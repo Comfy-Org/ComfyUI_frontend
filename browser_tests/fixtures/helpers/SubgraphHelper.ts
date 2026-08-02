@@ -364,6 +364,32 @@ export class SubgraphHelper {
       .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
   }
 
+  async enterSubgraphWithFallback(nodeId: string): Promise<void> {
+    const numericNodeId = Number(nodeId)
+    if (Number.isNaN(numericNodeId)) {
+      throw new Error(`Expected numeric subgraph node id, got ${nodeId}`)
+    }
+
+    const normalizedNodeId = String(numericNodeId)
+    const enterButton =
+      this.comfyPage.vueNodes.getSubgraphEnterButton(normalizedNodeId)
+    if ((await enterButton.count()) > 0) {
+      await this.comfyPage.vueNodes.enterSubgraph(normalizedNodeId)
+      return
+    }
+
+    await this.page.evaluate((targetNodeId) => {
+      const graph = window.app?.canvas.graph
+      const node = graph?.getNodeById(targetNodeId)
+      if (!node?.isSubgraphNode()) {
+        throw new Error(`Expected visible subgraph node ${targetNodeId}`)
+      }
+      window.app!.canvas.setGraph(node.subgraph)
+    }, toNodeId(normalizedNodeId))
+    await this.comfyPage.nextFrame()
+    await this.comfyPage.vueNodes.waitForNodes()
+  }
+
   async isInSubgraph(): Promise<boolean> {
     return this.page.evaluate(() => {
       const graph = window.app!.canvas.graph

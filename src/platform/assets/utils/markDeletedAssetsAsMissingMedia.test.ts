@@ -2,6 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type * as MissingMediaScanModule from '@/platform/missingMedia/missingMediaScan'
+import { createPromotedMediaRuntime } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { markDeletedAssetsAsMissingMedia } from './markDeletedAssetsAsMissingMedia'
@@ -158,6 +160,34 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
         widgetName: 'image',
         mediaType: 'image',
         name: 'nested.png [output]',
+        isMissing: true
+      }
+    ])
+  })
+
+  it('marks a deleted asset referenced only by a promoted host widget', async () => {
+    const deletedValue = 'deleted-host-only.png'
+    const { rootGraph } = createPromotedMediaRuntime({
+      sourceIds: [100],
+      hostIds: [50],
+      hostValue: deletedValue,
+      sourceValue: 'stale-interior.png',
+      sourceOptions: []
+    })
+    const { scanNodeMediaCandidates } = await vi.importActual<
+      typeof MissingMediaScanModule
+    >('@/platform/missingMedia/missingMediaScan')
+    mockScanNodeMediaCandidates.mockImplementation(scanNodeMediaCandidates)
+
+    markDeletedAssetsAsMissingMedia(rootGraph, new Set([deletedValue]))
+
+    expect(useMissingMediaStore().missingMediaCandidates).toEqual([
+      {
+        nodeId: '50',
+        nodeType: 'LoadImage',
+        widgetName: 'outer_image',
+        mediaType: 'image',
+        name: deletedValue,
         isMissing: true
       }
     ])

@@ -4,13 +4,13 @@ import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
 
 const PROMOTED_MODEL_WIDGET_NAME = 'ckpt_name'
 
@@ -138,7 +138,6 @@ export async function selectVueAssetPromotedModel(
   modelName: string
 ) {
   await selectModelFromFormDropdown(
-    comfyPage,
     comfyPage.vueNodes.getNodeByTitle(workflow.hostNodeTitle),
     currentModelName,
     modelName
@@ -169,7 +168,6 @@ export async function selectSectionAssetPromotedModel(
 ) {
   const panel = await openHostNodeParametersPanel(comfyPage, workflow)
   await selectModelFromFormDropdown(
-    comfyPage,
     panel.contentArea,
     currentModelName,
     modelName
@@ -288,8 +286,7 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
   await expectNoMissingModelUi(comfyPage)
 
   for (const step of expectedStaleInteriorWidgets) {
-    await enterSubgraphForStaleInteriorCheck(
-      comfyPage,
+    await comfyPage.subgraph.enterSubgraphWithFallback(
       step.subgraphNodeIdToEnter
     )
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
@@ -368,7 +365,6 @@ function setRootHostWidgetValue(
 }
 
 async function selectModelFromFormDropdown(
-  comfyPage: ComfyPage,
   root: Locator,
   currentModelName: string,
   nextModelName: string
@@ -377,12 +373,9 @@ async function selectModelFromFormDropdown(
     .getByRole('button', { name: currentModelName, exact: true })
     .first()
   await expect(trigger).toBeVisible()
-  await trigger.click()
-
-  const menu = comfyPage.page.getByTestId('form-dropdown-menu')
-  await expect(menu).toBeVisible()
-  await menu.getByText(nextModelName, { exact: true }).click()
-  await expect(menu).toBeHidden()
+  await WidgetSelectDropdownFixture.fromTrigger(trigger).selectOption(
+    nextModelName
+  )
 }
 
 async function clickLegacyHostPromotedWidget(
@@ -393,33 +386,4 @@ async function clickLegacyHostPromotedWidget(
   await hostNode.centerOnNode()
   const widget = await hostNode.getWidgetByName(PROMOTED_MODEL_WIDGET_NAME)
   await widget.click()
-}
-
-async function enterSubgraphForStaleInteriorCheck(
-  comfyPage: ComfyPage,
-  nodeId: string
-) {
-  const numericNodeId = Number(nodeId)
-  if (Number.isNaN(numericNodeId)) {
-    throw new Error(`Expected numeric subgraph node id, got ${nodeId}`)
-  }
-
-  const normalizedNodeId = String(numericNodeId)
-  const enterButton =
-    comfyPage.vueNodes.getSubgraphEnterButton(normalizedNodeId)
-  if ((await enterButton.count()) > 0) {
-    await comfyPage.vueNodes.enterSubgraph(normalizedNodeId)
-    return
-  }
-
-  await comfyPage.page.evaluate((targetNodeId) => {
-    const graph = window.app?.canvas.graph
-    const node = graph?.getNodeById(targetNodeId)
-    if (!node?.isSubgraphNode()) {
-      throw new Error(`Expected visible subgraph node ${targetNodeId}`)
-    }
-    window.app!.canvas.setGraph(node.subgraph)
-  }, toNodeId(normalizedNodeId))
-  await comfyPage.nextFrame()
-  await comfyPage.vueNodes.waitForNodes()
 }

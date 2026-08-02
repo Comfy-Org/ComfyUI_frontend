@@ -5,7 +5,16 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
@@ -15,17 +24,10 @@ import {
   hasWidgetError,
   isWidgetVisible
 } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import {
-  createNodeExecutionId,
-  createNodeLocatorId
-} from '@/types/nodeIdentification'
-import { widgetId } from '@/types/widgetId'
 import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 const GRAPH_ID = 'graph-test'
+const NODE_ID = toNodeId(1)
 
 const { executionIdToNodeLocatorId } = vi.hoisted(() => ({
   executionIdToNodeLocatorId: vi.fn()
@@ -64,6 +66,32 @@ const createMockWidget = (
   slotMetadata: undefined,
   ...overrides
 })
+
+const noopUi = {
+  getTooltipConfig: () => ({}) as TooltipOptions,
+  handleNodeRightClick: () => {}
+}
+
+function processWidgets(widgets: SafeWidgetData[]) {
+  return computeProcessedWidgets({
+    nodeData: {
+      id: NODE_ID,
+      type: 'TestNode',
+      widgets,
+      title: 'Test',
+      mode: 0,
+      selected: false,
+      executing: false,
+      inputs: [],
+      outputs: []
+    },
+    graphId: GRAPH_ID,
+    showAdvanced: false,
+    isGraphReady: false,
+    rootGraph: null,
+    ui: noopUi
+  })
+}
 
 describe('getWidgetIdentity', () => {
   it('keys dedupeIdentity by widgetId and widget type', () => {
@@ -303,12 +331,66 @@ describe('hasWidgetError', () => {
       )
     ).toBe(true)
   })
-})
 
-const noopUi = {
-  getTooltipConfig: () => ({}) as TooltipOptions,
-  handleNodeRightClick: () => {}
-}
+  it('marks a matching regular widget for missing media', () => {
+    const widget = createMockWidget({ name: 'image', nodeId: NODE_ID })
+    const missingMediaStore = useMissingMediaStore()
+
+    missingMediaStore.setMissingMedia([
+      {
+        nodeId: createNodeExecutionId([NODE_ID]),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      }
+    ])
+
+    expect(processWidgets([widget])[0].hasError).toBe(true)
+  })
+
+  it('marks only the matching promoted host widget for missing media', () => {
+    const matchingWidget = createMockWidget({
+      name: 'outer_image',
+      nodeId: NODE_ID,
+      sourceExecutionId: createNodeExecutionId([NODE_ID, toNodeId(42)]),
+      sourceWidgetName: 'image'
+    })
+    const otherWidget = createMockWidget({
+      name: 'other_input',
+      nodeId: NODE_ID,
+      sourceExecutionId: createNodeExecutionId([NODE_ID, toNodeId(43)]),
+      sourceWidgetName: 'image'
+    })
+    const missingMediaStore = useMissingMediaStore()
+
+    missingMediaStore.setMissingMedia([
+      {
+        nodeId: createNodeExecutionId([NODE_ID]),
+        nodeType: 'LoadImage',
+        widgetName: 'outer_image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      }
+    ])
+    expect(processWidgets([matchingWidget])[0].hasError).toBe(true)
+    expect(processWidgets([otherWidget])[0].hasError).toBe(false)
+
+    missingMediaStore.setMissingMedia([
+      {
+        nodeId: createNodeExecutionId([toNodeId(2)]),
+        nodeType: 'LoadImage',
+        widgetName: 'outer_image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      }
+    ])
+    expect(processWidgets([matchingWidget])[0].hasError).toBe(false)
+  })
+})
 
 describe('computeProcessedWidgets borderStyle', () => {
   beforeEach(() => {
@@ -648,33 +730,9 @@ describe('computeProcessedWidgets borderStyle', () => {
 })
 
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
-  const GRAPH_ID = 'graph-test'
-  const NODE_ID = toNodeId(1)
-
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
-
-  function processWidgets(widgets: SafeWidgetData[]) {
-    return computeProcessedWidgets({
-      nodeData: {
-        id: NODE_ID,
-        type: 'TestNode',
-        widgets,
-        title: 'Test',
-        mode: 0,
-        selected: false,
-        executing: false,
-        inputs: [],
-        outputs: []
-      },
-      graphId: GRAPH_ID,
-      showAdvanced: false,
-      isGraphReady: false,
-      rootGraph: null,
-      ui: noopUi
-    })
-  }
 
   it('calls widget.callback with the new value when widgetState exists', () => {
     const callback = vi.fn()

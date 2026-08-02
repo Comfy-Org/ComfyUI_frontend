@@ -1,6 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
@@ -34,6 +37,15 @@ function makeCandidate(
     name,
     isMissing: true
   }
+}
+
+type MissingMediaStoreWithPromotedHostIdentity = ReturnType<
+  typeof useMissingMediaStore
+> & {
+  isWidgetMissingMedia?: (
+    nodeId: NodeExecutionId,
+    widgetName: string
+  ) => boolean
 }
 
 describe('useMissingMediaStore', () => {
@@ -305,6 +317,46 @@ describe('useMissingMediaStore', () => {
 
       expect(store.missingMediaCandidates).toHaveLength(1)
       expect(store.missingMediaCandidates![0].name).toBe('orphan.png')
+    })
+  })
+
+  describe('promoted host identity', () => {
+    it('does not remove a promoted host whose nodeId only shares a numeric prefix', () => {
+      const store = useMissingMediaStore()
+      const candidates = [
+        {
+          ...makeCandidate('65', 'matching.png'),
+          widgetName: 'outer_image'
+        },
+        {
+          ...makeCandidate('650', 'numeric-sibling.png'),
+          widgetName: 'outer_image'
+        }
+      ]
+      store.setMissingMedia(candidates)
+
+      store.removeMissingMediaByNodeId('65')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].name).toBe('numeric-sibling.png')
+    })
+
+    it('finds missing media by the promoted host widget identity', () => {
+      const store =
+        useMissingMediaStore() as MissingMediaStoreWithPromotedHostIdentity
+      const hostExecutionId = createNodeExecutionId([65])
+      store.setMissingMedia([
+        {
+          ...makeCandidate('65', 'host.png'),
+          widgetName: 'outer_image'
+        }
+      ])
+
+      expect(store.isWidgetMissingMedia).toBeTypeOf('function')
+      expect(store.isWidgetMissingMedia?.(hostExecutionId, 'outer_image')).toBe(
+        true
+      )
+      expect(store.isWidgetMissingMedia?.(hostExecutionId, 'other')).toBe(false)
     })
   })
 })

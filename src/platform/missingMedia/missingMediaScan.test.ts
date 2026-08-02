@@ -1,13 +1,17 @@
+import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as AssetServiceModule from '@/platform/assets/services/assetService'
+import { createPromotedMediaRuntime } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 import {
   scanAllMediaCandidates,
@@ -32,13 +36,41 @@ const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  collectAllNodes: (graph: { _testNodes: LGraphNode[] }) => graph._testNodes,
-  getExecutionIdByNode: (
-    _graph: unknown,
-    node: { _testExecutionId?: string; id: number }
-  ) => node._testExecutionId ?? String(node.id)
-}))
+vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
+  const actual = await importActual<typeof GraphTraversalUtil>()
+  type TestNode = LGraphNode & { _testExecutionId?: string }
+  type TestGraph = { _testNodes: TestNode[] }
+  const isTestGraph = (graph: LGraph | TestGraph): graph is TestGraph =>
+    '_testNodes' in graph
+  const executionIdForNode = (node: TestNode) =>
+    node._testExecutionId ?? String(node.id)
+  const findNodeByExecutionId = (graph: TestGraph, executionId: string) =>
+    graph._testNodes.find((node) => executionIdForNode(node) === executionId)
+  const isInactive = (node: LGraphNode | undefined) =>
+    node?.mode === LGraphEventMode.NEVER ||
+    node?.mode === LGraphEventMode.BYPASS
+
+  return {
+    ...actual,
+    collectAllNodes: (graph: LGraph | TestGraph) =>
+      isTestGraph(graph) ? graph._testNodes : actual.collectAllNodes(graph),
+    getExecutionIdByNode: (graph: LGraph | TestGraph, node: TestNode) =>
+      isTestGraph(graph)
+        ? executionIdForNode(node)
+        : actual.getExecutionIdByNode(graph, node),
+    isExecutionPathActive: (graph: LGraph | TestGraph, executionId: string) => {
+      if (!isTestGraph(graph)) {
+        return actual.isExecutionPathActive(graph, executionId)
+      }
+      const path = executionId.split(':')
+      return path.every((_, index) => {
+        const prefix = path.slice(0, index + 1).join(':')
+        const node = findNodeByExecutionId(graph, prefix)
+        return !!node && !isInactive(node)
+      })
+    }
+  }
+})
 
 vi.mock('@/platform/assets/services/assetService', async () => {
   const actual = await vi.importActual<typeof AssetServiceModule>(
@@ -162,15 +194,108 @@ function makeHistoryJob(
   })
 }
 
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
+
 describe('scanNodeMediaCandidates', () => {
+  it('reports a missing promoted media value through the editable host widget', () => {
+    const {
+      rootGraph: graph,
+      hosts: [host]
+    } = createPromotedMediaRuntime()
+
+    const result = scanNodeMediaCandidates(graph, host, false)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      nodeId: '65',
+      nodeType: 'LoadImage',
+      widgetName: 'outer_image',
+      name: 'missing-host.png',
+      isMissing: true
+    })
+  })
+
+  it('does not report a promoted host when its leaf source is bypassed', () => {
+    const {
+      rootGraph: graph,
+      hosts: [host],
+      sourceNodes: [sourceNode]
+    } = createPromotedMediaRuntime()
+
+    expect.soft(scanNodeMediaCandidates(graph, host, false)).toEqual([
+      expect.objectContaining({
+        nodeId: '65',
+        widgetName: 'outer_image'
+      })
+    ])
+    sourceNode.mode = LGraphEventMode.BYPASS
+
+    expect(scanNodeMediaCandidates(graph, host, false)).toEqual([])
+  })
+
+  it('does not report a promoted host when its leaf source never executes', () => {
+    const {
+      rootGraph: graph,
+      hosts: [host],
+      sourceNodes: [sourceNode]
+    } = createPromotedMediaRuntime()
+
+    expect.soft(scanNodeMediaCandidates(graph, host, false)).toEqual([
+      expect.objectContaining({
+        nodeId: '65',
+        widgetName: 'outer_image'
+      })
+    ])
+    sourceNode.mode = LGraphEventMode.NEVER
+
+    expect(scanNodeMediaCandidates(graph, host, false)).toEqual([])
+  })
+
+  it('does not report a linked interior media widget as an editable candidate', () => {
+    const {
+      rootGraph: graph,
+      sourceNodes: [sourceNode]
+    } = createPromotedMediaRuntime()
+
+    const result = scanNodeMediaCandidates(graph, sourceNode, false)
+
+    expect(result).toEqual([])
+  })
+
+  it('does not report a regular media widget whose input value comes from a link', () => {
+    const graph = new LGraph()
+    const upstream = new LGraphNode('ImageSource')
+    upstream.addOutput('image', 'COMBO')
+    graph.add(upstream)
+
+    const node = new LGraphNode('LoadImage')
+    node.type = 'LoadImage'
+    const input = node.addInput('image', 'COMBO')
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'stale-local.png',
+      () => undefined,
+      { values: [] }
+    )
+    input.widget = { name: widget.name }
+    graph.add(node)
+    const link = upstream.connect(0, node, 0)
+    if (!link) throw new Error('Expected regular media input link')
+
+    expect(scanNodeMediaCandidates(graph, node, false)).toEqual([])
+  })
+
   it('returns candidate for a LoadImage node with missing image', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(
       1,
       'LoadImage',
       [makeMediaCombo('image', 'photo.png', ['other.png'])],
       0
     )
+    const graph = makeGraph([node])
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -186,13 +311,13 @@ describe('scanNodeMediaCandidates', () => {
   })
 
   it('returns empty for non-media node types', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(
       1,
       'KSampler',
       [makeMediaCombo('sampler', 'euler', ['euler', 'dpm'])],
       0
     )
+    const graph = makeGraph([node])
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -200,8 +325,8 @@ describe('scanNodeMediaCandidates', () => {
   })
 
   it('returns empty for node with no widgets', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(1, 'LoadImage', [], 0)
+    const graph = makeGraph([node])
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -211,13 +336,13 @@ describe('scanNodeMediaCandidates', () => {
   it.for([false, true])(
     'returns empty while a media upload is pending on the node (isCloud: %s)',
     (isCloud) => {
-      const graph = makeGraph([])
       const node = makeMediaNode(
         1,
         'LoadVideo',
         [makeMediaCombo('file', 'clip.mp4', [])],
         0
       )
+      const graph = makeGraph([node])
       node.isUploading = true
 
       const result = scanNodeMediaCandidates(graph, node, isCloud)
@@ -227,13 +352,13 @@ describe('scanNodeMediaCandidates', () => {
   )
 
   it('detects missing media again after upload state clears', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(
       1,
       'LoadVideo',
       [makeMediaCombo('file', 'clip.mp4', [])],
       0
     )
+    const graph = makeGraph([node])
 
     node.isUploading = true
     expect(scanNodeMediaCandidates(graph, node, false)).toEqual([])
@@ -282,13 +407,13 @@ describe('scanNodeMediaCandidates', () => {
   ])(
     'matches annotated $nodeType values against clean OSS options',
     ({ nodeType, widgetName, mediaType, value, option }) => {
-      const graph = makeGraph([])
       const node = makeMediaNode(
         1,
         nodeType,
         [makeMediaCombo(widgetName, value, [option])],
         0
       )
+      const graph = makeGraph([node])
 
       const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -322,13 +447,13 @@ describe('scanNodeMediaCandidates', () => {
   ])(
     'leaves OSS $nodeType output annotations pending when not in options',
     ({ nodeType, widgetName, value }) => {
-      const graph = makeGraph([])
       const node = makeMediaNode(
         1,
         nodeType,
         [makeMediaCombo(widgetName, value, ['other-file.png', value])],
         0
       )
+      const graph = makeGraph([node])
 
       const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -342,13 +467,13 @@ describe('scanNodeMediaCandidates', () => {
   )
 
   it('marks OSS input annotations missing when the clean option is absent', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(
       1,
       'LoadImage',
       [makeMediaCombo('image', 'photo.png [input]', ['other.png'])],
       0
     )
+    const graph = makeGraph([node])
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -359,13 +484,13 @@ describe('scanNodeMediaCandidates', () => {
   })
 
   it('does not treat compact Cloud annotations as valid OSS options', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(
       1,
       'LoadImage',
       [makeMediaCombo('image', 'photo.png[input]', ['photo.png'])],
       0
     )
+    const graph = makeGraph([node])
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -377,6 +502,239 @@ describe('scanNodeMediaCandidates', () => {
 })
 
 describe('scanAllMediaCandidates', () => {
+  it('treats a promoted value seeded from leaf options as present on its host', () => {
+    const { rootGraph: graph } = createPromotedMediaRuntime({
+      hostValue: 'leaf-option.png',
+      sourceValue: 'leaf-option.png',
+      sourceOptions: ['leaf-option.png']
+    })
+
+    expect(scanAllMediaCandidates(graph, false)).toEqual([
+      expect.objectContaining({
+        nodeId: '65',
+        widgetName: 'outer_image',
+        name: 'leaf-option.png',
+        isMissing: false
+      })
+    ])
+  })
+
+  it('uses a valid host value even when the linked interior value is stale', () => {
+    const { rootGraph: graph } = createPromotedMediaRuntime({
+      hostValue: 'valid.png'
+    })
+
+    const result = scanAllMediaCandidates(graph, false)
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        nodeId: '65',
+        widgetName: 'outer_image',
+        name: 'valid.png',
+        isMissing: false
+      })
+    ])
+  })
+
+  it('reports a promoted candidate with its editable host identity', () => {
+    const { rootGraph: graph } = createPromotedMediaRuntime()
+
+    const result = scanAllMediaCandidates(graph, false)
+
+    expect(result).toEqual([
+      {
+        nodeId: '65',
+        nodeType: 'LoadImage',
+        widgetName: 'outer_image',
+        mediaType: 'image',
+        name: 'missing-host.png',
+        isMissing: true
+      }
+    ])
+  })
+
+  it('reports only the outer editable host for a nested promoted media chain', () => {
+    const { rootGraph } = createPromotedMediaRuntime({ depth: 2 })
+
+    const result = scanAllMediaCandidates(rootGraph, false)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      nodeId: '65',
+      nodeType: 'LoadImage',
+      widgetName: 'outer_image'
+    })
+  })
+
+  it('reports independent host candidates for shared subgraph instances', () => {
+    const { rootGraph } = createPromotedMediaRuntime({ hostIds: [65, 66] })
+
+    const result = scanAllMediaCandidates(rootGraph, false)
+
+    expect(result).toHaveLength(2)
+    expect(result).toMatchObject([
+      { nodeId: '65', widgetName: 'outer_image' },
+      { nodeId: '66', widgetName: 'outer_image' }
+    ])
+  })
+
+  it('reports one host candidate for three active promoted consumers', () => {
+    const { rootGraph: graph } = createPromotedMediaRuntime({
+      sourceIds: [42, 43, 44]
+    })
+
+    const result = scanAllMediaCandidates(graph, false)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      nodeId: '65',
+      widgetName: 'outer_image',
+      nodeType: 'LoadImage'
+    })
+  })
+
+  it('keeps the host candidate when only the first-linked consumer is bypassed', () => {
+    const { rootGraph: graph, sourceNodes } = createPromotedMediaRuntime({
+      sourceIds: [42, 43, 44]
+    })
+    sourceNodes[0].mode = LGraphEventMode.BYPASS
+
+    const result = scanAllMediaCandidates(graph, false)
+
+    expect(result).toEqual([
+      expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
+    ])
+  })
+
+  it('keeps the host candidate when only the middle consumer is bypassed', () => {
+    const { rootGraph: graph, sourceNodes } = createPromotedMediaRuntime({
+      sourceIds: [42, 43, 44]
+    })
+    sourceNodes[1].mode = LGraphEventMode.BYPASS
+
+    const result = scanAllMediaCandidates(graph, false)
+
+    expect(result).toEqual([
+      expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
+    ])
+  })
+
+  it('does not report the host when all promoted consumers are bypassed', () => {
+    const { rootGraph: graph, sourceNodes } = createPromotedMediaRuntime({
+      sourceIds: [42, 43, 44]
+    })
+
+    expect
+      .soft(scanAllMediaCandidates(graph, false))
+      .toEqual([
+        expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
+      ])
+    for (const sourceNode of sourceNodes) {
+      sourceNode.mode = LGraphEventMode.BYPASS
+    }
+
+    expect(scanAllMediaCandidates(graph, false)).toEqual([])
+  })
+
+  it('does not report the host when all promoted consumers never execute', () => {
+    const { rootGraph: graph, sourceNodes } = createPromotedMediaRuntime({
+      sourceIds: [42, 43, 44]
+    })
+
+    expect
+      .soft(scanAllMediaCandidates(graph, false))
+      .toEqual([
+        expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
+      ])
+    for (const sourceNode of sourceNodes) {
+      sourceNode.mode = LGraphEventMode.NEVER
+    }
+
+    expect(scanAllMediaCandidates(graph, false)).toEqual([])
+  })
+
+  it('keeps one outer host candidate when the last nested branch is bypassed', () => {
+    const {
+      rootGraph: graph,
+      intermediateHosts: [, lastInnerHost]
+    } = createPromotedMediaRuntime({
+      sourceIds: [42, 43],
+      depth: 2
+    })
+    if (!lastInnerHost) throw new Error('Expected nested fanout branch')
+    lastInnerHost.mode = LGraphEventMode.BYPASS
+
+    const result = scanAllMediaCandidates(graph, false)
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        nodeId: '65',
+        widgetName: 'outer_image',
+        nodeType: 'LoadImage'
+      })
+    ])
+  })
+
+  it('does not report a promoted host when its leaf source is bypassed', () => {
+    const {
+      rootGraph: graph,
+      sourceNodes: [sourceNode]
+    } = createPromotedMediaRuntime()
+
+    expect.soft(scanAllMediaCandidates(graph, false)).toHaveLength(1)
+    sourceNode.mode = LGraphEventMode.BYPASS
+
+    expect(scanAllMediaCandidates(graph, false)).toEqual([])
+  })
+
+  it('does not report a promoted host when its leaf source never executes', () => {
+    const {
+      rootGraph: graph,
+      sourceNodes: [sourceNode]
+    } = createPromotedMediaRuntime()
+
+    expect.soft(scanAllMediaCandidates(graph, false)).toHaveLength(1)
+    sourceNode.mode = LGraphEventMode.NEVER
+
+    expect(scanAllMediaCandidates(graph, false)).toEqual([])
+  })
+
+  it('accepts a value found only in the promoted host options', () => {
+    const { rootGraph: graph } = createPromotedMediaRuntime({
+      hostValue: 'host-only.png',
+      hostOptions: ['host-only.png'],
+      sourceValue: 'host-only.png',
+      sourceOptions: ['leaf-option.png']
+    })
+
+    expect(scanAllMediaCandidates(graph, false)).toEqual([
+      expect.objectContaining({
+        nodeId: '65',
+        widgetName: 'outer_image',
+        name: 'host-only.png',
+        isMissing: false
+      })
+    ])
+  })
+
+  it('reports a value found only in the interior leaf options as missing', () => {
+    const { rootGraph: graph } = createPromotedMediaRuntime({
+      hostValue: 'leaf-only.png',
+      hostOptions: ['host-option.png'],
+      sourceValue: 'leaf-only.png',
+      sourceOptions: ['leaf-only.png']
+    })
+
+    expect(scanAllMediaCandidates(graph, false)).toEqual([
+      expect.objectContaining({
+        nodeId: '65',
+        widgetName: 'outer_image',
+        name: 'leaf-only.png',
+        isMissing: true
+      })
+    ])
+  })
+
   it('skips muted nodes (mode === NEVER)', () => {
     const node = makeMediaNode(
       1,
