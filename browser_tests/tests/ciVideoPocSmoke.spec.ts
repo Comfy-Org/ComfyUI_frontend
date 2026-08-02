@@ -30,8 +30,11 @@ test.describe('CI video PoC smoke', { tag: ['@smoke', '@node'] }, () => {
     // Zoom in on the new connection so it's clearly visible in the recording.
     await comfyPage.canvasOps.zoom(-120, 4)
 
-    const link = await (await previewImage.getInput(0)).getLink()
-    expect(link?.origin_id).toBe(vaeDecode.id)
+    const previewImageInput = await previewImage.getInput(0)
+    await expect
+      .poll(async () => (await previewImageInput.getLink())?.origin_id)
+      .toBe(vaeDecode.id)
+    const link = await previewImageInput.getLink()
     expect(link?.target_id).toBe(previewImage.id)
   })
 })
