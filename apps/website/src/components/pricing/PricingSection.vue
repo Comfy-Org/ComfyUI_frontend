@@ -49,24 +49,18 @@ function originalPriceFor(plan: PricingPlan): string | undefined {
 }
 
 const planCards = computed(() =>
-  pricingPlans.map((plan) => {
-    const isFree = plan.id === 'free'
-    return {
-      plan,
-      priceKey: displayPriceKey(plan),
-      originalPrice: originalPriceFor(plan),
-      yearlyTotal: plan.yearlyTotalKey
-        ? t(plan.yearlyTotalKey, locale)
-        : undefined,
-      features: plan.features,
-      period: isFree ? '' : t('pricing.plan.period', locale),
-      cycle: isFree ? undefined : billingPeriod.value,
-      creditsLabel: t(
-        isFree ? 'pricing.plan.free.creditsLabel' : 'pricing.creditsLabel',
-        locale
-      )
-    }
-  })
+  pricingPlans.map((plan) => ({
+    plan,
+    priceKey: displayPriceKey(plan),
+    originalPrice: originalPriceFor(plan),
+    yearlyTotal: plan.yearlyTotalKey
+      ? t(plan.yearlyTotalKey, locale)
+      : undefined,
+    features: plan.features,
+    period: plan.periodKey ? t(plan.periodKey, locale) : '',
+    cycle: plan.yearlyPriceKey ? billingPeriod.value : undefined,
+    creditsLabel: t(plan.creditsLabelKey, locale)
+  }))
 )
 </script>
 
