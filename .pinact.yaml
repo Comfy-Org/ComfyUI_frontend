@@ -14,8 +14,6 @@ ignore_actions:
     ref: v5
   - name: actions/checkout
     ref: v6
-  - name: actions/checkout
-    ref: v7
   - name: actions/setup-node
     ref: v6
   - name: actions/setup-python

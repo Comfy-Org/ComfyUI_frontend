@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# mapfile -d landed in bash 4.4; macOS still ships 3.2 as /bin/bash
-if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
-  echo "Error: bash 4.4 or newer is required, found ${BASH_VERSION}" >&2
-  exit 2
-fi
-
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 cd "$ROOT_DIR"
 

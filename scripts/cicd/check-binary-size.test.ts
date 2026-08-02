@@ -1,8 +1,8 @@
-import { execFileSync, spawnSync } from 'child_process'
-import fs from 'fs'
-import os from 'os'
-import path from 'path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { execFileSync, spawnSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { describe, expect, it } from 'vitest'
 
 const SCRIPT = path.join(import.meta.dirname, 'check-binary-size.sh')
 const LIMIT = 1024
@@ -15,183 +15,190 @@ const GIT_ENV = {
   GIT_CONFIG_SYSTEM: '/dev/null'
 }
 
-describe('check-binary-size.sh', () => {
-  let repo: string
+function tempGitRepo() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'binary-size-'))
+  const env = { ...process.env, ...GIT_ENV }
 
-  beforeEach(() => {
-    repo = fs.mkdtempSync(path.join(os.tmpdir(), 'binary-size-'))
-    git('init', '--initial-branch=main')
-    git('config', 'user.email', 'test@example.com')
-    git('config', 'user.name', 'Test')
-    git('config', 'commit.gpgsign', 'false')
-    writeText('README.md', 'base\n')
-    commit('base')
-  })
+  const git = (...args: string[]) =>
+    execFileSync('git', args, { cwd: dir, encoding: 'utf8', env })
 
-  afterEach(() => {
-    fs.rmSync(repo, { recursive: true, force: true })
-  })
-
-  function git(...args: string[]): string {
-    return execFileSync('git', args, {
-      cwd: repo,
-      encoding: 'utf8',
-      env: { ...process.env, ...GIT_ENV }
-    })
-  }
-
-  function commit(message: string): void {
-    git('add', '--all')
-    git('commit', '-m', message)
-  }
-
-  function write(name: string, contents: Buffer | string): void {
-    const filePath = path.join(repo, name)
+  const write = (rel: string, contents: Buffer | string) => {
+    const filePath = path.join(dir, rel)
     fs.mkdirSync(path.dirname(filePath), { recursive: true })
     fs.writeFileSync(filePath, contents)
   }
 
-  function writeBinary(name: string, bytes: number): void {
-    write(name, Buffer.alloc(bytes))
+  const writeBinary = (rel: string, bytes: number, fill = 0) =>
+    write(rel, Buffer.alloc(bytes, fill))
+
+  const commit = (message: string) => {
+    git('add', '--all')
+    git('commit', '-m', message)
   }
 
-  function writeText(name: string, contents: string): void {
-    write(name, contents)
+  const run = (args: string[], extraEnv: Record<string, string> = {}) => {
+    const result = spawnSync('bash', [SCRIPT, ...args], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: { ...env, ...extraEnv }
+    })
+    return { status: result.status, output: `${result.stdout}${result.stderr}` }
   }
 
-  function check(
+  const check = (
     options: { maxBytes?: string; env?: Record<string, string> } = {}
-  ) {
+  ) => {
     const args = ['--base', 'HEAD~1', '--head', 'HEAD']
     if (options.maxBytes !== undefined) {
       args.push('--max-bytes', options.maxBytes)
     }
-    const result = spawnSync('bash', [SCRIPT, ...args], {
-      cwd: repo,
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        ...GIT_ENV,
-        MAX_BINARY_BYTES: String(LIMIT),
-        ...options.env
-      }
-    })
-    return {
-      status: result.status,
-      output: `${result.stdout}${result.stderr}`
-    }
+    return run(args, { MAX_BINARY_BYTES: String(LIMIT), ...options.env })
   }
 
-  it('passes when the range changes no binary files', () => {
-    writeText('notes.md', 'some prose\n')
-    commit('add notes')
+  git('init', '--initial-branch=main')
+  git('config', 'user.email', 'test@example.com')
+  git('config', 'user.name', 'Test')
+  git('config', 'commit.gpgsign', 'false')
+  write('README.md', 'base\n')
+  commit('base')
 
-    expect(check().status).toBe(0)
+  return {
+    dir,
+    git,
+    write,
+    writeBinary,
+    commit,
+    run,
+    check,
+    [Symbol.dispose]() {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  }
+}
+
+describe('check-binary-size.sh', () => {
+  it('passes when the range changes no binary files', () => {
+    using repo = tempGitRepo()
+    repo.write('notes.md', 'some prose\n')
+    repo.commit('add notes')
+
+    expect(repo.check().status).toBe(0)
   })
 
   it('fails when an added binary exceeds the limit', () => {
-    writeBinary('src/assets/clip.mp4', LIMIT * 2)
-    commit('add clip')
+    using repo = tempGitRepo()
+    repo.writeBinary('src/assets/clip.mp4', LIMIT * 2)
+    repo.commit('add clip')
 
-    const { status, output } = check()
+    const { status, output } = repo.check()
     expect(status).toBe(1)
     expect(output).toContain('src/assets/clip.mp4')
     expect(output).toContain('2.0 KiB')
   })
 
   it('passes when an added binary is within the limit', () => {
-    writeBinary('src/assets/icon.png', LIMIT / 2)
-    commit('add icon')
+    using repo = tempGitRepo()
+    repo.writeBinary('src/assets/icon.png', LIMIT / 2)
+    repo.commit('add icon')
 
-    expect(check().status).toBe(0)
+    expect(repo.check().status).toBe(0)
   })
 
   it('passes when a text file exceeds the limit', () => {
-    writeText('src/locales/big.json', `${'a'.repeat(LIMIT * 2)}\n`)
-    commit('add translations')
+    using repo = tempGitRepo()
+    repo.write('src/locales/big.json', `${'a'.repeat(LIMIT * 2)}\n`)
+    repo.commit('add translations')
 
-    expect(check().status).toBe(0)
+    expect(repo.check().status).toBe(0)
   })
 
   it('fails when an existing binary grows past the limit', () => {
-    writeBinary('src/assets/clip.mp4', LIMIT / 2)
-    commit('add clip')
-    writeBinary('src/assets/clip.mp4', LIMIT * 3)
-    commit('grow clip')
+    using repo = tempGitRepo()
+    repo.writeBinary('src/assets/clip.mp4', LIMIT / 2)
+    repo.commit('add clip')
+    repo.writeBinary('src/assets/clip.mp4', LIMIT * 3)
+    repo.commit('grow clip')
 
-    const { status, output } = check()
+    const { status, output } = repo.check()
     expect(status).toBe(1)
     expect(output).toContain('src/assets/clip.mp4')
   })
 
   it('ignores an oversized binary that the range deletes', () => {
-    writeBinary('src/assets/clip.mp4', LIMIT * 2)
-    commit('add clip')
-    fs.rmSync(path.join(repo, 'src/assets/clip.mp4'))
-    commit('remove clip')
+    using repo = tempGitRepo()
+    repo.writeBinary('src/assets/clip.mp4', LIMIT * 2)
+    repo.commit('add clip')
+    fs.rmSync(path.join(repo.dir, 'src/assets/clip.mp4'))
+    repo.commit('remove clip')
 
-    expect(check().status).toBe(0)
+    expect(repo.check().status).toBe(0)
   })
 
   it('ignores a pure rename of an oversized binary', () => {
-    writeBinary('src/assets/clip.mp4', LIMIT * 2)
-    commit('add clip')
-    git('mv', 'src/assets/clip.mp4', 'src/assets/renamed.mp4')
-    commit('rename clip')
+    using repo = tempGitRepo()
+    repo.writeBinary('src/assets/clip.mp4', LIMIT * 2)
+    repo.commit('add clip')
+    repo.git('mv', 'src/assets/clip.mp4', 'src/assets/renamed.mp4')
+    repo.commit('rename clip')
 
-    expect(check().status).toBe(0)
+    expect(repo.check().status).toBe(0)
   })
 
   it('fails when a rename also grows the binary', () => {
-    writeBinary('src/assets/clip.mp4', LIMIT * 2)
-    commit('add clip')
-    git('mv', 'src/assets/clip.mp4', 'src/assets/renamed.mp4')
+    using repo = tempGitRepo()
+    repo.writeBinary('src/assets/clip.mp4', LIMIT * 2)
+    repo.commit('add clip')
+    repo.git('mv', 'src/assets/clip.mp4', 'src/assets/renamed.mp4')
     fs.appendFileSync(
-      path.join(repo, 'src/assets/renamed.mp4'),
+      path.join(repo.dir, 'src/assets/renamed.mp4'),
       Buffer.alloc(LIMIT)
     )
-    commit('rename and grow clip')
+    repo.commit('rename and grow clip')
 
-    const { status, output } = check()
+    const { status, output } = repo.check()
     expect(status).toBe(1)
     expect(output).toContain('src/assets/renamed.mp4')
   })
 
   it('fails when a replacement shrinks but stays over the limit', () => {
-    writeBinary('src/assets/clip.mp4', LIMIT * 4)
-    commit('add clip')
-    write('src/assets/clip.mp4', Buffer.alloc(LIMIT * 2, 1))
-    commit('re-encode clip')
+    using repo = tempGitRepo()
+    repo.writeBinary('src/assets/clip.mp4', LIMIT * 4)
+    repo.commit('add clip')
+    repo.writeBinary('src/assets/clip.mp4', LIMIT * 2, 1)
+    repo.commit('re-encode clip')
 
-    const { status, output } = check()
+    const { status, output } = repo.check()
     expect(status).toBe(1)
     expect(output).toContain('src/assets/clip.mp4')
   })
 
   it('ignores an oversized binary the range never touches', () => {
-    writeBinary('src/assets/clip.mp4', LIMIT * 2)
-    commit('add clip')
-    writeText('notes.md', 'some prose\n')
-    commit('add notes')
+    using repo = tempGitRepo()
+    repo.writeBinary('src/assets/clip.mp4', LIMIT * 2)
+    repo.commit('add clip')
+    repo.write('notes.md', 'some prose\n')
+    repo.commit('add notes')
 
-    expect(check().status).toBe(0)
+    expect(repo.check().status).toBe(0)
   })
 
   it('reads the limit from MAX_BINARY_BYTES', () => {
-    writeBinary('src/assets/clip.mp4', LIMIT * 2)
-    commit('add clip')
+    using repo = tempGitRepo()
+    repo.writeBinary('src/assets/clip.mp4', LIMIT * 2)
+    repo.commit('add clip')
 
-    expect(check({ env: { MAX_BINARY_BYTES: String(LIMIT * 4) } }).status).toBe(
-      0
-    )
+    expect(
+      repo.check({ env: { MAX_BINARY_BYTES: String(LIMIT * 4) } }).status
+    ).toBe(0)
   })
 
   it('prefers --max-bytes over MAX_BINARY_BYTES', () => {
-    writeBinary('src/assets/clip.mp4', LIMIT * 2)
-    commit('add clip')
+    using repo = tempGitRepo()
+    repo.writeBinary('src/assets/clip.mp4', LIMIT * 2)
+    repo.commit('add clip')
 
     expect(
-      check({
+      repo.check({
         maxBytes: String(LIMIT * 4),
         env: { MAX_BINARY_BYTES: String(LIMIT) }
       }).status
@@ -199,13 +206,17 @@ describe('check-binary-size.sh', () => {
   })
 
   it('rejects a non-numeric limit', () => {
-    const { status, output } = check({ maxBytes: 'lots' })
+    using repo = tempGitRepo()
+
+    const { status, output } = repo.check({ maxBytes: 'lots' })
     expect(status).toBe(2)
     expect(output).toContain('must be a non-negative integer')
   })
 
   it('rejects a negative limit', () => {
-    const { status, output } = check({ maxBytes: '-1' })
+    using repo = tempGitRepo()
+
+    const { status, output } = repo.check({ maxBytes: '-1' })
     expect(status).toBe(2)
     expect(output).toContain('must be a non-negative integer')
   })
@@ -216,12 +227,10 @@ describe('check-binary-size.sh', () => {
       { option, shape: 'followed by another flag', args: [option, '--base'] }
     ])
   )('rejects $option with no value $shape', ({ option, args }) => {
-    const result = spawnSync('bash', [SCRIPT, ...args], {
-      cwd: repo,
-      encoding: 'utf8',
-      env: { ...process.env, ...GIT_ENV }
-    })
-    expect(result.status).toBe(2)
-    expect(result.stderr).toContain(`${option} requires a value`)
+    using repo = tempGitRepo()
+
+    const { status, output } = repo.run(args)
+    expect(status).toBe(2)
+    expect(output).toContain(`${option} requires a value`)
   })
 })
