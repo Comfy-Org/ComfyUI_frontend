@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
 
+import { SHOW_FREE_TIER } from '../../../config/features'
+
 import { getRoutes } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 
@@ -24,7 +26,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             {{ t('cloud.pricing.description', locale) }}
           </p>
 
-          <p class="mt-4 text-base font-bold text-primary-comfy-ink">
+          <p
+            v-if="SHOW_FREE_TIER"
+            class="mt-4 text-base font-bold text-primary-comfy-ink"
+          >
             {{ t('cloud.pricing.tagline', locale) }}
           </p>
         </div>

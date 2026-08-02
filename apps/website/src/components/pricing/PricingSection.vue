@@ -49,15 +49,24 @@ function originalPriceFor(plan: PricingPlan): string | undefined {
 }
 
 const planCards = computed(() =>
-  pricingPlans.map((plan) => ({
-    plan,
-    priceKey: displayPriceKey(plan),
-    originalPrice: originalPriceFor(plan),
-    yearlyTotal: plan.yearlyTotalKey
-      ? t(plan.yearlyTotalKey, locale)
-      : undefined,
-    features: plan.features
-  }))
+  pricingPlans.map((plan) => {
+    const isFree = plan.id === 'free'
+    return {
+      plan,
+      priceKey: displayPriceKey(plan),
+      originalPrice: originalPriceFor(plan),
+      yearlyTotal: plan.yearlyTotalKey
+        ? t(plan.yearlyTotalKey, locale)
+        : undefined,
+      features: plan.features,
+      period: isFree ? '' : t('pricing.plan.period', locale),
+      cycle: isFree ? undefined : billingPeriod.value,
+      creditsLabel: t(
+        isFree ? 'pricing.plan.free.creditsLabel' : 'pricing.creditsLabel',
+        locale
+      )
+    }
+  })
 )
 </script>
 
@@ -112,7 +121,10 @@ const planCards = computed(() =>
           priceKey,
           originalPrice,
           yearlyTotal,
-          features
+          features,
+          period,
+          cycle,
+          creditsLabel
         } in planCards"
         :key="plan.id"
         class="row-span-7 grid grid-rows-subgrid"
@@ -130,9 +142,9 @@ const planCards = computed(() =>
         <PricingPrice
           v-if="priceKey"
           :price="t(priceKey, locale)"
-          :period="plan.id === 'free' ? '' : t('pricing.plan.period', locale)"
+          :period="period"
           :original-price="originalPrice"
-          :billing-period="plan.id === 'free' ? undefined : billingPeriod"
+          :billing-period="cycle"
           :yearly-total="yearlyTotal"
           :locale
         />
@@ -144,14 +156,7 @@ const planCards = computed(() =>
         <PricingCredits
           v-if="plan.creditsKey"
           :credits="t(plan.creditsKey, locale)"
-          :label="
-            t(
-              plan.id === 'free'
-                ? 'pricing.plan.free.creditsLabel'
-                : 'pricing.creditsLabel',
-              locale
-            )
-          "
+          :label="creditsLabel"
           :estimate-key="plan.estimateKey"
           :locale
         />

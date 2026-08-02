@@ -1,5 +1,6 @@
 import type { TranslationKey } from '../i18n/translations'
 
+import { SHOW_FREE_TIER } from '../config/features'
 import { externalLinks } from '../config/routes'
 
 export type BillingCycle = 'monthly' | 'yearly'
@@ -125,4 +126,6 @@ const standardPricingPlans: PricingPlan[] = [
   }
 ]
 
-export const pricingPlans: PricingPlan[] = [freePlan, ...standardPricingPlans]
+export const pricingPlans: PricingPlan[] = SHOW_FREE_TIER
+  ? [freePlan, ...standardPricingPlans]
+  : standardPricingPlans
