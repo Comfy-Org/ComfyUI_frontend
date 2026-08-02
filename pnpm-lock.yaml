@@ -1120,9 +1120,6 @@ importers:
       axios:
         specifier: 'catalog:'
         version: 1.18.1
-      dompurify:
-        specifier: 'catalog:'
-        version: 3.4.7
     devDependencies:
       typescript:
         specifier: 'catalog:'
