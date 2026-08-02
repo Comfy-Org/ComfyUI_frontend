@@ -223,13 +223,13 @@ jobs:
           [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
-  # PoC: record a video walkthrough of newly-added test spec files only.
-  # Scoped to added files (git diff --diff-filter=A against the PR base) so
-  # the cost stays bounded — this intentionally does not enable video for the
-  # rest of the suite. Runs for both fork and non-fork PRs (no secrets
-  # needed); the Cloudflare deploy + PR comment happens downstream, split by
-  # fork status the same way the trace/report comment is (see
-  # deploy-and-comment-video below and ci-tests-e2e-forks.yaml).
+  # Records a video walkthrough of newly-added test spec files only. Scoped
+  # to added files (git diff --diff-filter=A against the PR base) so the cost
+  # stays bounded — this intentionally does not enable video for the rest of
+  # the suite. Runs for both fork and non-fork PRs (no secrets needed); the
+  # Cloudflare deploy + PR comment happens downstream, split by fork status
+  # the same way the trace/report comment is (see deploy-and-comment-video
+  # below and ci-tests-e2e-forks.yaml).
   playwright-video-new-tests:
     needs: setup
     if: ${{ github.event_name == 'pull_request' }}
