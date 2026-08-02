@@ -647,6 +647,28 @@ describe('useWorkflowPersistenceV2', () => {
     })
   })
 
+  it('does not flush a pending workflow edit after disposal', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { nodes: [] }
+    mocks.state.graphChangedHandler?.()
+
+    const mounted = mountedApps.pop()
+    if (!mounted) throw new Error('Failed to find mounted persistence app')
+    mounted.app.unmount()
+    mounted.container.remove()
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+    await vi.runAllTimersAsync()
+
+    expect(
+      localStorage.getItem(StorageKeys.draftPayload(workflow.path, 'personal'))
+    ).toBeNull()
+  })
+
   it('flushes the final source-workspace edit before blocking transition writes', async () => {
     const sourceWorkspaceId = 'workspace-a'
     const destinationWorkspaceId = 'workspace-b'
