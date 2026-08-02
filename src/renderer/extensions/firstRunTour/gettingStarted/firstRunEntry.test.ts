@@ -126,21 +126,62 @@ describe('useFirstRunEntry', () => {
     )
   })
 
-  it.for(['restored', 'url-intent'] as const)(
-    'leaves a %s startup untouched',
+  it('marks a url-intent startup completed without taking over the screen', async () => {
+    const entry = await freshEntry()
+
+    await entry.handleStartupOutcome('url-intent')
+
+    expect(
+      entry.gettingStartedVisible.value,
+      'A share or template link is the user’s choice; onboarding must not cover it'
+    ).toBe(false)
+    expect(mocks.execute).not.toHaveBeenCalled()
+    expect(
+      mocks.setSetting,
+      'Without this the template browser reopens on every launch, as it did before this flow existed'
+    ).toHaveBeenCalledWith('Comfy.TutorialCompleted', true)
+  })
+
+  it('never onboards over restored work, even for an apparent new user', async () => {
+    const entry = await freshEntry()
+
+    await entry.handleStartupOutcome('restored')
+
+    expect(
+      entry.gettingStartedVisible.value,
+      'checkIsNewUser reads Comfy.TutorialCompleted, so a user who predates that setting looks new; only the outcome shows they had work to restore'
+    ).toBe(false)
+    expect(
+      mocks.execute,
+      'nor may the template browser cover their restored workflow'
+    ).not.toHaveBeenCalled()
+  })
+
+  it.for(['fresh', 'url-intent'] as const)(
+    'settles the first-run decision on a %s startup rather than leaving it pending',
     async (outcome: StartupOutcome) => {
       const entry = await freshEntry()
 
       await entry.handleStartupOutcome(outcome)
 
-      expect(entry.gettingStartedVisible.value).toBe(false)
-      expect(mocks.execute).not.toHaveBeenCalled()
       expect(
-        mocks.setSetting,
-        'A URL intent must not burn the first-run flag; the user never chose anything'
-      ).not.toHaveBeenCalled()
+        entry.gettingStartedVisible.value ||
+          mocks.setSetting.mock.calls.length > 0,
+        'a startup that opened a blank canvas must either offer onboarding or record that it is done; anything else strands the user with no screen and no flag'
+      ).toBe(true)
     }
   )
+
+  it('leaves a completed user alone', async () => {
+    mocks.settings['Comfy.TutorialCompleted'] = true
+    const entry = await freshEntry()
+
+    await entry.handleStartupOutcome('restored')
+
+    expect(entry.gettingStartedVisible.value).toBe(false)
+    expect(mocks.execute).not.toHaveBeenCalled()
+    expect(mocks.setSetting).not.toHaveBeenCalled()
+  })
 
   it('keeps the screen up when eligibility changes underneath it', async () => {
     const entry = await freshEntry()
@@ -162,7 +203,7 @@ describe('useFirstRunEntry', () => {
 
     expect(
       mocks.setSetting,
-      'Showing the screen must not persist completion; a reload here has to re-enter onboarding'
+      'Showing the screen must not persist completion; the user has not chosen anything yet'
     ).not.toHaveBeenCalled()
 
     await entry.dismissGettingStarted()

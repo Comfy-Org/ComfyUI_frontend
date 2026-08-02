@@ -282,6 +282,12 @@ describe('useWorkflowPersistenceV2', () => {
     )
   }
 
+  async function loadBlankIntoActiveWorkflow() {
+    const workflowStore = useWorkflowStore()
+    const blank = workflowStore.createTemporary('unsaved-workflow.json')
+    await workflowStore.openWorkflow(blank)
+  }
+
   function createDeferred<T = void>() {
     let resolve!: (value: T | PromiseLike<T>) => void
     const promise = new Promise<T>((res) => {
@@ -569,13 +575,70 @@ describe('useWorkflowPersistenceV2', () => {
       expect(loadBlankWorkflowMock).toHaveBeenCalled()
     })
 
-    it('still reports fresh on a reload before the user chose anything', async () => {
+    it('does not mark the tutorial completed on a reload before the user chose anything', async () => {
+      loadBlankWorkflowMock.mockImplementation(loadBlankIntoActiveWorkflow)
+
       await mountWorkflowPersistence().initializeWorkflow()
+      await nextTick()
+      await mountWorkflowPersistence().initializeWorkflow()
+
+      expect(
+        settingMocks.values['Comfy.TutorialCompleted'],
+        'Startup must not mark the tutorial completed; deciding that is the onboarding entry point’s job, not the graph loader’s'
+      ).toBeUndefined()
+    })
+
+    it('still reports fresh on a reload before the user touched anything', async () => {
+      loadBlankWorkflowMock.mockImplementation(loadBlankIntoActiveWorkflow)
+
+      await mountWorkflowPersistence().initializeWorkflow()
+      await nextTick()
 
       await expect(
         mountWorkflowPersistence().initializeWorkflow(),
-        'Startup must not mark the tutorial completed; a user who reloads before choosing anything would be stranded as a returning user'
+        'Persisting the blank canvas startup opened would make boot 2 report restored, stranding a first-run user as a returning one'
       ).resolves.toBe('fresh')
+    })
+
+    it('persists a temporary workflow once the user has modified it', async () => {
+      loadBlankWorkflowMock.mockImplementation(async () => {
+        const workflowStore = useWorkflowStore()
+        const blank = workflowStore.createTemporary('unsaved-workflow.json')
+        blank.isModified = true
+        await workflowStore.openWorkflow(blank)
+      })
+
+      await mountWorkflowPersistence().initializeWorkflow()
+      await nextTick()
+
+      await expect(
+        mountWorkflowPersistence().initializeWorkflow(),
+        'Real unsaved work must survive a reload'
+      ).resolves.toBe('restored')
+    })
+
+    it('reports restored for a user who already completed the tutorial', async () => {
+      settingMocks.values['Comfy.TutorialCompleted'] = true
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+
+      await expect(
+        initializeWorkflow(),
+        'Reporting fresh here would drop the full-screen onboarding takeover onto a returning user'
+      ).resolves.toBe('restored')
+      expect(loadBlankWorkflowMock).not.toHaveBeenCalled()
+    })
+
+    it('reports restored when saved tabs drive startup', async () => {
+      writeTabState(['workflows/a.json'], 0)
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+
+      await expect(
+        initializeWorkflow(),
+        'Restoring tabs is a returning user; reporting fresh would take the screen over their restored session'
+      ).resolves.toBe('restored')
     })
 
     it.for([
