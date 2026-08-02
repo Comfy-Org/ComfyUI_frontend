@@ -1,0 +1,136 @@
+{
+  "id": "cc111111-2222-4333-8444-000000000002",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "dd999999-8888-4777-a666-555555555556",
+      "pos": [400, 200],
+      "size": [400, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{ "name": "output", "type": "LATENT", "links": null }],
+      "title": "Sampler Subgraph",
+      "properties": {},
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "dd999999-8888-4777-a666-555555555556",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 1,
+          "lastLinkId": 1,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Sampler Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [50, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 200, 120, 60]
+        },
+        "inputs": [],
+        "outputs": [
+          {
+            "id": "ee888888-7777-4666-a555-444444444445",
+            "name": "output",
+            "type": "LATENT",
+            "linkIds": [1],
+            "pos": { "0": 920, "1": 220 }
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 1,
+            "type": "SamplerCustomAdvanced",
+            "pos": [250, 180],
+            "size": [260, 130],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "noise",
+                "name": "noise",
+                "type": "NOISE",
+                "link": null
+              },
+              {
+                "localized_name": "guider",
+                "name": "guider",
+                "type": "GUIDER",
+                "link": null
+              },
+              {
+                "localized_name": "sampler",
+                "name": "sampler",
+                "type": "SAMPLER",
+                "link": null
+              },
+              {
+                "localized_name": "sigmas",
+                "name": "sigmas",
+                "type": "SIGMAS",
+                "link": null
+              },
+              {
+                "localized_name": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "output",
+                "name": "output",
+                "type": "LATENT",
+                "links": [1]
+              },
+              {
+                "localized_name": "denoised_output",
+                "name": "denoised_output",
+                "type": "LATENT",
+                "links": null
+              }
+            ],
+            "properties": { "Node name for S&R": "SamplerCustomAdvanced" },
+            "widgets_values": []
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": 1,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "LATENT"
+          }
+        ],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": { "offset": [0, 0], "scale": 1 }
+  },
+  "version": 0.4
+}
