@@ -9,12 +9,10 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import {
+  canvasLayoutMutations,
   registerGroupLayout,
   registerNodeLayout,
-  unregisterAllGraphLayout,
-  unregisterGroupLayout,
-  unregisterNodeLayout,
-  unregisterRerouteLayout
+  unregisterAllGraphLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
@@ -45,7 +43,7 @@ import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
-import type { GroupId } from './LGraphGroup'
+import { toGroupId } from '@/types/groupId'
 import {
   LGraphNode,
   registerNodeState,
@@ -170,7 +168,8 @@ export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 export type SubgraphId = UUID
 
 export interface LGraphState {
-  lastGroupId: GroupId
+  /** Counter, not an id — brand at the point a group is constructed. */
+  lastGroupId: number
   lastNodeId: number
   lastLinkId: LinkId
   lastRerouteId: RerouteId
@@ -1079,7 +1078,8 @@ export class LGraph
     // groups
     if (node instanceof LGraphGroup) {
       // Assign group ID
-      if (node.id == null || node.id === -1) node.id = ++state.lastGroupId
+      if (node.id == null || node.id === -1)
+        node.id = toGroupId(++state.lastGroupId)
       if (node.id > state.lastGroupId) state.lastGroupId = node.id
 
       this._groups.push(node)
@@ -1183,7 +1183,7 @@ export class LGraph
       if (index != -1) {
         this._groups.splice(index, 1)
       }
-      unregisterGroupLayout(this, node)
+      canvasLayoutMutations().deleteGroup(this.rootGraph.id, node.id)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)
@@ -1248,7 +1248,7 @@ export class LGraph
     node.onRemoved?.()
 
     unregisterNodeState(node)
-    unregisterNodeLayout(node)
+    canvasLayoutMutations().deleteNode(node.id)
 
     node.graph = null
     this.incrementVersion()
@@ -1612,7 +1612,7 @@ export class LGraph
     if (!reroute) return
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
-    unregisterRerouteLayout(this, id)
+    canvasLayoutMutations().deleteReroute(this.rootGraph.id, id)
   }
 
   /**

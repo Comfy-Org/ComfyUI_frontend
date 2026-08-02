@@ -114,7 +114,7 @@ describe('useSlotElementTracking', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     document.body.innerHTML = ''
-    layoutStore.reset()
+    layoutStore.resetForTests()
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',

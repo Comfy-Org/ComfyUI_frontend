@@ -1,3 +1,4 @@
+import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
@@ -236,7 +237,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
 
     const group = new LGraphGroup('normalize-me', 810)
     group.graph = graph as LGraph
-    layoutMutations.createGroup(graph.id!, 810, {
+    layoutMutations.createGroup(graph.id!, toGroupId(810), {
       position: { x: 150, y: 150 },
       size: { width: 300, height: 200 }
     })
@@ -252,7 +253,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
 
     const anchor = 90 // min node pos (100) - createBounds padding (10)
     const relative = 150 - anchor
-    const layout = layoutStore.getGroupLayout(graph.id!, 810)
+    const layout = layoutStore.getGroupLayout(graph.id!, toGroupId(810))
     expect(layout?.position.x).toBeCloseTo(
       anchor + relative / RENDER_SCALE_FACTOR,
       5

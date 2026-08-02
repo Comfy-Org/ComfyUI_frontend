@@ -9,7 +9,7 @@ import log from 'loglevel'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
+import type { GroupId } from '@/types/groupId'
 import type {
   GroupLayout,
   LayoutSource,

@@ -31,7 +31,7 @@ function setup() {
 describe('LGraphNode size reflow', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    layoutStore.reset()
+    layoutStore.resetForTests()
   })
 
   afterEach(() => {

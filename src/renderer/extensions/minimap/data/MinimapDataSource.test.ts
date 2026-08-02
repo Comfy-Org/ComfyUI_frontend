@@ -1,3 +1,4 @@
+import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
@@ -212,8 +213,8 @@ describe('MinimapDataSource', () => {
 
     it('reads group geometry from the store, not the group', () => {
       LiteGraph.vueNodesMode = true
-      groupLayouts.set(7, {
-        id: 7,
+      groupLayouts.set(toGroupId(7), {
+        id: toGroupId(7),
         position: { x: 40, y: 60 },
         size: { width: 300, height: 200 }
       })

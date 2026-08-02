@@ -53,7 +53,7 @@ function createAdapter() {
 describe('resolveSlotTargetCandidate', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    layoutStore.reset()
+    layoutStore.resetForTests()
     useSlotLinkDragUIState().clearCompatible()
   })
 

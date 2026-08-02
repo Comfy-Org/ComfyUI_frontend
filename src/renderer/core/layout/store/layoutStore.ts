@@ -9,7 +9,8 @@ import { computed, customRef, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
-import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
+import { toGroupId } from '@/types/groupId'
+import type { GroupId } from '@/types/groupId'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -100,6 +101,10 @@ interface TypedYMap<T> {
   get<K extends keyof T>(key: K, defaultValue: T[K]): T[K]
 }
 
+// TODO: Delete the `LayoutStore` interface and rename this to `LayoutStore`.
+// The interface has no consumers other than this `implements` clause — it
+// duplicates every signature to express visibility that `private` already
+// expresses on the class.
 class LayoutStoreImpl implements LayoutStore {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
@@ -358,7 +363,8 @@ class LayoutStoreImpl implements LayoutStore {
       for (const [key, ygroup] of this.ygroups) {
         const parsed = parseLayoutKey(key)
         if (parsed.graphId !== rootGraphId) continue
-        result.set(parsed.localId, yGroupToLayout(ygroup, parsed.localId))
+        const groupId = toGroupId(parsed.localId)
+        result.set(groupId, yGroupToLayout(ygroup, groupId))
       }
       return result
     })
@@ -973,11 +979,10 @@ class LayoutStoreImpl implements LayoutStore {
 
   /**
    * Test-only escape hatch: drops everything, including entity entries that
-   * production drops through `unregisterAllGraphLayout`. Deliberately absent
-   * from the {@link LayoutStore} interface — calling it with a graph attached
-   * desyncs the store from every entity in it.
+   * production drops through `unregisterAllGraphLayout`. Calling it with a
+   * graph attached desyncs the store from every entity in it.
    */
-  reset(): void {
+  resetForTests(): void {
     this.ydoc.transact(() => {
       this.ynodes.clear()
       this.ygroups.clear()

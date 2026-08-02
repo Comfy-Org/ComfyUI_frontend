@@ -160,6 +160,7 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
@@ -255,7 +256,6 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 const { startSync, stopSync } = useLayoutSync()
-let wasRenderingVueNodes = false
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
@@ -267,28 +267,31 @@ watch(
   }
 )
 
+async function enterVueRendering(graph: LGraph | null) {
+  stopSync()
+  layoutStore.clearViewGeometry()
+  await nextTick()
+
+  // The awaited tick may have switched mode or graph out from under us.
+  if (!shouldRenderVueNodes.value || canvasStore.currentGraph !== graph) return
+  startSync(canvasStore.canvas)
+}
+
+function exitToLegacyRendering(graph: LGraph | null) {
+  stopSync()
+  layoutStore.clearViewGeometry()
+  if (graph) arrangeForLegacyRender(graph)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
 watch(
   [shouldRenderVueNodes, () => canvasStore.currentGraph],
-  async ([enabled, graph]) => {
-    if (!enabled) {
-      if (!wasRenderingVueNodes) return
-
-      wasRenderingVueNodes = false
-      stopSync()
-      layoutStore.clearViewGeometry()
-      if (graph) arrangeForLegacyRender(graph)
-      comfyApp.canvas?.setDirty(true, true)
-      return
+  async ([enabled, graph], previous) => {
+    if (enabled) {
+      await enterVueRendering(graph)
+    } else if (previous?.[0]) {
+      exitToLegacyRendering(graph)
     }
-
-    wasRenderingVueNodes = true
-    stopSync()
-    layoutStore.clearViewGeometry()
-    await nextTick()
-
-    if (!shouldRenderVueNodes.value || canvasStore.currentGraph !== graph)
-      return
-    startSync(canvasStore.canvas)
   },
   { immediate: true }
 )

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toNodeId } from '@/types/nodeId'
 
-import { registerNodeLayout } from './graphLayoutRegistration'
+import { canvasLayoutMutations } from './graphLayoutRegistration'
 import { useLayoutMutations } from './layoutMutations'
 
 const NODE_1 = toNodeId('1')
@@ -15,8 +15,18 @@ const NEW_NODE = toNodeId('99')
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  registerNodeLayout({ id: NODE_1, pos: [10, 20], size: [200, 100] }, 0)
-  registerNodeLayout({ id: NODE_2, pos: [300, 400], size: [150, 80] }, 1)
+  canvasLayoutMutations().createNode(NODE_1, {
+    position: { x: 10, y: 20 },
+    size: { width: 200, height: 100 },
+    zIndex: 0,
+    visible: true
+  })
+  canvasLayoutMutations().createNode(NODE_2, {
+    position: { x: 300, y: 400 },
+    size: { width: 150, height: 80 },
+    zIndex: 1,
+    visible: true
+  })
 })
 
 describe('moveNode', () => {

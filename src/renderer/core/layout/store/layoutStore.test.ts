@@ -1,3 +1,4 @@
+import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -13,7 +14,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { registerNodeLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import type {
   LayoutChange,
   LayoutOperation,
@@ -46,7 +47,7 @@ beforeEach(() => {
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
     // Clear the store before each test
-    layoutStore.reset()
+    layoutStore.resetForTests()
   })
   // Helper to create test node data
   const createTestNode = (id: NodeId): NodeLayout => ({
@@ -322,7 +323,12 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.onNodeChange(nodeId, staleListener)
 
     layoutStore.clearViewGeometry()
-    registerNodeLayout({ id: nodeId, pos: [0, 0], size: [200, 100] }, 0)
+    canvasLayoutMutations().createNode(nodeId, {
+      position: { x: 0, y: 0 },
+      size: { width: 200, height: 100 },
+      zIndex: 0,
+      visible: true
+    })
 
     layoutStore.applyOperation({
       type: 'moveNode',
@@ -691,7 +697,7 @@ describe('reroute layouts outlive an active-graph reseed', () => {
 describe('root-scoped group and reroute layouts', () => {
   const FIRST_GRAPH = createUuidv4()
   const SECOND_GRAPH = createUuidv4()
-  const GROUP_ID = 77
+  const GROUP_ID = toGroupId(77)
   const REROUTE_ID = toRerouteId(88)
 
   function apply(operation: LayoutOperation): void {
@@ -812,7 +818,7 @@ describe('root-scoped group and reroute layouts', () => {
 })
 describe('layoutStore getNodeLayoutRef setter', () => {
   beforeEach(() => {
-    layoutStore.reset()
+    layoutStore.resetForTests()
   })
 
   const REF_NODE = toNodeId('ref-node')
@@ -916,7 +922,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
 
 describe('layoutStore queries', () => {
   beforeEach(() => {
-    layoutStore.reset()
+    layoutStore.resetForTests()
   })
 
   const seedNode = (id: NodeId, x: number, y: number, z = 0) => {
@@ -974,7 +980,7 @@ describe('layoutStore queries', () => {
 
 describe('layoutStore link layout updates', () => {
   beforeEach(() => {
-    layoutStore.reset()
+    layoutStore.resetForTests()
   })
 
   const stubPath = () => fromPartial<Path2D>({})

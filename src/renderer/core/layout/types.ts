@@ -6,7 +6,7 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
-import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
+import type { GroupId } from '@/types/groupId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'

@@ -1,5 +1,4 @@
 import type { LGraph, LGraphState } from '../LGraph'
-import type { GroupId } from '../LGraphGroup'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -191,7 +190,7 @@ export function deduplicateSubgraphGroupIds(
   }
 }
 
-function reserveGroupId(id: GroupId, state: LGraphState): void {
+function reserveGroupId(id: number, state: LGraphState): void {
   if (id > state.lastGroupId) state.lastGroupId = id
 }
 export function collectReservedRerouteIds(

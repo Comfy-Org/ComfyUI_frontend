@@ -1,3 +1,4 @@
+import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -1314,18 +1315,25 @@ describe('Subgraph Unpacking', () => {
     secondRoot.id = createUuidv4()
     const firstRootId = firstRoot.id
     const subgraph = createSubgraphOnGraph(firstRoot)
-    const subgraphGroup = new LGraphGroup('subgraph group', 909)
-    const secondGroup = new LGraphGroup('second root group', 909)
+    const SHARED_GROUP = toGroupId(909)
+    const subgraphGroup = new LGraphGroup('subgraph group', SHARED_GROUP)
+    const secondGroup = new LGraphGroup('second root group', SHARED_GROUP)
 
     subgraph.add(subgraphGroup)
     secondRoot.add(secondGroup)
-    expect(layoutStore.getGroupLayout(firstRoot.id, 909)).not.toBeNull()
-    expect(layoutStore.getGroupLayout(secondRoot.id, 909)).not.toBeNull()
+    expect(
+      layoutStore.getGroupLayout(firstRoot.id, SHARED_GROUP)
+    ).not.toBeNull()
+    expect(
+      layoutStore.getGroupLayout(secondRoot.id, SHARED_GROUP)
+    ).not.toBeNull()
 
     firstRoot.clear()
 
-    expect(layoutStore.getGroupLayout(firstRootId, 909)).toBeNull()
-    expect(layoutStore.getGroupLayout(secondRoot.id, 909)).not.toBeNull()
+    expect(layoutStore.getGroupLayout(firstRootId, SHARED_GROUP)).toBeNull()
+    expect(
+      layoutStore.getGroupLayout(secondRoot.id, SHARED_GROUP)
+    ).not.toBeNull()
   })
 
   it('offsets unpacked group geometry in the layout store too', () => {
@@ -1601,6 +1609,10 @@ describe('Zero UUID handling in configure', () => {
 })
 
 describe('node layout registration', () => {
+  beforeEach(() => {
+    layoutStore.resetForTests()
+  })
+
   it('creates a layout entry on add and drops it on remove', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -1617,7 +1629,7 @@ describe('node layout registration', () => {
     expect(layoutStore.getNodeLayoutRef(node.id).value).toBeNull()
   })
 
-  it('orders entries by draw order, not execution order', () => {
+  it('stacks later nodes above earlier ones, ignoring execution order', () => {
     const graph = new LGraph()
     const first = new LGraphNode('first')
     const second = new LGraphNode('second')
@@ -1627,11 +1639,11 @@ describe('node layout registration', () => {
     const zIndexOf = (node: LGraphNode) =>
       layoutStore.getNodeLayoutRef(node.id).value?.zIndex
 
-    expect(zIndexOf(second)).toBeGreaterThan(zIndexOf(first)!)
+    expect(zIndexOf(first)).toBe(0)
+    expect(zIndexOf(second)).toBe(1)
   })
 
   it('registers after node:added so deferred listener work is queued first', () => {
-    layoutStore.reset()
     const graph = new LGraph()
     const node = new LGraphNode('test')
 
@@ -1650,7 +1662,7 @@ describe('graph teardown drops layout entries', () => {
   const REROUTE = toRerouteId(1)
 
   beforeEach(() => {
-    layoutStore.reset()
+    layoutStore.resetForTests()
   })
 
   /** Root node, group and reroute, plus a subgraph definition holding a node. */
