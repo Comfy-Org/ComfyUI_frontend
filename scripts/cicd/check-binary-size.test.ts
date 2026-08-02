@@ -129,6 +129,32 @@ describe('check-binary-size.sh', () => {
     expect(check().status).toBe(0)
   })
 
+  it('fails when a rename also grows the binary', () => {
+    writeBinary('src/assets/clip.mp4', LIMIT * 2)
+    commit('add clip')
+    git('mv', 'src/assets/clip.mp4', 'src/assets/renamed.mp4')
+    fs.appendFileSync(
+      path.join(repo, 'src/assets/renamed.mp4'),
+      Buffer.alloc(LIMIT)
+    )
+    commit('rename and grow clip')
+
+    const { status, output } = check()
+    expect(status).toBe(1)
+    expect(output).toContain('src/assets/renamed.mp4')
+  })
+
+  it('fails when a replacement shrinks but stays over the limit', () => {
+    writeBinary('src/assets/clip.mp4', LIMIT * 4)
+    commit('add clip')
+    write('src/assets/clip.mp4', Buffer.alloc(LIMIT * 2, 1))
+    commit('re-encode clip')
+
+    const { status, output } = check()
+    expect(status).toBe(1)
+    expect(output).toContain('src/assets/clip.mp4')
+  })
+
   it('ignores an oversized binary the range never touches', () => {
     writeBinary('src/assets/clip.mp4', LIMIT * 2)
     commit('add clip')

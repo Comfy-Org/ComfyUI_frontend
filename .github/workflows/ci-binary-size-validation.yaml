@@ -1,10 +1,12 @@
-# Description: Blocks PRs that add or grow a binary file above the size limit.
-# Bypass by adding the 'allow-large-binaries' label to the PR.
+# Description: Blocks PRs that add or replace a binary file above the size
+# limit. Bypass by adding the 'allow-large-binaries' label to the PR.
 name: 'CI: Binary Size Validation'
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
+  merge_group:
+    types: [checks_requested]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,11 +20,19 @@ jobs:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'allow-large-binaries') }}
     runs-on: ubuntu-latest
     steps:
+      # The label bypass only exists on the pull request, so re-checking the
+      # queued commit would block any PR that was deliberately allowed through.
+      - name: Binary sizes already verified before merge queue
+        if: github.event_name == 'merge_group'
+        run: echo 'Binary sizes are checked on the pull request.'
+
       - uses: actions/checkout@v6
+        if: github.event_name == 'pull_request'
         with:
           fetch-depth: 0
 
       - name: Block oversized binary files
+        if: github.event_name == 'pull_request'
         run: ./scripts/cicd/check-binary-size.sh
         env:
           BASE_REF: ${{ github.event.pull_request.base.sha }}

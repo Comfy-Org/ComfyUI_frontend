@@ -11,9 +11,10 @@ usage() {
   cat >&2 <<EOF
 Usage: $0 [--base <ref>] [--head <ref>] [--max-bytes <n>]
 
-Fails when the range <base>...<head> adds or grows a binary file larger than
---max-bytes. Whether a file counts as binary is git's own classification, so
-no file extensions are hardcoded.
+Fails when the range <base>...<head> introduces a binary file larger than
+--max-bytes, whether by adding it or by replacing an existing one. Moving a
+binary without changing it is allowed. Whether a file counts as binary is
+git's own classification, so no file extensions are hardcoded.
 
 Defaults: --base origin/main --head HEAD --max-bytes ${DEFAULT_MAX_BYTES}
 Environment: BASE_REF, HEAD_REF, MAX_BINARY_BYTES
@@ -73,22 +74,60 @@ human_size() {
   }'
 }
 
-changes_file="$(mktemp)"
-trap 'rm -f "$changes_file"' EXIT
+numstat_file="$(mktemp)"
+raw_file="$(mktemp)"
+trap 'rm -f "$numstat_file" "$raw_file"' EXIT
 
-git diff --numstat -z --diff-filter=AM "${base}...${head}" >"$changes_file"
-mapfile -d '' -t changes <"$changes_file"
+# -M keeps rename detection deterministic regardless of the caller's diff.renames
+git diff --numstat -z -M "${base}...${head}" >"$numstat_file"
+git diff --raw -z -M --no-abbrev --diff-filter=AMR "${base}...${head}" >"$raw_file"
 
-oversized=()
-for change in "${changes[@]}"; do
-  added_lines="${change%%$'\t'*}"
-  # git reports "-" instead of a line count for files it considers binary
-  [ "$added_lines" = '-' ] || continue
+mapfile -d '' -t numstat_records <"$numstat_file"
+mapfile -d '' -t raw_records <"$raw_file"
 
-  path="${change#*$'\t'}"
+# Renamed and copied entries carry an empty path field followed by two extra
+# records holding the source and destination paths.
+declare -A is_binary=()
+index=0
+while [ "$index" -lt "${#numstat_records[@]}" ]; do
+  record="${numstat_records[$index]}"
+  path="${record#*$'\t'}"
   path="${path#*$'\t'}"
 
-  size="$(git cat-file -s "${head}:${path}")"
+  if [ -z "$path" ]; then
+    path="${numstat_records[$((index + 2))]}"
+    index=$((index + 3))
+  else
+    index=$((index + 1))
+  fi
+
+  # git reports "-" instead of a line count for files it considers binary
+  if [ "${record%%$'\t'*}" = '-' ]; then
+    is_binary["$path"]=1
+  fi
+done
+
+oversized=()
+index=0
+while [ "$index" -lt "${#raw_records[@]}" ]; do
+  read -r _ _ base_blob head_blob change_type <<<"${raw_records[$index]#:}"
+
+  case "$change_type" in
+    R* | C*)
+      path="${raw_records[$((index + 2))]}"
+      index=$((index + 3))
+      ;;
+    *)
+      path="${raw_records[$((index + 1))]}"
+      index=$((index + 2))
+      ;;
+  esac
+
+  [ -n "${is_binary["$path"]:-}" ] || continue
+  # An unchanged blob at a new path is a move, which adds no weight to history
+  [ "$base_blob" != "$head_blob" ] || continue
+
+  size="$(git cat-file -s "$head_blob")"
   [ "$size" -gt "$max_bytes" ] || continue
 
   oversized+=("${size}"$'\t'"${path}")
@@ -97,7 +136,7 @@ done
 limit_label="$(human_size "$max_bytes")"
 
 if [ "${#oversized[@]}" -eq 0 ]; then
-  echo "No binary files larger than ${limit_label} were added or grown."
+  echo "No binary files larger than ${limit_label} were added or replaced."
   exit 0
 fi
 
