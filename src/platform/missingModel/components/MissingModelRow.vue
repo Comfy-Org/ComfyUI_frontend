@@ -416,7 +416,8 @@ const { showUploadDialog } = useModelUpload(
       handleLibrarySelect()
     }
   },
-  () => missingModelUploadContext.value
+  () => missingModelUploadContext.value,
+  'missing_model'
 )
 
 onMounted(() => {

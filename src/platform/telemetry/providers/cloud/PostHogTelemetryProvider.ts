@@ -59,9 +59,12 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
-  WorkspaceInviteMetadata
+  WorkspaceInviteMetadata,
+  ByomFunnelMetadata,
+  ByomFunnelStage
 } from '../../types'
 import {
+  BYOM_STAGE_EVENTS,
   CANCELLATION_STAGE_EVENTS,
   getBillingTelemetryEventName,
   getBillingTelemetryEventPayload,
@@ -421,6 +424,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
     this.trackEvent(TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED, metadata)
+  }
+
+  trackByomFunnel(stage: ByomFunnelStage, metadata: ByomFunnelMetadata): void {
+    this.trackEvent(BYOM_STAGE_EVENTS[stage], metadata)
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {

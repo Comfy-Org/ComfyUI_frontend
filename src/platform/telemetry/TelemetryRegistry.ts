@@ -6,6 +6,8 @@ import type {
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
+  ByomFunnelMetadata,
+  ByomFunnelStage,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -131,6 +133,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
     this.dispatch((provider) => provider.trackResubscribeClicked?.(metadata))
+  }
+
+  trackByomFunnel(stage: ByomFunnelStage, metadata: ByomFunnelMetadata): void {
+    this.dispatch((provider) => provider.trackByomFunnel?.(stage, metadata))
   }
 
   trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {

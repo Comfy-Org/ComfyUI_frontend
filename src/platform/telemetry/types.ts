@@ -604,6 +604,62 @@ export interface AddCreditsClickMetadata {
   source: 'credits_panel' | 'avatar_menu' | 'settings_billing_panel'
 }
 
+/** The UI surface a bring-your-own-model upload was started from. */
+export type ByomSurface = 'asset_browser' | 'model_dropdown' | 'missing_model'
+
+/** Import sources the upload wizard can resolve a URL to. */
+export type ByomSource = 'civitai' | 'huggingface'
+
+/** How the model type was decided, for measuring metadata auto-detection. */
+export type ByomModelTypeOrigin = 'required' | 'autodetected' | 'manual'
+
+/**
+ * Closed set of failure classes. Deliberately NOT the raw error string:
+ * `uploadError` is built from API messages and i18n strings that interpolate
+ * the asset name, so emitting it verbatim would leak user data into analytics
+ * and blow up property cardinality.
+ */
+export type ByomErrorReason =
+  | 'unsupported_source'
+  | 'metadata_fetch_failed'
+  | 'download_failed'
+  | 'type_mismatch'
+
+export type ByomFunnelStage = keyof typeof BYOM_STAGE_EVENTS
+
+export interface ByomFunnelMetadata {
+  /**
+   * Correlates the stages of ONE dialog session. A user can open the wizard
+   * repeatedly, so without this a funnel would happily stitch step 1 of one
+   * attempt to the final step of another, and repeated abandons would be
+   * indistinguishable from a single one.
+   */
+  flow_id: string
+  surface: ByomSurface
+  /**
+   * True when the user hit the upgrade modal instead of the wizard
+   * (`privateModelsEnabled` off). Only meaningful on `dialog_opened`.
+   */
+  gated?: boolean
+  /**
+   * NOTE: the source URL itself is never emitted — Hugging Face and Civitai
+   * URLs can carry tokens or private-repo paths in query params.
+   */
+  source?: ByomSource
+  model_type?: string
+  model_type_origin?: ByomModelTypeOrigin
+  /** Model type the missing-model flow demands, when entered that way. */
+  required_model_type?: string
+  model_type_autodetected?: boolean
+  has_preview?: boolean
+  /** Sync uploads finish inline; async ones resolve via the download store. */
+  mode?: 'sync' | 'async'
+  outcome?: 'success' | 'error' | 'failed' | 'type_mismatch'
+  error_reason?: ByomErrorReason
+  /** Wizard step the user was on when they abandoned. */
+  last_step?: number
+}
+
 export interface SubscriptionCancellationMetadata {
   current_tier?: string
   cycle?: BillingCycle
@@ -872,6 +928,12 @@ export interface TelemetryProvider {
   // Email verification events
   trackEmailVerification?(stage: 'opened' | 'requested' | 'completed'): void
 
+  // Bring-your-own-model upload funnel
+  trackByomFunnel?(
+    stage: ByomFunnelStage,
+    metadata: ByomFunnelMetadata
+  ): void
+
   // Template workflow events
   trackTemplate?(metadata: TemplateMetadata): void
   trackTemplateLibraryOpened?(metadata: TemplateLibraryMetadata): void
@@ -1056,6 +1118,14 @@ export const TelemetryEvents = {
   HELP_RESOURCE_CLICKED: 'app:help_resource_clicked',
   HELP_CENTER_CLOSED: 'app:help_center_closed',
 
+  // Bring Your Own Model (BYOM) upload funnel
+  BYOM_DIALOG_OPENED: 'app:byom_dialog_opened',
+  BYOM_URL_SUBMITTED: 'app:byom_url_submitted',
+  BYOM_METADATA_RESOLVED: 'app:byom_metadata_resolved',
+  BYOM_UPLOAD_SUBMITTED: 'app:byom_upload_submitted',
+  BYOM_UPLOAD_COMPLETED: 'app:byom_upload_completed',
+  BYOM_DIALOG_ABANDONED: 'app:byom_dialog_abandoned',
+
   // Workflow Creation
   WORKFLOW_CREATED: 'app:workflow_created',
   WORKFLOW_SAVED: 'app:workflow_saved',
@@ -1098,6 +1168,19 @@ export const CANCELLATION_STAGE_EVENTS = {
   confirmed: TelemetryEvents.SUBSCRIPTION_CANCEL_CONFIRMED,
   abandoned: TelemetryEvents.SUBSCRIPTION_CANCEL_ABANDONED,
   failed: TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED
+} as const
+
+/**
+ * Bring-your-own-model funnel stages, one distinct event each so PostHog funnel
+ * steps work without per-step property filters.
+ */
+export const BYOM_STAGE_EVENTS = {
+  dialog_opened: TelemetryEvents.BYOM_DIALOG_OPENED,
+  url_submitted: TelemetryEvents.BYOM_URL_SUBMITTED,
+  metadata_resolved: TelemetryEvents.BYOM_METADATA_RESOLVED,
+  upload_submitted: TelemetryEvents.BYOM_UPLOAD_SUBMITTED,
+  upload_completed: TelemetryEvents.BYOM_UPLOAD_COMPLETED,
+  dialog_abandoned: TelemetryEvents.BYOM_DIALOG_ABANDONED
 } as const
 
 const executionTriggerSources = [
