@@ -49,10 +49,16 @@ if ! command -v wrangler > /dev/null 2>&1; then
     }
 fi
 
-# Cloudflare-compatible branch name (lowercase, only alphanumeric and dashes)
+# Cloudflare-compatible branch name (lowercase, only alphanumeric and dashes).
+# Reuse the existing, already-provisioned "comfyui-playwright-chromium"
+# Pages project (proven to work for trace report deploys) rather than a new
+# "comfyui-playwright-videos" project, which isn't provisioned in Cloudflare
+# and fails to deploy. A "-videos" branch suffix keeps this deployment
+# distinct from the report deploy that runs for the same PR branch.
 cloudflare_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
     sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
-project="comfyui-playwright-videos"
+project="comfyui-playwright-chromium"
+cloudflare_branch="${cloudflare_branch}-videos"
 
 echo "Deploying videos to project $project on branch $cloudflare_branch..." >&2
 
