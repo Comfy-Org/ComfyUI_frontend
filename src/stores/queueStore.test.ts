@@ -1014,6 +1014,24 @@ describe('useQueueStore', () => {
       expect(store.hasFetchedHistorySnapshot).toBe(false)
       expect(store.isLoading).toBe(false)
     })
+
+    it('should let the new identity fetch while a previous request is still pending', async () => {
+      mockGetQueue.mockReturnValueOnce(new Promise<QueueResponse>(() => {}))
+      mockGetHistory.mockReturnValueOnce(new Promise<JobListItem[]>(() => {}))
+
+      void store.update()
+
+      store.reset()
+
+      mockGetQueue.mockResolvedValue({
+        Running: [createRunningJob(1, 'run-b')],
+        Pending: []
+      })
+      mockGetHistory.mockResolvedValue([])
+      await store.update()
+
+      expect(store.runningTasks.map((t) => t.jobId)).toEqual(['run-b'])
+    })
   })
 
   describe('update deduplication (coalescing)', () => {

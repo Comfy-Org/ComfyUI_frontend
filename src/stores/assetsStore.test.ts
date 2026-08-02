@@ -33,6 +33,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     getAssetsForNodeType: vi.fn(),
     getAssetsPageForNodeType: vi.fn(),
     invalidateInputAssetsIncludingPublic: vi.fn(),
+    invalidateModelBuckets: vi.fn(),
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
     removeAssetTags: vi.fn()
@@ -2442,5 +2443,103 @@ describe('assetsStore - reset() on identity change', () => {
     expect(store.flatOutputAssets).toEqual([])
     expect(store.flatOutputHasMore).toBe(true)
     expect(store.flatOutputLoading).toBe(false)
+  })
+
+  it('lets the new identity refetch outputs while the previous request is still pending', async () => {
+    let resolveFirstPage!: (page: AssetResponse) => void
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockReturnValueOnce(
+        new Promise<AssetResponse>((resolve) => {
+          resolveFirstPage = resolve
+        })
+      )
+      .mockResolvedValue(makePage([makeAsset('b1', 'account-b.png')]))
+
+    const store = useAssetsStore()
+    const accountAUpdate = store.updateFlatOutputs()
+
+    store.reset()
+    await store.updateFlatOutputs()
+
+    expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['b1'])
+
+    resolveFirstPage(makePage([makeAsset('a1', 'account-a.png')]))
+    await accountAUpdate
+
+    expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['b1'])
+    expect(store.flatOutputLoading).toBe(false)
+  })
+
+  it('does not surface a history failure raised by the previous identity', async () => {
+    let rejectHistory!: (err: Error) => void
+    vi.mocked(api.getHistory).mockReturnValueOnce(
+      new Promise<JobListItem[]>((_, reject) => {
+        rejectHistory = reject
+      })
+    )
+
+    const store = useAssetsStore()
+    const inFlightUpdate = store.updateHistory()
+
+    store.reset()
+    rejectHistory(new Error('401 Unauthorized'))
+    await inFlightUpdate
+
+    expect(store.historyError).toBeNull()
+    expect(store.historyLoading).toBe(false)
+  })
+
+  it('clears cached input assets and the model inventory', async () => {
+    mockIsCloud.value = true
+    try {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const store = useAssetsStore()
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
+        { id: 'input-1', name: 'account-a.png', tags: ['input'] }
+      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage([makeAsset('model-1', 'account-a.safetensors')])
+      )
+
+      await store.updateInputs()
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      expect(store.inputAssets).toHaveLength(1)
+      expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(1)
+
+      store.reset()
+
+      expect(store.inputAssets).toEqual([])
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
+      expect(store.hasAssetKey('CheckpointLoaderSimple')).toBe(false)
+      expect(assetService.invalidateModelBuckets).toHaveBeenCalled()
+    } finally {
+      mockIsCloud.value = false
+    }
+  })
+
+  it('does not commit an input fetch that resolves after the reset', async () => {
+    mockIsCloud.value = true
+    try {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const store = useAssetsStore()
+
+      let resolveInputs!: (assets: AssetItem[]) => void
+      vi.mocked(assetService.getAssetsByTag).mockReturnValueOnce(
+        new Promise<AssetItem[]>((resolve) => {
+          resolveInputs = resolve
+        })
+      )
+
+      const inFlightUpdate = store.updateInputs()
+
+      store.reset()
+      resolveInputs([{ id: 'input-1', name: 'account-a.png', tags: ['input'] }])
+      await inFlightUpdate
+
+      expect(store.inputAssets).toEqual([])
+    } finally {
+      mockIsCloud.value = false
+    }
   })
 })

@@ -132,12 +132,23 @@ export const useAssetsStore = defineStore('assets', () => {
     ? fetchInputFilesFromCloud
     : fetchInputFilesFromAPI
 
+  async function fetchInputFilesForCurrentIdentity(): Promise<AssetItem[]> {
+    const generation = identityGeneration
+    try {
+      const assets = await fetchInputFiles()
+      return generation === identityGeneration ? assets : inputAssets.value
+    } catch (err) {
+      if (generation !== identityGeneration) return inputAssets.value
+      throw err
+    }
+  }
+
   const {
     state: inputAssets,
     isLoading: inputLoading,
     error: inputError,
     execute: executeUpdateInputs
-  } = useAsyncState(fetchInputFiles, [], {
+  } = useAsyncState(fetchInputFilesForCurrentIdentity, [], {
     immediate: false,
     resetOnExecute: false,
     onError: (err) => {
@@ -227,20 +238,23 @@ export const useAssetsStore = defineStore('assets', () => {
    * Initial load of history assets
    */
   const updateHistory = async () => {
+    const generation = identityGeneration
     historyLoading.value = true
     historyError.value = null
     try {
       await fetchHistoryAssets(false)
+      if (generation !== identityGeneration) return
       historyAssets.value = allHistoryItems.value
     } catch (err) {
       console.error('Error fetching history assets:', err)
+      if (generation !== identityGeneration) return
       historyError.value = err
       // Keep existing data when error occurs
       if (!historyAssets.value.length) {
         historyAssets.value = []
       }
     } finally {
-      historyLoading.value = false
+      if (generation === identityGeneration) historyLoading.value = false
     }
   }
 
@@ -251,21 +265,24 @@ export const useAssetsStore = defineStore('assets', () => {
     // Guard: prevent concurrent loads and check if more items available
     if (!hasMoreHistory.value || isLoadingMore.value) return
 
+    const generation = identityGeneration
     isLoadingMore.value = true
     historyError.value = null
 
     try {
       await fetchHistoryAssets(true)
+      if (generation !== identityGeneration) return
       historyAssets.value = allHistoryItems.value
     } catch (err) {
       console.error('Error loading more history:', err)
+      if (generation !== identityGeneration) return
       historyError.value = err
       // Keep existing data when error occurs (consistent with updateHistory)
       if (!historyAssets.value.length) {
         historyAssets.value = []
       }
     } finally {
-      isLoadingMore.value = false
+      if (generation === identityGeneration) isLoadingMore.value = false
     }
   }
 
@@ -327,34 +344,17 @@ export const useAssetsStore = defineStore('assets', () => {
         flatOutputError.value = err
         return loadMore ? flatOutputAssets.value : []
       } finally {
-        if (loadMore) flatOutputIsLoadingMore.value = false
-        else flatOutputLoading.value = false
-        flatOutputInFlight = null
+        // A reset already released the slot and may have started the new
+        // identity's fetch; releasing it again would strand that fetch.
+        if (generation === identityGeneration) {
+          if (loadMore) flatOutputIsLoadingMore.value = false
+          else flatOutputLoading.value = false
+          flatOutputInFlight = null
+        }
       }
     })()
 
     return flatOutputInFlight
-  }
-
-  /**
-   * Drop every locally cached output/history asset so the previous account's
-   * outputs stop rendering after an in-session identity change. Loading flags
-   * are left alone: an in-flight fetch still owns them and clears them itself.
-   */
-  const reset = () => {
-    identityGeneration++
-    historyOffset.value = 0
-    hasMoreHistory.value = true
-    allHistoryItems.value = []
-    loadedIds.clear()
-    historyAssets.value = []
-    historyError.value = null
-    flatOutputAssets.value = []
-    flatOutputError.value = null
-    flatOutputOffset.value = 0
-    flatOutputHasMore.value = true
-    flatOutputSeenIds.clear()
-    flatOutputNextCursor = undefined
   }
 
   const updateFlatOutputs = () => fetchFlatOutputs(false)
@@ -923,6 +923,21 @@ export const useAssetsStore = defineStore('assets', () => {
       invalidateCategory('tag:models')
     }
 
+    /**
+     * Drop every cached category, aborting any walk still in flight. Used on an
+     * identity change, where the whole model inventory belongs to the previous
+     * account.
+     */
+    function invalidateAllCategories(): void {
+      const categories = new Set([
+        ...modelStateByCategory.value.keys(),
+        ...pendingRequestByCategory.keys(),
+        ...pendingPromiseByCategory.keys(),
+        ...abortByCategory.keys()
+      ])
+      for (const category of categories) invalidateCategory(category)
+    }
+
     return {
       getAssets,
       isLoading,
@@ -935,7 +950,8 @@ export const useAssetsStore = defineStore('assets', () => {
       invalidateCategory,
       updateAssetMetadata,
       updateAssetTags,
-      invalidateModelsForCategory
+      invalidateModelsForCategory,
+      invalidateAllCategories
     }
   }
 
@@ -951,8 +967,46 @@ export const useAssetsStore = defineStore('assets', () => {
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,
-    invalidateModelsForCategory
+    invalidateModelsForCategory,
+    invalidateAllCategories
   } = getModelState()
+
+  /**
+   * Drop every locally cached asset — outputs, history, inputs and the model
+   * inventory — so the previous account's data stops rendering after an
+   * in-session identity change. Loading flags and single-flight slots are
+   * released too, so a previous-identity request that never settles cannot
+   * starve the new identity's fetches.
+   */
+  const reset = () => {
+    identityGeneration++
+
+    historyOffset.value = 0
+    hasMoreHistory.value = true
+    allHistoryItems.value = []
+    loadedIds.clear()
+    historyAssets.value = []
+    historyError.value = null
+    historyLoading.value = false
+    isLoadingMore.value = false
+
+    flatOutputAssets.value = []
+    flatOutputError.value = null
+    flatOutputOffset.value = 0
+    flatOutputHasMore.value = true
+    flatOutputSeenIds.clear()
+    flatOutputNextCursor = undefined
+    flatOutputInFlight = null
+    flatOutputLoading.value = false
+    flatOutputIsLoadingMore.value = false
+
+    inputAssets.value = []
+    inputError.value = undefined
+    assetService.invalidateInputAssetsIncludingPublic()
+
+    invalidateAllCategories()
+    assetService.invalidateModelBuckets()
+  }
 
   // Watch for completed downloads and refresh model caches
   whenever(
