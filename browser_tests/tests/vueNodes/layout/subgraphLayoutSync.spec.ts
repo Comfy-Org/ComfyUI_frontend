@@ -2,45 +2,83 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { toNodeId } from '@/types/nodeId'
 
-/**
- * Deliberately an integration test, not a user-action test: the `setSize` call
- * below emulates how a legacy custom node mutates the graph directly, which is
- * the path under test. There is no click or keystroke equivalent for it.
- */
-test(
-  'extension resize updates an internal node after entering its subgraph',
-  { tag: '@vue-nodes' },
-  async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-    await comfyPage.vueNodes.enterSubgraph('2')
+const GROWTH: [number, number] = [90, 100]
 
-    const node = comfyPage.vueNodes.getNodeLocator('1')
-    await expect(node).toBeVisible()
-
-    const initialBounds = await node.evaluate((element) => [
+async function renderedBounds(comfyPage: ComfyPage, nodeId: string) {
+  return comfyPage.vueNodes
+    .getNodeLocator(nodeId)
+    .evaluate((element) => [
       element instanceof HTMLElement ? element.offsetWidth : 0,
       element instanceof HTMLElement ? element.offsetHeight : 0
     ])
-    expect(initialBounds[0]).toBeGreaterThan(0)
-    expect(initialBounds[1]).toBeGreaterThan(0)
+}
 
-    await comfyPage.page.evaluate((nodeId) => {
-      const node = window.app!.canvas.graph!.getNodeById(nodeId)!
-      node.setSize([node.size[0] + 90, node.size[1] + 100])
-    }, toNodeId('1'))
+/**
+ * Grows a node the way a legacy custom node would — a direct graph mutation,
+ * which is the path under test and has no click or keystroke equivalent — then
+ * waits for the rendered node to follow.
+ *
+ * A node only follows while its component still holds a layout subscription.
+ * `clearViewGeometry` drops every subscription on each graph transition, so
+ * this has to be re-checked after every one.
+ */
+async function expectGrowthRenders(
+  comfyPage: ComfyPage,
+  nodeId: string,
+  label: string
+) {
+  const before = await renderedBounds(comfyPage, nodeId)
+  expect(before[0], `${label}: node has a rendered width`).toBeGreaterThan(0)
+  expect(before[1], `${label}: node has a rendered height`).toBeGreaterThan(0)
 
-    await expect
-      .poll(
-        async () => {
-          return await node.evaluate((element) => [
-            element instanceof HTMLElement ? element.offsetWidth : 0,
-            element instanceof HTMLElement ? element.offsetHeight : 0
-          ])
-        },
-        { message: 'extension resize updates the rendered node bounds' }
-      )
-      .toEqual([initialBounds[0] + 90, initialBounds[1] + 100])
+  await comfyPage.page.evaluate(
+    ([id, dw, dh]) => {
+      const node = window.app!.canvas.graph!.getNodeById(id as never)!
+      node.setSize([
+        node.size[0] + (dw as number),
+        node.size[1] + (dh as number)
+      ])
+    },
+    [toNodeId(nodeId), GROWTH[0], GROWTH[1]] as const
+  )
+
+  await expect
+    .poll(async () => renderedBounds(comfyPage, nodeId), { message: label })
+    .toEqual([before[0] + GROWTH[0], before[1] + GROWTH[1]])
+}
+
+test(
+  'nodes keep following graph mutations across every graph transition',
+  { tag: '@vue-nodes' },
+  async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+    await comfyPage.vueNodes.waitForNodes()
+
+    const [rootNodeId] = await comfyPage.vueNodes.getNodeIds()
+    await expectGrowthRenders(comfyPage, rootNodeId, 'at the root graph')
+
+    await comfyPage.vueNodes.enterSubgraph('2')
+    const [interiorNodeId] = await comfyPage.vueNodes.getNodeIds()
+    await expectGrowthRenders(comfyPage, interiorNodeId, 'inside the subgraph')
+
+    await comfyPage.subgraph.exitViaBreadcrumb()
+    await comfyPage.vueNodes.waitForNodes()
+    await expectGrowthRenders(
+      comfyPage,
+      rootNodeId,
+      'back at the root graph after leaving the subgraph'
+    )
+
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.vueNodes.waitForNodes()
+    const [reloadedNodeId] = await comfyPage.vueNodes.getNodeIds()
+    await expectGrowthRenders(
+      comfyPage,
+      reloadedNodeId,
+      'after loading a second workflow'
+    )
   }
 )
