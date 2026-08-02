@@ -1,7 +1,10 @@
 import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
-import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import {
+  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
+  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import {
   createBalance,
@@ -197,14 +200,14 @@ export class SubscriptionHelper {
   }
 
   /**
-   * Dispatch `visibilitychange` to simulate returning from Stripe checkout.
-   * The app re-fetches subscription status when a pending checkout attempt
-   * exists in localStorage (seeded via `seedPendingCheckout`).
+   * Notify the app that a pending checkout attempt needs to be recovered.
    */
   async triggerSubscriptionRefetch(): Promise<void> {
-    await this.page.evaluate(() => {
-      document.dispatchEvent(new Event('visibilitychange'))
-    })
+    const eventName = PENDING_SUBSCRIPTION_CHECKOUT_EVENT
+    await this.page.evaluate(
+      (name) => window.dispatchEvent(new Event(name)),
+      eventName
+    )
   }
 
   /**
