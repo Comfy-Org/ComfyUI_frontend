@@ -6,8 +6,9 @@ import {
 } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
+import { readDesignTokenRgba } from '@comfyorg/shared-frontend-utils/designTokens'
+
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { readDesignTokenRgba } from '../../utils/designTokens'
 
 interface Node {
   x: number

@@ -29,21 +29,21 @@ interface Rgb {
   b: number
 }
 
-const COLOUR_LITERAL =
+const COLOR_LITERAL =
   /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|(?:ok)?l(?:ab|ch)|color|color-mix)\([^)]*\)/gi
 
-function parseColour(literal: string): Rgb | undefined {
+function parseColor(literal: string): Rgb | undefined {
   const hex = /^#([0-9a-f]{3,8})$/i.exec(literal)
   if (hex) {
     const digits = hex[1]
-    const channels =
+    const rrggbb =
       digits.length === 3 || digits.length === 4
-        ? [...digits.slice(0, 3)].map((c) => c + c)
+        ? digits.slice(0, 3).replace(/./g, '$&$&')
         : digits.length === 6 || digits.length === 8
-          ? [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 6)]
+          ? digits.slice(0, 6)
           : undefined
-    if (!channels) return undefined
-    const [r, g, b] = channels.map((pair) => parseInt(pair, 16))
+    if (!rrggbb) return undefined
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(rrggbb.slice(i, i + 2), 16))
     return { r, g, b }
   }
   const rgb = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(literal)
@@ -57,32 +57,32 @@ const toHex = ({ r, g, b }: Rgb) =>
 
 const isYellow = ({ r, g, b }: Rgb) => r > 200 && g > 200 && b < 200
 
-const coloursIn = (svg: string) =>
-  svg.replace(/url\([^)]*\)/gi, '').match(COLOUR_LITERAL) ?? []
+const colorsIn = (svg: string) =>
+  svg.replace(/url\([^)]*\)/gi, '').match(COLOR_LITERAL) ?? []
 
 function yellowsIn(svg: string): string[] {
-  const yellows = coloursIn(svg)
-    .map(parseColour)
-    .filter((colour): colour is Rgb => colour !== undefined && isYellow(colour))
+  const yellows = colorsIn(svg)
+    .map(parseColor)
+    .filter((color): color is Rgb => color !== undefined && isYellow(color))
     .map(toHex)
   return [...new Set(yellows)].sort()
 }
 
-function unreadableColoursIn(svg: string): string[] {
-  const unreadable = coloursIn(svg).filter(
-    (literal) => parseColour(literal) === undefined
+function unreadableColorsIn(svg: string): string[] {
+  const unreadable = colorsIn(svg).filter(
+    (literal) => parseColor(literal) === undefined
   )
   return [...new Set(unreadable.map((c) => c.toLowerCase()))].sort()
 }
 
 /*
- * Everything asserted here is a place a design-system colour has to be written
+ * Everything asserted here is a place a design-system color has to be written
  * out as a literal, because the consumer cannot read a CSS custom property:
  * a data table rendered as copyable text, a <meta> value the browser parses
  * itself, and standalone SVGs fetched as images. Since they cannot reference
  * the token, these tests are what stops them drifting from it.
  */
-describe('brand colours that cannot reference a token', () => {
+describe('brand colors that cannot reference a token', () => {
   it('the /brand palette table matches the design system', () => {
     const expected: Record<string, string> = {
       'Comfy Yellow': token('color-electric-400'),
@@ -99,11 +99,11 @@ describe('brand colours that cannot reference a token', () => {
   })
 
   it('the /brand palette table rgb values agree with its own hex values', () => {
-    for (const colour of brandColors) {
-      const hex = colour.hex.replace('#', '')
+    for (const color of brandColors) {
+      const hex = color.hex.replace('#', '')
       const fromHex = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16))
-      const declared = colour.rgb.split(',').map((n) => Number(n.trim()))
-      expect(declared, `${colour.name} rgb`).toEqual(fromHex)
+      const declared = color.rgb.split(',').map((n) => Number(n.trim()))
+      expect(declared, `${color.name} rgb`).toEqual(fromHex)
     }
   })
 
@@ -131,7 +131,7 @@ describe('brand colours that cannot reference a token', () => {
     }
   })
 
-  it('every colour in a brand SVG is one the yellow check can read', () => {
+  it('every color in a brand SVG is one the yellow check can read', () => {
     const files = [
       'public/favicon.svg',
       'public/icons/logo.svg',
@@ -145,9 +145,7 @@ describe('brand colours that cannot reference a token', () => {
     ]
 
     for (const file of files) {
-      expect(unreadableColoursIn(read(file)), `${file} colour syntax`).toEqual(
-        []
-      )
+      expect(unreadableColorsIn(read(file)), `${file} color syntax`).toEqual([])
     }
   })
 
@@ -191,40 +189,40 @@ describe('yellowsIn', () => {
     ).toEqual([yellow, retiredYellow].sort())
   })
 
-  it('ignores colours outside the yellow family', () => {
+  it('ignores colors outside the yellow family', () => {
     expect(
       yellowsIn(`<path fill="${yellow}"/><path fill="${ink}" stroke="none"/>`)
     ).toEqual([yellow])
   })
 
-  it('reports a colour syntax it cannot read rather than ignoring it', () => {
-    expect(unreadableColoursIn('<path fill="hsl(65 100% 67%)"/>')).toEqual([
+  it('reports a color syntax it cannot read rather than ignoring it', () => {
+    expect(unreadableColorsIn('<path fill="hsl(65 100% 67%)"/>')).toEqual([
       'hsl(65 100% 67%)'
     ])
-    expect(unreadableColoursIn(`<path fill="${yellow}"/>`)).toEqual([])
+    expect(unreadableColorsIn(`<path fill="${yellow}"/>`)).toEqual([])
   })
 
   it('reports a malformed hex literal as unreadable', () => {
-    expect(unreadableColoursIn('<path fill="#12345"/>')).toEqual(['#12345'])
+    expect(unreadableColorsIn('<path fill="#12345"/>')).toEqual(['#12345'])
     expect(yellowsIn('<path fill="#ffff7"/>')).toEqual([])
   })
 
-  it('finds nothing in markup that carries no colour', () => {
+  it('finds nothing in markup that carries no color', () => {
     expect(yellowsIn('')).toEqual([])
-    expect(unreadableColoursIn('')).toEqual([])
+    expect(unreadableColorsIn('')).toEqual([])
     expect(yellowsIn('<path d="M334.584 -244.988L252.495 -197.594"/>')).toEqual(
       []
     )
-    expect(unreadableColoursIn('<path d="M0 0h1v1H0z" fill="none"/>')).toEqual(
+    expect(unreadableColorsIn('<path d="M0 0h1v1H0z" fill="none"/>')).toEqual(
       []
     )
   })
 
-  it('does not mistake a url() reference for a colour', () => {
+  it('does not mistake a url() reference for a color', () => {
     const gradientRef =
       '<defs><linearGradient id="ffee00"/></defs>' +
       `<path fill="${yellow}"/><path fill="url(#ffee00)"/>`
     expect(yellowsIn(gradientRef)).toEqual([yellow])
-    expect(unreadableColoursIn(gradientRef)).toEqual([])
+    expect(unreadableColorsIn(gradientRef)).toEqual([])
   })
 })

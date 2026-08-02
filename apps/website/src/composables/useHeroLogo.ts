@@ -4,7 +4,8 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import * as THREE from 'three'
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js'
 
-import { readDesignToken } from '../utils/designTokens'
+import { readDesignToken } from '@comfyorg/shared-frontend-utils/designTokens'
+
 import { prefersReducedMotion } from './useReducedMotion'
 
 const IMAGE_COUNT = 16

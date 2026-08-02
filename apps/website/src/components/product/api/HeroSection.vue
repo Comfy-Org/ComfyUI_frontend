@@ -3,10 +3,11 @@ import { onMounted, onUnmounted, ref } from 'vue'
 
 import type { Locale } from '../../../i18n/translations'
 
+import { readDesignToken } from '@comfyorg/shared-frontend-utils/designTokens'
+
 import { prefersReducedMotion } from '../../../composables/useReducedMotion'
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
-import { readDesignToken } from '../../../utils/designTokens'
 import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 
@@ -112,8 +113,8 @@ onMounted(() => {
     const time = Date.now() / 1000
     const cycle = time % 1.0
 
-    let stampAmt = 0
-    let conveyorEject = 0
+    let stampAmt: number
+    let conveyorEject: number
 
     if (cycle < 0.35) {
       const p = cycle / 0.35
@@ -215,13 +216,13 @@ onUnmounted(() => {
       <ProductHeroBadge text="API" />
 
       <h1
-        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light whitespace-pre-line md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
+        class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
         {{ t('api.hero.heading', locale) }}
       </h1>
 
       <p
-        class="text-primary-comfy-canvas mt-6 max-w-md text-sm lg:mt-6 lg:text-base"
+        class="mt-6 max-w-md text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
       >
         {{ t('api.hero.subtitle', locale) }}
       </p>

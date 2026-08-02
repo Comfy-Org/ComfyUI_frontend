@@ -1,3 +1,4 @@
+import { readDesignToken } from '@comfyorg/shared-frontend-utils/designTokens'
 import type { ChartData, ChartOptions, ChartType } from 'chart.js'
 import {
   BarController,
@@ -29,18 +30,10 @@ Chart.register(
   Tooltip
 )
 
-function getCssVar(name: string): string {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim()
-}
-
 function getDefaultOptions(type: ChartType): ChartOptions {
-  const foreground =
-    getCssVar('--color-base-foreground') || getCssVar('--color-white')
-  const muted =
-    getCssVar('--color-muted-foreground') || getCssVar('--color-smoke-800')
-  const fontFamily = getCssVar('--font-inter')
+  const foreground = readDesignToken('--color-base-foreground', '--color-white')
+  const muted = readDesignToken('--color-muted-foreground', '--color-smoke-800')
+  const fontFamily = readDesignToken('--font-inter')
 
   return {
     responsive: true,
