@@ -292,10 +292,10 @@ jobs:
         if: steps.detect.outputs.has-new-tests == 'true'
         env:
           RECORD_VIDEO: 'true'
-          # Same slow-motion delay as the documented local video workflow
-          # (SLOW_MO=250 pnpm test:browser:local) so the recording is legible
-          # for reviewers instead of blazing through actions.
-          SLOW_MO: '250'
+          # Slowed well beyond the local default (SLOW_MO=250) so the
+          # recording is legible for reviewers instead of blazing through
+          # actions.
+          SLOW_MO: '1000'
           NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: video-report.json
         run: |

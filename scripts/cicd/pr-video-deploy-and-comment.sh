@@ -84,9 +84,13 @@ if [ -z "$url" ]; then
     exit 0
 fi
 
-comment="## 🎬 New-test video walkthrough
+comment="## 🎬 New-test video walkthrough available
 
-This PR adds new test spec file(s) — here's a video walkthrough of just the new test(s) (existing suite runs without video to keep CI cost down):"
+<details>
+<summary>🎬 New-test video walkthrough</summary>
+
+This PR adds new test spec file(s) — here's a video walkthrough of just the new test(s) (existing suite runs without video to keep CI cost down):
+"
 
 while IFS= read -r entry; do
     [ -z "$entry" ] && continue
@@ -95,5 +99,9 @@ while IFS= read -r entry; do
     comment="$comment
 - [$name](${url}/${relative_path})"
 done < <(jq -c '.[]' "$VIDEO_MANIFEST")
+
+comment="$comment
+
+</details>"
 
 printf '%s\n' "$comment" > "$SUMMARY_FILE"
