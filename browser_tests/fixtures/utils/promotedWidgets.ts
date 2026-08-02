@@ -9,6 +9,15 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export type PromotedWidgetEntry = [string, string]
 
+/**
+ * Sets the value of a promoted widget on a subgraph host node.
+ *
+ * @param hostNodeId - The numeric or typed ID of the host node
+ * @param widgetName - The name of the widget to update
+ * @param value - The value to assign to the widget
+ * @param options - Controls whether the widget's `setValue` handler is used
+ * @returns The widget's resulting value
+ */
 export async function setPromotedHostWidgetValue(
   comfyPage: ComfyPage,
   hostNodeId: number | NodeId,

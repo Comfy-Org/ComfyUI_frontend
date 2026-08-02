@@ -50,11 +50,10 @@ function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
 }
 
 /**
- * Scan combo widgets on media nodes for file values that may be missing.
+ * Scans eligible graph nodes for media files that may be missing.
  *
- * OSS: `isMissing` is resolved immediately via widget options unless an
- * output annotation needs generated-history verification.
- * Cloud: `isMissing` left `undefined` for async verification.
+ * @param isCloud - Whether to defer missing-file resolution for asynchronous verification
+ * @returns Media candidates found across the graph
  */
 export function scanAllMediaCandidates(
   rootGraph: LGraph,
@@ -79,7 +78,12 @@ export function scanAllMediaCandidates(
   return candidates
 }
 
-/** Scan a single node for missing media candidates (OSS immediate resolution). */
+/**
+ * Scans a node for media widgets whose referenced assets may be missing.
+ *
+ * @param isCloud - Whether candidates should defer missing-status resolution for Cloud asset lookup
+ * @returns The media candidates found on the node
+ */
 export function scanNodeMediaCandidates(
   rootGraph: LGraph,
   node: LGraphNode,
@@ -139,6 +143,13 @@ export function scanNodeMediaCandidates(
   return candidates
 }
 
+/**
+ * Determines whether a missing-media candidate remains within an active execution and widget scope.
+ *
+ * @param rootGraph - The root graph containing the candidate's execution path
+ * @param candidate - The media candidate to evaluate
+ * @returns `true` if the candidate's execution path and widget scope are active, `false` otherwise
+ */
 export function isMissingMediaCandidateScopeActive(
   rootGraph: LGraph | null | undefined,
   candidate: MissingMediaCandidate
@@ -163,6 +174,13 @@ export function isMissingMediaCandidateScopeActive(
   return hasActivePromotedWidgetConsumer(node, input.name)
 }
 
+/**
+ * Determines whether a media candidate is currently missing within its active scope.
+ *
+ * @param rootGraph - The root graph containing the candidate's execution context
+ * @param candidate - The media candidate to evaluate
+ * @returns `true` if the candidate is marked missing and its scope is active, `false` otherwise.
+ */
 export function isMissingMediaCandidateActive(
   rootGraph: LGraph | null | undefined,
   candidate: MissingMediaCandidate

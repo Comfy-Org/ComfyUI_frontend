@@ -44,6 +44,11 @@ export interface PromotedMediaRuntime {
   intermediateHosts: SubgraphNode[]
 }
 
+/**
+ * Defers media candidate verification until explicitly resolved, then marks all candidates as missing.
+ *
+ * @returns The verification spy and a resolver that releases the deferred verification.
+ */
 export function deferMediaVerification() {
   let resolveVerification: (() => void) | undefined
   const verification = new Promise<void>((resolve) => {
@@ -60,6 +65,13 @@ export function deferMediaVerification() {
   return { verifySpy, resolveVerification }
 }
 
+/**
+ * Creates a missing image candidate from a promoted media host node.
+ *
+ * @param host - The promoted media host node containing the image value
+ * @returns A missing image candidate derived from the host
+ * @throws If the host has no widget or its first widget value is not a string
+ */
 export function createPromotedMissingMediaCandidate(
   host: LGraphNode
 ): MissingMediaCandidate {
@@ -79,6 +91,16 @@ export function createPromotedMissingMediaCandidate(
   }
 }
 
+/**
+ * Adds a promoted media source node to a subgraph and connects it to the subgraph input.
+ *
+ * @param subgraph - The subgraph that receives the source node
+ * @param id - The identifier assigned to the source node
+ * @param value - The source node's selected image value
+ * @param options - The available image values for the source node
+ * @returns The added promoted media source node
+ * @throws Error if the source node cannot be connected to the subgraph input
+ */
 function addPromotedMediaSource(
   subgraph: Subgraph,
   id: number,
@@ -103,6 +125,18 @@ function addPromotedMediaSource(
   return sourceNode
 }
 
+/**
+ * Creates a configurable promoted-media test runtime with source branches and host nodes.
+ *
+ * @param sourceIds - Identifiers for the media source nodes.
+ * @param hostIds - Identifiers for the promoted media host nodes.
+ * @param depth - Graph nesting depth for the source branches.
+ * @param hostValue - Value assigned to each promoted media host.
+ * @param hostOptions - Available values for each promoted media host.
+ * @param sourceValue - Value assigned to each media source.
+ * @param sourceOptions - Available values for each media source.
+ * @returns The root graph, containing subgraphs, source nodes, host nodes, and intermediate hosts.
+ */
 export function createPromotedMediaRuntime({
   sourceIds = [42],
   hostIds = [65],
