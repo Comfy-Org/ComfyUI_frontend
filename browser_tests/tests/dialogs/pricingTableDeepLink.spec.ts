@@ -265,6 +265,22 @@ const PAYMENT_METHOD_REQUIRED_RESPONSE = {
   payment_method_url: 'https://pay.test/method'
 } satisfies SubscribeResponse
 
+const RETRIED_SUBSCRIPTION_OPERATION_ID = 'retried-subscription'
+const RETRIED_SUBSCRIPTION_ACTION_URL =
+  'https://verify.example/retried-subscription'
+
+const RETRIED_SUBSCRIPTION_RESPONSE = {
+  billing_op_id: RETRIED_SUBSCRIPTION_OPERATION_ID,
+  status: 'needs_payment_method',
+  payment_method_url: 'https://pay.test/retried-subscription'
+} satisfies SubscribeResponse
+
+const RETRIED_SUBSCRIPTION_OPERATION = {
+  id: RETRIED_SUBSCRIPTION_OPERATION_ID,
+  status: 'pending',
+  started_at: '2026-07-30T00:00:00Z'
+} satisfies BillingOpStatusResponse
+
 const UNEXPECTED_OPERATION_RESPONSE = {
   id: PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id,
   status: 'failed',
@@ -572,6 +588,80 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     ).toBeVisible()
     expect(subscribeRequests).toHaveLength(0)
     await expect(page).not.toHaveURL(/[?&](pricing|cycle)=/)
+  })
+
+  test('restores pending checkout when retrying a timed-out operation', async ({
+    page
+  }) => {
+    const subscribeRequests: Request[] = []
+    const operationPollRequests: Request[] = []
+    await page.addInitScript(() => {
+      window.open = () => window
+    })
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+    await page.route('**/api/billing/status', (route) =>
+      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+    )
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(
+        jsonRoute({
+          plans: [CREATOR_ANNUAL_PLAN]
+        } satisfies BillingPlansResponse)
+      )
+    )
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(NEW_CREATOR_SUBSCRIPTION))
+    )
+    await page.route('**/api/billing/subscribe', (route) => {
+      subscribeRequests.push(route.request())
+      return route.fulfill(jsonRoute(RETRIED_SUBSCRIPTION_RESPONSE))
+    })
+    await page.route(
+      `**/api/billing/ops/${RETRIED_SUBSCRIPTION_OPERATION_ID}`,
+      (route) => {
+        operationPollRequests.push(route.request())
+        return route.fulfill(
+          jsonRoute({
+            ...RETRIED_SUBSCRIPTION_OPERATION,
+            ...(subscribeRequests.length > 1 && {
+              action_url: RETRIED_SUBSCRIPTION_ACTION_URL
+            })
+          } satisfies BillingOpStatusResponse)
+        )
+      }
+    )
+
+    await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
+
+    const subscribeButton = page.getByRole('button', {
+      name: 'Subscribe to Creator'
+    })
+    const backButton = page.getByRole('button', { name: 'Back', exact: true })
+    await cloudAppExpect(subscribeButton).toBeVisible()
+    await page.clock.install({ time: new Date('2026-07-30T00:00:00Z') })
+    await subscribeButton.click()
+    await expect.poll(() => subscribeRequests.length).toBe(1)
+    await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
+    await expect(backButton).toBeDisabled()
+
+    await page.clock.fastForward(5 * 60_000 + 1)
+
+    await expect(backButton).toBeEnabled()
+    await expect(
+      page.getByText('Subscription verification timed out', { exact: true })
+    ).toBeVisible()
+    const pollCountAfterTimeout = operationPollRequests.length
+
+    await subscribeButton.click()
+
+    await expect.poll(() => subscribeRequests.length).toBe(2)
+    await expect(backButton).toBeDisabled()
+    await expect
+      .poll(() => operationPollRequests.length)
+      .toBeGreaterThan(pollCountAfterTimeout)
+    await expect(
+      page.getByRole('button', { name: 'Complete verification' })
+    ).toBeVisible()
   })
 
   test('cleans orphaned pricing params without opening the table', async ({

@@ -7,7 +7,10 @@ vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as Record<string, unknown>),
-    useI18n: () => ({ t: (key: string) => key })
+    useI18n: () => ({
+      t: (key: string, params?: Record<string, unknown>) =>
+        params ? `${key} ${Object.values(params).join(' ')}` : key
+    })
   }
 })
 
@@ -297,6 +300,45 @@ describe('ComfyHubPublishDialog', () => {
     )
     expect(mockToastAdd).not.toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
+    )
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('shows the backend error message when publish rejects with an Error', async () => {
+    mockSubmitToComfyHub.mockRejectedValueOnce(
+      new Error(
+        'unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
+      )
+    )
+    renderComponent()
+    await flushPromises()
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: expect.stringContaining(
+          'unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
+        )
+      })
+    )
+  })
+
+  it('shows a generic error toast without crashing when publish rejects with a non-Error value', async () => {
+    mockSubmitToComfyHub.mockRejectedValueOnce(undefined)
+    renderComponent()
+    await flushPromises()
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'comfyHubPublish.publishFailedDescription'
+      })
     )
     expect(onClose).not.toHaveBeenCalled()
   })
