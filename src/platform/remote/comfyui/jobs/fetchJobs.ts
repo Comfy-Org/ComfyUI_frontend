@@ -34,6 +34,25 @@ export interface FetchHistoryPageResult {
   hasMore: boolean
 }
 
+async function readErrorDetail(res: Response): Promise<string> {
+  try {
+    const text = await res.text()
+    if (!text) return res.statusText
+    try {
+      const body = JSON.parse(text) as {
+        message?: string
+        error?: string
+        code?: string
+      }
+      return body.message ?? body.error ?? body.code ?? text.slice(0, 200)
+    } catch {
+      return text.slice(0, 200)
+    }
+  } catch {
+    return res.statusText
+  }
+}
+
 /**
  * Fetches raw jobs from /jobs endpoint
  * @internal
@@ -49,10 +68,9 @@ async function fetchJobsRaw(
   try {
     const res = await fetchApi(url)
     if (!res.ok) {
-      const isExpectedAuthStatus = res.status === 401 || res.status === 403
-      if (!isExpectedAuthStatus) {
-        console.warn(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      }
+      console.warn(
+        `[Jobs API] Failed to fetch jobs (${res.status}): ${await readErrorDetail(res)}`
+      )
       return {
         jobs: [],
         total: 0,

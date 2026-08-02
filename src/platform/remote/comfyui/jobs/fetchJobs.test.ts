@@ -154,17 +154,30 @@ describe('fetchJobs', () => {
       expect(result).toEqual([])
     })
 
-    it.for([401, 403])(
-      'does not log expected auth status %i as an error',
-      async (status) => {
+    it.for([
+      [401, 'workspace membership not found'],
+      [403, 'email not verified']
+    ] as const)(
+      'warns (not errors) with status %i and the response detail',
+      async ([status, message]) => {
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-        const mockFetch = vi.fn().mockResolvedValue({ ok: false, status })
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const mockFetch = vi.fn().mockResolvedValue({
+          ok: false,
+          status,
+          text: () => Promise.resolve(JSON.stringify({ message }))
+        })
 
         const result = await fetchHistory(mockFetch)
 
         expect(result).toEqual([])
         expect(errorSpy).not.toHaveBeenCalled()
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining(String(status))
+        )
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(message))
         errorSpy.mockRestore()
+        warnSpy.mockRestore()
       }
     )
 
