@@ -516,6 +516,12 @@ export default defineConfig([
       ]
     }
   },
+  {
+    files: ['src/components/searchbox/**/*.vue'],
+    rules: {
+      'vue/no-v-html': 'error'
+    }
+  },
   // Browser tests must use comfyPageFixture, not raw @playwright/test test
   {
     files: ['browser_tests/tests/**/*.spec.ts'],
