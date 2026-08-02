@@ -622,6 +622,31 @@ describe('useWorkflowPersistenceV2', () => {
     })
   })
 
+  it('flushes a pending workflow edit when the page is unloaded', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = {
+      nodes: [],
+      extra: { marker: 'final-edit' }
+    }
+    mocks.state.graphChangedHandler?.()
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    expect(JSON.parse(payload.data)).toEqual({
+      nodes: [],
+      extra: { marker: 'final-edit' }
+    })
+  })
+
   it('flushes the final source-workspace edit before blocking transition writes', async () => {
     const sourceWorkspaceId = 'workspace-a'
     const destinationWorkspaceId = 'workspace-b'

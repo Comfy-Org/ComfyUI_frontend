@@ -134,9 +134,15 @@ export function useWorkflowPersistenceV2() {
 
   // Debounced version for graphChanged events
   const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
-  const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(() =>
+
+  function flushPendingPersistence() {
     debouncedPersist.flush()
+  }
+
+  const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(
+    flushPendingPersistence
   )
+  window.addEventListener('pagehide', flushPendingPersistence)
 
   const loadPreviousWorkflowFromStorage = async () => {
     const sessionPath = tabState.getActivePath()
@@ -259,6 +265,7 @@ export function useWorkflowPersistenceV2() {
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
+    window.removeEventListener('pagehide', flushPendingPersistence)
     unregisterPersistenceFlush()
     debouncedPersist.cancel()
   })
