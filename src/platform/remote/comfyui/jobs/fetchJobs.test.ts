@@ -85,20 +85,22 @@ describe('fetchJobs', () => {
       }
     )
 
-    it('logs the raw text when an auth-failure body is not JSON', async () => {
+    it('logs the raw text (truncated at 200 chars) when the body is not JSON', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const head = 'email not verified — '.padEnd(200, '.')
+      const sentinel = 'TRUNCATED_TAIL'
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 403,
         statusText: 'Forbidden',
-        text: () => Promise.resolve('upstream: email not verified')
+        text: () => Promise.resolve(head + sentinel)
       })
 
       await fetchHistory(mockFetch)
 
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('upstream: email not verified')
-      )
+      const logged = errorSpy.mock.calls[0]?.[0] as string
+      expect(logged).toContain(head)
+      expect(logged).not.toContain(sentinel)
     })
 
     it('falls back to statusText when an auth-failure body is empty', async () => {
