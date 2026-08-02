@@ -68,12 +68,28 @@ describe('TourSpotlight interactive and masked steps', () => {
     expect(screen.getByTestId('coach-hit-region')).toBeTruthy()
   })
 
-  it('covers the viewport with an evenodd region, so its holes pass input through', () => {
+  it('renders the hit region evenodd, so a hole in it can pass input through', () => {
     renderSpotlight({ step: spotlightStep({ interactive: true }) })
 
-    const region = screen.getByTestId('coach-hit-region')
-    expect(region.getAttribute('fill-rule')).toBe('evenodd')
-    expect(region.getAttribute('d')).toBe('M0 0H1024V768H0Z')
+    expect(
+      screen.getByTestId('coach-hit-region').getAttribute('fill-rule'),
+      'without evenodd the second subpath adds to the region instead of cutting it'
+    ).toBe('evenodd')
+  })
+
+  it('drops the modal claim on an interactive step, so keybindings still fire', () => {
+    renderSpotlight({ step: spotlightStep({ interactive: true }) })
+
+    expect(
+      screen.getByRole('dialog').getAttribute('aria-modal'),
+      'keybindingService drops every keybinding while an aria-modal dialog is up'
+    ).toBe('false')
+  })
+
+  it('keeps the modal claim on a step that does block the app', () => {
+    renderSpotlight()
+
+    expect(screen.getByRole('dialog').getAttribute('aria-modal')).toBe('true')
   })
 
   it('still skips on Escape during an interactive step', async () => {

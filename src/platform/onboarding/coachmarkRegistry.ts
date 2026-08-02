@@ -62,7 +62,7 @@ export function waitForTarget(
   if (signal.aborted) return Promise.resolve(false)
   return new Promise((resolve) => {
     let done = false
-    let poll: ReturnType<typeof setTimeout>
+    let poll: ReturnType<typeof setTimeout> | undefined
     function finish(found: boolean) {
       if (done) return
       done = true
