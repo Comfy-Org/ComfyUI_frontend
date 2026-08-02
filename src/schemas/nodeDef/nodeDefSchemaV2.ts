@@ -324,21 +324,6 @@ export const isComboInputSpec = (
   return inputSpec.type === 'COMBO'
 }
 
-/**
- * Whether a combo input spec drives a file-upload widget (LoadImage,
- * LoadVideo, LoadAudio, Load3D, etc.) rather than a plain value combo.
- */
-export const isUploadComboInputSpec = (inputSpec: InputSpec): boolean => {
-  if (!isComboInputSpec(inputSpec)) return false
-  return Boolean(
-    inputSpec.image_upload ||
-    inputSpec.animated_image_upload ||
-    inputSpec.video_upload ||
-    inputSpec.audio_upload ||
-    inputSpec.mesh_upload
-  )
-}
-
 export const isChartInputSpec = (
   inputSpec: InputSpec
 ): inputSpec is ChartInputSpec => {
