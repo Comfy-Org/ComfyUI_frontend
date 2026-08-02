@@ -4928,25 +4928,26 @@ const translations = {
     'zh-CN': '联系我们'
   },
 
-  // MiniMax H3 launch page (/minimax-h3). Hero and banner strings are verbatim
-  // from the Figma frame (node 9770-37353); remaining copy and the CTA button
-  // wording are unresolved (CRE-343). zh-CN hand-translated, native review
+  // MiniMax H3 launch page (/minimax-h3). Hero description and FAQ facts
+  // follow the final launch email copy approved in #gtm-mini-max; the Figma
+  // frame (node 9770-37353) still carries the earlier multi-modal draft that
+  // was corrected in that thread. zh-CN hand-translated, native review
   // welcome.
   'minimaxH3.meta.title': {
-    en: 'MiniMax H3 on Comfy — Open-Weights Video With Sound',
-    'zh-CN': 'Comfy 上的 MiniMax H3 — 开放权重、自带声音的视频模型'
+    en: 'MiniMax H3: Run Hailuo 3.0 Open Weights Free in ComfyUI',
+    'zh-CN': 'MiniMax H3：在 ComfyUI 免费运行 Hailuo 3.0 开放权重'
   },
   'minimaxH3.meta.description': {
-    en: 'Run MiniMax H3, the open release of Hailuo 3.0, on Comfy. Full multi-modal I/O, native stereo audio on every clip, up to 2K at five to fifteen seconds per generation.',
+    en: 'MiniMax H3 is the open-weight release of Hailuo 3.0. Text, image, or reference to video with stereo sound, up to 2K. Run it free in ComfyUI or on Comfy Cloud.',
     'zh-CN':
-      '在 Comfy 上运行 MiniMax H3——Hailuo 3.0 的开源版本。完整的多模态输入输出，每段片段自带原生立体声，最高 2K，每次生成 5 至 15 秒。'
+      'MiniMax H3 是 Hailuo 3.0 的开放权重版本。文本、图像或参考生成带立体声的视频，最高 2K。可在 ComfyUI 中免费运行，或使用 Comfy Cloud。'
   },
   'minimaxH3.hero.titleLead': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
   'minimaxH3.hero.titleTrail': { en: 'is here', 'zh-CN': '已上线' },
   'minimaxH3.hero.description': {
-    en: 'Open weights, full multi-modal I/O, native stereo on every clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. The open release of Hailuo 3.0.',
+    en: 'The open release of Hailuo 3.0. Feed it text or images and it generates video with real stereo sound, up to 2K and 15 seconds a clip. On ComfyUI, H3 runs comfortably on a regular RTX 3060.',
     'zh-CN':
-      '开放权重，完整的多模态输入输出，每段片段都带原生立体声。最高 2K，每次生成 5 至 15 秒。当其他模型覆盖或丢弃输入音频时，H3 真正以它作为生成条件。这是 Hailuo 3.0 的开源版本。'
+      'Hailuo 3.0 的开源版本。输入文本或图像，即可生成带真实立体声的视频，最高 2K，每段最长 15 秒。在 ComfyUI 中，一张普通的 RTX 3060 就能流畅运行 H3。'
   },
   'minimaxH3.hero.primaryCta': { en: 'TRY FOR FREE', 'zh-CN': '免费试用' },
   'minimaxH3.hero.secondaryCta': {
@@ -4987,8 +4988,8 @@ const translations = {
     'zh-CN': '运行 Comfy 的各种方式。'
   },
   'minimaxH3.runOptions.subtitle': {
-    en: 'Local, cloud, API, or enterprise — the same graph runs everywhere.',
-    'zh-CN': '本地、云端、API 或企业版——同一个节点图，处处可运行。'
+    en: 'Local, cloud, API, or enterprise. The same graph runs everywhere.',
+    'zh-CN': '本地、云端、API 或企业版。同一个节点图，处处可运行。'
   },
   'minimaxH3.runOptions.cta': { en: 'Learn more', 'zh-CN': '了解更多' },
   'minimaxH3.faq.heading': {

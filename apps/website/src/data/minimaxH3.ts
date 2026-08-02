@@ -39,8 +39,8 @@ export interface MinimaxH3Highlight {
   detail: LocalizedText
 }
 
-// Each highlight restates a claim already made in the hero subhead on the
-// Figma frame, so nothing here is a new marketing claim.
+// Each highlight restates a claim already made in the hero description, so
+// nothing here is a new marketing claim.
 export const minimaxH3Highlights: readonly MinimaxH3Highlight[] = [
   {
     id: 'open-weights',
@@ -67,11 +67,11 @@ export const minimaxH3Highlights: readonly MinimaxH3Highlight[] = [
     }
   },
   {
-    id: 'multi-modal',
-    label: { en: 'Multi-modal I/O', 'zh-CN': '多模态输入输出' },
+    id: 'local-hardware',
+    label: { en: 'Runs on your hardware', 'zh-CN': '在你的硬件上运行' },
     detail: {
-      en: 'Conditions on input audio instead of overwriting it.',
-      'zh-CN': '以输入音频作为条件，而非覆盖或丢弃它。'
+      en: 'A big model made small enough to run comfortably on a regular RTX 3060.',
+      'zh-CN': '大模型经过压缩，一张普通的 RTX 3060 即可流畅运行。'
     }
   }
 ] as const
@@ -92,8 +92,8 @@ export const minimaxH3Workflows: readonly MinimaxH3Workflow[] = [
     id: 'text-to-video',
     title: { en: 'Text to video', 'zh-CN': '文本生成视频' },
     description: {
-      en: 'Describe the shot and let H3 direct it, audio included.',
-      'zh-CN': '描述镜头，让 H3 完成拍摄，并同步生成音频。'
+      en: 'Write the shot and H3 renders it, audio included.',
+      'zh-CN': '写下镜头描述，H3 渲染成片，并同步生成音频。'
     },
     videoSrc: media.textToVideo,
     href: externalLinks.workflows
@@ -102,8 +102,8 @@ export const minimaxH3Workflows: readonly MinimaxH3Workflow[] = [
     id: 'image-to-video',
     title: { en: 'Image to video', 'zh-CN': '图像生成视频' },
     description: {
-      en: 'Bring a still into motion without losing the frame you set.',
-      'zh-CN': '让静态画面动起来，同时保留你设定的构图。'
+      en: 'Bring a still into motion, or pin the first and last frame and H3 fills the shot.',
+      'zh-CN': '让静态画面动起来，或固定首末帧，由 H3 补全整个镜头。'
     },
     videoSrc: media.imageToVideo,
     href: externalLinks.workflows
@@ -126,8 +126,10 @@ export interface MinimaxH3Faq {
   answer: LocalizedText
 }
 
-// Answers are deliberately limited to facts already public: the open-weights
-// release, the specs on the Figma frame, and the existing partner node.
+// Answers are deliberately limited to facts in the final launch email copy
+// approved in #gtm-mini-max and the open-weights release itself. Each answer
+// opens with a self-contained direct statement so it can be lifted verbatim
+// into search AI overviews and the FAQPage structured data.
 export const minimaxH3Faqs: readonly MinimaxH3Faq[] = [
   {
     id: 'what-is-minimax-h3',
@@ -136,45 +138,69 @@ export const minimaxH3Faqs: readonly MinimaxH3Faq[] = [
       'zh-CN': 'MiniMax H3 是什么？'
     },
     answer: {
-      en: 'MiniMax H3 is the open release of Hailuo 3.0, a video model with full multi-modal input and output. It generates five to fifteen second clips at up to 2K with native stereo audio in a single pass.',
+      en: 'MiniMax H3 is the open-weight release of Hailuo 3.0, a video generation model from MiniMax. It turns text, images, or reference inputs into video with stereo sound, at up to 2K resolution and 5 to 15 seconds per generation.',
       'zh-CN':
-        'MiniMax H3 是 Hailuo 3.0 的开源版本，是一款支持完整多模态输入输出的视频模型。它可一次性生成 5 至 15 秒、最高 2K 并带原生立体声的片段。'
+        'MiniMax H3 是 Hailuo 3.0 的开放权重版本，是 MiniMax 推出的视频生成模型。它可将文本、图像或参考输入生成带立体声的视频，最高 2K 分辨率，每次生成 5 至 15 秒。'
     }
   },
   {
-    id: 'audio-handling',
+    id: 'open-source-free',
     question: {
-      en: 'How does H3 handle input audio?',
-      'zh-CN': 'H3 如何处理输入音频？'
+      en: 'Is MiniMax H3 free and open source?',
+      'zh-CN': 'MiniMax H3 是免费开源的吗？'
     },
     answer: {
-      en: 'H3 conditions on the audio you supply rather than overwriting or discarding it, so a supplied track shapes the generation instead of being replaced by one.',
+      en: 'The MiniMax H3 weights are openly released. Download them and run H3 locally in ComfyUI at no cost beyond your own hardware. On Comfy Cloud, H3 runs on hosted GPUs and generations are billed in credits; current rates are on the pricing page.',
       'zh-CN':
-        'H3 会以你提供的音频作为生成条件，而不是覆盖或丢弃它，因此你的音轨会影响生成结果，而非被替换掉。'
+        'MiniMax H3 的权重已开放发布。下载权重后即可在本地 ComfyUI 中免费运行，只需自备硬件。在 Comfy Cloud 上，H3 在托管 GPU 上运行，按积分计费，最新费率见定价页面。'
     }
   },
   {
-    id: 'where-to-run',
+    id: 'gpu-requirements',
     question: {
-      en: 'Where can I run MiniMax H3?',
-      'zh-CN': '我可以在哪里运行 MiniMax H3？'
+      en: 'What GPU do I need to run MiniMax H3 locally?',
+      'zh-CN': '本地运行 MiniMax H3 需要什么 GPU？'
     },
     answer: {
-      en: 'Run it on Comfy Cloud with no local GPU, or locally in ComfyUI now that the weights are open. The MiniMax partner node is already available in ComfyUI.',
+      en: 'MiniMax H3 runs comfortably on a regular RTX 3060 in ComfyUI. It is a big model made small enough for consumer hardware, so no datacenter GPU is required.',
       'zh-CN':
-        '你可以在 Comfy Cloud 上运行，无需本地 GPU；权重开放后也可在本地的 ComfyUI 中运行。MiniMax 合作伙伴节点已在 ComfyUI 中提供。'
+        '在 ComfyUI 中，一张普通的 RTX 3060 就能流畅运行 MiniMax H3。这个大模型经过压缩，适配消费级硬件，无需数据中心级 GPU。'
     }
   },
   {
-    id: 'cost',
+    id: 'generation-modes',
     question: {
-      en: 'What does it cost?',
-      'zh-CN': '费用是多少？'
+      en: 'What can MiniMax H3 generate?',
+      'zh-CN': 'MiniMax H3 能生成什么？'
     },
     answer: {
-      en: 'Running the weights locally is free. On Comfy Cloud, H3 is billed per second of generated video like other partner models — see the pricing page for current rates.',
+      en: 'MiniMax H3 supports text to video, image to video with first and last frame control, reference to video, and edits to an existing shot in place. Every clip includes stereo sound, generated in the same pass as the frames.',
       'zh-CN':
-        '在本地运行权重是免费的。在 Comfy Cloud 上，H3 与其他合作伙伴模型一样按生成视频的秒数计费，具体费率请查看定价页面。'
+        'MiniMax H3 支持文本生成视频、带首末帧控制的图像生成视频、参考生成视频，以及对现有镜头的原位编辑。每段片段都带立体声，与画面在同一次生成中输出。'
+    }
+  },
+  {
+    id: 'hailuo-relationship',
+    question: {
+      en: 'How is MiniMax H3 related to Hailuo 3.0?',
+      'zh-CN': 'MiniMax H3 与 Hailuo 3.0 是什么关系？'
+    },
+    answer: {
+      en: 'MiniMax H3 is the open release of Hailuo 3.0. The generations come from the same model family; the difference is that H3 ships weights you can download, inspect, and run yourself.',
+      'zh-CN':
+        'MiniMax H3 就是 Hailuo 3.0 的开源版本。生成能力来自同一模型家族，区别在于 H3 提供可下载、可检查、可自行运行的权重。'
+    }
+  },
+  {
+    id: 'how-to-run',
+    question: {
+      en: 'How do I run MiniMax H3 in ComfyUI?',
+      'zh-CN': '如何在 ComfyUI 中运行 MiniMax H3？'
+    },
+    answer: {
+      en: 'Update ComfyUI to the latest version, open a MiniMax H3 workflow template, and press Run. The same workflow runs locally on your GPU or on Comfy Cloud with no local install.',
+      'zh-CN':
+        '将 ComfyUI 更新到最新版本，打开 MiniMax H3 工作流模板，点击运行即可。同一个工作流既可在本地 GPU 上运行，也可在无需本地安装的 Comfy Cloud 上运行。'
     }
   }
 ] as const

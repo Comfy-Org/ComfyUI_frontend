@@ -8,7 +8,7 @@ import { test } from './fixtures/blockExternalMedia'
 const PATH_EN = '/minimax-h3'
 const PATH_ZH = '/zh-CN/minimax-h3'
 const LAUNCH_WORKFLOW_COUNT = 3
-const FAQ_COUNT = 4
+const FAQ_COUNT = 6
 
 const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
   [PATH_EN, 'en'],
