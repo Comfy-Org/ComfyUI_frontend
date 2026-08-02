@@ -968,6 +968,71 @@ describe('ComfyApp', () => {
     })
   })
 
+  describe('mixed file type drag-and-drop spacing', () => {
+    function boxesOverlap(a: LGraphNode, b: LGraphNode): boolean {
+      const [ax, ay] = a.pos
+      const [aw, ah] = a.size
+      const [bx, by] = b.pos
+      const [bw, bh] = b.size
+      return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by
+    }
+
+    it('spaces an audio node dropped alongside images away from every image/batch node, not just other audio nodes', async () => {
+      // FE-1482: a mixed FileList (images + audio) creates every node at the
+      // same drop point. Spacing must consider ALL nodes created in the
+      // batch, not just other nodes of the same type.
+      const dropPos: [number, number] = [500, 500]
+      const imageNode1 = createMockNode({
+        id: 1,
+        type: 'LoadImage',
+        pos: [...dropPos],
+        size: [210, 344],
+        getBounding: vi.fn(() => new Float64Array([...dropPos, 210, 344]))
+      })
+      const imageNode2 = createMockNode({
+        id: 2,
+        type: 'LoadImage',
+        pos: [...dropPos],
+        size: [210, 344]
+      })
+      const batchNode = createMockNode({
+        id: 3,
+        type: 'BatchImagesNode',
+        pos: [...dropPos],
+        size: [210, 100]
+      })
+      const audioNode = createMockNode({
+        id: 4,
+        type: 'LoadAudio',
+        pos: [...dropPos],
+        size: [210, 100],
+        getBounding: vi.fn(() => new Float64Array([...dropPos, 210, 100]))
+      })
+
+      vi.mocked(pasteImageNodes).mockResolvedValue([imageNode1, imageNode2])
+      vi.mocked(createNode).mockResolvedValue(batchNode)
+      vi.mocked(pasteAudioNodes).mockResolvedValue([audioNode])
+
+      const imageFiles = [
+        createTestFile('a.png', 'image/png'),
+        createTestFile('b.png', 'image/png')
+      ]
+      const audioFiles = [createTestFile('c.mp3', 'audio/mpeg')]
+
+      // This mirrors the drop handler: the image batch is created first,
+      // then the audio batch is created from the same drop.
+      await app.handleFileList(imageFiles)
+      await app.handleAudioFileList(audioFiles)
+
+      const allNodes = [imageNode1, imageNode2, batchNode, audioNode]
+      for (let i = 0; i < allNodes.length; i++) {
+        for (let j = i + 1; j < allNodes.length; j++) {
+          expect(boxesOverlap(allNodes[i], allNodes[j])).toBe(false)
+        }
+      }
+    })
+  })
+
   describe('positionBatchNodes', () => {
     it('should position batch node to the right of first node', () => {
       const mockNode1 = createMockNode({
