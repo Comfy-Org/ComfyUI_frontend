@@ -15,6 +15,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { NodeError } from '@/schemas/apiSchema'
+import { isUploadComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
@@ -326,7 +327,10 @@ export function computeProcessedWidgets({
 
     const value = widgetState?.value as WidgetValue
 
-    const isDisabled = slotMetadata?.linked || widgetState?.disabled
+    const linkedByPromotion =
+      slotMetadata?.linked &&
+      !(widget.spec && isUploadComboInputSpec(widget.spec))
+    const isDisabled = linkedByPromotion || widgetState?.disabled
     const widgetOptions = isDisabled
       ? { ...mergedOptions, disabled: true }
       : mergedOptions
