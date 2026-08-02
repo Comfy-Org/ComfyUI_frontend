@@ -535,8 +535,9 @@ describe('useTeamWorkspaceStore', () => {
         await store.initialize()
         store.activeWorkspaceId = workspace.id
 
-        store.forgetRevokedActiveWorkspace(workspace.id)
+        const handled = store.forgetRevokedActiveWorkspace(workspace.id)
 
+        expect(handled).toBe(true)
         expect(mockLocalStorage.removeItem).toHaveBeenCalledTimes(reloads)
         expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledTimes(
           reloads
@@ -555,8 +556,9 @@ describe('useTeamWorkspaceStore', () => {
       await store.initialize()
       store.activeWorkspaceId = mockTeamWorkspace.id
 
-      store.forgetRevokedActiveWorkspace('some-other-workspace')
+      const handled = store.forgetRevokedActiveWorkspace('some-other-workspace')
 
+      expect(handled).toBe(false)
       expect(mockReload).not.toHaveBeenCalled()
     })
   })
