@@ -1,5 +1,4 @@
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
-import { watch } from 'vue'
 import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
@@ -17,10 +16,8 @@ import {
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
@@ -589,41 +586,13 @@ export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
 
-    const hasPreviewWidget = () =>
-      node.widgets?.some(isPreviewPseudoWidget) ?? false
-
-    function promotePreviewWidget() {
-      const widget = node.widgets?.find(isPreviewPseudoWidget)
-      if (!widget) return
-      promotePreviewViaExposure(subgraphNode, node, widget.name)
-    }
-    promotePreviewWidget()
-
-    if (hasPreviewWidget()) continue
-
-    if (supportsVirtualCanvasImagePreview(node)) {
-      promotePreviewViaExposure(subgraphNode, node, CANVAS_IMAGE_PREVIEW_WIDGET)
+    const previewWidget = node.widgets?.find(isPreviewPseudoWidget)
+    if (previewWidget) {
+      promotePreviewViaExposure(subgraphNode, node, previewWidget.name)
       continue
     }
 
-    // Not on the known-type allowlist: wait for a real preview to arrive
-    // (e.g. mid-execution) rather than never exposing one.
-    const locatorId = createNodeLocatorId(subgraphNode.subgraph.id, node.id)
-    if (!locatorId) continue
-
-    const nodeOutputStore = useNodeOutputStore()
-    const stopWatchingPreviews = watch(
-      () => nodeOutputStore.nodePreviewImages[locatorId],
-      (previews) => {
-        if (!previews?.length) return
-        promotePreviewViaExposure(
-          subgraphNode,
-          node,
-          CANVAS_IMAGE_PREVIEW_WIDGET
-        )
-        stopWatchingPreviews()
-      }
-    )
+    promotePreviewViaExposure(subgraphNode, node, CANVAS_IMAGE_PREVIEW_WIDGET)
   }
 }
 

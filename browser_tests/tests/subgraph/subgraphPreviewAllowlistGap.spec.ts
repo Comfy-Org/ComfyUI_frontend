@@ -10,15 +10,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const SUBGRAPH_NODE_ID = '1'
-// The interior node can't reuse id 1: LiteGraph's subgraph-node-ID
-// deduplication treats the outer SubgraphNode's own id as reserved and
-// silently remaps any colliding interior node id (see
-// `deduplicateSubgraphNodeIds`), which would desync this id from the one
-// the app actually assigns.
 const INTERIOR_SAMPLER_NODE_ID = '2'
-// Composite execution id for the interior SamplerCustomAdvanced node,
-// nested one level inside the outer SubgraphNode (id 1) — matches the
-// `host:local` format the backend uses for nodes inside a subgraph.
 const SAMPLER_EXECUTION_ID = `${SUBGRAPH_NODE_ID}:${INTERIOR_SAMPLER_NODE_ID}`
 
 test.describe(
@@ -32,16 +24,6 @@ test.describe(
       await comfyPage.vueNodes.waitForNodes(1)
     })
 
-    // Regression test for the gap introduced by PR #12197 ("Subgraph Link
-    // Only Promotion" / ADR 0009). `autoExposeKnownPreviewNodes` only
-    // auto-exposes a preview for interior node types hardcoded in
-    // `CANVAS_IMAGE_PREVIEW_NODE_TYPES` (KSampler, KSamplerAdvanced,
-    // PreviewImage, SaveImage, GLSLShader). SamplerCustomAdvanced is not on
-    // that list, so it falls back to a one-shot `requestAnimationFrame`
-    // check that runs immediately — long before the sampler has produced any
-    // output — and is never retried. When the real preview image later
-    // arrives mid-execution over the websocket, it is silently dropped: the
-    // outer SubgraphNode never shows a preview.
     test('promotes a mid-execution preview from a non-allowlisted interior node onto the outer SubgraphNode', async ({
       comfyPage,
       getWebSocket
@@ -59,11 +41,6 @@ test.describe(
         const jobId = await exec.run()
         await comfyPage.nextFrame()
         exec.executionStart(jobId)
-
-        // Mid-execution sampler preview — arrives well after the subgraph
-        // was created (and its one-shot auto-expose pass already ran), and
-        // well before any `executed` output message, exactly as it does for
-        // a real, in-progress sampler.
         exec.latentPreview(jobId, SAMPLER_EXECUTION_ID)
 
         await expect(previewImage).toBeVisible()

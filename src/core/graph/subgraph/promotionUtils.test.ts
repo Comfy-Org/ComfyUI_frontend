@@ -1,8 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { nextTick, reactive } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -14,7 +13,6 @@ import {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toLinkId } from '@/types/linkId'
 import type { WidgetId } from '@/types/widgetId'
 
@@ -51,18 +49,6 @@ function promotedWidgetRef(host: SubgraphNode, name: string): IBaseWidget {
 const updatePreviewsMock = vi.hoisted(() => vi.fn())
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ updatePreviews: updatePreviewsMock })
-}))
-
-// Reactive stand-in for the nodeOutputStore's `nodePreviewImages` map — the
-// signal a mid-execution websocket preview event ultimately populates. Kept
-// as a real `reactive()` object (not a plain vi.fn() mock) so a future
-// reactive watcher on `nodeOutputStore.nodePreviewImages` (see FE preview
-// promotion allowlist gap) observes the same mutations this test performs.
-const mockNodePreviewImages = reactive<Record<string, string[]>>({})
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({
-    nodePreviewImages: mockNodePreviewImages
-  })
 }))
 
 import {
@@ -504,46 +490,15 @@ describe('autoExposeKnownPreviewNodes — allowlist gap for unlisted node types 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     updatePreviewsMock.mockReset()
-    for (const key of Object.keys(mockNodePreviewImages)) {
-      delete mockNodePreviewImages[key]
-    }
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      cb(0)
-      return 0
-    })
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  /**
-   * PR #12197 ("Subgraph Link Only Promotion" / ADR 0009) replaced the old
-   * universal live-preview bubbling with an exposure allowlist
-   * (CANVAS_IMAGE_PREVIEW_NODE_TYPES). For node types not on that list (e.g.
-   * SamplerCustomAdvanced), autoExposeKnownPreviewNodes falls back to a
-   * one-shot `requestAnimationFrame(() => updatePreviews(node, ...))` check.
-   * That check runs exactly once, immediately after the subgraph is created —
-   * long before a sampler has produced any output. When the real preview
-   * image later arrives mid-execution via the websocket (populating
-   * nodeOutputStore.nodePreviewImages), nothing re-checks, so the preview is
-   * never promoted to the parent SubgraphNode.
-   *
-   * The fix (tracked separately) replaces the one-shot RAF check with a
-   * reactive watcher over nodeOutputStore.nodePreviewImages so the exposure
-   * is registered the first time preview data actually appears — for any
-   * node type, not just the hardcoded allowlist.
-   */
-  it('exposes a preview for an unlisted node type once nodeOutputStore.nodePreviewImages populates after the initial pass', async () => {
+  it('exposes a preview for an unlisted node type without waiting for output to arrive', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const samplerNode = new LGraphNode('SamplerCustomAdvanced')
     samplerNode.type = 'SamplerCustomAdvanced'
     subgraph.add(samplerNode)
 
-    // Initial auto-expose pass — runs at subgraph-creation time, before the
-    // sampler has executed. The deferred RAF check (stubbed to fire
-    // synchronously above) finds no output yet, so nothing is exposed.
     autoExposeKnownPreviewNodes(subgraphNode)
 
     expect(
@@ -551,20 +506,13 @@ describe('autoExposeKnownPreviewNodes — allowlist gap for unlisted node types 
         subgraphNode.rootGraph.id,
         String(subgraphNode.id)
       )
-    ).toEqual([])
-
-    // Simulate the real-world mid-execution websocket preview arriving,
-    // well after the one-shot check already ran and found nothing.
-    const locatorId = createNodeLocatorId(subgraph.id, samplerNode.id)
-    mockNodePreviewImages[locatorId] = ['/view?filename=preview_0001.png']
-    await nextTick()
-
-    expect(
-      usePreviewExposureStore().getExposures(
-        subgraphNode.rootGraph.id,
-        String(subgraphNode.id)
-      )
-    ).toHaveLength(1)
+    ).toEqual([
+      {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
+        sourceNodeId: String(samplerNode.id),
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    ])
   })
 })
 
