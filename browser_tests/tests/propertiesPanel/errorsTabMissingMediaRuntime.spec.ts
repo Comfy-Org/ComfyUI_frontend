@@ -599,6 +599,8 @@ comfyPageFixture.describe(
           leafIncludesValue: false
         })
 
+        await expectNoErrorsTab(comfyPage)
+
         const host = comfyPage.vueNodes.getNodeByTitle(promotedMediaHostTitle)
         await comfyPage.vueNodes.selectNode(String(promotedMediaHostNodeId))
         await comfyPage.keyboard.bypass()

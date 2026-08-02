@@ -593,64 +593,53 @@ describe('scanAllMediaCandidates', () => {
     })
   })
 
-  it('keeps the host candidate when only the first-linked consumer is bypassed', () => {
+  it.for([
+    {
+      caseName: 'first consumer bypassed keeps host',
+      consumerIndexes: [0],
+      mode: LGraphEventMode.BYPASS,
+      keepsHost: true
+    },
+    {
+      caseName: 'middle consumer bypassed keeps host',
+      consumerIndexes: [1],
+      mode: LGraphEventMode.BYPASS,
+      keepsHost: true
+    },
+    {
+      caseName: 'all consumers bypassed removes host',
+      consumerIndexes: [0, 1, 2],
+      mode: LGraphEventMode.BYPASS,
+      keepsHost: false
+    },
+    {
+      caseName: 'all consumers never removes host',
+      consumerIndexes: [0, 1, 2],
+      mode: LGraphEventMode.NEVER,
+      keepsHost: false
+    }
+  ] as const)('$caseName', ({ caseName, consumerIndexes, mode, keepsHost }) => {
     const { rootGraph: graph, sourceNodes } = createPromotedMediaRuntime({
       sourceIds: [42, 43, 44]
     })
-    sourceNodes[0].mode = LGraphEventMode.BYPASS
+    const hostCandidate = [
+      expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
+    ]
+    if (!keepsHost) {
+      expect
+        .soft(
+          scanAllMediaCandidates(graph, false),
+          `${caseName}: active baseline`
+        )
+        .toEqual(hostCandidate)
+    }
+    for (const index of consumerIndexes) {
+      sourceNodes[index].mode = mode
+    }
 
     const result = scanAllMediaCandidates(graph, false)
 
-    expect(result).toEqual([
-      expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
-    ])
-  })
-
-  it('keeps the host candidate when only the middle consumer is bypassed', () => {
-    const { rootGraph: graph, sourceNodes } = createPromotedMediaRuntime({
-      sourceIds: [42, 43, 44]
-    })
-    sourceNodes[1].mode = LGraphEventMode.BYPASS
-
-    const result = scanAllMediaCandidates(graph, false)
-
-    expect(result).toEqual([
-      expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
-    ])
-  })
-
-  it('does not report the host when all promoted consumers are bypassed', () => {
-    const { rootGraph: graph, sourceNodes } = createPromotedMediaRuntime({
-      sourceIds: [42, 43, 44]
-    })
-
-    expect
-      .soft(scanAllMediaCandidates(graph, false))
-      .toEqual([
-        expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
-      ])
-    for (const sourceNode of sourceNodes) {
-      sourceNode.mode = LGraphEventMode.BYPASS
-    }
-
-    expect(scanAllMediaCandidates(graph, false)).toEqual([])
-  })
-
-  it('does not report the host when all promoted consumers never execute', () => {
-    const { rootGraph: graph, sourceNodes } = createPromotedMediaRuntime({
-      sourceIds: [42, 43, 44]
-    })
-
-    expect
-      .soft(scanAllMediaCandidates(graph, false))
-      .toEqual([
-        expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
-      ])
-    for (const sourceNode of sourceNodes) {
-      sourceNode.mode = LGraphEventMode.NEVER
-    }
-
-    expect(scanAllMediaCandidates(graph, false)).toEqual([])
+    expect(result).toEqual(keepsHost ? hostCandidate : [])
   })
 
   it('keeps one outer host candidate when the last nested branch is bypassed', () => {

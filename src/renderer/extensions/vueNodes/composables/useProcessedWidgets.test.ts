@@ -358,7 +358,7 @@ describe('hasWidgetError', () => {
       sourceWidgetName: 'image'
     })
     const otherWidget = createMockWidget({
-      name: 'other_input',
+      name: 'outer_image',
       nodeId: NODE_ID,
       sourceExecutionId: createNodeExecutionId([NODE_ID, toNodeId(43)]),
       sourceWidgetName: 'image'

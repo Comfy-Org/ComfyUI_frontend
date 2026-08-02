@@ -8,9 +8,13 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
 type NonEmptyIds = readonly [number, ...number[]]
+
+const promotedMediaNodeType = 'LoadImage'
 
 interface PromotedMediaRuntimeOptions {
   sourceIds?: NonEmptyIds
@@ -37,15 +41,34 @@ export interface PromotedMediaRuntime {
   intermediateHosts: SubgraphNode[]
 }
 
+export function createPromotedMissingMediaCandidate(
+  host: LGraphNode
+): MissingMediaCandidate {
+  const hostWidget = host.widgets?.[0]
+  if (!hostWidget) throw new Error('Expected promoted image host widget')
+  if (typeof hostWidget.value !== 'string') {
+    throw new Error('Expected promoted image host value')
+  }
+
+  return {
+    nodeId: createNodeExecutionId([host.id]),
+    nodeType: promotedMediaNodeType,
+    widgetName: hostWidget.name,
+    mediaType: 'image',
+    name: hostWidget.value,
+    isMissing: true
+  }
+}
+
 function addPromotedMediaSource(
   subgraph: Subgraph,
   id: number,
   value: string,
   options: string[]
 ): LGraphNode {
-  const sourceNode = new LGraphNode('LoadImage')
+  const sourceNode = new LGraphNode(promotedMediaNodeType)
   sourceNode.id = toNodeId(id)
-  sourceNode.type = 'LoadImage'
+  sourceNode.type = promotedMediaNodeType
   const sourceInput = sourceNode.addInput('image', 'COMBO')
   const sourceWidget = sourceNode.addWidget(
     'combo',

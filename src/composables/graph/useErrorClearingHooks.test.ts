@@ -17,7 +17,10 @@ import {
   LGraphEventMode,
   NodeSlotType
 } from '@/lib/litegraph/src/types/globalEnums'
-import { createPromotedMediaRuntime } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import {
+  createPromotedMediaRuntime,
+  createPromotedMissingMediaCandidate
+} from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import * as missingModelScan from '@/platform/missingModel/missingModelScan'
@@ -68,19 +71,6 @@ function createNestedSubgraphRuntime() {
   }
 }
 
-function createPromotedMissingMediaCandidate(
-  host: LGraphNode
-): MissingMediaCandidate {
-  return fromAny<MissingMediaCandidate, unknown>({
-    nodeId: createNodeExecutionId([host.id]),
-    nodeType: 'LoadImage',
-    widgetName: 'outer_image',
-    mediaType: 'image',
-    name: 'missing-host.png',
-    isMissing: true
-  })
-}
-
 function setNodeMode(
   graph: LGraph,
   node: LGraphNode,
@@ -95,6 +85,49 @@ function setNodeMode(
     oldValue: oldMode,
     newValue: newMode
   })
+}
+
+async function startPendingPromotedMediaVerification() {
+  const {
+    rootGraph,
+    hosts: [outerHost],
+    sourceNodes: [leafNode]
+  } = createPromotedMediaRuntime({ depth: 2 })
+  outerHost.mode = LGraphEventMode.BYPASS
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+
+  const pendingCandidate = {
+    ...createPromotedMissingMediaCandidate(outerHost),
+    name: 'pending.png',
+    isMissing: undefined
+  }
+  vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+  vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockImplementation(
+    (_rootGraph, node) => (node === outerHost ? [pendingCandidate] : [])
+  )
+  let resolveVerification: (() => void) | undefined
+  const verification = new Promise<void>((resolve) => {
+    resolveVerification = resolve
+  })
+  const verifySpy = vi
+    .spyOn(missingMediaScan, 'verifyMediaCandidates')
+    .mockImplementation(async (candidates) => {
+      await verification
+      for (const candidate of candidates) candidate.isMissing = true
+    })
+
+  installErrorClearingHooks(rootGraph)
+  setNodeMode(rootGraph, outerHost, LGraphEventMode.ALWAYS)
+  await vi.waitFor(() => expect(verifySpy).toHaveBeenCalled())
+
+  if (!resolveVerification) throw new Error('Expected pending verification')
+  return {
+    rootGraph,
+    outerHost,
+    leafNode,
+    pendingCandidate,
+    resolveVerification
+  }
 }
 
 describe('Connection error clearing via onConnectionsChange', () => {
@@ -984,47 +1017,8 @@ describe('realtime verification staleness guards', () => {
   })
 
   it('surfaces verified media while its promoted consumer remains active', async () => {
-    const {
-      rootGraph,
-      hosts: [outerHost]
-    } = createPromotedMediaRuntime({ depth: 2 })
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-
-    const pendingCandidate = fromAny<MissingMediaCandidate, unknown>({
-      nodeId: createNodeExecutionId([outerHost.id]),
-      nodeType: 'LoadImage',
-      widgetName: 'outer_image',
-      mediaType: 'image',
-      name: 'pending.png',
-      isMissing: undefined
-    })
-    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
-    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockImplementation(
-      (_rootGraph, node) => (node === outerHost ? [pendingCandidate] : [])
-    )
-    let resolveVerification: (() => void) | undefined
-    const verification = new Promise<void>((resolve) => {
-      resolveVerification = resolve
-    })
-    const verifySpy = vi
-      .spyOn(missingMediaScan, 'verifyMediaCandidates')
-      .mockImplementation(async (candidates) => {
-        await verification
-        for (const candidate of candidates) candidate.isMissing = true
-      })
-
-    installErrorClearingHooks(rootGraph)
-    outerHost.mode = LGraphEventMode.ALWAYS
-    rootGraph.onTrigger?.({
-      type: 'node:property:changed',
-      nodeId: outerHost.id,
-      property: 'mode',
-      oldValue: LGraphEventMode.BYPASS,
-      newValue: LGraphEventMode.ALWAYS
-    })
-    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
-
-    if (!resolveVerification) throw new Error('Expected pending verification')
+    const { pendingCandidate, resolveVerification } =
+      await startPendingPromotedMediaVerification()
     resolveVerification()
 
     await vi.waitFor(() => {
@@ -1035,49 +1029,10 @@ describe('realtime verification staleness guards', () => {
   })
 
   it('skips verified media when its sole promoted consumer becomes bypassed', async () => {
-    const {
-      rootGraph,
-      hosts: [outerHost],
-      sourceNodes: [leafNode]
-    } = createPromotedMediaRuntime({ depth: 2 })
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-
-    const pendingCandidate = fromAny<MissingMediaCandidate, unknown>({
-      nodeId: createNodeExecutionId([outerHost.id]),
-      nodeType: 'LoadImage',
-      widgetName: 'outer_image',
-      mediaType: 'image',
-      name: 'pending.png',
-      isMissing: undefined
-    })
-    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
-    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockImplementation(
-      (_rootGraph, node) => (node === outerHost ? [pendingCandidate] : [])
-    )
-    let resolveVerification: (() => void) | undefined
-    const verification = new Promise<void>((resolve) => {
-      resolveVerification = resolve
-    })
-    const verifySpy = vi
-      .spyOn(missingMediaScan, 'verifyMediaCandidates')
-      .mockImplementation(async (candidates) => {
-        await verification
-        for (const candidate of candidates) candidate.isMissing = true
-      })
-
-    installErrorClearingHooks(rootGraph)
-    outerHost.mode = LGraphEventMode.ALWAYS
-    rootGraph.onTrigger?.({
-      type: 'node:property:changed',
-      nodeId: outerHost.id,
-      property: 'mode',
-      oldValue: LGraphEventMode.BYPASS,
-      newValue: LGraphEventMode.ALWAYS
-    })
-    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+    const { leafNode, resolveVerification } =
+      await startPendingPromotedMediaVerification()
 
     leafNode.mode = LGraphEventMode.BYPASS
-    if (!resolveVerification) throw new Error('Expected pending verification')
     resolveVerification()
     await new Promise((resolve) => setTimeout(resolve, 0))
 

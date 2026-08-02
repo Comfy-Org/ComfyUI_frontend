@@ -23,6 +23,7 @@ export async function selectVuePromotedMediaByTitle(
 
   const dropdown = new WidgetSelectDropdownFixture(widgetRow)
   await dropdown.selectOption(optionName)
+  await expect(dropdown.selection).toHaveText(optionName)
 }
 
 export async function setPromotedMediaHostOptionsAndValue(

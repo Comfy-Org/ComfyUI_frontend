@@ -29,7 +29,6 @@ export class WidgetSelectDropdownFixture {
     await expect(menu).toBeVisible()
     await menu.getByText(name, { exact: true }).click()
     await expect(menu).toBeHidden()
-    await expect(this.selection).toHaveText(name)
   }
 
   async searchAndSelectTop(popover: Locator, query: string): Promise<void> {
