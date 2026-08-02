@@ -48,7 +48,8 @@ export function nodeTypeValidForApp(type: string) {
 }
 
 export const useAppModeStore = defineStore('appMode', () => {
-  const { getCanvas } = useCanvasStore()
+  const canvasStore = useCanvasStore()
+  const { getCanvas } = canvasStore
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   const { mode, setMode, isAppMode, isBuilderMode, isSelectMode } = useAppMode()
@@ -223,7 +224,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   useEventListener(
-    () => app.rootGraph?.events,
+    () => (canvasStore.canvas ? app.rootGraph.events : undefined),
     'configured',
     resetSelectedToWorkflow
   )

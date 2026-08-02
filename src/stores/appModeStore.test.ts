@@ -56,9 +56,13 @@ vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
   resolveNode: mockResolveNode
 }))
 
+const mockCanvas = vi.hoisted(() => ({ current: {} as unknown }))
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    getCanvas: () => ({ read_only: false })
+    getCanvas: () => ({ read_only: false }),
+    get canvas() {
+      return mockCanvas.current
+    }
   })
 }))
 
@@ -157,6 +161,7 @@ describe('appModeStore', () => {
   let store: ReturnType<typeof useAppModeStore>
 
   beforeEach(() => {
+    mockCanvas.current = {}
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.mocked(app.rootGraph).extra = {}
     ChangeTracker.isLoadingGraph = false
@@ -433,6 +438,28 @@ describe('appModeStore', () => {
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
       expect(store.selectedOutputs).toEqual([toNodeId(1)])
+    })
+
+    it('does not bind the configured listener until the canvas is ready', async () => {
+      mockCanvas.current = null
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const inputs: [number, string][] = [[1, 'seed']]
+      useWorkflowStore().activeWorkflow = createWorkflowWithLinearData(
+        'app',
+        inputs,
+        [1]
+      )
+      const notReadyStore = useAppModeStore()
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? nodeWithWidgets(1, ['seed']) : undefined
+      )
+
+      ;(app.rootGraph.events as EventTarget).dispatchEvent(
+        new Event('configured')
+      )
+      await nextTick()
+
+      expect(notReadyStore.selectedInputs).toEqual([])
     })
 
     it('hasOutputs is false when all output nodes are deleted', () => {
