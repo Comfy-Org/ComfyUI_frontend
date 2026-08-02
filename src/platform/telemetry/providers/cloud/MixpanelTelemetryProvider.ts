@@ -126,7 +126,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
             })
           })
           .catch((error) => {
-            console.error('Failed to load Mixpanel:', error)
+            console.warn('Failed to load Mixpanel:', error)
             this.isEnabled = false
           })
       } catch (error) {

@@ -192,7 +192,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             })
           })
           .catch((error) => {
-            console.error('Failed to load PostHog:', error)
+            console.warn('Failed to load PostHog:', error)
             this.isEnabled = false
           })
       } catch (error) {

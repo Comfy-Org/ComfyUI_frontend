@@ -195,6 +195,27 @@ describe('CustomerIoTelemetryProvider', () => {
     expect(hoisted.analytics.page).toHaveBeenCalledTimes(2)
   })
 
+  it('warns without erroring and disables tracking when the client fails to load', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const loadError = new Error('blocked by ad-blocker')
+    hoisted.load.mockImplementation(() => {
+      throw loadError
+    })
+    const provider = createProvider()
+
+    await vi.dynamicImportSettled()
+
+    expect(consoleWarn).toHaveBeenCalledWith(
+      'Failed to load Customer.io:',
+      loadError
+    )
+    expect(consoleError).not.toHaveBeenCalled()
+
+    provider.trackWorkflowExecution()
+    expect(hoisted.analytics.track).not.toHaveBeenCalled()
+  })
+
   it('does not initialize without a write key', async () => {
     const provider = createProvider({ customer_io: { site_id: SITE_ID } })
     await vi.dynamicImportSettled()

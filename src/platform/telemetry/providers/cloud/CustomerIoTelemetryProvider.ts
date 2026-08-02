@@ -130,7 +130,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
           })
       })
       .catch((error) => {
-        console.error('Failed to load Customer.io:', error)
+        console.warn('Failed to load Customer.io:', error)
         this.isEnabled = false
         this.eventQueue = []
       })
