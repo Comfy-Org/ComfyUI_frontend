@@ -306,7 +306,7 @@ export const minimaxFaqs: readonly MiniMaxFaq[] = [
       'zh-CN': 'MiniMax H3 是什么？'
     },
     answer: {
-      en: "MiniMax's video model, available as open weights and through partner nodes. It takes text, image, or audio in and renders a clip with native stereo audio. On Comfy you direct it on the canvas alongside every other model.",
+      en: "MiniMax's video model, available as Open Weights and through Partner Nodes. It takes text, image, or audio in and renders a clip with native stereo audio. On Comfy you direct it on the canvas alongside every other model.",
       'zh-CN':
         'MiniMax 的视频模型，以开源权重形式提供，也可通过合作伙伴节点使用。它支持文本、图像或音频输入，并渲染出带原生立体声音频的片段。在 Comfy 上，你可以在画布上与其他模型一起执导它。'
     }
@@ -353,7 +353,7 @@ export const minimaxFaqs: readonly MiniMaxFaq[] = [
       'zh-CN': 'MiniMax H3 是开源权重吗？'
     },
     answer: {
-      en: 'Yes. H3 is available as open weights, so you can run it yourself, and through partner nodes on Comfy Cloud.',
+      en: 'Yes. H3 is available as Open Weights, so you can run it yourself, and through Partner Nodes on Comfy Cloud.',
       'zh-CN':
         '是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。'
     }

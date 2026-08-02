@@ -4933,7 +4933,7 @@ const translations = {
     'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
   },
   'minimax.meta.description': {
-    en: 'Run MiniMax H3 on Comfy: available as open weights and through partner nodes, multi-modal in/out, native stereo audio on every clip, up to 2K and 5–15s per generation. Draft free on Wan 2.2 and spend credits only on the final render.',
+    en: 'Run MiniMax H3 on Comfy: available as Open Weights and through Partner Nodes, multi-modal in/out, native stereo audio on every clip, up to 2K and 5–15s per generation. Draft free on Wan 2.2 and spend credits only on the final render.',
     'zh-CN':
       '在 Comfy 上运行 MiniMax H3：以开源权重形式提供，也可通过合作伙伴节点使用，多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
   },
@@ -4948,7 +4948,7 @@ const translations = {
     'zh-CN': 'MiniMax H3 已上线'
   },
   'minimax.hero.description': {
-    en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. H3 is available as open weights and through partner nodes.',
+    en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. H3 is available as Open Weights and through Partner Nodes.',
     'zh-CN':
       '完整的多模态输入/输出，每个片段都带原生立体声。最高 2K，每次生成 5 到 15 秒。H3 会真正以输入音频为条件进行生成，而其他模型往往覆盖或丢弃它。H3 以开源权重形式提供，也可通过合作伙伴节点使用。'
   },
@@ -4957,9 +4957,9 @@ const translations = {
     'zh-CN': '运行 MiniMax H3'
   },
   'minimax.hero.secondaryCta': { en: 'TRY WORKFLOWS', 'zh-CN': '试用工作流' },
-  'minimax.hero.tagOpenWeights': { en: 'Open weights', 'zh-CN': '开源权重' },
+  'minimax.hero.tagOpenWeights': { en: 'Open Weights', 'zh-CN': '开源权重' },
   'minimax.hero.tagPartnerNodes': {
-    en: 'Partner nodes',
+    en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
   },
   'minimax.hero.footnote': {
