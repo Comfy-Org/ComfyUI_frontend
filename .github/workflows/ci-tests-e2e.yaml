@@ -288,76 +288,18 @@ jobs:
           RECORD_VIDEO: 'true'
           SLOW_MO: '1000'
           NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
-          PLAYWRIGHT_JSON_OUTPUT_NAME: video-report.json
         run: |
           FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
-          pnpm exec playwright test --project=chromium --reporter=json $FILES
+          pnpm exec playwright test --project=chromium $FILES
 
-      - name: Build video manifest
-        if: ${{ !cancelled() && steps.detect.outputs.has-new-tests == 'true' && hashFiles('video-report.json') != '' }}
-        run: |
-          command -v tsx > /dev/null 2>&1 || npm install -g tsx
-          tsx ./scripts/cicd/extract-playwright-videos.ts video-report.json test-results > video-manifest.json
-          cat video-manifest.json
-
-      - name: Upload video artifacts
+      - name: Upload new-test report (with embedded video)
         if: ${{ !cancelled() && steps.detect.outputs.has-new-tests == 'true' }}
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-new-test-videos
-          path: |
-            test-results/
-            video-manifest.json
-          retention-days: 14
+          name: playwright-report-new-tests
+          path: ./playwright-report/
+          retention-days: 30
           if-no-files-found: warn
-
-  # Non-forked PRs only — see ci-tests-e2e-forks.yaml for the fork path.
-  deploy-and-comment-video:
-    needs: [playwright-video-new-tests]
-    runs-on: ubuntu-latest
-    concurrency:
-      group: pr-comment-${{ github.event.pull_request.number }}
-      cancel-in-progress: false
-    if: >-
-      ${{
-        !cancelled() &&
-        github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
-      }}
-    permissions:
-      pull-requests: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Download video artifacts
-        if: needs.playwright-video-new-tests.outputs.has-new-tests == 'true'
-        uses: actions/download-artifact@v7
-        with:
-          name: playwright-new-test-videos
-          path: video-artifacts
-          if-no-files-found: warn
-
-      - name: Deploy video(s) and generate section
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          TEST_RESULTS_DIR: video-artifacts/test-results
-          VIDEO_MANIFEST: video-artifacts/video-manifest.json
-          SUMMARY_FILE: video-section.md
-          BRANCH_NAME: ${{ github.head_ref }}
-        run: |
-          bash ./scripts/cicd/pr-video-deploy-and-comment.sh "$BRANCH_NAME"
-
-      - name: Read and upsert video section
-        if: ${{ !cancelled() }}
-        uses: ./.github/actions/read-and-upsert-comment-section
-        with:
-          pr-number: ${{ github.event.pull_request.number }}
-          section-name: video
-          section-file: video-section.md
-          token: ${{ github.token }}
 
   #### BEGIN Deployment and commenting (non-forked PRs only)
   # when using pull_request event, we have permission to comment directly
@@ -392,7 +334,8 @@ jobs:
 
   # Deploy and upsert final playwright section for non-forked PRs only
   deploy-and-comment:
-    needs: [changes, playwright-tests, merge-reports]
+    needs:
+      [changes, playwright-tests, merge-reports, playwright-video-new-tests]
     runs-on: ubuntu-latest
     concurrency:
       group: pr-comment-${{ github.event.pull_request.number }}

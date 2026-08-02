@@ -85,35 +85,3 @@ jobs:
           section-name: playwright
           section-file: playwright-section.md
           token: ${{ github.token }}
-
-      # No-op unless the PR added new spec files (see playwright-video-new-tests in ci-tests-e2e.yaml)
-      - name: Download new-test video artifacts (if any)
-        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed'
-        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
-        with:
-          run_id: ${{ github.event.workflow_run.id }}
-          name: playwright-new-test-videos
-          path: video-artifacts
-          if_no_artifact_found: warn
-
-      - name: Deploy new-test video(s) and generate section
-        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          TEST_RESULTS_DIR: video-artifacts/test-results
-          VIDEO_MANIFEST: video-artifacts/video-manifest.json
-          SUMMARY_FILE: video-section.md
-          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
-        run: |
-          chmod +x scripts/cicd/pr-video-deploy-and-comment.sh
-          ./scripts/cicd/pr-video-deploy-and-comment.sh "$BRANCH_NAME"
-
-      - name: Read and upsert video section
-        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed'
-        uses: ./.github/actions/read-and-upsert-comment-section
-        with:
-          pr-number: ${{ steps.pr.outputs.number }}
-          section-name: video
-          section-file: video-section.md
-          token: ${{ github.token }}
