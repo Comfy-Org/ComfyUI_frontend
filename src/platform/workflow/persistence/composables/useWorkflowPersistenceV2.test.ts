@@ -654,7 +654,11 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = { nodes: [] }
-    mocks.state.graphChangedHandler?.()
+    const graphChangedHandler = mocks.state.graphChangedHandler
+    if (!graphChangedHandler) {
+      throw new Error('Graph change handler was not registered')
+    }
+    graphChangedHandler()
 
     const mounted = mountedApps.pop()
     if (!mounted) throw new Error('Failed to find mounted persistence app')
