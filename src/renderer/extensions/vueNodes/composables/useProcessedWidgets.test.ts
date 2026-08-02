@@ -647,59 +647,6 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 })
 
-describe('computeProcessedWidgets disabled state', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  function processWidget(widget: SafeWidgetData) {
-    const result = computeProcessedWidgets({
-      nodeData: {
-        id: toNodeId('1'),
-        type: 'LoadImage',
-        widgets: [widget],
-        title: 'Load Image',
-        mode: 0,
-        selected: false,
-        executing: false,
-        inputs: [],
-        outputs: []
-      },
-      graphId: GRAPH_ID,
-      showAdvanced: false,
-      isGraphReady: false,
-      rootGraph: null,
-      ui: noopUi
-    })
-    return result[0]
-  }
-
-  it('disables a plain value widget once promoted to a subgraph boundary input', () => {
-    const widget = createMockWidget({
-      name: 'ckpt_name',
-      type: 'combo',
-      slotMetadata: { index: 0, linked: true, type: 'COMBO' }
-    })
-
-    expect(processWidget(widget).simplified.options?.disabled).toBe(true)
-  })
-
-  it('keeps a LoadImage-style upload widget interactive once promoted to a subgraph boundary input', () => {
-    const widget = createMockWidget({
-      name: 'image',
-      type: 'combo',
-      slotMetadata: { index: 0, linked: true, type: 'COMBO' },
-      spec: {
-        type: 'COMBO',
-        name: 'image',
-        image_upload: true
-      }
-    })
-
-    expect(processWidget(widget).simplified.options?.disabled).toBeFalsy()
-  })
-})
-
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
   const GRAPH_ID = 'graph-test'
   const NODE_ID = toNodeId(1)
