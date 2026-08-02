@@ -19,12 +19,15 @@ function makeTourState() {
     title: ref('Canvas title'),
     body: ref('Canvas body'),
     isLast: ref(false),
+    canGoBack: ref(true),
     primaryLabel: ref('Next'),
     skipLabel: ref('Skip'),
+    backLabel: ref('Back'),
     countedStepIdx: ref(0),
     countedStepsTotal: ref(0),
     waitingForTarget: ref(false),
     next: vi.fn(),
+    back: vi.fn(),
     skip: vi.fn()
   }
 }
@@ -32,11 +35,12 @@ function makeTourState() {
 // Stubbed so the suite covers only TourOverlay's branching and intent wiring.
 vi.mock('./TourSpotlight.vue', () => ({
   default: defineComponent({
-    emits: ['advance', 'skip'],
+    emits: ['advance', 'back', 'skip'],
     setup(_, { emit }) {
       return () =>
         h('div', { 'data-testid': 'spotlight' }, [
           h('button', { onClick: () => emit('advance') }, 'advance'),
+          h('button', { onClick: () => emit('back') }, 'back'),
           h('button', { onClick: () => emit('skip') }, 'skip')
         ])
     }
@@ -88,6 +92,9 @@ describe('TourOverlay', () => {
 
     await user.click(screen.getByRole('button', { name: 'advance' }))
     expect(s.next).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole('button', { name: 'back' }))
+    expect(s.back).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'skip' }))
     expect(s.skip).toHaveBeenCalledOnce()
