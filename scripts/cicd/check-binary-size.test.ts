@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 const SCRIPT = path.join(import.meta.dirname, 'check-binary-size.sh')
 const LIMIT = 1024
+const VALUE_OPTIONS = ['--base', '--head', '--max-bytes']
 
 // The script leans on git's binary classification and rename detection, both of
 // which a developer's global config can change. Keep fixtures hermetic.
@@ -209,16 +210,18 @@ describe('check-binary-size.sh', () => {
     expect(output).toContain('must be a non-negative integer')
   })
 
-  it.for([
-    { label: 'at the end of the arguments', args: ['--base'] },
-    { label: 'followed by another flag', args: ['--base', '--head'] }
-  ])('rejects an option with no value $label', ({ args }) => {
+  it.for(
+    VALUE_OPTIONS.flatMap((option) => [
+      { option, shape: 'at the end of the arguments', args: [option] },
+      { option, shape: 'followed by another flag', args: [option, '--base'] }
+    ])
+  )('rejects $option with no value $shape', ({ option, args }) => {
     const result = spawnSync('bash', [SCRIPT, ...args], {
       cwd: repo,
       encoding: 'utf8',
       env: { ...process.env, ...GIT_ENV }
     })
     expect(result.status).toBe(2)
-    expect(result.stderr).toContain('--base requires a value')
+    expect(result.stderr).toContain(`${option} requires a value`)
   })
 })
