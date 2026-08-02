@@ -51,17 +51,34 @@ const EMPTY_RESULT = (
   hasMore: false
 })
 
+interface ErrorBody {
+  message?: string
+  error?: string
+  code?: string
+}
+
+function isErrorBody(value: unknown): value is ErrorBody {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  const isStringOrAbsent = (v: unknown) =>
+    v === undefined || typeof v === 'string'
+  return (
+    isStringOrAbsent(record.message) &&
+    isStringOrAbsent(record.error) &&
+    isStringOrAbsent(record.code)
+  )
+}
+
 async function readErrorDetail(res: Response): Promise<string> {
   try {
     const text = await res.text()
     if (!text) return res.statusText
     try {
-      const body = JSON.parse(text) as {
-        message?: string
-        error?: string
-        code?: string
+      const body: unknown = JSON.parse(text)
+      if (isErrorBody(body)) {
+        return body.message ?? body.error ?? body.code ?? text.slice(0, 200)
       }
-      return body.message ?? body.error ?? body.code ?? text.slice(0, 200)
+      return text.slice(0, 200)
     } catch {
       return text.slice(0, 200)
     }
