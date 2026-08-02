@@ -21,12 +21,13 @@ import { useCommandStore } from '@/stores/commandStore'
 export const useFirstRunEntry = createSharedComposable(() => {
   const settingStore = useSettingStore()
   const gettingStartedVisible = ref(false)
+  const isDesktopWidth =
+    useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
   function isFirstRunCandidate(): boolean {
     if (!useFeatureFlags().flags.onboardingTourEnabled) return false
     if (!isCloud) return false
-    if (!useBreakpoints(breakpointsTailwind).greaterOrEqual('md').value)
-      return false
+    if (!isDesktopWidth.value) return false
     if (!useSubscription().isSubscriptionEnabled()) return false
     return useNewUserService().isNewUser() === true
   }
@@ -34,19 +35,34 @@ export const useFirstRunEntry = createSharedComposable(() => {
   /**
    * Candidacy is read once, here: a later breakpoint, flag or subscription
    * change must not unmount the screen out from under the user.
+   * Only a boot that opened a blank canvas can be onboarded over. `isNewUser()`
+   * cannot carry that alone — it reads `Comfy.TutorialCompleted`, which is
+   * exactly what a user predating the setting is missing.
    */
   async function handleStartupOutcome(outcome: StartupOutcome) {
-    if (outcome !== 'fresh') return
+    if (outcome === 'restored') return
+    if (settingStore.get('Comfy.TutorialCompleted')) return
+
+    if (outcome === 'url-intent') {
+      await markTutorialCompleted()
+      return
+    }
+
     if (isFirstRunCandidate()) {
       gettingStartedVisible.value = true
       return
     }
+
     await markTutorialCompleted()
     await useCommandStore().execute('Comfy.BrowseTemplates')
   }
 
-  function markTutorialCompleted() {
-    return settingStore.set('Comfy.TutorialCompleted', true)
+  async function markTutorialCompleted() {
+    try {
+      await settingStore.set('Comfy.TutorialCompleted', true)
+    } catch (error) {
+      console.error('Failed to persist Comfy.TutorialCompleted', error)
+    }
   }
 
   async function dismissGettingStarted() {

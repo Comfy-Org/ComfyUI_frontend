@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { CURATED_TEMPLATE_IDS } from './tutorialCards'
+import { CURATED_TEMPLATE_IDS, FALLBACK_TEMPLATE_IDS } from './tutorialCards'
 
 const mocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
@@ -15,7 +15,8 @@ const mocks = vi.hoisted(() => ({
   loadCatalog: vi.fn(),
   isLoaded: true,
   toastAdd: vi.fn(),
-  loadingTemplateId: { value: null as string | null }
+  loadingTemplateId: { value: null as string | null },
+  catalog: [] as { name: string }[]
 }))
 
 vi.mock('./firstRunEntry', () => ({
@@ -45,8 +46,12 @@ vi.mock(
       get isLoaded() {
         return mocks.isLoaded
       },
+      get enhancedTemplates() {
+        return mocks.catalog
+      },
       loadWorkflowTemplates: mocks.loadCatalog,
-      getTemplateByName: (name: string) => ({ name })
+      getTemplateByName: (name: string) =>
+        mocks.catalog.find((template) => template.name === name)
     })
   })
 )
@@ -72,6 +77,7 @@ describe('GettingStartedScreen', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     mocks.isLoaded = true
+    mocks.catalog = CURATED_TEMPLATE_IDS.map((name) => ({ name }))
     mocks.loadTemplate.mockResolvedValue(true)
     mocks.loadCatalog.mockResolvedValue(undefined)
     mocks.loadingTemplateId.value = null
@@ -110,6 +116,48 @@ describe('GettingStartedScreen', () => {
       mocks.loadTemplate,
       'a second template loading over the first leaves the tour on the wrong graph'
     ).not.toHaveBeenCalled()
+  })
+
+  describe('grid', () => {
+    it('fills from the catalog when no curated template survived a package skew', async () => {
+      mocks.catalog = [
+        { name: 'skew-a' },
+        { name: 'skew-b' },
+        { name: 'skew-c' },
+        { name: 'skew-d' },
+        { name: 'skew-e' }
+      ]
+
+      await renderScreen()
+
+      expect(
+        screen.getAllByTestId(/^getting-started-card-skew-/),
+        'A loaded catalog sharing none of the pinned ids must still fill the grid, not leave the user on empty space'
+      ).toHaveLength(CURATED_TEMPLATE_IDS.length)
+    })
+
+    it('keeps curated templates ahead of the ones it backfills', async () => {
+      mocks.catalog = [
+        { name: 'catalog-filler' },
+        { name: FALLBACK_TEMPLATE_IDS[0] },
+        { name: CURATED_TEMPLATE_IDS[1] }
+      ]
+
+      await renderScreen()
+
+      const ids = screen
+        .getAllByTestId(/^getting-started-card-/)
+        .map((card) => card.getAttribute('data-testid'))
+
+      expect(
+        ids,
+        'the curated pick is the one the grid was designed around, so it must not be pushed out of the grid by catalog order'
+      ).toEqual([
+        `getting-started-card-${CURATED_TEMPLATE_IDS[1]}`,
+        `getting-started-card-${FALLBACK_TEMPLATE_IDS[0]}`,
+        'getting-started-card-catalog-filler'
+      ])
+    })
   })
 
   describe('exits', () => {
