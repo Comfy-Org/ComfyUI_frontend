@@ -304,12 +304,6 @@ export class ComfyApp {
 
   canvas!: LGraphCanvas
   dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null = null
-  /**
-   * Nodes already placed by this drag-and-drop batch, tracked across every
-   * file type so later groups (e.g. audio) are spaced apart from earlier
-   * ones (e.g. images) instead of only from nodes of their own type.
-   */
-  private dropBatchNodes: LGraphNode[] = []
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
     // TODO: Fix possibly undefined reference
@@ -687,7 +681,7 @@ export class ComfyApp {
         const workspace = useWorkspaceStore()
         try {
           workspace.spinner = true
-          this.dropBatchNodes = []
+          const dropBatchNodes: LGraphNode[] = []
           const imageFiles = files.filter(hasImageType)
           const audioFiles = files.filter(hasAudioType)
           const videoFiles = files.filter(hasVideoType)
@@ -703,13 +697,19 @@ export class ComfyApp {
 
           if (hasMultipleMedia) {
             if (imageFiles.length > 0) {
-              await this.handleFileList(imageFiles)
+              dropBatchNodes.push(
+                ...(await this.handleFileList(imageFiles, dropBatchNodes))
+              )
             }
             if (audioFiles.length > 0) {
-              await this.handleAudioFileList(audioFiles)
+              dropBatchNodes.push(
+                ...(await this.handleAudioFileList(audioFiles, dropBatchNodes))
+              )
             }
             if (videoFiles.length > 0) {
-              await this.handleVideoFileList(videoFiles)
+              dropBatchNodes.push(
+                ...(await this.handleVideoFileList(videoFiles, dropBatchNodes))
+              )
             }
             for (const file of files.filter((f) => !isMediaFile(f))) {
               await this.handleFile(file, 'file_drop', handleFileOptions)
@@ -720,7 +720,7 @@ export class ComfyApp {
             }
           }
 
-          this.positionNodes(createdNodes, this.dropBatchNodes)
+          this.positionNodes(createdNodes, dropBatchNodes)
         } finally {
           workspace.spinner = false
         }
@@ -2104,49 +2104,58 @@ export class ComfyApp {
    * Loads multiple files, connects to a batch node, and selects them
    * @param {FileList} fileList
    */
-  async handleFileList(fileList: File[]) {
-    if (fileList.length === 0) return
-    if (!fileList[0].type.startsWith('image')) return
+  async handleFileList(
+    fileList: File[],
+    precedingNodes: LGraphNode[] = []
+  ): Promise<LGraphNode[]> {
+    if (fileList.length === 0) return []
+    if (!fileList[0].type.startsWith('image')) return []
 
     const imageNodes = await pasteImageNodes(this.canvas, fileList)
-    if (imageNodes.length === 0) return
+    if (imageNodes.length === 0) return []
 
     if (imageNodes.length > 1) {
       const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
-      if (!batchImagesNode) return
+      if (!batchImagesNode) return []
 
-      this.positionBatchNodes(imageNodes, batchImagesNode, this.dropBatchNodes)
+      this.positionBatchNodes(imageNodes, batchImagesNode, precedingNodes)
       this.canvas.selectItems([...imageNodes, batchImagesNode])
 
       imageNodes.forEach((imageNode, index) => {
         imageNode.connect(0, batchImagesNode, index)
       })
-      this.dropBatchNodes.push(...imageNodes, batchImagesNode)
-    } else {
-      if (this.dropBatchNodes.length > 0) {
-        this.positionNodes(imageNodes, this.dropBatchNodes)
-      }
-      this.canvas.selectItems(imageNodes)
-      this.dropBatchNodes.push(...imageNodes)
+      return [...imageNodes, batchImagesNode]
     }
+
+    if (precedingNodes.length > 0) {
+      this.positionNodes(imageNodes, precedingNodes)
+    }
+    this.canvas.selectItems(imageNodes)
+    return imageNodes
   }
 
-  async handleAudioFileList(fileList: File[]) {
+  async handleAudioFileList(
+    fileList: File[],
+    precedingNodes: LGraphNode[] = []
+  ): Promise<LGraphNode[]> {
     const audioNodes = await pasteAudioNodes(this.canvas, fileList)
-    if (audioNodes.length === 0) return
+    if (audioNodes.length === 0) return []
 
-    this.positionNodes(audioNodes, this.dropBatchNodes)
+    this.positionNodes(audioNodes, precedingNodes)
     this.canvas.selectItems(audioNodes)
-    this.dropBatchNodes.push(...audioNodes)
+    return audioNodes
   }
 
-  async handleVideoFileList(fileList: File[]) {
+  async handleVideoFileList(
+    fileList: File[],
+    precedingNodes: LGraphNode[] = []
+  ): Promise<LGraphNode[]> {
     const videoNodes = await pasteVideoNodes(this.canvas, fileList)
-    if (videoNodes.length === 0) return
+    if (videoNodes.length === 0) return []
 
-    this.positionNodes(videoNodes, this.dropBatchNodes)
+    this.positionNodes(videoNodes, precedingNodes)
     this.canvas.selectItems(videoNodes)
-    this.dropBatchNodes.push(...videoNodes)
+    return videoNodes
   }
 
   /**

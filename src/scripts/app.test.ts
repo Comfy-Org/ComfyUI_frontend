@@ -1019,10 +1019,13 @@ describe('ComfyApp', () => {
       ]
       const audioFiles = [createTestFile('c.mp3', 'audio/mpeg')]
 
-      // This mirrors the drop handler: the image batch is created first,
-      // then the audio batch is created from the same drop.
-      await app.handleFileList(imageFiles)
-      await app.handleAudioFileList(audioFiles)
+      const dropBatchNodes: LGraphNode[] = []
+      dropBatchNodes.push(
+        ...(await app.handleFileList(imageFiles, dropBatchNodes))
+      )
+      dropBatchNodes.push(
+        ...(await app.handleAudioFileList(audioFiles, dropBatchNodes))
+      )
 
       const allNodes = [imageNode1, imageNode2, batchNode, audioNode]
       for (let i = 0; i < allNodes.length; i++) {
@@ -1054,8 +1057,19 @@ describe('ComfyApp', () => {
       vi.mocked(pasteAudioNodes).mockResolvedValue([audioNode])
       vi.mocked(pasteImageNodes).mockResolvedValue([imageNode])
 
-      await app.handleAudioFileList([createTestFile('a.mp3', 'audio/mpeg')])
-      await app.handleFileList([createTestFile('b.png', 'image/png')])
+      const dropBatchNodes: LGraphNode[] = []
+      dropBatchNodes.push(
+        ...(await app.handleAudioFileList(
+          [createTestFile('a.mp3', 'audio/mpeg')],
+          dropBatchNodes
+        ))
+      )
+      dropBatchNodes.push(
+        ...(await app.handleFileList(
+          [createTestFile('b.png', 'image/png')],
+          dropBatchNodes
+        ))
+      )
 
       expect(createNode).not.toHaveBeenCalled()
       expect(boxesOverlap(imageNode, audioNode)).toBe(false)
