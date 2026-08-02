@@ -47,7 +47,6 @@
     </h3>
     <div
       v-if="loading"
-      aria-live="polite"
       class="absolute inset-0 flex items-center justify-center bg-base-background/70 backdrop-blur-md"
     >
       <Loader size="md" />

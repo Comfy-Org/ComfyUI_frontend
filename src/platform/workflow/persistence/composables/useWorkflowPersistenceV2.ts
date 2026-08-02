@@ -245,6 +245,8 @@ export function useWorkflowPersistenceV2() {
       if (!activeWorkflowKey) return
       // Flush any pending persistence from the previous workflow
       debouncedPersist.flush()
+      const activeWorkflow = workflowStore.activeWorkflow
+      if (activeWorkflow?.isTemporary && !activeWorkflow.isModified) return
       // Persist the new workflow immediately
       persistCurrentWorkflow()
     }
