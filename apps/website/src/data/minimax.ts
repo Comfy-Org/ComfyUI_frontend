@@ -79,15 +79,16 @@ export interface MiniMaxModel {
 // tier tag simply marks H3 as a premium model.
 export const minimaxModels: readonly MiniMaxModel[] = [
   {
-    id: 'ice-rider',
-    name: 'Ice canyon rider',
+    id: 'liquid-chrome',
+    name: 'Liquid chrome',
     tier: 'premium',
     note: { en: 'Text to video', 'zh-CN': '文本生成视频' },
     description: {
-      en: 'A lone rider crosses a glacial canyon in one continuous move, camera and native audio straight out of H3.',
-      'zh-CN': '骑手一镜到底穿越冰川峡谷，运镜与原生音频均由 H3 直接生成。'
+      en: 'A chrome fluid ripples under teal and amber light, a stress test for reflection and micro-detail.',
+      'zh-CN':
+        '青与琥珀光下的液态铬面泛起涟漪，是对反射与微观细节的一次压力测试。'
     },
-    imageSrc: media.iceRider,
+    imageSrc: media.fluid,
     logoSrc: '',
     logoAlt: 'MiniMax H3',
     href: externalLinks.workflows
@@ -121,16 +122,15 @@ export const minimaxModels: readonly MiniMaxModel[] = [
     href: externalLinks.workflows
   },
   {
-    id: 'liquid-chrome',
-    name: 'Liquid chrome',
+    id: 'ice-rider',
+    name: 'Ice canyon rider',
     tier: 'premium',
     note: { en: 'Text to video', 'zh-CN': '文本生成视频' },
     description: {
-      en: 'A chrome fluid ripples under teal and amber light, a stress test for reflection and micro-detail.',
-      'zh-CN':
-        '青与琥珀光下的液态铬面泛起涟漪，是对反射与微观细节的一次压力测试。'
+      en: 'A lone rider crosses a glacial canyon in one continuous move, camera and native audio straight out of H3.',
+      'zh-CN': '骑手一镜到底穿越冰川峡谷，运镜与原生音频均由 H3 直接生成。'
     },
-    imageSrc: media.fluid,
+    imageSrc: media.iceRider,
     logoSrc: '',
     logoAlt: 'MiniMax H3',
     href: externalLinks.workflows
