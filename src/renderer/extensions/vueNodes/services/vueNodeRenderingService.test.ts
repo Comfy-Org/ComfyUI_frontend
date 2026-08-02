@@ -127,7 +127,7 @@ describe('vueNodeRenderingService', () => {
     expect(service.getSnapshot().renderedNodeIds).toEqual(['1', '2', '3'])
   })
 
-  it('re-evaluates policies on invalidation and fails open on errors', () => {
+  it('re-evaluates policies on invalidation and runtime changes', () => {
     const service = createVueNodeRenderingService()
     service.updateRuntime(runtime())
     initializeAll(service)
@@ -145,6 +145,13 @@ describe('vueNodeRenderingService', () => {
     suppressed = ['2']
     policy.invalidate()
     expect(service.getSnapshot().suppressedNodeIds).toEqual(['2'])
+
+    suppressed = ['3']
+    service.updateRuntime({
+      ...runtime(),
+      visibleCanvasArea: [20, 10, 320, 240]
+    })
+    expect(service.getSnapshot().suppressedNodeIds).toEqual(['3'])
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining('broken'),
       error
@@ -175,6 +182,55 @@ describe('vueNodeRenderingService', () => {
     service.nodeMounted('1')
     await Promise.resolve()
     expect(listener).toHaveBeenCalledTimes(2)
+  })
+
+  it('reuses snapshot sections for viewport-only runtime updates', () => {
+    const service = createVueNodeRenderingService()
+    service.updateRuntime(runtime())
+    const previous = service.getSnapshot()
+    const listener = vi.fn()
+    service.subscribe(listener)
+    listener.mockClear()
+
+    service.updateRuntime({
+      ...runtime(),
+      visibleCanvasArea: [20, 10, 320, 240]
+    })
+
+    const next = service.getSnapshot()
+    expect(listener).toHaveBeenCalledOnce()
+    expect(next).not.toBe(previous)
+    expect(next.visibleCanvasArea).toEqual([20, 10, 320, 240])
+    expect(next.nodeIds).toBe(previous.nodeIds)
+    expect(next.renderAreas).toBe(previous.renderAreas)
+    expect(next.renderedNodeIds).toBe(previous.renderedNodeIds)
+    expect(next.suppressedNodeIds).toBe(previous.suppressedNodeIds)
+    expect(next.mountedNodeIds).toBe(previous.mountedNodeIds)
+    expect(next.initializedNodeIds).toBe(previous.initializedNodeIds)
+    expect(next.frontendRequiredNodeIds).toBe(previous.frontendRequiredNodeIds)
+    expect(next.contributionOwners).toBe(previous.contributionOwners)
+  })
+
+  it('ignores equivalent push controller updates', () => {
+    const service = createVueNodeRenderingService()
+    service.updateRuntime(runtime())
+    initializeAll(service)
+    const controller = service.createPushController('stable')
+    const listener = vi.fn()
+    service.subscribe(listener)
+
+    listener.mockClear()
+    controller.clear()
+    expect(listener).not.toHaveBeenCalled()
+
+    controller.update({ suppress: ['1', '2'], retain: ['3'] })
+    const previous = service.getSnapshot()
+    listener.mockClear()
+
+    controller.update({ suppress: ['2', '1', '2'], retain: ['3', '3'] })
+
+    expect(listener).not.toHaveBeenCalled()
+    expect(service.getSnapshot()).toBe(previous)
   })
 
   it('tracks mounted and initialized lifecycle independently', async () => {

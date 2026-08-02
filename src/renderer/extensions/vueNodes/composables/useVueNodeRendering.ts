@@ -33,13 +33,23 @@ interface FrameState {
   offsetY: number | undefined
   canvasWidth: number | undefined
   canvasHeight: number | undefined
+  draggingCanvas: boolean | undefined
   tail: readonly unknown[]
 }
+
+type FrameStateChange = 'runtime' | 'viewport' | false
 
 function nodeId(
   node: { id: string | number } | null | undefined
 ): string | undefined {
   return node ? String(node.id) : undefined
+}
+
+function areSameNodes(
+  a: readonly VueNodeData[],
+  b: readonly VueNodeData[]
+): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index])
 }
 
 function focusedNodeId(): string | undefined {
@@ -70,9 +80,11 @@ export function useVueNodeRendering({
   const snapshot = shallowRef<VueNodeRenderingSnapshot>(
     vueNodeRenderingService.getSnapshot()
   )
+  const renderedNodeIds = shallowRef(snapshot.value.renderedNodeIds)
 
   const unsubscribe = vueNodeRenderingService.subscribe((nextSnapshot) => {
     snapshot.value = nextSnapshot
+    renderedNodeIds.value = nextSnapshot.renderedNodeIds
   })
   let lastFrameState: FrameState | undefined
 
@@ -123,6 +135,7 @@ export function useVueNodeRendering({
       layoutStore.isDraggingVueNodes.value ||
       layoutStore.isResizingVueNodes.value ||
       activeCanvas?.isDragging ||
+      activeCanvas?.dragging_canvas ||
       activeCanvas?.resizingGroup
     )
 
@@ -155,6 +168,25 @@ export function useVueNodeRendering({
     lastFrameState = getFrameState(activeCanvas, focusedId)
   }
 
+  function refreshViewport(
+    activeCanvas: LGraphCanvas | null | undefined
+  ): void {
+    vueNodeRenderingService.updateViewport(visibleArea(activeCanvas))
+    const previousState = lastFrameState
+    if (!previousState) {
+      lastFrameState = getFrameState(activeCanvas, focusedNodeId())
+      return
+    }
+    lastFrameState = {
+      ...previousState,
+      scale: activeCanvas?.ds.scale,
+      offsetX: activeCanvas?.ds.offset[0],
+      offsetY: activeCanvas?.ds.offset[1],
+      canvasWidth: activeCanvas?.canvas.width,
+      canvasHeight: activeCanvas?.canvas.height
+    }
+  }
+
   function getFrameState(
     activeCanvas: LGraphCanvas | null | undefined,
     focusedId: string | undefined
@@ -165,6 +197,7 @@ export function useVueNodeRendering({
       offsetY: activeCanvas?.ds.offset[1],
       canvasWidth: activeCanvas?.canvas.width,
       canvasHeight: activeCanvas?.canvas.height,
+      draggingCanvas: activeCanvas?.dragging_canvas,
       tail: [
         activeCanvas?.isDragging,
         Boolean(activeCanvas?.resizingGroup),
@@ -180,26 +213,31 @@ export function useVueNodeRendering({
     }
   }
 
-  function frameStateChanged(
+  function getFrameStateChange(
     activeCanvas: LGraphCanvas | null | undefined
-  ): boolean {
+  ): FrameStateChange {
     const previousState = lastFrameState
     if (
       !previousState ||
+      activeCanvas?.dragging_canvas !== previousState.draggingCanvas
+    ) {
+      return 'runtime'
+    }
+    if (
       activeCanvas?.ds.scale !== previousState.scale ||
       activeCanvas?.ds.offset[0] !== previousState.offsetX ||
       activeCanvas?.ds.offset[1] !== previousState.offsetY ||
       activeCanvas?.canvas.width !== previousState.canvasWidth ||
       activeCanvas?.canvas.height !== previousState.canvasHeight
     ) {
-      return true
+      return 'viewport'
     }
 
     const nextState = getFrameState(activeCanvas, focusedNodeId())
-    return (
-      nextState.tail.length !== previousState.tail.length ||
+    return nextState.tail.length !== previousState.tail.length ||
       nextState.tail.some((value, index) => value !== previousState.tail[index])
-    )
+      ? 'runtime'
+      : false
   }
 
   function shouldTrackRuntime(
@@ -208,6 +246,8 @@ export function useVueNodeRendering({
     return Boolean(
       activeCanvas?.dirty_canvas ||
       activeCanvas?.dirty_bgcanvas ||
+      activeCanvas?.dragging_canvas ||
+      activeCanvas?.dragging_canvas !== lastFrameState?.draggingCanvas ||
       layoutStore.isDraggingVueNodes.value ||
       layoutStore.isResizingVueNodes.value ||
       activeCanvas?.isDragging ||
@@ -221,9 +261,12 @@ export function useVueNodeRendering({
     )
   }
 
-  const renderedNodes = computed(() => {
-    const renderedIds = new Set(snapshot.value.renderedNodeIds)
-    return toValue(allNodes).filter((node) => renderedIds.has(String(node.id)))
+  const renderedNodes = computed<VueNodeData[]>((previous) => {
+    const renderedIds = new Set(renderedNodeIds.value)
+    const next = toValue(allNodes).filter((node) =>
+      renderedIds.has(String(node.id))
+    )
+    return previous && areSameNodes(previous, next) ? previous : next
   })
 
   function onNodeMounted(id: VueNodeData['id']): void {
@@ -260,7 +303,9 @@ export function useVueNodeRendering({
     if (!toValue(enabled)) return
     const activeCanvas = toValue(canvas)
     if (!shouldTrackRuntime(activeCanvas)) return
-    if (frameStateChanged(activeCanvas)) refreshRuntime()
+    const stateChange = getFrameStateChange(activeCanvas)
+    if (stateChange === 'runtime') refreshRuntime()
+    else if (stateChange === 'viewport') refreshViewport(activeCanvas)
   })
 
   onScopeDispose(() => {

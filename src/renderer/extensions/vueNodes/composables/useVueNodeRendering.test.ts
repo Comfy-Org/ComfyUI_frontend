@@ -19,9 +19,13 @@ const raf = vi.hoisted(() => ({
   callback: undefined as (() => void) | undefined
 }))
 const renderingService = vi.hoisted(() => ({
+  listener: undefined as
+    | ((value: VueNodeRenderingSnapshot) => void)
+    | undefined,
   nodeMounted: vi.fn(),
   nodeUnmounted: vi.fn(),
   updateRuntime: vi.fn(),
+  updateViewport: vi.fn(),
   unsubscribe: vi.fn()
 }))
 const nodeOptions = vi.hoisted(() => ({ open: false }))
@@ -94,10 +98,12 @@ vi.mock(
     vueNodeRenderingService: {
       getSnapshot: () => snapshot,
       subscribe: (listener: (value: VueNodeRenderingSnapshot) => void) => {
+        renderingService.listener = listener
         listener(snapshot)
         return renderingService.unsubscribe
       },
       updateRuntime: renderingService.updateRuntime,
+      updateViewport: renderingService.updateViewport,
       nodeMounted: renderingService.nodeMounted,
       nodeUnmounted: renderingService.nodeUnmounted
     }
@@ -117,6 +123,7 @@ function createCanvas(): LGraphCanvas {
     canvas: { width: 100, height: 100 },
     dirty_canvas: false,
     dirty_bgcanvas: false,
+    dragging_canvas: false,
     isDragging: false,
     resizingGroup: null,
     node_capturing_input: null,
@@ -152,6 +159,7 @@ describe('useVueNodeRendering', () => {
     document.body.innerHTML = '<div data-node-id="1"><input /></div>'
     document.querySelector('input')?.focus()
     renderingService.updateRuntime.mockClear()
+    renderingService.updateViewport.mockClear()
     renderingService.unsubscribe.mockClear()
     renderingService.nodeMounted.mockClear()
     renderingService.nodeUnmounted.mockClear()
@@ -165,7 +173,7 @@ describe('useVueNodeRendering', () => {
     scope = undefined
   })
 
-  it('skips idle frame work and checks numeric state before focused DOM state', () => {
+  it('fast-paths viewport frames without checking focused DOM state', () => {
     const canvas = createCanvas()
     const node = createNode('1')
     scope = effectScope()
@@ -188,8 +196,44 @@ describe('useVueNodeRendering', () => {
     canvas.ds.scale = 2
     raf.callback?.()
 
-    expect(renderingService.updateRuntime).toHaveBeenCalledOnce()
-    expect(closestSpy).toHaveBeenCalledOnce()
+    expect(renderingService.updateRuntime).not.toHaveBeenCalled()
+    expect(renderingService.updateViewport).toHaveBeenCalledOnce()
+    expect(closestSpy).not.toHaveBeenCalled()
+  })
+
+  it('freezes rendering for the full canvas pan interaction', () => {
+    const canvas = createCanvas()
+    scope = effectScope()
+    scope.run(() => {
+      useVueNodeRendering({
+        allNodes: [createNode('1')],
+        canvas,
+        nodeManager: createNodeManager()
+      })
+    })
+    renderingService.updateRuntime.mockClear()
+
+    canvas.dragging_canvas = true
+    raf.callback?.()
+
+    expect(renderingService.updateRuntime).toHaveBeenLastCalledWith(
+      expect.objectContaining({ renderFrozen: true })
+    )
+
+    renderingService.updateRuntime.mockClear()
+    canvas.ds.offset[0] = 10
+    raf.callback?.()
+
+    expect(renderingService.updateRuntime).not.toHaveBeenCalled()
+    expect(renderingService.updateViewport).toHaveBeenCalledOnce()
+
+    canvas.dirty_canvas = false
+    canvas.dragging_canvas = false
+    raf.callback?.()
+
+    expect(renderingService.updateRuntime).toHaveBeenLastCalledWith(
+      expect.objectContaining({ renderFrozen: false })
+    )
   })
 
   it('filters rendered nodes, forwards lifecycle, and disposes runtime state', () => {
@@ -222,6 +266,44 @@ describe('useVueNodeRendering', () => {
       frontendRequiredNodeIds: [],
       renderFrozen: false
     })
+  })
+
+  it('preserves the rendered node list while membership is unchanged', () => {
+    scope = effectScope()
+    const rendering = scope.run(() =>
+      useVueNodeRendering({
+        allNodes: [createNode('1'), createNode('2')],
+        canvas: createCanvas(),
+        nodeManager: createNodeManager()
+      })
+    )
+    if (!rendering) throw new Error('Rendering scope did not start')
+    const initialNodes = rendering.renderedNodes.value
+
+    renderingService.listener?.(
+      Object.freeze({
+        ...snapshot,
+        visibleCanvasArea: Object.freeze([
+          10, 0, 100, 100
+        ] as const satisfies VueNodeRenderArea),
+        renderedNodeIds: Object.freeze(['1'])
+      })
+    )
+
+    expect(rendering.renderedNodes.value).toBe(initialNodes)
+
+    renderingService.listener?.(
+      Object.freeze({
+        ...snapshot,
+        renderedNodeIds: Object.freeze(['1', '2'])
+      })
+    )
+
+    expect(rendering.renderedNodes.value).not.toBe(initialNodes)
+    expect(rendering.renderedNodes.value.map((node) => node.id)).toEqual([
+      '1',
+      '2'
+    ])
   })
 
   it('skips runtime updates while disabled', () => {

@@ -48,12 +48,12 @@ function emptyContribution(): NormalizedContribution {
   }
 }
 
-function freezeArea(area: VueNodeRenderArea): VueNodeRenderArea {
+function freezeArea(
+  area: VueNodeRenderArea,
+  previous?: VueNodeRenderArea | null
+): VueNodeRenderArea {
+  if (previous && areAreasEqual(area, previous)) return previous
   return Object.freeze([area[0], area[1], area[2], area[3]])
-}
-
-function freezeIds(ids: Iterable<string>): readonly string[] {
-  return Object.freeze(Array.from(ids))
 }
 
 function normalizeIds(
@@ -82,6 +82,16 @@ function areArraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index])
 }
 
+function freezeIds(
+  ids: Iterable<string>,
+  previous?: readonly string[]
+): readonly string[] {
+  const next = Array.from(ids)
+  return previous && areArraysEqual(previous, next)
+    ? previous
+    : Object.freeze(next)
+}
+
 function areAreasEqual(
   a: VueNodeRenderArea | null,
   b: VueNodeRenderArea | null
@@ -104,8 +114,40 @@ function areRenderingNodesEqual(
   )
 }
 
+function areSnapshotRenderAreasEqual(
+  nodes: readonly RenderingNode[],
+  renderAreas: VueNodeRenderingSnapshot['renderAreas']
+): boolean {
+  return (
+    nodes.length === renderAreas.length &&
+    nodes.every(
+      (node, index) =>
+        node.id === renderAreas[index].id &&
+        areAreasEqual(node.renderArea, renderAreas[index].area)
+    )
+  )
+}
+
+function areSetsEqual<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): boolean {
+  if (a.size !== b.size) return false
+  for (const value of a) {
+    if (!b.has(value)) return false
+  }
+  return true
+}
+
+function areContributionsEqual(
+  a: NormalizedContribution,
+  b: NormalizedContribution
+): boolean {
+  return (
+    areSetsEqual(a.suppress, b.suppress) && areSetsEqual(a.retain, b.retain)
+  )
+}
+
 export function createVueNodeRenderingService(): VueNodeRenderingApi & {
   updateRuntime(state: RenderingRuntimeState): void
+  updateViewport(visibleCanvasArea: VueNodeRenderArea | null): void
   nodeMounted(id: string): void
   nodeUnmounted(id: string): void
 } {
@@ -134,7 +176,9 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
     return nodes.flatMap((node) => (ids.has(node.id) ? [node.id] : []))
   }
 
-  function createSnapshot(): VueNodeRenderingSnapshot {
+  function createSnapshot(
+    previous?: VueNodeRenderingSnapshot
+  ): VueNodeRenderingSnapshot {
     const suppressedIds = new Set(
       nodes
         .map((node) => node.id)
@@ -144,33 +188,58 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
     return Object.freeze({
       graphRevision,
       managerAvailable,
-      nodeIds: freezeIds(nodes.map((node) => node.id)),
-      renderAreas: Object.freeze(
-        nodes.map((node) =>
-          Object.freeze({
-            id: node.id,
-            area: freezeArea(node.renderArea)
-          })
-        )
+      nodeIds: freezeIds(
+        nodes.map((node) => node.id),
+        previous?.nodeIds
       ),
-      visibleCanvasArea: visibleCanvasArea
-        ? freezeArea(visibleCanvasArea)
-        : null,
-      renderedNodeIds: freezeIds(orderedSubset(renderedNodeIds)),
-      suppressedNodeIds: freezeIds(orderedSubset(suppressedIds)),
-      mountedNodeIds: freezeIds(orderedSubset(mountedNodeIds)),
-      initializedNodeIds: freezeIds(orderedSubset(initializedNodeIds)),
+      renderAreas:
+        previous && areSnapshotRenderAreasEqual(nodes, previous.renderAreas)
+          ? previous.renderAreas
+          : Object.freeze(
+              nodes.map((node) =>
+                Object.freeze({
+                  id: node.id,
+                  area: node.renderArea
+                })
+              )
+            ),
+      visibleCanvasArea,
+      renderedNodeIds: freezeIds(
+        orderedSubset(renderedNodeIds),
+        previous?.renderedNodeIds
+      ),
+      suppressedNodeIds: freezeIds(
+        orderedSubset(suppressedIds),
+        previous?.suppressedNodeIds
+      ),
+      mountedNodeIds: freezeIds(
+        orderedSubset(mountedNodeIds),
+        previous?.mountedNodeIds
+      ),
+      initializedNodeIds: freezeIds(
+        orderedSubset(initializedNodeIds),
+        previous?.initializedNodeIds
+      ),
       frontendRequiredNodeIds: freezeIds(
-        orderedSubset(new Set(frontendRequiredNodeIds))
+        orderedSubset(new Set(frontendRequiredNodeIds)),
+        previous?.frontendRequiredNodeIds
       ),
       renderFrozen,
-      contributionOwners: freezeIds(owners.keys())
+      contributionOwners: freezeIds(owners.keys(), previous?.contributionOwners)
     })
   }
 
-  function notify(): void {
-    snapshot = createSnapshot()
+  function publish(nextSnapshot: VueNodeRenderingSnapshot): void {
+    snapshot = nextSnapshot
     for (const listener of listeners) listener(snapshot)
+  }
+
+  function notify(): void {
+    publish(createSnapshot(snapshot))
+  }
+
+  function notifyViewportChanged(): void {
+    publish(Object.freeze({ ...snapshot, visibleCanvasArea }))
   }
 
   function pruneState(): void {
@@ -218,14 +287,17 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
   function applyContributions(): void {
     const desired = desiredRenderedNodeIds()
     if (!renderFrozen) {
-      renderedNodeIds = desired
+      if (!areSetsEqual(renderedNodeIds, desired)) renderedNodeIds = desired
       return
     }
 
     const knownIds = knownNodeIds()
-    renderedNodeIds = new Set(
+    const nextRenderedNodeIds = new Set(
       [...renderedNodeIds, ...desired].filter((id) => knownIds.has(id))
     )
+    if (!areSetsEqual(renderedNodeIds, nextRenderedNodeIds)) {
+      renderedNodeIds = nextRenderedNodeIds
+    }
   }
 
   function evaluatePolicies(): void {
@@ -294,23 +366,51 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
     recompute()
   }
 
+  function updateViewport(
+    nextVisibleCanvasArea: VueNodeRenderArea | null
+  ): void {
+    if (areAreasEqual(visibleCanvasArea, nextVisibleCanvasArea)) return
+    visibleCanvasArea = nextVisibleCanvasArea
+      ? freezeArea(nextVisibleCanvasArea, visibleCanvasArea)
+      : null
+    if (hasPolicyOwner() || mountRecomputeScheduled) recompute()
+    else notifyViewportChanged()
+  }
+
   function updateRuntime(state: RenderingRuntimeState): void {
     const graphChanged = graph !== state.graph
-    const nextNodes = state.nodes.map((node) => ({
-      id: node.id,
-      renderArea: freezeArea(node.renderArea)
-    }))
     const nextRequired = Array.from(
       new Set(state.frontendRequiredNodeIds.map(String))
+    )
+    const nodesChanged = !areRenderingNodesEqual(nodes, state.nodes)
+    const visibleCanvasAreaChanged = !areAreasEqual(
+      visibleCanvasArea,
+      state.visibleCanvasArea
+    )
+    const requiredNodeIdsChanged = !areArraysEqual(
+      frontendRequiredNodeIds,
+      nextRequired
     )
     const stateChanged =
       graphChanged ||
       managerAvailable !== state.managerAvailable ||
-      !areRenderingNodesEqual(nodes, nextNodes) ||
-      !areAreasEqual(visibleCanvasArea, state.visibleCanvasArea) ||
-      !areArraysEqual(frontendRequiredNodeIds, nextRequired) ||
+      nodesChanged ||
+      visibleCanvasAreaChanged ||
+      requiredNodeIdsChanged ||
       renderFrozen !== state.renderFrozen
     if (!stateChanged) return
+
+    if (
+      visibleCanvasAreaChanged &&
+      !graphChanged &&
+      managerAvailable === state.managerAvailable &&
+      !nodesChanged &&
+      !requiredNodeIdsChanged &&
+      renderFrozen === state.renderFrozen
+    ) {
+      updateViewport(state.visibleCanvasArea)
+      return
+    }
 
     if (graphChanged) {
       graph = state.graph
@@ -323,12 +423,22 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
       }
     }
     managerAvailable = state.managerAvailable
-    nodes = nextNodes
-    nodeIdSet = new Set(nodes.map((node) => node.id))
-    visibleCanvasArea = state.visibleCanvasArea
-      ? freezeArea(state.visibleCanvasArea)
-      : null
-    frontendRequiredNodeIds = nextRequired
+    if (nodesChanged) {
+      nodes = state.nodes.map((node, index) => ({
+        id: node.id,
+        renderArea: freezeArea(
+          node.renderArea,
+          nodes[index]?.id === node.id ? nodes[index].renderArea : undefined
+        )
+      }))
+      nodeIdSet = new Set(nodes.map((node) => node.id))
+    }
+    if (visibleCanvasAreaChanged) {
+      visibleCanvasArea = state.visibleCanvasArea
+        ? freezeArea(state.visibleCanvasArea, visibleCanvasArea)
+        : null
+    }
+    if (requiredNodeIdsChanged) frontendRequiredNodeIds = nextRequired
     renderFrozen = state.renderFrozen
     recompute()
   }
@@ -360,11 +470,21 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
     return Object.freeze({
       update(contribution: VueNodeRenderingContribution) {
         if (owners.get(ownerName) !== owner) return
-        owner.contribution = normalizeContribution(contribution, knownNodeIds())
+        const nextContribution = normalizeContribution(
+          contribution,
+          knownNodeIds()
+        )
+        if (areContributionsEqual(owner.contribution, nextContribution)) return
+        owner.contribution = nextContribution
         recompute()
       },
       clear() {
         if (owners.get(ownerName) !== owner) return
+        if (
+          owner.contribution.suppress.size === 0 &&
+          owner.contribution.retain.size === 0
+        )
+          return
         owner.contribution = emptyContribution()
         recompute()
       },
@@ -413,6 +533,7 @@ export function createVueNodeRenderingService(): VueNodeRenderingApi & {
     createPushController,
     createPolicyController,
     updateRuntime,
+    updateViewport,
     nodeMounted,
     nodeUnmounted
   })
