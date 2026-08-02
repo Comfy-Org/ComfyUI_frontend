@@ -6,7 +6,6 @@ import { ref, useTemplateRef } from 'vue'
 import type { Locale } from '../../i18n/translations'
 
 import NodeTag from '../../components/common/NodeTag.vue'
-import IconButton from '../../components/ui/icon-button/IconButton.vue'
 import { minimaxModels } from '../../data/minimax'
 import { t } from '../../i18n/translations'
 
@@ -43,7 +42,11 @@ const { stop } = useIntersectionObserver(
     <div
       class="mx-auto mt-16 grid max-w-7xl grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2"
     >
-      <article v-for="model in minimaxModels" :key="model.id">
+      <article
+        v-for="model in minimaxModels"
+        :key="model.id"
+        class="group/card relative"
+      >
         <div
           class="group rounded-4.5xl relative block aspect-19/10 overflow-hidden bg-black/40"
         >
@@ -111,17 +114,28 @@ const { stop } = useIntersectionObserver(
             </span>
           </div>
 
-          <IconButton
-            as="a"
+          <a
             :href="model.href"
             target="_blank"
             rel="noopener"
             :aria-label="model.name"
-            size="sm"
-            class="bg-primary-warm-gray hover:bg-primary-comfy-yellow rounded-xl text-primary-comfy-ink hover:text-primary-comfy-ink"
+            class="group/workflow-cta bg-primary-warm-gray hover:bg-primary-comfy-yellow md:group-hover/card:bg-primary-comfy-yellow inline-flex h-8 shrink-0 cursor-pointer items-center overflow-hidden rounded-xl text-sm font-bold tracking-wider text-primary-comfy-ink uppercase transition-all duration-500 after:absolute after:inset-0"
           >
-            <ChevronRight class="size-5" :stroke-width="2" />
-          </IconButton>
+            <span class="flex size-8 items-center justify-center">
+              <ChevronRight class="size-5" :stroke-width="2" />
+            </span>
+            <span
+              class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 md:group-hover/card:grid-cols-[1fr] md:group-hover/workflow-cta:grid-cols-[1fr]"
+            >
+              <span
+                class="flex h-8 items-center overflow-hidden whitespace-nowrap transition-[padding] duration-500 md:group-hover/card:pe-3 md:group-hover/workflow-cta:pe-3"
+              >
+                <span class="ppformula-text-center leading-none">
+                  {{ t('minimax.models.cardCta', locale) }}
+                </span>
+              </span>
+            </span>
+          </a>
         </div>
 
         <p class="mt-3 text-sm font-light text-primary-comfy-canvas">

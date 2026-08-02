@@ -4988,6 +4988,7 @@ const translations = {
     'zh-CN': 'MiniMax H3 动态演示'
   },
   'minimax.models.tagFree': { en: 'Free', 'zh-CN': '免费' },
+  'minimax.models.cardCta': { en: 'Try now', 'zh-CN': '立即试用' },
   'minimax.models.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
   'minimax.faq.heading': {
     en: 'Q&A',
