@@ -3,11 +3,18 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -138,5 +145,57 @@ describe('DomWidgets positioning', () => {
     drawFrame(canvas)
 
     expect(widgetState.visible).toBe(false)
+  })
+})
+
+describe('DomWidgets app mode round-trip', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('restores widget visibility after graph → app → graph without a draw frame', async () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+    const { setMode } = useAppMode()
+
+    const workflowStore = useWorkflowStore()
+    const workflow = new ComfyWorkflow({
+      path: 'workflows/test.json',
+      modified: Date.now(),
+      size: 1
+    })
+    workflow.activeMode = 'graph'
+    workflowStore.activeWorkflow = workflow as unknown as LoadedComfyWorkflow
+
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'host', [100, 200])
+    const widget = createWidget('round-trip-widget', node, 14)
+    domWidgetStore.registerWidget(widget)
+
+    const canvas = createCanvas(graph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    // Initial draw — widget is visible
+    drawFrame(canvas)
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)!
+    expect(widgetState.visible).toBe(true)
+
+    // Enter app mode — canvas is hidden via v-show so updateWidgets() stops running
+    setMode('app')
+    await nextTick()
+
+    // Simulate the stale state that builds up while the canvas is hidden
+    widgetState.visible = false
+
+    // Return to graph mode — the fix calls updateWidgets() immediately via whenever()
+    setMode('graph')
+    await nextTick()
+
+    // Without the fix, visible stays false because no draw frame has run yet
+    expect(widgetState.visible).toBe(true)
   })
 })
