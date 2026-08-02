@@ -8,6 +8,8 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 import { app } from '@/scripts/app'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 
 describe('useLitegraphService().getCanvasCenter', () => {
@@ -39,5 +41,32 @@ describe('useLitegraphService().getCanvasCenter', () => {
     const center = useLitegraphService().getCanvasCenter()
 
     expect(center).toEqual([110, 70])
+  })
+})
+
+describe('useLitegraphService().registerNodeDef', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('hides disabled nodes from LiteGraph discovery', async () => {
+    const nodeDef: ComfyNodeDef = {
+      name: 'DisabledTestNode',
+      display_name: 'Disabled Test Node',
+      category: 'test',
+      python_module: 'test',
+      description: '',
+      input: {},
+      output: [],
+      output_node: false,
+      disabled: {
+        reasons: [{ type: 'workspace_provider_disabled' }]
+      }
+    }
+
+    await useLitegraphService().registerNodeDef(nodeDef.name, nodeDef)
+
+    expect(LiteGraph.registered_node_types[nodeDef.name].skip_list).toBe(true)
+    LiteGraph.unregisterNodeType(nodeDef.name)
   })
 })

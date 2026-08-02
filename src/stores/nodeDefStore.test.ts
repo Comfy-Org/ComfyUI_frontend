@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
+import axios from 'axios'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -10,7 +11,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
@@ -246,6 +247,23 @@ describe('useNodeDefStore', () => {
       expect(store.visibleNodeDefs).toHaveLength(2)
     })
 
+    it('should hide disabled nodes', () => {
+      store.updateNodeDefs([
+        createMockNodeDef({ name: 'enabled' }),
+        createMockNodeDef({
+          name: 'disabled',
+          disabled: {
+            reasons: [{ type: 'workspace_provider_disabled' }]
+          }
+        })
+      ])
+
+      expect(store.visibleNodeDefs.map((node) => node.name)).toEqual([
+        'enabled'
+      ])
+      expect(store.nodeDefsByName.disabled.disabled).toBeDefined()
+    })
+
     it('should hide subgraph nodes by default', () => {
       const normalNode = createMockNodeDef({
         name: 'normal',
@@ -418,5 +436,27 @@ describe('useNodeDefStore', () => {
       // Each node (10) should be checked by each filter (5 test + 2 core = 7 total)
       expect(filterCallCount).toBe(10 * 5)
     })
+  })
+
+  it('excludes disabled nodes from frequent suggestions', async () => {
+    store.updateNodeDefs([
+      createMockNodeDef({ name: 'enabled' }),
+      createMockNodeDef({
+        name: 'disabled',
+        disabled: {
+          reasons: [{ type: 'workspace_provider_disabled' }]
+        }
+      })
+    ])
+    vi.spyOn(axios, 'get').mockResolvedValue({
+      data: { disabled: 2, enabled: 1 }
+    })
+
+    const frequencyStore = useNodeFrequencyStore()
+    await frequencyStore.loadNodeFrequencies()
+
+    expect(frequencyStore.topNodeDefs.map((node) => node.name)).toEqual([
+      'enabled'
+    ])
   })
 })

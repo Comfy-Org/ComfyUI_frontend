@@ -19,6 +19,7 @@ import type {
   ComfyInputsSpec as ComfyInputSpecV1,
   ComfyNodeDef as ComfyNodeDefV1,
   ComfyOutputTypesSpec as ComfyOutputSpecV1,
+  NodeDisabled,
   PriceBadge
 } from '@/schemas/nodeDefSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -49,6 +50,7 @@ export class ComfyNodeDefImpl
   readonly deprecated: boolean
   readonly experimental: boolean
   readonly dev_only: boolean
+  readonly disabled?: NodeDisabled
   readonly output_node: boolean
   readonly api_node: boolean
   /**
@@ -377,8 +379,10 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   })
 
   const visibleNodeDefs = computed(() => {
-    return nodeDefs.value.filter((nodeDef) =>
-      nodeDefFilters.value.every((filter) => filter.predicate(nodeDef))
+    return nodeDefs.value.filter(
+      (nodeDef) =>
+        nodeDefFilters.value.every((filter) => filter.predicate(nodeDef)) &&
+        nodeDef.disabled === undefined
     )
   })
   const nodeSearchService = computed(
@@ -560,9 +564,15 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
 
   const nodeDefStore = useNodeDefStore()
   const topNodeDefs = computed<ComfyNodeDefImpl[]>(() => {
+    const visibleNodeNames = new Set(
+      nodeDefStore.visibleNodeDefs.map((nodeDef) => nodeDef.name)
+    )
     return nodeNamesByFrequency.value
       .map((nodeName: string) => nodeDefStore.nodeDefsByName[nodeName])
-      .filter((nodeDef: ComfyNodeDefImpl) => nodeDef !== undefined)
+      .filter(
+        (nodeDef): nodeDef is ComfyNodeDefImpl =>
+          nodeDef !== undefined && visibleNodeNames.has(nodeDef.name)
+      )
       .slice(0, topNodeDefLimit.value)
   })
 
