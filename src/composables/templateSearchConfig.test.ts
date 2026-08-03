@@ -7,6 +7,7 @@ import {
   expandAbbreviation,
   expandQuery,
   rankByRelevanceThenUsage,
+  searchRankBoost,
   searchTemplates,
   termFuzziness,
   tokenize
@@ -281,9 +282,39 @@ describe('searchTemplates', () => {
   })
 })
 
+describe('searchRankBoost', () => {
+  // Most of the catalog ships an explicit `"searchRank": 0` from tooling, so 0
+  // must mean the same thing as an absent field, not a demotion.
+  it('treats unset, zero and non-numeric ranks as the same neutral baseline', () => {
+    expect(searchRankBoost(undefined)).toBe(0)
+    expect(searchRankBoost(0)).toBe(0)
+    expect(searchRankBoost(Number.NaN)).toBe(0)
+  })
+
+  it('promotes on positive and demotes on negative, symmetrically', () => {
+    expect(searchRankBoost(8)).toBeGreaterThan(0)
+    expect(searchRankBoost(-8)).toBeCloseTo(-searchRankBoost(8), 10)
+  })
+
+  it('increases with rank but saturates so out-of-range values stay bounded', () => {
+    expect(searchRankBoost(1000)).toBeGreaterThan(searchRankBoost(8))
+    expect(searchRankBoost(1_000_000)).toBe(1)
+    expect(searchRankBoost(Number.MAX_SAFE_INTEGER)).toBe(1)
+    expect(searchRankBoost(-1_000_000)).toBe(-1)
+  })
+})
+
 describe('rankByRelevanceThenUsage', () => {
   const hit = (id: string, score: number, usage: number): SearchResult =>
     ({ id, score, usage }) as unknown as SearchResult
+
+  const curatedHit = (
+    id: string,
+    score: number,
+    usage: number,
+    searchRank: number
+  ): SearchResult =>
+    ({ id, score, usage, searchRank }) as unknown as SearchResult
 
   // Scores 0.93/0.965/1.0 with usages 100/50/1 form an intransitive cycle under
   // a pairwise relative-band compare (A>B, B>C, but A<C), which makes Array.sort
@@ -312,5 +343,46 @@ describe('rankByRelevanceThenUsage', () => {
     )
     // near (higher usage, same band as strong) leads; weak stays last on score.
     expect(ids).toEqual(['near', 'strong', 'weak'])
+  })
+
+  it('lets curation lift a near-equal match above a slightly better one', () => {
+    const best = hit('best', 1.0, 0)
+    const curated = curatedHit('curated', 0.94, 0, 1000)
+
+    expect(rankByRelevanceThenUsage([best, curated]).map((h) => h.id)).toEqual([
+      'curated',
+      'best'
+    ])
+  })
+
+  it('never lets curation drag a weak match over a strong one', () => {
+    const strong = hit('strong', 1.0, 0)
+    const weakButCurated = curatedHit('weak', 0.4, 0, 1_000_000)
+
+    expect(
+      rankByRelevanceThenUsage([weakButCurated, strong]).map((h) => h.id)
+    ).toEqual(['strong', 'weak'])
+  })
+
+  it('leaves ordering untouched when no hit is curated', () => {
+    const hits = [hit('a', 1.0, 5), hit('b', 0.5, 900), hit('c', 0.2, 1)]
+
+    expect(rankByRelevanceThenUsage(hits).map((h) => h.id)).toEqual([
+      'a',
+      'b',
+      'c'
+    ])
+  })
+
+  // A demoting zero would knock `zero` into a lower score bucket, so `unset`
+  // would win on score instead of losing on usage.
+  it('ranks an explicit zero the same as an absent searchRank', () => {
+    const zero = curatedHit('zero', 1.0, 900, 0)
+    const unset = hit('unset', 1.0, 1)
+
+    expect(rankByRelevanceThenUsage([unset, zero]).map((h) => h.id)).toEqual([
+      'zero',
+      'unset'
+    ])
   })
 })

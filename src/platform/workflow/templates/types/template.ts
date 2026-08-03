@@ -40,8 +40,9 @@ export interface TemplateInfo {
    */
   requiresCustomNodes?: string[]
   /**
-   * Manual ranking boost/demotion for "Recommended" sort. Scale 1-10, default 5.
-   * Higher values promote the template, lower values demote it.
+   * Curator override applied to search relevance and the "Recommended" sort.
+   * Absent or 0 is neutral, positive promotes, negative demotes; magnitude
+   * saturates at 1000. See docs/TEMPLATE_RANKING.md.
    */
   searchRank?: number
   /**

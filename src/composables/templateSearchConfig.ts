@@ -18,6 +18,17 @@ const SEARCH_FIELDS = [
 // never overrides a clearly-better text match. 5% tuned empirically.
 const USAGE_TIEBREAK_BAND = 0.05
 
+// `searchRank` is the curator dial authored in workflow_templates, specified
+// there as "0-1000, higher = better" (docs/SPEC.md). Magnitude saturates on a
+// log curve so the values curators actually write — 8, 500, 1000, 1_000_000 —
+// all land inside the cap instead of swamping relevance.
+const SEARCH_RANK_SATURATION = 1000
+
+// How far curation may move a hit relative to its text relevance. ±30% is ~6
+// tiebreak bands: enough to lift a launch template over near-equal matches,
+// never enough to drag a weak match to the top.
+const SEARCH_RANK_RELEVANCE_WEIGHT = 0.3
+
 // Script-matched so spaced neighbors like Korean fall to the word tokenizer.
 const CJK = /[\p{scx=Han}\p{scx=Hiragana}\p{scx=Katakana}]/u
 const CJK_RUN = new RegExp(`${CJK.source}+`, 'gu')
@@ -137,8 +148,9 @@ export function createTemplateSearchIndex(
   const index = new MiniSearch<TemplateInfo>({
     idField: 'name',
     fields: [...SEARCH_FIELDS],
-    // Returned on each hit so the tiebreak can read usage without a second lookup.
-    storeFields: ['usage'],
+    // Returned on each hit so ranking can read usage and curation without a
+    // second lookup.
+    storeFields: ['usage', 'searchRank'],
     // Index the localized strings the card actually shows, so a match explains
     // a visible result.
     extractField: (template, field) => {
@@ -156,18 +168,47 @@ export function createTemplateSearchIndex(
   return index
 }
 
-// Rank by relevance, with usage breaking ties inside a score band. Scores are
-// bucketed so the ordering is a stable total order (a pairwise relative-band
-// compare is intransitive). log1p dampens heavy-tailed usage.
+/**
+ * Curator intent as a signed strength in [-1, 1]. Unset, `0` and non-numeric
+ * ranks are all the same neutral baseline — most of the catalog ships an
+ * explicit `"searchRank": 0` meaning "not curated", so 0 must not demote.
+ * Positive promotes, negative demotes, and magnitude saturates at the cap.
+ */
+export function searchRankBoost(searchRank: number | undefined): number {
+  if (!searchRank) return 0
+  const magnitude = Math.min(
+    1,
+    Math.log1p(Math.abs(searchRank)) / Math.log1p(SEARCH_RANK_SATURATION)
+  )
+  return Math.sign(searchRank) * magnitude
+}
+
+function searchRankMultiplier(searchRank: number | undefined): number {
+  return 1 + searchRankBoost(searchRank) * SEARCH_RANK_RELEVANCE_WEIGHT
+}
+
+// Rank by curated relevance, with usage breaking ties inside a score band.
+// Scores are bucketed so the ordering is a stable total order (a pairwise
+// relative-band compare is intransitive). log1p dampens heavy-tailed usage.
 export function rankByRelevanceThenUsage(hits: SearchResult[]): SearchResult[] {
+  const ranked = hits.map((hit) => ({
+    hit,
+    score: hit.score * searchRankMultiplier(Number(hit.searchRank ?? 0))
+  }))
   const bandSize =
-    hits.reduce((max, hit) => Math.max(max, hit.score), 0) * USAGE_TIEBREAK_BAND
+    ranked.reduce((max, entry) => Math.max(max, entry.score), 0) *
+    USAGE_TIEBREAK_BAND
   const bucket = (score: number) =>
     bandSize > 0 ? Math.round(score / bandSize) : 0
-  return [...hits].sort((a, b) => {
-    if (bucket(a.score) !== bucket(b.score)) return b.score - a.score
-    return Math.log1p(Number(b.usage ?? 0)) - Math.log1p(Number(a.usage ?? 0))
-  })
+  return ranked
+    .sort((a, b) => {
+      if (bucket(a.score) !== bucket(b.score)) return b.score - a.score
+      return (
+        Math.log1p(Number(b.hit.usage ?? 0)) -
+        Math.log1p(Number(a.hit.usage ?? 0))
+      )
+    })
+    .map((entry) => entry.hit)
 }
 
 /** Ordered template names for a query: literal matches first, then dedup'd expansion matches. */
