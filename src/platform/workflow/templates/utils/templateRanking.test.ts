@@ -16,14 +16,15 @@ describe('searchRankBoost', () => {
     expect(searchRankBoost(-8)).toBeCloseTo(-searchRankBoost(8), 10)
   })
 
-  // The retired 1-10 scale read 1-4 as "demote" and 5 as "neutral"; the starter
-  // templates still ship searchRank 3. Reading those as a promotion would
-  // invert the only intent their authors could have had.
-  it('ignores magnitudes left over from the retired 1-10 scale', () => {
-    for (const legacyRank of [1, 2, 3, 4, 5]) {
-      expect(searchRankBoost(legacyRank)).toBe(0)
+  // The dead zone exists because the retired 1-10 scale read 1-4 as "demote"
+  // and 5 as "neutral", and the starter templates still ship searchRank 3.
+  // Reading those as a promotion would invert their authors' only intent.
+  it('stays neutral inside the dead zone and engages just outside it', () => {
+    for (const insideDeadZone of [1, 2, 3, 4, 5, -1, -5]) {
+      expect(searchRankBoost(insideDeadZone)).toBe(0)
     }
     expect(searchRankBoost(6)).toBeGreaterThan(0)
+    expect(searchRankBoost(-6)).toBeLessThan(0)
   })
 
   it('increases with rank but saturates so out-of-range values stay bounded', () => {
