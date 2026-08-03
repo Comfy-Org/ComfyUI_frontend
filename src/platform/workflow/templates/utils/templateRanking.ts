@@ -1,12 +1,7 @@
-// `searchRank` is the curator dial authored in workflow_templates, specified
-// there as "0-1000, higher = better" (docs/SPEC.md). Magnitude saturates on a
-// log curve so the values curators actually write — 8, 500, 1000, 1_000_000 —
-// all land inside the cap instead of swamping whatever it is applied to.
+// Ceiling of the authored 0-1000 range (workflow_templates docs/SPEC.md).
 const SEARCH_RANK_SATURATION = 1000
 
-// The retired 1-10 scale used 1-4 to demote and 5 as neutral. Those magnitudes
-// are noise on a 0-1000 dial, so ignoring them honours both contracts: no
-// legacy value ever flips from demotion to promotion.
+// Spans the retired 1-10 scale's demote band; no legacy value flips to promote.
 const SEARCH_RANK_DEAD_ZONE = 5
 
 /**

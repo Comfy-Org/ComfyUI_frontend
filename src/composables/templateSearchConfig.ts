@@ -19,9 +19,8 @@ const SEARCH_FIELDS = [
 // never overrides a clearly-better text match. 5% tuned empirically.
 const USAGE_TIEBREAK_BAND = 0.05
 
-// How far curation may move a hit relative to its text relevance. ±30% is ~6
-// tiebreak bands: enough to lift a launch template over near-equal matches,
-// never enough to drag a weak match to the top.
+// ~6 tiebreak bands of headroom: enough to lift a near-equal match, never
+// enough to surface a weak one.
 const SEARCH_RANK_RELEVANCE_WEIGHT = 0.3
 
 // Script-matched so spaced neighbors like Korean fall to the word tokenizer.

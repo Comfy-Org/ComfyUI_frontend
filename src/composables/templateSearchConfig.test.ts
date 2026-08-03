@@ -293,10 +293,9 @@ describe('rankByRelevanceThenUsage', () => {
   ): SearchResult =>
     ({ id, score, usage, searchRank }) as unknown as SearchResult
 
-  // Scores 0.93/0.965/1.0 with usages 100/50/1 form an intransitive cycle under
-  // a pairwise relative-band compare (A>B, B>C, but A<C), which makes Array.sort
-  // input-order-dependent. Bucketing must give one stable order for any input.
   it('produces a stable order for an intransitive cluster', () => {
+    // These scores and usages cycle under a pairwise relative-band compare
+    // (A>B, B>C, but A<C), which makes Array.sort input-order-dependent.
     const a = hit('a', 0.93, 100)
     const b = hit('b', 0.965, 50)
     const c = hit('c', 1.0, 1)
@@ -304,10 +303,11 @@ describe('rankByRelevanceThenUsage', () => {
     const order = (hits: SearchResult[]) =>
       rankByRelevanceThenUsage(hits).map((h) => h.id)
 
+    const stable = 'an intransitive score cluster must resolve to one order'
     const expected = order([a, b, c])
-    expect(order([c, b, a])).toEqual(expected)
-    expect(order([b, a, c])).toEqual(expected)
-    expect(order([c, a, b])).toEqual(expected)
+    expect(order([c, b, a]), stable).toEqual(expected)
+    expect(order([b, a, c]), stable).toEqual(expected)
+    expect(order([c, a, b]), stable).toEqual(expected)
   })
 
   it('breaks ties within a band by usage but not across bands', () => {
@@ -318,8 +318,10 @@ describe('rankByRelevanceThenUsage', () => {
     const ids = rankByRelevanceThenUsage([weak, strong, nearStrong]).map(
       (h) => h.id
     )
-    // near (higher usage, same band as strong) leads; weak stays last on score.
-    expect(ids).toEqual(['near', 'strong', 'weak'])
+    expect(
+      ids,
+      "near leads on usage inside strong's band; weak stays last on score"
+    ).toEqual(['near', 'strong', 'weak'])
   })
 
   it('lets curation lift a near-equal match above a slightly better one', () => {
@@ -351,15 +353,13 @@ describe('rankByRelevanceThenUsage', () => {
     ])
   })
 
-  // A demoting zero would knock `zero` into a lower score bucket, so `unset`
-  // would win on score instead of losing on usage.
   it('ranks an explicit zero the same as an absent searchRank', () => {
     const zero = curatedHit('zero', 1.0, 900, 0)
     const unset = hit('unset', 1.0, 1)
 
-    expect(rankByRelevanceThenUsage([unset, zero]).map((h) => h.id)).toEqual([
-      'zero',
-      'unset'
-    ])
+    expect(
+      rankByRelevanceThenUsage([unset, zero]).map((h) => h.id),
+      'a demoting zero would drop `zero` a bucket and let `unset` win on score'
+    ).toEqual(['zero', 'unset'])
   })
 })
