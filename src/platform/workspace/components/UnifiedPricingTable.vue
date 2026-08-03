@@ -891,8 +891,13 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
 function handleSubscribeTeam() {
   if (isTeamButtonDisabled.value) return
   // Re-subscribe only when keeping the exact current plan; any other stop or
-  // cycle is a change.
-  if (isCancelled.value && isTeamCurrentPlanSelected.value) {
+  // cycle is a change. An ended subscription still reports its credit stop, so
+  // the stop alone is no proof there is a subscription left to resume.
+  if (
+    isTeamSubscribed.value &&
+    isCancelled.value &&
+    isTeamCurrentPlanSelected.value
+  ) {
     emit('resubscribe')
     return
   }

@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import enMessages from '@/locales/en/main.json'
+import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspaceApi'
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
 
 interface MockSubscription {
@@ -21,7 +22,7 @@ interface MockTeamStop {
 }
 
 const mockSubscription = ref<MockSubscription | null>(null)
-const mockSubscriptionStatus = ref<string | null>(null)
+const mockSubscriptionStatus = ref<BillingSubscriptionStatus | null>(null)
 const mockCurrentPlanSlug = ref<string | null>(null)
 const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
 const mockTeamFlag = ref(false)
@@ -124,7 +125,8 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     ).toBeTruthy()
   })
 
-  it('offers a fresh subscribe on the plan an ended subscription used to hold', () => {
+  it('offers a fresh subscribe on the plan an ended subscription used to hold', async () => {
+    const user = userEvent.setup()
     // An ended subscription still reports its tier and plan slug.
     mockSubscription.value = {
       tier: 'CREATOR',
@@ -133,13 +135,24 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     }
     mockSubscriptionStatus.value = 'ended'
 
-    renderComponent()
+    const { emitted } = renderComponent()
 
-    expect(
-      screen.getByRole('button', { name: 'Subscribe to Creator Yearly' })
-    ).toBeEnabled()
     expect(screen.queryByRole('button', { name: 'Current Plan' })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Change to/ })).toBeNull()
+
+    const cta = screen.getByRole('button', {
+      name: 'Subscribe to Creator Yearly'
+    })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    const [payload] = emitted().subscribe![0] as [
+      { tierKey: string; billingCycle: string }
+    ]
+    expect(payload).toMatchObject({
+      tierKey: 'creator',
+      billingCycle: 'yearly'
+    })
+    expect(emitted().resubscribe).toBeFalsy()
   })
 
   it('keeps personal tier cards actionable for the original owner of a team plan', () => {
