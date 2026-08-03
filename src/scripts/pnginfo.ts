@@ -180,11 +180,13 @@ interface LoraEntry {
   weight: number
 }
 
+type A1111ImportOutcome = 'imported' | 'not-a1111' | 'core-nodes-unavailable'
+
 export async function importA1111(
   graph: LGraph,
   parameters: string,
   beforeGraphClear?: () => void
-): Promise<'imported' | 'not-a1111' | 'core-nodes-unavailable'> {
+): Promise<A1111ImportOutcome> {
   const p = parameters.lastIndexOf('\nSteps:')
   if (p > -1) {
     const embeddings = await api.getEmbeddings()

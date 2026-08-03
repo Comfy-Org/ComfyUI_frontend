@@ -39,6 +39,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { importA1111 } from './pnginfo'
 
 const {
   mockApiKeyAuthStore,
@@ -77,14 +78,7 @@ const {
     activeWorkflow: null as ComfyWorkflow | null
   },
   mockRefreshMissingModelPipeline: vi.fn(),
-  mockImportA1111:
-    vi.fn<
-      (
-        graph: unknown,
-        parameters: string,
-        beforeGraphClear?: () => void
-      ) => Promise<'imported' | 'not-a1111' | 'core-nodes-unavailable'>
-    >(),
+  mockImportA1111: vi.fn<typeof importA1111>(),
   mockWorkflowService: {
     beforeLoadNewGraph: vi.fn(),
     afterLoadNewGraph: vi.fn<(...args: unknown[]) => Promise<void>>(),
