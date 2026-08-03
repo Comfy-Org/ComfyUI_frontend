@@ -643,6 +643,11 @@ watch(searchQuery, (value) => {
  * @param source The origin of the change ('nav' or 'sort').
  */
 const coordinateNavAndSort = (source: 'nav' | 'sort') => {
+  // The nav/sort mirror is a browse concern. While a query is active the sort is
+  // ephemeral and the nav is only a scope filter, so coupling them would reset
+  // the search sort every time the category changed.
+  if (hasActiveQuery.value) return
+
   const isPopularNav = selectedNavItem.value === 'popular'
   const isPopularSort = sortSelection.value === 'popular'
 

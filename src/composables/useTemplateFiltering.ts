@@ -26,6 +26,10 @@ type TemplateBrowseSort =
 
 export type TemplateSortMode = TemplateBrowseSort | 'relevance'
 
+// Sort applied when a query becomes active, before the user picks one. Flip to
+// 'relevance' to rank by text match instead of raw usage.
+const SEARCH_DEFAULT_SORT: TemplateSortMode = 'popular'
+
 /** The title shown on the card, trimmed for stable sorting. */
 function displayTitle(template: TemplateInfo): string {
   return (
@@ -168,9 +172,9 @@ export function useTemplateFiltering<T extends TemplateInfo>(
   )
 
   const hasActiveQuery = computed(() => searchQuery.value.trim().length > 0)
-  const searchSort = ref<TemplateSortMode>('relevance')
+  const searchSort = ref<TemplateSortMode>(SEARCH_DEFAULT_SORT)
   watch(hasActiveQuery, (searching) => {
-    if (searching) searchSort.value = 'relevance'
+    if (searching) searchSort.value = SEARCH_DEFAULT_SORT
   })
   const activeSort = computed(() =>
     hasActiveQuery.value ? searchSort.value : sortBy.value
