@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -14,16 +14,14 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { seedMediaNodeDefs } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import {
+  createMissingMediaCandidate,
+  seedMediaNodeDefs
+} from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { app } from '@/scripts/app'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
-
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => ({ workflow: { activeWorkflow: null } })
-}))
 
 describe('link ownership error surface', () => {
   beforeEach(() => {
@@ -55,16 +53,7 @@ describe('link ownership error surface', () => {
     installErrorClearingHooks(graph)
 
     const mediaStore = useMissingMediaStore()
-    mediaStore.setMissingMedia([
-      fromAny<MissingMediaCandidate, unknown>({
-        nodeId: String(node.id),
-        nodeType: 'LoadImage',
-        widgetName: 'image',
-        mediaType: 'image',
-        name: 'missing.png',
-        isMissing: true
-      })
-    ])
+    mediaStore.setMissingMedia([createMissingMediaCandidate([Number(node.id)])])
 
     const link = upstream.connect(0, node, 0)
     if (!link) throw new Error('Expected media input link')
@@ -95,14 +84,7 @@ describe('promotion listener lifecycle', () => {
   function seedStaleCandidate() {
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([
-      fromAny<MissingMediaCandidate, unknown>({
-        nodeId: '999',
-        nodeType: 'LoadImage',
-        widgetName: 'image',
-        mediaType: 'image',
-        name: 'stale.png',
-        isMissing: true
-      })
+      createMissingMediaCandidate([999], { name: 'stale.png' })
     ])
     return mediaStore
   }
@@ -130,12 +112,34 @@ describe('promotion listener lifecycle', () => {
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {
-      widget: fromAny<IBaseWidget, unknown>({ name: 'image' }),
+      widget: fromPartial<IBaseWidget>({ name: 'image' }),
       subgraphNode: host
     })
 
     // The reconcile is deferred a microtask, so give it a turn to prove it
     // never arrives rather than reading the store before it could have run.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(mediaStore.missingMediaCandidates).not.toBeNull()
+  })
+
+  it('stops reconciling after the node manager replays onNodeAdded for existing hosts', async () => {
+    const {
+      subgraph,
+      rootGraph,
+      hosts: [host]
+    } = createSharedDefinitionGraph([65])
+    installErrorClearingHooks(rootGraph)
+    // useGraphNodeManager chains onNodeAdded and replays it for every node
+    // already in the graph, so hosts counted at install time arrive again.
+    rootGraph.onNodeAdded?.(host)
+    rootGraph.remove(host)
+
+    const mediaStore = seedStaleCandidate()
+    subgraph.events.dispatch('widget-promoted', {
+      widget: fromPartial<IBaseWidget>({ name: 'image' }),
+      subgraphNode: host
+    })
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(mediaStore.missingMediaCandidates).not.toBeNull()
@@ -152,7 +156,7 @@ describe('promotion listener lifecycle', () => {
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {
-      widget: fromAny<IBaseWidget, unknown>({ name: 'image' }),
+      widget: fromPartial<IBaseWidget>({ name: 'image' }),
       subgraphNode: second
     })
 
@@ -197,14 +201,7 @@ describe('promoted widget promotion error surface moves with ownership', () => {
 
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([
-      fromAny<MissingMediaCandidate, unknown>({
-        nodeId: createNodeExecutionId([host.id, leafNode.id]),
-        nodeType: 'LoadImage',
-        widgetName: 'image',
-        mediaType: 'image',
-        name: 'missing.png',
-        isMissing: true
-      })
+      createMissingMediaCandidate([Number(host.id), Number(leafNode.id)])
     ])
 
     expect(
@@ -231,13 +228,8 @@ describe('promoted widget promotion error surface moves with ownership', () => {
 
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([
-      fromAny<MissingMediaCandidate, unknown>({
-        nodeId: createNodeExecutionId([host.id]),
-        nodeType: 'LoadImage',
-        widgetName: host.widgets[0].name,
-        mediaType: 'image',
-        name: 'missing.png',
-        isMissing: true
+      createMissingMediaCandidate([Number(host.id)], {
+        widgetName: host.widgets[0].name
       })
     ])
 
@@ -291,13 +283,8 @@ describe('promoted widget demotion error clearing', () => {
 
     const mediaStore = useMissingMediaStore()
     const candidates = [
-      fromAny<MissingMediaCandidate, unknown>({
-        nodeId: createNodeExecutionId([host.id]),
-        nodeType: 'LoadImage',
-        widgetName: host.widgets[0].name,
-        mediaType: 'image',
-        name: 'missing.png',
-        isMissing: true
+      createMissingMediaCandidate([Number(host.id)], {
+        widgetName: host.widgets[0].name
       })
     ]
     mediaStore.setMissingMedia(candidates)

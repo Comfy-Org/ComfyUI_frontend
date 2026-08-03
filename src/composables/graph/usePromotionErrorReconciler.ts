@@ -51,6 +51,10 @@ export function createPromotionErrorReconciler({
   removeHostWidgetCandidate
 }: PromotionErrorReconcilerHandlers): PromotionErrorReconciler {
   const subscriptions = new Map<Subgraph, Subscription>()
+  // useGraphNodeManager chains onNodeAdded and replays it for every node
+  // already in the graph, so the same host arrives twice. Count hosts, not
+  // arrivals, or the definition never drops to zero and is never released.
+  const attachedHosts = new WeakSet<LGraphNode>()
 
   // Ownership has not settled when the event fires, so reconcile on the next
   // microtask: the side that lost it fails the scope check and is dropped, the
@@ -113,11 +117,16 @@ export function createPromotionErrorReconciler({
   }
 
   const attachNode = (node: LGraphNode): void => {
-    if (node.isSubgraphNode?.()) attach(node.subgraph)
+    if (!node.isSubgraphNode?.()) return
+    if (attachedHosts.has(node)) return
+    attachedHosts.add(node)
+    attach(node.subgraph)
   }
 
   const detachNode = (node: LGraphNode): void => {
-    if (node.isSubgraphNode?.()) detach(node.subgraph)
+    if (!node.isSubgraphNode?.()) return
+    if (!attachedHosts.delete(node)) return
+    detach(node.subgraph)
   }
 
   const dispose = (): void => {
