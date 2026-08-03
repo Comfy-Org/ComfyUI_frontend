@@ -200,3 +200,20 @@ export async function extractWorkflow(
 
   return validated ?? undefined
 }
+
+/**
+ * Extracts the API-format graph a job stores at: workflow.prompt
+ *
+ * Jobs submitted through the API embed no editor workflow, leaving the
+ * API-format prompt as the only graph they store. Returns undefined whenever
+ * an embedded workflow exists so those submissions are always used as-is,
+ * never re-derived. The prompt itself is returned unvalidated — callers gate
+ * it with `app.isApiJson` before loading it.
+ */
+export function extractApiPrompt(job: JobDetail | undefined): unknown {
+  const parsed = zWorkflowContainer.safeParse(job?.workflow)
+  if (!parsed.success) return undefined
+  if (parsed.data.extra_data?.extra_pnginfo?.workflow) return undefined
+
+  return parsed.data.prompt
+}

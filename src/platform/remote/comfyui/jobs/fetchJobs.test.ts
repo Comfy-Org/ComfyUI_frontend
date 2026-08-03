@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  extractApiPrompt,
   extractWorkflow,
   fetchHistory,
   fetchHistoryPage,
@@ -381,6 +382,71 @@ describe('fetchJobs', () => {
         expect.any(String)
       )
       consoleSpy.mockRestore()
+    })
+  })
+
+  describe('extractApiPrompt', () => {
+    const apiPrompt = {
+      '1': { class_type: 'KSampler', inputs: { seed: 1 } }
+    }
+
+    it('extracts the stored API graph when no workflow is embedded', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: { prompt: apiPrompt }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toEqual(apiPrompt)
+    })
+
+    it('returns undefined when a workflow is embedded', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: {
+          prompt: apiPrompt,
+          extra_data: {
+            extra_pnginfo: {
+              workflow: {
+                version: 0.4,
+                last_node_id: 1,
+                last_link_id: 0,
+                nodes: [],
+                links: []
+              }
+            }
+          }
+        }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toBeUndefined()
+    })
+
+    it('returns undefined when the job stores no prompt', () => {
+      const jobDetail = createMockJob('job1', 'completed')
+
+      expect(extractApiPrompt(jobDetail)).toBeUndefined()
+    })
+
+    it('returns undefined for undefined input', () => {
+      expect(extractApiPrompt(undefined)).toBeUndefined()
+    })
+
+    it('extracts the API graph when the job nulls out its workflow keys', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: {
+          prompt: apiPrompt,
+          extra_data: { extra_pnginfo: null }
+        }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toEqual(apiPrompt)
+      expect(
+        extractApiPrompt({
+          ...createMockJob('job2', 'completed'),
+          workflow: { prompt: apiPrompt, extra_data: null }
+        })
+      ).toEqual(apiPrompt)
     })
   })
 })
