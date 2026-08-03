@@ -572,11 +572,6 @@ onMounted(async () => {
   }
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
-  await useFirstRunEntry().handleUrlWorkflow(
-    startupOutcome,
-    urlTemplateId,
-    sharedStatus
-  )
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
@@ -593,6 +588,18 @@ onMounted(async () => {
   void releaseStore.initialize()
 
   emit('ready')
+
+  // The tour draws into an overlay that only mounts once `ready` has flushed.
+  await nextTick()
+  try {
+    await useFirstRunEntry().handleUrlWorkflow(
+      startupOutcome,
+      urlTemplateId,
+      sharedStatus
+    )
+  } catch (error) {
+    console.error('[GraphCanvas] Failed to offer the first-run tour:', error)
+  }
 })
 
 onUnmounted(() => {
