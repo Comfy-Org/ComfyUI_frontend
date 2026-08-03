@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createPromotedMediaRuntime,
   seedMediaNodeDefs
@@ -86,6 +87,23 @@ describe('scanNodeMediaCandidates — promoted host widgets', () => {
 })
 
 describe('scanAllMediaCandidates — promoted host widgets', () => {
+  it('reports nothing when the host input is itself fed from the parent graph', () => {
+    const {
+      rootGraph,
+      hosts: [host]
+    } = createPromotedMediaRuntime()
+
+    const upstream = new LGraphNode('ImageSource')
+    upstream.addOutput('image', 'COMBO')
+    rootGraph.add(upstream)
+    const link = upstream.connect(0, host, 0)
+    if (!link) throw new Error('Expected a link into the promoted host input')
+
+    // Upstream owns the value now, so neither the host nor the interior
+    // widget is editable and nothing should be reported.
+    expect(scanAllMediaCandidates(rootGraph, false)).toEqual([])
+  })
+
   it('treats a promoted value seeded from leaf options as present on its host', () => {
     const { rootGraph: graph } = createPromotedMediaRuntime({
       hostValue: 'leaf-option.png',
