@@ -4933,9 +4933,9 @@ const translations = {
     'zh-CN': 'MiniMax H3（Hailuo 3.0）— ComfyUI 开源权重视频模型'
   },
   'minimax.meta.description': {
-    en: 'Run MiniMax H3 (Hailuo 3.0) in ComfyUI: open-weights omni-modal video with native stereo audio, up to 2K, 5–15s clips. Text, image and reference to video.',
+    en: 'Run MiniMax H3 (Hailuo 3.0) in ComfyUI: open-weights omni-modal video with native stereo audio. Text-to-video, image-to-video and reference-to-video.',
     'zh-CN':
-      '在 ComfyUI 中运行 MiniMax H3（Hailuo 3.0）：开源权重全模态视频，原生立体声，最高 2K，5–15 秒，支持文生、图生与参考生视频。'
+      '在 ComfyUI 中运行 MiniMax H3（Hailuo 3.0）：开源权重全模态视频生成，原生立体声音频，支持文生视频、图生视频与参考生视频。'
   },
   'minimax.breadcrumb.model': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
   'minimax.breadcrumb.updated': {
