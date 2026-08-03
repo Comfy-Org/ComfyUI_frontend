@@ -99,15 +99,15 @@ export function scanNodeMediaCandidates(
     const input = node.getSlotFromWidget?.(widget)
     if (input?.link != null) continue
 
-    const source = resolvePromotedWidgetSource(rootGraph, node, widget)
-    const definitionNode = source?.sourceNode ?? node
-    const definitionWidgetName = source?.sourceWidgetName ?? widget.name
+    // getInputSpecForWidget projects a promoted host input to its interior
+    // spec itself, so the scan reads schema through the store rather than
+    // walking the subgraph.
     const mediaType = mediaTypeFromSpec(
-      nodeDefStore.getInputSpecForWidget(definitionNode, definitionWidgetName)
+      nodeDefStore.getInputSpecForWidget(node, widget.name)
     )
     if (!mediaType) continue
-    if (definitionNode.isUploading) continue
-    if (source && !hasActivePromotedWidgetConsumer(node, source.input.name)) {
+    if (node.isUploading) continue
+    if (input?.widgetId && !hasActivePromotedWidgetConsumer(node, input.name)) {
       continue
     }
 
@@ -131,9 +131,14 @@ export function scanNodeMediaCandidates(
       }
     }
 
+    // Label only, and leaf-derived to match missingModelScan: the overlay
+    // formats nodeType directly and a SubgraphNode's own type is a UUID.
+    const labelNode =
+      resolvePromotedWidgetSource(rootGraph, node, widget)?.sourceNode ?? node
+
     candidates.push({
       nodeId: executionId,
-      nodeType: definitionNode.type,
+      nodeType: labelNode.type,
       widgetName: widget.name,
       mediaType,
       name: value,
@@ -155,9 +160,12 @@ export function isMissingMediaCandidateScopeActive(
 
   const node = getNodeByExecutionId(rootGraph, executionId)
   if (!node) return false
-  const widget = node?.widgets?.find(
+  const widget = node.widgets?.find(
     (candidateWidget) => candidateWidget.name === candidate.widgetName
   )
+  // Removed or renamed while verification was pending: nothing owns the value.
+  if (!widget) return false
+
   const input = node.getSlotFromWidget?.(widget)
   if (input?.link != null) return false
   if (!node.isSubgraphNode()) return true

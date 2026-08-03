@@ -83,13 +83,23 @@ function installNodeHooks(node: LGraphNode): void {
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
     function (type, slotIndex, isConnected) {
-      if (type !== NodeSlotType.INPUT || !isConnected) return
+      if (type !== NodeSlotType.INPUT) return
       if (!app.rootGraph) return
       const slotName = node.inputs?.[slotIndex]?.name
       if (!slotName) return
       const execId = getExecutionIdByNode(app.rootGraph, node)
       if (!execId) return
-      useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
+      if (isConnected) {
+        useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
+      }
+      // Linking hands value ownership to the upstream node and unlinking hands
+      // it back, so the media error surface follows the same way it follows
+      // promotion.
+      queueMicrotask(() => {
+        if (!app.rootGraph) return
+        dropOutOfScopeMissingMedia()
+        if (!isConnected) scanSingleNodeMedia(node)
+      })
     }
   )
 

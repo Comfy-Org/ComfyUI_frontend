@@ -19,6 +19,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 import {
+  isMissingMediaCandidateScopeActive,
   scanAllMediaCandidates,
   scanNodeMediaCandidates,
   verifyMediaCandidates,
@@ -529,6 +530,43 @@ describe('scanNodeMediaCandidates', () => {
       name: 'photo.png[input]',
       isMissing: true
     })
+  })
+})
+
+describe('isMissingMediaCandidateScopeActive', () => {
+  function createLoadImageGraph() {
+    const graph = new LGraph()
+    const node = new LGraphNode('LoadImage')
+    node.type = 'LoadImage'
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      () => undefined,
+      { values: [] }
+    )
+    graph.add(node)
+    return { graph, node, widget }
+  }
+
+  it('drops a candidate whose widget was removed while verification was pending', () => {
+    const { graph, node, widget } = createLoadImageGraph()
+    const candidate = makeCandidate(String(node.id), 'missing.png')
+
+    expect.soft(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(true)
+
+    node.widgets = (node.widgets ?? []).filter((entry) => entry !== widget)
+
+    expect(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(false)
+  })
+
+  it('drops a candidate whose widget was renamed while verification was pending', () => {
+    const { graph, node, widget } = createLoadImageGraph()
+    const candidate = makeCandidate(String(node.id), 'missing.png')
+
+    widget.name = 'renamed'
+
+    expect(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(false)
   })
 })
 

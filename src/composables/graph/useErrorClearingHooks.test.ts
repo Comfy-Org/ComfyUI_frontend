@@ -545,6 +545,65 @@ describe('installErrorClearingHooks lifecycle', () => {
   })
 })
 
+describe('link ownership error surface', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    seedMediaNodeDefs()
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  it('drops the candidate when the media input becomes link-fed and restores it when unlinked', async () => {
+    const graph = new LGraph()
+    const upstream = new LGraphNode('ImageSource')
+    upstream.addOutput('image', 'COMBO')
+    graph.add(upstream)
+
+    const node = new LGraphNode('LoadImage')
+    node.type = 'LoadImage'
+    const input = node.addInput('image', 'COMBO')
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      () => undefined,
+      { values: [] }
+    )
+    input.widget = { name: widget.name }
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    installErrorClearingHooks(graph)
+
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      fromAny<MissingMediaCandidate, unknown>({
+        nodeId: String(node.id),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      })
+    ])
+
+    const link = upstream.connect(0, node, 0)
+    if (!link) throw new Error('Expected media input link')
+
+    await vi.waitFor(() => expect(mediaStore.missingMediaCandidates).toBeNull())
+
+    node.disconnectInput(0, true)
+
+    await vi.waitFor(() =>
+      expect(mediaStore.missingMediaCandidates).toEqual([
+        expect.objectContaining({
+          nodeId: String(node.id),
+          name: 'missing.png'
+        })
+      ])
+    )
+  })
+})
+
 describe('promoted widget promotion error surface moves with ownership', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -920,6 +979,9 @@ describe('realtime scan verifies pending cloud candidates', () => {
   it('un-bypass path surfaces pending media candidates after verification', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('LoadImage')
+    node.addWidget('combo', 'image', 'cloud_image.png', () => undefined, {
+      values: []
+    })
     graph.add(node)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
