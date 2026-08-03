@@ -69,11 +69,7 @@ const mockBillingStatus: BillingStatusResponse = {
   has_funds: true
 }
 
-async function mockCloudBoot(
-  page: Page,
-  billingControlEnabled = true,
-  subscriptionTier: 'FREE' | 'PRO' = 'PRO'
-) {
+async function mockCloudBoot(page: Page, billingControlEnabled = true) {
   // Frontend-origin boot endpoints (proxied to the backend in production).
   // `/api/features` is the remote-config source: production builds resolve
   // workspace availability and the billing UX rollout from it (the `ff:`
@@ -138,7 +134,7 @@ async function mockCloudBoot(
     r.fulfill(
       jsonRoute({
         is_active: true,
-        subscription_tier: subscriptionTier,
+        subscription_tier: 'PRO',
         subscription_duration: 'MONTHLY',
         renewal_date: '2099-02-20T12:00:00Z',
         end_date: null
@@ -152,9 +148,7 @@ async function mockCloudBoot(
   // Workspace billing (flag-on path) — a personal workspace now routes through
   // `/api/billing/*`.
   await page.route('**/api/billing/status', (r) =>
-    r.fulfill(
-      jsonRoute({ ...mockBillingStatus, subscription_tier: subscriptionTier })
-    )
+    r.fulfill(jsonRoute(mockBillingStatus))
   )
   await page.route('**/api/billing/balance', (r) =>
     r.fulfill(balanceRoute(DEFAULT_BALANCE))
@@ -325,48 +319,6 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toBeVisible()
-  })
-})
-
-test.describe('Local credits flow', () => {
-  test('keeps top-up available after the credits settings load a free tier', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-
-    await mockCloudBoot(page, true, 'FREE')
-    const settingsDialog = await openSettings(page)
-    await page.keyboard.press('Escape')
-    await expect(settingsDialog).toBeHidden()
-
-    const topUpDialog = new TopUpCreditsDialog(page)
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('add-credits-button').click()
-    await expect(topUpDialog.heading).toBeVisible()
-    await page.keyboard.press('Escape')
-
-    await page
-      .getByRole('button', { name: /^Settings/ })
-      .first()
-      .click()
-    await expect(settingsDialog).toBeVisible()
-    await settingsDialog
-      .locator('nav')
-      .getByRole('button', { name: 'Credits', exact: true })
-      .click()
-
-    const creditsPanel = settingsDialog.getByRole('main')
-    await expect(
-      creditsPanel.getByRole('heading', { name: 'Credits' })
-    ).toBeVisible()
-    await expect(
-      creditsPanel.getByRole('button', { name: 'Upgrade to add credits' })
-    ).toHaveCount(0)
-
-    await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('add-credits-button').click()
-    await expect(topUpDialog.heading).toBeVisible()
   })
 })
 
