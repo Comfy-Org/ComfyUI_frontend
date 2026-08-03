@@ -324,9 +324,9 @@ export const minimaxFaqs: readonly MiniMaxFaq[] = [
       'zh-CN': 'MiniMax H3 每次生成需要多少费用？'
     },
     answer: {
-      en: 'It runs on pay-as-you-go or subscription credits. You can draft the same shot free on Wan 2.2 first, and spend credits only on the final render.',
+      en: 'It runs on pay-as-you-go or subscription credits, with no watermark and commercial use included. You can also run the open weights locally instead of spending credits.',
       'zh-CN':
-        '它采用按量付费或订阅积分。你可以先在 Wan 2.2 上免费打样同一个镜头，只在最终渲染时消耗积分。'
+        '它采用按量付费或订阅积分，无水印，并包含商业使用授权。你也可以在本地运行开源权重，无需消耗积分。'
     }
   },
   {
