@@ -202,6 +202,7 @@ describe('useSettingUI', () => {
   it('hides the empty Workspace navigation group for logged-out Cloud users', () => {
     env.state.isCloud = true
     env.state.isLoggedIn = false
+    env.state.teamWorkspacesEnabled = true
 
     const { navGroups } = useSettingUI()
 
