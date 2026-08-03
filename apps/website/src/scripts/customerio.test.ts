@@ -23,12 +23,12 @@ vi.mock('@customerio/cdp-analytics-browser', () => {
   }
 })
 
-async function importComposable(writeKey: string) {
+async function importModule(writeKey: string) {
   vi.stubEnv('PUBLIC_CUSTOMERIO_WRITE_KEY', writeKey)
-  return import('./useDownloadLinkRequest')
+  return import('./customerio')
 }
 
-describe('useDownloadLinkRequest', () => {
+describe('customerio', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.resetModules()
@@ -36,12 +36,11 @@ describe('useDownloadLinkRequest', () => {
   })
 
   it('is disabled and never loads the SDK when the write key is empty', async () => {
-    const { useDownloadLinkRequest } = await importComposable('')
-    const { isEnabled, preload, submit } = useDownloadLinkRequest('en')
+    const { isDownloadLinkRequestEnabled, preloadDownloadLinkAnalytics } =
+      await importModule('')
 
-    expect(isEnabled).toBe(false)
-    preload()
-    await submit('someone@example.com')
+    expect(isDownloadLinkRequestEnabled).toBe(false)
+    preloadDownloadLinkAnalytics()
 
     expect(hoisted.sdkImported).not.toHaveBeenCalled()
     expect(hoisted.mockIdentify).not.toHaveBeenCalled()
@@ -49,11 +48,11 @@ describe('useDownloadLinkRequest', () => {
   })
 
   it('identifies by email then tracks download_link_requested with locale and page', async () => {
-    const { useDownloadLinkRequest } = await importComposable('test-key')
-    const { isEnabled, submit } = useDownloadLinkRequest('zh-CN')
+    const { isDownloadLinkRequestEnabled, requestDownloadLink } =
+      await importModule('test-key')
 
-    expect(isEnabled).toBe(true)
-    await submit('someone@example.com')
+    expect(isDownloadLinkRequestEnabled).toBe(true)
+    await requestDownloadLink('someone@example.com', 'zh-CN')
 
     expect(hoisted.mockLoad).toHaveBeenCalledWith({ writeKey: 'test-key' })
     expect(hoisted.mockIdentify).toHaveBeenCalledWith('someone@example.com', {
@@ -69,12 +68,12 @@ describe('useDownloadLinkRequest', () => {
   })
 
   it('loads the SDK once across preload and repeated submits', async () => {
-    const { useDownloadLinkRequest } = await importComposable('test-key')
-    const { preload, submit } = useDownloadLinkRequest('en')
+    const { preloadDownloadLinkAnalytics, requestDownloadLink } =
+      await importModule('test-key')
 
-    preload()
-    await submit('a@example.com')
-    await submit('b@example.com')
+    preloadDownloadLinkAnalytics()
+    await requestDownloadLink('a@example.com', 'en')
+    await requestDownloadLink('b@example.com', 'en')
 
     expect(hoisted.mockLoad).toHaveBeenCalledTimes(1)
     expect(hoisted.mockTrack).toHaveBeenCalledTimes(2)

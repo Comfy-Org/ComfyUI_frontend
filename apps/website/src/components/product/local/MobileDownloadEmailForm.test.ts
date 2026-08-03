@@ -12,12 +12,12 @@ const hoisted = vi.hoisted(() => ({
   mockSubmit: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock('../../../composables/useDownloadLinkRequest', () => ({
-  useDownloadLinkRequest: () => ({
-    isEnabled: hoisted.isEnabled,
-    preload: hoisted.mockPreload,
-    submit: hoisted.mockSubmit
-  })
+vi.mock('../../../scripts/customerio', () => ({
+  get isDownloadLinkRequestEnabled() {
+    return hoisted.isEnabled
+  },
+  preloadDownloadLinkAnalytics: hoisted.mockPreload,
+  requestDownloadLink: hoisted.mockSubmit
 }))
 
 vi.mock('../../../composables/useDownloadUrl', async () => {
@@ -156,7 +156,7 @@ describe('MobileDownloadEmailForm', () => {
       screen.getByRole('button', { name: /send download link/i })
     )
 
-    expect(hoisted.mockSubmit).toHaveBeenCalledWith('someone@example.com')
+    expect(hoisted.mockSubmit).toHaveBeenCalledWith('someone@example.com', 'en')
     expect(
       await screen.findByText(/check your email for the download link/i)
     ).toBeTruthy()

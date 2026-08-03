@@ -4,13 +4,16 @@ import { computed, onMounted, ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../../i18n/translations'
 
-import { useDownloadLinkRequest } from '../../../composables/useDownloadLinkRequest'
 import { useDownloadUrl } from '../../../composables/useDownloadUrl'
 import { t } from '../../../i18n/translations'
+import {
+  isDownloadLinkRequestEnabled,
+  preloadDownloadLinkAnalytics,
+  requestDownloadLink
+} from '../../../scripts/customerio'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const { isEnabled, preload, submit } = useDownloadLinkRequest(locale)
 const { isMobileUa } = useDownloadUrl()
 
 type FormStatus = 'idle' | 'invalid' | 'pending' | 'error' | 'success'
@@ -21,7 +24,9 @@ const email = ref('')
 const decoy = ref('')
 const status = ref<FormStatus>('idle')
 
-const isVisible = computed(() => isEnabled && isMobileUa.value)
+const isVisible = computed(
+  () => isDownloadLinkRequestEnabled && isMobileUa.value
+)
 
 const STATUS_MESSAGE_KEYS: Partial<Record<FormStatus, TranslationKey>> = {
   success: 'download.emailForm.success',
@@ -36,7 +41,7 @@ const statusMessage = computed(() => {
 
 // The component mounts on every client; only visible (mobile) forms may load the SDK.
 onMounted(() => {
-  if (isVisible.value) preload()
+  if (isVisible.value) preloadDownloadLinkAnalytics()
 })
 
 async function onSubmit() {
@@ -51,7 +56,7 @@ async function onSubmit() {
   }
   status.value = 'pending'
   try {
-    await submit(email.value)
+    await requestDownloadLink(email.value, locale)
     status.value = 'success'
   } catch {
     status.value = 'error'
