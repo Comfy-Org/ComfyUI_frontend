@@ -2,23 +2,40 @@
   <slot v-if="initializationState === 'ready'" />
   <div
     v-else-if="initializationState !== 'initializing'"
+    ref="errorPanel"
     class="flex size-full items-center justify-center bg-base-background p-8"
+    role="alert"
+    tabindex="-1"
   >
     <div class="flex max-w-md flex-col items-center gap-4 text-center">
-      <i class="icon-[lucide--triangle-alert] size-8 text-error" />
+      <i
+        aria-hidden="true"
+        class="icon-[lucide--triangle-alert] size-8 text-error"
+      />
       <div>
         <h1 class="m-0 text-lg font-semibold text-base-foreground">
           {{ $t('workspaceAuth.initializationFailed') }}
         </h1>
         <p class="mt-2 mb-0 text-muted-foreground">
-          {{ $t('workspaceAuth.initializationFailedDetail') }}
+          {{
+            $t(
+              initializationRetryable
+                ? 'workspaceAuth.initializationFailedDetail'
+                : 'workspaceAuth.initializationFailedSignOutDetail'
+            )
+          }}
         </p>
       </div>
       <Button
-        :loading="initializationState === 'retrying'"
+        v-if="initializationRetryable"
+        :aria-busy="initializationState === 'retrying'"
+        :disabled="initializationState === 'retrying'"
         @click="retryInitialization"
       >
         {{ $t('workspaceAuth.retry') }}
+      </Button>
+      <Button variant="secondary" @click="handleSignOut">
+        {{ $t('auth.signOut.signOut') }}
       </Button>
     </div>
   </div>
@@ -41,15 +58,18 @@
  * phase, so no separate loading indicator is needed here.
  */
 import { captureException } from '@sentry/vue'
-import { promiseTimeout, until } from '@vueuse/core'
+import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import {
+  remoteConfigErrorStatus,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -61,10 +81,19 @@ const CONFIG_REFRESH_TIMEOUT_MS = 10_000
 const initializationState = ref<
   'initializing' | 'retrying' | 'ready' | 'error'
 >(isCloud ? 'initializing' : 'ready')
+const initializationRetryable = ref(true)
+const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
 const subscriptionDialog = useSubscriptionDialog()
+let initializationGeneration = 0
+let initializationController: AbortController | null = null
 
 async function initialize(): Promise<void> {
   if (!isCloud) return
+
+  const generation = ++initializationGeneration
+  initializationController?.abort()
+  const controller = new AbortController()
+  initializationController = controller
 
   const authStore = useAuthStore()
   const { isInitialized, currentUser } = storeToRefs(authStore)
@@ -75,7 +104,8 @@ async function initialize(): Promise<void> {
     // but this gate blocks rendering while router guard blocks navigation
     if (!isInitialized.value) {
       await until(isInitialized).toBe(true, {
-        timeout: FIREBASE_INIT_TIMEOUT_MS
+        timeout: FIREBASE_INIT_TIMEOUT_MS,
+        throwOnTimeout: true
       })
     }
 
@@ -89,12 +119,17 @@ async function initialize(): Promise<void> {
     // Step 3: Refresh feature flags with auth context
     // This ensures teamWorkspacesEnabled reflects the authenticated user's state
     // Timeout prevents hanging if server is slow/unresponsive
+    let timeoutId: ReturnType<typeof setTimeout>
     await Promise.race([
-      refreshRemoteConfig({ useAuth: true }),
-      promiseTimeout(CONFIG_REFRESH_TIMEOUT_MS).then(() => {
-        throw new Error('Config refresh timeout')
+      refreshRemoteConfig({ useAuth: true, signal: controller.signal }),
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          controller.abort()
+          reject(new Error('Config refresh timeout'))
+        }, CONFIG_REFRESH_TIMEOUT_MS)
       })
-    ])
+    ]).finally(() => clearTimeout(timeoutId))
+    if (generation !== initializationGeneration) return
     if (remoteConfigState.value !== 'authenticated') {
       throw new Error('Failed to load authenticated remote config')
     }
@@ -133,22 +168,44 @@ async function initialize(): Promise<void> {
       subscriptionDialog.resumePendingPricingFlow()
     }
 
-    initializationState.value = 'ready'
+    if (generation === initializationGeneration) {
+      initializationState.value = 'ready'
+    }
   } catch (error) {
+    if (generation !== initializationGeneration) return
     console.error('[WorkspaceAuthGate] Initialization failed:', error)
     captureException(error, {
       tags: {
         error_type: 'workspace_auth_gate_initialization_failure'
       }
     })
+    initializationRetryable.value = isRetryableInitializationError(error)
     initializationState.value = 'error'
     document.getElementById('splash-loader')?.remove()
+    await nextTick()
+    errorPanel.value?.focus()
   }
+}
+
+function isRetryableInitializationError(error: unknown): boolean {
+  if (
+    remoteConfigErrorStatus.value === 401 ||
+    remoteConfigErrorStatus.value === 403
+  ) {
+    return false
+  }
+  return !(
+    error instanceof Error && error.message === 'No workspaces available'
+  )
 }
 
 async function retryInitialization(): Promise<void> {
   initializationState.value = 'retrying'
   await initialize()
+}
+
+async function handleSignOut(): Promise<void> {
+  await useAuthStore().logout()
 }
 
 async function initializeWorkspaceMode(): Promise<void> {

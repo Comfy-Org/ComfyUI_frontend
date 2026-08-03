@@ -32,6 +32,8 @@ type RemoteConfigState = 'unloaded' | 'anonymous' | 'authenticated' | 'error'
  */
 export const remoteConfigState = ref<RemoteConfigState>('unloaded')
 
+export const remoteConfigErrorStatus = ref<number | null>(null)
+
 /**
  * Whether the authenticated config has been loaded.
  * Use this to gate access to user-specific feature flags like teamWorkspacesEnabled.
