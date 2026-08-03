@@ -188,7 +188,7 @@
 
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
-        v-if="isFreeTier"
+        v-if="capabilities.showsSubscribeUpsellUI"
         variant="subscribe"
         size="lg"
         class="w-full font-normal"
@@ -228,6 +228,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useUserCapabilities } from '@/platform/cloud/subscription/composables/useUserCapabilities'
 import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
@@ -251,11 +252,11 @@ const {
   subscription,
   balance,
   isActiveSubscription,
-  isFreeTier,
   currentTeamCreditStop,
   fetchBalance,
   fetchStatus
 } = useBillingContext()
+const { capabilities } = useUserCapabilities()
 const {
   monthlyBonusCredits,
   prepaidCredits,

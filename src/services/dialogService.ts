@@ -13,6 +13,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useUserCapabilities } from '@/platform/cloud/subscription/composables/useUserCapabilities'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
@@ -333,8 +334,9 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription, isFreeTier, type } = useBillingContext()
-    if (!isActiveSubscription.value || isFreeTier.value) {
+    const { type } = useBillingContext()
+    const { capabilities } = useUserCapabilities()
+    if (!capabilities.value.canTopUpCredits) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'

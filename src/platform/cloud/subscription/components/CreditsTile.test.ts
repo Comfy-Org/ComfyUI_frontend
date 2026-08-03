@@ -22,6 +22,13 @@ const state = vi.hoisted(() => ({
   subscription: null as Subscription | null,
   isActiveSubscription: false,
   isFreeTier: false,
+  tier: null as
+    | 'FREE'
+    | 'STANDARD'
+    | 'CREATOR'
+    | 'PRO'
+    | 'FOUNDERS_EDITION'
+    | null,
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   canTopUp: true,
@@ -55,11 +62,16 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     subscription: computed(() => state.subscription),
     isActiveSubscription: computed(() => state.isActiveSubscription),
     isFreeTier: computed(() => state.isFreeTier),
+    tier: computed(() => state.tier),
     currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     isLoading: computed(() => state.isLoading),
     fetchBalance: state.fetchBalance,
     fetchStatus: state.fetchStatus
   })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: true
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
@@ -144,6 +156,7 @@ function renderTile(props: Record<string, unknown> = {}) {
 
 function activeProSubscription() {
   state.isActiveSubscription = true
+  state.tier = 'PRO'
   state.subscription = {
     tier: 'PRO',
     duration: 'MONTHLY',
@@ -163,6 +176,7 @@ describe('CreditsTile', () => {
     state.subscription = null
     state.isActiveSubscription = false
     state.isFreeTier = false
+    state.tier = null
     state.currentTeamCreditStop = null
     state.isLoading = false
     state.canTopUp = true
@@ -370,6 +384,7 @@ describe('CreditsTile', () => {
   it('offers the upgrade path instead of add-credits on the free tier', async () => {
     activeProSubscription()
     state.isFreeTier = true
+    state.tier = 'FREE'
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))
