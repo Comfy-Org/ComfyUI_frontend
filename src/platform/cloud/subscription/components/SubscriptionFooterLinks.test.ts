@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -63,8 +63,13 @@ describe('SubscriptionFooterLinks', () => {
     vi.clearAllMocks()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('renders working support links without a duplicate invoice action', async () => {
     const user = userEvent.setup()
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
     renderComponent()
 
     expect(
@@ -85,5 +90,13 @@ describe('SubscriptionFooterLinks', () => {
 
     await user.click(screen.getByRole('button', { name: 'Message support' }))
     expect(state.handleMessageSupport).toHaveBeenCalledOnce()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Partner Nodes pricing' })
+    )
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://docs.comfy.org/partner-nodes',
+      '_blank'
+    )
   })
 })
