@@ -372,6 +372,7 @@ describe('WorkspaceAuthGate', () => {
       mountComponent()
       await flushPromises()
       await user.click(screen.getByRole('button', { name: 'Try again' }))
+      await flushPromises()
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(mockWorkspaceStoreInitialize).toHaveBeenCalledTimes(2)
