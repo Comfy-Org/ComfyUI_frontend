@@ -279,6 +279,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await nextTick()
 
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
+    expect(payButton).toBeDisabled()
     expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
 
     payButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
