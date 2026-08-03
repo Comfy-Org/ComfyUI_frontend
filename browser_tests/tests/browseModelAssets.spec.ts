@@ -110,7 +110,7 @@ cloudAppFixture.describe(
         const downloadTask = {
           task_id: 'download-task-001',
           status: 'created',
-          message: 'Download started'
+          message: 'Queued'
         } satisfies Extract<AsyncUploadResponse, { type: 'async' }>['task']
 
         await page.setViewportSize({ width: 1280, height: 420 })
@@ -122,7 +122,7 @@ cloudAppFixture.describe(
         await page.route('**/api/experiment/models', (route) =>
           route.fulfill(jsonRoute(modelFolders))
         )
-        await page.route('**/assets/remote-metadata?**', (route) =>
+        await page.route(/\/assets\/remote-metadata(?:\?.*)?$/, (route) =>
           route.fulfill(jsonRoute(metadata))
         )
         await page.route('**/assets/download', (route) =>
@@ -146,25 +146,25 @@ cloudAppFixture.describe(
         await expect(cancelButton).toBeVisible()
 
         const metrics = await dialog.evaluate((element) => {
-          const scrollRegions = Array.from(
-            element.querySelectorAll<HTMLElement>('*')
-          ).filter((candidate) => {
-            const style = getComputedStyle(candidate)
-            return [style.overflowX, style.overflowY].some(
-              (overflow) => overflow === 'auto' || overflow === 'scroll'
-            )
-          })
+          const panel = element.querySelector('.upload-model-dialog')
+          const body = panel?.parentElement
           const dialogRect = element.getBoundingClientRect()
+          const panelRect = panel?.getBoundingClientRect()
+          const bodyRect = body?.getBoundingClientRect()
 
           return {
-            scrollRegionCount: scrollRegions.length,
             dialogBottom: dialogRect.bottom,
+            panelLeft: panelRect?.left,
+            panelRight: panelRect?.right,
+            bodyLeft: bodyRect?.left,
+            bodyRight: bodyRect?.right,
             viewportHeight: window.innerHeight
           }
         })
 
-        expect(metrics.scrollRegionCount).toBe(1)
         expect(metrics.dialogBottom).toBeLessThanOrEqual(metrics.viewportHeight)
+        expect(metrics.panelLeft).toBeGreaterThanOrEqual(metrics.bodyLeft!)
+        expect(metrics.panelRight).toBeLessThanOrEqual(metrics.bodyRight!)
 
         const cancelButtonRect = await cancelButton.boundingBox()
         expect(cancelButtonRect).not.toBeNull()
@@ -184,17 +184,67 @@ cloudAppFixture.describe(
         await expect(dialog.getByText('Download started')).toBeVisible()
         await expect(dialog.getByText(filename)).toBeVisible()
 
-        const processingScrollRegions = await dialog.locator('*').evaluateAll(
-          (elements) =>
-            elements.filter((element) => {
-              const style = getComputedStyle(element)
-              return [style.overflowX, style.overflowY].some(
-                (overflow) => overflow === 'auto' || overflow === 'scroll'
+        const finishButton = dialog.locator(
+          '[data-attr="upload-model-step3-finish-button"]'
+        )
+        await expect(finishButton).toBeVisible()
+
+        const processingMetrics = await dialog.evaluate((element) => {
+          const candidates = new Set<Element>([
+            element,
+            ...element.querySelectorAll('*')
+          ])
+          let ancestor = element.parentElement
+          while (ancestor) {
+            candidates.add(ancestor)
+            ancestor = ancestor.parentElement
+          }
+          if (document.scrollingElement) {
+            candidates.add(document.scrollingElement)
+          }
+
+          const panel = element.querySelector('.upload-model-dialog')
+          const body = panel?.parentElement
+          const panelRect = panel?.getBoundingClientRect()
+          const bodyRect = body?.getBoundingClientRect()
+
+          return {
+            overflowingRegionCount: [...candidates].filter((candidate) => {
+              const style = getComputedStyle(candidate)
+              return (
+                ((style.overflowX === 'auto' || style.overflowX === 'scroll') &&
+                  candidate.scrollWidth > candidate.clientWidth) ||
+                ((style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+                  candidate.scrollHeight > candidate.clientHeight)
               )
-            }).length
+            }).length,
+            panelLeft: panelRect?.left,
+            panelRight: panelRect?.right,
+            bodyLeft: bodyRect?.left,
+            bodyRight: bodyRect?.right
+          }
+        })
+
+        expect(processingMetrics.overflowingRegionCount).toBe(0)
+        expect(processingMetrics.panelLeft).toBeGreaterThanOrEqual(
+          processingMetrics.bodyLeft!
+        )
+        expect(processingMetrics.panelRight).toBeLessThanOrEqual(
+          processingMetrics.bodyRight!
         )
 
-        expect(processingScrollRegions).toBe(1)
+        const bodyRect = await dialog
+          .locator('.upload-model-dialog')
+          .evaluate((panel) => {
+            const rect = panel.parentElement!.getBoundingClientRect()
+            return { top: rect.top, bottom: rect.bottom }
+          })
+        const finishButtonRect = await finishButton.boundingBox()
+        expect(finishButtonRect).not.toBeNull()
+        expect(finishButtonRect!.y).toBeGreaterThanOrEqual(bodyRect.top)
+        expect(
+          finishButtonRect!.y + finishButtonRect!.height
+        ).toBeLessThanOrEqual(bodyRect.bottom)
       }
     )
   }
