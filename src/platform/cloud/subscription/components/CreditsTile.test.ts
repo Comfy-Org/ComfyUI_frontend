@@ -87,6 +87,13 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -165,6 +172,7 @@ describe('CreditsTile', () => {
     state.currentTeamCreditStop = null
     state.isLoading = false
     state.canTopUp = true
+    mockIsCloud.value = true
     vi.clearAllMocks()
   })
 
@@ -339,6 +347,15 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('keeps offering add-credits on the free tier for non-cloud distributions', () => {
+    mockIsCloud.value = false
+    activeProSubscription()
+    state.isFreeTier = true
+    renderTile()
+    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 
   it('hides the action button when the user lacks the top-up permission', () => {
