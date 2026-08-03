@@ -127,17 +127,16 @@ test.describe('MCP page @smoke', () => {
   test('FAQ lists nine questions and autolinks the server URL', async ({
     page
   }) => {
-    const triggers = page.locator('[id^="faq-trigger-"]')
-    await triggers.first().scrollIntoViewIfNeeded()
-    await expect(triggers).toHaveCount(9)
+    // This page renders the MDX-driven FaqCollection (details/summary), not
+    // the shared accordion, so the assertions target native disclosure markup.
+    const entries = page.locator('#faq details')
+    await entries.first().scrollIntoViewIfNeeded()
+    await expect(entries).toHaveCount(9)
 
-    const question = page.getByRole('button', {
-      name: "What's the server URL?"
-    })
-    await question.click()
-    await expect(question).toHaveAttribute('aria-expanded', 'true')
+    const serverUrl = entries.filter({ hasText: "What's the server URL?" })
+    await serverUrl.locator('summary').click()
     await expect(
-      page.getByRole('link', { name: MCP_ENDPOINT, exact: true })
+      serverUrl.getByRole('link', { name: MCP_ENDPOINT, exact: true })
     ).toHaveAttribute('href', MCP_ENDPOINT)
   })
 })
