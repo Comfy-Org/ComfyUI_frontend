@@ -219,8 +219,6 @@ const canUpgrade = computed(() => {
   )
 })
 
-// Settings only has a plan-management panel on Cloud; elsewhere this entry can
-// only open the Credits panel, so it is labeled for where it actually goes.
 const planAndCreditsLabel = computed(() =>
   isCloud ? t('subscription.managePlan') : t('credits.credits')
 )

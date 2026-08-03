@@ -8,6 +8,7 @@ import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import type * as DistributionTypes from '@/platform/distribution/types'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
@@ -65,6 +66,14 @@ vi.mock(
 
 vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: () => ({ show: state.showSettingsDialog })
+}))
+
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionTypes>()),
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -157,6 +166,7 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    mockIsCloud.value = false
     state.isActiveSubscription = true
     state.isFreeTier = false
     state.isCancelled = false
@@ -265,5 +275,19 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(menuItem)
 
     expect(state.showSettingsDialog).toHaveBeenCalledWith('credits')
+  })
+
+  it('offers plan management pointing at the workspace panel on cloud', async () => {
+    const user = userEvent.setup()
+    mockIsCloud.value = true
+    state.canManageSubscription = true
+    renderComponent('team', 'owner')
+
+    const menuItem = screen.getByTestId('manage-plan-menu-item')
+    expect(menuItem).toHaveTextContent(enMessages.subscription.managePlan)
+
+    await user.click(menuItem)
+
+    expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
   })
 })
