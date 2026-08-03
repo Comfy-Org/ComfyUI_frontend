@@ -4975,8 +4975,8 @@ const translations = {
     'zh-CN': '合作伙伴节点'
   },
   'minimax.hero.footnote': {
-    en: 'Pay-as-you-go credits · No watermark · Commercial use included',
-    'zh-CN': '按量付费积分 · 无水印 · 包含商业使用授权'
+    en: 'Free to start · No watermark · Commercial use included',
+    'zh-CN': '免费开始 · 无水印 · 包含商业使用授权'
   },
   'minimax.models.heading': {
     en: 'Made with MiniMax H3',

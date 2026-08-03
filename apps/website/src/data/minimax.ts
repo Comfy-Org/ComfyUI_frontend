@@ -42,7 +42,7 @@ export const minimaxPage: ModelLaunchPage = {
     },
     secondaryCta: {
       labelKey: 'minimax.hero.secondaryCta',
-      href: minimaxLinks.imageToVideo,
+      href: minimaxLinks.textToVideo,
       target: '_blank'
     },
     badgeKeys: ['minimax.hero.tagOpenWeights', 'minimax.hero.tagPartnerNodes'],
@@ -163,9 +163,9 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN': 'MiniMax H3 每次生成需要多少费用？'
         },
         answer: {
-          en: 'It runs on pay-as-you-go or subscription credits. You can draft the same shot free on Wan 2.2 first, and spend credits only on the final render.',
+          en: 'You can try MiniMax H3 for free on Comfy Cloud. After that, each generation draws from your credits, either a subscription or pay-as-you-go.',
           'zh-CN':
-            '它采用按量付费或订阅积分。你可以先在 Wan 2.2 上免费打样同一个镜头，只在最终渲染时消耗积分。'
+            '你可以在 Comfy Cloud 上免费试用 MiniMax H3。之后每次生成都会消耗积分，可选择订阅或按量付费。'
         }
       },
       {
@@ -225,7 +225,7 @@ export const minimaxPage: ModelLaunchPage = {
     },
     secondaryCta: {
       labelKey: 'minimax.cta.secondaryCta',
-      href: minimaxLinks.imageToVideo,
+      href: minimaxLinks.textToVideo,
       target: '_blank'
     }
   },
