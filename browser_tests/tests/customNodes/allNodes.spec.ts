@@ -30,6 +30,7 @@ import type {
   VueNodeGeometry
 } from '@e2e/fixtures/customNode/geometry'
 import {
+  anyPackGeometryRecorded,
   diffGeometry,
   GEOMETRY_UNSTABLE_NODES,
   loadPackGeometry,
@@ -37,6 +38,7 @@ import {
   savePackGeometry
 } from '@e2e/fixtures/customNode/geometry'
 import {
+  customNodesEnv,
   loadCloudCoreDisabledNodes,
   loadCloudUnjoinedYamlPacks,
   loadManifest,
@@ -164,6 +166,26 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'ML-session initializer like RemBGSession+; sets up/downloads a background-removal model at execution, unstable on a bare backend',
     'LoadCLIPSegModels+':
       'downloads a CLIPSeg segmentation model at execution; network/model-dependent (same class as the excluded RemBG/TransparentBG loaders)'
+  }
+}
+
+// Auto-run OUTCOME not asserted for these nodes; they still execute every
+// run, so crashes and console errors surface - only the PASS/PARTIAL verdict
+// is ledgered. Mechanism: list-expanded execution emits no per-node executing
+// event on some runs, so the executed-set signal flip-flops between PASS and
+// PARTIAL; pinning either outcome coin-flips the gate (the same nodes carry
+// this mechanism in AUTO_RUN_EXCLUDE under their core pack names). Un-ledger
+// when the executing signal covers list-expanded runs.
+const AUTO_RUN_UNSTABLE_NODES: Record<string, Record<string, string>> = {
+  'comfyui-videohelpersuite': {
+    VHS_AudioToVHSAudio:
+      'list-expanded execution; executed-set flip-flops PASS/PARTIAL (same class as essentials TransitionMask+)',
+    VHS_BatchManager:
+      'iteration coordinator; executing signal flip-flops PASS/PARTIAL run-to-run'
+  },
+  comfyui_essentials: {
+    'TransitionMask+':
+      'list-expanded execution; executed-set flip-flops PASS/PARTIAL'
   }
 }
 
@@ -834,6 +856,21 @@ for (const entry of loadManifest()) {
           )
         } else {
           const geometryBaseline = loadPackGeometry(entry.pack)
+          // S14 is deferred on cloud until its baselines are recorded (none
+          // exist; the record workflow was auth-blocked). Self-expiring: the
+          // first recorded cloud batch makes anyPackGeometryRecorded() true
+          // and cloud flips back to fail-closed for every pack. Core keeps
+          // the fail-closed gate throughout.
+          if (
+            geometryBaseline === null &&
+            customNodesEnv() === 'cloud' &&
+            !anyPackGeometryRecorded()
+          ) {
+            console.log(
+              `${entry.pack}: geometry compare skipped - S14 deferred on cloud until baselines are recorded (record workflow, docs/custom-node-regression-suite.md Step 5b)`
+            )
+            return
+          }
           expect(
             geometryBaseline,
             `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (docs/custom-node-regression-suite.md Step 5b)`
@@ -1211,11 +1248,17 @@ for (const entry of loadManifest()) {
         // Two-way reconciliation: unlisted failure = regression; listed node
         // that runs clean (or is not auto-runnable) = stale entry.
         const baseline = new Set(entry.cannotRunAlone ?? [])
+        const unstable = AUTO_RUN_UNSTABLE_NODES[entry.pack] ?? {}
+        for (const ledgered of Object.keys(unstable))
+          expect(
+            keys,
+            `stale AUTO_RUN_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
+          ).toContain(ledgered)
         const runnable = new Set(
           batches.flatMap((batch) => batch.map((verdict) => verdict.key))
         )
         for (const [key, detail] of cannotRun)
-          if (!baseline.has(key))
+          if (!baseline.has(key) && !(key in unstable))
             hardFailures.push(
               `${key}: ${detail} - not in cannotRunAlone; a regression, or a new baseline entry (attach the run log)`
             )

@@ -210,11 +210,40 @@ function snapshotPacksOf(snapshot: ObjectInfoSnapshot): Map<string, string[]> {
 // red a healthy run.
 export type CloudExtensionSentinels = Record<string, string[]>
 
+// Per-pack auto-run calibration (nodes that cannot execute on pure defaults
+// against the cloud backend), carried as a sidecar so regeneration preserves
+// it. Calibrated from gate-run failure details, not authored by hand.
+export type CloudCannotRunAlone = Record<string, string[]>
+
+export function validateCloudCannotRunAlone(
+  value: unknown
+): CloudCannotRunAlone {
+  if (!isRecord(value))
+    throw new Error(
+      'cloudCannotRunAlone: expected { "<pack dirname>": ["<node key>", ...] }'
+    )
+  const sidecar: CloudCannotRunAlone = {}
+  for (const [pack, keys] of Object.entries(value)) {
+    if (
+      !isStringArray(keys) ||
+      keys.length === 0 ||
+      keys.some((key) => key === '') ||
+      new Set(keys).size !== keys.length
+    )
+      throw new Error(
+        `cloudCannotRunAlone: ${pack} must be a non-empty array of unique non-empty node keys`
+      )
+    sidecar[pack] = [...keys].sort()
+  }
+  return sidecar
+}
+
 export function buildCloudManifest(
   doc: SupportedNodesDoc,
   snapshot: ObjectInfoSnapshot,
   overlay: CuratedCloudOverlay = {},
-  sentinels: CloudExtensionSentinels = {}
+  sentinels: CloudExtensionSentinels = {},
+  cannotRunAlone: CloudCannotRunAlone = {}
 ): CloudManifest {
   const nodesByPack = snapshotPacksOf(snapshot)
   const dirnameByJoinKey = new Map<string, string>()
@@ -265,7 +294,10 @@ export function buildCloudManifest(
       expectedNodeCount: enabled.length,
       expectedExtensions: sentinels[dirname] ?? [],
       disabledNodes: sortedRecordOf(pack.node_labels ?? {}),
-      timeoutMs: curated?.timeoutMs ?? 30_000
+      timeoutMs: curated?.timeoutMs ?? 30_000,
+      ...(cannotRunAlone[dirname]
+        ? { cannotRunAlone: cannotRunAlone[dirname] }
+        : {})
     })
   }
   // A yaml pack with no snapshot nodes gets recorded, not thrown on: it would
@@ -290,6 +322,14 @@ export function buildCloudManifest(
       `curated overlay pack(s) with no generated row to attach to: ` +
         `${orphaned.sort().join(', ')} - overlay keys must be snapshot pack ` +
         `dirnames; known packs: ${packs.map((row) => row.pack).join(', ')}`
+    )
+  const orphanedCalibration = Object.keys(cannotRunAlone).filter(
+    (pack) => !packs.some((row) => row.pack === pack)
+  )
+  if (orphanedCalibration.length > 0)
+    throw new Error(
+      `cloudCannotRunAlone pack(s) with no generated row to attach to: ` +
+        `${orphanedCalibration.sort().join(', ')} - keys must be snapshot pack dirnames`
     )
 
   packs.sort((a, b) => (a.pack < b.pack ? -1 : a.pack > b.pack ? 1 : 0))

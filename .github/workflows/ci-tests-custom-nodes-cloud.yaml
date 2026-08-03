@@ -245,8 +245,13 @@ jobs:
           SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
           SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         run: |
+          # S13 (interaction profiles) is deferred on cloud until every other
+          # tier passes: no interactionProfiles/cloud/ baselines exist yet, so
+          # its fail-closed compare would red all packs. Drop the exclusion
+          # when S13 is un-deferred and its cloud baselines are recorded.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=list,json,html --workers=1
+            --project=custom-nodes --reporter=list,json,html --workers=1 \
+            --grep-invert "interaction profiles:"
 
       # A skip means a cloud pack, devtools, or an under-enrolled cloud manifest
       # failed to surface a tier: on this backend every enrolled tier is meant

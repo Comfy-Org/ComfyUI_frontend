@@ -100,8 +100,10 @@ for (const autogrowCase of AUTOGROW_CASES) {
       // pack that ever declares itself Vue-incompatible keeps its canvas
       // coverage here instead of failing the Vue pass. Also validates the
       // curated pack label against the manifest.
+      // Case-insensitive: the core manifest names this pack
+      // ComfyUI-Impact-Pack, the cloud manifest comfyui-impact-pack.
       const manifestEntry = loadManifest().find(
-        (entry) => entry.pack === autogrowCase.pack
+        (entry) => entry.pack.toLowerCase() === autogrowCase.pack.toLowerCase()
       )
       expect(
         manifestEntry,

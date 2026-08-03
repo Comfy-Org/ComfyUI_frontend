@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync
+} from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
@@ -85,6 +91,14 @@ function geometryPath(pack: string): string {
 // null = no baseline recorded yet; the caller decides whether that reds
 // (compare mode must - a silently uncovered pack is the failure mode this
 // suite bans everywhere) or is expected (record mode).
+// True once ANY pack baseline exists for the active env - the cloud S14
+// deferral keys off this so the first recorded batch flips cloud back to
+// fail-closed instead of skipping unbaselined packs forever.
+export function anyPackGeometryRecorded(): boolean {
+  if (!existsSync(geometryDir())) return false
+  return readdirSync(geometryDir()).some((name) => name.endsWith('.json'))
+}
+
 export function loadPackGeometry(pack: string): PackGeometryFile | null {
   const path = geometryPath(pack)
   if (!existsSync(path)) return null
