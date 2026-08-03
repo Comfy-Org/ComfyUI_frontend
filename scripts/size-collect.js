@@ -20,7 +20,10 @@ const sizeDir = path.resolve('temp/size')
  * @property {number} brotli
  */
 
-run()
+run().catch((err) => {
+  console.error(pico.red('Error collecting bundle size data:'), err)
+  process.exit(1)
+})
 
 /**
  * Main function to collect bundle size data
