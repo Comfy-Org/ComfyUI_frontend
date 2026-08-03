@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -142,6 +142,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     () => seatCapacity.value?.occupiedSeats ?? null
   )
 
+  watch(
+    () => workspaceStore.activeWorkspace?.id,
+    () => {
+      seatCapacity.value = null
+    }
+  )
+
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
 
@@ -165,7 +172,6 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   async function fetchStatus(): Promise<void> {
     const requestId = ++latestBillingReadIds.status
-    seatCapacity.value = null
     const workspaceId = workspaceStore.activeWorkspace?.id
     isLoading.value = true
     error.value = null
@@ -176,6 +182,15 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         workspaceId !== workspaceStore.activeWorkspace?.id
       ) {
         return
+      }
+
+      if (
+        !Number.isInteger(status.max_seats) ||
+        status.max_seats < 0 ||
+        !Number.isInteger(status.occupied_seats) ||
+        status.occupied_seats < 0
+      ) {
+        throw new Error('Billing status returned invalid seat capacity')
       }
 
       statusData.value = status

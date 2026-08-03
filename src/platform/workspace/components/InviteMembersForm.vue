@@ -49,7 +49,9 @@
       aria-live="polite"
       class="m-0 text-xs text-muted-foreground"
     >
-      {{ $t('workspacePanel.inviteMemberDialog.seatLimitReached', maxSeats) }}
+      {{
+        $t('workspacePanel.inviteMemberDialog.seatLimitReached', inviteLimit)
+      }}
     </p>
 
     <div
@@ -105,12 +107,14 @@ import {
 } from '@/platform/workspace/utils/inviteEmails'
 import { cn } from '@comfyorg/tailwind-utils'
 
+const MAX_INVITES_PER_BATCH = 30
+
 const {
   submitLabel,
   placeholder,
   source,
   cancelLabel,
-  maxSeats = Number.POSITIVE_INFINITY,
+  maxSeats = MAX_INVITES_PER_BATCH,
   showSubmit = true,
   autoFocus = false,
   tagsInputClass = 'min-h-10 w-full bg-tertiary-background px-3 focus-within:bg-tertiary-background hover:bg-tertiary-background-hover'
@@ -150,11 +154,12 @@ const seatLimitHintId = useId()
 const invalidEmails = computed(() =>
   emails.value.filter((email) => !isValidEmail(email))
 )
-const isAtSeatLimit = computed(() => emails.value.length >= maxSeats)
+const inviteLimit = computed(() => Math.min(maxSeats, MAX_INVITES_PER_BATCH))
+const isAtSeatLimit = computed(() => emails.value.length >= inviteLimit.value)
 const canSubmit = computed(
   () =>
     emails.value.length > 0 &&
-    emails.value.length <= maxSeats &&
+    emails.value.length <= inviteLimit.value &&
     invalidEmails.value.length === 0
 )
 
@@ -169,7 +174,7 @@ const describedBy = computed(
 )
 
 function onEmailsUpdate(value: string[]) {
-  emails.value = sanitizeInviteEmails(value, maxSeats)
+  emails.value = sanitizeInviteEmails(value, inviteLimit.value)
 }
 
 async function onSubmit() {

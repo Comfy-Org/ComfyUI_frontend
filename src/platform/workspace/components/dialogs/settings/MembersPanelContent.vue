@@ -10,10 +10,14 @@
             <template v-if="activeView === 'active'">
               <template v-if="hasMemberSeats">
                 {{
-                  $t('workspacePanel.members.membersCount', {
-                    count: members.length,
-                    maxSeats: maxSeats
-                  })
+                  maxSeats === 0
+                    ? $t('workspacePanel.tabs.membersCount', {
+                        count: members.length
+                      })
+                    : $t('workspacePanel.members.membersCount', {
+                        count: members.length,
+                        maxSeats: maxSeats
+                      })
                 }}
               </template>
               <template v-else>
@@ -176,7 +180,6 @@
                 :show-credits-column="uiConfig.showCreditsColumn"
                 :can-manage-members="permissions.canManageMembers"
                 :is-single-seat-plan="!hasMemberSeats"
-                :is-original-owner="isOriginalOwner(member)"
                 :striped="index % 2 === 1"
                 :menu-items="memberMenus.get(member.id)"
               />
@@ -197,7 +200,9 @@
     <!-- Upsell Banner -->
     <MemberUpsellBanner
       v-if="
-        !isPlanLoading && !hasMemberSeats && permissions.canManageSubscription
+        !isPlanLoading &&
+        (!hasMemberSeats || isCancelled) &&
+        permissions.canManageSubscription
       "
       :reactivate="hasLapsedTeamPlan"
       @show-plans="showTeamPlans()"
@@ -238,6 +243,7 @@ const {
   maxSeats,
   hasLapsedTeamPlan,
   hasMemberSeats,
+  isCancelled,
   isPlanLoading,
   hasMultipleMembers,
   showSearch,
@@ -256,7 +262,6 @@ const {
   uiConfig,
   userPhotoUrl,
   isCurrentUser,
-  isOriginalOwner,
   toggleSort,
   showTeamPlans,
   handleResendInvite,

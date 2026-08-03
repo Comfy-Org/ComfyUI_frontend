@@ -203,6 +203,20 @@ describe('InviteMembersForm', () => {
     ).toBeInTheDocument()
   })
 
+  it('caps unlimited workspaces to one invite batch', async () => {
+    const { user } = renderForm({ maxSeats: Number.POSITIVE_INFINITY })
+    const emails = Array.from(
+      { length: 31 },
+      (_, index) => `member${index + 1}@example.com`
+    )
+
+    await user.click(emailInput())
+    await user.paste(emails.join(','))
+
+    expect(screen.getByText('member30@example.com')).toBeInTheDocument()
+    expect(screen.queryByText('member31@example.com')).not.toBeInTheDocument()
+  })
+
   it('emits cancel when a cancel label is provided', async () => {
     const { user, emitted } = renderForm({ cancelLabel: 'Cancel' })
 

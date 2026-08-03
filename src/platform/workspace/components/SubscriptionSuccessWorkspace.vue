@@ -149,8 +149,8 @@ const displayCredits = computed(() =>
 )
 
 const invitableSeats = computed(() => {
-  if (maxSeats.value === null || occupiedSeats.value === null) return 0
-  if (maxSeats.value === 0) return Number.POSITIVE_INFINITY
+  if (maxSeats.value === null || occupiedSeats.value === null) return undefined
+  if (maxSeats.value === 0) return undefined
   return Math.max(0, maxSeats.value - occupiedSeats.value)
 })
 

@@ -365,7 +365,7 @@ describe('useWorkspaceBilling', () => {
       expect(billing.error.value).toBe('boom')
     })
 
-    it('invalidates capacity during refresh and keeps it null after failure', async () => {
+    it('keeps the last known capacity during refresh and after failure', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce(activeStatus)
       const billing = setupBilling()
       await billing.fetchStatus()
@@ -376,8 +376,8 @@ describe('useWorkspaceBilling', () => {
       )
       const refresh = billing.fetchStatus()
 
-      expect(billing.maxSeats.value).toBeNull()
-      expect(billing.occupiedSeats.value).toBeNull()
+      expect(billing.maxSeats.value).toBe(73)
+      expect(billing.occupiedSeats.value).toBe(72)
 
       refreshedStatus.resolve({
         ...activeStatus,
@@ -392,8 +392,25 @@ describe('useWorkspaceBilling', () => {
         new Error('refresh failed')
       )
       await expect(billing.fetchStatus()).rejects.toThrow('refresh failed')
-      expect(billing.maxSeats.value).toBeNull()
-      expect(billing.occupiedSeats.value).toBeNull()
+      expect(billing.maxSeats.value).toBe(80)
+      expect(billing.occupiedSeats.value).toBe(75)
+    })
+
+    it('rejects invalid seat capacity without replacing the last known value', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce(activeStatus)
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce({
+        ...activeStatus,
+        max_seats: undefined
+      } as unknown as BillingStatusResponse)
+
+      await expect(billing.fetchStatus()).rejects.toThrow(
+        'Billing status returned invalid seat capacity'
+      )
+      expect(billing.maxSeats.value).toBe(73)
+      expect(billing.occupiedSeats.value).toBe(72)
     })
 
     it('keeps the newest status when an older request resolves last', async () => {

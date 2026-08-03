@@ -968,9 +968,9 @@ describe('useMembersPanel', () => {
 
     it('disables the invite button when the team plan is cancelled', async () => {
       mockSubscription.value = { tier: 'PRO', isCancelled: true }
-      mockMaxSeats.value = 1
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.permissions.value.canInviteMembers).toBe(false)
       panel.handleInviteMember()
       expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
     })

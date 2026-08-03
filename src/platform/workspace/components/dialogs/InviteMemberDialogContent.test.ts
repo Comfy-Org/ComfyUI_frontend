@@ -138,6 +138,7 @@ describe('InviteMemberDialogContent', () => {
 
     await user.type(emailInput(), 'a@b.com ')
 
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(inviteButton()).toBeDisabled()
   })
 
@@ -147,6 +148,7 @@ describe('InviteMemberDialogContent', () => {
 
     await user.type(emailInput(), 'a@b.com ')
 
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(inviteButton()).toBeDisabled()
   })
 

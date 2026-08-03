@@ -112,6 +112,7 @@ export function useMembersPanel() {
   const {
     hasTeamPlan,
     isOnTeamPlan,
+    isCancelled,
     hasLapsedTeamPlan,
     hasMemberSeats,
     isPlanLoading
@@ -127,7 +128,7 @@ export function useMembersPanel() {
       ...workspacePermissions.value,
       canViewOtherMembers: hasMemberSeats.value,
       canViewPendingInvites: canManageMembers,
-      canInviteMembers: canManageMembers,
+      canInviteMembers: canManageMembers && !isCancelled.value,
       canManageInvites: canManageMembers,
       canManageMembers
     }
@@ -202,6 +203,7 @@ export function useMembersPanel() {
   const isInviteDisabled = computed(
     () =>
       isPlanLoading.value ||
+      isCancelled.value ||
       maxSeats.value === null ||
       occupiedSeats.value === null ||
       !hasMemberSeats.value ||
@@ -226,7 +228,7 @@ export function useMembersPanel() {
       void showInviteMemberUpsellDialog()
       return
     }
-    if (isMemberLimitReached.value) return
+    if (isCancelled.value || isMemberLimitReached.value) return
     void showInviteMemberDialog()
   }
 
@@ -382,6 +384,7 @@ export function useMembersPanel() {
     maxSeats,
     hasTeamPlan,
     isOnTeamPlan,
+    isCancelled,
     hasLapsedTeamPlan,
     hasMemberSeats,
     isPlanLoading,
