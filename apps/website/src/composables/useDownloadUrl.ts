@@ -9,15 +9,26 @@ export const downloadUrls = {
 
 export type Platform = 'windows' | 'mac'
 
-function isMobile(ua: string): boolean {
-  return /iphone|ipad|ipod|android/.test(ua)
+export interface DetectedDevice {
+  platform: Platform | null
+  isMobileUa: boolean
 }
 
-function detectPlatform(ua: string): Platform | null {
-  if (isMobile(ua)) return null
-  if (ua.includes('win')) return 'windows'
-  if (ua.includes('macintosh') || ua.includes('mac os x')) return 'mac'
-  return null
+// iPadOS Safari sends a Macintosh desktop UA by default; real Macs report no
+// touch points, so a "Mac" with a touchscreen is an iPad.
+export function detectDevice(
+  ua: string,
+  maxTouchPoints: number
+): DetectedDevice {
+  const lowerUa = ua.toLowerCase()
+  const isIpadOs = lowerUa.includes('macintosh') && maxTouchPoints > 1
+  const isMobileUa = /iphone|ipad|ipod|android/.test(lowerUa) || isIpadOs
+  if (isMobileUa) return { platform: null, isMobileUa }
+  if (lowerUa.includes('win')) return { platform: 'windows', isMobileUa }
+  if (lowerUa.includes('macintosh') || lowerUa.includes('mac os x')) {
+    return { platform: 'mac', isMobileUa }
+  }
+  return { platform: null, isMobileUa }
 }
 
 // TODO: Only Windows x64 and macOS arm64 are available today.
@@ -38,9 +49,9 @@ export function useDownloadUrl() {
   )
 
   onMounted(() => {
-    const ua = navigator.userAgent.toLowerCase()
-    isMobileUa.value = isMobile(ua)
-    platform.value = detectPlatform(ua)
+    const device = detectDevice(navigator.userAgent, navigator.maxTouchPoints)
+    isMobileUa.value = device.isMobileUa
+    platform.value = device.platform
     detected.value = true
   })
 
