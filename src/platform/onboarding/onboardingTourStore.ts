@@ -38,7 +38,7 @@ async function resolveDefinition(
     return Array.isArray(resolution) ? { steps: resolution } : resolution
   } catch (error) {
     console.error('coachmark tour definition failed', error)
-    return { steps: [] }
+    return { steps: [], reason: 'resolver_failed' }
   }
 }
 
@@ -344,10 +344,13 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     return true
   }
 
+  const reportedNotStarted = new Set<EntryPath>()
   function reportNotStarted(
     entryPath: EntryPath,
     reason: OnboardingTourNotStartedReason
   ) {
+    if (reportedNotStarted.has(entryPath)) return
+    reportedNotStarted.add(entryPath)
     telemetry?.trackOnboardingTour('not_started', {
       tour: entryPath,
       step_count: 0,
