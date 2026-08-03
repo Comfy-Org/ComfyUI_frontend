@@ -230,7 +230,11 @@ async function onSelectTemplate(id: string) {
 
   if (await loadWorkflowTemplate(id, 'default')) {
     await dismissGettingStarted()
-    await beginTour(id)
+    try {
+      await beginTour(id)
+    } catch (error) {
+      console.error('first-run tour failed to start', error)
+    }
     return
   }
 

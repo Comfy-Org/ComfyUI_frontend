@@ -222,6 +222,23 @@ describe('TourSpotlight interactive and masked steps', () => {
     ).not.toContain('transition-[left,top,opacity]')
   })
 
+  it('keeps focus inside the card on a step with no primary button', async () => {
+    renderSpotlight({
+      step: spotlightStep({ selfAdvancing: true, interactive: true })
+    })
+    await nextTick()
+    await nextTick()
+
+    expect(
+      screen.queryByRole('button', { name: 'Next' }),
+      'a self-advancing step is passed by doing the thing, so it offers no Next'
+    ).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Skip' }),
+      'focus on <body> makes a keyboard user tab from the top of the document'
+    ).toHaveFocus()
+  })
+
   it('points a cursor back at the target from the card edge facing it', async () => {
     registerCoachmark(FIRST_RUN_COACH_IDS.prompt, canvasNode())
 

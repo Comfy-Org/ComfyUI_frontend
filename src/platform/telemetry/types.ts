@@ -128,6 +128,7 @@ export type OnboardingTourNotStartedReason =
   | 'no_roles'
   | 'run_only'
   | 'no_steps'
+  | 'resolver_failed'
 
 /**
  * `step_number` is 1-based and matches the "Step N of M" indicator the user

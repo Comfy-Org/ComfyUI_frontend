@@ -228,4 +228,22 @@ describe('firstRunTourSteps', () => {
       'unregistering only hides a target; its observers run until it is disposed'
     ).toHaveBeenCalledTimes(onCanvas.length)
   })
+
+  it('releases the previous target set when it builds the tour again', async () => {
+    loadTemplate(FROM_IMAGE)
+    const steps = await buildSteps(FROM_IMAGE)
+    const onCanvas = steps.filter(
+      (s) =>
+        s.kind === 'spotlight' &&
+        s.coachId &&
+        s.coachId !== FIRST_RUN_COACH_IDS.runButton
+    )
+
+    await buildSteps(FROM_IMAGE)
+
+    expect(
+      disposals.spy,
+      'a stale target left registered competes with the live one for the same id'
+    ).toHaveBeenCalledTimes(onCanvas.length)
+  })
 })
