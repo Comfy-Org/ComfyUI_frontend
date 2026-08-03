@@ -2655,6 +2655,7 @@
     "changesToPlanOnDate": "Changes to {plan} on {date}",
     "manageSubscription": "Manage subscription",
     "billingAndInvoices": "Billing & invoices",
+    "manageBilling": "Manage billing",
     "changePlan": "Change plan",
     "cancelPlan": "Cancel plan",
     "canceled": "Canceled",
@@ -2761,6 +2762,7 @@
     "saveYearly": "Save 20%",
     "tierNameYearly": "{name} Yearly",
     "messageSupport": "Message support",
+    "invoiceHistory": "Invoice history",
     "refreshCredits": "Refresh credits",
     "benefits": {
       "benefit1": "Monthly credits for Partner Nodes — top up when needed",

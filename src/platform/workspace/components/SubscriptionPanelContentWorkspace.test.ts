@@ -24,6 +24,13 @@ const { mockIsSettingUp, mockSubscriptionActionOperation } = vi.hoisted(() => ({
     value: undefined as { actionUrl: string } | undefined
   }
 }))
+const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
 
 const RENEWAL_DATE_ISO = '2026-06-20T12:00:00Z'
 const END_DATE_ISO = '2026-01-20T12:00:00Z'
@@ -268,7 +275,9 @@ const ButtonStub = {
 }
 
 const SubscriptionFooterLinksStub = {
-  template: '<div data-testid="subscription-footer-links" />'
+  props: ['showInvoiceHistory'],
+  template:
+    '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
 }
 
 const DropdownMenuStub = {
@@ -300,6 +309,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'
     mockRenewalDate.value = RENEWAL_DATE_ISO
@@ -375,6 +385,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
     ).toBeInTheDocument()
     expect(screen.getByTestId('subscription-footer-links')).toBeInTheDocument()
+    expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
+      'data-show-invoice-history',
+      'true'
+    )
   })
 
   it('shows a scheduled plan change instead of the renewal date', () => {
@@ -474,6 +488,22 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
+  it('preserves local Manage billing and Invoice history actions', async () => {
+    const user = userEvent.setup()
+    mockDistributionState.isCloud = false
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Billing & invoices' })
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Manage billing' }))
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
+      'data-show-invoice-history',
+      'true'
+    )
+  })
+
   it('keeps a Personal workspace Team-plan member view read-only', () => {
     mockIsInPersonalWorkspace.value = true
     mockCanManageSubscription.value = false
@@ -497,6 +527,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Leave Workspace' })
     ).toBeInTheDocument()
     expect(screen.getByText('Invite members')).toBeInTheDocument()
+    expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
+      'data-show-invoice-history',
+      'false'
+    )
   })
 
   it('uses Team-plan change copy in a Personal workspace', () => {

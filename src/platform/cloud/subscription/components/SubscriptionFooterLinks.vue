@@ -29,18 +29,41 @@
         {{ $t('subscription.messageSupport') }}
       </Button>
     </div>
+
+    <Button
+      v-if="!isCloud && showInvoiceHistory"
+      variant="muted-textonly"
+      class="text-xs text-text-secondary"
+      @click="handleInvoiceHistory"
+    >
+      {{ $t('subscription.invoiceHistory') }}
+      <i class="pi pi-external-link text-xs text-text-secondary" />
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { isCloud } from '@/platform/distribution/types'
+
+const { showInvoiceHistory = true } = defineProps<{
+  showInvoiceHistory?: boolean
+}>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
+const { manageSubscription } = useBillingContext()
+
 const { isLoadingSupport, handleMessageSupport, handleLearnMoreClick } =
   useSubscriptionActions()
+
+async function handleInvoiceHistory() {
+  if (!showInvoiceHistory) return
+  await manageSubscription()
+}
 
 function handleOpenPartnerNodesInfo() {
   window.open(
