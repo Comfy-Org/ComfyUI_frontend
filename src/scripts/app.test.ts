@@ -12,6 +12,8 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { ComfyApp, app as singletonApp } from './app'
@@ -196,6 +198,13 @@ function createMockCanvas(): Partial<LGraphCanvas> {
 
 function createTestFile(name: string, type: string): File {
   return new File([''], name, { type })
+}
+
+function markLoaded(workflow: ComfyWorkflow): LoadedComfyWorkflow {
+  workflow.changeTracker = createMockChangeTracker()
+  workflow.content = '{}'
+  workflow.originalContent = '{}'
+  return workflow as LoadedComfyWorkflow
 }
 
 function createWorkflowGraphData(): ComfyWorkflowJSON {
@@ -971,6 +980,9 @@ describe('ComfyApp', () => {
       )
 
       expect(missingNodesStore.missingNodesError).toBeNull()
+      expect(
+        mockWorkspaceWorkflow.activeWorkflow?.pendingWarnings?.missingNodeTypes
+      ).toEqual([expect.objectContaining({ type: 'UninstalledDeferredNode' })])
 
       await app.handleFile(createTestFile('immediate.json', 'application/json'))
 
@@ -1514,7 +1526,7 @@ describe('ComfyApp', () => {
       }
       mockWorkspaceWorkflow.activeWorkflow = outgoingWorkflow
       const realWorkflowStore = useWorkflowStore()
-      realWorkflowStore.activeWorkflow = outgoingWorkflow as never
+      realWorkflowStore.activeWorkflow = markLoaded(outgoingWorkflow)
       const missingNodesStore = useMissingNodesErrorStore()
       missingNodesStore.setMissingNodeTypes(['OutgoingMissingNode'])
 
@@ -1539,7 +1551,7 @@ describe('ComfyApp', () => {
         async (workflow: ComfyWorkflow) => {
           await openWorkflowGate
           mockWorkspaceWorkflow.activeWorkflow = workflow
-          realWorkflowStore.activeWorkflow = workflow as never
+          realWorkflowStore.activeWorkflow = markLoaded(workflow)
           return workflow
         }
       )
