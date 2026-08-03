@@ -249,7 +249,7 @@ import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 const { t, n } = useI18n()
 const queueStore = useQueueStore()
@@ -258,13 +258,13 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { totalPercent } = useQueueProgress()
 const { jobItems } = useJobList()
 
-const sidebarTabStore = useSidebarTabStore()
+const rightSidePanelStore = useRightSidePanelStore()
 
 const expanded = ref(false)
 
-/** Idle popover shortcut into the job history. */
+/** Open the full job history in the right-side panel (with its filters). */
 const goToHistory = () => {
-  sidebarTabStore.toggleSidebarTab('job-history')
+  rightSidePanelStore.openPanel('job-history')
 }
 
 const runningCount = computed(() => queueStore.runningTasks.length)
