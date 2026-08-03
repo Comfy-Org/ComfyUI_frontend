@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 
-import type { LayoutStoreImpl } from '../layoutStore'
+import type { layoutStore as RealLayoutStore } from '../layoutStore'
 
 /**
  * Inert stand-in for the layout store, for suites that exercise canvas code
@@ -9,7 +9,7 @@ import type { LayoutStoreImpl } from '../layoutStore'
  * `vi.mock('@/renderer/core/layout/store/layoutStore')`, then set per-test
  * behaviour through `vi.mocked(layoutStore.someMethod)`.
  */
-export const layoutStore = fromPartial<LayoutStoreImpl>({
+export const layoutStore = fromPartial<typeof RealLayoutStore>({
   allocateZIndex: vi.fn(() => 1),
   applyOperation: vi.fn(),
   batchUpdateNodeBounds: vi.fn(),
