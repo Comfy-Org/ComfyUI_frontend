@@ -18,6 +18,9 @@ interface ModelLaunchCta {
 
 export interface ModelLaunchHero {
   videoSrc?: string
+  // Still stand-in for the hero frame, for pages announcing a model whose
+  // launch footage does not exist yet. Ignored once videoSrc is set.
+  placeholderImageSrc?: string
   // Small label above the heading, e.g. NEW.
   eyebrowKey?: TranslationKey
   // Brand mark drawn as a CSS mask over the top-right corner of the video.

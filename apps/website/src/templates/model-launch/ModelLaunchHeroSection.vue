@@ -15,6 +15,16 @@ const { locale = 'en', hero } = defineProps<{
 
 <template>
   <section class="max-w-9xl mx-auto px-6 py-12 lg:px-20 lg:py-16">
+    <img
+      v-if="!hero.videoSrc && hero.placeholderImageSrc"
+      :src="hero.placeholderImageSrc"
+      alt=""
+      aria-hidden="true"
+      width="1440"
+      height="810"
+      class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+    />
+
     <div v-if="hero.videoSrc" class="relative">
       <VideoPlayer :locale :src="hero.videoSrc" autoplay loop />
       <div

@@ -11,6 +11,8 @@ export const flux3Page: ModelLaunchPage = {
   breadcrumbLabelKey: 'flux3.breadcrumb.model',
   breadcrumbUpdatedKey: 'flux3.breadcrumb.updated',
   hero: {
+    // Stand-in until the launch footage lands; swap for videoSrc then.
+    placeholderImageSrc: '/images/flux-3/hero-placeholder.webp',
     eyebrowKey: 'flux3.hero.eyebrow',
     titleKey: 'flux3.hero.title',
     primaryCta: {
