@@ -15,6 +15,7 @@ import {
   NodeSlotType
 } from '@/lib/litegraph/src/types/globalEnums'
 import {
+  createMissingMediaCandidate,
   createPromotedMediaRuntime,
   createPromotedMissingMediaCandidate,
   deferMediaVerification
@@ -1188,14 +1189,10 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
     const mediaStore = useMissingMediaStore()
     const affectedCandidate = createPromotedMissingMediaCandidate(outerHost)
-    const unaffectedCandidate = fromAny<MissingMediaCandidate, unknown>({
-      nodeId: createNodeExecutionId([unaffectedNode.id]),
-      nodeType: 'LoadImage',
-      widgetName: 'image',
-      mediaType: 'image',
-      name: 'other.png',
-      isMissing: true
-    })
+    const unaffectedCandidate = createMissingMediaCandidate(
+      [unaffectedNode.id],
+      { name: 'other.png' }
+    )
     mediaStore.setMissingMedia([affectedCandidate, unaffectedCandidate])
 
     setNodeMode(innerSubgraph, leafNode, LGraphEventMode.BYPASS)
