@@ -108,7 +108,10 @@
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
                 <Button
-                  v-if="isCloud && permissions.canManageSubscription"
+                  v-if="
+                    permissions.canManageSubscription &&
+                    (isCloud || showInactiveTeamSubscription)
+                  "
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"

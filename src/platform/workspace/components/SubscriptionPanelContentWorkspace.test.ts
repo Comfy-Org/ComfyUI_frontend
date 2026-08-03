@@ -654,6 +654,25 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
   })
 
+  it('preserves local inactive Team billing and invoice actions', async () => {
+    const user = userEvent.setup()
+    mockDistributionState.isCloud = false
+    mockSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    renderComponent()
+
+    expect(
+      screen.getByRole('heading', { name: 'Inactive team subscription' })
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
+      'data-show-invoice-history',
+      'true'
+    )
+  })
+
   it('renders an ended Team plan for its owner and routes reactivation to checkout', async () => {
     mockSubscriptionStatus.value = 'canceled'
     mockIsActiveSubscription.value = false
