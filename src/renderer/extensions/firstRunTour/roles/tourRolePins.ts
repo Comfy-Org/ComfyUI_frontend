@@ -61,10 +61,10 @@ export const TOUR_ROLE_PINS: Record<SupportedTemplateId, RolePins> = {
     sink: { id: 108, type: 'SaveVideo' },
     mediaKind: 'video'
   },
-  gsc_advanced_3_2: {
-    source: { id: 479, type: 'LoadImage' },
-    sink: { id: 415, type: 'SaveVideo' },
-    mediaKind: 'video'
+  'templates-image_to_real': {
+    source: { id: 14, type: 'LoadImage' },
+    sink: { id: 18, type: 'SaveImage' },
+    mediaKind: 'image'
   },
   image_qwen_image_edit_2509: {
     source: { id: 78, type: 'LoadImage' },
@@ -77,10 +77,10 @@ export const TOUR_ROLE_PINS: Record<SupportedTemplateId, RolePins> = {
     sink: { id: 2, type: 'SaveImage' },
     mediaKind: 'image'
   },
-  gsc_advanced_3_1: {
-    source: { id: 483, type: 'LoadImage' },
-    prompt: { id: 1235, type: 'GeminiNanoBanana2' },
-    sink: { id: 1237, type: 'SaveVideo' },
+  video_ltx2_i2v_distilled: {
+    source: { id: 98, type: 'LoadImage' },
+    prompt: { id: 3, type: 'CLIPTextEncode' },
+    sink: { id: 75, type: 'SaveVideo' },
     mediaKind: 'video'
   }
 }
