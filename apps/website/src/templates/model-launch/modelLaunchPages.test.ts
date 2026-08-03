@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { flux3Page } from '../../data/flux3'
 import { minimaxPage } from '../../data/minimax'
 import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -7,12 +8,13 @@ import type { ModelLaunchPage } from './types'
 
 // Add every new launch-page config here so it inherits these checks.
 const pages: { name: string; page: ModelLaunchPage }[] = [
-  { name: 'minimax', page: minimaxPage }
+  { name: 'minimax', page: minimaxPage },
+  { name: 'flux3', page: flux3Page }
 ]
 
 describe.each(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {
-    const ids = page.gallery.cards.map((card) => card.id)
+    const ids = page.gallery?.cards.map((card) => card.id) ?? []
     expect(new Set(ids).size).toBe(ids.length)
   })
 
@@ -30,14 +32,14 @@ describe.each(pages)('$name launch page config', ({ page }) => {
       page.hero.secondaryCta?.labelKey,
       ...(page.hero.badgeKeys ?? []),
       page.hero.footnoteKey,
-      page.gallery.headingKey,
-      page.pricing.banner?.titleKey,
-      page.pricing.banner?.subtitleKey,
-      page.pricing.banner?.cta.labelKey,
-      page.faq.headingKey,
-      page.closingCta.headingKey,
-      page.closingCta.primaryCta.labelKey,
-      page.closingCta.secondaryCta?.labelKey,
+      page.gallery?.headingKey,
+      page.pricing?.banner?.titleKey,
+      page.pricing?.banner?.subtitleKey,
+      page.pricing?.banner?.cta.labelKey,
+      page.faq?.headingKey,
+      page.closingCta?.headingKey,
+      page.closingCta?.primaryCta.labelKey,
+      page.closingCta?.secondaryCta?.labelKey,
       page.runOptions.headingKey,
       page.runOptions.subtitleKey,
       page.runOptions.ctaKey,
@@ -54,14 +56,14 @@ describe.each(pages)('$name launch page config', ({ page }) => {
   })
 
   it('localizes every gallery card and FAQ entry in both locales', () => {
-    for (const card of page.gallery.cards) {
+    for (const card of page.gallery?.cards ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
         expect(card.name[locale], `${card.id} name`).not.toBe('')
         expect(card.note[locale], `${card.id} note`).not.toBe('')
         expect(card.description[locale], `${card.id} description`).not.toBe('')
       }
     }
-    for (const faq of page.faq.items) {
+    for (const faq of page.faq?.items ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
         expect(faq.question[locale], `${faq.id} question`).not.toBe('')
         expect(faq.answer[locale], `${faq.id} answer`).not.toBe('')
@@ -73,10 +75,10 @@ describe.each(pages)('$name launch page config', ({ page }) => {
     const hrefs = [
       page.hero.primaryCta.href,
       page.hero.secondaryCta?.href,
-      page.closingCta.primaryCta.href,
-      page.closingCta.secondaryCta?.href,
-      page.pricing.banner?.cta.href,
-      ...page.gallery.cards.map((card) => card.href)
+      page.closingCta?.primaryCta.href,
+      page.closingCta?.secondaryCta?.href,
+      page.pricing?.banner?.cta.href,
+      ...(page.gallery?.cards.map((card) => card.href) ?? [])
     ].filter((href): href is string => href !== undefined)
 
     for (const href of hrefs) {
@@ -85,7 +87,7 @@ describe.each(pages)('$name launch page config', ({ page }) => {
   })
 
   it('serves gallery media that the card can actually render', () => {
-    for (const card of page.gallery.cards) {
+    for (const card of page.gallery?.cards ?? []) {
       expect(card.mediaSrc, card.id).toMatch(
         /^https:\/\/media\.comfy\.org\/.+\.(webm|webp|png|jpg)$/
       )
