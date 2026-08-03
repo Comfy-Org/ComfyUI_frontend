@@ -79,7 +79,8 @@ function useFirstRunTourControllerInternal() {
 
   /**
    * A run outlives the step that starts it, so the click moves the tour on. One
-   * the paywall will refuse never queues, so it is consumed and the tour parked.
+   * the paywall will refuse never queues, so the tour parks and leaves the
+   * subscribe button to open its own dialog.
    */
   useEventListener(
     document,
@@ -90,9 +91,6 @@ function useFirstRunTourControllerInternal() {
       if (!event.target.closest(RUN_BUTTON_SELECTOR)) return
 
       if (!billing.canRunWorkflows.value) {
-        event.preventDefault()
-        event.stopImmediatePropagation()
-        billing.showSubscriptionDialog({ reason: 'out_of_credits' })
         engine.postpone()
         return
       }
