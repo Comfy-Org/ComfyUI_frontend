@@ -150,6 +150,13 @@ export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
   })
   const user = await smokeUser
   await seedFirebaseAuthUser(page, appUrl, user)
+  // The app pins persistence to browserLocalPersistence (authStore setPersistence),
+  // so the IndexedDB seed alone races that switch and boots signed out
+  // intermittently (gate run 30717671737). Seed localStorage under the same key.
+  await page.evaluate((record) => {
+    const key = `firebase:authUser:${record.apiKey}:${record.appName}`
+    localStorage.setItem(key, JSON.stringify(record))
+  }, user)
   await bypassOnboardingSurvey(page)
 }
 

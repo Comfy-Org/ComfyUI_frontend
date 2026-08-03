@@ -1,4 +1,9 @@
-import type { APIRequestContext, Locator, Page } from '@playwright/test'
+import type {
+  APIRequestContext,
+  Locator,
+  Page,
+  Response
+} from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
@@ -152,36 +157,52 @@ class ComfyMenu {
   }
 }
 
+// Only DEFINITIVELY third-party analytics hosts. A failure to one of these is
+// external and never ours to fix. Everything ambiguous - a Three.js
+// double-instance, a double-registered extension, a bare ERR_FAILED, a CORS
+// error to any other host - is kept, because it can be a real bundling bug.
+const TRACE_TELEMETRY =
+  /mp\.comfy\.org|customer\.io|gist\.build|sy-d\.io|sentry/
+
+// Dedupe over filter. The app boots against real Cloud, so the same error (a
+// per-node widget warning, a repeated failed poll) fires thousands of times
+// and buries the distinct problems. Every unique line still shows once; exact
+// repeats are collapsed and a count is emitted at teardown, so a
+// high-frequency error stays visible as such without the churn.
 function traceCloudPage(page: Page): void {
+  const counts = new Map<string, number>()
+  const once = (line: string) => {
+    if (TRACE_TELEMETRY.test(line)) return
+    const seen = counts.get(line) ?? 0
+    counts.set(line, seen + 1)
+    if (seen === 0) console.warn(line)
+  }
   page.on('framenavigated', (frame) => {
     if (frame === page.mainFrame())
       console.warn(`[trace] navigated -> ${frame.url()}`)
   })
-  page.on('pageerror', (error) => {
-    console.warn(`[trace] page error: ${error.message}`)
-  })
+  page.on('pageerror', (error) => once(`[trace] page error: ${error.message}`))
   page.on('console', (message) => {
-    if (message.type() === 'error' || message.type() === 'warning')
-      console.warn(
-        `[trace] console.${message.type()}: ${message.text().slice(0, 300)}`
-      )
+    if (message.type() !== 'error' && message.type() !== 'warning') return
+    once(`[trace] console.${message.type()}: ${message.text().slice(0, 200)}`)
   })
   page.on('requestfailed', (request) => {
-    console.warn(
-      `[trace] request FAILED ${request.method()} ${request.url()} - ${request.failure()?.errorText ?? 'unknown'}`
-    )
+    const err = request.failure()?.errorText ?? 'unknown'
+    // net::ERR_ABORTED is the page navigating away mid-request - benign.
+    if (err.includes('ERR_ABORTED')) return
+    once(`[trace] request FAILED ${request.method()} ${request.url()} - ${err}`)
   })
   page.on('response', (response) => {
     const url = response.url()
     const status = response.status()
     if (status >= 400)
-      console.warn(
-        `[trace] HTTP ${status} ${response.request().method()} ${url}`
-      )
-    else if (
-      /\/(api\/)?(features|users|settings|object_info|userdata)/.test(url)
-    )
-      console.warn(`[trace] HTTP ${status} ${url}`)
+      once(`[trace] HTTP ${status} ${response.request().method()} ${url}`)
+    else if (/\/api\/(features|users|object_info)/.test(url))
+      once(`[trace] HTTP ${status} ${url}`)
+  })
+  page.on('close', () => {
+    for (const [line, n] of counts)
+      if (n > 1) console.warn(`[trace] (x${n}) ${line}`)
   })
 }
 
@@ -366,7 +387,13 @@ export class ComfyPage {
       })
     }
 
-    if (clearStorage) {
+    // Skipped on cloud: a Playwright context starts with empty storage, so
+    // this only resets a REUSED context - but on cloud the smoke user has
+    // already signed in by now, and both the navigation and the wipe destroy
+    // that session. The app then boots signed out, so teamWorkspaceStore
+    // cannot init ("User not authenticated") and Cloud answers every
+    // workspace-scoped call with 403.
+    if (clearStorage && customNodesEnv() !== 'cloud') {
       // Navigate to a lightweight same-origin endpoint to obtain a page
       // context for clearing storage without loading the full frontend app.
       await this.page.goto(`${this.url}/api/users`)
@@ -390,29 +417,57 @@ export class ComfyPage {
    * `WorkflowHelper.reloadAndWaitForApp()`.
    */
   async waitForAppReady() {
-    // A fuse, not a cap. The per-test cap is off on cloud because every
-    // number picked there only moved the cliff, but an UNBOUNDED wait is
-    // worse: a hung boot then burns the whole step ceiling in silence and
-    // the diagnostic below never runs, which is exactly what record run
-    // 30468334258 did. Five minutes is far past any healthy boot (cloud
-    // sign-in lands in well under a second and the app follows), so this
-    // fires only on a genuine hang - and when it fires it explains itself.
     const readyFuseMs = 300_000
+    // Fail fast on the first auth failure. A signed-out app answers every
+    // /api call 401/403 and never becomes ready, so without this the run
+    // burns the whole fuse before reporting. Only same-origin xhr/fetch
+    // counts - a bare document GET to /api/users legitimately 401s. Local
+    // ComfyUI has no auth, so on core these calls are 200 and this never
+    // fires; it needs no cloud guard.
+    let onAuthFail: ((response: Response) => void) | undefined
+    const authFailed = new Promise<never>((_, reject) => {
+      onAuthFail = (response) => {
+        const status = response.status()
+        if (status !== 401 && status !== 403) return
+        const type = response.request().resourceType()
+        if (type !== 'xhr' && type !== 'fetch') return
+        const url = response.url()
+        if (!url.includes('localhost') || !url.includes('/api/')) return
+        reject(
+          new Error(
+            `cloud auth failed: HTTP ${status} ${response.request().method()} ${url}`
+          )
+        )
+      }
+      this.page.on('response', onAuthFail)
+    })
+    authFailed.catch(() => {})
     try {
-      await this.page.waitForFunction(
-        // window.app => GraphCanvas ready
-        // window.app.extensionManager => GraphView ready
-        () => window.app?.extensionManager,
-        null,
-        { timeout: readyFuseMs }
-      )
-      await this.page
-        .locator('.p-blockui-mask')
-        .waitFor({ state: 'hidden', timeout: readyFuseMs })
+      const ready = (async () => {
+        await this.page.waitForFunction(
+          // window.app => GraphCanvas ready
+          // window.app.extensionManager => GraphView ready
+          () => window.app?.extensionManager,
+          null,
+          { timeout: readyFuseMs }
+        )
+        await this.page
+          .locator('.p-blockui-mask')
+          .waitFor({ state: 'hidden', timeout: readyFuseMs })
+      })()
+      await Promise.race([ready, authFailed])
     } catch (error) {
+      if (error instanceof Error && error.message.startsWith('cloud auth')) {
+        console.warn(
+          `[cloud] ${error.message} - aborting, session not authorized`
+        )
+        throw error
+      }
       const state = await this.describeUnreadyApp()
       console.warn(`[cloud] app never became ready: ${state}`)
       throw new Error(`app never became ready: ${state}`, { cause: error })
+    } finally {
+      if (onAuthFail) this.page.off('response', onAuthFail)
     }
     await this.nextFrame()
   }
@@ -670,13 +725,6 @@ export const comfyPageFixture = base.extend<{
     if (testInfo.tags.includes('@cloud')) {
       await comfyPage.cloudAuth.mockAuth()
     } else if (isCloudEnv) {
-      // A real smoke-user session (no route mocks), seeded before the app
-      // boots so the Firebase SDK restores it. Mutually exclusive with the
-      // @cloud mock above: its interceptions would corrupt a real session.
-      // Refuse to seed while tracing: the record rides page.evaluate
-      // arguments, which a trace records verbatim. Read the resolved option
-      // rather than the project's, so a --trace flag or a spec-level
-      // test.use({ trace }) cannot turn tracing on behind the guard.
       const traceMode =
         typeof trace === 'string' ? trace : (trace?.mode ?? 'off')
       if (traceMode !== 'off')
@@ -685,10 +733,6 @@ export const comfyPageFixture = base.extend<{
             `'${testInfo.project.name}' traces '${traceMode}' - run with ` +
             `--project=custom-nodes and without --trace`
         )
-      // Timed because a cloud beforeEach that overruns reports only "Test
-      // timeout exceeded while running beforeEach hook", which cannot tell
-      // sign-in apart from app boot - the whole reason cloud failures have
-      // been undiagnosable. These two lines name which half spent the budget.
       const authStartedAt = Date.now()
       await seedSmokeAuth(page, comfyPage.url)
       console.warn(`[cloud] smoke sign-in took ${Date.now() - authStartedAt}ms`)
