@@ -255,7 +255,8 @@ const {
   isFreeTier,
   currentTeamCreditStop,
   fetchBalance,
-  fetchStatus
+  fetchStatus,
+  type
 } = useBillingContext()
 const {
   monthlyBonusCredits,
@@ -361,12 +362,14 @@ const showBar = computed(
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
+// Workspace-owner gating only applies to team billing; legacy (personal,
+// including local/desktop) accounts have no workspace concept to gate on.
 const showActionButton = computed(
   () =>
     isActiveSubscription.value &&
     !zeroState &&
     !inactivePlan &&
-    permissions.value.canTopUp
+    (type.value !== 'workspace' || permissions.value.canTopUp)
 )
 
 const isMonthlyDepleted = computed(
