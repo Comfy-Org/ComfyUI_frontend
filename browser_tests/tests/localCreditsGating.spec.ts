@@ -63,6 +63,7 @@ test.describe(
       const userButton = page.getByTestId(TestIds.user.currentUserButton)
 
       await expect(userButton).toBeVisible()
+      await comfyPage.toast.closeToasts()
 
       await userButton.click()
       await expect(
