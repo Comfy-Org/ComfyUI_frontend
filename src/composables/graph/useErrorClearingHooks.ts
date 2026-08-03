@@ -11,7 +11,8 @@ import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LGraph,
   LGraphNode,
-  SubgraphEventMap
+  SubgraphEventMap,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
@@ -392,52 +393,78 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
     nodesStore.removeMissingNodesByPrefix(prefix)
   }
 
+  dropOutOfScopeMissingMedia()
+}
+
+function dropOutOfScopeMissingMedia(): void {
+  const mediaStore = useMissingMediaStore()
   const candidates = mediaStore.missingMediaCandidates
-  if (candidates) {
-    mediaStore.setMissingMedia(
-      candidates.filter((candidate) =>
-        isMissingMediaCandidateScopeActive(app.rootGraph, candidate)
-      )
+  if (!candidates) return
+  mediaStore.setMissingMedia(
+    candidates.filter((candidate) =>
+      isMissingMediaCandidateScopeActive(app.rootGraph, candidate)
     )
-  }
+  )
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {
-  const demotionListeners = new Map<
-    Subgraph,
-    (event: CustomEvent<SubgraphEventMap['widget-demoted']>) => void
-  >()
-  const installDemotionListeners = (subgraph: Subgraph): void => {
-    if (demotionListeners.has(subgraph)) return
-    const listener = (
+  const promotionCleanups = new Map<Subgraph, () => void>()
+
+  // Promotion moves value ownership between the interior widget and the host,
+  // so the error surface has to move with it. Rescanning the whole subtree
+  // covers both directions: the side that lost ownership fails the scope check
+  // and is dropped, the side that gained it is scanned fresh.
+  const rescanPromotionTargets = (subgraphNode: SubgraphNode): void => {
+    queueMicrotask(() => {
+      if (!app.rootGraph) return
+      dropOutOfScopeMissingMedia()
+      scanNodeErrorTargets(subgraphNode, scanSingleNodeMedia)
+    })
+  }
+
+  const installPromotionListeners = (subgraph: Subgraph): void => {
+    if (promotionCleanups.has(subgraph)) return
+    const onDemoted = (
       event: CustomEvent<SubgraphEventMap['widget-demoted']>
     ) => {
       if (!app.rootGraph) return
       const { subgraphNode, widget } = event.detail
       const executionId = getExecutionIdByNode(app.rootGraph, subgraphNode)
       if (!executionId) return
+      // The host input still carries the widget when this fires, so the scope
+      // filter cannot see it as gone yet.
       useMissingMediaStore().removeMissingMediaByWidget(
         executionId,
         widget.name
       )
+      rescanPromotionTargets(subgraphNode)
     }
-    subgraph.events.addEventListener('widget-demoted', listener)
-    demotionListeners.set(subgraph, listener)
+    const onPromoted = (
+      event: CustomEvent<SubgraphEventMap['widget-promoted']>
+    ) => {
+      rescanPromotionTargets(event.detail.subgraphNode)
+    }
+    subgraph.events.addEventListener('widget-demoted', onDemoted)
+    subgraph.events.addEventListener('widget-promoted', onPromoted)
+    promotionCleanups.set(subgraph, () => {
+      subgraph.events.removeEventListener('widget-demoted', onDemoted)
+      subgraph.events.removeEventListener('widget-promoted', onPromoted)
+    })
     for (const node of subgraph.nodes) {
-      if (node.isSubgraphNode()) installDemotionListeners(node.subgraph)
+      if (node.isSubgraphNode()) installPromotionListeners(node.subgraph)
     }
   }
 
-  if (graph instanceof Subgraph) installDemotionListeners(graph)
+  if (graph instanceof Subgraph) installPromotionListeners(graph)
   for (const node of graph._nodes ?? []) {
     installNodeHooksRecursive(node)
-    if (node.isSubgraphNode()) installDemotionListeners(node.subgraph)
+    if (node.isSubgraphNode()) installPromotionListeners(node.subgraph)
   }
 
   const originalOnNodeAdded = graph.onNodeAdded
   graph.onNodeAdded = function (node: LGraphNode) {
     installNodeHooksRecursive(node)
-    if (node.isSubgraphNode()) installDemotionListeners(node.subgraph)
+    if (node.isSubgraphNode()) installPromotionListeners(node.subgraph)
 
     // Scan pasted/duplicated nodes for missing models/media.
     // Skip during loadGraphData (undo/redo/tab switch) — those are
@@ -461,10 +488,8 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // "parentId:...:nodeId" path that matches how missing asset errors
     // are keyed; without this, removal falls back to the local ID and
     // misses subgraph entries.
-    if (app.rootGraph === graph.rootGraph) {
-      const execId = getRemovedNodeExecutionId(graph, node.id)
-      removeNodeErrors(node, execId)
-    }
+    const execId = getRemovedNodeExecutionId(graph, node.id)
+    removeNodeErrors(node, execId)
     restoreNodeHooksRecursive(node)
     originalOnNodeRemoved?.call(this, node)
   }
@@ -489,8 +514,6 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     graph.onNodeAdded = originalOnNodeAdded || undefined
     graph.onNodeRemoved = originalOnNodeRemoved || undefined
     graph.onTrigger = originalOnTrigger || undefined
-    for (const [subgraph, listener] of demotionListeners) {
-      subgraph.events.removeEventListener('widget-demoted', listener)
-    }
+    for (const cleanup of promotionCleanups.values()) cleanup()
   }
 }

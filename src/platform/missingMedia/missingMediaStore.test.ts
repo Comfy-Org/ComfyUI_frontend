@@ -341,7 +341,6 @@ describe('useMissingMediaStore', () => {
         }
       ])
 
-      expect(store.isWidgetMissingMedia).toBeTypeOf('function')
       expect(store.isWidgetMissingMedia(hostExecutionId, 'outer_image')).toBe(
         true
       )

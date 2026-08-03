@@ -158,8 +158,6 @@ export function isMissingMediaCandidateScopeActive(
   const widget = node?.widgets?.find(
     (candidateWidget) => candidateWidget.name === candidate.widgetName
   )
-  if (!widget) return !node.isSubgraphNode()
-
   const input = node.getSlotFromWidget?.(widget)
   if (input?.link != null) return false
   if (!node.isSubgraphNode()) return true

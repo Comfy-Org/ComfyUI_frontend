@@ -20,7 +20,8 @@ import {
 import {
   createPromotedMediaRuntime,
   createPromotedMissingMediaCandidate,
-  deferMediaVerification
+  deferMediaVerification,
+  seedMediaNodeDefs
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -544,9 +545,105 @@ describe('installErrorClearingHooks lifecycle', () => {
   })
 })
 
+describe('promoted widget promotion error surface moves with ownership', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    seedMediaNodeDefs()
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  function createPromotableLeaf() {
+    const subgraph = createTestSubgraph()
+    const rootGraph = subgraph.rootGraph
+    const host = createTestSubgraphNode(subgraph, { id: 65 })
+    rootGraph.add(host)
+
+    const leafNode = new LGraphNode('LoadImage')
+    leafNode.id = toNodeId(42)
+    leafNode.type = 'LoadImage'
+    const leafInput = leafNode.addInput('image', 'COMBO')
+    const leafWidget = leafNode.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      () => undefined,
+      { values: [] }
+    )
+    leafInput.widget = { name: leafWidget.name }
+    subgraph.add(leafNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    return { subgraph, rootGraph, host, leafNode, leafWidget }
+  }
+
+  it('moves a missing media error from the interior widget to the host on promotion', async () => {
+    const { subgraph, host, leafNode, leafWidget } = createPromotableLeaf()
+    installErrorClearingHooks(subgraph)
+
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      fromAny<MissingMediaCandidate, unknown>({
+        nodeId: createNodeExecutionId([host.id, leafNode.id]),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      })
+    ])
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, leafNode, leafWidget).ok
+    ).toBe(true)
+
+    await vi.waitFor(() =>
+      expect(mediaStore.missingMediaCandidates).toEqual([
+        expect.objectContaining({
+          nodeId: createNodeExecutionId([host.id]),
+          widgetName: host.widgets[0].name,
+          name: 'missing.png'
+        })
+      ])
+    )
+  })
+
+  it('re-surfaces the error on the interior widget that regains ownership on demotion', async () => {
+    const { subgraph, host, leafNode, leafWidget } = createPromotableLeaf()
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, leafNode, leafWidget).ok
+    ).toBe(true)
+    installErrorClearingHooks(subgraph)
+
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      fromAny<MissingMediaCandidate, unknown>({
+        nodeId: createNodeExecutionId([host.id]),
+        nodeType: 'LoadImage',
+        widgetName: host.widgets[0].name,
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      })
+    ])
+
+    demoteWidget(leafNode, leafWidget, [host])
+
+    await vi.waitFor(() =>
+      expect(mediaStore.missingMediaCandidates).toEqual([
+        expect.objectContaining({
+          nodeId: createNodeExecutionId([host.id, leafNode.id]),
+          widgetName: 'image',
+          name: 'missing.png'
+        })
+      ])
+    )
+  })
+})
+
 describe('promoted widget demotion error clearing', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
