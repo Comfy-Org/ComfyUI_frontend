@@ -219,14 +219,17 @@ describe('useSettingUI', () => {
       } as typeof window.__CONFIG__
     })
 
-    it('shows only the legacy Workspace panel when disabled', () => {
+    it('keeps the legacy Workspace panel and standalone Credits when disabled', () => {
       const { defaultCategory, findPanelByKey, navGroups } =
         useSettingUI('workspace')
       const workspaceItems = navGroups.value
         .find((group) => group.title === 'Workspace')
         ?.items.map(({ id, label }) => ({ id, label }))
 
-      expect(workspaceItems).toEqual([{ id: 'workspace', label: 'Workspace' }])
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'Workspace' },
+        { id: 'credits', label: 'Credits' }
+      ])
       expect(findPanelByKey('workspace')?.node.label).toBe('Workspace')
       expect(findPanelByKey('workspace-members')).toBeNull()
       expect(defaultCategory.value).toMatchObject({
@@ -244,7 +247,10 @@ describe('useSettingUI', () => {
         .find((group) => group.title === 'Workspace')
         ?.items.map(({ id, label }) => ({ id, label }))
 
-      expect(workspaceItems).toEqual([{ id: 'workspace', label: 'Workspace' }])
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'Workspace' },
+        { id: 'credits', label: 'Credits' }
+      ])
       expect(findPanelByKey('workspace')?.node.label).toBe('Workspace')
       expect(findPanelByKey('workspace-members')).toBeNull()
     })

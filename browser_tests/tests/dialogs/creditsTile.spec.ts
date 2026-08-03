@@ -13,7 +13,10 @@ import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
-import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import {
+  mockWorkspaceTokenMint,
+  workspace
+} from '@e2e/fixtures/utils/workspaceMocks'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS
@@ -66,11 +69,7 @@ const mockBillingStatus: BillingStatusResponse = {
   has_funds: true
 }
 
-async function mockCloudBoot(
-  page: Page,
-  billingControlEnabled = true,
-  workspaceType: 'personal' | 'team' = 'personal'
-) {
+async function mockCloudBoot(page: Page, billingControlEnabled = true) {
   // Frontend-origin boot endpoints (proxied to the backend in production).
   // `/api/features` is the remote-config source: production builds resolve
   // workspace availability and the billing UX rollout from it (the `ff:`
@@ -111,8 +110,24 @@ async function mockCloudBoot(
   await page.route('**/api/auth/session', (r) =>
     r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
   )
-  await mockWorkspace(page, workspace(workspaceType, 'owner'), [])
+  await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
+
+  // Single personal workspace.
+  await page.route('**/api/workspaces', (r) =>
+    r.fulfill(
+      jsonRoute({
+        workspaces: [
+          {
+            id: 'ws-personal',
+            name: 'Personal Workspace',
+            type: 'personal',
+            role: 'owner'
+          }
+        ]
+      })
+    )
+  )
 
   // Legacy billing (flag-off path, api.comfy.org/customers/*).
   await page.route('**/customers/cloud-subscription-status', (r) =>
@@ -130,7 +145,8 @@ async function mockCloudBoot(
     r.fulfill(balanceRoute(DEFAULT_BALANCE))
   )
 
-  // Workspace billing (flag-on path).
+  // Workspace billing (flag-on path) — a personal workspace now routes through
+  // `/api/billing/*`.
   await page.route('**/api/billing/status', (r) =>
     r.fulfill(jsonRoute(mockBillingStatus))
   )
@@ -193,40 +209,35 @@ async function openPlanAndCredits(page: Page) {
 }
 
 test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
-  for (const workspaceType of ['personal', 'team'] as const) {
-    test(`keeps only Workspace navigation in V0 for a ${workspaceType} workspace`, async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
+  test('keeps the legacy Workspace UX when billing controls are disabled', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
 
-      await mockCloudBoot(page, false, workspaceType)
-      const dialog = await openSettings(page)
-      const nav = dialog.locator('nav')
+    await mockCloudBoot(page, false)
+    const dialog = await openSettings(page)
+    const nav = dialog.locator('nav')
 
-      await expect(
-        nav.getByRole('button', { name: 'Workspace', exact: true })
-      ).toBeVisible()
-      await expect(
-        nav.getByRole('button', { name: 'Credits', exact: true })
-      ).toHaveCount(0)
-      await expect(
-        nav.getByRole('button', { name: 'Plan & Credits', exact: true })
-      ).toHaveCount(0)
-      await expect(
-        nav.getByRole('button', { name: 'Members', exact: true })
-      ).toHaveCount(0)
+    await expect(
+      nav.getByRole('button', { name: 'Workspace', exact: true })
+    ).toBeVisible()
+    await expect(
+      nav.getByRole('button', { name: 'Plan & Credits', exact: true })
+    ).toHaveCount(0)
+    await expect(
+      nav.getByRole('button', { name: 'Members', exact: true })
+    ).toHaveCount(0)
 
-      await nav.getByRole('button', { name: 'Workspace', exact: true }).click()
-      const content = dialog.getByRole('main')
-      await expect(
-        content.getByRole('tab', { name: 'Plan & Credits' })
-      ).toBeVisible()
-      await expect(content.getByRole('tab', { name: 'Members' })).toBeVisible()
-      await expect(
-        content.getByRole('button', { name: 'Activity' })
-      ).toHaveCount(0)
-    })
-  }
+    await nav.getByRole('button', { name: 'Workspace', exact: true }).click()
+    const content = dialog.getByRole('main')
+    await expect(
+      content.getByRole('tab', { name: 'Plan & Credits' })
+    ).toBeVisible()
+    await expect(content.getByRole('tab', { name: 'Members' })).toBeVisible()
+    await expect(content.getByRole('button', { name: 'Activity' })).toHaveCount(
+      0
+    )
+  })
 
   test('renders the unified tile with breakdown and add-credits', async ({
     page
