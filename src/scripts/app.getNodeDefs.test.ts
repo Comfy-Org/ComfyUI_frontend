@@ -100,11 +100,44 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(resolveNodeDefText('description', 'TestNode')).toBe('Published desc')
   })
 
-  test('tolerates a node-def response that is not an object', async () => {
-    vi.mocked(api.getNodeDefs).mockResolvedValue(
-      null as unknown as Record<string, ComfyNodeDefV1>
+  test.for([[null], [undefined], ['a string'], [['x']], [42], [true]])(
+    'tolerates a node-def response of %j',
+    async ([response]) => {
+      vi.mocked(api.getNodeDefs).mockResolvedValue(
+        response as unknown as Record<string, ComfyNodeDefV1>
+      )
+
+      await expect(comfyApp.getNodeDefs()).resolves.toEqual({})
+    }
+  )
+
+  test('falls back to the bundled name when the backend omits display_name', async () => {
+    mockDefs(
+      nodeDef({
+        name: 'CLIPTextEncode',
+        display_name: undefined,
+        description: ''
+      })
     )
 
-    await expect(comfyApp.getNodeDefs()).resolves.toEqual({})
+    const result = await comfyApp.getNodeDefs()
+
+    expect(result.CLIPTextEncode.display_name).toBe('CLIP Text Encode (Prompt)')
+  })
+
+  test('falls back to the bundled description when the backend omits one', async () => {
+    mockDefs(
+      nodeDef({ name: 'CLIPTextEncode', display_name: 'x', description: '' })
+    )
+
+    const result = await comfyApp.getNodeDefs()
+
+    expect(result.CLIPTextEncode.description).toMatch(/^Encodes a text prompt/)
+  })
+
+  test('tolerates a def without a category', async () => {
+    mockDefs(nodeDef({ category: undefined as unknown as string }))
+
+    await expect(comfyApp.getNodeDefs()).resolves.toBeDefined()
   })
 })

@@ -1105,12 +1105,14 @@ export class ComfyApp {
         display_name: resolveNodeDefText(
           'display_name',
           def.name,
-          def.display_name || def.name
+          def.display_name || undefined
         ),
-        description: def.description
-          ? resolveNodeDefText('description', def.name, def.description)
-          : '',
-        category: def.category
+        description: resolveNodeDefText(
+          'description',
+          def.name,
+          def.description || undefined
+        ),
+        category: (def.category ?? '')
           .split('/')
           .map((category: string) =>
             st(`nodeCategories.${normalizeI18nKey(category)}`, category)
@@ -1119,7 +1121,13 @@ export class ComfyApp {
       }
     }
 
-    const defs = (await api.getNodeDefs()) ?? {}
+    const response: unknown = await api.getNodeDefs()
+    const defs: Record<string, ComfyNodeDefV1> =
+      typeof response === 'object' &&
+      response !== null &&
+      !Array.isArray(response)
+        ? (response as Record<string, ComfyNodeDefV1>)
+        : {}
     setBackendNodeText(Object.values(defs))
     return _.mapValues(defs, (def) => translateNodeDef(def))
   }
