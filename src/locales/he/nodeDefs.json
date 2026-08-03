@@ -6500,6 +6500,48 @@
       }
     }
   },
+  "IdeogramPImage": {
+    "description": "יוצר תמונות באמצעות P-Image, מודל טקסט-לתמונה מהיר של Ideogram. טיפוגרפיה חזקה ופוטוריאליזם; תומך ב־Ideogram 4.0 structured JSON captions לטקסט, צבעים ופריסה מדויקים.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "יחס הגובה-רוחב ליצירת התמונה."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "פרומפט טקסטואלי. ניתן גם להזין Ideogram 4.0 structured JSON caption (צבעים מדויקים כ־#RRGGBB hexes, מחרוזות טקסט מדויקות, פריסת bounding-box) — יש להגדיר prompt_upsampling ל־OFF כדי להשתמש בו כפי שהוא."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "מרחיב פרומפטים קצרים לכיתוב מובנה ומפורט לפני יצירה (הפרומפט המשוכתב מוחזר כ־final_prompt). יש להגדיר OFF כאשר מספקים JSON caption משלכם או טקסט מדויק."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "רמת מהירות/מחיר/איכות. MEDIUM היא ברירת המחדל היומיומית; HIGH לפרומפטים מורכבים, פירוט עדין וטקסטים קשים; VERY_LOW/LOW לטיוטות בהיקף רחב. טקסטים קשים מתקבלים באיכות ירודה מתחת ל־MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "מחלקת גודל הפלט (פיקסלים מדויקים בהתאם ליחס הגובה-רוחב, לדוג' 16:9 נותן 1280x720 ב־1K ו־2560x1440 ב־2K). מומלץ HIGH + 2K לטיפוגרפיה חדה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "זרע (seed) ליצירה ניתנת לשחזור. כאשר prompt_upsampling ב־OFF, אותו seed והגדרות מחזירים את אותה תמונה; ב־ON/AUTO השכתוב משתנה בכל הרצה — לשחזור תוצאה השתמשו ב־final_prompt עם prompt_upsampling ב־OFF ואותו seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "הפרומפט שממנו התמונה נוצרה בפועל (הכיתוב המובנה המשוכתב כאשר prompt_upsampling הופעל, אחרת הפרומפט שלכם). ניתן להזינו שוב עם prompt_upsampling ב־OFF ואותו seed כדי לשחזר את התמונה."
+      }
+    }
+  },
   "IdeogramV3": {
     "description": "יוצר תמונות באמצעות מודל Ideogram V3. תומך ביצירת תמונות מהנחיות טקסט רגילות וכן בעריכת תמונה עם מסכה.",
     "display_name": "Ideogram V3",
@@ -11328,6 +11370,125 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "יוצר וידאו מתמונה של פריים ראשון ואופציונלית גם פריים אחרון באמצעות מודל MiniMax H3. יחס הגובה-רוחב של הווידאו תואם לתמונות שסופקו.",
+    "display_name": "MiniMax H3 יצירת וידאו מפריים ראשון ואחרון",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "תמונת הפריים הראשון לווידאו."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "תמונת פריים אחרון אופציונלית לווידאו."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל לשימוש ביצירת הווידאו."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "זרע אקראי. אותה בקשה עם אותו seed תניב תוצאות דומות, אך לא בהכרח זהות."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "האם להוסיף סימן מים AIGC לווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "יצירת וידאו בהתבסס על תמונות רפרנס, סרטונים ואודיו באמצעות מודל MiniMax H3. התייחסו לרפרנסים בהנחיה לפי הסדר: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
+    "display_name": "MiniMax H3 רפרנס לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש ביצירת הווידאו."
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_ratio": {
+        "name": "יחס"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "זרע אקראי. בקשה זהה עם אותו seed תניב תוצאות דומות, אך לא בהכרח זהות."
+      },
+      "watermark": {
+        "name": "סימן מים",
+        "tooltip": "האם להוסיף סימן מים של AIGC לווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "יצירת וידאו מהנחיה טקסטואלית באמצעות מודל MiniMax H3.",
+    "display_name": "MiniMax H3 טקסט לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש ביצירת הווידאו."
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_ratio": {
+        "name": "יחס"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "זרע אקראי. בקשה זהה עם אותו seed תניב תוצאות דומות, אך לא בהכרח זהות."
+      },
+      "watermark": {
+        "name": "סימן מים",
+        "tooltip": "האם להוסיף סימן מים של AIGC לווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

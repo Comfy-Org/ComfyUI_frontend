@@ -21,6 +21,8 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
@@ -48,6 +50,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  UnifiedAuthRetryMetadata,
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
@@ -91,6 +94,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAuthFailed(metadata: AuthErrorMetadata): void {
     this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
+  }
+
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRetry?.(metadata))
   }
 
   trackUserLoggedIn(): void {
@@ -362,6 +369,22 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackNamedValuesShadowDiffMismatch?.(metadata)
+    )
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackNamedValuesShadowDiffSummary?.(metadata)
+    )
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
