@@ -16,6 +16,7 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 type NonEmptyIds = readonly [number, ...number[]]
 
@@ -92,12 +93,11 @@ export function deferMediaVerification() {
 
 /** A candidate addressed by node path, without laundering the id brand. */
 export function createMissingMediaCandidate(
-  nodePath: [number, ...number[]],
+  nodePath: readonly [NodeId, ...NodeId[]],
   overrides: Partial<MissingMediaCandidate> = {}
 ): MissingMediaCandidate {
-  const [first, ...rest] = nodePath.map(toNodeId)
   return {
-    nodeId: createNodeExecutionId([first, ...rest]),
+    nodeId: createNodeExecutionId(nodePath),
     nodeType: promotedMediaNodeType,
     widgetName: 'image',
     mediaType: 'image',

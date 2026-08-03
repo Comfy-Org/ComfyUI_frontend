@@ -1,9 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   demoteWidget,
   promoteValueWidgetViaSubgraphInput
@@ -53,7 +54,7 @@ describe('link ownership error surface', () => {
     installErrorClearingHooks(graph)
 
     const mediaStore = useMissingMediaStore()
-    mediaStore.setMissingMedia([createMissingMediaCandidate([Number(node.id)])])
+    mediaStore.setMissingMedia([createMissingMediaCandidate([node.id])])
 
     const link = upstream.connect(0, node, 0)
     if (!link) throw new Error('Expected media input link')
@@ -73,6 +74,53 @@ describe('link ownership error surface', () => {
   })
 })
 
+describe('link ownership while a workflow loads', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    seedMediaNodeDefs()
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  afterEach(() => {
+    ChangeTracker.isLoadingGraph = false
+  })
+
+  it('keeps restored candidates while the graph is still being wired', async () => {
+    const graph = new LGraph()
+    const upstream = new LGraphNode('ImageSource')
+    upstream.addOutput('image', 'COMBO')
+    graph.add(upstream)
+
+    const node = new LGraphNode('LoadImage')
+    node.type = 'LoadImage'
+    const input = node.addInput('image', 'COMBO')
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      () => undefined,
+      { values: [] }
+    )
+    input.widget = { name: widget.name }
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    installErrorClearingHooks(graph)
+
+    // A workflow load restores cached candidates, then configure() replays a
+    // connection change for every input slot.
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([createMissingMediaCandidate([toNodeId(999)])])
+    ChangeTracker.isLoadingGraph = true
+
+    const link = upstream.connect(0, node, 0)
+    if (!link) throw new Error('Expected media input link')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(mediaStore.missingMediaCandidates).toHaveLength(1)
+  })
+})
+
 describe('promotion listener lifecycle', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -84,7 +132,7 @@ describe('promotion listener lifecycle', () => {
   function seedStaleCandidate() {
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([
-      createMissingMediaCandidate([999], { name: 'stale.png' })
+      createMissingMediaCandidate([toNodeId(999)], { name: 'stale.png' })
     ])
     return mediaStore
   }
@@ -201,7 +249,7 @@ describe('promoted widget promotion error surface moves with ownership', () => {
 
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([
-      createMissingMediaCandidate([Number(host.id), Number(leafNode.id)])
+      createMissingMediaCandidate([host.id, leafNode.id])
     ])
 
     expect(
@@ -228,7 +276,7 @@ describe('promoted widget promotion error surface moves with ownership', () => {
 
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([
-      createMissingMediaCandidate([Number(host.id)], {
+      createMissingMediaCandidate([host.id], {
         widgetName: host.widgets[0].name
       })
     ])
@@ -283,7 +331,7 @@ describe('promoted widget demotion error clearing', () => {
 
     const mediaStore = useMissingMediaStore()
     const candidates = [
-      createMissingMediaCandidate([Number(host.id)], {
+      createMissingMediaCandidate([host.id], {
         widgetName: host.widgets[0].name
       })
     ]

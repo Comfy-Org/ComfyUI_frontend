@@ -104,21 +104,22 @@ export function scanNodeMediaCandidates(
   const executionId = getExecutionIdByNode(rootGraph, node)
   if (!executionId) return []
 
-  const nodeDefStore = useNodeDefStore()
-  const candidates: MissingMediaCandidate[] = []
   if (node.isUploading) return []
 
+  const nodeDefStore = useNodeDefStore()
+  const candidates: MissingMediaCandidate[] = []
   for (const widget of node.widgets) {
     if (!isComboWidget(widget)) continue
-    if (!isEditableValueOwner(node, widget)) continue
 
     // getInputSpecForWidget projects a promoted host input to its interior
     // spec itself, so the scan reads schema through the store rather than
-    // walking the subgraph.
+    // walking the subgraph. Media-ness is the cheaper question, so it runs
+    // before the ownership walk.
     const mediaType = mediaTypeFromSpec(
       nodeDefStore.getInputSpecForWidget(node, widget.name)
     )
     if (!mediaType) continue
+    if (!isEditableValueOwner(node, widget)) continue
 
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
