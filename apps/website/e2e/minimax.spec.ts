@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { externalLinks, getRoutes } from '../src/config/routes'
-import { minimaxFaqs, minimaxReviews } from '../src/data/minimax'
+import { minimaxFaqs, minimaxLinks, minimaxReviews } from '../src/data/minimax'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -12,6 +12,7 @@ const MODELS_ROUTE = getRoutes('en').models
 const CTA_HEADING = t('minimax.cta.heading', 'en')
 const CTA_PRIMARY = t('minimax.cta.primaryCta', 'en')
 const CLOUD_URL = externalLinks.cloud
+const CLOUD_RUN_URL = minimaxLinks.cloudRun
 const FAQ_COUNT = minimaxFaqs.length
 const FIRST_FAQ = minimaxFaqs[0]
 const REVIEWS_HEADING = t('minimax.reviews.heading', 'en')
@@ -73,7 +74,7 @@ test.describe('MiniMax H3 page — link targets', () => {
     const primary = ctaSection.getByRole('link', { name: CTA_PRIMARY })
     await primary.scrollIntoViewIfNeeded()
     await expect(primary).toBeVisible()
-    await expect(primary).toHaveAttribute('href', CLOUD_URL)
+    await expect(primary).toHaveAttribute('href', CLOUD_RUN_URL)
     await expect(primary).toHaveAttribute('target', '_blank')
     await expect(primary).toHaveAttribute('rel', /noopener/)
   })
