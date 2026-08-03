@@ -269,16 +269,20 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('locks back navigation after Pay while the top-up is pending', async () => {
+  it('locks pending payment actions and prevents duplicate top-ups', async () => {
     mockTopup.mockResolvedValue(topupResponse('pending'))
 
     renderDialog()
     await clickAddCredits()
-    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    const payButton = screen.getByRole('button', { name: 'Pay $50.00' })
+    await userEvent.click(payButton)
     await nextTick()
 
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
     expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
+
+    payButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(mockTopup).toHaveBeenCalledOnce()
   })
 
   it('unlocks payment and reports an operation start failure', async () => {

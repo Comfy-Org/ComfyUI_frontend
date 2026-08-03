@@ -392,7 +392,7 @@ function handleClose(clearTracking = true) {
 
 async function handleBuy() {
   if (
-    loading.value ||
+    paymentLocked.value ||
     !isValidAmount.value ||
     (shouldUseWorkspaceBilling.value && !permissions.value.canTopUp)
   ) {
