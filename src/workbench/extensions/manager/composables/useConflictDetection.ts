@@ -47,6 +47,72 @@ import {
 const BULK_NODE_VERSIONS_CHUNK_SIZE = 100
 
 /**
+ * Chunk requests allowed in flight at once, so a large install can't fan out
+ * into dozens of simultaneous registry requests and get rate-limited.
+ */
+const BULK_NODE_VERSIONS_MAX_PARALLEL_REQUESTS = 4
+
+/**
+ * Fetches version data for every installed pack in bounded batches of
+ * `POST /bulk/nodes/versions` requests, keyed by node id. Chunks that fail are
+ * skipped so the rest of the installed packs still get their Registry data.
+ */
+async function fetchBulkNodeVersions(
+  registryService: ReturnType<typeof useComfyRegistryService>,
+  nodeVersions: components['schemas']['NodeVersionIdentifier'][],
+  signal?: AbortSignal
+): Promise<Map<string, components['schemas']['NodeVersion']>> {
+  const versionDataMap = new Map<string, components['schemas']['NodeVersion']>()
+
+  const requestChunks = chunk(nodeVersions, BULK_NODE_VERSIONS_CHUNK_SIZE)
+
+  for (const parallelChunks of chunk(
+    requestChunks,
+    BULK_NODE_VERSIONS_MAX_PARALLEL_REQUESTS
+  )) {
+    if (signal?.aborted) break
+
+    const bulkResponses = await Promise.allSettled(
+      parallelChunks.map((nodeVersionsChunk) =>
+        registryService.getBulkNodeVersions(nodeVersionsChunk, signal)
+      )
+    )
+
+    for (const bulkResponse of bulkResponses) {
+      if (signal?.aborted) break
+
+      if (bulkResponse.status === 'rejected') {
+        console.warn(
+          '[ConflictDetection] Failed to fetch bulk version data:',
+          bulkResponse.reason
+        )
+        continue
+      }
+
+      if (!bulkResponse.value) {
+        console.warn(
+          '[ConflictDetection] Failed to fetch bulk version data for one batch of installed packs'
+        )
+        continue
+      }
+
+      bulkResponse.value.node_versions?.forEach((result) => {
+        if (result.status === 'success' && result.node_version) {
+          versionDataMap.set(result.identifier.node_id, result.node_version)
+        } else if (result.status === 'error') {
+          console.warn(
+            `[ConflictDetection] Failed to fetch version data for ${result.identifier.node_id}@${result.identifier.version}:`,
+            result.error_message
+          )
+        }
+      })
+    }
+  }
+
+  return versionDataMap
+}
+
+/**
  * Composable for conflict detection system.
  * Error-resilient and asynchronous to avoid affecting other components.
  */
@@ -162,67 +228,17 @@ export function useConflictDetection() {
       abortController.value = new AbortController()
 
       // Step 4: Use bulk API to fetch all version data in chunked requests
-      const versionDataMap = new Map<
-        string,
-        components['schemas']['NodeVersion']
-      >()
-
       // Prepare bulk request with actual installed versions from Manager API
       const nodeVersions = installedPacksWithVersions.value.map((pack) => ({
         node_id: pack.id,
         version: pack.version
       }))
 
-      if (nodeVersions.length > 0) {
-        try {
-          const signal = abortController.value?.signal
-          const bulkResponses = await Promise.allSettled(
-            chunk(nodeVersions, BULK_NODE_VERSIONS_CHUNK_SIZE).map(
-              (nodeVersionsChunk) =>
-                registryService.getBulkNodeVersions(nodeVersionsChunk, signal)
-            )
-          )
-
-          for (const bulkResponse of bulkResponses) {
-            if (bulkResponse.status === 'rejected') {
-              console.warn(
-                '[ConflictDetection] Failed to fetch bulk version data:',
-                bulkResponse.reason
-              )
-              continue
-            }
-
-            if (!bulkResponse.value) {
-              if (!signal?.aborted) {
-                console.warn(
-                  '[ConflictDetection] Failed to fetch bulk version data for one batch of installed packs'
-                )
-              }
-              continue
-            }
-
-            // Process bulk response
-            bulkResponse.value.node_versions?.forEach((result) => {
-              if (result.status === 'success' && result.node_version) {
-                versionDataMap.set(
-                  result.identifier.node_id,
-                  result.node_version
-                )
-              } else if (result.status === 'error') {
-                console.warn(
-                  `[ConflictDetection] Failed to fetch version data for ${result.identifier.node_id}@${result.identifier.version}:`,
-                  result.error_message
-                )
-              }
-            })
-          }
-        } catch (error) {
-          console.warn(
-            '[ConflictDetection] Failed to fetch bulk version data:',
-            error
-          )
-        }
-      }
+      const versionDataMap = await fetchBulkNodeVersions(
+        registryService,
+        nodeVersions,
+        abortController.value?.signal
+      )
 
       // Step 5: Combine local installation data with Registry version data
       const requirements: NodeRequirements[] = []

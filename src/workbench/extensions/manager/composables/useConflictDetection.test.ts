@@ -550,6 +550,30 @@ describe('useConflictDetection', () => {
       expect(bannedPackIds(results)).toEqual(packIds(250).slice(100))
     })
 
+    it('bounds how many chunk requests are in flight at once', async () => {
+      installPacks(1000)
+      let inFlightRequests = 0
+      let peakInFlightRequests = 0
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+        async (nodeVersions) => {
+          inFlightRequests += 1
+          peakInFlightRequests = Math.max(
+            peakInFlightRequests,
+            inFlightRequests
+          )
+          await Promise.resolve()
+          inFlightRequests -= 1
+          return bannedResponse(nodeVersions)
+        }
+      )
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      await runFullConflictAnalysis()
+
+      expect(bulkCalls()).toHaveLength(10)
+      expect(peakInFlightRequests).toBeLessThanOrEqual(4)
+    })
+
     it('sends a single request when the install fits in one chunk', async () => {
       installPacks(50)
 
