@@ -1,7 +1,7 @@
 import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware, Placement, Rect } from '@floating-ui/vue'
 import { useEventListener } from '@vueuse/core'
-import { computed, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, readonly, ref, toValue, watch, watchEffect } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
@@ -11,6 +11,8 @@ import type { CoachPlacement, CoachStep } from './onboardingTours'
 // A target animating in via CSS transform reports through neither scroll nor
 // resize events; poll each frame until its rect holds still this long.
 const MOTION_SETTLE_MS = 250
+
+const RAPID_CHANGE_MS = 50
 
 const PLACEMENT: Record<
   Exclude<CoachPlacement, 'auto' | 'center'>,
@@ -113,10 +115,19 @@ export function useCoachmarkTarget(
     { immediate: true }
   )
 
-  watch(rectKey, (_key, _prev, onCleanup) => {
+  const targetMoving = ref(false)
+  let lastChangeAt = 0
+  watch(rectKey, (key, prev, onCleanup) => {
+    const now = performance.now()
+    if (key && prev) {
+      trackMotion.value = true
+      if (now - lastChangeAt < RAPID_CHANGE_MS) targetMoving.value = true
+    }
+    lastChangeAt = now
     if (!trackMotion.value) return
     const timer = setTimeout(() => {
       trackMotion.value = false
+      targetMoving.value = false
     }, MOTION_SETTLE_MS)
     onCleanup(() => clearTimeout(timer))
   })
@@ -132,5 +143,11 @@ export function useCoachmarkTarget(
     )
   })
 
-  return { targetEl, targetRect, floatingStyles, isPositioned }
+  return {
+    targetEl,
+    targetRect,
+    floatingStyles,
+    isPositioned,
+    targetMoving: readonly(targetMoving)
+  }
 }

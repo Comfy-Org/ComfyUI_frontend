@@ -1,4 +1,5 @@
-export type EntryPath = 'appMode'
+export const ENTRY_PATHS = ['appMode', 'firstRun'] as const
+export type EntryPath = (typeof ENTRY_PATHS)[number]
 
 /** Setting holding the tours the user has completed or dismissed. */
 export const TOUR_SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
@@ -18,7 +19,11 @@ export const COACH_IDS = {
   appRunButton: 'app-run-button',
   inputsList: 'inputs-list',
   outputs: 'outputs',
-  assetsPanel: 'assets-panel'
+  assetsPanel: 'assets-panel',
+  graphRunButton: 'graph-run-button',
+  firstRunSource: 'first-run-source',
+  firstRunPrompt: 'first-run-prompt',
+  firstRunSink: 'first-run-sink'
 } as const
 
 export type CoachId = (typeof COACH_IDS)[keyof typeof COACH_IDS]
@@ -40,7 +45,14 @@ export interface CoachStep {
   /** Renders the landing dialog instead of a spotlight. */
   landing?: boolean
   image?: string
+  onEnter?: (signal: AbortSignal) => void | Promise<void>
+  interactive?: boolean
+  busy?: () => boolean
+  selfAdvancing?: boolean
+  primaryAction?: () => void
 }
+
+export type TourDefinition = CoachStep[] | (() => CoachStep[])
 
 /**
  * Fixes the running step set (and so the step count) at tour start: drops steps
@@ -55,7 +67,7 @@ export function resolveSteps(
   )
 }
 
-export const TOURS: Record<EntryPath, CoachStep[]> = {
+const TOURS: Partial<Record<EntryPath, TourDefinition>> = {
   appMode: [
     {
       name: 'landing',
@@ -89,4 +101,12 @@ export const TOURS: Record<EntryPath, CoachStep[]> = {
       openSidebarTab: 'assets'
     }
   ]
+}
+
+export function registerTour(entry: EntryPath, definition: TourDefinition) {
+  TOURS[entry] = definition
+}
+
+export function tourDefinition(entry: EntryPath): TourDefinition | undefined {
+  return TOURS[entry]
 }

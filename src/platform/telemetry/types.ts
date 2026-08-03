@@ -118,6 +118,7 @@ export type OnboardingTourSkipReason =
   | 'user'
   | 'target_timeout'
   | 'trigger_lost'
+  | 'postponed'
 
 /**
  * `step_number` is 1-based and matches the "Step N of M" indicator the user

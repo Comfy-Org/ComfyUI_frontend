@@ -1,6 +1,21 @@
 <template>
   <div ref="overlayRef" class="pointer-events-none fixed inset-0">
+    <svg
+      v-if="step.interactive"
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 size-full"
+    >
+      <path
+        data-testid="coach-hit-region"
+        :d="hitRegionPath"
+        :fill="targetRect ? 'transparent' : 'var(--color-coach-scrim)'"
+        fill-rule="evenodd"
+        class="pointer-events-auto"
+      />
+    </svg>
     <div
+      v-else
+      data-testid="coach-blocker"
       :class="
         cn(
           'pointer-events-auto absolute inset-0',
@@ -11,12 +26,18 @@
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      class="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
+      :class="
+        cn(
+          'pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring',
+          !targetMoving &&
+            'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-200 motion-safe:ease-out'
+        )
+      "
       :style="spotlightStyle"
     />
     <FocusScope
       as-child
-      :trapped="!waitingForTarget"
+      :trapped="!waitingForTarget && !step.interactive"
       loop
       @mount-auto-focus.prevent
     >
@@ -26,7 +47,13 @@
         aria-modal="true"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
-        class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
+        :class="
+          cn(
+            'pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto',
+            !targetMoving &&
+              'motion-safe:transition-[left,top] motion-safe:duration-200 motion-safe:ease-out'
+          )
+        "
         :style="cardStyle"
       >
         <CoachmarkCard
@@ -43,6 +70,12 @@
           :message-id="bodyId"
           :image="step.image"
         >
+          <i
+            v-if="step.busy?.()"
+            data-testid="coach-busy"
+            class="absolute top-4 right-4 z-10 icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
+            aria-hidden="true"
+          />
           <template #actions>
             <Button
               v-if="showSkip"
@@ -64,11 +97,14 @@
                 {{ backLabel }}
               </Button>
               <Button
+                v-if="!step.selfAdvancing || step.primaryAction"
                 ref="primaryButton"
                 variant="inverted"
                 size="md"
                 :disabled="waitingForTarget"
-                @click="emit('advance')"
+                @click="
+                  step.primaryAction ? step.primaryAction() : emit('advance')
+                "
               >
                 {{ primaryLabel }}
                 <i v-if="!isLast" class="icon-[lucide--arrow-right]" />
@@ -152,7 +188,7 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const { targetRect, targetEl, floatingStyles, isPositioned } =
+const { targetRect, targetEl, floatingStyles, isPositioned, targetMoving } =
   useCoachmarkTarget(() => step, cardRef)
 
 // Last step's "Done" already dismisses, so hide Skip there.
@@ -210,6 +246,18 @@ onBeforeUnmount(() => {
 function viewport() {
   return { width: windowWidth.value, height: windowHeight.value }
 }
+
+const hitRegionPath = computed(() => {
+  const { width, height } = viewport()
+  const r = targetRect.value
+  const viewportPath = `M0 0H${width}V${height}H0Z`
+  if (!r) return viewportPath
+  const x = Math.max(0, r.left - SPOTLIGHT_PAD)
+  const y = Math.max(0, r.top - SPOTLIGHT_PAD)
+  const w = Math.min(width, r.right + SPOTLIGHT_PAD) - x
+  const h = Math.min(height, r.bottom + SPOTLIGHT_PAD) - y
+  return `${viewportPath}M${x} ${y}h${w}v${h}h${-w}Z`
+})
 
 const spotlightStyle = computed(() => {
   const r = targetRect.value

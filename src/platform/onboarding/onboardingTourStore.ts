@@ -1,5 +1,6 @@
+import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -12,7 +13,11 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
-import { TOURS, TOUR_SEEN_SETTING, resolveSteps } from './onboardingTours'
+import {
+  tourDefinition,
+  TOUR_SEEN_SETTING,
+  resolveSteps
+} from './onboardingTours'
 import type { CoachStep, EntryPath } from './onboardingTours'
 import { useTourTriggers } from './useTourTriggers'
 
@@ -44,7 +49,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     return s ? countedSteps.value.indexOf(s) : 0
   })
   // Back navigates the numbered steps only — never into the landing.
-  const canGoBack = computed(() => countedStepIdx.value > 0)
+  const canGoBack = computed(
+    () =>
+      countedStepIdx.value > 0 && !steps.value[stepIdx.value - 1]?.selfAdvancing
+  )
 
   function trackTour(
     stage: OnboardingTourStage,
@@ -127,6 +135,14 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       }
     }
     stepIdx.value = idx
+    if (nextStep.onEnter) {
+      try {
+        await nextStep.onEnter(signal)
+      } catch (error) {
+        if (!signal.aborted) console.error('coachmark onEnter failed', error)
+      }
+      if (signal.aborted) return
+    }
     trackTour('step_shown')
   }
 
@@ -152,6 +168,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     finish('skipped')
   }
 
+  function postpone() {
+    finish('skipped', { markSeen: false, skipReason: 'postponed' })
+  }
+
   function finish(
     outcome: 'completed' | 'skipped',
     {
@@ -169,13 +189,9 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   }
 
   for (const [entryPath, trigger] of useTourTriggers()) {
-    watch(
-      trigger.autoOpen,
-      (visible) => {
-        if (visible) startTour(entryPath)
-      },
-      { immediate: true }
-    )
+    whenever(trigger.autoOpen, () => startTour(entryPath), {
+      immediate: true
+    })
     watch(trigger.holds, (holding) => {
       if (!holding && activeTour.value === entryPath)
         finish('skipped', { markSeen: false, skipReason: 'trigger_lost' })
@@ -192,19 +208,27 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     void settingStore.set(TOUR_SEEN_SETTING, [...seen, entryPath])
   }
 
-  function startTour(entryPath: EntryPath, force = false) {
-    if (steps.value.length) return
-    if (!force && hasSeenTour(entryPath)) return
-    const resolved = resolveSteps(TOURS[entryPath], targetMounted)
-    if (!resolved.length) return
+  function begin(entryPath: EntryPath): boolean {
+    if (steps.value.length) return false
+    const definition = tourDefinition(entryPath)
+    if (!definition) return false
+    const built = Array.isArray(definition) ? definition : definition()
+    const resolved = resolveSteps(built, targetMounted)
+    if (!resolved.length) return false
     steps.value = resolved
     activeTour.value = entryPath
     trackTour('started')
     void showStep(0)
+    return true
+  }
+
+  function startTour(entryPath: EntryPath): boolean {
+    if (hasSeenTour(entryPath)) return false
+    return begin(entryPath)
   }
 
   function replayTour(entryPath: EntryPath) {
-    startTour(entryPath, true)
+    begin(entryPath)
   }
 
   return {
@@ -219,9 +243,12 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     countedStepIdx,
     countedStepsTotal,
     waitingForTarget,
+    startTour,
     replayTour,
     next,
     back,
-    skip
+    skip,
+    postpone,
+    activeTour: readonly(activeTour)
   }
 })

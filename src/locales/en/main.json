@@ -4785,6 +4785,47 @@
         "title": "Find all your assets",
         "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
       }
+    },
+    "firstRun": {
+      "upload": {
+        "title": "Start with an image",
+        "body": "This image feeds the workflow. Swap in your own whenever you like."
+      },
+      "prompt": {
+        "title": "Describe what you want",
+        "body": "Your result gets built from this description. Try anything you like."
+      },
+      "run": {
+        "title": "Run your workflow",
+        "body": "Press Run to start generating your result.",
+        "primary": "Run"
+      },
+      "result": {
+        "generating": {
+          "title": "Hang tight",
+          "body": "Your result lands right here the moment it's ready."
+        },
+        "failed": {
+          "title": "That run didn't finish",
+          "body": "Nothing landed here. Close the tour and try running again."
+        },
+        "image": {
+          "title": "And there it is",
+          "body": "Your new image lands right here, ready to download or share.",
+          "primary": "Explore templates"
+        },
+        "video": {
+          "title": "And there it is",
+          "body": "Your new video lands right here, ready to download or share.",
+          "primary": "Explore templates"
+        }
+      }
     }
+  },
+  "gettingStarted": {
+    "title": "Let's make something",
+    "subtitle": "Pick a starting point. You can swap in your own images and prompts.",
+    "startBlank": "Start with a blank canvas",
+    "templateFailed": "That template failed to load. Try another one."
   }
 }
