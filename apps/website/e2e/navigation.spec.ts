@@ -3,10 +3,10 @@ import { expect } from '@playwright/test'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const MINIMAX_LABEL = t('footer.minimaxH3', 'en')
-const MINIMAX_LABEL_ZH = t('footer.minimaxH3', 'zh-CN')
-const MINIMAX_ROUTE = '/minimax'
-const MINIMAX_ROUTE_ZH = '/zh-CN/minimax'
+const minimaxLabel = t('footer.minimaxH3', 'en')
+const minimaxLabelZh = t('footer.minimaxH3', 'zh-CN')
+const minimaxRoute = '/minimax'
+const minimaxRouteZh = '/zh-CN/minimax'
 
 const TOP_LEVEL_LABELS = [
   'Products',
@@ -205,12 +205,12 @@ test.describe('Footer @smoke', () => {
   test('MiniMax H3 link navigates to the model page', async ({ page }) => {
     const link = page
       .locator('footer')
-      .getByRole('link', { name: MINIMAX_LABEL })
+      .getByRole('link', { name: minimaxLabel })
     await link.scrollIntoViewIfNeeded()
-    await expect(link).toHaveAttribute('href', MINIMAX_ROUTE)
+    await expect(link).toHaveAttribute('href', minimaxRoute)
 
     await link.click()
-    await expect(page).toHaveURL(MINIMAX_ROUTE)
+    await expect(page).toHaveURL(minimaxRoute)
   })
 })
 
@@ -222,11 +222,11 @@ test.describe('Footer zh-CN @smoke', () => {
 
     const link = page
       .locator('footer')
-      .getByRole('link', { name: MINIMAX_LABEL_ZH })
+      .getByRole('link', { name: minimaxLabelZh })
     await link.scrollIntoViewIfNeeded()
-    await expect(link).toHaveAttribute('href', MINIMAX_ROUTE_ZH)
+    await expect(link).toHaveAttribute('href', minimaxRouteZh)
 
     await link.click()
-    await expect(page).toHaveURL(MINIMAX_ROUTE_ZH)
+    await expect(page).toHaveURL(minimaxRouteZh)
   })
 })
