@@ -11,6 +11,8 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
+const VIEWPORT_VIRTUALIZATION_SETTING = 'Comfy.VueNodes.ViewportVirtualization'
+
 export class VueNodeHelpers {
   /**
    * Get locator for all Vue node components in the DOM
@@ -93,9 +95,6 @@ export class VueNodeHelpers {
   async layoutNodesAndEnableVirtualization(
     getPosition: (nodeId: string, index: number) => Point
   ): Promise<{ nodeIds: string[]; restore: () => Promise<void> }> {
-    const previousVirtualization = await this.settings.getSetting<boolean>(
-      'Comfy.VueNodes.ViewportVirtualization'
-    )
     const nodeIds = await this.page.evaluate(() =>
       window.app!.graph.nodes.map((node) => String(node.id))
     )
@@ -124,19 +123,22 @@ export class VueNodeHelpers {
       canvas.setDirty(true, true)
     }, entries)
     await nextFrame(this.page)
-    await this.settings.setSetting(
-      'Comfy.VueNodes.ViewportVirtualization',
-      true
-    )
+    const restore = await this.enableViewportVirtualization()
 
-    return {
-      nodeIds,
-      restore: () =>
-        this.settings.setSetting(
-          'Comfy.VueNodes.ViewportVirtualization',
-          previousVirtualization
-        )
-    }
+    return { nodeIds, restore }
+  }
+
+  async enableViewportVirtualization(): Promise<() => Promise<void>> {
+    const previousVirtualization = await this.settings.getSetting<boolean>(
+      VIEWPORT_VIRTUALIZATION_SETTING
+    )
+    await this.settings.setSetting(VIEWPORT_VIRTUALIZATION_SETTING, true)
+
+    return () =>
+      this.settings.setSetting(
+        VIEWPORT_VIRTUALIZATION_SETTING,
+        previousVirtualization
+      )
   }
 
   /**
@@ -168,10 +170,12 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Clear all selections by clicking empty space
+   * Clear all selections.
    */
   async clearSelection(): Promise<void> {
-    await this.page.mouse.click(50, 50)
+    await this.page.locator('#graph-canvas').focus()
+    await this.page.evaluate(() => window.app!.canvas.deselectAll())
+    await nextFrame(this.page)
   }
 
   /**

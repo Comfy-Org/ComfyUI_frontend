@@ -689,8 +689,12 @@ describe('LGraphNode', () => {
 
   describe('measure() collapsed branching', () => {
     let out: Rect
+    let previousVueNodesMode: boolean
+    let previousLayoutSource: LayoutSource
 
     beforeEach(() => {
+      previousVueNodesMode = LiteGraph.vueNodesMode
+      previousLayoutSource = layoutStore.getCurrentSource()
       out = [0, 0, 0, 0] as unknown as Rect
       node.flags.collapsed = true
       node.size[0] = 150
@@ -698,7 +702,9 @@ describe('LGraphNode', () => {
     })
 
     afterEach(() => {
-      LiteGraph.vueNodesMode = false
+      LiteGraph.vueNodesMode = previousVueNodesMode
+      layoutStore.initializeFromLiteGraph([])
+      layoutStore.setSource(previousLayoutSource)
     })
 
     test('legacy mode uses NODE_TITLE_HEIGHT-based fallback when no ctx', () => {

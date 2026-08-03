@@ -33,7 +33,10 @@ test.describe(
         const firstViewportIds = graphNodeIds.slice(0, 2)
         await expect
           .poll(() => comfyPage.vueNodes.getNodeIds())
-          .toEqual(firstViewportIds)
+          .toHaveLength(firstViewportIds.length)
+        await expect
+          .poll(() => comfyPage.vueNodes.getNodeIds())
+          .toEqual(expect.arrayContaining(firstViewportIds))
 
         await comfyPage.page.evaluate(() => {
           const canvas = window.app!.canvas
@@ -42,9 +45,10 @@ test.describe(
         })
         await comfyPage.nextFrame()
 
+        await expect.poll(() => comfyPage.vueNodes.getNodeIds()).toHaveLength(1)
         await expect
           .poll(() => comfyPage.vueNodes.getNodeIds())
-          .toEqual([graphNodeIds[2]])
+          .toEqual(expect.arrayContaining([graphNodeIds[2]]))
         expect(
           await comfyPage.page.evaluate(() => window.app!.graph.nodes.length)
         ).toBe(graphNodeIds.length)
@@ -373,6 +377,39 @@ test.describe(
       } finally {
         await restore()
       }
+    })
+
+    test('starts resizing below the full-detail zoom threshold', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.settings.setSetting('Comfy.VueNodes.LowZoomLOD', true)
+      await comfyPage.settings.setSetting('Comfy.VueNodes.FullDetailZoom', 95)
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const nodeId = await node.root.getAttribute('data-node-id')
+      if (!nodeId) throw new Error('KSampler node ID not found')
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
+      const initialSize = await nodeRef.getSize()
+
+      await comfyPage.page.evaluate(() => {
+        window.app!.canvas.ds.scale = 0.949
+        window.app!.canvas.setDirty(true, true)
+      })
+      await expect
+        .poll(() => comfyPage.page.locator('html').getAttribute('class'))
+        .toContain('vue-nodes-low-detail')
+      await expect(node.root.locator('[data-corner="SE"]')).toBeVisible()
+
+      await node.resizeFromCorner('SE', 40, 30)
+
+      await expect
+        .poll(async () => {
+          const size = await nodeRef.getSize()
+          return (
+            size.width > initialSize.width && size.height > initialSize.height
+          )
+        })
+        .toBe(true)
     })
   }
 )

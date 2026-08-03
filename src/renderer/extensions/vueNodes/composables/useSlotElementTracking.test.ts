@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import { defineComponent, nextTick, ref } from 'vue'
@@ -69,7 +69,10 @@ function createTestSetup(type: 'input' | 'output') {
   return { el, TestComponent }
 }
 
-function createSlotElement(collapsed = false): HTMLElement {
+function createSlotElement(
+  collapsed = false,
+  parent: Element = document.body
+): HTMLElement {
   const container = document.createElement('div')
   container.dataset.nodeId = NODE_ID
   if (collapsed) container.dataset.collapsed = ''
@@ -85,7 +88,7 @@ function createSlotElement(collapsed = false): HTMLElement {
       y: 0,
       toJSON: () => ({})
     }) as DOMRect
-  document.body.appendChild(container)
+  parent.appendChild(container)
 
   const el = document.createElement('div')
   el.getBoundingClientRect = () =>
@@ -113,11 +116,17 @@ async function mountAndRegisterSlot(
   collapsed = false
 ) {
   const { el, TestComponent } = createTestSetup(type)
-  const { unmount } = render(TestComponent)
-  el.value = createSlotElement(collapsed)
+  const { container, unmount: unmountComponent } = render(TestComponent)
+  const slotElement = createSlotElement(collapsed, container)
+  el.value = slotElement
   await nextTick()
   flushScheduledSlotLayoutSync()
-  return { unmount }
+  return {
+    unmount() {
+      unmountComponent()
+      container.innerHTML = ''
+    }
+  }
 }
 
 describe('useSlotElementTracking', () => {
@@ -145,6 +154,10 @@ describe('useSlotElementTracking', () => {
     mockCanvasState.canvas = {}
     mockClientPosToCanvasPos.mockClear()
     clearViewportVirtualizedNodeIds()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
   })
 
   it.for([
@@ -210,39 +223,44 @@ describe('useSlotElementTracking', () => {
   ])(
     'translates $state slot geometry after repeated viewport remounts',
     async ({ collapsed }) => {
-      let mounted = await mountAndRegisterSlot('input', collapsed)
+      let mounted:
+        | Awaited<ReturnType<typeof mountAndRegisterSlot>>
+        | undefined = await mountAndRegisterSlot('input', collapsed)
       const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
 
-      for (let cycle = 1; cycle <= 2; cycle++) {
-        replaceViewportVirtualizedNodeIds([NODE_ID])
-        mounted.unmount()
-        replaceViewportVirtualizedNodeIds([])
+      try {
+        for (let cycle = 1; cycle <= 2; cycle++) {
+          replaceViewportVirtualizedNodeIds([NODE_ID])
+          mounted?.unmount()
+          mounted = undefined
+          replaceViewportVirtualizedNodeIds([])
 
-        mounted = await mountAndRegisterSlot('input', collapsed)
-        const remountedLayout = layoutStore.getSlotLayout(slotKey)!
-        const previousPosition =
-          layoutStore.getNodeLayoutRef(NODE_ID).value!.position
-        const nextPosition = { x: cycle * 50, y: cycle * 75 }
+          mounted = await mountAndRegisterSlot('input', collapsed)
+          const remountedLayout = layoutStore.getSlotLayout(slotKey)!
+          const previousPosition =
+            layoutStore.getNodeLayoutRef(NODE_ID).value!.position
+          const nextPosition = { x: cycle * 50, y: cycle * 75 }
 
-        layoutStore.batchUpdateNodeBounds([
-          {
-            nodeId: NODE_ID,
-            bounds: {
-              ...nextPosition,
-              width: 200,
-              height: 100
+          layoutStore.batchUpdateNodeBounds([
+            {
+              nodeId: NODE_ID,
+              bounds: {
+                ...nextPosition,
+                width: 200,
+                height: 100
+              }
             }
-          }
-        ])
-        await nextTick()
+          ])
+          await nextTick()
 
-        expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
-          x: remountedLayout.position.x + nextPosition.x - previousPosition.x,
-          y: remountedLayout.position.y + nextPosition.y - previousPosition.y
-        })
+          expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+            x: remountedLayout.position.x + nextPosition.x - previousPosition.x,
+            y: remountedLayout.position.y + nextPosition.y - previousPosition.y
+          })
+        }
+      } finally {
+        mounted?.unmount()
       }
-
-      mounted.unmount()
     }
   )
 

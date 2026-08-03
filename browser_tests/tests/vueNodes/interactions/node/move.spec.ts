@@ -441,10 +441,8 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     const samplerId = toNodeId(rawSamplerId)
     const initialOffset = await comfyPage.canvasOps.getOffset()
 
-    await comfyPage.settings.setSetting(
-      'Comfy.VueNodes.ViewportVirtualization',
-      true
-    )
+    const restoreVirtualization =
+      await comfyPage.vueNodes.enableViewportVirtualization()
     try {
       await comfyPage.page.evaluate(() => {
         const canvas = window.app!.canvas
@@ -472,10 +470,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       await expectSlotPositionTracksDom(comfyPage, checkpointId, 0, false)
       await expectSlotPositionTracksDom(comfyPage, samplerId, 0, true)
     } finally {
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.ViewportVirtualization',
-        false
-      )
+      await restoreVirtualization()
     }
   })
 

@@ -19,8 +19,7 @@ import type { NodeId } from '@/types/nodeId'
 import type { SlotId } from '@/types/slotId'
 import {
   isBoundsEqual,
-  isPointEqual,
-  isSizeEqual
+  isPointEqual
 } from '@/renderer/core/layout/utils/geometry'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 import { createRafBatch } from '@/utils/rafBatch'
@@ -294,7 +293,11 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
 }
 
 function subscribeToNodeLayoutChanges(nodeId: NodeId): () => void {
-  let previousLayout = layoutStore.getNodeLayoutRef(nodeId).value
+  const initialLayout = layoutStore.getNodeLayoutRef(nodeId).value
+  let previousX = initialLayout?.position.x
+  let previousY = initialLayout?.position.y
+  let previousWidth = initialLayout?.size.width
+  let previousHeight = initialLayout?.size.height
 
   return layoutStore.onNodeChange(nodeId, () => {
     const node = useNodeSlotRegistryStore().getNode(nodeId)
@@ -304,11 +307,19 @@ function subscribeToNodeLayoutChanges(nodeId: NodeId): () => void {
     if (!currentLayout) return
 
     const sizeChanged =
-      !previousLayout || !isSizeEqual(currentLayout.size, previousLayout.size)
+      previousWidth === undefined ||
+      previousHeight === undefined ||
+      currentLayout.size.width !== previousWidth ||
+      currentLayout.size.height !== previousHeight
     const positionChanged =
-      !previousLayout ||
-      !isPointEqual(currentLayout.position, previousLayout.position)
-    previousLayout = currentLayout
+      previousX === undefined ||
+      previousY === undefined ||
+      currentLayout.position.x !== previousX ||
+      currentLayout.position.y !== previousY
+    previousX = currentLayout.position.x
+    previousY = currentLayout.position.y
+    previousWidth = currentLayout.size.width
+    previousHeight = currentLayout.size.height
 
     if (sizeChanged) {
       if (isNodeViewportVirtualized(nodeId)) {

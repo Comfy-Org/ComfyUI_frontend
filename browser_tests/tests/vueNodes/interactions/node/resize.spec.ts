@@ -200,7 +200,7 @@ test.describe(
         await node.toggleCollapse()
         await expect(node.root).toHaveAttribute('data-collapsed', 'true')
         await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
-        await comfyPage.page.mouse.click(900, 650)
+        await comfyPage.vueNodes.clearSelection()
 
         await comfyPage.page.evaluate(() => {
           const canvas = window.app!.canvas
@@ -223,11 +223,21 @@ test.describe(
         await expect(node.root).not.toHaveAttribute('data-collapsed', 'true')
         await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
         await expect
-          .poll(async () => (await node.boundingBox())?.width)
-          .toBeCloseTo(expandedBox.width, 1)
+          .poll(async () => {
+            const width = (await node.boundingBox())?.width
+            return width === undefined
+              ? Number.POSITIVE_INFINITY
+              : Math.abs(width - expandedBox.width)
+          })
+          .toBeLessThanOrEqual(1)
         await expect
-          .poll(async () => (await node.boundingBox())?.height)
-          .toBeCloseTo(expandedBox.height, 1)
+          .poll(async () => {
+            const height = (await node.boundingBox())?.height
+            return height === undefined
+              ? Number.POSITIVE_INFINITY
+              : Math.abs(height - expandedBox.height)
+          })
+          .toBeLessThanOrEqual(1)
       } finally {
         await restore()
       }

@@ -24,8 +24,6 @@ async function openMultiNodeContextMenu(
   comfyPage: ComfyPage,
   titles: string[]
 ) {
-  // deselectAll via evaluate — clearSelection() clicks at a fixed position
-  // which can hit nodes or the toolbar overlay
   await comfyPage.page.evaluate(() => window.app!.canvas.deselectAll())
   await comfyPage.nextFrame()
 

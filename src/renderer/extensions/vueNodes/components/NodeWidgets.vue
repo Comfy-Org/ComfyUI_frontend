@@ -25,11 +25,8 @@
     <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
         v-if="widget.visible"
-        data-testid="node-widget"
-        data-node-lod="hide"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch pr-3"
+        class="group col-span-full grid grid-cols-subgrid items-stretch"
       >
-        <!-- Widget Input Slot Dot -->
         <div
           :data-node-lod="widget.slotMetadata?.linked ? 'show' : undefined"
           :class="
@@ -54,29 +51,34 @@
             dot-only
           />
         </div>
-        <!-- Widget Component -->
-        <AppInput
-          :widget-id="widget.widgetId"
-          :name="widget.name"
-          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+        <div
+          data-testid="node-widget"
+          data-node-lod="hide"
+          class="lg-node-widget col-span-2 grid grid-cols-subgrid items-stretch pr-3"
         >
-          <component
-            :is="widget.vueComponent"
-            v-model="widget.value"
-            v-tooltip.left="widget.tooltipConfig"
-            :widget="widget.simplified"
-            :node-id="nodeData?.id"
-            :node-type="nodeType"
-            :class="
-              cn(
-                'col-span-2',
-                widget.hasError && 'font-bold text-node-stroke-error'
-              )
-            "
-            @update:model-value="widget.updateHandler"
-            @contextmenu="widget.handleContextMenu"
-          />
-        </AppInput>
+          <AppInput
+            :widget-id="widget.widgetId"
+            :name="widget.name"
+            :enable="canSelectInputs && !widget.simplified.options?.disabled"
+          >
+            <component
+              :is="widget.vueComponent"
+              v-model="widget.value"
+              v-tooltip.left="widget.tooltipConfig"
+              :widget="widget.simplified"
+              :node-id="nodeData?.id"
+              :node-type="nodeType"
+              :class="
+                cn(
+                  'col-span-2',
+                  widget.hasError && 'font-bold text-node-stroke-error'
+                )
+              "
+              @update:model-value="widget.updateHandler"
+              @contextmenu="widget.handleContextMenu"
+            />
+          </AppInput>
+        </div>
       </div>
     </template>
   </div>
