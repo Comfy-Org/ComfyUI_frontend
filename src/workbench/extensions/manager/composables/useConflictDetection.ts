@@ -6,6 +6,7 @@ import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
+import { isAbortError } from '@/utils/typeGuardUtil'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
@@ -52,17 +53,68 @@ const BULK_NODE_VERSIONS_CHUNK_SIZE = 100
  */
 const BULK_NODE_VERSIONS_MAX_PARALLEL_REQUESTS = 4
 
+type BulkNodeVersionsResponse =
+  components['schemas']['BulkNodeVersionsResponse']
+
+interface BulkNodeVersionsResult {
+  versionDataMap: Map<string, components['schemas']['NodeVersion']>
+  /**
+   * Packs whose chunk request never produced an answer, so the Registry never
+   * said whether they are banned or pending. Packs an answered response merely
+   * omits (or reports a per-identifier error for) are NOT in here — that is how
+   * the Registry reports packs it doesn't know about.
+   */
+  failedNodeIds: Set<string>
+}
+
+function collectNodeVersions(
+  response: BulkNodeVersionsResponse,
+  versionDataMap: Map<string, components['schemas']['NodeVersion']>
+): void {
+  response.node_versions?.forEach((result) => {
+    if (result.status === 'success' && result.node_version) {
+      versionDataMap.set(result.identifier.node_id, result.node_version)
+    } else if (result.status === 'error') {
+      console.warn(
+        `[ConflictDetection] Failed to fetch version data for ${result.identifier.node_id}@${result.identifier.version}:`,
+        result.error_message
+      )
+    }
+  })
+}
+
+async function retryBulkNodeVersionsChunk(
+  registryService: ReturnType<typeof useComfyRegistryService>,
+  nodeVersions: components['schemas']['NodeVersionIdentifier'][],
+  signal?: AbortSignal
+): Promise<BulkNodeVersionsResponse | null> {
+  try {
+    return await registryService.getBulkNodeVersions(nodeVersions, signal)
+  } catch (error) {
+    if (!isAbortError(error)) {
+      console.warn(
+        '[ConflictDetection] Retry of bulk version data failed:',
+        error
+      )
+    }
+    return null
+  }
+}
+
 /**
  * Fetches version data for every installed pack in bounded batches of
- * `POST /bulk/nodes/versions` requests, keyed by node id. Chunks that fail are
- * skipped so the rest of the installed packs still get their Registry data.
+ * `POST /bulk/nodes/versions` requests, keyed by node id. A chunk that fails is
+ * retried once; if it still fails, its packs are reported as unknown rather
+ * than silently treated as having no Registry status.
  */
 async function fetchBulkNodeVersions(
   registryService: ReturnType<typeof useComfyRegistryService>,
   nodeVersions: components['schemas']['NodeVersionIdentifier'][],
   signal?: AbortSignal
-): Promise<Map<string, components['schemas']['NodeVersion']>> {
+): Promise<BulkNodeVersionsResult> {
   const versionDataMap = new Map<string, components['schemas']['NodeVersion']>()
+  const failedNodeIds = new Set<string>()
+  const result = { versionDataMap, failedNodeIds }
 
   const requestChunks = chunk(nodeVersions, BULK_NODE_VERSIONS_CHUNK_SIZE)
 
@@ -70,7 +122,7 @@ async function fetchBulkNodeVersions(
     requestChunks,
     BULK_NODE_VERSIONS_MAX_PARALLEL_REQUESTS
   )) {
-    if (signal?.aborted) break
+    if (signal?.aborted) return result
 
     const bulkResponses = await Promise.allSettled(
       parallelChunks.map((nodeVersionsChunk) =>
@@ -78,38 +130,45 @@ async function fetchBulkNodeVersions(
       )
     )
 
-    for (const bulkResponse of bulkResponses) {
-      if (signal?.aborted) break
+    for (const [index, bulkResponse] of bulkResponses.entries()) {
+      // A cancelled run is not a failed lookup: leave those packs unmarked.
+      if (signal?.aborted) return result
+
+      const nodeVersionsChunk = parallelChunks[index]
+      let response: BulkNodeVersionsResponse | null = null
 
       if (bulkResponse.status === 'rejected') {
+        if (isAbortError(bulkResponse.reason)) return result
         console.warn(
           '[ConflictDetection] Failed to fetch bulk version data:',
           bulkResponse.reason
         )
-        continue
+      } else {
+        response = bulkResponse.value
       }
 
-      if (!bulkResponse.value) {
+      if (!response) {
+        response = await retryBulkNodeVersionsChunk(
+          registryService,
+          nodeVersionsChunk,
+          signal
+        )
+        if (signal?.aborted) return result
+      }
+
+      if (!response) {
         console.warn(
           '[ConflictDetection] Failed to fetch bulk version data for one batch of installed packs'
         )
+        nodeVersionsChunk.forEach(({ node_id }) => failedNodeIds.add(node_id))
         continue
       }
 
-      bulkResponse.value.node_versions?.forEach((result) => {
-        if (result.status === 'success' && result.node_version) {
-          versionDataMap.set(result.identifier.node_id, result.node_version)
-        } else if (result.status === 'error') {
-          console.warn(
-            `[ConflictDetection] Failed to fetch version data for ${result.identifier.node_id}@${result.identifier.version}:`,
-            result.error_message
-          )
-        }
-      })
+      collectNodeVersions(response, versionDataMap)
     }
   }
 
-  return versionDataMap
+  return result
 }
 
 /**
@@ -234,7 +293,7 @@ export function useConflictDetection() {
         version: pack.version
       }))
 
-      const versionDataMap = await fetchBulkNodeVersions(
+      const { versionDataMap, failedNodeIds } = await fetchBulkNodeVersions(
         registryService,
         nodeVersions,
         abortController.value?.signal
@@ -284,14 +343,17 @@ export function useConflictDetection() {
             `[ConflictDetection] No Registry data found for ${installedPackVersion.id}, using fallback`
           )
 
-          // Create fallback requirement without Registry data
+          // Create fallback requirement without Registry data. A failed lookup
+          // is flagged rather than reported as not-banned, so an earlier known
+          // banned/pending status isn't erased.
           const fallbackRequirement: NodeRequirements = {
             id: installedPackVersion.id,
             name: packInfo?.name || installedPackVersion.id,
             installed_version: installedPackVersion.version,
             is_enabled: isEnabled,
             is_banned: false,
-            is_pending: false
+            is_pending: false,
+            registry_status_unknown: failedNodeIds.has(installedPackVersion.id)
           }
 
           requirements.push(fallbackRequirement)
@@ -371,7 +433,8 @@ export function useConflictDetection() {
       package_name: packageReq.name ?? '',
       has_conflict: hasConflict,
       conflicts,
-      is_compatible: !hasConflict
+      is_compatible: !hasConflict,
+      registry_status_unknown: packageReq.registry_status_unknown
     }
   }
 
@@ -471,6 +534,25 @@ export function useConflictDetection() {
   }
 
   /**
+   * Keeps the banned/pending conflicts an earlier run already established for
+   * packs whose Registry lookup failed this run, so a Registry outage can't
+   * quietly downgrade a known-banned pack to "compatible".
+   */
+  function carryOverUnverifiedConflicts(
+    unknownPackIds: Set<string>
+  ): ConflictDetectionResult[] {
+    return [...unknownPackIds].flatMap((packId) => {
+      const storedResult = conflictStore.getConflictsForPackageByID(packId)
+      const hasKnownStatusConflict = storedResult?.conflicts.some(
+        (conflict) => conflict.type === 'banned' || conflict.type === 'pending'
+      )
+      return hasKnownStatusConflict && storedResult
+        ? [{ ...storedResult, registry_status_unknown: true }]
+        : []
+    })
+  }
+
+  /**
    * Performs complete conflict detection.
    * @returns Promise that resolves to conflict detection response
    */
@@ -492,6 +574,18 @@ export function useConflictDetection() {
 
       // 2. Collect installed node requirement information
       const installedNodeRequirements = await buildNodeRequirements()
+
+      const registryUnknownPackIds = new Set(
+        installedNodeRequirements.flatMap((requirement) =>
+          requirement.registry_status_unknown && requirement.id
+            ? [requirement.id]
+            : []
+        )
+      )
+      // Read before the store is overwritten below
+      const carriedOverConflicts = carryOverUnverifiedConflicts(
+        registryUnknownPackIds
+      )
 
       // 3. Detect conflicts for each package (parallel processing)
       const conflictDetectionTasks = installedNodeRequirements.map(
@@ -524,14 +618,16 @@ export function useConflictDetection() {
       // 6. Update state
       detectionResults.value = allResults
       lastDetectionTime.value = new Date().toISOString()
+      conflictStore.setRegistryUnknownPackIds(registryUnknownPackIds)
 
       // Store conflict results for later UI display
       // Dialog will be shown based on specific events, not on app mount
-      if (allResults.some((result) => result.has_conflict)) {
-        const conflictedResults = allResults.filter(
-          (result) => result.has_conflict
-        )
+      const conflictedResults = [
+        ...allResults.filter((result) => result.has_conflict),
+        ...carriedOverConflicts
+      ]
 
+      if (conflictedResults.length > 0) {
         // Merge conflicts for packages with the same name
         const mergedConflicts = consolidateConflictsByPackage(conflictedResults)
 
