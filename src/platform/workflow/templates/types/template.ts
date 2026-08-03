@@ -41,8 +41,9 @@ export interface TemplateInfo {
   requiresCustomNodes?: string[]
   /**
    * Curator override applied to search relevance and the "Recommended" sort.
-   * Absent or 0 is neutral, positive promotes, negative demotes; magnitude
-   * saturates at 1000. See docs/TEMPLATE_RANKING.md.
+   * Anything from -5 to 5, and an absent value, is neutral; promotion starts at
+   * 6 and demotion at -6, both saturating at a magnitude of 1000.
+   * See docs/TEMPLATE_RANKING.md.
    */
   searchRank?: number
   /**
