@@ -72,6 +72,8 @@
         v-if="showCameraControls"
         v-model:camera-type="cameraConfig!.cameraType"
         v-model:fov="cameraConfig!.fov"
+        v-model:use-custom-up="cameraConfig!.useCustomUp"
+        :has-custom-up="cameraConfig!.hasCustomUp ?? false"
       />
 
       <div v-if="showLightControls" class="flex flex-col">

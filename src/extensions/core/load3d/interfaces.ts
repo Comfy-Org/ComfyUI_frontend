@@ -82,6 +82,8 @@ export interface CameraConfig {
   cameraType: CameraType
   fov: number
   state?: CameraState
+  hasCustomUp?: boolean
+  useCustomUp?: boolean
 }
 
 export interface LightConfig {
@@ -159,6 +161,7 @@ export interface CameraManagerInterface extends BaseManager {
   setFOV(fov: number): void
   setCameraState(state: CameraState): void
   getCameraState(): CameraState
+  setUseCustomUp(use: boolean): void
   handleResize(width: number, height: number): void
   setControls(controls: OrbitControls): void
 }

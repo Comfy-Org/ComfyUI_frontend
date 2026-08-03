@@ -57,6 +57,9 @@ const Load3D = defineAsyncComponent(
 const Load3DAdvanced = defineAsyncComponent(
   () => import('@/components/load3d/Load3DAdvanced.vue')
 )
+const CameraInfo = defineAsyncComponent(
+  () => import('@/components/cameraInfo/CameraInfo.vue')
+)
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
 )
@@ -201,6 +204,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'cameraInfo',
+    {
+      component: CameraInfo,
+      aliases: ['CAMERA_INFO_STATE'],
+      essential: false
+    }
+  ],
+  [
     'imagecrop',
     {
       component: WidgetImageCrop,
@@ -300,6 +311,7 @@ const EXPANDING_TYPES = [
   'textPreview',
   'load3D',
   'load3DAdvanced',
+  'cameraInfo',
   'curve',
   'painter',
   'imagecompare',
