@@ -706,10 +706,10 @@ shims per [Extension API preservation](#extension-api-preservation) rather
 than reintroducing the call sites.
 
 Note that the node-facing ones were also _wrong_ by the time they were
-removed: node layout is keyed by bare `NodeId` with no root-graph scope, and
+removed: node layout was keyed by bare `NodeId` with no root-graph scope, and
 registration now happens for every graph including unopened subgraph
 definitions, so any of these would have returned nodes the user cannot see. A
-restored shim must take a `rootGraphId` and filter by it.
+restored shim must take a `rootGraphId`, which node layout is now keyed by.
 
 ### Removed CRDT sync seam (prior art for multiplayer)
 
@@ -736,9 +736,12 @@ learned by deleting this:
   higher `zIndex` would not have raised it, and the next allocation would
   collide. Any real sync path must rebuild that kind of derived state from the
   document, or observe `ynodes` rather than the operation stream.
-- Node layout is keyed by bare `NodeId` while groups and reroutes are
-  graph-scoped via `makeScopedLayoutKey`. Two peers in different subgraphs
-  would share node layout keys. Scope node keys before merging documents.
+- All three entity types are now keyed by `makeScopedLayoutKey(rootGraphId, id)`,
+  so two peers in different workflows cannot collide. They still share a bucket
+  across subgraphs of one root graph, which is safe only because node ids are
+  unique root-wide — `Subgraph` shares the root graph's `state`, so one counter
+  issues every id. A sync path that merges documents from peers holding
+  different workflows must not assume that invariant survives the merge.
 
 ### Extension Migration Examples (old -> new)
 
