@@ -1207,27 +1207,6 @@ export class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Get the Yjs document for network sync (future feature)
-   */
-  getYDoc(): Y.Doc {
-    return this.ydoc
-  }
-
-  /**
-   * Apply updates from remote peers (future feature)
-   */
-  applyUpdate(update: Uint8Array): void {
-    Y.applyUpdate(this.ydoc, update)
-  }
-
-  /**
-   * Get state as update for sending to peers (future feature)
-   */
-  getStateAsUpdate(): Uint8Array {
-    return Y.encodeStateAsUpdate(this.ydoc)
-  }
-
-  /**
    * Batch update node bounds using Yjs transaction for atomicity.
    */
   batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void {

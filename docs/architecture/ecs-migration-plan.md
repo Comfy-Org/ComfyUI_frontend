@@ -711,6 +711,35 @@ registration now happens for every graph including unopened subgraph
 definitions, so any of these would have returned nodes the user cannot see. A
 restored shim must take a `rootGraphId` and filter by it.
 
+### Removed CRDT sync seam (prior art for multiplayer)
+
+`layoutStore` carried three methods reserved for a networked future that has
+not arrived:
+
+| Removed method       | Was                                           |
+| -------------------- | --------------------------------------------- |
+| `getYDoc()`          | The raw `Y.Doc`, for a sync provider          |
+| `applyUpdate()`      | `Y.applyUpdate` — merge a remote peer's ops   |
+| `getStateAsUpdate()` | `Y.encodeStateAsUpdate` — full-state snapshot |
+
+None had a caller. Removed as YAGNI, not as a change of direction: the layout
+store is still a Yjs document and
+[ADR 0003](../adr/0003-crdt-based-layout-system.md) still holds. Reinstating
+them is a few lines against `this.ydoc`.
+
+Two things worth carrying forward when multiplayer is actually built, both
+learned by deleting this:
+
+- `applyUpdate` bypassed `applyOperation`, so nothing that derives state from
+  the operation stream would have seen a remote change. `highestZIndex` (see
+  `allocateZIndex`) is exactly such a counter — a remote peer's node with a
+  higher `zIndex` would not have raised it, and the next allocation would
+  collide. Any real sync path must rebuild that kind of derived state from the
+  document, or observe `ynodes` rather than the operation stream.
+- Node layout is keyed by bare `NodeId` while groups and reroutes are
+  graph-scoped via `makeScopedLayoutKey`. Two peers in different subgraphs
+  would share node layout keys. Scope node keys before merging documents.
+
 ### Extension Migration Examples (old -> new)
 
 The bridge keeps legacy callbacks working, but extension authors can migrate
