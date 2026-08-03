@@ -40,7 +40,7 @@ const quotes = creatorReviews.map((review) => ({
       </div>
 
       <BrandButton
-        :href="routes.mcp"
+        :href="routes[reviews.highlight.route ?? 'mcp']"
         variant="inverse"
         size="sm"
         class="h-12 shrink-0 px-5 uppercase"

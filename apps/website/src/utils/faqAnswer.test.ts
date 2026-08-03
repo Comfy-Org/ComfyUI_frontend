@@ -47,6 +47,35 @@ describe('parseFaqAnswer', () => {
       { type: 'link', value: 'https://blog.comfy.org/b' }
     ])
   })
+
+  it('returns nothing for an empty answer', () => {
+    expect(parseFaqAnswer('')).toEqual([])
+  })
+
+  it('leaves unfinished link markup as plain text', () => {
+    expect(parseFaqAnswer('See [the docs](')).toEqual([
+      { type: 'text', value: 'See [the docs](' }
+    ])
+  })
+
+  it('keeps a full-width stop outside a link in CJK copy', () => {
+    const labelled = parseFaqAnswer(
+      '技术细节请见[首日支持发布文章](https://blog.comfy.org/p/x)。'
+    )
+    expect(labelled).toEqual([
+      { type: 'text', value: '技术细节请见' },
+      {
+        type: 'link',
+        value: 'https://blog.comfy.org/p/x',
+        label: '首日支持发布文章'
+      },
+      { type: 'text', value: '。' }
+    ])
+
+    const bare = parseFaqAnswer('详见 https://docs.comfy.org/a。')
+    expect(bare[1]).toEqual({ type: 'link', value: 'https://docs.comfy.org/a' })
+    expect(bare[2]).toEqual({ type: 'text', value: '。' })
+  })
 })
 
 describe('faqAnswerPlainText', () => {

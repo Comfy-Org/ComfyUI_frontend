@@ -152,9 +152,8 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN': 'MiniMax H3 是什么？'
         },
         answer: {
-          en: "MiniMax's video model, available as Open Weights and through Partner Nodes. It takes text, image, or audio in and renders a clip with native stereo audio. On Comfy you direct it on the canvas alongside every other model. Read [the day-0 launch post](https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui) for the technical details.",
-          'zh-CN':
-            'MiniMax 的视频模型，以开源权重形式提供，也可通过合作伙伴节点使用。它支持文本、图像或音频输入，并渲染出带原生立体声音频的片段。在 Comfy 上，你可以在画布上与其他模型一起执导它。技术细节请见[首日支持发布文章](https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui)。'
+          en: `MiniMax's video model, available as Open Weights and through Partner Nodes. It takes text, image, or audio in and renders a clip with native stereo audio. On Comfy you direct it on the canvas alongside every other model. Read [the day-0 launch post](${minimaxLinks.blog}) for the technical details.`,
+          'zh-CN': `MiniMax 的视频模型，以开源权重形式提供，也可通过合作伙伴节点使用。它支持文本、图像或音频输入，并渲染出带原生立体声音频的片段。在 Comfy 上，你可以在画布上与其他模型一起执导它。技术细节请见[首日支持发布文章](${minimaxLinks.blog})。`
         }
       },
       {
@@ -211,9 +210,8 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN': '如何在 ComfyUI 中运行 MiniMax H3？'
         },
         answer: {
-          en: 'Open a MiniMax workflow template, or add H3 to any workflow on the canvas. It runs on Comfy Cloud, so you do not need a local GPU. Follow [the MiniMax H3 workflow tutorial](https://docs.comfy.org/tutorials/video/minimax/minimax-h3) for a step-by-step walkthrough.',
-          'zh-CN':
-            '打开 MiniMax 工作流模板，或将 H3 添加到画布上的任意工作流中。它在 Comfy Cloud 上运行，因此你不需要本地 GPU。分步教程请见[MiniMax H3 工作流文档](https://docs.comfy.org/tutorials/video/minimax/minimax-h3)。'
+          en: `Open a MiniMax workflow template, or add H3 to any workflow on the canvas. It runs on Comfy Cloud, so you do not need a local GPU. Follow [the MiniMax H3 workflow tutorial](${minimaxLinks.docs}) for a step-by-step walkthrough.`,
+          'zh-CN': `打开 MiniMax 工作流模板，或将 H3 添加到画布上的任意工作流中。它在 Comfy Cloud 上运行，因此你不需要本地 GPU。分步教程请见[MiniMax H3 工作流文档](${minimaxLinks.docs})。`
         }
       }
     ]

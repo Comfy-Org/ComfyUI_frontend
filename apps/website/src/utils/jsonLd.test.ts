@@ -65,9 +65,11 @@ describe('faqPageNode', () => {
       { question: 'What is MiniMax H3?', answer: "MiniMax's video model." },
       { question: 'Does it generate audio?', answer: 'Yes, native stereo.' }
     ])
+    expect(node['@type']).toBe('FAQPage')
     expect(node['@id']).toBe('https://comfy.org/minimax/#faq')
     const questions = node.mainEntity as Record<string, unknown>[]
     expect(questions).toHaveLength(2)
+    expect(questions[0]['@type']).toBe('Question')
     expect(questions[0].name).toBe('What is MiniMax H3?')
     expect(questions[1].acceptedAnswer).toEqual({
       '@type': 'Answer',

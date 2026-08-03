@@ -6,6 +6,7 @@ import { minimaxLinks, minimaxPage } from '../src/data/minimax'
 import { t } from '../src/i18n/translations'
 import { faqAnswerPlainText } from '../src/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/minimax'
 const HERO_TITLE =
@@ -162,15 +163,12 @@ test.describe('MiniMax H3 page — FAQ interlinks', () => {
   test('links the answers to the docs tutorial and the launch post', async ({
     page
   }) => {
-    // Answers live in a collapsed accordion, and the trigger renders
-    // aria-expanded="false" server-side, so re-click until the island hydrates.
+    // Answers live in a collapsed accordion, so each one has to be opened.
     const openAnswer = async (question: string) => {
       const trigger = page.getByRole('button', { name: question })
-      await trigger.scrollIntoViewIfNeeded()
-      await expect(async () => {
-        await trigger.click()
-        await expect(trigger).toHaveAttribute('aria-expanded', 'true')
-      }).toPass()
+      await waitForIsland(page, trigger)
+      await trigger.click()
+      await expect(trigger).toHaveAttribute('aria-expanded', 'true')
     }
 
     await openAnswer(FAQS[0].question.en)
@@ -243,15 +241,11 @@ test.describe('MiniMax H3 page — interactions', () => {
     const firstQuestion = page.getByRole('button', {
       name: FIRST_FAQ.question.en
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
+    await waitForIsland(page, firstQuestion)
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
-    // The trigger renders aria-expanded="false" server-side, so a click can
-    // land before the island hydrates. Re-click until it actually toggles.
-    await expect(async () => {
-      await firstQuestion.click()
-      await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
-    }).toPass()
+    await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
     await expect(
       page.getByText(faqAnswerPlainText(FIRST_FAQ.answer.en))
     ).toBeVisible()
@@ -268,18 +262,13 @@ test.describe('MiniMax H3 page — interactions', () => {
       .locator('div.overflow-x-auto')
       .filter({ has: page.getByRole('article') })
     const nextButton = reviewsSection.getByRole('button', { name: 'Next' })
-    await nextButton.scrollIntoViewIfNeeded()
+    await waitForIsland(page, nextButton)
 
     const startScroll = await track.evaluate((el) => el.scrollLeft)
-
-    // The button renders server-side, so a click can land before the island
-    // hydrates and scroll nowhere. Re-click until the track actually moves.
-    await expect(async () => {
-      await nextButton.click()
-      await expect
-        .poll(() => track.evaluate((el) => el.scrollLeft))
-        .toBeGreaterThan(startScroll)
-    }).toPass()
+    await nextButton.click()
+    await expect
+      .poll(() => track.evaluate((el) => el.scrollLeft))
+      .toBeGreaterThan(startScroll)
   })
 })
 

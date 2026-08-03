@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { affiliateFaqs } from '../src/data/affiliateFaq'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/affiliates'
 const APPLY_URL = 'https://forms.gle/RS8L2ttcuGap4Q1v6'
@@ -112,15 +113,11 @@ test.describe('Affiliates landing — desktop interactions', () => {
     const firstQuestion = page.getByRole('button', {
       name: FIRST_FAQ.question.en
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
+    await waitForIsland(page, firstQuestion)
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
-    // The trigger renders aria-expanded="false" server-side, so a click can
-    // land before the island hydrates. Re-click until it actually toggles.
-    await expect(async () => {
-      await firstQuestion.click()
-      await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
-    }).toPass()
+    await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
     await expect(page.getByText(FIRST_FAQ.answer.en)).toBeVisible()
 
     await firstQuestion.click()

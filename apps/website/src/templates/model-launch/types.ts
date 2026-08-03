@@ -1,5 +1,6 @@
 import type { AnchorHTMLAttributes } from 'vue'
 
+import type { getRoutes } from '../../config/routes'
 import type { BillingCycle } from '../../data/pricingPlans'
 import type { LocalizedText, TranslationKey } from '../../i18n/translations'
 
@@ -82,10 +83,13 @@ export interface ModelLaunchRunOptions {
 
 export interface ModelLaunchReviews {
   headingKey: TranslationKey
+  // The promo card above the testimonials. It points at /mcp unless a page
+  // names another route to cross-sell.
   highlight: {
     titleKey: TranslationKey
     descriptionKey: TranslationKey
     ctaKey: TranslationKey
+    route?: keyof ReturnType<typeof getRoutes>
   }
 }
 
