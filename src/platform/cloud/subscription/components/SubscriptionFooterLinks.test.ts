@@ -1,21 +1,13 @@
 import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
 
 const state = vi.hoisted(() => ({
-  manageSubscription: vi.fn(),
   handleLearnMoreClick: vi.fn(),
   handleMessageSupport: vi.fn()
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    manageSubscription: state.manageSubscription
-  })
 }))
 
 vi.mock('@/composables/useExternalLink', () => ({
@@ -44,16 +36,14 @@ const i18n = createI18n({
       subscription: {
         learnMore: 'Learn more',
         partnerNodesPricingTable: 'Partner Nodes pricing',
-        messageSupport: 'Message support',
-        invoiceHistory: 'Invoice history'
+        messageSupport: 'Message support'
       }
     }
   }
 })
 
-function renderComponent(showInvoiceHistory?: boolean) {
+function renderComponent() {
   return render(SubscriptionFooterLinks, {
-    props: showInvoiceHistory === undefined ? {} : { showInvoiceHistory },
     global: {
       plugins: [i18n],
       stubs: {
@@ -68,21 +58,8 @@ function renderComponent(showInvoiceHistory?: boolean) {
 }
 
 describe('SubscriptionFooterLinks', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('keeps Invoice history visible by default for legacy billing', async () => {
-    const user = userEvent.setup()
+  it('renders support links without a duplicate invoice action', () => {
     renderComponent()
-
-    await user.click(screen.getByRole('button', { name: 'Invoice history' }))
-
-    expect(state.manageSubscription).toHaveBeenCalledOnce()
-  })
-
-  it('hides Invoice history without opening the payment portal', () => {
-    renderComponent(false)
 
     expect(
       screen.queryByRole('button', { name: 'Invoice history' })
@@ -90,6 +67,11 @@ describe('SubscriptionFooterLinks', () => {
     expect(
       screen.getByRole('button', { name: 'Learn more' })
     ).toBeInTheDocument()
-    expect(state.manageSubscription).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Partner Nodes pricing' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Message support' })
+    ).toBeInTheDocument()
   })
 })

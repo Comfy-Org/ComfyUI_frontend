@@ -268,9 +268,7 @@ const ButtonStub = {
 }
 
 const SubscriptionFooterLinksStub = {
-  props: ['showInvoiceHistory'],
-  template:
-    '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
+  template: '<div data-testid="subscription-footer-links" />'
 }
 
 const DropdownMenuStub = {
@@ -377,10 +375,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
     ).toBeInTheDocument()
     expect(screen.getByTestId('subscription-footer-links')).toBeInTheDocument()
-    expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
-      'data-show-invoice-history',
-      'true'
-    )
   })
 
   it('shows a scheduled plan change instead of the renewal date', () => {
@@ -469,11 +463,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.getByText('$665.50')).toBeInTheDocument()
   })
 
-  it('wires Manage billing and Change plan actions for subscription managers', async () => {
+  it('wires Billing & invoices and Change plan actions for subscription managers', async () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Manage billing' }))
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Change plan' }))
@@ -491,7 +485,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Manage billing' })
+      screen.queryByRole('button', { name: 'Billing & invoices' })
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Change plan' })
@@ -503,10 +497,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Leave Workspace' })
     ).toBeInTheDocument()
     expect(screen.getByText('Invite members')).toBeInTheDocument()
-    expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
-      'data-show-invoice-history',
-      'false'
-    )
   })
 
   it('uses Team-plan change copy in a Personal workspace', () => {
@@ -596,7 +586,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Changes to/i)).not.toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Manage billing' })
+      screen.getByRole('button', { name: 'Billing & invoices' })
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Change plan' })
@@ -722,7 +712,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows the zero-state subscribe prompt to unsubscribed team owners', () => {
+  it('keeps Billing & invoices available to unsubscribed team owners', async () => {
+    const user = userEvent.setup()
     mockIsActiveSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
     mockHasSubscription.value = false
@@ -734,13 +725,13 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe Now' })
     ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Billing & invoices' })
-    ).not.toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
       'true'
     )
+
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
   })
 
   it('shows a loading indicator instead of a false Free plan while billing loads', () => {
@@ -810,6 +801,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'data-zero-state',
       'false'
     )
+
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()

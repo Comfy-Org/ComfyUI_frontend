@@ -108,7 +108,7 @@
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
                 <Button
-                  v-if="showInactiveTeamSubscription"
+                  v-if="permissions.canManageSubscription"
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -174,6 +174,15 @@
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
                 <Button
+                  v-if="permissions.canManageSubscription"
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="manageSubscription"
+                >
+                  {{ $t('subscription.billingAndInvoices') }}
+                </Button>
+                <Button
                   variant="primary"
                   size="lg"
                   class="rounded-lg px-4 text-sm font-normal"
@@ -227,13 +236,13 @@
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
                 <Button
-                  v-if="!isFreeTierPlan && permissions.canManageSubscription"
+                  v-if="permissions.canManageSubscription"
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
                   @click="manageSubscription"
                 >
-                  {{ $t('subscription.manageBilling') }}
+                  {{ $t('subscription.billingAndInvoices') }}
                 </Button>
                 <Button
                   v-if="
@@ -368,10 +377,7 @@
         </Button>
       </div>
 
-      <SubscriptionFooterLinks
-        class="mt-auto pt-6"
-        :show-invoice-history="permissions.canManageSubscription"
-      />
+      <SubscriptionFooterLinks class="mt-auto pt-6" />
     </template>
   </div>
 </template>
