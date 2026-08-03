@@ -210,7 +210,11 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
-          :disabled="!isValidAmount || paymentLocked"
+          :disabled="
+            !isValidAmount ||
+            paymentLocked ||
+            (shouldUseWorkspaceBilling && !permissions.canTopUp)
+          "
           :loading="paymentLocked"
           :variant="
             step === 'confirm' && topupActionUrl ? 'tertiary' : 'primary'
@@ -266,7 +270,7 @@ const { isInsufficientCredits = false } = defineProps<{
   isInsufficientCredits?: boolean
 }>()
 
-const { t } = useI18n()
+const { n, t } = useI18n()
 const dialogStore = useDialogStore()
 const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
@@ -319,13 +323,13 @@ const isValidAmount = computed(
 
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
 
-const displayTotal = computed(
-  () =>
-    '$' +
-    payAmount.value.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })
+const displayTotal = computed(() =>
+  n(payAmount.value, {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 )
 
 const paymentLocked = computed(
@@ -428,6 +432,9 @@ async function handleBuy() {
         .then(() => {
           paymentSubmitted.value = false
         })
+        .catch((error) => {
+          reportPurchaseError(error, response.billing_op_id)
+        })
     } else {
       paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
@@ -444,24 +451,29 @@ async function handleBuy() {
       })
     }
   } catch (error) {
-    paymentSubmitted.value = false
-    console.error('Purchase failed:', error)
-
-    const errorMessage =
-      error instanceof Error ? error.message : t('credits.topUp.unknownError')
-    telemetry?.trackBillingEvent({
-      operation: 'topup',
-      stage: 'failed',
-      outcome: 'failure',
-      failure_category: 'unknown'
-    })
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.purchaseError'),
-      detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage })
-    })
+    reportPurchaseError(error)
   } finally {
     loading.value = false
   }
+}
+
+function reportPurchaseError(error: unknown, billingOpId?: string) {
+  paymentSubmitted.value = false
+  console.error('Purchase failed:', error)
+
+  const errorMessage =
+    error instanceof Error ? error.message : t('credits.topUp.unknownError')
+  telemetry?.trackBillingEvent({
+    operation: 'topup',
+    stage: 'failed',
+    outcome: 'failure',
+    ...(billingOpId ? { billing_op_id: billingOpId } : {}),
+    failure_category: 'unknown'
+  })
+  toast.add({
+    severity: 'error',
+    summary: t('credits.topUp.purchaseError'),
+    detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage })
+  })
 }
 </script>

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -17,7 +17,9 @@ const mockToastAdd = vi.fn()
 const mockCloseDialog = vi.fn()
 const mockTrackTopUpPurchase = vi.fn()
 const mockTrackBillingEvent = vi.fn()
-const mockCanTopUp = vi.hoisted(() => ({ value: true }))
+const mockPermissions = vi.hoisted(() => ({
+  ref: undefined as { value: { canTopUp: boolean } } | undefined
+}))
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
 const mockIsAddingCredits = vi.hoisted(() => ({ value: false }))
 const mockTopupActionOperation = vi.hoisted(() => ({
@@ -45,20 +47,18 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      __v_isRef: true,
-      get value() {
-        return { canTopUp: mockCanTopUp.value }
-      }
-    }
-  })
-}))
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
+  const { ref } = await import('vue')
+  mockPermissions.ref = ref({ canTopUp: true })
+  return {
+    useWorkspaceUI: () => ({ permissions: mockPermissions.ref })
+  }
+})
 
 vi.mock('@/composables/billing/useBillingRouting', () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: {
+      __v_isRef: true,
       get value() {
         return mockShouldUseWorkspaceBilling.value
       }
@@ -171,6 +171,11 @@ function renderDialog() {
   })
 }
 
+function setCanTopUp(canTopUp: boolean) {
+  if (!mockPermissions.ref) throw new Error('Permissions mock not initialized')
+  mockPermissions.ref.value = { canTopUp }
+}
+
 async function clickAddCredits() {
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Add credits' }))
@@ -179,7 +184,7 @@ async function clickAddCredits() {
 describe('TopUpCreditsDialogContentWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCanTopUp.value = true
+    setCanTopUp(true)
     mockShouldUseWorkspaceBilling.value = true
     mockIsAddingCredits.value = false
     mockTopupActionOperation.value = undefined
@@ -252,7 +257,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('hides topup verification after permission is revoked', () => {
-    mockCanTopUp.value = false
+    setCanTopUp(false)
     mockTopupActionOperation.value = {
       actionUrl: 'https://verify.example/sensitive-token'
     }
@@ -274,6 +279,34 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
     expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
+  })
+
+  it('unlocks payment and reports an operation start failure', async () => {
+    const error = new Error('Operation unavailable')
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+    mockStartOperation.mockRejectedValue(error)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
+    )
+    expect(mockToastAdd).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'Purchase Failed',
+      detail: 'Failed to purchase credits: Operation unavailable'
+    })
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_op_id: 'op-1',
+      failure_category: 'unknown'
+    })
+    consoleError.mockRestore()
   })
 
   it('refreshes both balance and status after a completed top-up', async () => {
@@ -346,10 +379,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
   it('does not top up after the workspace role loses permission', async () => {
     renderDialog()
-    mockCanTopUp.value = false
-
     await clickAddCredits()
-    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    setCanTopUp(false)
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeDisabled()
 
     expect(mockTopup).not.toHaveBeenCalled()
     expect(mockTrackTopUpPurchase).not.toHaveBeenCalled()
@@ -358,7 +392,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('keeps a mounted workspace dialog usable after routing switches to legacy billing', async () => {
-    mockCanTopUp.value = false
+    setCanTopUp(false)
     mockShouldUseWorkspaceBilling.value = false
     mockTopup.mockResolvedValue(topupResponse('completed'))
 
