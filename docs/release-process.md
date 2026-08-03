@@ -65,7 +65,7 @@ Datadog exposes no GitHub identity, and GitHub only resolves commit emails its
 users chose to publish, so the two have to be bridged explicitly. That bridge
 lives on the Datadog schedule as tags, one per sheriff:
 
-```
+```text
 github:<datadog-email-local-part>:<github-login>
 ```
 
