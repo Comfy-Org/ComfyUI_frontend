@@ -1,0 +1,116 @@
+name: Publish Design System on PR Merge
+
+on:
+  pull_request:
+    types: ['closed']
+    branches: [main, core/*]
+    paths:
+      - 'packages/design-system/package.json'
+
+jobs:
+  resolve:
+    name: Resolve Version and Dist Tag
+    runs-on: ubuntu-latest
+    if: >
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'Release')
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      dist_tag: ${{ steps.dist.outputs.dist_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+
+      - name: Read design-system version
+        id: get_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./packages/design-system/package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Determine dist-tag
+        id: dist
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            echo "dist_tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "dist_tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    name: Publish Design System to npm
+    needs: resolve
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-design-system.yaml
+    with:
+      version: ${{ needs.resolve.outputs.version }}
+      dist_tag: ${{ needs.resolve.outputs.dist_tag }}
+      ref: ${{ github.event.pull_request.merge_commit_sha }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  comment_design_system_publish:
+    name: Comment Design System Publish Summary
+    needs:
+      - resolve
+      - publish
+    if: success()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 2
+
+      - name: Post design-system release summary comment
+        uses: ./.github/actions/comment-release-links
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          version_file: packages/design-system/package.json
+
+  notify_slack:
+    name: Notify Slack
+    needs:
+      - resolve
+      - publish
+    if: success()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Post to Slack
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: 'C09A24D4692' # #product-design
+          VERSION: ${{ needs.resolve.outputs.version }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          set -euo pipefail
+          TEXT=":package: *@comfyorg/design-system@${VERSION}* published to npm — <${PR_URL}|#${PR_NUMBER}> by ${PR_AUTHOR}. <https://www.npmjs.com/package/@comfyorg/design-system/v/${VERSION}|View on npm>"
+          BODY=$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg text "$TEXT" '{channel: $ch, text: $text}')
+          RESPONSE=$(curl -sS -X POST \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            https://slack.com/api/chat.postMessage)
+          echo "$RESPONSE" | jq -e '.ok == true' >/dev/null

@@ -207,6 +207,33 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('onboardingTourEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('defaults to false when nothing enables it', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(
+        flags.onboardingTourEnabled,
+        'This flag gates a full-screen first-run takeover; defaulting it on would ship the takeover to every user the moment config is unreachable'
+      ).toBe(false)
+    })
+
+    it('turns on from remote config', () => {
+      remoteConfig.value = { onboarding_tour_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.onboardingTourEnabled).toBe(true)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()
@@ -380,6 +407,39 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.signupTurnstileMode).toBe('shadow')
+    })
+  })
+
+  describe('churnkeyAppId', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfig.value = {}
+      localStorage.clear()
+    })
+
+    it('is disabled outside the cloud distribution', () => {
+      remoteConfig.value = { churnkey_app_id: 'app_test' }
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('')
+    })
+
+    it('reads and trims the cloud remote-config value', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfig.value = { churnkey_app_id: ' app_test ' }
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_test')
+    })
+
+    it('falls back to the trimmed server feature value', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === ServerFeatureFlag.CHURNKEY_APP_ID
+            ? ' app_server '
+            : defaultValue
+      )
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_server')
     })
   })
 

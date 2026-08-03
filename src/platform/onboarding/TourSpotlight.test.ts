@@ -9,7 +9,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import TourSpotlight from './TourSpotlight.vue'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 
 vi.mock('@primeuix/utils/zindex', () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
@@ -23,8 +23,8 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function spotlightStep(overrides: Partial<CoachStep> = {}): CoachStep {
-  return { name: 'run', placement: 'right', ...overrides }
+function spotlightStep(overrides: Partial<SpotlightStep> = {}): SpotlightStep {
+  return { kind: 'spotlight', name: 'run', placement: 'right', ...overrides }
 }
 
 const baseProps = {
@@ -92,8 +92,12 @@ describe('TourSpotlight', () => {
     await nextTick()
     expect(ZIndex.set).toHaveBeenCalled()
 
+    const clearedWhileMounted = vi.mocked(ZIndex.clear).mock.calls.length
     unmount()
-    expect(ZIndex.clear).toHaveBeenCalled()
+    expect(
+      vi.mocked(ZIndex.clear).mock.calls.length,
+      'an overlay that never releases its entry leaves the modal stack raised'
+    ).toBe(clearedWhileMounted + 1)
   })
 
   it('re-claims the modal stack per step without leaking entries', async () => {
@@ -114,6 +118,37 @@ describe('TourSpotlight', () => {
       vi.mocked(ZIndex.set).mock.calls.length + 1
     )
     expect(ZIndex.set).toHaveBeenCalled()
+  })
+
+  it('leaves focus and z-order alone when only the step copy changes', async () => {
+    vi.mocked(ZIndex.set).mockClear()
+    const step = spotlightStep()
+    const { rerender } = renderSpotlight({
+      step,
+      title: 'Hang tight',
+      body: 'Your result lands here'
+    })
+    await nextTick()
+    await nextTick()
+
+    const skip = screen.getByRole('button', { name: 'Skip' })
+    skip.focus()
+    const raises = vi.mocked(ZIndex.set).mock.calls.length
+
+    // The same step object reporting new copy — what a `get name()` does when
+    // the run it describes finishes.
+    await rerender({ step, title: 'Your image is ready', body: 'Here it is' })
+    await nextTick()
+    await nextTick()
+
+    expect(
+      skip,
+      'copy changing mid-run must not pull focus off what the user selected'
+    ).toHaveFocus()
+    expect(
+      vi.mocked(ZIndex.set).mock.calls.length,
+      'a re-raise per copy change leaks a z-index entry every time'
+    ).toBe(raises)
   })
 
   it('emits advance on the primary button and skip on the secondary', async () => {

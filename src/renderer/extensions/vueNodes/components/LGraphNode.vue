@@ -776,6 +776,10 @@ const hasVideoInput = computed(() => {
   )
 })
 
+const hasVideoEditWidget = computed(
+  () => nodeData.widgets?.some((widget) => widget.type === 'videoedit') ?? false
+)
+
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
@@ -799,6 +803,8 @@ const nodeMedia = computed(() => {
     (!node.previewMediaType && hasVideoInput.value)
       ? 'video'
       : 'image'
+
+  if (type === 'video' && hasVideoEditWidget.value) return undefined
 
   return { type, urls } as const
 })

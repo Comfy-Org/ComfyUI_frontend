@@ -95,6 +95,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       tier: status.subscription_tier ?? null,
       duration: status.subscription_duration ?? null,
       planSlug: status.plan_slug ?? null,
+      scheduledPlanSlug: status.scheduled_plan_slug ?? null,
+      changeAt: status.change_at ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
       isCancelled: status.subscription_status === 'canceled',
@@ -160,14 +162,27 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       const status = await workspaceApi.getBillingStatus()
-      if (requestId === latestBillingReadIds.status) {
-        statusData.value = status
-        if (workspaceId && status.billing_rail) {
-          workspaceStore.setWorkspaceBillingRail(
-            workspaceId,
-            status.billing_rail
-          )
-        }
+      if (
+        requestId !== latestBillingReadIds.status ||
+        workspaceId !== workspaceStore.activeWorkspace?.id
+      ) {
+        return
+      }
+
+      statusData.value = status
+      if (workspaceId && status.billing_rail) {
+        workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
+      }
+      if (
+        status.pending_billing_op_id &&
+        !billingOperationStore.getOperation(status.pending_billing_op_id)
+      ) {
+        void billingOperationStore.startOperation(
+          status.pending_billing_op_id,
+          'subscription',
+          undefined,
+          status.action_url
+        )
       }
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
@@ -334,7 +349,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       await workspaceApi.resubscribe()
-      await Promise.all([fetchStatus(), fetchBalance()])
+      await Promise.allSettled([fetchStatus(), fetchBalance()])
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
         // Mirrors the success path, which refreshes balance too. allSettled,

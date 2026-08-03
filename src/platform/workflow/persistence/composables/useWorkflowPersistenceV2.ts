@@ -11,7 +11,7 @@
 import { debounce } from 'es-toolkit'
 import { useToast } from 'primevue'
 import { tryOnScopeDispose } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -29,7 +29,11 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
-import { clearAllV2Storage } from '../base/storageIO'
+import type { StartupOutcome } from '../base/draftTypes'
+import {
+  clearAllWorkflowStorage,
+  registerWorkflowPersistenceFlush
+} from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
@@ -37,7 +41,6 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -60,7 +63,7 @@ export function useWorkflowPersistenceV2() {
   // Clear workflow persistence storage when user signs out (cloud only)
   onUserLogout(() => {
     if (isCloud) {
-      clearAllV2Storage()
+      clearAllWorkflowStorage()
     }
   })
 
@@ -131,6 +134,9 @@ export function useWorkflowPersistenceV2() {
 
   // Debounced version for graphChanged events
   const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
+  const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(() =>
+    debouncedPersist.flush()
+  )
 
   const loadPreviousWorkflowFromStorage = async () => {
     const sessionPath = tabState.getActivePath()
@@ -161,6 +167,21 @@ export function useWorkflowPersistenceV2() {
     })
   }
 
+  /**
+   * The blank canvas startup opens for itself is not the user's work, but the
+   * active-workflow watcher has already saved it. Drop the draft and the
+   * pointer to it, or the next boot restores it and reports `restored`.
+   */
+  const discardStartupBlankDraft = () => {
+    const blank = workflowStore.activeWorkflow
+    if (!blank?.isTemporary || blank.isModified) return
+
+    debouncedPersist.cancel()
+    draftStore.removeDraft(blank.path)
+    delete lastSavedJsonByPath.value[blank.path]
+    tabState.clearActivePathPointer()
+  }
+
   const hasPreservedIntent = (namespace: string, key: string) => {
     if (typeof route.query[key] === 'string') return true
     hydratePreservedQuery(namespace)
@@ -174,16 +195,18 @@ export function useWorkflowPersistenceV2() {
   const hasTemplateUrlIntent = () =>
     hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
-  const loadDefaultWorkflow = async () => {
-    if (!settingStore.get('Comfy.TutorialCompleted')) {
-      await settingStore.set('Comfy.TutorialCompleted', true)
-      await useWorkflowService().loadBlankWorkflow()
-      if (!hasSharedWorkflowIntent() && !hasTemplateUrlIntent()) {
-        await useCommandStore().execute('Comfy.BrowseTemplates')
-      }
-    } else {
+  const resolveStartupOutcome = async (): Promise<StartupOutcome> => {
+    if (settingStore.get('Comfy.TutorialCompleted')) {
       await comfyApp.loadGraphData()
+      return 'restored'
     }
+
+    await useWorkflowService().loadBlankWorkflow()
+    await nextTick()
+    discardStartupBlankDraft()
+    return hasSharedWorkflowIntent() || hasTemplateUrlIntent()
+      ? 'url-intent'
+      : 'fresh'
   }
 
   const getRestorableTabState = () => {
@@ -198,27 +221,24 @@ export function useWorkflowPersistenceV2() {
     return { paths, activeIndex }
   }
 
-  const initializeWorkflow = async () => {
+  const initializeWorkflow = async (): Promise<StartupOutcome> => {
     if (!workflowPersistenceEnabled.value) {
-      await loadDefaultWorkflow()
-      return
+      return await resolveStartupOutcome()
     }
 
     try {
       if (getRestorableTabState()) {
         // GraphCanvas calls restoreWorkflowTabsState next; skip the single-workflow
         // fallback here so the saved tab order and active index drive startup.
-        return
+        return 'restored'
       }
 
       await workflowStore.loadWorkflows()
       const restored = await loadPreviousWorkflowFromStorage()
-      if (!restored) {
-        await loadDefaultWorkflow()
-      }
+      return restored ? 'restored' : await resolveStartupOutcome()
     } catch (err) {
       console.error('Error loading previous workflow', err)
-      await loadDefaultWorkflow()
+      return await resolveStartupOutcome()
     }
   }
 
@@ -253,6 +273,7 @@ export function useWorkflowPersistenceV2() {
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
+    unregisterPersistenceFlush()
     debouncedPersist.cancel()
   })
 
@@ -303,7 +324,7 @@ export function useWorkflowPersistenceV2() {
       await workflowStore.loadWorkflows()
     } catch (err) {
       console.error('Error loading workflows for tab restore', err)
-      await loadDefaultWorkflow()
+      await resolveStartupOutcome()
       tabStateRestored = true
       return
     }
