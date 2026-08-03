@@ -112,7 +112,7 @@ async function initialize(): Promise<void> {
     if (!flags.teamWorkspacesEnabled) {
       // Not in workspace mode - use existing Firebase auth flow
       // No additional initialization needed
-      isReady.value = true
+      initializationState.value = 'ready'
       return
     }
 

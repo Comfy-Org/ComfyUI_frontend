@@ -360,6 +360,7 @@ describe('WorkspaceAuthGate', () => {
 
     it('renders the app after retrying a failed initialization', async () => {
       const user = userEvent.setup()
+      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitialize
         .mockImplementationOnce(async () => {
           mockWorkspaceStoreInitState.value = 'error'
