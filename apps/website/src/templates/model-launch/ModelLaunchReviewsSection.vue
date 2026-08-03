@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
+import type { ModelLaunchReviews } from './types'
 
 import BrandButton from '../../components/common/BrandButton.vue'
 import ScrollCarousel from '../../components/ui/scroll-carousel/ScrollCarousel.vue'
 import { getRoutes } from '../../config/routes'
-import { minimaxReviews } from '../../data/minimax'
+import { creatorReviews } from '../../data/creatorReviews'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', reviews } = defineProps<{
+  reviews: ModelLaunchReviews
+  locale?: Locale
+}>()
 
 const routes = getRoutes(locale)
 
-const reviews = minimaxReviews.map((review) => ({
+const quotes = creatorReviews.map((review) => ({
   id: review.id,
   body: review.body[locale],
   name: review.name,
@@ -28,10 +32,10 @@ const reviews = minimaxReviews.map((review) => ({
         <h3
           class="text-2xl font-medium text-primary-comfy-ink lg:text-3xl/tight"
         >
-          {{ t('minimax.reviews.highlightTitle', locale) }}
+          {{ t(reviews.highlight.titleKey, locale) }}
         </h3>
         <p class="mt-4 text-base/relaxed font-light text-primary-comfy-ink">
-          {{ t('minimax.reviews.highlightDescription', locale) }}
+          {{ t(reviews.highlight.descriptionKey, locale) }}
         </p>
       </div>
 
@@ -41,14 +45,14 @@ const reviews = minimaxReviews.map((review) => ({
         size="sm"
         class="h-12 shrink-0 px-5 uppercase"
       >
-        {{ t('minimax.reviews.highlightCta', locale) }}
+        {{ t(reviews.highlight.ctaKey, locale) }}
       </BrandButton>
     </div>
 
     <h2
       class="mt-20 text-center text-3xl font-light tracking-tight text-primary-comfy-canvas lg:mt-28 lg:text-5xl/tight"
     >
-      {{ t('minimax.reviews.heading', locale) }}
+      {{ t(reviews.headingKey, locale) }}
     </h2>
 
     <ScrollCarousel
@@ -57,19 +61,19 @@ const reviews = minimaxReviews.map((review) => ({
       class="mt-12 max-w-none p-0 lg:mt-16 lg:p-0"
     >
       <article
-        v-for="review in reviews"
-        :key="review.id"
+        v-for="quote in quotes"
+        :key="quote.id"
         class="bg-transparency-white-t4 rounded-5xl flex w-full shrink-0 snap-start flex-col justify-between p-8 lg:w-2/3 lg:p-12"
       >
         <p
           class="text-xl/relaxed font-light text-primary-comfy-canvas lg:text-2xl/relaxed"
         >
-          "{{ review.body }}"
+          "{{ quote.body }}"
         </p>
 
         <p class="text-primary-comfy-yellow mt-10 text-base lg:mt-12">
-          <span class="font-medium">{{ review.name }}</span
-          ><template v-if="review.role">,<br />{{ review.role }}</template>
+          <span class="font-medium">{{ quote.name }}</span
+          ><template v-if="quote.role">,<br />{{ quote.role }}</template>
         </p>
       </article>
     </ScrollCarousel>

@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test'
 
 import { externalLinks, getRoutes } from '../src/config/routes'
-import { minimaxFaqs, minimaxLinks, minimaxReviews } from '../src/data/minimax'
+import { creatorReviews } from '../src/data/creatorReviews'
+import { minimaxLinks, minimaxPage } from '../src/data/minimax'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -14,12 +15,14 @@ const CTA_HEADING = t('minimax.cta.heading', 'en')
 const CTA_PRIMARY = t('minimax.cta.primaryCta', 'en')
 const CLOUD_URL = externalLinks.cloud
 const CLOUD_RUN_URL = minimaxLinks.cloudRun
-const FAQ_COUNT = minimaxFaqs.length
-const FIRST_FAQ = minimaxFaqs[0]
+const FAQS = minimaxPage.faq.items
+const FAQ_COUNT = FAQS.length
+const FIRST_FAQ = FAQS[0]
+const PRICING_HEADING = t('pricing.title', 'en')
 const REVIEWS_HEADING = t('minimax.reviews.heading', 'en')
 const HIGHLIGHT_CTA = t('minimax.reviews.highlightCta', 'en')
 const MCP_ROUTE = getRoutes('en').mcp
-const FIRST_REVIEW = minimaxReviews[0]
+const FIRST_REVIEW = creatorReviews[0]
 
 test.describe('MiniMax H3 page — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -108,38 +111,45 @@ test.describe('MiniMax H3 page — pricing section', () => {
     await expect(tryFree).toHaveAttribute('href', CLOUD_URL)
   })
 
-  test('shows per-plan descriptions and cumulative feature groups', async ({
+  test('renders the shared pricing plans, team card and enterprise band', async ({
     page
   }) => {
-    const planCard = (label: string) =>
-      page
-        .locator('[class*="rounded-4.5xl"]')
-        .filter({ has: page.getByText(label, { exact: true }) })
+    const pricingSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: PRICING_HEADING })
+    })
+    await pricingSection.scrollIntoViewIfNeeded()
 
-    const standardCard = planCard(t('pricing.plan.standard.label', 'en'))
-    const creatorCard = planCard(t('pricing.plan.creator.label', 'en'))
-    const proCard = planCard(t('pricing.plan.pro.label', 'en'))
-
-    await standardCard.scrollIntoViewIfNeeded()
+    const standardCard = pricingSection
+      .locator('[class*="rounded-4.5xl"]')
+      .filter({
+        has: page.getByText(t('pricing.plan.standard.label', 'en'), {
+          exact: true
+        })
+      })
     await expect(
-      standardCard.getByText(
-        t('minimax.pricing.plan.standard.description', 'en')
-      )
-    ).toBeVisible()
-
-    await expect(
-      creatorCard.getByText(t('minimax.pricing.plan.creator.description', 'en'))
-    ).toBeVisible()
-    await expect(
-      creatorCard.getByText(t('minimax.pricing.everythingInStandard', 'en'))
+      standardCard.getByText(t('pricing.plan.standard.estimate', 'en'))
     ).toBeVisible()
 
     await expect(
-      proCard.getByText(t('minimax.pricing.plan.pro.description', 'en'))
+      pricingSection.getByText(t('pricing.plan.team.label', 'en'), {
+        exact: true
+      })
     ).toBeVisible()
     await expect(
-      proCard.getByText(t('minimax.pricing.everythingInCreator', 'en'))
+      pricingSection.getByText(t('pricing.enterprise.label', 'en'), {
+        exact: true
+      })
     ).toBeVisible()
+  })
+
+  test('opens on monthly billing, as the launch design specifies', async ({
+    page
+  }) => {
+    const subscribe = page.getByRole('link', {
+      name: t('pricing.plan.standard.cta', 'en')
+    })
+    await subscribe.scrollIntoViewIfNeeded()
+    await expect(subscribe).toHaveAttribute('href', /cycle=monthly/)
   })
 })
 
@@ -227,10 +237,15 @@ test.describe('MiniMax H3 page — interactions', () => {
     await nextButton.scrollIntoViewIfNeeded()
 
     const startScroll = await track.evaluate((el) => el.scrollLeft)
-    await nextButton.click()
-    await expect
-      .poll(() => track.evaluate((el) => el.scrollLeft))
-      .toBeGreaterThan(startScroll)
+
+    // The button renders server-side, so a click can land before the island
+    // hydrates and scroll nowhere. Re-click until the track actually moves.
+    await expect(async () => {
+      await nextButton.click()
+      await expect
+        .poll(() => track.evaluate((el) => el.scrollLeft))
+        .toBeGreaterThan(startScroll)
+    }).toPass()
   })
 })
 

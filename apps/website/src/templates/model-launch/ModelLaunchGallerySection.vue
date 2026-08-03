@@ -4,13 +4,16 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
+import type { ModelLaunchGallery } from './types'
 
 import Badge from '../../components/ui/badge/Badge.vue'
 import IconButton from '../../components/ui/icon-button/IconButton.vue'
-import { minimaxModels } from '../../data/minimax'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', gallery } = defineProps<{
+  gallery: ModelLaunchGallery
+  locale?: Locale
+}>()
 
 // The cards sit well below the fold; defer their videos until the section
 // nears the viewport instead of fetching all of them during first paint.
@@ -36,21 +39,21 @@ const { stop } = useIntersectionObserver(
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t('minimax.models.heading', locale) }}
+        {{ t(gallery.headingKey, locale) }}
       </h2>
     </div>
 
     <div
       class="mx-auto mt-16 grid max-w-7xl grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2"
     >
-      <article v-for="model in minimaxModels" :key="model.id">
+      <article v-for="card in gallery.cards" :key="card.id">
         <div
           class="group rounded-4.5xl relative block aspect-19/10 overflow-hidden bg-black/40"
         >
           <video
-            v-if="model.mediaSrc.endsWith('.webm')"
-            :src="shouldLoadVideos ? model.mediaSrc : undefined"
-            :aria-label="model.name[locale]"
+            v-if="card.mediaSrc.endsWith('.webm')"
+            :src="shouldLoadVideos ? card.mediaSrc : undefined"
+            :aria-label="card.name[locale]"
             class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             autoplay
             loop
@@ -60,8 +63,8 @@ const { stop } = useIntersectionObserver(
           />
           <img
             v-else
-            :src="model.mediaSrc"
-            :alt="model.name[locale]"
+            :src="card.mediaSrc"
+            :alt="card.name[locale]"
             class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
             decoding="async"
@@ -74,24 +77,24 @@ const { stop } = useIntersectionObserver(
 
         <div class="mt-5 flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <Badge :variant="model.tier === 'free' ? 'accent' : 'callout'">
+            <Badge :variant="card.tier === 'free' ? 'accent' : 'callout'">
               {{
-                model.tier === 'free'
-                  ? t('minimax.models.tagFree', locale)
-                  : t('minimax.models.tagPremium', locale)
+                card.tier === 'free'
+                  ? t('modelLaunch.tagFree', locale)
+                  : t('modelLaunch.tagPremium', locale)
               }}
             </Badge>
             <span class="text-primary-warm-gray text-xs">
-              {{ model.note[locale] }}
+              {{ card.note[locale] }}
             </span>
           </div>
 
           <IconButton
             as="a"
-            :href="model.href"
+            :href="card.href"
             target="_blank"
             rel="noopener"
-            :aria-label="model.name[locale]"
+            :aria-label="card.name[locale]"
             size="sm"
             class="bg-primary-warm-gray hover:bg-primary-comfy-yellow rounded-xl text-primary-comfy-ink hover:text-primary-comfy-ink"
           >
@@ -100,7 +103,7 @@ const { stop } = useIntersectionObserver(
         </div>
 
         <p class="mt-3 text-sm font-light text-primary-comfy-canvas">
-          {{ model.description[locale] }}
+          {{ card.description[locale] }}
         </p>
       </article>
     </div>

@@ -4932,6 +4932,9 @@ const translations = {
     'zh-CN': '联系我们'
   },
 
+  // Shared by every model-launch gallery card (see templates/model-launch).
+  'modelLaunch.tagFree': { en: 'Free', 'zh-CN': '免费' },
+  'modelLaunch.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
@@ -4975,27 +4978,10 @@ const translations = {
     en: 'Pay-as-you-go credits · No watermark · Commercial use included',
     'zh-CN': '按量付费积分 · 无水印 · 包含商业使用授权'
   },
-  'minimax.showcase.heading': {
-    en: 'Native stereo, up to 2K',
-    'zh-CN': '原生立体声，最高 2K'
-  },
-  'minimax.showcase.promptLabel': { en: 'Prompt', 'zh-CN': '提示词' },
-  'minimax.showcase.cta': { en: 'RUN MINIMAX', 'zh-CN': '运行 MiniMax' },
-  'minimax.steps.heading': {
-    en: 'Direct your first MiniMax shot',
-    'zh-CN': '执导你的第一个 MiniMax 镜头'
-  },
-  'minimax.steps.leadIn': {
-    en: 'The model is the artist. You write the brief.',
-    'zh-CN': '模型即艺术家，你只需写下创意简报。'
-  },
-  'minimax.steps.step': { en: 'Step', 'zh-CN': '步骤' },
   'minimax.models.heading': {
     en: 'Made with MiniMax H3',
     'zh-CN': '用 MiniMax H3 制作'
   },
-  'minimax.models.tagFree': { en: 'Free', 'zh-CN': '免费' },
-  'minimax.models.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
   'minimax.faq.heading': {
     en: 'Q&A',
     'zh-CN': '问答'
@@ -5040,7 +5026,6 @@ const translations = {
       '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
   'minimax.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
-  'minimax.pricing.heading': { en: 'Pricing', 'zh-CN': '价格' },
   'minimax.pricing.banner.title': {
     en: "Start free. Upgrade when you're ready.",
     'zh-CN': '免费开始，准备好了再升级。'
@@ -5049,63 +5034,7 @@ const translations = {
     en: '5 free runs on real GPUs — no credit card required.',
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
-  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
-  'minimax.pricing.plan.standard.description': {
-    en: 'For individuals creating workflows',
-    'zh-CN': '适合创建工作流的个人用户'
-  },
-  'minimax.pricing.plan.creator.description': {
-    en: 'Small teams building fine-tuned, repeatable workflows',
-    'zh-CN': '适合构建精调、可复用工作流的小型团队'
-  },
-  'minimax.pricing.plan.pro.description': {
-    en: 'For growing teams running Comfy in production',
-    'zh-CN': '适合在生产环境中运行 Comfy 的成长型团队'
-  },
-  'minimax.pricing.credits': {
-    en: 'Includes {credits} monthly credits with top-ups available',
-    'zh-CN': '包含每月 {credits} 积分，支持随时充值'
-  },
-  'minimax.pricing.plan.standard.estimate': {
-    en: '~380 5s videos*',
-    'zh-CN': '约 380 个 5 秒视频*'
-  },
-  'minimax.pricing.plan.creator.estimate': {
-    en: '~670 5s videos*',
-    'zh-CN': '约 670 个 5 秒视频*'
-  },
-  'minimax.pricing.plan.pro.estimate': {
-    en: '~1,915 5s videos*',
-    'zh-CN': '约 1,915 个 5 秒视频*'
-  },
-  'minimax.pricing.everythingInStandard': {
-    en: 'Everything in Standard, plus:',
-    'zh-CN': '包含标准版全部功能，另有：'
-  },
-  'minimax.pricing.everythingInCreator': {
-    en: 'Everything in Creator, plus:',
-    'zh-CN': '包含创作者版全部功能，另有：'
-  },
-  'minimax.pricing.feature.runtime30': {
-    en: '30-minute max runtime per workflow',
-    'zh-CN': '单个工作流最长运行 30 分钟'
-  },
-  'minimax.pricing.feature.loras': {
-    en: 'Import your own LoRAs',
-    'zh-CN': '导入你自己的 LoRA'
-  },
-  'minimax.pricing.feature.apiJobs3': {
-    en: '3 concurrent API jobs',
-    'zh-CN': '3 个并发 API 任务'
-  },
-  'minimax.pricing.feature.longRuntime': {
-    en: 'Longer workflow runtime (up to 1 hour)',
-    'zh-CN': '更长工作流运行时长（最长 1 小时）'
-  },
-  'minimax.pricing.feature.apiJobs5': {
-    en: '5 concurrent API jobs',
-    'zh-CN': '5 个并发 API 任务'
-  }
+  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
