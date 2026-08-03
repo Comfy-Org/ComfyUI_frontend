@@ -11,6 +11,7 @@ import ModelLaunchRunOptionsSection from './ModelLaunchRunOptionsSection.vue'
 import type { ModelLaunchPage } from './types'
 import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
+import { faqAnswerPlainText } from '../../utils/faqAnswer'
 import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
 
 interface Props {
@@ -45,7 +46,7 @@ const faqPage = faqPageNode(
   url,
   page.faq.items.map((item) => ({
     question: item.question[locale],
-    answer: item.answer[locale],
+    answer: faqAnswerPlainText(item.answer[locale]),
   })),
 )
 ---

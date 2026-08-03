@@ -4,6 +4,7 @@ import { externalLinks, getRoutes } from '../src/config/routes'
 import { creatorReviews } from '../src/data/creatorReviews'
 import { minimaxLinks, minimaxPage } from '../src/data/minimax'
 import { t } from '../src/i18n/translations'
+import { faqAnswerPlainText } from '../src/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/minimax'
@@ -153,6 +154,37 @@ test.describe('MiniMax H3 page — pricing section', () => {
   })
 })
 
+test.describe('MiniMax H3 page — FAQ interlinks', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('links the answers to the docs tutorial and the launch post', async ({
+    page
+  }) => {
+    // Answers live in a collapsed accordion, and the trigger renders
+    // aria-expanded="false" server-side, so re-click until the island hydrates.
+    const openAnswer = async (question: string) => {
+      const trigger = page.getByRole('button', { name: question })
+      await trigger.scrollIntoViewIfNeeded()
+      await expect(async () => {
+        await trigger.click()
+        await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+      }).toPass()
+    }
+
+    await openAnswer(FAQS[0].question.en)
+    await expect(
+      page.getByRole('link', { name: 'the day-0 launch post' })
+    ).toHaveAttribute('href', minimaxLinks.blog)
+
+    await openAnswer(FAQS[FAQS.length - 1].question.en)
+    await expect(
+      page.getByRole('link', { name: 'the MiniMax H3 workflow tutorial' })
+    ).toHaveAttribute('href', minimaxLinks.docs)
+  })
+})
+
 test.describe('MiniMax H3 page — interactions', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(PATH)
@@ -220,7 +252,9 @@ test.describe('MiniMax H3 page — interactions', () => {
       await firstQuestion.click()
       await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
     }).toPass()
-    await expect(page.getByText(FIRST_FAQ.answer.en)).toBeVisible()
+    await expect(
+      page.getByText(faqAnswerPlainText(FIRST_FAQ.answer.en))
+    ).toBeVisible()
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
