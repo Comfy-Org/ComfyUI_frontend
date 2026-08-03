@@ -2,6 +2,7 @@ import MiniSearch from 'minisearch'
 import type { SearchResult } from 'minisearch'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { searchRankBoost } from '@/platform/workflow/templates/utils/templateRanking'
 
 // MiniSearch serializes the index but not the search options, so the tokenizer
 // and field list live here and are used at both index and query time.
@@ -17,17 +18,6 @@ const SEARCH_FIELDS = [
 // Usage only reorders hits within this fraction of the top score, so popularity
 // never overrides a clearly-better text match. 5% tuned empirically.
 const USAGE_TIEBREAK_BAND = 0.05
-
-// `searchRank` is the curator dial authored in workflow_templates, specified
-// there as "0-1000, higher = better" (docs/SPEC.md). Magnitude saturates on a
-// log curve so the values curators actually write — 8, 500, 1000, 1_000_000 —
-// all land inside the cap instead of swamping relevance.
-const SEARCH_RANK_SATURATION = 1000
-
-// The retired 1-10 scale used 1-4 to demote and 5 as neutral. Those magnitudes
-// are noise on a 0-1000 dial, so ignoring them honours both contracts: no
-// legacy value ever flips from demotion to promotion.
-const SEARCH_RANK_DEAD_ZONE = 5
 
 // How far curation may move a hit relative to its text relevance. ±30% is ~6
 // tiebreak bands: enough to lift a launch template over near-equal matches,
@@ -171,22 +161,6 @@ export function createTemplateSearchIndex(
   })
   index.addAll(templates)
   return index
-}
-
-/**
- * Curator intent as a signed strength in [-1, 1]. Unset, non-numeric, and any
- * rank within the dead zone are the same neutral baseline — most of the catalog
- * ships an explicit `"searchRank": 0` meaning "not curated", so 0 must not
- * demote. Promotion starts once the rank exceeds the dead zone and demotion
- * once it falls below the negative of it, each saturating at the cap.
- */
-export function searchRankBoost(searchRank: number | undefined): number {
-  if (!searchRank || Math.abs(searchRank) <= SEARCH_RANK_DEAD_ZONE) return 0
-  const magnitude = Math.min(
-    1,
-    Math.log1p(Math.abs(searchRank)) / Math.log1p(SEARCH_RANK_SATURATION)
-  )
-  return Math.sign(searchRank) * magnitude
 }
 
 function searchRankMultiplier(searchRank: number | undefined): number {

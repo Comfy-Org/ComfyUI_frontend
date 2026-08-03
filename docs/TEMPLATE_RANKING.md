@@ -57,7 +57,7 @@ Set per template in the `workflow_templates` repo's `templates/index.json`. It i
 | above `1000`   | Same as `1000`. Saturated, never larger   |
 | `-6` and below | Demote, mirroring the positive curve      |
 
-Magnitude follows `log1p(|searchRank|) / log1p(1000)`, capped at 1. The curve is logarithmic so the whole documented `0`–`1000` range from [`workflow_templates/docs/SPEC.md`](https://github.com/Comfy-Org/workflow_templates/blob/main/docs/SPEC.md) is usable, and saturating so an out-of-range value cannot swamp relevance:
+`searchRankBoost()` in [`src/platform/workflow/templates/utils/templateRanking.ts`](../src/platform/workflow/templates/utils/templateRanking.ts) is the single definition of what the field means; both the search path and the `recommended` sort read it. Magnitude follows `log1p(|searchRank|) / log1p(1000)`, capped at 1. The curve is logarithmic so the whole documented `0`–`1000` range from [`workflow_templates/docs/SPEC.md`](https://github.com/Comfy-Org/workflow_templates/blob/main/docs/SPEC.md) is usable, and saturating so an out-of-range value cannot swamp relevance:
 
 | `searchRank` | Boost | Search multiplier |
 | ------------ | ----- | ----------------- |

@@ -7,7 +7,6 @@ import {
   expandAbbreviation,
   expandQuery,
   rankByRelevanceThenUsage,
-  searchRankBoost,
   searchTemplates,
   termFuzziness,
   tokenize
@@ -279,38 +278,6 @@ describe('searchTemplates', () => {
       buildTemplate({ name: 'exact', title: 'ControlNet' })
     ])
     expect(searchTemplates(index, 'controlnet')[0]).toBe('exact')
-  })
-})
-
-describe('searchRankBoost', () => {
-  // Most of the catalog ships an explicit `"searchRank": 0` from tooling, so 0
-  // must mean the same thing as an absent field, not a demotion.
-  it('treats unset, zero and non-numeric ranks as the same neutral baseline', () => {
-    expect(searchRankBoost(undefined)).toBe(0)
-    expect(searchRankBoost(0)).toBe(0)
-    expect(searchRankBoost(Number.NaN)).toBe(0)
-  })
-
-  it('promotes on positive and demotes on negative, symmetrically', () => {
-    expect(searchRankBoost(8)).toBeGreaterThan(0)
-    expect(searchRankBoost(-8)).toBeCloseTo(-searchRankBoost(8), 10)
-  })
-
-  // The retired 1-10 scale read 1-4 as "demote" and 5 as "neutral"; the starter
-  // templates still ship searchRank 3. Reading those as a promotion would
-  // invert the only intent their authors could have had.
-  it('ignores magnitudes left over from the retired 1-10 scale', () => {
-    for (const legacyRank of [1, 2, 3, 4, 5]) {
-      expect(searchRankBoost(legacyRank)).toBe(0)
-    }
-    expect(searchRankBoost(6)).toBeGreaterThan(0)
-  })
-
-  it('increases with rank but saturates so out-of-range values stay bounded', () => {
-    expect(searchRankBoost(1000)).toBeGreaterThan(searchRankBoost(8))
-    expect(searchRankBoost(1_000_000)).toBe(1)
-    expect(searchRankBoost(Number.MAX_SAFE_INTEGER)).toBe(1)
-    expect(searchRankBoost(-1_000_000)).toBe(-1)
   })
 })
 
