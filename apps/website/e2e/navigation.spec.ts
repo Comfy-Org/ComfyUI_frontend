@@ -1,10 +1,9 @@
 import { expect } from '@playwright/test'
 
-import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const minimaxLabel = t('footer.minimaxH3', 'en')
-const minimaxLabelZh = t('footer.minimaxH3', 'zh-CN')
+const minimaxLabel = 'MiniMax H3'
+const minimaxLabelZh = 'MiniMax H3'
 const minimaxRoute = '/minimax'
 const minimaxRouteZh = '/zh-CN/minimax'
 
