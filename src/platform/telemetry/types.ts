@@ -108,14 +108,22 @@ export interface SurveyResponses {
   usage?: string
 }
 
-export type OnboardingTourStage =
+/** Stages inside the coachmark sequence, which is what `step_count` counts. */
+export type OnboardingTourStepStage =
   | 'not_started'
   | 'started'
   | 'step_shown'
   | 'completed'
   | 'skipped'
+
+/** The nudge follows the tour, so it has no step to report. */
+export type OnboardingTourNudgeStage =
   | 'nudge_shown'
   | 'explore_templates_clicked'
+
+export type OnboardingTourStage =
+  | OnboardingTourStepStage
+  | OnboardingTourNudgeStage
 
 export type OnboardingTourSkipReason =
   | 'user'
@@ -134,17 +142,25 @@ export type OnboardingTourNotStartedReason =
  * `step_number` is 1-based and matches the "Step N of M" indicator the user
  * sees, with `step_count` as M. Both `step_number` and `coach_id` are absent
  * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
- * present only on the `skipped` stage, and `step_count` only on the stages that
- * happen inside the step sequence — the nudge stages follow the tour's end.
+ * present only on the `skipped` stage.
  */
-export interface OnboardingTourMetadata {
+export interface OnboardingTourStepMetadata {
   tour: string
-  step_count?: number
+  step_count: number
   step_number?: number
   coach_id?: string
   skip_reason?: OnboardingTourSkipReason
   not_started_reason?: OnboardingTourNotStartedReason
 }
+
+/** The nudge is post-tour, so it reports no step and no count. */
+export interface OnboardingTourNudgeMetadata {
+  tour: string
+}
+
+export type OnboardingTourMetadata =
+  | OnboardingTourStepMetadata
+  | OnboardingTourNudgeMetadata
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -371,7 +387,7 @@ export type WorkflowOpenSource = NonNullable<
  * Template library metadata
  */
 export interface TemplateLibraryMetadata {
-  source: 'sidebar' | 'menu' | 'command' | 'appbuilder'
+  source: 'sidebar' | 'menu' | 'command' | 'appbuilder' | 'first_run_nudge'
 }
 
 /**
@@ -850,8 +866,12 @@ export interface TelemetryProvider {
 
   // Onboarding coachmark tour events
   trackOnboardingTour?(
-    stage: OnboardingTourStage,
-    metadata: OnboardingTourMetadata
+    stage: OnboardingTourStepStage,
+    metadata: OnboardingTourStepMetadata
+  ): void
+  trackOnboardingTour?(
+    stage: OnboardingTourNudgeStage,
+    metadata: OnboardingTourNudgeMetadata
   ): void
 
   // Email verification events
