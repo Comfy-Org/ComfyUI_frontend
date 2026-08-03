@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
@@ -18,6 +19,7 @@ const mockTrackTopUpPurchase = vi.fn()
 const mockTrackBillingEvent = vi.fn()
 const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
+const mockIsAddingCredits = vi.hoisted(() => ({ value: false }))
 const mockTopupActionOperation = vi.hoisted(() => ({
   value: undefined as { actionUrl: string } | undefined
 }))
@@ -33,7 +35,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     hasPendingOperations: true,
-    isAddingCredits: false,
+    get isAddingCredits() {
+      return mockIsAddingCredits.value
+    },
     get topupActionOperation() {
       return mockTopupActionOperation.value
     },
@@ -102,10 +106,13 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close' },
+      g: { back: 'Back', close: 'Close' },
       subscription: {
         addCredits: 'Add credits',
-        preview: { completeVerification: 'Complete verification' }
+        preview: {
+          completeVerification: 'Complete verification',
+          totalDueToday: 'Total due today'
+        }
       },
       credits: {
         topUp: {
@@ -123,7 +130,15 @@ const i18n = createI18n({
           needMore: 'Need more?',
           contactUs: 'Contact us',
           viewPricing: 'View pricing',
-          insufficientWorkflowMessage: 'Insufficient credits'
+          insufficientWorkflowMessage: 'Insufficient credits',
+          chargedImmediatelyNote: 'Your saved card is charged immediately.',
+          confirmSubtitle:
+            'Credits are added to this workspace as soon as payment completes.',
+          confirmTitle: 'Confirm',
+          payAmount: 'Pay {amount}',
+          verifyBody:
+            'Your bank requires additional verification to complete this payment.',
+          verifyTitle: 'Verify your payment'
         }
       }
     }
@@ -166,9 +181,14 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     vi.clearAllMocks()
     mockCanTopUp.value = true
     mockShouldUseWorkspaceBilling.value = true
+    mockIsAddingCredits.value = false
     mockTopupActionOperation.value = undefined
     mockFetchBalance.mockResolvedValue(undefined)
     mockFetchStatus.mockResolvedValue(undefined)
+    mockStartOperation.mockImplementation(() => {
+      mockIsAddingCredits.value = true
+      return new Promise(() => {})
+    })
   })
 
   it('allows a top-up while an unrelated billing operation is pending', () => {
@@ -177,13 +197,36 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
-  it('opens topup verification without exposing its URL', async () => {
+  it('advances to confirmation without charging', async () => {
+    renderDialog()
+
+    await clickAddCredits()
+
+    expect(screen.getByText('Confirm')).toBeInTheDocument()
+    expect(screen.getByText('Total due today')).toBeInTheDocument()
+    expect(screen.getByText('$50.00')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
+    expect(mockTopup).not.toHaveBeenCalled()
+  })
+
+  it('allows returning to amount selection before payment', async () => {
+    renderDialog()
+    await clickAddCredits()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(screen.getByText('Select amount')).toBeInTheDocument()
+  })
+
+  it('reopens in verification without exposing the action URL', async () => {
     const actionUrl = 'https://verify.example/sensitive-token'
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
     mockTopupActionOperation.value = { actionUrl }
 
     const { container } = renderDialog()
 
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+    expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
     expect(container.innerHTML).not.toContain(actionUrl)
     await userEvent.click(
       screen.getByRole('button', { name: 'Complete verification' })
@@ -194,6 +237,18 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       'noopener,noreferrer'
     )
     open.mockRestore()
+  })
+
+  it('reopens in verification while the action URL is loading', () => {
+    mockIsAddingCredits.value = true
+
+    renderDialog()
+
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Complete verification' })
+    ).toBeDisabled()
+    expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
   })
 
   it('hides topup verification after permission is revoked', () => {
@@ -209,11 +264,24 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('locks back navigation after Pay while the top-up is pending', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
+    expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
+  })
+
   it('refreshes both balance and status after a completed top-up', async () => {
     mockTopup.mockResolvedValue(topupResponse('completed'))
 
     renderDialog()
     await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     expect(mockFetchBalance).toHaveBeenCalledOnce()
     expect(mockFetchStatus).toHaveBeenCalledOnce()
@@ -233,6 +301,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     renderDialog()
     await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     expect(mockTrackBillingEvent).toHaveBeenCalledTimes(1)
     expect(mockTrackBillingEvent).toHaveBeenCalledWith({
@@ -249,6 +318,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     renderDialog()
     await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
     expect(mockFetchBalance).not.toHaveBeenCalled()
@@ -261,6 +331,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     renderDialog()
     await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
@@ -278,6 +349,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     mockCanTopUp.value = false
 
     await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     expect(mockTopup).not.toHaveBeenCalled()
     expect(mockTrackTopUpPurchase).not.toHaveBeenCalled()
@@ -292,6 +364,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     renderDialog()
     await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     expect(mockTopup).toHaveBeenCalledWith(5000)
     expect(mockFetchBalance).toHaveBeenCalledOnce()
