@@ -23,6 +23,7 @@ const baseRoutes = {
   contact: '/contact',
   models: '/p/supported-models',
   mcp: '/mcp',
+  minimax: '/minimax',
   brand: '/brand'
 } as const
 
