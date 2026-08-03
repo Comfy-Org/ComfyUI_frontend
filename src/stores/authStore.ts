@@ -235,7 +235,7 @@ export const useAuthStore = defineStore('auth', () => {
    * When unified_cloud_auth is enabled, returns the single Cloud JWT for every
    * cloud request (no Firebase/API-key fallback) so one token is used end to end.
    * Otherwise checks for authentication in the following order:
-   * 1. Workspace token (if team_workspaces_enabled and user has active workspace context)
+   * 1. Workspace token on Cloud when the user has active workspace context
    * 2. Firebase authentication token (if user is logged in)
    * 3. API key (if stored in the browser's credential manager)
    *
@@ -250,7 +250,7 @@ export const useAuthStore = defineStore('auth', () => {
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
-    if (flags.teamWorkspacesEnabled) {
+    if (isCloud) {
       const workspaceAuth = useWorkspaceAuthStore()
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 
@@ -294,7 +294,7 @@ export const useAuthStore = defineStore('auth', () => {
       return useWorkspaceAuthStore().getUnifiedToken()
     }
 
-    if (flags.teamWorkspacesEnabled) {
+    if (isCloud) {
       const workspaceAuth = useWorkspaceAuthStore()
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 

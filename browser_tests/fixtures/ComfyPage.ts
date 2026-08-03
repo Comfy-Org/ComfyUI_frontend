@@ -6,6 +6,12 @@ import MCR from 'monocart-coverage-reports'
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
 import { TOURS, TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import {
+  EMPTY_BILLING_BALANCE,
+  EMPTY_BILLING_PLANS,
+  LEGACY_PERSONAL_BILLING_STATUS
+} from '@e2e/fixtures/data/cloudWorkspace'
+import { ZERO_BALANCE } from '@e2e/fixtures/data/subscriptionFixtures'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
@@ -13,6 +19,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
@@ -561,6 +568,23 @@ export const comfyPageFixture = base.extend<{
     }
 
     if (testInfo.tags.includes('@cloud')) {
+      const context = page.context()
+      await context.route('**/api/auth/session', (route) =>
+        route.fulfill({ status: 204 })
+      )
+      await context.route('**/api/billing/status', (route) =>
+        route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+      )
+      await context.route('**/api/billing/balance', (route) =>
+        route.fulfill({ json: EMPTY_BILLING_BALANCE })
+      )
+      await context.route('**/api/billing/plans', (route) =>
+        route.fulfill({ json: EMPTY_BILLING_PLANS })
+      )
+      await context.route('**/customers/balance', (route) =>
+        route.fulfill({ json: ZERO_BALANCE })
+      )
+      await mockWorkspace(context, workspace('personal', 'owner'), [])
       await comfyPage.cloudAuth.mockAuth()
     }
 

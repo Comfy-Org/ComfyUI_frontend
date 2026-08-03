@@ -61,10 +61,6 @@ export function useSettingUI(
   const { isActiveSubscription, type: billingType } = useBillingContext()
   const { workspaceRole } = useWorkspaceUI()
 
-  const teamWorkspacesEnabled = computed(
-    () => isCloud && flags.teamWorkspacesEnabled
-  )
-
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
       Object.values(settingStore.settingsById).filter(
@@ -228,9 +224,7 @@ export function useSettingUI(
     props: { section: 'allowlist' }
   }
 
-  const shouldShowWorkspacePanel = computed(
-    () => teamWorkspacesEnabled.value && isLoggedIn.value
-  )
+  const shouldShowWorkspacePanel = computed(() => isCloud && isLoggedIn.value)
   const shouldShowWorkspaceAllowlist = computed(
     () =>
       shouldShowWorkspacePanel.value &&
@@ -348,7 +342,7 @@ export function useSettingUI(
     )
   })
 
-  // Sidebar structure when team workspaces is enabled
+  // Cloud workspace sidebar structure
   const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [
     // Workspace settings
     translateCategory({
@@ -394,7 +388,7 @@ export function useSettingUI(
       : [])
   ])
 
-  // Sidebar structure when team workspaces is disabled (legacy)
+  // OSS legacy sidebar structure
   const legacyMenuTreeNodes = computed<SettingTreeNode[]>(() => [
     // Account settings - show different panels based on distribution and auth state
     {
@@ -432,29 +426,29 @@ export function useSettingUI(
   ])
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() =>
-    teamWorkspacesEnabled.value
-      ? workspaceMenuTreeNodes.value
-      : legacyMenuTreeNodes.value
+    isCloud ? workspaceMenuTreeNodes.value : legacyMenuTreeNodes.value
   )
 
   const navGroups = computed<NavGroupData[]>(() =>
-    groupedMenuTreeNodes.value.map((group) => ({
-      title:
-        (group as SettingTreeNode & { translatedLabel?: string })
-          .translatedLabel ?? group.label,
-      items: (group.children ?? []).map((child) => ({
-        id: child.key,
-        label:
-          (child as SettingTreeNode & { translatedLabel?: string })
-            .translatedLabel ?? child.label,
-        icon:
-          child.key === 'workspace' && billingControlsEnabled.value
-            ? CATEGORY_ICONS.PlanCredits
-            : (CATEGORY_ICONS[child.key] ??
-              CATEGORY_ICONS[child.label] ??
-              'icon-[lucide--plug]')
+    groupedMenuTreeNodes.value
+      .filter((group) => group.children?.length)
+      .map((group) => ({
+        title:
+          (group as SettingTreeNode & { translatedLabel?: string })
+            .translatedLabel ?? group.label,
+        items: (group.children ?? []).map((child) => ({
+          id: child.key,
+          label:
+            (child as SettingTreeNode & { translatedLabel?: string })
+              .translatedLabel ?? child.label,
+          icon:
+            child.key === 'workspace' && billingControlsEnabled.value
+              ? CATEGORY_ICONS.PlanCredits
+              : (CATEGORY_ICONS[child.key] ??
+                CATEGORY_ICONS[child.label] ??
+                'icon-[lucide--plug]')
+        }))
       }))
-    }))
   )
 
   function findCategoryByKey(key: string): SettingTreeNode | null {
@@ -480,7 +474,6 @@ export function useSettingUI(
     groupedMenuTreeNodes,
     settingCategories,
     navGroups,
-    teamWorkspacesEnabled,
     findCategoryByKey,
     findPanelByKey
   }

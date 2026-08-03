@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -41,10 +40,9 @@ export const useSessionCookie = () => {
   const getSessionHeaderOrThrow = async (
     useFirebaseToken: boolean
   ): Promise<Record<string, string>> => {
-    const { flags } = useFeatureFlags()
     const authStore = useAuthStore()
 
-    if (useFirebaseToken || flags.teamWorkspacesEnabled) {
+    if (isCloud || useFirebaseToken) {
       const firebaseToken = await authStore.getIdToken()
       if (!firebaseToken) {
         throw new Error('No Firebase token available for session creation')
@@ -60,14 +58,7 @@ export const useSessionCookie = () => {
     return authHeader
   }
 
-  /**
-   * Creates or refreshes the session cookie.
-   * Called after login and on token refresh.
-   *
-   * When team_workspaces_enabled is true, uses Firebase token directly
-   * (since getAuthHeader() returns workspace token which shouldn't be used for session creation).
-   * When disabled, uses getAuthHeader() for backward compatibility.
-   */
+  /** Creates or refreshes the session cookie after login or token refresh. */
   const performCreateSession = async (
     expectedOwnerUid: string,
     useFirebaseToken: boolean
@@ -91,6 +82,7 @@ export const useSessionCookie = () => {
     forceRefresh: boolean,
     useFirebaseToken = false
   ): Promise<void> => {
+    const usesFirebaseToken = isCloud || useFirebaseToken
     if (
       !forceRefresh &&
       pendingSessionMutations === 0 &&
@@ -100,7 +92,7 @@ export const useSessionCookie = () => {
     }
     if (
       inFlightCreateSession?.ownerUid === ownerUid &&
-      (!useFirebaseToken || inFlightCreateSession.usesFirebaseToken)
+      (!usesFirebaseToken || inFlightCreateSession.usesFirebaseToken)
     ) {
       return inFlightCreateSession.promise
     }
@@ -108,13 +100,13 @@ export const useSessionCookie = () => {
     pendingSessionMutations++
     const request: InFlightCreateSession = {
       ownerUid,
-      usesFirebaseToken: useFirebaseToken,
+      usesFirebaseToken,
       promise: sessionMutationTail
         .then(async () => {
           if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
             throw new Error('Session identity changed before creation')
           }
-          await performCreateSession(ownerUid, useFirebaseToken)
+          await performCreateSession(ownerUid, usesFirebaseToken)
           confirmedSessionOwnerUid = ownerUid
           if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
             throw new Error('Session identity changed during creation')

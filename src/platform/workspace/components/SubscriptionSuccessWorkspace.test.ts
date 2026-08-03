@@ -29,14 +29,6 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
-const { mockFlags } = vi.hoisted(() => ({
-  mockFlags: { teamWorkspacesEnabled: true }
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
-}))
-
 vi.mock('./InviteMembersForm.vue', () => ({
   default: {
     name: 'InviteMembersForm',
@@ -114,7 +106,6 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
 describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockFlags.teamWorkspacesEnabled = true
     mockMembers.length = 0
     mockPendingInvites.length = 0
   })
@@ -183,12 +174,6 @@ describe('SubscriptionSuccessWorkspace', () => {
   it('does not render the invite block for a personal upgrade', () => {
     renderCard({ isTeam: false })
     expect(screen.queryByText('subscription.success.inviteTitle')).toBeNull()
-    expect(screen.queryByTestId('invite-form')).toBeNull()
-  })
-
-  it('hides the invite block when team workspaces are disabled', () => {
-    mockFlags.teamWorkspacesEnabled = false
-    renderTeamCard()
     expect(screen.queryByTestId('invite-form')).toBeNull()
   })
 

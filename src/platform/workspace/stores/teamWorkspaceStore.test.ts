@@ -317,6 +317,20 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
     })
 
+    it('can retry after initialization fails', async () => {
+      mockWorkspaceApi.list.mockResolvedValueOnce({ workspaces: [] })
+      const store = useTeamWorkspaceStore()
+
+      await expect(store.initialize()).rejects.toThrow(
+        'No workspaces available'
+      )
+      await store.initialize()
+
+      expect(store.initState).toBe('ready')
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
+    })
+
     it('can initialize the next user after identity state is reset', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()

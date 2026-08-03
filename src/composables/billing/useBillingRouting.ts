@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type { BillingType } from './types'
@@ -8,27 +8,20 @@ import type { BillingType } from './types'
 /**
  * Selects the billing backend for the active workspace: legacy user-scoped
  * (`/customers/*`) or workspace-scoped (`/api/billing/*`). Personal workspaces
- * stay legacy until `consolidatedBillingEnabled`, and known legacy Stripe
- * workspaces remain legacy after it is enabled. An unknown rail keeps the
- * flag-based route so workspace status can load it. Team workspaces are always
- * workspace-scoped. Pricing follows feature availability independently of the
- * billing rail. The routing matrix is covered in useBillingRouting.test.ts.
+ * use workspace-scoped billing unless they are explicitly on the legacy Stripe
+ * rail. An unloaded workspace remains legacy during bootstrap. OSS always uses
+ * legacy billing. Pricing follows Cloud workspace availability independently
+ * of the billing rail.
  */
 export function useBillingRouting() {
-  const { flags } = useFeatureFlags()
   const workspaceStore = useTeamWorkspaceStore()
 
   const shouldUseUnifiedPricing = computed(() => {
-    if (!flags.teamWorkspacesEnabled) return false
-
-    const workspaceType = workspaceStore.activeWorkspace?.type
-    if (!workspaceType) return false
-
-    return workspaceType === 'team' || flags.consolidatedBillingEnabled
+    return isCloud && workspaceStore.activeWorkspace?.type !== undefined
   })
 
   const type = computed<BillingType>(() => {
-    if (!flags.teamWorkspacesEnabled) return 'legacy'
+    if (!isCloud) return 'legacy'
 
     // An unloaded workspace has no type yet; stay legacy so bootstrap never
     // eagerly routes to workspace billing.
@@ -37,8 +30,7 @@ export function useBillingRouting() {
 
     if (
       workspaceType === 'personal' &&
-      (!flags.consolidatedBillingEnabled ||
-        workspaceStore.activeWorkspaceBillingRail === 'legacy_stripe')
+      workspaceStore.activeWorkspaceBillingRail === 'legacy_stripe'
     ) {
       return 'legacy'
     }

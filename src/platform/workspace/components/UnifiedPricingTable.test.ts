@@ -23,7 +23,6 @@ interface MockTeamStop {
 const mockSubscription = ref<MockSubscription | null>(null)
 const mockCurrentPlanSlug = ref<string | null>(null)
 const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
-const mockTeamFlag = ref(false)
 const mockIsTeamPlan = ref(false)
 const mockCanManageSubscription = ref(true)
 const mockCanDowngradeToPersonal = ref(true)
@@ -45,12 +44,6 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canManageSubscription: mockCanManageSubscription.value,
       canDowngradeToPersonal: mockCanDowngradeToPersonal.value
     }))
-  })
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: { teamWorkspacesEnabled: mockTeamFlag.value }
   })
 }))
 
@@ -85,7 +78,6 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     mockSubscription.value = null
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
-    mockTeamFlag.value = false
     mockIsTeamPlan.value = false
     mockCanManageSubscription.value = true
     mockCanDowngradeToPersonal.value = true
@@ -144,7 +136,6 @@ describe('UnifiedPricingTable plan CTA labels', () => {
       credits_monthly: 147_700,
       stop_usd: 700
     }
-    mockTeamFlag.value = true
     mockIsTeamPlan.value = true
     mockCanDowngradeToPersonal.value = false
 
@@ -168,7 +159,6 @@ describe('UnifiedPricingTable team plan CTA', () => {
     mockSubscription.value = null
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
-    mockTeamFlag.value = true
     mockIsTeamPlan.value = false
     mockCanManageSubscription.value = true
     mockCanDowngradeToPersonal.value = true

@@ -1,4 +1,8 @@
-import type { BillingStatusResponse as IngestBillingStatusResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingBalanceResponse,
+  BillingPlansResponse,
+  BillingStatusResponse as IngestBillingStatusResponse
+} from '@comfyorg/ingest-types'
 
 import type {
   Member,
@@ -7,12 +11,27 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-// `/api/features` is the remote-config source: production builds resolve the
-// workspaces flag from it (the `ff:` localStorage override is dev-only).
-export const WORKSPACE_FEATURE_FLAG: RemoteConfig = {
-  team_workspaces_enabled: true,
-  consolidated_billing_enabled: true
-}
+export const CLOUD_REMOTE_CONFIG: RemoteConfig = {}
+
+export const LEGACY_PERSONAL_BILLING_STATUS = {
+  billing_rail: 'legacy_stripe',
+  billing_status: 'inactive',
+  has_funds: true,
+  is_active: false,
+  subscription_status: 'ended',
+  subscription_tier: 'FREE',
+  team_credit_stop: null
+} satisfies IngestBillingStatusResponse
+
+export const EMPTY_BILLING_BALANCE = {
+  amount_micros: 0,
+  currency: 'usd',
+  effective_balance_micros: 0
+} satisfies BillingBalanceResponse
+
+export const EMPTY_BILLING_PLANS = {
+  plans: []
+} satisfies BillingPlansResponse
 
 export const TEAM_WORKSPACE: WorkspaceWithRole = {
   id: 'ws-team',

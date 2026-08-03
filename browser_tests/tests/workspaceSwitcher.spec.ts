@@ -14,7 +14,6 @@ const TEAM_WORKSPACE_NAME = 'Team Workspace'
 const SINGLE_LINE_MAX_HEIGHT_PX = 28
 
 const mockRemoteConfig: RemoteConfig = {
-  team_workspaces_enabled: true,
   unified_cloud_auth: true
 }
 
