@@ -217,6 +217,24 @@ end_of_record
     )
   })
 
+  it('preserves extraction errors when the job summary is unwritable', () => {
+    const directory = createTempDirectory()
+    const missingPath = join(directory, 'missing.info')
+    const result = spawnSync(
+      process.execPath,
+      [TSX_CLI, EXTRACT_SCRIPT_PATH, '--input', missingPath, '--sha', HEAD_SHA],
+      {
+        encoding: 'utf-8',
+        env: { ...process.env, GITHUB_STEP_SUMMARY: directory }
+      }
+    )
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('ENOENT: no such file or directory')
+    expect(result.stderr).toContain('Unable to write GitHub step summary')
+    expect(result.stderr).not.toContain('    at ')
+  })
+
   it.for([
     {
       name: 'an unknown option',

@@ -58,6 +58,21 @@ describe('compareCriticalCoverage CLI', () => {
     expect(summary).toContain('| Covered branch delta | 0 |')
   })
 
+  it('does not fail a passing gate when the job summary is unwritable', () => {
+    const directory = createTempDirectory()
+    const shared = createBranch('src/stores/a.ts', true)
+    const paths = writeReports(
+      directory,
+      createReport(BASE_SHA, [shared]),
+      createReport(HEAD_SHA, [shared])
+    )
+
+    const result = runComparison(paths, { GITHUB_STEP_SUMMARY: directory })
+
+    expect(result.status).toBe(0)
+    expect(result.stderr).toContain('Unable to write GitHub step summary')
+  })
+
   it('fails a negative delta and lists the regressed branch', () => {
     const directory = createTempDirectory()
     const covered = createBranch('src/stores/a.ts', true)

@@ -1,10 +1,10 @@
-import { appendFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 
 import {
   createCriticalCoverageReport,
   writeCriticalCoverageReport
 } from './criticalCoverageReport'
+import { appendGitHubStepSummary } from './githubStepSummary'
 
 interface Options {
   input: string
@@ -20,9 +20,7 @@ try {
 
   process.stderr.write(`${message}\n`)
 
-  if (process.env.GITHUB_STEP_SUMMARY) {
-    appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`)
-  }
+  appendGitHubStepSummary(summary)
 
   process.exitCode = 1
 }

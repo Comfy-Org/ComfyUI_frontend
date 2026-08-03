@@ -1,4 +1,3 @@
-import { appendFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 
 import { createGitLocationMapper } from './criticalCoverageGitDiff'
@@ -7,6 +6,7 @@ import {
   readCriticalCoverageReport
 } from './criticalCoverageReport'
 import type { CriticalCoverageComparison } from './criticalCoverageReport'
+import { appendGitHubStepSummary } from './githubStepSummary'
 
 interface Options {
   base: string
@@ -26,9 +26,7 @@ try {
 
   process.stderr.write(`${message}\n`)
 
-  if (process.env.GITHUB_STEP_SUMMARY) {
-    appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`)
-  }
+  appendGitHubStepSummary(summary)
 
   process.exitCode = 1
 }
@@ -47,9 +45,7 @@ function main(): void {
 
   process.stdout.write(`${summary}\n`)
 
-  if (process.env.GITHUB_STEP_SUMMARY) {
-    appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`)
-  }
+  appendGitHubStepSummary(summary)
 
   if (result.status === 'FAIL') {
     process.stderr.write(`${result.message}\n`)
