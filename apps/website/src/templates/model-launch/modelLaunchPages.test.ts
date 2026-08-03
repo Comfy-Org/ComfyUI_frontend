@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { minimaxPage } from '../../data/minimax'
+import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { ModelLaunchPage } from './types'
 
@@ -16,18 +17,27 @@ describe.each(pages)('$name launch page config', ({ page }) => {
   })
 
   it('translates every referenced key in both locales', () => {
+    // Every key the ModelLaunchPage contract can render, optional ones included.
     const keys = [
       page.metaTitleKey,
       page.metaDescriptionKey,
       page.breadcrumbLabelKey,
       page.breadcrumbUpdatedKey,
       page.hero.titleKey,
+      page.hero.titleRestKey,
       page.hero.descriptionKey,
       page.hero.primaryCta.labelKey,
+      page.hero.secondaryCta?.labelKey,
+      ...(page.hero.badgeKeys ?? []),
+      page.hero.footnoteKey,
       page.gallery.headingKey,
+      page.pricing.banner?.titleKey,
+      page.pricing.banner?.subtitleKey,
+      page.pricing.banner?.cta.labelKey,
       page.faq.headingKey,
       page.closingCta.headingKey,
       page.closingCta.primaryCta.labelKey,
+      page.closingCta.secondaryCta?.labelKey,
       page.runOptions.headingKey,
       page.runOptions.subtitleKey,
       page.runOptions.ctaKey,
@@ -35,7 +45,8 @@ describe.each(pages)('$name launch page config', ({ page }) => {
       page.reviews.highlight.titleKey,
       page.reviews.highlight.descriptionKey,
       page.reviews.highlight.ctaKey
-    ]
+    ].filter((key): key is TranslationKey => key !== undefined)
+
     for (const key of keys) {
       expect(t(key, 'en'), `${key} (en)`).not.toBe('')
       expect(t(key, 'zh-CN'), `${key} (zh-CN)`).not.toBe('')
