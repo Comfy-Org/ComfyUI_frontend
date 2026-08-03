@@ -275,4 +275,17 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
   })
+
+  it('hides the resubscribe prompt off cloud', () => {
+    state.isCloud = false
+    state.isCancelled = true
+    state.canTopUp = true
+    state.canManageSubscription = true
+    state.canManageSubscriptionLifecycle = true
+    renderComponent('team', 'owner')
+
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
+  })
 })
