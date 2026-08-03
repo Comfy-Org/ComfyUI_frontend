@@ -286,7 +286,7 @@ const DropdownMenuStub = {
     '<div data-testid="plan-menu"><slot name="button" /><button v-for="item in (entries || []).filter((e) => !e.separator)" :key="item.label" type="button" :disabled="item.disabled" @click="item.command?.({})">{{ item.label }}</button></div>'
 }
 
-function renderComponent() {
+function renderComponent({ stubFooter = true } = {}) {
   return render(SubscriptionPanelContentWorkspace, {
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
@@ -294,7 +294,9 @@ function renderComponent() {
       stubs: {
         CreditsTile: CreditsTileStub,
         Button: ButtonStub,
-        SubscriptionFooterLinks: SubscriptionFooterLinksStub,
+        ...(stubFooter
+          ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
+          : {}),
         StatusBadge: true,
         DropdownMenu: DropdownMenuStub
       }
@@ -491,17 +493,15 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('preserves local Manage billing and Invoice history actions', async () => {
     const user = userEvent.setup()
     mockDistributionState.isCloud = false
-    renderComponent()
+    renderComponent({ stubFooter: false })
 
     expect(
       screen.queryByRole('button', { name: 'Billing & invoices' })
     ).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Manage billing' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
-    expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
-      'data-show-invoice-history',
-      'true'
-    )
+    await user.click(screen.getByRole('button', { name: 'Invoice history' }))
+    expect(mockManageSubscription).toHaveBeenCalledTimes(2)
   })
 
   it('keeps a Personal workspace Team-plan member view read-only', () => {
@@ -660,17 +660,15 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockSubscriptionStatus.value = 'canceled'
     mockIsActiveSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
-    renderComponent()
+    renderComponent({ stubFooter: false })
 
     expect(
       screen.getByRole('heading', { name: 'Inactive team subscription' })
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
-    expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
-      'data-show-invoice-history',
-      'true'
-    )
+    await user.click(screen.getByRole('button', { name: 'Invoice history' }))
+    expect(mockManageSubscription).toHaveBeenCalledTimes(2)
   })
 
   it('renders an ended Team plan for its owner and routes reactivation to checkout', async () => {
