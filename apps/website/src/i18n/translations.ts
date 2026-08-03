@@ -4926,6 +4926,75 @@ const translations = {
   'brand.questions.contact': {
     en: 'Contact Us',
     'zh-CN': '联系我们'
+  },
+
+  // MiniMax H3 launch page (/minimax-h3). Hero description and FAQ facts
+  // follow the final launch email copy approved in #gtm-mini-max; the Figma
+  // frame (node 9770-37353) still carries the earlier multi-modal draft that
+  // was corrected in that thread. zh-CN hand-translated, native review
+  // welcome.
+  'minimaxH3.meta.title': {
+    en: 'MiniMax H3: Run Hailuo 3.0 Open Weights Free in ComfyUI',
+    'zh-CN': 'MiniMax H3：在 ComfyUI 免费运行 Hailuo 3.0 开放权重'
+  },
+  'minimaxH3.meta.description': {
+    en: 'MiniMax H3 is the open-weight release of Hailuo 3.0. Text, image, or reference to video with stereo sound, up to 2K. Run it free in ComfyUI or on Comfy Cloud.',
+    'zh-CN':
+      'MiniMax H3 是 Hailuo 3.0 的开放权重版本。文本、图像或参考生成带立体声的视频，最高 2K。可在 ComfyUI 中免费运行，或使用 Comfy Cloud。'
+  },
+  'minimaxH3.hero.titleLead': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
+  'minimaxH3.hero.titleTrail': { en: 'is here', 'zh-CN': '已上线' },
+  'minimaxH3.hero.description': {
+    en: 'The open release of Hailuo 3.0. Feed it text or images and it generates video with real stereo sound, up to 2K and 15 seconds a clip. On ComfyUI, H3 runs comfortably on a regular RTX 3060.',
+    'zh-CN':
+      'Hailuo 3.0 的开放权重版本。输入文本或图像，即可生成带真实立体声的视频，最高 2K，每段最长 15 秒。在 ComfyUI 中，一张普通的 RTX 3060 就能流畅运行 H3。'
+  },
+  'minimaxH3.hero.primaryCta': { en: 'TRY FOR FREE', 'zh-CN': '免费试用' },
+  'minimaxH3.hero.secondaryCta': {
+    en: 'RUN MINIMAX H3',
+    'zh-CN': '运行 MiniMax H3'
+  },
+  'minimaxH3.hero.videoLabel': {
+    en: 'MiniMax H3 sample generation',
+    'zh-CN': 'MiniMax H3 生成示例'
+  },
+  'minimaxH3.highlights.heading': {
+    en: 'What lands with H3.',
+    'zh-CN': 'H3 带来了什么。'
+  },
+  'minimaxH3.workflows.heading': {
+    en: 'Three ways to run it.',
+    'zh-CN': '三种运行方式。'
+  },
+  'minimaxH3.workflows.subtitle': {
+    en: 'Open a workflow and start from a working graph rather than a blank canvas.',
+    'zh-CN': '打开工作流，从一个可用的节点图开始，而不是空白画布。'
+  },
+  'minimaxH3.workflows.cta': { en: 'Open workflow', 'zh-CN': '打开工作流' },
+  'minimaxH3.banner.heading': {
+    en: 'Up to 2K, with sound, in one generation.',
+    'zh-CN': '最高 2K，自带声音，一次生成。'
+  },
+  'minimaxH3.banner.primaryCta': {
+    en: 'RUN MINIMAX H3',
+    'zh-CN': '运行 MiniMax H3'
+  },
+  'minimaxH3.banner.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
+  },
+  'minimaxH3.runOptions.heading': {
+    en: 'Every way to run Comfy.',
+    'zh-CN': '运行 Comfy 的各种方式。'
+  },
+  'minimaxH3.runOptions.subtitle': {
+    en: 'Local, cloud, API, or enterprise. The same graph runs everywhere.',
+    'zh-CN': '本地、云端、API 或企业版。同一个节点图，处处可运行。'
+  },
+  'minimaxH3.runOptions.cta': { en: 'Learn more', 'zh-CN': '了解更多' },
+  'minimaxH3.faq.heading': {
+    en: 'MiniMax H3, answered.',
+    'zh-CN': 'MiniMax H3 常见问题。'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
