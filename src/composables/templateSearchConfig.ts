@@ -24,6 +24,11 @@ const USAGE_TIEBREAK_BAND = 0.05
 // all land inside the cap instead of swamping relevance.
 const SEARCH_RANK_SATURATION = 1000
 
+// The retired 1-10 scale used 1-4 to demote and 5 as neutral. Those magnitudes
+// are noise on a 0-1000 dial, so ignoring them honours both contracts: no
+// legacy value ever flips from demotion to promotion.
+const SEARCH_RANK_DEAD_ZONE = 5
+
 // How far curation may move a hit relative to its text relevance. ±30% is ~6
 // tiebreak bands: enough to lift a launch template over near-equal matches,
 // never enough to drag a weak match to the top.
@@ -169,13 +174,13 @@ export function createTemplateSearchIndex(
 }
 
 /**
- * Curator intent as a signed strength in [-1, 1]. Unset, `0` and non-numeric
- * ranks are all the same neutral baseline — most of the catalog ships an
- * explicit `"searchRank": 0` meaning "not curated", so 0 must not demote.
+ * Curator intent as a signed strength in [-1, 1]. Unset, `0`, non-numeric and
+ * dead-zone ranks are all the same neutral baseline — most of the catalog ships
+ * an explicit `"searchRank": 0` meaning "not curated", so 0 must not demote.
  * Positive promotes, negative demotes, and magnitude saturates at the cap.
  */
 export function searchRankBoost(searchRank: number | undefined): number {
-  if (!searchRank) return 0
+  if (!searchRank || Math.abs(searchRank) <= SEARCH_RANK_DEAD_ZONE) return 0
   const magnitude = Math.min(
     1,
     Math.log1p(Math.abs(searchRank)) / Math.log1p(SEARCH_RANK_SATURATION)

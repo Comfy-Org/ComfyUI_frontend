@@ -296,6 +296,16 @@ describe('searchRankBoost', () => {
     expect(searchRankBoost(-8)).toBeCloseTo(-searchRankBoost(8), 10)
   })
 
+  // The retired 1-10 scale read 1-4 as "demote" and 5 as "neutral"; the starter
+  // templates still ship searchRank 3. Reading those as a promotion would
+  // invert the only intent their authors could have had.
+  it('ignores magnitudes left over from the retired 1-10 scale', () => {
+    for (const legacyRank of [1, 2, 3, 4, 5]) {
+      expect(searchRankBoost(legacyRank)).toBe(0)
+    }
+    expect(searchRankBoost(6)).toBeGreaterThan(0)
+  })
+
   it('increases with rank but saturates so out-of-range values stay bounded', () => {
     expect(searchRankBoost(1000)).toBeGreaterThan(searchRankBoost(8))
     expect(searchRankBoost(1_000_000)).toBe(1)

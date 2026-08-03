@@ -52,9 +52,10 @@ Set per template in the `workflow_templates` repo's `templates/index.json`. It i
 | `searchRank`   | Effect                                    |
 | -------------- | ----------------------------------------- |
 | absent, or `0` | Neutral. No influence on ordering         |
-| `1` … `1000`   | Promote, with rapidly diminishing returns |
+| `1` … `5`      | Neutral. Reserved, see below              |
+| `6` … `1000`   | Promote, with rapidly diminishing returns |
 | above `1000`   | Same as `1000`. Saturated, never larger   |
-| negative       | Demote, mirroring the positive curve      |
+| `-6` and below | Demote, mirroring the positive curve      |
 
 Magnitude follows `log1p(|searchRank|) / log1p(1000)`, capped at 1. The curve is logarithmic so the whole documented `0`–`1000` range from [`workflow_templates/docs/SPEC.md`](https://github.com/Comfy-Org/workflow_templates/blob/main/docs/SPEC.md) is usable, and saturating so an out-of-range value cannot swamp relevance:
 
@@ -66,6 +67,10 @@ Magnitude follows `log1p(|searchRank|) / log1p(1000)`, capped at 1. The curve is
 | `500`        | 0.90  | 1.27×             |
 | `1000`       | 1.00  | 1.30×             |
 | `1000000`    | 1.00  | 1.30×             |
+
+### Why `1`–`5` are inert
+
+`searchRank` previously used a 1–10 scale where 1–4 demoted and 5 was neutral. A handful of templates — the numbered starter workflows — still carry values from it. Reading those on the current scale would turn a demotion into a promotion, so magnitudes of 5 and below are ignored. Nothing is lost: on a 0–1000 dial a value that small is indistinguishable from noise.
 
 ### Why `0` is neutral rather than a demotion
 
