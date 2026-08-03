@@ -5,8 +5,10 @@ import type {
   ISerialisedNode,
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
-import { CURATED_TEMPLATE_IDS } from '@/renderer/extensions/firstRunTour/gettingStarted/tutorialCards'
-import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
+import {
+  MEDIA_KIND_BY_SINK_TYPE,
+  TOUR_ROLE_PINS
+} from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 import type {
   RolePin,
   RolePins
@@ -34,8 +36,9 @@ function nodesOf(
   ]
 }
 
-function findNode(workflow: SerialisableGraph, id: number) {
-  return nodesOf(workflow).find((node) => String(node.id) === String(id))
+/** Ids are graph-local, so a nested same-id node would satisfy a match-first lookup. */
+function matchingNodes(workflow: SerialisableGraph, id: number) {
+  return nodesOf(workflow).filter((node) => String(node.id) === String(id))
 }
 
 test.describe('first-run tour role pins', { tag: '@workflow' }, () => {
@@ -54,20 +57,26 @@ test.describe('first-run tour role pins', { tag: '@workflow' }, () => {
 
       const workflow = (await response.json()) as SerialisableGraph
       for (const [role, pin] of pinnedRoles(pins)) {
+        const matches = matchingNodes(workflow, pin.id)
         expect(
-          findNode(workflow, pin.id)?.type,
+          matches,
+          `${templateId} pins its ${role} to node ${pin.id}, which this backend serves ${matches.length} times — a nested same-id node would resolve arbitrarily`
+        ).toHaveLength(1)
+        expect(
+          matches[0]?.type,
           `${templateId} pins its ${role} to node ${pin.id}, which this backend no longer serves as a ${pin.type}`
         ).toBe(pin.type)
       }
+
+      expect(
+        MEDIA_KIND_BY_SINK_TYPE[pins.sink.type],
+        `${templateId} pins a ${pins.sink.type} sink but claims mediaKind '${pins.mediaKind}', so the result step would preview the wrong medium`
+      ).toBe(pins.mediaKind)
     }
-    if (unserved.length)
-      test.info().annotations.push({
-        type: 'unserved templates',
-        description: `pins unverified, not served by this backend: ${unserved.join(', ')}`
-      })
+
     expect(
-      pinnedTemplates.length - unserved.length,
-      `the Getting Started grid needs ${CURATED_TEMPLATE_IDS.length} templates and this backend serves too few of these pins — unserved: ${unserved.join(', ')}`
-    ).toBeGreaterThanOrEqual(CURATED_TEMPLATE_IDS.length)
+      unserved,
+      'the Getting Started grid ships a card for each pinned template, so an unserved one 404s the user'
+    ).toEqual([])
   })
 })

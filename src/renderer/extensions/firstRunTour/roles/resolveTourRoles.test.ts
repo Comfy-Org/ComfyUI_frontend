@@ -103,6 +103,22 @@ describe('resolveTourRoles', () => {
     ).toBeNull()
   })
 
+  it('omits a role the template never pinned, without touching the graph', () => {
+    const root = createTestRootGraph()
+    const t2i = TOUR_ROLE_PINS['image_krea2_turbo_t2i']
+    addPinnedNode(root, t2i.sink)
+
+    expect(
+      resolveTourRoles(root, 'image_krea2_turbo_t2i'),
+      'text to image has nothing to upload, so the tour offers no upload step'
+    ).toEqual({
+      source: null,
+      promptHost: null,
+      sink: toNodeId(t2i.sink.id),
+      mediaKind: t2i.mediaKind
+    })
+  })
+
   it('gives an unsupported template no roles, so no tour starts', () => {
     const root = createTestRootGraph()
     addPinnedNode(root, sink)

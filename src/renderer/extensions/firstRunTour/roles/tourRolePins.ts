@@ -10,6 +10,12 @@ export type SupportedTemplateId =
 
 export type TourMediaKind = 'image' | 'video'
 
+/** The kind a sink node type produces, so the drift guard can hold the two in step. */
+export const MEDIA_KIND_BY_SINK_TYPE: Record<string, TourMediaKind> = {
+  SaveImage: 'image',
+  SaveVideo: 'video'
+}
+
 /**
  * A pinned node. The type is pinned alongside the id so an upstream renumber
  * that leaves the id occupied by a different node fails the drift guard.
