@@ -615,6 +615,7 @@ const {
   fetchPlans,
   isTeamPlan,
   subscription,
+  subscriptionStatus,
   currentTeamCreditStop
 } = useBillingContext()
 
@@ -639,6 +640,10 @@ watch(
 const { teamCreditStops } = useBillingPlans()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+// An ended subscription still reports its plan slug and tier, so the plan it
+// held must not read as current — it is buyable again.
+const isEnded = computed(() => subscriptionStatus.value === 'ended')
 
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
@@ -676,7 +681,9 @@ const teamVideoEstimate = computed(() =>
 
 // The team's currently-subscribed stop (null when on no team plan). Matched to
 // the slider stops by list price so the current stop can be disabled.
-const isTeamSubscribed = computed(() => currentTeamCreditStop.value !== null)
+const isTeamSubscribed = computed(
+  () => currentTeamCreditStop.value !== null && !isEnded.value
+)
 
 // `teamUsd` is seeded at mount from the fallback default; when the API stops
 // resolve afterwards with different breakpoints that seed can match no stop,
@@ -780,7 +787,9 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
 }
 
 const currentTierKey = computed<TierKey | null>(() =>
-  subscription.value?.tier ? TIER_TO_KEY[subscription.value.tier] : null
+  subscription.value?.tier && !isEnded.value
+    ? TIER_TO_KEY[subscription.value.tier]
+    : null
 )
 
 const isYearlySubscription = computed(
@@ -788,6 +797,7 @@ const isYearlySubscription = computed(
 )
 
 const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
+  if (isEnded.value) return false
   if (currentPlanSlug.value) {
     const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
     return plan?.slug === currentPlanSlug.value

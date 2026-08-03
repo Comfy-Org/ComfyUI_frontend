@@ -21,6 +21,7 @@ interface MockTeamStop {
 }
 
 const mockSubscription = ref<MockSubscription | null>(null)
+const mockSubscriptionStatus = ref<string | null>(null)
 const mockCurrentPlanSlug = ref<string | null>(null)
 const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
 const mockTeamFlag = ref(false)
@@ -35,6 +36,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     fetchPlans: vi.fn(),
     isTeamPlan: computed(() => mockIsTeamPlan.value),
     subscription: computed(() => mockSubscription.value),
+    subscriptionStatus: computed(() => mockSubscriptionStatus.value),
     currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value)
   })
 }))
@@ -83,6 +85,7 @@ function renderComponent(props: Record<string, unknown> = {}) {
 describe('UnifiedPricingTable plan CTA labels', () => {
   beforeEach(() => {
     mockSubscription.value = null
+    mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockTeamFlag.value = false
@@ -119,6 +122,24 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     expect(
       screen.getByRole('button', { name: 'Change to Pro Yearly' })
     ).toBeTruthy()
+  })
+
+  it('offers a fresh subscribe on the plan an ended subscription used to hold', () => {
+    // An ended subscription still reports its tier and plan slug.
+    mockSubscription.value = {
+      tier: 'CREATOR',
+      duration: 'ANNUAL',
+      isCancelled: false
+    }
+    mockSubscriptionStatus.value = 'ended'
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Creator Yearly' })
+    ).toBeEnabled()
+    expect(screen.queryByRole('button', { name: 'Current Plan' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Change to/ })).toBeNull()
   })
 
   it('keeps personal tier cards actionable for the original owner of a team plan', () => {
@@ -166,6 +187,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
 
   beforeEach(() => {
     mockSubscription.value = null
+    mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockTeamFlag.value = true
@@ -263,6 +285,26 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(cta).toBeEnabled()
     await user.click(cta)
     expect(emitted().subscribeTeam).toBeTruthy()
+    expect(emitted().resubscribe).toBeFalsy()
+  })
+
+  it('prompts a fresh subscribe for an ended team subscription', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      isCancelled: false
+    }
+    mockSubscriptionStatus.value = 'ended'
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    const cta = screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    const [teamPayload] = emitted().subscribeTeam![0] as [{ isChange: boolean }]
+    expect(teamPayload).toMatchObject({ isChange: false })
     expect(emitted().resubscribe).toBeFalsy()
   })
 
