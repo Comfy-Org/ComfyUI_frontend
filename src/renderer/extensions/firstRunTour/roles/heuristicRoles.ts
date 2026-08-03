@@ -8,6 +8,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
+import { MEDIA_KIND_BY_SINK_TYPE } from './tourRolePins'
 import type { TourMediaKind } from './tourRolePins'
 
 /** Roles read off a graph nobody pinned. Host-mapping stays the caller's job. */
@@ -23,7 +24,13 @@ const MEDIA_KIND_BY_SLOT_TYPE: Partial<Record<string, TourMediaKind>> = {
   VIDEO: 'video'
 }
 
-const DISQUALIFYING = ['negative', 'system']
+/** `neg` alone is the abbreviation; anything longer must be `negative*`, or
+ * `negate`, `negligible` and Spanish `negro` disqualify a real prompt. */
+const DISQUALIFYING = ['negative', 'neg', 'system', 'undesired', 'avoid']
+
+function disqualified(word: string): boolean {
+  return DISQUALIFYING.includes(word) || word.startsWith('negative')
+}
 
 /** Real templates ship nodes with no title and widgets with no name. */
 function labelWords(label: string | undefined): string[] {
@@ -81,13 +88,13 @@ function exposedInputNames(nodes: LGraphNode[]): Map<LGraphNode, string[]> {
 /**
  * Ranks a text node on its title, its widget's name, any subgraph port wired to
  * it, and the input name it feeds one hop on, normalised for case and
- * separators. `negative` and `system` disqualify.
+ * separators. Anything reading as a negative prompt disqualifies.
  */
 function promptScore(labels: string[], fedInputNames: string[]): number {
   const words = labels.flatMap(labelWords)
   const fed = fedInputNames.flatMap(labelWords)
 
-  if ([...words, ...fed].some((word) => DISQUALIFYING.includes(word))) return -1
+  if ([...words, ...fed].some(disqualified)) return -1
   if (fed.includes('positive')) return 3
   if (words.includes('positive')) return 2
   if (words.includes('prompt')) return 1
@@ -140,17 +147,21 @@ function findSink(
 ): { node: LGraphNode; mediaKind: TourMediaKind } | null {
   const sinks = filterOutputNodes(nodes).flatMap((node) => {
     for (const input of node.inputs ?? []) {
-      const mediaKind = MEDIA_KIND_BY_SLOT_TYPE[slotType(input)]
-      if (input.link != null && mediaKind) return [{ node, mediaKind }]
+      const slotKind = MEDIA_KIND_BY_SLOT_TYPE[slotType(input)]
+      if (input.link == null || !slotKind) continue
+      const mediaKind = MEDIA_KIND_BY_SINK_TYPE[node.type] ?? slotKind
+      return [{ node, slotKind, mediaKind }]
     }
     return []
   })
 
   const [first] = sinks
   if (!first) return null
-  return sinks.every(({ mediaKind }) => mediaKind === first.mediaKind)
-    ? first
-    : null
+  // Sinks must agree on the data they are fed; a video combine and a still
+  // preview of the same frames do not disagree, they rank — the video is the
+  // result and the preview is scaffolding.
+  if (!sinks.every(({ slotKind }) => slotKind === first.slotKind)) return null
+  return sinks.find(({ mediaKind }) => mediaKind === 'video') ?? first
 }
 
 /** Roles for a shared workflow or an unpinned template. No sink, no tour. */

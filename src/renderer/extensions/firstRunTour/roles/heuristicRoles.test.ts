@@ -324,6 +324,38 @@ describe('heuristicRoles', () => {
     ).toBeNull()
   })
 
+  it.for([
+    'Neg Prompt',
+    'Neg. Prompt',
+    'negatives',
+    'NEGATIVEPROMPT',
+    'Undesired content',
+    'Things to avoid'
+  ])('reads %s as a negative prompt rather than the prompt', (title) => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    addNode(graph, 'CLIPTextEncode', { title, prompts: ['text'] })
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'spotlighting a negative box with "describe what you want" teaches the user the opposite of the truth'
+    ).toBeNull()
+  })
+
+  it.for(['Antique portrait', 'Negro', 'negate mask', 'anti_aliasing'])(
+    'still offers %s as the prompt, since only its spelling looks negative',
+    (title) => {
+      const graph = createTestRootGraph()
+      addWiredSink(graph)
+      const box = addNode(graph, 'CLIPTextEncode', { title, prompts: ['text'] })
+
+      expect(
+        heuristicRoles(graph)?.prompt,
+        'a prefix match on "neg"/"anti" drops the prompt step for ordinary words, and localized titles put them on real nodes'
+      ).toBe(box)
+    }
+  )
+
   it('ignores an output node nothing is wired into', () => {
     const graph = createTestRootGraph()
     addNode(graph, 'SaveImage', { inputs: ['image'], output: true })
@@ -391,6 +423,52 @@ describe('heuristicRoles', () => {
     ).toBeNull()
   })
 
+  it.for([
+    'SaveAnimatedWEBP',
+    'SaveAnimatedPNG',
+    'SaveWEBM',
+    'VHS_VideoCombine'
+  ])(
+    'calls the result of %s a video though it is fed an image batch',
+    (sinkType) => {
+      const graph = createTestRootGraph()
+      const frames = addNode(graph, 'VAEDecode', { outputs: ['IMAGE'] })
+      const sink = addNode(graph, sinkType, {
+        inputs: ['images'],
+        inputType: 'IMAGE',
+        output: true
+      })
+      frames.connect(0, sink, 0)
+
+      expect(
+        heuristicRoles(graph)?.mediaKind,
+        'the whole AnimateDiff/WAN/SVD family ends in a video sink eating frames, and calling that an image mislabels the result step and picks the wrong tour shape'
+      ).toBe('video')
+    }
+  )
+
+  it('shows the video, not the still preview kept beside it', () => {
+    const graph = createTestRootGraph()
+    const frames = addNode(graph, 'VAEDecode', { outputs: ['IMAGE'] })
+    const preview = addNode(graph, 'SaveImage', {
+      inputs: ['images'],
+      inputType: 'IMAGE',
+      output: true
+    })
+    const video = addNode(graph, 'SaveWEBM', {
+      inputs: ['images'],
+      inputType: 'IMAGE',
+      output: true
+    })
+    frames.connect(0, preview, 0)
+    frames.connect(0, video, 0)
+
+    expect(
+      heuristicRoles(graph)?.sink,
+      'video graphs routinely keep a SaveImage beside the combine node, and letting that read as disagreement costs the tour entirely'
+    ).toBe(video)
+  })
+
   it('tours a graph with several sinks that agree', () => {
     const graph = createTestRootGraph()
     const first = addWiredSink(graph, 'IMAGE')
@@ -431,6 +509,29 @@ describe('heuristicRoles', () => {
       heuristicRoles(graph)?.source,
       'asking a user to replace the wrong image is worse than not asking'
     ).toBeNull()
+  })
+
+  it('never offers a virtual node as the image source', () => {
+    const graph = createTestRootGraph()
+    const latent = addNode(graph, 'KSampler', { outputs: ['LATENT'] })
+    const decode = addNode(graph, 'VAEDecode', {
+      inputs: ['samples'],
+      inputType: 'LATENT',
+      outputs: ['IMAGE']
+    })
+    const sink = addNode(graph, 'SaveImage', {
+      inputs: ['image'],
+      output: true
+    })
+    latent.connect(0, decode, 0)
+    decode.connect(0, sink, 0)
+    const real = addNode(graph, 'LoadImage', { outputs: ['IMAGE'] })
+    addNode(graph, 'Reroute', { outputs: ['IMAGE'], virtual: true })
+
+    expect(
+      heuristicRoles(graph)?.source,
+      'a reroute carries an image without ever holding one, so it must not tie out the node the user can actually upload into'
+    ).toBe(real)
   })
 
   it('finds the roles in a large graph full of unrelated nodes', () => {
