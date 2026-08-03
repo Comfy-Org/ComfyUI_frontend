@@ -297,10 +297,14 @@ describe('useSlotElementTracking', () => {
     unmount()
   })
 
-  it('remeasures invalidated geometry after a virtualized node resizes', async () => {
+  it('preserves cached geometry after a virtualized node resizes', async () => {
     const { unmount } = await mountAndRegisterSlot('input')
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     const registryStore = useNodeSlotRegistryStore()
+    const initialLayout = layoutStore.getSlotLayout(slotKey)
+    const initialOffset = registryStore
+      .getNode(NODE_ID)
+      ?.slots.get(slotKey)?.cachedOffset
     replaceViewportVirtualizedNodeIds([NODE_ID])
     unmount()
 
@@ -316,10 +320,10 @@ describe('useSlotElementTracking', () => {
     })
     await nextTick()
 
-    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(layoutStore.getSlotLayout(slotKey)).toEqual(initialLayout)
     expect(
       registryStore.getNode(NODE_ID)?.slots.get(slotKey)?.cachedOffset
-    ).toBeUndefined()
+    ).toEqual(initialOffset)
 
     layoutStore.applyOperation({
       type: 'moveNode',
@@ -333,7 +337,10 @@ describe('useSlotElementTracking', () => {
     })
     await nextTick()
 
-    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+      x: initialLayout!.position.x + 50,
+      y: initialLayout!.position.y + 75
+    })
 
     replaceViewportVirtualizedNodeIds([])
     const remounted = await mountAndRegisterSlot('input')

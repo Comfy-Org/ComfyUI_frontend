@@ -168,11 +168,6 @@ const resizeObserver = new ResizeObserver((entries) => {
     const height = Math.max(0, borderBox.blockSize)
     const isCollapsedNode = nodeId != null && element.dataset.collapsed != null
 
-    if (isCollapsedNode) {
-      const liteNode = canvasStore.canvas?.graph?.getNodeById(nodeId)
-      if (liteNode) liteNode._collapsed_width = width
-    }
-
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value
       : null

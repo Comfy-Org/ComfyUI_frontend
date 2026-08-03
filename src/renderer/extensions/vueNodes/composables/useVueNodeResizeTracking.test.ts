@@ -43,7 +43,6 @@ const resizeObserverState = vi.hoisted(() => {
 const testState = vi.hoisted(() => ({
   linearMode: false,
   nodeLayouts: new Map<NodeId, NodeLayout>(),
-  liteNodes: new Map<NodeId, { _collapsed_width?: number }>(),
   batchUpdateNodeBounds: vi.fn(),
   setSource: vi.fn(),
   syncNodeSlotLayoutsFromDOM: vi.fn(),
@@ -57,12 +56,7 @@ vi.mock('@vueuse/core', () => ({
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    linearMode: testState.linearMode,
-    canvas: {
-      graph: {
-        getNodeById: (nodeId: NodeId) => testState.liteNodes.get(nodeId) ?? null
-      }
-    }
+    linearMode: testState.linearMode
   })
 }))
 
@@ -166,7 +160,6 @@ describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     testState.linearMode = false
     testState.nodeLayouts.clear()
-    testState.liteNodes.clear()
     testState.batchUpdateNodeBounds.mockReset()
     testState.setSource.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
@@ -277,7 +270,7 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
-  it('updates collapsed visual bounds without replacing expanded size', () => {
+  it('records collapsed visual bounds without replacing expanded size', () => {
     const nodeId = toNodeId('test-node')
     const collapsedWidth = 200
     const collapsedHeight = 40
@@ -293,9 +286,6 @@ describe('useVueNodeResizeTracking', () => {
 
     // Seed with larger expanded size so the collapsed write is a real change
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
-    const liteNode = { _collapsed_width: undefined }
-    testState.liteNodes.set(nodeId, liteNode)
-
     resizeObserverState.callback?.([entry], createObserverMock())
 
     expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
@@ -311,7 +301,6 @@ describe('useVueNodeResizeTracking', () => {
         preserveSize: true
       }
     ])
-    expect(liteNode._collapsed_width).toBe(collapsedWidth)
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 

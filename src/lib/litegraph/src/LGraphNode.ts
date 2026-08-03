@@ -1057,6 +1057,11 @@ export class LGraphNode
    * `widgets_values_named` stores the same values keyed by widget name.
    * {@link LiteGraph.namedValuesRestore} selects named restoration when named
    * values are available, otherwise configuration uses the legacy positions.
+   * For widgets `[steps, action (serialize: false), seed]`, the old positional
+   * payload was `{ widgets_values: [20, null, 12345] }`. The migrated payload is
+   * `{ widgets_values: [20, 12345], widgets_values_named: { steps: 20, seed:
+   * 12345 } }`. Named values are preferred during configuration when present
+   * and named restoration is enabled.
    * Custom `onSerialize` hooks that replace these fields must emit both formats
    * with compact positional indexing. Custom `onConfigure` hooks that restore
    * widget values must accept both named and compact positional formats and
@@ -2216,7 +2221,13 @@ export class LGraphNode
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
     } else if (LiteGraph.vueNodesMode) {
-      this._collapsed_width ||= LiteGraph.NODE_COLLAPSED_WIDTH
+      const layout = layoutStore.getNodeLayoutRef(this.id).value
+      const measuredWidth =
+        layout && layout.bounds.height !== layout.size.height
+          ? layout.bounds.width
+          : undefined
+      this._collapsed_width =
+        measuredWidth || this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
       out[2] = this._collapsed_width
       out[3] = Math.max(titleHeight, LiteGraph.NODE_TITLE_HEIGHT)
     } else {

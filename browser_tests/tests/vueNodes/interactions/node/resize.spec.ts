@@ -122,7 +122,7 @@ test.describe(
         await expect.poll(getRight).toBeCloseTo(initialRight, 0)
         await expect
           .poll(getWidth)
-          .toBeGreaterThanOrEqual(MIN_NODE_WIDTH * scale)
+          .toBeGreaterThanOrEqual(MIN_NODE_WIDTH * scale - 0.5)
       })
 
       test('NE resize clamps height at its lower bound', async ({

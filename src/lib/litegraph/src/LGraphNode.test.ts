@@ -15,6 +15,8 @@ import {
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { test } from './__fixtures__/testExtensions'
 import { TitleMode } from './types/globalEnums'
@@ -709,12 +711,28 @@ describe('LGraphNode', () => {
 
     test('Vue mode uses visual collapsed width and preserves expanded size', () => {
       LiteGraph.vueNodesMode = true
-      node._collapsed_width = 96
-      node.measure(out)
+      node.id = toNodeId(1)
+      layoutStore.initializeFromLiteGraph([
+        { id: node.id, pos: [100, 200], size: [150, 10] }
+      ])
+      layoutStore.setSource(LayoutSource.Vue)
+      layoutStore.batchUpdateNodeBounds([
+        {
+          nodeId: node.id,
+          bounds: { x: 100, y: 200, width: 96, height: 0 },
+          preserveSize: true
+        }
+      ])
 
-      expect(out[2]).toBe(96)
-      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
-      expect(Array.from(node.size)).toEqual([150, 10])
+      try {
+        node.measure(out)
+
+        expect(out[2]).toBe(96)
+        expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+        expect(Array.from(node.size)).toEqual([150, 10])
+      } finally {
+        layoutStore.initializeFromLiteGraph([])
+      }
     })
 
     test('Vue mode retains fallback width when collapsed width is unset', () => {

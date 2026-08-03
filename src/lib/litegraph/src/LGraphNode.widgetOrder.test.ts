@@ -189,12 +189,19 @@ describe('LGraphNode widget ordering', () => {
       node.addWidget('text', '__proto__', 'prototype value', null, {})
       node.serialize_widgets = true
 
-      const namedValues = node.serialize().widgets_values_named
+      const serialized = node.serialize()
+      const namedValues = serialized.widgets_values_named
 
       expect(namedValues).toBeDefined()
       expect(Object.getPrototypeOf(namedValues)).toBeNull()
       expect(Object.hasOwn(namedValues!, '__proto__')).toBe(true)
       expect(namedValues!['__proto__']).toBe('prototype value')
+
+      const restoredNode = new LGraphNode('RestoredNode')
+      restoredNode.addWidget('text', '__proto__', 'unchanged', null, {})
+      restoredNode.configure(serialized)
+
+      expect(restoredNode.widgets![0].value).toBe('prototype value')
     })
 
     it('should support specifying order for legacy workflows', () => {

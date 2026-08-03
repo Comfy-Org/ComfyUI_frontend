@@ -311,13 +311,15 @@ function subscribeToNodeLayoutChanges(nodeId: NodeId): () => void {
     previousLayout = currentLayout
 
     if (sizeChanged) {
+      if (isNodeViewportVirtualized(nodeId)) {
+        updateNodeSlotsFromCache(nodeId)
+        return
+      }
       for (const [slotKey, entry] of node.slots) {
         entry.cachedOffset = undefined
         layoutStore.deleteSlotLayout(slotKey)
       }
-      if (!isNodeViewportVirtualized(nodeId)) {
-        scheduleSlotLayoutSync(nodeId)
-      }
+      scheduleSlotLayoutSync(nodeId)
       return
     }
 
