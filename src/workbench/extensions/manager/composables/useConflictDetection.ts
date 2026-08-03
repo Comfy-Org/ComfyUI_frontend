@@ -1,4 +1,5 @@
 import { until } from '@vueuse/core'
+import { chunk } from 'es-toolkit'
 import { find } from 'es-toolkit/compat'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
@@ -38,6 +39,12 @@ import {
   checkVersionCompatibility,
   getFrontendVersion
 } from '@/workbench/extensions/manager/utils/versionUtil'
+
+/**
+ * Node versions sent per `POST /bulk/nodes/versions` request. Must stay at or
+ * below the registry's server-side cap on that array (currently 1000).
+ */
+const BULK_NODE_VERSIONS_CHUNK_SIZE = 100
 
 /**
  * Composable for conflict detection system.
@@ -154,7 +161,7 @@ export function useConflictDetection() {
       // Step 3: Setup abort controller for request cancellation
       abortController.value = new AbortController()
 
-      // Step 4: Use bulk API to fetch all version data in a single request
+      // Step 4: Use bulk API to fetch all version data in chunked requests
       const versionDataMap = new Map<
         string,
         components['schemas']['NodeVersion']
@@ -168,14 +175,34 @@ export function useConflictDetection() {
 
       if (nodeVersions.length > 0) {
         try {
-          const bulkResponse = await registryService.getBulkNodeVersions(
-            nodeVersions,
-            abortController.value?.signal
+          const signal = abortController.value?.signal
+          const bulkResponses = await Promise.allSettled(
+            chunk(nodeVersions, BULK_NODE_VERSIONS_CHUNK_SIZE).map(
+              (nodeVersionsChunk) =>
+                registryService.getBulkNodeVersions(nodeVersionsChunk, signal)
+            )
           )
 
-          if (bulkResponse && bulkResponse.node_versions?.length > 0) {
+          for (const bulkResponse of bulkResponses) {
+            if (bulkResponse.status === 'rejected') {
+              console.warn(
+                '[ConflictDetection] Failed to fetch bulk version data:',
+                bulkResponse.reason
+              )
+              continue
+            }
+
+            if (!bulkResponse.value) {
+              if (!signal?.aborted) {
+                console.warn(
+                  '[ConflictDetection] Failed to fetch bulk version data for one batch of installed packs'
+                )
+              }
+              continue
+            }
+
             // Process bulk response
-            bulkResponse.node_versions.forEach((result) => {
+            bulkResponse.value.node_versions?.forEach((result) => {
               if (result.status === 'success' && result.node_version) {
                 versionDataMap.set(
                   result.identifier.node_id,

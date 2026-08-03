@@ -448,6 +448,119 @@ describe('useConflictDetection', () => {
     })
   })
 
+  describe('bulk version request chunking', () => {
+    const packIds = (count: number) =>
+      Array.from({ length: count }, (_, index) => `pack-${index}`)
+
+    const installPacks = (count: number) => {
+      mockInstalledPacks.isReady.value = true
+      mockInstalledPacksWithVersions.value = packIds(count).map((id) => ({
+        id,
+        version: '1.0.0'
+      }))
+    }
+
+    const bulkCalls = () =>
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mock.calls
+
+    const bannedResponse = (
+      nodeVersions: components['schemas']['NodeVersionIdentifier'][]
+    ) => ({
+      node_versions: nodeVersions.map((identifier) => ({
+        status: 'success' as const,
+        identifier,
+        node_version: {
+          status: 'NodeVersionStatusBanned' as const,
+          version: identifier.version,
+          publisher_id: 'test-publisher',
+          node_id: identifier.node_id,
+          created_at: '2024-01-01T00:00:00Z'
+        } as components['schemas']['NodeVersion']
+      }))
+    })
+
+    const bannedPackIds = (results: ConflictDetectionResult[]) =>
+      results
+        .filter((result) =>
+          result.conflicts?.some((conflict) => conflict.type === 'banned')
+        )
+        .map((result) => result.package_id)
+
+    it('splits a large install into chunks of 100, covering every pack exactly once', async () => {
+      installPacks(250)
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      await runFullConflictAnalysis()
+
+      const calls = bulkCalls()
+      expect(calls.map(([nodeVersions]) => nodeVersions.length)).toEqual([
+        100, 100, 50
+      ])
+      expect(
+        calls.flatMap(([nodeVersions]) =>
+          nodeVersions.map(({ node_id }) => node_id)
+        )
+      ).toEqual(packIds(250))
+      expect(calls.every(([, signal]) => signal instanceof AbortSignal)).toBe(
+        true
+      )
+    })
+
+    it('merges version data from every chunk', async () => {
+      installPacks(250)
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+        (nodeVersions) => Promise.resolve(bannedResponse(nodeVersions))
+      )
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const { results } = await runFullConflictAnalysis()
+
+      expect(bannedPackIds(results)).toEqual(packIds(250))
+    })
+
+    it('keeps the remaining chunks version data when one chunk request fails', async () => {
+      installPacks(250)
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+        (nodeVersions) =>
+          Promise.resolve(
+            nodeVersions.some(({ node_id }) => node_id === 'pack-0')
+              ? null
+              : bannedResponse(nodeVersions)
+          )
+      )
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const { results } = await runFullConflictAnalysis()
+
+      expect(bannedPackIds(results)).toEqual(packIds(250).slice(100))
+    })
+
+    it('keeps the remaining chunks version data when one chunk request throws', async () => {
+      installPacks(250)
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+        (nodeVersions) =>
+          nodeVersions.some(({ node_id }) => node_id === 'pack-0')
+            ? Promise.reject(new Error('network down'))
+            : Promise.resolve(bannedResponse(nodeVersions))
+      )
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const { results } = await runFullConflictAnalysis()
+
+      expect(bannedPackIds(results)).toEqual(packIds(250).slice(100))
+    })
+
+    it('sends a single request when the install fits in one chunk', async () => {
+      installPacks(50)
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      await runFullConflictAnalysis()
+
+      expect(bulkCalls()).toHaveLength(1)
+      expect(bulkCalls()[0][0]).toHaveLength(50)
+    })
+  })
+
   describe('computed properties', () => {
     it('should expose conflict status from store', () => {
       mockConflictedPackages = [
