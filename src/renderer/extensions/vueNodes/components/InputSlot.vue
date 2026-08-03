@@ -2,9 +2,10 @@
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
   <div
     v-else
+    v-tooltip.left="tooltipConfig"
     :class="
       cn(
-        'lg-slot lg-slot--input group/slot m-0 flex items-center rounded-r-lg',
+        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
         'cursor-crosshair',
         dotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
         {
@@ -19,7 +20,6 @@
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
-      v-tooltip.left="tooltipConfig"
       :class="
         cn(
           'w-3 -translate-x-1/2',
@@ -31,51 +31,47 @@
       @click="onClick"
       @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"
-      @contextmenu.stop.prevent="startRename"
     />
 
     <!-- Slot Name -->
     <div class="flex h-full min-w-0 items-center">
-      <input
-        v-if="isRenaming"
-        ref="renameInputRef"
-        v-model="renameValue"
-        class="m-0 w-full truncate border-none bg-transparent p-0 text-[length:inherit] leading-[inherit] text-node-component-slot-text outline-none"
-        @blur="finishRename"
-        @keydown.enter.prevent="finishRename"
-        @keydown.escape.prevent="cancelRename"
-        @click.stop
-        @pointerdown.stop
-      />
-      <span
-        v-else-if="!props.dotOnly && !hasNoLabel"
+      <EditableText
+        v-if="!props.dotOnly && !hasNoLabel"
         :class="
           cn(
-            'truncate text-node-component-slot-text hover:text-node-component-slot-text-highlight',
+            'truncate text-node-component-slot-text',
             hasError && 'font-medium text-error'
           )
         "
-        @dblclick.stop="startRename"
+        :is-editing="isEditingLabel"
+        :model-value="
+          slotData.label ||
+          slotData.localized_name ||
+          (slotData.name ?? `Input ${index}`)
+        "
+        @cancel="isEditingLabel = false"
+        @dblclick="isEditingLabel = true"
+        @edit="onEditLabel"
       >
-        {{ displayLabel }}
-      </span>
+      </EditableText>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onErrorCaptured, ref, watchEffect } from 'vue'
+import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 
+import EditableText from '@/components/common/EditableText.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import { app } from '@/scripts/app'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
 
@@ -94,15 +90,6 @@ interface InputSlotProps {
 }
 
 const props = defineProps<InputSlotProps>()
-
-const labelOverride = ref<string | null>(null)
-const displayLabel = computed(
-  () =>
-    labelOverride.value ||
-    props.slotData.label ||
-    props.slotData.localized_name ||
-    (props.slotData.name ?? `Input ${props.index}`)
-)
 
 const hasNoLabel = computed(
   () =>
@@ -164,47 +151,23 @@ const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   type: 'input'
 })
 
-// ── Inline rename ─────────────────────────────────────────────
-const isRenaming = ref(false)
-const renameValue = ref('')
-const renameInputRef = ref<HTMLInputElement | null>(null)
+const isEditingLabel = ref(false)
+function onEditLabel(val: string) {
+  const canvas = useCanvasStore().getCanvas()
+  isEditingLabel.value = false
+  if (!props.nodeId) return
 
-function startRename() {
-  if (props.slotData.nameLocked) return
-  renameValue.value = displayLabel.value
-  isRenaming.value = true
-  nextTick(() => {
-    renameInputRef.value?.select()
-  })
-}
-
-let renameCommitted = false
-
-function finishRename() {
-  if (!isRenaming.value || renameCommitted || !props.nodeId) return
-  renameCommitted = true
-
-  const newLabel = renameValue.value.trim()
-  const node = app.canvas?.graph?.getNodeById(props.nodeId)
+  const newLabel = val.trim() || undefined
+  const node = canvas.graph?.getNodeById(props.nodeId)
   const slot = node?.inputs?.[props.index]
+  if (!node || !slot || slot.label === newLabel) return
 
-  if (newLabel && newLabel !== displayLabel.value && slot) {
-    slot.label = newLabel
-    labelOverride.value = newLabel
-    node?.graph?.trigger('node:slot-label:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT
-    })
-    app.canvas?.setDirty(true, true)
-  }
+  slot.label = newLabel
 
-  nextTick(() => {
-    isRenaming.value = false
-    renameCommitted = false
+  node?.graph?.trigger('node:slot-label:changed', {
+    nodeId: props.nodeId,
+    slotType: NodeSlotType.INPUT
   })
-}
-
-function cancelRename() {
-  isRenaming.value = false
+  canvas.setDirty(true, true)
 }
 </script>

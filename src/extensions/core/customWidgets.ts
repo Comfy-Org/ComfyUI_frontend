@@ -97,7 +97,6 @@ const renameTrigger = ref(0)
 function onBranchSelectorCreated(this: LGraphNode) {
   this.applyToGraph = applyToGraph
 
-  //FIXME: watchers probably leak since we're not in a vue component
   const connectionsTrigger = ref(0)
   this.widgets?.pop()
   const labels = computed(() => {
@@ -111,13 +110,14 @@ function onBranchSelectorCreated(this: LGraphNode) {
   const comboWidget = this.addWidget('combo', 'branch', '', () => {}, {
     values
   })
-  watch([renameTrigger, connectionsTrigger], () => {
+  const stopWatch = watch([renameTrigger, connectionsTrigger], () => {
     if (app.configuringGraph || labels.value.includes(`${comboWidget.value}`))
       return
 
     comboWidget.value = labels.value[0] ?? ''
     comboWidget.callback?.(comboWidget.value)
   })
+  this.onRemoved = useChainCallback(this.onRemoved, stopWatch)
 
   comboWidget.serializeValue = () =>
     node.inputs.slice(0, -1).findIndex((inp) => inp.label === comboWidget.value)
