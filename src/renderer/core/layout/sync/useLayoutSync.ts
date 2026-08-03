@@ -29,8 +29,9 @@ export function useLayoutSync() {
     isMicrotaskQueued = false
     if (!canvas?.graph || pendingNodeIds.size === 0) return
 
+    const rootGraphId = canvas.graph.rootGraph.id
     for (const nodeId of pendingNodeIds) {
-      const layout = layoutStore.getNodeLayoutRef(nodeId).value
+      const layout = layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
       if (!layout) continue
 
       const liteNode = canvas.graph.getNodeById(nodeId)

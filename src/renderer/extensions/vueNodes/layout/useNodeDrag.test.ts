@@ -6,9 +6,12 @@ import type { Ref } from 'vue'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
 // of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765
+const ROOT_GRAPH_ID = vi.hoisted(() => 'root-graph' as UUID)
+
 const testState = vi.hoisted(() => {
   // Imports are unavailable inside vi.hoisted() so shoehorn's fromAny cannot
   // be used here. This local identity function serves the same purpose
@@ -62,6 +65,7 @@ vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
+    rootGraphId: ROOT_GRAPH_ID,
     selectedNodeIds: testState.selectedNodeIds,
     selectedItems: testState.selectedItems,
     canvas: {
@@ -85,7 +89,7 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getNodeLayoutRef: (nodeId: string) =>
+    getNodeLayoutRef: (_rootGraphId: string, nodeId: string) =>
       ref(testState.nodeLayouts.get(nodeId) ?? null),
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds
   }
@@ -177,10 +181,13 @@ describe('useNodeDrag', () => {
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
-    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
-      { nodeId: '1', position: { x: 120, y: 120 } },
-      { nodeId: '2', position: { x: 220, y: 200 } }
-    ])
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [
+        { nodeId: '1', position: { x: 120, y: 120 } },
+        { nodeId: '2', position: { x: 220, y: 200 } }
+      ]
+    )
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
 
@@ -198,9 +205,10 @@ describe('useNodeDrag', () => {
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
-    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
-      { nodeId: '1', position: { x: 70, y: 100 } }
-    ])
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [{ nodeId: '1', position: { x: 70, y: 100 } }]
+    )
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
 
@@ -225,17 +233,20 @@ describe('useNodeDrag', () => {
     expect(testState.cancelAnimationFrame).toHaveBeenCalledTimes(1)
     expect(testState.cancelAnimationFrame).toHaveBeenCalledWith(1)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
-      {
-        nodeId: '1',
-        bounds: {
-          x: 55,
-          y: 87,
-          width: 180,
-          height: 110
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [
+        {
+          nodeId: '1',
+          bounds: {
+            x: 55,
+            y: 87,
+            width: 180,
+            height: 110
+          }
         }
-      }
-    ])
+      ]
+    )
   })
 })
 
@@ -283,18 +294,20 @@ describe('useNodeDrag auto-pan', () => {
     drag.handleDrag(pointerEvent(760, 300), node1)
     testState.requestAnimationFrameCallback?.(0)
 
-    expect(testState.mutationFns.batchMoveNodes).toHaveBeenLastCalledWith([
-      { nodeId: '1', position: { x: 110, y: 200 } }
-    ])
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenLastCalledWith(
+      ROOT_GRAPH_ID,
+      [{ nodeId: '1', position: { x: 110, y: 200 } }]
+    )
 
     testState.mutationFns.batchMoveNodes.mockClear()
 
     testState.mockDs.offset[0] -= 5
     testState.capturedOnPan.current!(5, 0)
 
-    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
-      { nodeId: '1', position: { x: 115, y: 200 } }
-    ])
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      [{ nodeId: '1', position: { x: 115, y: 200 } }]
+    )
   })
 
   it('moves all selected nodes when auto-pan fires', () => {
@@ -309,7 +322,7 @@ describe('useNodeDrag auto-pan', () => {
     testState.capturedOnPan.current!(5, 0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
-    const calls = testState.mutationFns.batchMoveNodes.mock.calls[0][0]
+    const calls = testState.mutationFns.batchMoveNodes.mock.calls[0][1]
     const nodeIds = calls.map((u: { nodeId: string }) => u.nodeId)
     expect(nodeIds).toContain('1')
     expect(nodeIds).toContain('2')

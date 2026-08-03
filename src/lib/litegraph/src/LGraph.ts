@@ -502,16 +502,15 @@ export class LGraph
       useLinkStore().clearGraph(graphId)
       useRerouteStore().clearGraph(graphId)
       useNodeDataStore().clearGraph(graphId)
+      layoutStore.clearGraph(graphId)
     } else {
       // Subgraphs and unconfigured (zero-uuid) graphs share their store
       // bucket with other graphs, so unregister each entity individually.
       unregisterAllLinkTopologies(this)
       unregisterAllRerouteChains(this)
       unregisterAllNodeStates(this)
+      unregisterAllGraphLayout(this)
     }
-
-    // Geometry has no per-rootGraph bucket to wipe, so both branches sweep.
-    unregisterAllGraphLayout(this)
 
     this.id = zeroUuid
     this.revision = 0
@@ -1148,7 +1147,7 @@ export class LGraph
     this.events.dispatch('node:added', { node })
 
     // Must follow onNodeAdded: its microtask-deferred hooks must run before the Vue flush these writes schedule
-    registerNodeLayout(node)
+    registerNodeLayout(this, node)
     this.incrementVersion()
 
     this.setDirtyCanvas(true)
@@ -1247,7 +1246,7 @@ export class LGraph
     node.onRemoved?.()
 
     unregisterNodeState(node)
-    canvasLayoutMutations().deleteNode(node.id)
+    canvasLayoutMutations().deleteNode(this.rootGraph.id, node.id)
 
     node.graph = null
     this.incrementVersion()

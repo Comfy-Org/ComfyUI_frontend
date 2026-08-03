@@ -19,8 +19,8 @@ export function canvasLayoutMutations() {
 }
 
 /** A newly attached node stacks above those already registered. */
-export function registerNodeLayout(node: LGraphNode): void {
-  canvasLayoutMutations().createNode(node.id, {
+export function registerNodeLayout(graph: LGraph, node: LGraphNode): void {
+  canvasLayoutMutations().createNode(graph.rootGraph.id, node.id, {
     position: { x: node.pos[0], y: node.pos[1] },
     size: { width: node.size[0], height: node.size[1] },
     zIndex: layoutStore.allocateZIndex(),
@@ -48,7 +48,7 @@ export function unregisterAllGraphLayout(graph: LGraph): void {
   const rootGraphId = graph.rootGraph.id
   const mutations = canvasLayoutMutations()
 
-  for (const node of graph._nodes) mutations.deleteNode(node.id)
+  for (const node of graph._nodes) mutations.deleteNode(rootGraphId, node.id)
   for (const group of graph._groups) {
     mutations.deleteGroup(rootGraphId, group.id)
   }

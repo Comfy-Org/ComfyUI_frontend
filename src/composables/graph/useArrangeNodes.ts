@@ -3,6 +3,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point } from '@/renderer/core/layout/types'
@@ -166,17 +167,21 @@ export function useArrangeNodes() {
   const { selectedNodes, hasMultipleSelection } = useSelectionState()
   const mutations = useLayoutMutations()
   const workflowStore = useWorkflowStore()
+  const canvasStore = useCanvasStore()
 
   const arrangeNodes = (
     layout: ArrangeLayout,
     { gap = DEFAULT_ARRANGE_GAP, captureUndo = true }: ArrangeOptions = {}
   ) => {
     if (!hasMultipleSelection.value) return
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return
+
     const updates = computeArrangement(selectedNodes.value, layout, gap)
     if (updates.length === 0) return
 
     mutations.setSource(LayoutSource.Canvas)
-    mutations.batchMoveNodes(updates)
+    mutations.batchMoveNodes(rootGraphId, updates)
     app.canvas?.setDirty(true, true)
     if (captureUndo) {
       workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()

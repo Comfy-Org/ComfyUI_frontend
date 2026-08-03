@@ -13,6 +13,7 @@ export const layoutStore = fromPartial<LayoutStoreImpl>({
   allocateZIndex: vi.fn(() => 1),
   applyOperation: vi.fn(),
   batchUpdateNodeBounds: vi.fn(),
+  clearGraph: vi.fn(),
   clearViewGeometry: vi.fn(),
   getAllGroups: vi.fn(() => ({ value: new Map() })),
   getCurrentActor: vi.fn(() => 'test-actor'),

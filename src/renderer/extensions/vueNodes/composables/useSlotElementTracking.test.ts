@@ -4,6 +4,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -21,8 +23,10 @@ import {
 } from './useSlotElementTracking'
 
 const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
+const ROOT_GRAPH_ID = createUuidv4()
 const mockCanvasState = vi.hoisted(() => ({
-  canvas: {} as object | null
+  canvas: {} as object | null,
+  rootGraphId: undefined as UUID | undefined
 }))
 const mockClientPosToCanvasPos = vi.hoisted(() =>
   vi.fn(([x, y]: [number, number]) => [x * 0.5, y * 0.5] as [number, number])
@@ -118,6 +122,7 @@ describe('useSlotElementTracking', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: ROOT_GRAPH_ID,
       nodeId: NODE_ID,
       layout: {
         id: NODE_ID,
@@ -133,6 +138,7 @@ describe('useSlotElementTracking', () => {
     })
     mockGraph._nodes = [{ id: 1 }]
     mockCanvasState.canvas = {}
+    mockCanvasState.rootGraphId = ROOT_GRAPH_ID
     mockClientPosToCanvasPos.mockClear()
   })
 

@@ -76,15 +76,19 @@ const logger = log.getLogger('LayoutStore')
 
 type ScopedLayoutKey = string & { readonly __brand: 'ScopedLayoutKey' }
 
-function makeScopedLayoutKey(graphId: UUID, localId: number): ScopedLayoutKey {
+function makeScopedLayoutKey(
+  graphId: UUID,
+  localId: number | string
+): ScopedLayoutKey {
   return (graphId + ':' + localId) as ScopedLayoutKey
 }
 
-function parseLayoutKey(key: string): { graphId: UUID; localId: number } {
-  const separatorIndex = key.lastIndexOf(':')
+/** A UUID never contains `:`, so the first one always ends the graph id. */
+function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
+  const separatorIndex = key.indexOf(':')
   return {
     graphId: key.slice(0, separatorIndex) as UUID,
-    localId: Number(key.slice(separatorIndex + 1))
+    localId: key.slice(separatorIndex + 1)
   }
 }
 
@@ -126,15 +130,15 @@ export class LayoutStoreImpl implements LayoutStore {
   // Change listeners
   private changeListeners = new Set<(change: LayoutChange) => void>()
   private nodeChangeListeners = new Map<
-    NodeId,
+    ScopedLayoutKey,
     Set<(change: LayoutChange) => void>
   >()
   private pendingGlobalChanges: LayoutChange[] = []
   private isGlobalDispatchQueued = false
 
   // CustomRef cache and trigger functions
-  private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
-  private nodeTriggers = new Map<NodeId, () => void>()
+  private nodeRefs = new Map<ScopedLayoutKey, Ref<NodeLayout | null>>()
+  private nodeTriggers = new Map<ScopedLayoutKey, () => void>()
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -189,10 +193,7 @@ export class LayoutStoreImpl implements LayoutStore {
 
       // Trigger all affected node refs
       event.changes.keys.forEach((_change: YEventChange, key: string) => {
-        const trigger = this.nodeTriggers.get(toNodeId(key))
-        if (trigger) {
-          trigger()
-        }
+        this.nodeTriggers.get(key as ScopedLayoutKey)?.()
       })
     })
 
@@ -222,8 +223,8 @@ export class LayoutStoreImpl implements LayoutStore {
   /**
    * Get or create a customRef for a node layout
    */
-  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null> {
-    const nodeKey = nodeId
+  getNodeLayoutRef(rootGraphId: UUID, nodeId: NodeId): Ref<NodeLayout | null> {
+    const nodeKey = makeScopedLayoutKey(rootGraphId, nodeId)
     let nodeRef = this.nodeRefs.get(nodeKey)
 
     if (!nodeRef) {
@@ -249,6 +250,7 @@ export class LayoutStoreImpl implements LayoutStore {
               this.applyOperation({
                 type: 'createNode',
                 entity: 'node',
+                graphId: rootGraphId,
                 nodeId,
                 layout: newLayout,
                 timestamp: Date.now(),
@@ -266,6 +268,7 @@ export class LayoutStoreImpl implements LayoutStore {
                 this.applyOperation({
                   type: 'moveNode',
                   entity: 'node',
+                  graphId: rootGraphId,
                   nodeId,
                   position: newLayout.position,
                   timestamp: Date.now(),
@@ -280,6 +283,7 @@ export class LayoutStoreImpl implements LayoutStore {
                 this.applyOperation({
                   type: 'resizeNode',
                   entity: 'node',
+                  graphId: rootGraphId,
                   nodeId,
                   size: newLayout.size,
                   timestamp: Date.now(),
@@ -291,6 +295,7 @@ export class LayoutStoreImpl implements LayoutStore {
                 this.applyOperation({
                   type: 'setNodeZIndex',
                   entity: 'node',
+                  graphId: rootGraphId,
                   nodeId,
                   zIndex: newLayout.zIndex,
                   timestamp: Date.now(),
@@ -323,7 +328,7 @@ export class LayoutStoreImpl implements LayoutStore {
       for (const [key, ygroup] of this.ygroups) {
         const parsed = parseLayoutKey(key)
         if (parsed.graphId !== rootGraphId) continue
-        const groupId = toGroupId(parsed.localId)
+        const groupId = toGroupId(Number(parsed.localId))
         result.set(groupId, yGroupToLayout(ygroup, groupId))
       }
       return result
@@ -783,7 +788,28 @@ export class LayoutStoreImpl implements LayoutStore {
         )
         change.type = 'delete'
         break
+      case 'clearGraph':
+        this.handleClearGraph(operation.graphId, change)
+        break
     }
+  }
+
+  private handleClearGraph(graphId: UUID, change: LayoutChange): void {
+    const prefix = graphId + ':'
+
+    for (const key of [...this.ynodes.keys()]) {
+      if (!key.startsWith(prefix)) continue
+      this.ynodes.delete(key)
+      change.nodeIds.push(toNodeId(parseLayoutKey(key).localId))
+    }
+    for (const key of [...this.ygroups.keys()]) {
+      if (key.startsWith(prefix)) this.ygroups.delete(key)
+    }
+    for (const key of [...this.yreroutes.keys()]) {
+      if (key.startsWith(prefix)) this.yreroutes.delete(key)
+    }
+
+    change.type = 'delete'
   }
 
   /**
@@ -795,11 +821,9 @@ export class LayoutStoreImpl implements LayoutStore {
 
     // Manually trigger affected node refs after transaction
     // This is needed because Yjs observers don't fire for property changes
+    const { graphId } = change.operation
     change.nodeIds.forEach((nodeId) => {
-      const trigger = this.nodeTriggers.get(nodeId)
-      if (trigger) {
-        trigger()
-      }
+      this.nodeTriggers.get(makeScopedLayoutKey(graphId, nodeId))?.()
     })
 
     // Keep node-scoped listeners synchronous for immediate local feedback,
@@ -817,20 +841,22 @@ export class LayoutStoreImpl implements LayoutStore {
   }
 
   onNodeChange(
+    rootGraphId: UUID,
     nodeId: NodeId,
     callback: (change: LayoutChange) => void
   ): () => void {
-    const listenersForNode = this.nodeChangeListeners.get(nodeId) ?? new Set()
+    const nodeKey = makeScopedLayoutKey(rootGraphId, nodeId)
+    const listenersForNode = this.nodeChangeListeners.get(nodeKey) ?? new Set()
     listenersForNode.add(callback)
-    this.nodeChangeListeners.set(nodeId, listenersForNode)
+    this.nodeChangeListeners.set(nodeKey, listenersForNode)
 
     return () => {
-      const existingListeners = this.nodeChangeListeners.get(nodeId)
+      const existingListeners = this.nodeChangeListeners.get(nodeKey)
       if (!existingListeners) return
 
       existingListeners.delete(callback)
       if (existingListeners.size === 0) {
-        this.nodeChangeListeners.delete(nodeId)
+        this.nodeChangeListeners.delete(nodeKey)
       }
     }
   }
@@ -876,9 +902,25 @@ export class LayoutStoreImpl implements LayoutStore {
    * Clean up refs and triggers for a node when its Vue component unmounts.
    * This should be called from the component's onUnmounted hook.
    */
-  cleanupNodeRef(nodeId: NodeId): void {
-    this.nodeRefs.delete(nodeId)
-    this.nodeTriggers.delete(nodeId)
+  cleanupNodeRef(rootGraphId: UUID, nodeId: NodeId): void {
+    const nodeKey = makeScopedLayoutKey(rootGraphId, nodeId)
+    this.nodeRefs.delete(nodeKey)
+    this.nodeTriggers.delete(nodeKey)
+  }
+
+  /**
+   * Drops every node, group and reroute entry scoped to a root graph, including
+   * the entries owned by the subgraph definitions it holds.
+   */
+  clearGraph(rootGraphId: UUID): void {
+    this.applyOperation({
+      type: 'clearGraph',
+      entity: 'graph',
+      graphId: rootGraphId,
+      timestamp: Date.now(),
+      source: this.currentSource,
+      actor: this.currentActor
+    })
   }
 
   /**
@@ -928,7 +970,9 @@ export class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const { nodeId } = operation
-    const ynode = this.ynodes.get(String(nodeId))
+    const ynode = this.ynodes.get(
+      makeScopedLayoutKey(operation.graphId, nodeId)
+    )
     if (!ynode) {
       return
     }
@@ -950,7 +994,9 @@ export class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const { nodeId } = operation
-    const ynode = this.ynodes.get(String(nodeId))
+    const ynode = this.ynodes.get(
+      makeScopedLayoutKey(operation.graphId, nodeId)
+    )
     if (!ynode) return
 
     const position = yNodeToLayout(ynode).position
@@ -979,7 +1025,9 @@ export class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const { nodeId } = operation
-    const ynode = this.ynodes.get(String(nodeId))
+    const ynode = this.ynodes.get(
+      makeScopedLayoutKey(operation.graphId, nodeId)
+    )
     if (!ynode) return
 
     ynode.set('zIndex', operation.zIndex)
@@ -993,7 +1041,7 @@ export class LayoutStoreImpl implements LayoutStore {
   ): void {
     const { nodeId } = operation
     const ynode = layoutToYNode(operation.layout)
-    this.ynodes.set(String(nodeId), ynode)
+    this.ynodes.set(makeScopedLayoutKey(operation.graphId, nodeId), ynode)
     this.highestZIndex = Math.max(this.highestZIndex, operation.layout.zIndex)
 
     change.type = 'create'
@@ -1005,7 +1053,7 @@ export class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const { nodeId } = operation
-    const nodeKey = String(nodeId)
+    const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
     if (!this.ynodes.has(nodeKey)) return
 
     this.ynodes.delete(nodeKey)
@@ -1028,7 +1076,9 @@ export class LayoutStoreImpl implements LayoutStore {
   ): void {
     for (const nodeId of operation.nodeIds) {
       const bounds = operation.bounds[nodeId]
-      const ynode = this.ynodes.get(String(nodeId))
+      const ynode = this.ynodes.get(
+        makeScopedLayoutKey(operation.graphId, nodeId)
+      )
       if (!ynode || !bounds) continue
 
       ynode.set('rect', [bounds.x, bounds.y, bounds.width, bounds.height])
@@ -1117,7 +1167,7 @@ export class LayoutStoreImpl implements LayoutStore {
   private handleRerouteChange(change: YEventChange, key: string): void {
     const parsed = parseLayoutKey(key)
     const graphId = parsed.graphId
-    const rerouteId = toRerouteId(parsed.localId)
+    const rerouteId = toRerouteId(Number(parsed.localId))
 
     if (change.action === 'delete') {
       this.rerouteLayouts.delete(key as ScopedLayoutKey)
@@ -1192,8 +1242,11 @@ export class LayoutStoreImpl implements LayoutStore {
   }
 
   private notifyNodeChange(change: LayoutChange): void {
+    const { graphId } = change.operation
     for (const nodeId of new Set(change.nodeIds)) {
-      const listeners = this.nodeChangeListeners.get(nodeId)
+      const listeners = this.nodeChangeListeners.get(
+        makeScopedLayoutKey(graphId, nodeId)
+      )
       if (!listeners) continue
 
       listeners.forEach((listener) => {
@@ -1209,7 +1262,7 @@ export class LayoutStoreImpl implements LayoutStore {
   /**
    * Batch update node bounds using Yjs transaction for atomicity.
    */
-  batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void {
+  batchUpdateNodeBounds(rootGraphId: UUID, updates: NodeBoundsUpdate[]): void {
     if (updates.length === 0) return
 
     const originalSource = this.currentSource
@@ -1220,7 +1273,7 @@ export class LayoutStoreImpl implements LayoutStore {
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
     for (const { nodeId, bounds } of updates) {
-      if (!this.ynodes.has(String(nodeId))) continue
+      if (!this.ynodes.has(makeScopedLayoutKey(rootGraphId, nodeId))) continue
 
       boundsRecord[nodeId] = shouldNormalizeHeights
         ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
@@ -1236,6 +1289,7 @@ export class LayoutStoreImpl implements LayoutStore {
     const operation: BatchUpdateBoundsOperation = {
       type: 'batchUpdateBounds',
       entity: 'node',
+      graphId: rootGraphId,
       nodeIds,
       bounds: boundsRecord,
       timestamp: Date.now(),

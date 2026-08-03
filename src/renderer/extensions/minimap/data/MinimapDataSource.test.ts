@@ -37,7 +37,7 @@ const getAllGroups = vi.hoisted(() =>
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getNodeLayoutRef: vi.fn((nodeId: NodeId) => ({
+    getNodeLayoutRef: vi.fn((_rootGraphId: UUID, nodeId: NodeId) => ({
       get value() {
         return layouts.get(String(nodeId)) ?? null
       }

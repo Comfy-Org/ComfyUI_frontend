@@ -808,25 +808,31 @@ describe('snapToGrid', () => {
   }
 
   test('commits the snapped position to the layout store', () => {
-    const node = addedNode(new LGraph())
+    const graph = new LGraph()
+    const node = addedNode(graph)
 
     expect(node.snapToGrid(20)).toBe(true)
 
     expect([...node.pos]).toEqual([100, 100])
-    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
       x: 100,
       y: 100
     })
   })
 
   test('writes indexed position mutations through to the layout store', () => {
-    const node = addedNode(new LGraph())
+    const graph = new LGraph()
+    const node = addedNode(graph)
     const pos = node.pos
 
     node.pos[0] = 120
 
     expect(node.pos).toBe(pos)
-    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
       x: 120,
       y: 97
     })
@@ -842,12 +848,15 @@ describe('snapToGrid', () => {
   })
 
   test('leaves a pinned node alone', () => {
-    const node = addedNode(new LGraph())
+    const graph = new LGraph()
+    const node = addedNode(graph)
     node.pin(true)
 
     expect(node.snapToGrid(20)).toBe(false)
     expect([...node.pos]).toEqual([103, 97])
-    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
       x: 103,
       y: 97
     })

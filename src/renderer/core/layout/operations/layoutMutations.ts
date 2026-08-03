@@ -22,12 +22,19 @@ import type {
 const logger = log.getLogger('LayoutMutations')
 
 interface LayoutMutations {
-  moveNode(nodeId: NodeId, position: Point): void
-  batchMoveNodes(updates: Array<{ nodeId: NodeId; position: Point }>): void
-  resizeNode(nodeId: NodeId, size: Size): void
-  setNodeZIndex(nodeId: NodeId, zIndex: number): void
-  createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
-  deleteNode(nodeId: NodeId): void
+  moveNode(rootGraphId: UUID, nodeId: NodeId, position: Point): void
+  batchMoveNodes(
+    rootGraphId: UUID,
+    updates: Array<{ nodeId: NodeId; position: Point }>
+  ): void
+  resizeNode(rootGraphId: UUID, nodeId: NodeId, size: Size): void
+  setNodeZIndex(rootGraphId: UUID, nodeId: NodeId, zIndex: number): void
+  createNode(
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    layout: Partial<NodeLayout>
+  ): void
+  deleteNode(rootGraphId: UUID, nodeId: NodeId): void
 
   // Reroute operations
   createReroute(rootGraphId: UUID, rerouteId: RerouteId, position: Point): void
@@ -48,7 +55,7 @@ interface LayoutMutations {
   ): void
   deleteGroup(rootGraphId: UUID, groupId: GroupId): void
 
-  bringNodeToFront(nodeId: NodeId): void
+  bringNodeToFront(rootGraphId: UUID, nodeId: NodeId): void
   setSource(source: LayoutSource): void
   setActor(actor: string): void
 }
@@ -74,13 +81,18 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Move a node to a new position
    */
-  const moveNode = (nodeId: NodeId, position: Point): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
+  const moveNode = (
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    position: Point
+  ): void => {
+    const existing = layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'moveNode',
       entity: 'node',
+      graphId: rootGraphId,
       nodeId,
       position,
       timestamp: Date.now(),
@@ -90,12 +102,13 @@ export function useLayoutMutations(): LayoutMutations {
   }
 
   function batchMoveNodes(
+    rootGraphId: UUID,
     updates: Array<{ nodeId: NodeId; position: Point }>
   ): void {
     if (updates.length === 0) return
 
     const nodeBoundsUpdates = updates.flatMap(({ nodeId, position }) => {
-      const existing = layoutStore.getNodeLayoutRef(nodeId).value
+      const existing = layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
       if (!existing) return []
 
       return [
@@ -112,19 +125,20 @@ export function useLayoutMutations(): LayoutMutations {
     })
 
     if (nodeBoundsUpdates.length === 0) return
-    layoutStore.batchUpdateNodeBounds(nodeBoundsUpdates)
+    layoutStore.batchUpdateNodeBounds(rootGraphId, nodeBoundsUpdates)
   }
 
   /**
    * Resize a node
    */
-  const resizeNode = (nodeId: NodeId, size: Size): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
+  const resizeNode = (rootGraphId: UUID, nodeId: NodeId, size: Size): void => {
+    const existing = layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'resizeNode',
       entity: 'node',
+      graphId: rootGraphId,
       nodeId,
       size,
       timestamp: Date.now(),
@@ -136,13 +150,18 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Set node z-index
    */
-  const setNodeZIndex = (nodeId: NodeId, zIndex: number): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
+  const setNodeZIndex = (
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    zIndex: number
+  ): void => {
+    const existing = layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'setNodeZIndex',
       entity: 'node',
+      graphId: rootGraphId,
       nodeId,
       zIndex,
       timestamp: Date.now(),
@@ -154,7 +173,11 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Create a new node
    */
-  const createNode = (nodeId: NodeId, layout: Partial<NodeLayout>): void => {
+  const createNode = (
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    layout: Partial<NodeLayout>
+  ): void => {
     const fullLayout: NodeLayout = {
       id: nodeId,
       position: layout.position ?? { x: 0, y: 0 },
@@ -172,6 +195,7 @@ export function useLayoutMutations(): LayoutMutations {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: rootGraphId,
       nodeId,
       layout: fullLayout,
       timestamp: Date.now(),
@@ -183,13 +207,14 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Delete a node
    */
-  const deleteNode = (nodeId: NodeId): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
+  const deleteNode = (rootGraphId: UUID, nodeId: NodeId): void => {
+    const existing = layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'deleteNode',
       entity: 'node',
+      graphId: rootGraphId,
       nodeId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -200,8 +225,8 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Bring a node to the front (highest z-index)
    */
-  const bringNodeToFront = (nodeId: NodeId): void => {
-    setNodeZIndex(nodeId, layoutStore.allocateZIndex())
+  const bringNodeToFront = (rootGraphId: UUID, nodeId: NodeId): void => {
+    setNodeZIndex(rootGraphId, nodeId, layoutStore.allocateZIndex())
   }
 
   /**

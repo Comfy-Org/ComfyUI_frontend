@@ -1488,18 +1488,22 @@ describe('node layout registration', () => {
     node.pos = [120, 340]
     graph.add(node)
 
-    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
       x: 120,
       y: 340
     })
 
     graph.remove(node)
 
-    expect(layoutStore.getNodeLayoutRef(node.id).value).toBeNull()
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toBeNull()
   })
 
-  const zIndexOf = (node: LGraphNode) =>
-    layoutStore.getNodeLayoutRef(node.id).value?.zIndex
+  const zIndexOf = (graph: LGraph, node: LGraphNode) =>
+    layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.zIndex
 
   it('stacks later nodes above earlier ones', () => {
     const graph = new LGraph()
@@ -1508,7 +1512,7 @@ describe('node layout registration', () => {
     graph.add(first)
     graph.add(second)
 
-    expect(zIndexOf(second)).toBeGreaterThan(zIndexOf(first)!)
+    expect(zIndexOf(graph, second)).toBeGreaterThan(zIndexOf(graph, first)!)
   })
 
   it('keeps stacking order distinct from position in the graph', () => {
@@ -1523,7 +1527,7 @@ describe('node layout registration', () => {
     const third = new LGraphNode('third')
     graph.add(third)
 
-    expect(zIndexOf(third)).toBeGreaterThan(zIndexOf(second)!)
+    expect(zIndexOf(graph, third)).toBeGreaterThan(zIndexOf(graph, second)!)
   })
 
   it('registers after node:added so deferred listener work is queued first', () => {
@@ -1531,13 +1535,17 @@ describe('node layout registration', () => {
     const node = new LGraphNode('test')
 
     graph.events.addEventListener('node:added', () => {
-      expect(layoutStore.getNodeLayoutRef(node.id).value).toBeNull()
+      expect(
+        layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+      ).toBeNull()
     })
 
     graph.add(node)
 
     expect.assertions(2)
-    expect(layoutStore.getNodeLayoutRef(node.id).value).not.toBeNull()
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).not.toBeNull()
   })
 })
 
@@ -1574,8 +1582,8 @@ describe('graph teardown drops layout entries', () => {
   }: ReturnType<typeof populatedGraph>) {
     const rootGraphId = graph.rootGraph.id
     return [
-      layoutStore.getNodeLayoutRef(root.id).value,
-      layoutStore.getNodeLayoutRef(interior.id).value,
+      layoutStore.getNodeLayoutRef(rootGraphId, root.id).value,
+      layoutStore.getNodeLayoutRef(rootGraphId, interior.id).value,
       layoutStore.getGroupLayout(rootGraphId, group.id),
       layoutStore.getRerouteLayout(rootGraphId, REROUTE)
     ].filter((entry) => entry !== null).length
@@ -1603,6 +1611,8 @@ describe('graph teardown drops layout entries', () => {
 
     graph.remove(subgraphNode)
 
-    expect(layoutStore.getNodeLayoutRef(interior.id).value).toBeNull()
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, interior.id).value
+    ).toBeNull()
   })
 })

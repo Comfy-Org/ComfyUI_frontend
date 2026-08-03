@@ -118,6 +118,8 @@ interface OperationMeta {
   actor: string
   /** Source system that initiated the operation */
   source: LayoutSource
+  /** Root graph the entity belongs to; scopes every layout key */
+  graphId: UUID
   /** Operation type discriminator */
   type: OperationType
 }
@@ -128,7 +130,6 @@ interface OperationMeta {
 type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
 type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
-  graphId: UUID
   rerouteId: RerouteId
 }
 
@@ -149,6 +150,7 @@ type OperationType =
   | 'createGroup'
   | 'setGroupBounds'
   | 'deleteGroup'
+  | 'clearGraph'
 
 /**
  * Move node operation
@@ -232,7 +234,6 @@ export interface MoveRerouteOperation extends RerouteOpBase {
 
 type GroupOpBase = OperationMeta & {
   entity: 'group'
-  graphId: UUID
   groupId: GroupId
 }
 
@@ -256,6 +257,14 @@ interface DeleteGroupOperation extends GroupOpBase {
 }
 
 /**
+ * Drops every node, group and reroute entry scoped to one root graph.
+ */
+interface ClearGraphOperation extends OperationMeta {
+  entity: 'graph'
+  type: 'clearGraph'
+}
+
+/**
  * Union of all operation types
  */
 export type LayoutOperation =
@@ -272,6 +281,7 @@ export type LayoutOperation =
   | CreateGroupOperation
   | SetGroupBoundsOperation
   | DeleteGroupOperation
+  | ClearGraphOperation
 
 export interface LayoutChange {
   type: 'create' | 'update' | 'delete'
@@ -284,7 +294,7 @@ export interface LayoutChange {
 // Store interfaces
 export interface LayoutStore {
   // CustomRef accessors for shared write access
-  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
+  getNodeLayoutRef(rootGraphId: UUID, nodeId: NodeId): Ref<NodeLayout | null>
   getAllGroups(
     rootGraphId: UUID
   ): ComputedRef<ReadonlyMap<GroupId, GroupLayout>>
@@ -337,12 +347,16 @@ export interface LayoutStore {
   // Change subscription
   onChange(callback: (change: LayoutChange) => void): () => void
   onNodeChange(
+    rootGraphId: UUID,
     nodeId: NodeId,
     callback: (change: LayoutChange) => void
   ): () => void
 
   /** @see {@link LayoutStoreImpl.clearViewGeometry} */
   clearViewGeometry(): void
+
+  /** @see {@link LayoutStoreImpl.clearGraph} */
+  clearGraph(rootGraphId: UUID): void
 
   /** @see {@link LayoutStoreImpl.allocateZIndex} */
   allocateZIndex(): number
@@ -354,7 +368,7 @@ export interface LayoutStore {
   getCurrentActor(): string
 
   // Batch updates
-  batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void
+  batchUpdateNodeBounds(rootGraphId: UUID, updates: NodeBoundsUpdate[]): void
 
   batchUpdateSlotLayouts(
     updates: Array<{ key: SlotId; layout: SlotLayout }>

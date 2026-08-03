@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -78,7 +79,11 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   return new LGraphCanvas(el, graph, { skip_render: true })
 }
 
-function createLayoutEntry(node: LGraphNode, zIndex: number) {
+function createLayoutEntry(
+  rootGraphId: UUID,
+  node: LGraphNode,
+  zIndex: number
+) {
   const nodeId = node.id
   const layout: NodeLayout = {
     id: nodeId,
@@ -96,6 +101,7 @@ function createLayoutEntry(node: LGraphNode, zIndex: number) {
   layoutStore.applyOperation({
     type: 'createNode',
     entity: 'node',
+    graphId: rootGraphId,
     nodeId,
     layout,
     timestamp: Date.now(),
@@ -104,10 +110,11 @@ function createLayoutEntry(node: LGraphNode, zIndex: number) {
   })
 }
 
-function setZIndex(nodeId: NodeId, zIndex: number) {
+function setZIndex(rootGraphId: UUID, nodeId: NodeId, zIndex: number) {
   layoutStore.applyOperation({
     type: 'setNodeZIndex',
     entity: 'node',
+    graphId: rootGraphId,
     nodeId,
     zIndex,
     timestamp: Date.now(),
@@ -135,7 +142,7 @@ describe('cloned node z-index in Vue renderer', () => {
 
     // Simulate Vue runtime: create layout entries when nodes are added
     graph.onNodeAdded = (node: LGraphNode) => {
-      createLayoutEntry(node, 0)
+      createLayoutEntry(graph.rootGraph.id, node, 0)
     }
   })
 
@@ -151,9 +158,12 @@ describe('cloned node z-index in Vue renderer', () => {
 
     const originalNodeId = originalNode.id
 
-    setZIndex(originalNodeId, 5)
+    setZIndex(graph.rootGraph.id, originalNodeId, 5)
 
-    const originalLayout = layoutStore.getNodeLayoutRef(originalNodeId).value
+    const originalLayout = layoutStore.getNodeLayoutRef(
+      graph.rootGraph.id,
+      originalNodeId
+    ).value
     expect(originalLayout?.zIndex).toBe(5)
 
     // Clone the node via cloneNodes (same path as right-click > clone)
@@ -165,7 +175,10 @@ describe('cloned node z-index in Vue renderer', () => {
     const clonedNodeId = clonedNode.id
 
     // The cloned node should have a z-index higher than the original
-    const clonedLayout = layoutStore.getNodeLayoutRef(clonedNodeId).value
+    const clonedLayout = layoutStore.getNodeLayoutRef(
+      graph.rootGraph.id,
+      clonedNodeId
+    ).value
     expect(clonedLayout).toBeDefined()
     expect(clonedLayout!.zIndex).toBeGreaterThan(originalLayout!.zIndex)
   })
@@ -175,13 +188,13 @@ describe('cloned node z-index in Vue renderer', () => {
     nodeA.pos = [100, 100]
     nodeA.size = [200, 100]
     graph.add(nodeA)
-    setZIndex(nodeA.id, 3)
+    setZIndex(graph.rootGraph.id, nodeA.id, 3)
 
     const nodeB = new TestNode()
     nodeB.pos = [400, 100]
     nodeB.size = [200, 100]
     graph.add(nodeB)
-    setZIndex(nodeB.id, 7)
+    setZIndex(graph.rootGraph.id, nodeB.id, 7)
 
     const result = LGraphCanvas.cloneNodes([nodeA, nodeB])
     expect(result).toBeDefined()
@@ -189,8 +202,14 @@ describe('cloned node z-index in Vue renderer', () => {
 
     const clonedA = result!.created[0] as LGraphNode
     const clonedB = result!.created[1] as LGraphNode
-    const layoutA = layoutStore.getNodeLayoutRef(clonedA.id).value!
-    const layoutB = layoutStore.getNodeLayoutRef(clonedB.id).value!
+    const layoutA = layoutStore.getNodeLayoutRef(
+      graph.rootGraph.id,
+      clonedA.id
+    ).value!
+    const layoutB = layoutStore.getNodeLayoutRef(
+      graph.rootGraph.id,
+      clonedB.id
+    ).value!
 
     // Both cloned nodes should be above the highest original (z-index 7)
     expect(layoutA.zIndex).toBeGreaterThan(7)

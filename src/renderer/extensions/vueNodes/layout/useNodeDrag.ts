@@ -48,7 +48,10 @@ function useNodeDragIndividual() {
   let lastPointerY = 0
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
-    const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return
+
+    const layout = toValue(layoutStore.getNodeLayoutRef(rootGraphId, nodeId))
     if (!layout) return
     const position = layout.position ?? { x: 0, y: 0 }
 
@@ -73,7 +76,7 @@ function useNodeDragIndividual() {
         // Skip the current node being dragged
         if (id === nodeId) continue
 
-        const nodeLayout = layoutStore.getNodeLayoutRef(id).value
+        const nodeLayout = layoutStore.getNodeLayoutRef(rootGraphId, id).value
         if (nodeLayout) {
           otherSelectedNodesStartPositions.set(id, { ...nodeLayout.position })
         }
@@ -138,6 +141,9 @@ function useNodeDragIndividual() {
   function updateNodePositions(nodeId: NodeId) {
     if (!dragStartPos || !dragStartMouse) return
 
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return
+
     const mouseDelta = {
       x: lastPointerX - dragStartMouse.x,
       y: lastPointerY - dragStartMouse.y
@@ -176,7 +182,7 @@ function useNodeDragIndividual() {
       }
     }
 
-    mutations.batchMoveNodes(updates)
+    mutations.batchMoveNodes(rootGraphId, updates)
 
     for (const [item, start] of nonNodeStartPositions ?? []) {
       // Absolute target every frame, so a dropped frame cannot leave the item
@@ -215,11 +221,14 @@ function useNodeDragIndividual() {
 
   function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
-    if (shouldSnap(event) && nodeId) {
+    const { rootGraphId } = canvasStore
+    if (shouldSnap(event) && nodeId && rootGraphId) {
       const boundsUpdates: NodeBoundsUpdate[] = []
 
       // Snap main node
-      const currentLayout = toValue(layoutStore.getNodeLayoutRef(nodeId))
+      const currentLayout = toValue(
+        layoutStore.getNodeLayoutRef(rootGraphId, nodeId)
+      )
       if (currentLayout) {
         const currentPos = currentLayout.position
         const snappedPos = applySnapToPosition({ ...currentPos })
@@ -245,7 +254,10 @@ function useNodeDragIndividual() {
         otherSelectedNodesStartPositions.size > 0
       ) {
         for (const otherNodeId of otherSelectedNodesStartPositions.keys()) {
-          const nodeLayout = layoutStore.getNodeLayoutRef(otherNodeId).value
+          const nodeLayout = layoutStore.getNodeLayoutRef(
+            rootGraphId,
+            otherNodeId
+          ).value
           if (nodeLayout) {
             const currentPos = { ...nodeLayout.position }
             const snappedPos = applySnapToPosition(currentPos)
@@ -271,7 +283,7 @@ function useNodeDragIndividual() {
 
       // Apply all snap updates in a single batched transaction
       if (boundsUpdates.length > 0) {
-        layoutStore.batchUpdateNodeBounds(boundsUpdates)
+        layoutStore.batchUpdateNodeBounds(rootGraphId, boundsUpdates)
       }
     }
 
