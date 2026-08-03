@@ -511,7 +511,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows ended state for an inactive paid Personal workspace despite active status', () => {
+  it('keeps billing access in the ended state for an inactive paid Personal workspace', async () => {
+    const user = userEvent.setup()
     mockIsInPersonalWorkspace.value = true
     mockIsActiveSubscription.value = false
     mockBillingStatus.value = 'inactive'
@@ -519,6 +520,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
     expect(
       screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
