@@ -577,7 +577,7 @@ comfyPageFixture.describe(
     )
 
     comfyPageFixture(
-      'keeps a host-only uploaded image resolved after a promoted media rescan',
+      'keeps a host-only option value resolved after a promoted media rescan',
       async ({ comfyPage }) => {
         await loadWorkflowAndOpenErrorsTab(comfyPage, promotedMediaWorkflow)
 

@@ -400,11 +400,11 @@ function dropOutOfScopeMissingMedia(): void {
   const mediaStore = useMissingMediaStore()
   const candidates = mediaStore.missingMediaCandidates
   if (!candidates) return
-  mediaStore.setMissingMedia(
-    candidates.filter((candidate) =>
-      isMissingMediaCandidateScopeActive(app.rootGraph, candidate)
-    )
+  const inScope = candidates.filter((candidate) =>
+    isMissingMediaCandidateScopeActive(app.rootGraph, candidate)
   )
+  if (inScope.length === candidates.length) return
+  mediaStore.setMissingMedia(inScope)
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {

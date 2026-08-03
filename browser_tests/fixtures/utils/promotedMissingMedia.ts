@@ -31,7 +31,7 @@ export async function setPromotedMediaHostOptionsAndValue(
   value: string
 ) {
   await comfyPage.page.evaluate(
-    ({ hostNodeId, leafNodeId, hostWidgetName, leafWidgetName, value }) => {
+    ({ hostNodeId, hostWidgetName, value }) => {
       const host = window.app!.graph.getNodeById(hostNodeId)
       if (!host?.isSubgraphNode()) {
         throw new Error(`Expected subgraph host ${hostNodeId}`)
@@ -39,11 +39,8 @@ export async function setPromotedMediaHostOptionsAndValue(
       const hostWidget = host.widgets.find(
         (widget) => widget.name === hostWidgetName
       )
-      const leafWidget = host.subgraph
-        .getNodeById(leafNodeId)
-        ?.widgets?.find((widget) => widget.name === leafWidgetName)
-      if (!hostWidget || !leafWidget) {
-        throw new Error('Expected promoted host and leaf image widgets')
+      if (!hostWidget) {
+        throw new Error('Expected promoted host image widget')
       }
 
       const hostValues = hostWidget.options.values
@@ -52,7 +49,7 @@ export async function setPromotedMediaHostOptionsAndValue(
       }
       hostWidget.options.values = [...hostValues, value]
     },
-    { hostNodeId, leafNodeId, hostWidgetName, leafWidgetName, value }
+    { hostNodeId, hostWidgetName, value }
   )
   const hostValue = await setPromotedHostWidgetValue(
     comfyPage,
@@ -70,7 +67,7 @@ export async function setPromotedMediaHostOptionsAndValue(
         .getNodeById(leafNodeId)
         ?.widgets?.find((widget) => widget.name === leafWidgetName)
       if (!leafWidget) {
-        throw new Error('Expected promoted host and leaf image widgets')
+        throw new Error('Expected promoted leaf image widget')
       }
       const leafValues = leafWidget.options.values
       return Array.isArray(leafValues) && leafValues.includes(value)

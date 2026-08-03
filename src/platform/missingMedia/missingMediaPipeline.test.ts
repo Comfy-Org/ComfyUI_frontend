@@ -32,7 +32,7 @@ async function startPendingWorkflowLoadMediaVerification(
   ])
   const { verifySpy, resolveVerification } = deferMediaVerification()
 
-  await runMissingMediaPipeline({ graph: rootGraph, silent: true })
+  await runMissingMediaPipeline({ rootGraph, silent: true })
   await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
 
   return resolveVerification

@@ -1536,7 +1536,7 @@ export class ComfyApp {
         })
 
         await runMissingMediaPipeline({
-          graph: this.rootGraph,
+          rootGraph: this.rootGraph,
           silent: silentAssetErrors
         })
       }

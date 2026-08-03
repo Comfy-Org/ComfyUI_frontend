@@ -7,7 +7,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
@@ -365,30 +365,31 @@ export class SubgraphHelper {
   }
 
   async enterSubgraphWithFallback(nodeId: string): Promise<void> {
-    const numericNodeId = Number(nodeId)
-    if (!nodeId.trim() || !Number.isInteger(numericNodeId)) {
-      throw new Error(`Expected numeric subgraph node id, got ${nodeId}`)
+    const targetNodeId = parseNodeId(nodeId)
+    if (!targetNodeId) {
+      throw new Error(`Expected a subgraph node id, got ${nodeId}`)
     }
 
-    const normalizedNodeId = String(numericNodeId)
     const enterButton =
-      this.comfyPage.vueNodes.getSubgraphEnterButton(normalizedNodeId)
+      this.comfyPage.vueNodes.getSubgraphEnterButton(targetNodeId)
     if ((await enterButton.count()) > 0) {
-      await this.comfyPage.vueNodes.enterSubgraph(normalizedNodeId)
+      await this.comfyPage.vueNodes.enterSubgraph(targetNodeId)
     } else {
-      await this.page.evaluate((targetNodeId) => {
+      await this.page.evaluate((id) => {
         const graph = window.app?.canvas.graph
-        const node = graph?.getNodeById(targetNodeId)
+        const node = graph?.getNodeById(id)
         if (!node?.isSubgraphNode()) {
-          throw new Error(`Expected visible subgraph node ${targetNodeId}`)
+          throw new Error(`Expected visible subgraph node ${id}`)
         }
         window.app!.canvas.setGraph(node.subgraph)
-      }, toNodeId(normalizedNodeId))
-      await this.comfyPage.nextFrame()
-      await this.comfyPage.vueNodes.waitForNodes()
+      }, targetNodeId)
     }
 
+    await this.comfyPage.nextFrame()
     await expect.poll(async () => this.isInSubgraph()).toBe(true)
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async isInSubgraph(): Promise<boolean> {

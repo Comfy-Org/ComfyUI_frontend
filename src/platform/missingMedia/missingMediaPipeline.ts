@@ -16,7 +16,8 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 interface RunMissingMediaPipelineOptions {
-  graph: LGraph
+  /** Must be the root graph: candidates are keyed by root-relative execution id. */
+  rootGraph: LGraph
   silent?: boolean
 }
 
@@ -31,15 +32,15 @@ function cacheMediaCandidates(
 }
 
 export async function runMissingMediaPipeline({
-  graph,
+  rootGraph,
   silent = false
 }: RunMissingMediaPipelineOptions): Promise<void> {
   const missingMediaStore = useMissingMediaStore()
   const activeWf = useWorkspaceStore().workflow.activeWorkflow
-  const allCandidates = scanAllMediaCandidates(graph, isCloud)
+  const allCandidates = scanAllMediaCandidates(rootGraph, isCloud)
   // Drop candidates whose enclosing subgraph is muted/bypassed.
   const candidates = allCandidates.filter((candidate) =>
-    isMissingMediaCandidateScopeActive(graph, candidate)
+    isMissingMediaCandidateScopeActive(rootGraph, candidate)
   )
 
   if (!candidates.length) {
@@ -58,7 +59,7 @@ export async function runMissingMediaPipeline({
         if (controller.signal.aborted) return
         // Re-check ancestor after async verification (see model pipeline).
         const confirmed = candidates.filter((candidate) =>
-          isMissingMediaCandidateActive(graph, candidate)
+          isMissingMediaCandidateActive(rootGraph, candidate)
         )
         if (confirmed.length) {
           useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
