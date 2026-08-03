@@ -135,9 +135,27 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(result.CLIPTextEncode.description).toMatch(/^Encodes a text prompt/)
   })
 
-  test('tolerates a def without a category', async () => {
+  test('resolves a def without a category to an empty category', async () => {
     mockDefs(nodeDef({ category: undefined as unknown as string }))
 
-    await expect(comfyApp.getNodeDefs()).resolves.toBeDefined()
+    const result = await comfyApp.getNodeDefs()
+
+    expect(result.TestNode.category).toBe('')
+  })
+
+  test('discards malformed entries inside an otherwise valid response', async () => {
+    vi.mocked(api.getNodeDefs).mockResolvedValue({
+      TestNode: nodeDef({ display_name: 'Good Node' }),
+      NullEntry: null,
+      NumericCategory: { name: 'NumericCategory', category: 1 },
+      NamelessEntry: { category: 'test' },
+      StringEntry: 'nope'
+    } as unknown as Record<string, ComfyNodeDefV1>)
+
+    const result = await comfyApp.getNodeDefs()
+
+    expect(result.TestNode.display_name).toBe('Good Node')
+    expect(result.NumericCategory.category).toBe('')
+    expect(Object.keys(result).sort()).toEqual(['NumericCategory', 'TestNode'])
   })
 })

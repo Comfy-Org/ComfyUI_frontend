@@ -1112,7 +1112,7 @@ export class ComfyApp {
           def.name,
           def.description || undefined
         ),
-        category: (def.category ?? '')
+        category: (typeof def.category === 'string' ? def.category : '')
           .split('/')
           .map((category: string) =>
             st(`nodeCategories.${normalizeI18nKey(category)}`, category)
@@ -1121,13 +1121,23 @@ export class ComfyApp {
       }
     }
 
+    const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
+      typeof value === 'object' &&
+      value !== null &&
+      typeof (value as { name?: unknown }).name === 'string'
+
     const response: unknown = await api.getNodeDefs()
-    const defs: Record<string, ComfyNodeDefV1> =
+    const entries =
       typeof response === 'object' &&
       response !== null &&
       !Array.isArray(response)
-        ? (response as Record<string, ComfyNodeDefV1>)
-        : {}
+        ? Object.entries(response)
+        : []
+    const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
+      entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
+        isNodeDef(entry[1])
+      )
+    )
     setBackendNodeText(Object.values(defs))
     return _.mapValues(defs, (def) => translateNodeDef(def))
   }
