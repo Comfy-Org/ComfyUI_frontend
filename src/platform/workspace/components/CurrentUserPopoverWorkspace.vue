@@ -149,7 +149,7 @@
     >
       <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.managePlan')
+        planAndCreditsLabel
       }}</span>
     </div>
 
@@ -274,8 +274,14 @@ const {
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const isLoadingBalance = isLoading
+
+// Settings only has a plan-management panel on Cloud; elsewhere this entry can
+// only open the Credits panel, so it is labeled for where it actually goes.
+const planAndCreditsLabel = computed(() =>
+  isCloud ? t('subscription.managePlan') : t('credits.credits')
+)
 
 const displayedCredits = computed(() => {
   if (initState.value !== 'ready') return ''

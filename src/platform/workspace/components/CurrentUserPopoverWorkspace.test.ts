@@ -20,7 +20,8 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: false,
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
-  showPricingTable: vi.fn()
+  showPricingTable: vi.fn(),
+  showSettingsDialog: vi.fn()
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -63,7 +64,7 @@ vi.mock(
 )
 
 vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({ show: vi.fn() })
+  useSettingsDialog: () => ({ show: state.showSettingsDialog })
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -250,5 +251,19 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('labels the plan & credits item for the panel it opens off cloud', async () => {
+    const user = userEvent.setup()
+    state.canManageSubscription = true
+    renderComponent('personal', 'owner')
+
+    const menuItem = screen.getByTestId('manage-plan-menu-item')
+    expect(menuItem).toHaveTextContent(enMessages.credits.credits)
+    expect(menuItem).not.toHaveTextContent(enMessages.subscription.managePlan)
+
+    await user.click(menuItem)
+
+    expect(state.showSettingsDialog).toHaveBeenCalledWith('credits')
   })
 })
