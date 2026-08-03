@@ -13,6 +13,7 @@
       </h2>
       <button
         class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        :aria-label="$t('g.close')"
         @click="() => handleClose()"
       >
         <i class="icon-[lucide--x] size-6" />
@@ -52,7 +53,7 @@
     <!-- Amount (USD) / Credits -->
     <div class="flex gap-2 px-8 pt-8">
       <!-- You Pay -->
-      <div class="flex flex-1 flex-col gap-3">
+      <div class="flex flex-1 flex-col gap-3" data-testid="top-up-pay-amount">
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
@@ -124,16 +125,27 @@
     </p>
 
     <div class="flex flex-col gap-8 p-8">
-      <Button
-        :disabled="!isValidAmount || loading || isPolling"
-        :loading="loading || isPolling"
-        variant="primary"
-        size="lg"
-        class="h-10 justify-center"
-        @click="handleBuy"
-      >
-        {{ $t('subscription.addCredits') }}
-      </Button>
+      <div class="flex flex-col gap-2">
+        <Button
+          v-if="topupActionUrl && permissions.canTopUp"
+          variant="primary"
+          size="lg"
+          class="h-10 justify-center"
+          @click="openTopupVerification"
+        >
+          {{ $t('subscription.preview.completeVerification') }}
+        </Button>
+        <Button
+          :disabled="!isValidAmount || loading || isPolling"
+          :loading="loading || isPolling"
+          :variant="topupActionUrl ? 'tertiary' : 'primary'"
+          size="lg"
+          class="h-10 justify-center"
+          @click="handleBuy"
+        >
+          {{ $t('subscription.addCredits') }}
+        </Button>
+      </div>
       <div class="flex items-center justify-center gap-1">
         <a
           :href="pricingUrl"
@@ -157,14 +169,15 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false } = defineProps<{
   isInsufficientCredits?: boolean
@@ -176,10 +189,15 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance } = useBillingContext()
+const { fetchBalance, fetchStatus, topup } = useBillingContext()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
+const { permissions } = useWorkspaceUI()
 
 const billingOperationStore = useBillingOperationStore()
-const isPolling = computed(() => billingOperationStore.hasPendingOperations)
+const isPolling = computed(() => billingOperationStore.isAddingCredits)
+const topupActionUrl = computed(
+  () => billingOperationStore.topupActionOperation?.actionUrl ?? null
+)
 
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
@@ -241,6 +259,11 @@ function handlePresetClick(amount: number) {
   selectedPreset.value = amount
 }
 
+function openTopupVerification() {
+  if (!topupActionUrl.value) return
+  window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
+}
+
 function handleClose(clearTracking = true) {
   if (clearTracking) {
     clearTopupTracking()
@@ -249,27 +272,47 @@ function handleClose(clearTracking = true) {
 }
 
 async function handleBuy() {
-  if (loading.value || !isValidAmount.value) return
+  if (
+    loading.value ||
+    !isValidAmount.value ||
+    (shouldUseWorkspaceBilling.value && !permissions.value.canTopUp)
+  ) {
+    return
+  }
 
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
 
     const amountCents = payAmount.value * 100
-    const response = await workspaceApi.createTopup(amountCents)
+    const response = await topup(amountCents)
+    if (!response) return
 
     if (response.status === 'completed') {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: response.billing_op_id
+      })
       toast.add({
         severity: 'success',
         summary: t('credits.topUp.purchaseSuccess'),
         life: 5000
       })
-      await fetchBalance()
+      await Promise.allSettled([fetchBalance(), fetchStatus()])
       handleClose(false)
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
       billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: response.billing_op_id,
+        failure_category: 'unknown'
+      })
       toast.add({
         severity: 'error',
         summary: t('credits.topUp.purchaseError'),
@@ -281,6 +324,12 @@ async function handleBuy() {
 
     const errorMessage =
       error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'unknown'
+    })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.purchaseError'),

@@ -171,6 +171,23 @@ describe('useComfyHubService', () => {
     })
   })
 
+  it('fetches tag labels from /hub/labels?type=tag', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        labels: [
+          { name: 'video', display_name: 'Video', type: 'tag' },
+          { name: 'text-to-image', display_name: 'Text to Image', type: 'tag' }
+        ]
+      })
+    )
+
+    const service = useComfyHubService()
+    const tags = await service.fetchTagLabels()
+
+    expect(mockFetchApi).toHaveBeenCalledWith('/hub/labels?type=tag')
+    expect(tags).toEqual(['Video', 'Text to Image'])
+  })
+
   it('fetches current profile from /hub/profiles/me', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({

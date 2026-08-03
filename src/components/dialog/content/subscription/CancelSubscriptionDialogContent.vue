@@ -45,28 +45,61 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
+import { useTelemetry } from '@/platform/telemetry'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogStore } from '@/stores/dialogStore'
+import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 
-const props = defineProps<{
+const { cancelAt, flowAlreadyOpened = false } = defineProps<{
   cancelAt?: string
+  flowAlreadyOpened?: boolean
 }>()
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()
 const toast = useToast()
-const { cancelSubscription, fetchStatus, subscription } = useBillingContext()
+const { cancelSubscription, fetchStatus, subscription, tier } =
+  useBillingContext()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
+const { permissions } = useWorkspaceUI()
+const telemetry = useTelemetry()
 
 const isLoading = ref(false)
+const didCancelSucceed = ref(false)
+
+function cancellationMetadata() {
+  return getSubscriptionCancellationMetadata({
+    cancelAt,
+    duration: subscription.value?.duration,
+    endDate: subscription.value?.endDate,
+    tier: tier.value
+  })
+}
+
+onMounted(() => {
+  if (flowAlreadyOpened) return
+  telemetry?.trackSubscriptionCancellation(
+    'flow_opened',
+    cancellationMetadata()
+  )
+})
+
+onUnmounted(() => {
+  if (didCancelSucceed.value || isLoading.value) return
+  telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
+})
 
 const formattedEndDate = computed(() => {
-  const dateStr = props.cancelAt ?? subscription.value?.endDate
-  if (!dateStr) return t('subscription.cancelDialog.endOfBillingPeriod')
-  const date = new Date(dateStr)
+  const date = parseIsoDateSafe(cancelAt ?? subscription.value?.endDate)
+  if (!date) return t('subscription.cancelDialog.endOfBillingPeriod')
   return date.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -84,24 +117,43 @@ function onClose() {
 }
 
 async function onConfirmCancel() {
+  if (
+    shouldUseWorkspaceBilling.value &&
+    !permissions.value.canManageSubscriptionLifecycle
+  ) {
+    return
+  }
+
+  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
   isLoading.value = true
   try {
     await cancelSubscription()
-    await fetchStatus()
-    dialogStore.closeDialog({ key: 'cancel-subscription' })
-    toast.add({
-      severity: 'success',
-      summary: t('subscription.cancelSuccess'),
-      life: 5000
-    })
   } catch (error) {
+    const errorMessage = getErrorMessage(error)
+    if (!shouldUseWorkspaceBilling.value) {
+      telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
+    }
     toast.add({
       severity: 'error',
       summary: t('subscription.cancelDialog.failed'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+      detail: errorMessage ?? t('g.unknownError')
     })
-  } finally {
     isLoading.value = false
+    return
   }
+
+  didCancelSucceed.value = true
+  try {
+    await fetchStatus()
+  } catch {
+    // Cancellation already succeeded; stale local subscription status should not report failure.
+  }
+  dialogStore.closeDialog({ key: 'cancel-subscription' })
+  toast.add({
+    severity: 'success',
+    summary: t('subscription.cancelSuccess'),
+    life: 5000
+  })
+  isLoading.value = false
 }
 </script>

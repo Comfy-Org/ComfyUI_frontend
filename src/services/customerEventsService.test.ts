@@ -8,7 +8,8 @@ import {
 
 // Hoist the mocks to avoid hoisting issues
 const mockAxiosInstance = vi.hoisted(() => ({
-  get: vi.fn()
+  get: vi.fn(),
+  interceptors: { response: { use: vi.fn() } }
 }))
 
 const mockAuthStore = vi.hoisted(() => ({
@@ -32,7 +33,8 @@ vi.mock('@/stores/authStore', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
-  d: mockI18n.d
+  d: mockI18n.d,
+  t: (key: string) => key
 }))
 
 vi.mock('@/utils/typeGuardUtil', () => ({
@@ -197,16 +199,19 @@ describe('useCustomerEventsService', () => {
   })
 
   describe('formatEventType', () => {
-    it('should format known event types correctly', () => {
-      expect(service.formatEventType(EventType.CREDIT_ADDED)).toBe(
-        'Credits Added'
-      )
-      expect(service.formatEventType(EventType.ACCOUNT_CREATED)).toBe(
-        'Account Created'
-      )
-      expect(service.formatEventType(EventType.API_USAGE_COMPLETED)).toBe(
-        'API Usage'
-      )
+    const expectedByType: Record<string, string> = {
+      credit_added: 'credits.eventTypes.creditAdded',
+      topup_completed: 'credits.eventTypes.creditAdded',
+      account_created: 'credits.eventTypes.accountCreated',
+      api_usage_completed: 'credits.eventTypes.apiUsage',
+      gpu_usage: 'credits.eventTypes.gpuUsage',
+      api_node_usage: 'credits.eventTypes.apiNodeUsage'
+    }
+
+    it('maps known legacy and unified event types to expected i18n keys', () => {
+      for (const [eventType, expectedKey] of Object.entries(expectedByType)) {
+        expect(service.formatEventType(eventType)).toBe(expectedKey)
+      }
     })
 
     it('should return the original string for unknown event types', () => {
@@ -221,6 +226,15 @@ describe('useCustomerEventsService', () => {
       expect(service.getEventSeverity(EventType.API_USAGE_COMPLETED)).toBe(
         'warning'
       )
+    })
+
+    it('returns success for the unified topup_completed event', () => {
+      expect(service.getEventSeverity('topup_completed')).toBe('success')
+    })
+
+    it('returns warning for unified usage events', () => {
+      expect(service.getEventSeverity('gpu_usage')).toBe('warning')
+      expect(service.getEventSeverity('api_node_usage')).toBe('warning')
     })
 
     it('should return default severity for unknown event types', () => {

@@ -4,24 +4,14 @@ import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
 import { syncLayoutStoreNodeBoundsFromGraph } from './syncLayoutStoreFromGraph'
 
 function createGraph(nodes: LGraphNode[]): LGraph {
   return {
     nodes
   } as LGraph
-}
-
-function createNode(
-  id: number,
-  pos: [number, number],
-  size: [number, number]
-): LGraphNode {
-  return {
-    id,
-    pos,
-    size
-  } as LGraphNode
 }
 
 describe('syncLayoutStoreNodeBoundsFromGraph', () => {
@@ -38,8 +28,8 @@ describe('syncLayoutStoreNodeBoundsFromGraph', () => {
       .mockImplementation(() => {})
 
     const graph = createGraph([
-      createNode(1, [100, 200], [320, 140]),
-      createNode(2, [450, 300], [225, 96])
+      createMockLGraphNode({ id: '1', pos: [100, 200], size: [320, 140] }),
+      createMockLGraphNode({ id: '2', pos: [450, 300], size: [225, 96] })
     ])
 
     syncLayoutStoreNodeBoundsFromGraph(graph)
@@ -71,7 +61,9 @@ describe('syncLayoutStoreNodeBoundsFromGraph', () => {
       .spyOn(layoutStore, 'batchUpdateNodeBounds')
       .mockImplementation(() => {})
 
-    const graph = createGraph([createNode(1, [100, 200], [320, 140])])
+    const graph = createGraph([
+      createMockLGraphNode({ id: '1', pos: [100, 200], size: [320, 140] })
+    ])
 
     syncLayoutStoreNodeBoundsFromGraph(graph)
 

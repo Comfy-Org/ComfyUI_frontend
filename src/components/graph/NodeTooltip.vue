@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="tooltipText"
+    v-show="tooltipText"
     ref="tooltipRef"
     class="node-tooltip"
     :style="{ left, top }"
@@ -13,7 +13,7 @@
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref } from 'vue'
 
-import { st } from '@/i18n'
+import { stRaw } from '@/i18n'
 import {
   LiteGraph,
   isOverNodeInput,
@@ -34,7 +34,8 @@ const left = ref<string>()
 const top = ref<string>()
 
 function hideTooltip() {
-  return (tooltipText.value = '')
+  if (!tooltipText.value) return
+  tooltipText.value = ''
 }
 
 async function showTooltip(tooltip: string | null | undefined) {
@@ -83,7 +84,7 @@ function onIdle() {
   )
   if (inputSlot !== -1) {
     const inputName = node.inputs[inputSlot].name
-    const translatedTooltip = st(
+    const translatedTooltip = stRaw(
       `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(inputName)}.tooltip`,
       nodeDef?.inputs[inputName]?.tooltip ?? ''
     )
@@ -97,7 +98,7 @@ function onIdle() {
     [0, 0]
   )
   if (outputSlot !== -1) {
-    const translatedTooltip = st(
+    const translatedTooltip = stRaw(
       `nodeDefs.${normalizeI18nKey(node.type ?? '')}.outputs.${outputSlot}.tooltip`,
       nodeDef?.outputs[outputSlot]?.tooltip ?? ''
     )
@@ -107,7 +108,7 @@ function onIdle() {
   const widget = comfyApp.canvas.getWidgetAtCursor()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !isDOMWidget(widget)) {
-    const translatedTooltip = st(
+    const translatedTooltip = stRaw(
       `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(widget.name)}.tooltip`,
       nodeDef?.inputs[widget.name]?.tooltip ?? ''
     )

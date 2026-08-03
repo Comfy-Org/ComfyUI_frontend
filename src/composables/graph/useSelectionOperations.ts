@@ -47,7 +47,7 @@ export function useSelectionOperations() {
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
   const duplicateSelection = () => {
@@ -73,7 +73,7 @@ export function useSelectionOperations() {
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
   const deleteSelection = () => {
@@ -92,7 +92,7 @@ export function useSelectionOperations() {
     canvas.setDirty(true, true)
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
   const renameSelection = async () => {
@@ -122,7 +122,7 @@ export function useSelectionOperations() {
           const titledItem = item as { title: string }
           titledItem.title = newTitle
           app.canvas.setDirty(true, true)
-          workflowStore.activeWorkflow?.changeTracker?.checkState()
+          workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
         }
       }
       return
@@ -145,7 +145,7 @@ export function useSelectionOperations() {
           }
         })
         app.canvas.setDirty(true, true)
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
       }
       return
     }

@@ -4,13 +4,10 @@ import { computed } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 
-import { useAppSetDefaultView } from './useAppSetDefaultView'
-
 const BUILDER_STEPS = [
   'builder:inputs',
   'builder:outputs',
-  'builder:arrange',
-  'setDefaultView'
+  'builder:arrange'
 ] as const
 
 export type BuilderStepId = (typeof BUILDER_STEPS)[number]
@@ -19,10 +16,8 @@ const ARRANGE_INDEX = BUILDER_STEPS.indexOf('builder:arrange')
 
 export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
   const { mode, isBuilderMode, setMode } = useAppMode()
-  const { settingView, showDialog } = useAppSetDefaultView()
 
   const activeStep = computed<BuilderStepId>(() => {
-    if (settingView.value) return 'setDefaultView'
     if (isBuilderMode.value) {
       return mode.value as BuilderStepId
     }
@@ -47,23 +42,14 @@ export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
       activeStep.value === 'builder:outputs'
   )
 
-  function navigateToStep(stepId: BuilderStepId) {
-    if (stepId === 'setDefaultView') {
-      setMode('builder:arrange')
-      showDialog()
-    } else {
-      setMode(stepId)
-    }
-  }
-
   function goBack() {
     if (isFirstStep.value) return
-    navigateToStep(BUILDER_STEPS[activeStepIndex.value - 1])
+    setMode(BUILDER_STEPS[activeStepIndex.value - 1])
   }
 
   function goNext() {
     if (isLastStep.value) return
-    navigateToStep(BUILDER_STEPS[activeStepIndex.value + 1])
+    setMode(BUILDER_STEPS[activeStepIndex.value + 1])
   }
 
   return {
@@ -72,7 +58,7 @@ export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
     isFirstStep,
     isLastStep,
     isSelectStep,
-    navigateToStep,
+    navigateToStep: setMode,
     goBack,
     goNext
   }

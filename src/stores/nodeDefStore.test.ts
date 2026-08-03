@@ -2,6 +2,13 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
@@ -328,6 +335,59 @@ describe('useNodeDefStore', () => {
       // allNodeDefsByName includes all
       expect(store.allNodeDefsByName).toHaveProperty('Normal')
       expect(store.allNodeDefsByName).toHaveProperty('Deprecated')
+    })
+  })
+
+  describe('subgraph widget input specs', () => {
+    function setupPromotedPrompt(nodeDef: ComfyNodeDef): SubgraphNode {
+      store.updateNodeDefs([nodeDef])
+      const subgraph = createTestSubgraph()
+      const host = createTestSubgraphNode(subgraph)
+      const graph = host.graph as LGraph
+      graph.add(host)
+
+      const interior = new LGraphNode('PromptNode', 'PromptNode')
+      const input = interior.addInput('prompt', 'STRING')
+      const widget = interior.addWidget(
+        'text',
+        'prompt',
+        'current edited value',
+        () => undefined
+      )
+      input.widget = { name: widget.name }
+      subgraph.add(interior)
+      promoteValueWidgetViaSubgraphInput(host, interior, widget)
+      return host
+    }
+
+    it('resolves the interior node definition spec, not the current value', () => {
+      const host = setupPromotedPrompt(
+        createMockNodeDef({
+          name: 'PromptNode',
+          input: {
+            required: { prompt: ['STRING', { default: 'real default' }] }
+          }
+        })
+      )
+
+      expect(store.getInputSpecForWidget(host, 'prompt')).toMatchObject({
+        name: 'prompt',
+        type: 'STRING',
+        default: 'real default'
+      })
+    })
+
+    it('does not fabricate a default from the current promoted value', () => {
+      const host = setupPromotedPrompt(
+        createMockNodeDef({
+          name: 'PromptNode',
+          input: { required: { prompt: ['STRING', {}] } }
+        })
+      )
+
+      const spec = store.getInputSpecForWidget(host, 'prompt')
+      expect(spec?.type).toBe('STRING')
+      expect(spec?.default).toBeUndefined()
     })
   })
 

@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import HeroSection from '../../components/cloud-nodes/HeroSection.vue'
+import PackGridSection from '../../components/cloud-nodes/PackGridSection.vue'
+import { t } from '../../i18n/translations'
+import { loadPacksForBuild } from '../../utils/cloudNodes.build'
+import {
+  absoluteUrl,
+  itemListNode,
+  jsonLdId,
+  pageContext,
+} from '../../utils/jsonLd'
+
+const packs = await loadPacksForBuild()
+
+const title = t('cloudNodes.meta.title', 'en')
+const description = t('cloudNodes.meta.description', 'en')
+const { url, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const packList = itemListNode(
+  url,
+  title,
+  packs.map((pack) => ({
+    name: pack.displayName,
+    url: absoluteUrl(Astro.site, `/cloud/supported-nodes/${pack.id}`),
+  })),
+)
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  pageType="CollectionPage"
+  mainEntityId={jsonLdId(url, 'itemlist')}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
+    { name: t('breadcrumb.supportedNodes', locale) },
+  ]}
+  extraJsonLd={[packList]}
+>
+  <HeroSection client:visible />
+  <PackGridSection packs={packs} client:visible />
+</BaseLayout>

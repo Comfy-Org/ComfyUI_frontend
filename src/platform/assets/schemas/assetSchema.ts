@@ -1,15 +1,18 @@
+import { zListAssetsResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 // Zod schemas for asset API validation matching ComfyUI Assets REST API spec
 const zAsset = z.object({
   id: z.string(),
   name: z.string(),
-  asset_hash: z.string().nullish(),
+  hash: z.string().nullish(),
   size: z.number().optional(), // TBD: Will be provided by history API in the future
   mime_type: z.string().nullish(),
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
   display_name: z.string().optional(),
+  /** Path within the model's category folder, i.e. the value a loader widget expects. */
+  loader_path: z.string().nullish(),
   preview_url: z.string().optional(),
   thumbnail_url: z.string().optional(),
   created_at: z.string().optional(),
@@ -20,16 +23,11 @@ const zAsset = z.object({
   user_metadata: z.record(z.unknown()).optional() // API allows arbitrary key-value pairs
 })
 
-const zAssetResponse = z.object({
-  assets: z.array(zAsset).optional(),
-  total: z.number().optional(),
-  has_more: z.boolean().optional()
-})
-
-const zModelFolder = z.object({
-  name: z.string(),
-  folders: z.array(z.string())
-})
+const zAssetResponse = zListAssetsResponse
+  .pick({ total: true, has_more: true, next_cursor: true })
+  .extend({
+    assets: z.array(zAsset)
+  })
 
 // Zod schema for ModelFile to align with interface
 const zModelFile = z.object({
@@ -72,25 +70,42 @@ const zAsyncUploadResponse = z.discriminatedUnion('type', [
   z.object({ type: z.literal('async'), task: zAsyncUploadTask })
 ])
 
-// Filename validation schema
+// Filename validation schema. Trim runs FIRST so the anchored checks see the
+// trimmed value — trailing-position trim let ' /etc/passwd' bypass the
+// absolute-path block.
 export const assetFilenameSchema = z
   .string()
+  .trim()
   .min(1, 'Filename cannot be empty')
   .regex(/^[^\\:*?"<>|]+$/, 'Invalid filename characters') // Allow forward slashes, block backslashes and other unsafe chars
-  .regex(/^(?!\/|.*\.\.)/, 'Path must not start with / or contain ..') // Prevent absolute paths and directory traversal
-  .trim()
+  .regex(/^(?!\/)/, 'Path must not be absolute')
+  // Traversal check is segment-aware: `..` as a whole path segment is
+  // blocked, while double dots inside a filename (`flux..v2.safetensors`)
+  // stay valid.
+  .refine(
+    (value) => !value.split('/').includes('..'),
+    'Path must not contain ".." segments'
+  )
 
 // Export schemas following repository patterns
 export const assetItemSchema = zAsset
 export const assetResponseSchema = zAssetResponse
 export const asyncUploadResponseSchema = zAsyncUploadResponse
 
+/**
+ * Identifier for a single asset record.
+ *
+ * Backed by `AssetItem.id` which the API serialises as a string. This alias
+ * names that primitive at use sites (services, stores, composables) without
+ * changing structural typing.
+ */
+export type AssetId = string
+
 // Export types derived from Zod schemas
 export type AssetItem = z.infer<typeof zAsset>
 export type AssetResponse = z.infer<typeof zAssetResponse>
 export type AssetMetadata = z.infer<typeof zAssetMetadata>
 export type AsyncUploadResponse = z.infer<typeof zAsyncUploadResponse>
-export type ModelFolder = z.infer<typeof zModelFolder>
 export type ModelFile = z.infer<typeof zModelFile>
 
 /** Payload for updating an asset via PUT /assets/:id */
@@ -122,4 +137,10 @@ export type TagsOperationResult = z.infer<typeof tagsOperationResultSchema>
 export interface ModelFolderInfo {
   name: string
   folders: string[]
+  /**
+   * The folder's raw registered extension allowlist from
+   * `/experiment/models`. An empty array means match-all; absent on older
+   * backends.
+   */
+  extensions?: string[]
 }

@@ -12,15 +12,14 @@ export class ControlsManager implements ControlsManagerInterface {
   private camera: THREE.Camera
 
   constructor(
-    renderer: THREE.WebGLRenderer,
+    interactionElement: HTMLElement,
     camera: THREE.Camera,
     eventManager: EventManagerInterface
   ) {
     this.eventManager = eventManager
     this.camera = camera
 
-    const container = renderer.domElement.parentElement || renderer.domElement
-    this.controls = new OrbitControls(camera, container)
+    this.controls = new OrbitControls(camera, interactionElement)
     this.controls.enableDamping = true
   }
 
@@ -63,6 +62,15 @@ export class ControlsManager implements ControlsManagerInterface {
     camera.position.copy(position)
     this.controls.update()
   }
+
+  detach(): void {
+    this.controls.enabled = false
+  }
+
+  attach(): void {
+    this.controls.enabled = true
+  }
+
   reset(): void {
     this.controls.target.set(0, 0, 0)
     this.controls.update()

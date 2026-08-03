@@ -6,15 +6,19 @@
       "customSyntax": "postcss-html"
     }
   ],
+  "languageOptions": {
+    "syntax": {
+      "types": {
+        "radial-gradient()": "| <any-value>"
+      }
+    }
+  },
   "rules": {
     "import-notation": "string",
     "font-family-no-missing-generic-family-keyword": true,
     "declaration-property-value-no-unknown": [
       true,
       {
-        "typesSyntax": {
-          "radial-gradient()": "| <any-value>"
-        },
         "ignoreProperties": {
           "speak": ["none"],
           "app-region": ["drag", "no-drag"],
@@ -67,6 +71,7 @@
   "ignoreFiles": [
     "node_modules/**",
     "dist/**",
+    "**/dist/**",
     "playwright-report/**",
     "public/**",
     "src/lib/litegraph/**"

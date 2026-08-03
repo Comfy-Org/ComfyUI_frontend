@@ -7,12 +7,14 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
 import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -27,13 +29,16 @@ const CATEGORY_ICONS: Record<string, string> = {
   keybinding: 'icon-[lucide--keyboard]',
   LiteGraph: 'icon-[lucide--workflow]',
   'Mask Editor': 'icon-[lucide--pen-tool]',
+  Members: 'icon-[lucide--users]',
   Other: 'icon-[lucide--ellipsis]',
-  PlanCredits: 'icon-[lucide--credit-card]',
+  PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
   subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
-  workspace: 'icon-[lucide--building-2]'
+  workspace: 'icon-[lucide--building-2]',
+  'workspace-allowlist': 'icon-[lucide--list-checks]',
+  'workspace-members': 'icon-[lucide--users]'
 }
 
 interface SettingPanelItem {
@@ -53,7 +58,8 @@ export function useSettingUI(
 
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const { isActiveSubscription } = useBillingContext()
+  const { isActiveSubscription, type: billingType } = useBillingContext()
+  const { workspaceRole } = useWorkspaceUI()
 
   const teamWorkspacesEnabled = computed(
     () => isCloud && flags.teamWorkspacesEnabled
@@ -133,7 +139,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/LegacyCreditsPanel.vue')
+      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
     )
   }
 
@@ -157,6 +163,13 @@ export function useSettingUI(
     return isActiveSubscription.value
   })
 
+  const shouldShowLegacyPlanCreditsPanel = computed(
+    () =>
+      isLoggedIn.value &&
+      billingType.value === 'legacy' &&
+      shouldShowPlanCreditsPanel.value
+  )
+
   const userPanel: SettingPanelItem = {
     node: {
       key: 'user',
@@ -168,7 +181,6 @@ export function useSettingUI(
     )
   }
 
-  // Workspace panel: only available on cloud with team workspaces enabled
   const workspacePanel: SettingPanelItem = {
     node: {
       key: 'workspace',
@@ -181,9 +193,64 @@ export function useSettingUI(
     )
   }
 
+  const workspaceSettingsPanelComponent = defineAsyncComponent(
+    () =>
+      import('@/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
+  )
+
+  const planCreditsPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace',
+      label: 'PlanCredits',
+      children: []
+    },
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'planCredits' }
+  }
+
+  const membersPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-members',
+      label: 'Members',
+      children: []
+    },
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'members' }
+  }
+
+  const allowlistPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-allowlist',
+      label: 'Allowlist',
+      children: []
+    },
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'allowlist' }
+  }
+
   const shouldShowWorkspacePanel = computed(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
   )
+  const shouldShowWorkspaceAllowlist = computed(
+    () =>
+      shouldShowWorkspacePanel.value &&
+      flags.partnerNodeGovernanceEnabled &&
+      workspaceRole.value === 'owner'
+  )
+
+  const billingControlsEnabled = computed(
+    () => isAuthenticatedConfigLoaded.value && flags.billingControlEnabled
+  )
+
+  const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
+    if (!shouldShowWorkspacePanel.value) return []
+    const workspacePanels = billingControlsEnabled.value
+      ? [planCreditsPanel, membersPanel]
+      : [workspacePanel]
+    return shouldShowWorkspaceAllowlist.value
+      ? [...workspacePanels, allowlistPanel]
+      : workspacePanels
+  })
 
   const secretsPanel: SettingPanelItem = {
     node: {
@@ -238,7 +305,7 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
-      ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
+      ...visibleWorkspacePanels.value,
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
@@ -288,8 +355,11 @@ export function useSettingUI(
       key: 'workspace',
       label: 'Workspace',
       children: [
-        ...(shouldShowWorkspacePanel.value ? [workspacePanel.node] : []),
-        ...(isLoggedIn.value &&
+        ...visibleWorkspacePanels.value.map((panel) => panel.node),
+        // The legacy per-account Credits panel is redundant once the workspace
+        // Plan & Credits panel is present, which now owns the credit balance.
+        ...(!billingControlsEnabled.value &&
+        isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
           : [])
@@ -332,9 +402,7 @@ export function useSettingUI(
       label: 'Account',
       children: [
         userPanel.node,
-        ...(isLoggedIn.value &&
-        shouldShowPlanCreditsPanel.value &&
-        subscriptionPanel
+        ...(shouldShowLegacyPlanCreditsPanel.value && subscriptionPanel
           ? [subscriptionPanel.node]
           : []),
         ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
@@ -380,9 +448,11 @@ export function useSettingUI(
           (child as SettingTreeNode & { translatedLabel?: string })
             .translatedLabel ?? child.label,
         icon:
-          CATEGORY_ICONS[child.key] ??
-          CATEGORY_ICONS[child.label] ??
-          'icon-[lucide--plug]'
+          child.key === 'workspace' && billingControlsEnabled.value
+            ? CATEGORY_ICONS.PlanCredits
+            : (CATEGORY_ICONS[child.key] ??
+              CATEGORY_ICONS[child.label] ??
+              'icon-[lucide--plug]')
       }))
     }))
   )

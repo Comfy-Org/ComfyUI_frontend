@@ -1,97 +1,69 @@
 <template>
   <div
-    class="flex w-full max-w-[512px] flex-col rounded-2xl border border-border-default bg-base-background"
+    class="flex w-full max-w-lg flex-col rounded-2xl border border-border-default bg-base-background"
   >
-    <!-- Header -->
     <div
       class="flex h-12 items-center justify-between border-b border-border-default px-4"
     >
       <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{
-          step === 'email'
-            ? $t('workspacePanel.inviteMemberDialog.title')
-            : $t('workspacePanel.inviteMemberDialog.linkStep.title')
-        }}
+        {{ $t('workspacePanel.inviteMemberDialog.title') }}
       </h2>
       <button
         class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
-        @click="onCancel"
+        @click="onClose"
       >
         <i class="pi pi-times size-4" />
       </button>
     </div>
 
-    <!-- Body: Email Step -->
-    <template v-if="step === 'email'">
-      <div class="flex flex-col gap-4 p-4">
-        <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.inviteMemberDialog.message') }}
-        </p>
-        <input
-          v-model="email"
-          type="email"
-          class="focus:ring-secondary-foreground w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
+    <template v-if="step === 'form'">
+      <div class="flex flex-col gap-2 p-4">
+        <InviteMembersForm
+          ref="inviteForm"
+          auto-focus
+          :show-submit="false"
+          source="settings_members"
+          :submit-label="$t('workspacePanel.invite')"
           :placeholder="$t('workspacePanel.inviteMemberDialog.placeholder')"
+          :max-seats="invitableSeats"
+          tags-input-class="min-h-10 w-full bg-secondary-background"
+          @submitted="onInvited"
         />
       </div>
 
-      <!-- Footer: Email Step -->
       <div class="flex items-center justify-end gap-4 p-4">
-        <Button variant="muted-textonly" @click="onCancel">
+        <Button variant="muted-textonly" @click="onClose">
           {{ $t('g.cancel') }}
         </Button>
         <Button
-          variant="primary"
+          variant="secondary"
           size="lg"
           :loading
-          :disabled="!isValidEmail"
-          @click="onCreateLink"
+          :disabled="!canSubmit"
+          @click="handleInvite"
         >
-          {{ $t('workspacePanel.inviteMemberDialog.createLink') }}
+          {{ $t('workspacePanel.invite') }}
         </Button>
       </div>
     </template>
 
-    <!-- Body: Link Step -->
     <template v-else>
-      <div class="flex flex-col gap-4 p-4">
-        <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.inviteMemberDialog.linkStep.message') }}
+      <div class="p-4">
+        <p class="m-0 text-sm/5 text-muted-foreground">
+          {{
+            $t(
+              'workspacePanel.inviteMemberDialog.invitedMessage',
+              { emails: invitedEmails.join(', ') },
+              invitedEmails.length
+            )
+          }}
         </p>
-        <p class="m-0 text-sm font-medium text-base-foreground">
-          {{ email }}
-        </p>
-        <div class="relative">
-          <input
-            :value="generatedLink"
-            readonly
-            class="w-full cursor-pointer rounded-lg border border-border-default bg-transparent px-3 py-2 pr-10 text-sm text-base-foreground focus:outline-none"
-            @click="onSelectLink"
-          />
-          <div
-            class="absolute top-2.5 right-3 cursor-pointer"
-            @click="onCopyLink"
-          >
-            <i
-              :class="
-                cn(
-                  'pi size-4',
-                  justCopied ? 'pi-check text-green-500' : 'pi-copy'
-                )
-              "
-            />
-          </div>
-        </div>
       </div>
 
-      <!-- Footer: Link Step -->
-      <div class="flex items-center justify-end gap-4 p-4">
-        <Button variant="muted-textonly" @click="onCancel">
-          {{ $t('g.cancel') }}
-        </Button>
-        <Button variant="primary" size="lg" @click="onCopyLink">
-          {{ $t('workspacePanel.inviteMemberDialog.linkStep.copyLink') }}
+      <div class="flex items-center justify-end p-4">
+        <Button variant="secondary" size="lg" @click="onClose">
+          {{ $t('g.close') }}
         </Button>
       </div>
     </template>
@@ -99,74 +71,39 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
+import {
+  MAX_WORKSPACE_MEMBERS,
+  useTeamWorkspaceStore
+} from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-const toast = useToast()
-const { t } = useI18n()
 const workspaceStore = useTeamWorkspaceStore()
 
-const loading = ref(false)
-const email = ref('')
-const step = ref<'email' | 'link'>('email')
-const generatedLink = ref('')
-const justCopied = ref(false)
+const step = ref<'form' | 'invited'>('form')
+const invitedEmails = ref<string[]>([])
+const inviteForm = ref<InstanceType<typeof InviteMembersForm>>()
 
-const isValidEmail = computed(() => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email.value)
-})
+const invitableSeats = computed(() =>
+  Math.max(0, MAX_WORKSPACE_MEMBERS - workspaceStore.totalMemberSlots)
+)
+const canSubmit = computed(() => inviteForm.value?.canSubmit ?? false)
+const loading = computed(() => inviteForm.value?.loading ?? false)
 
-function onCancel() {
+function onClose() {
   dialogStore.closeDialog({ key: 'invite-member' })
 }
 
-async function onCreateLink() {
-  if (!isValidEmail.value) return
-  loading.value = true
-  try {
-    generatedLink.value = await workspaceStore.createInviteLink(email.value)
-    step.value = 'link'
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.inviteMemberDialog.linkCopyFailed'),
-      detail: error instanceof Error ? error.message : undefined
-    })
-  } finally {
-    loading.value = false
-  }
+function handleInvite() {
+  void inviteForm.value?.submit()?.catch(console.error)
 }
 
-async function onCopyLink() {
-  try {
-    await navigator.clipboard.writeText(generatedLink.value)
-    justCopied.value = true
-    setTimeout(() => {
-      justCopied.value = false
-    }, 759)
-    toast.add({
-      severity: 'success',
-      summary: t('workspacePanel.inviteMemberDialog.linkCopied'),
-      life: 2000
-    })
-  } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.inviteMemberDialog.linkCopyFailed')
-    })
-  }
-}
-
-function onSelectLink(event: Event) {
-  const input = event.target as HTMLInputElement
-  input.select()
+function onInvited(emails: string[]) {
+  invitedEmails.value = emails
+  step.value = 'invited'
 }
 </script>

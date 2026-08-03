@@ -66,7 +66,7 @@ class MaintenanceTaskRunner {
       this.error = undefined
       return true
     } catch (error) {
-      this.error = (error as Error)?.message
+      this.error = error instanceof Error ? error.message : String(error)
       throw error
     } finally {
       this.executing = false

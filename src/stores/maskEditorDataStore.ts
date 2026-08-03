@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 
 export interface ImageRef {
   filename: string

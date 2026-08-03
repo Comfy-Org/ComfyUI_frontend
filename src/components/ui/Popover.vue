@@ -8,8 +8,11 @@ import {
   PopoverTrigger
 } from 'reka-ui'
 
+import { ref } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
@@ -26,10 +29,13 @@ const {
   to?: string | HTMLElement
   showArrow?: boolean
 }>()
+
+const open = ref(false)
+const contentStyle = useModalLiftedZIndex(open)
 </script>
 
 <template>
-  <PopoverRoot v-slot="{ close }">
+  <PopoverRoot v-slot="{ close }" v-model:open="open">
     <PopoverTrigger as-child>
       <slot name="button">
         <Button size="icon">
@@ -43,6 +49,7 @@ const {
         :side-offset="5"
         :collision-padding="10"
         v-bind="$attrs"
+        :style="contentStyle"
         class="data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade z-1700 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[transform,opacity]"
       >
         <slot :close>

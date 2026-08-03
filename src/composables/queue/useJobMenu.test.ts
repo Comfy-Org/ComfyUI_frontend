@@ -68,12 +68,10 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   ComfyWorkflow: class {}
 }))
 
-const interruptMock = vi.fn()
-const deleteItemMock = vi.fn()
+const cancelJobMock = vi.fn()
 vi.mock('@/scripts/api', () => ({
   api: {
-    interrupt: (runningJobId: string | null) => interruptMock(runningJobId),
-    deleteItem: (type: string, id: string) => deleteItemMock(type, id)
+    cancelJob: (jobId: string) => cancelJobMock(jobId)
   }
 }))
 
@@ -128,12 +126,6 @@ vi.mock('@/stores/executionStore', () => ({
 const getJobWorkflowMock = vi.fn()
 vi.mock('@/services/jobOutputCache', () => ({
   getJobWorkflow: (jobId: string) => getJobWorkflowMock(jobId)
-}))
-
-const createAnnotatedPathMock = vi.fn()
-vi.mock('@/utils/createAnnotatedPath', () => ({
-  createAnnotatedPath: (filename: string, subfolder: string, type: string) =>
-    createAnnotatedPathMock(filename, subfolder, type)
 }))
 
 const appendJsonExtMock = vi.fn((value: string) =>
@@ -197,12 +189,12 @@ describe('useJobMenu', () => {
     }))
     queueStoreMock.update.mockResolvedValue(undefined)
     queueStoreMock.delete.mockResolvedValue(undefined)
+    cancelJobMock.mockResolvedValue(undefined)
     mediaAssetActionsMock.deleteAssets.mockResolvedValue(false)
     mapTaskOutputToAssetItemMock.mockImplementation((task, output) => ({
       task,
       output
     }))
-    createAnnotatedPathMock.mockReturnValue('annotated-path')
     nodeDefStoreMock.nodeDefsByName = {
       LoadImage: { name: 'LoadImage' },
       LoadVideo: { name: 'LoadVideo' },
@@ -246,6 +238,24 @@ describe('useJobMenu', () => {
     expect(workflowServiceMock.openWorkflow).not.toHaveBeenCalled()
   })
 
+  it('surfaces an error dialog when workflow open fails', async () => {
+    const { openJobWorkflow } = mountJobMenu()
+    const workflow = { nodes: [{ type: 'rgthree.DisplayAny' }] }
+    getJobWorkflowMock.mockResolvedValue(workflow)
+    const loadError = new Error('configure() failed: malformed widget')
+    workflowServiceMock.openWorkflow.mockRejectedValueOnce(loadError)
+    setCurrentItem(createJobItem({ id: '77' }))
+
+    await expect(openJobWorkflow()).resolves.toBeUndefined()
+
+    expect(dialogServiceMock.showErrorDialog).toHaveBeenCalledWith(
+      loadError,
+      expect.objectContaining({
+        reportType: 'queueOpenWorkflowError'
+      })
+    )
+  })
+
   it('copies job id to clipboard', async () => {
     const { copyJobId } = mountJobMenu()
     setCurrentItem(createJobItem({ id: 'job-99' }))
@@ -263,29 +273,18 @@ describe('useJobMenu', () => {
     expect(copyToClipboardMock).not.toHaveBeenCalled()
   })
 
-  it.each([
-    ['running', interruptMock, deleteItemMock],
-    ['initialization', interruptMock, deleteItemMock]
-  ])('cancels %s job via interrupt', async (state) => {
-    const { cancelJob } = mountJobMenu()
-    setCurrentItem(createJobItem({ state: state as JobListItem['state'] }))
+  it.for([['running'], ['initialization'], ['pending']])(
+    'cancels %s job via the state-agnostic jobs-namespace endpoint',
+    async ([state]) => {
+      const { cancelJob } = mountJobMenu()
+      setCurrentItem(createJobItem({ state: state as JobListItem['state'] }))
 
-    await cancelJob()
+      await cancelJob()
 
-    expect(interruptMock).toHaveBeenCalledWith('job-1')
-    expect(deleteItemMock).not.toHaveBeenCalled()
-    expect(queueStoreMock.update).toHaveBeenCalled()
-  })
-
-  it('cancels pending job via deleteItem', async () => {
-    const { cancelJob } = mountJobMenu()
-    setCurrentItem(createJobItem({ state: 'pending' }))
-
-    await cancelJob()
-
-    expect(deleteItemMock).toHaveBeenCalledWith('queue', 'job-1')
-    expect(queueStoreMock.update).toHaveBeenCalled()
-  })
+      expect(cancelJobMock).toHaveBeenCalledWith('job-1')
+      expect(queueStoreMock.update).toHaveBeenCalled()
+    }
+  )
 
   it('still updates queue for uncancellable states', async () => {
     const { cancelJob } = mountJobMenu()
@@ -293,9 +292,20 @@ describe('useJobMenu', () => {
 
     await cancelJob()
 
-    expect(interruptMock).not.toHaveBeenCalled()
-    expect(deleteItemMock).not.toHaveBeenCalled()
+    expect(cancelJobMock).not.toHaveBeenCalled()
     expect(queueStoreMock.update).toHaveBeenCalled()
+  })
+
+  it('propagates cancel failures from the API', async () => {
+    cancelJobMock.mockRejectedValueOnce(new Error('Failed to cancel job'))
+    const { cancelJob } = mountJobMenu()
+    setCurrentItem(createJobItem({ state: 'running' }))
+
+    await expect(cancelJob()).rejects.toThrow('Failed to cancel job')
+
+    expect(cancelJobMock).toHaveBeenCalledWith('job-1')
+    // Queue refresh is skipped when the cancel request itself fails.
+    expect(queueStoreMock.update).not.toHaveBeenCalled()
   })
 
   it('copies error message from failed job entry', async () => {
@@ -398,28 +408,63 @@ describe('useJobMenu', () => {
 
   const previewCases = [
     {
-      label: 'image',
+      label: 'image output',
       flags: { isImage: true },
       expectedNode: 'LoadImage',
-      widget: 'image'
+      filename: 'foo.png',
+      widget: 'image',
+      type: 'output',
+      expectedWidgetValue: 'bar/foo.png [output]'
     },
     {
-      label: 'video',
+      label: 'video output',
       flags: { isVideo: true },
       expectedNode: 'LoadVideo',
-      widget: 'file'
+      filename: 'foo.mp4',
+      widget: 'file',
+      type: 'output',
+      expectedWidgetValue: 'bar/foo.mp4 [output]'
     },
     {
-      label: 'audio',
+      label: 'audio output',
       flags: { isAudio: true },
       expectedNode: 'LoadAudio',
-      widget: 'audio'
+      filename: 'foo.wav',
+      widget: 'audio',
+      type: 'output',
+      expectedWidgetValue: 'bar/foo.wav [output]'
+    },
+    {
+      label: 'temp image',
+      flags: { isImage: true },
+      expectedNode: 'LoadImage',
+      filename: 'foo.png',
+      widget: 'image',
+      type: 'temp',
+      // TODO(#14356): Missing-media detection cannot yet verify [temp] paths.
+      expectedWidgetValue: 'bar/foo.png [temp]'
+    },
+    {
+      label: 'image output with a missing type',
+      flags: { isImage: true },
+      expectedNode: 'LoadImage',
+      filename: 'foo.png',
+      widget: 'image',
+      type: '',
+      expectedWidgetValue: 'bar/foo.png [output]'
     }
   ] as const
 
-  it.each(previewCases)(
-    'adds loader node for %s preview output',
-    async ({ flags, expectedNode, widget }) => {
+  it.for(previewCases)(
+    'adds $label preview loader with the expected annotated path',
+    async ({
+      flags,
+      expectedNode,
+      filename,
+      widget,
+      type,
+      expectedWidgetValue
+    }) => {
       const widgetCallback = vi.fn()
       const node = {
         widgets: [{ name: widget, value: null, callback: widgetCallback }],
@@ -428,9 +473,9 @@ describe('useJobMenu', () => {
       litegraphServiceMock.addNodeOnGraph.mockReturnValueOnce(node)
       const { jobMenuEntries } = mountJobMenu()
       const preview = {
-        filename: 'foo.png',
+        filename,
         subfolder: 'bar',
-        type: 'output',
+        type,
         url: 'http://asset',
         ...flags
       }
@@ -449,8 +494,10 @@ describe('useJobMenu', () => {
         nodeDefStoreMock.nodeDefsByName[expectedNode],
         { pos: [100, 200] }
       )
-      expect(node.widgets?.[0].value).toBe('annotated-path')
-      expect(widgetCallback).toHaveBeenCalledWith('annotated-path')
+      expect(node.widgets.find(({ name }) => name === widget)?.value).toBe(
+        expectedWidgetValue
+      )
+      expect(widgetCallback).toHaveBeenCalledWith(expectedWidgetValue)
       expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true, true)
     }
   )
@@ -499,10 +546,9 @@ describe('useJobMenu', () => {
     await entry?.onClick?.()
 
     expect(litegraphServiceMock.addNodeOnGraph).not.toHaveBeenCalled()
-    expect(createAnnotatedPathMock).not.toHaveBeenCalled()
   })
 
-  it('skips annotating when litegraph node creation fails', async () => {
+  it('does not throw when litegraph node creation fails', async () => {
     litegraphServiceMock.addNodeOnGraph.mockReturnValueOnce(null)
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
@@ -521,10 +567,9 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'add-to-current')
-    await entry?.onClick?.()
+    await expect(entry?.onClick?.()).resolves.toBeUndefined()
 
     expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalled()
-    expect(createAnnotatedPathMock).not.toHaveBeenCalled()
   })
 
   it('ignores add-to-current entry when preview missing entirely', async () => {
@@ -842,7 +887,7 @@ describe('useJobMenu', () => {
     const cancelEntry = findActionEntry(jobMenuEntries.value, 'cancel-job')
     await cancelEntry?.onClick?.()
 
-    expect(deleteItemMock).toHaveBeenCalledWith('queue', 'job-1')
+    expect(cancelJobMock).toHaveBeenCalledWith('job-1')
     expect(queueStoreMock.update).toHaveBeenCalled()
   })
 

@@ -6,11 +6,11 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st, t } from '@/i18n'
 import { mapTaskOutputToAssetItem } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
@@ -22,6 +22,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { isResultItemType } from '@/utils/typeGuardUtil'
 
 export type MenuEntry =
   | {
@@ -63,7 +64,14 @@ export function useJobMenu(
     if (!data) return
     const filename = `Job ${target.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
-    await workflowService.openWorkflow(temp)
+    try {
+      await workflowService.openWorkflow(temp)
+    } catch (error) {
+      useDialogService().showErrorDialog(error, {
+        title: t('errorDialog.queueOpenWorkflowFailedTitle'),
+        reportType: 'queueOpenWorkflowError'
+      })
+    }
   }
 
   const copyJobId = async (item?: JobListItem | null) => {
@@ -75,14 +83,13 @@ export function useJobMenu(
   const cancelJob = async (item?: JobListItem | null) => {
     const target = resolveItem(item)
     if (!target) return
-    if (target.state === 'running' || target.state === 'initialization') {
-      if (isCloud) {
-        await api.deleteItem('queue', target.id)
-      } else {
-        await api.interrupt(target.id)
-      }
-    } else if (target.state === 'pending') {
-      await api.deleteItem('queue', target.id)
+    if (
+      target.state === 'running' ||
+      target.state === 'initialization' ||
+      target.state === 'pending'
+    ) {
+      // State-agnostic cancel (see api.ts cancelJob for the runtime-parity caveat).
+      await api.cancelJob(target.id)
     }
     executionStore.clearInitializationByJobId(target.id)
     await queueStore.update()
@@ -139,24 +146,21 @@ export function useJobMenu(
 
     const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
     if (!nodeDef) return
-    const node = litegraphService.addNodeOnGraph(nodeDef, {
-      pos: litegraphService.getCanvasCenter()
-    })
+    const node = withNodeAddSource('programmatic', () =>
+      litegraphService.addNodeOnGraph(nodeDef, {
+        pos: litegraphService.getCanvasCenter()
+      })
+    )
 
     if (!node) return
-
-    const isResultItemType = (v: string | undefined): v is ResultItemType =>
-      v === 'input' || v === 'output' || v === 'temp'
 
     const apiItem: ResultItem = {
       filename: result.filename,
       subfolder: result.subfolder,
-      type: isResultItemType(result.type) ? result.type : undefined
+      type: isResultItemType(result.type) ? result.type : 'output'
     }
 
-    const annotated = createAnnotatedPath(apiItem, {
-      rootFolder: apiItem.type
-    })
+    const annotated = createAnnotatedPath(apiItem)
     const widget = node.widgets?.find((w) => w.name === widgetName)
     if (widget) {
       widget.value = annotated

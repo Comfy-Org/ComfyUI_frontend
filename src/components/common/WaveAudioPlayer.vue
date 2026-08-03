@@ -159,7 +159,7 @@
 
   <audio
     :ref="(el) => (audioRef = el as HTMLAudioElement)"
-    :src="audioSrc"
+    :src
     preload="metadata"
     class="hidden"
   />
@@ -171,7 +171,7 @@ import { ref, toRef } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   src,
@@ -192,7 +192,6 @@ const progressRef = ref<HTMLElement>()
 const {
   audioRef,
   waveformRef,
-  audioSrc,
   bars,
   loading,
   isPlaying,

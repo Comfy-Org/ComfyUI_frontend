@@ -4,7 +4,7 @@ import { ToggleGroupItem, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed, inject, ref } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ToggleGroupItemVariants } from './toggleGroup.variants'
 import {

@@ -7,8 +7,9 @@ import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseTog
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import type { NodeId } from '@/types/nodeId'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
@@ -44,24 +45,24 @@ watch(
   }
 )
 
-function isSectionCollapsed(nodeId: string): boolean {
+function isSectionCollapsed(nodeId: NodeId): boolean {
   // Defaults to collapsed when not explicitly set by the user
   return collapseMap[nodeId] ?? true
 }
 
-function setSectionCollapsed(nodeId: string, collapsed: boolean) {
+function setSectionCollapsed(nodeId: NodeId, collapsed: boolean) {
   collapseMap[nodeId] = collapsed
 }
 
 const isAllCollapsed = computed({
   get() {
     return searchedWidgetsSectionDataList.value.every(({ node }) =>
-      isSectionCollapsed(String(node.id))
+      isSectionCollapsed(node.id)
     )
   },
   set(collapse: boolean) {
     for (const { node } of widgetsSectionDataList.value) {
-      setSectionCollapsed(String(node.id), collapse)
+      setSectionCollapsed(node.id, collapse)
     }
   }
 })
@@ -78,7 +79,7 @@ async function searcher(query: string) {
   <div
     class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
   >
-    <FormSearchInput
+    <AsyncSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="widgetsSectionDataList"
@@ -101,7 +102,7 @@ async function searcher(query: string) {
       :key="node.id"
       :node
       :widgets
-      :collapse="isSectionCollapsed(String(node.id)) && !isSearching"
+      :collapse="isSectionCollapsed(node.id) && !isSearching"
       :tooltip="
         isSearching || widgets.length
           ? ''
@@ -109,7 +110,7 @@ async function searcher(query: string) {
       "
       show-locate-button
       class="border-b border-interface-stroke"
-      @update:collapse="setSectionCollapsed(String(node.id), $event)"
+      @update:collapse="setSectionCollapsed(node.id, $event)"
     />
   </TransitionGroup>
 </template>

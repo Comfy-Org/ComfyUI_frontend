@@ -1,9 +1,9 @@
-import type { NodeId } from '../LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { NodeSlotType } from './globalEnums'
 
 interface NodePropertyChangedEvent {
   type: 'node:property:changed'
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   property: string
   oldValue: unknown
   newValue: unknown
@@ -11,12 +11,12 @@ interface NodePropertyChangedEvent {
 
 interface NodeSlotErrorsChangedEvent {
   type: 'node:slot-errors:changed'
-  nodeId: NodeId
+  nodeId: SerializedNodeId
 }
 
 interface NodeSlotLinksChangedEvent {
   type: 'node:slot-links:changed'
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   slotType: NodeSlotType
   slotIndex: number
   connected: boolean
@@ -25,7 +25,7 @@ interface NodeSlotLinksChangedEvent {
 
 interface NodeSlotLabelChangedEvent {
   type: 'node:slot-label:changed'
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   slotType?: NodeSlotType
 }
 
@@ -35,7 +35,14 @@ export type LGraphTriggerEvent =
   | NodeSlotLinksChangedEvent
   | NodeSlotLabelChangedEvent
 
-export type LGraphTriggerAction = LGraphTriggerEvent['type']
+export const LGraphTriggerActions = [
+  'node:property:changed',
+  'node:slot-errors:changed',
+  'node:slot-links:changed',
+  'node:slot-label:changed'
+] as const satisfies readonly LGraphTriggerEvent['type'][]
+
+export type LGraphTriggerAction = (typeof LGraphTriggerActions)[number]
 
 export type LGraphTriggerParam<A extends LGraphTriggerAction> = Extract<
   LGraphTriggerEvent,

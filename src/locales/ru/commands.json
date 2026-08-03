@@ -158,15 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Распаковать выбранный подграф"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "Преобразовать выбранные ноды в групповую ноду"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "Управление групповыми нодами"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "Разгруппировать выбранные групповые ноды"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "Открыть «О ComfyUI»"
   },

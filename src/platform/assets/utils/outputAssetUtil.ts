@@ -1,11 +1,11 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
 import type { ResultItemImpl } from '@/stores/queueStore'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 type OutputAssetMapOptions = {
   jobId: string
@@ -22,7 +22,7 @@ type ResolveOutputAssetItemsOptions = {
 }
 
 type OutputKeyParts = {
-  nodeId?: NodeId | null
+  nodeId?: SerializedNodeId | null
   subfolder?: string | null
   filename?: string | null
 }
@@ -38,6 +38,19 @@ function shouldLoadFullOutputs(
   )
 }
 
+export function getAssetOutputCount(
+  asset: Pick<AssetItem, 'user_metadata'>
+): number {
+  const count = asset.user_metadata?.outputCount
+  return typeof count === 'number' && count > 0 ? count : 1
+}
+
+export function getTotalAssetOutputCount(
+  assets: Pick<AssetItem, 'user_metadata'>[]
+): number {
+  return assets.reduce((sum, asset) => sum + getAssetOutputCount(asset), 0)
+}
+
 export function getOutputKey({
   nodeId,
   subfolder,
@@ -50,6 +63,19 @@ export function getOutputKey({
   return `${nodeId}-${subfolder}-${filename}`
 }
 
+/**
+ * Maps a job's outputs to AssetItems with ids derived from the composite
+ * `<nodeId>-<subfolder>-<filename>` key. Records sharing a composite key are
+ * dropped after the first to keep `:key` unique in VirtualGrid — colliding
+ * ids cause Vue to reuse one DOM node and visibly duplicate the asset on
+ * scroll.
+ *
+ * The dedupe key ignores `type`/`mediaType`/`format`/`frame_rate` because
+ * those fields don't appear in `AssetItem.id`, so widening the key would
+ * just let the collision propagate. The kept copy is the first one seen;
+ * callers that reverse the input (e.g. `resolveOutputAssetItems`) retain
+ * the last record in the API's original order.
+ */
 function mapOutputsToAssetItems({
   jobId,
   outputs,
@@ -59,12 +85,17 @@ function mapOutputsToAssetItems({
   excludeOutputKey
 }: OutputAssetMapOptions): AssetItem[] {
   const createdAtValue = createdAt ?? new Date().toISOString()
+  const seenOutputKeys = new Set<string>()
 
   return outputs.reduce<AssetItem[]>((items, output) => {
     const outputKey = getOutputKey(output)
     if (!output.filename || !outputKey || outputKey === excludeOutputKey) {
       return items
     }
+    if (seenOutputKeys.has(outputKey)) {
+      return items
+    }
+    seenOutputKeys.add(outputKey)
 
     items.push({
       id: `${jobId}-${outputKey}`,

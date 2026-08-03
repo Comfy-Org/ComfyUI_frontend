@@ -16,7 +16,7 @@ import type {
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import type { Object3D } from 'three'
 
 // Type for the useLoad3dViewer composable function
@@ -37,6 +37,7 @@ type UseLoad3dViewerFn = (node?: LGraphNode) => {
   isStandaloneMode: { value: boolean }
   isSplatModel: { value: boolean }
   isPlyModel: { value: boolean }
+  sourceFormat: { value: string | null }
   animations: { value: AnimationItem[] }
   playing: { value: boolean }
   selectedSpeed: { value: number }
@@ -179,12 +180,13 @@ class Load3dService {
    * Use this for initial viewer creation.
    */
   async getOrCreateViewer(node: LGraphNode) {
-    if (!viewerInstances.has(node.id)) {
+    const nodeId = node.id
+    if (!viewerInstances.has(nodeId)) {
       const useLoad3dViewer = await loadUseLoad3dViewer()
-      viewerInstances.set(node.id, useLoad3dViewer(node))
+      viewerInstances.set(nodeId, useLoad3dViewer(node))
     }
 
-    return viewerInstances.get(node.id)
+    return viewerInstances.get(nodeId)
   }
 
   /**
@@ -196,25 +198,30 @@ class Load3dService {
     node: LGraphNode,
     useLoad3dViewer: T
   ): ReturnType<T> {
-    if (!viewerInstances.has(node.id)) {
-      viewerInstances.set(node.id, useLoad3dViewer(node))
+    const nodeId = node.id
+    if (!viewerInstances.has(nodeId)) {
+      viewerInstances.set(nodeId, useLoad3dViewer(node))
     }
 
-    return viewerInstances.get(node.id) as ReturnType<T>
+    return viewerInstances.get(nodeId) as ReturnType<T>
   }
 
   removeViewer(node: LGraphNode) {
-    const viewer = viewerInstances.get(node.id)
+    const nodeId = node.id
+    const viewer = viewerInstances.get(nodeId)
 
     if (viewer) {
       viewer.cleanup()
     }
 
-    viewerInstances.delete(node.id)
+    viewerInstances.delete(nodeId)
   }
 
   async copyLoad3dState(source: Load3d, target: Load3d) {
     const sourceModel = source.modelManager.currentModel
+
+    const gizmoWasEnabled = target.getGizmoManager().isEnabled()
+    target.getGizmoManager().detach()
 
     if (sourceModel) {
       // Remove existing model from target scene before adding new one
@@ -254,6 +261,36 @@ class Load3dService {
         if (source.getModelManager().appliedTexture) {
           target.getModelManager().appliedTexture =
             source.getModelManager().appliedTexture
+        }
+
+        const sourceInitial = source.getGizmoManager().getInitialTransform()
+        modelClone.position.set(
+          sourceInitial.position.x,
+          sourceInitial.position.y,
+          sourceInitial.position.z
+        )
+        modelClone.rotation.set(
+          sourceInitial.rotation.x,
+          sourceInitial.rotation.y,
+          sourceInitial.rotation.z
+        )
+        modelClone.scale.set(
+          sourceInitial.scale.x,
+          sourceInitial.scale.y,
+          sourceInitial.scale.z
+        )
+
+        target.getGizmoManager().setupForModel(modelClone)
+        const gizmoTransform = source.getGizmoTransform()
+        target.applyGizmoTransform(
+          gizmoTransform.position,
+          gizmoTransform.rotation,
+          gizmoTransform.scale
+        )
+        const shouldEnable =
+          gizmoWasEnabled || source.getGizmoManager().isEnabled()
+        if (shouldEnable) {
+          target.setGizmoEnabled(true)
         }
 
         // Copy animation state

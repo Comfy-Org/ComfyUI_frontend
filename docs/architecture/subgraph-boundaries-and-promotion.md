@@ -74,7 +74,7 @@ graph TD
 
     subgraph Unified["Unified: Composition"]
         direction TB
-        W["World (flat)"]
+        W["Dedicated stores (flat)"]
         N1["Node A
         graphScope: root"]
         N2["Node B (subgraph carrier)
@@ -95,30 +95,29 @@ graph TD
     style Unified fill:#1a2a1a,stroke:#2a4a2a,color:#e0e0e0
 ```
 
-In the ECS World:
+Across the dedicated stores:
 
 - **Every graph is a graph.** The "root" graph is simply the one whose
   `graphScope` has no parent.
-- **Nesting is a component, not a type.** A node can carry a
-  `SubgraphStructure` component, which references another graph scope. That
-  scope contains its own entities — nodes, links, widgets, reroutes, groups —
-  all living in the same flat World.
-- **One World per workflow.** All entities across all nesting levels coexist in
-  a single World, each tagged with a `graphScope` identifier. There are no
-  sub-worlds, no recursive containers. The fractal structure is encoded in the
-  data, not in the container hierarchy.
-- **Entity taxonomy: six kinds, not seven.** ADR 0008 defines seven entity kinds
-  including `SubgraphEntityId`. Under unification, "subgraph" is not an entity
-  kind — it is a node with a component. The taxonomy becomes: Node, Link,
-  Widget, Slot, Reroute, Group.
-- **ID counters remain global.** All entity IDs are allocated from a single
-  counter space, shared across all nesting levels. This preserves the current
-  `rootGraph.state` behavior and guarantees ID uniqueness across the entire
-  World.
-- **Graph scope parentage is tracked.** The World maintains a scope registry:
-  each `graphId` maps to its parent `graphId` (or null for the root). This
-  enables the ancestor walk required by the acyclicity invariant and supports
-  queries like "all entities transitively contained by this graph."
+- **Nesting is a component.** A node can carry a `SubgraphStructure` component,
+  which references another graph scope. That scope contains its own entities —
+  nodes, links, widgets, reroutes, groups — and each store entry tags the scope
+  it belongs to.
+- **Scope tagging over container nesting.** Entries across all nesting levels
+  live in the same stores, each tagged with a `graphScope` identifier. The
+  stores stay flat; the fractal structure is encoded in the keys and scope tags,
+  with no recursive containers.
+- **Entity taxonomy: six kinds.** A subgraph is a node carrying a
+  `SubgraphStructure` component. The taxonomy is: Node, Link, Widget, Slot,
+  Reroute, Group. `SubgraphEntityId` is replaced by a `GraphId` scope identifier.
+- **Numeric ID counters stay shared.** Node/link/reroute IDs are allocated from
+  a single counter space across nesting levels, preserving the current
+  `rootGraph.state` behavior and guaranteeing uniqueness. Widget keys embed
+  their scope directly (`WidgetId = graphId:nodeId:name`).
+- **Graph scope parentage is tracked.** A scope registry maps each `graphId` to
+  its parent `graphId` (or null for the root). This enables the ancestor walk
+  required by the acyclicity invariant and supports queries like "all entities
+  transitively contained by this graph."
 
 ### The acyclicity invariant
 
@@ -303,22 +302,29 @@ must choose before Phase 3 of the migration.
 
 ### Current mechanism
 
-The current system has three layers:
+> **Historical note:** the legacy three-layer mechanism described below
+> (PromotionStore, PromotedWidgetViewManager, PromotedWidgetView) has been
+> removed by [ADR 0009](../adr/0009-subgraph-promoted-widgets-use-linked-inputs.md).
+> Promoted value widgets are now standard linked `SubgraphInput` widgets.
+> This section is retained for archival context.
 
-1. **PromotionStore** (`src/stores/promotionStore.ts`): A ref-counted Pinia
-   store mapping `graphId → subgraphNodeId → PromotedWidgetSource[]`. Tracks
-   which interior widgets are promoted and provides O(1) `isPromotedByAny()`
-   queries.
+The legacy system had three layers:
 
-2. **PromotedWidgetViewManager**: A reconciliation layer that maintains stable
-   `PromotedWidgetView` proxy widget objects, diffing against the store on each
-   update — a pattern analogous to virtual DOM reconciliation.
+1. **PromotionStore** (removed; formerly `src/stores/promotionStore.ts`): A
+   ref-counted Pinia store mapping
+   `graphId → subgraphNodeId → PromotedWidgetSource[]`. Tracked which interior
+   widgets were promoted and provided O(1) `isPromotedByAny()` queries.
 
-3. **PromotedWidgetView**: A proxy widget on the SubgraphNode that mirrors the
-   interior widget's type, value, and options. Reads and writes delegate to the
-   original widget's entry in `WidgetValueStore`.
+2. **PromotedWidgetViewManager** (removed): A reconciliation layer that
+   maintained stable `PromotedWidgetView` proxy widget objects, diffing against
+   the store on each update — a pattern analogous to virtual DOM reconciliation.
 
-Serialized as `properties.proxyWidgets` on the SubgraphNode.
+3. **PromotedWidgetView** (removed): A proxy widget on the SubgraphNode that
+   mirrored the interior widget's type, value, and options. Reads and writes
+   delegated to the original widget's entry in `WidgetValueStore`.
+
+Serialized as `properties.proxyWidgets` on the SubgraphNode (now consumed only
+during legacy load repair).
 
 ### Candidate A: Connections-only
 
@@ -360,15 +366,17 @@ sequenceDiagram
     Exec->>IW: reads input value (42)
 ```
 
-### Candidate B: Simplified component promotion
+### Candidate B: Simplified component promotion (rejected)
+
+ADR 0009 chose Candidate A. Candidate B is retained here as the rejected
+alternative; it relied on a source-widget lookup model that no longer exists.
 
 Promotion remains a first-class concept, simplified from three layers to one:
 
-- A `WidgetPromotion` component on a widget entity:
-  `{ promotedTo: NodeEntityId, sourceWidget: WidgetEntityId }`
-- The SubgraphNode's widget list includes promoted widget entity IDs directly
-- Value reads/writes delegate to the source widget's `WidgetValue` component via
-  World lookup
+- A `WidgetPromotion` component on a widget entity referencing the host node and
+  source widget
+- The SubgraphNode's widget list includes promoted widget references directly
+- Value reads/writes delegate to the source widget's value via a store lookup
 - Serialized as `properties.proxyWidgets` (unchanged)
 
 This removes the ViewManager and proxy widget reconciliation but preserves the
@@ -392,8 +400,9 @@ concept of promotion as distinct from connection.
 
 Whichever candidate is chosen:
 
-- **`WidgetEntityId` is internal.** Serialization uses widget name + parent node
-  reference. This is settled (see Section 4).
+- **Internal identity is the `WidgetId` string.** Serialization uses widget name
+  - parent node reference, while runtime state keys on `WidgetId`
+    (`graphId:nodeId:name`). This is settled (see Section 4).
 - **The type → widget mapping is authoritative.** The widget registry
   (`widgetStore.widgets`) is the single source of truth for which types produce
   widgets. No parallel mechanism should duplicate this.
@@ -404,26 +413,21 @@ Whichever candidate is chosen:
   instance-specific state beyond inputs — must remain reachable. This is a
   constraint, not a current requirement.
 
-### Recommendation and decision criteria
+### Decision
 
-**Lean toward A.** It eliminates an entire subsystem by recognizing a structural
-truth: promotion is adding a typed input to a function signature. The type
-system already handles widget creation for typed inputs. Building a parallel
-mechanism for "promoted widgets" is building a second, narrower version of
-something the system already does.
+[ADR 0009](../adr/0009-subgraph-promoted-widgets-use-linked-inputs.md)
+chooses Candidate A for promoted value widgets. It eliminates an entire
+subsystem by recognizing a structural truth: promotion is adding a typed input
+to a function signature. The type system already handles widget creation for
+typed inputs. Building a parallel mechanism for "promoted widgets" is building
+a second, narrower version of something the system already does.
 
 The cost of A is a migration path for existing `proxyWidgets` serialization. On
-load, the `SerializationSystem` converts `proxyWidgets` entries into interface
-inputs and boundary links. This is a one-time ratchet conversion — once
-loaded and re-saved, the workflow uses the new format.
-
-**Choose B if** the team determines that promoted widgets must remain
-visually or behaviorally distinct from normal input widgets in ways the type →
-widget mapping cannot express, or if the `proxyWidgets` migration burden exceeds
-the current release cycle's capacity.
-
-**Decision needed before** Phase 3 of the ECS migration, when systems are
-introduced and the widget/connectivity architecture solidifies.
+load, the `SerializationSystem` converts value-widget `proxyWidgets` entries
+into interface inputs and boundary links. Once loaded and re-saved, the workflow
+uses the new format. ADR 0009 separates display-only preview exposures from
+promoted value widgets; those previews use their own host-scoped serialized
+representation instead of linked `SubgraphInput` widgets.
 
 ---
 
@@ -471,20 +475,20 @@ and produces the recursive `ExportedSubgraph` structure, matching the current
 format exactly. Existing workflows, the ComfyUI backend, and third-party tools
 see no change.
 
-| Direction       | Format                          | Notes                                    |
-| --------------- | ------------------------------- | ---------------------------------------- |
-| **Save/export** | Nested (current shape)          | SerializationSystem walks scope tree     |
-| **Load/import** | Nested (current) or future flat | Ratchet: normalize to flat World on load |
+| Direction       | Format                          | Notes                                              |
+| --------------- | ------------------------------- | -------------------------------------------------- |
+| **Save/export** | Nested (current shape)          | SerializationSystem walks scope tree               |
+| **Load/import** | Nested (current) or future flat | Migration: normalize to store-backed state on load |
 
-The "ratchet conversion" pattern: load any supported format, normalize to the
-internal model. The system accepts old formats indefinitely but produces the
-current format on save.
+The migration pattern: load any supported format and normalize to the internal
+model. The system accepts old formats indefinitely but produces the current
+format on save.
 
 ### Widget identity at the boundary
 
 | Context              | Identity                                                   | Example                            |
 | -------------------- | ---------------------------------------------------------- | ---------------------------------- |
-| **Internal (World)** | `WidgetEntityId` (opaque branded number)                   | `42 as WidgetEntityId`             |
+| **Internal (store)** | `WidgetId` composite string                                | `'graphId:42:seed' as WidgetId`    |
 | **Serialized**       | Position in `widgets_values[]` + name from node definition | `widgets_values[2]` → third widget |
 
 On save: the `SerializationSystem` queries `WidgetIdentity.name` and
@@ -492,7 +496,7 @@ On save: the `SerializationSystem` queries `WidgetIdentity.name` and
 order.
 
 On load: widget values are matched by name against the node definition's input
-specs, then assigned `WidgetEntityId`s from the global counter.
+specs, then registered in `WidgetValueStore` under their `WidgetId`.
 
 This is the existing contract, preserved exactly.
 
@@ -511,13 +515,12 @@ SubgraphIO {
 }
 ```
 
-If Candidate A (connections-only promotion) is chosen: promoted widgets become
-interface inputs, serialized as additional `SubgraphIO` entries. On load, legacy
-`proxyWidgets` data is converted to interface inputs and boundary links (ratchet
-migration). On save, `proxyWidgets` is no longer written.
-
-If Candidate B (simplified promotion) is chosen: `proxyWidgets` continues to be
-serialized in its current format.
+ADR 0009 chooses Candidate A (connections-only promotion) for promoted value
+widgets: they become interface inputs, serialized as additional `SubgraphIO`
+entries. On load, legacy value-widget `proxyWidgets` data is converted to
+interface inputs and boundary links. On save, repaired `proxyWidgets` entries
+are no longer written. Display-only preview exposures use separate
+host-scoped `previewExposures` serialization.
 
 ### Backward-compatible loading contract
 
@@ -552,10 +555,10 @@ This document proposes or surfaces the following changes to
 | Entity taxonomy     | 7 kinds including `SubgraphEntityId`                                     | 6 kinds — subgraph is a node with `SubgraphStructure` component                 |
 | `SubgraphEntityId`  | `string & { __brand: 'SubgraphEntityId' }`                               | Eliminated; replaced by `GraphId` scope identifier                              |
 | Subgraph components | `SubgraphStructure`, `SubgraphMeta` listed as separate-entity components | Become node components on SubgraphNode entities                                 |
-| World structure     | Implied per-graph containment                                            | Flat World with `graphScope` tags; one World per workflow                       |
+| Storage structure   | Implied per-graph containment                                            | Dedicated stores with `graphScope`-tagged entries; no single registry           |
 | Acyclicity          | Not addressed                                                            | DAG invariant on `SubgraphStructure.graphId` references, enforced on mutation   |
 | Boundary model      | Deferred                                                                 | Typed interface contracts on `SubgraphStructure`; no virtual nodes or magic IDs |
-| Widget promotion    | Treated as a given feature to migrate                                    | Open decision: Candidate A (connections-only) vs B (simplified component)       |
+| Widget promotion    | Treated as a given feature to migrate                                    | ADR 0009 chooses Candidate A: promoted value widgets are linked inputs          |
 | Serialization       | Not explicitly separated from internal model                             | Internal model ≠ wire format; `SerializationSystem` is the membrane             |
 | Backward compat     | Implicit                                                                 | Explicit contract: load any prior format, indefinitely                          |
 

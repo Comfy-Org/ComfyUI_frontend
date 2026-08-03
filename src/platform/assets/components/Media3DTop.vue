@@ -74,5 +74,20 @@ watch(
   }
 )
 
+watch(
+  () => [asset?.preview_id, asset?.preview_url] as const,
+  ([newPreviewId, newPreviewUrl], [, oldPreviewUrl]) => {
+    if (
+      newPreviewId &&
+      newPreviewUrl &&
+      newPreviewUrl !== oldPreviewUrl &&
+      !thumbnailSrc.value
+    ) {
+      thumbnailSrc.value = newPreviewUrl
+      hasAttempted.value = true
+    }
+  }
+)
+
 onBeforeUnmount(revokeThumbnail)
 </script>

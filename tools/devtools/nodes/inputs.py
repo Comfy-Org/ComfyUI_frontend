@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import time
 
+from comfy_api.v0_0_2 import IO
+
 
 class LongComboDropdown:
     @classmethod
@@ -302,6 +304,90 @@ class NodeWithV2ComboInput:
     def node_with_v2_combo_input(self, combo_input: str):
         return (combo_input,)
 
+class NodeWithLegacyWidget:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": { "legacy_widget": ("INT", { "widgetType":  "DEVTOOLSLEGACYWIDGET" }) }
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "node_with_legacy_widget"
+    CATEGORY = "DevTools"
+    DESCRIPTION = ("A node with a legacy widget")
+
+    def node_with_legacy_widget(self):
+        return ()
+
+class NodeWithPriceBadge(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithPriceBadge",
+            display_name="Node With Price Badge",
+            description="An API node with a price badge",
+            inputs=[IO.Combo.Input("price", options=["1x", "2x", "3x"])],
+            is_api_node=True,
+            price_badge=IO.PriceBadge(
+                depends_on=IO.PriceBadgeDepends(widgets=["price"]),
+                expr="""
+                (
+                  $p := widgets.price;
+                  {"type":"usd","usd": $contains($p, "2x") ? 2 : $contains($p, "3x") ? 3 : 1}
+                )
+                """,
+            ),
+        )
+
+    @classmethod
+    async def execute(cls, price):
+        return IO.NodeOutput()
+
+class NodeWithDynamicCombo(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithDynamicCombo",
+            display_name="Node With Dynamic Combo",
+            description="A node with a Dynamic combo",
+            inputs=[IO.DynamicCombo.Input("combo", options=[
+                IO.DynamicCombo.Option("option1", [IO.Combo.Input("suboption", options=["1x"])]),
+                IO.DynamicCombo.Option("option2", [IO.Combo.Input("suboption", options=["2x"])]),
+                IO.DynamicCombo.Option("option3", [IO.Image.Input("image")]),
+                IO.DynamicCombo.Option("option4", [
+                    IO.DynamicCombo.Input("subcombo", options=[
+                        IO.DynamicCombo.Option("opt1", [IO.Float.Input("float_x"), IO.Float.Input("float_y")]),
+                        IO.DynamicCombo.Option("opt2", [IO.Mask.Input("mask1", optional=True)]),
+                    ])
+                ])]
+            )],
+        )
+
+    @classmethod
+    async def execute(cls):
+        return IO.NodeOutput()
+
+
+class NodeRuntimeReflow:
+    """Emulates the runtime node-growth idioms that several popular custom-node
+    packs use (rgthree Power Lora Loader, Impact-Pack image previews, ...).
+
+    The growth itself is performed on the client in ``web/runtimeReflow.js``:
+    the node keeps this Python surface minimal and exposes two triggers on the
+    client node instance (widget-count growth and image-preview growth).
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "noop"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "A node that emulates runtime reflow growth (rgthree widget growth and Impact-Pack image-preview growth)"
+
+    def noop(self):
+        return ()
 
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
@@ -318,6 +404,10 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithSeedInput": NodeWithSeedInput,
     "DevToolsNodeWithValidation": NodeWithValidation,
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
+    "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
+    "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
+    "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
+    "DevToolsNodeRuntimeReflow": NodeRuntimeReflow,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -335,6 +425,10 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithSeedInput": "Node With Seed Input",
     "DevToolsNodeWithValidation": "Node With Validation",
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
+    "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
+    "DevToolsNodeWithPriceBadge": "Node With Price Badge",
+    "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
+    "DevToolsNodeRuntimeReflow": "Node Runtime Reflow",
 }
 
 __all__ = [

@@ -8,6 +8,11 @@ import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTran
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import {
+  hasNorthEdge,
+  hasWestEdge
+} from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import { toNodeId } from '@/types/nodeId'
 
 export interface ResizeCallbackPayload {
   size: Size
@@ -39,7 +44,6 @@ export function useNodeResize(
   const { trackShiftKey } = useShiftKeySync()
 
   const startResize = (event: PointerEvent, corner: CompassCorners = 'SE') => {
-    event.preventDefault()
     event.stopPropagation()
 
     const target = event.currentTarget
@@ -48,8 +52,9 @@ export function useNodeResize(
     const nodeElement = target.closest('[data-node-id]')
     if (!(nodeElement instanceof HTMLElement)) return
 
-    const nodeId = nodeElement.dataset.nodeId
-    if (!nodeId) return
+    const rawNodeId = nodeElement.dataset.nodeId
+    if (!rawNodeId) return
+    const nodeId = toNodeId(rawNodeId)
 
     const rect = nodeElement.getBoundingClientRect()
     const scale = transformState.camera.z
@@ -59,10 +64,17 @@ export function useNodeResize(
       height: rect.height / scale
     }
 
-    const savedNodeHeight = nodeElement.style.getPropertyValue('--node-height')
-    nodeElement.style.setProperty('--node-height', '0px')
-    const minContentHeight = nodeElement.getBoundingClientRect().height / scale
-    nodeElement.style.setProperty('--node-height', savedNodeHeight || '')
+    const measureMinContentHeight = (candidateWidth: number) => {
+      const savedWidth = nodeElement.style.getPropertyValue('--node-width')
+      const savedHeight = nodeElement.style.getPropertyValue('--node-height')
+      nodeElement.style.setProperty('--node-width', `${candidateWidth}px`)
+      nodeElement.style.setProperty('--node-height', '0px')
+      const measured = nodeElement.getBoundingClientRect().height
+      nodeElement.style.setProperty('--node-height', savedHeight || '')
+      nodeElement.style.setProperty('--node-width', savedWidth || '')
+      const currentScale = transformState.camera.z || 1
+      return measured / currentScale
+    }
 
     const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
     const startPosition: Point = nodeLayout
@@ -128,20 +140,23 @@ export function useNodeResize(
           break
       }
 
+      const isWestCorner = hasWestEdge(activeCorner)
+      const isNorthCorner = hasNorthEdge(activeCorner)
+
       // Apply snap-to-grid
       if (shouldSnap(moveEvent)) {
         // Snap position first for N/W corners, then compensate size
-        if (activeCorner.includes('N') || activeCorner.includes('W')) {
+        if (isNorthCorner || isWestCorner) {
           const originalX = newX
           const originalY = newY
           const snapped = applySnapToPosition({ x: newX, y: newY })
           newX = snapped.x
           newY = snapped.y
 
-          if (activeCorner.includes('N')) {
+          if (isNorthCorner) {
             newHeight += originalY - newY
           }
-          if (activeCorner.includes('W')) {
+          if (isWestCorner) {
             newWidth += originalX - newX
           }
         }
@@ -159,14 +174,20 @@ export function useNodeResize(
         parseFloat(nodeElement.style.getPropertyValue('min-width') || '0') ||
         MIN_NODE_WIDTH
       if (newWidth < minWidth) {
-        if (activeCorner.includes('W')) {
+        if (isWestCorner) {
           newX =
             resizeStartPosition.value.x + resizeStartSize.value.width - minWidth
         }
         newWidth = minWidth
       }
+      // Re-measure on each move with the candidate width applied: widget
+      // content (e.g. painter controls) can re-flow taller as width shrinks,
+      // raising the true minimum. Probing with newWidth — not the DOM's
+      // current width — keeps the clamp accurate on the frame that crosses
+      // a responsive breakpoint.
+      const minContentHeight = measureMinContentHeight(newWidth)
       if (newHeight < minContentHeight) {
-        if (activeCorner.includes('N')) {
+        if (isNorthCorner) {
           newY =
             resizeStartPosition.value.y +
             resizeStartSize.value.height -

@@ -199,7 +199,6 @@
     "name": "محرك PLY",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "اختر المحرك لتحميل ملفات PLY. \"threejs\" يستخدم محمل Three.js PLY الأصلي (الأفضل لملفات الشبكة). \"fastply\" يستخدم محملًا محسنًا لملفات PLY السحابية النقطية بنسق ASCII. \"sparkjs\" يستخدم Spark.js لملفات PLY الخاصة بتقنية Gaussian Splatting ثلاثية الأبعاد."
@@ -271,6 +270,10 @@
       "litegraph (legacy)": "لايت جراف (قديم)",
       "v1 (legacy)": "الإصدار 1 (قديم)"
     }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "العُقَد المضافة تتبع المؤشر",
+    "tooltip": "عند التفعيل، تتبع العُقَد المضافة من مربع البحث المؤشر حتى يتم النقر لوضعها. ينطبق فقط على التنفيذ الافتراضي."
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "معاينة العقدة",
@@ -423,10 +426,6 @@
   "Comfy_Validation_Workflows": {
     "name": "التحقق من صحة سير العمل"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "تخطيط مقياس تلقائي (عقد Vue)",
-    "tooltip": "قياس مواضع العقد تلقائيًا عند التبديل إلى عرض Vue لمنع التداخل"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "تصميم العقد الحديث (عقد Vue)",
     "tooltip": "الحديث: عرض قائم على DOM مع تفاعلية محسّنة وميزات متصفح أصلية وتصميم مرئي محدث. الكلاسيكي: عرض لوحة تقليدي."
@@ -455,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "عرض تأكيد عند حذف سير العمل"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "استعادة قيم عناصر الواجهة حسب الاسم"
   },
   "Comfy_Workflow_Persist": {
     "name": "الاحتفاظ بحالة سير العمل واستعادتها عند (إعادة) تحميل الصفحة"

@@ -12,11 +12,12 @@
 </template>
 
 <script setup lang="ts">
+import { default as DOMPurify } from 'dompurify'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
+import type { NodeId } from '@/types/nodeId'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
 const modelValue = defineModel<string>({ required: true })
@@ -25,7 +26,10 @@ const props = defineProps<{
 }>()
 
 const executionStore = useExecutionStore()
-const isParentNodeExecuting = ref(true)
+const isParentNodeExecuting = computed(() => {
+  if (executionStore.isIdle) return false
+  return executionStore.executingNodeIds.includes(props.nodeId)
+})
 const formattedText = computed(() => {
   const src = modelValue.value
   // Turn [[label|url]] into placeholders to avoid interfering with linkifyHtml
@@ -51,39 +55,12 @@ const formattedText = computed(() => {
       : safeLabel
   })
 
-  return html
+  // Strict allowlist: this widget only needs anchors and line breaks. Raw
+  // websocket progress text flows into modelValue, so we drop every other
+  // tag (img, script, iframe, etc.) to keep the v-html trust boundary tight.
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['a', 'br'],
+    ALLOWED_ATTR: ['href', 'target', 'rel']
+  })
 })
-
-let parentNodeId: NodeId | null = null
-onMounted(() => {
-  // Get the parent node ID from props if provided
-  // For backward compatibility, fall back to the first executing node
-  parentNodeId = props.nodeId
-})
-
-// Watch for either a new node has starting execution or overall execution ending
-const stopWatching = watch(
-  [() => executionStore.executingNodeIds, () => executionStore.isIdle],
-  () => {
-    if (executionStore.isIdle) {
-      isParentNodeExecuting.value = false
-      stopWatching()
-      return
-    }
-
-    // Check if parent node is no longer in the executing nodes list
-    if (
-      parentNodeId &&
-      !executionStore.executingNodeIds.includes(parentNodeId)
-    ) {
-      isParentNodeExecuting.value = false
-      stopWatching()
-    }
-
-    // Set parent node ID if not set yet
-    if (!parentNodeId && executionStore.executingNodeIds.length > 0) {
-      parentNodeId = executionStore.executingNodeIds[0]
-    }
-  }
-)
 </script>

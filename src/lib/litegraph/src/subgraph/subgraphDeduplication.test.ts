@@ -1,3 +1,7 @@
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { describe, expect, it } from 'vitest'
 
 import type { ExportedSubgraph } from '../types/serialisation'
@@ -23,8 +27,8 @@ function makeSubgraph(id: string, nodeTypes: string[] = []): ExportedSubgraph {
       outputs: [],
       properties: {}
     })),
-    inputNode: { id: -10, bounding: [0, 0, 100, 100] },
-    outputNode: { id: -20, bounding: [0, 0, 100, 100] }
+    inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 100, 100] },
+    outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 100, 100] }
   } as ExportedSubgraph
 }
 

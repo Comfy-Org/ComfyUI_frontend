@@ -1,7 +1,7 @@
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { components } from '@/types/comfyRegistryTypes'
 
-type SubscriptionTier = components['schemas']['SubscriptionTier']
+export type SubscriptionTier = components['schemas']['SubscriptionTier']
 
 export type TierKey = 'free' | 'standard' | 'creator' | 'pro' | 'founder'
 

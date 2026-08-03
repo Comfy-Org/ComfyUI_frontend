@@ -24,6 +24,7 @@ import type {
   WidgetDependency
 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { NodeId } from '@/types/nodeId'
 import type { Expression } from 'jsonata'
 import jsonata from 'jsonata'
 
@@ -237,12 +238,15 @@ const normalizeWidgetValue = (
 
 const buildJsonataContext = (
   node: LGraphNode,
-  rule: JsonataPricingRule
+  rule: JsonataPricingRule,
+  widgetOverrides?: ReadonlyMap<string, unknown>
 ): JsonataEvalContext => {
   const widgets: Record<string, NormalizedWidgetValue> = {}
   for (const dep of rule.depends_on.widgets) {
-    const widget = node.widgets?.find((x: IBaseWidget) => x.name === dep.name)
-    widgets[dep.name] = normalizeWidgetValue(widget?.value, dep.type)
+    const raw = widgetOverrides?.has(dep.name)
+      ? widgetOverrides.get(dep.name)
+      : node.widgets?.find((x: IBaseWidget) => x.name === dep.name)?.value
+    widgets[dep.name] = normalizeWidgetValue(raw, dep.type)
   }
 
   const inputs: Record<string, { connected: boolean }> = {}
@@ -449,18 +453,17 @@ const pricingTick = ref(0)
 // Per-node revision tracking for VueNodes mode (more efficient than global tick)
 // Uses plain Map with individual refs per node for fine-grained reactivity
 // Keys are stringified node IDs to handle both string and number ID types
-const nodeRevisions = new Map<string, Ref<number>>()
+const nodeRevisions = new Map<NodeId, Ref<number>>()
 
 /**
  * Get or create a revision ref for a specific node.
  * Each node has its own independent ref, so updates to one won't trigger others.
  */
-const getNodeRevisionRef = (nodeId: string | number): Ref<number> => {
-  const key = String(nodeId)
-  let rev = nodeRevisions.get(key)
+const getNodeRevisionRef = (nodeId: NodeId): Ref<number> => {
+  let rev = nodeRevisions.get(nodeId)
   if (!rev) {
     rev = ref(0)
-    nodeRevisions.set(key, rev)
+    nodeRevisions.set(nodeId, rev)
   }
   return rev
 }
@@ -509,10 +512,8 @@ const scheduleEvaluation = (
       if (LiteGraph.vueNodesMode) {
         // VueNodes mode: bump per-node revision (only this node re-renders)
         getNodeRevisionRef(node.id).value++
-      } else {
-        // Nodes 1.0 mode: bump global tick to trigger setDirtyCanvas
-        pricingTick.value++
       }
+      pricingTick.value++
     })
 
   inflight.set(node, { sig, promise })
@@ -554,7 +555,10 @@ export const useNodePricing = () => {
    * - schedules async evaluation when needed
    * - remains non-fatal on errors (returns safe fallback '')
    */
-  const getNodeDisplayPrice = (node: LGraphNode): string => {
+  const getNodeDisplayPrice = (
+    node: LGraphNode,
+    widgetOverrides?: ReadonlyMap<string, unknown>
+  ): string => {
     // Make this function reactive: when async evaluation completes, we bump pricingTick,
     // which causes this getter to recompute in Vue render/computed contexts.
     void pricingTick.value
@@ -567,7 +571,7 @@ export const useNodePricing = () => {
     if (rule.engine !== 'jsonata') return ''
     if (!rule._compiled) return ''
 
-    const ctx = buildJsonataContext(node, rule)
+    const ctx = buildJsonataContext(node, rule, widgetOverrides)
     const sig = buildSignature(ctx, rule)
 
     const cached = cache.get(node)

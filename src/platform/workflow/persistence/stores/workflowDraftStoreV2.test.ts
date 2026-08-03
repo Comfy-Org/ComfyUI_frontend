@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MAX_DRAFTS } from '../base/draftTypes'
+import { StorageKeys } from '../base/storageKeys'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock('@/scripts/api', () => ({
@@ -76,6 +77,39 @@ describe('workflowDraftStoreV2', () => {
       expect(draft!.data).toBe('{"nodes":[1,2,3]}')
       expect(draft!.name).toBe('test-updated')
       expect(draft!.isTemporary).toBe(false)
+      expect(draft!.updatedAt).toEqual(expect.any(Number))
+    })
+
+    it('keeps payload updatedAt stable when only recency is refreshed', () => {
+      vi.useFakeTimers()
+
+      try {
+        const store = useWorkflowDraftStoreV2()
+
+        vi.setSystemTime(new Date('2026-03-21T10:00:00Z'))
+        store.saveDraft('workflows/a.json', '{"id":"a"}', {
+          name: 'a',
+          isTemporary: true
+        })
+        const initialUpdatedAt = store.getDraft('workflows/a.json')!.updatedAt
+
+        vi.setSystemTime(new Date('2026-03-21T10:01:00Z'))
+        store.saveDraft('workflows/b.json', '{"id":"b"}', {
+          name: 'b',
+          isTemporary: true
+        })
+        expect(store.getMostRecentPath()).toBe('workflows/b.json')
+
+        vi.setSystemTime(new Date('2026-03-21T10:02:00Z'))
+        store.markDraftUsed('workflows/a.json')
+
+        expect(store.getDraft('workflows/a.json')!.updatedAt).toBe(
+          initialUpdatedAt
+        )
+        expect(store.getMostRecentPath()).toBe('workflows/a.json')
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('evicts oldest when over limit', () => {
@@ -97,6 +131,48 @@ describe('workflowDraftStoreV2', () => {
       // First draft should be evicted
       expect(store.getDraft('workflows/draft0.json')).toBeNull()
       expect(store.getDraft('workflows/new.json')).not.toBeNull()
+    })
+
+    it('evicts the oldest draft and retries when a payload write hits quota', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      for (let i = 0; i < MAX_DRAFTS - 1; i++) {
+        store.saveDraft(`workflows/draft${i}.json`, `{"id":${i}}`, {
+          name: `draft${i}`,
+          isTemporary: true
+        })
+      }
+
+      const originalSetItem = localStorage.setItem.bind(localStorage)
+      const newDraftPayloadKey = StorageKeys.draftPayload(
+        'workflows/new.json',
+        'personal'
+      )
+      let quotaFailureInjected = false
+      const setItemSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key: string, value: string) => {
+          if (key === newDraftPayloadKey && !quotaFailureInjected) {
+            quotaFailureInjected = true
+            throw new DOMException('Quota exceeded', 'QuotaExceededError')
+          }
+
+          return originalSetItem(key, value)
+        })
+
+      try {
+        const result = store.saveDraft('workflows/new.json', '{"id":"new"}', {
+          name: 'new',
+          isTemporary: true
+        })
+
+        expect(result).toBe(true)
+        expect(quotaFailureInjected).toBe(true)
+        expect(store.getDraft('workflows/draft0.json')).toBeNull()
+        expect(store.getDraft('workflows/new.json')?.data).toBe('{"id":"new"}')
+      } finally {
+        setItemSpy.mockRestore()
+      }
     })
   })
 
@@ -138,6 +214,31 @@ describe('workflowDraftStoreV2', () => {
       expect(newDraft).not.toBeNull()
       expect(newDraft!.name).toBe('new')
       expect(newDraft!.data).toBe('{"data":"test"}')
+    })
+
+    it('preserves payload updatedAt when moving a draft', () => {
+      vi.useFakeTimers()
+
+      try {
+        const store = useWorkflowDraftStoreV2()
+
+        vi.setSystemTime(new Date('2026-05-13T00:00:00Z'))
+        store.saveDraft('workflows/old.json', '{"data":"test"}', {
+          name: 'old',
+          isTemporary: true
+        })
+        const originalUpdatedAt =
+          store.getDraft('workflows/old.json')!.updatedAt
+
+        vi.setSystemTime(new Date('2026-05-13T00:05:00Z'))
+        store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
+
+        expect(store.getDraft('workflows/new.json')!.updatedAt).toBe(
+          originalUpdatedAt
+        )
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 

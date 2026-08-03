@@ -1,16 +1,19 @@
-import { mount } from '@vue/test-utils'
+/* eslint-disable testing-library/no-container */
+/* eslint-disable testing-library/no-node-access */
+/* eslint-disable testing-library/prefer-user-event */
+import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
-import type { AssetFilterState } from '@/platform/assets/types/filterTypes'
 import {
   createAssetWithSpecificBaseModel,
   createAssetWithSpecificExtension,
   createAssetWithoutBaseModel
 } from '@/platform/assets/fixtures/ui-mock-assets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { createI18n } from 'vue-i18n'
+import type { AssetFilterState } from '@/platform/assets/types/filterTypes'
 
 const i18n = createI18n({
   legacy: false,
@@ -21,7 +24,7 @@ const i18n = createI18n({
 })
 
 // Mock components with minimal functionality for business logic testing
-vi.mock('@/components/input/MultiSelect.vue', () => ({
+vi.mock('@/components/ui/multi-select/MultiSelect.vue', () => ({
   default: {
     name: 'MultiSelect',
     props: {
@@ -43,7 +46,7 @@ vi.mock('@/components/input/MultiSelect.vue', () => ({
   }
 }))
 
-vi.mock('@/components/input/SingleSelect.vue', () => ({
+vi.mock('@/components/ui/single-select/SingleSelect.vue', () => ({
   default: {
     name: 'SingleSelect',
     props: {
@@ -67,29 +70,31 @@ vi.mock('@/components/input/SingleSelect.vue', () => ({
 
 // Test factory functions
 function mountAssetFilterBar(props = {}) {
-  return mount(AssetFilterBar, {
-    props,
+  const onFilterChange = vi.fn()
+  const { container } = render(AssetFilterBar, {
+    props: { ...props, onFilterChange },
     global: {
       plugins: [i18n]
     }
   })
+  return { container, onFilterChange }
 }
 
 // Helper functions to find filters by user-facing attributes
-function findFileFormatsFilter(
-  wrapper: ReturnType<typeof mountAssetFilterBar>
-) {
-  return wrapper.findComponent(
+function findFileFormatsFilter(container: Element) {
+  return container.querySelector(
     '[data-component-id="asset-filter-file-formats"]'
   )
 }
 
-function findBaseModelsFilter(wrapper: ReturnType<typeof mountAssetFilterBar>) {
-  return wrapper.findComponent('[data-component-id="asset-filter-base-models"]')
+function findBaseModelsFilter(container: Element) {
+  return container.querySelector(
+    '[data-component-id="asset-filter-base-models"]'
+  )
 }
 
-function findSortFilter(wrapper: ReturnType<typeof mountAssetFilterBar>) {
-  return wrapper.findComponent('[data-component-id="asset-filter-sort"]')
+function findSortFilter(container: Element) {
+  return container.querySelector('[data-component-id="asset-filter-sort"]')
 }
 
 describe('AssetFilterBar', () => {
@@ -102,49 +107,55 @@ describe('AssetFilterBar', () => {
         createAssetWithSpecificBaseModel('sd15'),
         createAssetWithSpecificBaseModel('sdxl')
       ]
-      const wrapper = mountAssetFilterBar({ assets })
+      const { container, onFilterChange } = mountAssetFilterBar({ assets })
 
       // Update file formats
-      const fileFormatSelect = findFileFormatsFilter(wrapper)
-      const fileFormatSelectElement = fileFormatSelect.find('select')
-      const options = fileFormatSelectElement.findAll('option')
-      const ckptOption = options.find((o) => o.element.value === 'ckpt')!
-      const safetensorsOption = options.find(
-        (o) => o.element.value === 'safetensors'
-      )!
-      ckptOption.element.selected = true
-      safetensorsOption.element.selected = true
-      await fileFormatSelectElement.trigger('change')
+      const fileFormatEl = findFileFormatsFilter(container)!
+      const fileFormatSelectEl = fileFormatEl.querySelector(
+        'select'
+      ) as HTMLSelectElement
+      const fileFormatOptions = fileFormatEl.querySelectorAll('option')
+      const ckptOption = Array.from(fileFormatOptions).find(
+        (o) => (o as HTMLOptionElement).value === 'ckpt'
+      ) as HTMLOptionElement
+      const safetensorsOption = Array.from(fileFormatOptions).find(
+        (o) => (o as HTMLOptionElement).value === 'safetensors'
+      ) as HTMLOptionElement
+      ckptOption.selected = true
+      safetensorsOption.selected = true
+      await fireEvent.change(fileFormatSelectEl)
 
       await nextTick()
 
       // Update base models
-      const baseModelSelect = findBaseModelsFilter(wrapper)
-      const baseModelSelectElement = baseModelSelect.find('select')
-      const sdxlOption = baseModelSelectElement
-        .findAll('option')
-        .find((o) => o.element.value === 'sdxl')
-      sdxlOption!.element.selected = true
-      await baseModelSelectElement.trigger('change')
+      const baseModelEl = findBaseModelsFilter(container)!
+      const baseModelSelectEl = baseModelEl.querySelector(
+        'select'
+      ) as HTMLSelectElement
+      const baseModelOptions = baseModelEl.querySelectorAll('option')
+      const sdxlOption = Array.from(baseModelOptions).find(
+        (o) => (o as HTMLOptionElement).value === 'sdxl'
+      ) as HTMLOptionElement
+      sdxlOption.selected = true
+      await fireEvent.change(baseModelSelectEl)
 
       await nextTick()
 
       // Update sort
-      const sortSelect = findSortFilter(wrapper)
-      const sortSelectElement = sortSelect.find('select')
-      sortSelectElement.element.value = 'name-desc'
-      await sortSelectElement.trigger('change')
+      const sortEl = findSortFilter(container)!
+      const sortSelectEl = sortEl.querySelector('select') as HTMLSelectElement
+      sortSelectEl.value = 'name-desc'
+      await fireEvent.change(sortSelectEl)
 
       await nextTick()
 
-      const emitted = wrapper.emitted('filterChange')
-      expect(emitted).toBeTruthy()
-      expect(emitted!.length).toBeGreaterThanOrEqual(3)
+      expect(onFilterChange).toHaveBeenCalled()
+      expect(onFilterChange.mock.calls.length).toBeGreaterThanOrEqual(3)
 
       // Check final state
-      const finalState: AssetFilterState = emitted![
-        emitted!.length - 1
-      ][0] as AssetFilterState
+      const lastCall =
+        onFilterChange.mock.calls[onFilterChange.mock.calls.length - 1]
+      const finalState: AssetFilterState = lastCall[0]
       expect(finalState.fileFormats).toEqual(['ckpt', 'safetensors'])
       expect(finalState.baseModels).toEqual(['sdxl'])
       expect(finalState.sortBy).toBe('name-desc')
@@ -157,18 +168,22 @@ describe('AssetFilterBar', () => {
         createAssetWithSpecificExtension('safetensors'),
         createAssetWithSpecificBaseModel('sd15')
       ]
-      const wrapper = mountAssetFilterBar({ assets })
+      const { container, onFilterChange } = mountAssetFilterBar({ assets })
 
-      const fileFormatSelect = findFileFormatsFilter(wrapper)
-      const fileFormatSelectElement = fileFormatSelect.find('select')
-      const ckptOption = fileFormatSelectElement.findAll('option')[0]
-      ckptOption.element.selected = true
-      await fileFormatSelectElement.trigger('change')
+      const fileFormatEl = findFileFormatsFilter(container)!
+      const fileFormatSelectEl = fileFormatEl.querySelector(
+        'select'
+      ) as HTMLSelectElement
+      const firstOption = fileFormatEl.querySelector(
+        'option'
+      ) as HTMLOptionElement
+      firstOption.selected = true
+      await fireEvent.change(fileFormatSelectEl)
 
       await nextTick()
 
-      const emitted = wrapper.emitted('filterChange')
-      const filterState = emitted![0][0] as AssetFilterState
+      expect(onFilterChange).toHaveBeenCalled()
+      const filterState: AssetFilterState = onFilterChange.mock.calls[0][0]
 
       // Type and structure assertions
       expect(Array.isArray(filterState.fileFormats)).toBe(true)
@@ -193,12 +208,15 @@ describe('AssetFilterBar', () => {
         createAssetWithSpecificExtension('pt')
       ]
 
-      const wrapper = mountAssetFilterBar({ assets })
+      const { container } = mountAssetFilterBar({ assets })
 
-      const fileFormatSelect = findFileFormatsFilter(wrapper)
-      const options = fileFormatSelect.findAll('option')
+      const fileFormatEl = findFileFormatsFilter(container)!
+      const options = fileFormatEl.querySelectorAll('option')
       expect(
-        options.map((o) => ({ name: o.text(), value: o.element.value }))
+        Array.from(options).map((o) => ({
+          name: o.textContent?.trim(),
+          value: (o as HTMLOptionElement).value
+        }))
       ).toEqual([
         { name: '.ckpt', value: 'ckpt' },
         { name: '.pt', value: 'pt' },
@@ -213,12 +231,15 @@ describe('AssetFilterBar', () => {
         createAssetWithSpecificBaseModel('sd35')
       ]
 
-      const wrapper = mountAssetFilterBar({ assets })
+      const { container } = mountAssetFilterBar({ assets })
 
-      const baseModelSelect = findBaseModelsFilter(wrapper)
-      const options = baseModelSelect.findAll('option')
+      const baseModelEl = findBaseModelsFilter(container)!
+      const options = baseModelEl.querySelectorAll('option')
       expect(
-        options.map((o) => ({ name: o.text(), value: o.element.value }))
+        Array.from(options).map((o) => ({
+          name: o.textContent?.trim(),
+          value: (o as HTMLOptionElement).value
+        }))
       ).toEqual([
         { name: 'sd15', value: 'sd15' },
         { name: 'sd35', value: 'sd35' },
@@ -230,18 +251,16 @@ describe('AssetFilterBar', () => {
   describe('Conditional Filter Visibility', () => {
     it('hides file format filter when no options available', () => {
       const assets: AssetItem[] = [] // No assets = no file format options
-      const wrapper = mountAssetFilterBar({ assets })
+      const { container } = mountAssetFilterBar({ assets })
 
-      const fileFormatSelect = findFileFormatsFilter(wrapper)
-      expect(fileFormatSelect.exists()).toBe(false)
+      expect(findFileFormatsFilter(container)).toBeNull()
     })
 
     it('hides base model filter when no options available', () => {
       const assets = [createAssetWithoutBaseModel()] // Asset without base model = no base model options
-      const wrapper = mountAssetFilterBar({ assets })
+      const { container } = mountAssetFilterBar({ assets })
 
-      const baseModelSelect = findBaseModelsFilter(wrapper)
-      expect(baseModelSelect.exists()).toBe(false)
+      expect(findBaseModelsFilter(container)).toBeNull()
     })
 
     it('shows both filters when options are available', () => {
@@ -249,23 +268,17 @@ describe('AssetFilterBar', () => {
         createAssetWithSpecificExtension('safetensors'),
         createAssetWithSpecificBaseModel('sd15')
       ]
-      const wrapper = mountAssetFilterBar({ assets })
+      const { container } = mountAssetFilterBar({ assets })
 
-      const fileFormatSelect = findFileFormatsFilter(wrapper)
-      const baseModelSelect = findBaseModelsFilter(wrapper)
-
-      expect(fileFormatSelect.exists()).toBe(true)
-      expect(baseModelSelect.exists()).toBe(true)
+      expect(findFileFormatsFilter(container)).not.toBeNull()
+      expect(findBaseModelsFilter(container)).not.toBeNull()
     })
 
     it('hides both filters when no assets provided', () => {
-      const wrapper = mountAssetFilterBar()
+      const { container } = mountAssetFilterBar()
 
-      const fileFormatSelect = findFileFormatsFilter(wrapper)
-      const baseModelSelect = findBaseModelsFilter(wrapper)
-
-      expect(fileFormatSelect.exists()).toBe(false)
-      expect(baseModelSelect.exists()).toBe(false)
+      expect(findFileFormatsFilter(container)).toBeNull()
+      expect(findBaseModelsFilter(container)).toBeNull()
     })
   })
 })

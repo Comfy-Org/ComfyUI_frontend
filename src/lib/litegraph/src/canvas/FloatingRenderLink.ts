@@ -1,4 +1,6 @@
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
@@ -11,7 +13,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
-  Point
+  Point,
+  SlotIndex
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -34,15 +37,15 @@ export class FloatingRenderLink implements RenderLink {
   readonly fromSlot: INodeOutputSlot | INodeInputSlot
   readonly fromPos: Point
   readonly fromDirection: LinkDirection
-  readonly fromSlotIndex: number
+  readonly fromSlotIndex: SlotIndex
 
-  readonly outputNodeId: NodeId = -1
+  readonly outputNodeId: NodeId = UNASSIGNED_NODE_ID
   readonly outputNode?: LGraphNode
   readonly outputSlot?: INodeOutputSlot
   readonly outputIndex: number = -1
   readonly outputPos?: Point
 
-  readonly inputNodeId: NodeId = -1
+  readonly inputNodeId: NodeId = UNASSIGNED_NODE_ID
   readonly inputNode?: LGraphNode
   readonly inputSlot?: INodeInputSlot
   readonly inputIndex: number = -1
@@ -62,7 +65,7 @@ export class FloatingRenderLink implements RenderLink {
       target_slot: inputIndex
     } = link
 
-    if (outputNodeId !== -1) {
+    if (outputNodeId !== UNASSIGNED_NODE_ID) {
       // Output connected
       const outputNode = network.getNodeById(outputNodeId) ?? undefined
       if (!outputNode)

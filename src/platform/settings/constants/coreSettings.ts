@@ -1,5 +1,10 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import {
+  getDefaultLocale,
+  SUPPORTED_LOCALE_OPTIONS
+} from '@/locales/localeConfig'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
@@ -67,6 +72,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Only applies to the default implementation',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.NodeSearchBoxImpl.FollowCursor',
+    category: ['Comfy', 'Node Search Box', 'FollowCursor'],
+    name: 'Added nodes follow the cursor',
+    tooltip:
+      'When enabled, nodes added from the search box follow the cursor until clicked to place. Only applies to the default implementation.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.44.4'
   },
   {
     id: 'Comfy.NodeSearchBoxImpl.ShowCategory',
@@ -148,6 +163,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Sort node IDs when saving workflow',
     type: 'boolean',
     defaultValue: false
+  },
+  {
+    id: 'Comfy.Workflow.NamedValuesRestore',
+    name: 'Restore widget values by name',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true
   },
   {
     id: 'Comfy.Canvas.NavigationMode',
@@ -429,21 +451,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Locale',
     name: 'Language',
     type: 'combo',
-    options: [
-      { value: 'en', text: 'English' },
-      { value: 'zh', text: '中文' },
-      { value: 'zh-TW', text: '繁體中文' },
-      { value: 'ru', text: 'Русский' },
-      { value: 'ja', text: '日本語' },
-      { value: 'ko', text: '한국어' },
-      { value: 'fr', text: 'Français' },
-      { value: 'es', text: 'Español' },
-      { value: 'ar', text: 'عربي' },
-      { value: 'tr', text: 'Türkçe' },
-      { value: 'pt-BR', text: 'Português (BR)' },
-      { value: 'fa', text: 'فارسی' }
-    ],
-    defaultValue: () => navigator.language.split('-')[0] || 'en'
+    options: SUPPORTED_LOCALE_OPTIONS,
+    defaultValue: getDefaultLocale
   },
   {
     id: 'Comfy.NodeBadge.NodeSourceBadgeMode',
@@ -649,7 +658,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: isCloud ? 32 : 100,
+    defaultValue: 100,
     versionAdded: '1.3.5'
   },
   {
@@ -778,7 +787,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     versionAdded: '1.36.1'
   },
   {
@@ -802,16 +811,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Pointer', 'ClickBufferTime'],
     name: 'Pointer click drift delay',
     tooltip:
-      'After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.',
+      'After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.\n\nThe distance threshold (Pointer click drift) already disambiguates clicks from drags; this time threshold only matters when the pointer is held still then released. A long delay here forces every pointerdown to wait before drag begins, which feels laggy when click+dragging an unselected node. ~2 frames at 60fps is plenty.',
     experimental: true,
     type: 'slider',
     attrs: {
       min: 0,
       max: 1000,
-      step: 25
+      step: 1
     },
-    defaultValue: 150,
-    versionAdded: '1.4.3'
+    defaultValue: 32,
+    versionAdded: '1.4.3',
+    versionModified: '1.44.19'
   },
   {
     id: 'Comfy.Pointer.DoubleClickTime',
@@ -943,6 +953,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: 'dark',
     versionModified: '1.6.7',
+    telemetry: { trackChanges: true, includeValues: true },
     migrateDeprecatedValue(val: unknown) {
       const value = val as string
       // Legacy custom palettes were prefixed with 'custom_'
@@ -973,6 +984,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.8.7'
+  },
+  {
+    id: TOUR_SEEN_SETTING,
+    name: 'Onboarding coachmark tours the user has already seen',
+    type: 'hidden',
+    defaultValue: [],
+    versionAdded: '1.48.0'
   },
   {
     id: 'Comfy.InstalledVersion',
@@ -1205,22 +1223,19 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
-    id: 'Comfy.VueNodes.AutoScaleLayout',
-    category: ['Comfy', 'Nodes 2.0', 'AutoScaleLayout'],
-    name: 'Auto-scale layout (Nodes 2.0)',
-    tooltip:
-      'Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap',
-    type: 'boolean',
-    sortOrder: 50,
-    experimental: true,
-    defaultValue: true,
-    versionAdded: '1.30.3'
-  },
-  {
     id: 'Comfy.Assets.UseAssetAPI',
     name: 'Use Asset API for model library',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
+    defaultValue: isCloud ? true : false,
+    experimental: true
+  },
+  {
+    id: 'Comfy.ModelLibrary.UseAssetBrowser',
+    name: 'Use the asset browser for the model library',
+    type: 'hidden',
+    tooltip:
+      'When enabled alongside the asset API, the model library opens the asset browser. Otherwise it opens the sidebar tree.',
     defaultValue: isCloud ? true : false,
     experimental: true
   },
@@ -1245,7 +1260,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     tooltip:
       'Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout.',
-    defaultValue: false,
+    defaultValue: isNightly,
     experimental: true
   },
   {
@@ -1272,9 +1287,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements.',
     type: 'boolean',
-    defaultValue: false,
-    experimental: true,
-    versionAdded: '1.40.0'
+    defaultValue: true,
+    experimental: false,
+    versionAdded: '1.40.0',
+    versionModified: '1.44.5'
   },
   {
     id: 'Comfy.Graph.DeduplicateSubgraphNodeIds',

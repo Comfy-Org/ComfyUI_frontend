@@ -158,15 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "بازکردن زیرگراف انتخاب‌شده"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "تبدیل نودهای انتخاب‌شده به گروه نود"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "مدیریت گروه نودها"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "خارج کردن گروه نودهای انتخاب‌شده از گروه"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "درباره ComfyUI"
   },

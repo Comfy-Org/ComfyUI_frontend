@@ -10,7 +10,9 @@ import {
   useNodePricing
 } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
+import { toNodeId } from '@/types/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // -----------------------------------------------------------------------------
@@ -577,12 +579,88 @@ describe('useNodePricing', () => {
       const config = getNodePricingConfig(node)
       expect(config).toBeUndefined()
     })
+
+    it('does not leak the compiled JSONata expression', () => {
+      const { getNodePricingConfig } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestStripCompiledNode',
+        priceBadge('{"type":"usd","usd":0.05}')
+      )
+
+      const config = getNodePricingConfig(node)
+      expect(config).toBeDefined()
+      // _compiled is the runtime JSONata instance and must not be exposed to
+      // tooling/debug consumers.
+      expect(config).not.toHaveProperty('_compiled')
+    })
+  })
+
+  describe('reactive revision', () => {
+    it('bumps pricingRevision after an async evaluation resolves (Nodes 1.0 mode)', async () => {
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestRevisionNode',
+        priceBadge('{"type":"usd","usd":0.05}')
+      )
+
+      const before = pricingRevision.value
+      getNodeDisplayPrice(node)
+      await new Promise((r) => setTimeout(r, 50))
+
+      expect(pricingRevision.value).toBeGreaterThan(before)
+    })
+
+    it('bumps the per-node revision ref after async evaluation resolves in VueNodes mode', async () => {
+      const { getNodeDisplayPrice, getNodeRevisionRef, pricingRevision } =
+        useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestVueNodeRevision',
+        priceBadge('{"type":"usd","usd":0.05}')
+      )
+
+      LiteGraph.vueNodesMode = true
+      try {
+        const nodeId = node.id
+        const revBefore = getNodeRevisionRef(nodeId).value
+        const tickBefore = pricingRevision.value
+
+        getNodeDisplayPrice(node)
+        await new Promise((r) => setTimeout(r, 50))
+
+        // VueNodes path bumps per-node ref and the global tick.
+        expect(getNodeRevisionRef(nodeId).value).toBeGreaterThan(revBefore)
+        expect(pricingRevision.value).toBeGreaterThan(tickBefore)
+      } finally {
+        LiteGraph.vueNodesMode = false
+      }
+    })
+
+    it('returns the cached label on a second call with the same signature', async () => {
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestCachedSignatureNode',
+        priceBadge('{"type":"usd","usd":0.05}')
+      )
+
+      // First call schedules eval; second call (after resolution) is a cache hit.
+      getNodeDisplayPrice(node)
+      await new Promise((r) => setTimeout(r, 50))
+      const first = getNodeDisplayPrice(node)
+
+      const tickAfterFirst = pricingRevision.value
+      const second = getNodeDisplayPrice(node)
+      // Cache-hit path must not schedule a new evaluation, so no further tick.
+      await new Promise((r) => setTimeout(r, 20))
+
+      expect(second).toBe(first)
+      expect(pricingRevision.value).toBe(tickAfterFirst)
+    })
   })
 
   describe('getNodeRevisionRef', () => {
     it('should return a ref for a node ID', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref = getNodeRevisionRef('node-1')
+      const ref = getNodeRevisionRef(toNodeId('node-1'))
 
       expect(ref).toBeDefined()
       expect(ref.value).toBe(0)
@@ -590,25 +668,24 @@ describe('useNodePricing', () => {
 
     it('should return the same ref for the same node ID', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref1 = getNodeRevisionRef('node-same')
-      const ref2 = getNodeRevisionRef('node-same')
+      const ref1 = getNodeRevisionRef(toNodeId('node-same'))
+      const ref2 = getNodeRevisionRef(toNodeId('node-same'))
 
       expect(ref1).toBe(ref2)
     })
 
     it('should return different refs for different node IDs', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref1 = getNodeRevisionRef('node-a')
-      const ref2 = getNodeRevisionRef('node-b')
+      const ref1 = getNodeRevisionRef(toNodeId('node-a'))
+      const ref2 = getNodeRevisionRef(toNodeId('node-b'))
 
       expect(ref1).not.toBe(ref2)
     })
 
     it('should handle both string and number node IDs', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      // Number ID gets stringified, so '123' and 123 should return the same ref
-      const refFromNumber = getNodeRevisionRef(123)
-      const refFromString = getNodeRevisionRef('123')
+      const refFromNumber = getNodeRevisionRef(toNodeId(123))
+      const refFromString = getNodeRevisionRef(toNodeId('123'))
 
       expect(refFromNumber).toBe(refFromString)
     })
@@ -975,6 +1052,47 @@ describe('formatPricingResult', () => {
     it('should return empty for undefined', () => {
       const result = formatPricingResult(undefined)
       expect(result).toBe('')
+    })
+  })
+
+  describe('non-finite numbers', () => {
+    it('returns empty for type:usd when usd is a non-numeric string', () => {
+      const result = formatPricingResult({ type: 'usd', usd: 'not-a-number' })
+      expect(result).toBe('')
+    })
+
+    it('returns empty for type:usd when usd is Infinity', () => {
+      const result = formatPricingResult({ type: 'usd', usd: Infinity })
+      expect(result).toBe('')
+    })
+
+    it('returns empty for type:range_usd when min_usd or max_usd is NaN', () => {
+      expect(
+        formatPricingResult({ type: 'range_usd', min_usd: NaN, max_usd: 0.1 })
+      ).toBe('')
+      expect(
+        formatPricingResult({ type: 'range_usd', min_usd: 0.05, max_usd: NaN })
+      ).toBe('')
+    })
+
+    it('returns empty for type:list_usd when usd is empty or all values are non-finite', () => {
+      expect(formatPricingResult({ type: 'list_usd', usd: [] })).toBe('')
+      expect(
+        formatPricingResult({ type: 'list_usd', usd: [NaN, 'x', null] })
+      ).toBe('')
+    })
+
+    it('drops non-finite entries from type:list_usd while keeping finite ones', () => {
+      const result = formatPricingResult(
+        { type: 'list_usd', usd: [0.05, NaN, 0.1] },
+        { valueOnly: true }
+      )
+      expect(result).toBe('10.6/21.1')
+    })
+
+    it('returns empty for legacy {usd} format when usd is non-finite', () => {
+      expect(formatPricingResult({ usd: NaN })).toBe('')
+      expect(formatPricingResult({ usd: 'abc' })).toBe('')
     })
   })
 })

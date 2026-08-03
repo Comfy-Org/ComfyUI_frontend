@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -59,6 +59,15 @@ vi.mock('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil', () => ({
     mockPerformSubscriptionCheckout(...args)
 }))
 
+const mockPerformTeamSubscriptionCheckout = vi.fn()
+vi.mock(
+  '@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil',
+  () => ({
+    performTeamSubscriptionCheckout: (...args: unknown[]) =>
+      mockPerformTeamSubscriptionCheckout(...args)
+  })
+)
+
 const createI18nInstance = () =>
   createI18n({
     legacy: false,
@@ -73,6 +82,7 @@ const createI18nInstance = () =>
         },
         subscription: {
           subscribeTo: 'Subscribe to {plan}',
+          teamPlan: { name: 'Team Plan' },
           tiers: {
             standard: { name: 'Standard' },
             creator: { name: 'Creator' },
@@ -86,7 +96,7 @@ const createI18nInstance = () =>
 const mountView = async (query: Record<string, unknown>) => {
   mockQuery = query
 
-  const wrapper = mount(CloudSubscriptionRedirectView, {
+  const { container } = render(CloudSubscriptionRedirectView, {
     global: {
       plugins: [createI18nInstance()]
     }
@@ -94,7 +104,7 @@ const mountView = async (query: Record<string, unknown>) => {
 
   await flushPromises()
 
-  return { wrapper }
+  return { container }
 }
 
 describe('CloudSubscriptionRedirectView', () => {
@@ -118,27 +128,28 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('shows subscription copy when subscriptionType is valid', async () => {
-    const { wrapper } = await mountView({ tier: 'creator' })
+    await mountView({ tier: 'creator' })
 
     // Should not redirect to home
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
 
     // Shows copy under logo
-    expect(wrapper.text()).toContain('Subscribe to Creator')
+    expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
 
     // Triggers checkout flow
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',
-      false
+      {
+        openInNewTab: false,
+        paymentIntentSource: 'deep_link'
+      }
     )
 
     // Shows loading affordances
-    expect(wrapper.findComponent({ name: 'ProgressSpinner' }).exists()).toBe(
-      true
-    )
-    const skipLink = wrapper.get('a[href="/"]')
-    expect(skipLink.text()).toContain('Skip to the cloud app')
+    expect(
+      screen.getByRole('link', { name: /skip to the cloud app/i })
+    ).toBeInTheDocument()
   })
 
   test('opens billing portal when subscription is already active', async () => {
@@ -152,16 +163,40 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('uses first value when subscriptionType is an array', async () => {
-    const { wrapper } = await mountView({
+    await mountView({
       tier: ['creator', 'pro']
     })
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-    expect(wrapper.text()).toContain('Subscribe to Creator')
+    expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',
-      false
+      {
+        openInNewTab: false,
+        paymentIntentSource: 'deep_link'
+      }
     )
+  })
+
+  test('checks out the team plan via the workspace path with the chosen stop and cycle', async () => {
+    await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
+
+    expect(mockRouterPush).not.toHaveBeenCalledWith('/')
+    expect(screen.getByText('Subscribe to Team Plan')).toBeInTheDocument()
+    expect(mockPerformTeamSubscriptionCheckout).toHaveBeenCalledWith(
+      'team_700',
+      'yearly',
+      { paymentIntentSource: 'deep_link' }
+    )
+    // Team never goes through the personal checkout path
+    expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
+  })
+
+  test('redirects to home for a team link with no stop', async () => {
+    await mountView({ tier: 'team', cycle: 'yearly' })
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/')
+    expect(mockPerformTeamSubscriptionCheckout).not.toHaveBeenCalled()
   })
 })

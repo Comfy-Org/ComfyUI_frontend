@@ -7,6 +7,7 @@ import type { InProgressItem } from '@/renderer/extensions/linearMode/linearMode
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { ResultItemImpl } from '@/stores/queueStore'
+import { toNodeId } from '@/types/nodeId'
 
 const mediaRef = ref<AssetItem[]>([])
 const pendingResolveRef = ref(new Set<string>())
@@ -23,8 +24,8 @@ const selectAsLatestFn = vi.fn()
 const resolveIfReadyFn = vi.fn()
 const resolvedOutputsCacheRef = new Map<string, ResultItemImpl[]>()
 
-vi.mock('@/platform/assets/composables/media/useMediaAssets', () => ({
-  useMediaAssets: () => ({
+vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
+  useAssetsApi: () => ({
     media: mediaRef,
     loading: ref(false),
     error: ref(null),
@@ -127,7 +128,7 @@ function makeAsset(
     preview_url: `/view?filename=${id}.png`,
     user_metadata: {
       jobId,
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       subfolder: '',
       ...(opts?.allOutputs ? { allOutputs: opts.allOutputs } : {}),
       ...(opts?.outputCount !== undefined
@@ -220,7 +221,7 @@ describe(useOutputHistory, () => {
     })
 
     it('returns outputs from metadata allOutputs when count matches', () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
       const results = [makeResult('a.png'), makeResult('b.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -248,7 +249,7 @@ describe(useOutputHistory, () => {
       })
 
       const appModeStore = useAppModeStore()
-      appModeStore.selectedOutputs.push('2')
+      appModeStore.selectedOutputs.push(toNodeId('2'))
 
       const { allOutputs } = useOutputHistory()
       const outputs = allOutputs(asset)
@@ -278,7 +279,7 @@ describe(useOutputHistory, () => {
       })
 
       const appModeStore = useAppModeStore()
-      appModeStore.selectedOutputs.push('2')
+      appModeStore.selectedOutputs.push(toNodeId('2'))
 
       const { allOutputs } = useOutputHistory()
       const first = allOutputs(asset)
@@ -290,7 +291,7 @@ describe(useOutputHistory, () => {
     })
 
     it('returns in-progress outputs for pending resolve jobs', () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
       pendingResolveRef.value = new Set(['job-1'])
       inProgressItemsRef.value = [
         {
@@ -317,7 +318,7 @@ describe(useOutputHistory, () => {
     })
 
     it('fetches full job detail for multi-output jobs', async () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
       jobDetailResults.set('job-1', {
         outputs: {
           '1': {
@@ -346,7 +347,7 @@ describe(useOutputHistory, () => {
 
   describe('watchEffect resolve loop', () => {
     it('resolves pending jobs when history outputs load', async () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
       const results = [makeResult('a.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -365,7 +366,7 @@ describe(useOutputHistory, () => {
     })
 
     it('does not select first history when a selection exists', async () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
       const results = [makeResult('a.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,

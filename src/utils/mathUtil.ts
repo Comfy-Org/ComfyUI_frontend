@@ -1,5 +1,48 @@
+import { clamp } from 'es-toolkit/math'
+
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
+
+/** A rectangle's viewport edges: the DOMRect subset, so a DOMRect is directly assignable. */
+export type RectEdges = Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom'>
+
+/**
+ * Clips a rectangle to `bounds`: each edge is limited independently, so the
+ * rect shrinks to the overlapping region rather than being moved to fit.
+ * Keeps an interaction rectangle (the canvas selection box, the assets
+ * marquee) inside its own surface. Both the rect and the bounds use
+ * viewport-style edges (left/top/right/bottom), e.g. a DOMRect.
+ */
+export function clipRectToBounds(
+  rect: RectEdges,
+  bounds: RectEdges
+): RectEdges {
+  return {
+    left: clamp(rect.left, bounds.left, bounds.right),
+    top: clamp(rect.top, bounds.top, bounds.bottom),
+    right: clamp(rect.right, bounds.left, bounds.right),
+    bottom: clamp(rect.bottom, bounds.top, bounds.bottom)
+  }
+}
+
+/**
+ * Linearly maps a value from [min, max] to [0, 1].
+ * Returns 0 when min equals max to avoid division by zero.
+ */
+export function normalize(value: number, min: number, max: number): number {
+  return max === min ? 0 : (value - min) / (max - min)
+}
+
+/**
+ * Linearly maps a normalized value from [0, 1] back to [min, max].
+ */
+export function denormalize(
+  normalized: number,
+  min: number,
+  max: number
+): number {
+  return min + normalized * (max - min)
+}
 
 /** Simple 2D point or size as [x, y] or [width, height] */
 type Vec2 = readonly [number, number]

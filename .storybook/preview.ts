@@ -5,7 +5,6 @@ import type { Preview, StoryContext, StoryFn } from '@storybook/vue3-vite'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 
@@ -42,7 +41,6 @@ setup((app) => {
       }
     }
   })
-  app.use(ConfirmationService)
   app.use(ToastService)
 })
 

@@ -15,7 +15,7 @@
       :data-variant="queueButtonVariant"
       @click="queuePrompt"
     >
-      <i :class="cn(iconClass, 'size-4')" />
+      <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
       {{ queueButtonLabel }}
     </Button>
 
@@ -80,25 +80,19 @@ import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   isInstantMode,
   isInstantRunningMode,
   useQueueSettingsStore
-} from '@/stores/queueStore'
+} from '@/stores/queueSettingsStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { cn } from '@/utils/tailwindUtil'
-import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const workspaceStore = useWorkspaceStore()
 const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
-
-const nodeDefStore = useNodeDefStore()
-const hasMissingNodes = computed(() =>
-  graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
-)
+const { hasMissingError } = storeToRefs(useExecutionErrorStore())
 
 const { t } = useI18n()
 type QueueModeMenuKey = 'disabled' | 'change' | 'instant-idle'
@@ -131,7 +125,8 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
         tooltip: t('menu.onChangeTooltip'),
         command: () => {
           useTelemetry()?.trackUiButtonClicked({
-            button_id: 'queue_mode_option_run_on_change_selected'
+            button_id: 'queue_mode_option_run_on_change_selected',
+            element_group: 'queue'
           })
           queueMode.value = 'change'
         }
@@ -145,7 +140,8 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
         tooltip: t('menu.instantTooltip'),
         command: () => {
           useTelemetry()?.trackUiButtonClicked({
-            button_id: 'queue_mode_option_run_instant_selected'
+            button_id: 'queue_mode_option_run_instant_selected',
+            element_group: 'queue'
           })
           queueMode.value = 'instant-idle'
         }
@@ -188,7 +184,7 @@ const iconClass = computed(() => {
   if (isStopInstantAction.value) {
     return 'icon-[lucide--square]'
   }
-  if (hasMissingNodes.value) {
+  if (hasMissingError.value) {
     return 'icon-[lucide--triangle-alert]'
   }
   if (workspaceStore.shiftDown) {
@@ -210,8 +206,8 @@ const queueButtonTooltip = computed(() => {
   if (isStopInstantAction.value) {
     return t('menu.stopRunInstantTooltip')
   }
-  if (hasMissingNodes.value) {
-    return t('menu.runWorkflowDisabled')
+  if (hasMissingError.value) {
+    return t('menu.runWorkflowMissingResources')
   }
   if (workspaceStore.shiftDown) {
     return t('menu.runWorkflowFront')
@@ -237,7 +233,8 @@ const queuePrompt = async (e: Event) => {
 
   if (batchCount.value > 1) {
     useTelemetry()?.trackUiButtonClicked({
-      button_id: 'queue_run_multiple_batches_submitted'
+      button_id: 'queue_run_multiple_batches_submitted',
+      element_group: 'queue'
     })
   }
 

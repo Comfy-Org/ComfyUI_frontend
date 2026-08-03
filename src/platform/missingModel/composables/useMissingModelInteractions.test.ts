@@ -1,33 +1,24 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp } from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 const mockGetNodeByExecutionId = vi.fn()
 const mockResolveNodeDisplayName = vi.fn()
-const mockValidateSourceUrl = vi.fn()
-const mockGetAssetMetadata = vi.fn()
-const mockGetAssetDisplayName = vi.fn((a: { name: string }) => a.name)
-const mockGetAssetFilename = vi.fn((a: { name: string }) => a.name)
-const mockGetAssets = vi.fn()
+const mockTrackDownload = vi.fn()
+const mockInvalidateModelsForCategory = vi.fn()
 const mockUpdateModelsForNodeType = vi.fn()
 const mockGetAllNodeProviders = vi.fn()
 const mockDownloadList = vi.fn(
   (): Array<{ taskId: string; status: string }> => []
 )
 
-vi.mock('@/i18n', () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
-
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -52,9 +43,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
-    getAssets: mockGetAssets,
     updateModelsForNodeType: mockUpdateModelsForNodeType,
-    invalidateModelsForCategory: vi.fn(),
+    invalidateModelsForCategory: mockInvalidateModelsForCategory,
     updateModelsForTag: vi.fn()
   })
 }))
@@ -64,7 +54,7 @@ vi.mock('@/stores/assetDownloadStore', () => ({
     get downloadList() {
       return mockDownloadList()
     },
-    trackDownload: vi.fn()
+    trackDownload: mockTrackDownload
   })
 }))
 
@@ -74,41 +64,9 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   })
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    getAssetMetadata: (...args: unknown[]) => mockGetAssetMetadata(...args)
-  }
-}))
-
-vi.mock('@/platform/assets/utils/assetMetadataUtils', () => ({
-  getAssetDisplayName: (a: { name: string }) => mockGetAssetDisplayName(a),
-  getAssetFilename: (a: { name: string }) => mockGetAssetFilename(a)
-}))
-
-vi.mock('@/platform/assets/importSources/civitaiImportSource', () => ({
-  civitaiImportSource: {
-    type: 'civitai',
-    name: 'Civitai',
-    hostnames: ['civitai.com']
-  }
-}))
-
-vi.mock('@/platform/assets/importSources/huggingfaceImportSource', () => ({
-  huggingfaceImportSource: {
-    type: 'huggingface',
-    name: 'Hugging Face',
-    hostnames: ['huggingface.co']
-  }
-}))
-
-vi.mock('@/platform/assets/utils/importSourceUtil', () => ({
-  validateSourceUrl: (...args: unknown[]) => mockValidateSourceUrl(...args)
-}))
-
 import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import {
-  getComboValue,
   getModelStateKey,
   getNodeDisplayLabel,
   useMissingModelInteractions
@@ -129,15 +87,52 @@ function makeCandidate(
 }
 
 describe('useMissingModelInteractions', () => {
+  const mountedApps: App<Element>[] = []
+
+  function setupWithI18n<T>(factory: () => T): T {
+    let result: T | undefined
+    const host = document.createElement('div')
+    const app = createApp({
+      setup() {
+        result = factory()
+        return () => null
+      }
+    })
+    app.use(
+      createI18n({
+        legacy: false,
+        locale: 'en',
+        messages: { en: enMessages }
+      })
+    )
+    app.mount(host)
+    mountedApps.push(app)
+
+    if (result === undefined) {
+      throw new Error('Composable setup did not run')
+    }
+    return result
+  }
+
+  function setupMissingModelInteractions(): ReturnType<
+    typeof useMissingModelInteractions
+  > {
+    return setupWithI18n(() => useMissingModelInteractions())
+  }
+
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.resetAllMocks()
-    mockGetAssetDisplayName.mockImplementation((a: { name: string }) => a.name)
-    mockGetAssetFilename.mockImplementation((a: { name: string }) => a.name)
     mockDownloadList.mockImplementation(
       (): Array<{ taskId: string; status: string }> => []
     )
     ;(app as { rootGraph: unknown }).rootGraph = null
+  })
+
+  afterEach(() => {
+    for (const app of mountedApps.splice(0)) {
+      app.unmount()
+    }
   })
 
   describe('getModelStateKey', () => {
@@ -180,146 +175,25 @@ describe('useMissingModelInteractions', () => {
     })
   })
 
-  describe('getComboValue', () => {
-    it('returns undefined when node is not found', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = {}
-      mockGetNodeByExecutionId.mockReturnValue(null)
-
-      const result = getComboValue(makeCandidate())
-      expect(result).toBeUndefined()
-    })
-
-    it('returns undefined when widget is not found', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = {}
-      mockGetNodeByExecutionId.mockReturnValue({
-        widgets: [{ name: 'other_widget', value: 'test' }]
-      })
-
-      const result = getComboValue(makeCandidate())
-      expect(result).toBeUndefined()
-    })
-
-    it('returns string value directly', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = {}
-      mockGetNodeByExecutionId.mockReturnValue({
-        widgets: [{ name: 'ckpt_name', value: 'v1-5.safetensors' }]
-      })
-
-      expect(getComboValue(makeCandidate())).toBe('v1-5.safetensors')
-    })
-
-    it('returns stringified number value', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = {}
-      mockGetNodeByExecutionId.mockReturnValue({
-        widgets: [{ name: 'ckpt_name', value: 42 }]
-      })
-
-      expect(getComboValue(makeCandidate())).toBe('42')
-    })
-
-    it('returns undefined for unexpected types', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = {}
-      mockGetNodeByExecutionId.mockReturnValue({
-        widgets: [{ name: 'ckpt_name', value: { complex: true } }]
-      })
-
-      expect(getComboValue(makeCandidate())).toBeUndefined()
-    })
-
-    it('returns undefined when nodeId is null', () => {
-      const result = getComboValue(makeCandidate({ nodeId: undefined }))
-      expect(result).toBeUndefined()
-    })
-  })
-
   describe('toggleModelExpand / isModelExpanded', () => {
     it('starts collapsed by default', () => {
-      const { isModelExpanded } = useMissingModelInteractions()
+      const { isModelExpanded } = setupMissingModelInteractions()
       expect(isModelExpanded('key1')).toBe(false)
     })
 
     it('toggles to expanded', () => {
       const { toggleModelExpand, isModelExpanded } =
-        useMissingModelInteractions()
+        setupMissingModelInteractions()
       toggleModelExpand('key1')
       expect(isModelExpanded('key1')).toBe(true)
     })
 
     it('toggles back to collapsed', () => {
       const { toggleModelExpand, isModelExpanded } =
-        useMissingModelInteractions()
+        setupMissingModelInteractions()
       toggleModelExpand('key1')
       toggleModelExpand('key1')
       expect(isModelExpanded('key1')).toBe(false)
-    })
-  })
-
-  describe('handleComboSelect', () => {
-    it('sets selectedLibraryModel in store', () => {
-      const store = useMissingModelStore()
-      const { handleComboSelect } = useMissingModelInteractions()
-
-      handleComboSelect('key1', 'model_v2.safetensors')
-      expect(store.selectedLibraryModel['key1']).toBe('model_v2.safetensors')
-    })
-
-    it('does not set value when undefined', () => {
-      const store = useMissingModelStore()
-      const { handleComboSelect } = useMissingModelInteractions()
-
-      handleComboSelect('key1', undefined)
-      expect(store.selectedLibraryModel['key1']).toBeUndefined()
-    })
-  })
-
-  describe('isSelectionConfirmable', () => {
-    it('returns false when no selection exists', () => {
-      const { isSelectionConfirmable } = useMissingModelInteractions()
-      expect(isSelectionConfirmable('key1')).toBe(false)
-    })
-
-    it('returns false when download is running', () => {
-      const store = useMissingModelStore()
-      store.selectedLibraryModel['key1'] = 'model.safetensors'
-      store.importTaskIds['key1'] = 'task-123'
-      mockDownloadList.mockReturnValue([
-        { taskId: 'task-123', status: 'running' }
-      ])
-
-      const { isSelectionConfirmable } = useMissingModelInteractions()
-      expect(isSelectionConfirmable('key1')).toBe(false)
-    })
-
-    it('returns false when importCategoryMismatch exists', () => {
-      const store = useMissingModelStore()
-      store.selectedLibraryModel['key1'] = 'model.safetensors'
-      store.importCategoryMismatch['key1'] = 'loras'
-
-      const { isSelectionConfirmable } = useMissingModelInteractions()
-      expect(isSelectionConfirmable('key1')).toBe(false)
-    })
-
-    it('returns true when selection is ready with no active download', () => {
-      const store = useMissingModelStore()
-      store.selectedLibraryModel['key1'] = 'model.safetensors'
-      mockDownloadList.mockReturnValue([])
-
-      const { isSelectionConfirmable } = useMissingModelInteractions()
-      expect(isSelectionConfirmable('key1')).toBe(true)
-    })
-  })
-
-  describe('cancelLibrarySelect', () => {
-    it('clears selectedLibraryModel and importCategoryMismatch', () => {
-      const store = useMissingModelStore()
-      store.selectedLibraryModel['key1'] = 'model.safetensors'
-      store.importCategoryMismatch['key1'] = 'loras'
-
-      const { cancelLibrarySelect } = useMissingModelInteractions()
-      cancelLibrarySelect('key1')
-
-      expect(store.selectedLibraryModel['key1']).toBeUndefined()
-      expect(store.importCategoryMismatch['key1']).toBeUndefined()
     })
   })
 
@@ -343,6 +217,7 @@ describe('useMissingModelInteractions', () => {
 
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'new_model.safetensors'
+      store.importTaskIds['key1'] = 'task-123'
       store.setMissingModels([
         makeCandidate({ name: 'old_model.safetensors', nodeId: '10' }),
         makeCandidate({ name: 'old_model.safetensors', nodeId: '20' })
@@ -350,7 +225,7 @@ describe('useMissingModelInteractions', () => {
 
       const removeSpy = vi.spyOn(store, 'removeMissingModelByNameOnNodes')
 
-      const { confirmLibrarySelect } = useMissingModelInteractions()
+      const { confirmLibrarySelect } = setupMissingModelInteractions()
       confirmLibrarySelect(
         'key1',
         'old_model.safetensors',
@@ -368,6 +243,7 @@ describe('useMissingModelInteractions', () => {
         new Set(['10', '20'])
       )
       expect(store.selectedLibraryModel['key1']).toBeUndefined()
+      expect(store.importTaskIds['key1']).toBeUndefined()
     })
 
     it('does nothing when no selection exists', () => {
@@ -375,7 +251,7 @@ describe('useMissingModelInteractions', () => {
       const store = useMissingModelStore()
       const removeSpy = vi.spyOn(store, 'removeMissingModelByNameOnNodes')
 
-      const { confirmLibrarySelect } = useMissingModelInteractions()
+      const { confirmLibrarySelect } = setupMissingModelInteractions()
       confirmLibrarySelect('key1', 'model.safetensors', [], null)
 
       expect(removeSpy).not.toHaveBeenCalled()
@@ -387,7 +263,7 @@ describe('useMissingModelInteractions', () => {
       store.selectedLibraryModel['key1'] = 'new.safetensors'
       const removeSpy = vi.spyOn(store, 'removeMissingModelByNameOnNodes')
 
-      const { confirmLibrarySelect } = useMissingModelInteractions()
+      const { confirmLibrarySelect } = setupMissingModelInteractions()
       confirmLibrarySelect('key1', 'model.safetensors', [], null)
 
       expect(removeSpy).not.toHaveBeenCalled()
@@ -403,114 +279,67 @@ describe('useMissingModelInteractions', () => {
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'new.safetensors'
 
-      const { confirmLibrarySelect } = useMissingModelInteractions()
+      const { confirmLibrarySelect } = setupMissingModelInteractions()
       confirmLibrarySelect('key1', 'model.safetensors', [], 'checkpoints')
 
       expect(mockGetAllNodeProviders).toHaveBeenCalledWith('checkpoints')
     })
   })
 
-  describe('handleUrlInput', () => {
-    it('clears previous state on new input', () => {
-      const store = useMissingModelStore()
-      store.urlMetadata['key1'] = { name: 'old' } as never
-      store.urlErrors['key1'] = 'old error'
-      store.urlFetching['key1'] = true
-
-      const { handleUrlInput } = useMissingModelInteractions()
-      handleUrlInput('key1', 'https://civitai.com/models/123')
-
-      expect(store.urlInputs['key1']).toBe('https://civitai.com/models/123')
-      expect(store.urlMetadata['key1']).toBeUndefined()
-      expect(store.urlErrors['key1']).toBeUndefined()
-      expect(store.urlFetching['key1']).toBe(false)
+  describe('getDownloadStatus', () => {
+    it('returns null when no taskId is tracked for the key', () => {
+      const { getDownloadStatus } = setupMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toBeNull()
     })
 
-    it('does not set debounce timer for empty input', () => {
+    it('returns the matching download record when a taskId is tracked', () => {
       const store = useMissingModelStore()
-      const setTimerSpy = vi.spyOn(store, 'setDebounceTimer')
+      store.importTaskIds['key1'] = 'task-42'
+      mockDownloadList.mockReturnValue([
+        { taskId: 'task-other', status: 'running' },
+        { taskId: 'task-42', status: 'created' }
+      ])
 
-      const { handleUrlInput } = useMissingModelInteractions()
-      handleUrlInput('key1', '   ')
-
-      expect(setTimerSpy).not.toHaveBeenCalled()
-    })
-
-    it('sets debounce timer for non-empty input', () => {
-      const store = useMissingModelStore()
-      const setTimerSpy = vi.spyOn(store, 'setDebounceTimer')
-
-      const { handleUrlInput } = useMissingModelInteractions()
-      handleUrlInput('key1', 'https://civitai.com/models/123')
-
-      expect(setTimerSpy).toHaveBeenCalledWith(
-        'key1',
-        expect.any(Function),
-        800
-      )
-    })
-
-    it('clears previous debounce timer', () => {
-      const store = useMissingModelStore()
-      const clearTimerSpy = vi.spyOn(store, 'clearDebounceTimer')
-
-      const { handleUrlInput } = useMissingModelInteractions()
-      handleUrlInput('key1', 'https://civitai.com/models/123')
-
-      expect(clearTimerSpy).toHaveBeenCalledWith('key1')
+      const { getDownloadStatus } = setupMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toEqual({
+        taskId: 'task-42',
+        status: 'created'
+      })
     })
   })
 
-  describe('getTypeMismatch', () => {
-    it('returns null when groupDirectory is null', () => {
-      const { getTypeMismatch } = useMissingModelInteractions()
-      expect(getTypeMismatch('key1', null)).toBeNull()
-    })
-
-    it('returns null when no metadata exists', () => {
-      const { getTypeMismatch } = useMissingModelInteractions()
-      expect(getTypeMismatch('key1', 'checkpoints')).toBeNull()
-    })
-
-    it('returns null when metadata has no tags', () => {
+  describe('handleUploadedModelImport', () => {
+    it('tracks an async-pending result via importTaskIds and trackDownload', () => {
       const store = useMissingModelStore()
-      store.urlMetadata['key1'] = { name: 'model', tags: [] } as never
 
-      const { getTypeMismatch } = useMissingModelInteractions()
-      expect(getTypeMismatch('key1', 'checkpoints')).toBeNull()
+      const { handleUploadedModelImport } = setupMissingModelInteractions()
+      handleUploadedModelImport('key1', {
+        status: 'processing',
+        taskId: 'task-99',
+        modelType: 'checkpoints',
+        filename: 'model.safetensors'
+      })
+
+      expect(store.importTaskIds['key1']).toBe('task-99')
+      expect(store.selectedLibraryModel['key1']).toBe('model.safetensors')
+      expect(mockTrackDownload).toHaveBeenCalledWith(
+        'task-99',
+        'checkpoints',
+        'model.safetensors'
+      )
     })
 
-    it('returns null when detected type matches directory', () => {
-      const store = useMissingModelStore()
-      store.urlMetadata['key1'] = {
-        name: 'model',
-        tags: ['checkpoints']
-      } as never
+    it('invalidates model caches when the result is already completed', () => {
+      const { handleUploadedModelImport } = setupMissingModelInteractions()
+      handleUploadedModelImport('key1', {
+        status: 'success',
+        modelType: 'checkpoints',
+        filename: 'model.safetensors'
+      })
 
-      const { getTypeMismatch } = useMissingModelInteractions()
-      expect(getTypeMismatch('key1', 'checkpoints')).toBeNull()
-    })
-
-    it('returns detected type when it differs from directory', () => {
-      const store = useMissingModelStore()
-      store.urlMetadata['key1'] = {
-        name: 'model',
-        tags: ['loras']
-      } as never
-
-      const { getTypeMismatch } = useMissingModelInteractions()
-      expect(getTypeMismatch('key1', 'checkpoints')).toBe('loras')
-    })
-
-    it('returns null when tags contain no recognized model type', () => {
-      const store = useMissingModelStore()
-      store.urlMetadata['key1'] = {
-        name: 'model',
-        tags: ['other', 'random']
-      } as never
-
-      const { getTypeMismatch } = useMissingModelInteractions()
-      expect(getTypeMismatch('key1', 'checkpoints')).toBeNull()
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
+        'checkpoints'
+      )
     })
   })
 })

@@ -28,7 +28,7 @@ export function useGroupMenuOptions() {
       try {
         groupContext.recomputeInsideNodes()
       } catch (e) {
-        console.warn('Failed to recompute group nodes:', e)
+        console.warn('Failed to recompute nodes in group:', e)
         return
       }
 
@@ -36,7 +36,7 @@ export function useGroupMenuOptions() {
       groupContext.resizeTo(groupContext.children, padding)
       groupContext.graph?.change()
       canvasStore.canvas?.setDirty(true, true)
-      workflowStore.activeWorkflow?.changeTracker?.checkState()
+      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
     }
   })
 
@@ -89,7 +89,7 @@ export function useGroupMenuOptions() {
     try {
       groupContext.recomputeInsideNodes()
     } catch (e) {
-      console.warn('Failed to recompute group nodes for mode options:', e)
+      console.warn('Failed to recompute nodes in group for mode options:', e)
       return options
     }
 
@@ -119,7 +119,7 @@ export function useGroupMenuOptions() {
         })
         canvasStore.canvas?.setDirty(true, true)
         groupContext.graph?.change()
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
         bump()
       }
     })

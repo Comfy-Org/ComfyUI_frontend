@@ -132,6 +132,35 @@ describe('useAssetSelection', () => {
       expect(isSelected('asset-1')).toBe(true)
       expect(selectedCount.value).toBe(1)
     })
+
+    it('keeps the only selected asset selected when clicked again', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+      handleAssetClick(assets[0], 0, assets)
+
+      expect(isSelected('asset-0')).toBe(true)
+      expect(selectedCount.value).toBe(1)
+    })
+
+    it('collapses a multi-selection to the clicked asset', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+      mockCtrlKey.value = true
+      handleAssetClick(assets[1], 1, assets)
+      mockCtrlKey.value = false
+
+      handleAssetClick(assets[0], 0, assets)
+
+      expect(isSelected('asset-0')).toBe(true)
+      expect(isSelected('asset-1')).toBe(false)
+      expect(selectedCount.value).toBe(1)
+    })
   })
 
   describe('handleAssetClick - shift+click', () => {
@@ -238,6 +267,33 @@ describe('useAssetSelection', () => {
     })
   })
 
+  describe('toggleAssetSelection', () => {
+    it('removes one asset without clearing the rest of the selection', () => {
+      const selection = useAssetSelection()
+      const assets = createMockAssets(3)
+
+      selection.selectAll(assets)
+      selection.toggleAssetSelection(assets[1], 1, assets)
+
+      expect(selection.isSelected('asset-0')).toBe(true)
+      expect(selection.isSelected('asset-1')).toBe(false)
+      expect(selection.isSelected('asset-2')).toBe(true)
+      expect(selection.selectedCount.value).toBe(2)
+    })
+
+    it('adds one asset without clearing the rest of the selection', () => {
+      const selection = useAssetSelection()
+      const assets = createMockAssets(3)
+
+      selection.handleAssetClick(assets[0], 0, assets)
+      selection.toggleAssetSelection(assets[1], 1, assets)
+
+      expect(selection.isSelected('asset-0')).toBe(true)
+      expect(selection.isSelected('asset-1')).toBe(true)
+      expect(selection.selectedCount.value).toBe(2)
+    })
+  })
+
   describe('selectAll', () => {
     it('selects all assets', () => {
       const { selectAll, selectedCount } = useAssetSelection()
@@ -245,6 +301,36 @@ describe('useAssetSelection', () => {
 
       selectAll(assets)
       expect(selectedCount.value).toBe(5)
+    })
+  })
+
+  describe('setSelectedIds', () => {
+    it('replaces selection and anchors on the last selected asset', () => {
+      const selection = useAssetSelection()
+      const store = useAssetSelectionStore()
+      const assets = createMockAssets(5)
+
+      selection.setSelectedIds(['asset-1', 'asset-3'], assets)
+
+      expect(Array.from(store.selectedAssetIds).sort()).toEqual([
+        'asset-1',
+        'asset-3'
+      ])
+      expect(store.lastSelectedIndex).toBe(3)
+      expect(store.lastSelectedAssetId).toBe('asset-3')
+    })
+
+    it('clears the anchor when the selection is empty', () => {
+      const selection = useAssetSelection()
+      const store = useAssetSelectionStore()
+      const assets = createMockAssets(3)
+      store.setLastSelectedIndex(2)
+      store.setLastSelectedAssetId('asset-2')
+
+      selection.setSelectedIds([], assets)
+
+      expect(store.lastSelectedIndex).toBe(-1)
+      expect(store.lastSelectedAssetId).toBeNull()
     })
   })
 

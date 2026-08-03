@@ -1,14 +1,22 @@
-import { computed, onBeforeUnmount, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
+  CreateTopupResponse,
+  PreviewSubscribeOptions,
   PreviewSubscribeResponse,
+  SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
@@ -19,12 +27,47 @@ import type {
 } from '../../../composables/billing/types'
 
 /**
+ * Whether a rejection means the subscription already holds the state the caller
+ * asked for. The request did nothing, but the user's intent is satisfied, so
+ * surfacing it as a failure would report a problem that does not exist — most
+ * visibly when a request succeeds and its response is lost, and the retry is
+ * then refused.
+ *
+ * The 4xx check keeps a server fault that happens to echo one of these codes
+ * from being swallowed as success.
+ */
+function isAlreadyInRequestedState(err: unknown, code: string): boolean {
+  return (
+    err instanceof WorkspaceApiError &&
+    err.code === code &&
+    err.status !== undefined &&
+    err.status >= 400 &&
+    err.status < 500
+  )
+}
+
+/**
+ * Refreshes local state after a no-op, without letting the refresh overturn the
+ * outcome. The desired state already holds on the server, so a failed read must
+ * not turn it back into a reported failure — which is exactly what would happen
+ * on the flaky network that caused the no-op in the first place.
+ */
+async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
+  try {
+    await refresh()
+  } catch {
+    // Intentionally ignored: the next read corrects the view.
+  }
+}
+
+/**
  * Adapter for workspace-scoped billing via /billing/* endpoints.
  * Used for team workspaces.
  * @internal - Use useBillingContext() instead of importing directly.
  */
 export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingPlans = useBillingPlans()
+  const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
 
   const isInitialized = ref(false)
@@ -33,6 +76,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
+  // Prevent older status and balance responses from overwriting newer state.
+  const latestBillingReadIds = { status: 0, balance: 0 }
 
   const isActiveSubscription = computed(
     () => statusData.value?.is_active ?? false
@@ -50,6 +95,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       tier: status.subscription_tier ?? null,
       duration: status.subscription_duration ?? null,
       planSlug: status.plan_slug ?? null,
+      scheduledPlanSlug: status.scheduled_plan_slug ?? null,
+      changeAt: status.change_at ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
       isCancelled: status.subscription_status === 'canceled',
@@ -64,78 +111,28 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     return {
       amountMicros: data.amount_micros,
       currency: data.currency,
-      effectiveBalanceMicros: data.effective_balance_micros,
-      prepaidBalanceMicros: data.prepaid_balance_micros,
-      cloudCreditBalanceMicros: data.cloud_credit_balance_micros
+      effectiveBalanceMicros:
+        data.effective_balance_micros ?? data.amount_micros,
+      prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
+      cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0
     }
   })
+
+  const billingStatus = computed(() => statusData.value?.billing_status ?? null)
+  const subscriptionStatus = computed(
+    () => statusData.value?.subscription_status ?? null
+  )
+  const tier = computed(() => statusData.value?.subscription_tier ?? null)
+  const renewalDate = computed(() => statusData.value?.renewal_date ?? null)
 
   const plans = computed(() => billingPlans.plans.value)
   const currentPlanSlug = computed(
     () => statusData.value?.plan_slug ?? billingPlans.currentPlanSlug.value
   )
-
-  const pendingCancelOpId = ref<string | null>(null)
-  let cancelPollTimeout: number | null = null
-
-  const stopCancelPolling = () => {
-    if (cancelPollTimeout !== null) {
-      window.clearTimeout(cancelPollTimeout)
-      cancelPollTimeout = null
-    }
-  }
-
-  async function pollCancelStatus(opId: string): Promise<void> {
-    stopCancelPolling()
-
-    const maxAttempts = 30
-    let attempt = 0
-    const poll = async () => {
-      if (pendingCancelOpId.value !== opId) return
-
-      try {
-        const response = await workspaceApi.getBillingOpStatus(opId)
-        if (response.status === 'succeeded') {
-          pendingCancelOpId.value = null
-          stopCancelPolling()
-          await fetchStatus()
-          workspaceStore.updateActiveWorkspace({
-            isSubscribed: false
-          })
-          return
-        }
-
-        if (response.status === 'failed') {
-          pendingCancelOpId.value = null
-          stopCancelPolling()
-          throw new Error(
-            response.error_message ?? 'Failed to cancel subscription'
-          )
-        }
-
-        attempt += 1
-        if (attempt >= maxAttempts) {
-          pendingCancelOpId.value = null
-          stopCancelPolling()
-          await fetchStatus()
-          return
-        }
-      } catch (err) {
-        pendingCancelOpId.value = null
-        stopCancelPolling()
-        throw err
-      }
-
-      cancelPollTimeout = window.setTimeout(
-        () => {
-          void poll()
-        },
-        Math.min(1000 * 2 ** attempt, 5000)
-      )
-    }
-
-    await poll()
-  }
+  const teamCreditStops = computed(() => billingPlans.teamCreditStops.value)
+  const currentTeamCreditStop = computed(
+    () => statusData.value?.team_credit_stop ?? null
+  )
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -159,66 +156,136 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   }
 
   async function fetchStatus(): Promise<void> {
+    const requestId = ++latestBillingReadIds.status
+    const workspaceId = workspaceStore.activeWorkspace?.id
     isLoading.value = true
     error.value = null
     try {
-      statusData.value = await workspaceApi.getBillingStatus()
+      const status = await workspaceApi.getBillingStatus()
+      if (
+        requestId !== latestBillingReadIds.status ||
+        workspaceId !== workspaceStore.activeWorkspace?.id
+      ) {
+        return
+      }
+
+      statusData.value = status
+      if (workspaceId && status.billing_rail) {
+        workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
+      }
+      if (
+        status.pending_billing_op_id &&
+        !billingOperationStore.getOperation(status.pending_billing_op_id)
+      ) {
+        void billingOperationStore.startOperation(
+          status.pending_billing_op_id,
+          'subscription',
+          undefined,
+          status.action_url
+        )
+      }
     } catch (err) {
-      error.value =
-        err instanceof Error ? err.message : 'Failed to fetch billing status'
+      if (requestId === latestBillingReadIds.status) {
+        error.value =
+          err instanceof Error ? err.message : 'Failed to fetch billing status'
+      }
       throw err
     } finally {
-      isLoading.value = false
+      if (requestId === latestBillingReadIds.status) isLoading.value = false
     }
   }
 
   async function fetchBalance(): Promise<void> {
+    const requestId = ++latestBillingReadIds.balance
     isLoading.value = true
     error.value = null
     try {
-      balanceData.value = await workspaceApi.getBillingBalance()
+      const balance = await workspaceApi.getBillingBalance()
+      if (requestId === latestBillingReadIds.balance) {
+        balanceData.value = balance
+      }
     } catch (err) {
-      error.value =
-        err instanceof Error ? err.message : 'Failed to fetch balance'
+      if (requestId === latestBillingReadIds.balance) {
+        error.value =
+          err instanceof Error ? err.message : 'Failed to fetch balance'
+      }
       throw err
     } finally {
-      isLoading.value = false
+      if (requestId === latestBillingReadIds.balance) isLoading.value = false
+    }
+  }
+
+  async function retryBillingRead(
+    fetchBillingResource: () => Promise<void>,
+    billingResource: keyof typeof latestBillingReadIds
+  ): Promise<{ failed: boolean; requestId: number }> {
+    const firstAttempt = fetchBillingResource()
+    const firstRequestId = latestBillingReadIds[billingResource]
+    try {
+      await firstAttempt
+      return { failed: false, requestId: firstRequestId }
+    } catch {
+      if (firstRequestId !== latestBillingReadIds[billingResource]) {
+        return { failed: false, requestId: firstRequestId }
+      }
+    }
+
+    const retry = fetchBillingResource()
+    const retryRequestId = latestBillingReadIds[billingResource]
+    try {
+      await retry
+      return { failed: false, requestId: retryRequestId }
+    } catch {
+      return {
+        failed: retryRequestId === latestBillingReadIds[billingResource],
+        requestId: retryRequestId
+      }
+    }
+  }
+
+  async function reconcileBillingStateAfterSubscribe(): Promise<void> {
+    const [statusResult, balanceResult] = await Promise.all([
+      retryBillingRead(fetchStatus, 'status'),
+      retryBillingRead(fetchBalance, 'balance')
+    ])
+    const statusFailed =
+      statusResult.failed &&
+      statusResult.requestId === latestBillingReadIds.status
+    const balanceFailed =
+      balanceResult.failed &&
+      balanceResult.requestId === latestBillingReadIds.balance
+
+    if (statusFailed || balanceFailed) {
+      error.value = 'Subscription succeeded, but billing state refresh failed'
     }
   }
 
   async function subscribe(
     planSlug: string,
-    returnUrl?: string,
-    cancelUrl?: string
+    options?: SubscribeOptions
   ): Promise<SubscribeResponse> {
     isLoading.value = true
     error.value = null
     try {
-      const response = await workspaceApi.subscribe(
-        planSlug,
-        returnUrl,
-        cancelUrl
-      )
-
-      // Refresh status and balance after subscription
-      await Promise.all([fetchStatus(), fetchBalance()])
-
+      const response = await workspaceApi.subscribe(planSlug, options)
+      isLoading.value = false
+      void reconcileBillingStateAfterSubscribe()
       return response
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to subscribe'
-      throw err
-    } finally {
       isLoading.value = false
+      throw err
     }
   }
 
   async function previewSubscribe(
-    planSlug: string
+    planSlug: string,
+    options?: PreviewSubscribeOptions
   ): Promise<PreviewSubscribeResponse | null> {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.previewSubscribe(planSlug)
+      return await workspaceApi.previewSubscribe(planSlug, options)
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to preview subscription'
@@ -251,11 +318,65 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       const response = await workspaceApi.cancelSubscription()
-      pendingCancelOpId.value = response.billing_op_id
-      await pollCancelStatus(response.billing_op_id)
+      const operation = await billingOperationStore.startOperation(
+        response.billing_op_id,
+        'cancel'
+      )
+
+      if (operation.status !== 'succeeded') {
+        throw new Error(
+          operation.errorMessage ?? 'Failed to cancel subscription'
+        )
+      }
     } catch (err) {
+      if (isAlreadyInRequestedState(err, 'ALREADY_CANCELED')) {
+        await resyncQuietly(fetchStatus)
+        // fetchStatus records its own read failure; the cancellation still
+        // holds, so the operation is not in error.
+        error.value = null
+        return
+      }
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function resubscribe(): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    try {
+      await workspaceApi.resubscribe()
+      await Promise.allSettled([fetchStatus(), fetchBalance()])
+    } catch (err) {
+      if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
+        // Mirrors the success path, which refreshes balance too. allSettled,
+        // not all: a rejection from one read must not release this branch while
+        // the other is still in flight, or that one writes its failure into
+        // error after the clear below.
+        await resyncQuietly(() =>
+          Promise.allSettled([fetchStatus(), fetchBalance()])
+        )
+        error.value = null
+        return
+      }
+      error.value = err instanceof Error ? err.message : 'Failed to resubscribe'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function topup(amountCents: number): Promise<CreateTopupResponse> {
+    isLoading.value = true
+    error.value = null
+    try {
+      return await workspaceApi.createTopup(amountCents)
+    } catch (err) {
+      error.value =
+        err instanceof Error ? err.message : 'Failed to top up credits'
       throw err
     } finally {
       isLoading.value = false
@@ -280,17 +401,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
     if (!isActiveSubscription.value) {
-      subscriptionDialog.show()
+      subscriptionDialog.show({ reason: 'subscription_required' })
     }
   }
 
-  function showSubscriptionDialog(): void {
-    subscriptionDialog.show()
+  function showSubscriptionDialog(options?: SubscriptionDialogOptions): void {
+    subscriptionDialog.show(options)
   }
-
-  onBeforeUnmount(() => {
-    stopCancelPolling()
-  })
 
   return {
     // State
@@ -299,10 +416,16 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,
     isFreeTier,
+    billingStatus,
+    subscriptionStatus,
+    tier,
+    renewalDate,
 
     // Actions
     initialize,
@@ -312,6 +435,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     previewSubscribe,
     manageSubscription,
     cancelSubscription,
+    resubscribe,
+    topup,
     fetchPlans,
     requireActiveSubscription,
     showSubscriptionDialog

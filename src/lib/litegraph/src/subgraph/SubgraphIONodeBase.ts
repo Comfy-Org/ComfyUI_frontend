@@ -1,4 +1,5 @@
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { serializeNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
@@ -265,7 +266,7 @@ export abstract class SubgraphIONodeBase<
         break
     }
 
-    this.subgraph.setDirtyCanvas(true)
+    this.subgraph.setDirtyCanvas(true, true)
   }
 
   /**
@@ -368,7 +369,7 @@ export abstract class SubgraphIONodeBase<
 
   asSerialisable(): ExportedSubgraphIONode {
     return {
-      id: this.id,
+      id: serializeNodeId(this.id),
       bounding: this.boundingRect.export(),
       pinned: this.pinned ? true : undefined
     }

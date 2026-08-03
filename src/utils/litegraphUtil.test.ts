@@ -1,9 +1,24 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-import { resolveNode } from './litegraphUtil'
+import { createNode, getWidgetIdForNode, resolveNode } from './litegraphUtil'
+
+const mockBringNodeToFront = vi.fn()
+
+vi.mock('@/renderer/extensions/vueNodes/composables/useNodeZIndex', () => ({
+  useNodeZIndex: () => ({ bringNodeToFront: mockBringNodeToFront })
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ addAlert: vi.fn() })
+}))
 
 describe('resolveNode', () => {
   it('returns undefined when graph is null', () => {
@@ -66,5 +81,113 @@ describe('resolveNode', () => {
 
     const targetNode = sg2._nodes[0]
     expect(resolveNode(targetNode.id, rootGraph)).toBe(targetNode)
+  })
+})
+
+describe('createNode', () => {
+  function makeCanvas(graph: LGraph): LGraphCanvas {
+    return fromPartial<LGraphCanvas>({
+      graph,
+      graph_mouse: [100, 200]
+    })
+  }
+
+  beforeEach(() => {
+    mockBringNodeToFront.mockClear()
+  })
+
+  it('returns null when name is empty', async () => {
+    const result = await createNode(makeCanvas(new LGraph()), '')
+    expect(result).toBeNull()
+    expect(mockBringNodeToFront).not.toHaveBeenCalled()
+  })
+
+  it('places the new node at the canvas graph_mouse position', async () => {
+    const newNode = new LGraphNode('LoadImage')
+    const spy = vi.spyOn(LiteGraph, 'createNode').mockReturnValue(newNode)
+    const graph = new LGraph()
+
+    const result = await createNode(makeCanvas(graph), 'LoadImage')
+
+    expect(result).toBe(newNode)
+    expect(Array.from(newNode.pos)).toEqual([100, 200])
+    spy.mockRestore()
+  })
+
+  it('brings the new node to front so it renders above existing nodes', async () => {
+    const newNode = new LGraphNode('LoadImage')
+    const spy = vi.spyOn(LiteGraph, 'createNode').mockReturnValue(newNode)
+    const graph = new LGraph()
+
+    const result = await createNode(makeCanvas(graph), 'LoadImage')
+
+    expect(result).toBe(newNode)
+    expect(mockBringNodeToFront).toHaveBeenCalledTimes(1)
+    expect(mockBringNodeToFront).toHaveBeenCalledWith(newNode.id)
+    spy.mockRestore()
+  })
+
+  it('does not bring node to front when LiteGraph.createNode returns null', async () => {
+    const spy = vi.spyOn(LiteGraph, 'createNode').mockReturnValue(null)
+    await createNode(makeCanvas(new LGraph()), 'NonexistentNode')
+    expect(mockBringNodeToFront).not.toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  it('does not bring node to front when graph.add returns null', async () => {
+    const newNode = new LGraphNode('LoadImage')
+    const spy = vi.spyOn(LiteGraph, 'createNode').mockReturnValue(newNode)
+    const graph = new LGraph()
+    vi.spyOn(graph, 'add').mockReturnValue(fromAny<LGraphNode, null>(null))
+
+    await createNode(makeCanvas(graph), 'LoadImage')
+
+    expect(mockBringNodeToFront).not.toHaveBeenCalled()
+    spy.mockRestore()
+  })
+})
+
+describe('getWidgetIdForNode', () => {
+  const graphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+
+  function fakeNode(id: number, opts: { detached?: boolean } = {}): LGraphNode {
+    return createMockLGraphNode({
+      id,
+      graph: opts.detached ? undefined : { rootGraph: { id: graphId } }
+    })
+  }
+
+  it('returns widget.widgetId when present', () => {
+    const node = fakeNode(7)
+    const existingWidgetId = widgetId(graphId, toNodeId(7), 'seed')
+    const widget = {
+      name: 'seed',
+      widgetId: existingWidgetId
+    }
+    expect(getWidgetIdForNode(node, widget)).toBe(existingWidgetId)
+  })
+
+  it('derives an widgetId for plain POJO widgets bound to a node', () => {
+    const node = fakeNode(42)
+    expect(getWidgetIdForNode(node, { name: 'legacy_widget' })).toBe(
+      widgetId(graphId, toNodeId(42), 'legacy_widget')
+    )
+  })
+
+  it('can distinguish duplicate widget names on one node without changing the displayed name', () => {
+    const node = fakeNode(42)
+    expect(getWidgetIdForNode(node, { name: 'UNKNOWN' }, 1)).toBe(
+      widgetId(graphId, toNodeId(42), 'UNKNOWN#1')
+    )
+  })
+
+  it('returns undefined when the node has no graph', () => {
+    const node = fakeNode(1, { detached: true })
+    expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
+  })
+
+  it('returns undefined for placeholder node id (-1)', () => {
+    const node = fakeNode(-1)
+    expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
   })
 })

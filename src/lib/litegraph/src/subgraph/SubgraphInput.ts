@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { toLinkId } from '@/types/linkId'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
@@ -99,8 +100,11 @@ export class SubgraphInput extends SubgraphSlot {
       this.events.dispatch('input-connected', { input: slot })
     }
 
+    const linkId = toLinkId(Number(subgraph.state.lastLinkId) + 1)
+    subgraph.state.lastLinkId = linkId
+
     const link = new LLink(
-      ++subgraph.state.lastLinkId,
+      linkId,
       slot.type,
       this.parent.id,
       this.parent.slots.indexOf(this),
@@ -134,8 +138,15 @@ export class SubgraphInput extends SubgraphSlot {
         }
       }
     }
-    subgraph._version++
+    subgraph.incrementVersion()
 
+    subgraph.trigger('node:slot-links:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: inputIndex,
+      connected: true,
+      linkId: link.id
+    })
     node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
 
     subgraph.afterChange()
@@ -239,11 +250,8 @@ export class SubgraphInput extends SubgraphSlot {
   override isValidTarget(
     fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
   ): boolean {
-    if (isNodeSlot(fromSlot)) {
-      return (
-        'link' in fromSlot &&
-        LiteGraph.isValidConnection(this.type, fromSlot.type)
-      )
+    if (isNodeSlot(fromSlot) && 'link' in fromSlot) {
+      return LiteGraph.isValidConnection(this.type, fromSlot.type)
     }
 
     if (isSubgraphOutput(fromSlot)) {

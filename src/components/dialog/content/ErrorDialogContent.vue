@@ -1,5 +1,8 @@
 <template>
-  <div class="comfy-error-report flex flex-col gap-4">
+  <div
+    data-testid="error-dialog"
+    class="comfy-error-report flex flex-col gap-4"
+  >
     <NoResultsPlaceholder
       class="pb-0"
       icon="pi pi-exclamation-circle"
@@ -14,11 +17,17 @@
     </template>
 
     <div class="flex justify-center gap-2">
-      <Button v-show="!reportOpen" variant="textonly" @click="showReport">
+      <Button
+        v-show="!reportOpen"
+        data-testid="error-dialog-show-report"
+        variant="textonly"
+        @click="showReport"
+      >
         {{ $t('g.showReport') }}
       </Button>
       <Button
         v-show="!reportOpen"
+        data-testid="error-dialog-contact-support"
         variant="textonly"
         @click="showContactSupport"
       >
@@ -26,13 +35,13 @@
       </Button>
     </div>
     <template v-if="reportOpen">
-      <Divider />
-      <ScrollPanel class="h-[400px] w-full max-w-[80vw]">
+      <hr class="border-t border-border-subtle" />
+      <div class="h-[400px] w-full max-w-[80vw] overflow-auto">
         <pre class="wrap-break-word whitespace-pre-wrap">{{
           reportContent
         }}</pre>
-      </ScrollPanel>
-      <Divider />
+      </div>
+      <hr class="border-t border-border-subtle" />
     </template>
     <div class="flex justify-end gap-4">
       <FindIssueButton
@@ -40,7 +49,11 @@
         :repo-owner="repoOwner"
         :repo-name="repoName"
       />
-      <Button v-if="reportOpen" @click="copyReportToClipboard">
+      <Button
+        v-if="reportOpen"
+        data-testid="error-dialog-copy-report"
+        @click="copyReportToClipboard"
+      >
         <i class="pi pi-copy" />
         {{ $t('g.copyToClipboard') }}
       </Button>
@@ -49,8 +62,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
-import ScrollPanel from 'primevue/scrollpanel'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -90,7 +101,8 @@ const reportOpen = ref(false)
  */
 const showReport = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'error_dialog_show_report_clicked'
+    button_id: 'error_dialog_show_report_clicked',
+    element_group: 'error_dialog'
   })
   reportOpen.value = true
 }

@@ -1,16 +1,10 @@
 <template>
+  <!--
+    Root @click.stop keeps clicks outside the explicit selection regions from
+    reaching the panel's empty-space deselection handler.
+  -->
   <div
     ref="cardContainerRef"
-    role="button"
-    :aria-label="
-      asset
-        ? $t('assetBrowser.ariaLabel.assetCard', {
-            name: getAssetDisplayName(asset),
-            type: fileKind
-          })
-        : $t('assetBrowser.ariaLabel.loadingAsset')
-    "
-    :tabindex="loading ? -1 : 0"
     :class="
       cn(
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
@@ -21,15 +15,18 @@
       )
     "
     :data-selected="selected"
+    :data-asset-id="asset?.id"
     :draggable="true"
-    @click.stop="$emit('click')"
-    @contextmenu.prevent.stop="
-      asset ? emit('context-menu', $event, asset) : undefined
-    "
+    @click.stop
+    @contextmenu.prevent.stop="handleContextMenu"
     @dragstart="dragStart"
   >
     <!-- Top Area: Media Preview -->
-    <div class="relative aspect-square overflow-hidden p-0">
+    <div
+      class="relative aspect-square overflow-hidden p-0"
+      @click.stop="fileKind !== 'video' && emit('select')"
+      @dblclick.stop="fileKind === 'image' && handleZoomClick()"
+    >
       <!-- Loading State -->
       <div
         v-if="loading"
@@ -43,8 +40,7 @@
         :asset="adaptedAsset"
         :context="{ type: assetType }"
         class="absolute inset-0"
-        @view="handleZoomClick"
-        @download="actions.downloadAsset()"
+        @download="handleDownload"
         @video-playing-state-changed="isVideoPlaying = $event"
         @video-controls-changed="showVideoControls = $event"
         @image-loaded="handleImageLoaded"
@@ -54,28 +50,55 @@
         <i class="icon-[lucide--trash-2] size-5" />
       </LoadingOverlay>
 
-      <!-- Action buttons overlay (top-left) -->
+      <Button
+        v-if="asset && !loading && !isDeleting"
+        variant="overlay-white"
+        size="icon"
+        :class="
+          cn(
+            'pointer-events-none absolute top-2 left-2 z-1 size-6 rounded-full opacity-0 transition-opacity',
+            'group-hover:pointer-events-auto group-hover:opacity-100',
+            'focus-visible:pointer-events-auto focus-visible:opacity-100',
+            !selected &&
+              'bg-transparent text-white shadow-sm ring-2 ring-white ring-inset hover:bg-white/20'
+          )
+        "
+        :aria-label="
+          $t('assetBrowser.ariaLabel.assetCard', {
+            name: getAssetDisplayName(asset),
+            type: fileKind
+          })
+        "
+        :aria-pressed="selected ?? false"
+        @click.stop="emit('toggle-selection')"
+      >
+        <i
+          aria-hidden="true"
+          :class="
+            cn('icon-[lucide--check] size-4 shrink-0', !selected && 'opacity-0')
+          "
+        />
+      </Button>
+
+      <!-- Action buttons overlay (top-right) -->
       <div
         v-if="showActionsOverlay"
-        class="absolute top-2 left-2 flex flex-wrap justify-start gap-2"
+        class="absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2"
       >
         <IconGroup background-class="bg-white">
           <Button
-            v-if="canInspect"
             variant="overlay-white"
             size="icon"
-            :aria-label="$t('mediaAsset.actions.zoom')"
-            @click.stop="handleZoomClick"
+            :aria-label="$t('mediaAsset.actions.download')"
+            @click.stop="handleDownload"
           >
-            <i class="icon-[lucide--zoom-in] size-4" />
+            <i class="icon-[lucide--download] size-4" />
           </Button>
           <Button
             variant="overlay-white"
             size="icon"
             :aria-label="$t('mediaAsset.actions.moreOptions')"
-            @click.stop="
-              asset ? emit('context-menu', $event, asset) : undefined
-            "
+            @click.stop="handleContextMenu"
           >
             <i class="icon-[lucide--ellipsis] size-4" />
           </Button>
@@ -104,24 +127,21 @@
       <div
         v-else-if="asset && adaptedAsset"
         class="flex items-end justify-between gap-1.5"
+        @click.stop="emit('select')"
       >
-        <!-- Left side: Media name and metadata -->
-        <div class="flex flex-col gap-1">
-          <!-- Title -->
+        <div class="flex min-w-0 flex-col gap-1">
           <MediaTitle :file-name="fileName" />
-          <!-- Metadata -->
-          <div class="flex gap-1.5 text-xs text-muted-foreground">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span v-if="formattedDuration">{{ formattedDuration }}</span>
             <span v-if="metaInfo">{{ metaInfo }}</span>
           </div>
         </div>
-
-        <!-- Right side: Output count -->
         <div v-if="showOutputCount" class="shrink-0">
           <Button
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')
             "
+            :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
             variant="secondary"
             @click.stop="handleOutputCountClick"
           >
@@ -135,13 +155,14 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { isCloud } from '@/platform/distribution/types'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -150,15 +171,17 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  resolveDisplayImageDimensions
+} from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey } from '../schemas/mediaAssetSchema'
+import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -194,7 +217,10 @@ const isDeleting = computed(() =>
 )
 
 const emit = defineEmits<{
-  click: []
+  // Image and info clicks use the standard selection rules.
+  select: []
+  // The selection control toggles only this asset in the current selection.
+  'toggle-selection': []
   zoom: [asset: AssetItem]
   'output-count-click': []
   'context-menu': [event: MouseEvent, asset: AssetItem]
@@ -277,17 +303,29 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
-// Get metadata info based on file kind
+const displayImageDimensions = computed(() =>
+  resolveDisplayImageDimensions(asset, imageDimensions.value)
+)
+
+const format = computed(() => {
+  const suffix = getFilenameDetails(asset?.name ?? '').suffix
+  return suffix ? suffix.toUpperCase() : ''
+})
+
 const metaInfo = computed(() => {
   if (!asset) return ''
-  // TODO(assets): Re-enable once /assets API returns original image dimensions in metadata (#10590)
-  if (fileKind.value === 'image' && imageDimensions.value && !isCloud) {
-    return `${imageDimensions.value.width}x${imageDimensions.value.height}`
+  const parts: string[] = []
+  if (format.value) parts.push(format.value)
+
+  if (fileKind.value === 'image' && displayImageDimensions.value) {
+    parts.push(
+      `${displayImageDimensions.value.width}x${displayImageDimensions.value.height}`
+    )
+  } else if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
+    parts.push(formatSize(asset.size))
   }
-  if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
-    return formatSize(asset.size)
-  }
-  return ''
+
+  return parts.join(' ')
 })
 
 const showActionsOverlay = computed(() => {
@@ -308,11 +346,39 @@ const handleImageLoaded = (width: number, height: number) => {
 const handleOutputCountClick = () => {
   emit('output-count-click')
 }
+
+function handleContextMenu(event: MouseEvent) {
+  if (!asset) return
+  emit('context-menu', event, asset)
+}
+
+function handleDownload() {
+  if (!asset) return
+  actions.downloadAssets([asset])
+}
+
 function dragStart(e: DragEvent) {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    return
+  }
+
   if (!asset?.preview_url) return
 
   const { dataTransfer } = e
   if (!dataTransfer) return
+
+  const { filename, subfolder, type, display_name } =
+    getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
+  if (filename) {
+    const outputString = JSON.stringify({
+      filename,
+      subfolder,
+      type,
+      display_name
+    })
+    dataTransfer.items.add(outputString, MIME_ASSET_INFO)
+  }
 
   const url = URL.parse(asset.preview_url, location.href)
   if (!url) return

@@ -10,6 +10,17 @@ const MockComponent = defineComponent({
   template: '<div>Mock</div>'
 })
 
+const MockContentPropsComponent = defineComponent({
+  name: 'MockContentPropsComponent',
+  props: {
+    openingAction: {
+      type: String,
+      default: null
+    }
+  },
+  template: '<div>Mock</div>'
+})
+
 describe('dialogStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -171,6 +182,31 @@ describe('dialogStore', () => {
       expect(store.dialogStack).toHaveLength(1)
       expect(store.dialogStack[0].key).toBe('reusable-dialog')
       expect(store.dialogStack[0].title).toBe('Original Title')
+    })
+
+    it('should update existing dialog props by key', () => {
+      const store = useDialogStore()
+
+      store.showDialog({
+        key: 'updatable-dialog',
+        component: MockContentPropsComponent,
+        props: { openingAction: null },
+        dialogComponentProps: { dismissableMask: true }
+      })
+
+      const updated = store.updateDialog({
+        key: 'updatable-dialog',
+        contentProps: { openingAction: 'copy-and-open' },
+        dialogComponentProps: { dismissableMask: false }
+      })
+
+      expect(updated).toBe(true)
+      expect(store.dialogStack[0].contentProps).toMatchObject({
+        openingAction: 'copy-and-open'
+      })
+      expect(store.dialogStack[0].dialogComponentProps.dismissableMask).toBe(
+        false
+      )
     })
   })
 

@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
-import { usePromotionStore } from '@/stores/promotionStore'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -486,19 +485,6 @@ describe('SubgraphIO - Empty Slot Connection', () => {
         'input',
         'seed',
         'seed_1'
-      ])
-      expect(subgraphNode.widgets.map((widget) => widget.name)).toStrictEqual([
-        'seed',
-        'seed_1'
-      ])
-      expect(
-        usePromotionStore().getPromotions(
-          subgraphNode.rootGraph.id,
-          subgraphNode.id
-        )
-      ).toEqual([
-        { sourceNodeId: String(firstNode.id), sourceWidgetName: 'seed' },
-        { sourceNodeId: String(secondNode.id), sourceWidgetName: 'seed' }
       ])
     }
   )

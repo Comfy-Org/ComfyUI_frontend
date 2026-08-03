@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
@@ -35,7 +36,7 @@ function createMockGraph(
 ): Partial<LGraph> {
   const graph: Partial<LGraph> = {
     id: crypto.randomUUID(),
-    nodes: nodes as unknown as LGraph['nodes'],
+    nodes: fromAny<LGraph['nodes'], unknown>(nodes),
     groups: [],
     reroutes: new Map() as LGraph['reroutes'],
     extra

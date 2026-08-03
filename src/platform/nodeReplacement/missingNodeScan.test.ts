@@ -1,3 +1,4 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -52,22 +53,24 @@ import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 function mockNode(
   id: number,
   type: string,
-  overrides: Partial<LGraphNode> = {}
+  overrides: Record<string, unknown> = {}
 ): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id,
     type,
     last_serialization: { type },
     ...overrides
-  } as unknown as LGraphNode
+  })
 }
 
 function mockGraph(): LGraph {
-  return {} as unknown as LGraph
+  return fromAny<LGraph, unknown>({})
 }
 
 function getMissingNodesError(
@@ -137,7 +140,9 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
 
   it('uses executionId when available for nodeId', () => {
     vi.mocked(collectAllNodes).mockReturnValue([mockNode(1, 'Missing')])
-    vi.mocked(getExecutionIdByNode).mockReturnValue('exec-42')
+    vi.mocked(getExecutionIdByNode).mockReturnValue(
+      createNodeExecutionId([toNodeId('exec-42')])
+    )
 
     rescanAndSurfaceMissingNodes(mockGraph())
 
@@ -214,11 +219,52 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
     expect(typeof missing !== 'string' && missing.isReplaceable).toBe(false)
   })
 
+  it('skips muted nodes (mode NEVER = 2)', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'MutedNode', { mode: 2 })
+    ])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    expect(store.missingNodesError).toBeNull()
+  })
+
+  it('skips bypassed nodes (mode BYPASS = 4)', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'BypassedNode', { mode: 4 })
+    ])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    expect(store.missingNodesError).toBeNull()
+  })
+
+  it('detects active nodes (mode ALWAYS = 0) as missing', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'ActiveMissingNode', { mode: 0 })
+    ])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    const error = getMissingNodesError(store)
+    expect(error.nodeTypes).toHaveLength(1)
+    const missing = error.nodeTypes[0]
+    expect(typeof missing !== 'string' && missing.type).toBe(
+      'ActiveMissingNode'
+    )
+  })
+
   it('uses last_serialization.type over node.type', () => {
     const node = mockNode(1, 'LiveType')
-    node.last_serialization = {
+    node.last_serialization = fromPartial<LGraphNode['last_serialization']>({
       type: 'OriginalType'
-    } as unknown as LGraphNode['last_serialization']
+    })
     vi.mocked(collectAllNodes).mockReturnValue([node])
     vi.mocked(getExecutionIdByNode).mockReturnValue(null)
 

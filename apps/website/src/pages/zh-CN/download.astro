@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import CloudBannerSection from '../../components/product/shared/CloudBannerSection.vue'
+import AIModelsSection from '../../components/product/shared/AIModelsSection.vue'
+import HeroSection from '../../components/product/local/HeroSection.vue'
+import ReasonSection from '../../components/product/local/ReasonSection.vue'
+import EcoSystemSection from '../../components/product/local/EcoSystemSection.vue'
+import ProductCardsSection from '../../components/product/local/ProductCardsSection.vue'
+import FAQSection from '../../components/product/local/FAQSection.vue'
+import { t } from '../../i18n/translations'
+import {
+  absoluteUrl,
+  comfyUiApplicationNode,
+  comfyUiSoftwareId,
+  comfyUiSourceCodeNode,
+  pageContext,
+} from '../../utils/jsonLd'
+
+const { siteUrl, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+---
+
+<BaseLayout
+  title="下载 Comfy 桌面版 - 在您的硬件上运行 AI"
+  description={t('download.hero.subtitle', 'zh-CN')}
+  mainEntityId={comfyUiSoftwareId(siteUrl)}
+  breadcrumbs={[
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, '/zh-CN'),
+    },
+    { name: t('breadcrumb.download', locale) },
+  ]}
+  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
+  keywords={['comfyui app', 'comfyui desktop app', 'comfyui download', 'ComfyUI 下载', 'ComfyUI 桌面应用', 'ComfyUI 应用', 'ComfyUI Windows', 'ComfyUI macOS', 'ComfyUI Linux']}
+>
+  <CloudBannerSection locale="zh-CN" />
+  <HeroSection locale="zh-CN" client:load />
+  <ReasonSection locale="zh-CN" />
+  <EcoSystemSection locale="zh-CN" client:visible />
+  <AIModelsSection locale="zh-CN" />
+  <ProductCardsSection locale="zh-CN" />
+  <FAQSection locale="zh-CN" client:visible />
+</BaseLayout>

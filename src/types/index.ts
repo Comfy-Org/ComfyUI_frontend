@@ -1,3 +1,4 @@
+import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 import type {
   DeviceStats,
   EmbeddingsResponse,
@@ -24,7 +25,16 @@ import type {
   ToastMessageOptions
 } from './extensionTypes'
 
+export type { NodeId, SerializedNodeId } from './nodeId'
+export { toNodeId, parseNodeId } from './nodeId'
+export type { LinkId } from './linkId'
+export { toLinkId } from './linkId'
+export type { RerouteId } from './rerouteId'
+export { toRerouteId } from './rerouteId'
+export type { SlotDirection, SlotId, SlotIndex } from './slotId'
+export { slotId } from './slotId'
 export type { ComfyExtension } from './comfy'
+export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@/scripts/api'
 export type { ComfyApp } from '@/scripts/app'
 export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -88,5 +98,7 @@ declare global {
 
     /** For use in tests to track app initialization state */
     __appReadiness?: AppReadiness
+
+    __comfyDesktop2?: ComfyDesktop2Bridge
   }
 }

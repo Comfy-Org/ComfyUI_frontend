@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
+import { toNodeId } from '@/types/nodeId'
 
 // Mock the layout mutations module
 vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
@@ -30,7 +31,7 @@ describe('useNodeZIndex', () => {
 
       const { bringNodeToFront } = useNodeZIndex()
 
-      bringNodeToFront('node1')
+      bringNodeToFront(toNodeId('node1'))
 
       expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Vue)
       expect(mockBringNodeToFront).toHaveBeenCalledWith('node1')
@@ -49,7 +50,7 @@ describe('useNodeZIndex', () => {
 
       const { bringNodeToFront } = useNodeZIndex()
 
-      bringNodeToFront('node2', LayoutSource.Canvas)
+      bringNodeToFront(toNodeId('node2'), LayoutSource.Canvas)
 
       expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Canvas)
       expect(mockBringNodeToFront).toHaveBeenCalledWith('node2')
@@ -70,7 +71,7 @@ describe('useNodeZIndex', () => {
         layoutSource: LayoutSource.External
       })
 
-      bringNodeToFront('node3')
+      bringNodeToFront(toNodeId('node3'))
 
       expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.External)
       expect(mockBringNodeToFront).toHaveBeenCalledWith('node3')
@@ -91,7 +92,7 @@ describe('useNodeZIndex', () => {
         layoutSource: LayoutSource.External
       })
 
-      bringNodeToFront('node4', LayoutSource.Canvas)
+      bringNodeToFront(toNodeId('node4'), LayoutSource.Canvas)
 
       expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Canvas)
       expect(mockBringNodeToFront).toHaveBeenCalledWith('node4')

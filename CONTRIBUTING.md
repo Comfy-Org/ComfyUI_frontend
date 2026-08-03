@@ -62,6 +62,37 @@ python main.py --port 8188 --cpu
 - Run `pnpm dev:electron` to start the dev server with electron API mocked
 - Run `pnpm dev:cloud` to start the dev server against the cloud backend (instead of local ComfyUI server)
 
+#### Testing with Cloud & Staging Environments
+
+Some features — particularly **partner/API nodes** (e.g. BFL, OpenAI, Stability AI) — require a cloud backend for authentication and billing. Running these against a local ComfyUI instance will result in permission errors or logged-out states. There are two ways to connect to a cloud/staging backend:
+
+**Option 1: Frontend — `pnpm dev:cloud`**
+
+The simplest approach. This proxies all API requests to the test cloud environment:
+
+```bash
+pnpm dev:cloud
+```
+
+This sets `DEV_SERVER_COMFYUI_URL` to `https://testcloud.comfy.org/` automatically. You can also set this variable manually in your `.env` file to target a different environment:
+
+```bash
+# .env
+DEV_SERVER_COMFYUI_URL=https://stagingcloud.comfy.org/
+```
+
+Any `*.comfy.org` URL automatically enables cloud mode, which includes the GCS media proxy needed for viewing generated images and videos. See [.env_example](.env_example) for all available cloud URLs.
+
+**Option 2: Backend — `--comfy-api-base`**
+
+Alternatively, launch the ComfyUI backend pointed at the staging API:
+
+```bash
+python main.py --comfy-api-base https://stagingapi.comfy.org --verbose
+```
+
+Then run `pnpm dev` as usual. This keeps the frontend in local mode but routes backend API calls through staging.
+
 #### Access dev server on touch devices
 
 Enable remote access to the dev server by setting `VITE_REMOTE_DEV` in `.env` to `true`.

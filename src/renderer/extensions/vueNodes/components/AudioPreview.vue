@@ -5,6 +5,7 @@
       :key="index"
       :src="url"
       controls
+      preload="metadata"
       class="w-full"
     />
   </div>

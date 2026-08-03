@@ -1,14 +1,17 @@
 import { ref, toRaw, watch } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
 
-import Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
   CameraConfig,
   CameraState,
   CameraType,
+  GizmoMode,
   LightConfig,
   MaterialMode,
   ModelConfig,
@@ -32,6 +35,8 @@ interface Load3dViewerState {
   backgroundRenderMode: BackgroundRenderModeType
   upDirection: UpDirection
   materialMode: MaterialMode
+  gizmoEnabled: boolean
+  gizmoMode: GizmoMode
 }
 
 const DEFAULT_STANDALONE_CONFIG: Load3dViewerState = {
@@ -44,7 +49,9 @@ const DEFAULT_STANDALONE_CONFIG: Load3dViewerState = {
   backgroundImage: '',
   backgroundRenderMode: 'tiled',
   upDirection: 'original',
-  materialMode: 'original'
+  materialMode: 'original',
+  gizmoEnabled: false,
+  gizmoMode: 'translate'
 }
 
 const standaloneConfigCache = new QuickLRU<string, Load3dViewerState>({
@@ -69,11 +76,35 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   const backgroundRenderMode = ref<BackgroundRenderModeType>('tiled')
   const upDirection = ref<UpDirection>('original')
   const materialMode = ref<MaterialMode>('original')
+  const gizmoEnabled = ref(false)
+  const gizmoMode = ref<GizmoMode>('translate')
   const needApplyChanges = ref(true)
   const isPreview = ref(false)
   const isStandaloneMode = ref(false)
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
+  const sourceFormat = ref<string | null>(null)
+  const canFitToViewer = ref(true)
+  const canUseGizmo = ref(true)
+  const canUseLighting = ref(true)
+  const canExport = ref(true)
+  const materialModes = ref<readonly MaterialMode[]>([
+    'original',
+    'normal',
+    'wireframe'
+  ])
+
+  const captureAdapterFlags = (source: Load3d) => {
+    isSplatModel.value = source.isSplatModel()
+    isPlyModel.value = source.isPlyModel()
+    sourceFormat.value = source.getSourceFormat()
+    const caps = source.getCurrentModelCapabilities()
+    canFitToViewer.value = caps.fitToViewer
+    canUseGizmo.value = caps.gizmoTransform
+    canUseLighting.value = caps.lighting
+    canExport.value = caps.exportable
+    materialModes.value = caps.materialModes
+  }
 
   // Animation state
   const animations = ref<AnimationItem[]>([])
@@ -86,6 +117,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   let load3d: Load3d | null = null
   let sourceLoad3d: Load3d | null = null
   let currentModelUrl: string | null = null
+  let mouseOnViewer = false
 
   const initialState = ref<Load3dViewerState>({
     backgroundColor: '#282828',
@@ -97,7 +129,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     backgroundImage: '',
     backgroundRenderMode: 'tiled',
     upDirection: 'original',
-    materialMode: 'original'
+    materialMode: 'original',
+    gizmoEnabled: false,
+    gizmoMode: 'translate'
   })
 
   watch(backgroundColor, (newColor) => {
@@ -272,6 +306,18 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     }
   }
 
+  watch(gizmoEnabled, (newValue) => {
+    if (load3d) {
+      load3d.setGizmoEnabled(newValue)
+    }
+  })
+
+  watch(gizmoMode, (newValue) => {
+    if (load3d) {
+      load3d.setGizmoMode(newValue)
+    }
+  })
+
   /**
    * Initializes the viewer in node mode using a source Load3d instance.
    *
@@ -292,7 +338,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       const hasTargetDimensions = !!(width && height)
 
-      load3d = new Load3d(containerRef, {
+      load3d = createLoad3d(containerRef, {
         width: width ? (toRaw(width).value as number) : undefined,
         height: height ? (toRaw(height).value as number) : undefined,
         getDimensions: hasTargetDimensions
@@ -303,6 +349,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
           : undefined,
         isViewerMode: hasTargetDimensions
       })
+
+      if (mouseOnViewer) {
+        load3d.updateStatusMouseOnViewer(true)
+      }
 
       await useLoad3dService().copyLoad3dState(source, load3d)
 
@@ -321,7 +371,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         | LightConfig
         | undefined
 
-      isPreview.value = node.type === 'Preview3D'
+      isPreview.value = isLoad3dResultViewerNode(node.type ?? '')
 
       if (sceneConfig) {
         backgroundColor.value =
@@ -362,10 +412,13 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
           modelConfig.upDirection || source.modelManager.currentUpDirection
         materialMode.value =
           modelConfig.materialMode || source.modelManager.materialMode
+        if (modelConfig.gizmo) {
+          gizmoEnabled.value = modelConfig.gizmo.enabled
+          gizmoMode.value = modelConfig.gizmo.mode
+        }
       }
 
-      isSplatModel.value = source.isSplatModel()
-      isPlyModel.value = source.isPlyModel()
+      captureAdapterFlags(source)
 
       initialState.value = {
         backgroundColor: backgroundColor.value,
@@ -377,7 +430,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         backgroundImage: backgroundImage.value,
         backgroundRenderMode: backgroundRenderMode.value,
         upDirection: upDirection.value,
-        materialMode: materialMode.value
+        materialMode: materialMode.value,
+        gizmoEnabled: gizmoEnabled.value,
+        gizmoMode: gizmoMode.value
       }
 
       setupAnimationEvents()
@@ -410,17 +465,20 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       isStandaloneMode.value = true
 
-      load3d = new Load3d(containerRef, {
+      load3d = createLoad3d(containerRef, {
         width: 800,
         height: 600,
         isViewerMode: true
       })
 
+      if (mouseOnViewer) {
+        load3d.updateStatusMouseOnViewer(true)
+      }
+
       await load3d.loadModel(modelUrl)
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
-      isSplatModel.value = load3d.isSplatModel()
-      isPlyModel.value = load3d.isPlyModel()
+      captureAdapterFlags(load3d)
 
       isPreview.value = true
 
@@ -443,8 +501,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       await load3d.loadModel(modelUrl)
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
-      isSplatModel.value = load3d.isSplatModel()
-      isPlyModel.value = load3d.isPlyModel()
+      captureAdapterFlags(load3d)
     } catch (error) {
       console.error('Error loading model in standalone viewer:', error)
       useToastStore().addAlert('Failed to load 3D model')
@@ -466,7 +523,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       backgroundImage: backgroundImage.value,
       backgroundRenderMode: backgroundRenderMode.value,
       upDirection: upDirection.value,
-      materialMode: materialMode.value
+      materialMode: materialMode.value,
+      gizmoEnabled: gizmoEnabled.value,
+      gizmoMode: gizmoMode.value
     })
   }
 
@@ -488,6 +547,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     backgroundRenderMode.value = config.backgroundRenderMode
     upDirection.value = config.upDirection
     materialMode.value = config.materialMode
+    gizmoEnabled.value = config.gizmoEnabled
+    gizmoMode.value = config.gizmoMode
     if (cached?.cameraState && load3d) {
       load3d.setCameraState(cached.cameraState)
     }
@@ -522,6 +583,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    * Notifies the viewer that the mouse has entered the viewer area.
    */
   const handleMouseEnter = () => {
+    mouseOnViewer = true
     load3d?.updateStatusMouseOnViewer(true)
   }
 
@@ -529,6 +591,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    * Notifies the viewer that the mouse has left the viewer area.
    */
   const handleMouseLeave = () => {
+    mouseOnViewer = false
     load3d?.updateStatusMouseOnViewer(false)
   }
 
@@ -559,9 +622,20 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         intensity: initialState.value.lightIntensity
       }
 
+      const existingModelConfig = nodeValue.properties['Model Config'] as
+        | ModelConfig
+        | undefined
       nodeValue.properties['Model Config'] = {
+        ...existingModelConfig,
         upDirection: initialState.value.upDirection,
-        materialMode: initialState.value.materialMode
+        materialMode: initialState.value.materialMode,
+        gizmo: {
+          enabled: initialState.value.gizmoEnabled,
+          mode: initialState.value.gizmoMode,
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 }
+        }
       }
 
       const currentCameraConfig = nodeValue.properties['Camera Config'] as
@@ -603,9 +677,21 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         intensity: lightIntensity.value
       }
 
+      const gizmoTransform = load3d.getGizmoTransform()
+      const existingModelConfig = nodeValue.properties['Model Config'] as
+        | ModelConfig
+        | undefined
       nodeValue.properties['Model Config'] = {
+        ...existingModelConfig,
         upDirection: upDirection.value,
-        materialMode: materialMode.value
+        materialMode: materialMode.value,
+        gizmo: {
+          enabled: gizmoEnabled.value,
+          mode: gizmoMode.value,
+          position: gizmoTransform.position,
+          rotation: gizmoTransform.rotation,
+          scale: gizmoTransform.scale
+        }
       }
     }
 
@@ -666,6 +752,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       )
 
       if (uploadPath) {
+        backgroundRenderMode.value = 'tiled'
         backgroundImage.value = uploadPath
         hasBackgroundImage.value = true
       }
@@ -706,6 +793,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       await load3d.loadModel(modelUrl)
 
+      captureAdapterFlags(load3d)
+
       const modelWidget = node?.widgets?.find((w) => w.name === 'model_file')
       if (modelWidget) {
         const options = modelWidget.options as { values?: string[] } | undefined
@@ -727,6 +816,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     if (isStandaloneMode.value) {
       saveStandaloneConfig()
     }
+    mouseOnViewer = false
     load3d?.remove()
     load3d = null
     sourceLoad3d = null
@@ -745,11 +835,19 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     backgroundRenderMode,
     upDirection,
     materialMode,
+    gizmoEnabled,
+    gizmoMode,
     needApplyChanges,
     isPreview,
     isStandaloneMode,
     isSplatModel,
     isPlyModel,
+    sourceFormat,
+    canFitToViewer,
+    canUseGizmo,
+    canUseLighting,
+    canExport,
+    materialModes,
 
     // Animation state
     animations,
@@ -772,6 +870,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     handleBackgroundImageUpdate,
     handleModelDrop,
     handleSeek,
+    resetGizmoTransform: () => {
+      load3d?.resetGizmoTransform()
+    },
     cleanup,
 
     hasSkeleton: false,

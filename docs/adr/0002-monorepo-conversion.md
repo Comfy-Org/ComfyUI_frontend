@@ -4,7 +4,7 @@ Date: 2025-08-25
 
 ## Status
 
-Proposed
+Accepted (Nx tooling choice superseded by [ADR-0010](0010-remove-nx-orchestration.md))
 
 <!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-NNNN](NNNN-title.md)] -->
 
@@ -30,6 +30,8 @@ For more information on Monorepos, check out [monorepo.tools](https://monorepo.t
 
 For monorepo management, I'd probably go with [Nx](https://nx.dev/), but I could be conviced otherwise.
 There's a [whole list here](https://monorepo.tools/#tools-review) if you're interested.
+
+> **Update:** The Nx tooling choice has since been reversed. See [ADR-0010: Remove Nx Orchestration](0010-remove-nx-orchestration.md) for the migration to direct pnpm workspace scripts and native tool CLIs.
 
 ## Consequences
 

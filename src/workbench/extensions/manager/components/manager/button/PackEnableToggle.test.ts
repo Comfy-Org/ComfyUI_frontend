@@ -1,8 +1,7 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -12,7 +11,6 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 
 import PackEnableToggle from './PackEnableToggle.vue'
 
-// Mock debounce to execute immediately
 vi.mock('es-toolkit/compat', async () => {
   const actual = await vi.importActual('es-toolkit/compat')
   return {
@@ -20,6 +18,50 @@ vi.mock('es-toolkit/compat', async () => {
     debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
   }
 })
+
+const {
+  acknowledgmentState,
+  mockMarkConflictsAsSeen,
+  mockShowImportFailedDialog,
+  mockShowNodeConflictDialog
+} = vi.hoisted(() => ({
+  acknowledgmentState: {
+    value: {
+      modal_dismissed: false,
+      red_dot_dismissed: false,
+      warning_banner_dismissed: false
+    }
+  },
+  mockMarkConflictsAsSeen: vi.fn(),
+  mockShowImportFailedDialog: vi.fn(),
+  mockShowNodeConflictDialog: vi.fn()
+}))
+
+vi.mock(
+  '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
+  () => ({
+    useConflictAcknowledgment: () => ({
+      acknowledgmentState,
+      markConflictsAsSeen: mockMarkConflictsAsSeen
+    })
+  })
+)
+
+vi.mock(
+  '@/workbench/extensions/manager/composables/useImportFailedDetection',
+  () => ({
+    useImportFailedDetection: () => ({
+      showImportFailedDialog: mockShowImportFailedDialog
+    })
+  })
+)
+
+vi.mock(
+  '@/workbench/extensions/manager/composables/useNodeConflictDialog',
+  () => ({
+    useNodeConflictDialog: () => ({ show: mockShowNodeConflictDialog })
+  })
+)
 
 const mockNodePack = {
   id: 'test-pack',
@@ -51,20 +93,24 @@ vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
 }))
 
 describe('PackEnableToggle', () => {
+  const user = userEvent.setup()
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsPackEnabled.mockReset()
     mockEnablePack.mockReset().mockResolvedValue(undefined)
     mockDisablePack.mockReset().mockResolvedValue(undefined)
+    mockGetConflictsForPackageByID.mockReset().mockReturnValue(undefined)
+    acknowledgmentState.value.modal_dismissed = false
   })
 
-  const mountComponent = ({
+  function renderComponent({
     props = {},
     installedPacks = {}
   }: {
     props?: Record<string, unknown>
     installedPacks?: Record<string, unknown>
-  } = {}): VueWrapper => {
+  } = {}) {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -80,7 +126,7 @@ describe('PackEnableToggle', () => {
       typeof useComfyManagerStore
     >)
 
-    return mount(PackEnableToggle, {
+    return render(PackEnableToggle, {
       props: {
         nodePack: mockNodePack,
         ...props
@@ -93,41 +139,39 @@ describe('PackEnableToggle', () => {
 
   it('renders a toggle switch', () => {
     mockIsPackEnabled.mockReturnValue(true)
-    const wrapper = mountComponent()
+    renderComponent()
 
-    const toggleSwitch = wrapper.findComponent(ToggleSwitch)
-    expect(toggleSwitch.exists()).toBe(true)
+    expect(
+      screen.getByRole('switch', { name: 'Enable or disable pack' })
+    ).toBeInTheDocument()
   })
 
   it('checks if pack is enabled on mount', () => {
     mockIsPackEnabled.mockReturnValue(true)
-    mountComponent()
+    renderComponent()
 
     expect(mockIsPackEnabled).toHaveBeenCalledWith(mockNodePack.id)
   })
 
   it('sets toggle to on when pack is enabled', () => {
     mockIsPackEnabled.mockReturnValue(true)
-    const wrapper = mountComponent()
+    renderComponent()
 
-    const toggleSwitch = wrapper.findComponent(ToggleSwitch)
-    expect(toggleSwitch.props('modelValue')).toBe(true)
+    expect(screen.getByRole('switch')).toBeChecked()
   })
 
   it('sets toggle to off when pack is disabled', () => {
     mockIsPackEnabled.mockReturnValue(false)
-    const wrapper = mountComponent()
+    renderComponent()
 
-    const toggleSwitch = wrapper.findComponent(ToggleSwitch)
-    expect(toggleSwitch.props('modelValue')).toBe(false)
+    expect(screen.getByRole('switch')).not.toBeChecked()
   })
 
   it('calls enablePack when toggle is switched on', async () => {
     mockIsPackEnabled.mockReturnValue(false)
-    const wrapper = mountComponent()
+    renderComponent()
 
-    const toggleSwitch = wrapper.findComponent(ToggleSwitch)
-    await toggleSwitch.vm.$emit('update:modelValue', true)
+    await user.click(screen.getByRole('switch'))
 
     expect(mockEnablePack).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -139,10 +183,9 @@ describe('PackEnableToggle', () => {
 
   it('calls disablePack when toggle is switched off', async () => {
     mockIsPackEnabled.mockReturnValue(true)
-    const wrapper = mountComponent()
+    renderComponent()
 
-    const toggleSwitch = wrapper.findComponent(ToggleSwitch)
-    await toggleSwitch.vm.$emit('update:modelValue', false)
+    await user.click(screen.getByRole('switch'))
 
     expect(mockDisablePack).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -153,28 +196,48 @@ describe('PackEnableToggle', () => {
   })
 
   it('disables toggle while loading', async () => {
+    let resolvePendingPromise: () => void
     const pendingPromise = new Promise<void>((resolve) => {
-      setTimeout(() => resolve(), 1000)
+      resolvePendingPromise = resolve
     })
     mockEnablePack.mockReturnValue(pendingPromise)
 
     mockIsPackEnabled.mockReturnValue(false)
-    const wrapper = mountComponent()
+    renderComponent()
 
-    // Trigger the toggle
-    const toggleSwitch = wrapper.findComponent(ToggleSwitch)
-    await toggleSwitch.vm.$emit('update:modelValue', true)
-
-    // Check that the toggle is disabled during loading
+    await user.click(screen.getByRole('switch'))
     await nextTick()
-    expect(wrapper.findComponent(ToggleSwitch).props('disabled')).toBe(true)
+    expect(screen.getByRole('switch')).toBeDisabled()
 
-    // Resolve the promise to simulate the operation completing
+    resolvePendingPromise!()
     await pendingPromise
-
-    // Check that the toggle is enabled after the operation completes
     await nextTick()
-    expect(wrapper.findComponent(ToggleSwitch).props('disabled')).toBe(false)
+    expect(screen.getByRole('switch')).not.toBeDisabled()
+  })
+
+  it('opens the conflict dialog when the readonly switch receives focus', async () => {
+    mockGetConflictsForPackageByID.mockReturnValue({
+      package_id: 'test-pack',
+      package_name: 'Test Pack',
+      has_conflict: true,
+      conflicts: [
+        {
+          type: 'comfyui_version',
+          current_value: '1.0.0',
+          required_value: '2.0.0'
+        }
+      ],
+      is_compatible: false
+    })
+    mockIsPackEnabled.mockReturnValue(true)
+    renderComponent()
+
+    const control = screen.getByRole('switch')
+    expect(control).toHaveAttribute('aria-readonly', 'true')
+
+    await user.tab()
+
+    expect(mockShowNodeConflictDialog).toHaveBeenCalledTimes(1)
   })
 
   describe('conflict warning icon', () => {
@@ -194,23 +257,27 @@ describe('PackEnableToggle', () => {
       })
 
       mockIsPackEnabled.mockReturnValue(true)
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
 
-      // Check if warning icon exists
-      const warningIcon = wrapper.find('.icon-\\[lucide--triangle-alert\\]')
-      expect(warningIcon.exists()).toBe(true)
-      expect(warningIcon.classes()).toContain('text-warning-background')
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const warningIcon = container.querySelector(
+        '.icon-\\[lucide--triangle-alert\\]'
+      )
+      expect(warningIcon).not.toBeNull()
+      expect(warningIcon).toHaveClass('text-warning-background')
     })
 
     it('should not show warning icon when package has no conflicts', () => {
       mockGetConflictsForPackageByID.mockReturnValue(null)
 
       mockIsPackEnabled.mockReturnValue(true)
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
 
-      // Check if warning icon does not exist
-      const warningIcon = wrapper.find('.icon-\\[lucide--triangle-alert\\]')
-      expect(warningIcon.exists()).toBe(false)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const warningIcon = container.querySelector(
+        '.icon-\\[lucide--triangle-alert\\]'
+      )
+      expect(warningIcon).toBeNull()
     })
   })
 })

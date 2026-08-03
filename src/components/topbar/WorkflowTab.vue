@@ -21,8 +21,20 @@
           {{ workflowOption.workflow.filename }}
         </span>
         <div class="relative">
+          <i
+            v-if="workflowStatus"
+            role="img"
+            :aria-label="workflowStatusLabel"
+            :class="
+              cn(
+                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
+                workflowStatusIconClasses[workflowStatus]
+              )
+            "
+          />
           <span
-            v-if="shouldShowStatusIndicator"
+            v-else-if="shouldShowUnsavedIndicator"
+            data-testid="workflow-dirty-indicator"
             class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
             >•</span
           >
@@ -31,6 +43,7 @@
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="t('g.close')"
+            data-testid="close-workflow-button"
             @click.stop="onCloseWorkflow(workflowOption)"
           >
             <i class="pi pi-times" />
@@ -84,8 +97,14 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useCommandStore } from '@/stores/commandStore'
+import type { WorkflowExecutionStatus } from '@/stores/executionStore'
+import {
+  useExecutionStore,
+  WORKFLOW_STATUS_I18N_KEYS
+} from '@/stores/executionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
 
@@ -112,6 +131,7 @@ const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
+const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
 const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
 const workflowThumbnail = useWorkflowThumbnail()
@@ -124,7 +144,7 @@ const autoSaveDelay = computed(() =>
   settingStore.get('Comfy.Workflow.AutoSaveDelay')
 )
 
-const shouldShowStatusIndicator = computed(() => {
+const shouldShowUnsavedIndicator = computed(() => {
   if (workspaceStore.shiftDown) {
     // Branch 1: Shift key is held down, do not show the status indicator.
     return false
@@ -158,6 +178,27 @@ const isBuilderState = computed(() => {
 const isActiveTab = computed(() => {
   return workflowStore.activeWorkflow?.key === props.workflowOption.workflow.key
 })
+
+const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
+  running:
+    'text-base-foreground icon-[lucide--loader-circle] motion-safe:animate-spin',
+  completed: 'icon-[lucide--circle-check] text-success-background',
+  failed: 'icon-[lucide--octagon-alert] text-destructive-background'
+}
+
+// The active tab doesn't badge its own status - the user is already looking
+// at it. Background tabs surface the recorded execution status.
+const workflowStatus = computed(() =>
+  isActiveTab.value
+    ? undefined
+    : executionStore.getWorkflowStatus(props.workflowOption.workflow)
+)
+
+const workflowStatusLabel = computed(() =>
+  workflowStatus.value
+    ? t(WORKFLOW_STATUS_I18N_KEYS[workflowStatus.value])
+    : undefined
+)
 
 const thumbnailUrl = computed(() => {
   return workflowThumbnail.getThumbnail(props.workflowOption.workflow.key)

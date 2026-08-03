@@ -4,9 +4,9 @@ import { merge } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { markRaw, ref } from 'vue'
-import type { Component } from 'vue'
+import type { Component, HTMLAttributes, Ref } from 'vue'
 
-import type GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 type DialogPosition =
@@ -20,6 +20,14 @@ type DialogPosition =
   | 'bottomleft'
   | 'bottomright'
 
+/**
+ * Selects the dialog renderer used by `GlobalDialog`. `'reka'` (the default)
+ * renders the Reka-UI primitive set under `src/components/ui/dialog/`.
+ * `'primevue'` is the legacy PrimeVue `Dialog` escape hatch, kept only until
+ * the branch is deleted in the Phase 6 cleanup (FE-578).
+ */
+type DialogRenderer = 'primevue' | 'reka'
+
 interface CustomDialogComponentProps {
   maximizable?: boolean
   maximized?: boolean
@@ -30,27 +38,59 @@ interface CustomDialogComponentProps {
   pt?: DialogPassThroughOptions
   closeOnEscape?: boolean
   dismissableMask?: boolean
+  /**
+   * When `false`, the Reka dialog does not dismiss when focus leaves its
+   * content. Set on container dialogs (e.g. Settings) that host nested dialogs,
+   * where a nested dialog closing can move focus onto an ordinary app element
+   * — a programmatic shift that must not be read as a dismiss. Escape and
+   * outside-pointer dismissal are unaffected. Defaults to `true`.
+   */
+  dismissOnFocusOutside?: boolean
   unstyled?: boolean
   headless?: boolean
+  renderer?: DialogRenderer
+  size?: DialogContentSize
+  /**
+   * Class applied to the Reka-UI `DialogContent` element. Ignored on the
+   * PrimeVue path — use `pt` for that renderer.
+   */
+  contentClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the Reka-UI `DialogOverlay` element. Ignored on the
+   * PrimeVue path — use `pt.mask` for that renderer.
+   */
+  overlayClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the Reka-UI `DialogHeader` element on the non-headless
+   * path. Ignored on the PrimeVue path — use `pt.header` for that renderer.
+   */
+  headerClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the wrapper around the content component on the Reka-UI
+   * non-headless path. Ignored on the PrimeVue path — use `pt.content` for
+   * that renderer.
+   */
+  bodyClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the Reka-UI `DialogFooter` element on the non-headless
+   * path. Ignored on the PrimeVue path — use `pt.footer` for that renderer.
+   */
+  footerClass?: HTMLAttributes['class']
 }
 
-export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &
+export type DialogComponentProps = Record<string, unknown> &
   CustomDialogComponentProps
 
-export interface DialogInstance<
-  H extends Component = Component,
-  B extends Component = Component,
-  F extends Component = Component
-> {
+export interface DialogInstance {
   key: string
   visible: boolean
   title?: string
-  headerComponent?: H
-  headerProps?: ComponentAttrs<H>
-  component: B
-  contentProps: ComponentAttrs<B>
-  footerComponent?: F
-  footerProps?: ComponentAttrs<F>
+  headerComponent?: Component
+  headerProps?: Record<string, unknown>
+  component: Component
+  contentProps: Record<string, unknown>
+  footerComponent?: Component
+  footerProps?: Record<string, unknown>
   dialogComponentProps: DialogComponentProps
   priority: number
 }
@@ -77,8 +117,14 @@ export interface ShowDialogOptions<
   priority?: number
 }
 
+interface UpdateDialogOptions {
+  key: string
+  contentProps?: Partial<DialogInstance['contentProps']>
+  dialogComponentProps?: Partial<DialogComponentProps>
+}
+
 export const useDialogStore = defineStore('dialog', () => {
-  const dialogStack = ref<DialogInstance[]>([])
+  const dialogStack: Ref<DialogInstance[]> = ref([])
 
   /**
    * The key of the currently active (top-most) dialog.
@@ -96,7 +142,6 @@ export const useDialogStore = defineStore('dialog', () => {
     const insertIndex = dialogStack.value.findIndex(
       (d) => d.priority <= dialog.priority
     )
-
     dialogStack.value.splice(
       insertIndex === -1 ? dialogStack.value.length : insertIndex,
       0,
@@ -123,8 +168,8 @@ export const useDialogStore = defineStore('dialog', () => {
     if (!targetDialog) return
 
     targetDialog.dialogComponentProps?.onClose?.()
-    const index = dialogStack.value.indexOf(targetDialog)
-    dialogStack.value.splice(index, 1)
+    const index = dialogStack.value.findIndex((d) => d.key === targetDialog.key)
+    if (index !== -1) dialogStack.value.splice(index, 1)
 
     activeKey.value =
       dialogStack.value.length > 0
@@ -164,6 +209,7 @@ export const useDialogStore = defineStore('dialog', () => {
         closable: true,
         closeOnEscape: true,
         dismissableMask: true,
+        renderer: 'reka' as DialogRenderer,
         ...options.dialogComponentProps,
         maximized: false,
         onMaximize: () => {
@@ -253,6 +299,28 @@ export const useDialogStore = defineStore('dialog', () => {
     return dialogStack.value.some((d) => d.key === key)
   }
 
+  function updateDialog(options: UpdateDialogOptions): boolean {
+    const dialog = dialogStack.value.find((d) => d.key === options.key)
+    if (!dialog) return false
+
+    if (options.contentProps) {
+      dialog.contentProps = {
+        ...dialog.contentProps,
+        ...options.contentProps
+      }
+    }
+
+    if (options.dialogComponentProps) {
+      dialog.dialogComponentProps = {
+        ...dialog.dialogComponentProps,
+        ...options.dialogComponentProps
+      }
+      updateCloseOnEscapeStates()
+    }
+
+    return true
+  }
+
   return {
     dialogStack,
     riseDialog,
@@ -260,6 +328,7 @@ export const useDialogStore = defineStore('dialog', () => {
     closeDialog,
     showExtensionDialog,
     isDialogOpen,
+    updateDialog,
     activeKey
   }
 })

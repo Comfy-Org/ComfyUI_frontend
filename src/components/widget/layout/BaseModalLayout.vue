@@ -35,7 +35,7 @@
           v-if="$slots.header"
           class="flex h-18 w-full items-center justify-between gap-2 px-6"
         >
-          <div class="flex flex-1 shrink-0 gap-2">
+          <div class="flex min-w-0 flex-1 gap-2">
             <Button
               v-if="!notMobile && !showLeftPanel"
               size="lg"
@@ -61,6 +61,7 @@
             <Button
               size="lg"
               class="w-10"
+              :variant="closeButtonVariant"
               :aria-label="t('g.closeDialog')"
               @click="closeDialog"
             >
@@ -117,6 +118,7 @@
             <Button
               size="lg"
               class="w-10 p-0"
+              :variant="closeButtonVariant"
               :aria-label="t('g.closeDialog')"
               @click="closeDialog"
             >
@@ -138,8 +140,9 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
 import { OnCloseKey } from '@/types/widgetTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 
@@ -158,13 +161,15 @@ const {
   rightPanelTitle,
   size = 'lg',
   leftPanelWidth = '14rem',
-  contentPadding = 'default'
+  contentPadding = 'default',
+  closeButtonVariant
 } = defineProps<{
   contentTitle: string
   rightPanelTitle?: string
   size?: ModalSize
   leftPanelWidth?: string
   contentPadding?: ContentPadding
+  closeButtonVariant?: ButtonVariants['variant']
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])

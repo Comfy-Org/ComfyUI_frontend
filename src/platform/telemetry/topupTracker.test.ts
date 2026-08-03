@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  consumePendingTopup,
   startTopupTracking,
   checkForCompletedTopup,
   clearTopupTracking
@@ -131,6 +132,28 @@ describe('topupTracker', () => {
       )
     })
 
+    it('should detect completed topup for topup_completed (unified billing feed)', () => {
+      const startTimestamp = Date.now() - 5 * 60 * 1000 // 5 minutes ago
+      mockLocalStorage.getItem.mockReturnValue(startTimestamp.toString())
+
+      const events: AuditLog[] = [
+        {
+          event_id: 'evt-topup',
+          event_type: 'topup_completed',
+          createdAt: new Date(startTimestamp + 1000).toISOString(),
+          params: {}
+        }
+      ]
+
+      const result = checkForCompletedTopup(events)
+
+      expect(result).toBe(true)
+      expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalledOnce()
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+        'pending_topup_timestamp'
+      )
+    })
+
     it('should not detect topup if credit_added event is before tracking started', () => {
       const startTimestamp = Date.now()
       mockLocalStorage.getItem.mockReturnValue(startTimestamp.toString())
@@ -200,6 +223,37 @@ describe('topupTracker', () => {
     it('should remove pending topup from localStorage', () => {
       clearTopupTracking()
 
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+        'pending_topup_timestamp'
+      )
+    })
+  })
+
+  describe('consumePendingTopup', () => {
+    it('returns false and clears nothing when no marker exists', () => {
+      mockLocalStorage.getItem.mockReturnValue(null)
+
+      expect(consumePendingTopup()).toBe(false)
+      expect(mockLocalStorage.removeItem).not.toHaveBeenCalled()
+    })
+
+    it('clears and returns true for a fresh marker', () => {
+      mockLocalStorage.getItem.mockReturnValue(
+        (Date.now() - 5 * 60 * 1000).toString()
+      )
+
+      expect(consumePendingTopup()).toBe(true)
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+        'pending_topup_timestamp'
+      )
+    })
+
+    it('clears and returns false for a marker older than 24 hours', () => {
+      mockLocalStorage.getItem.mockReturnValue(
+        (Date.now() - 25 * 60 * 60 * 1000).toString()
+      )
+
+      expect(consumePendingTopup()).toBe(false)
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
         'pending_topup_timestamp'
       )

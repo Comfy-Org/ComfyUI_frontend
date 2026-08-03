@@ -70,7 +70,7 @@ export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
     for (const node of graph._nodes) {
       if (!node.outputs) continue
 
-      const sourceNodeData = nodeMap.get(String(node.id))
+      const sourceNodeData = nodeMap.get(node.id)
       if (!sourceNodeData) continue
 
       for (const output of node.outputs) {
@@ -80,7 +80,7 @@ export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
           const link = graph.links[linkId]
           if (!link) continue
 
-          const targetNodeData = nodeMap.get(String(link.target_id))
+          const targetNodeData = nodeMap.get(link.target_id)
           if (!targetNodeData) continue
 
           links.push({

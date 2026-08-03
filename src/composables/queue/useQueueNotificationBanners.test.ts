@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
@@ -45,14 +45,14 @@ vi.mock('@/stores/executionStore', () => {
 
 const mountComposable = () => {
   let composable: ReturnType<typeof useQueueNotificationBanners>
-  const wrapper = mount({
+  const result = render({
     template: '<div />',
     setup() {
       composable = useQueueNotificationBanners()
       return {}
     }
   })
-  return { wrapper, composable: composable! }
+  return { ...result, composable: composable! }
 }
 
 describe(useQueueNotificationBanners, () => {
@@ -131,7 +131,7 @@ describe(useQueueNotificationBanners, () => {
   })
 
   it('shows queued notifications from promptQueued events', async () => {
-    const { wrapper, composable } = mountComposable()
+    const { unmount, composable } = mountComposable()
 
     try {
       mockApi.dispatchEvent(
@@ -148,12 +148,12 @@ describe(useQueueNotificationBanners, () => {
       await nextTick()
       expect(composable.currentNotification.value).toBeNull()
     } finally {
-      wrapper.unmount()
+      unmount()
     }
   })
 
   it('shows queued pending then queued confirmation', async () => {
-    const { wrapper, composable } = mountComposable()
+    const { unmount, composable } = mountComposable()
 
     try {
       mockApi.dispatchEvent(
@@ -182,12 +182,12 @@ describe(useQueueNotificationBanners, () => {
         requestId: 1
       })
     } finally {
-      wrapper.unmount()
+      unmount()
     }
   })
 
   it('falls back to 1 when queued batch count is invalid', async () => {
-    const { wrapper, composable } = mountComposable()
+    const { unmount, composable } = mountComposable()
 
     try {
       mockApi.dispatchEvent(
@@ -200,12 +200,12 @@ describe(useQueueNotificationBanners, () => {
         count: 1
       })
     } finally {
-      wrapper.unmount()
+      unmount()
     }
   })
 
   it('shows a completed notification from a finished batch', async () => {
-    const { wrapper, composable } = mountComposable()
+    const { unmount, composable } = mountComposable()
 
     try {
       await runBatch({
@@ -225,12 +225,12 @@ describe(useQueueNotificationBanners, () => {
         thumbnailUrls: ['https://example.com/preview.png']
       })
     } finally {
-      wrapper.unmount()
+      unmount()
     }
   })
 
   it('shows one completion notification when history updates after queue becomes idle', async () => {
-    const { wrapper, composable } = mountComposable()
+    const { unmount, composable } = mountComposable()
 
     try {
       vi.setSystemTime(4_000)
@@ -266,12 +266,12 @@ describe(useQueueNotificationBanners, () => {
       await nextTick()
       expect(composable.currentNotification.value).toBeNull()
     } finally {
-      wrapper.unmount()
+      unmount()
     }
   })
 
   it('queues both completed and failed notifications for mixed batches', async () => {
-    const { wrapper, composable } = mountComposable()
+    const { unmount, composable } = mountComposable()
 
     try {
       await runBatch({
@@ -302,12 +302,12 @@ describe(useQueueNotificationBanners, () => {
         count: 1
       })
     } finally {
-      wrapper.unmount()
+      unmount()
     }
   })
 
   it('uses up to two completion thumbnails for notification icon previews', async () => {
-    const { wrapper, composable } = mountComposable()
+    const { unmount, composable } = mountComposable()
 
     try {
       await runBatch({
@@ -342,7 +342,7 @@ describe(useQueueNotificationBanners, () => {
         ]
       })
     } finally {
-      wrapper.unmount()
+      unmount()
     }
   })
 })

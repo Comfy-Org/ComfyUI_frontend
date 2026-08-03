@@ -39,29 +39,3 @@ export const minimalSerialisableGraph: SerialisableGraph = {
   links: [],
   groups: []
 }
-
-export const basicSerialisableGraph: SerialisableGraph = {
-  id: 'ca9da7d8-fddd-4707-ad32-67be9be13140',
-  revision: 0,
-  version: 1,
-  config: {},
-  state: {
-    lastNodeId: 0,
-    lastLinkId: 0,
-    lastGroupId: 0,
-    lastRerouteId: 0
-  },
-  groups: [
-    {
-      id: 123,
-      bounding: [20, 20, 1, 3],
-      color: '#6029aa',
-      font_size: 14,
-      title: 'A group to test with'
-    }
-  ],
-  nodes: [
-    { id: 1, type: 'mustBeSet' } as Partial<ISerialisedNode> as ISerialisedNode
-  ],
-  links: []
-}

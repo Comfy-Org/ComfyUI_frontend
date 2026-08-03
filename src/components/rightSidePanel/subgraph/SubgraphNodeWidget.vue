@@ -1,26 +1,34 @@
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
-import type { ClassValue } from '@/utils/tailwindUtil'
+import { computed } from 'vue'
 
-const props = defineProps<{
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { ClassValue } from '@comfyorg/tailwind-utils'
+
+const {
+  nodeTitle,
+  widgetName,
+  isDraggable = false,
+  isPhysical = false,
+  isShown = false,
+  class: className
+} = defineProps<{
   nodeTitle: string
   widgetName: string
   isDraggable?: boolean
   isPhysical?: boolean
+  isShown?: boolean
   class?: ClassValue
 }>()
-defineEmits<{
-  (e: 'toggleVisibility'): void
-}>()
+defineEmits<{ toggleVisibility: [] }>()
 
-function getIcon() {
-  return props.isPhysical
+const icon = computed(() =>
+  isPhysical
     ? 'icon-[lucide--link]'
-    : props.isDraggable
+    : isShown
       ? 'icon-[lucide--eye]'
       : 'icon-[lucide--eye-off]'
-}
+)
 </script>
 
 <template>
@@ -29,27 +37,35 @@ function getIcon() {
       cn(
         'flex items-center gap-1 rounded-sm px-2 py-1 break-all',
         'bg-node-component-surface',
-        props.isDraggable && 'ring-accent-background hover:ring-1',
-        props.class
+        isDraggable && 'ring-accent-background hover:ring-1',
+        className
       )
     "
+    data-testid="subgraph-widget-item"
   >
     <div class="pointer-events-none flex-1">
-      <div class="line-clamp-1 text-xs text-text-secondary">
+      <div
+        class="line-clamp-1 text-xs text-text-secondary"
+        data-testid="subgraph-widget-node-name"
+      >
         {{ nodeTitle }}
       </div>
-      <div class="line-clamp-1 text-sm/8">{{ widgetName }}</div>
+      <div class="line-clamp-1 text-sm/8" data-testid="subgraph-widget-label">
+        {{ widgetName }}
+      </div>
     </div>
     <Button
       variant="muted-textonly"
       size="sm"
+      data-testid="subgraph-widget-toggle"
       :disabled="isPhysical"
       @click.stop="$emit('toggleVisibility')"
     >
-      <i :class="getIcon()" />
+      <i :class="icon" :data-testid="isPhysical ? 'icon-link' : 'icon-eye'" />
     </Button>
     <div
       v-if="isDraggable"
+      data-testid="subgraph-widget-drag-handle"
       class="pointer-events-none icon-[lucide--grip-vertical] size-4"
     />
   </div>

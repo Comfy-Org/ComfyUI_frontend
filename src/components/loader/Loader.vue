@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { size } = defineProps<{
   size?: 'sm' | 'md' | 'lg'

@@ -2,12 +2,13 @@
 import { remove } from 'es-toolkit'
 import { computed } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { cn } from '@/utils/tailwindUtil'
+import type { WidgetId } from '@/types/widgetId'
+import { cn } from '@comfyorg/tailwind-utils'
 
-const { id, name } = defineProps<{
-  id: string
+const { widgetId, name } = defineProps<{
+  widgetId?: WidgetId
   enable: boolean
   name: string
 }>()
@@ -15,12 +16,13 @@ const { id, name } = defineProps<{
 const appModeStore = useAppModeStore()
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
 
-function matchesThis([nodeId, widgetName]: [NodeId, string]) {
-  return id == nodeId && name === widgetName
+function matchesThis([storedId]: LinearInput) {
+  return widgetId !== undefined && storedId === widgetId
 }
 function togglePromotion() {
+  if (!widgetId) return
   if (isPromoted.value) remove(appModeStore.selectedInputs, matchesThis)
-  else appModeStore.selectedInputs.push([id, name])
+  else appModeStore.selectedInputs.push([widgetId, name])
 }
 </script>
 <template>

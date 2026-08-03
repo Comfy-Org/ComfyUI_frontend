@@ -1,11 +1,11 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { isCloud } from '@/platform/distribution/types'
+import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
+import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -437,11 +437,13 @@ export class ComfyUI {
     )
     autoQueueModeEl.style.display = 'none'
 
-    api.addEventListener('graphChanged', () => {
+    api.addEventListener('autoQueueGraphChanged', () => {
       if (this.autoQueueMode === 'change' && this.autoQueueEnabled === true) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false
-          app.queuePrompt(0, this.batchCount)
+          app.queuePrompt(0, this.batchCount, {
+            intent: { trigger_source: 'auto_queue' }
+          })
         } else {
           this.graphHasChanged = true
         }
@@ -487,11 +489,14 @@ export class ComfyUI {
           id: 'queue-button',
           textContent: 'Queue Prompt',
           onclick: () => {
-            if (isCloud) {
-              useTelemetry()?.trackRunButton({ trigger_source: 'legacy_ui' })
-              useTelemetry()?.trackWorkflowExecution()
-            }
-            app.queuePrompt(0, this.batchCount)
+            const workflowQueueIntent = {
+              trigger_source: 'legacy_ui'
+            } as const
+            useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
+            useTelemetry()?.trackWorkflowExecution()
+            app.queuePrompt(0, this.batchCount, {
+              intent: workflowQueueIntent
+            })
           }
         }),
         $el('div', {}, [
@@ -595,11 +600,14 @@ export class ComfyUI {
             id: 'queue-front-button',
             textContent: 'Queue Front',
             onclick: () => {
-              if (isCloud) {
-                useTelemetry()?.trackRunButton({ trigger_source: 'legacy_ui' })
-                useTelemetry()?.trackWorkflowExecution()
-              }
-              app.queuePrompt(-1, this.batchCount)
+              const workflowQueueIntent = {
+                trigger_source: 'legacy_ui'
+              } as const
+              useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
+              useTelemetry()?.trackWorkflowExecution()
+              app.queuePrompt(-1, this.batchCount, {
+                intent: workflowQueueIntent
+              })
             }
           }),
           $el('button', {
@@ -646,7 +654,9 @@ export class ComfyUI {
         $el('button', {
           id: 'comfy-refresh-button',
           textContent: 'Refresh',
-          onclick: () => app.refreshComboInNodes()
+          onclick: () => {
+            void app.refreshComboInNodes().catch(() => {})
+          }
         }),
         $el('button', {
           id: 'comfy-clipspace-button',
@@ -709,7 +719,9 @@ export class ComfyUI {
         (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
         !app.lastExecutionError
       ) {
-        app.queuePrompt(0, this.batchCount)
+        app.queuePrompt(0, this.batchCount, {
+          intent: { trigger_source: 'auto_queue' }
+        })
         status.exec_info.queue_remaining += this.batchCount
         this.graphHasChanged = false
       }

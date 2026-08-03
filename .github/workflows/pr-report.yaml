@@ -2,9 +2,11 @@ name: 'PR: Unified Report'
 
 on:
   workflow_run:
-    workflows: ['CI: Size Data', 'CI: Performance Report']
+    workflows: ['CI: Size Data', 'CI: Performance Report', 'CI: E2E Coverage']
     types:
       - completed
+    branches-ignore:
+      - main
 
 permissions:
   contents: read
@@ -30,110 +32,25 @@ jobs:
 
       - name: Resolve PR from workflow_run context
         id: pr-meta
-        uses: actions/github-script@v8
-        with:
-          script: |
-            let pr = context.payload.workflow_run.pull_requests?.[0];
-            if (!pr) {
-              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                commit_sha: context.payload.workflow_run.head_sha,
-              });
-              pr = prs.find(p => p.state === 'open');
-            }
+        uses: ./.github/actions/resolve-pr-from-workflow-run
 
-            if (!pr) {
-              core.info('No open PR found for this workflow run — skipping.');
-              core.setOutput('skip', 'true');
-              return;
-            }
-
-            // Verify the workflow_run head SHA matches the current PR head
-            const { data: livePr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pr.number,
-            });
-
-            if (livePr.head.sha !== context.payload.workflow_run.head_sha) {
-              core.info(`Stale run: workflow SHA ${context.payload.workflow_run.head_sha} != PR head ${livePr.head.sha}`);
-              core.setOutput('skip', 'true');
-              return;
-            }
-
-            core.setOutput('skip', 'false');
-            core.setOutput('number', String(pr.number));
-            core.setOutput('base', livePr.base.ref);
-            core.setOutput('head-sha', livePr.head.sha);
-
-      - name: Find size workflow run for this commit
+      - name: Find size workflow run
         if: steps.pr-meta.outputs.skip != 'true'
         id: find-size
-        uses: actions/github-script@v8
+        uses: ./.github/actions/find-workflow-run
         with:
-          script: |
-            const headSha = '${{ steps.pr-meta.outputs.head-sha }}';
-            const { data: runs } = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ci-size-data.yaml',
-              head_sha: headSha,
-              per_page: 1,
-            });
+          workflow-id: ci-size-data.yaml
+          head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-            const run = runs.workflow_runs[0];
-            if (!run) {
-              core.setOutput('status', 'pending');
-              return;
-            }
-
-            if (run.status !== 'completed') {
-              core.setOutput('status', 'pending');
-              return;
-            }
-
-            if (run.conclusion !== 'success') {
-              core.setOutput('status', 'failed');
-              return;
-            }
-
-            core.setOutput('status', 'ready');
-            core.setOutput('run-id', String(run.id));
-
-      - name: Find perf workflow run for this commit
+      - name: Find perf workflow run
         if: steps.pr-meta.outputs.skip != 'true'
         id: find-perf
-        uses: actions/github-script@v8
+        uses: ./.github/actions/find-workflow-run
         with:
-          script: |
-            const headSha = '${{ steps.pr-meta.outputs.head-sha }}';
-            const { data: runs } = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ci-perf-report.yaml',
-              head_sha: headSha,
-              per_page: 1,
-            });
-
-            const run = runs.workflow_runs[0];
-            if (!run) {
-              core.setOutput('status', 'pending');
-              return;
-            }
-
-            if (run.status !== 'completed') {
-              core.setOutput('status', 'pending');
-              return;
-            }
-
-            if (run.conclusion !== 'success') {
-              core.setOutput('status', 'failed');
-              return;
-            }
-
-            core.setOutput('status', 'ready');
-            core.setOutput('run-id', String(run.id));
+          workflow-id: ci-perf-report.yaml
+          head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download size data (current)
         if: steps.pr-meta.outputs.skip != 'true' && steps.find-size.outputs.status == 'ready'
@@ -152,6 +69,25 @@ jobs:
           event: push
           name: size-data
           path: temp/size-prev
+          if_no_artifact_found: warn
+
+      - name: Find coverage workflow run
+        if: steps.pr-meta.outputs.skip != 'true'
+        id: find-coverage
+        uses: ./.github/actions/find-workflow-run
+        with:
+          workflow-id: ci-tests-e2e-coverage.yaml
+          head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          not-found-status: skip
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download coverage data
+        if: steps.pr-meta.outputs.skip != 'true' && steps.find-coverage.outputs.status == 'ready'
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: e2e-coverage
+          run_id: ${{ steps.find-coverage.outputs.run-id }}
+          path: temp/coverage
           if_no_artifact_found: warn
 
       - name: Download perf metrics (current)
@@ -189,9 +125,10 @@ jobs:
       - name: Generate unified report
         if: steps.pr-meta.outputs.skip != 'true'
         run: >
-          node scripts/unified-report.js
+          pnpm exec tsx scripts/unified-report.ts
           --size-status=${{ steps.find-size.outputs.status }}
           --perf-status=${{ steps.find-perf.outputs.status }}
+          --coverage-status=${{ steps.find-coverage.outputs.status }}
           > pr-report.md
 
       - name: Remove legacy separate comments
@@ -203,6 +140,8 @@ jobs:
             const legacyMarkers = [
               '<!-- COMFYUI_FRONTEND_SIZE -->',
               '<!-- COMFYUI_FRONTEND_PERF -->',
+              '<!-- PLAYWRIGHT_TEST_STATUS -->',
+              '<!-- STORYBOOK_BUILD_STATUS -->',
             ];
 
             const comments = await github.paginate(github.rest.issues.listComments, {
@@ -223,11 +162,19 @@ jobs:
               }
             }
 
-      - name: Post PR comment
+      - name: Read PR report
+        id: report
         if: steps.pr-meta.outputs.skip != 'true'
-        uses: ./.github/actions/post-pr-report-comment
+        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+        with:
+          path: ./pr-report.md
+
+      - name: Upsert bundle/perf/coverage section into unified report
+        if: steps.pr-meta.outputs.skip != 'true'
+        uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ steps.pr-meta.outputs.number }}
-          report-file: ./pr-report.md
+          section-name: ci-metrics
+          section-content: ${{ steps.report.outputs.content }}
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -35,10 +35,10 @@
           :class="
             sidebarLocation === 'left'
               ? cn(
-                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
+                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
                   sidebarPanelVisible && 'min-w-78'
                 )
-              : 'pointer-events-auto bg-comfy-menu-bg'
+              : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
           "
           :min-size="
             sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
@@ -82,7 +82,7 @@
             </SplitterPanel>
             <SplitterPanel
               v-show="bottomPanelVisible && !focusMode"
-              class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg"
+              class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg focus-visible:outline-hidden"
             >
               <slot name="bottom-panel" />
             </SplitterPanel>
@@ -95,10 +95,10 @@
           :class="
             sidebarLocation === 'right'
               ? cn(
-                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
+                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
                   sidebarPanelVisible && 'min-w-78'
                 )
-              : 'pointer-events-auto bg-comfy-menu-bg'
+              : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
           "
           :min-size="
             sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
@@ -171,14 +171,10 @@ const sidebarPanelVisible = computed(
 )
 
 const firstPanelVisible = computed(
-  () =>
-    !focusMode.value &&
-    (sidebarLocation.value === 'left' || showOffsideSplitter.value)
+  () => sidebarLocation.value === 'left' || showOffsideSplitter.value
 )
 const lastPanelVisible = computed(
-  () =>
-    !focusMode.value &&
-    (sidebarLocation.value === 'right' || showOffsideSplitter.value)
+  () => sidebarLocation.value === 'right' || showOffsideSplitter.value
 )
 
 /**
@@ -200,12 +196,12 @@ const centerPanelDefaultSize = computed(() =>
   bothSidePanelsVisible.value ? 100 - 2 * SIDE_PANEL_SIZE : CENTER_PANEL_SIZE
 )
 
-const sidebarTabKey = computed(() => {
-  return unifiedWidth.value
+const sidebarTabKey = computed(() =>
+  unifiedWidth.value
     ? 'unified-sidebar'
     : // When no tab is active, use a default key to maintain state
       (activeSidebarTabId.value ?? 'default-sidebar')
-})
+)
 
 const sidebarStateKey = computed(() => {
   const base = sidebarTabKey.value
@@ -268,6 +264,7 @@ const splitterRefreshKey = computed(() => {
 })
 
 const firstPanelStyle = computed(() => {
+  if (focusMode.value) return { display: 'none' }
   if (sidebarLocation.value === 'left') {
     return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
   }
@@ -275,6 +272,7 @@ const firstPanelStyle = computed(() => {
 })
 
 const lastPanelStyle = computed(() => {
+  if (focusMode.value) return { display: 'none' }
   if (sidebarLocation.value === 'right') {
     return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
   }
@@ -293,9 +291,13 @@ const lastPanelStyle = computed(() => {
   background-color: var(--p-primary-color);
 }
 
-/* Hide sidebar gutter when sidebar is not visible */
-:deep(.side-bar-panel[style*='display: none'] + .p-splitter-gutter),
-:deep(.p-splitter-gutter + .side-bar-panel[style*='display: none']) {
+/* Hide gutter when adjacent panel is not visible */
+:deep(
+  [data-pc-name='splitterpanel'][style*='display: none'] + .p-splitter-gutter
+),
+:deep(
+  .p-splitter-gutter + [data-pc-name='splitterpanel'][style*='display: none']
+) {
   display: none;
 }
 

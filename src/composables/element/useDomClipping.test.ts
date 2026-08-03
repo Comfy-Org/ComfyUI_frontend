@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 import { useDomClipping } from './useDomClipping'
@@ -8,7 +9,7 @@ function createMockElement(rect: {
   width: number
   height: number
 }): HTMLElement {
-  return {
+  return fromPartial<HTMLElement>({
     getBoundingClientRect: vi.fn(
       () =>
         ({
@@ -20,7 +21,7 @@ function createMockElement(rect: {
           toJSON: () => ({})
         }) as DOMRect
     )
-  } as unknown as HTMLElement
+  })
 }
 
 function createMockCanvas(rect: {
@@ -29,7 +30,7 @@ function createMockCanvas(rect: {
   width: number
   height: number
 }): HTMLCanvasElement {
-  return {
+  return fromPartial<HTMLCanvasElement>({
     getBoundingClientRect: vi.fn(
       () =>
         ({
@@ -41,7 +42,7 @@ function createMockCanvas(rect: {
           toJSON: () => ({})
         }) as DOMRect
     )
-  } as unknown as HTMLCanvasElement
+  })
 }
 
 describe('useDomClipping', () => {

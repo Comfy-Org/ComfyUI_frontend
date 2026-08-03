@@ -10,15 +10,6 @@ export const zPublishRecordResponse = z.object({
   assets: z.array(zAssetInfo).optional()
 })
 
-export const zHubWorkflowPrefillResponse = z.object({
-  description: z.string().nullish(),
-  tags: z.array(z.string()).nullish(),
-  sample_image_urls: z.array(z.string()).nullish(),
-  thumbnail_type: z.enum(['image', 'video', 'image_comparison']).nullish(),
-  thumbnail_url: z.string().nullish(),
-  thumbnail_comparison_url: z.string().nullish()
-})
-
 /**
  * Strips path separators and control characters from a workflow name to prevent
  * path traversal when the name is later used as part of a file path.
@@ -69,4 +60,14 @@ export const zHubWorkflowPublishResponse = z.object({
   share_id: z.string(),
   workflow_id: z.string(),
   thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional()
+})
+
+const zHubLabelInfo = z.object({
+  name: z.string(),
+  display_name: z.string(),
+  type: z.enum(['tag', 'model', 'custom_node'])
+})
+
+export const zHubLabelListResponse = z.object({
+  labels: z.array(zHubLabelInfo)
 })

@@ -1,6 +1,8 @@
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { toLinkId } from '@/types/linkId'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
@@ -106,8 +108,11 @@ export class SubgraphInputNode
     if (outputIndex === -1 || inputIndex === -1)
       throw new Error('Invalid slot indices.')
 
+    const linkId = toLinkId(Number(subgraph.state.lastLinkId) + 1)
+    subgraph.state.lastLinkId = linkId
+
     return new LLink(
-      ++subgraph.state.lastLinkId,
+      linkId,
       input.type || fromSlot.type,
       this.id,
       outputIndex,
@@ -187,7 +192,7 @@ export class SubgraphInputNode
 
     const subgraphInputIndex = link.origin_slot
     link.disconnect(subgraph, 'output')
-    subgraph._version++
+    subgraph.incrementVersion()
 
     const subgraphInput = this.slots.at(subgraphInputIndex)
     if (!subgraphInput) {
@@ -226,6 +231,13 @@ export class SubgraphInputNode
         link,
         subgraphInput
       )
+      subgraph.trigger('node:slot-links:changed', {
+        nodeId: node.id,
+        slotType: NodeSlotType.INPUT,
+        slotIndex: slotIndex,
+        connected: false,
+        linkId: link.id
+      })
     }
   }
 

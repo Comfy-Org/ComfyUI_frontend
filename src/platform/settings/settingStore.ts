@@ -6,6 +6,8 @@ import { compare, valid } from 'semver'
 import { ref } from 'vue'
 
 import type { SettingParams } from '@/platform/settings/types'
+import { useTelemetry } from '@/platform/telemetry'
+import type { SettingChangedMetadata } from '@/platform/telemetry/types'
 import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -21,6 +23,11 @@ export const getSettingInfo = (setting: SettingParams) => {
 
 export interface SettingTreeNode extends TreeNode {
   data?: SettingParams
+}
+
+interface AppliedSetting<TValue> {
+  previousValue: TValue
+  newValue: TValue
 }
 
 function tryMigrateDeprecatedValue(
@@ -43,6 +50,28 @@ function onChange(
   if (setting) {
     app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
   }
+}
+
+function settingChangedEvent<K extends keyof Settings>(
+  setting: SettingParams | undefined,
+  key: K,
+  applied: AppliedSetting<Settings[K]>
+): SettingChangedMetadata | undefined {
+  if (!setting) return undefined
+
+  const telemetry = setting.telemetry
+  const isVisible = setting.type !== 'hidden'
+  const trackChanges = telemetry?.trackChanges ?? isVisible
+  if (!trackChanges) return undefined
+
+  const includeValues = telemetry?.includeValues ?? isVisible
+  return includeValues
+    ? {
+        setting_id: key,
+        previous_value: applied.previousValue,
+        new_value: applied.newValue
+      }
+    : { setting_id: key }
 }
 
 export const useSettingStore = defineStore('setting', () => {
@@ -99,7 +128,7 @@ export const useSettingStore = defineStore('setting', () => {
   function applySettingLocally<K extends keyof Settings>(
     key: K,
     value: Settings[K]
-  ): Settings[K] | undefined {
+  ): AppliedSetting<Settings[K]> | undefined {
     const clonedValue = _.cloneDeep(value)
     const newValue = tryMigrateDeprecatedValue(
       settingsById.value[key],
@@ -109,8 +138,12 @@ export const useSettingStore = defineStore('setting', () => {
     if (newValue === oldValue) return undefined
 
     onChange(settingsById.value[key], newValue, oldValue)
-    settingValues.value[key] = newValue
-    return newValue as Settings[K]
+    const typedNewValue = newValue as Settings[K]
+    settingValues.value[key] = typedNewValue
+    return {
+      previousValue: oldValue,
+      newValue: typedNewValue
+    }
   }
 
   /**
@@ -121,7 +154,10 @@ export const useSettingStore = defineStore('setting', () => {
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     const applied = applySettingLocally(key, value)
     if (applied === undefined) return
-    await api.storeSetting(key, applied)
+    await api.storeSetting(key, applied.newValue)
+
+    const event = settingChangedEvent(settingsById.value[key], key, applied)
+    if (event) useTelemetry()?.trackSettingChanged(event)
   }
 
   /**
@@ -130,6 +166,7 @@ export const useSettingStore = defineStore('setting', () => {
    */
   async function setMany(settings: Partial<Settings>) {
     const updatedSettings: Partial<Settings> = {}
+    const telemetryEvents: SettingChangedMetadata[] = []
 
     for (const key of Object.keys(settings) as (keyof Settings)[]) {
       const applied = applySettingLocally(
@@ -137,12 +174,18 @@ export const useSettingStore = defineStore('setting', () => {
         settings[key] as Settings[typeof key]
       )
       if (applied !== undefined) {
-        updatedSettings[key] = applied
+        updatedSettings[key] = applied.newValue
+        const event = settingChangedEvent(settingsById.value[key], key, applied)
+        if (event) telemetryEvents.push(event)
       }
     }
 
     if (Object.keys(updatedSettings).length > 0) {
       await api.storeSettings(updatedSettings)
+      const telemetry = useTelemetry()
+      for (const event of telemetryEvents) {
+        telemetry?.trackSettingChanged(event)
+      }
     }
   }
 

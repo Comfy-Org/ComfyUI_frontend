@@ -2,12 +2,13 @@ import { defineStore } from 'pinia'
 import { computed, readonly, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { JobId } from '@/schemas/apiSchema'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
 } from '@/utils/objectUrlUtil'
 
-type PromptPreviewMap = Record<string, string>
+type PromptPreviewMap = Record<JobId, string>
 interface NodePromptPreview {
   url: string
   nodeId?: string
@@ -15,7 +16,7 @@ interface NodePromptPreview {
 
 export const useJobPreviewStore = defineStore('jobPreview', () => {
   const settingStore = useSettingStore()
-  const nodePreviewsByPromptId = ref<Record<string, NodePromptPreview>>({})
+  const nodePreviewsByPromptId = ref<Record<JobId, NodePromptPreview>>({})
 
   const previewMethod = computed(() =>
     settingStore.get('Comfy.Execution.PreviewMethod')
@@ -31,7 +32,7 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
   })
 
   function setPreviewUrl(
-    promptId: string | undefined,
+    promptId: JobId | undefined,
     url: string,
     nodeId?: string
   ) {
@@ -46,7 +47,7 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
     }
   }
 
-  function clearPreview(promptId: string | undefined) {
+  function clearPreview(promptId: JobId | undefined) {
     if (!promptId) return
     const current = nodePreviewsByPromptId.value[promptId]
     if (!current) return

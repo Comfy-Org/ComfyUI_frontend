@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import HeroSection from '../components/product/local/HeroSection.vue'
+import CloudBannerSection from '../components/product/shared/CloudBannerSection.vue'
+import AIModelsSection from '../components/product/shared/AIModelsSection.vue'
+import ReasonSection from '../components/product/local/ReasonSection.vue'
+import EcoSystemSection from '../components/product/local/EcoSystemSection.vue'
+import ProductCardsSection from '../components/product/local/ProductCardsSection.vue'
+import FAQSection from '../components/product/local/FAQSection.vue'
+import { t } from '../i18n/translations'
+import {
+  absoluteUrl,
+  comfyUiApplicationNode,
+  comfyUiSoftwareId,
+  comfyUiSourceCodeNode,
+  pageContext,
+} from '../utils/jsonLd'
+
+const { siteUrl, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+---
+
+<BaseLayout
+  title="Download Comfy Desktop - Run AI on Your Hardware"
+  description={t('download.hero.subtitle', 'en')}
+  mainEntityId={comfyUiSoftwareId(siteUrl)}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.download', locale) },
+  ]}
+  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
+  keywords={['comfyui app', 'comfyui desktop app', 'comfyui desktop', 'comfy ui application', 'comfyui download', 'download comfyui', 'comfyui windows', 'comfyui mac', 'comfyui linux']}
+>
+  <CloudBannerSection />
+  <HeroSection client:load />
+  <ReasonSection />
+  <EcoSystemSection client:visible />
+  <AIModelsSection />
+  <ProductCardsSection />
+  <FAQSection client:visible />
+</BaseLayout>

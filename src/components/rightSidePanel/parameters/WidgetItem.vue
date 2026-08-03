@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -17,13 +17,14 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
-  useWidgetValueStore,
-  stripGraphPrefix
+  stripGraphPrefix,
+  useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { widgetId } from '@/types/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
@@ -67,35 +68,43 @@ const widgetComponent = computed(() => {
   return component || WidgetLegacy
 })
 
-function resolveSourceWidget(): { node: LGraphNode; widget: IBaseWidget } {
-  const source = resolvePromotedWidgetSource(node, widget)
-  return source ?? { node, widget }
-}
+const isLinked = computed(() => {
+  const safeWidget = useVueNodeLifecycle()
+    .nodeManager.value?.vueNodeData.get(node.id)
+    ?.widgets?.find((w) => w.name === widget.name)
+  return safeWidget?.slotMetadata
+    ? !!safeWidget.slotMetadata.linked
+    : !!node.inputs?.find((inp) => inp.widget?.name === widget.name)?.link
+})
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
-  const { node: sourceNode, widget: sourceWidget } = resolveSourceWidget()
   const graphId = node.graph?.rootGraph?.id
-  const bareNodeId = stripGraphPrefix(String(sourceNode.id))
-  const widgetState = graphId
-    ? widgetValueStore.getWidget(graphId, bareNodeId, sourceWidget.name)
-    : undefined
+  const bareNodeId = stripGraphPrefix(node.id)
+  const widgetState = widget.widgetId
+    ? useWidgetValueStore().getWidget(widget.widgetId)
+    : graphId && bareNodeId
+      ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
+      : undefined
+  const widgetName = widgetState?.name ?? widget.name
+  const widgetType = widgetState?.type ?? widget.type
 
+  const baseOptions = widgetState?.options ?? widget.options
+  const disabled = isLinked.value || !!widget.disabled || undefined
   return {
-    name: widget.name,
-    type: widget.type,
+    name: widgetName,
+    type: widgetType,
     value: widgetState?.value ?? widget.value,
     label: widgetState?.label ?? widget.label,
-    options: widgetState?.options ?? widget.options,
-    spec: nodeDefStore.getInputSpecForWidget(sourceNode, sourceWidget.name),
-    controlWidget: getControlWidget(sourceWidget)
+    options: { ...baseOptions, disabled },
+    spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
+    controlWidget: getControlWidget(widget)
   }
 })
 
-const sourceNodeName = computed((): string | null => {
-  const sourceNode = resolvePromotedWidgetSource(node, widget)?.node ?? node
-  if (!sourceNode) return null
+const displayNodeName = computed((): string | null => {
+  if (!node) return null
   const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
-  return resolveNodeDisplayName(sourceNode, {
+  return resolveNodeDisplayName(node, {
     emptyLabel: fallbackNodeTitle,
     untitledLabel: fallbackNodeTitle,
     st
@@ -167,10 +176,10 @@ const displayLabel = customRef((track, trigger) => {
       />
 
       <span
-        v-if="(showNodeName || hasParents) && sourceNodeName"
+        v-if="(showNodeName || hasParents) && displayNodeName"
         class="mx-1 my-0 min-w-10 flex-1 truncate p-0 text-right text-xs text-muted-foreground"
       >
-        {{ sourceNodeName }}
+        {{ displayNodeName }}
       </span>
       <div
         v-if="!hiddenWidgetActions"
@@ -203,7 +212,7 @@ const displayLabel = customRef((track, trigger) => {
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
-      :node-id="String(node.id)"
+      :node-id="node.id"
       :node-type="node.type"
       :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
     />

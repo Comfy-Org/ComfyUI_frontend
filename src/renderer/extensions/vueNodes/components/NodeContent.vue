@@ -2,7 +2,10 @@
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
     {{ st('nodeErrors.content', 'Node Content Error') }}
   </div>
-  <div v-else class="lg-node-content flex flex-auto grow flex-col">
+  <div
+    v-else
+    class="lg-node-content flex flex-auto grow flex-col [content-visibility:auto]"
+  >
     <!-- Default slot for custom content -->
     <slot>
       <VideoPreview
@@ -49,8 +52,7 @@ const props = defineProps<NodeContentProps>()
 
 const hasMedia = computed(() => props.media && props.media.urls.length > 0)
 
-// Get node ID from nodeData
-const nodeId = computed(() => props.nodeData?.id?.toString())
+const nodeId = computed(() => props.nodeData?.id)
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)

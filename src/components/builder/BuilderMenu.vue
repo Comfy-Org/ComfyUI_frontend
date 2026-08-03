@@ -48,7 +48,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()

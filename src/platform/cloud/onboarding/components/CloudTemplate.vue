@@ -1,81 +1,34 @@
 <template>
-  <div class="flex">
-    <BaseViewTemplate dark class="flex-1">
-      <template #header>
-        <CloudLogo />
-      </template>
-      <slot />
-      <template #footer>
-        <CloudTemplateFooter />
-      </template>
-    </BaseViewTemplate>
-    <div class="relative hidden flex-1 overflow-hidden bg-black lg:block">
-      <!-- Video Background -->
-      <video
-        class="absolute inset-0 size-full object-cover"
-        autoplay
-        muted
-        loop
-        playsinline
-        :poster="videoPoster"
-      >
-        <source :src="videoSrc" type="video/mp4" />
-      </video>
-
-      <div class="absolute inset-0 size-full bg-black/30"></div>
-
-      <!-- Optional Overlay for better visual -->
-      <div
-        class="absolute inset-0 flex items-center justify-center text-center text-white"
-      >
-        <div>
-          <h1 class="font-abcrom hero-title font-black uppercase italic">
-            {{ t('cloudStart_title') }}
-          </h1>
-          <p class="m-2 text-center text-xl text-white">
-            {{ t('cloudStart_desc') }}
-          </p>
-          <p class="m-0 text-center text-xl text-white">
-            {{ t('cloudStart_explain') }}
-          </p>
-        </div>
+  <div
+    class="flex h-svh w-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas"
+  >
+    <div class="relative flex flex-1 flex-col">
+      <div class="flex h-16 shrink-0 items-center px-6">
+        <i
+          class="icon-[comfy--comfy-logo] h-5 w-22 text-brand-yellow md:h-6 md:w-26"
+        />
       </div>
-      <div class="absolute inset-0 flex flex-col justify-end px-14 pb-[64px]">
-        <div class="flex items-center justify-end">
-          <div class="flex items-center gap-3">
-            <p class="text-md text-white">
-              {{ t('cloudStart_wantToRun') }}
-            </p>
-            <Button
-              type="button"
-              class="h-10 bg-black font-bold text-white"
-              variant="secondary"
-              @click="handleDownloadClick"
-            >
-              {{ t('cloudStart_download') }}
-            </Button>
-          </div>
-        </div>
+      <div class="flex flex-1 items-center justify-center overflow-auto">
+        <slot />
       </div>
+      <CloudTemplateFooter />
+    </div>
+    <div
+      v-if="!route.meta.hideHero"
+      class="relative hidden flex-1 overflow-hidden py-2 pr-2 lg:block"
+    >
+      <CloudHeroCarousel />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
-import videoPoster from '@/platform/cloud/onboarding/assets/videos/thumbnail.png'
-import videoSrc from '@/platform/cloud/onboarding/assets/videos/video.mp4'
-import CloudLogo from '@/platform/cloud/onboarding/components/CloudLogo.vue'
+import CloudHeroCarousel from '@/platform/cloud/onboarding/components/CloudHeroCarousel.vue'
 import CloudTemplateFooter from '@/platform/cloud/onboarding/components/CloudTemplateFooter.vue'
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
-const { t } = useI18n()
-
-const handleDownloadClick = () => {
-  window.open('https://www.comfy.org/download', '_blank')
-}
+const route = useRoute()
 </script>
 <style>
 @import '../assets/css/fonts.css';

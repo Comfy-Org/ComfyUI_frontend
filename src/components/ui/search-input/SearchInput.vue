@@ -52,6 +52,7 @@
           )
         "
         :placeholder="placeholderText"
+        :aria-label="ariaLabel"
         :auto-focus="autofocus"
       />
     </ComboboxAnchor>
@@ -61,7 +62,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { watchDebounced } from '@vueuse/core'
 import { ComboboxAnchor, ComboboxInput, ComboboxRoot } from 'reka-ui'
 import { computed, ref } from 'vue'
@@ -78,6 +79,7 @@ const { t } = useI18n()
 
 const {
   placeholder,
+  ariaLabel,
   icon = 'icon-[lucide--search]',
   debounceTime = 300,
   autofocus = false,
@@ -87,6 +89,7 @@ const {
   class: className
 } = defineProps<{
   placeholder?: string
+  ariaLabel?: string
   icon?: string
   debounceTime?: number
   autofocus?: boolean

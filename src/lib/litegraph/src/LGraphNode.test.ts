@@ -7,6 +7,7 @@ import type {
   Point,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphNode,
   LiteGraph,
@@ -17,6 +18,7 @@ import {
 
 import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+import { toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -99,7 +101,7 @@ describe('LGraphNode', () => {
     }
     node.configure(configureData)
     expect(node.pos).toEqual(new Float64Array([50, 60]))
-    expect(node.size).toEqual(new Float64Array([70, 80]))
+    expect(Array.from(node.size)).toEqual([70, 80])
   })
 
   test('should configure inputs correctly', () => {
@@ -117,7 +119,7 @@ describe('LGraphNode', () => {
 
     // Should not override existing inputs
     node.configure(getMockISerialisedNode({ id: 1 }))
-    expect(node.id).toEqual(1)
+    expect(node.id).toEqual(toNodeId(1))
     expect(node.inputs.length).toEqual(1)
   })
 
@@ -137,7 +139,7 @@ describe('LGraphNode', () => {
 
     // Should not override existing outputs
     node.configure(getMockISerialisedNode({ id: 1 }))
-    expect(node.id).toEqual(1)
+    expect(node.id).toEqual(toNodeId(1))
     expect(node.outputs.length).toEqual(1)
   })
   test('should not allow configuring id to -1', () => {
@@ -183,7 +185,7 @@ describe('LGraphNode', () => {
       expect(disconnected).toBe(true)
       expect(node2.inputs[0].link).toBeNull()
       expect(node1.outputs[0].links?.length).toBe(0)
-      expect(graph._links.has(link?.id ?? -1)).toBe(false)
+      expect(graph._links.has(link!.id)).toBe(false)
 
       // Test disconnecting by slot name
       node1.connect(0, node2, 0)
@@ -246,8 +248,8 @@ describe('LGraphNode', () => {
       expect(disconnectedSpecific).toBe(true)
       expect(targetNode1.inputs[0].link).toBeNull()
       expect(sourceNode.outputs[0].links?.length).toBe(1)
-      expect(graph._links.has(link1?.id ?? -1)).toBe(false)
-      expect(graph._links.has(link2?.id ?? -1)).toBe(true)
+      expect(graph._links.has(link1!.id)).toBe(false)
+      expect(graph._links.has(link2!.id)).toBe(true)
 
       // Test disconnecting by slot name
       const link3 = sourceNode.connect(1, targetNode1, 0)
@@ -269,8 +271,8 @@ describe('LGraphNode', () => {
       expect(sourceNode.outputs[0].links).toBeNull()
       expect(targetNode1.inputs[0].link).toBeNull()
       expect(targetNode2.inputs[0].link).toBeNull()
-      expect(graph._links.has(link2?.id ?? -1)).toBe(false)
-      expect(graph._links.has(link4?.id ?? -1)).toBe(false)
+      expect(graph._links.has(link2!.id)).toBe(false)
+      expect(graph._links.has(link4!.id)).toBe(false)
 
       // Test disconnecting non-existent slot
       const invalidDisconnect = sourceNode.disconnectOutput(999)
@@ -651,6 +653,49 @@ describe('LGraphNode', () => {
       expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(
         false
       )
+    })
+  })
+
+  describe('measure() collapsed branching', () => {
+    let out: Rect
+
+    beforeEach(() => {
+      out = [0, 0, 0, 0] as unknown as Rect
+      node.flags.collapsed = true
+      node.size[0] = 150
+      node.size[1] = 10
+    })
+
+    afterEach(() => {
+      LiteGraph.vueNodesMode = false
+    })
+
+    test('legacy mode uses NODE_TITLE_HEIGHT-based fallback when no ctx', () => {
+      LiteGraph.vueNodesMode = false
+      node.measure(out)
+
+      // No ctx → legacy collapsed branch falls back to NODE_COLLAPSED_WIDTH
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+    })
+
+    test('Vue mode uses this.size directly for collapsed nodes', () => {
+      LiteGraph.vueNodesMode = true
+      node.measure(out)
+
+      // Vue mode collapsed takes the expanded-style branch
+      expect(out[2]).toBe(150)
+      expect(out[3]).toBe(10 + LiteGraph.NODE_TITLE_HEIGHT)
+    })
+
+    test('Vue mode expanded behaves identically to legacy expanded', () => {
+      LiteGraph.vueNodesMode = true
+      node.flags.collapsed = false
+      node.size[0] = 200
+      node.size[1] = 120
+      node.measure(out)
+
+      expect(out[2]).toBe(200)
+      expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
   })
 })

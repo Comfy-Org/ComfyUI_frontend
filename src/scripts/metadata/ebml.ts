@@ -10,6 +10,7 @@ import {
   type TextRange,
   type VInt
 } from '@/types/metadataTypes'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const WEBM_SIGNATURE = [0x1a, 0x45, 0xdf, 0xa3]
 const MAX_READ_BYTES = 2 * 1024 * 1024
@@ -123,7 +124,7 @@ const findElementsInTag = (
   end: number,
   id: Uint8Array
 ): EbmlElementRange | null => {
-  for (let pos = start; pos < end - 1; ) {
+  for (let pos = start; pos < end - 1;) {
     if (matchesId(data, pos, id)) {
       const size = readVint(data, pos + 2)
       if (size && size.value > 0) {
@@ -245,7 +246,9 @@ const parseJsonText = (
   if (jsonEndPos === null) return null
 
   try {
-    return JSON.parse(jsonText.substring(0, jsonEndPos))
+    return parseJsonWithNonFinite<ComfyWorkflowJSON | ComfyApiWorkflow>(
+      jsonText.substring(0, jsonEndPos)
+    )
   } catch {
     return null
   }
@@ -304,7 +307,7 @@ const ebmlToString = (
 const parseMetadata = (data: Uint8Array): ComfyMetadata => {
   const meta: ComfyMetadata = {}
 
-  for (let pos = 0; pos < data.length - 2; ) {
+  for (let pos = 0; pos < data.length - 2;) {
     const tagInfo = findNextTag(data, pos)
     if (!tagInfo) {
       pos++
@@ -353,6 +356,7 @@ export function getFromWebmFile(file: File): Promise<ComfyMetadata> {
     const reader = new FileReader()
     reader.onload = (event) => handleFileLoad(event, resolve)
     reader.onerror = () => resolve({})
+    reader.onabort = () => resolve({})
     reader.readAsArrayBuffer(file.slice(0, MAX_READ_BYTES))
   })
 }

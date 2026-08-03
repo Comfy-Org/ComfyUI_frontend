@@ -1,14 +1,17 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
+import {
+  addAutogrow,
+  addDynamicCombo
+} from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { HasInitialMinSize } from '@/services/litegraphService'
 
 setActivePinia(createTestingPinia())
-type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
+type TestAutogrowNode = LGraphNode & {
+  comfyDynamic: { autogrow: Record<string, unknown> }
+}
 
 const { addNodeInput } = useLitegraphService()
 
@@ -16,43 +19,6 @@ function nextTick() {
   return new Promise<void>((r) => requestAnimationFrame(() => r()))
 }
 
-function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
-  const namePrefix = `${node.widgets?.length ?? 0}`
-  function getSpec(
-    inputs: DynamicInputs,
-    depth: number = 0
-  ): { key: string; inputs: object }[] {
-    return inputs.map((group, groupIndex) => {
-      const inputs = group.map((input, inputIndex) => [
-        `${namePrefix}.${depth}.${inputIndex}`,
-        Array.isArray(input)
-          ? ['COMFY_DYNAMICCOMBO_V3', { options: getSpec(input, depth + 1) }]
-          : [input, { tooltip: `${groupIndex}` }]
-      ])
-      return {
-        key: `${groupIndex}`,
-        inputs: { required: Object.fromEntries(inputs) }
-      }
-    })
-  }
-  const inputSpec: Required<InputSpec> = [
-    'COMFY_DYNAMICCOMBO_V3',
-    { options: getSpec(inputs) }
-  ]
-  addNodeInput(
-    node,
-    transformInputSpecV1ToV2(inputSpec, { name: namePrefix, isOptional: false })
-  )
-}
-function addAutogrow(node: LGraphNode, template: unknown) {
-  addNodeInput(
-    node,
-    transformInputSpecV1ToV2(['COMFY_AUTOGROW_V3', { template }], {
-      name: `${node.inputs.length}`,
-      isOptional: false
-    })
-  )
-}
 function connectInput(node: LGraphNode, inputIndex: number, graph: LGraph) {
   const node2 = testNode()
   node2.addOutput('out', '*')
@@ -60,12 +26,8 @@ function connectInput(node: LGraphNode, inputIndex: number, graph: LGraph) {
   node2.connect(0, node, inputIndex)
 }
 function testNode() {
-  const node: LGraphNode & Partial<HasInitialMinSize> = new LGraphNode('test')
+  const node = new LGraphNode('test')
   node.widgets = []
-  node._initialMinSize = { width: 1, height: 1 }
-  node.constructor.nodeData = {
-    name: 'testnode'
-  } as typeof node.constructor.nodeData
   return node as LGraphNode & Required<Pick<LGraphNode, 'widgets'>>
 }
 
@@ -143,14 +105,14 @@ describe('Autogrow', () => {
   test('Can add autogrow with min input count', () => {
     const node = testNode()
     addAutogrow(node, { min: 4, input: inputsSpec })
-    expect(node.inputs.length).toBe(4)
+    expect(node.inputs.length).toBe(5)
   })
   test('Adding connections will cause growth up to max', () => {
     const graph = new LGraph()
     const node = testNode()
     graph.add(node)
     addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test', max: 3 })
-    expect(node.inputs.length).toBe(1)
+    expect(node.inputs.length).toBe(2)
 
     connectInput(node, 0, graph)
     expect(node.inputs.length).toBe(2)
@@ -159,7 +121,7 @@ describe('Autogrow', () => {
     connectInput(node, 2, graph)
     expect(node.inputs.length).toBe(3)
   })
-  test('Removing connections decreases to min', async () => {
+  test('Removing connections decreases to min + 1', async () => {
     const graph = new LGraph()
     const node = testNode()
     graph.add(node)
@@ -181,6 +143,79 @@ describe('Autogrow', () => {
     node.disconnectInput(0)
     await nextTick()
     expect(node.inputs.length).toBe(5)
+  })
+  test('Removing a connection ignores stale autogrow callbacks after group removal', () => {
+    const graph = new LGraph()
+    const node = testNode() as TestAutogrowNode
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
+    graph.add(node)
+    addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
+
+    const rafCallbacks: FrameRequestCallback[] = []
+    const requestAnimationFrameSpy = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation((callback) => {
+        rafCallbacks.push(callback)
+        return rafCallbacks.length
+      })
+
+    try {
+      connectInput(node, 0, graph)
+      expect(node.inputs.length).toBe(2)
+
+      rafCallbacks.shift()?.(0)
+
+      node.disconnectInput(0)
+
+      const staleDisconnectCallback = rafCallbacks.shift()
+      expect(staleDisconnectCallback).toBeDefined()
+
+      delete node.comfyDynamic.autogrow['0']
+
+      const callbackCountBeforeFlush = onConnectionsChange.mock.calls.length
+      staleDisconnectCallback?.(0)
+
+      expect(onConnectionsChange).toHaveBeenCalledTimes(
+        callbackCountBeforeFlush
+      )
+    } finally {
+      requestAnimationFrameSpy.mockRestore()
+    }
+  })
+  test('Multi-group autogrow shifts second group indices on first group growth', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+
+    const imageSpec = { required: { image: ['IMAGE', {}] } }
+    const videoSpec = { required: { video: ['VIDEO', {}] } }
+    addAutogrow(node, { min: 1, input: imageSpec, prefix: 'img' })
+    addAutogrow(node, { min: 1, input: videoSpec, prefix: 'vid' })
+
+    expect(node.inputs.map((i) => i.name)).toStrictEqual([
+      '0.img0',
+      '0.img1',
+      '2.vid0',
+      '2.vid1'
+    ])
+
+    connectInput(node, 1, graph)
+    expect(node.inputs.map((i) => i.name)).toStrictEqual([
+      '0.img0',
+      '0.img1',
+      '0.img2',
+      '2.vid0',
+      '2.vid1'
+    ])
+
+    const vid0Index = node.inputs.findIndex((i) => i.name === '2.vid0')
+    expect(vid0Index).toBe(3)
+
+    connectInput(node, vid0Index, graph)
+    const vid0Link = node.inputs[vid0Index].link
+    expect(vid0Link).not.toBeNull()
+    expect(graph.links[vid0Link!].target_slot).toBe(vid0Index)
   })
   test('Can deserialize a complex node', async () => {
     const graph = new LGraph()
@@ -204,9 +239,9 @@ describe('Autogrow', () => {
       '0.a0',
       '0.a1',
       '0.a2',
-      '1.b0',
-      '1.b1',
-      '1.b2',
+      '2.b0',
+      '2.b1',
+      '2.b2',
       'aa'
     ])
   })

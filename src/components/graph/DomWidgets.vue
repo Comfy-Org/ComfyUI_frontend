@@ -21,7 +21,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 const domWidgetStore = useDomWidgetStore()
-const overrideTransitionGrace = new Set<string>()
 
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 
@@ -31,47 +30,16 @@ const updateWidgets = () => {
 
   const lowQuality = lgCanvas.low_quality
   const currentGraph = lgCanvas.graph
-  const seenWidgetIds = new Set<string>()
 
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget
-    seenWidgetIds.add(widget.id)
 
-    // Use position override only when the override node (SubgraphNode) is
-    // in the current graph. When the user enters the subgraph, the override
-    // node is no longer visible — fall back to the widget's own node.
-    // Use graph reference equality (IDs are not unique across graphs).
-    const override = widgetState.positionOverride
-    const useOverride = !!override && currentGraph === override.node.graph
-    const inOverrideTransitionGap =
-      !!override && !useOverride && !widgetState.active
-    const useTransitionGrace =
-      inOverrideTransitionGap && !overrideTransitionGrace.has(widget.id)
-
-    if (useTransitionGrace) {
-      overrideTransitionGrace.add(widget.id)
-    } else if (!inOverrideTransitionGap) {
-      overrideTransitionGrace.delete(widget.id)
-    }
-
-    // Early exit for non-visible widgets.
-    // When a position override is active (widget promoted to SubgraphNode),
-    // the interior widget's `active` flag is false (its node is in the
-    // subgraph, not the current graph) — bypass that check.
-    if (
-      !widget.isVisible() ||
-      (!widgetState.active && !useOverride && !useTransitionGrace)
-    ) {
+    if (!widget.isVisible() || !widgetState.active) {
       widgetState.visible = false
       continue
     }
 
-    // During graph transitions, hold the previous position for one frame
-    // so promoted widgets don't briefly disappear before activation flips.
-    if (useTransitionGrace) continue
-
-    const posNode = useOverride ? override.node : widget.node
-    const posWidget = useOverride ? override.widget : widget
+    const posNode = widget.node
 
     const isInCorrectGraph = posNode.graph === currentGraph
     const nodeVisible = lgCanvas.isNodeVisible(posNode)
@@ -85,20 +53,14 @@ const updateWidgets = () => {
       const margin = widget.margin
       widgetState.pos = [
         posNode.pos[0] + margin,
-        posNode.pos[1] + margin + posWidget.y
+        posNode.pos[1] + margin + widget.y
       ]
       widgetState.size = [
-        (posWidget.width ?? posNode.width) - margin * 2,
-        (posWidget.computedHeight ?? 50) - margin * 2
+        (widget.width ?? posNode.width) - margin * 2,
+        (widget.computedHeight ?? 50) - margin * 2
       ]
       widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph)
       widgetState.readonly = lgCanvas.read_only
-    }
-  }
-
-  for (const widgetId of overrideTransitionGrace) {
-    if (!seenWidgetIds.has(widgetId)) {
-      overrideTransitionGrace.delete(widgetId)
     }
   }
 }

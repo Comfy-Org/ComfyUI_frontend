@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import { toNodeId } from '@/types/nodeId'
 
 const {
   capturedOnPan,
@@ -49,6 +52,10 @@ vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
       capturedAutoPan.current = this as typeof capturedAutoPan.current
     }
   }
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({ isReadOnly: false })
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -205,7 +212,7 @@ function pointerEvent(
   clientY: number,
   pointerId = 1
 ): PointerEvent {
-  return {
+  return fromPartial<PointerEvent>({
     clientX,
     clientY,
     button: 0,
@@ -217,12 +224,12 @@ function pointerEvent(
     target: document.createElement('div'),
     preventDefault: vi.fn(),
     stopPropagation: vi.fn()
-  } as unknown as PointerEvent
+  })
 }
 
 function startDrag() {
   const { onPointerDown } = useSlotLinkInteraction({
-    nodeId: 'node1',
+    nodeId: toNodeId('node1'),
     index: 0,
     type: 'output'
   })

@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import FormSection from '../../components/contact/FormSection.vue'
+import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
+import { t } from '../../i18n/translations'
+import { absoluteUrl, organizationId, pageContext } from '../../utils/jsonLd'
+
+const { siteUrl, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+---
+
+<BaseLayout
+  title="联系我们 - Comfy"
+  pageType="ContactPage"
+  mainEntityId={organizationId(siteUrl)}
+  breadcrumbs={[
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, '/zh-CN'),
+    },
+    { name: t('breadcrumb.contact', locale) },
+  ]}
+>
+  <FormSection locale="zh-CN" client:load />
+  <SocialProofBarSection />
+</BaseLayout>

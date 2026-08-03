@@ -9,6 +9,7 @@ import { onUnmounted, ref } from 'vue'
 import type { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 
 /**
  * Composable for syncing LiteGraph with the Layout system
@@ -16,7 +17,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
  */
 export function useLayoutSync() {
   const unsubscribe = ref<() => void>()
-  const pendingNodeIds = new Set<string>()
+  const pendingNodeIds = new Set<NodeId>()
   let rafId: number | null = null
   let isMicrotaskQueued = false
   let syncGeneration = 0
@@ -50,11 +51,8 @@ export function useLayoutSync() {
         liteNode.size[0] !== layout.size.width ||
         liteNode.size[1] !== layout.size.height
       ) {
-        // Update internal size directly (like position above) to avoid
-        // the size setter writing back to layoutStore with Canvas source,
-        // which would create a feedback loop through handleLayoutChange.
-        liteNode.size[0] = layout.size.width
-        liteNode.size[1] = layout.size.height
+        // The setter's isSizeEqual guard no-ops this equal write-back.
+        liteNode.size = [layout.size.width, layout.size.height]
         liteNode.onResize?.(liteNode.size)
       }
     }

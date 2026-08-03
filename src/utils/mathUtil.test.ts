@@ -1,9 +1,40 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import { computeUnionBounds, gcd, lcm } from '@/utils/mathUtil'
+import {
+  clipRectToBounds,
+  computeUnionBounds,
+  denormalize,
+  gcd,
+  lcm,
+  normalize
+} from '@/utils/mathUtil'
 
 describe('mathUtil', () => {
+  describe('normalize', () => {
+    it('normalizes value to 0-1', () => {
+      expect(normalize(128, 0, 256)).toBe(0.5)
+      expect(normalize(0, 0, 255)).toBe(0)
+      expect(normalize(255, 0, 255)).toBe(1)
+    })
+
+    it('returns 0 when min equals max', () => {
+      expect(normalize(5, 5, 5)).toBe(0)
+    })
+  })
+
+  describe('denormalize', () => {
+    it('converts normalized value back to range', () => {
+      expect(denormalize(0.5, 0, 256)).toBe(128)
+      expect(denormalize(0, 0, 255)).toBe(0)
+      expect(denormalize(1, 0, 255)).toBe(255)
+    })
+
+    it('round-trips with normalize', () => {
+      expect(denormalize(normalize(100, 0, 255), 0, 255)).toBeCloseTo(100)
+    })
+  })
+
   describe('gcd', () => {
     it('should compute greatest common divisor correctly', () => {
       expect(gcd(48, 18)).toBe(6)
@@ -105,6 +136,31 @@ describe('mathUtil', () => {
       expect(result!.y).toBe(0)
       expect(result!.width).toBe(325)
       expect(result!.height).toBe(242)
+    })
+  })
+
+  describe('clipRectToBounds', () => {
+    const bounds = { left: 0, top: 0, right: 100, bottom: 100 }
+
+    it('returns the rect unchanged when fully inside the bounds', () => {
+      expect(
+        clipRectToBounds({ left: 10, top: 10, right: 40, bottom: 40 }, bounds)
+      ).toEqual({ left: 10, top: 10, right: 40, bottom: 40 })
+    })
+
+    it('clamps every edge that extends past the bounds', () => {
+      expect(
+        clipRectToBounds(
+          { left: -20, top: -10, right: 150, bottom: 130 },
+          bounds
+        )
+      ).toEqual({ left: 0, top: 0, right: 100, bottom: 100 })
+    })
+
+    it('clamps only the overflowing side', () => {
+      expect(
+        clipRectToBounds({ left: 10, top: 10, right: 200, bottom: 40 }, bounds)
+      ).toEqual({ left: 10, top: 10, right: 100, bottom: 40 })
     })
   })
 })

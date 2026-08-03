@@ -6,11 +6,11 @@ import { computed, ref, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
-import { st } from '@/i18n'
+import { st, stRaw } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 // PrimeVue adds this internal property to elements with tooltips
 interface PrimeVueTooltipElement extends Element {
@@ -119,7 +119,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
 
     const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.inputs.${normalizeI18nKey(slotName)}.tooltip`
     const inputTooltip = nodeDef.value.inputs?.[slotName]?.tooltip ?? ''
-    return st(key, inputTooltip)
+    return stRaw(key, inputTooltip)
   }
 
   /**
@@ -130,7 +130,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
 
     const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.outputs.${slotIndex}.tooltip`
     const outputTooltip = nodeDef.value.outputs?.[slotIndex]?.tooltip ?? ''
-    return st(key, outputTooltip)
+    return stRaw(key, outputTooltip)
   }
 
   /**
@@ -146,7 +146,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
     // Then try input-based tooltip lookup
     const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.inputs.${normalizeI18nKey(widget.name)}.tooltip`
     const inputTooltip = nodeDef.value.inputs?.[widget.name]?.tooltip ?? ''
-    return st(key, inputTooltip)
+    return stRaw(key, inputTooltip)
   }
 
   /**
@@ -169,7 +169,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
       pt: {
         text: {
           class:
-            'border-node-component-tooltip-border bg-node-component-tooltip-surface border rounded-md px-4 py-2 text-node-component-tooltip text-sm font-normal leading-tight max-w-75 shadow-none'
+            'border-node-component-tooltip-border bg-node-component-tooltip-surface border rounded-md px-4 py-2 text-node-component-tooltip text-sm font-normal leading-tight max-w-96 whitespace-pre-line shadow-none'
         },
         arrow: ({ context }: TooltipPassThroughMethodOptions) => ({
           class: cn(

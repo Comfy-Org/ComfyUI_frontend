@@ -158,15 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Desempacotar o Subgrafo selecionado"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "Converter nós selecionados em nó de grupo"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "Gerenciar nós de grupo"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "Desagrupar nós de grupo selecionados"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "Abrir Sobre o ComfyUI"
   },

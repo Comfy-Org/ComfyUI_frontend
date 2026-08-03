@@ -15,6 +15,7 @@ const mockGetServerFeature = vi.hoisted(() => vi.fn(() => false))
 const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
+const mockSetAssetPreview = vi.hoisted(() => vi.fn())
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -31,6 +32,10 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     uploadAssetFromBase64: mockUploadAssetFromBase64,
     updateAsset: mockUpdateAsset
   }
+}))
+
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({ setAssetPreview: mockSetAssetPreview })
 }))
 
 function mockFetchResponse(assets: Record<string, unknown>[]) {
@@ -51,7 +56,7 @@ function mockFetchError() {
 const cloudAsset = {
   id: '72d169cc-7f9a-40d2-9382-35eadcba0a6a',
   name: 'mesh/ComfyUI_00003_.glb',
-  asset_hash: 'c6cadcee57dd.glb',
+  hash: 'c6cadcee57dd.glb',
   preview_id: null,
   preview_url: undefined
 }
@@ -105,9 +110,7 @@ describe('findOutputAsset', () => {
     const result = await findOutputAsset('c6cadcee57dd.glb')
 
     expect(mockFetchApi).toHaveBeenCalledOnce()
-    expect(mockFetchApi.mock.calls[0][0]).toContain(
-      'asset_hash=c6cadcee57dd.glb'
-    )
+    expect(mockFetchApi.mock.calls[0][0]).toContain('hash=c6cadcee57dd.glb')
     expect(result).toEqual(cloudAsset)
   })
 
@@ -118,7 +121,7 @@ describe('findOutputAsset', () => {
     const result = await findOutputAsset('ComfyUI_00081_.glb')
 
     expect(mockFetchApi).toHaveBeenCalledTimes(2)
-    expect(mockFetchApi.mock.calls[0][0]).toContain('asset_hash=')
+    expect(mockFetchApi.mock.calls[0][0]).toContain('hash=')
     expect(mockFetchApi.mock.calls[1][0]).toContain('name_contains=')
     expect(result).toEqual(localAsset)
   })
@@ -263,5 +266,67 @@ describe('persistThumbnail', () => {
     expect(mockUpdateAsset).toHaveBeenCalledWith(cloudAsset.id, {
       preview_id: 'new-preview-id'
     })
+  })
+
+  it('patches the assets store by name with the new preview after upload', async () => {
+    mockFetchEmpty()
+    mockFetchResponse([localAsset])
+    mockUploadAssetFromBase64.mockResolvedValue({ id: 'new-preview-id' })
+    mockUpdateAsset.mockResolvedValue({})
+
+    const blob = new Blob(['fake-png'], { type: 'image/png' })
+    await persistThumbnail('ComfyUI_00081_.glb', blob)
+
+    expect(mockSetAssetPreview).toHaveBeenCalledWith(
+      localAsset.name,
+      'new-preview-id',
+      'http://localhost:8188/assets/new-preview-id/content'
+    )
+  })
+
+  it('uses the cloud asset name (not the hash) when patching the store', async () => {
+    mockFetchResponse([cloudAsset])
+    mockUploadAssetFromBase64.mockResolvedValue({ id: 'new-preview-id' })
+    mockUpdateAsset.mockResolvedValue({})
+
+    const blob = new Blob(['fake-png'], { type: 'image/png' })
+    await persistThumbnail('c6cadcee57dd.glb', blob)
+
+    expect(mockSetAssetPreview).toHaveBeenCalledWith(
+      cloudAsset.name,
+      'new-preview-id',
+      'http://localhost:8188/assets/new-preview-id/content'
+    )
+  })
+
+  it('does not patch the store when the asset already has a preview', async () => {
+    mockFetchEmpty()
+    mockFetchResponse([localAssetWithPreview])
+
+    const blob = new Blob(['fake-png'], { type: 'image/png' })
+    await persistThumbnail('ComfyUI_00081_.glb', blob)
+
+    expect(mockSetAssetPreview).not.toHaveBeenCalled()
+  })
+
+  it('does not patch the store when no asset is found', async () => {
+    mockFetchEmpty()
+    mockFetchEmpty()
+
+    const blob = new Blob(['fake-png'], { type: 'image/png' })
+    await persistThumbnail('nonexistent.glb', blob)
+
+    expect(mockSetAssetPreview).not.toHaveBeenCalled()
+  })
+
+  it('does not patch the store when upload fails', async () => {
+    mockFetchEmpty()
+    mockFetchResponse([localAsset])
+    mockUploadAssetFromBase64.mockRejectedValue(new Error('upload failed'))
+
+    const blob = new Blob(['fake-png'], { type: 'image/png' })
+    await persistThumbnail('ComfyUI_00081_.glb', blob)
+
+    expect(mockSetAssetPreview).not.toHaveBeenCalled()
   })
 })
