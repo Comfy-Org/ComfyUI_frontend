@@ -14,6 +14,10 @@ import {
   EMPTY_BILLING_PLANS,
   LEGACY_PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
+import {
+  UNSUBSCRIBED,
+  ZERO_BALANCE
+} from '@e2e/fixtures/data/subscriptionFixtures'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
@@ -582,6 +586,12 @@ export const comfyPageFixture = base.extend<{
       )
       await context.route('**/api/billing/plans', (route) =>
         route.fulfill({ json: EMPTY_BILLING_PLANS })
+      )
+      await context.route('**/customers/cloud-subscription-status', (route) =>
+        route.fulfill({ json: UNSUBSCRIBED })
+      )
+      await context.route('**/customers/balance', (route) =>
+        route.fulfill({ json: ZERO_BALANCE })
       )
       await mockWorkspace(context, workspace('personal', 'owner'), [])
       await comfyPage.cloudAuth.mockAuth()
