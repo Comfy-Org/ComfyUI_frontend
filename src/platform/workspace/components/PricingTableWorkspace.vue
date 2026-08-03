@@ -540,6 +540,6 @@ async function handleContactUs() {
 }
 
 function handleViewEnterprise() {
-  window.open('https://www.comfy.org/enterprise', '_blank')
+  window.open('https://comfy.org/cloud/enterprise/', '_blank')
 }
 </script>

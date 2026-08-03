@@ -18,6 +18,8 @@ describe('localizeHref', () => {
   })
 
   it('never prefixes locale-invariant routes', () => {
-    expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
+    expect(localizeHref('/terms-of-service/', 'zh-CN')).toBe(
+      '/terms-of-service/'
+    )
   })
 })

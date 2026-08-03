@@ -39,8 +39,8 @@ describe('enterprise MSA i18n', () => {
     }
   })
 
-  it('serves the enterprise MSA at the canonical /enterprise-msa path regardless of locale', () => {
-    expect(getRoutes('en').enterpriseMsa).toBe('/enterprise-msa')
-    expect(getRoutes('zh-CN').enterpriseMsa).toBe('/enterprise-msa')
+  it('serves the enterprise MSA at the canonical /enterprise-msa/ path regardless of locale', () => {
+    expect(getRoutes('en').enterpriseMsa).toBe('/enterprise-msa/')
+    expect(getRoutes('zh-CN').enterpriseMsa).toBe('/enterprise-msa/')
   })
 })
