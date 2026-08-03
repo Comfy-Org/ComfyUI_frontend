@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="!workspaceStore.focusMode"
-    class="ml-1 flex flex-col gap-1 pt-1"
+    class="ml-1 flex flex-col gap-2 pt-1"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
   >

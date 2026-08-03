@@ -167,13 +167,13 @@
               v-for="job in recentJobs"
               :key="job.id"
               type="button"
-              class="relative flex h-[52px] cursor-pointer items-center gap-2.5 overflow-clip rounded-[10px] border-none bg-[#1c1c1d] px-3 py-2 text-left transition-colors hover:bg-[#232426]"
+              class="relative flex h-11 cursor-pointer items-center gap-2 overflow-clip rounded-[10px] border-none bg-[#1c1c1d] py-1.5 pr-1.5 pl-2.5 text-left transition-colors hover:bg-[#232426]"
               :aria-label="t('queueStatus.viewResult')"
               data-testid="queue-status-recent-job"
               @click="openRecentJob(job)"
             >
               <span class="flex min-w-0 flex-1 flex-col gap-1">
-                <span class="truncate text-sm font-normal text-base-foreground">
+                <span class="truncate text-[13px] font-normal text-base-foreground">
                   {{ recentJobName(job) }}
                 </span>
                 <span class="truncate text-xs text-[#8a8a8a]">
