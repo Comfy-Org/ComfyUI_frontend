@@ -89,20 +89,24 @@ runs:
 
             if (response) {
               const workflowRuns = response.data.workflow_runs;
-              const successfulRun = workflowRuns.find(
-                ({ status, conclusion }) =>
-                  status === 'completed' && conclusion === 'success'
-              );
+              if (waitSeconds > 0) {
+                const successfulRun = workflowRuns.find(
+                  ({ status, conclusion }) =>
+                    status === 'completed' && conclusion === 'success'
+                );
 
-              if (successfulRun) {
-                core.setOutput('status', 'ready');
-                core.setOutput('run-id', String(successfulRun.id));
-                return;
+                if (successfulRun) {
+                  core.setOutput('status', 'ready');
+                  core.setOutput('run-id', String(successfulRun.id));
+                  return;
+                }
               }
 
               run =
-                workflowRuns.find(({ status }) => status !== 'completed') ??
-                workflowRuns[0];
+                waitSeconds > 0
+                  ? workflowRuns.find(({ status }) => status !== 'completed') ??
+                    workflowRuns[0]
+                  : workflowRuns[0];
             }
 
             if (run?.status === 'completed') {
