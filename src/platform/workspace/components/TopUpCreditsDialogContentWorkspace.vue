@@ -432,8 +432,8 @@ async function handleBuy() {
         .then(() => {
           paymentSubmitted.value = false
         })
-        .catch((error) => {
-          reportPurchaseError(error, response.billing_op_id)
+        .catch(() => {
+          reportPurchaseError(response.billing_op_id)
         })
     } else {
       paymentSubmitted.value = false
@@ -450,19 +450,17 @@ async function handleBuy() {
         detail: t('credits.topUp.unknownError')
       })
     }
-  } catch (error) {
-    reportPurchaseError(error)
+  } catch {
+    reportPurchaseError()
   } finally {
     loading.value = false
   }
 }
 
-function reportPurchaseError(error: unknown, billingOpId?: string) {
+function reportPurchaseError(billingOpId?: string) {
   paymentSubmitted.value = false
-  console.error('Purchase failed:', error)
+  console.error('Purchase failed')
 
-  const errorMessage =
-    error instanceof Error ? error.message : t('credits.topUp.unknownError')
   telemetry?.trackBillingEvent({
     operation: 'topup',
     stage: 'failed',
@@ -473,7 +471,9 @@ function reportPurchaseError(error: unknown, billingOpId?: string) {
   toast.add({
     severity: 'error',
     summary: t('credits.topUp.purchaseError'),
-    detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage })
+    detail: t('credits.topUp.purchaseErrorDetail', {
+      error: t('credits.topUp.unknownError')
+    })
   })
 }
 </script>

@@ -297,7 +297,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Purchase Failed',
-      detail: 'Failed to purchase credits: Operation unavailable'
+      detail: 'Failed to purchase credits: An unknown error occurred'
     })
     expect(mockTrackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
@@ -306,6 +306,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       billing_op_id: 'op-1',
       failure_category: 'unknown'
     })
+    expect(consoleError).toHaveBeenCalledWith('Purchase failed')
     consoleError.mockRestore()
   })
 
