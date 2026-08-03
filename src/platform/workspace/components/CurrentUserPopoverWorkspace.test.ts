@@ -12,6 +12,7 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
+  isCloud: true,
   isActiveSubscription: true,
   isFreeTier: false,
   isCancelled: false,
@@ -30,6 +31,12 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
     userPhotoUrl: ref(null),
     handleSignOut: vi.fn()
   })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return state.isCloud
+  }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -156,6 +163,7 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    state.isCloud = true
     state.isActiveSubscription = true
     state.isFreeTier = false
     state.isCancelled = false
@@ -250,5 +258,21 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('drops every subscribe reference off cloud and leaves top-up intact', () => {
+    state.isCloud = false
+    state.isFreeTier = true
+    state.canTopUp = true
+    state.canManageSubscription = true
+    renderComponent('personal', 'owner')
+
+    expect(
+      screen.queryByTestId('upgrade-to-add-credits-button')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
   })
 })

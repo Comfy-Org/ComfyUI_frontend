@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
 const state = vi.hoisted(() => ({
+  isCloud: true,
   isActiveSubscription: true,
   isFreeTier: false,
   type: 'workspace' as 'workspace' | 'legacy',
@@ -27,7 +28,9 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
+  get isCloud() {
+    return state.isCloud
+  }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -62,6 +65,7 @@ import { useDialogService } from '@/services/dialogService'
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    state.isCloud = true
     state.isActiveSubscription = true
     state.isFreeTier = false
     state.type = 'workspace'
@@ -119,5 +123,17 @@ describe('showTopUpCreditsDialog', () => {
       reason: 'out_of_credits'
     })
     expect(showDialog).not.toHaveBeenCalled()
+  })
+
+  it('opens the purchase dialog for a free-tier user off cloud, where the subscribe flow does not exist', async () => {
+    state.isCloud = false
+    state.isFreeTier = true
+    state.type = 'legacy'
+
+    await useDialogService().showTopUpCreditsDialog()
+
+    expect(showSubscriptionDialog).not.toHaveBeenCalled()
+    const [args] = showDialog.mock.calls[0]
+    expect(args.key).toBe('top-up-credits')
   })
 })

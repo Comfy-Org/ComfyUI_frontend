@@ -560,7 +560,7 @@ export const comfyPageFixture = base.extend<{
       console.error(e)
     }
 
-    if (testInfo.tags.includes('@cloud')) {
+    if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {
       await comfyPage.cloudAuth.mockAuth()
     }
 

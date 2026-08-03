@@ -396,6 +396,12 @@ WebKit engine does not expose embedded-WKWebView globals such as
 context `userAgent`. See `browser_tests/tests/cloudLoginIosWebview.spec.ts` for the
 reference pattern.
 
+`@auth` is a behavioural tag rather than a routing one: it makes the
+`comfyPage` fixture seed the mocked Firebase user (`cloudAuth.mockAuth()`),
+which `@cloud` also does implicitly. Reach for it when a signed-in user is
+needed outside the cloud project — pair `['@oss', '@auth']` to exercise a
+logged-in account on the localhost/desktop bundle, where `isCloud` is false.
+
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
 `@node`, `@widget`, `@vue-nodes`, `@subgraph`, `@ui`. Apply them so a test is
