@@ -32,6 +32,9 @@ const INTRO_PREVIEW_MS = 500
 
 const OFFLINE_GRACE_MS = 20_000
 
+/** How long a submitted run has to be accepted before the card stops promising. */
+const ACCEPT_DEADLINE_MS = 15_000
+
 function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
   const billing = useBillingContext()
@@ -71,6 +74,7 @@ function useFirstRunTourControllerInternal() {
       executionErrorStore.hasNodeError || executionErrorStore.hasPromptError
     ],
     ([status, refused], previous) => {
+      if (status !== undefined) stopAcceptDeadline()
       if (status === 'running') runState.value = 'generating'
       else if (status === 'completed') runState.value = 'succeeded'
       else if (status === 'failed') runState.value = 'failed'
@@ -82,6 +86,27 @@ function useFirstRunTourControllerInternal() {
         runState.value = 'failed'
     }
   )
+
+  /**
+   * A submission the backend refuses never gets a prompt_id, so no status ever
+   * appears and none of the branches above can fire. Account preconditions —
+   * sign-in, subscription, credits — are deliberately kept out of the error
+   * stores by `ComfyApp.queuePrompt`, so the refusal is invisible there too.
+   * Give acceptance a deadline. Only acceptance: any status at all clears it,
+   * so a run that is merely slow is never cut short.
+   */
+  let acceptTimer: ReturnType<typeof setTimeout> | undefined
+  function stopAcceptDeadline() {
+    clearTimeout(acceptTimer)
+    acceptTimer = undefined
+  }
+  function startAcceptDeadline() {
+    stopAcceptDeadline()
+    acceptTimer = setTimeout(() => {
+      stopAcceptDeadline()
+      if (runState.value === 'generating') runState.value = 'failed'
+    }, ACCEPT_DEADLINE_MS)
+  }
 
   let offlineTimer: ReturnType<typeof setTimeout> | undefined
   function stopOfflineGrace() {
@@ -116,6 +141,7 @@ function useFirstRunTourControllerInternal() {
       }
 
       runState.value = 'generating'
+      startAcceptDeadline()
       engine.next()
     },
     { capture: true }
@@ -132,6 +158,7 @@ function useFirstRunTourControllerInternal() {
         ending?.tour === 'firstRun' && ending.outcome === 'completed'
       nudgeArmed.value = true
       stopOfflineGrace()
+      stopAcceptDeadline()
       releaseFirstRunTargets()
       tourWorkflow.value = null
       runState.value = 'idle'
