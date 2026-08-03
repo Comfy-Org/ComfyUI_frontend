@@ -41,6 +41,8 @@ function useFirstRunTourControllerInternal() {
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
+  /** A tour that never appeared leaves the user nothing to be congratulated for. */
+  const tourWasShown = ref(false)
 
   // The tour's node ids are graph-local, so they only describe the workflow it
   // resolved against: swapping workflows leaves it pointing at strangers.
@@ -140,6 +142,7 @@ function useFirstRunTourControllerInternal() {
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     nudgeArmed.value = false
+    tourWasShown.value = false
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),
@@ -147,6 +150,7 @@ function useFirstRunTourControllerInternal() {
     )
     await delay(INTRO_PREVIEW_MS)
     const started = await engine.startTour('firstRun')
+    tourWasShown.value = started
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null
@@ -156,7 +160,12 @@ function useFirstRunTourControllerInternal() {
     return started
   }
 
-  return { beginTour, nudgeArmed: readonly(nudgeArmed), dismissNudge }
+  return {
+    beginTour,
+    nudgeArmed: readonly(nudgeArmed),
+    tourWasShown: readonly(tourWasShown),
+    dismissNudge
+  }
 }
 
 export const useFirstRunTourController = createSharedComposable(

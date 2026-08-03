@@ -591,6 +591,41 @@ describe('useFirstRunTourController', () => {
       ).toBe(true)
     })
 
+    it('takes an armed nudge off the screen when a second tour starts', async () => {
+      const { controller } = await tourOnRunStep()
+      mocks.engine.activeTour = null
+      await nextTick()
+      expect(controller.nudgeArmed.value).toBe(true)
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+
+      expect(
+        controller.nudgeArmed.value,
+        'a nudge left over from the last tour would sit on top of this one'
+      ).toBe(false)
+    })
+
+    it('congratulates nobody when the tour never appeared', async () => {
+      mocks.steps = []
+      mocks.activeWorkflow.value = TOUR_WORKFLOW
+      mocks.engine.startTour.mockImplementation(async () => {
+        await resolveRegisteredTour()
+        return false
+      })
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+
+      expect(
+        controller.tourWasShown.value,
+        'a tour that resolved no steps made nothing for the nudge to celebrate'
+      ).toBe(false)
+    })
+
     it('stops offering the nudge once it is waved away', async () => {
       const { controller } = await tourOnRunStep()
       mocks.engine.activeTour = null
