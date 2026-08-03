@@ -70,6 +70,7 @@
         :aria-modal="!step.interactive"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
+        tabindex="-1"
         :class="
           cn(
             'absolute motion-safe:duration-300',
@@ -109,6 +110,7 @@
           <template #actions>
             <Button
               v-if="showSkip"
+              ref="skipButton"
               variant="textonly"
               size="md"
               @click="emit('skip')"
@@ -232,10 +234,13 @@ const showSkip = computed(() => !isLast)
 
 const primaryButton =
   useTemplateRef<InstanceType<typeof Button>>('primaryButton')
+const skipButton = useTemplateRef<InstanceType<typeof Button>>('skipButton')
 
 async function focusPrimary() {
   await nextTick()
-  const el = primaryButton.value?.$el as HTMLElement | undefined
+  const el = (primaryButton.value?.$el ??
+    skipButton.value?.$el ??
+    cardRef.value) as HTMLElement | undefined
   el?.focus()
 }
 

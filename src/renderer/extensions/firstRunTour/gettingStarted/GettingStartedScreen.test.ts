@@ -135,12 +135,31 @@ describe('GettingStartedScreen', () => {
 
     await pickFirstTemplate()
 
-    await waitFor(() =>
-      expect(
-        mocks.dismiss,
-        'the graph is loaded and usable, so the takeover must not strand the user on it'
-      ).toHaveBeenCalled()
-    )
+    await waitFor(() => expect(mocks.beginTour).toHaveBeenCalled())
+    expect(
+      mocks.dismiss,
+      'the graph is loaded and usable, so the takeover must not strand the user on it'
+    ).toHaveBeenCalled()
+  })
+
+  it('keeps the click handler from rejecting when the tour cannot start', async () => {
+    mocks.beginTour.mockRejectedValue(new Error('tour unavailable'))
+    const rejections: unknown[] = []
+    const onRejection = (reason: unknown) => rejections.push(reason)
+    process.on('unhandledRejection', onRejection)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await renderScreen()
+
+    await pickFirstTemplate()
+
+    await waitFor(() => expect(mocks.beginTour).toHaveBeenCalled())
+    await new Promise((resolve) => setImmediate(resolve))
+    process.off('unhandledRejection', onRejection)
+
+    expect(
+      rejections,
+      'the graph is already loaded, so a tour that throws must not escape the click'
+    ).toEqual([])
   })
 
   describe('grid', () => {

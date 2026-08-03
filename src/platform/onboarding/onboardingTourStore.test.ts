@@ -471,6 +471,18 @@ describe('onboardingTourStore', () => {
     expect(shownCoachId(store.step)).toBe('inputs-list')
   })
 
+  it('offers no way back off the first step', async () => {
+    registerAppModeTargets()
+    const store = mountStore()
+    store.replayTour('appMode')
+    await nextTick()
+
+    expect(
+      store.canGoBack,
+      'there is no step before this one, so Back would show step -1'
+    ).toBe(false)
+  })
+
   it('reports step index 0 while no tour is active', () => {
     const store = mountStore()
     expect(store.countedStepIdx).toBe(0)
@@ -571,6 +583,32 @@ describe('onboardingTourStore', () => {
       seenTours(),
       'the user never got this tour, so it must be offered again'
     ).not.toContain('appMode')
+  })
+
+  it('ends quietly when losing the context also loses the target', async () => {
+    const targets = registerAppModeTargets()
+    const store = mountStore()
+    enterApp('app', true)
+    await nextTick()
+    store.next()
+    await nextTick()
+    expect(shownCoachId(store.step)).toBe('inputs-list')
+
+    const el = targets.get('inputs-list')
+    if (!el) throw new Error('no inputs target')
+    enterApp('graph', false)
+    unregisterCoachmark('inputs-list', el)
+    await nextTick()
+
+    expect(store.activeTour).toBeNull()
+    expect(
+      useToastStore().messagesToAdd,
+      'leaving app mode is an ordinary thing to do, so it must not read as an error'
+    ).toEqual([])
+    const skipped = telemetry.track.mock.calls.findLast(
+      ([stage]) => stage === 'skipped'
+    )
+    expect(skipped?.[1]).toMatchObject({ skip_reason: 'trigger_lost' })
   })
 
   describe('a step whose onEnter is still running', () => {

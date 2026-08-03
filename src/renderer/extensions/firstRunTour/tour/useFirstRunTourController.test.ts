@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import type { DetachedWindowAPI } from 'happy-dom'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
@@ -161,6 +162,15 @@ function dropRun(workflow: unknown) {
   return nextTick()
 }
 
+function setViewportWidth(width: number) {
+  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
+    .happyDOM
+  if (!happyDOM)
+    throw new Error('window.happyDOM is unavailable to set viewport')
+  happyDOM.setViewport({ width })
+  window.dispatchEvent(new Event('resize'))
+}
+
 function mountRunButton(
   testId: 'queue-button' | 'subscribe-to-run-button',
   onClick: () => void
@@ -193,6 +203,7 @@ describe('useFirstRunTourController', () => {
     controllerScope?.stop()
     controllerScope = undefined
     document.body.innerHTML = ''
+    setViewportWidth(1280)
     vi.useRealTimers()
   })
 
@@ -340,6 +351,37 @@ describe('useFirstRunTourController', () => {
         'video takes minutes; a timer that does not need the socket to drop fails healthy runs'
       ).toBe('generating')
     })
+
+    it('lets a recovered socket cancel every retry that preceded it', async () => {
+      const api = await generatingRun()
+
+      // Only the first retry may own the deadline, or reconnecting leaves
+      // timers behind that no single `reconnected` can clear.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        api.dispatchCustomEvent('reconnecting')
+        await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS / 4)
+      }
+      api.dispatchCustomEvent('reconnected')
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS * 2)
+
+      expect(
+        mocks.runState.value,
+        'a run that came back must not be failed by a timer an earlier retry armed'
+      ).toBe('generating')
+    })
+
+    it('keeps a run that landed while the socket was gone', async () => {
+      const api = await generatingRun()
+
+      api.dispatchCustomEvent('reconnecting')
+      await finishRun(TOUR_WORKFLOW, 'completed')
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS)
+
+      expect(
+        mocks.runState.value,
+        'the grace timer must not clobber an outcome that arrived before it fired'
+      ).toBe('succeeded')
+    })
   })
 
   describe('run outcome', () => {
@@ -389,6 +431,16 @@ describe('useFirstRunTourController', () => {
         registeredTourHolds(),
         'a tour must not end just because its run progressed'
       ).toBe(true)
+    })
+
+    it('refuses to hold a tour on a viewport below the desktop layout', async () => {
+      setViewportWidth(500)
+      await tourOnRunStep()
+
+      expect(
+        registeredTourHolds(),
+        'the spotlight is placed against a desktop layout, so below md it points nowhere'
+      ).toBe(false)
     })
 
     it('ignores a run that finished for another workflow', async () => {
@@ -443,6 +495,20 @@ describe('useFirstRunTourController', () => {
       await finishRun(TOUR_WORKFLOW, 'running')
 
       expect(mocks.runState.value).toBe('generating')
+    })
+
+    it('hands the next tour a run state of its own', async () => {
+      await tourOnRunStep()
+      await finishRun(TOUR_WORKFLOW, 'completed')
+      expect(mocks.runState.value).toBe('succeeded')
+
+      mocks.engine.activeTour = null
+      await nextTick()
+
+      expect(
+        mocks.runState.value,
+        'inheriting the last outcome opens the next Result step already reporting'
+      ).toBe('idle')
     })
 
     it('remembers a run that landed after the queue drops its status', async () => {
@@ -540,7 +606,7 @@ describe('useFirstRunTourController', () => {
   })
 
   describe('the paywall', () => {
-    it('consumes a Run click it is going to refuse', async () => {
+    it('parks the tour on a Run click it cannot fund', async () => {
       await tourOnRunStep()
       mocks.canRunWorkflows.value = false
       const underlyingHandler = vi.fn()
@@ -555,21 +621,24 @@ describe('useFirstRunTourController', () => {
 
       expect(
         underlyingHandler,
-        'a refused run must never reach the handler that queues it'
-      ).not.toHaveBeenCalled()
+        'the subscribe button opens the paywall itself, with its own reason and telemetry'
+      ).toHaveBeenCalled()
       expect(
-        click.defaultPrevented,
-        'the browser activates the button on its own unless the click is cancelled'
-      ).toBe(true)
-      expect(mocks.showSubscriptionDialog).toHaveBeenCalled()
+        mocks.showSubscriptionDialog,
+        'opening it here too would replace the button reason with the tour own'
+      ).not.toHaveBeenCalled()
       expect(
         mocks.engine.postpone,
         'whoever subscribes off the back of this still has their first run ahead of them'
       ).toHaveBeenCalled()
       expect(mocks.engine.skip).not.toHaveBeenCalled()
+      expect(
+        mocks.engine.next,
+        'nothing was queued, so there is no result to send the user to'
+      ).not.toHaveBeenCalled()
     })
 
-    it('keeps intercepting after the step renames its copy', async () => {
+    it('keeps parking after the step renames its copy', async () => {
       await tourOnRunStep()
       mocks.engine.step = { ...runStep(), name: 'run.cloud' }
       mocks.canRunWorkflows.value = false
@@ -579,8 +648,8 @@ describe('useFirstRunTourController', () => {
       mountRunButton('subscribe-to-run-button', underlyingHandler).click()
 
       expect(
-        underlyingHandler,
-        'a translation key is copy, so renaming it must not open the paywall gate'
+        mocks.engine.next,
+        'a translation key is copy, so renaming it must not walk the tour onto a run that never queued'
       ).not.toHaveBeenCalled()
       expect(mocks.engine.postpone).toHaveBeenCalled()
     })

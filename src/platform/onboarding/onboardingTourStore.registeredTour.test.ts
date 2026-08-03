@@ -132,6 +132,38 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     ).resolves.toBe(true)
   })
 
+  it('tells a resolver that crashed apart from one with nothing to show', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    registerTour('firstRun', () =>
+      Promise.reject(new Error('unreadable graph'))
+    )
+    const store = mountStore()
+
+    await expect(store.startTour('firstRun')).resolves.toBe(false)
+
+    expect(
+      telemetry.track,
+      'sharing a reason with an empty pin set reports the tour crash rate as zero'
+    ).toHaveBeenCalledWith(
+      'not_started',
+      expect.objectContaining({ not_started_reason: 'resolver_failed' })
+    )
+  })
+
+  it('counts a user once however often the trigger re-fires', async () => {
+    settings.store.set(TOUR_SEEN_SETTING, ['firstRun'])
+    const store = mountStore()
+
+    await store.startTour('firstRun')
+    await store.startTour('firstRun')
+    await store.startTour('firstRun')
+
+    expect(
+      telemetry.track.mock.calls.filter(([stage]) => stage === 'not_started'),
+      'the trigger re-fires on every mode change, so the funnel would count edges not users'
+    ).toHaveLength(1)
+  })
+
   it('runs the steps its resolver builds', async () => {
     registerTour('firstRun', () =>
       Promise.resolve([step('upload'), step('run')])

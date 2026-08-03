@@ -122,13 +122,12 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
         const unguarded = await surface.evaluate((el) =>
           [...el.classList].filter(
             (name) =>
-              name.includes('transition-[') && !name.startsWith('motion-safe:')
+              name.includes('transition') && !name.startsWith('motion-safe:')
           )
         )
         expect(unguarded).toEqual([])
+        await expect(surface).toHaveCSS('transition-duration', '0s')
       }
-
-      await expect(coach.spotlight).toHaveCSS('transition-duration', '0s')
     })
   })
 
