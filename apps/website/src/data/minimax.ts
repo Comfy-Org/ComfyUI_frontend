@@ -1,8 +1,6 @@
 import type { LocalizedText, TranslationKey } from '../i18n/translations'
 import type { PlanFeatureGroup } from './pricingPlans'
 
-import { externalLinks } from '../config/routes'
-
 // MiniMax H3 media, served from media.comfy.org.
 // hero + the four scene clips are real H3 renders under website/minimax/. The
 // two `example` stills reuse existing shared assets for the steps/showcase
@@ -22,6 +20,14 @@ const media = {
 } as const
 
 export const minimaxHeroVideo = media.hero
+
+export const minimaxLinks = {
+  cloudRun: 'https://cloud.comfy.org/?share=a781503cf508',
+  textToVideo: 'https://comfy.org/workflows/e8099b642c9f-e8099b642c9f/',
+  referenceToVideo: 'https://comfy.org/workflows/46a303cbccf9-46a303cbccf9/',
+  imageToVideo: 'https://comfy.org/workflows/a781503cf508-a781503cf508/',
+  iceRider: 'https://comfy.org/workflows/b34841f6789c-b34841f6789c/'
+} as const
 
 export interface MiniMaxStep {
   id: string
@@ -84,7 +90,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
         '青与琥珀光下的液态铬面泛起涟漪，是对反射与微观细节的一次压力测试。'
     },
     mediaSrc: media.fluid,
-    href: externalLinks.workflows
+    href: minimaxLinks.textToVideo
   },
   {
     id: 'sunken-temple',
@@ -96,7 +102,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
       'zh-CN': '光束穿过被水淹没的黄金浮雕神殿，全程保持光影与景深的稳定。'
     },
     mediaSrc: media.sunkenTemple,
-    href: externalLinks.workflows
+    href: minimaxLinks.textToVideo
   },
   {
     id: 'night-ascent',
@@ -108,7 +114,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
       'zh-CN': '头灯登山者攀上月光沙丘，近乎全黑的画面中颗粒与运动依旧干净。'
     },
     mediaSrc: media.nightAscent,
-    href: externalLinks.workflows
+    href: minimaxLinks.textToVideo
   },
   {
     id: 'ice-rider',
@@ -120,7 +126,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
       'zh-CN': '骑手一镜到底穿越冰川峡谷，运镜与原生音频均由 H3 直接生成。'
     },
     mediaSrc: media.iceRider,
-    href: externalLinks.workflows
+    href: minimaxLinks.iceRider
   },
   {
     id: 'backyard-hero',
@@ -133,7 +139,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
         '小小超级英雄向巨型城市怪兽宣战，仅凭一张参考图便保持角色始终如一。'
     },
     mediaSrc: media.superhero,
-    href: externalLinks.workflows
+    href: minimaxLinks.referenceToVideo
   },
   {
     id: 'stay-comfy-can',
@@ -145,7 +151,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
       'zh-CN': '一张产品图生成完整场景 — 瀑布旁倾倒的罐身上，标签始终清晰锐利。'
     },
     mediaSrc: media.comfyCan,
-    href: externalLinks.workflows
+    href: minimaxLinks.referenceToVideo
   }
 ] as const
 
