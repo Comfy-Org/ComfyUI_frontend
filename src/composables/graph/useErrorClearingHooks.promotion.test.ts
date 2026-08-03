@@ -85,6 +85,35 @@ describe('link ownership while a workflow loads', () => {
     ChangeTracker.isLoadingGraph = false
   })
 
+  it('keeps cached candidates while a workflow load clears the old graph', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('LoadImage')
+    node.type = 'LoadImage'
+    const input = node.addInput('image', 'COMBO')
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      () => undefined,
+      { values: [] }
+    )
+    input.widget = { name: widget.name }
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    installErrorClearingHooks(graph)
+
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([createMissingMediaCandidate([toNodeId(999)])])
+
+    // clear() fires the removal lifecycle per node, which reaches the same
+    // prune the connection path uses.
+    ChangeTracker.isLoadingGraph = true
+    graph.clear()
+
+    expect(mediaStore.missingMediaCandidates).toHaveLength(1)
+  })
+
   it('keeps restored candidates while the graph is still being wired', async () => {
     const graph = new LGraph()
     const upstream = new LGraphNode('ImageSource')
