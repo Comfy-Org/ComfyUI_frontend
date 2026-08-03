@@ -567,6 +567,33 @@ describe('LGraphNode', () => {
       expect(serialized.widgets_values).toHaveLength(2)
     })
 
+    test('should compact serialized values around non-serializing widgets', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+      node.addWidget('number', 'steps', 20, null)
+      node.addWidget('button', 'action', 'Click', null)
+      node.widgets![1].serialize = false
+      node.addWidget('number', 'seed', 12345, null)
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values).toEqual([20, 12345])
+
+      const restoredNode = new LGraphNode('TestNode')
+      restoredNode.addWidget('number', 'steps', 0, null)
+      restoredNode.addWidget('button', 'action', 'Click', null)
+      restoredNode.widgets![1].serialize = false
+      restoredNode.addWidget('number', 'seed', 0, null)
+      LiteGraph.namedValuesRestore = false
+      restoredNode.configure(serialized)
+
+      expect(restoredNode.widgets!.map((widget) => widget.value)).toEqual([
+        20,
+        'Click',
+        12345
+      ])
+    })
+
     test('should only configure widgets with serialize flag not set to false', () => {
       const node = new LGraphNode('TestNode')
       node.serialize_widgets = true
@@ -688,6 +715,15 @@ describe('LGraphNode', () => {
       expect(out[2]).toBe(96)
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
       expect(Array.from(node.size)).toEqual([150, 10])
+    })
+
+    test('Vue mode retains fallback width when collapsed width is unset', () => {
+      LiteGraph.vueNodesMode = true
+      node.measure(out)
+
+      expect(node._collapsed_width).toBe(LiteGraph.NODE_COLLAPSED_WIDTH)
+      expect(out[2]).toBe(LiteGraph.NODE_COLLAPSED_WIDTH)
+      expect(node.renderingSize[0]).toBe(LiteGraph.NODE_COLLAPSED_WIDTH)
     })
 
     test.each([TitleMode.TRANSPARENT_TITLE, TitleMode.NO_TITLE])(

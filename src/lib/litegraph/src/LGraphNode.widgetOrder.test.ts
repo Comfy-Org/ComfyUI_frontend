@@ -143,6 +143,13 @@ describe('LGraphNode widget ordering', () => {
       ])
     })
 
+    it('should ignore inherited named widget values', () => {
+      node.addWidget('text', 'toString', 'unchanged', null, {})
+      node.configure(mockNode(undefined, {}))
+
+      expect(node.widgets![0].value).toBe('unchanged')
+    })
+
     it('should skip widgets with serialize: false', () => {
       node.addWidget('number', 'steps', 20, null, {})
       node.addWidget('button', 'action', 'Click', null, {})
@@ -176,6 +183,18 @@ describe('LGraphNode widget ordering', () => {
       node2.configure(node.serialize())
 
       expect(node2.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
+    })
+
+    it('should serialize named widget values as own properties', () => {
+      node.addWidget('text', '__proto__', 'prototype value', null, {})
+      node.serialize_widgets = true
+
+      const namedValues = node.serialize().widgets_values_named
+
+      expect(namedValues).toBeDefined()
+      expect(Object.getPrototypeOf(namedValues)).toBeNull()
+      expect(Object.hasOwn(namedValues!, '__proto__')).toBe(true)
+      expect(namedValues!['__proto__']).toBe('prototype value')
     })
 
     it('should support specifying order for legacy workflows', () => {

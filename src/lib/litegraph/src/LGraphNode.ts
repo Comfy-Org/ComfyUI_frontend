@@ -271,6 +271,7 @@ export class LGraphNode
     output_node?: boolean
     api_node?: boolean
     name?: string
+    fallbackWidgetsValuesNames?: string[]
   }
 
   static resizeHandleSize = 15
@@ -1014,7 +1015,10 @@ export class LGraphNode
 
       if (namedValues && LiteGraph.namedValuesRestore) {
         for (const widget of this.widgets) {
-          if (widget.serialize === false || !(widget.name in namedValues))
+          if (
+            widget.serialize === false ||
+            !Object.hasOwn(namedValues, widget.name)
+          )
             continue
 
           widget.value = namedValues[widget.name]
@@ -1044,7 +1048,19 @@ export class LGraphNode
   }
 
   /**
-   * serialize the content
+   * Serializes the node, including widget values when
+   * {@link serialize_widgets} is enabled.
+   *
+   * `widgets_values` retains the legacy positional format. Its indexes are
+   * compact and include only widgets whose `serialize` property is not false,
+   * matching the positional restore loop in {@link configure}.
+   * `widgets_values_named` stores the same values keyed by widget name.
+   * {@link LiteGraph.namedValuesRestore} selects named restoration when named
+   * values are available, otherwise configuration uses the legacy positions.
+   * Custom `onSerialize` hooks that replace these fields must emit both formats
+   * with compact positional indexing. Custom `onConfigure` hooks that restore
+   * widget values must accept both named and compact positional formats and
+   * honor the restore switch.
    */
   serialize(): ISerialisedNode {
     // create serialization object
@@ -1075,9 +1091,11 @@ export class LGraphNode
 
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets) {
+      const namedWidgetValues: Record<string, TWidgetValue> =
+        Object.create(null)
       o.widgets_values = []
-      o.widgets_values_named = {}
-      for (const [i, widget] of widgets.entries()) {
+      o.widgets_values_named = namedWidgetValues
+      for (const widget of widgets) {
         if (widget.serialize === false) continue
         const val = widget.value
         // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
@@ -1085,8 +1103,8 @@ export class LGraphNode
           val != null && typeof val === 'object'
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
-        o.widgets_values[i] = serialisedVal
-        o.widgets_values_named[widget.name] = serialisedVal
+        o.widgets_values.push(serialisedVal)
+        namedWidgetValues[widget.name] = serialisedVal
       }
     }
 
@@ -2198,7 +2216,8 @@ export class LGraphNode
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
     } else if (LiteGraph.vueNodesMode) {
-      out[2] = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
+      this._collapsed_width ||= LiteGraph.NODE_COLLAPSED_WIDTH
+      out[2] = this._collapsed_width
       out[3] = Math.max(titleHeight, LiteGraph.NODE_TITLE_HEIGHT)
     } else {
       if (ctx) ctx.font = this.innerFontStyle
