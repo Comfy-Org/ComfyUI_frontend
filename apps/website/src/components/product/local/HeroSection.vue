@@ -298,7 +298,9 @@ onUnmounted(() => {
         {{ t('download.hero.subtitle', locale) }}
       </p>
 
-      <div class="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end">
+      <div
+        class="mt-8 flex max-w-md flex-col gap-4 lg:max-w-none lg:flex-row lg:items-end"
+      >
         <MobileDownloadEmailForm :locale />
         <DownloadLocalButton :locale class="lg:min-w-60 lg:p-4" />
         <BrandButton
