@@ -83,7 +83,9 @@
       </Button>
       <!-- Upgrade to add credits (free tier) -->
       <Button
-        v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
+        v-if="
+          isCloud && isActiveSubscription && permissions.canTopUp && isFreeTier
+        "
         variant="subscribe"
         size="sm"
         data-testid="upgrade-to-add-credits-button"

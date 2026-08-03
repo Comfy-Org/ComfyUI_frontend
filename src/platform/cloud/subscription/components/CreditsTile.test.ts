@@ -18,6 +18,7 @@ type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
 type TeamStop = CurrentTeamCreditStop
 
 const state = vi.hoisted(() => ({
+  isCloud: true,
   balance: null as Balance | null,
   subscription: null as Subscription | null,
   isActiveSubscription: false,
@@ -31,6 +32,12 @@ const state = vi.hoisted(() => ({
   showTopUpCreditsDialog: vi.fn(),
   trackAddApiCreditButtonClicked: vi.fn(),
   toastErrorHandler: vi.fn()
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return state.isCloud
+  }
 }))
 
 vi.mock('@/composables/useErrorHandling', () => ({
@@ -159,6 +166,7 @@ function activeProSubscription() {
 
 describe('CreditsTile', () => {
   beforeEach(() => {
+    state.isCloud = true
     state.balance = null
     state.subscription = null
     state.isActiveSubscription = false
@@ -374,6 +382,17 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('offers add-credits to local free-tier users', async () => {
+    activeProSubscription()
+    state.isCloud = false
+    state.isFreeTier = true
+    renderTile()
+
+    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    await userEvent.click(screen.getByText('Add credits'))
+    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('hides the action button when the user lacks the top-up permission', () => {

@@ -12,6 +12,7 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
+  isCloud: true,
   isActiveSubscription: true,
   isFreeTier: false,
   isCancelled: false,
@@ -21,6 +22,12 @@ const state = vi.hoisted(() => ({
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
   showPricingTable: vi.fn()
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return state.isCloud
+  }
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -156,6 +163,7 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    state.isCloud = true
     state.isActiveSubscription = true
     state.isFreeTier = false
     state.isCancelled = false
@@ -250,5 +258,19 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('keeps add credits available to local free-tier users', async () => {
+    const user = userEvent.setup()
+    state.isCloud = false
+    state.isFreeTier = true
+    state.canTopUp = true
+    renderComponent('personal', 'owner')
+
+    expect(
+      screen.queryByTestId('upgrade-to-add-credits-button')
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByTestId('add-credits-button'))
+    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 })
