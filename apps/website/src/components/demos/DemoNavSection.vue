@@ -32,6 +32,8 @@ const nextHref = localizeHref(`/demos/${nextSlug}`, locale)
         <img
           :src="nextThumbnail"
           :alt="nextTitle"
+          loading="lazy"
+          decoding="async"
           class="w-full rounded-4xl object-cover"
         />
       </a>
