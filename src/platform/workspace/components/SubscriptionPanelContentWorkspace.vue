@@ -425,6 +425,7 @@ function openSubscriptionVerification() {
 const {
   canAccessSubscriptionFeatures,
   isFreeTier: isFreeTierPlan,
+  isTeamPlan,
   subscription,
   plans,
   billingStatus,
@@ -574,7 +575,8 @@ const subscriptionStateCardDescription = computed(() => {
 })
 
 const planDateDisplay = computed(() => {
-  if (!canAccessSubscriptionFeatures.value || isSubscriptionEnded.value) return ''
+  if (!canAccessSubscriptionFeatures.value || isSubscriptionEnded.value)
+    return ''
   if (isSubscriptionCancelled.value) {
     return formattedEndDate.value
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })

@@ -447,7 +447,7 @@ describe('PricingTable', () => {
     })
 
     it('tracks and rethrows a subscription checkout failure for new subscribers', async () => {
-      mockIsActiveSubscription.value = false
+      mockCanAccessSubscriptionFeatures.value = false
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
         json: async () => ({ message: 'declined for person@example.com' })

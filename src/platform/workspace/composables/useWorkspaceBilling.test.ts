@@ -975,7 +975,7 @@ describe('useWorkspaceBilling', () => {
       // No scheduled cancellation left on the resynced subscription.
       expect(billing.subscription.value?.endDate).toBeNull()
       expect(billing.subscription.value?.tier).toBe('CREATOR')
-      expect(billing.isActiveSubscription.value).toBe(true)
+      expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isLoading.value).toBe(false)
     })
 
