@@ -53,7 +53,7 @@ const { stop } = useIntersectionObserver(
           <video
             v-if="model.mediaSrc.endsWith('.webm')"
             :src="shouldLoadVideos ? model.mediaSrc : undefined"
-            :aria-label="model.name"
+            :aria-label="model.name[locale]"
             class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             autoplay
             loop
@@ -64,7 +64,7 @@ const { stop } = useIntersectionObserver(
           <img
             v-else
             :src="model.mediaSrc"
-            :alt="model.name"
+            :alt="model.name[locale]"
             class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
             decoding="async"
@@ -93,7 +93,7 @@ const { stop } = useIntersectionObserver(
             :href="model.href"
             target="_blank"
             rel="noopener"
-            :aria-label="model.name"
+            :aria-label="model.name[locale]"
             class="group/workflow-cta bg-primary-warm-gray hover:bg-primary-comfy-yellow md:group-hover/card:bg-primary-comfy-yellow inline-flex h-8 shrink-0 cursor-pointer items-center overflow-hidden rounded-xl text-sm font-bold tracking-wider text-primary-comfy-ink uppercase transition-all duration-500 after:absolute after:inset-0"
           >
             <span class="flex size-8 items-center justify-center">

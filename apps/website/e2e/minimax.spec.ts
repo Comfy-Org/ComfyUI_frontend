@@ -75,6 +75,7 @@ test.describe('MiniMax H3 page — link targets', () => {
     await expect(primary).toBeVisible()
     await expect(primary).toHaveAttribute('href', CLOUD_URL)
     await expect(primary).toHaveAttribute('target', '_blank')
+    await expect(primary).toHaveAttribute('rel', /noopener/)
   })
 
   test('MCP highlight card CTA links to the MCP page', async ({ page }) => {
@@ -197,7 +198,9 @@ test.describe('MiniMax H3 page — interactions', () => {
     const reviewsSection = page.locator('section').filter({
       has: page.getByRole('heading', { level: 2, name: REVIEWS_HEADING })
     })
-    const track = reviewsSection.getByRole('article').first().locator('..')
+    const track = reviewsSection
+      .locator('div.overflow-x-auto')
+      .filter({ has: page.getByRole('article') })
     const nextButton = reviewsSection.getByRole('button', { name: 'Next' })
     await nextButton.scrollIntoViewIfNeeded()
 

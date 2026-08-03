@@ -64,7 +64,7 @@ type MiniMaxModelTier = 'free' | 'premium'
 
 export interface MiniMaxModel {
   id: string
-  name: string
+  name: LocalizedText
   tier: MiniMaxModelTier
   note: LocalizedText
   description: LocalizedText
@@ -75,7 +75,7 @@ export interface MiniMaxModel {
 export const minimaxModels: readonly MiniMaxModel[] = [
   {
     id: 'liquid-chrome',
-    name: 'Liquid chrome',
+    name: { en: 'Liquid chrome', 'zh-CN': '液态铬' },
     tier: 'premium',
     note: { en: 'Text to video', 'zh-CN': '文本生成视频' },
     description: {
@@ -88,7 +88,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
   },
   {
     id: 'sunken-temple',
-    name: 'Sunken temple',
+    name: { en: 'Sunken temple', 'zh-CN': '沉没神殿' },
     tier: 'premium',
     note: { en: 'Text to video', 'zh-CN': '文本生成视频' },
     description: {
@@ -100,7 +100,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
   },
   {
     id: 'night-ascent',
-    name: 'Night ascent',
+    name: { en: 'Night ascent', 'zh-CN': '夜间攀登' },
     tier: 'premium',
     note: { en: 'Text to video', 'zh-CN': '文本生成视频' },
     description: {
@@ -112,7 +112,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
   },
   {
     id: 'ice-rider',
-    name: 'Ice canyon rider',
+    name: { en: 'Ice canyon rider', 'zh-CN': '冰川峡谷骑手' },
     tier: 'premium',
     note: { en: 'Text to video', 'zh-CN': '文本生成视频' },
     description: {
@@ -124,7 +124,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
   },
   {
     id: 'backyard-hero',
-    name: 'Backyard hero',
+    name: { en: 'Backyard hero', 'zh-CN': '后院小英雄' },
     tier: 'premium',
     note: { en: 'Reference to video', 'zh-CN': '参考生成视频' },
     description: {
@@ -137,7 +137,7 @@ export const minimaxModels: readonly MiniMaxModel[] = [
   },
   {
     id: 'stay-comfy-can',
-    name: 'Stay Comfy can',
+    name: { en: 'Stay Comfy can', 'zh-CN': 'Stay Comfy 罐' },
     tier: 'premium',
     note: { en: 'Reference to video', 'zh-CN': '参考生成视频' },
     description: {
