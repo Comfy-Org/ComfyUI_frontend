@@ -245,12 +245,19 @@ end_of_record
       name: 'an incomplete option',
       args: ['--input', `--sha=${HEAD_SHA}`],
       expected: '--input'
+    },
+    {
+      name: 'a missing SHA',
+      args: [],
+      expected: '--sha is required or GITHUB_SHA must be set'
     }
   ])('rejects $name', ({ args, expected }) => {
+    const env = { ...process.env }
+    delete env.GITHUB_SHA
     const result = spawnSync(
       process.execPath,
       [TSX_CLI, EXTRACT_SCRIPT_PATH, ...args],
-      { encoding: 'utf-8' }
+      { encoding: 'utf-8', env }
     )
 
     expect(result.status).toBe(1)

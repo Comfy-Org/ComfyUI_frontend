@@ -54,10 +54,15 @@ function parseOptions(args: string[]): Options {
     strict: true,
     allowPositionals: false
   })
+  const sha = values.sha ?? process.env.GITHUB_SHA
+
+  if (!sha) {
+    throw new Error('--sha is required or GITHUB_SHA must be set')
+  }
 
   return {
     input: values.input ?? 'coverage/lcov.info',
     output: values.output ?? 'coverage/critical-unit-coverage.json',
-    sha: values.sha ?? process.env.GITHUB_SHA ?? ''
+    sha
   }
 }
