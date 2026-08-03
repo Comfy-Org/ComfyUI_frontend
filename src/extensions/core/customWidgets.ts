@@ -78,16 +78,16 @@ function onCustomComboCreated(this: LGraphNode) {
     })
   }
   const widgets = this.widgets!
-  widgets.push({
+  this.addCustomWidget({
+    computeSize: () => [0, -4],
+    draw: () => undefined,
     name: 'index',
+    options: { hidden: true },
     type: 'hidden',
     get value() {
       return widgets.slice(2).findIndex((w) => w.value === comboWidget.value)
     },
     set value(_) {},
-    draw: () => undefined,
-    computeSize: () => [0, -4],
-    options: { hidden: true },
     y: 0
   })
   addOption(this)
@@ -104,11 +104,9 @@ function onBranchSelectorCreated(this: LGraphNode) {
     void connectionsTrigger.value
     return this.inputs.slice(0, -2).map((inp) => inp.label)
   })
-  const values = () => labels.value
-  const node = this
 
   const comboWidget = this.addWidget('combo', 'branch', '', () => {}, {
-    values
+    values: () => labels.value
   })
   const stopWatch = watch([renameTrigger, connectionsTrigger], () => {
     if (app.configuringGraph || labels.value.includes(`${comboWidget.value}`))
@@ -119,8 +117,21 @@ function onBranchSelectorCreated(this: LGraphNode) {
   })
   this.onRemoved = useChainCallback(this.onRemoved, stopWatch)
 
-  comboWidget.serializeValue = () =>
-    node.inputs.slice(0, -1).findIndex((inp) => inp.label === comboWidget.value)
+  const namesIndex = this.inputs.findIndex((inp) => inp.name === 'branch_names')
+  if (namesIndex !== -1) this.removeInput(namesIndex)
+  this.addCustomWidget({
+    computeSize: () => [0, -4],
+    draw: () => undefined,
+    name: 'branch_names',
+    options: { hidden: true },
+    serialize: false,
+    type: 'hidden',
+    get value() {
+      return labels.value
+    },
+    set value(_) {},
+    y: 0
+  })
 
   // Refresh on connection changes (add/remove inputs)
   this.onConnectionsChange = useChainCallback(
