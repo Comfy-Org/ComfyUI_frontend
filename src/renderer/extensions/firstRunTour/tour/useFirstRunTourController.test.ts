@@ -14,6 +14,7 @@ const TOUR_WORKFLOW = { path: 'tour.json' }
 const OTHER_WORKFLOW = { path: 'other.json' }
 const INTRO_PREVIEW_MS = 500
 const OFFLINE_GRACE_MS = 20_000
+const ACCEPT_DEADLINE_MS = 15_000
 
 const mocks = vi.hoisted(() => ({
   canRunWorkflows: { value: true },
@@ -295,13 +296,46 @@ describe('useFirstRunTourController', () => {
   })
 
   describe('a run behind a dropped socket', () => {
+    /**
+     * A run the queue accepted: the click reports `generating`, then the
+     * backend answers with a status. The acknowledgement matters — an
+     * unacknowledged submission is a refusal, and is covered separately below.
+     */
     async function generatingRun() {
       await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
       expect(mocks.runState.value).toBe('generating')
+      await finishRun(TOUR_WORKFLOW, 'running')
       const { api } = await import('@/scripts/api')
       return api
     }
+
+    it('stops promising a result the queue never accepted', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      expect(mocks.runState.value).toBe('generating')
+
+      // No status ever arrives. A refused submission gets no prompt_id, and
+      // account preconditions - sign-in, subscription, credits - are kept out
+      // of the error stores on purpose, so nothing else can report this.
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
+
+      expect(
+        mocks.runState.value,
+        'a paid user out of credits is refused silently; the card must not promise a result forever'
+      ).toBe('failed')
+    })
+
+    it('leaves an accepted run past the acceptance deadline alone', async () => {
+      await generatingRun()
+
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
+
+      expect(
+        mocks.runState.value,
+        'the deadline is on acceptance, not on the run: a job that answered must never be cut short'
+      ).toBe('generating')
+    })
 
     it('stops promising a result once the socket stays gone', async () => {
       const api = await generatingRun()
