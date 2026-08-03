@@ -101,6 +101,39 @@ describe('refreshRemoteConfig', () => {
       expect(remoteConfigState.value).toBe('authenticated')
       expect(remoteConfigErrorStatus.value).toBeNull()
     })
+
+    it('preserves shared state when the caller cancels the refresh', async () => {
+      const existingConfig = { subscription_required: true }
+      remoteConfig.value = existingConfig
+      remoteConfigState.value = 'authenticated'
+      remoteConfigErrorStatus.value = 500
+      window.__CONFIG__ = existingConfig
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route, options) =>
+          new Promise<Response>((_, reject) => {
+            if (options?.signal?.aborted) {
+              reject(new DOMException('Aborted', 'AbortError'))
+              return
+            }
+            options?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'))
+            })
+          })
+      )
+      const controller = new AbortController()
+
+      const refresh = refreshRemoteConfig({
+        useAuth: true,
+        signal: controller.signal
+      })
+      controller.abort()
+      await refresh
+
+      expect(remoteConfig.value).toEqual(existingConfig)
+      expect(remoteConfigState.value).toBe('authenticated')
+      expect(remoteConfigErrorStatus.value).toBe(500)
+      expect(window.__CONFIG__).toEqual(existingConfig)
+    })
   })
 
   describe('without auth', () => {

@@ -60,7 +60,7 @@
 import { captureException } from '@sentry/vue'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { nextTick, onMounted, ref, useTemplateRef } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -87,11 +87,17 @@ const subscriptionDialog = useSubscriptionDialog()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
 
+function cancelInitialization(): void {
+  initializationGeneration++
+  initializationController?.abort()
+  initializationController = null
+}
+
 async function initialize(): Promise<void> {
   if (!isCloud) return
 
-  const generation = ++initializationGeneration
-  initializationController?.abort()
+  cancelInitialization()
+  const generation = initializationGeneration
   const controller = new AbortController()
   initializationController = controller
 
@@ -108,6 +114,7 @@ async function initialize(): Promise<void> {
         throwOnTimeout: true
       })
     }
+    if (generation !== initializationGeneration) return
 
     // Step 2: If not authenticated, nothing more to do
     // Unauthenticated users don't have workspace context
@@ -139,6 +146,7 @@ async function initialize(): Promise<void> {
     const workspaceAuthStore = useWorkspaceAuthStore()
     if (flags.unifiedCloudAuthEnabled) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
+      if (generation !== initializationGeneration) return
       if (!authenticated) {
         throw new Error('Failed to initialize unified cloud auth')
       }
@@ -153,6 +161,7 @@ async function initialize(): Promise<void> {
 
     // Step 5: WORKSPACE MODE - Full initialization
     await initializeWorkspaceMode()
+    if (generation !== initializationGeneration) return
     if (
       flags.unifiedCloudAuthEnabled &&
       !workspaceAuthStore.getUnifiedToken()
@@ -183,6 +192,7 @@ async function initialize(): Promise<void> {
     initializationState.value = 'error'
     document.getElementById('splash-loader')?.remove()
     await nextTick()
+    if (generation !== initializationGeneration) return
     errorPanel.value?.focus()
   }
 }
@@ -205,6 +215,7 @@ async function retryInitialization(): Promise<void> {
 }
 
 async function handleSignOut(): Promise<void> {
+  cancelInitialization()
   await useAuthStore().logout()
 }
 
@@ -235,4 +246,5 @@ async function initializeWorkspaceMode(): Promise<void> {
 onMounted(() => {
   void initialize()
 })
+onUnmounted(cancelInitialization)
 </script>

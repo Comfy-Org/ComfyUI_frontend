@@ -61,10 +61,12 @@ export async function refreshRemoteConfig(
   try {
     const response = await fetchRemoteConfig(useAuth, controller.signal)
     if (generation !== refreshGeneration) return
+    if (signal?.aborted) return
 
     if (response.ok) {
       const config = await response.json()
       if (generation !== refreshGeneration) return
+      if (signal?.aborted) return
       window.__CONFIG__ = config
       remoteConfig.value = config
       remoteConfigErrorStatus.value = null
@@ -92,6 +94,7 @@ export async function refreshRemoteConfig(
     }
   } catch (error) {
     if (generation !== refreshGeneration) return
+    if (signal?.aborted) return
     console.error('Failed to fetch remote config:', error)
     window.__CONFIG__ = {}
     remoteConfig.value = {}

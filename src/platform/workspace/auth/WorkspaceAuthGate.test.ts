@@ -247,6 +247,31 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
+    it('stops initialization when unmounted', async () => {
+      let resolveRefresh: (() => void) | undefined
+      mockTeamWorkspacesEnabled.value = true
+      mockRefreshRemoteConfig.mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveRefresh = resolve
+          })
+      )
+
+      const { unmount } = mountComponent()
+      await vi.waitFor(() =>
+        expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
+      )
+      const signal = mockRefreshRemoteConfig.mock.calls[0][0].signal
+      unmount()
+      resolveRefresh?.()
+      await flushPromises()
+
+      expect(signal.aborted).toBe(true)
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(mockResumePendingPricingFlow).not.toHaveBeenCalled()
+      expect(mockCaptureException).not.toHaveBeenCalled()
+    })
+
     it('calls resumePendingPricingFlow after successful workspace init', async () => {
       mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitState.value = 'ready'
@@ -468,6 +493,33 @@ describe('WorkspaceAuthGate', () => {
       )
 
       resolveRetry?.()
+    })
+
+    it('stops a pending retry before logging out', async () => {
+      const user = userEvent.setup()
+      let resolveRetry: (() => void) | undefined
+      mockTeamWorkspacesEnabled.value = true
+      mockRefreshRemoteConfig
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockImplementationOnce(
+          () =>
+            new Promise<void>((resolve) => {
+              resolveRetry = resolve
+            })
+        )
+
+      mountComponent()
+      await flushPromises()
+      await user.click(screen.getByRole('button', { name: 'Try again' }))
+      const retrySignal = mockRefreshRemoteConfig.mock.calls[1][0].signal
+      await user.click(screen.getByRole('button', { name: 'Log Out' }))
+      resolveRetry?.()
+      await flushPromises()
+
+      expect(retrySignal.aborted).toBe(true)
+      expect(mockLogout).toHaveBeenCalledOnce()
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(mockResumePendingPricingFlow).not.toHaveBeenCalled()
     })
   })
 })
