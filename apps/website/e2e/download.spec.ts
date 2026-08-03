@@ -188,7 +188,7 @@ test.describe('Download page @smoke', () => {
     await hero.getByRole('button', { name: /Send download link/i }).click()
 
     await expect(
-      hero.getByText(/Check your email for the download link/i)
+      hero.getByText(/The link is sent to someone@example\.com/i)
     ).toBeVisible()
 
     const events = () => captured.filter((capture) => capture.method === 'POST')
@@ -228,7 +228,7 @@ test.describe('Download page @smoke', () => {
     await hero.getByRole('button', { name: /Send download link/i }).click()
 
     await expect(
-      hero.getByText(/Check your email for the download link/i)
+      hero.getByText(/The link is sent to someone@example\.com/i)
     ).toBeVisible()
     expect(
       captured.filter((capture) => capture.method === 'POST')

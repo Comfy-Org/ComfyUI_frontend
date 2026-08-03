@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { ArrowRight } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../../i18n/translations'
 
+import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { useDownloadUrl } from '../../../composables/useDownloadUrl'
 import { t } from '../../../i18n/translations'
 import {
@@ -36,7 +38,7 @@ const STATUS_MESSAGE_KEYS: Partial<Record<FormStatus, TranslationKey>> = {
 
 const statusMessage = computed(() => {
   const key = STATUS_MESSAGE_KEYS[status.value]
-  return key ? t(key, locale) : ''
+  return key ? t(key, locale).replace('{email}', email.value) : ''
 })
 
 // The component mounts on every client; only visible (mobile) forms may load the SDK.
@@ -69,10 +71,10 @@ async function onSubmit() {
     <form
       v-if="status !== 'success'"
       novalidate
-      class="flex flex-col gap-3"
+      class="flex flex-col gap-4"
       @submit.prevent="onSubmit"
     >
-      <h2 class="text-primary-comfy-yellow text-lg font-bold">
+      <h2 class="text-primary-comfy-yellow text-[17px] font-medium">
         {{ t('download.emailForm.heading', locale) }}
       </h2>
       <input
@@ -92,32 +94,34 @@ async function onSubmit() {
           autocomplete="email"
           :aria-label="t('download.emailForm.heading', locale)"
           :placeholder="t('download.emailForm.placeholder', locale)"
-          class="bg-primary-comfy-ink-light w-full rounded-full py-3 pr-14 pl-5 text-sm text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/50"
+          class="bg-transparency-white-t4 h-16 w-full rounded-3xl border border-primary-comfy-canvas pr-14 pl-4 text-[13px] font-semibold text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/60"
         />
-        <button
+        <IconButton
           type="submit"
+          variant="solid"
+          size="sm"
+          class="absolute right-4 rounded-xl"
           :disabled="status === 'pending'"
           :aria-busy="status === 'pending'"
           :aria-label="t('download.emailForm.submit', locale)"
-          class="bg-primary-comfy-yellow absolute right-2 inline-flex size-9 cursor-pointer items-center justify-center rounded-xl text-primary-comfy-ink transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           <span
             v-if="status === 'pending'"
             aria-hidden="true"
             class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
           />
-          <span v-else aria-hidden="true">→</span>
-        </button>
+          <ArrowRight v-else class="size-5" aria-hidden="true" />
+        </IconButton>
       </div>
     </form>
     <p
       role="status"
       :class="
         cn(
-          'text-sm',
-          status === 'success'
-            ? 'text-primary-comfy-canvas'
-            : 'text-primary-comfy-orange'
+          status === 'success' &&
+            'bg-transparency-white-t4 text-primary-warm-gray flex h-16 items-center rounded-3xl px-4 text-[13px] font-semibold',
+          (status === 'invalid' || status === 'error') &&
+            'text-primary-comfy-orange mt-2 text-sm'
         )
       "
     >

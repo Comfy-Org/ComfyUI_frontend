@@ -817,8 +817,8 @@ const translations = {
     'zh-CN': '发送下载链接'
   },
   'download.emailForm.success': {
-    en: 'Check your email for the download link.',
-    'zh-CN': '请查收邮件获取下载链接。'
+    en: 'The link is sent to {email}!',
+    'zh-CN': '下载链接已发送至 {email}！'
   },
   'download.emailForm.invalidEmail': {
     en: 'Please enter a valid email address.',

@@ -91,7 +91,7 @@ describe('MobileDownloadEmailForm', () => {
     )
 
     expect(
-      await screen.findByText(/check your email for the download link/i)
+      await screen.findByText(/link is sent to someone@example\.com/i)
     ).toBeTruthy()
     expect(hoisted.mockSubmit).not.toHaveBeenCalled()
   })
@@ -113,7 +113,7 @@ describe('MobileDownloadEmailForm', () => {
     await user.click(submitButton)
 
     expect(
-      await screen.findByText(/check your email for the download link/i)
+      await screen.findByText(/link is sent to someone@example\.com/i)
     ).toBeTruthy()
     expect(hoisted.mockSubmit).toHaveBeenCalledTimes(2)
   })
@@ -143,7 +143,7 @@ describe('MobileDownloadEmailForm', () => {
 
     resolveSubmit()
     expect(
-      await screen.findByText(/check your email for the download link/i)
+      await screen.findByText(/link is sent to someone@example\.com/i)
     ).toBeTruthy()
   })
 
@@ -158,7 +158,7 @@ describe('MobileDownloadEmailForm', () => {
 
     expect(hoisted.mockSubmit).toHaveBeenCalledWith('someone@example.com', 'en')
     expect(
-      await screen.findByText(/check your email for the download link/i)
+      await screen.findByText(/link is sent to someone@example\.com/i)
     ).toBeTruthy()
     expect(screen.queryByRole('textbox')).toBeNull()
   })
