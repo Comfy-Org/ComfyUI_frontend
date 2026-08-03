@@ -11,7 +11,7 @@
 import { debounce } from 'es-toolkit'
 import { useToast } from 'primevue'
 import { tryOnScopeDispose } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -167,6 +167,21 @@ export function useWorkflowPersistenceV2() {
     })
   }
 
+  /**
+   * The blank canvas startup opens for itself is not the user's work, but the
+   * active-workflow watcher has already saved it. Drop the draft and the
+   * pointer to it, or the next boot restores it and reports `restored`.
+   */
+  const discardStartupBlankDraft = () => {
+    const blank = workflowStore.activeWorkflow
+    if (!blank?.isTemporary || blank.isModified) return
+
+    debouncedPersist.cancel()
+    draftStore.removeDraft(blank.path)
+    delete lastSavedJsonByPath.value[blank.path]
+    tabState.clearActivePathPointer()
+  }
+
   const hasPreservedIntent = (namespace: string, key: string) => {
     if (typeof route.query[key] === 'string') return true
     hydratePreservedQuery(namespace)
@@ -187,6 +202,8 @@ export function useWorkflowPersistenceV2() {
     }
 
     await useWorkflowService().loadBlankWorkflow()
+    await nextTick()
+    discardStartupBlankDraft()
     return hasSharedWorkflowIntent() || hasTemplateUrlIntent()
       ? 'url-intent'
       : 'fresh'
@@ -245,8 +262,6 @@ export function useWorkflowPersistenceV2() {
       if (!activeWorkflowKey) return
       // Flush any pending persistence from the previous workflow
       debouncedPersist.flush()
-      const activeWorkflow = workflowStore.activeWorkflow
-      if (activeWorkflow?.isTemporary && !activeWorkflow.isModified) return
       // Persist the new workflow immediately
       persistCurrentWorkflow()
     }
