@@ -200,6 +200,35 @@ describe('useFirstRunEntry', () => {
       expect(mocks.beginTour).toHaveBeenCalledWith('image_z_image_turbo')
     })
 
+    it('drops the template pins when a share link replaced the graph', async () => {
+      const entry = await freshEntry()
+
+      await entry.handleUrlWorkflow(
+        'url-intent',
+        'image_z_image_turbo',
+        'loaded'
+      )
+
+      expect(
+        mocks.beginTour,
+        'pinned ids are graph-local, so validating them against a stranger workflow spotlights whichever node happens to share the id'
+      ).toHaveBeenCalledWith(undefined)
+    })
+
+    it('leaves the completion flag to the startup handler that already settled it', async () => {
+      const entry = await freshEntry()
+      await entry.handleStartupOutcome('url-intent')
+      mocks.setSetting.mockClear()
+      mocks.beginTour.mockResolvedValue(false)
+
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(
+        mocks.setSetting,
+        'writing it again here would mark onboarding done for a user whose tour never started, and postpone() exists to offer that user the tour again'
+      ).not.toHaveBeenCalled()
+    })
+
     it.for(['failed', 'cancelled', 'not-present'] as const)(
       'offers no tour when nothing the user asked for arrived (%s)',
       async (sharedStatus) => {
@@ -218,7 +247,7 @@ describe('useFirstRunEntry', () => {
       mocks.isNewUser = false
       const entry = await freshEntry()
 
-      await entry.handleUrlWorkflow('url-intent')
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
       expect(
         mocks.beginTour,
@@ -231,7 +260,7 @@ describe('useFirstRunEntry', () => {
       async (outcome: StartupOutcome) => {
         const entry = await freshEntry()
 
-        await entry.handleUrlWorkflow(outcome)
+        await entry.handleUrlWorkflow(outcome, 'image_z_image_turbo')
 
         expect(
           mocks.beginTour,

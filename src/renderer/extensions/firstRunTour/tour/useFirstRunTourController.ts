@@ -13,6 +13,7 @@ import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -37,6 +38,7 @@ function useFirstRunTourControllerInternal() {
   const executionStore = useExecutionStore()
   const executionErrorStore = useExecutionErrorStore()
   const workflowStore = useWorkflowStore()
+  const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
@@ -46,9 +48,12 @@ function useFirstRunTourControllerInternal() {
 
   // The tour's node ids are graph-local, so they only describe the workflow it
   // resolved against: swapping workflows leaves it pointing at strangers.
+  // Linear mode hides the canvas entirely, so its nodes are nothing to point at.
   const tourContextHolds = computed(
     () =>
-      desktopLayout.value && workflowStore.activeWorkflow === tourWorkflow.value
+      desktopLayout.value &&
+      !canvasStore.linearMode &&
+      workflowStore.activeWorkflow === tourWorkflow.value
   )
 
   const onRunStep = computed(

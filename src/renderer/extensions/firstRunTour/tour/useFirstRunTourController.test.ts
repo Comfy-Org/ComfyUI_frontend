@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   workflowStatus: { value: new Map<unknown, string>() },
   executionErrors: { hasNodeError: false, hasPromptError: false },
   activeWorkflow: { value: null as unknown },
+  linearMode: { value: false },
   vueNodesEnabled: true,
   steps: [] as CoachStep[],
   runState: { value: 'idle' } as Ref<string>,
@@ -70,6 +71,18 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     useWorkflowStore: () => ({
       get activeWorkflow() {
         return mocks.activeWorkflow.value
+      }
+    })
+  }
+})
+
+vi.mock('@/renderer/core/canvas/canvasStore', async () => {
+  const { shallowRef } = await import('vue')
+  mocks.linearMode = shallowRef(false)
+  return {
+    useCanvasStore: () => ({
+      get linearMode() {
+        return mocks.linearMode.value
       }
     })
   }
@@ -192,6 +205,7 @@ describe('useFirstRunTourController', () => {
     mocks.executionErrors.hasNodeError = false
     mocks.executionErrors.hasPromptError = false
     mocks.activeWorkflow.value = null
+    mocks.linearMode.value = false
     mocks.vueNodesEnabled = true
     mocks.steps = []
     mocks.engine.activeTour = null
@@ -440,6 +454,29 @@ describe('useFirstRunTourController', () => {
       expect(
         registeredTourHolds(),
         'the spotlight is placed against a desktop layout, so below md it points nowhere'
+      ).toBe(false)
+    })
+
+    it('refuses to hold a tour over the linear view, which hides the canvas', async () => {
+      mocks.linearMode.value = true
+      await tourOnRunStep()
+
+      expect(
+        registeredTourHolds(),
+        '?mode=linear display:none-s the canvas, so every spotlight lands on a node nobody can see'
+      ).toBe(false)
+    })
+
+    it('ends the tour when the user switches into the linear view mid-walk', async () => {
+      await tourOnRunStep()
+      expect(registeredTourHolds()).toBe(true)
+
+      mocks.linearMode.value = true
+      await nextTick()
+
+      expect(
+        registeredTourHolds(),
+        'the canvas the tour is pointing at goes away the moment linear mode takes over'
       ).toBe(false)
     })
 

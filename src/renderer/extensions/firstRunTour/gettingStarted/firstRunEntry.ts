@@ -74,7 +74,9 @@ export const useFirstRunEntry = createSharedComposable(() => {
     const shareLoaded =
       sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
     if (templateId === undefined && !shareLoaded) return
-    await useFirstRunTourController().beginTour(templateId)
+    await useFirstRunTourController().beginTour(
+      shareLoaded ? undefined : templateId
+    )
   }
 
   // Applied locally before the request, so a failed write is next launch's problem.
