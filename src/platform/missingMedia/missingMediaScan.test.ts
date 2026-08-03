@@ -145,6 +145,7 @@ function makeMediaNode(
     widgets,
     mode,
     isSubgraphNode: () => false,
+    getSlotFromWidget: () => undefined,
     _testExecutionId: executionId ?? String(id)
   })
 }

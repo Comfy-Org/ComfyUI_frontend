@@ -41,6 +41,18 @@ function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
 }
 
+/**
+ * The widget a user can actually edit. A linked slot means the value comes
+ * from upstream; a promoted host owns the value only while some interior
+ * consumer is still live.
+ */
+function isEditableValueOwner(node: LGraphNode, widget: IBaseWidget): boolean {
+  const input = node.getSlotFromWidget(widget)
+  if (input?.link != null) return false
+  if (!node.isSubgraphNode()) return true
+  return !!input?.widgetId && hasActivePromotedWidgetConsumer(node, input.name)
+}
+
 function mediaTypeFromSpec(
   spec: InputSpecV2 | undefined
 ): MediaType | undefined {
@@ -94,10 +106,11 @@ export function scanNodeMediaCandidates(
 
   const nodeDefStore = useNodeDefStore()
   const candidates: MissingMediaCandidate[] = []
+  if (node.isUploading) return []
+
   for (const widget of node.widgets) {
     if (!isComboWidget(widget)) continue
-    const input = node.getSlotFromWidget?.(widget)
-    if (input?.link != null) continue
+    if (!isEditableValueOwner(node, widget)) continue
 
     // getInputSpecForWidget projects a promoted host input to its interior
     // spec itself, so the scan reads schema through the store rather than
@@ -106,10 +119,6 @@ export function scanNodeMediaCandidates(
       nodeDefStore.getInputSpecForWidget(node, widget.name)
     )
     if (!mediaType) continue
-    if (node.isUploading) continue
-    if (input?.widgetId && !hasActivePromotedWidgetConsumer(node, input.name)) {
-      continue
-    }
 
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
@@ -166,12 +175,7 @@ export function isMissingMediaCandidateScopeActive(
   // Removed or renamed while verification was pending: nothing owns the value.
   if (!widget) return false
 
-  const input = node.getSlotFromWidget?.(widget)
-  if (input?.link != null) return false
-  if (!node.isSubgraphNode()) return true
-  if (!input?.widgetId) return false
-
-  return hasActivePromotedWidgetConsumer(node, input.name)
+  return isEditableValueOwner(node, widget)
 }
 
 export function isMissingMediaCandidateActive(
