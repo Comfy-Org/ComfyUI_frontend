@@ -7,7 +7,6 @@ import type { Locale, TranslationKey } from '../../../i18n/translations'
 import { useDownloadLinkRequest } from '../../../composables/useDownloadLinkRequest'
 import { useDownloadUrl } from '../../../composables/useDownloadUrl'
 import { t } from '../../../i18n/translations'
-import { captureDownloadLinkRequested } from '../../../scripts/posthog'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -54,7 +53,6 @@ async function onSubmit() {
   try {
     await submit(email.value)
     status.value = 'success'
-    captureDownloadLinkRequested()
   } catch {
     status.value = 'error'
   }

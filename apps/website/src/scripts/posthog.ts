@@ -49,10 +49,6 @@ export function captureDownloadClick(platform: Platform) {
   safeCapture('website:download_button_clicked', { platform })
 }
 
-export function captureDownloadLinkRequested() {
-  safeCapture('website:download_link_requested')
-}
-
 export function captureMcpClientTabClick(client: string) {
   safeCapture('website:mcp_client_tab_clicked', { client })
 }

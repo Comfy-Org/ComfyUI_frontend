@@ -9,12 +9,7 @@ const hoisted = vi.hoisted(() => ({
   isEnabled: true,
   isMobileUa: true,
   mockPreload: vi.fn(),
-  mockSubmit: vi.fn().mockResolvedValue(undefined),
-  mockCaptureDownloadLinkRequested: vi.fn()
-}))
-
-vi.mock('../../../scripts/posthog', () => ({
-  captureDownloadLinkRequested: hoisted.mockCaptureDownloadLinkRequested
+  mockSubmit: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('../../../composables/useDownloadLinkRequest', () => ({
@@ -99,7 +94,6 @@ describe('MobileDownloadEmailForm', () => {
       await screen.findByText(/check your email for the download link/i)
     ).toBeTruthy()
     expect(hoisted.mockSubmit).not.toHaveBeenCalled()
-    expect(hoisted.mockCaptureDownloadLinkRequested).not.toHaveBeenCalled()
   })
 
   it('shows an inline error on failure and lets a retry succeed', async () => {
@@ -115,7 +109,6 @@ describe('MobileDownloadEmailForm', () => {
 
     expect(await screen.findByText(/something went wrong/i)).toBeTruthy()
     expect(screen.getByRole('textbox')).toBeTruthy()
-    expect(hoisted.mockCaptureDownloadLinkRequested).not.toHaveBeenCalled()
 
     await user.click(submitButton)
 
@@ -123,7 +116,6 @@ describe('MobileDownloadEmailForm', () => {
       await screen.findByText(/check your email for the download link/i)
     ).toBeTruthy()
     expect(hoisted.mockSubmit).toHaveBeenCalledTimes(2)
-    expect(hoisted.mockCaptureDownloadLinkRequested).toHaveBeenCalledOnce()
   })
 
   it('locks out repeat taps and signals busy while a submission is in flight', async () => {
@@ -169,18 +161,5 @@ describe('MobileDownloadEmailForm', () => {
       await screen.findByText(/check your email for the download link/i)
     ).toBeTruthy()
     expect(screen.queryByRole('textbox')).toBeNull()
-  })
-
-  it('captures a PostHog event on successful submit', async () => {
-    const user = userEvent.setup()
-    render(MobileDownloadEmailForm)
-
-    await user.type(screen.getByRole('textbox'), 'someone@example.com')
-    await user.click(
-      screen.getByRole('button', { name: /send download link/i })
-    )
-
-    await screen.findByText(/check your email for the download link/i)
-    expect(hoisted.mockCaptureDownloadLinkRequested).toHaveBeenCalledOnce()
   })
 })
