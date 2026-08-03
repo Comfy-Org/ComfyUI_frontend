@@ -1,6 +1,11 @@
 import { expect } from '@playwright/test'
 
+import { getRoutes } from '../src/config/routes'
+import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
+
+const MINIMAX_LABEL = t('footer.minimaxH3', 'en')
+const MINIMAX_ROUTE = getRoutes('en').minimax
 
 const TOP_LEVEL_LABELS = [
   'Products',
@@ -194,5 +199,16 @@ test.describe('Footer @smoke', () => {
     await expect(
       page.locator('footer').getByText(/© \d{4} Comfy Org/)
     ).toBeVisible()
+  })
+
+  test('MiniMax H3 link navigates to the model page', async ({ page }) => {
+    const link = page
+      .locator('footer')
+      .getByRole('link', { name: MINIMAX_LABEL })
+    await link.scrollIntoViewIfNeeded()
+    await expect(link).toHaveAttribute('href', MINIMAX_ROUTE)
+
+    await link.click()
+    await expect(page).toHaveURL(new RegExp(`${MINIMAX_ROUTE}$`))
   })
 })
