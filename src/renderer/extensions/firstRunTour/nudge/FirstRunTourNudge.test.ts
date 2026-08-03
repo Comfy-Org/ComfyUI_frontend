@@ -15,6 +15,7 @@ const mocks = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   return {
     nudgeArmed: ref(false),
+    tourWasShown: ref(true),
     openDialogs: ref<string[]>([]),
     dismissNudge: vi.fn(() => {
       mocks.nudgeArmed.value = false
@@ -27,6 +28,7 @@ const mocks = await vi.hoisted(async () => {
 vi.mock('../tour/useFirstRunTourController', () => ({
   useFirstRunTourController: () => ({
     nudgeArmed: mocks.nudgeArmed,
+    tourWasShown: mocks.tourWasShown,
     dismissNudge: mocks.dismissNudge
   })
 }))
@@ -116,6 +118,68 @@ describe('FirstRunTourNudge', () => {
       nudge(),
       'the dialog was already open at mount, so no open-to-closed edge ever fired'
     ).not.toBeNull()
+  })
+
+  it('waits out a dialog that opens while it is still on its way', async () => {
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS - 500)
+    mocks.openDialogs.value = ['some-dialog']
+    await vi.advanceTimersByTimeAsync(500 + APPEAR_DELAY_MS)
+
+    expect(
+      nudge(),
+      'a nudge that came due behind a dialog would land on top of the modal'
+    ).toBeNull()
+    expect(
+      mocks.trackOnboardingTour,
+      'a nudge nobody can see has not been shown'
+    ).not.toHaveBeenCalledWith('nudge_shown', expect.anything())
+  })
+
+  it('reports one nudge once, however often it comes and goes', async () => {
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    mocks.openDialogs.value = ['some-dialog']
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    mocks.openDialogs.value = []
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    const shown = mocks.trackOnboardingTour.mock.calls.filter(
+      ([stage]) => stage === 'nudge_shown'
+    )
+    expect(
+      shown,
+      'the funnel counts nudges, so a reappearance is not a second one'
+    ).toHaveLength(1)
+  })
+
+  it('offers no congratulation for a tour that never appeared', async () => {
+    mocks.tourWasShown.value = false
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(
+      screen.queryByText(nudgeCopy.ran.title),
+      'a user whose tour never ran made nothing to be congratulated for'
+    ).toBeNull()
+    expect(screen.getByText(nudgeCopy.noTour.title)).toBeTruthy()
+  })
+
+  it('stays gone once the user closes it', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    await user.click(screen.getByRole('button', { name: enMessages.g.close }))
+
+    expect(mocks.dismissNudge).toHaveBeenCalled()
+    expect(nudge()).toBeNull()
   })
 
   it('stays gone once the user waves it away', async () => {

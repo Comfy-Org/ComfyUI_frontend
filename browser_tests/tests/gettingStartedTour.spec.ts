@@ -255,6 +255,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
         spotlight,
         'a tour parked on a button that will never run has nowhere to go'
       ).toBeHidden()
+      await expect(nudge, 'the nudge sits below the modal stack').toBeHidden()
 
       await page.keyboard.press('Escape')
 

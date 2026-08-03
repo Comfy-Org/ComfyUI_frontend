@@ -4862,8 +4862,14 @@
         }
       },
       "nudge": {
-        "title": "That was one of hundreds",
-        "body": "You just made your first. Explore what else you can build.",
+        "ran": {
+          "title": "That was one of hundreds",
+          "body": "You just made your first. Explore what else you can build."
+        },
+        "noTour": {
+          "title": "Hundreds more where that came from",
+          "body": "Browse the templates and pick something to build."
+        },
         "dismiss": "Not now",
         "explore": "Explore templates"
       }
