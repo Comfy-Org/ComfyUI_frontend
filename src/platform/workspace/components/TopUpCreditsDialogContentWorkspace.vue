@@ -125,16 +125,27 @@
     </p>
 
     <div class="flex flex-col gap-8 p-8">
-      <Button
-        :disabled="!isValidAmount || loading || isPolling"
-        :loading="loading || isPolling"
-        variant="primary"
-        size="lg"
-        class="h-10 justify-center"
-        @click="handleBuy"
-      >
-        {{ $t('subscription.addCredits') }}
-      </Button>
+      <div class="flex flex-col gap-2">
+        <Button
+          v-if="topupActionUrl && permissions.canTopUp"
+          variant="primary"
+          size="lg"
+          class="h-10 justify-center"
+          @click="openTopupVerification"
+        >
+          {{ $t('subscription.preview.completeVerification') }}
+        </Button>
+        <Button
+          :disabled="!isValidAmount || loading || isPolling"
+          :loading="loading || isPolling"
+          :variant="topupActionUrl ? 'tertiary' : 'primary'"
+          size="lg"
+          class="h-10 justify-center"
+          @click="handleBuy"
+        >
+          {{ $t('subscription.addCredits') }}
+        </Button>
+      </div>
       <div class="flex items-center justify-center gap-1">
         <a
           :href="pricingUrl"
@@ -183,7 +194,10 @@ const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { permissions } = useWorkspaceUI()
 
 const billingOperationStore = useBillingOperationStore()
-const isPolling = computed(() => billingOperationStore.hasPendingOperations)
+const isPolling = computed(() => billingOperationStore.isAddingCredits)
+const topupActionUrl = computed(
+  () => billingOperationStore.topupActionOperation?.actionUrl ?? null
+)
 
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
@@ -243,6 +257,11 @@ function handlePresetClick(amount: number) {
   showCeilingWarning.value = false
   payAmount.value = amount
   selectedPreset.value = amount
+}
+
+function openTopupVerification() {
+  if (!topupActionUrl.value) return
+  window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
 }
 
 function handleClose(clearTracking = true) {

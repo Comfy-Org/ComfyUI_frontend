@@ -5,7 +5,6 @@
     "feedbackTooltip": "Retour",
     "freeTierPartner": "Les nodes partenaires nécessitent un forfait payant",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} exécutions restantes",
-    "freeTierRunsExhausted": "Aucune exécution restante",
     "share": "Partager",
     "shareTooltip": "Partager le workflow"
   },
@@ -143,6 +142,8 @@
       "modelDescription": "Description du modèle",
       "modelTagging": "Étiquetage du modèle",
       "modelType": "Type de modèle",
+      "modelTypeCoreReadonly": "Le type de modèle ne peut pas être modifié sur le core, le déplacement du fichier n'est pas encore pris en charge.",
+      "modelTypeImmutableReadonly": "Le type de modèle ne peut pas être modifié pour un modèle en lecture seule.",
       "noAdditionalTags": "Aucun tag supplémentaire",
       "selectModelPrompt": "Sélectionnez un modèle pour voir ses informations",
       "selectModelType": "Sélectionner le type de modèle...",
@@ -173,6 +174,7 @@
     "rename": {
       "failed": "Impossible de renommer l'actif."
     },
+    "searchModels": "Rechercher des modèles",
     "selectFrameworks": "Sélectionner les frameworks",
     "selectModelType": "Sélectionner le type de modèle",
     "selectProjects": "Sélectionner les projets",
@@ -343,6 +345,7 @@
     "cancelFailed": "Échec de l'annulation de l'abonnement",
     "cancelTimeout": "Délai d'annulation de l'abonnement dépassé",
     "subscriptionFailed": "Échec de la mise à jour de l'abonnement",
+    "subscriptionFailedDetail": "Nous n’avons pas pu mettre à jour votre abonnement. Veuillez réessayer.",
     "subscriptionProcessing": "Traitement du paiement — configuration de votre espace de travail...",
     "subscriptionSuccess": "Abonnement mis à jour avec succès",
     "subscriptionTimeout": "Le délai de vérification de l'abonnement a expiré",
@@ -649,12 +652,11 @@
     "next": "Suivant",
     "publishButton": "Publier sur Comfy Workflows",
     "publishFailedDescription": "Une erreur s’est produite lors de la publication de votre workflow. Veuillez réessayer.",
+    "publishFailedDescriptionWithReason": "Une erreur est survenue lors de la publication de votre workflow : {reason}",
     "publishFailedTitle": "Échec de la publication",
     "publishSuccessDescription": "Votre workflow est maintenant en ligne sur Comfy Workflows.",
     "publishSuccessTitle": "Publication réussie",
     "removeExampleImage": "Supprimer l’image d’exemple",
-    "renameFailedDescription": "Votre workflow a été publié avec succès, mais le renommage du fichier local a échoué. Renommez-le à nouveau pour correspondre.",
-    "renameFailedTitle": "Échec du renommage",
     "selectAThumbnail": "Sélectionner une miniature",
     "shareAs": "Partager en tant que",
     "showLessTags": "Afficher moins...",
@@ -1268,6 +1270,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "Ce nœud a été désactivé par la politique de votre espace de travail. Utilisez un autre nœud.",
+        "title": "Nœud désactivé",
+        "toastMessage": "Ce nœud a été désactivé par la politique de votre espace de travail.",
+        "toastTitle": "Nœuds partenaires"
+      },
       "bad_linked_input": {
         "details": "{nodeName} a une connexion invalide pour {inputName}.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2625,8 @@
     "resetView": "Réinitialiser la vue du canevas",
     "run": "Exécuter",
     "runWorkflow": "Exécuter le workflow (Maj pour mettre en file d'attente en premier)",
-    "runWorkflowDisabled": "Le workflow contient des nœuds non pris en charge (en rouge). Supprimez-les pour exécuter le workflow.",
     "runWorkflowFront": "Exécuter le workflow (Mettre en file d'attente en premier)",
+    "runWorkflowMissingResources": "Le workflow contient des ressources manquantes.",
     "settings": "Paramètres",
     "showMenu": "Afficher le menu",
     "stopRunInstant": "Arrêter l'exécution (immédiat)",
@@ -3050,6 +3059,38 @@
       "personal": "Personnel"
     }
   },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Chaque génération et importation se trouve dans Médias. Ouvrez-le à tout moment pour parcourir, télécharger ou réutiliser vos travaux précédents.",
+        "title": "Trouvez tous vos médias"
+      },
+      "inputs": {
+        "body": "Ajoutez ce avec quoi vous souhaitez travailler. Vos entrées sont ce que l'application transforme en résultats.",
+        "title": "Ajoutez vos entrées"
+      },
+      "landing": {
+        "body": "Une visite rapide des éléments essentiels, en environ une minute. Nous vous montrerons où ajouter des entrées, exécuter votre application et trouver vos résultats.",
+        "primary": "Commencer le tutoriel",
+        "title": "Bienvenue dans les Applications"
+      },
+      "outputs": {
+        "body": "Vos résultats finaux s'affichent ici au centre. Téléchargez-les, ou modifiez une entrée et relancez.",
+        "title": "Obtenez vos résultats"
+      },
+      "replay": "Faire une visite du mode Application",
+      "run": {
+        "body": "Satisfait de vos entrées ? Cliquez sur Exécuter et votre résultat apparaîtra au centre dès qu'il sera prêt.",
+        "title": "Exécutez votre application"
+      }
+    },
+    "back": "Précédent",
+    "done": "Terminé",
+    "loadError": "Une erreur est survenue lors de l'affichage de ce tutoriel",
+    "next": "Suivant",
+    "skip": "Passer",
+    "stepLabel": "Étape {current} sur {total}"
+  },
   "openSharedWorkflow": {
     "author": "Auteur :",
     "copyAssetsAndOpen": "Importer les ressources et ouvrir le workflow",
@@ -3222,12 +3263,18 @@
       "copyUrl": "Copier l’URL",
       "customNodeDownloadDisabled": "L’environnement cloud ne prend pas en charge l’importation de modèles pour les nœuds personnalisés dans cette section. Veuillez utiliser des nœuds de chargement standard ou remplacer par un modèle de la bibliothèque ci-dessous.",
       "downloadAll": "Tout télécharger",
+      "downloadModel": "Télécharger {model}",
       "expandNodes": "Afficher les nœuds référencés",
+      "gatedModelDownloadTooltip": "Le téléchargement peut nécessiter une connexion à Hugging Face au préalable.",
+      "gatedModelTooltip": "Ce modèle est restreint et nécessite d’être connecté à Hugging Face et d’accepter son accord de licence.",
+      "gatedModelsHint": "Certains modèles sont restreints. Pour les télécharger, connectez-vous à Hugging Face et acceptez l’accord de licence du modèle.",
+      "gatedModelsHintLabel": "Remarque :",
       "import": "Importer",
       "importNotSupported": "Importation non prise en charge",
       "importing": "Importation...",
       "locateNode": "Localiser le nœud sur le canevas",
       "missingModelsTitle": "Modèles manquants",
+      "openHuggingFaceRepo": "Ouvrir le dépôt Hugging Face pour {model}",
       "refresh": "Rafraîchir",
       "refreshFailed": "Échec du rafraîchissement des modèles manquants. Veuillez réessayer.",
       "refreshing": "Rafraîchissement des modèles manquants.",
@@ -3275,6 +3322,8 @@
   "secrets": {
     "addSecret": "Ajouter un secret",
     "createdAt": "Créé le {date}",
+    "credentialType": "Type d’identifiant",
+    "credentialTypeHint": "Choisissez comment vous fournirez cet identifiant.",
     "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer « {name} » ? Cette action est irréversible.",
     "deleteConfirmTitle": "Supprimer le secret",
     "description": "Les secrets sont chiffrés et utilisés pour les données sensibles comme les clés API.",
@@ -3487,6 +3536,7 @@
     "3DViewer": "3DViewer",
     "API Nodes": "Nœuds API",
     "About": "À Propos",
+    "Allowlist": "Liste autorisée",
     "Appearance": "Apparence",
     "BrushAdjustment": "Ajustement de Brosse",
     "Camera": "Caméra",
@@ -3641,6 +3691,7 @@
     "logout": "Déconnexion",
     "mediaAssets": "Ressources multimédias",
     "modelLibrary": "Bibliothèque de modèles",
+    "modelLibraryLoadFailed": "Échec du chargement des modèles. Vérifiez la connexion au serveur et utilisez Actualiser pour réessayer.",
     "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
     "noFilesFound": "Aucun fichier trouvé",
     "noFilesFoundMessage": "Téléversez des fichiers ou générez du contenu pour les voir ici",
@@ -3746,6 +3797,7 @@
       "viewList": "Vue en liste"
     },
     "searchAssets": "Rechercher des ressources",
+    "searchResultsCapped": "Affichage des {limit} premiers résultats. Affinez votre recherche pour voir des résultats plus spécifiques.",
     "sidebar": "Barre latérale",
     "templates": "Modèles",
     "themeToggle": "Basculer le thème",
@@ -3823,17 +3875,23 @@
       "endOfBillingPeriod": "fin de la période de facturation",
       "failed": "Échec de l'annulation de l'abonnement",
       "keepSubscription": "Conserver l'abonnement",
-      "title": "Annuler l'abonnement"
+      "offerUnavailable": "Cette option n’est pas disponible. Veuillez en choisir une autre.",
+      "title": "Annuler l'abonnement",
+      "workspaceChanged": "Votre espace de travail actif a changé. Revenez à l’espace précédent et réessayez."
     },
     "cancelPlan": "Annuler l’abonnement",
     "cancelSuccess": "Abonnement annulé avec succès",
     "canceled": "Annulé",
     "canceledCard": {
       "description": "Vous ne serez plus facturé. Vos fonctionnalités restent actives jusqu'au {date}.",
+      "descriptionWithoutDate": "Vous ne serez plus facturé. Vos fonctionnalités restent actives jusqu’à la fin de votre période de facturation.",
+      "endedDescription": "Votre abonnement n’est plus actif.",
+      "endedTitle": "Votre abonnement a pris fin",
       "title": "Votre abonnement a été annulé"
     },
     "changePlan": "Changer d’abonnement",
     "changeTo": "Changer pour {plan}",
+    "changesToPlanOnDate": "Changements vers {plan} le {date}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Logo Comfy Cloud",
     "contactOwnerToSubscribe": "Contactez le propriétaire de l’espace de travail pour vous abonner",
@@ -3850,6 +3908,8 @@
     "descriptionWorkspace": "Choisissez la meilleure offre pour votre espace de travail",
     "downgrade": {
       "body": "Tous les autres membres de cet espace de travail seront immédiatement supprimés.",
+      "bodyReactivation": "Votre abonnement est annulé. Changer de formule le réactivera et vous serez facturé {amount} aujourd’hui.",
+      "bodyRemovalAndReactivation": "Tous les autres membres de cet espace de travail seront immédiatement supprimés. Votre abonnement est annulé, donc changer de formule le réactivera également et vous serez facturé {amount} aujourd’hui.",
       "confirm": "Changer de plan",
       "confirmationPhrase": "Je comprends",
       "confirmationPrompt": "Tapez « {phrase} » pour confirmer.",
@@ -3859,6 +3919,8 @@
       "notAllowed": "Ce changement de plan n'est pas disponible",
       "paymentMethodRequired": "Un moyen de paiement est requis pour changer de plan",
       "paymentPageBlocked": "Impossible d’ouvrir la page de paiement — veuillez réessayer",
+      "reactivationAmountChanged": "Le montant facturé a changé depuis votre confirmation — veuillez vérifier et réessayer",
+      "reactivationConfirmationRequired": "Veuillez confirmer le montant de la réactivation avant de continuer",
       "title": "Passer au plan {plan} ?"
     },
     "endsOnDate": "Se termine le {date}",
@@ -3872,23 +3934,8 @@
     "everythingInPlus": "Tout ce qui est dans {plan}, plus :",
     "expiresDate": "Expire le {date}",
     "freePerks": {
+      "freeRuns": "{count} exécution gratuite | {count} exécutions gratuites",
       "maxRuntime": "{duration} de temps d’exécution maximum"
-    },
-    "freeTier": {
-      "description": "Votre plan gratuit inclut {credits} crédits chaque mois pour essayer Comfy Cloud.",
-      "descriptionGeneric": "Votre plan gratuit inclut une allocation mensuelle de crédits pour essayer Comfy Cloud.",
-      "descriptionQuota": "Votre offre gratuite inclut {runs} exécutions pour commencer avec Comfy Cloud — aucune carte requise.",
-      "nextRefresh": "Vos crédits seront renouvelés le {date}.",
-      "outOfCredits": {
-        "subtitle": "Abonnez-vous pour débloquer les recharges et plus encore",
-        "title": "Vous n’avez plus de crédits gratuits"
-      },
-      "subscribeCta": "Abonnez-vous pour plus",
-      "title": "Vous êtes sur le plan Gratuit",
-      "topUpBlocked": {
-        "title": "Débloquez les recharges et plus encore"
-      },
-      "upgradeCta": "Voir les offres"
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Des questions ou besoin d'une offre entreprise ?",
@@ -3958,6 +4005,7 @@
       "backToAllPlans": "Retour à toutes les offres",
       "billedEachMonth": "{amount} facturé chaque mois. Annulez à tout moment.",
       "commitment": "engagement",
+      "completeVerification": "Terminer la vérification",
       "confirm": "Confirmer",
       "confirmChange": "Confirmer la modification",
       "confirmChangeTitle": "Vérifiez votre modification programmée",
@@ -3982,6 +4030,20 @@
       "privacyPolicy": "Politique de confidentialité",
       "proratedCharge": "Facturation au prorata pour {plan}",
       "proratedRefund": "Remboursement au prorata pour {plan}",
+      "reactivation": {
+        "amountChanged": "Le montant facturé a changé depuis votre confirmation — veuillez vérifier et réessayer",
+        "checkboxLabel": "Je comprends que je serai facturé {amount} aujourd'hui",
+        "confirmButton": "Confirmer et réactiver",
+        "confirmButtonWithCharge": "Confirmer et réactiver — {amount} aujourd'hui",
+        "confirmationRequired": "Votre abonnement est annulé — veuillez confirmer le montant de la réactivation avant de continuer",
+        "downgradeBody": "Votre {plan} devait se terminer le {date}. Passer à {newPlan} réactive votre abonnement — vous ne serez pas facturé aujourd'hui, mais il se renouvellera automatiquement le {nextDate} au nouveau tarif au lieu de se terminer.",
+        "durationChangeBody": "Votre {plan} devait se terminer le {date}. Passer à la facturation annuelle réactive votre abonnement et facture l'année complète, {amount}, aujourd'hui. Il se renouvellera ensuite chaque année le {nextDate} au lieu de se terminer.",
+        "durationChangeBodyMonthly": "Votre {plan} devait se terminer le {date}. Passer à la facturation mensuelle réactive votre abonnement — vous serez facturé {amount} aujourd'hui, et il se renouvellera automatiquement le {nextDate} au lieu de se terminer.",
+        "title": "Réactivation de votre abonnement",
+        "titleAnnual": "Réactivation de votre abonnement — année complète facturée aujourd'hui",
+        "unavailable": "Nous ne pouvons pas confirmer cette réactivation pour le moment — veuillez choisir à nouveau votre abonnement",
+        "upgradeBody": "Votre {plan} devait se terminer le {date}. La mise à niveau réactive votre abonnement — vous serez facturé {amount} aujourd'hui, et il se renouvellera automatiquement le {nextDate} au lieu de se terminer."
+      },
       "refillReplacesNote": "Remplace votre recharge mensuelle. Le solde existant est conservé.",
       "showMoreFeatures": "Afficher plus de fonctionnalités",
       "starting": "À partir du {date}",
@@ -4181,6 +4243,11 @@
     "modelsSelected": "{count} Modèles",
     "noResults": "Aucun modèle trouvé",
     "noResultsHint": "Essayez d'ajuster votre recherche ou vos filtres",
+    "paidTemplate": {
+      "badgeLabel": "API partenaire",
+      "credits": "S'exécute avec des crédits",
+      "title": "Modèle premium"
+    },
     "resultsCount": "Affichage de {count} sur {total} modèles",
     "runsOnFilter": "Exécute sur",
     "runsOnSelected": "{count} exécutions sur",
@@ -4249,6 +4316,7 @@
     "fileTooLarge": "Fichier trop volumineux ({size} Mo). La taille maximale prise en charge est de {maxSize} Mo",
     "fileUploadFailed": "Échec du téléchargement du fichier",
     "interrupted": "L'exécution a été interrompue",
+    "invalidBillingPortalUrl": "URL du portail invalide",
     "invalidTemplateData": "Échec du chargement du modèle de nœud : données invalides",
     "legacyMaskEditorDeprecated": "L’éditeur de masque hérité est obsolète et sera bientôt supprimé.",
     "migrateToLitegraphReroute": "Les nœuds de reroute seront supprimés dans les futures versions. Cliquez pour migrer vers le reroute natif de litegraph.",
@@ -4317,6 +4385,34 @@
     "frontendOutdated": "La version du frontend {frontendVersion} est obsolète. Le backend nécessite la version {requiredVersion} ou supérieure.",
     "title": "Avertissement de compatibilité de version",
     "updateFrontend": "Mettre à jour le frontend"
+  },
+  "videoEdit": {
+    "adjustCrop": "Ajuster la zone de recadrage",
+    "adjustEndFrame": "Ajuster l'image de fin",
+    "adjustStartFrame": "Ajuster l'image de début",
+    "cropVideo": "Rogner la vidéo",
+    "duration": "Durée",
+    "durationSeconds": "{count}s",
+    "durationZero": "0s",
+    "endFrame": "Image de fin",
+    "fileSize": "Taille du fichier",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "fileSizeUnknown": "—",
+    "frames": "Nombre d’images",
+    "loadingFilmstrip": "Chargement de la pellicule…",
+    "loadingVideo": "Chargement de l’aperçu vidéo",
+    "noVideoSource": "Sélectionnez ou connectez une vidéo pour prévisualiser et éditer",
+    "pause": "Pause",
+    "play": "Lire",
+    "resolution": "{width} × {height}",
+    "seekVideo": "Naviguer dans la vidéo",
+    "selectedOfTotal": "{selected} / {total}",
+    "setEndFrame": "Réinitialiser l’image de fin",
+    "setStartFrame": "Réinitialiser l’image de début",
+    "startFrame": "Image de début",
+    "trimVideo": "Couper la vidéo"
   },
   "vueNodesBanner": {
     "desc": "– Flux de travail plus flexibles, nouveaux widgets puissants, conçu pour l’extensibilité",
@@ -4424,9 +4520,7 @@
         "lastActivity": "Dernière activité",
         "partnerNodeUsed": "Nœud partenaire utilisé",
         "totalCreditsUsed": "Total de crédits utilisés"
-      },
-      "perUserHint": "Vous cherchez l'utilisation totale par utilisateur ?",
-      "seeMembers": "Voir les membres"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4562,6 +4656,39 @@
       "deleteWorkspaceDisabledTooltip": "Annulez d’abord l’abonnement actif de votre espace de travail",
       "editWorkspace": "Modifier les détails de l’espace de travail",
       "leaveWorkspace": "Quitter l’espace de travail"
+    },
+    "partnerNodes": {
+      "accessMode": "Mode d'accès aux nœuds partenaires",
+      "allowAllAccessHint": "Cela peut prendre jusqu'à 10 minutes pour s'appliquer à l'ensemble de votre espace de travail.",
+      "allowAllAccessMessage": "Les nœuds partenaires de chaque fournisseur seront disponibles pour tous les membres de l'espace de travail.",
+      "allowAllAccessTitle": "Autoriser l'accès à tous les nœuds partenaires ?",
+      "columns": {
+        "nodes": "Nœuds",
+        "provider": "Fournisseur"
+      },
+      "disableAll": "Tout désactiver",
+      "disableAllMessage": "Tous les fournisseurs seront désactivés. Les nœuds partenaires ne seront pas disponibles tant que l'accès est restreint.",
+      "disableAllTitle": "Désactiver tous les fournisseurs ?",
+      "enableAll": "Tout activer",
+      "loadError": "Impossible de charger l'accès aux nœuds partenaires.",
+      "loading": "Chargement de l'accès aux nœuds partenaires",
+      "noResults": "Aucun fournisseur ou nœud partenaire trouvé",
+      "nodeCount": "{count} activé(s)",
+      "ownerOnly": "Seuls les propriétaires de l'espace de travail peuvent mettre à jour l'accès aux nœuds partenaires.",
+      "restrictAccessHint": "Cela peut prendre jusqu'à 10 minutes pour s'appliquer à l'ensemble de votre espace de travail.",
+      "restrictAccessMessage": "Les membres de l'espace de travail ne pourront utiliser que les nœuds partenaires des fournisseurs que vous activez.",
+      "restrictAccessTitle": "Restreindre l'accès aux nœuds partenaires ?",
+      "restricted": "Restreint",
+      "restrictedDescription": "Seuls les nœuds partenaires des fournisseurs activés sont disponibles. Les modifications peuvent prendre jusqu'à 10 minutes pour s'appliquer.",
+      "retry": "Réessayer",
+      "saveError": "Impossible de mettre à jour l'accès aux nœuds partenaires. Veuillez réessayer.",
+      "searchPlaceholder": "Rechercher des fournisseurs et des nœuds partenaires...",
+      "tableLabel": "Fournisseurs de nœuds partenaires",
+      "title": "Accès aux nœuds partenaires",
+      "toggleProvider": "Définir l'accès pour {provider}",
+      "unavailable": "L'accès aux nœuds partenaires n'est pas disponible pour cet espace de travail.",
+      "unrestricted": "Non restreint",
+      "unrestrictedDescription": "Les nœuds partenaires de chaque fournisseur sont disponibles pour tous. Désactiver des fournisseurs définira ce mode sur Restreint."
     },
     "planCredits": {
       "tabs": {

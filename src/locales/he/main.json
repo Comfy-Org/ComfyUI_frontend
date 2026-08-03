@@ -5,7 +5,6 @@
     "feedbackTooltip": "משוב",
     "freeTierPartner": "צמתים של שותפים דורשים תוכנית בתשלום",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} הרצות נותרו",
-    "freeTierRunsExhausted": "לא נותרו הרצות",
     "share": "שיתוף",
     "shareTooltip": "שיתוף תהליך העבודה"
   },
@@ -143,6 +142,8 @@
       "modelDescription": "תיאור המודל",
       "modelTagging": "תיוג המודל",
       "modelType": "סוג המודל",
+      "modelTypeCoreReadonly": "לא ניתן לשנות את סוג המודל בליבת המערכת, העברת הקובץ אינה נתמכת כרגע.",
+      "modelTypeImmutableReadonly": "לא ניתן לשנות את סוג המודל עבור מודל לקריאה בלבד.",
       "noAdditionalTags": "אין תגיות נוספות",
       "selectModelPrompt": "בחר מודל כדי לראות את המידע שלו",
       "selectModelType": "בחר סוג מודל...",
@@ -173,6 +174,7 @@
     "rename": {
       "failed": "לא ניתן היה לשנות את שם הנכס."
     },
+    "searchModels": "חפש מודלים",
     "selectFrameworks": "בחירת מסגרות עבודה",
     "selectModelType": "בחר סוג מודל",
     "selectProjects": "בחירת פרויקטים",
@@ -343,6 +345,7 @@
     "cancelFailed": "ביטול המנוי נכשל",
     "cancelTimeout": "פג זמן ההמתנה לביטול המנוי",
     "subscriptionFailed": "עדכון המנוי נכשל",
+    "subscriptionFailedDetail": "לא הצלחנו לעדכן את המנוי שלכם. אנא נסו שוב.",
     "subscriptionProcessing": "מעבד תשלום — מגדיר את סביבת העבודה שלך...",
     "subscriptionSuccess": "המנוי עודכן בהצלחה",
     "subscriptionTimeout": "תם הזמן הקצוב לאימות המנוי",
@@ -649,12 +652,11 @@
     "next": "הבא",
     "publishButton": "פרסום ל-Comfy Workflows",
     "publishFailedDescription": "משהו השתבש במהלך פרסום תהליך העבודה שלך. אנא נסה שוב.",
+    "publishFailedDescriptionWithReason": "משהו השתבש בפרסום תהליך העבודה שלכם: {reason}",
     "publishFailedTitle": "הפרסום נכשל",
     "publishSuccessDescription": "תהליך העבודה שלך פעיל כעת ב-Comfy Workflows.",
     "publishSuccessTitle": "פורסם בהצלחה",
     "removeExampleImage": "הסרת תמונת הדוגמה",
-    "renameFailedDescription": "תהליך העבודה פורסם בהצלחה, אך שינוי שם הקובץ המקומי נכשל. נסו לשנות את השם שוב כדי להתאים.",
-    "renameFailedTitle": "השם החדש נכשל",
     "selectAThumbnail": "בחר תמונה ממוזערת",
     "shareAs": "שתף בתור",
     "showLessTags": "הצג פחות...",
@@ -1268,6 +1270,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "צומת זה הושבת על פי מדיניות סביבת העבודה שלך. השתמש בצומת אחר.",
+        "title": "צומת מושבת",
+        "toastMessage": "צומת זה הושבת על פי מדיניות סביבת העבודה שלך.",
+        "toastTitle": "צמתים שותפים"
+      },
       "bad_linked_input": {
         "details": "ל-{nodeName} יש חיבור לא תקין עבור {inputName}.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2625,8 @@
     "resetView": "איפוס תצוגת הקנבס",
     "run": "הרצה",
     "runWorkflow": "הרצת תהליך העבודה (Shift כדי להוסיף לראש התור)",
-    "runWorkflowDisabled": "תהליך העבודה מכיל צמתים שאינם נתמכים (מודגשים באדום). הסר אותם כדי להריץ את תהליך העבודה.",
     "runWorkflowFront": "הרצת תהליך העבודה (הוספה לראש התור)",
+    "runWorkflowMissingResources": "תהליך העבודה מכיל משאבים חסרים.",
     "settings": "הגדרות",
     "showMenu": "הצגת התפריט",
     "stopRunInstant": "עצירת ההרצה (מיידי)",
@@ -3050,6 +3059,38 @@
       "personal": "אישי"
     }
   },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "כל יצירה וייבוא נשמרים בנכסי מדיה. פתח אותם בכל עת כדי לעיין, להוריד או לעשות שימוש חוזר בעבודות קודמות.",
+        "title": "מצא את כל הנכסים שלך"
+      },
+      "inputs": {
+        "body": "הוסף את מה שברצונך לעבוד איתו. הקלטים שלך הם מה שהאפליקציה הופכת לתוצאות.",
+        "title": "הוסף את הקלטים שלך"
+      },
+      "landing": {
+        "body": "סיור קצר על העיקר, בדקה אחת. נראה לך איפה להוסיף קלטים, להריץ את האפליקציה ולמצוא את התוצאות.",
+        "primary": "התחל הדרכה",
+        "title": "ברוך הבא לאפליקציות"
+      },
+      "outputs": {
+        "body": "התוצאות המוגמרות שלך יופיעו כאן במרכז. תוכל להוריד אותן, או לשנות קלט ולהריץ שוב.",
+        "title": "קבל את התוצאות שלך"
+      },
+      "replay": "צא לסיור במצב אפליקציה",
+      "run": {
+        "body": "מרוצה מהקלטים שלך? לחץ על 'הרץ' והתוצאה תופיע במרכז ברגע שהיא מוכנה.",
+        "title": "הרץ את האפליקציה שלך"
+      }
+    },
+    "back": "חזור",
+    "done": "סיום",
+    "loadError": "משהו השתבש בהצגת הסיור",
+    "next": "הבא",
+    "skip": "דלג",
+    "stepLabel": "שלב {current} מתוך {total}"
+  },
   "openSharedWorkflow": {
     "author": "יוצר:",
     "copyAssetsAndOpen": "ייבוא נכסים ופתיחת תהליך העבודה",
@@ -3222,12 +3263,18 @@
       "copyUrl": "העתקת הכתובת",
       "customNodeDownloadDisabled": "סביבת הענן אינה תומכת בייבוא מודלים עבור צמתים מותאמים בקטע זה. אנא השתמש בצמתי טעינה רגילים או החלף במודל מהספרייה שלמטה.",
       "downloadAll": "הורדת הכול",
+      "downloadModel": "הורידו את {model}",
       "expandNodes": "הצגת הצמתים המפנים",
+      "gatedModelDownloadTooltip": "ההורדה עשויה לדרוש התחברות ל-Hugging Face תחילה.",
+      "gatedModelTooltip": "מודל זה מוגבל ודורש התחברות ל-Hugging Face ואישור הסכם הרישיון.",
+      "gatedModelsHint": "חלק מהמודלים מוגבלים. כדי להוריד אותם, התחברו ל-Hugging Face ואשרו את הסכם הרישיון של המודל.",
+      "gatedModelsHintLabel": "הערה:",
       "import": "ייבוא",
       "importNotSupported": "ייבוא אינו נתמך",
       "importing": "מייבא...",
       "locateNode": "איתור הצומת בקנבס",
       "missingModelsTitle": "מודלים חסרים",
+      "openHuggingFaceRepo": "פתחו את מאגר Hugging Face עבור {model}",
       "refresh": "רענון",
       "refreshFailed": "רענון המודלים החסרים נכשל. אנא נסה שוב.",
       "refreshing": "מרענן מודלים חסרים.",
@@ -3275,6 +3322,8 @@
   "secrets": {
     "addSecret": "הוספת סוד",
     "createdAt": "נוצר {date}",
+    "credentialType": "סוג אישור",
+    "credentialTypeHint": "בחר כיצד תספק אישור זה.",
     "deleteConfirmMessage": "האם אתה בטוח שברצונך למחוק את \"{name}\"? לא ניתן לבטל פעולה זו.",
     "deleteConfirmTitle": "מחיקת סוד",
     "description": "סודות מוצפנים ומשמשים לנתונים רגישים כגון מפתחות API.",
@@ -3487,6 +3536,7 @@
     "3DViewer": "מציג תלת-ממד",
     "API Nodes": "צמתי API",
     "About": "אודות",
+    "Allowlist": "רשימת מורשים",
     "Appearance": "מראה",
     "BrushAdjustment": "כוונון המברשת",
     "Camera": "מצלמה",
@@ -3640,19 +3690,34 @@
     },
     "logout": "התנתקות",
     "mediaAssets": {
+      "clearFilters": "נקה הכל",
+      "dateAll": "כל הזמנים",
+      "datePastMonth": "30 הימים האחרונים",
+      "datePastWeek": "7 הימים האחרונים",
+      "dateThisYear": "השנה",
+      "dateToday": "היום",
       "filter3D": "תלת-ממד",
       "filterAudio": "שמע",
+      "filterDate": "תאריך",
+      "filterGroupAttribute": "מאפיין",
       "filterImage": "תמונה",
+      "filterMediaType": "סוג מדיה",
       "filterText": "טקסט",
       "filterVideo": "סרטון",
+      "removeFilter": "הסר מסנן {label}",
+      "sortAToZ": "שם (A → Z)",
       "sortFastestFirst": "זמן יצירה (המהיר תחילה)",
       "sortLongestFirst": "זמן יצירה (הארוך תחילה)",
       "sortNewestFirst": "החדשים תחילה",
       "sortOldestFirst": "הישנים תחילה",
+      "sortZToA": "שם (Z → A)",
       "title": "נכסי מדיה",
+      "viewGridLarge": "תצוגת גריד (גדול)",
+      "viewGridSmall": "תצוגת גריד (קטן)",
       "viewSettings": "הגדרות תצוגה"
     },
     "modelLibrary": "ספריית המודלים",
+    "modelLibraryLoadFailed": "טעינת המודלים נכשלה. בדוק את חיבור השרת והשתמש ברענון כדי לנסות שוב.",
     "newBlankWorkflow": "יצירת תהליך עבודה ריק חדש",
     "noFilesFound": "לא נמצאו קבצים",
     "noFilesFoundMessage": "העלה קבצים או צור תוכן כדי לראותם כאן",
@@ -3758,6 +3823,7 @@
       "viewList": "תצוגת רשימה"
     },
     "searchAssets": "חיפוש נכסים",
+    "searchResultsCapped": "מוצגות {limit} התאמות ראשונות. צמצם את החיפוש להצגת תוצאות ממוקדות יותר.",
     "sidebar": "סרגל צד",
     "templates": "תבניות",
     "themeToggle": "החלפת ערכת הנושא",
@@ -3835,17 +3901,23 @@
       "endOfBillingPeriod": "סוף תקופת החיוב",
       "failed": "ביטול המנוי נכשל",
       "keepSubscription": "השאר את המנוי",
-      "title": "ביטול המנוי"
+      "offerUnavailable": "אפשרות זו אינה זמינה. אנא בחר אפשרות אחרת.",
+      "title": "ביטול המנוי",
+      "workspaceChanged": "סביבת העבודה הפעילה שלך השתנתה. חזור אחורה ונסה שוב."
     },
     "cancelPlan": "בטל תוכנית",
     "cancelSuccess": "המנוי בוטל בהצלחה",
     "canceled": "בוטל",
     "canceledCard": {
       "description": "לא תחויב שוב. התכונות שלך יישארו פעילות עד {date}.",
+      "descriptionWithoutDate": "לא תחויבו שוב. הפיצ'רים שלכם יישארו פעילים עד לסיום תקופת החיוב.",
+      "endedDescription": "המנוי שלכם אינו פעיל יותר.",
+      "endedTitle": "המנוי שלכם הסתיים",
       "title": "המנוי שלך בוטל"
     },
     "changePlan": "שנה תוכנית",
     "changeTo": "שנה ל-{plan}",
+    "changesToPlanOnDate": "שינויים ל-{plan} בתאריך {date}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "הלוגו של Comfy Cloud",
     "contactOwnerToSubscribe": "פנה לבעלים של סביבת העבודה כדי להירשם",
@@ -3862,6 +3934,8 @@
     "descriptionWorkspace": "בחר את המסלול הטוב ביותר עבור סביבת העבודה שלך",
     "downgrade": {
       "body": "כל שאר החברים במרחב העבודה יוסרו מיד.",
+      "bodyReactivation": "המנוי שלכם בוטל. שינוי התוכנית יחדש אותו, ותחויבו {amount} היום.",
+      "bodyRemovalAndReactivation": "כל שאר החברים במרחב עבודה זה יוסרו מיד. המנוי שלכם בוטל, לכן שינוי התוכנית יחדש אותו, ותחויבו {amount} היום.",
       "confirm": "שנה תוכנית",
       "confirmationPhrase": "אני מבין",
       "confirmationPrompt": "הקלד \"{phrase}\" לאישור.",
@@ -3871,6 +3945,8 @@
       "notAllowed": "שינוי תוכנית זה אינו זמין",
       "paymentMethodRequired": "נדרש אמצעי תשלום לשינוי תוכנית",
       "paymentPageBlocked": "לא ניתן היה לפתוח את דף התשלום — נסה שוב",
+      "reactivationAmountChanged": "סכום החיוב השתנה מאז האישור — אנא בדקו ונסו שוב",
+      "reactivationConfirmationRequired": "אנא אשרו את החיוב לחידוש לפני המשך",
       "title": "לעבור לתוכנית {plan}?"
     },
     "endsOnDate": "מסתיים בתאריך {date}",
@@ -3884,23 +3960,8 @@
     "everythingInPlus": "הכל ב-{plan}, בנוסף:",
     "expiresDate": "פג תוקף ב-{date}",
     "freePerks": {
+      "freeRuns": "{count} הרצה חינמית | {count} הרצות חינמיות",
       "maxRuntime": "זמן ריצה מרבי {duration}"
-    },
-    "freeTier": {
-      "description": "המסלול החינמי שלך כולל {credits} קרדיטים בכל חודש להתנסות ב-Comfy Cloud.",
-      "descriptionGeneric": "המסלול החינמי שלך כולל מכסת קרדיטים חודשית להתנסות ב-Comfy Cloud.",
-      "descriptionQuota": "התוכנית החינמית שלך כוללת {runs} הרצות כדי להתחיל עם Comfy Cloud — ללא צורך בכרטיס אשראי.",
-      "nextRefresh": "הקרדיטים שלך מתחדשים ב-{date}.",
-      "outOfCredits": {
-        "subtitle": "הירשם כדי לפתוח טעינות ועוד",
-        "title": "נגמרו לך הקרדיטים החינמיים"
-      },
-      "subscribeCta": "הירשם לעוד",
-      "title": "אתה במסלול החינמי",
-      "topUpBlocked": {
-        "title": "פתח טעינות ועוד"
-      },
-      "upgradeCta": "הצגת המסלולים"
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "יש לך שאלות או מתעניין במסלול ארגוני (enterprise)?",
@@ -3970,6 +4031,7 @@
       "backToAllPlans": "חזרה לכל המסלולים",
       "billedEachMonth": "{amount} מחויב כל חודש. ניתן לבטל בכל עת.",
       "commitment": "התחייבות",
+      "completeVerification": "השלם אימות",
       "confirm": "אישור",
       "confirmChange": "אשר שינוי",
       "confirmChangeTitle": "סקור את השינוי המתוזמן שלך",
@@ -3994,6 +4056,20 @@
       "privacyPolicy": "מדיניות הפרטיות",
       "proratedCharge": "חיוב יחסי עבור {plan}",
       "proratedRefund": "החזר יחסי עבור {plan}",
+      "reactivation": {
+        "amountChanged": "סכום החיוב השתנה מאז האישור — נא בדוק ונסה שוב",
+        "checkboxLabel": "אני מבין/ה שאחויב {amount} היום",
+        "confirmButton": "אשר וחדש",
+        "confirmButtonWithCharge": "אשר וחדש — {amount} היום",
+        "confirmationRequired": "המנוי שלך בוטל — נא אשר את החיוב לחידוש לפני המשך",
+        "downgradeBody": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. מעבר ל-{newPlan} מחדש אותו — לא תחויב היום, אך כעת הוא יתחדש אוטומטית בתאריך {nextDate} במחיר החדש במקום להסתיים.",
+        "durationChangeBody": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. מעבר לחיוב שנתי מחדש אותו ומחייב את הסכום המלא, {amount}, היום. לאחר מכן הוא יתחדש מדי שנה בתאריך {nextDate} במקום להסתיים.",
+        "durationChangeBodyMonthly": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. מעבר לחיוב חודשי מחדש אותו — תחויב {amount} היום, והוא יתחדש אוטומטית בתאריך {nextDate} במקום להסתיים.",
+        "title": "מחדש את המנוי שלך",
+        "titleAnnual": "מחדש את המנוי שלך — שנה מלאה מחויבת היום",
+        "unavailable": "לא ניתן לאשר את החידוש כעת — נא בחר את התוכנית שלך מחדש",
+        "upgradeBody": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. שדרוג כעת מחדש אותו — תחויב {amount} היום, והוא יתחדש אוטומטית בתאריך {nextDate} במקום להסתיים."
+      },
       "refillReplacesNote": "מחליף את המילוי החודשי שלך. היתרה הקיימת נשמרת.",
       "showMoreFeatures": "הצגת תכונות נוספות",
       "starting": "החל מ-{date}",
@@ -4193,6 +4269,11 @@
     "modelsSelected": "{count} מודלים",
     "noResults": "לא נמצאו תבניות",
     "noResultsHint": "נסה לשנות את החיפוש או המסננים",
+    "paidTemplate": {
+      "badgeLabel": "Partner API",
+      "credits": "הרצה באמצעות קרדיטים",
+      "title": "תבנית פרימיום"
+    },
     "resultsCount": "מציג {count} מתוך {total} תבניות",
     "runsOnFilter": "פועל על",
     "runsOnSelected": "{count} פועל על",
@@ -4261,6 +4342,7 @@
     "fileTooLarge": "הקובץ גדול מדי ({size} MB). הגודל המרבי הנתמך הוא {maxSize} MB",
     "fileUploadFailed": "העלאת הקובץ נכשלה",
     "interrupted": "ההרצה הופסקה",
+    "invalidBillingPortalUrl": "כתובת פורטל לא חוקית",
     "invalidTemplateData": "טעינת תבנית הצומת נכשלה: נתונים לא תקינים",
     "legacyMaskEditorDeprecated": "עורך המסכות הישן מיושן ויוסר בקרוב.",
     "migrateToLitegraphReroute": "צמתי ניתוב (Reroute) יוסרו בגרסאות עתידיות. לחץ כדי לעבור לניתוב המקורי של litegraph.",
@@ -4329,6 +4411,34 @@
     "frontendOutdated": "גרסת הפרונטאנד {frontendVersion} מיושנת. השרת דורש גרסה {requiredVersion} ומעלה.",
     "title": "אזהרת תאימות גרסאות",
     "updateFrontend": "עדכון הפרונטאנד"
+  },
+  "videoEdit": {
+    "adjustCrop": "כוון אזור חיתוך",
+    "adjustEndFrame": "כוון פריים סיום",
+    "adjustStartFrame": "כוון פריים התחלה",
+    "cropVideo": "חיתוך מסגרת וידאו",
+    "duration": "משך",
+    "durationSeconds": "{count}ש׳",
+    "durationZero": "0ש׳",
+    "endFrame": "פריים סיום",
+    "fileSize": "גודל קובץ",
+    "fileSizeBytes": "{count} בייט",
+    "fileSizeKilobytes": "{count} ק\"ב",
+    "fileSizeMegabytes": "{count} מ\"ב",
+    "fileSizeUnknown": "—",
+    "frames": "מספר פריימים",
+    "loadingFilmstrip": "טוען פס סרט…",
+    "loadingVideo": "טוען תצוגה מקדימה של וידאו",
+    "noVideoSource": "בחרו או חברו וידאו לתצוגה ועריכה",
+    "pause": "השהה",
+    "play": "נגן",
+    "resolution": "{width} × {height}",
+    "seekVideo": "דלג בווידאו",
+    "selectedOfTotal": "{selected} / {total}",
+    "setEndFrame": "איפוס פריים סיום",
+    "setStartFrame": "איפוס פריים התחלה",
+    "startFrame": "פריים התחלה",
+    "trimVideo": "חיתוך וידאו"
   },
   "vueNodesBanner": {
     "desc": "– תהליכי עבודה גמישים יותר, פקדים חדשים ועוצמתיים, נבנו להרחבה",
@@ -4436,9 +4546,7 @@
         "lastActivity": "פעילות אחרונה",
         "partnerNodeUsed": "צומת שותף בשימוש",
         "totalCreditsUsed": "סך הקרדיטים שנוצלו"
-      },
-      "perUserHint": "מחפש סך שימוש לכל משתמש?",
-      "seeMembers": "הצג חברים"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4574,6 +4682,39 @@
       "deleteWorkspaceDisabledTooltip": "בטל תחילה את המנוי הפעיל של סביבת העבודה שלך",
       "editWorkspace": "עריכת פרטי סביבת העבודה",
       "leaveWorkspace": "עזיבת סביבת העבודה"
+    },
+    "partnerNodes": {
+      "accessMode": "מצב גישה לצמתים שותפים",
+      "allowAllAccessHint": "החלת השינוי עשויה להימשך עד 10 דקות בסביבת העבודה.",
+      "allowAllAccessMessage": "כל הצמתים השותפים מכל הספקים יהיו זמינים לכל חברי סביבת העבודה.",
+      "allowAllAccessTitle": "לאפשר גישה לכל הצמתים השותפים?",
+      "columns": {
+        "nodes": "צמתים",
+        "provider": "ספק"
+      },
+      "disableAll": "השבת הכל",
+      "disableAllMessage": "כל הספקים יושבתו. צמתים שותפים לא יהיו זמינים כאשר הגישה מוגבלת.",
+      "disableAllTitle": "להשבית את כל הספקים?",
+      "enableAll": "הפעל הכל",
+      "loadError": "לא ניתן היה לטעון את הגישה לצמתים שותפים.",
+      "loading": "טוען גישה לצמתים שותפים",
+      "noResults": "לא נמצאו ספקים או צמתים שותפים",
+      "nodeCount": "{count} מופעלים",
+      "ownerOnly": "רק בעלי סביבת העבודה יכולים לעדכן את הגישה לצמתים שותפים.",
+      "restrictAccessHint": "החלת השינוי עשויה להימשך עד 10 דקות בסביבת העבודה.",
+      "restrictAccessMessage": "חברי סביבת העבודה יוכלו להשתמש רק בצמתים שותפים מהספקים שתפעיל.",
+      "restrictAccessTitle": "להגביל גישה לצמתים שותפים?",
+      "restricted": "מוגבל",
+      "restrictedDescription": "רק צמתים שותפים מהספקים המופעלים זמינים. ייתכן שיחולו שינויים עד 10 דקות.",
+      "retry": "נסה שוב",
+      "saveError": "לא ניתן היה לעדכן את הגישה לצמתים שותפים. נסה שוב.",
+      "searchPlaceholder": "חפש ספקים וצמתים שותפים...",
+      "tableLabel": "ספקי צמתים שותפים",
+      "title": "גישה לצמתים שותפים",
+      "toggleProvider": "הגדר גישה עבור {provider}",
+      "unavailable": "הגישה לצמתים שותפים אינה זמינה בסביבת עבודה זו.",
+      "unrestricted": "ללא הגבלה",
+      "unrestrictedDescription": "כל הצמתים השותפים מכל הספקים זמינים לכולם. השבתת ספקים תעביר למצב מוגבל."
     },
     "planCredits": {
       "tabs": {
