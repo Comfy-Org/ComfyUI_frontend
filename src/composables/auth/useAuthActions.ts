@@ -10,7 +10,10 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { clearAllWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
+import {
+  clearAllWorkflowStorage,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
@@ -113,7 +116,10 @@ export const useAuthActions = () => {
     }
 
     await authStore.logout()
-    if (isCloud) clearAllWorkflowStorage({ blockWrites: true })
+    if (isCloud) {
+      prepareWorkflowLogoutTransition()
+      clearAllWorkflowStorage()
+    }
 
     toastStore.add({
       severity: 'success',
