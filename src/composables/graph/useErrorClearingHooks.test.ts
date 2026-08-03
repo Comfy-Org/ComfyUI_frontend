@@ -4,6 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   demoteWidget,
   promoteValueWidgetViaSubgraphInput
@@ -601,6 +602,82 @@ describe('link ownership error surface', () => {
         })
       ])
     )
+  })
+})
+
+describe('promotion listener lifecycle', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    seedMediaNodeDefs()
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  /** A candidate for a node that does not exist, so any reconcile drops it. */
+  function seedStaleCandidate() {
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      fromAny<MissingMediaCandidate, unknown>({
+        nodeId: '999',
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'stale.png',
+        isMissing: true
+      })
+    ])
+    return mediaStore
+  }
+
+  function createSharedDefinitionGraph(hostIds: number[]) {
+    const subgraph = createTestSubgraph()
+    const rootGraph = subgraph.rootGraph
+    const hosts = hostIds.map((id) => {
+      const host = createTestSubgraphNode(subgraph, { id })
+      rootGraph.add(host)
+      return host
+    })
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    return { subgraph, rootGraph, hosts }
+  }
+
+  it('stops reconciling a subgraph definition once its last host is removed', async () => {
+    const {
+      subgraph,
+      rootGraph,
+      hosts: [host]
+    } = createSharedDefinitionGraph([65])
+    installErrorClearingHooks(rootGraph)
+    rootGraph.remove(host)
+
+    const mediaStore = seedStaleCandidate()
+    subgraph.events.dispatch('widget-promoted', {
+      widget: fromAny<IBaseWidget, unknown>({ name: 'image' }),
+      subgraphNode: host
+    })
+
+    // The reconcile is deferred a microtask, so give it a turn to prove it
+    // never arrives rather than reading the store before it could have run.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(mediaStore.missingMediaCandidates).not.toBeNull()
+  })
+
+  it('keeps reconciling while another host still shares the definition', async () => {
+    const {
+      subgraph,
+      rootGraph,
+      hosts: [first, second]
+    } = createSharedDefinitionGraph([65, 66])
+    installErrorClearingHooks(rootGraph)
+    rootGraph.remove(first)
+
+    const mediaStore = seedStaleCandidate()
+    subgraph.events.dispatch('widget-promoted', {
+      widget: fromAny<IBaseWidget, unknown>({ name: 'image' }),
+      subgraphNode: second
+    })
+
+    await vi.waitFor(() => expect(mediaStore.missingMediaCandidates).toBeNull())
   })
 })
 

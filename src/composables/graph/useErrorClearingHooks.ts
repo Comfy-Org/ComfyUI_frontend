@@ -7,13 +7,9 @@
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { createPromotionErrorReconciler } from '@/composables/graph/usePromotionErrorReconciler'
 import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  LGraph,
-  LGraphNode,
-  SubgraphEventMap,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
   NodeSlotType
@@ -418,63 +414,28 @@ function dropOutOfScopeMissingMedia(): void {
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {
-  const promotionCleanups = new Map<Subgraph, () => void>()
-
-  // Promotion moves value ownership between the interior widget and the host,
-  // so the error surface has to move with it. Rescanning the whole subtree
-  // covers both directions: the side that lost ownership fails the scope check
-  // and is dropped, the side that gained it is scanned fresh.
-  const rescanPromotionTargets = (subgraphNode: SubgraphNode): void => {
-    queueMicrotask(() => {
+  const promotionErrors = createPromotionErrorReconciler({
+    pruneOutOfScope: dropOutOfScopeMissingMedia,
+    rescanHost: (subgraphNode) =>
+      scanNodeErrorTargets(subgraphNode, scanSingleNodeMedia),
+    removeHostWidgetCandidate: (subgraphNode, widgetName) => {
       if (!app.rootGraph) return
-      dropOutOfScopeMissingMedia()
-      scanNodeErrorTargets(subgraphNode, scanSingleNodeMedia)
-    })
-  }
-
-  const installPromotionListeners = (subgraph: Subgraph): void => {
-    if (promotionCleanups.has(subgraph)) return
-    const onDemoted = (
-      event: CustomEvent<SubgraphEventMap['widget-demoted']>
-    ) => {
-      if (!app.rootGraph) return
-      const { subgraphNode, widget } = event.detail
       const executionId = getExecutionIdByNode(app.rootGraph, subgraphNode)
       if (!executionId) return
-      // The host input still carries the widget when this fires, so the scope
-      // filter cannot see it as gone yet.
-      useMissingMediaStore().removeMissingMediaByWidget(
-        executionId,
-        widget.name
-      )
-      rescanPromotionTargets(subgraphNode)
+      useMissingMediaStore().removeMissingMediaByWidget(executionId, widgetName)
     }
-    const onPromoted = (
-      event: CustomEvent<SubgraphEventMap['widget-promoted']>
-    ) => {
-      rescanPromotionTargets(event.detail.subgraphNode)
-    }
-    subgraph.events.addEventListener('widget-demoted', onDemoted)
-    subgraph.events.addEventListener('widget-promoted', onPromoted)
-    promotionCleanups.set(subgraph, () => {
-      subgraph.events.removeEventListener('widget-demoted', onDemoted)
-      subgraph.events.removeEventListener('widget-promoted', onPromoted)
-    })
-    for (const node of subgraph.nodes) {
-      if (node.isSubgraphNode()) installPromotionListeners(node.subgraph)
-    }
-  }
+  })
 
-  if (graph instanceof Subgraph) installPromotionListeners(graph)
+  if (graph instanceof Subgraph) promotionErrors.attach(graph)
   for (const node of graph._nodes ?? []) {
     installNodeHooksRecursive(node)
-    if (node.isSubgraphNode()) installPromotionListeners(node.subgraph)
+    promotionErrors.attachNode(node)
   }
 
   const originalOnNodeAdded = graph.onNodeAdded
   graph.onNodeAdded = function (node: LGraphNode) {
     installNodeHooksRecursive(node)
-    if (node.isSubgraphNode()) installPromotionListeners(node.subgraph)
+    promotionErrors.attachNode(node)
 
     // Scan pasted/duplicated nodes for missing models/media.
     // Skip during loadGraphData (undo/redo/tab switch) — those are
@@ -501,6 +462,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     const execId = getRemovedNodeExecutionId(graph, node.id)
     removeNodeErrors(node, execId)
     restoreNodeHooksRecursive(node)
+    promotionErrors.detachNode(node)
     originalOnNodeRemoved?.call(this, node)
   }
 
@@ -524,6 +486,6 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     graph.onNodeAdded = originalOnNodeAdded || undefined
     graph.onNodeRemoved = originalOnNodeRemoved || undefined
     graph.onTrigger = originalOnTrigger || undefined
-    for (const cleanup of promotionCleanups.values()) cleanup()
+    promotionErrors.dispose()
   }
 }
