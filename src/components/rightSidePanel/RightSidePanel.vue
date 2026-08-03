@@ -39,6 +39,7 @@ import {
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from './errors/TabErrors.vue'
+import JobHistorySidebarTab from '@/components/sidebar/tabs/JobHistorySidebarTab.vue'
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -227,7 +228,10 @@ const tabs = computed<RightSidePanelTabList>(() => {
 watchEffect(() => {
   if (
     !tabs.value.some((tab) => tab.value === activeTab.value) &&
-    !(activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
+    !(activeTab.value === 'subgraph' && isSingleSubgraphNode.value) &&
+    // Job history is a full-panel takeover, not one of the contextual tabs,
+    // so it must not be reset to the first tab.
+    activeTab.value !== 'job-history'
   ) {
     rightSidePanelStore.openPanel(tabs.value[0].value)
   }
@@ -298,7 +302,10 @@ function handleTitleCancel() {
     <!-- Panel Header -->
     <section class="pt-1">
       <div class="flex items-center justify-between pr-3 pl-4">
-        <h3 class="my-3.5 line-clamp-2 cursor-default text-sm font-semibold">
+        <h3
+          v-if="activeTab !== 'job-history'"
+          class="my-3.5 line-clamp-2 cursor-default text-sm font-semibold"
+        >
           <template v-if="allowTitleEdit">
             <EditableText
               :model-value="panelTitle"
@@ -352,7 +359,10 @@ function handleTitleCancel() {
           </Button>
         </div>
       </div>
-      <nav class="overflow-x-auto px-4 pt-1 pb-2">
+      <nav
+        v-if="activeTab !== 'job-history'"
+        class="overflow-x-auto px-4 pt-1 pb-2"
+      >
         <TabList :model-value="activeTab" @update:model-value="handleTabChange">
           <Tab
             v-for="tab in tabs"
@@ -374,7 +384,8 @@ function handleTitleCancel() {
 
     <!-- Panel Content -->
     <div class="flex-1 scrollbar-thin overflow-y-auto">
-      <TabErrors v-if="activeTab === 'errors'" />
+      <JobHistorySidebarTab v-if="activeTab === 'job-history'" />
+      <TabErrors v-else-if="activeTab === 'errors'" />
       <template v-else-if="!hasSelection">
         <TabGlobalParameters v-if="activeTab === 'parameters'" />
         <TabNodes v-else-if="activeTab === 'nodes'" />
