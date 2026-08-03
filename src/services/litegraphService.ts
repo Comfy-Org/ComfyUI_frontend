@@ -65,7 +65,7 @@ import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import type { WidgetId } from '@/types/widgetId'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import {
   isAnimatedOutput,
   isImageNode,

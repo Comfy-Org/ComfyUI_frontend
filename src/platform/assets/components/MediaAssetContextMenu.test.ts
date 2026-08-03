@@ -6,7 +6,7 @@ import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as FormatUtil from '@/utils/formatUtil'
+import type * as FormatUtil from '@comfyorg/shared-frontend-utils/formatUtil'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -22,10 +22,13 @@ vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
   supportsWorkflowMetadata: () => true
 }))
 
-vi.mock('@/utils/formatUtil', async (importOriginal) => ({
-  ...(await importOriginal<typeof FormatUtil>()),
-  isPreviewableMediaType: () => true
-}))
+vi.mock(
+  '@comfyorg/shared-frontend-utils/formatUtil',
+  async (importOriginal) => ({
+    ...(await importOriginal<typeof FormatUtil>()),
+    isPreviewableMediaType: () => true
+  })
+)
 
 const mediaAssetActions = {
   addWorkflow: vi.fn(),

@@ -104,7 +104,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { getErrorMessage } from '@/utils/errorUtil'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { OnCloseKey } from '@/types/widgetTypes'
 
 const { onClose } = defineProps<{

@@ -32,7 +32,7 @@ import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingOption, SettingParams } from '@/platform/settings/types'
 import type { Settings } from '@/schemas/apiSchema'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const props = defineProps<{
   setting: SettingParams

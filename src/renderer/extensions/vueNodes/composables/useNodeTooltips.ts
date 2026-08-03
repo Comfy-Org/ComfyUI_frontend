@@ -9,7 +9,7 @@ import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { st, stRaw } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 // PrimeVue adds this internal property to elements with tooltips

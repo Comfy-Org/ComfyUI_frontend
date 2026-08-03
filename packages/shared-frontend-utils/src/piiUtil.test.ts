@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { PostHogEventLike } from './piiUtil'
 import { createPostHogBeforeSend } from './piiUtil'
 
 describe('createPostHogBeforeSend', () => {
@@ -48,7 +49,9 @@ describe('createPostHogBeforeSend', () => {
   })
 
   it('handles missing property bags gracefully', () => {
-    const event = { properties: { email: 'a@example.com', safe: true } }
+    const event: PostHogEventLike = {
+      properties: { email: 'a@example.com', safe: true }
+    }
     const result = beforeSend(event)!
     expect(result.properties).not.toHaveProperty('email')
     expect(result.properties).toHaveProperty('safe', true)

@@ -1,0 +1,98 @@
+name: 'CI: Shared Frontend Utils Pack Check'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'packages/shared-frontend-utils/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-pack-contents:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Typecheck
+        run: pnpm -C packages/shared-frontend-utils typecheck
+
+      - name: Build package
+        run: pnpm -C packages/shared-frontend-utils build
+
+      - name: Verify packed tarball only contains compiled dist output
+        shell: bash
+        run: |
+          set -euo pipefail
+          UNEXPECTED=$(
+            pnpm -C packages/shared-frontend-utils pack --dry-run --json |
+              jq -r '
+                .files[].path
+                | select(
+                    . != "package.json"
+                    and . != "LICENSE"
+                    and . != "README.md"
+                    and (startswith("dist/") | not)
+                  )
+              '
+          )
+          if [ -n "$UNEXPECTED" ]; then
+            echo "::error title=Unexpected files in tarball::Packed tarball contains files outside dist:" >&2
+            echo "$UNEXPECTED" >&2
+            exit 1
+          fi
+          echo 'Packed tarball contains only expected files.'
+
+      - name: Verify published manifest resolves to dist and pins real versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACK_DIR="$RUNNER_TEMP/shared-frontend-utils-pack"
+          rm -rf "$PACK_DIR"
+          mkdir -p "$PACK_DIR"
+          pnpm -C packages/shared-frontend-utils pack --pack-destination "$PACK_DIR"
+          TARBALL=$(find "$PACK_DIR" -maxdepth 1 -name '*.tgz' | head -n 1)
+          if [ -z "$TARBALL" ]; then
+            echo "::error title=Pack failed::No tarball produced in $PACK_DIR" >&2
+            exit 1
+          fi
+          MANIFEST=$(tar -xzOf "$TARBALL" package/package.json)
+          NON_DIST_EXPORTS=$(
+            printf '%s' "$MANIFEST" |
+              jq -r '
+                [
+                  .exports
+                  | ..
+                  | strings
+                  | select(. != "./package.json" and (startswith("./dist/") | not))
+                ]
+                | join(", ")
+              '
+          )
+          if [ -n "$NON_DIST_EXPORTS" ]; then
+            echo "::error title=Exports escape dist::Published exports must resolve to compiled dist output, got: $NON_DIST_EXPORTS" >&2
+            exit 1
+          fi
+          UNRESOLVED=$(
+            printf '%s' "$MANIFEST" |
+              jq -r '
+                (.dependencies // {}) + (.peerDependencies // {})
+                | to_entries[]
+                | select(.value | test("^(catalog:|workspace:)"))
+                | "\(.key)@\(.value)"
+              '
+          )
+          if [ -n "$UNRESOLVED" ]; then
+            echo "::error title=Unresolved workspace specifiers::Published manifest must not contain catalog:/workspace: ranges:" >&2
+            echo "$UNRESOLVED" >&2
+            exit 1
+          fi
+          echo 'Published manifest resolves to dist with real dependency ranges.'
