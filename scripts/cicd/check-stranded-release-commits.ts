@@ -13,6 +13,7 @@
  * commits by design (dead lines, unreleased work) and would be pure noise.
  */
 import { execFileSync } from 'child_process'
+import { appendFileSync } from 'fs'
 import { pathToFileURL } from 'url'
 
 export interface Commit {
@@ -245,6 +246,19 @@ async function main(): Promise<void> {
   for (const finding of allFindings) {
     const label = finding.severity === 'failure' ? 'FAIL' : 'note'
     console.error(`[${label}] ${finding.message}`)
+  }
+
+  // Emit the line that needs a patch so CI can cut it, rather than relying on
+  // somebody reading a Slack message. Only the ComfyUI-pinned line: that is the
+  // one users install from.
+  const strandedPinnedLine = allFindings.find(
+    (f) => f.kind === 'stranded-commits' && f.severity === 'failure'
+  )
+  if (process.env.GITHUB_OUTPUT && strandedPinnedLine) {
+    appendFileSync(
+      process.env.GITHUB_OUTPUT,
+      `needs_patch_branch=${strandedPinnedLine.branch}\n`
+    )
   }
 
   if (allFindings.some((f) => f.severity === 'failure')) {

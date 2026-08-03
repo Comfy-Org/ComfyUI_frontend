@@ -56,6 +56,33 @@ jobs:
             ]
           }' > payload.json
 
+      # Alerting was never the missing piece. Both times this failed, the
+      # information existed and nobody acted on it, so the check cuts the patch
+      # itself. Branch protection still gates the bump PR, so this starts the
+      # release rather than bypassing review.
+      - name: Cut the patch release for the stranded line
+        if: failure() && steps.check.outputs.needs_patch_branch != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          BRANCH: ${{ steps.check.outputs.needs_patch_branch }}
+        run: |
+          set -euo pipefail
+          # Idempotent: if a bump PR for this line is already open, the release
+          # is already in flight and firing again would resolve a second patch.
+          OPEN_BUMP=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open \
+            --base "$BRANCH" --label Release --json number --jq 'length')
+          if [ "$OPEN_BUMP" != "0" ]; then
+            echo "A Release bump PR is already open against ${BRANCH}; not firing another."
+            exit 0
+          fi
+
+          echo "::warning::Fix commits are stranded on ${BRANCH}; dispatching a patch release."
+          gh workflow run release-biweekly-comfyui.yaml \
+            --repo "$GITHUB_REPOSITORY" \
+            --field release_type=patch \
+            --field target_branch="$BRANCH"
+
       - name: Post to Slack
         if: failure() && steps.check.outcome == 'failure'
         continue-on-error: true
