@@ -214,6 +214,21 @@ describe('useMissingMediaStore', () => {
       store.removeMissingMediaByNodeId('1')
       expect(store.missingMediaCandidates).toBeNull()
     })
+
+    // The sibling removeMissingMediaByPrefix matches on prefix, so exact
+    // matching here is easy to regress into.
+    it('does not remove a node whose id only shares a numeric prefix', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('65', 'matching.png'),
+        makeCandidate('650', 'numeric-sibling.png')
+      ])
+
+      store.removeMissingMediaByNodeId('65')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].name).toBe('numeric-sibling.png')
+    })
   })
 
   describe('removeMissingMediaByPrefix', () => {
@@ -311,26 +326,6 @@ describe('useMissingMediaStore', () => {
   })
 
   describe('promoted host identity', () => {
-    it('does not remove a promoted host whose nodeId only shares a numeric prefix', () => {
-      const store = useMissingMediaStore()
-      const candidates = [
-        {
-          ...makeCandidate('65', 'matching.png'),
-          widgetName: 'outer_image'
-        },
-        {
-          ...makeCandidate('650', 'numeric-sibling.png'),
-          widgetName: 'outer_image'
-        }
-      ]
-      store.setMissingMedia(candidates)
-
-      store.removeMissingMediaByNodeId('65')
-
-      expect(store.missingMediaCandidates).toHaveLength(1)
-      expect(store.missingMediaCandidates![0].name).toBe('numeric-sibling.png')
-    })
-
     it('finds missing media by the promoted host widget identity', () => {
       const store = useMissingMediaStore()
       const hostExecutionId = createNodeExecutionId([65])

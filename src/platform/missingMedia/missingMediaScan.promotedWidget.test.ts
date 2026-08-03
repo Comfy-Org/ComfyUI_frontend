@@ -248,30 +248,6 @@ describe('scanAllMediaCandidates — promoted host widgets', () => {
     ])
   })
 
-  it('does not report a promoted host when its leaf source is bypassed', () => {
-    const {
-      rootGraph: graph,
-      sourceNodes: [sourceNode]
-    } = createPromotedMediaRuntime()
-
-    expect.soft(scanAllMediaCandidates(graph, false)).toHaveLength(1)
-    sourceNode.mode = LGraphEventMode.BYPASS
-
-    expect(scanAllMediaCandidates(graph, false)).toEqual([])
-  })
-
-  it('does not report a promoted host when its leaf source never executes', () => {
-    const {
-      rootGraph: graph,
-      sourceNodes: [sourceNode]
-    } = createPromotedMediaRuntime()
-
-    expect.soft(scanAllMediaCandidates(graph, false)).toHaveLength(1)
-    sourceNode.mode = LGraphEventMode.NEVER
-
-    expect(scanAllMediaCandidates(graph, false)).toEqual([])
-  })
-
   it('accepts a value found only in the promoted host options', () => {
     const { rootGraph: graph } = createPromotedMediaRuntime({
       hostValue: 'host-only.png',

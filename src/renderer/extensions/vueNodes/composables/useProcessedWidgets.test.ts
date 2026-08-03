@@ -340,10 +340,18 @@ describe('hasWidgetError', () => {
       )
     ).toBe(true)
   })
+})
+
+describe('computeProcessedWidgets missing media', () => {
+  let missingMediaStore: ReturnType<typeof useMissingMediaStore>
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    missingMediaStore = useMissingMediaStore()
+  })
 
   it('marks a matching regular widget for missing media', () => {
     const widget = createMockWidget({ name: 'image', nodeId: NODE_ID })
-    const missingMediaStore = useMissingMediaStore()
 
     missingMediaStore.setMissingMedia([
       {
@@ -372,7 +380,6 @@ describe('hasWidgetError', () => {
       sourceExecutionId: createNodeExecutionId([NODE_ID, toNodeId(43)]),
       sourceWidgetName: 'image'
     })
-    const missingMediaStore = useMissingMediaStore()
 
     missingMediaStore.setMissingMedia([
       {
