@@ -33,8 +33,11 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackEvent: vi.fn() })
 }))
 
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -75,6 +78,7 @@ describe('showTopUpCreditsDialog', () => {
     state.tier = 'STANDARD'
     state.type = 'workspace'
     state.canTopUp = true
+    mockIsCloud.value = true
   })
 
   it('shows the purchase dialog to users who can top up', async () => {
@@ -128,5 +132,32 @@ describe('showTopUpCreditsDialog', () => {
       reason: 'out_of_credits'
     })
     expect(showDialog).not.toHaveBeenCalled()
+  })
+
+  describe('non-cloud distribution', () => {
+    beforeEach(() => {
+      mockIsCloud.value = false
+      state.type = 'legacy'
+    })
+
+    it('opens the purchase dialog directly on the free tier instead of the subscription-required flow', async () => {
+      state.isFreeTier = true
+
+      await useDialogService().showTopUpCreditsDialog()
+
+      expect(showSubscriptionDialog).not.toHaveBeenCalled()
+      const [args] = showDialog.mock.calls[0]
+      expect(args.key).toBe('top-up-credits')
+    })
+
+    it('opens the purchase dialog even when the facade reports no active subscription', async () => {
+      state.isActiveSubscription = false
+
+      await useDialogService().showTopUpCreditsDialog()
+
+      expect(showSubscriptionDialog).not.toHaveBeenCalled()
+      const [args] = showDialog.mock.calls[0]
+      expect(args.key).toBe('top-up-credits')
+    })
   })
 })
