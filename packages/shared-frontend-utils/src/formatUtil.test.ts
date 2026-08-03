@@ -11,6 +11,7 @@ import {
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
+  escapeI18nMessage,
   isCivitaiModelUrl,
   isCivitaiUrl,
   isPreviewableMediaType,
@@ -498,6 +499,36 @@ describe('formatUtil', () => {
     it('returns an em-dash for undefined or unparseable input', () => {
       expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
       expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
+    })
+  })
+
+  describe('escapeI18nMessage', () => {
+    it('wraps message-syntax characters in literal interpolations', () => {
+      expect(escapeI18nMessage('a@b')).toBe("a{'@'}b")
+      expect(escapeI18nMessage('{x}')).toBe("{'{'}x{'}'}")
+      expect(escapeI18nMessage('a|b')).toBe("a{'|'}b")
+      expect(escapeI18nMessage('50%')).toBe("50{'%'}")
+      expect(escapeI18nMessage('$5')).toBe("{'$'}5")
+    })
+
+    it('doubles backslashes rather than interpolating them', () => {
+      expect(escapeI18nMessage('\\')).toBe('\\\\')
+      expect(escapeI18nMessage('C:\\@home')).toBe("C:\\\\{'@'}home")
+    })
+
+    it('leaves text without message syntax untouched', () => {
+      expect(escapeI18nMessage('plain name')).toBe('plain name')
+      expect(escapeI18nMessage('')).toBe('')
+    })
+
+    it('is not idempotent, so it must be applied exactly once', () => {
+      const once = escapeI18nMessage('a@b')
+      expect(escapeI18nMessage(once)).not.toBe(once)
+    })
+
+    it('returns an empty string for non-string input', () => {
+      expect(escapeI18nMessage(42 as unknown as string)).toBe('')
+      expect(escapeI18nMessage(null as unknown as string)).toBe('')
     })
   })
 })

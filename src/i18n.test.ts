@@ -4,22 +4,22 @@ import type * as I18nModule from './i18n'
 
 let i18n: typeof I18nModule.i18n
 let loadLocale: typeof I18nModule.loadLocale
-let mergeBackendNodeDisplayNames: typeof I18nModule.mergeBackendNodeDisplayNames
+let resolveNodeDefText: typeof I18nModule.resolveNodeDefText
+let setBackendNodeText: typeof I18nModule.setBackendNodeText
 let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
 let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
 let setActiveLocale: typeof I18nModule.setActiveLocale
-let st: typeof I18nModule.st
 let te: typeof I18nModule.te
 
 async function importI18nModule() {
   const i18nModule = await import('./i18n')
   i18n = i18nModule.i18n
   loadLocale = i18nModule.loadLocale
-  mergeBackendNodeDisplayNames = i18nModule.mergeBackendNodeDisplayNames
+  resolveNodeDefText = i18nModule.resolveNodeDefText
+  setBackendNodeText = i18nModule.setBackendNodeText
   mergeCustomNodesI18n = i18nModule.mergeCustomNodesI18n
   resolveSupportedLocale = i18nModule.resolveSupportedLocale
   setActiveLocale = i18nModule.setActiveLocale
-  st = i18nModule.st
   te = i18nModule.te
 }
 
@@ -209,80 +209,160 @@ describe('i18n', () => {
     })
   })
 
-  describe('mergeBackendNodeDisplayNames', () => {
-    it('overrides bundled English display names with backend values', () => {
-      expect(st('nodeDefs.KSampler.display_name', 'fallback')).toBe(
-        'KSampler (bundled)'
-      )
+  describe('resolveNodeDefText', () => {
+    const backend = (
+      name: string,
+      display_name?: string,
+      description?: string
+    ) => setBackendNodeText([{ name, display_name, description }])
 
-      mergeBackendNodeDisplayNames([
-        { name: 'KSampler', display_name: 'KSampler (renamed)' }
-      ])
+    describe('precedence', () => {
+      it('en: custom-node translation beats backend and bundled', () => {
+        mergeCustomNodesI18n({
+          en: { nodeDefs: { KSampler: { display_name: 'Custom EN' } } }
+        })
+        backend('KSampler', 'Backend Name')
 
-      expect(st('nodeDefs.KSampler.display_name', 'fallback')).toBe(
-        'KSampler (renamed)'
-      )
-    })
-
-    it('adds display names for nodes missing from the bundle', () => {
-      mergeBackendNodeDisplayNames([
-        { name: 'BrandNewNode', display_name: 'Brand New Node' }
-      ])
-
-      expect(st('nodeDefs.BrandNewNode.display_name', 'fallback')).toBe(
-        'Brand New Node'
-      )
-    })
-
-    it('normalizes node names and renders i18n syntax characters verbatim', () => {
-      mergeBackendNodeDisplayNames([
-        { name: 'my.node', display_name: "Weird {name} @ 100% | $x '" }
-      ])
-
-      expect(st('nodeDefs.my_node.display_name', 'fallback')).toBe(
-        "Weird {name} @ 100% | $x '"
-      )
-    })
-
-    it('skips defs without a display name', () => {
-      mergeBackendNodeDisplayNames([{ name: 'KSampler' }])
-
-      expect(st('nodeDefs.KSampler.display_name', 'fallback')).toBe(
-        'KSampler (bundled)'
-      )
-    })
-
-    it('keeps custom-node English translations over backend names', () => {
-      mergeCustomNodesI18n({
-        en: {
-          nodeDefs: { MyCustomNode: { display_name: 'Custom EN Name' } }
-        }
+        expect(resolveNodeDefText('display_name', 'KSampler')).toBe('Custom EN')
       })
 
-      mergeBackendNodeDisplayNames([
-        { name: 'MyCustomNode', display_name: 'Backend Name' },
-        { name: 'KSampler', display_name: 'KSampler (renamed)' }
-      ])
+      it('en: backend beats the bundled snapshot', () => {
+        backend('KSampler', 'KSampler (renamed)')
 
-      expect(st('nodeDefs.MyCustomNode.display_name', 'fallback')).toBe(
-        'Custom EN Name'
-      )
-      expect(st('nodeDefs.KSampler.display_name', 'fallback')).toBe(
-        'KSampler (renamed)'
-      )
+        expect(resolveNodeDefText('display_name', 'KSampler')).toBe(
+          'KSampler (renamed)'
+        )
+      })
+
+      it('en: bundled is used when the backend sends nothing', () => {
+        setBackendNodeText([])
+
+        expect(resolveNodeDefText('display_name', 'KSampler')).toBe(
+          'KSampler (bundled)'
+        )
+      })
+
+      it('en: falls back to the node name when nothing supplies text', () => {
+        setBackendNodeText([])
+
+        expect(resolveNodeDefText('display_name', 'Unknown')).toBe('Unknown')
+      })
+
+      it('non-en: translation stays authoritative over the backend', async () => {
+        await setActiveLocale('zh')
+        backend('testNode', 'Backend Name')
+
+        expect(resolveNodeDefText('display_name', 'testNode2')).toBe(
+          'testNode2'
+        )
+        expect(te('nodeDefs.testNode', 'zh')).toBe(true)
+      })
+
+      it('non-en: falls back to the live backend value, not the stale en snapshot', async () => {
+        await setActiveLocale('zh')
+        backend('KSampler', 'KSampler (renamed)')
+
+        expect(resolveNodeDefText('display_name', 'KSampler')).toBe(
+          'KSampler (renamed)'
+        )
+      })
     })
 
-    it('does not affect other locales', async () => {
-      mergeBackendNodeDisplayNames([
-        { name: 'KSampler', display_name: 'KSampler (renamed)' }
-      ])
+    describe('backend text is data, not a translation', () => {
+      it.for([
+        ['Load Image {batch} | v2'],
+        ['Save Image %{count}'],
+        ['Regex Replace (\\$1)'],
+        ['C:\\@home'],
+        ['Save to D:\\\\output'],
+        ["Weird {name} @ 100% | $x '"]
+      ])('renders %j verbatim without compiling it', ([raw]) => {
+        backend('SyntaxNode', raw)
 
-      await setActiveLocale('zh')
-      const zhMessages = i18n.global.getLocaleMessage('zh') as Record<
-        string,
-        unknown
-      >
-      expect(zhMessages.nodeDefs).toEqual({ testNode: '测试节点' })
+        expect(resolveNodeDefText('display_name', 'SyntaxNode')).toBe(raw)
+      })
+
+      it('does not write backend values into the en message tree', () => {
+        backend('BrandNewNode', 'Brand New Node')
+
+        expect(te('nodeDefs.BrandNewNode.display_name')).toBe(false)
+      })
+    })
+
+    describe('key resolution', () => {
+      it('resolves dotted node names against the normalized key', () => {
+        mergeCustomNodesI18n({
+          en: { nodeDefs: { my_node: { display_name: 'Flat Key' } } }
+        })
+
+        expect(resolveNodeDefText('display_name', 'my.node')).toBe('Flat Key')
+      })
+
+      it('resolves the legacy nested shape hand-written locales use', () => {
+        mergeCustomNodesI18n({
+          en: { nodeDefs: { my: { node: { display_name: 'Nested Key' } } } }
+        })
+
+        expect(resolveNodeDefText('display_name', 'my.node')).toBe('Nested Key')
+      })
+
+      it('compiles custom-node translations so generated escapes render', () => {
+        mergeCustomNodesI18n({
+          en: {
+            nodeDefs: {
+              EscapedNode: { display_name: "50{'%'} {'@'} {'|'}" }
+            }
+          }
+        })
+
+        expect(resolveNodeDefText('display_name', 'EscapedNode')).toBe(
+          '50% @ |'
+        )
+      })
+    })
+
+    describe('setBackendNodeText', () => {
+      it('drops entries the backend no longer sends', () => {
+        backend('Ephemeral', 'First Name')
+        expect(resolveNodeDefText('display_name', 'Ephemeral')).toBe(
+          'First Name'
+        )
+
+        setBackendNodeText([{ name: 'Ephemeral' }])
+
+        expect(resolveNodeDefText('display_name', 'Ephemeral')).toBe(
+          'Ephemeral'
+        )
+      })
+
+      it('ignores non-string values instead of throwing', () => {
+        expect(() =>
+          setBackendNodeText([
+            { name: 'Bad', display_name: 42 },
+            { name: 7, display_name: 'x' },
+            { name: 'Empty', display_name: '' }
+          ])
+        ).not.toThrow()
+
+        expect(resolveNodeDefText('display_name', 'Bad')).toBe('Bad')
+        expect(resolveNodeDefText('display_name', 'Empty')).toBe('Empty')
+      })
+    })
+
+    describe('description', () => {
+      it('prefers the backend description over the bundled one', () => {
+        backend('KSampler', undefined, 'Live description')
+
+        expect(resolveNodeDefText('description', 'KSampler')).toBe(
+          'Live description'
+        )
+      })
+
+      it('returns an empty string when nothing supplies a description', () => {
+        setBackendNodeText([])
+
+        expect(resolveNodeDefText('description', 'Unknown')).toBe('')
+      })
     })
   })
 

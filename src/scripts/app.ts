@@ -11,7 +11,7 @@ import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/com
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { mergeBackendNodeDisplayNames, st, t } from '@/i18n'
+import { resolveNodeDefText, setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -1100,25 +1100,27 @@ export class ComfyApp {
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
-      // Use object info display_name as fallback before using name
-      const objectInfoDisplayName = def.display_name || def.name
-      const nodeKey = `nodeDefs.${normalizeI18nKey(def.name)}`
-
       return {
         ...def,
-        display_name: st(`${nodeKey}.display_name`, objectInfoDisplayName),
+        display_name: resolveNodeDefText(
+          'display_name',
+          def.name,
+          def.display_name || def.name
+        ),
         description: def.description
-          ? st(`${nodeKey}.description`, def.description)
+          ? resolveNodeDefText('description', def.name, def.description)
           : '',
         category: def.category
           .split('/')
-          .map((category: string) => st(`nodeCategories.${category}`, category))
+          .map((category: string) =>
+            st(`nodeCategories.${normalizeI18nKey(category)}`, category)
+          )
           .join('/')
       }
     }
 
-    const defs = await api.getNodeDefs()
-    mergeBackendNodeDisplayNames(Object.values(defs))
+    const defs = (await api.getNodeDefs()) ?? {}
+    setBackendNodeText(Object.values(defs))
     return _.mapValues(defs, (def) => translateNodeDef(def))
   }
 
