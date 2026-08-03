@@ -6500,6 +6500,48 @@
       }
     }
   },
+  "IdeogramPImage": {
+    "description": "يولّد صورًا باستخدام P-Image، نموذج Ideogram السريع لتحويل النص إلى صورة. يتميز بقوة في الطباعة والواقعية الفوتوغرافية؛ يدعم تسميات JSON المنظمة لإصدار Ideogram 4.0 من أجل نصوص دقيقة، ألوان وتخطيط محدد.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "نسبة العرض إلى الارتفاع لتوليد الصورة."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "وصف نصي. يقبل أيضًا تسميات JSON المنظمة لإصدار Ideogram 4.0 (ألوان دقيقة بصيغة #RRGGBB، نصوص محددة، وتخطيط بصناديق الإحاطة) — عيّن prompt_upsampling إلى إيقاف OFF لاستخدامها كما هي."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "يوسّع الأوصاف القصيرة إلى تسمية منظمة مفصلة قبل التوليد (يتم إرجاع الوصف المعاد كتابته كـ final_prompt). عيّن إلى إيقاف OFF عند تزويدك بتسمية JSON خاصة بك أو نص دقيق."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "فئة السرعة/السعر/الجودة. MEDIUM هو الافتراضي اليومي؛ HIGH للنصوص المعقدة، التفاصيل الدقيقة والنصوص الصعبة؛ VERY_LOW/LOW للمسودات على نطاق واسع. النصوص الصعبة تظهر بشكل سيء تحت MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "فئة حجم المخرجات (عدد البكسلات يتبع نسبة العرض إلى الارتفاع، مثلًا 16:9 يعطي 1280x720 عند 1K و2560x1440 عند 2K). يُفضل HIGH + 2K لطباعة واضحة."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة للتوليد القابل لإعادة الإنتاج. مع prompt_upsampling على إيقاف OFF، نفس البذرة والإعدادات تعطي نفس الصورة؛ مع ON/AUTO إعادة كتابة الوصف تختلف في كل مرة — لإعادة إنتاج نتيجة استخدم final_prompt مع prompt_upsampling على إيقاف OFF ونفس البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "الوصف الذي تم توليد الصورة بناءً عليه فعليًا (التسمية المنظمة المعاد كتابتها عند تشغيل prompt_upsampling، أو وصفك الأصلي). أعد استخدامه مع prompt_upsampling على إيقاف OFF ونفس البذرة لإعادة إنتاج هذه الصورة."
+      }
+    }
+  },
   "IdeogramV3": {
     "description": "ينشئ الصور بشكل متزامن باستخدام نموذج إيديوغرام الإصدار 3.\n\nيدعم التوليد العادي للصور من النصوص وتحرير الصور مع القناع.\nروابط الصور متاحة لفترة محدودة من الوقت؛ إذا كنت ترغب في الاحتفاظ بالصورة، يجب عليك تنزيلها.",
     "display_name": "إيديوغرام الإصدار 3",
@@ -11328,6 +11370,125 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "توليد فيديو من صورة الإطار الأول وصورة إطار أخير اختيارية باستخدام نموذج MiniMax H3. نسبة العرض إلى الارتفاع للفيديو تتبع الصور المقدمة.",
+    "display_name": "MiniMax H3 من إطار أول/أخير إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "صورة الإطار الأول للفيديو."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "صورة إطار أخير اختيارية للفيديو."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة عشوائية. نفس الطلب مع نفس البذرة يعطي نتائج متشابهة، لكن ليس بالضرورة متطابقة."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "هل تريد إضافة علامة مائية AIGC إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "إنشاء فيديو بناءً على صور مرجعية، فيديوهات، وصوت باستخدام نموذج MiniMax H3. ارجع إلى المراجع في النص حسب ترتيبها: 'صورة 1'، 'صورة 2'، 'فيديو 1'، 'صوت 1'، وهكذا.",
+    "display_name": "MiniMax H3 مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء الفيديو."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "النص"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية. نفس الطلب مع نفس البذرة يعطي نتائج متشابهة، لكن ليست متطابقة بالضرورة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية AIGC إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "إنشاء فيديو من نص باستخدام نموذج MiniMax H3.",
+    "display_name": "MiniMax H3 تحويل نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء الفيديو."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "النص"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية. نفس الطلب مع نفس البذرة يعطي نتائج متشابهة، لكن ليست متطابقة بالضرورة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية AIGC إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

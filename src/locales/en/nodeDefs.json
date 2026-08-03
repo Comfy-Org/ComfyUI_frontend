@@ -6500,6 +6500,48 @@
       }
     }
   },
+  "IdeogramPImage": {
+    "display_name": "Ideogram P-Image",
+    "description": "Generates images using P-Image, Ideogram's fast text-to-image model. Strong typography and photorealism; supports Ideogram 4.0 structured JSON captions for exact text, colors and layout.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt. Also accepts an Ideogram 4.0 structured JSON caption (exact colors as #RRGGBB hexes, exact text strings, bounding-box layout) — set prompt_upsampling to OFF to use it verbatim."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Speed/price/quality tier. MEDIUM is the everyday default; HIGH for complex prompts, fine detail and difficult text; VERY_LOW/LOW for drafts at scale. Difficult text renders poorly below MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output size class (exact pixels follow the aspect ratio, e.g. 16:9 gives 1280x720 at 1K and 2560x1440 at 2K). Prefer HIGH + 2K for crisp typography."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio for image generation."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Expands short prompts into a detailed structured caption before generation (the rewritten prompt is returned as final_prompt). Set OFF when supplying your own JSON caption or exact wording."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducible generation. With prompt_upsampling OFF, the same seed and settings return the same image; with ON/AUTO the prompt rewrite varies per run — reproduce a result by reusing its final_prompt output with prompt_upsampling OFF and the same seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "The prompt the image was actually generated from (the rewritten structured caption when prompt_upsampling ran, else your prompt). Feed it back with prompt_upsampling OFF and the same seed to reproduce this image."
+      }
+    }
+  },
   "IdeogramV3": {
     "display_name": "Ideogram V3",
     "description": "Generates images using the Ideogram V3 model. Supports both regular image generation from text prompts and image editing with mask.",
@@ -11332,9 +11374,128 @@
       }
     }
   },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "display_name": "MiniMax H3 First-Last-Frame to Video",
+    "description": "Generate video from a first frame image and an optional last frame image using the MiniMax H3 model. The aspect ratio of the video follows the supplied images.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image for the video."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed. The same request with the same seed gives similar, but not guaranteed identical, results."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AIGC watermark to the video."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Optional last frame image for the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "display_name": "MiniMax H3 Reference to Video",
+    "description": "Generate video conditioned on reference images, videos, and audio using the MiniMax H3 model. Refer to the references in the prompt by their order: 'Image 1', 'Image 2', 'Video 1', 'Audio 1', and so on.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed. The same request with the same seed gives similar, but not guaranteed identical, results."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AIGC watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "display_name": "MiniMax H3 Text to Video",
+    "description": "Generate video from a text prompt using the MiniMax H3 model.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed. The same request with the same seed gives similar, but not guaranteed identical, results."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AIGC watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
-    "display_name": "MiniMax Hailuo Video",
-    "description": "Generates videos from prompt, with optional start frame using the new MiniMax Hailuo-02 model.",
+    "display_name": "MiniMax Hailuo 02 Video",
+    "description": "Generates videos from prompt, with optional start frame using the MiniMax Hailuo-02 model.",
     "inputs": {
       "prompt_text": {
         "name": "prompt_text",

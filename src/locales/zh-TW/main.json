@@ -3875,7 +3875,9 @@
       "endOfBillingPeriod": "帳單週期結束",
       "failed": "取消訂閱失敗",
       "keepSubscription": "保留訂閱",
-      "title": "取消訂閱"
+      "offerUnavailable": "此選項無法使用。請選擇其他選項。",
+      "title": "取消訂閱",
+      "workspaceChanged": "您的使用中工作區已變更。請切換回原本的工作區後再試一次。"
     },
     "cancelPlan": "取消方案",
     "cancelSuccess": "訂閱已成功取消",
@@ -4314,6 +4316,7 @@
     "fileTooLarge": "檔案過大（{size} MB）。最大支援大小為 {maxSize} MB",
     "fileUploadFailed": "檔案上傳失敗",
     "interrupted": "執行已被中斷",
+    "invalidBillingPortalUrl": "無效的入口網站網址",
     "invalidTemplateData": "載入節點範本失敗：資料無效",
     "legacyMaskEditorDeprecated": "舊版遮罩編輯器即將淘汰並很快移除。",
     "migrateToLitegraphReroute": "重導節點將於未來版本移除。點擊以遷移至 litegraph 原生重導。",

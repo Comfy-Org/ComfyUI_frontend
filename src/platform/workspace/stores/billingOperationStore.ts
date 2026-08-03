@@ -84,7 +84,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   const isAddingCredits = computed(() =>
     [...operations.value.values()].some(
-      (op) => op.status === 'pending' && op.type === 'topup'
+      (op) =>
+        op.status === 'pending' &&
+        op.type === 'topup' &&
+        op.workspaceId === workspaceStore.activeWorkspaceId
     )
   )
 

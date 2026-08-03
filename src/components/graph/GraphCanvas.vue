@@ -179,6 +179,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
+import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
@@ -559,9 +560,10 @@ onMounted(async () => {
     )
 
     // Restore saved workflow and workflow tabs state
-    await workflowPersistence.initializeWorkflow()
+    const startupOutcome = await workflowPersistence.initializeWorkflow()
     await workflowPersistence.restoreWorkflowTabsState()
     await workflowPersistence.loadTemplateFromUrlIfPresent()
+    await useFirstRunEntry().handleStartupOutcome(startupOutcome)
   } finally {
     workspaceStore.spinner = false
   }
