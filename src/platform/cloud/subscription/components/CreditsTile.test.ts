@@ -25,6 +25,7 @@ const state = vi.hoisted(() => ({
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   canTopUp: true,
+  type: 'workspace' as 'workspace' | 'legacy',
   fetchBalance: vi.fn(),
   fetchStatus: vi.fn(),
   showPricingTable: vi.fn(),
@@ -57,6 +58,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isFreeTier: computed(() => state.isFreeTier),
     currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     isLoading: computed(() => state.isLoading),
+    type: computed(() => state.type),
     fetchBalance: state.fetchBalance,
     fetchStatus: state.fetchStatus
   })
@@ -85,6 +87,13 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackAddApiCreditButtonClicked: state.trackAddApiCreditButtonClicked
   })
+}))
+
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
 const i18n = createI18n({
@@ -166,6 +175,8 @@ describe('CreditsTile', () => {
     state.currentTeamCreditStop = null
     state.isLoading = false
     state.canTopUp = true
+    state.type = 'workspace'
+    mockIsCloud.value = true
     vi.clearAllMocks()
   })
 
@@ -376,12 +387,29 @@ describe('CreditsTile', () => {
     expect(state.showPricingTable).toHaveBeenCalledOnce()
   })
 
-  it('hides the action button when the user lacks the top-up permission', () => {
+  it('keeps offering add-credits on the free tier for non-cloud distributions', () => {
+    mockIsCloud.value = false
+    activeProSubscription()
+    state.isFreeTier = true
+    renderTile()
+    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+  })
+
+  it('hides the action button when a team workspace member lacks the top-up permission', () => {
     activeProSubscription()
     state.canTopUp = false
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+  })
+
+  it('ignores the workspace top-up permission on legacy (personal) billing', () => {
+    activeProSubscription()
+    state.type = 'legacy'
+    state.canTopUp = false
+    renderTile()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 
   it('refreshes balance and status from the facade on mount and on demand', async () => {
