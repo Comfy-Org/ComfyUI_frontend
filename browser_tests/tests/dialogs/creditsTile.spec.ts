@@ -222,6 +222,9 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
       nav.getByRole('button', { name: 'Workspace', exact: true })
     ).toBeVisible()
     await expect(
+      nav.getByRole('button', { name: 'Credits', exact: true })
+    ).toHaveCount(0)
+    await expect(
       nav.getByRole('button', { name: 'Plan & Credits', exact: true })
     ).toHaveCount(0)
     await expect(

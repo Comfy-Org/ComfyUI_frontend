@@ -354,16 +354,9 @@ export function useSettingUI(
     translateCategory({
       key: 'workspace',
       label: 'Workspace',
-      children: [
-        ...visibleWorkspacePanels.value.map((panel) => panel.node),
-        // The legacy per-account Credits panel is redundant once the workspace
-        // Plan & Credits panel is present, which now owns the credit balance.
-        ...(!billingControlsEnabled.value &&
-        isLoggedIn.value &&
-        !(isCloud && window.__CONFIG__?.subscription_required)
-          ? [creditsPanel.node]
-          : [])
-      ].map(translateCategory)
+      children: visibleWorkspacePanels.value.map((panel) =>
+        translateCategory(panel.node)
+      )
     }),
     // General settings - Profile + all core settings + special panels
     translateCategory({
