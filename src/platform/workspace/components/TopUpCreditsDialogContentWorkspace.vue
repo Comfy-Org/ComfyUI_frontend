@@ -249,7 +249,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
@@ -339,6 +339,12 @@ const paymentLocked = computed(
     isPolling.value ||
     !!topupActionUrl.value
 )
+
+watch([isPolling, topupActionUrl], ([polling, actionUrl]) => {
+  if (step.value === 'verifying' && !polling && !actionUrl) {
+    step.value = 'amount'
+  }
+})
 
 // Utility functions
 function formatNumber(num: number): string {

@@ -21,9 +21,11 @@ const mockPermissions = vi.hoisted(() => ({
   ref: undefined as { value: { canTopUp: boolean } } | undefined
 }))
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
-const mockIsAddingCredits = vi.hoisted(() => ({ value: false }))
-const mockTopupActionOperation = vi.hoisted(() => ({
-  value: undefined as { actionUrl: string } | undefined
+const mockBillingOperationState = vi.hoisted(() => ({
+  isAddingCredits: undefined as { value: boolean } | undefined,
+  topupActionOperation: undefined as
+    | { value: { actionUrl: string } | undefined }
+    | undefined
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -34,18 +36,23 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    hasPendingOperations: true,
-    get isAddingCredits() {
-      return mockIsAddingCredits.value
-    },
-    get topupActionOperation() {
-      return mockTopupActionOperation.value
-    },
-    startOperation: mockStartOperation
-  })
-}))
+vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
+  const { ref } = await import('vue')
+  mockBillingOperationState.isAddingCredits = ref(false)
+  mockBillingOperationState.topupActionOperation = ref(undefined)
+  return {
+    useBillingOperationStore: () => ({
+      hasPendingOperations: true,
+      get isAddingCredits() {
+        return mockBillingOperationState.isAddingCredits?.value ?? false
+      },
+      get topupActionOperation() {
+        return mockBillingOperationState.topupActionOperation?.value
+      },
+      startOperation: mockStartOperation
+    })
+  }
+})
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
   const { ref } = await import('vue')
@@ -176,6 +183,20 @@ function setCanTopUp(canTopUp: boolean) {
   mockPermissions.ref.value = { canTopUp }
 }
 
+function setIsAddingCredits(isAddingCredits: boolean) {
+  if (!mockBillingOperationState.isAddingCredits) {
+    throw new Error('Billing operation mock not initialized')
+  }
+  mockBillingOperationState.isAddingCredits.value = isAddingCredits
+}
+
+function setTopupActionOperation(operation: { actionUrl: string } | undefined) {
+  if (!mockBillingOperationState.topupActionOperation) {
+    throw new Error('Billing operation mock not initialized')
+  }
+  mockBillingOperationState.topupActionOperation.value = operation
+}
+
 async function clickAddCredits() {
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Add credits' }))
@@ -186,12 +207,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     vi.clearAllMocks()
     setCanTopUp(true)
     mockShouldUseWorkspaceBilling.value = true
-    mockIsAddingCredits.value = false
-    mockTopupActionOperation.value = undefined
+    setIsAddingCredits(false)
+    setTopupActionOperation(undefined)
     mockFetchBalance.mockResolvedValue(undefined)
     mockFetchStatus.mockResolvedValue(undefined)
     mockStartOperation.mockImplementation(() => {
-      mockIsAddingCredits.value = true
+      setIsAddingCredits(true)
       return new Promise(() => {})
     })
   })
@@ -226,7 +247,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   it('reopens in verification without exposing the action URL', async () => {
     const actionUrl = 'https://verify.example/sensitive-token'
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
-    mockTopupActionOperation.value = { actionUrl }
+    setTopupActionOperation({ actionUrl })
 
     const { container } = renderDialog()
 
@@ -245,7 +266,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('reopens in verification while the action URL is loading', () => {
-    mockIsAddingCredits.value = true
+    setIsAddingCredits(true)
 
     renderDialog()
 
@@ -256,11 +277,24 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
   })
 
+  it('returns to amount selection when a reopened operation ends', async () => {
+    setIsAddingCredits(true)
+
+    renderDialog()
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+
+    setIsAddingCredits(false)
+    await nextTick()
+
+    expect(screen.getByText('Select amount')).toBeInTheDocument()
+    expect(screen.queryByText('Verify your payment')).not.toBeInTheDocument()
+  })
+
   it('hides topup verification after permission is revoked', () => {
     setCanTopUp(false)
-    mockTopupActionOperation.value = {
+    setTopupActionOperation({
       actionUrl: 'https://verify.example/sensitive-token'
-    }
+    })
 
     renderDialog()
 
