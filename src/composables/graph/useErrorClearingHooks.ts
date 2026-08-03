@@ -406,6 +406,12 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
 }
 
 function dropOutOfScopeMissingMedia(): void {
+  // Without a root graph every candidate reads as out of scope, so this would
+  // empty the store rather than no-op. LGraph.clear() also fires the removal
+  // lifecycle per node, which would re-validate the whole store once per node
+  // against a graph that is mid-teardown.
+  if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+
   const mediaStore = useMissingMediaStore()
   const candidates = mediaStore.missingMediaCandidates
   if (!candidates) return
