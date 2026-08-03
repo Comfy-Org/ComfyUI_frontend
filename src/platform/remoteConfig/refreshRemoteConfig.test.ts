@@ -220,6 +220,8 @@ describe('refreshRemoteConfig', () => {
 
       expect(remoteConfig.value).toEqual(existingConfig)
       expect(window.__CONFIG__).toEqual(existingConfig)
+      expect(remoteConfigState.value).toBe('error')
+      expect(remoteConfigErrorStatus.value).toBeNull()
     })
   })
 })

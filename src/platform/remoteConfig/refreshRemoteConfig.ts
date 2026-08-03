@@ -90,8 +90,10 @@ export async function refreshRemoteConfig(
       window.__CONFIG__ = {}
       remoteConfig.value = {}
       remoteConfigErrorStatus.value = response.status
-      remoteConfigState.value = 'error'
+    } else {
+      remoteConfigErrorStatus.value = null
     }
+    remoteConfigState.value = 'error'
   } catch (error) {
     if (generation !== refreshGeneration) return
     if (signal?.aborted) return

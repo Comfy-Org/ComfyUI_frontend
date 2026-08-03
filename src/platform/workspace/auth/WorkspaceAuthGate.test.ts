@@ -352,6 +352,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when authenticated config is unavailable', async () => {
+      mockTeamWorkspacesEnabled.value = true
       mockRemoteConfigState.value = 'error'
 
       mountComponent()
@@ -360,6 +361,7 @@ describe('WorkspaceAuthGate', () => {
       expect(
         screen.getByText("Couldn't load your workspace")
       ).toBeInTheDocument()
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
     })
 
     it('requires sign out when authenticated config rejects the credential', async () => {
