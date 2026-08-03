@@ -32,10 +32,6 @@ import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionEr
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => ({ workflow: { activeWorkflow: null } })
-}))
-
 beforeEach(() => {
   vi.restoreAllMocks()
 })

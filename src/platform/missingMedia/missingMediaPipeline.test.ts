@@ -14,6 +14,8 @@ import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
+// The real store reaches authStore -> firebase setPersistence, which has no
+// config under vitest. Mirrors missingModelPipeline.test.ts.
 vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ workflow: { activeWorkflow: null } })
 }))

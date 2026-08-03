@@ -90,6 +90,23 @@ export function deferMediaVerification() {
   return { verifySpy, resolveVerification }
 }
 
+/** A candidate addressed by node path, without laundering the id brand. */
+export function createMissingMediaCandidate(
+  nodePath: [number, ...number[]],
+  overrides: Partial<MissingMediaCandidate> = {}
+): MissingMediaCandidate {
+  const [first, ...rest] = nodePath.map(toNodeId)
+  return {
+    nodeId: createNodeExecutionId([first, ...rest]),
+    nodeType: promotedMediaNodeType,
+    widgetName: 'image',
+    mediaType: 'image',
+    name: 'missing.png',
+    isMissing: true,
+    ...overrides
+  }
+}
+
 export function createPromotedMissingMediaCandidate(
   host: LGraphNode
 ): MissingMediaCandidate {
