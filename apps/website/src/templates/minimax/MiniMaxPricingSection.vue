@@ -87,7 +87,7 @@ const planCards = computed(() =>
     </div>
 
     <div
-      class="mb-4 flex flex-col gap-4 rounded-3xl bg-[#29222F] px-8 py-6 sm:flex-row sm:items-center sm:justify-between"
+      class="bg-primary-comfy-ink-light mb-4 flex flex-col gap-4 rounded-3xl px-8 py-6 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>
         <p class="text-lg font-bold text-primary-comfy-canvas">

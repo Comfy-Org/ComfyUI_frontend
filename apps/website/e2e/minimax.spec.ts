@@ -107,16 +107,34 @@ test.describe('MiniMax H3 page — pricing section', () => {
   test('shows per-plan descriptions and cumulative feature groups', async ({
     page
   }) => {
-    const standardDescription = page.getByText(
-      t('minimax.pricing.plan.standard.description', 'en')
-    )
-    await standardDescription.scrollIntoViewIfNeeded()
-    await expect(standardDescription).toBeVisible()
+    const planCard = (label: string) =>
+      page
+        .locator('[class*="rounded-4.5xl"]')
+        .filter({ has: page.getByText(label, { exact: true }) })
+
+    const standardCard = planCard(t('pricing.plan.standard.label', 'en'))
+    const creatorCard = planCard(t('pricing.plan.creator.label', 'en'))
+    const proCard = planCard(t('pricing.plan.pro.label', 'en'))
+
+    await standardCard.scrollIntoViewIfNeeded()
     await expect(
-      page.getByText(t('minimax.pricing.everythingInStandard', 'en'))
+      standardCard.getByText(
+        t('minimax.pricing.plan.standard.description', 'en')
+      )
+    ).toBeVisible()
+
+    await expect(
+      creatorCard.getByText(t('minimax.pricing.plan.creator.description', 'en'))
     ).toBeVisible()
     await expect(
-      page.getByText(t('minimax.pricing.everythingInCreator', 'en'))
+      creatorCard.getByText(t('minimax.pricing.everythingInStandard', 'en'))
+    ).toBeVisible()
+
+    await expect(
+      proCard.getByText(t('minimax.pricing.plan.pro.description', 'en'))
+    ).toBeVisible()
+    await expect(
+      proCard.getByText(t('minimax.pricing.everythingInCreator', 'en'))
     ).toBeVisible()
   })
 })
