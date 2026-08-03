@@ -27,6 +27,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: { value: true },
     isFreeTier: { value: false },
+    tier: { value: 'STANDARD' },
     type: { value: 'legacy' }
   })
 }))
