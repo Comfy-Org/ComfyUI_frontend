@@ -3,41 +3,42 @@ import { describe, expect, it } from 'vitest'
 import { deriveUserState } from './useUserState'
 
 describe('deriveUserState', () => {
-  it('is Local off Cloud regardless of subscription state', () => {
+  it.for<[string, boolean]>([
+    ['LocalAndUnsubscribed', false],
+    ['CloudAndUnsubscribed', true]
+  ])('maps no active subscription to %s (isCloud=%s)', ([kind, isCloud]) => {
     expect(
-      deriveUserState({
-        isCloud: false,
-        isActiveSubscription: true,
-        tier: 'PRO'
-      })
-    ).toEqual({ kind: 'Local' })
-  })
-
-  it('is CloudUnsubscribed on Cloud with no active subscription', () => {
-    expect(
-      deriveUserState({
-        isCloud: true,
-        isActiveSubscription: false,
-        tier: null
-      })
-    ).toEqual({ kind: 'CloudUnsubscribed' })
-  })
-
-  it.for<[Parameters<typeof deriveUserState>[0]['tier'], string]>([
-    ['FREE', 'CloudFree'],
-    ['STANDARD', 'CloudStandard'],
-    ['CREATOR', 'CloudCreator'],
-    ['PRO', 'CloudPro'],
-    ['FOUNDERS_EDITION', 'CloudFounders']
-  ])('maps active Cloud subscription tier %s to %s', ([tier, kind]) => {
-    expect(
-      deriveUserState({ isCloud: true, isActiveSubscription: true, tier })
+      deriveUserState({ isCloud, isActiveSubscription: false, tier: null })
     ).toEqual({ kind })
   })
 
-  it('treats an active Cloud subscription with no resolved tier yet as CloudFree', () => {
-    expect(
-      deriveUserState({ isCloud: true, isActiveSubscription: true, tier: null })
-    ).toEqual({ kind: 'CloudFree' })
-  })
+  it.for<[Parameters<typeof deriveUserState>[0]['tier'], string, string]>([
+    ['FREE', 'LocalAndFree', 'CloudAndFree'],
+    ['STANDARD', 'LocalAndStandard', 'CloudAndStandard'],
+    ['CREATOR', 'LocalAndCreator', 'CloudAndCreator'],
+    ['PRO', 'LocalAndPro', 'CloudAndPro'],
+    ['FOUNDERS_EDITION', 'LocalAndFounders', 'CloudAndFounders']
+  ])(
+    'maps an active subscription tier %s to %s off Cloud and %s on Cloud',
+    ([tier, localKind, cloudKind]) => {
+      expect(
+        deriveUserState({ isCloud: false, isActiveSubscription: true, tier })
+      ).toEqual({ kind: localKind })
+      expect(
+        deriveUserState({ isCloud: true, isActiveSubscription: true, tier })
+      ).toEqual({ kind: cloudKind })
+    }
+  )
+
+  it.for<[string, boolean]>([
+    ['LocalAndFree', false],
+    ['CloudAndFree', true]
+  ])(
+    'treats an active subscription with no resolved tier yet as %s (isCloud=%s)',
+    ([kind, isCloud]) => {
+      expect(
+        deriveUserState({ isCloud, isActiveSubscription: true, tier: null })
+      ).toEqual({ kind })
+    }
+  )
 })

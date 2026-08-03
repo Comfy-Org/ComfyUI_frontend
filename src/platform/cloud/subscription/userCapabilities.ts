@@ -15,19 +15,29 @@ export interface UserCapabilities {
  */
 export function getUserCapabilities(state: UserState): UserCapabilities {
   switch (state.kind) {
-    case 'Local':
+    case 'LocalAndUnsubscribed':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
-    case 'CloudUnsubscribed':
+    case 'LocalAndFree':
+      return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
+    case 'LocalAndStandard':
+      return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
+    case 'LocalAndCreator':
+      return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
+    case 'LocalAndPro':
+      return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
+    case 'LocalAndFounders':
+      return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
+    case 'CloudAndUnsubscribed':
       return { canTopUpCredits: false, showsSubscribeUpsellUI: true }
-    case 'CloudFree':
+    case 'CloudAndFree':
       return { canTopUpCredits: false, showsSubscribeUpsellUI: true }
-    case 'CloudStandard':
+    case 'CloudAndStandard':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
-    case 'CloudCreator':
+    case 'CloudAndCreator':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
-    case 'CloudPro':
+    case 'CloudAndPro':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
-    case 'CloudFounders':
+    case 'CloudAndFounders':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
   }
 }
