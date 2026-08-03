@@ -2558,6 +2558,9 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
+      "chargedImmediatelyNote": "Your saved card is charged immediately.",
+      "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
+      "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
       "usdAmount": "${amount}",
       "videosEstimate": "~{count} videos*",
@@ -2566,7 +2569,10 @@
       "purchaseSuccess": "Credits added successfully!",
       "purchaseError": "Purchase Failed",
       "purchaseErrorDetail": "Failed to purchase credits: {error}",
+      "payAmount": "Pay {amount}",
       "unknownError": "An unknown error occurred",
+      "verifyBody": "Your bank requires additional verification to complete this payment.",
+      "verifyTitle": "Verify your payment",
       "viewPricing": "View pricing details",
       "youPay": "Amount (USD)",
       "youGet": "Credits",
@@ -2641,6 +2647,7 @@
     "endsOnDate": "Ends on {date}",
     "changesToPlanOnDate": "Changes to {plan} on {date}",
     "manageSubscription": "Manage subscription",
+    "billingAndInvoices": "Billing & invoices",
     "manageBilling": "Manage billing",
     "changePlan": "Change plan",
     "cancelPlan": "Cancel plan",
@@ -2725,6 +2732,10 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
+    "inactiveTeamTitle": "Inactive team subscription",
+    "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
+    "inactiveTeamPlanIncludes": "An active plan features everything in {plan}, plus:",
+    "reactivateToUseCredits": "Reactivate your plan to use these credits",
     "teamPerks": {
       "inviteMembers": "Invite members",
       "concurrentRuns": "Members can run workflows concurrently",
@@ -4749,6 +4760,26 @@
     "training": "Training…",
     "processingVideo": "Processing video…",
     "running": "Running…"
+  },
+  "gettingStarted": {
+    "title": "Let's make something",
+    "subtitle": "Pick a ready-made workflow to start from, or begin with a blank canvas.",
+    "tabsLabel": "Getting started options",
+    "startBlank": "Start with a blank canvas",
+    "retry": "Try again",
+    "loadFailed": "We couldn't load the templates.",
+    "templateFailed": "We couldn't open this template.",
+    "retryTemplate": "Retry {title}",
+    "tabs": {
+      "templates": "Templates",
+      "tutorials": "Tutorials"
+    },
+    "tutorials": {
+      "interfaceOverview": "Interface overview",
+      "textToImage": "Text to image",
+      "imageToImage": "Image to image",
+      "inpaint": "Inpainting"
+    }
   },
   "onboardingCoachmarks": {
     "stepLabel": "Step {current} of {total}",

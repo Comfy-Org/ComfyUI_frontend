@@ -847,10 +847,12 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(store.topupActionOperation?.actionUrl).toBe(actionUrl)
+      expect(store.isAddingCredits).toBe(true)
 
       mockActiveWorkspaceId.value = 'workspace-2'
 
       expect(store.topupActionOperation).toBeUndefined()
+      expect(store.isAddingCredits).toBe(false)
     })
 
     it('only exposes subscription actions for the active workspace', async () => {

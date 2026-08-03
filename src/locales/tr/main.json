@@ -3875,7 +3875,9 @@
       "endOfBillingPeriod": "fatura dönemi sonu",
       "failed": "Abonelik iptali başarısız oldu",
       "keepSubscription": "Aboneliği sürdür",
-      "title": "Aboneliği iptal et"
+      "offerUnavailable": "Bu seçenek mevcut değil. Lütfen başka bir seçenek seçin.",
+      "title": "Aboneliği iptal et",
+      "workspaceChanged": "Aktif çalışma alanınız değişti. Geri dönüp tekrar deneyin."
     },
     "cancelPlan": "Planı iptal et",
     "cancelSuccess": "Abonelik başarıyla iptal edildi",
@@ -4314,6 +4316,7 @@
     "fileTooLarge": "Dosya çok büyük ({size} MB). Desteklenen maksimum boyut {maxSize} MB",
     "fileUploadFailed": "Dosya yükleme başarısız oldu",
     "interrupted": "Yürütme kesintiye uğradı",
+    "invalidBillingPortalUrl": "Geçersiz portal URL'si",
     "invalidTemplateData": "Düğüm şablonu yüklenemedi: geçersiz veri",
     "legacyMaskEditorDeprecated": "Klasik maske düzenleyici kullanımdan kaldırıldı ve yakında kaldırılacak.",
     "migrateToLitegraphReroute": "Yeniden yönlendirme düğümleri gelecekteki sürümlerde kaldırılacaktır. Litegraph yerel yeniden yönlendirmeye geçmek için tıklayın.",

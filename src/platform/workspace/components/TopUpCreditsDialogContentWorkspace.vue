@@ -1,16 +1,32 @@
 <template>
   <div
-    class="flex min-w-[460px] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="flex min-h-[500px] w-[min(512px,95vw)] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- Header -->
     <div class="flex items-center justify-between p-8">
-      <h2 class="m-0 text-lg font-bold text-base-foreground">
-        {{
-          isInsufficientCredits
-            ? $t('credits.topUp.addMoreCreditsToRun')
-            : $t('credits.topUp.addMoreCredits')
-        }}
-      </h2>
+      <div class="flex items-center gap-2">
+        <button
+          v-if="step === 'confirm'"
+          class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground disabled:pointer-events-none disabled:opacity-40"
+          :disabled="paymentLocked"
+          :aria-label="$t('g.back')"
+          @click="step = 'amount'"
+        >
+          <i class="icon-[lucide--arrow-left] size-5" />
+        </button>
+        <h2
+          v-if="step !== 'verifying'"
+          class="m-0 text-base font-bold text-base-foreground"
+        >
+          {{
+            step === 'confirm'
+              ? $t('credits.topUp.confirmTitle')
+              : isInsufficientCredits
+                ? $t('credits.topUp.addMoreCreditsToRun')
+                : $t('credits.topUp.addMoreCredits')
+          }}
+        </h2>
+      </div>
       <button
         class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
@@ -20,14 +36,59 @@
       </button>
     </div>
     <p
-      v-if="isInsufficientCredits"
+      v-if="isInsufficientCredits && step === 'amount'"
       class="m-0 px-8 text-sm text-muted-foreground"
     >
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
 
+    <template v-if="step === 'confirm'">
+      <p class="m-0 px-8 text-sm text-muted-foreground">
+        {{ $t('credits.topUp.confirmSubtitle') }}
+      </p>
+      <div class="flex flex-col gap-3 px-8 pt-6">
+        <span
+          class="flex items-center gap-2 py-2 text-2xl font-semibold text-base-foreground tabular-nums"
+        >
+          <i class="icon-[lucide--component] size-5 text-gold-500" />
+          {{ formatNumber(creditsModel) }}
+        </span>
+        <div
+          class="flex items-center justify-between border-t border-border-default pt-4"
+        >
+          <span class="text-base font-semibold text-base-foreground">
+            {{ $t('subscription.preview.totalDueToday') }}
+          </span>
+          <span
+            class="text-base font-semibold text-base-foreground tabular-nums"
+          >
+            {{ displayTotal }}
+          </span>
+        </div>
+        <p class="m-0 text-xs text-muted-foreground">
+          {{ $t('credits.topUp.chargedImmediatelyNote') }}
+        </p>
+      </div>
+    </template>
+
+    <template v-if="step === 'verifying'">
+      <div class="flex flex-col items-center gap-3 px-8 text-center">
+        <i
+          class="icon-[lucide--shield-alert] size-10 text-warning-background"
+        />
+        <h2
+          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        >
+          {{ $t('credits.topUp.verifyTitle') }}
+        </h2>
+        <p class="m-0 text-sm text-balance text-muted-foreground">
+          {{ $t('credits.topUp.verifyBody') }}
+        </p>
+      </div>
+    </template>
+
     <!-- Preset amount buttons -->
-    <div class="px-8">
+    <div v-if="step === 'amount'" class="px-8">
       <h3 class="m-0 text-sm font-normal text-muted-foreground">
         {{ $t('credits.topUp.selectAmount') }}
       </h3>
@@ -51,7 +112,7 @@
       </div>
     </div>
     <!-- Amount (USD) / Credits -->
-    <div class="flex gap-2 px-8 pt-8">
+    <div v-if="step === 'amount'" class="flex gap-2 px-8 pt-8">
       <!-- You Pay -->
       <div class="flex flex-1 flex-col gap-3" data-testid="top-up-pay-amount">
         <div class="text-sm text-muted-foreground">
@@ -95,7 +156,7 @@
     <!-- Warnings -->
 
     <p
-      v-if="isBelowMin"
+      v-if="isBelowMin && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
     >
       <i class="icon-[lucide--component] size-4" />
@@ -106,7 +167,7 @@
       }}
     </p>
     <p
-      v-if="showCeilingWarning"
+      v-if="showCeilingWarning && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
     >
       <i class="icon-[lucide--component] size-4" />
@@ -124,10 +185,23 @@
       >
     </p>
 
-    <div class="flex flex-col gap-8 p-8">
-      <div class="flex flex-col gap-2">
+    <div class="mt-auto flex flex-col gap-8 p-8">
+      <div v-if="step === 'verifying'">
         <Button
-          v-if="topupActionUrl && permissions.canTopUp"
+          variant="primary"
+          size="lg"
+          class="h-10 w-full justify-center"
+          :disabled="!topupActionUrl || !permissions.canTopUp"
+          :loading="!topupActionUrl"
+          :aria-label="$t('subscription.preview.completeVerification')"
+          @click="openTopupVerification"
+        >
+          {{ $t('subscription.preview.completeVerification') }}
+        </Button>
+      </div>
+      <div v-else class="flex flex-col gap-2">
+        <Button
+          v-if="step === 'confirm' && topupActionUrl && permissions.canTopUp"
           variant="primary"
           size="lg"
           class="h-10 justify-center"
@@ -136,17 +210,30 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
-          :disabled="!isValidAmount || loading || isPolling"
-          :loading="loading || isPolling"
-          :variant="topupActionUrl ? 'tertiary' : 'primary'"
+          :disabled="
+            !isValidAmount ||
+            paymentLocked ||
+            (shouldUseWorkspaceBilling && !permissions.canTopUp)
+          "
+          :loading="paymentLocked"
+          :variant="
+            step === 'confirm' && topupActionUrl ? 'tertiary' : 'primary'
+          "
           size="lg"
-          class="h-10 justify-center"
-          @click="handleBuy"
+          class="h-10 justify-center tabular-nums"
+          @click="handlePrimaryAction"
         >
-          {{ $t('subscription.addCredits') }}
+          {{
+            step === 'confirm'
+              ? $t('credits.topUp.payAmount', { amount: displayTotal })
+              : $t('subscription.addCredits')
+          }}
         </Button>
       </div>
-      <div class="flex items-center justify-center gap-1">
+      <div
+        v-if="step === 'amount'"
+        class="flex items-center justify-center gap-1"
+      >
         <a
           :href="pricingUrl"
           target="_blank"
@@ -162,7 +249,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
@@ -184,7 +271,7 @@ const { isInsufficientCredits = false } = defineProps<{
   isInsufficientCredits?: boolean
 }>()
 
-const { t } = useI18n()
+const { n, t } = useI18n()
 const dialogStore = useDialogStore()
 const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
@@ -210,6 +297,13 @@ const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
 const showCeilingWarning = ref(false)
 const loading = ref(false)
+const paymentSubmitted = ref(false)
+const step = ref<'amount' | 'confirm' | 'verifying'>(
+  (billingOperationStore.topupActionOperation?.actionUrl || isPolling.value) &&
+    permissions.value.canTopUp
+    ? 'verifying'
+    : 'amount'
+)
 
 // Computed
 const pricingUrl = computed(() =>
@@ -229,6 +323,29 @@ const isValidAmount = computed(
 )
 
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
+
+const displayTotal = computed(() =>
+  n(payAmount.value, {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+)
+
+const paymentLocked = computed(
+  () =>
+    loading.value ||
+    paymentSubmitted.value ||
+    isPolling.value ||
+    !!topupActionUrl.value
+)
+
+watch([isPolling, topupActionUrl], ([polling, actionUrl]) => {
+  if (step.value === 'verifying' && !polling && !actionUrl) {
+    step.value = 'amount'
+  }
+})
 
 // Utility functions
 function formatNumber(num: number): string {
@@ -260,6 +377,14 @@ function handlePresetClick(amount: number) {
   selectedPreset.value = amount
 }
 
+function handlePrimaryAction() {
+  if (step.value === 'amount') {
+    step.value = 'confirm'
+    return
+  }
+  void handleBuy()
+}
+
 function openTopupVerification() {
   if (!topupActionUrl.value) return
   window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
@@ -274,7 +399,7 @@ function handleClose(clearTracking = true) {
 
 async function handleBuy() {
   if (
-    loading.value ||
+    paymentLocked.value ||
     !isValidAmount.value ||
     (shouldUseWorkspaceBilling.value && !permissions.value.canTopUp)
   ) {
@@ -282,6 +407,7 @@ async function handleBuy() {
   }
 
   loading.value = true
+  paymentSubmitted.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
     telemetry?.trackBillingEvent({
@@ -293,6 +419,7 @@ async function handleBuy() {
     const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
     if (!response) {
+      paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',
@@ -318,9 +445,17 @@ async function handleBuy() {
       handleClose(false)
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
-      billingOperationStore.startOperation(response.billing_op_id, 'topup')
+      void billingOperationStore
+        .startOperation(response.billing_op_id, 'topup')
+        .then(() => {
+          paymentSubmitted.value = false
+        })
+        .catch(() => {
+          reportPurchaseError(response.billing_op_id)
+        })
     } else {
       // Synchronous 'failed' here means the charge was declined, not rejected pre-attempt.
+      paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',
@@ -335,23 +470,31 @@ async function handleBuy() {
       })
     }
   } catch (error) {
-    console.error('Purchase failed:', error)
-
-    const errorMessage =
-      error instanceof Error ? error.message : t('credits.topUp.unknownError')
-    telemetry?.trackBillingEvent({
-      operation: 'topup',
-      stage: 'failed',
-      outcome: 'failure',
-      failure_category: categorizeBillingApiError(error)
-    })
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.purchaseError'),
-      detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage })
-    })
+    reportPurchaseError(undefined, error)
   } finally {
     loading.value = false
   }
+}
+
+function reportPurchaseError(billingOpId?: string, error?: unknown) {
+  paymentSubmitted.value = false
+  console.error('Purchase failed', ...(error === undefined ? [] : [error]))
+
+  telemetry?.trackBillingEvent({
+    operation: 'topup',
+    stage: 'failed',
+    outcome: 'failure',
+    ...(billingOpId ? { billing_op_id: billingOpId } : {}),
+    failure_category:
+      error === undefined ? 'unknown' : categorizeBillingApiError(error)
+  })
+  toast.add({
+    severity: 'error',
+    summary: t('credits.topUp.purchaseError'),
+    detail: t('credits.topUp.purchaseErrorDetail', {
+      error:
+        error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    })
+  })
 }
 </script>

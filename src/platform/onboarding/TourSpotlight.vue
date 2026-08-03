@@ -1,31 +1,75 @@
 <template>
   <div ref="overlayRef" class="pointer-events-none fixed inset-0">
+    <svg
+      v-if="useMaskScrim"
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 size-full"
+    >
+      <mask :id="maskId">
+        <rect width="100%" height="100%" fill="white" />
+        <rect
+          v-if="scrimHole"
+          data-testid="coach-mask-hole"
+          v-bind="scrimHole"
+          rx="12"
+          fill="black"
+          :class="
+            !targetMoves &&
+            'motion-safe:transition-[x,y,width,height] motion-safe:duration-300'
+          "
+        />
+      </mask>
+      <rect
+        width="100%"
+        height="100%"
+        class="fill-coach-scrim"
+        :mask="`url(#${maskId})`"
+      />
+      <path
+        v-if="step.interactive"
+        data-testid="coach-hit-region"
+        :d="hitRegion"
+        fill="transparent"
+        fill-rule="evenodd"
+        class="pointer-events-auto"
+      />
+    </svg>
     <div
+      v-if="!step.interactive"
+      data-testid="coach-blocker"
       :class="
         cn(
           'pointer-events-auto absolute inset-0',
-          !targetRect && 'bg-coach-scrim'
+          !useMaskScrim && !targetRect && 'bg-coach-scrim'
         )
       "
     />
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      class="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
+      :class="
+        cn(
+          'pointer-events-none absolute rounded-xl outline-2 outline-coach-ring',
+          !targetMoves &&
+            'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
+          !useMaskScrim && 'shadow-[0_0_0_9999px_var(--color-coach-scrim)]'
+        )
+      "
       :style="spotlightStyle"
     />
     <FocusScope
       as-child
-      :trapped="!waitingForTarget"
+      :trapped="!waitingForTarget && !step.interactive"
       loop
       @mount-auto-focus.prevent
     >
       <div
         ref="cardRef"
         role="dialog"
-        aria-modal="true"
+        :aria-modal="!step.interactive"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
+        tabindex="-1"
         class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
         :style="cardStyle"
       >
@@ -41,11 +85,11 @@
           :title-id="titleId"
           :message="body"
           :message-id="bodyId"
-          :image="step.image"
         >
           <template #actions>
             <Button
               v-if="showSkip"
+              ref="skipButton"
               variant="textonly"
               size="md"
               @click="emit('skip')"
@@ -106,9 +150,11 @@ import {
   SPOTLIGHT_PAD,
   VIEWPORT_MARGIN,
   clampSpotlight,
+  clampSpotlightRect,
+  hitRegionPath,
   noTargetCardLeft
 } from './coachmarkLayout'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
 
 const {
@@ -124,7 +170,7 @@ const {
   countedStepsTotal,
   waitingForTarget
 } = defineProps<{
-  step: CoachStep
+  step: SpotlightStep
   title: string
   body: string
   isLast: boolean
@@ -152,7 +198,7 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const { targetRect, targetEl, floatingStyles, isPositioned } =
+const { targetRect, targetMoves, floatingStyles, isPositioned } =
   useCoachmarkTarget(() => step, cardRef)
 
 // Last step's "Done" already dismisses, so hide Skip there.
@@ -160,10 +206,13 @@ const showSkip = computed(() => !isLast)
 
 const primaryButton =
   useTemplateRef<InstanceType<typeof Button>>('primaryButton')
+const skipButton = useTemplateRef<InstanceType<typeof Button>>('skipButton')
 
 async function focusPrimary() {
   await nextTick()
-  const el = primaryButton.value?.$el as HTMLElement | undefined
+  const el = (primaryButton.value?.$el ??
+    skipButton.value?.$el ??
+    cardRef.value) as HTMLElement | undefined
   el?.focus()
 }
 
@@ -217,10 +266,22 @@ const spotlightStyle = computed(() => {
   return { ...clampSpotlight(r, SPOTLIGHT_PAD, viewport()), opacity: '1' }
 })
 
+const maskId = useId()
+
+const useMaskScrim = computed(() => !!step.interactive)
+
+const scrimHole = computed(() =>
+  targetRect.value
+    ? clampSpotlightRect(targetRect.value, SPOTLIGHT_PAD, viewport())
+    : null
+)
+
+const hitRegion = computed(() => hitRegionPath(viewport(), scrimHole.value))
+
 const cardStyle = computed(() => {
   const width = `${CARD_WIDTH}px`
   const maxWidth = `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`
-  if (!targetEl.value) {
+  if (!targetRect.value) {
     return {
       width,
       maxWidth,
