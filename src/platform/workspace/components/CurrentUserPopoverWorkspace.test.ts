@@ -266,7 +266,7 @@ describe('CurrentUserPopoverWorkspace', () => {
   it('labels the plan & credits item for the panel it opens off cloud', async () => {
     const user = userEvent.setup()
     state.canManageSubscription = true
-    renderComponent('personal', 'owner')
+    const { emitted } = renderComponent('personal', 'owner')
 
     const menuItem = screen.getByTestId('manage-plan-menu-item')
     expect(menuItem).toHaveTextContent(enMessages.credits.credits)
@@ -275,13 +275,14 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(menuItem)
 
     expect(state.showSettingsDialog).toHaveBeenCalledWith('credits')
+    expect(emitted('close')).toHaveLength(1)
   })
 
   it('offers plan management pointing at the workspace panel on cloud', async () => {
     const user = userEvent.setup()
     mockIsCloud.value = true
     state.canManageSubscription = true
-    renderComponent('team', 'owner')
+    const { emitted } = renderComponent('team', 'owner')
 
     const menuItem = screen.getByTestId('manage-plan-menu-item')
     expect(menuItem).toHaveTextContent(enMessages.subscription.managePlan)
@@ -289,5 +290,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(menuItem)
 
     expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
+    expect(emitted('close')).toHaveLength(1)
   })
 })

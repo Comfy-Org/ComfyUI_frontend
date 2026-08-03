@@ -510,7 +510,7 @@ describe('CurrentUserPopoverLegacy', () => {
     })
 
     it('labels the plan & credits item for the credits panel it opens, since no plan management exists here', async () => {
-      const { user } = renderComponent()
+      const { user, onClose } = renderComponent()
 
       const menuItem = screen.getByTestId('manage-plan-menu-item')
       expect(menuItem).toHaveTextContent(enMessages.credits.credits)
@@ -519,6 +519,7 @@ describe('CurrentUserPopoverLegacy', () => {
       await user.click(menuItem)
 
       expect(mockShowSettingsDialog).toHaveBeenCalledWith('credits')
+      expect(onClose).toHaveBeenCalledTimes(1)
     })
 
     it('still shows user settings menu item', () => {
