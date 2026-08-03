@@ -158,6 +158,21 @@ export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
     localStorage.setItem(key, JSON.stringify(record))
   }, user)
   await bypassOnboardingSurvey(page)
+  await stubUnservedBootEndpoints(page)
+}
+
+// testcloud does not serve /api/global_subgraphs (permanent 502, 79/79 in gate
+// run 30719735171); its boot-time console error trips expectNoVisibleErrors on
+// unrelated packs. Stub the empty result the real backend would return - a
+// cloud-backend gap, not a pack surface. object_info and node data stay real.
+async function stubUnservedBootEndpoints(page: Page): Promise<void> {
+  await page.route('**/api/global_subgraphs', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({})
+    })
+  )
 }
 
 async function bypassOnboardingSurvey(page: Page): Promise<void> {

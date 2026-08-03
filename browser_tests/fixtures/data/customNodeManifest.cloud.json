@@ -996,6 +996,7 @@
     {
       "pack": "comfyui-impact-pack",
       "deployRef": "comfyui-impact-pack@8.28.2",
+      "cannotRunAlone": ["ImpactMakeImageBatch"],
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["AddMask", "AnyPipeToBasic"],
