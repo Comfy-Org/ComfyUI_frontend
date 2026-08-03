@@ -7,7 +7,7 @@
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { createPromotionErrorReconciler } from '@/composables/graph/usePromotionErrorReconciler'
+import { createPromotionErrorReconciler } from '@/core/graph/subgraph/createPromotionErrorReconciler'
 import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
