@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
@@ -187,23 +188,26 @@ export const DowngradeCadenceMonthly: Story = transitionStory({
 
 /** Success — "You're all set". */
 export const SuccessAllSet: Story = {
-  render: () => ({
-    components: { SubscriptionSuccessWorkspace },
-    data: () => ({
-      previewData: {
-        allowed: true,
-        transition_type: 'new_subscription',
-        effective_at: TODAY,
-        is_immediate: true,
-        cost_today_cents: 33_600,
-        cost_next_period_cents: 33_600,
-        credits_today_cents: 0,
-        credits_next_period_cents: 0,
-        new_plan: creatorAnnual
-      } satisfies PreviewSubscribeResponse
-    }),
-    template: `${shell}<SubscriptionSuccessWorkspace tier-key="creator" :preview-data="previewData" /></div>`
-  })
+  render: () => {
+    setBillingContextMock({})
+    return {
+      components: { SubscriptionSuccessWorkspace },
+      data: () => ({
+        previewData: {
+          allowed: true,
+          transition_type: 'new_subscription',
+          effective_at: TODAY,
+          is_immediate: true,
+          cost_today_cents: 33_600,
+          cost_next_period_cents: 33_600,
+          credits_today_cents: 0,
+          credits_next_period_cents: 0,
+          new_plan: creatorAnnual
+        } satisfies PreviewSubscribeResponse
+      }),
+      template: `${shell}<SubscriptionSuccessWorkspace tier-key="creator" :preview-data="previewData" /></div>`
+    }
+  }
 }
 
 /**
@@ -211,11 +215,14 @@ export const SuccessAllSet: Story = {
  * (FE-965 / DES-394). Team-only: gated on a team plan + teamWorkspacesEnabled.
  */
 export const TeamSuccessWithInvite: Story = {
-  render: () => ({
-    components: { SubscriptionSuccessWorkspace },
-    data: () => ({
-      teamPlan: { usd: 700, credits: 147_700, discountedUsd: 630 }
-    }),
-    template: `${shell}<SubscriptionSuccessWorkspace :team-plan="teamPlan" /></div>`
-  })
+  render: () => {
+    setBillingContextMock({ maxSeats: 30, occupiedSeats: 4 })
+    return {
+      components: { SubscriptionSuccessWorkspace },
+      data: () => ({
+        teamPlan: { usd: 700, credits: 147_700, discountedUsd: 630 }
+      }),
+      template: `${shell}<SubscriptionSuccessWorkspace :team-plan="teamPlan" /></div>`
+    }
+  }
 }

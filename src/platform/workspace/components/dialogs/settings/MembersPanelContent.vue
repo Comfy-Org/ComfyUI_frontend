@@ -153,7 +153,7 @@
         <div class="min-h-0 flex-1 overflow-y-auto">
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <template v-if="isInPersonalWorkspace && !hasMemberSeats">
+            <template v-if="isInPersonalWorkspace && maxSeats === 1">
               <MemberListItem
                 :member="personalWorkspaceMember"
                 :is-current-user="true"
@@ -201,7 +201,7 @@
     <MemberUpsellBanner
       v-if="
         !isPlanLoading &&
-        ((isInPersonalWorkspace && !hasMemberSeats) || isCancelled) &&
+        ((isInPersonalWorkspace && maxSeats === 1) || isCancelled) &&
         permissions.canManageSubscription
       "
       :reactivate="hasLapsedTeamPlan"

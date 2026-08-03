@@ -189,13 +189,13 @@ describe('SubscriptionSuccessWorkspace', () => {
     mockMaxSeats.value = 1
     renderCard()
     expect(screen.queryByText('subscription.success.inviteTitle')).toBeNull()
-    expect(screen.queryByTestId('invite-form')).toBeNull()
+    expect(screen.queryByText(/^seats:/)).toBeNull()
   })
 
   it('renders the invite block for a multi-seat personal upgrade', () => {
     mockMaxSeats.value = 5
     renderCard()
-    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:4')
+    expect(screen.getByText('seats:4', { exact: false })).toBeTruthy()
   })
 
   it('hides the invite block when team workspaces are disabled', () => {

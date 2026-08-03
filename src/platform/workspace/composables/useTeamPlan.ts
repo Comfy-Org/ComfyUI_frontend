@@ -28,6 +28,7 @@ export function useTeamPlan() {
   const isPlanLoading = computed(() => !isInitialized.value)
 
   return {
+    maxSeats,
     hasTeamPlan: isTeamPlan,
     isOnTeamPlan,
     isCancelled,

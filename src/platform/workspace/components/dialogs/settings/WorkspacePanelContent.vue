@@ -86,7 +86,7 @@ const { workspaceName, isInPersonalWorkspace, members } =
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 
 const { workspaceRole } = useWorkspaceUI()
-const { hasMemberSeats, isPlanLoading } = useTeamPlan()
+const { maxSeats, hasMemberSeats, isPlanLoading } = useTeamPlan()
 const activeTab = ref(defaultTab)
 
 const showMembersTabCount = computed(
@@ -95,7 +95,7 @@ const showMembersTabCount = computed(
 
 whenever(
   () =>
-    (!isInPersonalWorkspace.value || hasMemberSeats.value) &&
+    (!isInPersonalWorkspace.value || maxSeats.value !== 1) &&
     !isPlanLoading.value,
   () => Promise.allSettled([fetchMembers(), fetchPendingInvites()]),
   { immediate: true }

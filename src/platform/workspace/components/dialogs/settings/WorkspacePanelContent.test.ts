@@ -26,6 +26,7 @@ const { mockMaxSeats, mockIsPlanLoading, mockMembers, mockWorkspaceType } =
 
 vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
   useTeamPlan: () => ({
+    maxSeats: mockMaxSeats,
     hasMemberSeats: computed(
       () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
     ),
@@ -210,6 +211,14 @@ describe('WorkspacePanelContent members tab label', () => {
 
   it('fetches team member data while seat capacity is unresolved', () => {
     mockWorkspaceType.value = 'team'
+    mockMaxSeats.value = null
+    renderComponent()
+    expect(mockFetchMembers).toHaveBeenCalled()
+    expect(mockFetchPendingInvites).toHaveBeenCalled()
+  })
+
+  it('fetches personal member data while seat capacity is unresolved', () => {
+    mockWorkspaceType.value = 'personal'
     mockMaxSeats.value = null
     renderComponent()
     expect(mockFetchMembers).toHaveBeenCalled()

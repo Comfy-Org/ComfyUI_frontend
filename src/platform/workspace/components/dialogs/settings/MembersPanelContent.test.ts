@@ -503,6 +503,17 @@ describe('MembersPanelContent', () => {
     })
   })
 
+  it('renders fetched personal members while seat capacity is unresolved', () => {
+    mockIsInPersonalWorkspace.value = true
+    mockMaxSeats.value = null
+    mockFilteredMembers.value = [createMember({ name: 'Alice' })]
+
+    renderComponent()
+
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.queryByText('workspacePanel.members.upsellBanner')).toBeNull()
+  })
+
   describe('not on team plan', () => {
     beforeEach(() => {
       mockMaxSeats.value = 1
