@@ -1,0 +1,113 @@
+name: Enforce Greatest-Semver-Wins Latest Release
+
+# Keeps GitHub's "latest release" flag pinned to the highest stable semver
+# tag, so `--front-end-version latest` (ComfyUI's FrontEndProvider.latest_release,
+# which calls GET /repos/{owner}/{repo}/releases/latest) can never resolve to
+# an older release than what's already shipped.
+#
+# Triggers:
+#  - release published/edited/unpublished/deleted: catches both the automated
+#    release-draft-create.yaml flow and manual `gh release edit` / GitHub UI
+#    edits (e.g. a hotfix release where someone forgot to uncheck "Set as the
+#    latest release").
+#  - schedule: a low-frequency backstop in case a release webhook is delayed,
+#    dropped, or "latest" drifts some other way.
+#  - workflow_dispatch: manual "fix it now" button.
+#
+# Note: edits made with the workflow's own GITHUB_TOKEN do not re-trigger
+# `release` events (GitHub's built-in loop prevention), so a correction here
+# will not cause a recursive run.
+
+on:
+  release:
+    types: [published, edited, unpublished, deleted]
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+# Serialize runs so two near-simultaneous release edits can't race each
+# other's `gh release edit --latest` calls. Do NOT cancel-in-progress: a
+# queued run still needs to re-check state after the run ahead of it finishes.
+concurrency:
+  group: enforce-latest-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # required: gh release edit / releases API write access
+
+jobs:
+  enforce-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reconcile "latest" flag to the highest stable semver release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          echo "Fetching all releases for $REPO..."
+          RELEASES_JSON=$(gh release list --repo "$REPO" --limit 1000 \
+            --json tagName,isDraft,isPrerelease,isLatest)
+
+          STABLE_TAGS=$(echo "$RELEASES_JSON" | jq -r \
+            '.[] | select(.isDraft == false and .isPrerelease == false) | .tagName')
+
+          if [ -z "$STABLE_TAGS" ]; then
+            echo "No stable (non-draft, non-prerelease) releases found. Nothing to do."
+            exit 0
+          fi
+
+          # Defensive filter: only consider strict [v]X.Y.Z-shaped tags. This
+          # also protects against "-rc"/"-beta" style pre-release tags that
+          # were not correctly flagged as prerelease on GitHub, and against
+          # other monorepo tags (design-system, desktop-ui, npm-types, etc.)
+          # that don't follow the frontend's release tag shape. Anything odd
+          # is skipped rather than mis-sorted.
+          CANDIDATES=()
+          while IFS= read -r tag; do
+            if [[ "$tag" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              CANDIDATES+=("$tag")
+            fi
+          done <<< "$STABLE_TAGS"
+
+          if [ "${#CANDIDATES[@]}" -eq 0 ]; then
+            echo "No semver-shaped stable tags found among releases. Nothing to do."
+            exit 0
+          fi
+
+          # greatest-semver-wins: sort numerically by version (v-prefix
+          # stripped so sort -V compares pure dotted-numeric strings), not by
+          # tag name or publish date.
+          TRUE_LATEST_VER=$(printf '%s\n' "${CANDIDATES[@]}" | sed 's/^v//' | sort -V | tail -1)
+
+          TRUE_LATEST_TAG=""
+          for tag in "${CANDIDATES[@]}"; do
+            if [[ "${tag#v}" == "$TRUE_LATEST_VER" ]]; then
+              TRUE_LATEST_TAG="$tag"
+              break
+            fi
+          done
+
+          echo "Highest stable semver release: $TRUE_LATEST_TAG"
+
+          CURRENT_LATEST_TAG=$(echo "$RELEASES_JSON" | jq -r \
+            '[.[] | select(.isLatest == true)][0].tagName // empty')
+          echo "GitHub-flagged 'latest' release: ${CURRENT_LATEST_TAG:-<none>}"
+
+          if [ "$CURRENT_LATEST_TAG" == "$TRUE_LATEST_TAG" ]; then
+            echo "OK: 'latest' already matches the highest stable semver release. No action needed."
+            exit 0
+          fi
+
+          echo "::warning::'latest' is currently '${CURRENT_LATEST_TAG:-<none>}' but the highest stable semver release is '$TRUE_LATEST_TAG'. Reassigning 'latest' to '$TRUE_LATEST_TAG'."
+
+          gh release edit "$TRUE_LATEST_TAG" --repo "$REPO" --latest
+
+          {
+            echo "## Latest-release auto-correction"
+            echo ""
+            echo "- Previously flagged as \`latest\`: \`${CURRENT_LATEST_TAG:-<none>}\`"
+            echo "- Highest stable semver release: \`$TRUE_LATEST_TAG\`"
+            echo "- Action taken: re-assigned \`latest\` to \`$TRUE_LATEST_TAG\` via \`gh release edit --latest\`"
+          } >> "$GITHUB_STEP_SUMMARY"
