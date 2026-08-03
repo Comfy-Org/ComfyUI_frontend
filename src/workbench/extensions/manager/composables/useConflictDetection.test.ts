@@ -613,6 +613,12 @@ describe('useConflictDetection', () => {
         nodeVersions: components['schemas']['NodeVersionIdentifier'][]
       ) => nodeVersions.some(({ node_id }) => node_id === 'pack-0')
 
+      const bannedConflict = {
+        type: 'banned' as const,
+        current_value: 'installed',
+        required_value: 'not_banned'
+      }
+
       it.for([
         { outcome: 'resolves null', fail: () => Promise.resolve(null) },
         {
@@ -642,11 +648,6 @@ describe('useConflictDetection', () => {
 
       it('keeps a stored banned conflict for a pack whose lookup failed', async () => {
         installPacks(1)
-        const bannedConflict = {
-          type: 'banned' as const,
-          current_value: 'installed',
-          required_value: 'not_banned'
-        }
         mockConflictedPackages = [
           {
             package_id: 'pack-0',
@@ -673,15 +674,79 @@ describe('useConflictDetection', () => {
         ])
       })
 
+      it('keeps a stored compatibility conflict for a pack whose lookup failed', async () => {
+        installPacks(1)
+        const osConflict = {
+          type: 'os' as const,
+          current_value: 'Windows',
+          required_value: 'Linux'
+        }
+        mockConflictedPackages = [
+          {
+            package_id: 'pack-0',
+            package_name: 'pack-0',
+            has_conflict: true,
+            conflicts: [osConflict],
+            is_compatible: false
+          }
+        ]
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue(
+          null
+        )
+
+        const { runFullConflictAnalysis } = useConflictDetection()
+        await runFullConflictAnalysis()
+
+        expect(mockConflictStore.setConflictedPackages).toHaveBeenCalledWith([
+          expect.objectContaining({
+            package_id: 'pack-0',
+            conflicts: [osConflict],
+            registry_status_unknown: true
+          })
+        ])
+      })
+
+      it('drops a stored import failure rather than carrying it over', async () => {
+        installPacks(1)
+        mockConflictedPackages = [
+          {
+            package_id: 'pack-0',
+            package_name: 'pack-0',
+            has_conflict: true,
+            conflicts: [
+              bannedConflict,
+              {
+                type: 'import_failed' as const,
+                current_value: 'since-resolved error',
+                required_value: 'since-resolved error'
+              }
+            ],
+            is_compatible: false
+          }
+        ]
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue(
+          null
+        )
+
+        const { runFullConflictAnalysis } = useConflictDetection()
+        await runFullConflictAnalysis()
+
+        expect(mockConflictStore.setConflictedPackages).toHaveBeenCalledWith([
+          expect.objectContaining({
+            package_id: 'pack-0',
+            conflicts: [bannedConflict]
+          })
+        ])
+      })
+
       it.for([
         { answer: 'omits the pack', node_versions: [] },
         {
-          answer: 'reports an error for the pack',
+          answer: "reports the pack 'not_found'",
           node_versions: [
             {
-              status: 'error' as const,
-              identifier: { node_id: 'pack-0', version: '1.0.0' },
-              error_message: 'node version not found'
+              status: 'not_found' as const,
+              identifier: { node_id: 'pack-0', version: '1.0.0' }
             }
           ]
         }
@@ -700,6 +765,30 @@ describe('useConflictDetection', () => {
           expect(unknownPackIds(results)).toEqual([])
         }
       )
+
+      it("marks a pack unverified when its entry comes back 'error'", async () => {
+        installPacks(2)
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+          (nodeVersions) =>
+            Promise.resolve({
+              node_versions: nodeVersions.map((identifier) =>
+                identifier.node_id === 'pack-0'
+                  ? {
+                      status: 'error' as const,
+                      identifier,
+                      error_message: 'internal error'
+                    }
+                  : activeResponse([identifier]).node_versions[0]
+              )
+            })
+        )
+
+        const { runFullConflictAnalysis } = useConflictDetection()
+        const { results } = await runFullConflictAnalysis()
+
+        expect(bulkCalls()).toHaveLength(1)
+        expect(unknownPackIds(results)).toEqual(['pack-0'])
+      })
 
       it('does not mark packs unverified when the retry succeeds', async () => {
         installPacks(50)
@@ -733,8 +822,17 @@ describe('useConflictDetection', () => {
         expect(unknownPackIds(results)).toEqual(packIds(50))
       })
 
-      it('neither retries nor marks packs unverified when the run is cancelled', async () => {
+      it('leaves the stored conflicts untouched when the run is cancelled', async () => {
         installPacks(50)
+        mockConflictedPackages = [
+          {
+            package_id: 'pack-0',
+            package_name: 'pack-0',
+            has_conflict: true,
+            conflicts: [bannedConflict],
+            is_compatible: false
+          }
+        ]
 
         const { runFullConflictAnalysis, cancelRequests } =
           useConflictDetection()
@@ -745,13 +843,15 @@ describe('useConflictDetection', () => {
           }
         )
 
-        const { results } = await runFullConflictAnalysis()
+        const { success } = await runFullConflictAnalysis()
 
+        expect(success).toBe(false)
         expect(bulkCalls()).toHaveLength(1)
-        expect(unknownPackIds(results)).toEqual([])
         expect(
           mockConflictStore.setRegistryUnknownPackIds
-        ).toHaveBeenCalledWith(new Set())
+        ).not.toHaveBeenCalled()
+        expect(mockConflictStore.setConflictedPackages).not.toHaveBeenCalled()
+        expect(mockConflictStore.clearConflicts).not.toHaveBeenCalled()
       })
 
       it('clears the unverified pack ids on a later successful run', async () => {

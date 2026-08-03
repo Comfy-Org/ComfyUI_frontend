@@ -77,7 +77,10 @@ export function consolidateConflictsByPackage(
       package_name: packageName, // Use normalized name
       conflicts: uniqueConflicts,
       has_conflict: uniqueConflicts.length > 0,
-      is_compatible: uniqueConflicts.length === 0
+      is_compatible: uniqueConflicts.length === 0,
+      registry_status_unknown: packageConflicts.some(
+        (pc) => pc.registry_status_unknown
+      )
     }
   })
 }

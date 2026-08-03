@@ -143,6 +143,43 @@ describe('conflictUtils', () => {
       expect(result).toEqual([])
     })
 
+    it('keeps the unverified-registry marker when any grouped entry carries it', () => {
+      const conflicts: ConflictDetectionResult[] = [
+        {
+          package_name: 'pack',
+          package_id: 'pack',
+          conflicts: [
+            {
+              type: 'import_failed',
+              current_value: 'boom',
+              required_value: 'boom'
+            }
+          ],
+          has_conflict: true,
+          is_compatible: false
+        },
+        {
+          package_name: 'pack@1_0_0',
+          package_id: 'pack@1_0_0',
+          conflicts: [
+            {
+              type: 'banned',
+              current_value: 'installed',
+              required_value: 'not_banned'
+            }
+          ],
+          has_conflict: true,
+          is_compatible: false,
+          registry_status_unknown: true
+        }
+      ]
+
+      const result = consolidateConflictsByPackage(conflicts)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].registry_status_unknown).toBe(true)
+    })
+
     it('should merge conflicts from multiple versions of same package', () => {
       const conflicts: ConflictDetectionResult[] = [
         {

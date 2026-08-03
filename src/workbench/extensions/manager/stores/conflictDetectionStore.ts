@@ -45,6 +45,7 @@ export const useConflictDetectionStore = defineStore(
 
     function clearConflicts() {
       conflictedPackages.value = []
+      registryUnknownPackIds.value = new Set()
     }
 
     function setRegistryUnknownPackIds(packIds: Set<string>) {

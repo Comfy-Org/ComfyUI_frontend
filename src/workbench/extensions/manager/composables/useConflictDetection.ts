@@ -59,17 +59,18 @@ type BulkNodeVersionsResponse =
 interface BulkNodeVersionsResult {
   versionDataMap: Map<string, components['schemas']['NodeVersion']>
   /**
-   * Packs whose chunk request never produced an answer, so the Registry never
-   * said whether they are banned or pending. Packs an answered response merely
-   * omits (or reports a per-identifier error for) are NOT in here — that is how
-   * the Registry reports packs it doesn't know about.
+   * Packs the Registry never gave a banned/pending answer for, because their
+   * chunk request went unanswered or their entry came back `status: 'error'`.
+   * A `not_found` entry (or an omitted one) is NOT in here — that is how the
+   * Registry reports packs it doesn't know about.
    */
   failedNodeIds: Set<string>
 }
 
 function collectNodeVersions(
   response: BulkNodeVersionsResponse,
-  versionDataMap: Map<string, components['schemas']['NodeVersion']>
+  versionDataMap: Map<string, components['schemas']['NodeVersion']>,
+  failedNodeIds: Set<string>
 ): void {
   response.node_versions?.forEach((result) => {
     if (result.status === 'success' && result.node_version) {
@@ -79,6 +80,7 @@ function collectNodeVersions(
         `[ConflictDetection] Failed to fetch version data for ${result.identifier.node_id}@${result.identifier.version}:`,
         result.error_message
       )
+      failedNodeIds.add(result.identifier.node_id)
     }
   })
 }
@@ -138,7 +140,6 @@ async function fetchBulkNodeVersions(
       let response: BulkNodeVersionsResponse | null = null
 
       if (bulkResponse.status === 'rejected') {
-        if (isAbortError(bulkResponse.reason)) return result
         console.warn(
           '[ConflictDetection] Failed to fetch bulk version data:',
           bulkResponse.reason
@@ -164,7 +165,7 @@ async function fetchBulkNodeVersions(
         continue
       }
 
-      collectNodeVersions(response, versionDataMap)
+      collectNodeVersions(response, versionDataMap, failedNodeIds)
     }
   }
 
@@ -283,10 +284,7 @@ export function useConflictDetection() {
       // Step 2: Get Registry service for bulk API calls
       const registryService = useComfyRegistryService()
 
-      // Step 3: Setup abort controller for request cancellation
-      abortController.value = new AbortController()
-
-      // Step 4: Use bulk API to fetch all version data in chunked requests
+      // Step 3: Use bulk API to fetch all version data in chunked requests
       // Prepare bulk request with actual installed versions from Manager API
       const nodeVersions = installedPacksWithVersions.value.map((pack) => ({
         node_id: pack.id,
@@ -299,7 +297,7 @@ export function useConflictDetection() {
         abortController.value?.signal
       )
 
-      // Step 5: Combine local installation data with Registry version data
+      // Step 4: Combine local installation data with Registry version data
       const requirements: NodeRequirements[] = []
 
       // IMPORTANT: Use installedPacksWithVersions to check ALL installed packages
@@ -534,20 +532,30 @@ export function useConflictDetection() {
   }
 
   /**
-   * Keeps the banned/pending conflicts an earlier run already established for
-   * packs whose Registry lookup failed this run, so a Registry outage can't
-   * quietly downgrade a known-banned pack to "compatible".
+   * Keeps the Registry-derived conflicts an earlier run already established for
+   * packs whose Registry lookup failed this run, so an outage can't quietly
+   * downgrade a known-banned pack to "compatible". `import_failed` is excluded
+   * because it comes from the Manager, not the Registry, and is re-detected in
+   * full on every run — carrying it over would resurrect a resolved failure.
    */
   function carryOverUnverifiedConflicts(
     unknownPackIds: Set<string>
   ): ConflictDetectionResult[] {
     return [...unknownPackIds].flatMap((packId) => {
       const storedResult = conflictStore.getConflictsForPackageByID(packId)
-      const hasKnownStatusConflict = storedResult?.conflicts.some(
-        (conflict) => conflict.type === 'banned' || conflict.type === 'pending'
+      const conflicts = storedResult?.conflicts.filter(
+        (conflict) => conflict.type !== 'import_failed'
       )
-      return hasKnownStatusConflict && storedResult
-        ? [{ ...storedResult, registry_status_unknown: true }]
+      return storedResult && conflicts?.length
+        ? [
+            {
+              ...storedResult,
+              conflicts,
+              has_conflict: true,
+              is_compatible: false,
+              registry_status_unknown: true
+            }
+          ]
         : []
     })
   }
@@ -567,6 +575,10 @@ export function useConflictDetection() {
 
     isDetecting.value = true
     detectionError.value = null
+
+    // Held locally because `cancelRequests` drops the ref on abort
+    abortController.value = new AbortController()
+    const { signal } = abortController.value
 
     try {
       // 1. Collect system environment information
@@ -615,10 +627,19 @@ export function useConflictDetection() {
       // 5. Combine all results
       const allResults = [...packageResults, ...importFailResults]
 
+      // A cancelled run saw only partial Registry and Manager data; committing
+      // it would downgrade every pack it never got to re-verify.
+      if (signal.aborted) {
+        return {
+          success: false,
+          error_message: 'Conflict detection cancelled',
+          results: detectionResults.value
+        }
+      }
+
       // 6. Update state
       detectionResults.value = allResults
       lastDetectionTime.value = new Date().toISOString()
-      conflictStore.setRegistryUnknownPackIds(registryUnknownPackIds)
 
       // Store conflict results for later UI display
       // Dialog will be shown based on specific events, not on app mount
@@ -627,33 +648,31 @@ export function useConflictDetection() {
         ...carriedOverConflicts
       ]
 
-      if (conflictedResults.length > 0) {
-        // Merge conflicts for packages with the same name
-        const mergedConflicts = consolidateConflictsByPackage(conflictedResults)
+      // Merge conflicts for packages with the same name
+      const mergedConflicts =
+        conflictedResults.length > 0
+          ? consolidateConflictsByPackage(conflictedResults)
+          : null
 
+      if (mergedConflicts) {
         // Store merged conflicts in Pinia store for UI usage
         conflictStore.setConflictedPackages(mergedConflicts)
 
         // Also update local state for backward compatibility
         detectionResults.value = [...mergedConflicts]
         storedMergedConflicts.value = [...mergedConflicts]
-
-        // Use merged conflicts in response as well
-        const response: ConflictDetectionResponse = {
-          success: true,
-          results: mergedConflicts,
-          detected_system_environment: systemEnvInfo
-        }
-        return response
       } else {
         // No conflicts detected, clear the results
         conflictStore.clearConflicts()
         detectionResults.value = []
       }
 
+      // After clearConflicts(), which also resets the unknown-pack ids
+      conflictStore.setRegistryUnknownPackIds(registryUnknownPackIds)
+
       const response: ConflictDetectionResponse = {
         success: true,
-        results: allResults,
+        results: mergedConflicts ?? allResults,
         detected_system_environment: systemEnvInfo
       }
 
