@@ -216,6 +216,6 @@ export const TeamSuccessWithInvite: Story = {
     data: () => ({
       teamPlan: { usd: 700, credits: 147_700, discountedUsd: 630 }
     }),
-    template: `${shell}<SubscriptionSuccessWorkspace :team-plan="teamPlan" is-team /></div>`
+    template: `${shell}<SubscriptionSuccessWorkspace :team-plan="teamPlan" /></div>`
   })
 }

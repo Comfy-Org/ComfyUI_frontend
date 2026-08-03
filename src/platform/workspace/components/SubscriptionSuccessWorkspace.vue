@@ -111,13 +111,11 @@ import InviteMembersForm from './InviteMembersForm.vue'
 const {
   tierKey,
   previewData = null,
-  teamPlan = null,
-  isTeam = false
+  teamPlan = null
 } = defineProps<{
   tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
   teamPlan?: TeamPlanSelection | null
-  isTeam?: boolean
 }>()
 
 defineEmits<{
@@ -154,7 +152,11 @@ const invitableSeats = computed(() => {
   return Math.max(0, maxSeats.value - occupiedSeats.value)
 })
 
-const showInviteBlock = computed(() => isTeam && flags.teamWorkspacesEnabled)
+const showInviteBlock = computed(
+  () =>
+    flags.teamWorkspacesEnabled &&
+    (maxSeats.value === 0 || (maxSeats.value ?? 0) > 1)
+)
 
 const invitedEmails = ref<string[]>([])
 const invitedMessage = ref<HTMLElement>()

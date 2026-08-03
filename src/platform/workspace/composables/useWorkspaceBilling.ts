@@ -196,6 +196,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
           maxSeats: status.max_seats,
           occupiedSeats: status.occupied_seats
         }
+      } else {
+        seatCapacity.value = null
       }
 
       statusData.value = status

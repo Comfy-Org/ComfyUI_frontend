@@ -101,8 +101,13 @@ export function useMembersPanel() {
     showInviteMemberUpsellDialog
   } = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
-  const { activeWorkspace, members, pendingInvites, originalOwnerId } =
-    storeToRefs(workspaceStore)
+  const {
+    activeWorkspace,
+    isInPersonalWorkspace,
+    members,
+    pendingInvites,
+    originalOwnerId
+  } = storeToRefs(workspaceStore)
   const { resendInvite } = workspaceStore
   const {
     permissions: workspacePermissions,
@@ -382,6 +387,7 @@ export function useMembersPanel() {
     sortField,
     sortDirection,
     maxSeats,
+    isInPersonalWorkspace,
     hasTeamPlan,
     isOnTeamPlan,
     isCancelled,

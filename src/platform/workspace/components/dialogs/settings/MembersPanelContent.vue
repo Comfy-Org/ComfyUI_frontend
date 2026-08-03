@@ -153,12 +153,13 @@
         <div class="min-h-0 flex-1 overflow-y-auto">
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <template v-if="!hasMemberSeats">
+            <template v-if="isInPersonalWorkspace && !hasMemberSeats">
               <MemberListItem
                 :member="personalWorkspaceMember"
                 :is-current-user="true"
                 :photo-url="userPhotoUrl ?? undefined"
                 :grid-cols="uiConfig.membersGridCols"
+                :is-single-seat-plan="maxSeats === 1"
               />
             </template>
 
@@ -179,7 +180,6 @@
                 "
                 :show-credits-column="uiConfig.showCreditsColumn"
                 :can-manage-members="permissions.canManageMembers"
-                :is-single-seat-plan="!hasMemberSeats"
                 :striped="index % 2 === 1"
                 :menu-items="memberMenus.get(member.id)"
               />
@@ -201,7 +201,7 @@
     <MemberUpsellBanner
       v-if="
         !isPlanLoading &&
-        (!hasMemberSeats || isCancelled) &&
+        ((isInPersonalWorkspace && !hasMemberSeats) || isCancelled) &&
         permissions.canManageSubscription
       "
       :reactivate="hasLapsedTeamPlan"
@@ -241,6 +241,7 @@ const {
   searchQuery,
   activeView,
   maxSeats,
+  isInPersonalWorkspace,
   hasLapsedTeamPlan,
   hasMemberSeats,
   isCancelled,

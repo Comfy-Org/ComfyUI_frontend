@@ -135,6 +135,22 @@ describe('InviteMembersForm', () => {
     expect(emitted().submitted).toEqual([[['a@b.com', 'c@d.com']]])
   })
 
+  it('completes submission when the billing refresh fails', async () => {
+    const refreshError = new Error('refresh failed')
+    mockFetchStatus.mockRejectedValueOnce(refreshError)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'a@b.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() => expect(emitted().submitted).toEqual([[['a@b.com']]]))
+    expect(submitButton()).toBeEnabled()
+    expect(mockFetchStatus).toHaveBeenCalledOnce()
+    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+    consoleError.mockRestore()
+  })
+
   it('keeps failed emails for retry and emits all invited emails after recovery', async () => {
     let shouldFail = true
     mockCreateInvite.mockImplementation(async (email: string) => {

@@ -396,7 +396,7 @@ describe('useWorkspaceBilling', () => {
       expect(billing.occupiedSeats.value).toBe(75)
     })
 
-    it('accepts missing seat capacity without replacing the last known value', async () => {
+    it('accepts missing seat capacity and clears the last known value', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce(activeStatus)
       const billing = setupBilling()
       await billing.fetchStatus()
@@ -410,8 +410,8 @@ describe('useWorkspaceBilling', () => {
 
       await billing.fetchStatus()
       expect(billing.subscription.value?.tier).toBe('PRO')
-      expect(billing.maxSeats.value).toBe(73)
-      expect(billing.occupiedSeats.value).toBe(72)
+      expect(billing.maxSeats.value).toBeNull()
+      expect(billing.occupiedSeats.value).toBeNull()
       expect(billing.error.value).toBeNull()
     })
 

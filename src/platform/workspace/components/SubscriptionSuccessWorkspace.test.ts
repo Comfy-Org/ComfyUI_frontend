@@ -111,7 +111,6 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
   return renderCard({
     tierKey: null,
     teamPlan: TEAM_STOP,
-    isTeam: true,
     ...props
   })
 }
@@ -163,8 +162,9 @@ describe('SubscriptionSuccessWorkspace', () => {
   })
 
   it('emits close when the close button is clicked', async () => {
-    const { emitted } = renderCard({ isTeam: false })
-    await userEvent.click(screen.getByRole('button'))
+    mockMaxSeats.value = 1
+    const { emitted } = renderCard()
+    await userEvent.click(screen.getByRole('button', { name: 'g.close' }))
     expect(emitted().close).toBeTruthy()
   })
 
@@ -180,14 +180,22 @@ describe('SubscriptionSuccessWorkspace', () => {
   })
 
   it('shows no Send invites action for a personal upgrade', () => {
-    renderCard({ isTeam: false })
+    mockMaxSeats.value = 1
+    renderCard()
     expect(screen.queryByText('subscription.success.sendInvites')).toBeNull()
   })
 
   it('does not render the invite block for a personal upgrade', () => {
-    renderCard({ isTeam: false })
+    mockMaxSeats.value = 1
+    renderCard()
     expect(screen.queryByText('subscription.success.inviteTitle')).toBeNull()
     expect(screen.queryByTestId('invite-form')).toBeNull()
+  })
+
+  it('renders the invite block for a multi-seat personal upgrade', () => {
+    mockMaxSeats.value = 5
+    renderCard()
+    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:4')
   })
 
   it('hides the invite block when team workspaces are disabled', () => {
