@@ -115,7 +115,18 @@ export function writeCriticalCoverageReport(
 export function readCriticalCoverageReport(
   inputPath: string
 ): CriticalCoverageReport {
-  const parsed: unknown = JSON.parse(readFileSync(inputPath, 'utf-8'))
+  const contents = readFileSync(inputPath, 'utf-8')
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(contents)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(
+      `Invalid critical coverage report JSON at ${inputPath}: ${message}`,
+      { cause: error }
+    )
+  }
 
   if (!isCriticalCoverageReport(parsed)) {
     throw new Error(`Invalid critical coverage report: ${inputPath}`)

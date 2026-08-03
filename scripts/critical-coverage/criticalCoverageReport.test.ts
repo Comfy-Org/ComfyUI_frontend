@@ -260,6 +260,16 @@ end_of_record
 })
 
 describe('readCriticalCoverageReport', () => {
+  it('identifies malformed JSON artifacts by path', () => {
+    const directory = createTempDirectory()
+    const inputPath = join(directory, 'coverage.json')
+    writeFileSync(inputPath, '{')
+
+    expect(() => readCriticalCoverageReport(inputPath)).toThrow(
+      `Invalid critical coverage report JSON at ${inputPath}`
+    )
+  })
+
   it('accepts a report with its own valid critical-directory scope', () => {
     const directory = createTempDirectory()
     const inputPath = join(directory, 'coverage.json')
