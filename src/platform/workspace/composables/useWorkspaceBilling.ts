@@ -185,19 +185,20 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       }
 
       if (
-        !Number.isInteger(status.max_seats) ||
-        status.max_seats < 0 ||
-        !Number.isInteger(status.occupied_seats) ||
-        status.occupied_seats < 0
+        typeof status.max_seats === 'number' &&
+        Number.isInteger(status.max_seats) &&
+        status.max_seats >= 0 &&
+        typeof status.occupied_seats === 'number' &&
+        Number.isInteger(status.occupied_seats) &&
+        status.occupied_seats >= 0
       ) {
-        throw new Error('Billing status returned invalid seat capacity')
+        seatCapacity.value = {
+          maxSeats: status.max_seats,
+          occupiedSeats: status.occupied_seats
+        }
       }
 
       statusData.value = status
-      seatCapacity.value = {
-        maxSeats: status.max_seats,
-        occupiedSeats: status.occupied_seats
-      }
       if (workspaceId && status.billing_rail) {
         workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
       }

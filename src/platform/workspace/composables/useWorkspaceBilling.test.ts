@@ -396,21 +396,23 @@ describe('useWorkspaceBilling', () => {
       expect(billing.occupiedSeats.value).toBe(75)
     })
 
-    it('rejects invalid seat capacity without replacing the last known value', async () => {
+    it('accepts missing seat capacity without replacing the last known value', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce(activeStatus)
       const billing = setupBilling()
       await billing.fetchStatus()
 
       mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce({
         ...activeStatus,
-        max_seats: undefined
-      } as unknown as BillingStatusResponse)
+        subscription_tier: 'PRO',
+        max_seats: undefined,
+        occupied_seats: undefined
+      })
 
-      await expect(billing.fetchStatus()).rejects.toThrow(
-        'Billing status returned invalid seat capacity'
-      )
+      await billing.fetchStatus()
+      expect(billing.subscription.value?.tier).toBe('PRO')
       expect(billing.maxSeats.value).toBe(73)
       expect(billing.occupiedSeats.value).toBe(72)
+      expect(billing.error.value).toBeNull()
     })
 
     it('keeps the newest status when an older request resolves last', async () => {

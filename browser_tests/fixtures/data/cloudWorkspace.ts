@@ -83,7 +83,10 @@ export const TEAM_BILLING_STATUS = {
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
   team_credit_stop: null
-} satisfies IngestBillingStatusResponse
+} satisfies IngestBillingStatusResponse & {
+  max_seats: number
+  occupied_seats: number
+}
 
 export const ENDED_STANDARD_BILLING_STATUS = {
   billing_rail: 'stripe',
