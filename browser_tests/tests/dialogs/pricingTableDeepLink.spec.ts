@@ -42,7 +42,8 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const SELF_EMAIL = 'e2e@test.comfy.org'
 
 const BOOT_FEATURES = {
-  billing_control_enabled: true
+  billing_control_enabled: true,
+  consolidated_billing_enabled: true
 } satisfies RemoteConfig
 // Disable the experimental Asset API: with it on (cloud default) the unmocked
 // asset endpoints 403 and workflow restore throws uncaught, aborting the
