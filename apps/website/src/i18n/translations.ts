@@ -4929,13 +4929,13 @@ const translations = {
   },
 
   'minimax.meta.title': {
-    en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
-    'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
+    en: 'MiniMax H3 (Hailuo 3.0) — Open-Weights Video in ComfyUI',
+    'zh-CN': 'MiniMax H3（Hailuo 3.0）— ComfyUI 开源权重视频模型'
   },
   'minimax.meta.description': {
-    en: 'Run MiniMax H3 on Comfy: available as Open Weights and through Partner Nodes, multi-modal in/out, native stereo audio on every clip, up to 2K and 5–15s per generation. Draft free on Wan 2.2 and spend credits only on the final render.',
+    en: 'Run MiniMax H3 (Hailuo 3.0) in ComfyUI: open-weights omni-modal video with native stereo audio. Text-to-video, image-to-video and reference-to-video.',
     'zh-CN':
-      '在 Comfy 上运行 MiniMax H3：以开源权重形式提供，也可通过合作伙伴节点使用，多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
+      '在 ComfyUI 中运行 MiniMax H3（Hailuo 3.0）：开源权重全模态视频生成，原生立体声音频，支持文生视频、图生视频与参考生视频。'
   },
   'minimax.breadcrumb.model': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
   'minimax.breadcrumb.updated': {
