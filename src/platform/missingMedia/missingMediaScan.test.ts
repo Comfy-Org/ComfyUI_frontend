@@ -8,9 +8,14 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as AssetServiceModule from '@/platform/assets/services/assetService'
-import { createPromotedMediaRuntime } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import {
+  createMediaNodeDef,
+  createPromotedMediaRuntime,
+  seedMediaNodeDefs
+} from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 import {
@@ -139,6 +144,7 @@ function makeMediaNode(
     type,
     widgets,
     mode,
+    isSubgraphNode: () => false,
     _testExecutionId: executionId ?? String(id)
   })
 }
@@ -196,6 +202,7 @@ function makeHistoryJob(
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
+  seedMediaNodeDefs()
 })
 
 describe('scanNodeMediaCandidates', () => {
@@ -465,6 +472,30 @@ describe('scanNodeMediaCandidates', () => {
       })
     }
   )
+
+  it('reports a custom node whose input spec declares a media upload', () => {
+    useNodeDefStore().addNodeDef(
+      createMediaNodeDef('ThirdPartyVideoLoader', 'clip', 'video_upload')
+    )
+    const node = makeMediaNode(
+      1,
+      'ThirdPartyVideoLoader',
+      [makeMediaCombo('clip', 'gone.mp4', ['other.mp4'])],
+      0
+    )
+
+    const result = scanNodeMediaCandidates(makeGraph([node]), node, false)
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        nodeType: 'ThirdPartyVideoLoader',
+        widgetName: 'clip',
+        mediaType: 'video',
+        name: 'gone.mp4',
+        isMissing: true
+      })
+    ])
+  })
 
   it('marks OSS input annotations missing when the clean option is absent', () => {
     const node = makeMediaNode(

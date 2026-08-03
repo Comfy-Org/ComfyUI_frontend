@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type * as MissingMediaScanModule from '@/platform/missingMedia/missingMediaScan'
-import { createPromotedMediaRuntime } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import {
+  createPromotedMediaRuntime,
+  seedMediaNodeDefs
+} from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { markDeletedAssetsAsMissingMedia } from './markDeletedAssetsAsMissingMedia'
@@ -28,6 +31,7 @@ function makeGraph(nodes: unknown[]): LGraph {
 describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    seedMediaNodeDefs()
     mockScanNodeMediaCandidates.mockReset()
     mockScanNodeMediaCandidates.mockReturnValue([])
   })

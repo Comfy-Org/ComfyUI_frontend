@@ -12,6 +12,8 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -42,6 +44,34 @@ export interface PromotedMediaRuntime {
   sourceGraphs: [Subgraph, ...Subgraph[]]
   sourceNodes: [LGraphNode, ...LGraphNode[]]
   intermediateHosts: SubgraphNode[]
+}
+
+export function createMediaNodeDef(
+  name: string,
+  widgetName: string,
+  uploadFlag: 'image_upload' | 'video_upload' | 'audio_upload'
+): ComfyNodeDefV1 {
+  return {
+    name,
+    display_name: name,
+    category: 'media',
+    python_module: 'nodes',
+    description: '',
+    input: { required: { [widgetName]: [[], { [uploadFlag]: true }] } },
+    output: [],
+    output_name: [],
+    output_is_list: [],
+    output_node: false
+  }
+}
+
+export function seedMediaNodeDefs() {
+  useNodeDefStore().updateNodeDefs([
+    createMediaNodeDef('LoadImage', 'image', 'image_upload'),
+    createMediaNodeDef('LoadImageMask', 'image', 'image_upload'),
+    createMediaNodeDef('LoadVideo', 'file', 'video_upload'),
+    createMediaNodeDef('LoadAudio', 'audio', 'audio_upload')
+  ])
 }
 
 export function deferMediaVerification() {

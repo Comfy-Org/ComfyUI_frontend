@@ -1,6 +1,9 @@
 import { groupBy } from 'es-toolkit'
 import { hasActivePromotedWidgetConsumer } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   MissingMediaCandidate,
   MissingMediaViewModel,
@@ -34,19 +37,18 @@ import {
 } from './missingMediaAssetResolver'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 
-/** Map of node types to their media widget name and media type. */
-const MEDIA_NODE_WIDGETS: Record<
-  string,
-  { widgetName: string; mediaType: MediaType }
-> = {
-  LoadImage: { widgetName: 'image', mediaType: 'image' },
-  LoadImageMask: { widgetName: 'image', mediaType: 'image' },
-  LoadVideo: { widgetName: 'file', mediaType: 'video' },
-  LoadAudio: { widgetName: 'audio', mediaType: 'audio' }
-}
-
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
+}
+
+function mediaTypeFromSpec(
+  spec: InputSpecV2 | undefined
+): MediaType | undefined {
+  if (!spec || !isComboInputSpec(spec)) return undefined
+  if (spec.video_upload) return 'video'
+  if (spec.image_upload || spec.animated_image_upload) return 'image'
+  if (spec.audio_upload) return 'audio'
+  return undefined
 }
 
 /**
@@ -90,6 +92,7 @@ export function scanNodeMediaCandidates(
   const executionId = getExecutionIdByNode(rootGraph, node)
   if (!executionId) return []
 
+  const nodeDefStore = useNodeDefStore()
   const candidates: MissingMediaCandidate[] = []
   for (const widget of node.widgets) {
     if (!isComboWidget(widget)) continue
@@ -99,8 +102,10 @@ export function scanNodeMediaCandidates(
     const source = resolvePromotedWidgetSource(rootGraph, node, widget)
     const definitionNode = source?.sourceNode ?? node
     const definitionWidgetName = source?.sourceWidgetName ?? widget.name
-    const mediaInfo = MEDIA_NODE_WIDGETS[definitionNode.type]
-    if (!mediaInfo || definitionWidgetName !== mediaInfo.widgetName) continue
+    const mediaType = mediaTypeFromSpec(
+      nodeDefStore.getInputSpecForWidget(definitionNode, definitionWidgetName)
+    )
+    if (!mediaType) continue
     if (definitionNode.isUploading) continue
     if (source && !hasActivePromotedWidgetConsumer(node, source.input.name)) {
       continue
@@ -130,7 +135,7 @@ export function scanNodeMediaCandidates(
       nodeId: executionId,
       nodeType: definitionNode.type,
       widgetName: widget.name,
-      mediaType: mediaInfo.mediaType,
+      mediaType,
       name: value,
       isMissing
     })
