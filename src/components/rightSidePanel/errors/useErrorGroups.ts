@@ -707,7 +707,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (cachedNode && nodeIds.has(String(cachedNode.id))) return true
 
     // Resolve from graph for model/media candidates
-    if (app.rootGraph) {
+    if (app.isGraphReady) {
       const graphNode = getNodeByExecutionId(app.rootGraph, executionNodeId)
       if (graphNode && nodeIds.has(String(graphNode.id))) return true
     }
