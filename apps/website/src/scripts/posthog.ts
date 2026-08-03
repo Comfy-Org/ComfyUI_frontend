@@ -32,23 +32,29 @@ export function initPostHog() {
   }
 }
 
-function safeCapture(event: string, properties?: Record<string, unknown>) {
+export function capturePageview() {
   if (!initialized) return
   try {
-    posthog.capture(event, properties)
+    posthog.capture('$pageview')
   } catch (error) {
-    console.error(`PostHog capture failed: ${event}`, error)
+    console.error('PostHog pageview capture failed', error)
   }
 }
 
-export function capturePageview() {
-  safeCapture('$pageview')
-}
-
 export function captureDownloadClick(platform: Platform) {
-  safeCapture('website:download_button_clicked', { platform })
+  if (!initialized) return
+  try {
+    posthog.capture('website:download_button_clicked', { platform })
+  } catch (error) {
+    console.error('PostHog download click capture failed', error)
+  }
 }
 
 export function captureMcpClientTabClick(client: string) {
-  safeCapture('website:mcp_client_tab_clicked', { client })
+  if (!initialized) return
+  try {
+    posthog.capture('website:mcp_client_tab_clicked', { client })
+  } catch (error) {
+    console.error('PostHog MCP client tab capture failed', error)
+  }
 }
