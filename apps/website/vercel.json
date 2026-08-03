@@ -61,6 +61,11 @@
       "permanent": true
     },
     {
+      "source": "/trust",
+      "destination": "https://trust.comfy.org",
+      "permanent": false
+    },
+    {
       "source": "/login",
       "destination": "https://cloud.comfy.org/login",
       "permanent": false
