@@ -25,7 +25,7 @@
     </div>
 
     <!-- Workspace Selector -->
-    <div class="relative">
+    <div v-if="!accountActionsOnly" class="relative">
       <div
         ref="workspaceSwitcherTrigger"
         v-tooltip="{ value: workspaceName, showDelay: 300 }"
@@ -60,7 +60,7 @@
 
     <!-- Credits Section -->
 
-    <div class="flex items-center gap-2 px-4 py-2">
+    <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--component] text-sm text-credit" />
       <Skeleton
         v-if="isLoadingBalance"
@@ -127,10 +127,10 @@
       </Button>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <div
-      v-if="showPlansAndPricing"
+      v-if="!accountActionsOnly && showPlansAndPricing"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
@@ -142,7 +142,7 @@
     </div>
 
     <div
-      v-if="showManagePlan"
+      v-if="!accountActionsOnly && showManagePlan"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
@@ -155,6 +155,7 @@
 
     <!-- Partner Nodes Pricing (always shown) -->
     <div
+      v-if="!accountActionsOnly"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
@@ -165,10 +166,11 @@
       }}</span>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <!-- Workspace Settings (always shown) -->
     <div
+      v-if="!accountActionsOnly"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="workspace-settings-menu-item"
       @click="handleOpenWorkspaceSettings"
@@ -254,6 +256,10 @@ onClickOutside(
 
 const emit = defineEmits<{
   close: []
+}>()
+
+const { accountActionsOnly = false } = defineProps<{
+  accountActionsOnly?: boolean
 }>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
@@ -365,7 +371,7 @@ const toggleWorkspaceSwitcher = () => {
 }
 
 const refreshBalance = () => {
-  void fetchBalance()
+  if (!accountActionsOnly) void fetchBalance()
 }
 
 defineExpose({ refreshBalance })

@@ -4615,6 +4615,9 @@
     "switchFailed": "Failed to switch workspace. Please try again."
   },
   "workspaceAuth": {
+    "initializationFailed": "Couldn't load your workspace",
+    "initializationFailedDetail": "Check your connection and try again.",
+    "retry": "Try again",
     "errors": {
       "notAuthenticated": "You must be logged in to access workspaces",
       "invalidFirebaseToken": "Authentication failed. Please try logging in again.",

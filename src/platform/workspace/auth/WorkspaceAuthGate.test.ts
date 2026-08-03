@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 
@@ -123,7 +126,11 @@ describe('WorkspaceAuthGate', () => {
     mockGetUnifiedToken.mockReturnValue('cloud-jwt')
   })
 
-  const i18n = createI18n({ legacy: false })
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
+  })
 
   const mountComponent = () =>
     render(WorkspaceAuthGate, {
@@ -242,14 +249,19 @@ describe('WorkspaceAuthGate', () => {
       mockCurrentUser.value = { uid: 'user-123' }
     })
 
-    it('keeps the app gated when remote config refresh fails', async () => {
+    it('shows a recoverable error when remote config refresh fails', async () => {
       const error = new Error('Network error')
       mockRefreshRemoteConfig.mockRejectedValue(error)
 
       mountComponent()
       await flushPromises()
 
-      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Try again' })
+      ).toBeInTheDocument()
       expect(mockCaptureException).toHaveBeenCalledWith(error, {
         tags: {
           error_type: 'workspace_auth_gate_initialization_failure'
@@ -257,7 +269,7 @@ describe('WorkspaceAuthGate', () => {
       })
     })
 
-    it('keeps the app gated when remote config refresh times out', async () => {
+    it('shows a recoverable error when remote config refresh times out', async () => {
       vi.useFakeTimers()
       try {
         // Never-resolving promise simulates a hanging request
@@ -268,37 +280,46 @@ describe('WorkspaceAuthGate', () => {
 
         // Slot not yet rendered before timeout
         expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+        expect(
+          screen.queryByText("Couldn't load your workspace")
+        ).not.toBeInTheDocument()
 
         // Advance past the 10 second timeout
         await vi.advanceTimersByTimeAsync(10_001)
 
-        expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+        expect(
+          screen.getByText("Couldn't load your workspace")
+        ).toBeInTheDocument()
       } finally {
         vi.useRealTimers()
       }
     })
 
-    it('keeps the app gated when authenticated config is unavailable', async () => {
+    it('shows a recoverable error when authenticated config is unavailable', async () => {
       mockRemoteConfigState.value = 'error'
 
       mountComponent()
       await flushPromises()
 
-      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
     })
 
-    it('keeps the app gated when unified auth initialization fails', async () => {
+    it('shows a recoverable error when unified auth initialization fails', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockMintAtLogin.mockResolvedValue(false)
 
       mountComponent()
       await flushPromises()
 
-      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
       expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
     })
 
-    it('keeps the app gated when workspace store initialization fails', async () => {
+    it('shows a recoverable error when workspace store initialization fails', async () => {
       mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitialize.mockRejectedValue(
         new Error('Workspace init failed')
@@ -307,10 +328,12 @@ describe('WorkspaceAuthGate', () => {
       mountComponent()
       await flushPromises()
 
-      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
     })
 
-    it('keeps the app gated when workspace setup clears unified auth', async () => {
+    it('shows a recoverable error when workspace setup clears unified auth', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockTeamWorkspacesEnabled.value = true
       mockGetUnifiedToken.mockReturnValue(undefined)
@@ -318,17 +341,40 @@ describe('WorkspaceAuthGate', () => {
       mountComponent()
       await flushPromises()
 
-      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
     })
 
-    it('keeps the app gated without a ready workspace context', async () => {
+    it('shows a recoverable error without a ready workspace context', async () => {
       mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitState.value = 'loading'
 
       mountComponent()
       await flushPromises()
 
-      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
+    })
+
+    it('renders the app after retrying a failed initialization', async () => {
+      const user = userEvent.setup()
+      mockWorkspaceStoreInitialize
+        .mockImplementationOnce(async () => {
+          mockWorkspaceStoreInitState.value = 'error'
+          throw new Error('Workspace init failed')
+        })
+        .mockImplementationOnce(async () => {
+          mockWorkspaceStoreInitState.value = 'ready'
+        })
+
+      mountComponent()
+      await flushPromises()
+      await user.click(screen.getByRole('button', { name: 'Try again' }))
+
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledTimes(2)
     })
   })
 })
