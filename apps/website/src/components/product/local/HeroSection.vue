@@ -282,7 +282,7 @@ onUnmounted(() => {
 
     <!-- Text -->
     <div
-      class="relative z-10 mx-auto mt-17 w-full max-w-xl px-4 pb-16 lg:mx-0 lg:mt-0 lg:max-w-none lg:min-w-160 lg:flex-1 lg:translate-x-[10%] lg:px-20 lg:py-14"
+      class="relative z-10 mx-auto mt-17 w-full max-w-lg px-4 pb-16 lg:mx-0 lg:mt-0 lg:max-w-none lg:min-w-160 lg:flex-1 lg:translate-x-[10%] lg:px-20 lg:py-14"
     >
       <ProductHeroBadge text="DESKTOP" />
 
@@ -298,9 +298,7 @@ onUnmounted(() => {
         {{ t('download.hero.subtitle', locale) }}
       </p>
 
-      <div
-        class="mt-8 flex max-w-md flex-col gap-4 lg:max-w-none lg:flex-row lg:items-end"
-      >
+      <div class="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end">
         <MobileDownloadEmailForm :locale />
         <DownloadLocalButton :locale class="lg:min-w-60 lg:p-4" />
         <BrandButton
