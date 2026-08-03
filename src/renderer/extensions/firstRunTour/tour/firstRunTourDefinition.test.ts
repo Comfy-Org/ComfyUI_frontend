@@ -24,8 +24,8 @@ import type { RunState } from './firstRunTourDefinition'
 
 const FROM_IMAGE = 'image_qwen_image_edit_2509'
 const FROM_TEXT = 'image_z_image_turbo'
-const VIDEO = 'gsc_advanced_3_1'
-const NO_PROMPT = 'gsc_advanced_3_2'
+const VIDEO = 'video_ltx2_i2v_distilled'
+const NO_PROMPT = 'templates-image_to_real'
 
 const runState = ref<RunState>('idle')
 const framings: { glide?: boolean }[] = []
@@ -143,7 +143,7 @@ describe('firstRunTourSteps', () => {
       templateId: VIDEO,
       names: ['upload.i2v', 'prompt.i2v', 'run', 'result.video']
     },
-    { templateId: NO_PROMPT, names: ['upload.other', 'run', 'result.video'] }
+    { templateId: NO_PROMPT, names: ['upload.other', 'run', 'result.image'] }
   ])(
     'names $templateId steps for what the workflow does',
     async ({ templateId, names }) => {
