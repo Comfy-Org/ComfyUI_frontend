@@ -1,11 +1,12 @@
 import { expect } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const MINIMAX_LABEL = t('footer.minimaxH3', 'en')
-const MINIMAX_ROUTE = getRoutes('en').minimax
+const MINIMAX_LABEL_ZH = t('footer.minimaxH3', 'zh-CN')
+const MINIMAX_ROUTE = '/minimax'
+const MINIMAX_ROUTE_ZH = '/zh-CN/minimax'
 
 const TOP_LEVEL_LABELS = [
   'Products',
@@ -209,6 +210,23 @@ test.describe('Footer @smoke', () => {
     await expect(link).toHaveAttribute('href', MINIMAX_ROUTE)
 
     await link.click()
-    await expect(page).toHaveURL(new RegExp(`${MINIMAX_ROUTE}$`))
+    await expect(page).toHaveURL(MINIMAX_ROUTE)
+  })
+})
+
+test.describe('Footer zh-CN @smoke', () => {
+  test('MiniMax H3 link navigates to the localized model page', async ({
+    page
+  }) => {
+    await page.goto('/zh-CN/')
+
+    const link = page
+      .locator('footer')
+      .getByRole('link', { name: MINIMAX_LABEL_ZH })
+    await link.scrollIntoViewIfNeeded()
+    await expect(link).toHaveAttribute('href', MINIMAX_ROUTE_ZH)
+
+    await link.click()
+    await expect(page).toHaveURL(MINIMAX_ROUTE_ZH)
   })
 })
