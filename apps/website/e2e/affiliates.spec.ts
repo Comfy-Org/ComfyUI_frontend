@@ -115,8 +115,12 @@ test.describe('Affiliates landing — desktop interactions', () => {
     await firstQuestion.scrollIntoViewIfNeeded()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
-    await firstQuestion.click()
-    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
+    // The trigger renders aria-expanded="false" server-side, so a click can
+    // land before the island hydrates. Re-click until it actually toggles.
+    await expect(async () => {
+      await firstQuestion.click()
+      await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
+    }).toPass()
     await expect(page.getByText(FIRST_FAQ.answer.en)).toBeVisible()
 
     await firstQuestion.click()
