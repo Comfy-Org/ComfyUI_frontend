@@ -8,10 +8,10 @@ export const CURATED_TEMPLATE_IDS = [
 
 /** Fills the grid, in order, when a curated template is missing from the data. */
 export const FALLBACK_TEMPLATE_IDS = [
-  'gsc_advanced_3_2',
+  'templates-image_to_real',
   'image_qwen_image_edit_2509',
   'templates-qwen_multiangle.app',
-  'gsc_advanced_3_1'
+  'video_ltx2_i2v_distilled'
 ] as const
 
 export const TUTORIAL_BADGE_ICON = 'icon-[lucide--graduation-cap]'
