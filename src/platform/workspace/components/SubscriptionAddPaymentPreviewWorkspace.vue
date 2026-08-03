@@ -136,7 +136,16 @@
       <!-- Terms Agreement -->
       <SubscriptionTermsNote />
 
-      <!-- Add Credit Card Button -->
+      <Button
+        v-if="actionUrl"
+        variant="primary"
+        size="lg"
+        class="w-full rounded-lg"
+        @click="openVerification"
+      >
+        {{ $t('subscription.preview.completeVerification') }}
+      </Button>
+
       <Button
         variant="tertiary"
         size="lg"
@@ -151,6 +160,7 @@
       <Button
         variant="textonly"
         class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
+        :disabled="isLoading"
         @click="$emit('back')"
       >
         {{ $t('subscription.preview.backToAllPlans') }}
@@ -186,6 +196,7 @@ interface Props {
   previewData?: PreviewSubscribeResponse | null
   /** Team-plan checkout (selected slider stop); overrides tier-derived display. */
   teamPlan?: TeamPlanSelection | null
+  actionUrl?: string | null
 }
 
 const {
@@ -193,7 +204,8 @@ const {
   billingCycle = 'monthly',
   isLoading = false,
   previewData = null,
-  teamPlan = null
+  teamPlan = null,
+  actionUrl = null
 } = defineProps<Props>()
 
 defineEmits<{
@@ -204,6 +216,11 @@ defineEmits<{
 const { t, n } = useI18n()
 
 const isFeaturesCollapsed = ref(true)
+
+function openVerification() {
+  if (!actionUrl) return
+  window.open(actionUrl, '_blank', 'noopener,noreferrer')
+}
 
 const tierName = computed(() =>
   teamPlan
