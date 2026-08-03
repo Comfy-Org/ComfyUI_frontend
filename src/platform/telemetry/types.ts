@@ -70,6 +70,20 @@ export interface AuthErrorMetadata {
   auth_action: AuthFlowAction
 }
 
+export type UnifiedAuthRetryFailureReason =
+  | 'missing_bearer'
+  | 'non_replayable_body'
+  | 'remint_failed'
+  | 'retry_rejected'
+  | 'retry_request_failed'
+
+export interface UnifiedAuthRetryMetadata {
+  transport: 'axios' | 'fetch'
+  outcome: 'succeeded' | 'failed'
+  final_status?: number
+  failure_reason?: UnifiedAuthRetryFailureReason
+}
+
 /**
  * Survey field ids mapped to answers. Fields are backend-overridable, so all
  * are optional.
@@ -182,10 +196,51 @@ export interface ExecutionErrorMetadata {
   error?: string
 }
 
-export interface ExecutionOutcomeMetadata {
-  startTime: number
-  outcome: 'success' | 'failure'
+export interface WorkflowExecutionContext {
+  workflow_type: 'template' | 'custom'
+  view_mode: AppMode
+  execution_scope: 'full' | 'partial'
+  total_node_count: number
+  executable_node_count: number
+  custom_node_count: number
+  api_node_count: number
+  subgraph_count: number
 }
+
+export interface WorkflowQueueIntent {
+  trigger_source?: ExecutionTriggerSource
+}
+
+export interface WorkflowExecutionIntent {
+  trigger_source: ExecutionTriggerSource
+}
+
+export type WorkflowExecutionFailureReason =
+  | 'prompt_build_failed'
+  | 'submission_rejected'
+  | 'submission_failed'
+  | 'execution_failed'
+  | 'execution_interrupted'
+
+interface ExecutionOutcomeBaseMetadata extends WorkflowExecutionIntent {
+  startTime: number
+  submissionAcceptedAt?: number
+  executionStartedAt?: number
+  endTime: number
+  workflowContext?: WorkflowExecutionContext
+}
+
+export type ExecutionOutcomeMetadata = ExecutionOutcomeBaseMetadata &
+  (
+    | {
+        success: true
+        failureReason: ''
+      }
+    | {
+        success: false
+        failureReason: WorkflowExecutionFailureReason
+      }
+  )
 
 /**
  * Execution success metadata
@@ -445,6 +500,34 @@ export interface WidgetFavoriteToggledMetadata {
 }
 
 /**
+ * Fired once per node when its `widgets_values_named` restore path
+ * disagrees with what the legacy positional `widgets_values` restore
+ * would have produced. Diagnostic only — never reflects an actual
+ * mis-restored widget value, since the legacy side is a shadow
+ * computation that's never applied when the flag is on.
+ */
+export interface NamedValuesShadowDiffMismatchMetadata {
+  node_type: string
+  pack_id?: string
+  mismatch_widget_count: number
+  checked_widget_count: number
+  had_named_field: boolean
+  has_on_serialize_hook: boolean
+  has_on_configure_hook: boolean
+}
+
+/**
+ * Fired once per workflow load (sampled), aggregating the shadow-diff
+ * results across every node checked during that load.
+ */
+export interface NamedValuesShadowDiffSummaryMetadata {
+  total_nodes_checked: number
+  nodes_with_mismatch: number
+  distinct_node_types: string[]
+  distinct_pack_ids: string[]
+}
+
+/**
  * Help center opened metadata
  */
 export interface HelpCenterOpenedMetadata {
@@ -611,6 +694,8 @@ type BillingErrorCode =
   | 'missing_checkout_response'
   | 'missing_payment_method_url'
   | 'payment_popup_blocked'
+  | 'reactivation_not_confirmed'
+  | 'reactivation_amount_changed'
 
 export interface BillingFailure {
   failure_category: BillingFailureCategory
@@ -743,6 +828,7 @@ export interface TelemetryProvider {
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
   trackAuthFailed?(metadata: AuthErrorMetadata): void
+  trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
@@ -846,6 +932,14 @@ export interface TelemetryProvider {
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
+  // Named values shadow-diff diagnostics
+  trackNamedValuesShadowDiffMismatch?(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void
+  trackNamedValuesShadowDiffSummary?(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
 }
@@ -870,6 +964,8 @@ export const TelemetryEvents = {
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_AUTH_FAILED: 'app:user_auth_failed',
   USER_LOGGED_IN: 'app:user_logged_in',
+  UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',
+  UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -976,6 +1072,10 @@ export const TelemetryEvents = {
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
+  // Named Values Shadow Diff (Comfy.Workflow.NamedValuesRestore diagnostics)
+  NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
+  NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
+
   // Page View
   PAGE_VIEW: 'app:page_view'
 } as const
@@ -1000,12 +1100,25 @@ export const CANCELLATION_STAGE_EVENTS = {
   failed: TelemetryEvents.SUBSCRIPTION_CANCEL_FAILED
 } as const
 
-export type ExecutionTriggerSource =
-  | 'button'
-  | 'keybinding'
-  | 'legacy_ui'
-  | 'unknown'
-  | 'linear'
+const executionTriggerSources = [
+  'button',
+  'keybinding',
+  'legacy_ui',
+  'unknown',
+  'linear',
+  'auto_queue'
+] as const
+
+export type ExecutionTriggerSource = (typeof executionTriggerSources)[number]
+
+export function normalizeExecutionTriggerSource(
+  value: unknown
+): ExecutionTriggerSource {
+  return (
+    executionTriggerSources.find((triggerSource) => triggerSource === value) ??
+    'unknown'
+  )
+}
 
 /**
  * Union type for all possible telemetry event properties
@@ -1014,6 +1127,7 @@ export type TelemetryEventProperties =
   | AuthMetadata
   | OnboardingTourMetadata
   | AuthErrorMetadata
+  | UnifiedAuthRetryMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
@@ -1035,6 +1149,8 @@ export type TelemetryEventProperties =
   | SettingChangedMetadata
   | UiButtonClickMetadata
   | WidgetFavoriteToggledMetadata
+  | NamedValuesShadowDiffMismatchMetadata
+  | NamedValuesShadowDiffSummaryMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata

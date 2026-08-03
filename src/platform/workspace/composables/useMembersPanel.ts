@@ -273,13 +273,8 @@ export function useMembersPanel() {
         })
     }
 
-    const creditLimitEnabled = flags.billingControlEnabled
-
-    // The creator and the current user can't change their own role or be
-    // removed; their only possible action is capping their own usage, so they
-    // get a menu at all only when credit limits are enabled.
     if (isCurrentUser(member) || isOriginalOwner(member)) {
-      return creditLimitEnabled ? [creditLimitItem] : []
+      return []
     }
 
     return [
@@ -290,7 +285,9 @@ export function useMembersPanel() {
           roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
         ]
       },
-      ...(creditLimitEnabled ? [creditLimitItem] : []),
+      ...(flags.billingControlEnabled && member.role === 'member'
+        ? [creditLimitItem]
+        : []),
       {
         label: t('workspacePanel.members.actions.removeMember'),
         command: () => handleRemoveMember(member)

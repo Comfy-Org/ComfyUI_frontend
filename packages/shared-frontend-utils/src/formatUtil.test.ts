@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   appendWorkflowJsonExt,
+  downloadUrlToHfRepoUrl,
   ensureWorkflowSuffix,
   formatLocalizedMediumDate,
   formatLocalizedNumber,
@@ -18,6 +19,22 @@ import {
 } from './formatUtil'
 
 describe('formatUtil', () => {
+  describe('downloadUrlToHfRepoUrl', () => {
+    it('converts a download URL to its Hugging Face repository URL', () => {
+      expect(
+        downloadUrlToHfRepoUrl(
+          'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+        )
+      ).toBe('https://huggingface.co/bfl/FLUX.1')
+    })
+
+    it('returns the Hugging Face root for malformed input', () => {
+      expect(downloadUrlToHfRepoUrl('not a url')).toBe(
+        'https://huggingface.co/'
+      )
+    })
+  })
+
   describe('truncateFilename', () => {
     it('should not truncate short filenames', () => {
       expect(truncateFilename('test.png')).toBe('test.png')

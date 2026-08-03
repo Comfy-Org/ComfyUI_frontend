@@ -14,12 +14,35 @@ vi.mock('@datadog/browser-rum', () => ({
   datadogRum: { addAction, addDurationVital, getInternalContext }
 }))
 
+const workflowExecutionIntent = {
+  trigger_source: 'keybinding'
+} as const
+
 afterEach(() => {
   vi.restoreAllMocks()
   vi.clearAllMocks()
 })
 
 describe('DatadogRumTelemetryProvider', () => {
+  it('records terminal unified auth retry outcomes without request data', () => {
+    new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
+      transport: 'axios',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+      {
+        transport: 'axios',
+        outcome: 'failed',
+        final_status: 401,
+        failure_reason: 'retry_rejected'
+      }
+    )
+  })
+
   it('records the same canonical billing name and context as PostHog', () => {
     const event: BillingTelemetryEvent = {
       operation: 'operation',
@@ -70,27 +93,172 @@ describe('DatadogRumTelemetryProvider', () => {
     )
   })
 
-  it.for(['success', 'failure'] as const)(
-    'records a workflow vital with a %s outcome',
-    (outcome) => {
-      getInternalContext.mockReturnValue({ view: { id: 'view-a' } })
-      vi.spyOn(performance, 'now').mockReturnValue(142)
+  it('records one successful workflow vital with every stage', () => {
+    getInternalContext.mockReturnValue({ view: { id: 'view-a' } })
 
-      new DatadogRumTelemetryProvider().trackExecutionOutcome({
+    new DatadogRumTelemetryProvider().trackExecutionOutcome({
+      startTime: 42,
+      submissionAcceptedAt: 62,
+      executionStartedAt: 92,
+      endTime: 142,
+      success: true,
+      failureReason: '',
+      ...workflowExecutionIntent,
+      workflowContext: {
+        workflow_type: 'custom',
+        view_mode: 'graph',
+        execution_scope: 'full',
+        total_node_count: 42,
+        executable_node_count: 12,
+        custom_node_count: 3,
+        api_node_count: 1,
+        subgraph_count: 2
+      }
+    })
+
+    expect(getInternalContext).toHaveBeenCalledWith(42)
+    expect(addDurationVital).toHaveBeenCalledWith('workflow_execution', {
+      startTime: performance.timeOrigin + 42,
+      duration: 100,
+      context: {
+        api_node_count: 1,
+        custom_node_count: 3,
+        executable_node_count: 12,
+        execution_duration_ms: 50,
+        execution_scope: 'full',
+        execution_started_at_unix_ms: performance.timeOrigin + 92,
+        failure_reason: '',
+        origin_view_id: 'view-a',
+        queue_wait_duration_ms: 30,
+        submission_accepted_at_unix_ms: performance.timeOrigin + 62,
+        submission_duration_ms: 20,
+        subgraph_count: 2,
+        success: true,
+        terminal_stage: 'execution',
+        total_node_count: 42,
+        trigger_source: 'keybinding',
+        view_mode: 'graph',
+        workflow_ended_at_unix_ms: performance.timeOrigin + 142,
+        workflow_started_at_unix_ms: performance.timeOrigin + 42,
+        workflow_type: 'custom'
+      }
+    })
+  })
+
+  it.for([
+    {
+      name: 'submission',
+      metadata: {
         startTime: 42,
-        outcome
-      })
+        endTime: 62,
+        success: false,
+        failureReason: 'submission_rejected',
+        ...workflowExecutionIntent
+      },
+      duration: 20,
+      context: {
+        success: false,
+        failure_reason: 'submission_rejected',
+        terminal_stage: 'submission',
+        workflow_started_at_unix_ms: performance.timeOrigin + 42,
+        workflow_ended_at_unix_ms: performance.timeOrigin + 62,
+        submission_duration_ms: 20,
+        trigger_source: 'keybinding'
+      }
+    },
+    {
+      name: 'queue wait',
+      metadata: {
+        startTime: 42,
+        submissionAcceptedAt: 62,
+        endTime: 82,
+        success: false,
+        failureReason: 'execution_failed',
+        ...workflowExecutionIntent
+      },
+      duration: 40,
+      context: {
+        success: false,
+        failure_reason: 'execution_failed',
+        terminal_stage: 'queue_wait',
+        workflow_started_at_unix_ms: performance.timeOrigin + 42,
+        submission_accepted_at_unix_ms: performance.timeOrigin + 62,
+        workflow_ended_at_unix_ms: performance.timeOrigin + 82,
+        submission_duration_ms: 20,
+        queue_wait_duration_ms: 20,
+        trigger_source: 'keybinding'
+      }
+    },
+    {
+      name: 'execution',
+      metadata: {
+        startTime: 42,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: false,
+        failureReason: 'execution_failed',
+        ...workflowExecutionIntent
+      },
+      duration: 100,
+      context: {
+        success: false,
+        failure_reason: 'execution_failed',
+        terminal_stage: 'execution',
+        workflow_started_at_unix_ms: performance.timeOrigin + 42,
+        submission_accepted_at_unix_ms: performance.timeOrigin + 62,
+        execution_started_at_unix_ms: performance.timeOrigin + 92,
+        workflow_ended_at_unix_ms: performance.timeOrigin + 142,
+        submission_duration_ms: 20,
+        queue_wait_duration_ms: 30,
+        execution_duration_ms: 50,
+        trigger_source: 'keybinding'
+      }
+    }
+  ] as const)(
+    'records a failed workflow vital ending during $name',
+    ({ metadata, duration, context }) => {
+      getInternalContext.mockReturnValue(undefined)
 
-      expect(getInternalContext).toHaveBeenCalledWith(42)
+      new DatadogRumTelemetryProvider().trackExecutionOutcome(metadata)
+
       expect(addDurationVital).toHaveBeenCalledWith('workflow_execution', {
         startTime: performance.timeOrigin + 42,
-        duration: 100,
-        context: {
-          origin_view_id: 'view-a',
-          outcome,
-          product: 'cloud_generation'
-        }
+        duration,
+        context
       })
     }
   )
+
+  it('keeps stage timestamps monotonic when execution finishes before the submission response', () => {
+    getInternalContext.mockReturnValue(undefined)
+
+    new DatadogRumTelemetryProvider().trackExecutionOutcome({
+      startTime: 42,
+      executionStartedAt: 52,
+      submissionAcceptedAt: 62,
+      endTime: 58,
+      success: false,
+      failureReason: 'execution_failed',
+      ...workflowExecutionIntent
+    })
+
+    expect(addDurationVital).toHaveBeenCalledWith('workflow_execution', {
+      startTime: performance.timeOrigin + 42,
+      duration: 20,
+      context: {
+        success: false,
+        failure_reason: 'execution_failed',
+        terminal_stage: 'execution',
+        trigger_source: 'keybinding',
+        workflow_started_at_unix_ms: performance.timeOrigin + 42,
+        submission_accepted_at_unix_ms: performance.timeOrigin + 62,
+        execution_started_at_unix_ms: performance.timeOrigin + 62,
+        workflow_ended_at_unix_ms: performance.timeOrigin + 62,
+        submission_duration_ms: 20,
+        queue_wait_duration_ms: 0,
+        execution_duration_ms: 0
+      }
+    })
+  })
 })
