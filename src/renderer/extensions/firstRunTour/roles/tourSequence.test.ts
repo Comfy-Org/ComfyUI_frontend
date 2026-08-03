@@ -45,6 +45,19 @@ describe('sequenceBuilder', () => {
     expect(sequenceBuilder(roles).map((step) => step.kind)).toEqual(kinds)
   })
 
+  it('points each step at its own role', () => {
+    const steps = sequenceBuilder(
+      roles({ source: SOURCE, promptHost: PROMPT_HOST, sink: SINK })
+    )
+
+    expect(steps).toEqual([
+      { kind: 'upload', nodeId: SOURCE },
+      { kind: 'prompt', nodeId: PROMPT_HOST },
+      { kind: 'run' },
+      { kind: 'result', nodeId: SINK, mediaKind: 'image' }
+    ])
+  })
+
   it('hands the result step the sink and its media kind', () => {
     const steps = sequenceBuilder(
       roles({ promptHost: PROMPT_HOST, sink: SINK, mediaKind: 'video' })
