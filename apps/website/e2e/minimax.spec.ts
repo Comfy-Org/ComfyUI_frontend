@@ -6,7 +6,8 @@ import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/minimax'
-const HERO_TITLE = t('minimax.hero.title', 'en')
+const HERO_TITLE =
+  t('minimax.hero.titleModel', 'en') + t('minimax.hero.titleRest', 'en')
 const MODELS_HEADING = t('minimax.models.heading', 'en')
 const MODELS_ROUTE = getRoutes('en').models
 const CTA_HEADING = t('minimax.cta.heading', 'en')
@@ -67,7 +68,9 @@ test.describe('MiniMax H3 page — link targets', () => {
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
-  test('closing CTA links to cloud signup in a new tab', async ({ page }) => {
+  test('closing CTA links to the cloud workflow in a new tab', async ({
+    page
+  }) => {
     const ctaSection = page.locator('section').filter({
       has: page.getByRole('heading', { level: 2, name: CTA_HEADING })
     })

@@ -6,9 +6,11 @@ import type { BillingCycle } from '../../data/pricingPlans'
 
 import BrandButton from '../../components/common/BrandButton.vue'
 import PricingCard from '../../components/pricing/PricingCard.vue'
+import PricingContactBand from '../../components/pricing/PricingContactBand.vue'
 import PricingPlanFeatureList from '../../components/pricing/PricingPlanFeatureList.vue'
 import PricingPlanLabel from '../../components/pricing/PricingPlanLabel.vue'
 import PricingPrice from '../../components/pricing/PricingPrice.vue'
+import PricingTeamCard from '../../components/pricing/PricingTeamCard.vue'
 import Badge from '../../components/ui/badge/Badge.vue'
 import Button from '../../components/ui/button/Button.vue'
 import ToggleGroup from '../../components/ui/toggle-group/ToggleGroup.vue'
@@ -166,6 +168,14 @@ const planCards = computed(() =>
           </Button>
         </div>
       </PricingCard>
+
+      <PricingTeamCard :billing-period="billingPeriod" :locale />
+
+      <PricingContactBand
+        label-key="pricing.enterprise.label"
+        description-key="pricing.enterprise.description"
+        :locale
+      />
     </div>
 
     <p class="mt-12 text-xs text-primary-comfy-canvas/70">

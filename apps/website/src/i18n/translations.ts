@@ -2477,16 +2477,20 @@ const translations = {
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW: COMFY MCP',
-    'zh-CN': '全新发布：Comfy MCP'
+    en: 'NEW RELEASE: MINIMAX H3',
+    'zh-CN': '全新发布：MiniMax H3'
   },
   'nav.featuredProductsAlt': {
-    en: 'Comfy MCP feature image',
-    'zh-CN': 'Comfy MCP 精选图片'
+    en: 'MiniMax H3 feature image',
+    'zh-CN': 'MiniMax H3 精选图片'
+  },
+  'nav.featuredProductsCta': {
+    en: 'TRY WORKFLOW',
+    'zh-CN': '试用工作流'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Get started with Comfy MCP',
-    'zh-CN': '开始使用 Comfy MCP'
+    en: 'Try the MiniMax H3 workflow',
+    'zh-CN': '试用 MiniMax H3 工作流'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -4942,9 +4946,15 @@ const translations = {
     en: 'Updated August 2026',
     'zh-CN': '更新于 2026 年 8 月'
   },
-  'minimax.hero.title': {
-    en: 'MiniMax H3 is here',
-    'zh-CN': 'MiniMax H3 已上线'
+  // The hero h1 renders titleModel bright and titleRest muted (Figma two-tone
+  // heading); together they read "MiniMax H3 is here".
+  'minimax.hero.titleModel': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'minimax.hero.titleRest': {
+    en: ' is here',
+    'zh-CN': ' 已上线'
   },
   'minimax.hero.description': {
     en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. H3 is available as Open Weights and through Partner Nodes.',
@@ -4985,23 +4995,22 @@ const translations = {
     'zh-CN': '用 MiniMax H3 制作'
   },
   'minimax.models.tagFree': { en: 'Free', 'zh-CN': '免费' },
-  'minimax.models.cardCta': { en: 'Try now', 'zh-CN': '立即试用' },
   'minimax.models.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
   'minimax.faq.heading': {
     en: 'Q&A',
     'zh-CN': '问答'
   },
   'minimax.cta.heading': {
-    en: 'Open weights.\nFull control.',
-    'zh-CN': '开源权重，\n完全掌控。'
+    en: 'Up to 2K, with sound, in one generation.',
+    'zh-CN': '最高 2K，自带声音，一次生成。'
   },
   'minimax.cta.primaryCta': {
-    en: 'SIGN UP FOR FREE',
-    'zh-CN': '免费注册'
-  },
-  'minimax.cta.secondaryCta': {
     en: 'RUN MINIMAX H3',
     'zh-CN': '运行 MiniMax H3'
+  },
+  'minimax.cta.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
   },
   'minimax.runOptions.heading': {
     en: 'One engine, every way to run it',

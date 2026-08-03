@@ -18,7 +18,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     }"
     :secondary-cta="{
       label: t('minimax.cta.secondaryCta', locale),
-      href: minimaxLinks.cloudRun,
+      href: minimaxLinks.imageToVideo,
       target: '_blank'
     }"
   />

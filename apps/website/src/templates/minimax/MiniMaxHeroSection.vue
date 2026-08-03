@@ -12,13 +12,32 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section class="max-w-9xl mx-auto px-6 py-12 lg:px-20 lg:py-16">
-    <VideoPlayer :locale :src="minimaxHeroVideo" autoplay loop />
+    <div class="relative">
+      <VideoPlayer :locale :src="minimaxHeroVideo" autoplay loop />
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute top-6 right-6 flex size-12 items-center justify-center rounded-2xl bg-white/8 backdrop-blur-sm lg:top-10 lg:right-10 lg:size-[70px] lg:rounded-3xl"
+      >
+        <span
+          class="inline-block size-6 bg-current text-white lg:size-[35px]"
+          :style="{
+            maskImage: 'url(/icons/ai-models/minimax.svg)',
+            maskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            maskPosition: 'center'
+          }"
+        />
+      </div>
+    </div>
 
     <div class="mx-auto mt-10 flex max-w-2xl flex-col items-center text-center">
       <h1
         class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl/tight"
       >
-        {{ t('minimax.hero.title', locale) }}
+        {{ t('minimax.hero.titleModel', locale)
+        }}<span class="text-primary-comfy-canvas/80">{{
+          t('minimax.hero.titleRest', locale)
+        }}</span>
       </h1>
 
       <p
@@ -49,10 +68,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       </div>
 
       <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <Badge variant="accent">{{
+        <Badge variant="subtle">{{
           t('minimax.hero.tagOpenWeights', locale)
         }}</Badge>
-        <Badge variant="callout">{{
+        <Badge variant="subtle">{{
           t('minimax.hero.tagPartnerNodes', locale)
         }}</Badge>
       </div>
