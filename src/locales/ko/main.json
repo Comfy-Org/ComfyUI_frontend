@@ -3865,6 +3865,7 @@
     "beta": "베타",
     "billedMonthly": "매월 결제",
     "billedYearly": "{total} 연간 결제",
+    "billingAndInvoices": "결제 및 인보이스",
     "billingComingSoon": {
       "message": "팀 결제 기능이 곧 제공됩니다. 워크스페이스별 좌석당 요금제로 구독할 수 있습니다. 업데이트를 기대해 주세요.",
       "title": "곧 출시 예정"
@@ -3946,6 +3947,9 @@
       "memberTitle": "이 워크스페이스의 구독이 비활성화되었습니다",
       "runLabel": "실행"
     },
+    "inactiveTeamDescription": "팀 플랜을 다시 활성화하여 더 많은 멤버를 추가하고 워크플로우를 실행하세요",
+    "inactiveTeamPlanIncludes": "활성 플랜에는 {plan}의 모든 기능과 다음이 포함됩니다:",
+    "inactiveTeamTitle": "비활성화된 팀 구독",
     "inviteUpTo": "최대 {count}명 초대",
     "invoiceHistory": "청구서 기록",
     "learnMore": "더 알아보기",
@@ -4065,6 +4069,7 @@
     "pricingBlurbQuestions": "문의",
     "pricingBlurbSeeDetails": "자세히 보기",
     "reactivatePlan": "요금제 재활성화",
+    "reactivateToUseCredits": "이 크레딧을 사용하려면 플랜을 다시 활성화하세요",
     "refillsDate": "{date}에 리필",
     "refillsNextCycle": "다음 주기에 리필",
     "refreshCredits": "크레딧 새로고침",

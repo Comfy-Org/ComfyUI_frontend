@@ -5704,6 +5704,15 @@
       "model_resolution": {
         "name": "分辨率"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "提示词",
         "tooltip": "描述期望视频的文本。"

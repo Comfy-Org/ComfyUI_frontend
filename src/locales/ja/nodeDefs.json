@@ -5704,6 +5704,15 @@
       "model_resolution": {
         "name": "解像度"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "プロンプト",
         "tooltip": "希望するビデオのテキスト説明。"

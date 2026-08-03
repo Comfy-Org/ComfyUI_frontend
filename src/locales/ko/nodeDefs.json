@@ -5704,6 +5704,15 @@
       "model_resolution": {
         "name": "해상도"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "프롬프트",
         "tooltip": "원하는 비디오를 설명하는 텍스트입니다."

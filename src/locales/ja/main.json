@@ -3865,6 +3865,7 @@
     "beta": "ベータ版",
     "billedMonthly": "毎月請求",
     "billedYearly": "{total} 年間請求",
+    "billingAndInvoices": "請求と請求書",
     "billingComingSoon": {
       "message": "チーム向けの請求機能が近日中に追加されます。ワークスペースごとに席数単位でプランに加入できるようになります。今後のアップデートをお待ちください。",
       "title": "近日公開"
@@ -3946,6 +3947,9 @@
       "memberTitle": "このワークスペースのサブスクリプションは無効です",
       "runLabel": "実行"
     },
+    "inactiveTeamDescription": "チームプランを再有効化して、メンバーの追加やワークフローの実行を行ってください",
+    "inactiveTeamPlanIncludes": "有効なプランには{plan}のすべてに加えて、以下が含まれます：",
+    "inactiveTeamTitle": "チームサブスクリプションが無効です",
     "inviteUpTo": "最大 {count} 人を招待",
     "invoiceHistory": "請求履歴",
     "learnMore": "詳細を見る",
@@ -4065,6 +4069,7 @@
     "pricingBlurbQuestions": "ご質問",
     "pricingBlurbSeeDetails": "詳細を見る",
     "reactivatePlan": "プランを再開",
+    "reactivateToUseCredits": "これらのクレジットを利用するにはプランを再有効化してください",
     "refillsDate": "{date}に補充",
     "refillsNextCycle": "次のサイクルで補充",
     "refreshCredits": "クレジットを更新",

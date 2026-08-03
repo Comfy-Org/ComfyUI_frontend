@@ -5648,11 +5648,11 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 currently always requires an input image."
+        "tooltip": "The model to use for video generation."
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Text description of the desired video."
+        "tooltip": "Text description of the desired video. Optional for grok-imagine-video-1.5 when an input image is provided."
       },
       "resolution": {
         "name": "resolution",
@@ -5672,7 +5672,7 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Optional starting image for grok-imagine-video. Required for grok-imagine-video-1.5."
+        "tooltip": "Optional starting image. If omitted, the video is generated from the text prompt alone."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5686,7 +5686,7 @@
   },
   "GrokVideoReferenceNode": {
     "display_name": "Grok Reference-to-Video",
-    "description": "Generate video guided by reference images as style and content references.",
+    "description": "Generate video guided by reference images, with optional preset voice references.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -5711,6 +5711,15 @@
       },
       "model_resolution": {
         "name": "resolution"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       }
     },
     "outputs": {

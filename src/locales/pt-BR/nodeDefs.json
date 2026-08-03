@@ -5704,6 +5704,15 @@
       "model_resolution": {
         "name": "resolução"
       },
+      "model_voice_1": {
+        "name": "voz_1"
+      },
+      "model_voice_2": {
+        "name": "voz_2"
+      },
+      "model_voice_3": {
+        "name": "voz_3"
+      },
       "prompt": {
         "name": "prompt",
         "tooltip": "Descrição em texto do vídeo desejado."
