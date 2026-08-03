@@ -10,6 +10,9 @@ export type RightSidePanelTab =
   | 'info'
   | 'subgraph'
   | 'errors'
+  // Full-panel takeover, not a node-contextual tab: the job history opened
+  // from the run bar's "View all history".
+  | 'job-history'
 
 type RightSidePanelSection = 'advanced-inputs' | string
 
