@@ -155,6 +155,15 @@ describe('useConflictDetectionStore', () => {
       expect(store.conflictedPackages).toEqual([])
       expect(store.hasConflicts).toBe(false)
     })
+
+    it('should clear the unverified registry pack ids', () => {
+      const store = useConflictDetectionStore()
+      store.setRegistryUnknownPackIds(new Set(['ComfyUI-Manager']))
+
+      store.clearConflicts()
+
+      expect(store.registryUnknownPackIds).toEqual(new Set())
+    })
   })
 
   describe('detection state management', () => {

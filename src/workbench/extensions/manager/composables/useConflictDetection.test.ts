@@ -178,8 +178,11 @@ describe('useConflictDetection', () => {
         p.conflicts?.some((c) => c.type === 'pending')
       )
     },
+    getConflictsForPackageByID: (packageId: string) =>
+      mockConflictedPackages.find((pkg) => pkg.package_id === packageId),
     setConflictedPackages: vi.fn(),
-    clearConflicts: vi.fn()
+    clearConflicts: vi.fn(),
+    setRegistryUnknownPackIds: vi.fn()
   } as Partial<ReturnType<typeof useConflictDetectionStore>> as ReturnType<
     typeof useConflictDetectionStore
   >
@@ -582,6 +585,297 @@ describe('useConflictDetection', () => {
 
       expect(bulkCalls()).toHaveLength(1)
       expect(bulkCalls()[0][0]).toHaveLength(50)
+    })
+
+    describe('unverified registry status', () => {
+      const activeResponse = (
+        nodeVersions: components['schemas']['NodeVersionIdentifier'][]
+      ) => ({
+        node_versions: nodeVersions.map((identifier) => ({
+          status: 'success' as const,
+          identifier,
+          node_version: {
+            status: 'NodeVersionStatusActive' as const,
+            version: identifier.version,
+            publisher_id: 'test-publisher',
+            node_id: identifier.node_id,
+            created_at: '2024-01-01T00:00:00Z'
+          } as components['schemas']['NodeVersion']
+        }))
+      })
+
+      const unknownPackIds = (results: ConflictDetectionResult[]) =>
+        results
+          .filter((result) => result.registry_status_unknown)
+          .map((result) => result.package_id)
+
+      const isFirstChunk = (
+        nodeVersions: components['schemas']['NodeVersionIdentifier'][]
+      ) => nodeVersions.some(({ node_id }) => node_id === 'pack-0')
+
+      const bannedConflict = {
+        type: 'banned' as const,
+        current_value: 'installed',
+        required_value: 'not_banned'
+      }
+
+      it.for([
+        { outcome: 'resolves null', fail: () => Promise.resolve(null) },
+        {
+          outcome: 'rejects',
+          fail: () => Promise.reject(new Error('network down'))
+        }
+      ])(
+        'marks unverified only the packs in the failed chunk when its request $outcome',
+        async ({ fail }) => {
+          installPacks(250)
+          vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+            (nodeVersions) =>
+              isFirstChunk(nodeVersions)
+                ? fail()
+                : Promise.resolve(activeResponse(nodeVersions))
+          )
+
+          const { runFullConflictAnalysis } = useConflictDetection()
+          const { results } = await runFullConflictAnalysis()
+
+          expect(unknownPackIds(results)).toEqual(packIds(100))
+          expect(
+            mockConflictStore.setRegistryUnknownPackIds
+          ).toHaveBeenCalledWith(new Set(packIds(100)))
+        }
+      )
+
+      it('keeps a stored banned conflict for a pack whose lookup failed', async () => {
+        installPacks(1)
+        mockConflictedPackages = [
+          {
+            package_id: 'pack-0',
+            package_name: 'pack-0',
+            has_conflict: true,
+            conflicts: [bannedConflict],
+            is_compatible: false
+          }
+        ]
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue(
+          null
+        )
+
+        const { runFullConflictAnalysis } = useConflictDetection()
+        await runFullConflictAnalysis()
+
+        expect(mockConflictStore.clearConflicts).not.toHaveBeenCalled()
+        expect(mockConflictStore.setConflictedPackages).toHaveBeenCalledWith([
+          expect.objectContaining({
+            package_id: 'pack-0',
+            conflicts: [bannedConflict],
+            registry_status_unknown: true
+          })
+        ])
+      })
+
+      it('keeps a stored compatibility conflict for a pack whose lookup failed', async () => {
+        installPacks(1)
+        const osConflict = {
+          type: 'os' as const,
+          current_value: 'Windows',
+          required_value: 'Linux'
+        }
+        mockConflictedPackages = [
+          {
+            package_id: 'pack-0',
+            package_name: 'pack-0',
+            has_conflict: true,
+            conflicts: [osConflict],
+            is_compatible: false
+          }
+        ]
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue(
+          null
+        )
+
+        const { runFullConflictAnalysis } = useConflictDetection()
+        await runFullConflictAnalysis()
+
+        expect(mockConflictStore.setConflictedPackages).toHaveBeenCalledWith([
+          expect.objectContaining({
+            package_id: 'pack-0',
+            conflicts: [osConflict],
+            registry_status_unknown: true
+          })
+        ])
+      })
+
+      it('drops a stored import failure rather than carrying it over', async () => {
+        installPacks(1)
+        mockConflictedPackages = [
+          {
+            package_id: 'pack-0',
+            package_name: 'pack-0',
+            has_conflict: true,
+            conflicts: [
+              bannedConflict,
+              {
+                type: 'import_failed' as const,
+                current_value: 'since-resolved error',
+                required_value: 'since-resolved error'
+              }
+            ],
+            is_compatible: false
+          }
+        ]
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue(
+          null
+        )
+
+        const { runFullConflictAnalysis } = useConflictDetection()
+        await runFullConflictAnalysis()
+
+        expect(mockConflictStore.setConflictedPackages).toHaveBeenCalledWith([
+          expect.objectContaining({
+            package_id: 'pack-0',
+            conflicts: [bannedConflict]
+          })
+        ])
+      })
+
+      it.for([
+        { answer: 'omits the pack', node_versions: [] },
+        {
+          answer: "reports the pack 'not_found'",
+          node_versions: [
+            {
+              status: 'not_found' as const,
+              identifier: { node_id: 'pack-0', version: '1.0.0' }
+            }
+          ]
+        }
+      ])(
+        'leaves the plain fallback when the response $answer',
+        async ({ node_versions }) => {
+          installPacks(1)
+          vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue({
+            node_versions
+          })
+
+          const { runFullConflictAnalysis } = useConflictDetection()
+          const { results } = await runFullConflictAnalysis()
+
+          expect(bulkCalls()).toHaveLength(1)
+          expect(unknownPackIds(results)).toEqual([])
+        }
+      )
+
+      it("marks a pack unverified when its entry comes back 'error'", async () => {
+        installPacks(2)
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+          (nodeVersions) =>
+            Promise.resolve({
+              node_versions: nodeVersions.map((identifier) =>
+                identifier.node_id === 'pack-0'
+                  ? {
+                      status: 'error' as const,
+                      identifier,
+                      error_message: 'internal error'
+                    }
+                  : activeResponse([identifier]).node_versions[0]
+              )
+            })
+        )
+
+        const { runFullConflictAnalysis } = useConflictDetection()
+        const { results } = await runFullConflictAnalysis()
+
+        expect(bulkCalls()).toHaveLength(1)
+        expect(unknownPackIds(results)).toEqual(['pack-0'])
+      })
+
+      it('does not mark packs unverified when the retry succeeds', async () => {
+        installPacks(50)
+        let attempts = 0
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+          (nodeVersions) => {
+            attempts += 1
+            return Promise.resolve(
+              attempts === 1 ? null : activeResponse(nodeVersions)
+            )
+          }
+        )
+
+        const { runFullConflictAnalysis } = useConflictDetection()
+        const { results } = await runFullConflictAnalysis()
+
+        expect(bulkCalls()).toHaveLength(2)
+        expect(unknownPackIds(results)).toEqual([])
+      })
+
+      it('retries a chunk exactly once before marking its packs unverified', async () => {
+        installPacks(50)
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue(
+          null
+        )
+
+        const { runFullConflictAnalysis } = useConflictDetection()
+        const { results } = await runFullConflictAnalysis()
+
+        expect(bulkCalls()).toHaveLength(2)
+        expect(unknownPackIds(results)).toEqual(packIds(50))
+      })
+
+      it('leaves the stored conflicts untouched when the run is cancelled', async () => {
+        installPacks(50)
+        mockConflictedPackages = [
+          {
+            package_id: 'pack-0',
+            package_name: 'pack-0',
+            has_conflict: true,
+            conflicts: [bannedConflict],
+            is_compatible: false
+          }
+        ]
+
+        const { runFullConflictAnalysis, cancelRequests } =
+          useConflictDetection()
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+          () => {
+            cancelRequests()
+            return Promise.resolve(null)
+          }
+        )
+
+        const { success } = await runFullConflictAnalysis()
+
+        expect(success).toBe(false)
+        expect(bulkCalls()).toHaveLength(1)
+        expect(
+          mockConflictStore.setRegistryUnknownPackIds
+        ).not.toHaveBeenCalled()
+        expect(mockConflictStore.setConflictedPackages).not.toHaveBeenCalled()
+        expect(mockConflictStore.clearConflicts).not.toHaveBeenCalled()
+      })
+
+      it('clears the unverified pack ids on a later successful run', async () => {
+        installPacks(50)
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue(
+          null
+        )
+
+        const { runFullConflictAnalysis } = useConflictDetection()
+        await runFullConflictAnalysis()
+
+        expect(
+          mockConflictStore.setRegistryUnknownPackIds
+        ).toHaveBeenLastCalledWith(new Set(packIds(50)))
+
+        vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+          (nodeVersions) => Promise.resolve(activeResponse(nodeVersions))
+        )
+        await runFullConflictAnalysis()
+
+        expect(
+          mockConflictStore.setRegistryUnknownPackIds
+        ).toHaveBeenLastCalledWith(new Set())
+      })
     })
   })
 
