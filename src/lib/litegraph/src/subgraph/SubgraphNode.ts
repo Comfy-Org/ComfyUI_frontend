@@ -475,7 +475,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     super.configure(info)
-    this._applyPromotedWidgetValues(info.widgets_values)
+    if (!info.widgets_values_named || !LiteGraph.namedValuesRestore)
+      this._applyPromotedWidgetValues(info.widgets_values)
   }
 
   private _applyPromotedWidgetValues(

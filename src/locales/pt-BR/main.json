@@ -5,7 +5,6 @@
     "feedbackTooltip": "Feedback",
     "freeTierPartner": "Nodes parceiros precisam de um plano pago",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} execuções restantes",
-    "freeTierRunsExhausted": "Sem execuções restantes",
     "share": "Compartilhar",
     "shareTooltip": "Compartilhar fluxo de trabalho"
   },
@@ -143,6 +142,8 @@
       "modelDescription": "Descrição do Modelo",
       "modelTagging": "Tagueamento do Modelo",
       "modelType": "Tipo de Modelo",
+      "modelTypeCoreReadonly": "O tipo de modelo não pode ser alterado no core, mover o arquivo ainda não é suportado.",
+      "modelTypeImmutableReadonly": "O tipo de modelo não pode ser alterado para um modelo somente leitura.",
       "noAdditionalTags": "Sem tags adicionais",
       "selectModelPrompt": "Selecione um modelo para ver suas informações",
       "selectModelType": "Selecione o tipo de modelo...",
@@ -173,6 +174,7 @@
     "rename": {
       "failed": "Não foi possível renomear o ativo."
     },
+    "searchModels": "Buscar modelos",
     "selectFrameworks": "Selecione Frameworks",
     "selectModelType": "Selecione o tipo de modelo",
     "selectProjects": "Selecione Projetos",
@@ -343,6 +345,7 @@
     "cancelFailed": "Falha ao cancelar a assinatura",
     "cancelTimeout": "Tempo esgotado ao cancelar a assinatura",
     "subscriptionFailed": "Falha ao atualizar a assinatura",
+    "subscriptionFailedDetail": "Não foi possível atualizar sua assinatura. Por favor, tente novamente.",
     "subscriptionProcessing": "Processando pagamento — configurando seu workspace...",
     "subscriptionSuccess": "Assinatura atualizada com sucesso",
     "subscriptionTimeout": "Tempo esgotado na verificação da assinatura",
@@ -649,12 +652,11 @@
     "next": "Avançar",
     "publishButton": "Publicar no Comfy Workflows",
     "publishFailedDescription": "Algo deu errado ao publicar seu fluxo de trabalho. Por favor, tente novamente.",
+    "publishFailedDescriptionWithReason": "Algo deu errado ao publicar seu workflow: {reason}",
     "publishFailedTitle": "Falha ao publicar",
     "publishSuccessDescription": "Seu fluxo de trabalho está agora disponível no Comfy Workflows.",
     "publishSuccessTitle": "Publicado com sucesso",
     "removeExampleImage": "Remover imagem de exemplo",
-    "renameFailedDescription": "Seu workflow foi publicado com sucesso, mas a renomeação do arquivo local falhou. Renomeie novamente para corresponder.",
-    "renameFailedTitle": "Falha ao renomear",
     "selectAThumbnail": "Selecione uma miniatura",
     "shareAs": "Compartilhar como",
     "showLessTags": "Mostrar menos...",
@@ -1268,6 +1270,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "Este nó foi desabilitado pela política do seu workspace. Use outro nó.",
+        "title": "Nó desabilitado",
+        "toastMessage": "Este nó foi desabilitado pela política do seu workspace.",
+        "toastTitle": "Nós de parceiros"
+      },
       "bad_linked_input": {
         "details": "{nodeName} possui uma conexão inválida para {inputName}.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -2616,8 +2625,8 @@
     "resetView": "Redefinir visualização da tela",
     "run": "Executar",
     "runWorkflow": "Executar fluxo de trabalho (Shift para enfileirar na frente)",
-    "runWorkflowDisabled": "O fluxo de trabalho contém nós não suportados (destacados em vermelho). Remova-os para executar o fluxo de trabalho.",
     "runWorkflowFront": "Executar fluxo de trabalho (Enfileirar na frente)",
+    "runWorkflowMissingResources": "O fluxo de trabalho contém recursos ausentes.",
     "settings": "Configurações",
     "showMenu": "Mostrar menu",
     "stopRunInstant": "Parar execução (Instantâneo)",
@@ -3050,6 +3059,38 @@
       "personal": "Pessoal"
     }
   },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "Toda geração e importação ficam em Assets de Mídia. Abra a qualquer momento para navegar, baixar ou reutilizar trabalhos anteriores.",
+        "title": "Encontre todos os seus assets"
+      },
+      "inputs": {
+        "body": "Adicione o que você deseja trabalhar. Suas entradas são o que o app transforma em resultados.",
+        "title": "Adicione suas entradas"
+      },
+      "landing": {
+        "body": "Um tour rápido pelos essenciais, em cerca de um minuto. Vamos mostrar onde adicionar entradas, executar seu app e encontrar seus resultados.",
+        "primary": "Iniciar tutorial",
+        "title": "Bem-vindo aos Apps"
+      },
+      "outputs": {
+        "body": "Seus resultados finais aparecem aqui no centro. Baixe-os ou ajuste uma entrada e execute novamente.",
+        "title": "Veja seus resultados"
+      },
+      "replay": "Fazer um tour pelo Modo App",
+      "run": {
+        "body": "Satisfeito com suas entradas? Clique em Executar e seu resultado aparecerá no centro assim que estiver pronto.",
+        "title": "Execute seu app"
+      }
+    },
+    "back": "Voltar",
+    "done": "Concluir",
+    "loadError": "Algo deu errado ao exibir este tour",
+    "next": "Próximo",
+    "skip": "Pular",
+    "stepLabel": "Etapa {current} de {total}"
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar ativos e abrir fluxo de trabalho",
@@ -3222,12 +3263,18 @@
       "copyUrl": "Copiar URL",
       "customNodeDownloadDisabled": "O ambiente em nuvem não suporta importação de modelos para nós personalizados nesta seção. Utilize nós de carregamento padrão ou substitua por um modelo da biblioteca abaixo.",
       "downloadAll": "Baixar tudo",
+      "downloadModel": "Baixar {model}",
       "expandNodes": "Mostrar nós de referência",
+      "gatedModelDownloadTooltip": "O download pode exigir login no Hugging Face primeiro.",
+      "gatedModelTooltip": "Este modelo é restrito e requer que você esteja logado no Hugging Face e aceite o acordo de licença.",
+      "gatedModelsHint": "Alguns modelos são restritos. Para baixá-los, faça login no Hugging Face e aceite o acordo de licença do modelo.",
+      "gatedModelsHintLabel": "Observação:",
       "import": "Importar",
       "importNotSupported": "Importação não suportada",
       "importing": "Importando...",
       "locateNode": "Localizar nó no canvas",
       "missingModelsTitle": "Modelos Ausentes",
+      "openHuggingFaceRepo": "Abrir repositório Hugging Face para {model}",
       "refresh": "Atualizar",
       "refreshFailed": "Falha ao atualizar modelos ausentes. Por favor, tente novamente.",
       "refreshing": "Atualizando modelos ausentes.",
@@ -3275,6 +3322,8 @@
   "secrets": {
     "addSecret": "Adicionar Segredo",
     "createdAt": "Criado em {date}",
+    "credentialType": "Tipo de Credencial",
+    "credentialTypeHint": "Escolha como você fornecerá esta credencial.",
     "deleteConfirmMessage": "Tem certeza de que deseja excluir \"{name}\"? Esta ação não pode ser desfeita.",
     "deleteConfirmTitle": "Excluir Segredo",
     "description": "Os segredos são criptografados e usados para dados sensíveis como chaves de API.",
@@ -3487,6 +3536,7 @@
     "3DViewer": "Visualizador 3D",
     "API Nodes": "Nós de API",
     "About": "Sobre",
+    "Allowlist": "Lista de Permissão",
     "Appearance": "Aparência",
     "BrushAdjustment": "Ajuste do Pincel",
     "Camera": "Câmera",
@@ -3640,19 +3690,34 @@
     },
     "logout": "Sair",
     "mediaAssets": {
+      "clearFilters": "Limpar tudo",
+      "dateAll": "Todo o período",
+      "datePastMonth": "Últimos 30 dias",
+      "datePastWeek": "Últimos 7 dias",
+      "dateThisYear": "Este ano",
+      "dateToday": "Hoje",
       "filter3D": "3D",
       "filterAudio": "Áudio",
+      "filterDate": "Data",
+      "filterGroupAttribute": "Atributo",
       "filterImage": "Imagem",
+      "filterMediaType": "Tipo de mídia",
       "filterText": "Texto",
       "filterVideo": "Vídeo",
+      "removeFilter": "Remover filtro {label}",
+      "sortAToZ": "Nome (A → Z)",
       "sortFastestFirst": "Tempo de geração (menor primeiro)",
       "sortLongestFirst": "Tempo de geração (maior primeiro)",
       "sortNewestFirst": "Mais recentes primeiro",
       "sortOldestFirst": "Mais antigos primeiro",
+      "sortZToA": "Nome (Z → A)",
       "title": "Ativos de Mídia",
+      "viewGridLarge": "Grade (grande)",
+      "viewGridSmall": "Grade (pequena)",
       "viewSettings": "Ver configurações"
     },
     "modelLibrary": "Biblioteca de modelos",
+    "modelLibraryLoadFailed": "Falha ao carregar os modelos. Verifique a conexão com o servidor e use Atualizar para tentar novamente.",
     "newBlankWorkflow": "Criar um novo workflow em branco",
     "noFilesFound": "Nenhum arquivo encontrado",
     "noFilesFoundMessage": "Envie arquivos ou gere conteúdo para vê-los aqui",
@@ -3758,6 +3823,7 @@
       "viewList": "Visualização em lista"
     },
     "searchAssets": "Buscar ativos",
+    "searchResultsCapped": "Mostrando os primeiros {limit} resultados. Refine sua busca para ver resultados mais específicos.",
     "sidebar": "Barra lateral",
     "templates": "Modelos",
     "themeToggle": "Alternar tema",
@@ -3835,17 +3901,23 @@
       "endOfBillingPeriod": "fim do período de cobrança",
       "failed": "Falha ao cancelar a assinatura",
       "keepSubscription": "Manter assinatura",
-      "title": "Cancelar assinatura"
+      "offerUnavailable": "Esta opção não está disponível. Por favor, escolha outra opção.",
+      "title": "Cancelar assinatura",
+      "workspaceChanged": "Seu espaço de trabalho ativo foi alterado. Volte e tente novamente."
     },
     "cancelPlan": "Cancelar plano",
     "cancelSuccess": "Assinatura cancelada com sucesso",
     "canceled": "Cancelado",
     "canceledCard": {
       "description": "Você não será mais cobrado. Seus recursos permanecem ativos até {date}.",
+      "descriptionWithoutDate": "Você não será cobrado novamente. Seus recursos permanecem ativos até o final do seu período de cobrança.",
+      "endedDescription": "Sua assinatura não está mais ativa.",
+      "endedTitle": "Sua assinatura foi encerrada",
       "title": "Sua assinatura foi cancelada"
     },
     "changePlan": "Alterar plano",
     "changeTo": "Mudar para {plan}",
+    "changesToPlanOnDate": "Alterações para {plan} em {date}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Logo do Comfy Cloud",
     "contactOwnerToSubscribe": "Entre em contato com o proprietário do espaço de trabalho para assinar",
@@ -3862,6 +3934,8 @@
     "descriptionWorkspace": "Escolha o melhor plano para seu workspace",
     "downgrade": {
       "body": "Todos os outros membros deste workspace serão removidos imediatamente.",
+      "bodyReactivation": "Sua assinatura está cancelada. Alterar seu plano irá reativá-la, e você será cobrado {amount} hoje.",
+      "bodyRemovalAndReactivation": "Todos os outros membros deste workspace serão removidos imediatamente. Sua assinatura está cancelada, então alterar seu plano também irá reativá-la, e você será cobrado {amount} hoje.",
       "confirm": "Mudar plano",
       "confirmationPhrase": "Eu entendo",
       "confirmationPrompt": "Digite \"{phrase}\" para confirmar.",
@@ -3871,6 +3945,8 @@
       "notAllowed": "Esta alteração de plano não está disponível",
       "paymentMethodRequired": "É necessário um método de pagamento para mudar de plano",
       "paymentPageBlocked": "Não foi possível abrir a página de pagamento — tente novamente",
+      "reactivationAmountChanged": "O valor da cobrança mudou desde a sua confirmação — revise e tente novamente",
+      "reactivationConfirmationRequired": "Por favor, confirme a cobrança de reativação antes de continuar",
       "title": "Mudar para o plano {plan}?"
     },
     "endsOnDate": "Termina em {date}",
@@ -3884,23 +3960,8 @@
     "everythingInPlus": "Tudo do {plan}, além de:",
     "expiresDate": "Expira em {date}",
     "freePerks": {
+      "freeRuns": "{count} execução gratuita | {count} execuções gratuitas",
       "maxRuntime": "{duration} de tempo máximo de execução"
-    },
-    "freeTier": {
-      "description": "Seu plano gratuito inclui {credits} créditos por mês para testar o Comfy Cloud.",
-      "descriptionGeneric": "Seu plano gratuito inclui uma cota mensal de créditos para testar o Comfy Cloud.",
-      "descriptionQuota": "Seu plano gratuito inclui {runs} execuções para começar a usar o Comfy Cloud — não é necessário cartão.",
-      "nextRefresh": "Seus créditos serão renovados em {date}.",
-      "outOfCredits": {
-        "subtitle": "Assine para liberar recargas e mais benefícios",
-        "title": "Você ficou sem créditos gratuitos"
-      },
-      "subscribeCta": "Assine para mais",
-      "title": "Você está no plano Gratuito",
-      "topUpBlocked": {
-        "title": "Desbloqueie recargas e mais benefícios"
-      },
-      "upgradeCta": "Ver planos"
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Tem dúvidas ou interesse em soluções empresariais?",
@@ -3970,6 +4031,7 @@
       "backToAllPlans": "Voltar para todos os planos",
       "billedEachMonth": "{amount} cobrados a cada mês. Cancele a qualquer momento.",
       "commitment": "compromisso",
+      "completeVerification": "Concluir verificação",
       "confirm": "Confirmar",
       "confirmChange": "Confirmar alteração",
       "confirmChangeTitle": "Revise sua alteração agendada",
@@ -3994,6 +4056,20 @@
       "privacyPolicy": "Política de Privacidade",
       "proratedCharge": "Cobrança proporcional para {plan}",
       "proratedRefund": "Reembolso proporcional para {plan}",
+      "reactivation": {
+        "amountChanged": "O valor da cobrança mudou desde a sua confirmação — revise e tente novamente",
+        "checkboxLabel": "Entendo que serei cobrado {amount} hoje",
+        "confirmButton": "Confirmar e reativar",
+        "confirmButtonWithCharge": "Confirmar e reativar — {amount} hoje",
+        "confirmationRequired": "Sua assinatura está cancelada — confirme a cobrança de reativação antes de continuar",
+        "downgradeBody": "Sua {plan} estava programada para terminar em {date}. Mudar para {newPlan} a reativa — você não será cobrado hoje, mas agora ela será renovada automaticamente em {nextDate} pelo novo valor em vez de encerrar.",
+        "durationChangeBody": "Sua {plan} estava programada para terminar em {date}. Mudar para cobrança anual a reativa e cobra o valor total do ano, {amount}, hoje. Depois, será renovada anualmente em {nextDate} em vez de encerrar.",
+        "durationChangeBodyMonthly": "Sua {plan} estava programada para terminar em {date}. Mudar para cobrança mensal a reativa — você será cobrado {amount} hoje, e ela será renovada automaticamente em {nextDate} em vez de encerrar.",
+        "title": "Reativando sua assinatura",
+        "titleAnnual": "Reativando sua assinatura — ano completo cobrado hoje",
+        "unavailable": "Não podemos confirmar esta reativação agora — por favor, escolha seu plano novamente",
+        "upgradeBody": "Sua {plan} estava programada para terminar em {date}. Fazer o upgrade agora a reativa — você será cobrado {amount} hoje, e ela será renovada automaticamente em {nextDate} em vez de encerrar."
+      },
       "refillReplacesNote": "Substitui sua recarga mensal. O saldo existente é mantido.",
       "showMoreFeatures": "Mostrar mais recursos",
       "starting": "Começando em {date}",
@@ -4193,6 +4269,11 @@
     "modelsSelected": "{count} Modelos",
     "noResults": "Nenhum modelo encontrado",
     "noResultsHint": "Tente ajustar sua busca ou filtros",
+    "paidTemplate": {
+      "badgeLabel": "API de Parceiro",
+      "credits": "Executa com créditos",
+      "title": "Template premium"
+    },
     "resultsCount": "Mostrando {count} de {total} modelos",
     "runsOnFilter": "Executa em",
     "runsOnSelected": "{count} Execuções em",
@@ -4261,6 +4342,7 @@
     "fileTooLarge": "Arquivo muito grande ({size} MB). O tamanho máximo suportado é {maxSize} MB",
     "fileUploadFailed": "Falha no upload do arquivo",
     "interrupted": "Execução interrompida",
+    "invalidBillingPortalUrl": "URL do portal inválida",
     "invalidTemplateData": "Falha ao carregar o modelo de nó: dados inválidos",
     "legacyMaskEditorDeprecated": "O editor de máscara legado está obsoleto e será removido em breve.",
     "migrateToLitegraphReroute": "Nós de redirecionamento serão removidos em versões futuras. Clique para migrar para o redirecionamento nativo do litegraph.",
@@ -4329,6 +4411,34 @@
     "frontendOutdated": "A versão do frontend {frontendVersion} está desatualizada. O backend requer a versão {requiredVersion} ou superior.",
     "title": "Aviso de Compatibilidade de Versão",
     "updateFrontend": "Atualizar Frontend"
+  },
+  "videoEdit": {
+    "adjustCrop": "Ajustar região de corte",
+    "adjustEndFrame": "Ajustar quadro final",
+    "adjustStartFrame": "Ajustar quadro inicial",
+    "cropVideo": "Recortar vídeo",
+    "duration": "Duração",
+    "durationSeconds": "{count}s",
+    "durationZero": "0s",
+    "endFrame": "Quadro final",
+    "fileSize": "Tamanho do arquivo",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "fileSizeUnknown": "—",
+    "frames": "Número de quadros",
+    "loadingFilmstrip": "Carregando miniaturas…",
+    "loadingVideo": "Carregando prévia do vídeo",
+    "noVideoSource": "Selecione ou conecte um vídeo para visualizar e editar",
+    "pause": "Pausar",
+    "play": "Reproduzir",
+    "resolution": "{width} × {height}",
+    "seekVideo": "Buscar no vídeo",
+    "selectedOfTotal": "{selected} / {total}",
+    "setEndFrame": "Redefinir quadro final",
+    "setStartFrame": "Redefinir quadro inicial",
+    "startFrame": "Quadro inicial",
+    "trimVideo": "Cortar vídeo"
   },
   "vueNodesBanner": {
     "desc": "– Fluxos de trabalho mais flexíveis, novos widgets poderosos, feito para extensibilidade",
@@ -4436,9 +4546,7 @@
         "lastActivity": "Última atividade",
         "partnerNodeUsed": "Nó parceiro utilizado",
         "totalCreditsUsed": "Total de créditos usados"
-      },
-      "perUserHint": "Procurando o uso total por usuário?",
-      "seeMembers": "Ver membros"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4574,6 +4682,39 @@
       "deleteWorkspaceDisabledTooltip": "Cancele a assinatura ativa do seu espaço de trabalho primeiro",
       "editWorkspace": "Editar detalhes do espaço de trabalho",
       "leaveWorkspace": "Sair do espaço de trabalho"
+    },
+    "partnerNodes": {
+      "accessMode": "Modo de acesso a nós de parceiros",
+      "allowAllAccessHint": "Isso pode levar até 10 minutos para ser aplicado em todo o workspace.",
+      "allowAllAccessMessage": "Nós de parceiros de todos os provedores ficarão disponíveis para todos os membros do workspace.",
+      "allowAllAccessTitle": "Permitir acesso a todos os nós de parceiros?",
+      "columns": {
+        "nodes": "Nós",
+        "provider": "Provedor"
+      },
+      "disableAll": "Desabilitar todos",
+      "disableAllMessage": "Todos os provedores serão desativados. Os nós de parceiros ficarão indisponíveis enquanto o acesso estiver restrito.",
+      "disableAllTitle": "Desabilitar todos os provedores?",
+      "enableAll": "Habilitar todos",
+      "loadError": "Não foi possível carregar o acesso aos nós de parceiros.",
+      "loading": "Carregando acesso aos nós de parceiros",
+      "noResults": "Nenhum provedor ou nó de parceiro encontrado",
+      "nodeCount": "{count} habilitado(s)",
+      "ownerOnly": "Apenas os proprietários do workspace podem atualizar o acesso aos nós de parceiros.",
+      "restrictAccessHint": "Isso pode levar até 10 minutos para ser aplicado em todo o workspace.",
+      "restrictAccessMessage": "Os membros do workspace só poderão usar nós de parceiros dos provedores que você habilitar.",
+      "restrictAccessTitle": "Restringir acesso aos nós de parceiros?",
+      "restricted": "Restrito",
+      "restrictedDescription": "Apenas nós de parceiros dos provedores habilitados estão disponíveis. As alterações podem levar até 10 minutos para serem aplicadas.",
+      "retry": "Tentar novamente",
+      "saveError": "Não foi possível atualizar o acesso aos nós de parceiros. Tente novamente.",
+      "searchPlaceholder": "Buscar provedores e nós de parceiros...",
+      "tableLabel": "Provedores de nós de parceiros",
+      "title": "Acesso a nós de parceiros",
+      "toggleProvider": "Definir acesso para {provider}",
+      "unavailable": "O acesso aos nós de parceiros não está disponível para este workspace.",
+      "unrestricted": "Sem restrição",
+      "unrestrictedDescription": "Nós de parceiros de todos os provedores estão disponíveis para todos. Desabilitar provedores definirá como Restrito."
     },
     "planCredits": {
       "tabs": {
