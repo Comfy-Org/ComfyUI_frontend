@@ -330,7 +330,7 @@ export const useDialogService = () => {
     isInsufficientCredits?: boolean
   }) {
     const { isActiveSubscription, isFreeTier, type } = useBillingContext()
-    if (!isActiveSubscription.value || isFreeTier.value) {
+    if (isCloud && (!isActiveSubscription.value || isFreeTier.value)) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'

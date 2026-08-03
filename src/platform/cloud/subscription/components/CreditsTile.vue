@@ -146,7 +146,7 @@
 
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
-        v-if="isFreeTier"
+        v-if="isCloud && isFreeTier"
         variant="gradient"
         size="lg"
         class="w-full font-normal"
@@ -192,6 +192,7 @@ import {
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
