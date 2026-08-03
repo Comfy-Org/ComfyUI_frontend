@@ -600,6 +600,41 @@ describe('useWorkflowPersistenceV2', () => {
       ).resolves.toBe('fresh')
     })
 
+    it('keeps working on the blank canvas the user then edits', async () => {
+      loadBlankWorkflowMock.mockImplementation(loadBlankIntoActiveWorkflow)
+
+      await mountWorkflowPersistence().initializeWorkflow()
+      await nextTick()
+
+      mocks.state.currentGraph = { nodes: [{ id: 1, type: 'KSampler' }] }
+      mocks.state.graphChangedHandler?.()
+      await vi.runAllTimersAsync()
+
+      await expect(
+        mountWorkflowPersistence().initializeWorkflow(),
+        'Dropping the startup blank must not stop the user’s own edits to it from being saved'
+      ).resolves.toBe('restored')
+    })
+
+    it('restores a workflow the user opened after startup', async () => {
+      loadBlankWorkflowMock.mockImplementation(loadBlankIntoActiveWorkflow)
+      const workflowStore = useWorkflowStore()
+
+      await mountWorkflowPersistence().initializeWorkflow()
+      await nextTick()
+
+      mocks.state.currentGraph = { nodes: [{ id: 1, type: 'KSampler' }] }
+      await workflowStore.openWorkflow(
+        workflowStore.createTemporary('single_ksampler.json')
+      )
+      await nextTick()
+
+      await expect(
+        mountWorkflowPersistence().initializeWorkflow(),
+        'A workflow the user opened must survive a reload'
+      ).resolves.toBe('restored')
+    })
+
     it('persists a temporary workflow once the user has modified it', async () => {
       loadBlankWorkflowMock.mockImplementation(async () => {
         const workflowStore = useWorkflowStore()
