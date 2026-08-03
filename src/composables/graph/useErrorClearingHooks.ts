@@ -92,7 +92,10 @@ function installNodeHooks(node: LGraphNode): void {
       // it back, so the media error surface follows the same way it follows
       // promotion.
       queueMicrotask(() => {
-        if (!app.rootGraph) return
+        // LGraphNode.configure fires this for every input slot while a
+        // workflow loads, so a load would prune candidates against a graph
+        // that is still being wired.
+        if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
         dropOutOfScopeMissingMedia()
         if (!isConnected) scanSingleNodeMedia(node)
       })
