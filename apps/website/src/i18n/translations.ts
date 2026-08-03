@@ -808,6 +808,10 @@ const translations = {
     en: 'Get download link',
     'zh-CN': '获取下载链接'
   },
+  'download.emailForm.emailLabel': {
+    en: 'Email address',
+    'zh-CN': '邮箱地址'
+  },
   'download.emailForm.placeholder': {
     en: 'you@email.com',
     'zh-CN': 'you@email.com'

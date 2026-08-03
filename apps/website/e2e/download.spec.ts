@@ -24,11 +24,19 @@ interface CdpCapture {
   body?: CdpEventBody
 }
 
-async function routeCdp(context: BrowserContext, captured: CdpCapture[]) {
+async function routeCdp(
+  context: BrowserContext,
+  captured: CdpCapture[],
+  { unreachable = false } = {}
+) {
   await context.route('**/cdp.customer.io/**', async (route) => {
     const request = route.request()
     const method = request.method()
     const path = new URL(request.url()).pathname
+    if (unreachable) {
+      captured.push({ method, path })
+      return route.abort('failed')
+    }
     if (path.endsWith('/settings')) {
       captured.push({ method, path })
       return route.fulfill({
@@ -64,10 +72,14 @@ function heroLocator(page: Page) {
   })
 }
 
-async function openMobileDownloadPage(browser: Browser, path = '/download') {
+async function openMobileDownloadPage(
+  browser: Browser,
+  path = '/download',
+  { cdpUnreachable = false } = {}
+) {
   const context = await browser.newContext({ userAgent: IPHONE_UA })
   const captured: CdpCapture[] = []
-  await routeCdp(context, captured)
+  await routeCdp(context, captured, { unreachable: cdpUnreachable })
   const page = await context.newPage()
   await page.goto(path)
   return { context, page, hero: heroLocator(page), captured }
@@ -178,7 +190,7 @@ test.describe('Download page @smoke', () => {
   }) => {
     const { context, hero, captured } = await openMobileDownloadPage(browser)
 
-    const emailInput = hero.getByRole('textbox', { name: /Get download link/i })
+    const emailInput = hero.getByRole('textbox', { name: /Email address/i })
     await expect(emailInput).toBeVisible()
     await expect(
       hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
@@ -210,13 +222,37 @@ test.describe('Download page @smoke', () => {
     await context.close()
   })
 
+  test('mobile email form shows error state when Customer.io is unreachable', async ({
+    browser
+  }) => {
+    const { context, hero } = await openMobileDownloadPage(
+      browser,
+      '/download',
+      { cdpUnreachable: true }
+    )
+
+    await hero
+      .getByRole('textbox', { name: /Email address/i })
+      .fill('someone@example.com')
+    await hero.getByRole('button', { name: /Send download link/i }).click()
+
+    await expect(
+      hero.getByText(/Something went wrong\. Please try again\./i)
+    ).toBeVisible()
+    await expect(
+      hero.getByRole('button', { name: /Send download link/i })
+    ).toBeEnabled()
+
+    await context.close()
+  })
+
   test('honeypot submission shows success without any CDP event', async ({
     browser
   }) => {
     const { context, hero, captured } = await openMobileDownloadPage(browser)
 
     await hero
-      .getByRole('textbox', { name: /Get download link/i })
+      .getByRole('textbox', { name: /Email address/i })
       .fill('someone@example.com')
     // Bots fill the hidden decoy via script — mimic that, since Playwright
     // refuses to fill invisible elements.
@@ -237,10 +273,10 @@ test.describe('Download page @smoke', () => {
     await context.close()
   })
 
-  test('zh-CN download page renders the translated email form', async ({
+  test('zh-CN download page submits the translated email form with zh-CN locale', async ({
     browser
   }) => {
-    const { context, hero } = await openMobileDownloadPage(
+    const { context, hero, captured } = await openMobileDownloadPage(
       browser,
       '/zh-CN/download'
     )
@@ -248,9 +284,21 @@ test.describe('Download page @smoke', () => {
     await expect(
       hero.getByRole('heading', { name: '获取下载链接' })
     ).toBeVisible()
+
+    await hero
+      .getByRole('textbox', { name: '邮箱地址' })
+      .fill('someone@example.com')
+    await hero.getByRole('button', { name: '发送下载链接' }).click()
+
     await expect(
-      hero.getByRole('textbox', { name: '获取下载链接' })
+      hero.getByText(/下载链接已发送至 someone@example\.com/)
     ).toBeVisible()
+
+    const track = captured.find((capture) => capture.path === '/v1/t')
+    expect(track?.body?.properties).toMatchObject({
+      locale: 'zh-CN',
+      page: '/zh-CN/download'
+    })
 
     await context.close()
   })

@@ -24,6 +24,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const email = ref('')
 const decoy = ref('')
+const submittedEmail = ref('')
 const status = ref<FormStatus>('idle')
 
 const isVisible = computed(
@@ -38,7 +39,9 @@ const STATUS_MESSAGE_KEYS: Partial<Record<FormStatus, TranslationKey>> = {
 
 const statusMessage = computed(() => {
   const key = STATUS_MESSAGE_KEYS[status.value]
-  return key ? t(key, locale).replace('{email}', email.value) : ''
+  return key
+    ? t(key, locale).replace('{email}', () => submittedEmail.value)
+    : ''
 })
 
 // The component mounts on every client; only visible (mobile) forms may load the SDK.
@@ -49,6 +52,7 @@ onMounted(() => {
 async function onSubmit() {
   if (status.value === 'pending') return
   if (decoy.value !== '') {
+    submittedEmail.value = email.value
     status.value = 'success'
     return
   }
@@ -56,9 +60,10 @@ async function onSubmit() {
     status.value = 'invalid'
     return
   }
+  submittedEmail.value = email.value
   status.value = 'pending'
   try {
-    await requestDownloadLink(email.value, locale)
+    await requestDownloadLink(submittedEmail.value, locale)
     status.value = 'success'
   } catch {
     status.value = 'error'
@@ -92,7 +97,7 @@ async function onSubmit() {
           type="email"
           required
           autocomplete="email"
-          :aria-label="t('download.emailForm.heading', locale)"
+          :aria-label="t('download.emailForm.emailLabel', locale)"
           :placeholder="t('download.emailForm.placeholder', locale)"
           class="bg-transparency-white-t4 h-16 w-full rounded-3xl border border-primary-comfy-canvas pr-14 pl-4 text-[13px] font-semibold text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/60"
         />
@@ -119,7 +124,7 @@ async function onSubmit() {
       :class="
         cn(
           status === 'success' &&
-            'bg-transparency-white-t4 text-primary-warm-gray flex h-16 items-center rounded-3xl px-4 text-[13px] font-semibold',
+            'bg-transparency-white-t4 text-primary-warm-gray flex h-16 items-center rounded-3xl px-4 text-[13px] font-semibold wrap-break-word',
           (status === 'invalid' || status === 'error') &&
             'text-primary-comfy-orange mt-2 text-sm'
         )
