@@ -13,12 +13,17 @@ import type { UserState } from '../userState'
 export function deriveUserState(input: {
   isCloud: boolean
   isActiveSubscription: boolean
+  isTeamPlan: boolean
   tier: SubscriptionTier | null
 }): UserState {
   const distribution = input.isCloud ? 'Cloud' : 'Local'
 
   if (!input.isActiveSubscription) {
     return { kind: `${distribution}AndUnsubscribed` }
+  }
+
+  if (input.isTeamPlan) {
+    return { kind: `${distribution}AndTeam` }
   }
 
   switch (input.tier) {
@@ -33,9 +38,7 @@ export function deriveUserState(input: {
     case 'FOUNDERS_EDITION':
       return { kind: `${distribution}AndFounders` }
     case null:
-      // An active subscription can be reported before its tier value
-      // resolves; treat that gap as Free rather than guessing a paid tier.
-      return { kind: `${distribution}AndFree` }
+      return { kind: `${distribution}AndUnknown` }
   }
 }
 
@@ -45,12 +48,13 @@ export function deriveUserState(input: {
  * and the local backend stay exactly as they are today.
  */
 export function useUserState() {
-  const { isActiveSubscription, tier } = useBillingContext()
+  const { isActiveSubscription, isTeamPlan, tier } = useBillingContext()
 
   const userState = computed<UserState>(() =>
     deriveUserState({
       isCloud,
       isActiveSubscription: isActiveSubscription.value,
+      isTeamPlan: isTeamPlan.value,
       tier: tier.value
     })
   )

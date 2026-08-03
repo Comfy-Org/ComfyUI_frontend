@@ -17,6 +17,8 @@ export function getUserCapabilities(state: UserState): UserCapabilities {
   switch (state.kind) {
     case 'LocalAndUnsubscribed':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
+    case 'LocalAndUnknown':
+      return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
     case 'LocalAndFree':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
     case 'LocalAndStandard':
@@ -27,8 +29,12 @@ export function getUserCapabilities(state: UserState): UserCapabilities {
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
     case 'LocalAndFounders':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
+    case 'LocalAndTeam':
+      return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
     case 'CloudAndUnsubscribed':
       return { canTopUpCredits: false, showsSubscribeUpsellUI: true }
+    case 'CloudAndUnknown':
+      return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
     case 'CloudAndFree':
       return { canTopUpCredits: false, showsSubscribeUpsellUI: true }
     case 'CloudAndStandard':
@@ -39,16 +45,7 @@ export function getUserCapabilities(state: UserState): UserCapabilities {
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
     case 'CloudAndFounders':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
+    case 'CloudAndTeam':
+      return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
   }
-}
-
-/**
- * Single entry point call sites should use instead of re-deriving capability
- * logic from `isCloud` / subscription tier / feature flags themselves.
- */
-export function canUseCapability<K extends keyof UserCapabilities>(
-  state: UserState,
-  capability: K
-): UserCapabilities[K] {
-  return getUserCapabilities(state)[capability]
 }

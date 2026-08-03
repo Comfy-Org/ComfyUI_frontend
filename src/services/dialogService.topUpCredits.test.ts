@@ -9,6 +9,7 @@ const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
 const state = vi.hoisted(() => ({
   isActiveSubscription: true,
+  isTeamPlan: false,
   isFreeTier: false,
   tier: 'STANDARD' as
     | 'FREE'
@@ -43,6 +44,7 @@ vi.mock('@/platform/distribution/types', () => ({
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: { value: state.isActiveSubscription },
+    isTeamPlan: { value: state.isTeamPlan },
     isFreeTier: { value: state.isFreeTier },
     tier: { value: state.tier },
     type: { value: state.type }
@@ -74,6 +76,7 @@ describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     state.isActiveSubscription = true
+    state.isTeamPlan = false
     state.isFreeTier = false
     state.tier = 'STANDARD'
     state.type = 'workspace'

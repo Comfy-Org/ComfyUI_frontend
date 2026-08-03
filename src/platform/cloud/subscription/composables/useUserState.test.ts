@@ -8,7 +8,12 @@ describe('deriveUserState', () => {
     ['CloudAndUnsubscribed', true]
   ])('maps no active subscription to %s (isCloud=%s)', ([kind, isCloud]) => {
     expect(
-      deriveUserState({ isCloud, isActiveSubscription: false, tier: null })
+      deriveUserState({
+        isCloud,
+        isActiveSubscription: false,
+        isTeamPlan: false,
+        tier: null
+      })
     ).toEqual({ kind })
   })
 
@@ -22,23 +27,52 @@ describe('deriveUserState', () => {
     'maps an active subscription tier %s to %s off Cloud and %s on Cloud',
     ([tier, localKind, cloudKind]) => {
       expect(
-        deriveUserState({ isCloud: false, isActiveSubscription: true, tier })
+        deriveUserState({
+          isCloud: false,
+          isActiveSubscription: true,
+          isTeamPlan: false,
+          tier
+        })
       ).toEqual({ kind: localKind })
       expect(
-        deriveUserState({ isCloud: true, isActiveSubscription: true, tier })
+        deriveUserState({
+          isCloud: true,
+          isActiveSubscription: true,
+          isTeamPlan: false,
+          tier
+        })
       ).toEqual({ kind: cloudKind })
     }
   )
 
   it.for<[string, boolean]>([
-    ['LocalAndFree', false],
-    ['CloudAndFree', true]
+    ['LocalAndUnknown', false],
+    ['CloudAndUnknown', true]
   ])(
     'treats an active subscription with no resolved tier yet as %s (isCloud=%s)',
     ([kind, isCloud]) => {
       expect(
-        deriveUserState({ isCloud, isActiveSubscription: true, tier: null })
+        deriveUserState({
+          isCloud,
+          isActiveSubscription: true,
+          isTeamPlan: false,
+          tier: null
+        })
       ).toEqual({ kind })
     }
   )
+
+  it.for<[string, boolean]>([
+    ['LocalAndTeam', false],
+    ['CloudAndTeam', true]
+  ])('maps an active Team plan to %s (isCloud=%s)', ([kind, isCloud]) => {
+    expect(
+      deriveUserState({
+        isCloud,
+        isActiveSubscription: true,
+        isTeamPlan: true,
+        tier: 'PRO'
+      })
+    ).toEqual({ kind })
+  })
 })

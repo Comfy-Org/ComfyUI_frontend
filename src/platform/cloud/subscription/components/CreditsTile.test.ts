@@ -21,14 +21,9 @@ const state = vi.hoisted(() => ({
   balance: null as Balance | null,
   subscription: null as Subscription | null,
   isActiveSubscription: false,
+  isTeamPlan: false,
   isFreeTier: false,
-  tier: null as
-    | 'FREE'
-    | 'STANDARD'
-    | 'CREATOR'
-    | 'PRO'
-    | 'FOUNDERS_EDITION'
-    | null,
+  tier: null as SubscriptionInfo['tier'],
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   canTopUp: true,
@@ -62,6 +57,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     balance: computed(() => state.balance),
     subscription: computed(() => state.subscription),
     isActiveSubscription: computed(() => state.isActiveSubscription),
+    isTeamPlan: computed(() => state.isTeamPlan),
     isFreeTier: computed(() => state.isFreeTier),
     tier: computed(() => state.tier),
     currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
@@ -180,6 +176,7 @@ describe('CreditsTile', () => {
     state.balance = null
     state.subscription = null
     state.isActiveSubscription = false
+    state.isTeamPlan = false
     state.isFreeTier = false
     state.tier = null
     state.currentTeamCreditStop = null
