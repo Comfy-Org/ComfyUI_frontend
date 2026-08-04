@@ -7,7 +7,7 @@
   <SubscribeToRunButton v-else />
 </template>
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -27,6 +27,8 @@ const { permissions } = useWorkspaceUI()
 const dialogService = useDialogService()
 const dialogStore = useDialogStore()
 const { toastErrorHandler } = useErrorHandling()
+const isUpdatingPayment = ref(false)
+let paymentPortalRequest: Promise<void> | null = null
 
 const paymentRecoveryLock = computed<'owner' | 'member' | null>(() =>
   flags.v1PaymentRecovery && billingStatus.value === 'paused'
@@ -40,13 +42,31 @@ function closePaymentRecoveryDialog() {
   dialogStore.closeDialog({ key: DIALOG_KEY })
 }
 
-async function updatePayment() {
-  try {
-    await manageSubscription()
-    closePaymentRecoveryDialog()
-  } catch (error) {
-    toastErrorHandler(error)
-  }
+function updatePayment(): Promise<void> {
+  if (paymentPortalRequest) return paymentPortalRequest
+
+  paymentPortalRequest = (async () => {
+    isUpdatingPayment.value = true
+    dialogStore.updateDialog({
+      key: DIALOG_KEY,
+      contentProps: { isUpdatingPayment: true }
+    })
+    try {
+      await manageSubscription()
+      closePaymentRecoveryDialog()
+    } catch (error) {
+      toastErrorHandler(error)
+    } finally {
+      isUpdatingPayment.value = false
+      paymentPortalRequest = null
+      dialogStore.updateDialog({
+        key: DIALOG_KEY,
+        contentProps: { isUpdatingPayment: false }
+      })
+    }
+  })()
+
+  return paymentPortalRequest
 }
 
 function showPaymentRecoveryDialog() {
@@ -55,6 +75,7 @@ function showPaymentRecoveryDialog() {
     component: SubscriptionPausedDialog,
     props: {
       canManage: paymentRecoveryLock.value === 'owner',
+      isUpdatingPayment: isUpdatingPayment.value,
       onClose: closePaymentRecoveryDialog,
       onUpdatePayment: updatePayment
     },

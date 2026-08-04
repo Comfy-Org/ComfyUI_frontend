@@ -26,11 +26,11 @@ const i18n = createI18n({
   }
 })
 
-function renderDialog(canManage: boolean) {
+function renderDialog(canManage: boolean, isUpdatingPayment = false) {
   const onClose = vi.fn()
   const onUpdatePayment = vi.fn()
   render(SubscriptionPausedDialog, {
-    props: { canManage, onClose, onUpdatePayment },
+    props: { canManage, isUpdatingPayment, onClose, onUpdatePayment },
     global: { plugins: [i18n] }
   })
   return { onClose, onUpdatePayment }
@@ -72,5 +72,13 @@ describe('SubscriptionPausedDialog', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('disables the owner action while payment recovery is pending', () => {
+    renderDialog(true, true)
+
+    expect(
+      screen.getByRole('button', { name: 'Update payment' })
+    ).toBeDisabled()
   })
 })

@@ -34,6 +34,15 @@
       <Button
         :variant="canManage ? 'subscribe' : 'secondary'"
         size="lg"
+        :loading="canManage && isUpdatingPayment"
+        :disabled="canManage && isUpdatingPayment"
+        :aria-label="
+          $t(
+            canManage
+              ? 'subscription.paymentRecovery.ownerCta'
+              : 'subscription.paymentRecovery.memberCta'
+          )
+        "
         @click="canManage ? onUpdatePayment() : onClose()"
       >
         {{
@@ -51,8 +60,14 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 
-const { canManage, onClose, onUpdatePayment } = defineProps<{
+const {
+  canManage,
+  isUpdatingPayment = false,
+  onClose,
+  onUpdatePayment
+} = defineProps<{
   canManage: boolean
+  isUpdatingPayment?: boolean
   onClose: () => void
   onUpdatePayment: () => void
 }>()

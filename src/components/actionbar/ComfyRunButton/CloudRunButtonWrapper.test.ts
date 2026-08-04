@@ -13,7 +13,8 @@ const state = vi.hoisted(() => ({
   manageSubscription: vi.fn(),
   toastErrorHandler: vi.fn(),
   showLayoutDialog: vi.fn(),
-  closeDialog: vi.fn()
+  closeDialog: vi.fn(),
+  updateDialog: vi.fn()
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -54,7 +55,10 @@ vi.mock('@/services/dialogService', () => ({
 }))
 
 vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ closeDialog: state.closeDialog })
+  useDialogStore: () => ({
+    closeDialog: state.closeDialog,
+    updateDialog: state.updateDialog
+  })
 }))
 
 vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
@@ -63,7 +67,7 @@ vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
     props: ['paymentRecoveryLock'],
     emits: ['paymentRecoveryClick'],
     template:
-      '<div data-testid="queue-group"><div data-testid="batch-count"/><button data-testid="queue-button" @click="$emit(\'paymentRecoveryClick\')">{{ paymentRecoveryLock ?? \'queue\' }}</button><div data-testid="queue-dropdown"/></div>'
+      '<div data-testid="queue-group"><div data-testid="batch-count"/><button data-testid="queue-button" @click="$emit(\'paymentRecoveryClick\')">{{ paymentRecoveryLock === \'owner\' ? \'Update payment to run\' : \'Run\' }}</button><div data-testid="queue-dropdown"/></div>'
   }
 }))
 
@@ -126,12 +130,16 @@ describe('CloudRunButtonWrapper', () => {
 
     expect(screen.getByTestId('batch-count')).toBeInTheDocument()
     expect(screen.getByTestId('queue-dropdown')).toBeInTheDocument()
-    expect(screen.getByTestId('queue-button')).toHaveTextContent('owner')
+    expect(screen.getByTestId('queue-button')).toHaveTextContent(
+      'Update payment to run'
+    )
     expect(
       screen.queryByTestId('subscribe-to-run-button')
     ).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByTestId('queue-button'))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment to run' })
+    )
     const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
     expect(dialogOptions.props.canManage).toBe(true)
 
@@ -157,13 +165,51 @@ describe('CloudRunButtonWrapper', () => {
     expect(state.closeDialog).not.toHaveBeenCalled()
   })
 
+  it('reuses a pending portal request across rapid clicks and reopen', async () => {
+    let resolvePortal!: () => void
+    state.manageSubscription.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolvePortal = resolve
+        })
+    )
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'paused'
+    renderWrapper()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment to run' })
+    )
+    const firstDialog = state.showLayoutDialog.mock.calls[0][0]
+    const firstRequest = firstDialog.props.onUpdatePayment()
+    const repeatedRequest = firstDialog.props.onUpdatePayment()
+    expect(state.manageSubscription).toHaveBeenCalledOnce()
+
+    firstDialog.props.onClose()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment to run' })
+    )
+    const reopenedDialog = state.showLayoutDialog.mock.calls.at(-1)?.[0]
+    expect(reopenedDialog.props.isUpdatingPayment).toBe(true)
+    expect(reopenedDialog.props.onUpdatePayment()).toBe(firstRequest)
+    expect(repeatedRequest).toBe(firstRequest)
+    expect(state.manageSubscription).toHaveBeenCalledOnce()
+
+    resolvePortal()
+    await firstRequest
+    expect(state.updateDialog).toHaveBeenLastCalledWith({
+      key: 'subscription-paused',
+      contentProps: { isUpdatingPayment: false }
+    })
+  })
+
   it('opens member-safe recovery copy without a payment action', async () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'
     state.canManageSubscription = false
     renderWrapper()
 
-    expect(screen.getByTestId('queue-button')).toHaveTextContent('member')
+    expect(screen.getByTestId('queue-button')).toHaveTextContent('Run')
     await userEvent.click(screen.getByTestId('queue-button'))
 
     const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
