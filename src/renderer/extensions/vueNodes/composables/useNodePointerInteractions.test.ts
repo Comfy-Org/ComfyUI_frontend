@@ -78,13 +78,11 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => {
   const isResizingVueNodes = ref(false)
   const fakeNodeLayoutRef = ref(mockData.fakeNodeLayout)
   const getNodeLayoutRef = vi.fn(() => fakeNodeLayoutRef)
-  const setSource = vi.fn()
   return {
     layoutStore: {
       isDraggingVueNodes,
       isResizingVueNodes,
-      getNodeLayoutRef,
-      setSource
+      getNodeLayoutRef
     }
   }
 })

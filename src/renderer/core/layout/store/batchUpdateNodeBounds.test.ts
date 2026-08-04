@@ -44,19 +44,4 @@ describe('batchUpdateNodeBounds height normalization', () => {
 
     expect(storedHeight()).toBe(HEIGHT)
   })
-
-  /**
-   * The shared ResizeObserver leaves `LayoutSource.DOM` set on the store, and
-   * drag-end passes already-title-less heights without resetting it — which
-   * took the title height off a second time.
-   */
-  it('ignores an ambient DOM source left set by an earlier mutation', () => {
-    layoutStore.setSource(LayoutSource.DOM)
-
-    layoutStore.batchUpdateNodeBounds(GRAPH, bounds(HEIGHT), {
-      source: LayoutSource.Vue
-    })
-
-    expect(storedHeight()).toBe(HEIGHT)
-  })
 })

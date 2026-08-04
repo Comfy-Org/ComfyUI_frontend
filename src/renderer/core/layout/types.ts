@@ -14,9 +14,7 @@ import type { UUID } from '@/utils/uuid'
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
-  Vue = 'vue',
-  DOM = 'dom',
-  External = 'external'
+  Vue = 'vue'
 }
 
 // Basic geometric types
@@ -113,8 +111,7 @@ interface OperationMeta {
   /** Timestamp for ordering operations */
   timestamp: number
   /** Actor who performed the operation (for CRDT) */
-  actor: string
-  /** Source system that initiated the operation */
+  actor?: string  /** Source system that initiated the operation */
   source: LayoutSource
   graphId: UUID
   /** Operation type discriminator */
@@ -153,7 +150,6 @@ type OperationType =
   | 'createGroup'
   | 'setGroupBounds'
   | 'deleteGroup'
-  | 'clearGraph'
 
 /**
  * Move node operation
@@ -266,13 +262,7 @@ interface DeleteGroupOperation extends GroupOpBase {
   registrationId?: string
 }
 
-interface ClearGraphOperation extends OperationMeta {
-  entity: 'graph'
-  type: 'clearGraph'
-}
-
-/**
- * Union of all operation types
+/** * Union of all operation types
  */
 export type LayoutOperation =
   | MoveNodeOperation
@@ -288,7 +278,6 @@ export type LayoutOperation =
   | CreateGroupOperation
   | SetGroupBoundsOperation
   | DeleteGroupOperation
-  | ClearGraphOperation
 
 export interface LayoutChange {
   type: 'create' | 'update' | 'delete'

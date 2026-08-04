@@ -47,7 +47,6 @@ const testState = vi.hoisted(() => ({
   linearMode: false,
   nodeLayouts: new Map<NodeId, NodeLayout>(),
   batchUpdateNodeBounds: vi.fn(),
-  setSource: vi.fn(),
   syncNodeSlotLayoutsFromDOM: vi.fn(),
   scheduleSlotLayoutSync: vi.fn()
 }))
@@ -73,7 +72,6 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds,
-    setSource: testState.setSource,
     getNodeLayoutRef: (
       _rootGraphId: UUID,
       rawNodeId: NodeId
@@ -168,7 +166,6 @@ describe('useVueNodeResizeTracking', () => {
     testState.linearMode = false
     testState.nodeLayouts.clear()
     testState.batchUpdateNodeBounds.mockReset()
-    testState.setSource.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
     testState.scheduleSlotLayoutSync.mockReset()
     resizeObserverState.observe.mockReset()
@@ -200,7 +197,6 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
 
-    testState.setSource.mockReset()
     testState.batchUpdateNodeBounds.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
 

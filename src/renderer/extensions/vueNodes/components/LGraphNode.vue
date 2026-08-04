@@ -446,16 +446,10 @@ function initSizeStyles() {
 }
 
 /**
- * Handle external size changes (e.g., from extensions calling node.setSize()).
- * Updates CSS variables when layoutStore changes from Canvas/External source.
+ * Updates CSS variables when the layout store changes from the canvas side.
  */
 function handleLayoutChange(change: LayoutChange) {
-  // Only handle Canvas or External source (extensions calling setSize)
-  if (
-    change.source !== LayoutSource.Canvas &&
-    change.source !== LayoutSource.External
-  )
-    return
+  if (change.source !== LayoutSource.Canvas) return
   if (layoutStore.isResizingVueNodes.value) return
   if (isCollapsed.value) return
 

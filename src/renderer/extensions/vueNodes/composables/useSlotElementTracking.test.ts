@@ -136,7 +136,7 @@ describe('useSlotElementTracking', () => {
         bounds: { x: 0, y: 0, width: 200, height: 100 }
       },
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
     mockGraph._nodes = [{ id: 1 }]

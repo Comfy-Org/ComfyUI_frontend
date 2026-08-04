@@ -163,7 +163,6 @@ export const canvasLayoutMutations = useLayoutMutations(LayoutSource.Canvas)
 
 function canvasOperationMeta() {
   return {
-    actor: layoutStore.getCurrentActor(),
     source: LayoutSource.Canvas,
     timestamp: Date.now()
   }
@@ -875,7 +874,6 @@ export function unregisterAllGraphLayout(
   collectOwners(graph)
 
   const timestamp = Date.now()
-  const actor = layoutStore.getCurrentActor()
   const source = LayoutSource.Canvas
   const restorationOperations: LayoutOperation[] = []
   const operations: LayoutOperation[] = owners.flatMap((owner) => [
@@ -891,7 +889,6 @@ export function unregisterAllGraphLayout(
       )
       if (layout && storedRegistrationId === registration.registrationId) {
         restorationOperations.push({
-          actor,
           entity: 'node',
           graphId,
           layout,
@@ -904,7 +901,6 @@ export function unregisterAllGraphLayout(
       }
       return [
         {
-          actor,
           entity: 'node',
           graphId,
           nodeId,
@@ -927,7 +923,6 @@ export function unregisterAllGraphLayout(
       )
       if (layout && storedRegistrationId === registrationId) {
         restorationOperations.push({
-          actor,
           entity: 'group',
           graphId,
           groupId: group.id,
@@ -940,7 +935,6 @@ export function unregisterAllGraphLayout(
       }
       return [
         {
-          actor,
           entity: 'group',
           graphId,
           groupId: group.id,
@@ -964,7 +958,6 @@ export function unregisterAllGraphLayout(
       if (layout && storedRegistrationId === registrationId) {
         void reroute.pos[0]
         restorationOperations.push({
-          actor,
           entity: 'reroute',
           graphId,
           position: layout.position,
@@ -977,7 +970,6 @@ export function unregisterAllGraphLayout(
       }
       return [
         {
-          actor,
           entity: 'reroute',
           graphId,
           registrationId,

@@ -90,8 +90,7 @@ export function useLayoutMutations(source: LayoutSource): LayoutMutations {
       position,
       registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       timestamp: Date.now(),
-      source,
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -139,8 +138,7 @@ export function useLayoutMutations(source: LayoutSource): LayoutMutations {
       registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       size,
       timestamp: Date.now(),
-      source,
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -163,8 +161,7 @@ export function useLayoutMutations(source: LayoutSource): LayoutMutations {
       registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       zIndex,
       timestamp: Date.now(),
-      source,
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -197,8 +194,7 @@ export function useLayoutMutations(source: LayoutSource): LayoutMutations {
       nodeId,
       layout: fullLayout,
       timestamp: Date.now(),
-      source,
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -227,8 +223,7 @@ export function useLayoutMutations(source: LayoutSource): LayoutMutations {
       position,
       registrationId,
       timestamp: Date.now(),
-      source,
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -246,8 +241,7 @@ export function useLayoutMutations(source: LayoutSource): LayoutMutations {
       layout: { id: groupId, ...layout },
       registrationId,
       timestamp: Date.now(),
-      source,
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -265,8 +259,7 @@ export function useLayoutMutations(source: LayoutSource): LayoutMutations {
       groupId,
       registrationId,
       timestamp: Date.now(),
-      source,
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -288,8 +281,7 @@ export function useLayoutMutations(source: LayoutSource): LayoutMutations {
       rerouteId,
       registrationId,
       timestamp: Date.now(),
-      source,
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
