@@ -1330,6 +1330,17 @@ export type SubscriptionTier =
 export type SubscriptionDiscount = {
   kind: 'plan' | 'promotion'
   code: string
+  /**
+   * Customer-facing display name of the underlying coupon. `code` can
+   * be an internal identifier (e.g. team_commitment_7_5); render this
+   * when present.
+   *
+   */
+  name?: string
+  /**
+   * What this discount removed from the amount due today.
+   */
+  amount_off_cents?: number
 }
 
 /**
@@ -1404,6 +1415,15 @@ export type PreviewSubscribeResponse = {
   currency?: string
   renewal_amount_cents?: number
   renewal_at?: string
+  /**
+   * The Stripe payment method configuration governing which payment
+   * methods the embedded checkout offers for this environment. Mount
+   * Stripe Elements with `paymentMethodConfiguration` set to this id
+   * instead of hardcoding payment method types. Absent when the
+   * environment has none configured.
+   *
+   */
+  payment_method_configuration_id?: string
 }
 
 /**
@@ -10264,6 +10284,10 @@ export type PreviewSubscribeErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * Workspace owner role required
+   */
+  403: ErrorResponse
   /**
    * Internal server error
    */

@@ -759,7 +759,17 @@ export const zPreviewPlanInfo = z.object({
 
 export const zSubscriptionDiscount = z.object({
   kind: z.enum(['plan', 'promotion']),
-  code: z.string()
+  code: z.string(),
+  name: z.string().optional(),
+  amount_off_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
 })
 
 /**
@@ -834,7 +844,8 @@ export const zPreviewSubscribeResponse = z.object({
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     })
     .optional(),
-  renewal_at: z.string().datetime().optional()
+  renewal_at: z.string().datetime().optional(),
+  payment_method_configuration_id: z.string().optional()
 })
 
 /**

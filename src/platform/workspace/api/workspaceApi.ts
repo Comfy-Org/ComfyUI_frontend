@@ -277,11 +277,14 @@ export interface PreviewSubscribeResponse {
   currency?: string
   renewal_amount_cents?: number
   renewal_at?: string
+  payment_method_configuration_id?: string
 }
 
 interface SubscriptionDiscount {
   kind: 'plan' | 'promotion'
   code: string
+  name?: string
+  amount_off_cents?: number
 }
 
 export interface SavedPaymentMethod {

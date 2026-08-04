@@ -53,9 +53,12 @@ const i18n = createI18n({
   }
 })
 
-function renderSelector(amountCents = 66500) {
+function renderSelector(
+  amountCents = 66500,
+  paymentMethodConfigurationId = ''
+) {
   return render(UnifiedStripePaymentSelector, {
-    props: { amountCents, currency: 'usd' },
+    props: { amountCents, currency: 'usd', paymentMethodConfigurationId },
     global: { plugins: [i18n] }
   })
 }
@@ -89,7 +92,9 @@ describe('UnifiedStripePaymentSelector', () => {
           mode: 'subscription',
           amount: 66500,
           currency: 'usd',
-          setupFutureUsage: 'off_session',
+          paymentMethodOptions: {
+            card: { setup_future_usage: 'off_session' }
+          },
           paymentMethodTypes: ['card', 'alipay']
         })
       )
@@ -146,5 +151,34 @@ describe('UnifiedStripePaymentSelector', () => {
     unmount()
 
     expect(stripeMocks.destroy).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('UnifiedStripePaymentSelector payment method configuration', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
+    vi.resetAllMocks()
+    stripeMocks.loadStripe.mockResolvedValue(stripeMocks.stripe)
+    stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
+    stripeMocks.create.mockReturnValue({
+      mount: stripeMocks.mount,
+      destroy: stripeMocks.destroy,
+      on: stripeMocks.on
+    })
+  })
+
+  it('mounts against the served configuration instead of a hardcoded method list', async () => {
+    renderSelector(66500, 'pmc_environment')
+
+    await waitFor(() => {
+      expect(stripeMocks.stripe.elements).toHaveBeenCalledWith(
+        expect.objectContaining({
+          paymentMethodConfiguration: 'pmc_environment'
+        })
+      )
+    })
+    expect(stripeMocks.stripe.elements).not.toHaveBeenCalledWith(
+      expect.objectContaining({ paymentMethodTypes: expect.anything() })
+    )
   })
 })

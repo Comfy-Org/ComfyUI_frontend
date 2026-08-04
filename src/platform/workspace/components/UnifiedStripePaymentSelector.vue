@@ -62,12 +62,17 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   amountCents,
   currency,
+  paymentMethodConfigurationId = '',
   isLoading = false,
   verificationPending = false,
   canSubmit = true
 } = defineProps<{
   amountCents: number
   currency: string
+  /** Stripe payment method configuration governing which methods Elements
+   *  offers (served per-environment by the preview). Empty falls back to the
+   *  static card + Alipay set. */
+  paymentMethodConfigurationId?: string
   isLoading?: boolean
   /** A 3DS verification is pending: Complete verification (rendered by the
    *  parent) is the primary action, so the pay button steps back. */
@@ -106,8 +111,19 @@ onMounted(async () => {
     mode: 'subscription',
     amount: amountCents,
     currency: currency.toLowerCase(),
-    setupFutureUsage: 'off_session',
-    paymentMethodTypes: ['card', 'alipay'],
+    // Off-session reuse is a card property here, exactly as the server
+    // confirms it: intent-wide off_session would make Stripe hide methods
+    // that cannot be reused off-session (Alipay renews through its own
+    // agreement instead).
+    paymentMethodOptions: {
+      card: { setup_future_usage: 'off_session' }
+    },
+    // The environment's dashboard-managed configuration decides the method
+    // mix; the static pair is only the fallback for environments (or older
+    // servers) that expose none.
+    ...(paymentMethodConfigurationId
+      ? { paymentMethodConfiguration: paymentMethodConfigurationId }
+      : { paymentMethodTypes: ['card', 'alipay'] }),
     appearance: {
       variables: {
         // Selection (radio, selected label, accordion highlight) uses the

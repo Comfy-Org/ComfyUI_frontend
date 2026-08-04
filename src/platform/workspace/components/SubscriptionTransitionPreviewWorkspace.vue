@@ -181,7 +181,14 @@
             <span>{{
               $t(`subscription.preview.discount.${discount.kind}`)
             }}</span>
-            <span class="text-base-foreground">{{ discount.code }}</span>
+            <span class="text-base-foreground">
+              {{ discount.name || discount.code
+              }}<template v-if="discount.amount_off_cents">
+                · −${{
+                  formatUsdFromCents({ cents: discount.amount_off_cents })
+                }}</template
+              >
+            </span>
           </div>
         </template>
         <div class="flex items-center justify-between text-base">

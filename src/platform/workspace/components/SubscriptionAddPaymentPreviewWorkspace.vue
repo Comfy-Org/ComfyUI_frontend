@@ -132,7 +132,12 @@
           <span>{{
             $t(`subscription.preview.discount.${discount.kind}`)
           }}</span>
-          <span class="text-base-foreground">{{ discount.code }}</span>
+          <span class="text-base-foreground">
+            {{ discount.name || discount.code
+            }}<template v-if="discount.amount_off_cents">
+              · −{{ formatQuoteMoney(discount.amount_off_cents) }}</template
+            >
+          </span>
         </div>
       </div>
       <div class="flex gap-2 pt-6">
@@ -266,6 +271,9 @@
         v-if="captureMode"
         :amount-cents="amountDueCents"
         :currency="previewData?.currency ?? ''"
+        :payment-method-configuration-id="
+          previewData?.payment_method_configuration_id ?? ''
+        "
         :is-loading
         :verification-pending="Boolean(actionUrl) || verificationRecoveryActive"
         :can-submit="quoteIsCurrent"
