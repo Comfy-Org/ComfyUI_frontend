@@ -1,17 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 
 import WorkspaceSettingsPanelContent from './WorkspaceSettingsPanelContent.vue'
 
-const {
-  mockBannerMounted,
-  mockBannerUnmounted,
-  mockFetchMembers,
-  mockFetchPendingInvites
-} = vi.hoisted(() => ({
-  mockBannerMounted: vi.fn(),
-  mockBannerUnmounted: vi.fn(),
+const { mockFetchMembers, mockFetchPendingInvites } = vi.hoisted(() => ({
   mockFetchMembers: vi.fn(),
   mockFetchPendingInvites: vi.fn()
 }))
@@ -29,19 +22,13 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({ workspaceRole: ref('owner') })
 }))
 
-const BillingStatusBanner = defineComponent({
-  setup() {
-    onMounted(mockBannerMounted)
-    onUnmounted(mockBannerUnmounted)
-    return () => h('div', { 'data-testid': 'billing-banner' })
-  }
-})
-
 const stubs = {
-  BillingStatusBanner,
   MembersPanelContent: { template: '<div data-testid="members-body" />' },
   PartnerNodeAccessPanel: { template: '<div data-testid="allowlist-body" />' },
-  PlanCreditsPanelContent: { template: '<div data-testid="plan-body" />' },
+  PlanCreditsPanelContent: {
+    template:
+      '<div data-testid="plan-body"><div data-testid="billing-banner" /></div>'
+  },
   WorkspaceProfilePic: { template: '<div />' }
 }
 
@@ -52,8 +39,8 @@ describe('WorkspaceSettingsPanelContent', () => {
     mockFetchPendingInvites.mockResolvedValue(undefined)
   })
 
-  it('keeps the billing banner mounted while switching sections', async () => {
-    const { rerender, unmount } = render(WorkspaceSettingsPanelContent, {
+  it('keeps the billing banner within the plan and credits section', async () => {
+    const { rerender } = render(WorkspaceSettingsPanelContent, {
       props: { section: 'planCredits' },
       global: { stubs }
     })
@@ -63,8 +50,7 @@ describe('WorkspaceSettingsPanelContent', () => {
     expect(
       screen.getByRole('heading', { name: 'Acme Team' })
     ).toBeInTheDocument()
-    expect(mockBannerMounted).toHaveBeenCalledTimes(1)
-    expect(mockBannerUnmounted).not.toHaveBeenCalled()
+    expect(screen.getByTestId('billing-banner')).toBeInTheDocument()
 
     await rerender({ section: 'members' })
 
@@ -72,8 +58,7 @@ describe('WorkspaceSettingsPanelContent', () => {
     expect(screen.getByTestId('members-body')).toBeInTheDocument()
     expect(mockFetchMembers).toHaveBeenCalledTimes(1)
     expect(mockFetchPendingInvites).toHaveBeenCalledTimes(1)
-    expect(mockBannerMounted).toHaveBeenCalledTimes(1)
-    expect(mockBannerUnmounted).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('billing-banner')).not.toBeInTheDocument()
 
     await rerender({ section: 'allowlist' })
 
@@ -81,10 +66,6 @@ describe('WorkspaceSettingsPanelContent', () => {
     expect(screen.getByTestId('allowlist-body')).toBeInTheDocument()
     expect(mockFetchMembers).toHaveBeenCalledTimes(1)
     expect(mockFetchPendingInvites).toHaveBeenCalledTimes(1)
-    expect(mockBannerMounted).toHaveBeenCalledTimes(1)
-    expect(mockBannerUnmounted).not.toHaveBeenCalled()
-
-    unmount()
-    expect(mockBannerUnmounted).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('billing-banner')).not.toBeInTheDocument()
   })
 })
