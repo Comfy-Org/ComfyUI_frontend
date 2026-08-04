@@ -131,8 +131,8 @@ jobs:
             # bot-authored version bumps: leaving those for a human to click is
             # what stalled the 1.47.10 and 07-27 runs, and a stalled bump PR also
             # silently skips the downstream ComfyUI pin PR.
-            if [ "$state" != "OPEN" ] || [ "$is_draft" != "false" ] || [ "$is_backport" != "true" ]; then
-              echo "Not an actionable backport PR (state=$state draft=$is_draft backport=$is_backport) — skipping."
+            if [ "$state" != "OPEN" ] || [ "$is_draft" != "false" ] || [ "$has_supported_label" != "true" ]; then
+              echo "Not an actionable backport or Release PR (state=$state draft=$is_draft eligible=$has_supported_label) — skipping."
               echo "::endgroup::"; continue
             fi
             case "$base" in

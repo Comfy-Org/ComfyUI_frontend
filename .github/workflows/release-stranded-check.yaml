@@ -78,7 +78,7 @@ jobs:
           fi
 
           echo "::warning::Fix commits are stranded on ${BRANCH}; dispatching a patch release."
-          gh workflow run release-biweekly-comfyui.yaml \
+          gh workflow run release-weekly-comfyui.yaml \
             --repo "$GITHUB_REPOSITORY" \
             --field release_type=patch \
             --field target_branch="$BRANCH"
