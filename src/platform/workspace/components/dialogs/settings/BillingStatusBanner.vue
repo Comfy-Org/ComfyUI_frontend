@@ -71,16 +71,19 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
 type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
-const { t, d } = useI18n()
-const { renewalDate, subscription, manageSubscription } = useBillingContext()
+const { t, d, n } = useI18n()
+const { renewalDate, subscription, plans, manageSubscription } =
+  useBillingContext()
 const { permissions } = useWorkspaceUI()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
+const { formatTierName } = useWorkspaceTierLabel()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
@@ -98,6 +101,34 @@ const planEndDate = computed(() => {
   return raw
     ? d(new Date(raw), { year: 'numeric', month: 'long', day: 'numeric' })
     : ''
+})
+const scheduledPlan = computed(() =>
+  plans.value.find(({ slug }) => slug === subscription.value?.scheduledPlanSlug)
+)
+const planChangeDate = computed(() => {
+  const raw = subscription.value?.changeAt
+  if (!raw) return ''
+  const date = new Date(raw)
+  return Number.isNaN(date.getTime())
+    ? ''
+    : d(date, { year: 'numeric', month: 'long', day: 'numeric' })
+})
+const scheduledPlanName = computed(() =>
+  formatTierName(
+    scheduledPlan.value?.tier,
+    scheduledPlan.value?.duration === 'ANNUAL'
+  )
+)
+const scheduledPlanCharge = computed(() => {
+  const amountCents = scheduledPlan.value?.price_cents
+  return amountCents === undefined
+    ? ''
+    : n(amountCents / 100, {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
 })
 
 interface BannerView {
@@ -147,6 +178,26 @@ const banner = computed<BannerView | null>(() => {
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
         body: t(`${bs}.ending.body`),
         action: canManageLifecycle.value ? 'reactivate' : null,
+        dismissible: false
+      }
+    case 'planChange':
+      if (
+        !scheduledPlanName.value ||
+        !planChangeDate.value ||
+        !scheduledPlanCharge.value
+      ) {
+        return null
+      }
+      return {
+        muted: true,
+        title: t(`${bs}.planChange.title`, {
+          plan: scheduledPlanName.value,
+          date: planChangeDate.value
+        }),
+        body: t(`${bs}.planChange.body`, {
+          amount: scheduledPlanCharge.value
+        }),
+        action: null,
         dismissible: false
       }
     default:

@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import type {
   BillingStatus,
+  Plan,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
@@ -14,6 +15,23 @@ interface Subscription {
   hasFunds: boolean
   isCancelled: boolean
   endDate: string | null
+  scheduledPlanSlug?: string | null
+  changeAt?: string | null
+}
+
+const creatorAnnualPlan: Plan = {
+  slug: 'creator-annual',
+  tier: 'CREATOR',
+  duration: 'ANNUAL',
+  price_cents: 33600,
+  credits_cents: 12000,
+  max_seats: 1,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 33600,
+    total_credits_cents: 12000
+  }
 }
 
 const state = vi.hoisted(() => ({
@@ -27,6 +45,7 @@ const state = vi.hoisted(() => ({
     isCancelled: false,
     endDate: null
   } as Subscription | null,
+  plans: [] as Plan[],
   renewalDate: null as string | null,
   workspaceType: 'team' as string,
   canManageSubscription: true,
@@ -58,6 +77,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isTeamPlan: computed(() => state.isTeamPlan),
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
     subscription: computed(() => state.subscription),
+    plans: computed(() => state.plans),
     renewalDate: computed(() => state.renewalDate),
     manageSubscription: state.manageSubscription,
     fetchStatus: vi.fn(),
@@ -122,7 +142,17 @@ const i18n = createI18n({
             body: 'Members keep full access until then. Reactivate to keep your shared credits and seats.',
             reactivate: 'Reactivate plan'
           },
+          planChange: {
+            title: 'Your plan changes to {plan} on {date}.',
+            body: "We'll automatically charge {amount} to your card on file."
+          },
           updatePayment: 'Update payment'
+        }
+      },
+      subscription: {
+        tierNameYearly: '{name} Yearly',
+        tiers: {
+          creator: { name: 'Creator' }
         }
       }
     }
@@ -169,6 +199,7 @@ describe('BillingStatusBanner', () => {
     state.isTeamPlan = true
     state.billingStatus = 'paid'
     state.subscription = { hasFunds: true, isCancelled: false, endDate: null }
+    state.plans = [creatorAnnualPlan]
     state.renewalDate = null
     state.workspaceType = 'team'
     state.canManageSubscription = true
@@ -318,6 +349,42 @@ describe('BillingStatusBanner', () => {
       screen.getByRole('button', { name: 'Reactivate plan' })
     )
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the scheduled plan, effective date, and automatic charge', () => {
+    state.isTeamPlan = false
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'creator-annual',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan changes to Creator Yearly on August 3, 2026.'
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "We'll automatically charge $336.00 to your card on file."
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('hides a scheduled change whose destination plan cannot be resolved', () => {
+    state.isTeamPlan = false
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'missing-plan',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+
+    renderBanner()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('does not expose reactivation controls to a member', () => {

@@ -12,6 +12,7 @@ export type BillingBannerKind =
   | 'paymentFailed'
   | 'outOfCredits'
   | 'ending'
+  | 'planChange'
 
 export interface BillingBannerInputs {
   billingControlEnabled: boolean
@@ -23,21 +24,21 @@ export interface BillingBannerInputs {
   hasFunds: boolean | null
   isCancelled: boolean
   endDate: string | null
+  scheduledPlanSlug: string | null
+  changeAt: string | null
   canManage: boolean
   outOfCreditsDismissed: boolean
 }
 
 // The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending. Payment recovery and the existing billing-control
+// outOfCredits > ending > planChange. Payment recovery and billing-control
 // notices have independent rollout gates.
 export function deriveBillingBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
-  if (!inputs.isTeamPlan || !inputs.isLoaded) {
-    return null
-  }
+  if (!inputs.isLoaded) return null
 
-  if (inputs.v1PaymentRecovery) {
+  if (inputs.isTeamPlan && inputs.v1PaymentRecovery) {
     if (inputs.billingStatus === 'paused') return 'paused'
     if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
       return 'paymentFailed'
@@ -45,13 +46,24 @@ export function deriveBillingBanner(
   }
 
   if (!inputs.isActiveSubscription) return null
-  if (!inputs.billingControlEnabled) return null
 
-  if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
-    return 'outOfCredits'
+  if (inputs.isTeamPlan && inputs.billingControlEnabled) {
+    if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
+      return 'outOfCredits'
+    }
+    if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
+      return 'ending'
+    }
   }
-  if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
-    return 'ending'
+
+  if (
+    inputs.billingControlEnabled &&
+    !inputs.isCancelled &&
+    inputs.scheduledPlanSlug &&
+    inputs.changeAt &&
+    inputs.canManage
+  ) {
+    return 'planChange'
   }
 
   return null
@@ -83,6 +95,8 @@ function useBillingBannerInternal() {
       hasFunds: subscription.value?.hasFunds ?? null,
       isCancelled: subscription.value?.isCancelled ?? false,
       endDate: subscription.value?.endDate ?? null,
+      scheduledPlanSlug: subscription.value?.scheduledPlanSlug ?? null,
+      changeAt: subscription.value?.changeAt ?? null,
       canManage: permissions.value.canManageSubscription,
       outOfCreditsDismissed: dismissed.value
     })
