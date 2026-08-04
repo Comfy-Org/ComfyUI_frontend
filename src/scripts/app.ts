@@ -32,7 +32,6 @@ import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/instal
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
@@ -107,12 +106,8 @@ import {
 } from '@/platform/missingModel/missingModelPipeline'
 import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import {
-  scanAllMediaCandidates,
-  verifyMediaCandidates
-} from '@/platform/missingMedia/missingMediaScan'
 
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
@@ -120,7 +115,6 @@ import {
   forEachNode,
   getNodeByExecutionId,
   isAncestorPathActive,
-  isMissingCandidateActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
 import {
@@ -1521,7 +1515,10 @@ export class ComfyApp {
           silent: silentAssetErrors
         })
 
-        await this.runMissingMediaPipeline(silentAssetErrors)
+        await runMissingMediaPipeline({
+          rootGraph: this.rootGraph,
+          silent: silentAssetErrors
+        })
       }
 
       if (!deferWarnings) {
@@ -1549,73 +1546,6 @@ export class ComfyApp {
       missingModelStore: useMissingModelStore(),
       silent: options.silent ?? true
     })
-  }
-
-  private cacheMediaCandidates(
-    wf: ComfyWorkflow | null,
-    confirmed: MissingMediaCandidate[]
-  ) {
-    if (!wf) return
-    updatePendingWarnings(wf, {
-      missingMediaCandidates: confirmed
-    })
-  }
-
-  private async runMissingMediaPipeline(
-    silent: boolean = false
-  ): Promise<void> {
-    const missingMediaStore = useMissingMediaStore()
-    const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    const allCandidates = scanAllMediaCandidates(this.rootGraph, isCloud)
-    // Drop candidates whose enclosing subgraph is muted/bypassed.
-    const candidates = allCandidates.filter((c) =>
-      isAncestorPathActive(this.rootGraph, String(c.nodeId))
-    )
-
-    if (!candidates.length) {
-      this.cacheMediaCandidates(activeWf, [])
-      return
-    }
-
-    const pending = candidates.some((c) => c.isMissing === undefined)
-    if (pending) {
-      const controller = missingMediaStore.createVerificationAbortController()
-      void verifyMediaCandidates(candidates, {
-        isCloud,
-        signal: controller.signal
-      })
-        .then(() => {
-          if (controller.signal.aborted) return
-          // Re-check ancestor after async verification (see model pipeline).
-          const confirmed = candidates.filter((c) =>
-            isMissingCandidateActive(this.rootGraph, c)
-          )
-          if (confirmed.length) {
-            useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-          }
-          this.cacheMediaCandidates(activeWf, confirmed)
-        })
-        .catch((err) => {
-          console.warn(
-            '[Missing Media Pipeline] Asset verification failed:',
-            err
-          )
-          useToastStore().add({
-            severity: 'warn',
-            summary: st(
-              'toastMessages.missingMediaVerificationFailed',
-              'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
-            ),
-            life: 5000
-          })
-        })
-    } else {
-      const confirmed = candidates.filter((c) => c.isMissing === true)
-      if (confirmed.length) {
-        useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-      }
-      this.cacheMediaCandidates(activeWf, confirmed)
-    }
   }
 
   async graphToPrompt(graph = this.rootGraph) {
