@@ -2,6 +2,63 @@ import '@testing-library/jest-dom/vitest'
 import { vi } from 'vitest'
 import 'vue'
 
+/**
+ * Unit tests must never perform real network I/O.
+ *
+ * happy-dom serves the page from `http://localhost:3000` (vitest's default
+ * environment URL), so any un-mocked relative `fetch('/api/...')` becomes a
+ * real TCP connection to a port nothing is listening on. The request outlives
+ * the test that started it, and when it finally fails the resulting
+ * `console.error` is emitted after vitest has torn the environment down:
+ *
+ *   EnvironmentTeardownError: [vitest-worker]: Closing rpc while
+ *   "onUserConsoleLog" was pending
+ *
+ * Vitest counts that as an unhandled error and exits non-zero even when every
+ * test passed, which silently evicts PRs from the merge queue.
+ *
+ * Rejecting immediately keeps the failure inside the test that caused it,
+ * where it is attributable and fixable. Tests that need network behaviour must
+ * mock the module that issues the request, or stub `fetch` themselves - a
+ * local stub replaces this guard.
+ */
+const originalFetch = globalThis.fetch
+
+const blockedNetworkFetch: typeof globalThis.fetch = (input, init) => {
+  const requested =
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.href
+        : input.url
+
+  let resolved = requested
+  try {
+    resolved = new URL(requested, globalThis.location?.href).href
+  } catch {
+    // Keep the raw value if it cannot be resolved against the page URL.
+  }
+
+  if (!/^https?:/i.test(resolved)) {
+    return originalFetch(input, init)
+  }
+
+  return Promise.reject(
+    new Error(
+      `Blocked a real network request to ${resolved} from a unit test. ` +
+        'Mock the module that issues it (or stub globalThis.fetch in the ' +
+        'test) instead of letting the request escape - see vitest.setup.ts.'
+    )
+  )
+}
+
+globalThis.fetch = blockedNetworkFetch
+// vitest copies happy-dom's globals onto `globalThis` as bound functions, so
+// `window.fetch` is a separate reference that would otherwise stay unguarded.
+if (typeof window !== 'undefined' && window.fetch !== blockedNetworkFetch) {
+  window.fetch = blockedNetworkFetch
+}
+
 // Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
 vi.mock('@sparkjsdev/spark', async () => {
   const three = await import('three')

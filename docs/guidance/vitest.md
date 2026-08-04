@@ -22,6 +22,23 @@ which is always loaded. In addition:
 - Keep module mocks contained - no global mutable state
 - Use `vi.hoisted()` for per-test mock manipulation
 
+## No Real Network
+
+`vitest.setup.ts` blocks every `http(s)` `fetch`, and happy-dom is configured not
+to load iframes, stylesheets or scripts from remote hosts. A blocked request
+rejects with `Blocked a real network request to <url>`.
+
+This is deliberate, not an inconvenience to route around. happy-dom serves the
+page from `http://localhost:3000`, so an un-mocked relative `fetch('/api/...')`
+becomes a real connection whose failure arrives _after_ the test that started it
+has finished. Vitest then reports the late `console.error` as an unhandled
+error - `Closing rpc while "onUserConsoleLog" was pending` - against whichever
+file happened to be running, and fails the run with every test passing.
+
+If you hit the guard, mock the module that issues the request. Stubbing `fetch`
+in your own test (`vi.stubGlobal('fetch', ...)`) also works and replaces the
+guard for that test.
+
 ## Component Testing
 
 - Use `@testing-library/vue` with `@testing-library/user-event` for component tests (an ESLint rule bans `@vue/test-utils` in new tests)
