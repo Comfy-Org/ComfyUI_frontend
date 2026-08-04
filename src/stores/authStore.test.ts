@@ -14,6 +14,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import type * as ApiModule from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -21,7 +22,8 @@ import { createTestingPinia } from '@pinia/testing'
 const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
     isCloud: true,
-    isDesktop: true
+    isDesktop: false,
+    DISTRIBUTION: 'cloud'
   }
 }))
 
@@ -30,6 +32,10 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
     teamWorkspacesEnabled: false,
     unifiedCloudAuthEnabled: false
   }
+}))
+
+const { mockResetSocket } = vi.hoisted(() => ({
+  mockResetSocket: vi.fn()
 }))
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
@@ -42,6 +48,16 @@ type MockAuth = Record<string, unknown>
 // Mock fetch
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
+
+const customerRequestBody = (): Record<string, unknown> | undefined => {
+  const customerCall = mockFetch.mock.calls.find(([url]) =>
+    String(url).endsWith('/customers')
+  )
+  const body = customerCall?.[1]?.body
+  return typeof body === 'string'
+    ? (JSON.parse(body) as Record<string, unknown>)
+    : undefined
+}
 
 // Mock successful API responses
 const mockCreateCustomerResponse = {
@@ -119,6 +135,15 @@ vi.mock('@/stores/toastStore', () => ({
     add: vi.fn()
   })
 }))
+
+// Keep the real API singleton (other modules rely on its full surface) but
+// override resetSocket so we can assert socket lifecycle calls without opening
+// a real WebSocket.
+vi.mock('@/scripts/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof ApiModule>()
+  Object.assign(actual.api, { resetSocket: mockResetSocket })
+  return actual
+})
 
 // Mock useDialogService
 vi.mock('@/services/dialogService')
@@ -313,6 +338,37 @@ describe('useAuthStore', () => {
     await store.login('test@example.com', 'correct-password')
   })
 
+  describe('fetchBalance identity isolation', () => {
+    it('discards a late balance response from the previous account after an A->B switch', async () => {
+      let signalBalanceRequested: () => void = () => {}
+      const balanceRequested = new Promise<void>((resolve) => {
+        signalBalanceRequested = resolve
+      })
+      let resolveBalanceJson: (value: unknown) => void = () => {}
+      const balanceJson = new Promise((resolve) => {
+        resolveBalanceJson = resolve
+      })
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers/balance')) {
+          signalBalanceRequested()
+          return Promise.resolve({ ok: true, json: () => balanceJson })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      // Request starts while account A is current.
+      const pending = store.fetchBalance()
+      await balanceRequested
+
+      // Firebase transitions directly to account B before the response lands.
+      authStateCallback({ ...mockUser, uid: 'account-b' } as User)
+      resolveBalanceJson({ balance: 4242 })
+
+      expect(await pending).toBeNull()
+      expect(store.balance).toBeNull()
+    })
+  })
+
   describe('login', () => {
     it('should login with valid credentials', async () => {
       const mockUserCredential = { user: mockUser }
@@ -414,22 +470,22 @@ describe('useAuthStore', () => {
         expect.stringContaining('/customers'),
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ turnstile_token: 'turnstile-abc' })
+          body: JSON.stringify({
+            turnstile_token: 'turnstile-abc',
+            signup_source: 'cloud'
+          })
         })
       )
     })
 
-    it('omits the request body when no turnstile token is provided', async () => {
+    it('omits turnstile_token when no turnstile token is provided', async () => {
       vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
         user: mockUser
       } as Partial<UserCredential> as UserCredential)
 
       await store.register('new@example.com', 'password')
 
-      const customerCall = mockFetch.mock.calls.find(([url]) =>
-        String(url).endsWith('/customers')
-      )
-      expect(customerCall?.[1]).not.toHaveProperty('body')
+      expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
     })
 
     it('rolls back the orphaned Firebase user when customer creation fails', async () => {
@@ -526,6 +582,27 @@ describe('useAuthStore', () => {
       const token = await store.getIdToken()
 
       expect(token).toBeUndefined()
+    })
+
+    it('discards a token that resolves after the account changes', async () => {
+      let resolveToken: (token: string) => void = () => {}
+      mockUser.getIdToken.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveToken = resolve
+        })
+      )
+      const tokenPromise = store.getIdToken()
+      const nextUser = {
+        ...mockUser,
+        uid: 'different-user-id',
+        email: 'different@example.com',
+        getIdToken: vi.fn().mockResolvedValue('different-user-token')
+      } as MockUser
+
+      authStateCallback(nextUser)
+      resolveToken('old-user-token')
+
+      await expect(tokenPromise).resolves.toBeUndefined()
     })
 
     it('should return null for token after login and logout sequence', async () => {
@@ -754,11 +831,7 @@ describe('useAuthStore', () => {
 
         await store.loginWithGoogle()
 
-        const customerCall = mockFetch.mock.calls.find(([url]) =>
-          String(url).endsWith('/customers')
-        )
-        expect(customerCall).toBeDefined()
-        expect(customerCall?.[1]).not.toHaveProperty('body')
+        expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
       })
 
       it('should handle Google sign in errors', async () => {
@@ -801,11 +874,7 @@ describe('useAuthStore', () => {
 
         await store.loginWithGithub()
 
-        const customerCall = mockFetch.mock.calls.find(([url]) =>
-          String(url).endsWith('/customers')
-        )
-        expect(customerCall).toBeDefined()
-        expect(customerCall?.[1]).not.toHaveProperty('body')
+        expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
       })
 
       it('should handle Github sign in errors', async () => {
@@ -1119,6 +1188,21 @@ describe('useAuthStore', () => {
   })
 
   describe('createCustomer', () => {
+    it('sends signup_source on every call, even with no payload', async () => {
+      await store.createCustomer()
+
+      expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
+    })
+
+    it('preserves caller payload alongside signup_source', async () => {
+      await store.createCustomer({ turnstile_token: 'token-xyz' })
+
+      expect(customerRequestBody()).toEqual({
+        turnstile_token: 'token-xyz',
+        signup_source: 'cloud'
+      })
+    })
+
     it('should succeed with API key auth when no Firebase user is present', async () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
@@ -1169,6 +1253,58 @@ describe('useAuthStore', () => {
       const error = await store.createCustomer().catch((e: unknown) => e)
       expect(error).toBeInstanceOf(AuthStoreError)
       expect((error as AuthStoreError).status).toBe(422)
+    })
+  })
+
+  describe('realtime socket identity lifecycle', () => {
+    const accountB: MockUser = {
+      ...mockUser,
+      uid: 'account-b-id',
+      email: 'b@example.com'
+    } as MockUser
+
+    it('does not reset the socket on the initial sign-in', () => {
+      // The store is created in beforeEach, which drives the initial
+      // authStateCallback(mockUser); the first identity must not reconnect
+      // because api.init() already owns the initial connect.
+      expect(mockResetSocket).not.toHaveBeenCalled()
+    })
+
+    it('reconnects the socket on a direct A -> B account switch', () => {
+      mockResetSocket.mockClear()
+
+      authStateCallback(accountB)
+
+      expect(mockResetSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not reconnect on a same-account token refresh', () => {
+      mockResetSocket.mockClear()
+
+      // Same UID observed again (e.g. onAuthStateChanged re-emitting the same
+      // user) must not tear down the connection.
+      authStateCallback(mockUser)
+
+      expect(mockResetSocket).not.toHaveBeenCalled()
+    })
+
+    it('reconnects the socket on sign-out', () => {
+      mockResetSocket.mockClear()
+
+      authStateCallback(null)
+
+      expect(mockResetSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not reconnect when transitioning from signed-out to signed-in', () => {
+      authStateCallback(null)
+      mockResetSocket.mockClear()
+
+      // Re-signing in from a signed-out state records the identity again; the
+      // socket was already torn down on sign-out, so there is no extra reset.
+      authStateCallback(accountB)
+
+      expect(mockResetSocket).not.toHaveBeenCalled()
     })
   })
 })

@@ -103,7 +103,9 @@ vi.mock('primevue/usetoast', () => ({
   }))
 }))
 
-function renderComponent(props: { cancelAt?: string } = {}) {
+function renderComponent(
+  props: { cancelAt?: string; flowAlreadyOpened?: boolean } = {}
+) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -134,15 +136,30 @@ describe('CancelSubscriptionDialogContent', () => {
 
   describe('cancellation telemetry', () => {
     it('tracks flow_opened with tier and end date when the dialog mounts', () => {
-      mockSubscription.value = { endDate: '2026-08-01T00:00:00.000Z' }
+      mockSubscription.value = {
+        duration: 'ANNUAL',
+        endDate: '2026-08-01T00:00:00.000Z'
+      }
 
       renderComponent()
 
       expect(mockTrackCancellation).toHaveBeenCalledWith('flow_opened', {
         source: 'cancel_plan_menu',
         current_tier: 'standard',
+        cycle: 'yearly',
         end_date: '2026-08-01T00:00:00.000Z'
       })
+    })
+
+    it('does not repeat flow_opened when continuing a fallback flow', () => {
+      mockSubscription.value = null
+
+      renderComponent({ flowAlreadyOpened: true })
+
+      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+        'flow_opened',
+        expect.anything()
+      )
     })
 
     it('tracks confirmed before the cancel request and no abandoned on success', async () => {
@@ -178,11 +195,32 @@ describe('CancelSubscriptionDialogContent', () => {
       await waitFor(() =>
         expect(mockTrackCancellation).toHaveBeenCalledWith(
           'failed',
-          expect.objectContaining({ error_message: 'timed out' })
+          expect.not.objectContaining({ error_message: expect.anything() })
         )
       )
       expect(mockTrackCancellation).toHaveBeenCalledWith(
         'confirmed',
+        expect.anything()
+      )
+    })
+
+    it('leaves workspace terminal failure telemetry to the billing poller', async () => {
+      mockSubscription.value = null
+      mockShouldUseWorkspaceBilling.value = true
+      mockCancelSubscription.mockRejectedValueOnce({ message: 'timed out' })
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      )
+      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+        'failed',
         expect.anything()
       )
     })

@@ -115,7 +115,19 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     memberMenus: computed(
       () =>
         new Map(
-          mockFilteredMembers.value.map((m) => [m.id, mockMemberMenuItems()])
+          mockFilteredMembers.value.map((member) => [
+            member.id,
+            member.email.toLowerCase() === 'owner@example.com' ||
+            member.id === mockOriginalOwnerId.value
+              ? []
+              : [
+                  { label: 'changeRole' },
+                  ...(member.role === 'member'
+                    ? [{ label: 'setCreditLimit' }]
+                    : []),
+                  { label: 'removeMember' }
+                ]
+          ])
         )
     ),
     members: mockMembers,
@@ -324,7 +336,7 @@ describe('MembersPanelContent', () => {
       ).toHaveLength(1)
     })
 
-    it('does not show more options for current user', () => {
+    it('hides the menu for the current user', () => {
       mockFilteredMembers.value = [
         createMember({ name: 'Owner User', email: 'owner@example.com' })
       ]
@@ -334,7 +346,7 @@ describe('MembersPanelContent', () => {
       ).toHaveLength(0)
     })
 
-    it('does not show more options on the original owner row', () => {
+    it('hides the creator menu and shows the member menu', () => {
       mockOriginalOwnerId.value = 'creator-1'
       mockFilteredMembers.value = [
         createMember({
@@ -351,7 +363,7 @@ describe('MembersPanelContent', () => {
       const otherRow = screen.getByTestId('member-row-2')
       expect(
         within(creatorRow).queryByRole('button', { name: 'g.moreOptions' })
-      ).toBeNull()
+      ).not.toBeInTheDocument()
       expect(
         within(otherRow).getByRole('button', { name: 'g.moreOptions' })
       ).toBeInTheDocument()
@@ -531,7 +543,7 @@ describe('MembersPanelContent', () => {
   })
 
   describe('contact us footer', () => {
-    it('opens discord in a new tab on a Team plan', async () => {
+    it('opens the Team plan request form in a new tab', async () => {
       const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
       renderComponent()
       expect(
@@ -541,7 +553,7 @@ describe('MembersPanelContent', () => {
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://discord.com/invite/comfyorg',
+        'https://comfy-org.portal.usepylon.com/forms/team-plan-requests',
         '_blank',
         'noopener,noreferrer'
       )

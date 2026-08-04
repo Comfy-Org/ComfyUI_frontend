@@ -11,6 +11,7 @@ import {
   createVerificationAbortController
 } from '@/platform/missing/missingCandidateHelpers'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 /**
  * Missing media error state.
@@ -33,6 +34,15 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
       new Set(missingMediaCandidates.value?.map((m) => String(m.nodeId)) ?? [])
   )
 
+  /** `nodeId::widgetName` keys, so per-widget render lookups stay O(1). */
+  const missingMediaWidgetKeys = computed<Set<string>>(() => {
+    const keys = new Set<string>()
+    for (const candidate of missingMediaCandidates.value ?? []) {
+      keys.add(`${String(candidate.nodeId)}::${candidate.widgetName}`)
+    }
+    return keys
+  })
+
   const missingMediaAncestorExecutionIds = computed(() =>
     computeAncestorExecutionIds(missingMediaNodeIds.value)
   )
@@ -53,6 +63,13 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   function isContainerWithMissingMedia(node: LGraphNode): boolean {
     return activeMissingMediaGraphIds.value.has(String(node.id))
+  }
+
+  function isWidgetMissingMedia(
+    nodeId: NodeExecutionId,
+    widgetName: string
+  ): boolean {
+    return missingMediaWidgetKeys.value.has(`${String(nodeId)}::${widgetName}`)
   }
 
   function removeMissingMediaByWidget(nodeId: string, widgetName: string) {
@@ -135,6 +152,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     clearMissingMedia,
     createVerificationAbortController: verificationAbortController.create,
 
-    isContainerWithMissingMedia
+    isContainerWithMissingMedia,
+    isWidgetMissingMedia
   }
 })

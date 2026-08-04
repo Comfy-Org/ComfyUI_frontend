@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "تطبيق Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "نسبة النهاية"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "mask": {
+        "name": "القناع"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_patch": {
+        "name": "تصحيح النموذج"
+      },
+      "start_percent": {
+        "name": "نسبة البداية"
+      },
+      "strength": {
+        "name": "القوة"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "ضبط مستوى صوت الملف الصوتي بمقدار محدد بوحدة ديسيبل (dB).",
     "display_name": "ضبط مستوى الصوت",
@@ -1177,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "مستوى الصوت. ٠ = عادي، ١٠٠ = ٢.٠×، -٥٠ = ٠.٥×."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: ٢٠ لغة (الإنجليزية، الصينية، اليابانية، الكورية، الإسبانية المكسيكية والإسبانية القشتالية، الإندونيسية، الألمانية، البرتغالية البرازيلية، الفرنسية، التايلاندية، الفيتنامية، الماليزية، الفلبينية، الإيطالية، الروسية، الهولندية، البولندية، التركية، السويدية) بالإضافة إلى التحكم في توقيت كل جملة عبر الطوابع الزمنية مثل \"[5.5s:8.0s] ...\". seed-audio-1.0: الإنجليزية والصينية فقط، بدون تحكم في التوقيت."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "تغيير طبقة الصوت بالنصف نغمة (-١٢ إلى ١٢)."
@@ -2010,9 +2040,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "temperature"
       },
       "prompt": {
         "name": "prompt",
@@ -4071,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "كامن مشترك للفيديو والصوت لـ MiniMax H3. يتم ضبط المدة تلقائيًا على شبكة الإطارات 17k+5 الخاصة بالنموذج بسرعة 24 إطارًا في الثانية.",
+    "display_name": "فراغ MiniMax H3 AV كامن",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات بسرعة 24 إطارًا في الثانية، يتم ضبطه تلقائيًا على شبكة 17k+5 الخاصة بالنموذج (124 ≈ ٥ ثوانٍ؛ النطاق المدرب تقريبًا 124-362، القيم الأطول غير مجربة)"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "فيديو موتشي كامن فارغ",
     "inputs": {
@@ -5677,6 +5725,15 @@
       "model_resolution": {
         "name": "الدقة"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "الوصف النصي",
         "tooltip": "وصف نصي للفيديو المطلوب."
@@ -5853,6 +5910,212 @@
       "watermark": {
         "name": "علامة مائية",
         "tooltip": "هل ترغب في إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة؟"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatarVideoNode": {
+    "description": "إنشاء فيديو مقدم يتحدث باستخدام HeyGen avatar. يتضمن أشهر الصور الرمزية العامة من HeyGen؛ يمكن تزويد معرف مظهر كبديل.",
+    "display_name": "فيديو HeyGen Avatar",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع",
+        "tooltip": "نسبة العرض إلى الارتفاع للفيديو الناتج. 'تلقائي' يتبع مصدر الفيديو للصورة الرمزية."
+      },
+      "background_color": {
+        "name": "لون الخلفية",
+        "tooltip": "لون خلفية صلبة اختياري كرمز hex (مثال: '#00ff00'). اتركه فارغاً لاستخدام خلفية الصورة الرمزية نفسها."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "custom_avatar_id": {
+        "name": "معرف الصورة الرمزية المخصص",
+        "tooltip": "معرف مظهر HeyGen اختياري. عند تعيينه، يتجاوز الصورة الرمزية المحددة أعلاه. يمكن استخدام أي من أكثر من ٣٠٠٠ مظهر عام من HeyGen (أو صورك الرمزية الخاصة)."
+      },
+      "engine": {
+        "name": "المحرك",
+        "tooltip": "محرك التصيير؛ كل خيار يعرض فقط الصور الرمزية التي يدعمها. 'تلقائي' يعرض جميع الصور الرمزية ويختار أفضل محرك لها (يفضل Avatar IV). Avatar V هو الأعلى دقة، وAvatar III هو الأكثر توفيراً."
+      },
+      "engine_avatar": {
+        "name": "الصورة الرمزية"
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "دقة الفيديو الناتج."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لن يتم إرسالها إلى HeyGen؛ غيّرها لإعادة التشغيل."
+      },
+      "speech": {
+        "name": "الكلام",
+        "tooltip": "تحريك الصورة الرمزية بنص (تحويل النص إلى كلام من HeyGen) أو صوتك الخاص."
+      },
+      "speech_custom_voice_id": {
+        "name": "معرف الصوت المخصص"
+      },
+      "speech_text": {
+        "name": "النص"
+      },
+      "speech_voice": {
+        "name": "الصوت"
+      },
+      "speech_voice_speed": {
+        "name": "سرعة الصوت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "أنشئ صورتك الرمزية القابلة لإعادة الاستخدام من HeyGen من صورة شخص أو من نص (شخصية مولدة). أدخل avatar_id الناتج في custom_avatar_id لفيديو HeyGen Avatar — واحتفظ بالمعرف لإعادة استخدام الصورة الرمزية في سير العمل مستقبلاً.",
+    "display_name": "إنشاء HeyGen Avatar",
+    "inputs": {
+      "source": {
+        "name": "المصدر",
+        "tooltip": "أنشئ شخصية جديدة من نص، أو أنشئ الصورة الرمزية من صورة متصلة لشخص."
+      },
+      "source_prompt": {
+        "name": "المطالبة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرف الصورة الرمزية",
+        "tooltip": "معرف مظهر الصورة الرمزية. مرره إلى custom_avatar_id لفيديو HeyGen Avatar؛ واحتفظ به لإعادة استخدام الصورة الرمزية لاحقاً."
+      },
+      "1": {
+        "name": "المعاينة",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "حوّل أي صورة لشخص إلى فيديو متكلم متزامن مع حركة الشفاه (HeyGen Avatar IV). يمكنك تحريكها بنص مكتوب أو صوتك الخاص.",
+    "display_name": "HeyGen صورة متحركة ناطقة",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع",
+        "tooltip": "نسبة العرض إلى الارتفاع للفيديو الناتج. 'تلقائي' يتبع صورة الإدخال."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "expressiveness": {
+        "name": "التعبيرية",
+        "tooltip": "مدى تعبير الوجه والإيماءات المتحركة."
+      },
+      "image": {
+        "name": "صورة",
+        "tooltip": "صورة الشخص المراد تحريكها. سيتم تصغيرها تلقائيًا إذا كانت أكبر من 2K."
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "دقة الفيديو الناتج."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لن يتم إرسالها إلى HeyGen؛ غيّرها لإعادة التشغيل."
+      },
+      "speech": {
+        "name": "الصوت",
+        "tooltip": "حرّك الصورة بنص مكتوب (تحويل النص إلى كلام من HeyGen) أو صوتك الخاص."
+      },
+      "speech_custom_voice_id": {
+        "name": "معرّف الصوت المخصص"
+      },
+      "speech_text": {
+        "name": "النص"
+      },
+      "speech_voice": {
+        "name": "الصوت"
+      },
+      "speech_voice_speed": {
+        "name": "سرعة الصوت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "أنشئ صوتًا من نص باستخدام محرك HeyGen Starfish TTS. يشمل أشهر أصوات HeyGen عبر ١٧ لغة.",
+    "display_name": "HeyGen تحويل النص إلى كلام",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "custom_voice_id": {
+        "name": "معرّف الصوت المخصص",
+        "tooltip": "معرّف صوت HeyGen اختياري. عند تعيينه، يتجاوز الصوت المحدد أعلاه. يجب أن يدعم الصوت محرك Starfish."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لن يتم إرسالها إلى HeyGen؛ غيّرها لإعادة التشغيل."
+      },
+      "speed": {
+        "name": "السرعة",
+        "tooltip": "معامل سرعة الكلام."
+      },
+      "ssml": {
+        "name": "SSML",
+        "tooltip": "تعامل مع النص كعلامات SSML (للوقفات، والتأكيد، والتحكم في النطق)."
+      },
+      "text": {
+        "name": "النص",
+        "tooltip": "النص المراد تحويله إلى صوت (حتى ٥٠٠٠ حرف). يجب أن يكون الصوت الناتج أطول من ثانية واحدة."
+      },
+      "voice": {
+        "name": "الصوت",
+        "tooltip": "الصوت المستخدم (مختار من أشهر الأصوات المتوافقة مع Starfish من HeyGen)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "ترجم فيديو منطوق إلى لغة أخرى. يقوم باستنساخ صوت المتحدث الأصلي ويعيد تحريك الفم ليتطابق مع الكلام المترجم.",
+    "display_name": "HeyGen ترجمة الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "'السرعة' أسرع؛ 'الدقة' تنتج مزامنة شفاه بجودة أعلى ولكن بتكلفة مضاعفة."
+      },
+      "output_language": {
+        "name": "اللغة المستهدفة",
+        "tooltip": "اللغة الهدف للفيديو المترجم."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لن يتم إرسالها إلى HeyGen؛ غيّرها لإعادة التشغيل القسري."
+      },
+      "speaker_count": {
+        "name": "عدد المتحدثين",
+        "tooltip": "عدد المتحدثين في الفيديو. 0 = اكتشاف تلقائي."
+      },
+      "translate_audio_only": {
+        "name": "ترجمة الصوت فقط",
+        "tooltip": "استبدال المسار الصوتي فقط مع الحفاظ على حركات الفم الأصلية (بدون مزامنة شفاه)."
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "فيديو يحتوي على كلام لترجمته."
       }
     },
     "outputs": {
@@ -6264,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "يولّد صورًا باستخدام P-Image، نموذج Ideogram السريع لتحويل النص إلى صورة. يتميز بقوة في الطباعة والواقعية الفوتوغرافية؛ يدعم تسميات JSON المنظمة لإصدار Ideogram 4.0 من أجل نصوص دقيقة، ألوان وتخطيط محدد.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "نسبة العرض إلى الارتفاع لتوليد الصورة."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "وصف نصي. يقبل أيضًا تسميات JSON المنظمة لإصدار Ideogram 4.0 (ألوان دقيقة بصيغة #RRGGBB، نصوص محددة، وتخطيط بصناديق الإحاطة) — عيّن prompt_upsampling إلى إيقاف OFF لاستخدامها كما هي."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "يوسّع الأوصاف القصيرة إلى تسمية منظمة مفصلة قبل التوليد (يتم إرجاع الوصف المعاد كتابته كـ final_prompt). عيّن إلى إيقاف OFF عند تزويدك بتسمية JSON خاصة بك أو نص دقيق."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "فئة السرعة/السعر/الجودة. MEDIUM هو الافتراضي اليومي؛ HIGH للنصوص المعقدة، التفاصيل الدقيقة والنصوص الصعبة؛ VERY_LOW/LOW للمسودات على نطاق واسع. النصوص الصعبة تظهر بشكل سيء تحت MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "فئة حجم المخرجات (عدد البكسلات يتبع نسبة العرض إلى الارتفاع، مثلًا 16:9 يعطي 1280x720 عند 1K و2560x1440 عند 2K). يُفضل HIGH + 2K لطباعة واضحة."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة للتوليد القابل لإعادة الإنتاج. مع prompt_upsampling على إيقاف OFF، نفس البذرة والإعدادات تعطي نفس الصورة؛ مع ON/AUTO إعادة كتابة الوصف تختلف في كل مرة — لإعادة إنتاج نتيجة استخدم final_prompt مع prompt_upsampling على إيقاف OFF ونفس البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "الوصف الذي تم توليد الصورة بناءً عليه فعليًا (التسمية المنظمة المعاد كتابتها عند تشغيل prompt_upsampling، أو وصفك الأصلي). أعد استخدامه مع prompt_upsampling على إيقاف OFF ونفس البذرة لإعادة إنتاج هذه الصورة."
       }
     }
   },
@@ -8410,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "دمج كامن فيديو وكامن صوت في كامن AV مشترك (أي نموذج AV مثل LTXV أو MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -9493,6 +9799,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "تحميل مجموعة بيانات من الفيديوهات من مجلد محدد وإرجاع قائمة بالفيديوهات. الصيغ المدعومة: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "تحميل فيديو (من مجلد)",
+    "inputs": {
+      "folder": {
+        "name": "المجلد",
+        "tooltip": "المجلد الذي يحتوي على ملفات الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فيديوهات",
+        "tooltip": "مراجع فيديو كسولة؛ يتم فك ترميز الإطارات فقط عند الحاجة في المراحل التالية."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "تحميل مجموعة بيانات من أزواج الفيديو والنصوص من مجلد محدد وإرجاعها كقائمة. الصيغ المدعومة: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "تحميل فيديو-نص (من مجلد)",
+    "inputs": {
+      "folder": {
+        "name": "المجلد",
+        "tooltip": "المجلد الذي يحتوي على ملفات الفيديو وملفات الترجمة النصية .txt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فيديوهات",
+        "tooltip": "مراجع فيديو كسولة؛ يتم فك ترميز الإطارات فقط عند الحاجة في المراحل التالية."
+      },
+      "1": {
+        "name": "نصوص",
+        "tooltip": "قائمة بالنصوص التوضيحية."
       }
     }
   },
@@ -11059,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "تحويل صورة MiniMax H3 إلى فيديو",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "الإطار الأول"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "last_frame": {
+        "name": "الإطار الأخير"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات بسرعة 24 إطارًا في الثانية، يتم ضبطه تلقائيًا على شبكة 17k+5 الخاصة بالنموذج (124 ≈ ٥ ثوانٍ؛ النطاق المدرب تقريبًا 124-362، القيم الأطول غير مجربة)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<صورة i> / <فيديو k> / <صوت j> تكييف مرجعي لـ MiniMax H3. استخدم نفس العلامات عند كتابة البرومبت.",
+    "display_name": "تحويل مرجع MiniMax H3 إلى فيديو",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات بسرعة 24 إطارًا في الثانية (124 ≈ ٥ ثوانٍ، النطاق المدرب تقريبًا 124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "الصوتيات المرجعية"
+      },
+      "ref_image_size": {
+        "name": "حجم الصورة المرجعية",
+        "tooltip": "تغيير حجم الصورة المرجعية. 'match' يقوم بتصغير كل مرجع (مع الحفاظ على النسبة) لمساحة بكسل التوليد؛ 'max' يستخدم الحافة القصيرة 2048 بكسل في خط أنابيب المرجع لأفضل دقة هوية. تمر رموز المرجع في كل خطوة توليد، لذا 'max' قد يكون أبطأ بعدة مرات."
+      },
+      "ref_images": {
+        "name": "الصور المرجعية"
+      },
+      "ref_video_audios": {
+        "name": "الصوتيات المرجعية للفيديو"
+      },
+      "ref_videos": {
+        "name": "الفيديوهات المرجعية"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "تعيين تحولات تدفق الفيديو/الصوت.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "النموذج"
+      },
+      "shift_audio": {
+        "name": "تحويل الصوت"
+      },
+      "shift_video": {
+        "name": "تحويل الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "توليد فيديو من صورة الإطار الأول وصورة إطار أخير اختيارية باستخدام نموذج MiniMax H3. نسبة العرض إلى الارتفاع للفيديو تتبع الصور المقدمة.",
+    "display_name": "MiniMax H3 من إطار أول/أخير إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "صورة الإطار الأول للفيديو."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "صورة إطار أخير اختيارية للفيديو."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة عشوائية. نفس الطلب مع نفس البذرة يعطي نتائج متشابهة، لكن ليس بالضرورة متطابقة."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "هل تريد إضافة علامة مائية AIGC إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "إنشاء فيديو بناءً على صور مرجعية، فيديوهات، وصوت باستخدام نموذج MiniMax H3. ارجع إلى المراجع في النص حسب ترتيبها: 'صورة 1'، 'صورة 2'، 'فيديو 1'، 'صوت 1'، وهكذا.",
+    "display_name": "MiniMax H3 مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء الفيديو."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "النص"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية. نفس الطلب مع نفس البذرة يعطي نتائج متشابهة، لكن ليست متطابقة بالضرورة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية AIGC إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "إنشاء فيديو من نص باستخدام نموذج MiniMax H3.",
+    "display_name": "MiniMax H3 تحويل نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء الفيديو."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "النص"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية. نفس الطلب مع نفس البذرة يعطي نتائج متشابهة، لكن ليست متطابقة بالضرورة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية AIGC إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18445,6 +19018,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "خلط ترتيب الفيديوهات في القائمة بشكل عشوائي.",
+    "display_name": "خلط قائمة الفيديوهات",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة التوليد العشوائي."
+      },
+      "videos": {
+        "name": "فيديوهات",
+        "tooltip": "قائمة الفيديوهات المراد خلطها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فيديوهات",
+        "tooltip": "فيديوهات مخلوطة"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "خلط ترتيب أزواج الفيديو والنص في القائمة بشكل عشوائي.",
+    "display_name": "خلط أزواج فيديو-نص",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة التوليد العشوائي."
+      },
+      "texts": {
+        "name": "نصوص",
+        "tooltip": "قائمة النصوص المراد خلطها."
+      },
+      "videos": {
+        "name": "فيديوهات",
+        "tooltip": "قائمة الفيديوهات المراد خلطها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فيديوهات",
+        "tooltip": "فيديوهات مخلوطة"
+      },
+      "1": {
+        "name": "نصوص",
+        "tooltip": "نصوص مخلوطة"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "نسخة عامة من عقدة SkipLayerGuidance يمكن استخدامها مع كل نموذج DiT.",
     "display_name": "توجيه تخطي الطبقة DiT",
@@ -19648,6 +20275,75 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "ترميز تعليمات التحرير مع صورة أو أكثر كمرجع لـ Mage-Flow-Edit. يتم تغيير حجم الـ latent المرجعي ليتطابق مع دقة الإخراج (العرض/الارتفاع، أو حجم الصورة الأولى إذا كان ٠). استخدم مخرجات latent لأخذ العينات حتى تتطابق الأحجام دائماً.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "ارتفاع الإخراج. ٠ = استخدم حجم الصورة المرجعية الأولى."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صورة أو صور مرجعية للتحرير. يتم تغيير حجم جميع المراجع لتتطابق مع دقة الإخراج قبل الترميز."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "عرض الإخراج. ٠ = استخدم حجم الصورة المرجعية الأولى."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -21644,6 +22340,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "استخلاص عدد ثابت من الإطارات من فيديو باستخدام استراتيجيات متنوعة.",
+    "display_name": "استخلاص إطار من الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "num_frames": {
+        "name": "عدد الإطارات",
+        "tooltip": "عدد الإطارات المراد استخلاصها."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية (تستخدم فقط مع استراتيجية 'random')."
+      },
+      "strategy": {
+        "name": "الاستراتيجية",
+        "tooltip": "uniform: متباعدة بالتساوي، head: أول N، tail: آخر N، random: عشوائي مرتب."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو الإدخال."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المستخلص."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "توجيه VideoLinearCFG",
     "inputs": {
@@ -21652,6 +22379,57 @@
       },
       "model": {
         "name": "النموذج"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "قص عشوائي لمجموعة متتالية من الإطارات من فيديو.",
+    "display_name": "قص الفيديو (زمني عشوائي)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات المراد الاحتفاظ بها."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو الإدخال."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المقصوص (كسول)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "قص مجموعة متتالية من الإطارات من فيديو.",
+    "display_name": "قص الفيديو (زمني)",
+    "inputs": {
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات المراد الاحتفاظ بها."
+      },
+      "start_frame": {
+        "name": "إطار البداية",
+        "tooltip": "فهرس إطار البداية."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو الإدخال."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المقصوص (كسول)."
       }
     }
   },
@@ -23886,6 +24664,33 @@
       "2": {
         "name": "كامن",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "تطبيق Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "نسبة النهاية"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_patch": {
+        "name": "تصحيح النموذج"
+      },
+      "render_video": {
+        "name": "فيديو التوجيه",
+        "tooltip": "فيديو التوجيه الناتج من مسار الكاميرا، وغالبًا ما يكون عرضًا مشوهًا لسحابة النقاط من صورة الإدخال."
+      },
+      "start_percent": {
+        "name": "نسبة البداية"
+      },
+      "strength": {
+        "name": "القوة"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

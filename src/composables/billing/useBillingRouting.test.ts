@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
+
 import { useBillingRouting } from './useBillingRouting'
 
 const { mockFlags, mockActiveWorkspace, mockActiveWorkspaceBillingRail } =
@@ -12,7 +14,7 @@ const { mockFlags, mockActiveWorkspace, mockActiveWorkspaceBillingRail } =
       value: null as { id: string; type: 'personal' | 'team' } | null
     },
     mockActiveWorkspaceBillingRail: {
-      value: null as 'legacy_stripe' | 'stripe' | null
+      value: null as BillingRail | null
     }
   }))
 
@@ -73,16 +75,18 @@ describe('useBillingRouting', () => {
     expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
-  it('keeps legacy Stripe personal workspaces on Stripe Checkout', () => {
+  it('uses unified pricing while keeping legacy Stripe top-ups on Checkout', () => {
     mockFlags.teamWorkspacesEnabled = true
     mockFlags.consolidatedBillingEnabled = true
     mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
 
-    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+    const { type, shouldUseWorkspaceBilling, shouldUseUnifiedPricing } =
+      useBillingRouting()
 
     expect(type.value).toBe('legacy')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
+    expect(shouldUseUnifiedPricing.value).toBe(true)
   })
 
   it('uses workspace billing for migrated Stripe personal workspaces', () => {

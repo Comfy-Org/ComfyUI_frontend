@@ -23,13 +23,15 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
-import { isCloud } from '@/platform/distribution/types'
+import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
+import type { Distribution } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -57,6 +59,7 @@ type CreateCustomerResponse =
  */
 type CreateCustomerPayload = {
   turnstile_token?: string
+  signup_source?: Distribution
 }
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -139,11 +142,29 @@ export const useAuthStore = defineStore('auth', () => {
   void setPersistence(auth, browserLocalPersistence)
 
   onAuthStateChanged(auth, (user) => {
+    const previousUserId = currentUser.value?.uid ?? null
+    const identityChanged =
+      previousUserId !== null && previousUserId !== (user?.uid ?? null)
+
+    if (user === null || identityChanged) {
+      useWorkspaceAuthStore().clearWorkspaceContext()
+    }
+    if (identityChanged) {
+      useTeamWorkspaceStore().resetForIdentityChange()
+    }
+
+    // A direct account switch (A -> B, or sign-out) must re-handshake the
+    // realtime socket so a tab stops receiving the previous account's live
+    // events. The initial connect is owned by api.init(), so only react once an
+    // identity has been recorded (`identityChanged` is false on first sign-in).
+    if (isCloud && identityChanged) {
+      void api.resetSocket()
+    }
+
     currentUser.value = user
     isInitialized.value = true
     if (user === null) {
       lastTokenUserId.value = null
-      useWorkspaceAuthStore().clearWorkspaceContext()
     } else if (isCloud) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
       // no-op when unified_cloud_auth is off).
@@ -183,10 +204,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getIdToken = async (): Promise<string | undefined> => {
-    if (!currentUser.value) return
+    const user = currentUser.value
+    if (!user) return
     try {
-      return await currentUser.value.getIdToken()
+      const token = await user.getIdToken()
+      return currentUser.value?.uid === user.uid ? token : undefined
     } catch (error: unknown) {
+      if (currentUser.value?.uid !== user.uid) return
       if (
         error instanceof FirebaseError &&
         error.code === AuthErrorCodes.NETWORK_REQUEST_FAILED
@@ -222,7 +246,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
-      const token = useWorkspaceAuthStore().unifiedToken
+      const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
@@ -267,7 +291,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthToken = async (): Promise<string | undefined> => {
     if (flags.unifiedCloudAuthEnabled) {
-      return useWorkspaceAuthStore().unifiedToken ?? undefined
+      return useWorkspaceAuthStore().getUnifiedToken()
     }
 
     if (flags.teamWorkspacesEnabled) {
@@ -307,6 +331,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
+    const requestOwnerUid = currentUser.value?.uid ?? null
     try {
       const authHeader = await getAuthHeader()
       if (!authHeader) {
@@ -338,6 +363,11 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const balanceData = await response.json()
+      // A direct A->B account switch nulls balance in onAuthStateChanged; a
+      // late-resolving request from the previous identity must not repaint it.
+      if ((currentUser.value?.uid ?? null) !== requestOwnerUid) {
+        return null
+      }
       // Update the last balance update time
       lastBalanceUpdateTime.value = new Date()
       balance.value = balanceData
@@ -355,6 +385,11 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
+    const body: CreateCustomerPayload = {
+      ...payload,
+      signup_source: DISTRIBUTION
+    }
+
     const createCustomerRes = await fetchWithUnifiedRemint(
       buildApiUrl('/customers'),
       {
@@ -363,8 +398,7 @@ export const useAuthStore = defineStore('auth', () => {
           ...authHeader,
           'Content-Type': 'application/json'
         },
-        ...(payload &&
-          Object.keys(payload).length > 0 && { body: JSON.stringify(payload) })
+        body: JSON.stringify(body)
       },
       isCloud && flags.unifiedCloudAuthEnabled
     )

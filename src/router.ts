@@ -118,7 +118,12 @@ installPreservedQueryTracker(router, [
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
-    keys: ['pricing']
+    keys: ['pricing', 'stop', 'cycle'],
+    requiredKey: 'pricing'
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.TOPUP,
+    keys: ['topup']
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
@@ -149,7 +154,7 @@ if (isCloud) {
     '/cloud/login',
     '/cloud/signup',
     '/cloud/forgot-password',
-    '/cloud/oauth/consent',
+    '/oauth/consent',
     '/cloud/sorry-contact-support'
   ])
 

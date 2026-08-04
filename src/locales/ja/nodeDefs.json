@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "Anima LLLite を適用",
+    "inputs": {
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_patch": {
+        "name": "モデルパッチ"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      },
+      "strength": {
+        "name": "強度"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "オーディオの音量をデシベル（dB）単位で指定した量だけ調整します。",
     "display_name": "オーディオ音量調整",
@@ -1177,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "音量。0 = 通常、100 = 2.0倍、-50 = 0.5倍。"
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual：20言語対応（英語、中国語、日本語、韓国語、メキシコ・カスティーリャスペイン語、インドネシア語、ドイツ語、ブラジルポルトガル語、フランス語、タイ語、ベトナム語、マレー語、フィリピン語、イタリア語、ロシア語、オランダ語、ポーランド語、トルコ語、スウェーデン語）および「[5.5s:8.0s] ...」のタイムスタンプによる文ごとのタイミング制御。seed-audio-1.0：英語と中国語のみ対応、タイミング制御なし。"
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "ピッチのシフト（半音単位、-12～12）。"
@@ -2010,9 +2040,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "温度"
       },
       "prompt": {
         "name": "プロンプト",
@@ -4071,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 用の映像＋音声のジョイントラテント。持続時間はモデルの 17k+5 フレームグリッド（24fps）に合わせて調整されます。",
+    "display_name": "Empty MiniMax H3 AV ラテント",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "24fps でのフレーム数。モデルの 17k+5 グリッドに切り上げられます（124 = 約5秒、学習範囲は約124-362、これ以上は未検証）"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "空のMochi潜在ビデオ",
     "inputs": {
@@ -5677,6 +5725,15 @@
       "model_resolution": {
         "name": "解像度"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "プロンプト",
         "tooltip": "希望するビデオのテキスト説明。"
@@ -5853,6 +5910,212 @@
       "watermark": {
         "name": "ウォーターマーク",
         "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatarVideoNode": {
+    "description": "HeyGen アバターから話すプレゼンター動画を生成します。HeyGen の最も人気のある公開アバターが含まれており、任意の look ID を上書き指定できます。",
+    "display_name": "HeyGen アバター動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力アスペクト比。「auto」はアバターの元映像に従います。"
+      },
+      "background_color": {
+        "name": "背景色",
+        "tooltip": "任意の単色背景（例: '#00ff00' のような16進コード）。空欄の場合はアバター自身の背景が使用されます。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "custom_avatar_id": {
+        "name": "カスタムアバターID",
+        "tooltip": "任意の HeyGen アバター look ID。設定すると上記で選択したアバターを上書きします。HeyGen の 3000 以上の公開 look（または自身のプライベートアバター）が利用可能です。"
+      },
+      "engine": {
+        "name": "エンジン",
+        "tooltip": "レンダリングエンジン。各選択肢には対応するアバターのみが表示されます。「auto」はすべてのアバターを提供し、最適なエンジン（Avatar IV 推奨）を選択します。Avatar V は最高品質、Avatar III は最も手頃です。"
+      },
+      "engine_avatar": {
+        "name": "アバター"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力動画の解像度。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "HeyGen には送信されません。変更すると再実行を強制します。"
+      },
+      "speech": {
+        "name": "スピーチ",
+        "tooltip": "テキストスクリプト（HeyGen テキスト読み上げ）または自身の音声でアバターを動かします。"
+      },
+      "speech_custom_voice_id": {
+        "name": "カスタムボイスID"
+      },
+      "speech_text": {
+        "name": "テキスト"
+      },
+      "speech_voice": {
+        "name": "ボイス"
+      },
+      "speech_voice_speed": {
+        "name": "ボイス速度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "人物の写真またはテキストプロンプト（生成キャラクター）から再利用可能な HeyGen アバターを作成します。生成された avatar_id を HeyGen アバター動画の custom_avatar_id に入力し、ID を保存して今後のワークフローでアバターを再利用してください。",
+    "display_name": "HeyGen アバター作成",
+    "inputs": {
+      "source": {
+        "name": "ソース",
+        "tooltip": "テキストプロンプトから新しいキャラクターを生成するか、接続された人物写真からアバターを作成します。"
+      },
+      "source_prompt": {
+        "name": "プロンプト"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "アバターID",
+        "tooltip": "アバター look ID。HeyGen アバター動画の custom_avatar_id に渡してください。後でアバターを再利用するために保存してください。"
+      },
+      "1": {
+        "name": "プレビュー",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "人物の画像をリップシンクされたトーキングビデオ（HeyGen Avatar IV）にアニメーション化します。テキストスクリプトまたは自身の音声で操作できます。",
+    "display_name": "HeyGen トーキングフォト",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力アスペクト比。「auto」は入力画像に従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "expressiveness": {
+        "name": "表現力",
+        "tooltip": "アニメーションされた顔やジェスチャーの表現力の度合い。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "アニメーション化する人物の画像。2Kを超える場合は自動でダウンスケールされます。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力ビデオの解像度。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "HeyGenには送信されません。変更すると再実行されます。"
+      },
+      "speech": {
+        "name": "音声",
+        "tooltip": "アバターをテキストスクリプト（HeyGen テキスト読み上げ）または自身の音声で操作します。"
+      },
+      "speech_custom_voice_id": {
+        "name": "カスタムボイスID"
+      },
+      "speech_text": {
+        "name": "テキスト"
+      },
+      "speech_voice": {
+        "name": "ボイス"
+      },
+      "speech_voice_speed": {
+        "name": "ボイス速度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "HeyGenのStarfish TTSエンジンを使ってテキストから音声を生成します。17言語でHeyGenの人気ボイスを利用可能です。",
+    "display_name": "HeyGen テキスト読み上げ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "custom_voice_id": {
+        "name": "カスタムボイスID",
+        "tooltip": "オプションのHeyGenボイスID。設定すると上記で選択したボイスを上書きします。ボイスはStarfishエンジンに対応している必要があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "HeyGenには送信されません。変更すると再実行されます。"
+      },
+      "speed": {
+        "name": "速度",
+        "tooltip": "音声の速度倍率。"
+      },
+      "ssml": {
+        "name": "SSML",
+        "tooltip": "テキストをSSMLマークアップとして扱います（ポーズ、強調、発音制御など）。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "合成するテキスト（最大5000文字）。生成される音声は1秒以上である必要があります。"
+      },
+      "voice": {
+        "name": "ボイス",
+        "tooltip": "使用するボイス（HeyGenのStarfish対応人気ボイスから厳選）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "話されているビデオを別の言語に翻訳します。元の話者の声をクローンし、翻訳された音声に合わせて口の動きを再アニメーションします。",
+    "display_name": "HeyGenビデオ翻訳",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "「speed」は高速、「precision」は2倍の価格で高品質なリップシンクを生成します。"
+      },
+      "output_language": {
+        "name": "出力言語",
+        "tooltip": "翻訳ビデオのターゲット言語。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "HeyGenには送信されません。変更すると再実行を強制します。"
+      },
+      "speaker_count": {
+        "name": "話者数",
+        "tooltip": "ビデオ内の話者数。0 = 自動検出。"
+      },
+      "translate_audio_only": {
+        "name": "音声のみ翻訳",
+        "tooltip": "音声トラックのみを入れ替え、元の口の動きを維持します（リップシンクなし）。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "翻訳する音声付きビデオ。"
       }
     },
     "outputs": {
@@ -6264,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "P-Image（Ideogramの高速テキストから画像生成モデル）を使用して画像を生成します。強力なタイポグラフィとフォトリアリズムを実現し、Ideogram 4.0の構造化JSONキャプションによる正確なテキスト、色、レイアウト指定に対応しています。",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "画像生成時のアスペクト比。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "テキストプロンプト。Ideogram 4.0の構造化JSONキャプション（#RRGGBB形式の正確な色指定、正確なテキスト文字列、バウンディングボックスレイアウト）も入力可能です。verbatimで使用する場合はprompt_upsamplingをOFFにしてください。"
+      },
+      "prompt_upsampling": {
+        "name": "プロンプトアップサンプリング",
+        "tooltip": "短いプロンプトを詳細な構造化キャプションに展開してから生成します（書き換え後のプロンプトはfinal_promptとして返されます）。独自のJSONキャプションや正確な文言を使う場合はOFFにしてください。"
+      },
+      "quality": {
+        "name": "品質",
+        "tooltip": "速度／価格／品質のグレード。MEDIUMは日常利用のデフォルト、HIGHは複雑なプロンプトや細部・難しいテキスト向け、VERY_LOW/LOWは大量ドラフト用。MEDIUM未満では難しいテキストの描画品質が低下します。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力サイズクラス（アスペクト比に従いピクセル数が決まります。例：16:9の場合、1Kで1280x720、2Kで2560x1440）。鮮明なタイポグラフィにはHIGH＋2K推奨。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "再現性のある生成のためのシード値。prompt_upsamplingがOFFの場合、同じシードと設定で同じ画像が得られます。ON/AUTOの場合はプロンプトの書き換えが毎回異なります。結果を再現するには、出力されたfinal_promptと同じシードでprompt_upsamplingをOFFにして再実行してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "実際に画像生成に使用されたプロンプト（prompt_upsamplingが有効な場合は書き換え後の構造化キャプション、無効な場合は入力プロンプト）。prompt_upsamplingをOFF、同じシードで再入力すると同じ画像を再現できます。"
       }
     }
   },
@@ -8410,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "ビデオラテントとオーディオラテントを結合し、ジョイントAVラテントを作成します（任意のAVモデル、例：LTXVまたはMiniMax H3）。",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -9493,6 +9799,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "指定したフォルダからビデオのデータセットを読み込み、ビデオのリストを返します。対応フォーマット：MP4、AVI、MOV、WEBM、MKV、FLV。",
+    "display_name": "ビデオ読み込み（フォルダから）",
+    "inputs": {
+      "folder": {
+        "name": "フォルダ",
+        "tooltip": "ビデオファイルが含まれるフォルダ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "遅延ビデオ参照。フレームは下流で必要なときのみデコードされます。"
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "指定したフォルダからビデオとテキストキャプションのペアのデータセットを読み込み、リストとして返します。対応フォーマット：MP4、AVI、MOV、WEBM、MKV、FLV。",
+    "display_name": "ビデオ＋テキスト読み込み（フォルダから）",
+    "inputs": {
+      "folder": {
+        "name": "フォルダ",
+        "tooltip": "ビデオファイルと.txtキャプションが含まれるフォルダ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "遅延ビデオ参照。フレームは下流で必要なときのみデコードされます。"
+      },
+      "1": {
+        "name": "テキスト",
+        "tooltip": "テキストキャプションのリスト。"
       }
     }
   },
@@ -11059,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 画像から動画へ",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "最初のフレーム"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "last_frame": {
+        "name": "最後のフレーム"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "24fps でのフレーム数。モデルの 17k+5 グリッドに切り上げられます（124 = 約5秒、学習範囲は約124-362、これ以上は未検証）"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> のリファレンスコンディショニング（MiniMax H3用）。プロンプト時に同じタグを使用してください。",
+    "display_name": "MiniMax H3 リファレンスから動画へ",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "24fps でのフレーム数（124 = 約5秒、学習範囲は約124-362）"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "ref_audios": {
+        "name": "リファレンス音声"
+      },
+      "ref_image_size": {
+        "name": "リファレンス画像サイズ",
+        "tooltip": "リファレンス画像のサイズ設定。「match」は各リファレンスを生成画像のピクセル面積に合わせて縮小（アスペクト比維持）、「max」はリファレンスパイプラインの2048px短辺を使用し、最も高いアイデンティティ精度を実現します。リファレンストークンは全サンプリングステップで適用されるため、「max」は数倍遅くなる場合があります。"
+      },
+      "ref_images": {
+        "name": "リファレンス画像"
+      },
+      "ref_video_audios": {
+        "name": "リファレンス動画音声"
+      },
+      "ref_videos": {
+        "name": "リファレンス動画"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "ビデオ／オーディオフローのシフトを設定します。",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "オーディオシフト"
+      },
+      "shift_video": {
+        "name": "ビデオシフト"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "MiniMax H3モデルを使用し、最初のフレーム画像と（オプションで）最後のフレーム画像から動画を生成します。動画のアスペクト比は入力画像に従います。",
+    "display_name": "MiniMax H3 最初・最後フレームから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "動画の最初のフレーム画像。"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "動画の最後のフレーム画像（オプション）。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。同じリクエスト・同じシードで類似した（完全に同一ではない）結果が得られます。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "MiniMax H3 モデルを使用して、参照画像、ビデオ、音声に基づいてビデオを生成します。プロンプト内で参照を順番に指定してください：『Image 1』、『Image 2』、『Video 1』、『Audio 1』など。",
+    "display_name": "MiniMax H3 参照からビデオ生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ生成に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。同じリクエストと同じシードで、似た結果が得られますが、完全に同一とは限りません。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "ビデオにAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "MiniMax H3 モデルを使用してテキストプロンプトからビデオを生成します。",
+    "display_name": "MiniMax H3 テキストからビデオ生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ生成に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。同じリクエストと同じシードで、似た結果が得られますが、完全に同一とは限りません。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "ビデオにAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18445,6 +19018,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "ビデオリストの順序をランダムにシャッフルします。",
+    "display_name": "ビデオリストをシャッフル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。"
+      },
+      "videos": {
+        "name": "ビデオ",
+        "tooltip": "シャッフルするビデオリスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "シャッフルされたビデオ"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "ビデオとテキストのペアの順序をランダムにシャッフルします。",
+    "display_name": "ビデオ＋テキストペアをシャッフル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。"
+      },
+      "texts": {
+        "name": "テキスト",
+        "tooltip": "シャッフルするテキストリスト。"
+      },
+      "videos": {
+        "name": "ビデオ",
+        "tooltip": "シャッフルするビデオリスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "シャッフルされたビデオ"
+      },
+      "1": {
+        "name": "テキスト",
+        "tooltip": "シャッフルされたテキスト"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "すべてのDiTモデルで使用できるSkipLayerGuidanceノードの一般的なバージョン。",
     "display_name": "SkipLayerGuidanceDiT",
@@ -19648,6 +20275,75 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "画像"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Mage-Flow-Edit用の編集指示を、1枚以上の参照画像とともにエンコードします。参照latentは出力解像度（幅・高さ、または0の場合は最初の画像サイズ）にリサイズされます。sampling時はlatent出力を使用することで、常にサイズが一致します。",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "出力高さ。0の場合は最初の参照画像のサイズを使用します。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "編集用の参照画像。すべての参照画像はエンコード前に出力解像度へリサイズされます。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "出力幅。0の場合は最初の参照画像のサイズを使用します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -21644,6 +22340,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "さまざまな戦略を使って、ビデオから固定数のフレームをサンプリングします。",
+    "display_name": "ビデオフレームのサンプリング",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "num_frames": {
+        "name": "フレーム数",
+        "tooltip": "サンプリングするフレーム数。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード（「random」戦略のみ使用）。"
+      },
+      "strategy": {
+        "name": "戦略",
+        "tooltip": "uniform: 均等間隔, head: 最初のN, tail: 最後のN, random: ランダムでソート。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "入力ビデオ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "サンプリングされたビデオ。"
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "ビデオ線形CFGガイダンス",
     "inputs": {
@@ -21652,6 +22379,57 @@
       },
       "model": {
         "name": "モデル"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "ビデオから連続した範囲のフレームをランダムにクロップします。",
+    "display_name": "ビデオのクロップ（時間的ランダム）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "保持するフレーム数。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "入力ビデオ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "クロップされたビデオ（遅延）。"
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "ビデオから連続した範囲のフレームをクロップします。",
+    "display_name": "ビデオのクロップ（時間的）",
+    "inputs": {
+      "length": {
+        "name": "長さ",
+        "tooltip": "保持するフレーム数。"
+      },
+      "start_frame": {
+        "name": "開始フレーム",
+        "tooltip": "開始フレームのインデックス。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "入力ビデオ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "クロップされたビデオ（遅延）。"
       }
     }
   },
@@ -23886,6 +24664,33 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "Wan Uni3C ControlNet の適用",
+    "inputs": {
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_patch": {
+        "name": "モデルパッチ"
+      },
+      "render_video": {
+        "name": "レンダービデオ",
+        "tooltip": "カメラ軌道からレンダリングされたガイダンスビデオ。最も一般的には入力画像のワープされた点群レンダリング。"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

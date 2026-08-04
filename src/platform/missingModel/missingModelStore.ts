@@ -73,6 +73,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const importTaskIds = ref<Record<string, string>>({})
   const folderPaths = ref<Record<string, string[]>>({})
   const fileSizes = ref<Record<string, number>>({})
+  const gatedRepoUrls = ref<Record<string, string>>({})
 
   const verificationAbortController = createVerificationAbortController()
 
@@ -227,6 +228,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     fileSizes.value[url] = size
   }
 
+  function setGatedRepoUrl(url: string, repoUrl: string) {
+    gatedRepoUrls.value[url] = repoUrl
+  }
+
   function clearMissingModels() {
     verificationAbortController.abort()
     missingModelCandidates.value = null
@@ -235,6 +240,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     importTaskIds.value = {}
     folderPaths.value = {}
     fileSizes.value = {}
+    gatedRepoUrls.value = {}
   }
 
   function isAbortError(error: unknown) {
@@ -293,8 +299,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     importTaskIds,
     folderPaths,
     fileSizes,
+    gatedRepoUrls,
 
     setFolderPaths,
-    setFileSize
+    setFileSize,
+    setGatedRepoUrl
   }
 })

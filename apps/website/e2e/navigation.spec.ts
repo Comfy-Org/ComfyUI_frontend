@@ -2,6 +2,11 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
+const minimaxLabel = 'MiniMax H3'
+const minimaxLabelZh = 'MiniMax H3'
+const minimaxRoute = '/minimax'
+const minimaxRouteZh = '/zh-CN/minimax'
+
 const TOP_LEVEL_LABELS = [
   'Products',
   'Pricing',
@@ -58,7 +63,7 @@ test.describe('Desktop navigation @smoke', () => {
       desktopCTA.getByRole('link', { name: 'DOWNLOAD DESKTOP' })
     ).toBeVisible()
     await expect(
-      desktopCTA.getByRole('link', { name: 'LAUNCH CLOUD' })
+      desktopCTA.getByRole('link', { name: 'TRY CLOUD FOR FREE' })
     ).toBeVisible()
   })
 })
@@ -194,5 +199,33 @@ test.describe('Footer @smoke', () => {
     await expect(
       page.locator('footer').getByText(/© \d{4} Comfy Org/)
     ).toBeVisible()
+  })
+
+  test('MiniMax H3 link navigates to the model page', async ({ page }) => {
+    const link = page
+      .locator('footer')
+      .getByRole('link', { name: minimaxLabel })
+    await link.scrollIntoViewIfNeeded()
+    await expect(link).toHaveAttribute('href', minimaxRoute)
+
+    await link.click()
+    await expect(page).toHaveURL(minimaxRoute)
+  })
+})
+
+test.describe('Footer zh-CN @smoke', () => {
+  test('MiniMax H3 link navigates to the localized model page', async ({
+    page
+  }) => {
+    await page.goto('/zh-CN/')
+
+    const link = page
+      .locator('footer')
+      .getByRole('link', { name: minimaxLabelZh })
+    await link.scrollIntoViewIfNeeded()
+    await expect(link).toHaveAttribute('href', minimaxRouteZh)
+
+    await link.click()
+    await expect(page).toHaveURL(minimaxRouteZh)
   })
 })

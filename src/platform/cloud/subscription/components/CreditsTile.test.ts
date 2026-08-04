@@ -25,6 +25,7 @@ const state = vi.hoisted(() => ({
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   canTopUp: true,
+  type: 'workspace' as 'workspace' | 'legacy',
   fetchBalance: vi.fn(),
   fetchStatus: vi.fn(),
   showPricingTable: vi.fn(),
@@ -57,6 +58,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isFreeTier: computed(() => state.isFreeTier),
     currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     isLoading: computed(() => state.isLoading),
+    type: computed(() => state.type),
     fetchBalance: state.fetchBalance,
     fetchStatus: state.fetchStatus
   })
@@ -87,6 +89,13 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -107,6 +116,7 @@ const i18n = createI18n({
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after monthly runs out',
+        reactivateToUseCredits: 'Reactivate your plan to use these credits',
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
         monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
@@ -165,7 +175,10 @@ describe('CreditsTile', () => {
     state.currentTeamCreditStop = null
     state.isLoading = false
     state.canTopUp = true
+    state.type = 'workspace'
+    mockIsCloud.value = true
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {
@@ -249,6 +262,15 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('253,200 left of 253,200')
   })
 
+  it('formats the renewal date in the local timezone, not UTC', () => {
+    activeProSubscription()
+    expect(renderTile().container.textContent).toContain('Refills Feb 20')
+
+    // The suite is pinned to TZ=UTC, so opt this render into a UTC+13 viewer.
+    vi.stubEnv('TZ', 'Pacific/Auckland')
+    expect(renderTile().container.textContent).toContain('Refills Feb 21')
+  })
+
   it('falls back to a dateless refills label when renewal date is missing', () => {
     activeProSubscription()
     state.subscription = { tier: 'PRO', duration: 'MONTHLY', renewalDate: null }
@@ -280,6 +302,18 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('0')
     expect(container.textContent).not.toContain('left of')
     expect(container.textContent).not.toContain('Additional credits')
+    expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('shows disabled credit details for an inactive plan', () => {
+    activeProSubscription()
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).toContain('0remaining')
+    expect(container.textContent).toContain('Additional credits')
+    expect(container.textContent).toContain(
+      'Reactivate your plan to use these credits'
+    )
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
@@ -363,12 +397,29 @@ describe('CreditsTile', () => {
     expect(state.showPricingTable).toHaveBeenCalledOnce()
   })
 
-  it('hides the action button when the user lacks the top-up permission', () => {
+  it('keeps offering add-credits on the free tier for non-cloud distributions', () => {
+    mockIsCloud.value = false
+    activeProSubscription()
+    state.isFreeTier = true
+    renderTile()
+    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+  })
+
+  it('hides the action button when a team workspace member lacks the top-up permission', () => {
     activeProSubscription()
     state.canTopUp = false
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+  })
+
+  it('ignores the workspace top-up permission on legacy (personal) billing', () => {
+    activeProSubscription()
+    state.type = 'legacy'
+    state.canTopUp = false
+    renderTile()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 
   it('refreshes balance and status from the facade on mount and on demand', async () => {
