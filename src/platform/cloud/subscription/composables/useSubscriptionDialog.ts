@@ -90,6 +90,7 @@ export const useSubscriptionDialog = () => {
     const legacyPricingDialogProps = {
       renderer: 'reka',
       size: 'full',
+      dismissableMask: false,
       contentClass:
         'sm:max-w-7xl max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
     } as const

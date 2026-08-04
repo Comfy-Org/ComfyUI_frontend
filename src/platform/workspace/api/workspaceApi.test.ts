@@ -443,7 +443,7 @@ describe('workspaceApi', () => {
           id: 'pm_saved',
           brand: 'visa',
           last4: '4242',
-          isDefault: true
+          is_default: true
         }
       ]
       mockAxiosInstance.get.mockResolvedValue({ data })

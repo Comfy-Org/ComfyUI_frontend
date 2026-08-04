@@ -905,6 +905,8 @@
       "filterMediaType": "Media type",
       "filterDate": "Date",
       "filterGroupAttribute": "Attribute",
+      "filterBy": "Filter by...",
+      "filterNoMatches": "No matches",
       "dateAll": "All time",
       "dateToday": "Today",
       "datePastWeek": "Past 7 days",
@@ -1784,6 +1786,7 @@
     "hunyhuan video": "hunyhuan video",
     "mochi": "mochi",
     "ltxv": "ltxv",
+    "minimax": "minimax",
     "preprocessors": "preprocessors",
     "hooks": "hooks",
     "create": "create",
@@ -2275,6 +2278,7 @@
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "dropFileError": "Unable to process dropped item: {error}",
+    "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Errors tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
     "interrupted": "Execution has been interrupted",
     "pendingTasksDeleted": "Pending tasks deleted",
@@ -2303,6 +2307,7 @@
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
+    "invalidBillingPortalUrl": "Invalid portal URL",
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",
     "failedToFetchSubscription": "Failed to fetch subscription status: {error}",
     "failedToInitiateSubscription": "Failed to initiate subscription: {error}",
@@ -2557,6 +2562,9 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
+      "chargedImmediatelyNote": "Your saved card is charged immediately.",
+      "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
+      "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
       "usdAmount": "${amount}",
       "videosEstimate": "~{count} videos*",
@@ -2565,7 +2573,10 @@
       "purchaseSuccess": "Credits added successfully!",
       "purchaseError": "Purchase Failed",
       "purchaseErrorDetail": "Failed to purchase credits: {error}",
+      "payAmount": "Pay {amount}",
       "unknownError": "An unknown error occurred",
+      "verifyBody": "Your bank requires additional verification to complete this payment.",
+      "verifyTitle": "Verify your payment",
       "viewPricing": "View pricing details",
       "youPay": "Amount (USD)",
       "youGet": "Credits",
@@ -2647,6 +2658,7 @@
     "endsOnDate": "Ends on {date}",
     "changesToPlanOnDate": "Changes to {plan} on {date}",
     "manageSubscription": "Manage subscription",
+    "billingAndInvoices": "Billing & invoices",
     "manageBilling": "Manage billing",
     "changePlan": "Change plan",
     "cancelPlan": "Cancel plan",
@@ -2731,6 +2743,10 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
+    "inactiveTeamTitle": "Inactive team subscription",
+    "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
+    "inactiveTeamPlanIncludes": "An active plan features everything in {plan}, plus:",
+    "reactivateToUseCredits": "Reactivate your plan to use these credits",
     "teamPerks": {
       "inviteMembers": "Invite members",
       "concurrentRuns": "Members can run workflows concurrently",
@@ -4780,6 +4796,26 @@
     "processingVideo": "Processing video…",
     "running": "Running…"
   },
+  "gettingStarted": {
+    "title": "Let's make something",
+    "subtitle": "Pick a ready-made workflow to start from, or begin with a blank canvas.",
+    "tabsLabel": "Getting started options",
+    "startBlank": "Start with a blank canvas",
+    "retry": "Try again",
+    "loadFailed": "We couldn't load the templates.",
+    "templateFailed": "We couldn't open this template.",
+    "retryTemplate": "Retry {title}",
+    "tabs": {
+      "templates": "Templates",
+      "tutorials": "Tutorials"
+    },
+    "tutorials": {
+      "interfaceOverview": "Interface overview",
+      "textToImage": "Text to image",
+      "imageToImage": "Image to image",
+      "inpaint": "Inpainting"
+    }
+  },
   "onboardingCoachmarks": {
     "stepLabel": "Step {current} of {total}",
     "skip": "Skip",
@@ -4809,6 +4845,74 @@
       "assets": {
         "title": "Find all your assets",
         "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
+      }
+    },
+    "firstRun": {
+      "upload": {
+        "i2v": {
+          "title": "Start with an image",
+          "body": "This picture is your first frame. Swap in your own whenever you like."
+        },
+        "image-edit": {
+          "title": "Start with an image",
+          "body": "This is the picture you'll edit. Swap in your own whenever you like."
+        },
+        "other": {
+          "title": "Start with an image",
+          "body": "This image feeds the workflow. Swap in your own whenever you like."
+        }
+      },
+      "prompt": {
+        "t2i": {
+          "title": "Describe what you want",
+          "body": "Your image gets built from this description. Try anything you like."
+        },
+        "i2v": {
+          "title": "Describe how it should move",
+          "body": "The image sets the scene. This tells it what happens next."
+        },
+        "image-edit": {
+          "title": "Say what to change",
+          "body": "Your image stays as it is. Describe what you want different."
+        },
+        "other": {
+          "title": "Tell it what to make",
+          "body": "This is your prompt. Change it to change your result."
+        }
+      },
+      "run": {
+        "title": "Run your workflow",
+        "body": "Press Run to start generating your result."
+      },
+      "result": {
+        "generating": {
+          "title": "Hang tight",
+          "body": "Your result lands right here the moment it's ready."
+        },
+        "failed": {
+          "title": "That run didn't finish",
+          "body": "Nothing landed here. Close the tour and try running again."
+        },
+        "image": {
+          "title": "And there it is",
+          "body": "Your new image lands right here — ready to download or share."
+        },
+        "video": {
+          "title": "And there it is",
+          "body": "Your new video lands right here — ready to download or share."
+        }
+      },
+      "nudge": {
+        "ran": {
+          "title": "That was one of hundreds",
+          "body": "You just made your first. Explore what else you can build."
+        },
+        "noTour": {
+          "title": "Hundreds more where that came from",
+          "body": "Browse the templates and pick something to build."
+        },
+        "dismiss": "Not now",
+        "explore": "Explore templates"
       }
     }
   }

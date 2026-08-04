@@ -158,10 +158,10 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
     billingStatus: mockBillingStatus,
+    subscriptionStatus: mockSubscriptionStatus,
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
     plans: mockPlans,
-    subscriptionStatus: mockSubscriptionStatus,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
     isLoading: mockIsLoading,
@@ -252,9 +252,9 @@ const i18n = createI18n({
 })
 
 const CreditsTileStub = {
-  props: ['zeroState'],
+  props: ['zeroState', 'inactivePlan'],
   template:
-    '<div data-testid="credits-tile" :data-zero-state="String(zeroState)" />'
+    '<div data-testid="credits-tile" :data-zero-state="String(zeroState)" :data-inactive-plan="String(inactivePlan)" />'
 }
 
 const ButtonStub = {
@@ -534,6 +534,26 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('shows subscribe prompt for an ended Standard plan in a Team workspace', () => {
+    mockSubscriptionStatus.value = 'ended'
+    mockSubscriptionTier.value = 'STANDARD'
+    mockPlanSlug.value = 'standard-monthly'
+    mockHasTeamPlan.value = false
+    renderComponent()
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'This workspace is not on a subscription'
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe Now' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Standard' })
+    ).not.toBeInTheDocument()
+  })
+
   it.for(['paid', 'payment_failed', 'paused'] as BillingStatus[])(
     'keeps a %s personal plan visible until it is terminal',
     (billingStatus) => {
@@ -581,6 +601,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
     expect(mockResubscribe).toHaveBeenCalledOnce()
+    expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
   })
 
   it('shows ended copy for an inactive ended subscription without a date', () => {
@@ -603,20 +624,57 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows ended copy and subscribe CTA after a canceled Team plan becomes inactive', () => {
+  it('renders an ended Team plan for its owner and routes reactivation to checkout', async () => {
     mockSubscriptionStatus.value = 'canceled'
     mockIsActiveSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
+    const user = userEvent.setup()
     renderComponent()
 
     expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
     expect(
-      screen.getByText('Your subscription is no longer active.')
+      screen.getByRole('heading', { name: 'Inactive team subscription' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe Now' })
+      screen.getByText(
+        'Reactivate your team plan to add more members and run workflows'
+      )
     ).toBeInTheDocument()
-    expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Billing & invoices' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Reactivate plan' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'More Options' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-zero-state',
+      'true'
+    )
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-inactive-plan',
+      'true'
+    )
+    expect(document.body.textContent).toContain(
+      'An active plan features everything in Pro, plus:'
+    )
+    expect(screen.getByText('Invite members')).toBeInTheDocument()
+    expect(
+      screen.getByText('Members can run workflows concurrently')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Shared credit pool for all members')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Role-based permissions')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
+
+    expect(mockShowSubscriptionDialog).toHaveBeenCalledWith({
+      reason: 'settings_billing_panel'
+    })
+    expect(mockResubscribe).not.toHaveBeenCalled()
   })
 
   it('does not show stale renewal copy for an explicitly ended active state', () => {
@@ -673,6 +731,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe Now' })
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Billing & invoices' })
+    ).not.toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
       'true'

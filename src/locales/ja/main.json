@@ -2905,6 +2905,7 @@
     "mage": "mage",
     "mask": "マスク",
     "merging": "マージ",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "モデル",
     "model specific": "モデル固有",
@@ -3865,6 +3866,7 @@
     "beta": "ベータ版",
     "billedMonthly": "毎月請求",
     "billedYearly": "{total} 年間請求",
+    "billingAndInvoices": "請求と請求書",
     "billingComingSoon": {
       "message": "チーム向けの請求機能が近日中に追加されます。ワークスペースごとに席数単位でプランに加入できるようになります。今後のアップデートをお待ちください。",
       "title": "近日公開"
@@ -3875,7 +3877,9 @@
       "endOfBillingPeriod": "請求期間の終了",
       "failed": "サブスクリプションのキャンセルに失敗しました",
       "keepSubscription": "サブスクリプションを維持する",
-      "title": "サブスクリプションのキャンセル"
+      "offerUnavailable": "このオプションは利用できません。別のオプションを選択してください。",
+      "title": "サブスクリプションのキャンセル",
+      "workspaceChanged": "アクティブなワークスペースが変更されました。元に戻して再度お試しください。"
     },
     "cancelPlan": "プランをキャンセル",
     "cancelSuccess": "サブスクリプションが正常にキャンセルされました",
@@ -3944,6 +3948,9 @@
       "memberTitle": "このワークスペースのサブスクリプションは無効です",
       "runLabel": "実行"
     },
+    "inactiveTeamDescription": "チームプランを再有効化して、メンバーを追加したりワークフローを実行したりできます",
+    "inactiveTeamPlanIncludes": "有効なプランには{plan}のすべてに加えて、以下が含まれます：",
+    "inactiveTeamTitle": "チームサブスクリプションが無効です",
     "inviteUpTo": "最大 {count} 人を招待",
     "invoiceHistory": "請求履歴",
     "learnMore": "詳細を見る",
@@ -4063,6 +4070,7 @@
     "pricingBlurbQuestions": "ご質問",
     "pricingBlurbSeeDetails": "詳細を見る",
     "reactivatePlan": "プランを再開",
+    "reactivateToUseCredits": "これらのクレジットを使用するにはプランを再有効化してください",
     "refillsDate": "{date}に補充",
     "refillsNextCycle": "次のサイクルで補充",
     "refreshCredits": "クレジットを更新",
@@ -4314,6 +4322,7 @@
     "fileTooLarge": "ファイルが大きすぎます（{size} MB）。サポートされている最大サイズは{maxSize} MBです",
     "fileUploadFailed": "ファイルのアップロードに失敗しました",
     "interrupted": "実行が中断されました",
+    "invalidBillingPortalUrl": "無効なポータルURLです",
     "invalidTemplateData": "ノードテンプレートの読み込みに失敗しました：無効なデータです",
     "legacyMaskEditorDeprecated": "従来のマスクエディタは非推奨となり、まもなく削除されます。",
     "migrateToLitegraphReroute": "将来のバージョンではRerouteノードが削除されます。litegraph-native rerouteに移行するにはクリックしてください。",

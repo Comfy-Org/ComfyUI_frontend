@@ -195,9 +195,9 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
             id: 'pm_default',
             brand: 'visa',
             last4: '4242',
-            isDefault: true
+            is_default: true
           },
-          { type: 'alipay', id: 'pm_alipay', isDefault: false }
+          { type: 'alipay', id: 'pm_alipay', is_default: false }
         ]
       },
       global: {

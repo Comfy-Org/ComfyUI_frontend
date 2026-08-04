@@ -289,7 +289,7 @@ export interface SavedPaymentMethod {
   brand?: string
   last4?: string
   id: string
-  isDefault: boolean
+  is_default: boolean
 }
 
 export type BillingSubscriptionStatus =

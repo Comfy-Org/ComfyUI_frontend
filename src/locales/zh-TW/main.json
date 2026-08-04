@@ -2905,6 +2905,7 @@
     "mage": "mage",
     "mask": "遮罩",
     "merging": "合併",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "模型",
     "model specific": "模型專用",
@@ -3865,6 +3866,7 @@
     "beta": "測試版",
     "billedMonthly": "每月收費",
     "billedYearly": "每年收費 {total}",
+    "billingAndInvoices": "帳單與發票",
     "billingComingSoon": {
       "message": "團隊計費功能即將推出。屆時你可以為你的工作區訂閱方案，並依照每位成員計價。請持續關注最新消息。",
       "title": "即將推出"
@@ -3875,7 +3877,9 @@
       "endOfBillingPeriod": "帳單週期結束",
       "failed": "取消訂閱失敗",
       "keepSubscription": "保留訂閱",
-      "title": "取消訂閱"
+      "offerUnavailable": "此選項無法使用。請選擇其他選項。",
+      "title": "取消訂閱",
+      "workspaceChanged": "您的使用中工作區已變更。請切換回原本的工作區後再試一次。"
     },
     "cancelPlan": "取消方案",
     "cancelSuccess": "訂閱已成功取消",
@@ -3944,6 +3948,9 @@
       "memberTitle": "此工作區的訂閱已失效",
       "runLabel": "執行"
     },
+    "inactiveTeamDescription": "重新啟用您的團隊方案以新增更多成員並執行工作流程",
+    "inactiveTeamPlanIncludes": "啟用方案包含 {plan} 的所有功能，並額外提供：",
+    "inactiveTeamTitle": "團隊訂閱已停用",
     "inviteUpTo": "可邀請最多",
     "invoiceHistory": "發票記錄",
     "learnMore": "了解更多",
@@ -4063,6 +4070,7 @@
     "pricingBlurbQuestions": "問題諮詢",
     "pricingBlurbSeeDetails": "查看詳情",
     "reactivatePlan": "重新啟用方案",
+    "reactivateToUseCredits": "請重新啟用您的方案以使用這些點數",
     "refillsDate": "補充 {date}",
     "refillsNextCycle": "下個週期補充",
     "refreshCredits": "刷新點數",
@@ -4314,6 +4322,7 @@
     "fileTooLarge": "檔案過大（{size} MB）。最大支援大小為 {maxSize} MB",
     "fileUploadFailed": "檔案上傳失敗",
     "interrupted": "執行已被中斷",
+    "invalidBillingPortalUrl": "無效的入口網站網址",
     "invalidTemplateData": "載入節點範本失敗：資料無效",
     "legacyMaskEditorDeprecated": "舊版遮罩編輯器即將淘汰並很快移除。",
     "migrateToLitegraphReroute": "重導節點將於未來版本移除。點擊以遷移至 litegraph 原生重導。",
