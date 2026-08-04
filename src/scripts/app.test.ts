@@ -13,6 +13,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
@@ -955,7 +956,7 @@ describe('ComfyApp', () => {
       }
     })
 
-    it('defers API JSON missing node warnings when requested', async () => {
+    it('defers API JSON missing node warnings until they are flushed', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
@@ -979,12 +980,13 @@ describe('ComfyApp', () => {
         { deferWarnings: true }
       )
 
+      const deferredWorkflow = mockWorkspaceWorkflow.activeWorkflow
       expect(missingNodesStore.missingNodesError).toBeNull()
-      expect(
-        mockWorkspaceWorkflow.activeWorkflow?.pendingWarnings?.missingNodeTypes
-      ).toEqual([expect.objectContaining({ type: 'UninstalledDeferredNode' })])
+      expect(deferredWorkflow?.pendingWarnings?.missingNodeTypes).toEqual([
+        expect.objectContaining({ type: 'UninstalledDeferredNode' })
+      ])
 
-      await app.handleFile(createTestFile('immediate.json', 'application/json'))
+      useWorkflowService().showPendingWarnings(deferredWorkflow)
 
       expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
         expect.objectContaining({ type: 'UninstalledDeferredNode' })

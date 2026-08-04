@@ -308,9 +308,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.nextFrame()
 
     // Known nodes and an error-marked placeholder for the unknown node load.
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount())
-      .toBeGreaterThanOrEqual(2)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(3)
 
     const getNodes = () =>
       comfyPage.page.evaluate(() =>

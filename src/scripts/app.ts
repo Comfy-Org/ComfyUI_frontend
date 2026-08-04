@@ -2218,15 +2218,18 @@ export class ComfyApp {
     for (const id of ids) {
       const data = apiData[id]
       const nodeId = toNodeId(isNaN(+id) ? id : +id)
-      const missingNodeIndex = missingNodeTypes.length
       let node = LiteGraph.createNode(data.class_type)
+      let placeholderEntry:
+        | Extract<MissingNodeType, { type: string }>
+        | undefined
       if (!node) {
         node = new LGraphNode(data._meta?.title ?? data.class_type)
         node.type = sanitizeNodeName(data.class_type)
         node.has_errors = true
         const widgetValues: TWidgetValue[] = []
-        const widgetValuesNamed: Record<string, TWidgetValue> = {}
-        for (const [input, value] of Object.entries(data.inputs)) {
+        const widgetValuesNamed: Record<string, TWidgetValue> =
+          Object.create(null)
+        for (const [input, value] of Object.entries(data.inputs ?? {})) {
           if (value instanceof Array) {
             node.addInput(input, '*')
           } else {
@@ -2250,19 +2253,19 @@ export class ComfyApp {
         const replacement = nodeReplacementStore.getReplacementFor(
           data.class_type
         )
-        missingNodeTypes.push({
+        placeholderEntry = {
           type: data.class_type,
           isReplaceable: replacement !== null,
           replacement: replacement ?? undefined
-        })
+        }
+        missingNodeTypes.push(placeholderEntry)
       }
       node.id = nodeId
       node.title = data._meta?.title ?? node.title
       app.rootGraph.add(node)
-      const missingNodeType = missingNodeTypes[missingNodeIndex]
-      if (typeof missingNodeType === 'object' && node.last_serialization) {
+      if (placeholderEntry && node.last_serialization) {
         node.last_serialization.id = node.id
-        missingNodeType.nodeId = String(node.id)
+        placeholderEntry.nodeId = String(node.id)
       }
     }
 
