@@ -2,7 +2,7 @@
   <div
     v-if="docked"
     data-testid="docked-agent-panel"
-    class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden"
+    class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]"
     :style="{ width: `${width}px` }"
   >
     <div
