@@ -1237,4 +1237,31 @@ describe('ChangeTracker', () => {
       expect(tracker.activeState).toEqual(changed)
     })
   })
+
+  describe('keyboard shortcuts', () => {
+    it('does not undo while a modal is open', async () => {
+      const previousState = createState(1)
+      const currentState = createState(2)
+      const tracker = createTracker(currentState)
+      tracker.undoQueue.push(previousState)
+      const dialog = document.createElement('div')
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('data-state', 'open')
+      document.body.appendChild(dialog)
+
+      try {
+        ChangeTracker.init()
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+        )
+        await vi.runAllTimersAsync()
+
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(tracker.activeState).toEqual(currentState)
+        expect(tracker.undoQueue).toEqual([previousState])
+      } finally {
+        document.body.removeChild(dialog)
+      }
+    })
+  })
 })
