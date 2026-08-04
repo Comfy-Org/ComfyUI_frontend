@@ -9,14 +9,22 @@ import { toNodeId } from '@/types/nodeId'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import {
   computeProcessedWidgets,
   getWidgetIdentity,
   hasWidgetError,
   isWidgetVisible
 } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   createNodeExecutionId,
@@ -309,6 +317,59 @@ const noopUi = {
   getTooltipConfig: () => ({}) as TooltipOptions,
   handleNodeRightClick: () => {}
 }
+
+describe('computeProcessedWidgets visibility', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('keeps a promoted advanced widget visible when advanced widgets are hidden', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraph.rootGraph.add(subgraphNode)
+
+    const interiorNode = new LGraphNode('ModelSamplingFlux')
+    const interiorInput = interiorNode.addInput('max_shift', 'FLOAT')
+    const interiorWidget = interiorNode.addWidget(
+      'number',
+      'max_shift',
+      1,
+      () => {},
+      { advanced: true }
+    )
+    interiorInput.widget = { name: interiorWidget.name }
+    subgraph.add(interiorNode)
+
+    const promotion = promoteValueWidgetViaSubgraphInput(
+      subgraphNode,
+      interiorNode,
+      interiorWidget
+    )
+    expect(promotion.ok).toBe(true)
+
+    const rootGraphSpy = vi
+      .spyOn(app, 'rootGraph', 'get')
+      .mockReturnValue(subgraph.rootGraph)
+    try {
+      const processedWidgets = computeProcessedWidgets({
+        nodeData: extractVueNodeData(subgraphNode),
+        graphId: subgraph.rootGraph.id,
+        showAdvanced: false,
+        isGraphReady: false,
+        rootGraph: null,
+        ui: noopUi
+      })
+      const promotedWidget = processedWidgets.find(
+        (widget) => widget.name === 'max_shift'
+      )
+
+      expect(promotedWidget).toBeDefined()
+      expect(promotedWidget?.visible).toBe(true)
+    } finally {
+      rootGraphSpy.mockRestore()
+    }
+  })
+})
 
 describe('computeProcessedWidgets borderStyle', () => {
   beforeEach(() => {
