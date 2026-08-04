@@ -92,10 +92,7 @@ describe('UnifiedStripePaymentSelector', () => {
           mode: 'subscription',
           amount: 66500,
           currency: 'usd',
-          paymentMethodOptions: {
-            card: { setup_future_usage: 'off_session' },
-            alipay: { setup_future_usage: 'off_session' }
-          },
+          setupFutureUsage: 'off_session',
           paymentMethodTypes: ['card', 'alipay']
         })
       )
