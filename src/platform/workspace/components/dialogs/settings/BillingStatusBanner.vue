@@ -130,7 +130,7 @@ const scheduledPlanName = computed(() => {
 })
 const scheduledPlanCharge = computed(() => {
   const amountCents = isScheduledTeamPlan.value
-    ? scheduledPlan.value?.seat_summary.total_cost_cents
+    ? scheduledPlan.value?.seat_summary?.total_cost_cents
     : scheduledPlan.value?.price_cents
   return amountCents === undefined
     ? ''

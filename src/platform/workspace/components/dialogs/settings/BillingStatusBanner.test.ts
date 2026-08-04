@@ -19,7 +19,10 @@ interface Subscription {
   changeAt?: string | null
 }
 
-const creatorAnnualPlan: Plan = {
+type RuntimePlan = Omit<Plan, 'seat_summary'> &
+  Partial<Pick<Plan, 'seat_summary'>>
+
+const creatorAnnualPlan: RuntimePlan = {
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
@@ -34,7 +37,7 @@ const creatorAnnualPlan: Plan = {
   }
 }
 
-const teamAnnualPlan: Plan = {
+const teamAnnualPlan: RuntimePlan = {
   slug: 'team-pro-annual',
   tier: 'PRO',
   duration: 'ANNUAL',
@@ -60,7 +63,7 @@ const state = vi.hoisted(() => ({
     isCancelled: false,
     endDate: null
   } as Subscription | null,
-  plans: [] as Plan[],
+  plans: [] as RuntimePlan[],
   renewalDate: null as string | null,
   workspaceType: 'team' as string,
   canManageSubscription: true,
@@ -406,6 +409,21 @@ describe('BillingStatusBanner', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       "We'll automatically charge $360.00 to your card on file."
     )
+  })
+
+  it('hides a Team plan change whose seat summary is missing', () => {
+    state.plans = [{ ...teamAnnualPlan, seat_summary: undefined }]
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'team-pro-annual',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+
+    renderBanner()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('hides a scheduled change whose destination plan cannot be resolved', () => {
