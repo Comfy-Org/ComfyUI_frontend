@@ -1,19 +1,25 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+
+const { downloadAssets } = vi.hoisted(() => ({
+  downloadAssets: vi.fn()
+}))
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({ isAssetDeleting: () => false })
 }))
 
 vi.mock('../composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => ({ downloadAssets: vi.fn() })
+  useMediaAssetActions: () => ({ downloadAssets })
 }))
 
 const asset: AssetItem = {
@@ -23,7 +29,9 @@ const asset: AssetItem = {
   preview_url: '/preview.png'
 }
 
-function renderCard(cardAsset: AssetItem = asset) {
+function renderCard(
+  props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
+) {
   setActivePinia(createTestingPinia({ stubActions: false }))
   const i18n = createI18n({
     legacy: false,
@@ -33,13 +41,11 @@ function renderCard(cardAsset: AssetItem = asset) {
     fallbackWarn: false
   })
   return render(MediaAssetCard, {
-    props: { asset: cardAsset, loading: true },
+    props: { asset, loading: true, ...props },
     global: {
       plugins: [i18n],
       stubs: {
-        IconGroup: true,
         LoadingOverlay: true,
-        Button: true,
         MediaTitle: true
       },
       directives: { tooltip: {} }
@@ -48,6 +54,7 @@ function renderCard(cardAsset: AssetItem = asset) {
 }
 
 function dispatchDragStart(
+  container: Element,
   init: { ctrlKey?: boolean; metaKey?: boolean } = {}
 ) {
   const dataTransfer = new DataTransfer()
@@ -59,9 +66,8 @@ function dispatchDragStart(
     ctrlKey: { value: init.ctrlKey ?? false, configurable: true },
     metaKey: { value: init.metaKey ?? false, configurable: true }
   })
-  screen
-    .getByRole('button', { name: 'assetBrowser.ariaLabel.assetCard' })
-    .dispatchEvent(event)
+  // eslint-disable-next-line testing-library/no-node-access -- the draggable card intentionally has no interactive role
+  container.querySelector('[data-asset-id]')!.dispatchEvent(event)
   return { event, add }
 }
 
@@ -72,18 +78,18 @@ describe('MediaAssetCard', () => {
 
   describe('dragStart', () => {
     it('cancels the native drag when Ctrl is held so a marquee can start over the card', () => {
-      renderCard()
+      const { container } = renderCard()
 
-      const { event, add } = dispatchDragStart({ ctrlKey: true })
+      const { event, add } = dispatchDragStart(container, { ctrlKey: true })
 
       expect(event.defaultPrevented).toBe(true)
       expect(add).not.toHaveBeenCalled()
     })
 
     it('cancels the native drag when Meta is held', () => {
-      renderCard()
+      const { container } = renderCard()
 
-      const { event } = dispatchDragStart({ metaKey: true })
+      const { event } = dispatchDragStart(container, { metaKey: true })
 
       expect(event.defaultPrevented).toBe(true)
     })
@@ -94,15 +100,17 @@ describe('MediaAssetCard', () => {
     ])(
       'includes trusted metadata for an imported $mime card',
       ({ name, display_name }) => {
-        renderCard({
-          id: name,
-          name,
-          display_name,
-          tags: ['input'],
-          preview_url: `/api/view?filename=${name}`
+        const { container } = renderCard({
+          asset: {
+            id: name,
+            name,
+            display_name,
+            tags: ['input'],
+            preview_url: `/api/view?filename=${name}`
+          }
         })
 
-        const { event, add } = dispatchDragStart()
+        const { event, add } = dispatchDragStart(container)
 
         expect(event.defaultPrevented).toBe(false)
         expect(add).toHaveBeenCalledWith(
@@ -117,28 +125,30 @@ describe('MediaAssetCard', () => {
     )
 
     it('preserves generated-output metadata instead of replacing it with card fallbacks', () => {
-      renderCard({
-        id: 'job-1',
-        name: 'card-name.png',
-        display_name: 'Card name',
-        tags: ['output'],
-        preview_url: '/preview.png',
-        user_metadata: {
-          jobId: 'job-1',
-          nodeId: '9',
-          subfolder: '',
-          allOutputs: [
-            {
-              filename: 'generated.png',
-              subfolder: 'outputs',
-              type: 'output',
-              display_name: 'Generated image'
-            }
-          ]
+      const { container } = renderCard({
+        asset: {
+          id: 'job-1',
+          name: 'card-name.png',
+          display_name: 'Card name',
+          tags: ['output'],
+          preview_url: '/preview.png',
+          user_metadata: {
+            jobId: 'job-1',
+            nodeId: '9',
+            subfolder: '',
+            allOutputs: [
+              {
+                filename: 'generated.png',
+                subfolder: 'outputs',
+                type: 'output',
+                display_name: 'Generated image'
+              }
+            ]
+          }
         }
       })
 
-      const { add } = dispatchDragStart()
+      const { add } = dispatchDragStart(container)
 
       expect(add).toHaveBeenCalledWith(
         JSON.stringify({
@@ -152,13 +162,15 @@ describe('MediaAssetCard', () => {
     })
 
     it('uses the asset content URL when an imported card has no preview URL', () => {
-      renderCard({
-        id: 'plain-video',
-        name: 'plain_video.mp4',
-        tags: ['input']
+      const { container } = renderCard({
+        asset: {
+          id: 'plain-video',
+          name: 'plain_video.mp4',
+          tags: ['input']
+        }
       })
 
-      const { add } = dispatchDragStart()
+      const { add } = dispatchDragStart(container)
 
       expect(add).toHaveBeenCalledWith(
         JSON.stringify({
@@ -173,5 +185,118 @@ describe('MediaAssetCard', () => {
         'text/uri-list'
       )
     })
+  })
+
+  it('keeps download and more actions independent from selection', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderCard({ loading: false, selected: true })
+
+    await user.click(
+      screen.getByRole('button', { name: 'mediaAsset.actions.download' })
+    )
+
+    expect(downloadAssets).toHaveBeenCalledWith([asset])
+    expect(emitted().select).toBeUndefined()
+    expect(emitted()['toggle-selection']).toBeUndefined()
+
+    await user.click(
+      screen.getByRole('button', { name: 'mediaAsset.actions.moreOptions' })
+    )
+    expect(emitted()['context-menu']).toHaveLength(1)
+    expect(emitted().select).toBeUndefined()
+    expect(emitted()['toggle-selection']).toBeUndefined()
+  })
+
+  it('selects the asset from the image preview and inspects it on double click', async () => {
+    const user = userEvent.setup()
+    const { container, emitted } = renderCard({
+      loading: false,
+      selected: true
+    })
+    const preview = await screen.findByRole('img', { name: 'a.png' })
+    const outsideClick = vi.fn()
+    // eslint-disable-next-line testing-library/no-container -- verifies the card's event boundary against its rendered parent
+    container.addEventListener('click', outsideClick)
+
+    await user.click(preview)
+    expect(emitted().select).toHaveLength(1)
+    expect(emitted()['toggle-selection']).toBeUndefined()
+    expect(outsideClick).not.toHaveBeenCalled()
+
+    await user.dblClick(preview)
+    expect(emitted().select).toHaveLength(3)
+    expect(emitted().zoom).toEqual([[asset]])
+  })
+
+  it('selects non-video assets from the preview', async () => {
+    const user = userEvent.setup()
+    const { container, emitted } = renderCard({
+      loading: false,
+      asset: { ...asset, name: 'model.glb' }
+    })
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- verifies the preview event boundary independently of its async media component
+    const preview = container.querySelector('.aspect-square')!
+
+    await user.click(preview)
+
+    expect(emitted().select).toHaveLength(1)
+    expect(emitted().zoom).toBeUndefined()
+  })
+
+  it('selects the asset from the info area or selection control', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderCard({ loading: false })
+
+    await user.click(screen.getByText('PNG'))
+    expect(emitted().select).toHaveLength(1)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'assetBrowser.ariaLabel.assetCard'
+      })
+    )
+    expect(emitted()['toggle-selection']).toHaveLength(1)
+  })
+
+  it('does not let the hidden selection control intercept pointer input', () => {
+    renderCard({ loading: false })
+
+    const selectionControl = screen.getByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    expect(selectionControl).toHaveClass(
+      'pointer-events-none',
+      'group-hover:pointer-events-auto',
+      'focus-visible:pointer-events-auto'
+    )
+  })
+
+  it('shows image format and dimensions without file size', () => {
+    renderCard({
+      loading: false,
+      asset: {
+        ...asset,
+        size: 1048576,
+        metadata: { width: 1024, height: 768 },
+        user_metadata: { executionTimeInSeconds: 1.25 }
+      }
+    })
+
+    expect(screen.getByText('1.25s')).toBeInTheDocument()
+    expect(screen.getByText('PNG 1024x768')).toBeInTheDocument()
+    expect(screen.queryByText(/MB/)).not.toBeInTheDocument()
+  })
+
+  it('shows format and file size for non-image assets', () => {
+    renderCard({
+      loading: false,
+      asset: {
+        ...asset,
+        name: 'clip.mp4',
+        size: 1048576
+      }
+    })
+
+    expect(screen.getByText(/^MP4 .*MB$/)).toBeInTheDocument()
   })
 })

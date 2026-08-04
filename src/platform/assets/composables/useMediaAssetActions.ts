@@ -43,6 +43,17 @@ import { assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
+function createAssetWidgetPath(asset: AssetItem): string {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  const assetType = getAssetType(asset, 'input')
+
+  return createAnnotatedPath({
+    filename: getAssetStoredFilename(asset),
+    subfolder: metadata?.subfolder ?? '',
+    type: isResultItemType(assetType) ? assetType : undefined
+  })
+}
+
 /**
  * Canonical widget-value strings that may reference this asset, scoped by the
  * asset's source type so basenames cannot cross-match across input/output.
@@ -366,21 +377,7 @@ export function useMediaAssetActions() {
       return
     }
 
-    // Get metadata to construct the annotated path
-    const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
-    const assetType = getAssetType(targetAsset, 'input')
-
-    const filename = getAssetStoredFilename(targetAsset)
-
-    // Create annotated path for the asset
-    const annotated = createAnnotatedPath(
-      {
-        filename,
-        subfolder: metadata?.subfolder || '',
-        type: isResultItemType(assetType) ? assetType : undefined
-      },
-      { rootFolder: 'input' }
-    )
+    const annotated = createAssetWidgetPath(targetAsset)
 
     const widget = node.widgets?.find((w) => w.name === widgetName)
     if (widget) {
@@ -506,21 +503,7 @@ export function useMediaAssetActions() {
         continue
       }
 
-      const metadata = getOutputAssetMetadata(asset.user_metadata)
-      const assetType = getAssetType(asset, 'input')
-
-      const filename = getAssetStoredFilename(asset)
-
-      const annotated = createAnnotatedPath(
-        {
-          filename,
-          subfolder: metadata?.subfolder || '',
-          type: isResultItemType(assetType) ? assetType : undefined
-        },
-        {
-          rootFolder: isResultItemType(assetType) ? assetType : undefined
-        }
-      )
+      const annotated = createAssetWidgetPath(asset)
 
       const widget = node.widgets?.find((w) => w.name === widgetName)
       if (widget) {

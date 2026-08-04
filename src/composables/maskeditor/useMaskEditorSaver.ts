@@ -12,6 +12,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
+import { isResultItemType } from '@/utils/typeGuardUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 // Private layer filename functions
@@ -302,7 +303,7 @@ export function useMaskEditorSaver() {
     node.imgs = undefined
     const annotatedPath = createAnnotatedPath(mainRef.filename, {
       subfolder: mainRef.subfolder,
-      rootFolder: mainRef.type
+      rootFolder: isResultItemType(mainRef.type) ? mainRef.type : undefined
     })
     nodeOutputStore.setNodeOutputs(node, annotatedPath, { folder: 'input' })
     node.graph?.setDirtyCanvas(true)

@@ -6500,6 +6500,48 @@
       }
     }
   },
+  "IdeogramPImage": {
+    "description": "P-Image（Ideogramの高速テキストから画像生成モデル）を使用して画像を生成します。強力なタイポグラフィとフォトリアリズムを実現し、Ideogram 4.0の構造化JSONキャプションによる正確なテキスト、色、レイアウト指定に対応しています。",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "画像生成時のアスペクト比。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "テキストプロンプト。Ideogram 4.0の構造化JSONキャプション（#RRGGBB形式の正確な色指定、正確なテキスト文字列、バウンディングボックスレイアウト）も入力可能です。verbatimで使用する場合はprompt_upsamplingをOFFにしてください。"
+      },
+      "prompt_upsampling": {
+        "name": "プロンプトアップサンプリング",
+        "tooltip": "短いプロンプトを詳細な構造化キャプションに展開してから生成します（書き換え後のプロンプトはfinal_promptとして返されます）。独自のJSONキャプションや正確な文言を使う場合はOFFにしてください。"
+      },
+      "quality": {
+        "name": "品質",
+        "tooltip": "速度／価格／品質のグレード。MEDIUMは日常利用のデフォルト、HIGHは複雑なプロンプトや細部・難しいテキスト向け、VERY_LOW/LOWは大量ドラフト用。MEDIUM未満では難しいテキストの描画品質が低下します。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力サイズクラス（アスペクト比に従いピクセル数が決まります。例：16:9の場合、1Kで1280x720、2Kで2560x1440）。鮮明なタイポグラフィにはHIGH＋2K推奨。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "再現性のある生成のためのシード値。prompt_upsamplingがOFFの場合、同じシードと設定で同じ画像が得られます。ON/AUTOの場合はプロンプトの書き換えが毎回異なります。結果を再現するには、出力されたfinal_promptと同じシードでprompt_upsamplingをOFFにして再実行してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "実際に画像生成に使用されたプロンプト（prompt_upsamplingが有効な場合は書き換え後の構造化キャプション、無効な場合は入力プロンプト）。prompt_upsamplingをOFF、同じシードで再入力すると同じ画像を再現できます。"
+      }
+    }
+  },
   "IdeogramV3": {
     "description": "Ideogram V3モデルを使用して同期的に画像を生成します。\n\nテキストプロンプトからの通常の画像生成と、マスクを使った画像編集の両方に対応しています。\n画像リンクは一定期間のみ有効です。画像を保存したい場合は、必ずダウンロードしてください。",
     "display_name": "Ideogram V3",
@@ -11328,6 +11370,125 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "MiniMax H3モデルを使用し、最初のフレーム画像と（オプションで）最後のフレーム画像から動画を生成します。動画のアスペクト比は入力画像に従います。",
+    "display_name": "MiniMax H3 最初・最後フレームから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "動画の最初のフレーム画像。"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "動画の最後のフレーム画像（オプション）。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。同じリクエスト・同じシードで類似した（完全に同一ではない）結果が得られます。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "MiniMax H3 モデルを使用して、参照画像、ビデオ、音声に基づいてビデオを生成します。プロンプト内で参照を順番に指定してください：『Image 1』、『Image 2』、『Video 1』、『Audio 1』など。",
+    "display_name": "MiniMax H3 参照からビデオ生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ生成に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。同じリクエストと同じシードで、似た結果が得られますが、完全に同一とは限りません。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "ビデオにAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "MiniMax H3 モデルを使用してテキストプロンプトからビデオを生成します。",
+    "display_name": "MiniMax H3 テキストからビデオ生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ生成に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。同じリクエストと同じシードで、似た結果が得られますが、完全に同一とは限りません。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "ビデオにAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
