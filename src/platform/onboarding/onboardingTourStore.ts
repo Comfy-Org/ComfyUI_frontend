@@ -7,7 +7,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type {
   OnboardingTourNotStartedReason,
   OnboardingTourSkipReason,
-  OnboardingTourStage
+  OnboardingTourStepStage
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -108,7 +108,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   }
 
   function trackTour(
-    stage: OnboardingTourStage,
+    stage: OnboardingTourStepStage,
     skipReason?: OnboardingTourSkipReason,
     reported: CoachStep | null = step.value,
     { tour, counted } = snapshot()
