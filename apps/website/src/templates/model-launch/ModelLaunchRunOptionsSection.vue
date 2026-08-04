@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
+import type { ModelLaunchRunOptions } from './types'
 
 import ProductCard from '../../components/common/ProductCard.vue'
 import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', runOptions } = defineProps<{
+  runOptions: ModelLaunchRunOptions
+  locale?: Locale
+}>()
 
 const routes = getRoutes(locale)
 
@@ -29,10 +33,10 @@ const cards = [
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t('minimax.runOptions.heading', locale) }}
+        {{ t(runOptions.headingKey, locale) }}
       </h2>
       <p class="mt-6 max-w-xl text-sm font-light text-primary-comfy-canvas/70">
-        {{ t('minimax.runOptions.subtitle', locale) }}
+        {{ t(runOptions.subtitleKey, locale) }}
       </p>
     </div>
 
@@ -44,7 +48,7 @@ const cards = [
         :key="card.product"
         :title="t(`products.${card.product}.title`, locale)"
         :description="t(`products.${card.product}.description`, locale)"
-        :cta="t('minimax.runOptions.cta', locale)"
+        :cta="t(runOptions.ctaKey, locale)"
         :href="card.href"
         :bg="card.bg"
       />
