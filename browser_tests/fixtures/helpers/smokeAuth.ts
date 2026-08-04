@@ -173,9 +173,12 @@ export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
 const TELEMETRY_HOSTS =
   /(^|\.)(mp\.comfy\.org|customer\.io|gist\.build|sy-d\.io|sentry\.io)$/
 async function blockThirdPartyTelemetry(page: Page): Promise<void> {
+  // Fulfill empty, never abort: an aborted request still logs a console error
+  // (net::ERR_FAILED, x4 per boot in run 30871208042), which is the exact
+  // noise this block exists to remove. A 204 logs nothing.
   await page.route(
     (url) => TELEMETRY_HOSTS.test(url.hostname),
-    (route) => route.abort()
+    (route) => route.fulfill({ status: 204, body: '' })
   )
 }
 
