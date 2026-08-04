@@ -42,20 +42,22 @@ const breadcrumbs = crumbs.map((crumb) =>
 // Launch models are third party, so these pages intentionally emit no Product /
 // AggregateRating / Review JSON-LD. FAQPage is the only page-specific node;
 // Organization / WebSite / WebPage / BreadcrumbList come from BaseLayout.
-const faqPage = faqPageNode(
-  url,
-  page.faq.items.map((item) => ({
-    question: item.question[locale],
-    answer: faqAnswerPlainText(item.answer[locale]),
-  })),
-)
+const faqPage = page.faq
+  ? faqPageNode(
+      url,
+      page.faq.items.map((item) => ({
+        question: item.question[locale],
+        answer: faqAnswerPlainText(item.answer[locale]),
+      })),
+    )
+  : undefined
 ---
 
 <BaseLayout
   title={t(page.metaTitleKey, locale)}
   description={t(page.metaDescriptionKey, locale)}
   breadcrumbs={breadcrumbs}
-  extraJsonLd={[faqPage]}
+  extraJsonLd={faqPage ? [faqPage] : []}
 >
   <BreadcrumbBar
     crumbs={crumbs}
@@ -63,18 +65,34 @@ const faqPage = faqPageNode(
     label={t('ui.breadcrumb', locale)}
   />
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
-  <ModelLaunchGallerySection
-    client:visible
-    gallery={page.gallery}
-    locale={locale}
-  />
-  <ModelLaunchPricingSection
-    client:load
-    pricing={page.pricing}
-    locale={locale}
-  />
-  <ModelLaunchFaqSection client:visible faq={page.faq} locale={locale} />
-  <ModelLaunchCtaSection cta={page.closingCta} locale={locale} />
+  {
+    page.gallery && (
+      <ModelLaunchGallerySection
+        client:visible
+        gallery={page.gallery}
+        locale={locale}
+      />
+    )
+  }
+  {
+    page.pricing && (
+      <ModelLaunchPricingSection
+        client:load
+        pricing={page.pricing}
+        locale={locale}
+      />
+    )
+  }
+  {
+    page.faq && (
+      <ModelLaunchFaqSection client:visible faq={page.faq} locale={locale} />
+    )
+  }
+  {
+    page.closingCta && (
+      <ModelLaunchCtaSection cta={page.closingCta} locale={locale} />
+    )
+  }
   <ModelLaunchRunOptionsSection runOptions={page.runOptions} locale={locale} />
   <ModelLaunchReviewsSection
     client:visible

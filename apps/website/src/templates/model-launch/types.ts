@@ -17,13 +17,18 @@ interface ModelLaunchCta {
 }
 
 export interface ModelLaunchHero {
-  videoSrc: string
+  videoSrc?: string
+  // Still stand-in for the hero frame, for pages announcing a model whose
+  // launch footage does not exist yet. Ignored once videoSrc is set.
+  placeholderImageSrc?: string
+  // Small label above the heading, e.g. NEW.
+  eyebrowKey?: TranslationKey
   // Brand mark drawn as a CSS mask over the top-right corner of the video.
   logoSrc?: string
   titleKey: TranslationKey
   // Rendered muted directly after `titleKey`, for the two-tone Figma heading.
   titleRestKey?: TranslationKey
-  descriptionKey: TranslationKey
+  descriptionKey?: TranslationKey
   primaryCta: ModelLaunchCta
   secondaryCta?: ModelLaunchCta
   badgeKeys?: readonly TranslationKey[]
@@ -99,10 +104,12 @@ export interface ModelLaunchPage {
   breadcrumbLabelKey: TranslationKey
   breadcrumbUpdatedKey: TranslationKey
   hero: ModelLaunchHero
-  gallery: ModelLaunchGallery
-  pricing: ModelLaunchPricing
-  faq: ModelLaunchFaqSection
-  closingCta: ModelLaunchClosingCta
+  // Everything below the hero is optional: a page announcing a model that has
+  // not shipped yet has no gallery, pricing, FAQ or closing CTA to show.
+  gallery?: ModelLaunchGallery
+  pricing?: ModelLaunchPricing
+  faq?: ModelLaunchFaqSection
+  closingCta?: ModelLaunchClosingCta
   runOptions: ModelLaunchRunOptions
   reviews: ModelLaunchReviews
 }

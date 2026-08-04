@@ -15,7 +15,17 @@ const { locale = 'en', hero } = defineProps<{
 
 <template>
   <section class="max-w-9xl mx-auto px-6 py-12 lg:px-20 lg:py-16">
-    <div class="relative">
+    <img
+      v-if="!hero.videoSrc && hero.placeholderImageSrc"
+      :src="hero.placeholderImageSrc"
+      alt=""
+      aria-hidden="true"
+      width="1440"
+      height="810"
+      class="aspect-21/9 w-full rounded-4xl border border-white/10 object-cover"
+    />
+
+    <div v-if="hero.videoSrc" class="relative">
       <VideoPlayer :locale :src="hero.videoSrc" autoplay loop />
       <div
         v-if="hero.logoSrc"
@@ -35,6 +45,13 @@ const { locale = 'en', hero } = defineProps<{
     </div>
 
     <div class="mx-auto mt-10 flex max-w-2xl flex-col items-center text-center">
+      <p
+        v-if="hero.eyebrowKey"
+        class="text-primary-comfy-yellow mb-4 text-sm font-extrabold tracking-wider uppercase"
+      >
+        {{ t(hero.eyebrowKey, locale) }}
+      </p>
+
       <h1
         class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl/tight"
       >
@@ -45,6 +62,7 @@ const { locale = 'en', hero } = defineProps<{
       </h1>
 
       <p
+        v-if="hero.descriptionKey"
         class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
       >
         {{ t(hero.descriptionKey, locale) }}
