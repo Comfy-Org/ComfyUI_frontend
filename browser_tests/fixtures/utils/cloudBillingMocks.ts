@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -13,10 +14,11 @@ export async function mockBilling(page: Page) {
         is_active: true,
         has_funds: true,
         subscription_status: 'active',
-        subscription_tier: 'pro',
+        subscription_tier: 'PRO',
         subscription_duration: 'MONTHLY',
-        billing_status: 'paid'
-      })
+        billing_status: 'paid',
+        team_credit_stop: null
+      } satisfies BillingStatusResponse)
     )
   )
   await page.route('**/api/billing/balance', (r) =>
