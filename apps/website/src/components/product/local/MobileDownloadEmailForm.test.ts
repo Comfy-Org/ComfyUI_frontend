@@ -162,4 +162,17 @@ describe('MobileDownloadEmailForm', () => {
     ).toBeTruthy()
     expect(screen.queryByRole('textbox')).toBeNull()
   })
+
+  it('forwards a non-default locale to requestDownloadLink', async () => {
+    const user = userEvent.setup()
+    render(MobileDownloadEmailForm, { props: { locale: 'zh-CN' } })
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    await user.click(screen.getByRole('button', { name: '发送下载链接' }))
+
+    expect(hoisted.mockSubmit).toHaveBeenCalledWith(
+      'someone@example.com',
+      'zh-CN'
+    )
+  })
 })
