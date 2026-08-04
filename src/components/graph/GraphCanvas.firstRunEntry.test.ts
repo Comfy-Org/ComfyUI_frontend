@@ -1,6 +1,7 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -143,6 +144,11 @@ vi.mock(
 )
 
 async function mountGraphCanvas() {
+  // Handed to the component rather than left to the active-Pinia fallback, so
+  // the readiness gates below are set on the instance startup actually reads.
+  const pinia = createTestingPinia({ stubActions: false })
+  setActivePinia(pinia)
+
   // Startup waits on both readiness gates before it reaches the tour hand-off.
   useSettingStore().isReady = true
   useBootstrapStore().isI18nReady = true
@@ -153,7 +159,10 @@ async function mountGraphCanvas() {
     // which honours it — @testing-library/vue just omits it from its own type.
     shallow: true,
     global: {
-      plugins: [createI18n({ legacy: false, locale: 'en', missingWarn: false })]
+      plugins: [
+        pinia,
+        createI18n({ legacy: false, locale: 'en', missingWarn: false })
+      ]
     }
   } as RenderOptions<typeof GraphCanvas>)
 
@@ -166,7 +175,6 @@ async function mountGraphCanvas() {
 
 describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.clearAllMocks()
     // Startup writes to the workspace store, and clearAllMocks does not undo
     // writes to a plain object.
