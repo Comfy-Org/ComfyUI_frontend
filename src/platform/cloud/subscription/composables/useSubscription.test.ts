@@ -384,25 +384,30 @@ describe('useSubscription', () => {
           headers: expect.objectContaining({
             Authorization: 'Bearer test-token',
             'Content-Type': 'application/json'
-          }),
-          body: JSON.stringify({
-            im_ref: 'impact-click-001',
-            utm_source: 'impact'
           })
         })
       )
+      const requestBody = JSON.parse(
+        vi.mocked(global.fetch).mock.calls[0][1]?.body as string
+      )
+      expect(requestBody).toEqual({
+        im_ref: 'impact-click-001',
+        utm_source: 'impact',
+        checkout_attempt_id: expect.any(String)
+      })
 
       expect(windowOpenSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
-      expect(
-        JSON.parse(
-          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) ??
-            '{}'
-        )
-      ).toMatchObject({
+      const persistedAttempt = JSON.parse(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) ?? '{}'
+      )
+      expect(persistedAttempt).toMatchObject({
         tier: 'standard',
         cycle: 'monthly',
         checkout_type: 'new'
       })
+      // The id sent to the backend is the persisted attempt's id — the funnel
+      // join key echoed back on the server-side billing success events.
+      expect(requestBody.checkout_attempt_id).toBe(persistedAttempt.attempt_id)
 
       windowOpenSpy.mockRestore()
     })
