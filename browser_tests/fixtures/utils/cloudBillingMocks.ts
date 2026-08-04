@@ -25,9 +25,6 @@ export async function mockBilling(page: Page) {
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )
-  await page.route('**/customers/cloud-subscription-status', (r) =>
-    r.fulfill(jsonRoute({ is_active: false }))
-  )
   await page.route('**/customers/balance', (r) =>
     r.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
   )

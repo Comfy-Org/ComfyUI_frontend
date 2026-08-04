@@ -1,8 +1,11 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import {
+  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
+  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse
@@ -33,21 +36,6 @@ const jsonRoute = (body: unknown) => ({
   body: JSON.stringify(body)
 })
 
-// The workspace `/api/billing/status` shape mirrors the legacy subscription
-// status; map the fields so a single test fixture drives both backends.
-const toWorkspaceStatus = (
-  s: CloudSubscriptionStatusResponse
-): BillingStatusResponse => ({
-  is_active: s.is_active ?? false,
-  max_seats: 1,
-  occupied_seats: 1,
-  subscription_tier: s.subscription_tier ?? undefined,
-  subscription_duration: s.subscription_duration ?? undefined,
-  renewal_date: s.renewal_date ?? undefined,
-  cancel_at: s.end_date ?? undefined,
-  has_funds: s.has_fund ?? true
-})
-
 const mockBalance: BillingBalanceResponse = {
   amount_micros: 6000, // -> 12,660 credits
   currency: 'usd',
@@ -62,7 +50,7 @@ const mockWorkspaceBalance: BillingBalanceResponse = {
 
 async function mockCloudBoot(
   page: Page,
-  subscriptionStatus: CloudSubscriptionStatusResponse,
+  subscriptionStatus: BillingStatusResponse,
   remoteConfig: RemoteConfig = {},
   billingRail?: BillingStatusResponse['billing_rail']
 ) {
@@ -117,14 +105,13 @@ async function mockCloudBoot(
     )
   )
 
-  // Legacy endpoints remain mocked for consumers that explicitly use them.
-  await page.route('**/customers/cloud-subscription-status', (r) => {
-    billingRequests.legacyStatus++
-    return r.fulfill(jsonRoute(subscriptionStatus))
-  })
   await page.route('**/customers/balance', (r) => {
     billingRequests.legacyBalance++
     return r.fulfill(jsonRoute(mockBalance))
+  })
+  await page.route('**/customers/cloud-subscription-status', (r) => {
+    billingRequests.legacyStatus++
+    return r.fulfill(jsonRoute(subscriptionStatus))
   })
 
   // Cloud personal workspaces route through `/api/billing/*`.
@@ -132,7 +119,7 @@ async function mockCloudBoot(
     billingRequests.workspaceStatus++
     return r.fulfill(
       jsonRoute({
-        ...toWorkspaceStatus(subscriptionStatus),
+        ...subscriptionStatus,
         billing_rail: billingRail
       })
     )
@@ -174,21 +161,41 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
         subscription_tier: 'PRO',
         subscription_duration: 'MONTHLY',
         renewal_date: '2099-02-20T10:00:00Z',
-        end_date: null
+        has_funds: true
       },
       { consolidated_billing_enabled: true },
       'legacy_stripe'
     )
     await bootApp(page)
+    await page.evaluate(
+      ({ eventName, storageKey }) => {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            attempt_id: 'rail-selection-regression',
+            started_at_ms: Date.now(),
+            tier: 'pro',
+            cycle: 'monthly',
+            checkout_type: 'upgrade'
+          })
+        )
+        window.dispatchEvent(new Event(eventName))
+      },
+      {
+        eventName: PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
+        storageKey: PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+      }
+    )
 
     await page.getByRole('button', { name: 'Current user' }).click()
     const popover = page.locator('.current-user-popover')
     await expect(popover).toBeVisible()
 
     await expect(popover.getByText('12,660')).toBeVisible()
+    await expect(popover.getByText('0', { exact: true })).toHaveCount(0)
     await expect(popover.getByTestId('add-credits-button')).toBeVisible()
-    expect(billingRequests.workspaceStatus).toBeGreaterThan(0)
-    expect(billingRequests.legacyStatus).toBeGreaterThan(0)
+    await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(0)
+    expect(billingRequests.legacyStatus).toBe(0)
     expect(billingRequests.legacyBalance).toBeGreaterThan(0)
   })
 
@@ -211,12 +218,13 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
         subscription_duration: 'MONTHLY',
         // 10:00Z keeps the en-US calendar date stable across CI timezones.
         renewal_date: '2099-02-20T10:00:00Z',
-        end_date: null
+        has_funds: false
       },
       {
         subscription_required: true,
         consolidated_billing_enabled: true
-      }
+      },
+      'stripe'
     )
     await bootApp(page)
 
