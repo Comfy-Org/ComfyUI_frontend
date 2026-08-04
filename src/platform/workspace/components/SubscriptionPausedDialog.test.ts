@@ -65,4 +65,12 @@ describe('SubscriptionPausedDialog', () => {
     expect(onClose).toHaveBeenCalledOnce()
     expect(onUpdatePayment).not.toHaveBeenCalled()
   })
+
+  it('closes from the visible close button', async () => {
+    const { onClose } = renderDialog(true)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(onClose).toHaveBeenCalledOnce()
+  })
 })

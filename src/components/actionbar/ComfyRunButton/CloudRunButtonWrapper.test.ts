@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
   v1PaymentRecovery: true,
   canManageSubscription: true,
   manageSubscription: vi.fn(),
+  toastErrorHandler: vi.fn(),
   showLayoutDialog: vi.fn(),
   closeDialog: vi.fn()
 }))
@@ -31,6 +32,10 @@ vi.mock('@/composables/useFeatureFlags', () => ({
       }
     }
   })
+}))
+
+vi.mock('@/composables/useErrorHandling', () => ({
+  useErrorHandling: () => ({ toastErrorHandler: state.toastErrorHandler })
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
@@ -130,11 +135,26 @@ describe('CloudRunButtonWrapper', () => {
     const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
     expect(dialogOptions.props.canManage).toBe(true)
 
-    dialogOptions.props.onUpdatePayment()
+    await dialogOptions.props.onUpdatePayment()
     expect(state.closeDialog).toHaveBeenCalledWith({
       key: 'subscription-paused'
     })
     expect(state.manageSubscription).toHaveBeenCalledOnce()
+  })
+
+  it('keeps recovery open and surfaces portal failures', async () => {
+    const error = new Error('Portal unavailable')
+    state.manageSubscription.mockRejectedValueOnce(error)
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'paused'
+    renderWrapper()
+
+    await userEvent.click(screen.getByTestId('queue-button'))
+    const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
+    await dialogOptions.props.onUpdatePayment()
+
+    expect(state.toastErrorHandler).toHaveBeenCalledWith(error)
+    expect(state.closeDialog).not.toHaveBeenCalled()
   })
 
   it('opens member-safe recovery copy without a payment action', async () => {

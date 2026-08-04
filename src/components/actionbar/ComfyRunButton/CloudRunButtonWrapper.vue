@@ -11,6 +11,7 @@ import { computed } from 'vue'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import SubscriptionPausedDialog from '@/platform/workspace/components/SubscriptionPausedDialog.vue'
@@ -25,6 +26,7 @@ const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
 const dialogService = useDialogService()
 const dialogStore = useDialogStore()
+const { toastErrorHandler } = useErrorHandling()
 
 const paymentRecoveryLock = computed<'owner' | 'member' | null>(() =>
   flags.v1PaymentRecovery && billingStatus.value === 'paused'
@@ -38,9 +40,13 @@ function closePaymentRecoveryDialog() {
   dialogStore.closeDialog({ key: DIALOG_KEY })
 }
 
-function updatePayment() {
-  closePaymentRecoveryDialog()
-  void manageSubscription()
+async function updatePayment() {
+  try {
+    await manageSubscription()
+    closePaymentRecoveryDialog()
+  } catch (error) {
+    toastErrorHandler(error)
+  }
 }
 
 function showPaymentRecoveryDialog() {
