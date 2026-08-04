@@ -54,6 +54,7 @@ const {
           :src="videoSrc"
           :poster="videoPoster"
           autoplay
+          lazy-autoplay
           loop
           mute-only
           class="lg:rounded-4.5xl absolute inset-0 aspect-auto h-full rounded-3xl border-0"

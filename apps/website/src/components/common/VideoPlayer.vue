@@ -32,6 +32,7 @@ const {
   tracks = [],
   autoplay = false,
   autoplayUnmuted = false,
+  lazyAutoplay = false,
   loop = false,
   minimal = false,
   muteOnly = false,
@@ -48,6 +49,10 @@ const {
   /** Attempt autoplay with sound; browsers without engagement-based
    * permission reject it, and playback falls back to muted. */
   autoplayUnmuted?: boolean
+  /** Omit the native autoplay attribute and keep preload conservative so
+   * media loads and plays only after hydration; pair with `client:visible`
+   * to start the preview when it scrolls into view. */
+  lazyAutoplay?: boolean
   loop?: boolean
   minimal?: boolean
   /** Show only a persistent mute toggle in the top-right corner. */
@@ -258,10 +263,10 @@ function toggleFullscreen() {
       "
       :src
       :poster
-      :preload="autoplay ? 'auto' : 'metadata'"
+      :preload="autoplay && !lazyAutoplay ? 'auto' : 'metadata'"
       crossorigin="anonymous"
       playsinline
-      :autoplay
+      :autoplay="autoplay && !lazyAutoplay"
       :loop
       muted
       @click="hideControls || muteOnly ? undefined : (playing = !playing)"
@@ -276,18 +281,30 @@ function toggleFullscreen() {
       />
     </video>
 
-    <!-- Persistent corner mute toggle -->
-    <button
+    <!-- Persistent corner pause and mute toggles -->
+    <div
       v-if="src && muteOnly && !hideControls"
-      class="bg-primary-comfy-yellow absolute top-4 right-4 flex size-8 items-center justify-center rounded-xl lg:top-6 lg:right-6"
-      :aria-label="
-        muted ? t('player.unmute', locale) : t('player.mute', locale)
-      "
-      @click="muted = !muted"
+      class="absolute top-4 right-4 flex gap-2 lg:top-6 lg:right-6"
     >
-      <VolumeMutedIcon v-if="muted" class="size-4 text-primary-comfy-ink" />
-      <VolumeUnmutedIcon v-else class="size-4 text-primary-comfy-ink" />
-    </button>
+      <PlayPauseButton
+        :playing
+        size="sm"
+        :aria-label="
+          playing ? t('player.pause', locale) : t('player.play', locale)
+        "
+        @click="playing = !playing"
+      />
+      <button
+        class="bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-xl lg:size-10"
+        :aria-label="
+          muted ? t('player.unmute', locale) : t('player.mute', locale)
+        "
+        @click="muted = !muted"
+      >
+        <VolumeMutedIcon v-if="muted" class="size-4 text-primary-comfy-ink" />
+        <VolumeUnmutedIcon v-else class="size-4 text-primary-comfy-ink" />
+      </button>
+    </div>
 
     <!-- Minimal centered play/pause button -->
     <div
