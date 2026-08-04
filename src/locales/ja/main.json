@@ -446,7 +446,26 @@
   "cloudForgotPassword_title": "パスワードを忘れた場合",
   "cloudHero": {
     "nextSlide": "次のスライド",
-    "previousSlide": "前のスライド"
+    "previousSlide": "前のスライド",
+    "slidePagerLabel": "スライド{index}へ移動",
+    "slides": {
+      "cloud": {
+        "description": "商用ライセンスが確認されたモデルを使い、どこからでも作業したいほとんどのユーザーに最適です。",
+        "title": "クラウド"
+      },
+      "models": {
+        "description": "厳選された商用ライセンス付きモデルが、セットアップ不要ですぐに利用可能です。",
+        "title": "モデル"
+      },
+      "team": {
+        "description": "今すぐチームをオンボードしましょう。ワークフローやアセットを組織全体で共有できます。",
+        "title": "チーム"
+      },
+      "workflows": {
+        "description": "アイデアから出力まで数分で。複数のバリエーションを並べて生成できます。",
+        "title": "ワークフロー"
+      }
+    }
   },
   "cloudNotification": {
     "continueLocally": "ローカルで続行",
@@ -558,9 +577,11 @@
   "cloudPrivateBeta_title": "クラウドは現在プライベートベータ版です",
   "cloudSorryContactSupport_title": "申し訳ありません、サポートに連絡してください",
   "cloudStart_desc": "セットアップ不要。あらゆるデバイスで動作します。",
+  "cloudStart_download": "ComfyUIをダウンロード",
   "cloudStart_explain": "複数の出力を一度に生成。ワークフローを簡単に共有。",
   "cloudStart_learnAboutButton": "クラウドについて学ぶ",
   "cloudStart_title": "数秒で作成を開始",
+  "cloudStart_wantToRun": "代わりにローカルでComfyUIを実行したいですか？",
   "cloudSurvey_steps_experience": "ComfyUIの知識レベルは？",
   "cloudSurvey_steps_focus": "何を作成していますか？",
   "cloudSurvey_steps_intent": "ComfyUIで何を作成したいですか？",
