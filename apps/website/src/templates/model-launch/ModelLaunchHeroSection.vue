@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
+import { computed, onMounted, shallowRef } from 'vue'
+
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchHero } from './types'
 
@@ -11,22 +14,45 @@ const { locale = 'en', hero } = defineProps<{
   hero: ModelLaunchHero
   locale?: Locale
 }>()
+
+// Hero clips run to tens of megabytes, so phones get the still instead. A
+// CSS-hidden <video> would still download during SSR hydration; withholding
+// the element until the query matches is what actually skips the transfer.
+const isDesktop = useMediaQuery('(min-width: 768px)')
+
+// The still is what SSR emits, so hold it through the first client render too;
+// swapping in the video before hydration settles would count as a mismatch.
+const mounted = shallowRef(false)
+onMounted(() => {
+  mounted.value = true
+})
+
+const showVideo = computed(
+  () =>
+    Boolean(hero.videoSrc) &&
+    (!hero.placeholderImageSrc || (mounted.value && isDesktop.value))
+)
 </script>
 
 <template>
   <section class="max-w-9xl mx-auto px-6 py-12 lg:px-20 lg:py-16">
-    <img
-      v-if="!hero.videoSrc && hero.placeholderImageSrc"
-      :src="hero.placeholderImageSrc"
-      alt=""
-      aria-hidden="true"
-      width="1440"
-      height="810"
-      class="aspect-21/9 w-full rounded-4xl border border-white/10 object-cover"
-    />
-
-    <div v-if="hero.videoSrc" class="relative">
-      <VideoPlayer :locale :src="hero.videoSrc" autoplay loop />
+    <div v-if="showVideo || hero.placeholderImageSrc" class="relative">
+      <VideoPlayer
+        v-if="showVideo"
+        :locale
+        :src="hero.videoSrc"
+        autoplay
+        loop
+      />
+      <img
+        v-else
+        :src="hero.placeholderImageSrc"
+        alt=""
+        aria-hidden="true"
+        width="1280"
+        height="720"
+        class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+      />
       <div
         v-if="hero.logoSrc"
         aria-hidden="true"

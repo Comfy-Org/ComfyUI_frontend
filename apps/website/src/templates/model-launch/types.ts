@@ -18,8 +18,9 @@ interface ModelLaunchCta {
 
 export interface ModelLaunchHero {
   videoSrc?: string
-  // Still stand-in for the hero frame, for pages announcing a model whose
-  // launch footage does not exist yet. Ignored once videoSrc is set.
+  // Still stand-in for the hero frame, used below 768px so phones skip the
+  // video download, and at every width for pages announcing a model whose
+  // launch footage does not exist yet.
   placeholderImageSrc?: string
   // Small label above the heading, e.g. NEW.
   eyebrowKey?: TranslationKey
