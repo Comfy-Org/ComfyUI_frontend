@@ -377,7 +377,11 @@ jobs:
                 fi
                 gh pr merge "${PR_NUM}" --auto --squash --repo "${{ github.repository }}" \
                   || echo "::warning::Failed to enable auto-merge for PR #${PR_NUM}"
-                gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}"
+                # Non-fatal: a merged source PR can be locked, and under `set -e`
+                # a failed comment would abort the loop before the remaining
+                # targets ran and before pr-create-failed was written below.
+                gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}" \
+                  || echo "::warning::Could not comment on PR #${PR_NUMBER} (backported to #${PR_NUM})."
               fi
             else
               echo "::error::Failed to create PR for ${target}: ${PR_URL}"
@@ -385,8 +389,10 @@ jobs:
               # and re-red the run, otherwise the branch is stranded silently
               # and nothing retries it.
               PR_CREATE_FAILED="${PR_CREATE_FAILED} ${target}"
-              # Still try to comment on the original PR about the failure
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport branch created but PR creation failed for \`${target}\`. Please create the PR manually from branch \`${branch}\`"
+              # Also non-fatal, for the same reason: losing this notice must not
+              # also lose the record that the branch was stranded.
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport branch created but PR creation failed for \`${target}\`. Please create the PR manually from branch \`${branch}\`" \
+                || echo "::warning::Could not comment on PR #${PR_NUMBER} about the failed PR creation for ${target}."
             fi
           done
 
