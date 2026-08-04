@@ -13,6 +13,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -115,10 +116,11 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
   /**
    * The shared half of the walk: a fresh user reaches Getting Started, picks a
-   * pinned template, and the tour guides them to Run — where the outcomes part.
-   * The run is queued under a known id so WS events can address it afterwards.
+   * pinned template, and the tour guides them to Run — where the funded and
+   * paywalled branches part. The run is queued under a known id, so whoever
+   * goes on to click Run can address it over the websocket.
    */
-  async function tourToGeneratingStep(page: Page) {
+  async function tourToRunStep(page: Page) {
     const screen = page.getByRole('dialog', { name: GETTING_STARTED_TITLE })
     const spotlight = page.getByTestId('coach-spotlight')
     const card = page.getByTestId('coach-card')
@@ -130,7 +132,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     await expect(screen).toBeVisible()
 
     const templateId = await firstPinnedTemplateOnScreen(page)
-    await page.getByTestId(`getting-started-card-${templateId}`).click()
+    await page.getByTestId(`${CARD_TESTID_PREFIX}${templateId}`).click()
 
     await expect(screen).toBeHidden()
     await expect(
@@ -154,6 +156,15 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       'the Run step must offer no way forward except running'
     ).toBeHidden()
 
+    return { spotlight, card, totalSteps }
+  }
+
+  /** Clicks Run and waits for the Result step to admit the run is in flight. */
+  async function runFromTourStep(
+    page: Page,
+    card: Locator,
+    totalSteps: number
+  ) {
     await page.getByTestId('queue-button').click()
 
     await expect(
@@ -164,8 +175,6 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       card,
       'Run hands over to the last step, the one spotlighting where output lands'
     ).toContainText(`Step ${totalSteps} of ${totalSteps}`)
-
-    return { card, spotlight }
   }
 
   wstest(
@@ -176,7 +185,8 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       const { page } = comfyPage
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      const { card } = await tourToGeneratingStep(page)
+      const { card, totalSteps } = await tourToRunStep(page)
+      await runFromTourStep(page, card, totalSteps)
 
       execution.executionStart(TOUR_JOB_ID)
       execution.executionSuccess(TOUR_JOB_ID)
@@ -195,7 +205,8 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       const { page } = comfyPage
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      const { card } = await tourToGeneratingStep(page)
+      const { card, totalSteps } = await tourToRunStep(page)
+      await runFromTourStep(page, card, totalSteps)
 
       execution.executionStart(TOUR_JOB_ID)
       execution.executionError(TOUR_JOB_ID, '1', 'the run blew up')
@@ -206,6 +217,39 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       ).toBeVisible({ timeout: 15_000 })
     }
   )
+
+  test.describe('without a subscription', () => {
+    test.beforeEach(async ({ page }) => {
+      await mockBilling(page)
+    })
+
+    test('leaves the nudge until the upgrade dialog closes', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      const { page } = comfyPage
+      const { spotlight } = await tourToRunStep(page)
+      const nudge = page.getByTestId('first-run-nudge')
+      const upgradeDialog = page.getByTestId('dialog-overlay')
+
+      await page.getByTestId('subscribe-to-run-button').click()
+
+      await expect(upgradeDialog).toBeVisible()
+      await expect(
+        spotlight,
+        'a tour parked on a button that will never run has nowhere to go'
+      ).toBeHidden()
+      await expect(nudge, 'the nudge sits below the modal stack').toBeHidden()
+
+      await page.keyboard.press('Escape')
+
+      await expect(upgradeDialog).toBeHidden()
+      await expect(
+        nudge,
+        'the tour ended, so the user still needs somewhere to go next'
+      ).toBeVisible({ timeout: 10_000 })
+    })
+  })
 
   test('starts no tour for a user who takes the blank canvas', async ({
     comfyPage
