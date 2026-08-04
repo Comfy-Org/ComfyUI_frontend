@@ -79,6 +79,8 @@ export const TEAM_BILLING_STATUS = {
   plan_slug: TEAM_PLAN_SLUG,
   billing_status: 'paid',
   has_funds: true,
+  max_seats: 30,
+  occupied_seats: 4,
   renewal_date: '2099-02-20T00:00:00Z',
   team_credit_stop: null
 } satisfies IngestBillingStatusResponse
@@ -88,12 +90,26 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   billing_status: 'inactive',
   has_funds: true,
   is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
   plan_slug: 'standard-monthly',
   subscription_duration: 'MONTHLY',
   subscription_status: 'ended',
   subscription_tier: 'STANDARD',
   team_credit_stop: null
 } satisfies IngestBillingStatusResponse & { billing_rail: 'stripe' }
+
+export const PAYMENT_FAILED_TEAM_BILLING_STATUS = {
+  ...TEAM_BILLING_STATUS,
+  is_active: false,
+  billing_status: 'payment_failed'
+} satisfies IngestBillingStatusResponse
+
+export const PAUSED_TEAM_BILLING_STATUS = {
+  ...TEAM_BILLING_STATUS,
+  is_active: false,
+  billing_status: 'paused'
+} satisfies IngestBillingStatusResponse
 
 export const TEAM_PRO_PLAN: Plan = {
   slug: TEAM_PLAN_SLUG,
