@@ -64,7 +64,6 @@ interface LayoutMutations {
   ): LayoutOperationResult
   moveNode(rootGraphId: UUID, nodeId: NodeId, position: Point): void
   resizeNode(rootGraphId: UUID, nodeId: NodeId, size: Size): void
-  setActor(actor: string): void
   setNodeZIndex(rootGraphId: UUID, nodeId: NodeId, zIndex: number): void
   setSource(source: LayoutSource): void
 }
@@ -78,13 +77,6 @@ export function useLayoutMutations(): LayoutMutations {
    */
   const setSource = (source: LayoutSource): void => {
     layoutStore.setSource(source)
-  }
-
-  /**
-   * Set the current actor (for CRDT)
-   */
-  const setActor = (actor: string): void => {
-    layoutStore.setActor(actor)
   }
 
   /**
@@ -309,7 +301,6 @@ export function useLayoutMutations(): LayoutMutations {
 
   return {
     setSource,
-    setActor,
     moveNode,
     batchMoveNodes,
     resizeNode,

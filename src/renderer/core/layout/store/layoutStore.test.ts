@@ -1233,7 +1233,6 @@ describe('layoutStore CRDT operations', () => {
 
     // Set source and actor
     layoutStore.setSource(LayoutSource.Vue)
-    layoutStore.setActor('user-123')
 
     // Track change notifications AFTER setting source/actor
     const changes: LayoutChange[] = []
@@ -1260,7 +1259,7 @@ describe('layoutStore CRDT operations', () => {
 
     const lastChange = changes[changes.length - 1]
     expect(lastChange.source).toBe('vue')
-    expect(lastChange.operation.actor).toBe('user-123')
+    expect(lastChange.operation.actor).toBe(layoutStore.getCurrentActor())
 
     unsubscribe()
   })

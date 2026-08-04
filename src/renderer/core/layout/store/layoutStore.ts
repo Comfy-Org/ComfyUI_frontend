@@ -1045,13 +1045,6 @@ class LayoutStore {
   }
 
   /**
-   * Set the current actor (for CRDT)
-   */
-  setActor(actor: string): void {
-    this.currentActor = actor
-  }
-
-  /**
    * Get the current operation source
    */
   getCurrentSource(): LayoutSource {
