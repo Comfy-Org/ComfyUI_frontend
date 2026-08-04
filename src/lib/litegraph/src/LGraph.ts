@@ -495,11 +495,13 @@ export class LGraph
   /**
    * Removes all nodes from this graph
    */
-  clear(): void {
+  clear(): LayoutOperationResult {
     this.stop()
     this.status = LGraph.STATUS_STOPPED
 
     const graphId = this.id
+    const layoutResult = unregisterAllGraphLayout(this)
+    if (layoutResult === 'rejected') return 'rejected'
     if (this.isRootGraph && graphId !== zeroUuid) {
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
@@ -511,11 +513,6 @@ export class LGraph
       unregisterAllLinkTopologies(this)
       unregisterAllNodeStates(this)
     }
-
-    // Layout entries carry per-entity ownership, so a graph drops only the
-    // ones it registered — a bulk wipe would take another actor's too.
-    unregisterAllGraphLayout(this)
-
     unregisterAllRerouteChains(this)
     if (this.isRootGraph) {
       for (const subgraph of this._subgraphs.values()) {
@@ -600,6 +597,7 @@ export class LGraph
     this.change()
 
     this.canvasAction((c) => c.clear())
+    return layoutResult
   }
 
   get subgraphs(): Map<SubgraphId, Subgraph> {
@@ -1240,8 +1238,8 @@ export class LGraph
       const index = this._groups.indexOf(node)
       if (index === -1) return
 
+      if (unregisterGroupLayout(this, node) === 'rejected') return
       this.canvasAction((c) => c.deselect(node))
-      unregisterGroupLayout(this, node)
       this._groups.splice(index, 1)
       node.graph = undefined
       this.incrementVersion()
@@ -1260,6 +1258,7 @@ export class LGraph
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }
+    if (unregisterNodeLayout(this, node) === 'rejected') return
 
     // sure? - almost sure is wrong
     this.beforeChange()
@@ -1307,7 +1306,6 @@ export class LGraph
     node.onRemoved?.()
 
     unregisterNodeState(node)
-    unregisterNodeLayout(this, node)
 
     node.graph = null
     this.incrementVersion()
@@ -1706,7 +1704,7 @@ export class LGraph
   _removeReroute(id: RerouteId): void {
     const reroute = this.reroutesInternal.get(id)
     if (!reroute) return
-    unregisterRerouteLayout(this, reroute)
+    if (unregisterRerouteLayout(this, reroute) === 'rejected') return
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
   }
@@ -1800,7 +1798,7 @@ export class LGraph
     const reroute = reroutes.get(id)
     if (!reroute) return
 
-    unregisterRerouteLayout(this, reroute)
+    if (unregisterRerouteLayout(this, reroute) === 'rejected') return
     this.canvasAction((c) => c.deselect(reroute))
 
     // Extract reroute from the reroute chain
@@ -2723,8 +2721,10 @@ export class LGraph
 
       // TODO: Finish typing configure()
       if (!data) return
-      if (options.clearGraph) this.clear()
-      else unregisterAllGraphLayout(this)
+      const layoutResult = options.clearGraph
+        ? this.clear()
+        : unregisterAllGraphLayout(this)
+      if (layoutResult === 'rejected') return
 
       this._configureBase(data)
 

@@ -27,12 +27,16 @@ export function registerNodeLayout(graph: LGraph, node: LGraphNode): void {
   node._geometryVersion = layoutStore.geometryVersion
 }
 
-export function unregisterNodeLayout(graph: LGraph, node: LGraphNode): void {
-  if (!node._layoutRegistered) return
+export function unregisterNodeLayout(
+  graph: LGraph,
+  node: LGraphNode
+): LayoutOperationResult {
+  if (!node._layoutRegistered) return 'no-op'
 
   layoutStore.readNodeRect(graph.rootGraph.id, node.id, node._posSize)
-  node._layoutRegistered = false
-  canvasLayoutMutations().deleteNode(graph.rootGraph.id, node.id)
+  const result = canvasLayoutMutations().deleteNode(graph.rootGraph.id, node.id)
+  if (result !== 'rejected') node._layoutRegistered = false
+  return result
 }
 
 export function registerGroupLayout(
@@ -57,17 +61,18 @@ export function unregisterGroupLayout(
   graph: Pick<LGraph, 'rootGraph'>,
   group: LGraphGroup,
   registrationId?: string
-): void {
+): LayoutOperationResult {
   const resolvedRegistrationId =
     registrationId ?? groupRegistrationIds.get(group)
-  if (resolvedRegistrationId === undefined) return
+  if (resolvedRegistrationId === undefined) return 'no-op'
 
-  canvasLayoutMutations().deleteGroup(
+  const result = canvasLayoutMutations().deleteGroup(
     graph.rootGraph.id,
     group.id,
     resolvedRegistrationId
   )
-  groupRegistrationIds.delete(group)
+  if (result !== 'rejected') groupRegistrationIds.delete(group)
+  return result
 }
 
 export function registerRerouteLayout(
@@ -90,43 +95,63 @@ export function unregisterRerouteLayout(
   graph: Pick<LGraph, 'rootGraph'>,
   reroute: Reroute,
   registrationId?: string
-): void {
+): LayoutOperationResult {
   const resolvedRegistrationId =
     registrationId ?? rerouteRegistrationIds.get(reroute)
-  if (resolvedRegistrationId === undefined) return
+  if (resolvedRegistrationId === undefined) return 'no-op'
 
-  canvasLayoutMutations().deleteReroute(
+  const result = canvasLayoutMutations().deleteReroute(
     graph.rootGraph.id,
     reroute.id,
     resolvedRegistrationId
   )
-  rerouteRegistrationIds.delete(reroute)
+  if (result !== 'rejected') rerouteRegistrationIds.delete(reroute)
+  return result
 }
 
 /**
  * Remove graph and subgraph layouts alongside node state, before clearing
  * entity containers.
  */
-export function unregisterAllGraphLayout(graph: LGraph): void {
-  // LGraph construction clears before a subgraph has a rootGraph.
-  if (!graph.rootGraph) return
+export function unregisterAllGraphLayout(graph: LGraph): LayoutOperationResult {
+  let result: LayoutOperationResult = 'no-op'
 
-  function unregisterEntities(target: LGraph) {
+  // LGraph construction clears before a subgraph has a rootGraph.
+  if (!graph.rootGraph) return result
+
+  function unregisterEntities(target: LGraph): LayoutOperationResult {
+    let targetResult: LayoutOperationResult = 'no-op'
+
     for (const node of target._nodes) {
-      unregisterNodeLayout(target, node)
+      const nodeResult = unregisterNodeLayout(target, node)
+      if (nodeResult === 'rejected') return 'rejected'
+      if (nodeResult === 'applied') targetResult = 'applied'
     }
     for (const group of target._groups) {
-      unregisterGroupLayout(target, group)
+      const groupResult = unregisterGroupLayout(target, group)
+      if (groupResult === 'rejected') return 'rejected'
+      if (groupResult === 'applied') targetResult = 'applied'
     }
     for (const reroute of target.reroutes.values()) {
-      unregisterRerouteLayout(target, reroute)
+      const rerouteResult = unregisterRerouteLayout(target, reroute)
+      if (rerouteResult === 'rejected') return 'rejected'
+      if (rerouteResult === 'applied') targetResult = 'applied'
+    }
+
+    return targetResult
+  }
+
+  const graphResult = unregisterEntities(graph)
+  if (graphResult === 'rejected') return 'rejected'
+  if (graphResult === 'applied') result = 'applied'
+
+  if (graph.isRootGraph) {
+    for (const subgraph of graph._subgraphs.values()) {
+      const subgraphResult = unregisterEntities(subgraph)
+      if (subgraphResult === 'rejected') return 'rejected'
+      if (subgraphResult === 'applied') result = 'applied'
     }
   }
 
-  unregisterEntities(graph)
-  if (graph.isRootGraph) {
-    for (const subgraph of graph._subgraphs.values()) {
-      unregisterEntities(subgraph)
-    }
-  }
+  return result
 }

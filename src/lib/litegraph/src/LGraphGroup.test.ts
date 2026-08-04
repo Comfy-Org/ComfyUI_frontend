@@ -206,6 +206,87 @@ describe('group layout in layoutStore', () => {
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
   })
 
+  test('keeps group ownership when reentrant unregister is rejected', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(807))
+    const ydoc = layoutStore.getYDoc()
+    function attemptRemove(): void {
+      ydoc.off('beforeTransaction', attemptRemove)
+      graph.remove(group)
+    }
+    ydoc.on('beforeTransaction', attemptRemove)
+
+    group.pos = [200, 250]
+
+    expect(graph.groups).toContain(group)
+    expect(group.graph).toBe(graph)
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 200, y: 250 },
+      size: { width: 300, height: 200 }
+    })
+  })
+
+  test('keeps node layout registration when reentrant clear is rejected', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    graph.add(node)
+    const group = addedGroup(graph, toGroupId(808))
+    const ydoc = layoutStore.getYDoc()
+    function attemptClear(): void {
+      ydoc.off('beforeTransaction', attemptClear)
+      graph.clear()
+    }
+    ydoc.on('beforeTransaction', attemptClear)
+
+    group.pos = [200, 250]
+
+    expect(node._layoutRegistered).toBe(true)
+    expect(graph.nodes).toContain(node)
+    expect(graph.groups).toContain(group)
+    expect(group.graph).toBe(graph)
+  })
+
+  test('keeps node ownership when reentrant removal is rejected', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    graph.add(node)
+    const group = addedGroup(graph, toGroupId(809))
+    const ydoc = layoutStore.getYDoc()
+    function attemptRemove(): void {
+      ydoc.off('beforeTransaction', attemptRemove)
+      graph.remove(node)
+    }
+    ydoc.on('beforeTransaction', attemptRemove)
+
+    group.pos = [200, 250]
+
+    expect(node._layoutRegistered).toBe(true)
+    expect(node.graph).toBe(graph)
+    expect(graph.nodes).toContain(node)
+  })
+
+  test('aborts reentrant configure when layout teardown is rejected', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    graph.add(node)
+    const group = addedGroup(graph, toGroupId(810))
+    const data = graph.asSerialisable()
+    const ydoc = layoutStore.getYDoc()
+    function attemptConfigure(): void {
+      ydoc.off('beforeTransaction', attemptConfigure)
+      graph.configure(data)
+    }
+    ydoc.on('beforeTransaction', attemptConfigure)
+
+    group.pos = [200, 250]
+
+    expect(graph.nodes).toEqual([node])
+    expect(graph.groups).toEqual([group])
+    expect(node.graph).toBe(graph)
+    expect(group.graph).toBe(graph)
+  })
+
   test('clear detaches groups so another graph can adopt them', () => {
     const firstGraph = new LGraph()
     const secondGraph = new LGraph()

@@ -49,13 +49,13 @@ interface LayoutMutations {
     rootGraphId: UUID,
     groupId: GroupId,
     registrationId?: string
-  ): void
-  deleteNode(rootGraphId: UUID, nodeId: NodeId): void
+  ): LayoutOperationResult
+  deleteNode(rootGraphId: UUID, nodeId: NodeId): LayoutOperationResult
   deleteReroute(
     rootGraphId: UUID,
     rerouteId: RerouteId,
     registrationId?: string
-  ): void
+  ): LayoutOperationResult
   moveNode(rootGraphId: UUID, nodeId: NodeId, position: Point): void
   moveReroute(rootGraphId: UUID, rerouteId: RerouteId, position: Point): void
   resizeNode(rootGraphId: UUID, nodeId: NodeId, size: Size): void
@@ -217,11 +217,14 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Delete a node
    */
-  const deleteNode = (rootGraphId: UUID, nodeId: NodeId): void => {
+  const deleteNode = (
+    rootGraphId: UUID,
+    nodeId: NodeId
+  ): LayoutOperationResult => {
     const existing = layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
-    if (!existing) return
+    if (!existing) return 'no-op'
 
-    layoutStore.applyOperation({
+    return layoutStore.applyOperation({
       type: 'deleteNode',
       entity: 'node',
       graphId: rootGraphId,
@@ -307,10 +310,10 @@ export function useLayoutMutations(): LayoutMutations {
     rootGraphId: UUID,
     groupId: GroupId,
     registrationId?: string
-  ): void => {
-    if (!layoutStore.getGroupLayout(rootGraphId, groupId)) return
+  ): LayoutOperationResult => {
+    if (!layoutStore.getGroupLayout(rootGraphId, groupId)) return 'no-op'
 
-    layoutStore.applyOperation({
+    return layoutStore.applyOperation({
       type: 'deleteGroup',
       entity: 'group',
       graphId: rootGraphId,
@@ -329,11 +332,11 @@ export function useLayoutMutations(): LayoutMutations {
     rootGraphId: UUID,
     rerouteId: RerouteId,
     registrationId?: string
-  ): void => {
-    if (!layoutStore.getRerouteLayout(rootGraphId, rerouteId)) return
+  ): LayoutOperationResult => {
+    if (!layoutStore.getRerouteLayout(rootGraphId, rerouteId)) return 'no-op'
 
     logger.debug('Deleting reroute:', rerouteId)
-    layoutStore.applyOperation({
+    return layoutStore.applyOperation({
       type: 'deleteReroute',
       entity: 'reroute',
       graphId: rootGraphId,

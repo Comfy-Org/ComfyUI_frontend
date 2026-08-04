@@ -860,6 +860,26 @@ describe('Reroute position lives only in layoutStore', () => {
     ).toBeNull()
   })
 
+  it('keeps reroute ownership when reentrant unregister is rejected', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 20], link)!
+    const ydoc = layoutStore.getYDoc()
+    function attemptRemove(): void {
+      ydoc.off('beforeTransaction', attemptRemove)
+      graph.removeReroute(reroute.id)
+    }
+    ydoc.on('beforeTransaction', attemptRemove)
+
+    reroute.pos = [30, 40]
+
+    expect(graph.reroutes.get(reroute.id)).toBe(reroute)
+    expect(reroute._attachedGraph?.deref()).toBe(graph)
+    expect(link.parentId).toBe(reroute.id)
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 30, y: 40 })
+  })
+
   it('retains subgraph reroute ownership when clear layout deletion throws', () => {
     const root = new LGraph()
     const subgraph = createTestSubgraph({ rootGraph: root })
