@@ -749,6 +749,20 @@ export default defineConfig({
     fakeTimers: { now: TEST_SYSTEM_TIME, shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          // Stop happy-dom fetching real subresources. An <iframe src> or
+          // <link rel=stylesheet> pointing at a remote host issues a request
+          // that outlives the test; happy-dom aborts it during teardown and
+          // the resulting error is reported against whichever file is running
+          // then. Unit tests should never depend on the network.
+          disableIframePageLoading: true,
+          disableCSSFileLoading: true,
+          disableJavaScriptFileLoading: true
+        }
+      }
+    },
     // Pin the timezone so date-formatting assertions are deterministic
     // regardless of the contributor's local timezone (CI runs in UTC).
     env: { TZ: 'UTC' },
