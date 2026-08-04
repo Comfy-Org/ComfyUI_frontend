@@ -7,6 +7,7 @@ import { getProviderName } from '@/utils/categoryUtil'
 
 type NodeDisabledInput = Pick<ComfyNodeDef, 'api_node' | 'category'>
 
+// TODO: Remove isNodeFromPartnerProvider once object_info.disabled is available.
 export function isNodeFromPartnerProvider(
   nodeDef: NodeDisabledInput,
   provider: PartnerProvider
