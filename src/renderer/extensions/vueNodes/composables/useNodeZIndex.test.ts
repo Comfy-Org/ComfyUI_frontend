@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -28,12 +29,12 @@ describe('useNodeZIndex', () => {
       const mockSetSource = vi.fn()
       const mockBringNodeToFront = vi.fn()
 
-      mockedUseLayoutMutations.mockReturnValue({
-        setSource: mockSetSource,
-        bringNodeToFront: mockBringNodeToFront
-      } as Partial<ReturnType<typeof useLayoutMutations>> as ReturnType<
-        typeof useLayoutMutations
-      >)
+      mockedUseLayoutMutations.mockReturnValue(
+        fromPartial<ReturnType<typeof useLayoutMutations>>({
+          setSource: mockSetSource,
+          bringNodeToFront: mockBringNodeToFront
+        })
+      )
 
       const { bringNodeToFront } = useNodeZIndex()
 
@@ -47,12 +48,12 @@ describe('useNodeZIndex', () => {
       const mockSetSource = vi.fn()
       const mockBringNodeToFront = vi.fn()
 
-      mockedUseLayoutMutations.mockReturnValue({
-        setSource: mockSetSource,
-        bringNodeToFront: mockBringNodeToFront
-      } as Partial<ReturnType<typeof useLayoutMutations>> as ReturnType<
-        typeof useLayoutMutations
-      >)
+      mockedUseLayoutMutations.mockReturnValue(
+        fromPartial<ReturnType<typeof useLayoutMutations>>({
+          setSource: mockSetSource,
+          bringNodeToFront: mockBringNodeToFront
+        })
+      )
 
       const { bringNodeToFront } = useNodeZIndex()
 
@@ -66,12 +67,12 @@ describe('useNodeZIndex', () => {
       const mockSetSource = vi.fn()
       const mockBringNodeToFront = vi.fn()
 
-      mockedUseLayoutMutations.mockReturnValue({
-        setSource: mockSetSource,
-        bringNodeToFront: mockBringNodeToFront
-      } as Partial<ReturnType<typeof useLayoutMutations>> as ReturnType<
-        typeof useLayoutMutations
-      >)
+      mockedUseLayoutMutations.mockReturnValue(
+        fromPartial<ReturnType<typeof useLayoutMutations>>({
+          setSource: mockSetSource,
+          bringNodeToFront: mockBringNodeToFront
+        })
+      )
 
       const { bringNodeToFront } = useNodeZIndex({
         layoutSource: LayoutSource.External
@@ -87,12 +88,12 @@ describe('useNodeZIndex', () => {
       const mockSetSource = vi.fn()
       const mockBringNodeToFront = vi.fn()
 
-      mockedUseLayoutMutations.mockReturnValue({
-        setSource: mockSetSource,
-        bringNodeToFront: mockBringNodeToFront
-      } as Partial<ReturnType<typeof useLayoutMutations>> as ReturnType<
-        typeof useLayoutMutations
-      >)
+      mockedUseLayoutMutations.mockReturnValue(
+        fromPartial<ReturnType<typeof useLayoutMutations>>({
+          setSource: mockSetSource,
+          bringNodeToFront: mockBringNodeToFront
+        })
+      )
 
       const { bringNodeToFront } = useNodeZIndex({
         layoutSource: LayoutSource.External
