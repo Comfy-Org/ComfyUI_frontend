@@ -49,7 +49,10 @@ import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  layoutStore.resetForTests()
+})
 
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
@@ -323,6 +326,7 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     reroutesComplexGraph
   }) => {
     const first = reroutesComplexGraph.asSerialisable()
+    reroutesComplexGraph.clear()
     const second = new LGraph(first).asSerialisable()
 
     const chainedLinks = (first.links ?? []).filter(
@@ -337,7 +341,9 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     expect,
     floatingLinkGraph
   }) => {
-    const first = new LGraph(floatingLinkGraph).asSerialisable()
+    const graph = new LGraph(floatingLinkGraph)
+    const first = graph.asSerialisable()
+    graph.clear()
     const second = new LGraph(first).asSerialisable()
 
     expect(first.floatingLinks?.length).toBeGreaterThan(0)
@@ -364,6 +370,7 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     reroutesComplexGraph
   }) => {
     const first = reroutesComplexGraph.asSerialisable()
+    reroutesComplexGraph.clear()
     const second = new LGraph(first).asSerialisable()
 
     const reroutes = first.reroutes ?? []
@@ -1474,6 +1481,84 @@ describe('Zero UUID handling in configure', () => {
     const subgraph = graph.createSubgraph(subgraphData)
     subgraph.configure(subgraphData)
     expect(subgraph.id).toBe(zeroUuid)
+  })
+})
+
+describe('Subgraph configure events', () => {
+  it('does not apply subgraph data when configuration is canceled', () => {
+    const root = new LGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const originalName = subgraph.name
+    const data = { ...subgraph.asSerialisable(), name: 'Canceled' }
+    subgraph.events.addEventListener('configuring', (event) =>
+      event.preventDefault()
+    )
+
+    subgraph.configure(data)
+
+    expect(subgraph.name).toBe(originalName)
+  })
+
+  it('applies replacement data supplied by configuring listeners', () => {
+    const root = new LGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const replacement = { ...subgraph.asSerialisable(), name: 'Replacement' }
+    subgraph.events.addEventListener('configuring', (event) => {
+      event.detail.data = replacement
+    })
+
+    subgraph.configure({ ...subgraph.asSerialisable(), name: 'Original' })
+
+    expect(subgraph.name).toBe('Replacement')
+  })
+
+  it('keeps reentrant replacement and cancellation data invocation-local', () => {
+    const root = new LGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const appliedDuringOuter: string[] = []
+    subgraph.events.addEventListener('configuring', (event) => {
+      const name =
+        'name' in event.detail.data ? event.detail.data.name : undefined
+      if (name === 'Outer original') {
+        event.detail.data = createTestSubgraphData({
+          ...subgraph.asSerialisable(),
+          name: 'Outer replacement'
+        })
+      } else if (name === 'Inner original') {
+        event.detail.data = createTestSubgraphData({
+          ...subgraph.asSerialisable(),
+          name: 'Inner replacement'
+        })
+      } else if (name === 'Canceled original') {
+        event.preventDefault()
+      }
+    })
+    let reentered = false
+    subgraph.events.addEventListener('configured', () => {
+      if (reentered) return
+      reentered = true
+      subgraph.configure({
+        ...subgraph.asSerialisable(),
+        name: 'Inner original'
+      })
+      appliedDuringOuter.push(subgraph.name)
+      subgraph.configure({
+        ...subgraph.asSerialisable(),
+        name: 'Canceled original'
+      })
+      appliedDuringOuter.push(subgraph.name)
+    })
+
+    subgraph.configure({
+      ...subgraph.asSerialisable(),
+      name: 'Outer original'
+    })
+
+    expect(appliedDuringOuter).toEqual([
+      'Inner replacement',
+      'Inner replacement'
+    ])
+    expect(subgraph.name).toBe('Outer replacement')
   })
 })
 

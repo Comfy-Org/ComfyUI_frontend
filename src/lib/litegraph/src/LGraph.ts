@@ -9,13 +9,16 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import {
-  canvasLayoutMutations,
   registerGroupLayout,
   registerNodeLayout,
+  registerRerouteLayout,
   unregisterAllGraphLayout,
-  unregisterNodeLayout
+  unregisterGroupLayout,
+  unregisterNodeLayout,
+  unregisterRerouteLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { LayoutOperationResult } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
@@ -501,19 +504,37 @@ export class LGraph
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(graphId)
-      useRerouteStore().clearGraph(graphId)
       useNodeDataStore().clearGraph(graphId)
-      layoutStore.clearGraph(graphId)
     } else {
       // Subgraphs and unconfigured (zero-uuid) graphs share their store
       // bucket with other graphs, so unregister each entity individually.
       unregisterAllLinkTopologies(this)
-      unregisterAllRerouteChains(this)
       unregisterAllNodeStates(this)
-      unregisterAllGraphLayout(this)
     }
 
-    this.id = zeroUuid
+    // Layout entries carry per-entity ownership, so a graph drops only the
+    // ones it registered — a bulk wipe would take another actor's too.
+    unregisterAllGraphLayout(this)
+
+    unregisterAllRerouteChains(this)
+    if (this.isRootGraph) {
+      for (const subgraph of this._subgraphs.values()) {
+        unregisterAllRerouteChains(subgraph)
+      }
+    }
+    const pendingGraphs: LGraph[] = [this]
+    const detachedGraphs = new Set<LGraph>()
+    for (const graph of pendingGraphs) {
+      if (detachedGraphs.has(graph)) continue
+      detachedGraphs.add(graph)
+      if (this.isRootGraph) pendingGraphs.push(...graph._subgraphs.values())
+      for (const group of graph._groups) {
+        if (group.graph === graph) group.graph = undefined
+      }
+      graph._groups = []
+    }
+
+    this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
     this.state = {
@@ -1059,6 +1080,13 @@ export class LGraph
   ): LGraphNode | null | undefined {
     if (!node) return
 
+    if (node instanceof LGraphGroup) {
+      if (node.graph === this && this._groups.includes(node)) return
+      if (node.graph && node.graph !== this) {
+        throw new Error(`Group ${node.id} already belongs to another graph`)
+      }
+    }
+
     // Handle backwards compatibility: 2nd arg can be boolean or options
     const opts: GraphAddOptions =
       typeof skipComputeOrderOrOptions === 'object'
@@ -1077,16 +1105,48 @@ export class LGraph
     // LEGACY: This was changed from constructor === LGraphGroup
     // groups
     if (node instanceof LGraphGroup) {
+      const originalId = node.id
+      const originalLastGroupId = state.lastGroupId
+
       // Assign group ID
       if (node.id == null || node.id === -1)
         node.id = toGroupId(++state.lastGroupId)
+      const idIsLive = [this.rootGraph, ...this.subgraphs.values()].some(
+        (graph) => graph._groups.some((group) => group.id === node.id)
+      )
+      if (idIsLive) {
+        node.id = toGroupId(++state.lastGroupId)
+      }
       if (node.id > state.lastGroupId) state.lastGroupId = node.id
+      const previousLayout = layoutStore.getGroupLayout(
+        this.rootGraph.id,
+        node.id
+      )
+      if (previousLayout) {
+        node.id = originalId
+        state.lastGroupId = originalLastGroupId
+        throw new Error(`Group layout ${previousLayout.id} is already owned`)
+      }
 
+      const registrationId = createUuidv4()
+      let registrationResult: LayoutOperationResult
+      try {
+        registrationResult = registerGroupLayout(this, node, registrationId)
+      } catch (error) {
+        unregisterGroupLayout(this, node, registrationId)
+        node.id = originalId
+        state.lastGroupId = originalLastGroupId
+        throw error
+      }
+      if (registrationResult !== 'applied') {
+        node.id = originalId
+        state.lastGroupId = originalLastGroupId
+        throw new Error(`Group layout registration ${registrationResult}`)
+      }
       this._groups.push(node)
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
-      registerGroupLayout(this, node)
       this.incrementVersion()
       return
     }
@@ -1177,13 +1237,12 @@ export class LGraph
   remove(node: LGraphNode | LGraphGroup): void {
     // LEGACY: This was changed from constructor === LiteGraph.LGraphGroup
     if (node instanceof LGraphGroup) {
-      this.canvasAction((c) => c.deselect(node))
-
       const index = this._groups.indexOf(node)
-      if (index != -1) {
-        this._groups.splice(index, 1)
-      }
-      canvasLayoutMutations().deleteGroup(this.rootGraph.id, node.id)
+      if (index === -1) return
+
+      this.canvasAction((c) => c.deselect(node))
+      unregisterGroupLayout(this, node)
+      this._groups.splice(index, 1)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)
@@ -1598,8 +1657,45 @@ export class LGraph
    * store from silently desyncing.
    */
   _addReroute(reroute: Reroute): void {
-    this.reroutesInternal.set(reroute.id, reroute)
+    if (reroute.network.deref() !== this) {
+      throw new Error(
+        `Reroute ${reroute.id} may only attach to its constructor graph`
+      )
+    }
+    const attachedGraph = reroute._attachedGraph?.deref()
+    if (attachedGraph && attachedGraph !== this) {
+      throw new Error(
+        `Reroute ${reroute.id} is already attached to another graph`
+      )
+    }
+    const existing = this.reroutesInternal.get(reroute.id)
+    if (existing && existing !== reroute) {
+      throw new Error(`Reroute ${reroute.id} is already owned by this graph`)
+    }
+    if (existing) return
+
+    const position = { x: reroute.pos[0], y: reroute.pos[1] }
     registerRerouteChain(this, reroute)
+    const registrationId = createUuidv4()
+    let registrationResult: LayoutOperationResult
+    try {
+      registrationResult = registerRerouteLayout(
+        this,
+        reroute,
+        position,
+        registrationId
+      )
+    } catch (error) {
+      unregisterRerouteLayout(this, reroute, registrationId)
+      unregisterRerouteChain(reroute)
+      throw error
+    }
+    if (registrationResult !== 'applied') {
+      unregisterRerouteChain(reroute)
+      throw new Error(`Reroute layout registration ${registrationResult}`)
+    }
+    this.reroutesInternal.set(reroute.id, reroute)
+    reroute._attachedGraph = new WeakRef(this)
   }
 
   /**
@@ -1610,9 +1706,9 @@ export class LGraph
   _removeReroute(id: RerouteId): void {
     const reroute = this.reroutesInternal.get(id)
     if (!reroute) return
+    unregisterRerouteLayout(this, reroute)
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
-    canvasLayoutMutations().deleteReroute(this.rootGraph.id, id)
   }
 
   /**
@@ -1626,6 +1722,7 @@ export class LGraph
     pos,
     floating
   }: OptionalProps<SerialisableReroute, 'id'>): Reroute {
+    const originalLastRerouteId = this.state.lastRerouteId
     const rerouteId =
       id === undefined
         ? toRerouteId(Number(this.state.lastRerouteId) + 1)
@@ -1640,7 +1737,12 @@ export class LGraph
       parentId === undefined ? undefined : toRerouteId(parentId)
     if (pos && existingReroute) reroute.pos = pos
     reroute.floating = floating
-    this._addReroute(reroute)
+    try {
+      this._addReroute(reroute)
+    } catch (error) {
+      this.state.lastRerouteId = originalLastRerouteId
+      throw error
+    }
     return reroute
   }
 
@@ -1655,7 +1757,8 @@ export class LGraph
     if (!(before instanceof LLink) && !(before instanceof Reroute)) {
       return
     }
-    const rerouteId = toRerouteId(Number(this.state.lastRerouteId) + 1)
+    const originalLastRerouteId = this.state.lastRerouteId
+    const rerouteId = toRerouteId(Number(originalLastRerouteId) + 1)
     this.state.lastRerouteId = rerouteId
     const chainLinks =
       before instanceof Reroute
@@ -1667,7 +1770,12 @@ export class LGraph
           ]
         : [before]
     const reroute = new Reroute(rerouteId, this, pos, before.parentId)
-    this._addReroute(reroute)
+    try {
+      this._addReroute(reroute)
+    } catch (error) {
+      this.state.lastRerouteId = originalLastRerouteId
+      throw error
+    }
 
     // Splice the new reroute into every chain that contained `before`
     for (const link of chainLinks) {
@@ -1692,6 +1800,7 @@ export class LGraph
     const reroute = reroutes.get(id)
     if (!reroute) return
 
+    unregisterRerouteLayout(this, reroute)
     this.canvasAction((c) => c.deselect(reroute))
 
     // Extract reroute from the reroute chain
@@ -2511,6 +2620,10 @@ export class LGraph
     delete this.extra.linkExtensions
   }
 
+  protected _configureAdditionalData(
+    _data: ISerialisedGraph | SerialisableGraph
+  ): void {}
+
   /**
    * Configure a graph from a JSON string
    * @param data The deserialised object to configure this graph from
@@ -2527,8 +2640,87 @@ export class LGraph
     }
     const mayContinue = this.events.dispatch('configuring', options)
     if (!mayContinue) return
-
+    let configured = false
     try {
+      data = options.data
+      const keepsOldState = !options.clearGraph
+
+      const serializedRootId =
+        data.id && data.id !== zeroUuid ? data.id : undefined
+      const retainsRootState =
+        this._nodes.length > 0 ||
+        this._groups.length > 0 ||
+        this._links.size > 0 ||
+        this.reroutes.size > 0 ||
+        this._subgraphs.size > 0
+      if (
+        keepsOldState &&
+        this.isRootGraph &&
+        serializedRootId &&
+        serializedRootId !== this.id &&
+        retainsRootState
+      ) {
+        throw new Error(
+          'Cannot change a populated root graph identity while keeping old state'
+        )
+      }
+      const targetGraphId = this.isRootGraph
+        ? (serializedRootId ?? (keepsOldState ? this.id : undefined))
+        : this.rootGraph.id
+      const graphs = [
+        {
+          graph: this,
+          reroutes: data.version === 0.4 ? data.extra?.reroutes : data.reroutes
+        },
+        ...(data.definitions?.subgraphs ?? []).map((subgraph) => ({
+          graph: this.subgraphs.get(subgraph.id),
+          reroutes: subgraph.reroutes
+        }))
+      ]
+      const incomingRerouteIds = new Set<RerouteId>()
+      for (const { reroutes } of graphs) {
+        for (const { id } of reroutes ?? []) {
+          const rerouteId = toRerouteId(id)
+          if (incomingRerouteIds.has(rerouteId)) {
+            throw new Error(
+              `Reroute ${rerouteId} appears more than once in the configuration`
+            )
+          }
+          incomingRerouteIds.add(rerouteId)
+        }
+      }
+
+      if (targetGraphId && targetGraphId !== zeroUuid) {
+        const store = useRerouteStore()
+        const replaceableOwners = keepsOldState
+          ? undefined
+          : new Set(
+              [
+                this,
+                ...(this.isRootGraph ? this.subgraphs.values() : [])
+              ].flatMap((graph) =>
+                [...graph.reroutes.values()].map((reroute) =>
+                  toRaw(reroute._chain)
+                )
+              )
+            )
+        for (const { graph, reroutes } of graphs) {
+          for (const { id } of reroutes ?? []) {
+            const rerouteId = toRerouteId(id)
+            const owner = store.getReroute(targetGraphId, rerouteId)
+            if (
+              owner &&
+              owner !== graph?.reroutes.get(rerouteId)?._chain &&
+              !replaceableOwners?.has(toRaw(owner))
+            ) {
+              throw new Error(
+                `Reroute ${rerouteId} is already owned in root graph ${targetGraphId}`
+              )
+            }
+          }
+        }
+      }
+
       // TODO: Finish typing configure()
       if (!data) return
       if (options.clearGraph) this.clear()
@@ -2787,9 +2979,11 @@ export class LGraph
       }
 
       this.setDirtyCanvas(true, true)
+      configured = true
       return error
     } finally {
       this.events.dispatch('configured')
+      if (configured) this._configureAdditionalData(data)
     }
   }
 
@@ -2945,16 +3139,21 @@ export class Subgraph
     for (const node of this.nodes) node.updateComputedDisabled()
   }
 
+  protected override _configureAdditionalData(
+    data:
+      | (ISerialisedGraph & ExportedSubgraph)
+      | (SerialisableGraph & ExportedSubgraph)
+  ): void {
+    this._configureSubgraph(data)
+  }
+
   override configure(
     data:
       | (ISerialisedGraph & ExportedSubgraph)
       | (SerialisableGraph & ExportedSubgraph),
     keep_old?: boolean
   ): boolean | undefined {
-    const r = super.configure(data, keep_old)
-
-    this._configureSubgraph(data)
-    return r
+    return super.configure(data, keep_old)
   }
 
   /**

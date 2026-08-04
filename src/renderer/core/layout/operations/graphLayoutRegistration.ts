@@ -1,9 +1,14 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutOperationResult, Point } from '@/renderer/core/layout/types'
+
+const groupRegistrationIds = new WeakMap<LGraphGroup, string>()
+const rerouteRegistrationIds = new WeakMap<Reroute, string>()
 
 export function canvasLayoutMutations() {
   const mutations = useLayoutMutations()
@@ -30,11 +35,72 @@ export function unregisterNodeLayout(graph: LGraph, node: LGraphNode): void {
   canvasLayoutMutations().deleteNode(graph.rootGraph.id, node.id)
 }
 
-export function registerGroupLayout(graph: LGraph, group: LGraphGroup): void {
-  canvasLayoutMutations().createGroup(graph.rootGraph.id, group.id, {
-    position: { x: group.pos[0], y: group.pos[1] },
-    size: { width: group.size[0], height: group.size[1] }
-  })
+export function registerGroupLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  group: LGraphGroup,
+  registrationId: string
+): LayoutOperationResult {
+  const result = canvasLayoutMutations().createGroup(
+    graph.rootGraph.id,
+    group.id,
+    {
+      position: { x: group.pos[0], y: group.pos[1] },
+      size: { width: group.size[0], height: group.size[1] }
+    },
+    registrationId
+  )
+  if (result === 'applied') groupRegistrationIds.set(group, registrationId)
+  return result
+}
+
+export function unregisterGroupLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  group: LGraphGroup,
+  registrationId?: string
+): void {
+  const resolvedRegistrationId =
+    registrationId ?? groupRegistrationIds.get(group)
+  if (resolvedRegistrationId === undefined) return
+
+  canvasLayoutMutations().deleteGroup(
+    graph.rootGraph.id,
+    group.id,
+    resolvedRegistrationId
+  )
+  groupRegistrationIds.delete(group)
+}
+
+export function registerRerouteLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  reroute: Reroute,
+  position: Point,
+  registrationId: string
+): LayoutOperationResult {
+  const result = canvasLayoutMutations().createReroute(
+    graph.rootGraph.id,
+    reroute.id,
+    position,
+    registrationId
+  )
+  if (result === 'applied') rerouteRegistrationIds.set(reroute, registrationId)
+  return result
+}
+
+export function unregisterRerouteLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  reroute: Reroute,
+  registrationId?: string
+): void {
+  const resolvedRegistrationId =
+    registrationId ?? rerouteRegistrationIds.get(reroute)
+  if (resolvedRegistrationId === undefined) return
+
+  canvasLayoutMutations().deleteReroute(
+    graph.rootGraph.id,
+    reroute.id,
+    resolvedRegistrationId
+  )
+  rerouteRegistrationIds.delete(reroute)
 }
 
 /**
@@ -45,18 +111,15 @@ export function unregisterAllGraphLayout(graph: LGraph): void {
   // LGraph construction clears before a subgraph has a rootGraph.
   if (!graph.rootGraph) return
 
-  const rootGraphId = graph.rootGraph.id
-  const mutations = canvasLayoutMutations()
-
   function unregisterEntities(target: LGraph) {
     for (const node of target._nodes) {
       unregisterNodeLayout(target, node)
     }
     for (const group of target._groups) {
-      mutations.deleteGroup(rootGraphId, group.id)
+      unregisterGroupLayout(target, group)
     }
-    for (const rerouteId of target.reroutes.keys()) {
-      mutations.deleteReroute(rootGraphId, rerouteId)
+    for (const reroute of target.reroutes.values()) {
+      unregisterRerouteLayout(target, reroute)
     }
   }
 

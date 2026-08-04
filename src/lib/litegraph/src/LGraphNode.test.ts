@@ -794,6 +794,7 @@ describe('LGraphNode', () => {
 describe('snapToGrid', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    layoutStore.resetForTests()
   })
 
   afterEach(() => {

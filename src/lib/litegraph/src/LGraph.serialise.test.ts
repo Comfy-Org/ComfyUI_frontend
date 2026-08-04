@@ -30,6 +30,7 @@ describe('LGraph Serialisation', () => {
     expect(minimalGraph.groups[0].title).toEqual(groupTitle)
 
     const serialised = JSON.stringify(minimalGraph.serialize())
+    minimalGraph.clear()
     const deserialised = JSON.parse(serialised) as ISerialisedGraph
 
     const copied = new LGraph(deserialised)

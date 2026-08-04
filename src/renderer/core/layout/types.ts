@@ -121,6 +121,8 @@ interface OperationMeta {
   type: OperationType
 }
 
+export type LayoutOperationResult = 'applied' | 'no-op' | 'rejected'
+
 /**
  * Entity-specific base types for proper type discrimination
  */
@@ -212,6 +214,7 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
 export interface CreateRerouteOperation extends RerouteOpBase {
   type: 'createReroute'
   position: Point
+  registrationId?: string
 }
 
 /**
@@ -219,6 +222,7 @@ export interface CreateRerouteOperation extends RerouteOpBase {
  */
 export interface DeleteRerouteOperation extends RerouteOpBase {
   type: 'deleteReroute'
+  registrationId?: string
 }
 
 /**
@@ -237,6 +241,7 @@ type GroupOpBase = OperationMeta & {
 interface CreateGroupOperation extends GroupOpBase {
   type: 'createGroup'
   layout: GroupLayout
+  registrationId?: string
 }
 
 /**
@@ -251,6 +256,7 @@ export interface SetGroupBoundsOperation extends GroupOpBase {
 
 interface DeleteGroupOperation extends GroupOpBase {
   type: 'deleteGroup'
+  registrationId?: string
 }
 
 interface ClearGraphOperation extends OperationMeta {

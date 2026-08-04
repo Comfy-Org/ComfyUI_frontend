@@ -72,10 +72,9 @@ describe('useRerouteStore', () => {
     const owner = store.registerReroute(graphA, chain(1))
 
     expect(store.registerReroute(graphA, owner)).toBe(owner)
-    expect(warn).not.toHaveBeenCalled()
 
     const usurper = chain(1, 7)
-    expect(store.registerReroute(graphA, usurper)).toBe(usurper)
+    expect(store.registerReroute(graphA, usurper)).toBe(owner)
     expect(warn).toHaveBeenCalledOnce()
 
     expect(store.deleteReroute(graphA, usurper)).toBe(false)

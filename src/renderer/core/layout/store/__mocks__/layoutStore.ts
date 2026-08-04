@@ -6,7 +6,7 @@ import type { layoutStore as RealLayoutStore } from '../layoutStore'
 /** Inert layout store for tests that exercise canvas behavior. */
 export const layoutStore = fromPartial<typeof RealLayoutStore>({
   allocateZIndex: vi.fn(() => 1),
-  applyOperation: vi.fn(),
+  applyOperation: vi.fn(() => 'applied'),
   batchUpdateNodeBounds: vi.fn(),
   clearGraph: vi.fn(),
   clearViewGeometry: vi.fn(),
