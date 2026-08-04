@@ -1254,6 +1254,15 @@ const translations = {
     'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
   },
   'pricing.badge.popular': { en: 'MOST POPULAR', 'zh-CN': '最受欢迎' },
+  'pricing.freeTrial.title': {
+    en: "Start free. Upgrade when you're ready.",
+    'zh-CN': '免费开始，随时升级。'
+  },
+  'pricing.freeTrial.description': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '5 次真实 GPU 免费运行——无需信用卡。'
+  },
+  'pricing.freeTrial.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'pricing.period.monthly': { en: 'Monthly', 'zh-CN': '按月' },
   'pricing.period.yearly': {
     en: 'Yearly (Up to 20% off)',
