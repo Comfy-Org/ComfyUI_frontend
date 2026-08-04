@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "نسيت كلمة المرور",
   "cloudHero": {
     "nextSlide": "الشريحة التالية",
-    "previousSlide": "الشريحة السابقة",
-    "slidePagerLabel": "انتقل إلى الشريحة {index}",
-    "slides": {
-      "cloud": {
-        "description": "الأفضل لمعظم المستخدمين الذين يرغبون في العمل من أي مكان مع نماذج تم التحقق من تراخيصها التجارية.",
-        "title": "السحابة"
-      },
-      "models": {
-        "description": "نماذج مختارة ومرخصة تجاريًا جاهزة للتشغيل دون أي إعداد.",
-        "title": "النماذج"
-      },
-      "team": {
-        "description": "قم بإضافة فريقك اليوم. شارك سير العمل والموارد عبر مؤسستك.",
-        "title": "الفريق"
-      },
-      "workflows": {
-        "description": "من الفكرة إلى الناتج في دقائق. أنشئ عدة تنويعات جنبًا إلى جنب.",
-        "title": "سير العمل"
-      }
-    }
+    "previousSlide": "الشريحة السابقة"
   },
   "cloudNotification": {
     "continueLocally": "المتابعة محليًا",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "السحابة حاليًا في نسخة تجريبية خاصة",
   "cloudSorryContactSupport_title": "عذرًا، اتصل بالدعم",
   "cloudStart_desc": "لا حاجة لإعداد مسبق. يعمل على أي جهاز.",
-  "cloudStart_download": "تنزيل ComfyUI",
   "cloudStart_explain": "أنتج عدة مخرجات في وقت واحد. شارك سير العمل بسهولة.",
   "cloudStart_learnAboutButton": "تعرف على السحابة",
   "cloudStart_title": "ابدأ الإبداع في ثوانٍ",
-  "cloudStart_wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
   "cloudSurvey_steps_experience": "ما مدى معرفتك بـ ComfyUI؟",
   "cloudSurvey_steps_focus": "ماذا تبني؟",
   "cloudSurvey_steps_intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
