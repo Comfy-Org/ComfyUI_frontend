@@ -330,7 +330,12 @@ describe('heuristicRoles', () => {
     'negatives',
     'NEGATIVEPROMPT',
     'Undesired content',
-    'Things to avoid'
+    'Things to avoid',
+    'Anti-prompt',
+    'anti prompt',
+    'AntiPrompt',
+    'ANTIPROMPT',
+    'anti_prompts'
   ])('reads %s as a negative prompt rather than the prompt', (title) => {
     const graph = createTestRootGraph()
     addWiredSink(graph)
@@ -342,7 +347,24 @@ describe('heuristicRoles', () => {
     ).toBeNull()
   })
 
-  it.for(['Antique portrait', 'Negro', 'negate mask', 'anti_aliasing'])(
+  it('reads a widget named anti_prompt as a negative prompt', () => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    addNode(graph, 'CustomEncode', { prompts: ['anti_prompt'] })
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'the widget name names the box just as the node title does'
+    ).toBeNull()
+  })
+
+  it.for([
+    'Antique portrait',
+    'Negro',
+    'negate mask',
+    'anti_aliasing',
+    'antialiasing strength'
+  ])(
     'still offers %s as the prompt, since only its spelling looks negative',
     (title) => {
       const graph = createTestRootGraph()
