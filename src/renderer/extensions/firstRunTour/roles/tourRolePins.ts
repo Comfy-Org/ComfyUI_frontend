@@ -10,10 +10,18 @@ export type SupportedTemplateId =
 
 export type TourMediaKind = 'image' | 'video'
 
-/** The kind a sink node type produces, so the drift guard can hold the two in step. */
+/**
+ * The kind a sink node type produces, so the drift guard can hold the two in
+ * step. Video sinks are listed because they are fed IMAGE frames, so the slot
+ * type alone would call their output an image.
+ */
 export const MEDIA_KIND_BY_SINK_TYPE: Record<string, TourMediaKind> = {
   SaveImage: 'image',
-  SaveVideo: 'video'
+  SaveVideo: 'video',
+  SaveAnimatedWEBP: 'video',
+  SaveAnimatedPNG: 'video',
+  SaveWEBM: 'video',
+  VHS_VideoCombine: 'video'
 }
 
 /**
