@@ -1,7 +1,6 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { toGroupId } from '@/types/groupId'
 import type { GroupId } from '@/types/groupId'
 
@@ -30,8 +29,6 @@ import {
   snapPoint
 } from './measure'
 import type { ISerialisedGroup } from './types/serialisation'
-
-const layoutMutations = useLayoutMutations()
 
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
@@ -155,13 +152,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this.bounds.set([x, y, width, height])
     if (!this.graph || this.id === -1) return
 
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.setGroupBounds(
-      this.graph.rootGraph.id,
-      this.id,
-      { x, y },
-      { width, height }
-    )
+    setGroupBoundsLayout(this.graph, this, { x, y }, { width, height })
     this.syncBoundsFromStore()
   }
 

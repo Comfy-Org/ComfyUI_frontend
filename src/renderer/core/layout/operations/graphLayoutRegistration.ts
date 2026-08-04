@@ -1,41 +1,454 @@
+/**
+ * Layout registration for litegraph entities.
+ *
+ * Geometry joins and leaves the layout store with the entity that owns it, so
+ * every attach/detach path — including bulk teardown — goes through these
+ * helpers rather than re-deriving the store writes by hand.
+ */
+import type * as Y from 'yjs'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  LayoutOperationError,
+  layoutStore
+} from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { LayoutOperationResult, Point } from '@/renderer/core/layout/types'
+import type {
+  LayoutOperation,
+  LayoutOperationResult,
+  Point,
+  Size
+} from '@/renderer/core/layout/types'
+import type { UUID } from '@/utils/uuid'
+import { createUuidv4 } from '@/utils/uuid'
+import { toGroupId } from '@/types/groupId'
+import { toRerouteId } from '@/types/rerouteId'
+
+type GraphLayoutOwner = Pick<
+  LGraph,
+  '_nodes' | '_groups' | '_subgraphs' | 'reroutes' | 'rootGraph'
+>
 
 const groupRegistrationIds = new WeakMap<LGraphGroup, string>()
+const nodeRegistrations = new WeakMap<
+  LGraphNode,
+  { graphId: UUID; nodeId: LGraphNode['id']; registrationId: string }
+>()
 const rerouteRegistrationIds = new WeakMap<Reroute, string>()
+const pendingRegistrations = new Map<string, string>()
 
+function registrationKey(
+  entity: 'group' | 'reroute',
+  graphId: UUID,
+  id: number
+): string {
+  return `${entity}:${graphId}:${id}`
+}
+
+function reconcilePendingRegistration(
+  key: string,
+  map: 'groups' | 'reroutes',
+  storedKey: string,
+  deleteRegistration: (registrationId: string) => LayoutOperationResult
+): boolean {
+  const registrationId = pendingRegistrations.get(key)
+  if (registrationId === undefined) return true
+
+  const storedId = storedRegistrationId(map, storedKey)
+  if (storedId === registrationId) {
+    const result = deleteRegistration(registrationId)
+    if (result === 'rejected') return false
+  }
+  pendingRegistrations.delete(key)
+  return true
+}
+
+function reconcilePendingGraph(graphId: UUID): LayoutOperationResult {
+  for (const key of [...pendingRegistrations.keys()]) {
+    const groupPrefix = `group:${graphId}:`
+    const reroutePrefix = `reroute:${graphId}:`
+    if (key.startsWith(groupPrefix)) {
+      const groupId = toGroupId(Number(key.slice(groupPrefix.length)))
+      if (
+        !reconcilePendingRegistration(
+          key,
+          'groups',
+          `${graphId}:${groupId}`,
+          (registrationId) =>
+            layoutStore.applyOperation({
+              ...canvasOperationMeta(),
+              entity: 'group',
+              graphId,
+              groupId,
+              registrationId,
+              type: 'deleteGroup'
+            })
+        )
+      )
+        return 'rejected'
+    } else if (key.startsWith(reroutePrefix)) {
+      const rerouteId = toRerouteId(Number(key.slice(reroutePrefix.length)))
+      if (
+        !reconcilePendingRegistration(
+          key,
+          'reroutes',
+          `${graphId}:${rerouteId}`,
+          (registrationId) =>
+            layoutStore.applyOperation({
+              ...canvasOperationMeta(),
+              entity: 'reroute',
+              graphId,
+              registrationId,
+              rerouteId,
+              type: 'deleteReroute'
+            })
+        )
+      )
+        return 'rejected'
+    }
+  }
+  return 'applied'
+}
+
+interface NodeLayoutRegistration {
+  entity: 'node'
+  graphId: UUID
+  layout: NonNullable<ReturnType<typeof layoutStore.getNodeLayoutRef>['value']>
+  node: LGraphNode
+  nodeId: LGraphNode['id']
+  registrationId: string
+}
+
+interface GroupLayoutRegistration {
+  entity: 'group'
+  graphId: UUID
+  group: LGraphGroup
+  layout: NonNullable<ReturnType<typeof layoutStore.getGroupLayout>>
+  registrationId: string
+}
+
+interface RerouteLayoutRegistration {
+  entity: 'reroute'
+  graphId: UUID
+  layout: NonNullable<ReturnType<typeof layoutStore.getRerouteLayout>>
+  registrationId: string
+  reroute: Reroute
+}
+
+export type GraphLayoutRegistration =
+  | NodeLayoutRegistration
+  | GroupLayoutRegistration
+  | RerouteLayoutRegistration
+
+/** Layout mutations attributed to the canvas, for direct delete calls. */
 export function canvasLayoutMutations() {
   const mutations = useLayoutMutations()
   mutations.setSource(LayoutSource.Canvas)
   return mutations
 }
 
-export function registerNodeLayout(graph: LGraph, node: LGraphNode): void {
-  canvasLayoutMutations().createNode(graph.rootGraph.id, node.id, {
-    position: { x: node._pos[0], y: node._pos[1] },
-    size: { width: node._size[0], height: node._size[1] },
-    zIndex: layoutStore.allocateZIndex(),
-    visible: true
+function canvasOperationMeta() {
+  layoutStore.setSource(LayoutSource.Canvas)
+  return {
+    actor: layoutStore.getCurrentActor(),
+    source: layoutStore.getCurrentSource(),
+    timestamp: Date.now()
+  }
+}
+
+function storedRegistrationId(map: string, key: string): unknown {
+  return layoutStore
+    .getYDoc()
+    .getMap<Y.Map<unknown>>(map)
+    .get(key)
+    ?.get('registrationId')
+}
+
+export function captureNodeLayoutRegistration(
+  node: LGraphNode
+): NodeLayoutRegistration | undefined {
+  const registration = nodeRegistrations.get(node)
+  if (!registration) return
+  const { graphId, nodeId } = registration
+  const layout = layoutStore.getNodeLayoutRef(graphId, nodeId).value
+  if (
+    !layout ||
+    storedRegistrationId('nodes', `${graphId}:${nodeId}`) !==
+      registration.registrationId
+  )
+    return
+  return { entity: 'node', layout, node, ...registration }
+}
+
+export function captureGroupLayoutRegistration(
+  graph: Pick<LGraph, 'rootGraph'>,
+  group: LGraphGroup
+): GroupLayoutRegistration | undefined {
+  const registrationId = groupRegistrationIds.get(group)
+  if (registrationId === undefined) return
+  const graphId = graph.rootGraph.id
+  const layout = layoutStore.getGroupLayout(graphId, group.id)
+  if (
+    !layout ||
+    storedRegistrationId('groups', `${graphId}:${group.id}`) !== registrationId
+  )
+    return
+  return { entity: 'group', graphId, group, layout, registrationId }
+}
+
+export function captureRerouteLayoutRegistration(
+  graph: Pick<LGraph, 'rootGraph'>,
+  reroute: Reroute
+): RerouteLayoutRegistration | undefined {
+  const registrationId = rerouteRegistrationIds.get(reroute)
+  if (registrationId === undefined) return
+  const graphId = graph.rootGraph.id
+  const layout = layoutStore.getRerouteLayout(graphId, reroute.id)
+  if (
+    !layout ||
+    storedRegistrationId('reroutes', `${graphId}:${reroute.id}`) !==
+      registrationId
+  )
+    return
+  return { entity: 'reroute', graphId, layout, registrationId, reroute }
+}
+
+export function captureAllGraphLayoutRegistrations(
+  graph: GraphLayoutOwner
+): GraphLayoutRegistration[] {
+  const registrations: GraphLayoutRegistration[] = []
+  const visited = new Set<GraphLayoutOwner>()
+  function capture(owner: GraphLayoutOwner): void {
+    if (visited.has(owner)) return
+    visited.add(owner)
+    for (const node of owner._nodes) {
+      const registration = captureNodeLayoutRegistration(node)
+      if (registration) registrations.push(registration)
+    }
+    for (const group of owner._groups) {
+      const registration = captureGroupLayoutRegistration(owner, group)
+      if (registration) registrations.push(registration)
+    }
+    for (const reroute of owner.reroutes.values()) {
+      const registration = captureRerouteLayoutRegistration(owner, reroute)
+      if (registration) registrations.push(registration)
+    }
+    for (const subgraph of owner._subgraphs.values()) capture(subgraph)
+  }
+  capture(graph)
+  return registrations
+}
+
+export function restoreGraphLayoutRegistration(
+  registration: GraphLayoutRegistration
+): void {
+  let compensationError: unknown
+  try {
+    if (registration.entity === 'node') {
+      if (
+        !layoutStore.getNodeLayoutRef(registration.graphId, registration.nodeId)
+          .value
+      ) {
+        layoutStore.applyOperation({
+          ...canvasOperationMeta(),
+          entity: 'node',
+          graphId: registration.graphId,
+          layout: registration.layout,
+          nodeId: registration.nodeId,
+          registrationId: registration.registrationId,
+          type: 'createNode'
+        })
+      }
+    } else if (registration.entity === 'group') {
+      if (
+        !layoutStore.getGroupLayout(registration.graphId, registration.group.id)
+      ) {
+        layoutStore.applyOperation({
+          ...canvasOperationMeta(),
+          entity: 'group',
+          graphId: registration.graphId,
+          groupId: registration.group.id,
+          layout: registration.layout,
+          registrationId: registration.registrationId,
+          type: 'createGroup'
+        })
+      }
+    } else if (
+      !layoutStore.getRerouteLayout(
+        registration.graphId,
+        registration.reroute.id
+      )
+    ) {
+      layoutStore.applyOperation({
+        ...canvasOperationMeta(),
+        entity: 'reroute',
+        graphId: registration.graphId,
+        position: registration.layout.position,
+        registrationId: registration.registrationId,
+        rerouteId: registration.reroute.id,
+        type: 'createReroute'
+      })
+    }
+  } catch (error) {
+    compensationError = error
+  }
+
+  if (registration.entity === 'node') {
+    nodeRegistrations.set(registration.node, {
+      graphId: registration.graphId,
+      nodeId: registration.nodeId,
+      registrationId: registration.registrationId
+    })
+    registration.node._layoutRegistered = true
+    registration.node._geometryVersion = layoutStore.geometryVersion
+  } else if (registration.entity === 'group') {
+    groupRegistrationIds.set(registration.group, registration.registrationId)
+  } else {
+    rerouteRegistrationIds.set(
+      registration.reroute,
+      registration.registrationId
+    )
+  }
+  if (compensationError) throw compensationError
+}
+
+/** A newly attached node stacks above those already registered. */
+export function registerNodeLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  node: LGraphNode,
+  registrationId = createUuidv4()
+): LayoutOperationResult {
+  const graphId = graph.rootGraph.id
+  const retained = nodeRegistrations.get(node)
+  if (retained) {
+    const cleanupResult = layoutStore.applyOperation({
+      ...canvasOperationMeta(),
+      entity: 'node',
+      graphId: retained.graphId,
+      nodeId: retained.nodeId,
+      registrationId: retained.registrationId,
+      type: 'deleteNode'
+    })
+    if (cleanupResult === 'rejected') return cleanupResult
+    nodeRegistrations.delete(node)
+  }
+
+  const position = { x: node._pos[0], y: node._pos[1] }
+  const size = { width: node._size[0], height: node._size[1] }
+  nodeRegistrations.set(node, { graphId, nodeId: node.id, registrationId })
+  const result = layoutStore.applyOperation({
+    ...canvasOperationMeta(),
+    entity: 'node',
+    graphId,
+    layout: {
+      bounds: { ...position, ...size },
+      id: node.id,
+      position,
+      size,
+      zIndex: layoutStore.allocateZIndex(),
+      visible: true
+    },
+    nodeId: node.id,
+    registrationId,
+    type: 'createNode'
   })
+  if (result === 'applied') {
+    node._layoutRegistered = true
+    node._geometryVersion = layoutStore.geometryVersion
+  } else {
+    nodeRegistrations.delete(node)
+  }
+  return result
+}
+
+export function adoptNodeLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  node: LGraphNode
+): LayoutOperationResult {
+  const graphId = graph.rootGraph.id
+  const ynode = layoutStore
+    .getYDoc()
+    .getMap<Y.Map<unknown>>('nodes')
+    .get(`${graphId}:${node.id}`)
+  const registrationId = ynode?.get('registrationId')
+  if (typeof registrationId !== 'string') return 'no-op'
+
+  nodeRegistrations.set(node, { graphId, nodeId: node.id, registrationId })
   node._layoutRegistered = true
   node._geometryVersion = layoutStore.geometryVersion
+  return 'applied'
+}
+
+export function moveNodeLayout(node: LGraphNode, position: Point): void {
+  const registration = nodeRegistrations.get(node)
+  if (!registration) return
+  layoutStore.applyOperation({
+    ...canvasOperationMeta(),
+    entity: 'node',
+    graphId: registration.graphId,
+    nodeId: registration.nodeId,
+    position,
+    registrationId: registration.registrationId,
+    type: 'moveNode'
+  })
+}
+
+export function resizeNodeLayout(node: LGraphNode, size: Size): void {
+  const registration = nodeRegistrations.get(node)
+  if (!registration) return
+  layoutStore.applyOperation({
+    ...canvasOperationMeta(),
+    entity: 'node',
+    graphId: registration.graphId,
+    nodeId: registration.nodeId,
+    registrationId: registration.registrationId,
+    size,
+    type: 'resizeNode'
+  })
 }
 
 export function unregisterNodeLayout(
-  graph: LGraph,
-  node: LGraphNode
+  graph: Pick<LGraph, 'rootGraph'>,
+  node: LGraphNode,
+  registrationId?: string
 ): LayoutOperationResult {
-  if (!node._layoutRegistered) return 'no-op'
+  const retainedRegistration = nodeRegistrations.get(node)
+  const resolvedRegistrationId =
+    registrationId !== undefined
+      ? registrationId
+      : retainedRegistration?.registrationId
+  if (resolvedRegistrationId === undefined) return 'no-op'
+  const ownsRetained =
+    retainedRegistration?.registrationId === resolvedRegistrationId
+  const nodeId = ownsRetained ? retainedRegistration.nodeId : node.id
+  const graphId = ownsRetained
+    ? retainedRegistration.graphId
+    : graph.rootGraph.id
 
-  layoutStore.readNodeRect(graph.rootGraph.id, node.id, node._posSize)
-  const result = canvasLayoutMutations().deleteNode(graph.rootGraph.id, node.id)
-  if (result !== 'rejected') node._layoutRegistered = false
+  if (ownsRetained) {
+    layoutStore.readNodeRect(graphId, nodeId, node._posSize)
+  }
+  const result = layoutStore.applyOperation({
+    ...canvasOperationMeta(),
+    entity: 'node',
+    graphId,
+    nodeId,
+    registrationId: resolvedRegistrationId,
+    type: 'deleteNode'
+  })
+  if (
+    result !== 'rejected' &&
+    ownsRetained &&
+    storedRegistrationId('nodes', `${graphId}:${nodeId}`) !==
+      resolvedRegistrationId
+  ) {
+    nodeRegistrations.delete(node)
+    node._layoutRegistered = false
+  }
   return result
 }
 
@@ -44,8 +457,28 @@ export function registerGroupLayout(
   group: LGraphGroup,
   registrationId: string
 ): LayoutOperationResult {
+  const graphId = graph.rootGraph.id
+  const key = registrationKey('group', graphId, group.id)
+  if (
+    !reconcilePendingRegistration(
+      key,
+      'groups',
+      `${graphId}:${group.id}`,
+      (pendingId) =>
+        layoutStore.applyOperation({
+          ...canvasOperationMeta(),
+          entity: 'group',
+          graphId,
+          groupId: group.id,
+          registrationId: pendingId,
+          type: 'deleteGroup'
+        })
+    )
+  )
+    return 'rejected'
+  pendingRegistrations.set(key, registrationId)
   const result = canvasLayoutMutations().createGroup(
-    graph.rootGraph.id,
+    graphId,
     group.id,
     {
       position: { x: group.pos[0], y: group.pos[1] },
@@ -53,7 +486,10 @@ export function registerGroupLayout(
     },
     registrationId
   )
-  if (result === 'applied') groupRegistrationIds.set(group, registrationId)
+  if (result === 'applied') {
+    pendingRegistrations.delete(key)
+    groupRegistrationIds.set(group, registrationId)
+  } else pendingRegistrations.delete(key)
   return result
 }
 
@@ -62,16 +498,94 @@ export function unregisterGroupLayout(
   group: LGraphGroup,
   registrationId?: string
 ): LayoutOperationResult {
+  const retainedRegistrationId = groupRegistrationIds.get(group)
   const resolvedRegistrationId =
-    registrationId ?? groupRegistrationIds.get(group)
+    registrationId !== undefined ? registrationId : retainedRegistrationId
   if (resolvedRegistrationId === undefined) return 'no-op'
 
-  const result = canvasLayoutMutations().deleteGroup(
-    graph.rootGraph.id,
-    group.id,
-    resolvedRegistrationId
-  )
-  if (result !== 'rejected') groupRegistrationIds.delete(group)
+  const result = layoutStore.applyOperation({
+    ...canvasOperationMeta(),
+    entity: 'group',
+    graphId: graph.rootGraph.id,
+    groupId: group.id,
+    registrationId: resolvedRegistrationId,
+    type: 'deleteGroup'
+  })
+  if (result !== 'rejected') {
+    const key = registrationKey('group', graph.rootGraph.id, group.id)
+    const storedId = storedRegistrationId(
+      'groups',
+      `${graph.rootGraph.id}:${group.id}`
+    )
+    if (
+      pendingRegistrations.get(key) === resolvedRegistrationId &&
+      storedId !== resolvedRegistrationId
+    )
+      pendingRegistrations.delete(key)
+    if (
+      retainedRegistrationId === resolvedRegistrationId &&
+      storedId !== resolvedRegistrationId
+    )
+      groupRegistrationIds.delete(group)
+  }
+  return result
+}
+
+export function setGroupBoundsLayout(
+  graph: { rootGraph: { id: UUID } },
+  group: LGraphGroup,
+  position: Point,
+  size: Size
+): void {
+  const registrationId = groupRegistrationIds.get(group)
+  if (registrationId === undefined) return
+  layoutStore.applyOperation({
+    ...canvasOperationMeta(),
+    entity: 'group',
+    graphId: graph.rootGraph.id,
+    groupId: group.id,
+    position,
+    registrationId,
+    size,
+    type: 'setGroupBounds'
+  })
+}
+
+export function unregisterRerouteLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  reroute: Reroute,
+  registrationId?: string
+): LayoutOperationResult {
+  const retainedRegistrationId = rerouteRegistrationIds.get(reroute)
+  const resolvedRegistrationId =
+    registrationId !== undefined ? registrationId : retainedRegistrationId
+  if (resolvedRegistrationId === undefined) return 'no-op'
+
+  const result = layoutStore.applyOperation({
+    ...canvasOperationMeta(),
+    entity: 'reroute',
+    graphId: graph.rootGraph.id,
+    registrationId: resolvedRegistrationId,
+    rerouteId: reroute.id,
+    type: 'deleteReroute'
+  })
+  if (result !== 'rejected') {
+    const key = registrationKey('reroute', graph.rootGraph.id, reroute.id)
+    const storedId = storedRegistrationId(
+      'reroutes',
+      `${graph.rootGraph.id}:${reroute.id}`
+    )
+    if (
+      pendingRegistrations.get(key) === resolvedRegistrationId &&
+      storedId !== resolvedRegistrationId
+    )
+      pendingRegistrations.delete(key)
+    if (
+      retainedRegistrationId === resolvedRegistrationId &&
+      storedId !== resolvedRegistrationId
+    )
+      rerouteRegistrationIds.delete(reroute)
+  }
   return result
 }
 
@@ -81,77 +595,226 @@ export function registerRerouteLayout(
   position: Point,
   registrationId: string
 ): LayoutOperationResult {
+  const graphId = graph.rootGraph.id
+  const key = registrationKey('reroute', graphId, reroute.id)
+  if (
+    !reconcilePendingRegistration(
+      key,
+      'reroutes',
+      `${graphId}:${reroute.id}`,
+      (pendingId) =>
+        layoutStore.applyOperation({
+          ...canvasOperationMeta(),
+          entity: 'reroute',
+          graphId,
+          registrationId: pendingId,
+          rerouteId: reroute.id,
+          type: 'deleteReroute'
+        })
+    )
+  )
+    return 'rejected'
+  pendingRegistrations.set(key, registrationId)
   const result = canvasLayoutMutations().createReroute(
-    graph.rootGraph.id,
+    graphId,
     reroute.id,
     position,
     registrationId
   )
-  if (result === 'applied') rerouteRegistrationIds.set(reroute, registrationId)
+  if (result === 'applied') {
+    pendingRegistrations.delete(key)
+    rerouteRegistrationIds.set(reroute, registrationId)
+  } else pendingRegistrations.delete(key)
   return result
 }
 
-export function unregisterRerouteLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
+export function moveRerouteLayout(
+  graph: { rootGraph: { id: UUID } },
   reroute: Reroute,
-  registrationId?: string
-): LayoutOperationResult {
-  const resolvedRegistrationId =
-    registrationId ?? rerouteRegistrationIds.get(reroute)
-  if (resolvedRegistrationId === undefined) return 'no-op'
-
-  const result = canvasLayoutMutations().deleteReroute(
-    graph.rootGraph.id,
-    reroute.id,
-    resolvedRegistrationId
-  )
-  if (result !== 'rejected') rerouteRegistrationIds.delete(reroute)
-  return result
+  position: Point
+): void {
+  const registrationId = rerouteRegistrationIds.get(reroute)
+  if (registrationId === undefined) return
+  layoutStore.applyOperation({
+    ...canvasOperationMeta(),
+    entity: 'reroute',
+    graphId: graph.rootGraph.id,
+    position,
+    registrationId,
+    rerouteId: reroute.id,
+    type: 'moveReroute'
+  })
 }
 
 /**
- * Remove graph and subgraph layouts alongside node state, before clearing
- * entity containers.
+ * Drops every layout entry a graph owns, including those inside the subgraph
+ * definitions it holds. Mirrors `unregisterAllNodeStates`; call it from the
+ * same places, before the entity containers are emptied.
+ *
+ * Nodes go through `unregisterNodeLayout` so each one clears the flag its
+ * geometry projection reads; deleting the entry alone would leave the node
+ * believing it is still registered.
  */
-export function unregisterAllGraphLayout(graph: LGraph): LayoutOperationResult {
-  let result: LayoutOperationResult = 'no-op'
-
-  // LGraph construction clears before a subgraph has a rootGraph.
-  if (!graph.rootGraph) return result
-
-  function unregisterEntities(target: LGraph): LayoutOperationResult {
-    let targetResult: LayoutOperationResult = 'no-op'
-
-    for (const node of target._nodes) {
-      const nodeResult = unregisterNodeLayout(target, node)
-      if (nodeResult === 'rejected') return 'rejected'
-      if (nodeResult === 'applied') targetResult = 'applied'
-    }
-    for (const group of target._groups) {
-      const groupResult = unregisterGroupLayout(target, group)
-      if (groupResult === 'rejected') return 'rejected'
-      if (groupResult === 'applied') targetResult = 'applied'
-    }
-    for (const reroute of target.reroutes.values()) {
-      const rerouteResult = unregisterRerouteLayout(target, reroute)
-      if (rerouteResult === 'rejected') return 'rejected'
-      if (rerouteResult === 'applied') targetResult = 'applied'
-    }
-
-    return targetResult
+export function unregisterAllGraphLayout(
+  graph: GraphLayoutOwner
+): LayoutOperationResult {
+  if (graph.rootGraph) {
+    const pendingResult = reconcilePendingGraph(graph.rootGraph.id)
+    if (pendingResult === 'rejected') return pendingResult
   }
-
-  const graphResult = unregisterEntities(graph)
-  if (graphResult === 'rejected') return 'rejected'
-  if (graphResult === 'applied') result = 'applied'
-
-  if (graph.isRootGraph) {
-    for (const subgraph of graph._subgraphs.values()) {
-      const subgraphResult = unregisterEntities(subgraph)
-      if (subgraphResult === 'rejected') return 'rejected'
-      if (subgraphResult === 'applied') result = 'applied'
-    }
+  const owners: GraphLayoutOwner[] = []
+  const visited = new Set<GraphLayoutOwner>()
+  function collectOwners(owner: GraphLayoutOwner): void {
+    if (visited.has(owner)) return
+    visited.add(owner)
+    owners.push(owner)
+    for (const subgraph of owner._subgraphs.values()) collectOwners(subgraph)
   }
+  collectOwners(graph)
 
+  layoutStore.setSource(LayoutSource.Canvas)
+  const timestamp = Date.now()
+  const actor = layoutStore.getCurrentActor()
+  const source = layoutStore.getCurrentSource()
+  const restorationOperations: LayoutOperation[] = []
+  const operations: LayoutOperation[] = owners.flatMap((owner) => [
+    ...owner._nodes.flatMap((node): LayoutOperation[] => {
+      const registration = nodeRegistrations.get(node)
+      if (registration === undefined) return []
+      const { graphId, nodeId } = registration
+      const layout = layoutStore.getNodeLayoutRef(graphId, nodeId).value
+      const storedRegistrationId = layoutStore
+        .getYDoc()
+        .getMap<Y.Map<unknown>>('nodes')
+        .get(`${graphId}:${nodeId}`)
+        ?.get('registrationId')
+      if (layout && storedRegistrationId === registration.registrationId) {
+        restorationOperations.push({
+          actor,
+          entity: 'node',
+          graphId,
+          layout,
+          nodeId,
+          registrationId: registration.registrationId,
+          source,
+          timestamp,
+          type: 'createNode'
+        })
+      }
+      return [
+        {
+          actor,
+          entity: 'node',
+          graphId,
+          nodeId,
+          registrationId: registration.registrationId,
+          source,
+          timestamp,
+          type: 'deleteNode'
+        }
+      ]
+    }),
+    ...owner._groups.flatMap((group): LayoutOperation[] => {
+      const registrationId = groupRegistrationIds.get(group)
+      if (registrationId === undefined) return []
+      const graphId = owner.rootGraph.id
+      const layout = layoutStore.getGroupLayout(graphId, group.id)
+      const storedRegistrationId = layoutStore
+        .getYDoc()
+        .getMap<Y.Map<unknown>>('groups')
+        .get(`${graphId}:${group.id}`)
+        ?.get('registrationId')
+      if (layout && storedRegistrationId === registrationId) {
+        restorationOperations.push({
+          actor,
+          entity: 'group',
+          graphId,
+          groupId: group.id,
+          layout,
+          registrationId,
+          source,
+          timestamp,
+          type: 'createGroup'
+        })
+      }
+      return [
+        {
+          actor,
+          entity: 'group',
+          graphId,
+          groupId: group.id,
+          registrationId,
+          source,
+          timestamp,
+          type: 'deleteGroup'
+        }
+      ]
+    }),
+    ...[...owner.reroutes.values()].flatMap((reroute): LayoutOperation[] => {
+      const registrationId = rerouteRegistrationIds.get(reroute)
+      if (registrationId === undefined) return []
+      const graphId = owner.rootGraph.id
+      const layout = layoutStore.getRerouteLayout(graphId, reroute.id)
+      const storedRegistrationId = layoutStore
+        .getYDoc()
+        .getMap<Y.Map<unknown>>('reroutes')
+        .get(`${graphId}:${reroute.id}`)
+        ?.get('registrationId')
+      if (layout && storedRegistrationId === registrationId) {
+        restorationOperations.push({
+          actor,
+          entity: 'reroute',
+          graphId,
+          position: layout.position,
+          registrationId,
+          rerouteId: reroute.id,
+          source,
+          timestamp,
+          type: 'createReroute'
+        })
+      }
+      return [
+        {
+          actor,
+          entity: 'reroute',
+          graphId,
+          registrationId,
+          rerouteId: reroute.id,
+          source,
+          timestamp,
+          type: 'deleteReroute'
+        }
+      ]
+    })
+  ])
+  let result: LayoutOperationResult
+  try {
+    result = layoutStore.applyOperations(operations)
+  } catch (error) {
+    if (!(error instanceof LayoutOperationError) || !error.applied) throw error
+    try {
+      layoutStore.applyOperations(restorationOperations)
+    } catch (compensationError) {
+      Object.defineProperty(error, 'cause', {
+        configurable: true,
+        value: new AggregateError(
+          [error.cause, compensationError],
+          'Layout teardown and compensation failed'
+        )
+      })
+    }
+    throw error
+  }
+  if (result === 'rejected') return result
+
+  for (const owner of owners) {
+    for (const node of owner._nodes) {
+      nodeRegistrations.delete(node)
+      node._layoutRegistered = false
+    }
+    for (const group of owner._groups) groupRegistrationIds.delete(group)
+    for (const reroute of owner.reroutes.values())
+      rerouteRegistrationIds.delete(reroute)
+  }
   return result
 }

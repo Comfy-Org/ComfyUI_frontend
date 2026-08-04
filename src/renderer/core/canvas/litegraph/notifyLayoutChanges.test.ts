@@ -22,7 +22,16 @@ function setup() {
   const setDirty = vi.fn()
   const canvas = { graph, setDirty } as unknown as LGraphCanvas
   const stop = notifyLayoutChanges(canvas)
-  return { graph, node, setDirty, stop, [Symbol.dispose]: stop }
+  return {
+    graph,
+    node,
+    setDirty,
+    stop,
+    [Symbol.dispose]() {
+      stop()
+      graph.clear()
+    }
+  }
 }
 
 describe('notifyLayoutChanges', () => {

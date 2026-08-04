@@ -5,6 +5,7 @@
  * Operations are synchronous and applied directly to the store.
  */
 import log from 'loglevel'
+import type * as Y from 'yjs'
 
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -21,6 +22,18 @@ import type {
 } from '@/renderer/core/layout/types'
 
 const logger = log.getLogger('LayoutMutations')
+
+function getNodeRegistrationId(
+  rootGraphId: UUID,
+  nodeId: NodeId
+): string | undefined {
+  const registrationId = layoutStore
+    .getYDoc()
+    .getMap<Y.Map<unknown>>('nodes')
+    .get(`${rootGraphId}:${nodeId}`)
+    ?.get('registrationId')
+  return typeof registrationId === 'string' ? registrationId : undefined
+}
 
 interface LayoutMutations {
   batchMoveNodes(
@@ -105,6 +118,7 @@ export function useLayoutMutations(): LayoutMutations {
       graphId: rootGraphId,
       nodeId,
       position,
+      registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -150,6 +164,7 @@ export function useLayoutMutations(): LayoutMutations {
       entity: 'node',
       graphId: rootGraphId,
       nodeId,
+      registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       size,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -173,6 +188,7 @@ export function useLayoutMutations(): LayoutMutations {
       entity: 'node',
       graphId: rootGraphId,
       nodeId,
+      registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       zIndex,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),

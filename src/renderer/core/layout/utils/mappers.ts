@@ -11,8 +11,9 @@ type StoredNode = {
   id: NodeId
   position: NodeLayout['position']
   size: NodeLayout['size']
-  zIndex: number
   visible: boolean
+  zIndex: number
+  registrationId?: string
 }
 
 export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
@@ -20,13 +21,19 @@ export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
 const DEFAULT_NODE_POSITION: NodeLayout['position'] = { x: 0, y: 0 }
 const DEFAULT_NODE_SIZE: NodeLayout['size'] = { width: 100, height: 50 }
 
-export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
+export function layoutToYNode(
+  layout: NodeLayout,
+  registrationId?: string
+): NodeLayoutMap {
   const ynode = new Y.Map<StoredNode[keyof StoredNode]>() as NodeLayoutMap
   ynode.set('id', layout.id)
   ynode.set('position', { ...layout.position })
   ynode.set('size', { ...layout.size })
   ynode.set('zIndex', layout.zIndex)
   ynode.set('visible', layout.visible)
+  if (registrationId !== undefined) {
+    ynode.set('registrationId', registrationId)
+  }
   return ynode
 }
 

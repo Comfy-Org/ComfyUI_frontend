@@ -25,7 +25,9 @@ import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLa
 import type {
   LayoutChange,
   LayoutOperation,
+  MoveNodeOperation,
   NodeLayout,
+  Point,
   SlotLayout
 } from '@/renderer/core/layout/types'
 
@@ -97,17 +99,21 @@ describe('layoutStore CRDT operations', () => {
       timestamp: 1
     } as const
 
-    function createNode(layout = createTestNode(nodeId)) {
+    function createNode(
+      layout = createTestNode(nodeId),
+      registrationId?: string
+    ) {
       return layoutStore.applyOperation({
         ...metadata,
         entity: 'node',
         layout,
         nodeId: layout.id,
+        registrationId,
         type: 'createNode'
       })
     }
 
-    function createGroup(position = { x: 10, y: 20 }) {
+    function createGroup(position = { x: 10, y: 20 }, registrationId?: string) {
       return layoutStore.applyOperation({
         ...metadata,
         entity: 'group',
@@ -118,16 +124,21 @@ describe('layoutStore CRDT operations', () => {
           position,
           size: { width: 30, height: 40 }
         },
+        registrationId,
         type: 'createGroup'
       })
     }
 
-    function createReroute(position = { x: 10, y: 20 }) {
+    function createReroute(
+      position = { x: 10, y: 20 },
+      registrationId?: string
+    ) {
       return layoutStore.applyOperation({
         ...metadata,
         entity: 'reroute',
         graphId,
         position,
+        registrationId,
         rerouteId,
         type: 'createReroute'
       })
@@ -158,8 +169,173 @@ describe('layoutStore CRDT operations', () => {
           visible: false
         })
       ).toBe('applied')
-      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.visible).toBe(false)
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.visible).toBe(
+        false
+      )
     })
+
+    it('executes dependent batch commands in order', () => {
+      createNode()
+      const initialPosition = createTestNode(nodeId).position
+      const move = (position: Point): MoveNodeOperation => ({
+        ...metadata,
+        entity: 'node',
+        nodeId,
+        position,
+        type: 'moveNode'
+      })
+      const operations = [move({ x: 300, y: 400 }), move(initialPosition)]
+
+      expect(layoutStore.applyOperations(operations)).toBe('applied')
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position
+      ).toEqual(initialPosition)
+      expect(layoutStore.applyOperations(operations)).toBe('applied')
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position
+      ).toEqual(initialPosition)
+    })
+
+    it('rejects tokenless updates to a registered node', () => {
+      createNode(createTestNode(nodeId), 'owner')
+      const operations: LayoutOperation[] = [
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          position: { x: 300, y: 400 },
+          type: 'moveNode'
+        },
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          size: { width: 300, height: 400 },
+          type: 'resizeNode'
+        },
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          type: 'setNodeVisibility',
+          visible: false
+        },
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          type: 'setNodeZIndex',
+          zIndex: 10
+        },
+        {
+          ...metadata,
+          bounds: {
+            [nodeId]: { x: 1, y: 2, width: 3, height: 4 }
+          },
+          entity: 'node',
+          nodeIds: [nodeId],
+          type: 'batchUpdateBounds'
+        }
+      ]
+
+      expect(layoutStore.applyOperations(operations)).toBe('no-op')
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value).toEqual(
+        createTestNode(nodeId)
+      )
+    })
+
+    it('requires exact group and reroute ownership while preserving legacy updates', () => {
+      createGroup(undefined, 'group-owner')
+      createReroute(undefined, '')
+
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'group',
+          graphId,
+          groupId,
+          position: { x: 100, y: 200 },
+          size: { width: 300, height: 400 },
+          type: 'setGroupBounds'
+        })
+      ).toBe('no-op')
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'reroute',
+          graphId,
+          position: { x: 100, y: 200 },
+          registrationId: '',
+          rerouteId,
+          type: 'moveReroute'
+        })
+      ).toBe('applied')
+
+      layoutStore.resetForTests()
+      createGroup()
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'group',
+          graphId,
+          groupId,
+          position: { x: 100, y: 200 },
+          size: { width: 300, height: 400 },
+          type: 'setGroupBounds'
+        })
+      ).toBe('applied')
+    })
+
+    it.for([
+      {
+        create: () => createGroup(undefined, 'owner'),
+        key: `${graphId}:${groupId}`,
+        map: 'groups',
+        operation: {
+          ...metadata,
+          entity: 'group',
+          graphId,
+          groupId,
+          position: { x: 100, y: 200 },
+          registrationId: 'owner',
+          size: { width: 300, height: 400 },
+          type: 'setGroupBounds'
+        } satisfies LayoutOperation
+      },
+      {
+        create: () => createReroute(undefined, 'owner'),
+        key: `${graphId}:${rerouteId}`,
+        map: 'reroutes',
+        operation: {
+          ...metadata,
+          entity: 'reroute',
+          graphId,
+          position: { x: 100, y: 200 },
+          registrationId: 'owner',
+          rerouteId,
+          type: 'moveReroute'
+        } satisfies LayoutOperation
+      }
+    ])(
+      'preserves a foreign $map replacement at commit time',
+      ({ create, key, map, operation }) => {
+        create()
+        const collection = layoutStore.getYDoc().getMap<Y.Map<unknown>>(map)
+        const foreign = new Y.Map<unknown>()
+        foreign.set('registrationId', 'foreign')
+        const ydoc = layoutStore.getYDoc()
+        const originalTransact = ydoc.transact.bind(ydoc)
+        vi.spyOn(ydoc, 'transact').mockImplementationOnce(
+          (transaction, origin) => {
+            collection.set(key, foreign)
+            originalTransact(transaction, origin)
+          }
+        )
+
+        expect(layoutStore.applyOperation(operation)).toBe('no-op')
+        expect(collection.get(key)).toBe(foreign)
+      }
+    )
 
     it.for([
       {
@@ -275,7 +451,9 @@ describe('layoutStore CRDT operations', () => {
       ).toBe('no-op')
       expect(createGroup({ x: 500, y: 600 })).toBe('no-op')
       expect(createReroute({ x: 500, y: 600 })).toBe('no-op')
-      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position).toEqual({
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position
+      ).toEqual({
         x: 100,
         y: 100
       })
@@ -383,8 +561,12 @@ describe('layoutStore CRDT operations', () => {
       })
       await nextTick()
 
-      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.id).toBe(nodeId)
-      expect(layoutStore.getNodeLayoutRef(graphId, embeddedNodeId).value).toBeNull()
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.id).toBe(
+        nodeId
+      )
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, embeddedNodeId).value
+      ).toBeNull()
       expect(layoutStore.getGroupLayout(graphId, groupId)?.id).toBe(groupId)
       expect(layoutStore.getGroupLayout(graphId, embeddedGroupId)).toBeNull()
       expect(listener).toHaveBeenCalledWith(
@@ -432,7 +614,9 @@ describe('layoutStore CRDT operations', () => {
       createGroup()
       createReroute()
 
-      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.id).toBe(nodeId)
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.id).toBe(
+        nodeId
+      )
       expect(layoutStore.getGroupLayout(graphId, groupId)?.id).toBe(groupId)
       expect(layoutStore.getRerouteLayout(graphId, rerouteId)?.id).toBe(
         rerouteId
@@ -518,13 +702,17 @@ describe('layoutStore CRDT operations', () => {
           type: 'batchUpdateBounds'
         })
       ).toBe('applied')
-      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.bounds).toEqual({
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, nodeId).value?.bounds
+      ).toEqual({
         x: 5,
         y: 6,
         width: 7,
         height: 8
       })
-      expect(layoutStore.getNodeLayoutRef(graphId, equalNodeId).value?.bounds).toEqual({
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, equalNodeId).value?.bounds
+      ).toEqual({
         x: 100,
         y: 100,
         width: 200,
@@ -842,9 +1030,9 @@ describe('layoutStore CRDT operations', () => {
         expect(originalPositionChanges).toHaveLength(
           interference === 'make-equal' ? 1 : 0
         )
-        expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position).toEqual(
-          interference === 'delete' ? undefined : { x: 300, y: 400 }
-        )
+        expect(
+          layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position
+        ).toEqual(interference === 'delete' ? undefined : { x: 300, y: 400 })
         stopNode()
         stopGlobal()
         stopGeometry()
@@ -871,7 +1059,9 @@ describe('layoutStore CRDT operations', () => {
         ydoc.off('beforeTransaction', interfere)
         ynodes.delete(`${graphId}:${nodeId}`)
         ynodes.get(`${graphId}:${secondId}`)?.set('position', { x: 5, y: 6 })
-        ynodes.get(`${graphId}:${secondId}`)?.set('size', { width: 7, height: 8 })
+        ynodes
+          .get(`${graphId}:${secondId}`)
+          ?.set('size', { width: 7, height: 8 })
       }
       ydoc.on('beforeTransaction', interfere)
 
@@ -890,7 +1080,9 @@ describe('layoutStore CRDT operations', () => {
       expect(result).toBe('no-op')
       expect(globalListener).not.toHaveBeenCalled()
       expect(originalPositionChanges).toHaveLength(0)
-      expect(layoutStore.getNodeLayoutRef(graphId, secondId).value?.bounds).toEqual({
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, secondId).value?.bounds
+      ).toEqual({
         x: 5,
         y: 6,
         width: 7,
@@ -944,10 +1136,12 @@ describe('layoutStore CRDT operations', () => {
           operation: expect.objectContaining({ actor: 'outer-actor' })
         })
       )
-      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value).toMatchObject({
-        position: { x: 300, y: 400 },
-        size: { width: 200, height: 100 }
-      })
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value).toMatchObject(
+        {
+          position: { x: 300, y: 400 },
+          size: { width: 200, height: 100 }
+        }
+      )
       ydoc.off('afterTransaction', recordTransaction)
       stopNode()
     })
@@ -1023,7 +1217,9 @@ describe('layoutStore CRDT operations', () => {
     it('reports applied when a batch mutation throws after its first write', () => {
       createNode()
       const ydoc = layoutStore.getYDoc()
-      const ynode = ydoc.getMap<Y.Map<unknown>>('nodes').get(`${graphId}:${nodeId}`)!
+      const ynode = ydoc
+        .getMap<Y.Map<unknown>>('nodes')
+        .get(`${graphId}:${nodeId}`)!
       const error = new Error('second write failed')
       const originalSet = ynode.set.bind(ynode)
       const set = vi.spyOn(ynode, 'set')

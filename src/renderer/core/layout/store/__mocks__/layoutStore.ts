@@ -7,6 +7,7 @@ import type { layoutStore as RealLayoutStore } from '../layoutStore'
 export const layoutStore = fromPartial<typeof RealLayoutStore>({
   allocateZIndex: vi.fn(() => 1),
   applyOperation: vi.fn(() => 'applied'),
+  applyOperations: vi.fn(() => 'applied'),
   batchUpdateNodeBounds: vi.fn(),
   clearGraph: vi.fn(),
   clearViewGeometry: vi.fn(),
@@ -20,6 +21,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   getRerouteLayout: vi.fn(() => null),
   getSlotLayout: vi.fn(() => null),
   getVersion: vi.fn(() => ({ value: 0 })),
+  getYDoc: vi.fn(() => ({ getMap: vi.fn(() => ({ get: vi.fn() })) })),
   hasSlotLayouts: false,
   onChange: vi.fn(() => () => {}),
   onNodeChange: vi.fn(() => () => {}),

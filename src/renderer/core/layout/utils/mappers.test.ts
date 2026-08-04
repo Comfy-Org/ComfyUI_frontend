@@ -53,6 +53,22 @@ describe('mappers', () => {
     })
   })
 
+  it('keeps registration ownership out of the public node layout', () => {
+    const layout = {
+      id: toNodeId('node-1'),
+      position: { x: 12, y: 34 },
+      size: { width: 111, height: 222 },
+      zIndex: 5,
+      visible: true,
+      bounds: { x: 12, y: 34, width: 111, height: 222 }
+    }
+    const ynode = layoutToYNode(layout, '')
+    new Y.Doc().getMap('nodes').set('node-1', ynode)
+
+    expect(ynode.get('registrationId')).toBe('')
+    expect(yNodeToLayout(ynode)).toEqual(layout)
+  })
+
   it('derives bounds from independently stored position and size', () => {
     const doc = new Y.Doc()
     const ynode = doc.getMap('node') as NodeLayoutMap

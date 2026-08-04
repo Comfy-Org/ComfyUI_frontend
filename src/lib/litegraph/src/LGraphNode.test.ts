@@ -53,6 +53,7 @@ describe('LGraphNode', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    layoutStore.resetForTests()
     origLiteGraph = Object.assign({}, LiteGraph)
     // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
     delete origLiteGraph.Classes
@@ -1031,6 +1032,7 @@ describe('layout geometry projection', () => {
 describe('_setConcreteSlots', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    layoutStore.resetForTests()
   })
 
   test('per-frame calls do not invalidate slot-array subscribers', async () => {
@@ -1074,6 +1076,7 @@ describe('_setConcreteSlots', () => {
 describe('widgets array reactivity', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    layoutStore.resetForTests()
   })
 
   test('notifies readers when a widget is removed in place', async () => {

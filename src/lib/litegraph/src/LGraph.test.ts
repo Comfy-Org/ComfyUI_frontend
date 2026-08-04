@@ -1,11 +1,17 @@
 import { toGroupId } from '@/types/groupId'
+import { fromAny } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  LayoutOperationError,
+  layoutStore
+} from '@/renderer/core/layout/store/layoutStore'
 import {
   LGraph,
   LGraphGroup,
@@ -1407,6 +1413,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     sourceHost.properties.proxyWidgets = [['9999', 'seed']]
     const serialized = sourceHost.rootGraph.serialize()
     const instanceData = sourceHost.serialize()
+    sourceHost.rootGraph.clear()
 
     const previous = LGraph.proxyWidgetMigrationFlush
     LGraph.proxyWidgetMigrationFlush = undefined
@@ -1594,6 +1601,199 @@ describe('node layout registration', () => {
     return zIndex
   }
 
+  it('restores an attached node layout when onBeforeChange throws', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [120, 340]
+    graph.add(node)
+    graph.onBeforeChange = () => {
+      throw new Error('before change failed')
+    }
+
+    expect(() => graph.remove(node)).toThrow('before change failed')
+    expect(graph.nodes).toContain(node)
+    expect(node.graph).toBe(graph)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 120,
+      y: 340
+    })
+
+    node.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 220,
+      y: 440
+    })
+
+    graph.onBeforeChange = undefined
+    graph.remove(node)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toBeNull()
+  })
+
+  it('retains primary cause when node removal compensation also fails', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const primaryCause = new Error('primary cause')
+    const primaryError = new Error('removal failed', { cause: primaryCause })
+    const compensationError = new Error('compensation failed')
+    graph.onBeforeChange = () => {
+      throw primaryError
+    }
+    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockImplementation((operation) => {
+        if (operation.type === 'createNode') throw compensationError
+        return originalApplyOperation(operation)
+      })
+
+    let thrown: unknown
+    try {
+      graph.remove(node)
+    } catch (error) {
+      thrown = error
+    }
+    applyOperation.mockRestore()
+
+    expect(thrown).toBe(primaryError)
+    expect(thrown).toMatchObject({
+      cause: expect.objectContaining({
+        errors: [primaryCause, compensationError]
+      })
+    })
+  })
+
+  it('restores node registration when unregister throws after deletion', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [120, 340]
+    graph.add(node)
+    const ynodes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes')
+    const registrationId = ynodes
+      .get(`${graph.rootGraph.id}:${node.id}`)
+      ?.get('registrationId')
+    const ydoc = layoutStore.getYDoc()
+    const originalTransact = ydoc.transact.bind(ydoc)
+    const transact = vi
+      .spyOn(ydoc, 'transact')
+      .mockImplementationOnce((transaction, origin) => {
+        originalTransact(transaction, origin)
+        throw new Error('node unregister failed')
+      })
+
+    expect(() => graph.remove(node)).toThrow('node unregister failed')
+    transact.mockRestore()
+    expect(graph.nodes).toContain(node)
+    expect(node.graph).toBe(graph)
+    expect(
+      ynodes.get(`${graph.rootGraph.id}:${node.id}`)?.get('registrationId')
+    ).toBe(registrationId)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 120,
+      y: 340
+    })
+
+    node.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 220,
+      y: 440
+    })
+    graph.remove(node)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toBeNull()
+  })
+
+  it('restores node ownership when canvas deselect throws after detachment', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [120, 340]
+    graph.add(node)
+    const ynodes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes')
+    const registrationId = ynodes
+      .get(`${graph.rootGraph.id}:${node.id}`)
+      ?.get('registrationId')
+    const canvas = fromAny<LGraphCanvas, unknown>({
+      checkPanels: vi.fn(),
+      selected_nodes: { [node.id]: node },
+      setDirty: vi.fn(),
+      deselect: vi.fn().mockImplementationOnce(() => {
+        expect(node.graph).toBeNull()
+        throw new Error('node deselect failed')
+      })
+    })
+    graph.list_of_graphcanvas = [canvas]
+
+    expect(() => graph.remove(node)).toThrow('node deselect failed')
+    expect(graph.nodes).toContain(node)
+    expect(graph.getNodeById(node.id)).toBe(node)
+    expect(node.graph).toBe(graph)
+    expect(
+      ynodes.get(`${graph.rootGraph.id}:${node.id}`)?.get('registrationId')
+    ).toBe(registrationId)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 120,
+      y: 340
+    })
+
+    node.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 220,
+      y: 440
+    })
+    graph.remove(node)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toBeNull()
+  })
+
+  it('restores released subgraph layouts when outer removal fails', () => {
+    const graph = new LGraph()
+    const subgraph = graph.createSubgraph(createTestSubgraphData())
+    const interior = new LGraphNode('interior')
+    interior.pos = [10, 20]
+    subgraph.add(interior)
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    graph.add(subgraphNode)
+    subgraphNode.onRemoved = () => {
+      throw new Error('outer removal failed')
+    }
+
+    expect(() => graph.remove(subgraphNode)).toThrow('outer removal failed')
+    expect(graph.nodes).toContain(subgraphNode)
+    expect(subgraphNode.graph).toBe(graph)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, interior.id).value
+        ?.position
+    ).toEqual({
+      x: 10,
+      y: 20
+    })
+
+    interior.pos = [30, 40]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, interior.id).value
+        ?.position
+    ).toEqual({
+      x: 30,
+      y: 40
+    })
+  })
+
   it('stacks later nodes above earlier ones', () => {
     const graph = new LGraph()
     const first = new LGraphNode('first')
@@ -1617,28 +1817,28 @@ describe('node layout registration', () => {
 
     expect(zIndexOf(graph, third)).toBeGreaterThan(zIndexOf(graph, second))
   })
-
-  it('registers after node:added so deferred listener work is queued first', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-
-    graph.events.addEventListener('node:added', () => {
-      expect(
-        layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
-      ).toBeNull()
-    })
-
-    graph.add(node)
-
-    expect.assertions(2)
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
-    ).not.toBeNull()
-  })
 })
 
 describe('graph teardown drops layout entries', () => {
   const REROUTE = toRerouteId(1)
+
+  function layoutEntryCount(graph: LGraph) {
+    const rootGraphId = graph.rootGraph.id
+    const nodeKeys = [
+      ...layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes').keys()
+    ].filter((key) => key.startsWith(`${rootGraphId}:`))
+    return (
+      nodeKeys.length +
+      layoutStore.getAllGroups(rootGraphId).value.size +
+      (layoutStore.getRerouteLayout(rootGraphId, REROUTE) ? 1 : 0)
+    )
+  }
+
+  class ClearOverrideGraph extends LGraph {
+    override clear(): void {
+      super.clear()
+    }
+  }
 
   beforeEach(() => {
     layoutStore.resetForTests()
@@ -1675,6 +1875,15 @@ describe('graph teardown drops layout entries', () => {
       layoutStore.getRerouteLayout(rootGraphId, REROUTE)
     ].filter((entry) => entry !== null).length
   }
+
+  it('keeps clear void and override-compatible', () => {
+    const graph = new LGraph()
+    graph.add(new LGraphNode('node'))
+
+    expect(graph.clear()).toBeUndefined()
+    expect(graph.nodes).toHaveLength(0)
+    expect(new ClearOverrideGraph()).toBeInstanceOf(LGraph)
+  })
 
   it.for([
     ['clear', (graph: LGraph) => graph.clear()],
@@ -1725,5 +1934,159 @@ describe('graph teardown drops layout entries', () => {
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, interior.id).value
     ).toBeNull()
+  })
+
+  it('restores owned layouts when clear fails after a prefix deletion', () => {
+    const { graph } = createGraphWithEveryLayoutEntryType()
+    const nodes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes')
+    const registrations = new Map(
+      [...nodes].map(([id, layout]) => [id, layout.get('registrationId')])
+    )
+    const originalDelete = nodes.delete.bind(nodes)
+    const failure = new Error('prefix delete failed')
+    let deletionCount = 0
+    const deleteNode = vi.spyOn(nodes, 'delete').mockImplementation((id) => {
+      originalDelete(id)
+      deletionCount += 1
+      if (deletionCount === 2) throw failure
+      return true
+    })
+
+    let thrown: unknown
+    try {
+      graph.clear()
+    } catch (error) {
+      thrown = error
+    }
+    deleteNode.mockRestore()
+
+    expect(thrown).toBeInstanceOf(LayoutOperationError)
+    expect(thrown).toMatchObject({ applied: true, cause: failure })
+    expect(graph.nodes).not.toHaveLength(0)
+    expect(layoutEntryCount(graph)).toBe(4)
+    for (const [id, registrationId] of registrations) {
+      expect(nodes.get(id)?.get('registrationId')).toBe(registrationId)
+    }
+
+    graph.clear()
+    expect(layoutEntryCount(graph)).toBe(0)
+  })
+
+  it.for(['nodes', 'groups', 'reroutes'] as const)(
+    'restores layouts when the first %s delete writes then throws',
+    (mapName) => {
+      const graph = new LGraph()
+      graph.id = createUuidv4()
+      if (mapName === 'nodes') graph.add(new LGraphNode('node'))
+      if (mapName === 'groups') graph.add(new LGraphGroup('group'))
+      if (mapName === 'reroutes') {
+        graph._addReroute(new Reroute(REROUTE, graph, [10, 10]))
+      }
+      const layouts = layoutStore.getYDoc().getMap<Y.Map<unknown>>(mapName)
+      const originalDelete = layouts.delete.bind(layouts)
+      const failure = new Error(`${mapName} delete failed`)
+      const deleteLayout = vi
+        .spyOn(layouts, 'delete')
+        .mockImplementation((id) => {
+          originalDelete(id)
+          throw failure
+        })
+
+      let thrown: unknown
+      try {
+        graph.clear()
+      } catch (error) {
+        thrown = error
+      }
+      deleteLayout.mockRestore()
+
+      expect(thrown).toBeInstanceOf(LayoutOperationError)
+      expect(thrown).toMatchObject({ applied: true, cause: failure })
+      expect(layoutEntryCount(graph)).toBe(1)
+      graph.clear()
+      expect(layoutEntryCount(graph)).toBe(0)
+    }
+  )
+
+  it('restores owned layouts when clear fails during finalization', () => {
+    const { graph } = createGraphWithEveryLayoutEntryType()
+    const failure = new Error('finalization failed')
+    const stop = layoutStore.onChange(vi.fn())
+    const originalStructuredClone = structuredClone
+    const clone = vi.spyOn(globalThis, 'structuredClone')
+    clone.mockImplementation((value) => {
+      if (typeof value === 'object' && value !== null && 'operation' in value) {
+        throw failure
+      }
+      return originalStructuredClone(value)
+    })
+
+    let thrown: unknown
+    try {
+      graph.clear()
+    } catch (error) {
+      thrown = error
+    }
+    clone.mockRestore()
+    stop()
+
+    expect(thrown).toBeInstanceOf(LayoutOperationError)
+    expect(thrown).toMatchObject({
+      applied: true,
+      cause: expect.objectContaining({
+        errors: expect.arrayContaining([failure])
+      })
+    })
+    expect(graph.nodes).not.toHaveLength(0)
+    expect(layoutEntryCount(graph)).toBe(4)
+    graph.clear()
+    expect(layoutEntryCount(graph)).toBe(0)
+  })
+
+  it('preserves existing entities when configure teardown is rejected', () => {
+    const { graph } = createGraphWithEveryLayoutEntryType()
+    const originalId = graph.id
+    const originalNodes = [...graph.nodes]
+    const originalExtra = graph.extra
+    const replacement = {
+      ...new LGraph().serialize(),
+      id: createUuidv4(),
+      extra: { replacement: true }
+    }
+    const applyOperations = vi
+      .spyOn(layoutStore, 'applyOperations')
+      .mockReturnValueOnce('rejected')
+
+    graph.configure(replacement)
+    applyOperations.mockRestore()
+
+    expect(graph.id).toBe(originalId)
+    expect(graph.nodes).toEqual(originalNodes)
+    expect(graph.extra).toBe(originalExtra)
+    expect(layoutEntryCount(graph)).toBe(4)
+  })
+
+  it('does not overwrite a foreign replacement while compensating clear', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    graph.add(node)
+    const nodes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes')
+    const key = `${graph.rootGraph.id}:${node.id}`
+    const foreign = new Y.Map<unknown>()
+    foreign.set('registrationId', 'foreign')
+    const originalDelete = nodes.delete.bind(nodes)
+    const deleteNode = vi.spyOn(nodes, 'delete').mockImplementation((id) => {
+      originalDelete(id)
+      nodes.set(id, foreign)
+      throw new Error('delete failed')
+    })
+
+    expect(() => graph.clear()).toThrow('delete failed')
+    deleteNode.mockRestore()
+
+    expect(nodes.get(key)).toBe(foreign)
+    expect(node._layoutRegistered).toBe(true)
+    graph.clear()
+    expect(nodes.get(key)).toBe(foreign)
   })
 })

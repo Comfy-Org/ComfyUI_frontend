@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { registerGroupLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
@@ -68,8 +68,6 @@ function snapshotGeometry(nodes: MockNode[]) {
     size: [...n.size] as [number, number]
   }))
 }
-
-const layoutMutations = useLayoutMutations()
 
 describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
   beforeEach(() => {
@@ -234,10 +232,9 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
 
     const group = new LGraphGroup('normalize-me', 810)
     group.graph = graph
-    layoutMutations.createGroup(graph.id, toGroupId(810), {
-      position: { x: 150, y: 150 },
-      size: { width: 300, height: 200 }
-    })
+    group.pos = [150, 150]
+    group.size = [300, 200]
+    registerGroupLayout(graph, group, 'normalize-me-registration')
     graph.groups!.push(group)
 
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')

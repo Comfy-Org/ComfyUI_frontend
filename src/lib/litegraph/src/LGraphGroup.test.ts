@@ -2,12 +2,17 @@ import { toGroupId } from '@/types/groupId'
 import type { GroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, vi } from 'vitest'
+import { beforeEach, describe, expect, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { unregisterGroupLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import {
+  registerGroupLayout,
+  registerNodeLayout,
+  unregisterNodeLayout,
+  unregisterGroupLayout
+} from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import {
   LayoutOperationError,
@@ -183,6 +188,44 @@ describe('group layout in layoutStore', () => {
     expect(groups.get(key)).toBe(foreignGroup)
   })
 
+  test('keeps retained node ownership after a foreign explicit unregister', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    unregisterNodeLayout(graph, node)
+    registerNodeLayout(graph, node, 'A')
+
+    expect(unregisterNodeLayout(graph, node, 'B')).toBe('no-op')
+    node.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 220,
+      y: 440
+    })
+
+    expect(unregisterNodeLayout(graph, node, 'A')).toBe('applied')
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toBeNull()
+  })
+
+  test('keeps retained ownership after a foreign explicit unregister', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(817))
+    unregisterGroupLayout(graph, group)
+    registerGroupLayout(graph, group, 'A')
+
+    expect(unregisterGroupLayout(graph, group, 'B')).toBe('no-op')
+    group.pos = [200, 250]
+    expect(
+      layoutStore.getGroupLayout(graph.rootGraph.id, group.id)?.position
+    ).toEqual({ x: 200, y: 250 })
+
+    expect(unregisterGroupLayout(graph, group, 'A')).toBe('applied')
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
+  })
+
   test('retains group ownership when unregister throws before deletion', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(806))
@@ -203,6 +246,75 @@ describe('group layout in layoutStore', () => {
 
     expect(graph.groups).not.toContain(group)
     expect(group.graph).toBeUndefined()
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
+  })
+
+  test('restores group registration when unregister throws after deletion', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(810))
+    const ydoc = layoutStore.getYDoc()
+    const groups = ydoc.getMap<Y.Map<unknown>>('groups')
+    const key = `${graph.rootGraph.id}:${group.id}`
+    const registrationId = groups.get(key)?.get('registrationId')
+    const originalTransact = ydoc.transact.bind(ydoc)
+    const transact = vi
+      .spyOn(ydoc, 'transact')
+      .mockImplementationOnce((transaction, origin) => {
+        originalTransact(transaction, origin)
+        throw new Error('group unregister failed')
+      })
+
+    expect(() => graph.remove(group)).toThrow('group unregister failed')
+    transact.mockRestore()
+    expect(graph.groups).toContain(group)
+    expect(group.graph).toBe(graph)
+    expect(groups.get(key)?.get('registrationId')).toBe(registrationId)
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 100, y: 100 },
+      size: { width: 300, height: 200 }
+    })
+
+    group.pos = [200, 250]
+    expect(
+      layoutStore.getGroupLayout(graph.rootGraph.id, group.id)?.position
+    ).toEqual({
+      x: 200,
+      y: 250
+    })
+    graph.remove(group)
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
+  })
+
+  test('restores an attached group layout when canvas deselect throws', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(809))
+    unregisterGroupLayout(graph, group)
+    registerGroupLayout(graph, group, '')
+    const canvasAction = vi
+      .spyOn(graph, 'canvasAction')
+      .mockImplementation(() => {
+        throw new Error('group deselect failed')
+      })
+
+    expect(() => graph.remove(group)).toThrow('group deselect failed')
+    expect(graph.groups).toContain(group)
+    expect(group.graph).toBe(graph)
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 100, y: 100 },
+      size: { width: 300, height: 200 }
+    })
+
+    group.pos = [200, 250]
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 200, y: 250 },
+      size: { width: 300, height: 200 }
+    })
+
+    canvasAction.mockRestore()
+    graph.remove(group)
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
   })
 
@@ -266,6 +378,206 @@ describe('group layout in layoutStore', () => {
     expect(graph.nodes).toContain(node)
   })
 
+  test('preserves a foreign layout that replaced an attached node', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    graph.add(node)
+    const nodes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes')
+    const key = `${graph.rootGraph.id}:${node.id}`
+    const foreignNode = new Y.Map<unknown>()
+    foreignNode.set('id', node.id)
+    foreignNode.set('position', { x: 20, y: 30 })
+    foreignNode.set('size', { width: 40, height: 50 })
+    foreignNode.set('visible', true)
+    foreignNode.set('zIndex', 0)
+    foreignNode.set('registrationId', 'foreign-node')
+    nodes.set(key, foreignNode)
+
+    node.pos = [200, 300]
+    node.size = [400, 500]
+
+    expect([...node.pos]).toEqual([20, 30])
+    expect([...node.size]).toEqual([40, 50])
+    graph.remove(node)
+
+    expect(nodes.get(key)).toBe(foreignNode)
+  })
+
+  test('adding the same node instance twice is idempotent', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+
+    expect(graph.add(node)).toBe(node)
+    expect(graph.add(node)).toBe(node)
+
+    expect(graph.nodes).toEqual([node])
+    expect(
+      [...layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes').keys()].filter(
+        (key) => key.startsWith(`${graph.rootGraph.id}:`)
+      )
+    ).toHaveLength(1)
+  })
+
+  test('rolls back node add when reentrant registration is rejected', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(811))
+    const node = new LGraphNode('node')
+    const originalId = node.id
+    const ydoc = layoutStore.getYDoc()
+    function attemptAdd(): void {
+      ydoc.off('beforeTransaction', attemptAdd)
+      graph.add(node)
+    }
+    ydoc.on('beforeTransaction', attemptAdd)
+
+    group.pos = [200, 250]
+
+    expect(node.id).toBe(originalId)
+    expect(node.graph).toBeNull()
+    expect(node._layoutRegistered).toBe(false)
+    expect(graph.nodes).not.toContain(node)
+  })
+
+  test('restores node identity when registration compensation throws', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    const originalId = node.id
+    const originalLastNodeId = graph.state.lastNodeId
+    const registrationCause = new Error('registration cause')
+    const registrationError = new LayoutOperationError(
+      'registration failed',
+      true,
+      { cause: registrationCause }
+    )
+    const compensationError = new Error('compensation failed')
+    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    applyOperation.mockImplementation((operation) => {
+      if (operation.type === 'deleteNode') {
+        throw compensationError
+      }
+      const result = originalApplyOperation(operation)
+      if (operation.type === 'createNode') {
+        throw registrationError
+      }
+      return result
+    })
+
+    let thrown: unknown
+    try {
+      graph.add(node)
+    } catch (error) {
+      thrown = error
+    }
+
+    expect(thrown).toBe(registrationError)
+    expect(thrown).toMatchObject({
+      cause: expect.objectContaining({
+        errors: [registrationCause, compensationError]
+      })
+    })
+    expect(node.id).toBe(originalId)
+    expect(node.graph).toBeNull()
+    expect(graph.nodes).not.toContain(node)
+    expect(graph.state.lastNodeId).toBe(originalLastNodeId)
+
+    applyOperation.mockRestore()
+    expect(graph.add(node)).toBe(node)
+    expect(graph.nodes).toEqual([node])
+  })
+
+  test('restores group identity when registration compensation throws', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group')
+    const originalId = group.id
+    const originalLastGroupId = graph.state.lastGroupId
+    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
+    applyOperation.mockImplementation((operation) => {
+      if (operation.type === 'deleteGroup') {
+        throw new Error('compensation failed')
+      }
+      const result = originalApplyOperation(operation)
+      if (operation.type === 'createGroup') {
+        throw new LayoutOperationError('registration failed', true, {
+          cause: new Error('registration failed')
+        })
+      }
+      return result
+    })
+
+    expect(() => graph.add(group)).toThrow('registration failed')
+
+    expect(group.id).toBe(originalId)
+    expect(group.graph).toBeUndefined()
+    expect(graph.groups).not.toContain(group)
+    expect(graph.state.lastGroupId).toBe(originalLastGroupId)
+
+    applyOperation.mockRestore()
+    graph.add(group)
+    expect(graph.groups).toEqual([group])
+    expect(layoutStore.getGroupLayout(graph.id, group.id)).not.toBeNull()
+  })
+
+  test('reconciles an empty-token registration after cleanup fails', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', 816)
+    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
+    applyOperation.mockImplementation((operation) => {
+      if (operation.type === 'deleteGroup') throw new Error('cleanup failed')
+      const result = originalApplyOperation(operation)
+      if (operation.type === 'createGroup') throw new Error('create failed')
+      return result
+    })
+
+    expect(() => registerGroupLayout(graph, group, '')).toThrow('create failed')
+    expect(() => unregisterGroupLayout(graph, group, '')).toThrow(
+      'cleanup failed'
+    )
+
+    applyOperation.mockRestore()
+    expect(registerGroupLayout(graph, group, 'retry')).toBe('applied')
+    expect(
+      layoutStore
+        .getYDoc()
+        .getMap<Y.Map<unknown>>('groups')
+        .get(`${graph.id}:${group.id}`)
+        ?.get('registrationId')
+    ).toBe('retry')
+  })
+
+  test('keeps a pending orphan after a foreign explicit unregister', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', 818)
+    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockImplementation((operation) => {
+        const result = originalApplyOperation(operation)
+        if (operation.type === 'createGroup') throw new Error('create failed')
+        return result
+      })
+    onTestFinished(() => applyOperation.mockRestore())
+
+    expect(() => registerGroupLayout(graph, group, 'A')).toThrow(
+      'create failed'
+    )
+    expect(unregisterGroupLayout(graph, group, 'B')).toBe('no-op')
+
+    applyOperation.mockRestore()
+    expect(registerGroupLayout(graph, group, 'retry')).toBe('applied')
+    expect(
+      layoutStore
+        .getYDoc()
+        .getMap<Y.Map<unknown>>('groups')
+        .get(`${graph.id}:${group.id}`)
+        ?.get('registrationId')
+    ).toBe('retry')
+  })
+
   test('aborts reentrant configure when layout teardown is rejected', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')
@@ -315,7 +627,9 @@ describe('group layout in layoutStore', () => {
     expect(group.graph).toBe(nextGraph)
     expect(subgraph.groups).toHaveLength(0)
     expect(nextGraph.groups).toEqual([group])
-    expect(layoutStore.getGroupLayout(originalRootId, toGroupId(814))).toBeNull()
+    expect(
+      layoutStore.getGroupLayout(originalRootId, toGroupId(814))
+    ).toBeNull()
     expect(layoutStore.getGroupLayout(nextGraph.id, group.id)).toEqual({
       id: group.id,
       position: { x: 100, y: 100 },
@@ -647,17 +961,11 @@ describe('group layout in layoutStore', () => {
     const pos = group.pos
     const size = group.size
 
-    layoutStore.applyOperation({
-      type: 'setGroupBounds',
-      actor: 'test',
-      timestamp: 1,
-      source: layoutStore.getCurrentSource(),
-      entity: 'group',
-      graphId: graph.rootGraph.id,
-      groupId: group.id,
-      position: { x: 11, y: 12 },
-      size: { width: 410, height: 310 }
-    })
+    layoutStore
+      .getYDoc()
+      .getMap<Y.Map<unknown>>('groups')
+      .get(`${graph.rootGraph.id}:${group.id}`)
+      ?.set('rect', [11, 12, 410, 310])
 
     expect(group.pos).toBe(pos)
     expect(group.size).toBe(size)
@@ -754,5 +1062,27 @@ describe('group layout in layoutStore', () => {
       position: { x: 20, y: 30 },
       size: { width: 40, height: 50 }
     })
+
+    const foreignLayout = groups.get(registeredKey!)
+    expect(() => graph.add(group)).toThrow(/layout|registration/i)
+    expect(groups.get(registeredKey!)).toBe(foreignLayout)
+  })
+
+  test('stale registered group writes preserve a foreign replacement', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group')
+    graph.add(group)
+    const groups = layoutStore.getYDoc().getMap<Y.Map<unknown>>('groups')
+    const key = `${graph.rootGraph.id}:${group.id}`
+    const foreign = new Y.Map<unknown>()
+    foreign.set('id', group.id)
+    foreign.set('rect', [20, 30, 40, 50])
+    foreign.set('registrationId', 'foreign')
+    groups.set(key, foreign)
+
+    group.pos = [200, 300]
+
+    expect(groups.get(key)).toBe(foreign)
+    expect([...group.pos]).toEqual([20, 30])
   })
 })

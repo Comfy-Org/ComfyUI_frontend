@@ -1,4 +1,4 @@
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
@@ -9,7 +9,6 @@ import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { toRaw } from 'vue'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
@@ -138,9 +137,9 @@ export class Reroute
       return
     }
 
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Canvas)
-    mutations.moveReroute(this.rootGraphId, this.id, {
+    const graph = this.network.deref()
+    if (!graph) return
+    moveRerouteLayout(graph, this, {
       x: value[0],
       y: value[1]
     })

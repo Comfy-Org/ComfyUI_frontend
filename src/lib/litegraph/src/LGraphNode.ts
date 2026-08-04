@@ -5,9 +5,11 @@ import {
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import {
+  moveNodeLayout,
+  resizeNodeLayout
+} from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -122,9 +124,6 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 // #region Types
 
 export type NodeProperty = string | number | boolean | object | null
-
-/** Captures only the {@link layoutStore} singleton, so shared across nodes. */
-const layoutMutations = useLayoutMutations()
 
 const storedRectScratch = new Float64Array(4)
 
@@ -673,8 +672,7 @@ export class LGraphNode
       return
     }
 
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.moveNode(rootGraphId, this.id, position)
+    moveNodeLayout(this, position)
     this._geometryVersion = -1
     this.refreshGeometry()
   }
@@ -711,8 +709,7 @@ export class LGraphNode
       return
     }
 
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.resizeNode(rootGraphId, this.id, {
+    resizeNodeLayout(this, {
       width: this._size[0],
       height: this._size[1]
     })

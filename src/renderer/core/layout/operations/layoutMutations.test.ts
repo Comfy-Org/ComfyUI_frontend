@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import type * as Y from 'yjs'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toGroupId } from '@/types/groupId'
@@ -33,6 +34,7 @@ function seedNode(
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
+  layoutStore.resetForTests()
   seedNode(NODE_1, [10, 20], [200, 100], 0)
   seedNode(NODE_2, [300, 400], [150, 80], 1)
 })
@@ -57,6 +59,35 @@ describe('moveNode', () => {
         y: 200
       }
     )
+  })
+
+  it('preserves a registered node when ownership does not match', () => {
+    const { createNode } = useLayoutMutations()
+    createNode(GRAPH, NEW_NODE, { position: { x: 10, y: 20 } })
+    layoutStore
+      .getYDoc()
+      .getMap<Y.Map<unknown>>('nodes')
+      .get(`${GRAPH}:${NEW_NODE}`)
+      ?.set('registrationId', 'owner')
+
+    layoutStore.applyOperation({
+      actor: layoutStore.getCurrentActor(),
+      entity: 'node',
+      graphId: GRAPH,
+      nodeId: NEW_NODE,
+      position: { x: 100, y: 200 },
+      registrationId: 'foreign',
+      source: layoutStore.getCurrentSource(),
+      timestamp: Date.now(),
+      type: 'moveNode'
+    })
+
+    expect(
+      layoutStore.getNodeLayoutRef(GRAPH, NEW_NODE).value?.position
+    ).toEqual({
+      x: 10,
+      y: 20
+    })
   })
 })
 
@@ -127,6 +158,32 @@ describe('deleteNode', () => {
     const { deleteNode } = useLayoutMutations()
     deleteNode(GRAPH, NODE_1)
     expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value).toBeNull()
+  })
+
+  it('requires exact ownership evidence for registered nodes', () => {
+    const { createNode, deleteNode } = useLayoutMutations()
+    createNode(GRAPH, NEW_NODE, {})
+    layoutStore
+      .getYDoc()
+      .getMap<Y.Map<unknown>>('nodes')
+      .get(`${GRAPH}:${NEW_NODE}`)
+      ?.set('registrationId', '')
+
+    expect(deleteNode(GRAPH, NEW_NODE)).toBe('no-op')
+    const deleteWithRegistration = (registrationId: string) =>
+      layoutStore.applyOperation({
+        actor: layoutStore.getCurrentActor(),
+        entity: 'node',
+        graphId: GRAPH,
+        nodeId: NEW_NODE,
+        registrationId,
+        source: layoutStore.getCurrentSource(),
+        timestamp: Date.now(),
+        type: 'deleteNode'
+      })
+    expect(deleteWithRegistration('foreign')).toBe('no-op')
+    expect(deleteWithRegistration('')).toBe('applied')
+    expect(layoutStore.getNodeLayoutRef(GRAPH, NEW_NODE).value).toBeNull()
   })
 })
 

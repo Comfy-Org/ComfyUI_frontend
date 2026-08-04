@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
@@ -111,16 +112,7 @@ function createLayoutEntry(
 }
 
 function setZIndex(rootGraphId: UUID, nodeId: NodeId, zIndex: number) {
-  layoutStore.applyOperation({
-    type: 'setNodeZIndex',
-    entity: 'node',
-    graphId: rootGraphId,
-    nodeId,
-    zIndex,
-    timestamp: Date.now(),
-    source: LayoutSource.Canvas,
-    actor: 'test'
-  })
+  useLayoutMutations().setNodeZIndex(rootGraphId, nodeId, zIndex)
 }
 
 function getNodeLayout(rootGraphId: UUID, nodeId: NodeId): NodeLayout {

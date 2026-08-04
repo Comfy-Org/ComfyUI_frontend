@@ -36,6 +36,7 @@ describe('LGraph Serialisation', () => {
     const copied = new LGraph(deserialised)
     expect(copied.nodes.length).toBe(1)
     expect(copied.groups.length).toBe(1)
+    copied.clear()
   })
 
   test('registers connected links after a JSON round trip', ({ expect }) => {
@@ -73,5 +74,6 @@ describe('LGraph Serialisation', () => {
     )
 
     expect(copiedLink).toMatchObject(expectedLink)
+    copied.clear()
   })
 })

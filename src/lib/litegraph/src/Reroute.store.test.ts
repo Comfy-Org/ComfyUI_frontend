@@ -15,9 +15,15 @@ import {
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import { unregisterRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import {
+  registerRerouteLayout,
+  unregisterRerouteLayout
+} from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  LayoutOperationError,
+  layoutStore
+} from '@/renderer/core/layout/store/layoutStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { toRerouteId } from '@/types/rerouteId'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
@@ -38,7 +44,10 @@ function connectedGraph() {
 }
 
 describe('Reroute ↔ rerouteStore integration', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    layoutStore.resetForTests()
+  })
 
   it('createReroute registers the chain, removeReroute unregisters it', () => {
     const { graph, link } = connectedGraph()
@@ -799,6 +808,23 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(reroutes.get(key)).toBe(foreignReroute)
   })
 
+  it('stale attached reroute writes preserve a foreign replacement', () => {
+    const graph = new LGraph()
+    const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
+    const reroutes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('reroutes')
+    const key = `${graph.rootGraph.id}:${reroute.id}`
+    const foreign = new Y.Map<unknown>()
+    foreign.set('id', reroute.id)
+    foreign.set('position', { x: 70, y: 80 })
+    foreign.set('registrationId', 'foreign')
+    reroutes.set(key, foreign)
+
+    reroute.pos = [30, 40]
+
+    expect(reroutes.get(key)).toBe(foreign)
+    expect([...reroute.pos]).toEqual([70, 80])
+  })
+
   it('clear preserves a foreign layout that replaced the attached reroute', () => {
     const graph = new LGraph()
     const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
@@ -831,6 +857,55 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(reroutes.get(key)).toBe(foreignReroute)
   })
 
+  it('keeps retained ownership after a foreign explicit unregister', () => {
+    const graph = new LGraph()
+    const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
+    unregisterRerouteLayout(graph, reroute)
+    registerRerouteLayout(graph, reroute, { x: 10, y: 20 }, 'A')
+
+    expect(unregisterRerouteLayout(graph, reroute, 'B')).toBe('no-op')
+    reroute.pos = [30, 40]
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 30, y: 40 })
+
+    expect(unregisterRerouteLayout(graph, reroute, 'A')).toBe('applied')
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)
+    ).toBeNull()
+  })
+
+  it('keeps a pending orphan after a foreign explicit unregister', () => {
+    const graph = new LGraph()
+    const reroute = new Reroute(toRerouteId(33), graph, [10, 20])
+    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockImplementation((operation) => {
+        const result = originalApplyOperation(operation)
+        if (operation.type === 'createReroute') throw new Error('create failed')
+        return result
+      })
+    onTestFinished(() => applyOperation.mockRestore())
+
+    expect(() =>
+      registerRerouteLayout(graph, reroute, { x: 10, y: 20 }, 'A')
+    ).toThrow('create failed')
+    expect(unregisterRerouteLayout(graph, reroute, 'B')).toBe('no-op')
+
+    applyOperation.mockRestore()
+    expect(
+      registerRerouteLayout(graph, reroute, { x: 30, y: 40 }, 'retry')
+    ).toBe('applied')
+    expect(
+      layoutStore
+        .getYDoc()
+        .getMap<Y.Map<unknown>>('reroutes')
+        .get(`${graph.id}:${reroute.id}`)
+        ?.get('registrationId')
+    ).toBe('retry')
+  })
+
   it('retains reroute ownership when unregister throws before deletion', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 20], link)!
@@ -855,6 +930,81 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(graph.reroutes.has(reroute.id)).toBe(false)
     expect(reroute._attachedGraph).toBeUndefined()
     expect(link.parentId).toBeUndefined()
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)
+    ).toBeNull()
+  })
+
+  it('restores reroute registration when unregister throws after deletion', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 20], link)!
+    const ydoc = layoutStore.getYDoc()
+    const reroutes = ydoc.getMap<Y.Map<unknown>>('reroutes')
+    const key = `${graph.rootGraph.id}:${reroute.id}`
+    const registrationId = reroutes.get(key)?.get('registrationId')
+    const originalTransact = ydoc.transact.bind(ydoc)
+    const transact = vi
+      .spyOn(ydoc, 'transact')
+      .mockImplementationOnce((transaction, origin) => {
+        originalTransact(transaction, origin)
+        throw new Error('reroute unregister failed')
+      })
+
+    expect(() => graph.removeReroute(reroute.id)).toThrow(
+      'reroute unregister failed'
+    )
+    transact.mockRestore()
+    expect(graph.reroutes.get(reroute.id)).toBe(reroute)
+    expect(reroute._attachedGraph?.deref()).toBe(graph)
+    expect(reroutes.get(key)?.get('registrationId')).toBe(registrationId)
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({
+      x: 10,
+      y: 20
+    })
+
+    reroute.pos = [30, 40]
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({
+      x: 30,
+      y: 40
+    })
+    graph.removeReroute(reroute.id)
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)
+    ).toBeNull()
+  })
+
+  it('restores an attached reroute layout when canvas deselect throws', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 20], link)!
+    unregisterRerouteLayout(graph, reroute)
+    registerRerouteLayout(graph, reroute, { x: 10, y: 20 }, '')
+    const canvasAction = vi
+      .spyOn(graph, 'canvasAction')
+      .mockImplementation(() => {
+        throw new Error('reroute deselect failed')
+      })
+
+    expect(() => graph.removeReroute(reroute.id)).toThrow(
+      'reroute deselect failed'
+    )
+    expect(graph.reroutes.get(reroute.id)).toBe(reroute)
+    expect(reroute._attachedGraph?.deref()).toBe(graph)
+    expect(link.parentId).toBe(reroute.id)
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 10, y: 20 })
+
+    reroute.pos = [30, 40]
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 30, y: 40 })
+
+    canvasAction.mockRestore()
+    graph.removeReroute(reroute.id)
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)
     ).toBeNull()
@@ -995,12 +1145,11 @@ describe('Reroute position lives only in layoutStore', () => {
     const reroute = graph.createReroute([10, 10], link)!
     const pos = reroute.pos
 
-    // Move it in the store only. A mirrored copy on the class could not see
-    // this without a synchronisation step.
-    useLayoutMutations().moveReroute(graph.rootGraph.id, reroute.id, {
-      x: 300,
-      y: 400
-    })
+    layoutStore
+      .getYDoc()
+      .getMap<Y.Map<unknown>>('reroutes')
+      .get(`${graph.rootGraph.id}:${reroute.id}`)
+      ?.set('position', { x: 300, y: 400 })
 
     expect([...reroute.pos]).toEqual([300, 400])
     expect(reroute.pos).toBe(pos)
@@ -1090,6 +1239,45 @@ describe('Reroute position lives only in layoutStore', () => {
       .get(`${graph.id}:1`)
     expect(foreignLayout?.get('id')).toBe(1)
     expect(foreignLayout?.get('position')).toEqual({ x: 70, y: 80 })
+  })
+
+  it('restores reroute chain ownership when registration compensation throws', () => {
+    const graph = new LGraph()
+    const rerouteId = toRerouteId(999_999)
+    const reroute = new Reroute(rerouteId, graph, [10, 20])
+    const originalLastRerouteId = graph.state.lastRerouteId
+    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
+    applyOperation.mockImplementation((operation) => {
+      if (operation.type === 'deleteReroute') {
+        throw new Error('compensation failed')
+      }
+      const result = originalApplyOperation(operation)
+      if (operation.type === 'createReroute') {
+        throw new LayoutOperationError('registration failed', true, {
+          cause: new Error('registration failed')
+        })
+      }
+      return result
+    })
+
+    expect(() => graph._addReroute(reroute)).toThrow('registration failed')
+
+    expect(graph.reroutes).toHaveLength(0)
+    expect(graph.state.lastRerouteId).toBe(originalLastRerouteId)
+    expect(useRerouteStore().getReroute(graph.id, rerouteId)).toBeUndefined()
+
+    applyOperation.mockRestore()
+    graph._addReroute(reroute)
+    expect(graph.reroutes.get(reroute.id)).toBe(reroute)
+    expect(
+      layoutStore
+        .getYDoc()
+        .getMap<Y.Map<unknown>>('reroutes')
+        .get(`${graph.id}:${reroute.id}`)
+        ?.get('position')
+    ).toEqual({ x: 10, y: 20 })
   })
 
   it('preserves a foreign layout replacing an applied registration before failure', () => {
