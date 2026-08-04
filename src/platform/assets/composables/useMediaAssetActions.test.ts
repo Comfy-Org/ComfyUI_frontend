@@ -924,6 +924,35 @@ describe('useMediaAssetActions', () => {
       expect(payload.naming_strategy).toBe('group_by_job_time')
     })
 
+    it('should export temp history outputs through their job IDs', async () => {
+      mockGetAssetType.mockReturnValueOnce('temp').mockReturnValueOnce('output')
+      const tempOutput = createOutputAsset(
+        'temp-job',
+        'ComfyUI_temp_audio.flac',
+        'temp-job',
+        1
+      )
+      const savedOutput = createOutputAsset(
+        'output-job',
+        'ComfyUI_output.png',
+        'output-job',
+        1
+      )
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([tempOutput, savedOutput])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockCreateAssetExport).toHaveBeenCalledWith({
+        job_ids: ['temp-job', 'output-job'],
+        naming_strategy: 'group_by_job_time',
+        include_previews: true
+      })
+    })
+
     it('should include name filters when outputCount is unknown', async () => {
       const asset1 = createOutputAsset('a1', 'img1.png', 'job1')
       const asset2 = createOutputAsset('a2', 'img2.png', 'job2')
