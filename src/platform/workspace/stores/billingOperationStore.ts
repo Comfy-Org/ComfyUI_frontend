@@ -361,6 +361,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (!operation) return
 
     const superseded = errorMessage === CHECKOUT_SUPERSEDED_REASON
+    const failureCategory = superseded ? 'stale_operation' : 'unknown'
     const defaultMessage = failureMessage(operation.type)
     const detail =
       operation.type === 'subscription'
@@ -381,7 +382,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       cycle: operation.cycle,
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
-      failure_category: superseded ? 'stale_operation' : 'unknown'
+      failure_category: failureCategory
     })
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
@@ -392,7 +393,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         member_removal_failures:
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
-        failure_category: 'unknown'
+        failure_category: failureCategory
       })
     }
 

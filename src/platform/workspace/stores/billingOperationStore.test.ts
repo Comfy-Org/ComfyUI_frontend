@@ -465,6 +465,39 @@ describe('billingOperationStore', () => {
       )
     })
 
+    it('categorises both events when a superseded op was a downgrade', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'checkout_superseded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription', {
+        downgradeToPersonal: {
+          memberRemovalCount: 2,
+          memberRemovalFailures: 0,
+          targetTier: 'free'
+        }
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      // Both emissions must agree: a downgrade that was merely replaced is not
+      // an unexplained billing failure in either event stream.
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'downgrade_to_personal',
+          stage: 'failed',
+          failure_category: 'stale_operation'
+        })
+      )
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ failure_category: 'unknown' })
+      )
+    })
+
     it('uses default message when no error_message in response', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
