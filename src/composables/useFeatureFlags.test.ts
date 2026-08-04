@@ -410,6 +410,47 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('supportsModelTypeTags', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('uses the remote config value', () => {
+      remoteConfig.value = { supports_model_type_tags: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(true)
+    })
+
+    it('falls back to the server feature flag when remote config omits it', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+        false
+      )
+    })
+
+    it('defaults to false when neither source has the flag', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(false)
+    })
+  })
+
   describe('churnkeyAppId', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
