@@ -17,6 +17,7 @@ import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/co
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -51,7 +52,9 @@ function useSubscriptionInternal() {
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
+  const workspaceStore = useTeamWorkspaceStore()
   const { getAuthHeader, fetchWithCustomerRecovery } = authStore
+  const { flags } = useFeatureFlags()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -322,8 +325,23 @@ function useSubscriptionInternal() {
   async function performFetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
     if (!isCloud) return null
 
-    const statusData = await workspaceApi.getBillingStatus()
+    let statusData: BillingStatusResponse
+    try {
+      statusData = await workspaceApi.getBillingStatus()
+    } catch (error) {
+      throw new AuthStoreError(
+        t('toastMessages.failedToFetchSubscription', {
+          error: error instanceof Error ? error.message : String(error)
+        })
+      )
+    }
     subscriptionStatus.value = statusData
+    if (workspaceStore.activeWorkspaceId && statusData.billing_rail) {
+      workspaceStore.setWorkspaceBillingRail(
+        workspaceStore.activeWorkspaceId,
+        statusData.billing_rail
+      )
+    }
     syncPendingSubscriptionSuccess(statusData)
 
     return statusData
