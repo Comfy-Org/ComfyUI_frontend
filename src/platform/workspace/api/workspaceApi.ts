@@ -283,6 +283,7 @@ export interface BillingStatusResponse {
   plan_slug?: string
   billing_status?: BillingStatus
   pending_billing_op_id?: string
+  pending_billing_op_type?: 'subscription' | 'topup'
   action_url?: string
   has_funds: boolean
   cancel_at?: string
