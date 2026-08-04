@@ -397,7 +397,7 @@ const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 const renderedSize = ref<Size>({ ...size.value })
 
 watch(size, (next) => {
-  if (isCollapsed.value || layoutStore.isResizingVueNodes.value) return
+  if (isCollapsed.value) return
   renderedSize.value = next
 })
 
@@ -451,15 +451,16 @@ const mutations = useLayoutMutations(LayoutSource.Vue)
 
 const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
+  const { rootGraphId } = canvasStore
+  if (!rootGraphId) return
 
-  renderedSize.value = {
+  mutations.resizeNode(rootGraphId, nodeData.id, {
     width: Math.max(result.size.width, MIN_NODE_WIDTH),
     height: removeNodeTitleHeight(result.size.height)
-  }
+  })
 
   // Update position for non-SE corner resizing
-  const { rootGraphId } = canvasStore
-  if (result.position && rootGraphId) {
+  if (result.position) {
     mutations.moveNode(rootGraphId, nodeData.id, result.position)
   }
 })
