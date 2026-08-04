@@ -24,6 +24,11 @@ export const TEAM_WORKSPACE: WorkspaceWithRole = {
   subscription_tier: 'PRO'
 }
 
+export const TEAM_MEMBER_WORKSPACE: WorkspaceWithRole = {
+  ...TEAM_WORKSPACE,
+  role: 'member'
+}
+
 export const CREATOR: Member = {
   id: 'u-liz',
   name: 'Liz',
@@ -94,6 +99,14 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   subscription_tier: 'STANDARD',
   team_credit_stop: null
 } satisfies IngestBillingStatusResponse & { billing_rail: 'stripe' }
+
+export const INACTIVE_TEAM_BILLING_STATUS = {
+  ...TEAM_BILLING_STATUS,
+  billing_status: 'inactive',
+  is_active: false,
+  subscription_status: 'canceled',
+  subscription_tier: 'TEAM'
+} satisfies IngestBillingStatusResponse
 
 export const TEAM_PRO_PLAN: Plan = {
   slug: TEAM_PLAN_SLUG,

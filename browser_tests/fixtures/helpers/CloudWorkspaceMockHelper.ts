@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test'
+import type { Locator, Page, Route } from '@playwright/test'
 import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
 import type {
@@ -16,6 +16,7 @@ import {
   WORKSPACE_FEATURE_FLAG
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
 
 interface RoleChangeRequest {
@@ -44,6 +45,30 @@ const jsonRoute = (body: unknown) => ({
  */
 export class CloudWorkspaceMockHelper {
   constructor(private readonly page: Page) {}
+
+  async openWorkspaceSettings(): Promise<Locator> {
+    await this.page.goto(
+      process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+    )
+    await this.page.waitForFunction(
+      () => !!window.app?.extensionManager,
+      null,
+      {
+        timeout: 45_000
+      }
+    )
+    await this.page
+      .getByRole('button', { name: /^Settings/ })
+      .first()
+      .click()
+    const dialog = this.page.getByTestId(TestIds.dialogs.settings)
+    await dialog.waitFor({ state: 'visible' })
+    await dialog
+      .locator('nav')
+      .getByRole('button', { name: 'Workspace', exact: true })
+      .click()
+    return dialog.getByRole('main')
+  }
 
   async setup(
     members: Member[] = DEFAULT_TEAM_MEMBERS,
@@ -137,6 +162,9 @@ export class CloudWorkspaceMockHelper {
 
     await page.route('**/api/billing/status', (r) =>
       r.fulfill(jsonRoute(billingStatus))
+    )
+    await page.route('**/api/billing/payment-portal', (r) =>
+      r.fulfill(jsonRoute({ url: 'https://billing.example/portal' }))
     )
     await page.route('**/api/billing/balance', (r) =>
       r.fulfill(
