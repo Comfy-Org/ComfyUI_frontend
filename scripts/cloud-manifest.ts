@@ -115,12 +115,13 @@ export function validateObjectInfoSnapshot(value: unknown): ObjectInfoSnapshot {
 interface CuratedCloudWorkflow {
   workflow: string
   tiers: CloudManifestEntry['tiers']
+  expectedNodes?: string[]
   timeoutMs?: number
 }
 
 export type CuratedCloudOverlay = Record<string, CuratedCloudWorkflow>
 
-const OVERLAY_KEYS = ['workflow', 'tiers', 'timeoutMs']
+const OVERLAY_KEYS = ['workflow', 'tiers', 'expectedNodes', 'timeoutMs']
 
 export function validateCuratedCloudOverlay(
   value: unknown
@@ -151,6 +152,15 @@ export function validateCuratedCloudOverlay(
     if (!entry.tiers.includes('run'))
       throw new Error(`curated overlay: ${pack} tiers must include 'run'`)
     if (
+      entry.expectedNodes !== undefined &&
+      (!isStringArray(entry.expectedNodes) ||
+        entry.expectedNodes.length === 0 ||
+        new Set(entry.expectedNodes).size !== entry.expectedNodes.length)
+    )
+      throw new Error(
+        `curated overlay: ${pack} expectedNodes must be a non-empty array of unique non-empty node keys`
+      )
+    if (
       entry.timeoutMs !== undefined &&
       (typeof entry.timeoutMs !== 'number' ||
         !Number.isFinite(entry.timeoutMs) ||
@@ -162,6 +172,9 @@ export function validateCuratedCloudOverlay(
     overlay[pack] = {
       workflow: entry.workflow,
       tiers: entry.tiers as CloudManifestEntry['tiers'],
+      ...(entry.expectedNodes !== undefined
+        ? { expectedNodes: entry.expectedNodes }
+        : {}),
       ...(entry.timeoutMs !== undefined ? { timeoutMs: entry.timeoutMs } : {})
     }
   }
@@ -285,12 +298,25 @@ export function buildCloudManifest(
         `pack ${dirname}: every snapshot node is label-disabled - nothing left to expect`
       )
     const curated = overlay[dirname]
+    // The default two sentinels are alphabetical, so a run-tier pack's load
+    // tier can end up asserting nodes its curated workflow never opens. The
+    // overlay may name the workflow's own nodes instead; they must still be
+    // nodes this env registers.
+    const offEnabled = (curated?.expectedNodes ?? []).filter(
+      (node) => !enabled.includes(node)
+    )
+    if (offEnabled.length > 0)
+      throw new Error(
+        `curated overlay: ${dirname} expectedNodes ${offEnabled.sort().join(', ')} ` +
+          `are not enabled nodes of the pack - they must be snapshot nodes the ` +
+          `deployment leaves label-enabled`
+      )
     packs.push({
       pack: dirname,
       deployRef: deployRefOf(pack),
       tiers: curated?.tiers ?? ['load', 'connectivity'],
       workflow: curated?.workflow ?? '',
-      expectedNodes: enabled.slice(0, 2),
+      expectedNodes: curated?.expectedNodes ?? enabled.slice(0, 2),
       expectedNodeCount: enabled.length,
       expectedExtensions: sentinels[dirname] ?? [],
       disabledNodes: sortedRecordOf(pack.node_labels ?? {}),

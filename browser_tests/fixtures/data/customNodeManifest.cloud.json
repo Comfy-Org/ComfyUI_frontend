@@ -25,13 +25,7 @@
       "expectedNodeCount": 4,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000,
-      "cannotRunAlone": [
-        "comfy-qr-by-image-size",
-        "comfy-qr-by-module-size",
-        "comfy-qr-by-module-split",
-        "comfy-qr-mask_errors"
-      ]
+      "timeoutMs": 30000
     },
     {
       "pack": "ComfyUI-AdvancedLivePortrait",
@@ -45,8 +39,7 @@
         "LoadExpData": ["DisabledOnCloud", "ReadsArbitraryFile"],
         "SaveExpData": ["DisabledOnCloud", "WritesToDisk"]
       },
-      "timeoutMs": 30000,
-      "cannotRunAlone": ["ExpData"]
+      "timeoutMs": 30000
     },
     {
       "pack": "ComfyUI-DepthAnythingV2",
@@ -81,12 +74,9 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "DA3_CreateCameraParams",
         "DA3_MultiViewPointCloud",
-        "DA3_ParseCameraPose",
         "DA3_ToMesh",
-        "DA3_ToPointCloud",
-        "DownloadAndLoadDepthAnythingV3Model"
+        "DA3_ToPointCloud"
       ]
     },
     {
@@ -105,7 +95,6 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "DownloadAndLoadCLIPVisionModel",
         "DownloadAndLoadDynamiCrafterCNModel",
         "DownloadAndLoadDynamiCrafterModel",
         "DynamiCrafterCNLoader",
@@ -121,17 +110,7 @@
       "expectedNodeCount": 17,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000,
-      "cannotRunAlone": [
-        "AdaptiveLongestEdge_EditUtils",
-        "ConfigJsonParser_EditUtils",
-        "Flux2KleinConfigPreparer_EditUtils",
-        "Flux2KleinModelConfig_EditUtils",
-        "LoadImageWithFilename_EditUtils",
-        "ModelConfig_EditUtils",
-        "QwenConfigPreparer_EditUtils",
-        "QwenModelConfig_EditUtils"
-      ]
+      "timeoutMs": 30000
     },
     {
       "pack": "ComfyUI-FlashVSR_Ultra_Fast",
@@ -164,7 +143,8 @@
       "expectedNodeCount": 2,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["DownloadAndLoadGIMMVFIModel"]
     },
     {
       "pack": "ComfyUI-Image-Filters",
@@ -179,26 +159,17 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "AdainFilterLatent",
-        "AdainImage",
         "AlphaMatte",
-        "BatchAlign",
-        "BatchAverageImage",
         "BatchAverageUnJittered",
-        "BatchNormalizeImage",
+        "DilateErodeMask",
         "EnhanceDetail",
         "ExposureAdjust",
         "ExtractNFrames",
-        "FrequencyCombine",
         "FrequencySeparate",
-        "GameOfLife",
         "GuidedFilterImage",
         "Hunyuan3Dv2LatentUpscaleBy",
         "ImageMatting",
-        "JitterImage",
-        "UnJitterImage",
-        "UnTonemap",
-        "VisualizeLatents"
+        "UnJitterImage"
       ]
     },
     {
@@ -236,11 +207,10 @@
         "CheckpointLoaderKJ",
         "ColorMatch",
         "ColorMatchV2",
+        "CondPassThrough",
         "CreateAudioMask",
-        "CreateFadeMask",
-        "CreateFadeMaskAdvanced",
-        "CreateFluidMask",
         "CreateGradientFromCoords",
+        "CreateGradientMask",
         "CreateInstanceDiffusionTracking",
         "CreateShapeImageOnPath",
         "CreateShapeMaskOnPath",
@@ -250,8 +220,13 @@
         "CustomControlNetWeightsFluxFromList",
         "CutAndDragOnPath",
         "FloatToMask",
+        "FloatToSigmas",
         "FluxBlockLoraSelect",
+        "GetImageRangeFromBatch",
+        "GetImageSizeAndCount",
         "GetImagesFromBatchIndexed",
+        "GetLatentRangeFromBatch",
+        "GetLatentSizeAndCount",
         "GetLatentsFromBatchIndexed",
         "ImageAndMaskPreview",
         "ImageBatchMulti",
@@ -265,23 +240,18 @@
         "ImageGridComposite3x3",
         "ImageGridtoBatch",
         "ImagePadForOutpaintTargetSize",
-        "ImagePass",
-        "ImageResizeKJ",
-        "ImageTensorList",
-        "InjectNoiseToLatent",
         "InsertLatentToIndexed",
         "InterpolateCoords",
-        "JoinStringMulti",
         "LTX2BlockLoraSelect",
+        "LTXVAudioVideoMask",
         "LazySwitchKJ",
         "MaskBatchMulti",
-        "MaskOrImageToWeight",
         "MergeImageChannels",
         "ModelPassThrough",
-        "OffsetMask",
-        "PadImageBatchInterleaved",
         "PlotCoordinates",
-        "PreviewLatentNoiseMask",
+        "TorchCompileModelQwenImage",
+        "TorchCompileModelWanVideo",
+        "TransitionImagesMulti",
         "VAELoaderKJ",
         "Wan21BlockLoraSelect",
         "WeightScheduleConvert",
@@ -302,7 +272,7 @@
       "expectedExtensions": [],
       "disabledNodes": {},
       "timeoutMs": 30000,
-      "cannotRunAlone": ["LoadChatGLM3"]
+      "cannotRunAlone": ["DownloadAndLoadKolorsModel", "LoadChatGLM3"]
     },
     {
       "pack": "ComfyUI-LTXVideo",
@@ -310,7 +280,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["APGGuider", "AddLatentGuide"],
-      "expectedNodeCount": 73,
+      "expectedNodeCount": 75,
       "expectedExtensions": ["LTXVideo.SparseTrackEditor"],
       "disabledNodes": {
         "GemmaAPITextEncode": ["NetworkAccess", "RequiresExternalAPI"],
@@ -319,8 +289,14 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
+        "ImageToCPU",
         "LTXAttentioOverride",
         "LTXAttentionBank",
+        "LTXAttnOverride",
+        "LTXFloatToInt",
+        "LTXFlowEditSampler",
+        "LTXRFForwardODESampler",
+        "LTXVAdainLatent",
         "LTXVDilateVideoMask",
         "LTXVDrawTracks",
         "LTXVGemmaCLIPModelLoader",
@@ -328,6 +304,8 @@
         "LTXVPromptEnhancerLoader",
         "LTXVSelectLatents",
         "LTXVSetVideoLatentNoiseMasks",
+        "LTXVStatNormLatent",
+        "LinearOverlapLatentTransition",
         "LowVRAMAudioVAELoader",
         "LowVRAMCheckpointLoader",
         "STGAdvancedPresets"
@@ -359,8 +337,6 @@
       "disabledNodes": {},
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "DownloadAndLoadLivePortraitModels",
-        "LivePortraitLoadCropper",
         "LivePortraitLoadFaceAlignmentCropper",
         "LivePortraitLoadMediaPipeCropper"
       ]
@@ -402,7 +378,7 @@
       "expectedExtensions": [],
       "disabledNodes": {},
       "timeoutMs": 30000,
-      "cannotRunAlone": ["DiffusersScheduler", "MimicMotionGetPoses"]
+      "cannotRunAlone": ["MimicMotionGetPoses"]
     },
     {
       "pack": "ComfyUI-NormalCrafterWrapper",
@@ -413,7 +389,8 @@
       "expectedNodeCount": 2,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["DetailTransfer", "NormalCrafterNode"]
     },
     {
       "pack": "ComfyUI-Prompt-Combinator",
@@ -463,7 +440,11 @@
         "AILab_QwenVL_GGUF_Advanced": ["DisabledOnCloud"]
       },
       "timeoutMs": 30000,
-      "cannotRunAlone": ["AILab_QwenVL_Advanced"]
+      "cannotRunAlone": [
+        "AILab_QwenVL",
+        "AILab_QwenVL_Advanced",
+        "AILab_QwenVL_PromptEnhancer"
+      ]
     },
     {
       "pack": "ComfyUI-SCAIL-Pose",
@@ -507,7 +488,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["UltraShapeConvertToGLB", "UltraShapeLoadCoarseMesh"],
-      "expectedNodeCount": 4,
+      "expectedNodeCount": 6,
       "expectedExtensions": [],
       "disabledNodes": {
         "UltraShapeMeshSelector": ["DisabledOnCloud"],
@@ -533,7 +514,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["DrawViTPose", "OnnxDetectionModelLoader"],
-      "expectedNodeCount": 4,
+      "expectedNodeCount": 5,
       "expectedExtensions": [],
       "disabledNodes": {},
       "timeoutMs": 30000,
@@ -559,8 +540,6 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "DrawGaussianNoiseOnImage",
-        "DummyComfyWanModelObject",
         "FantasyPortraitModelLoader",
         "FantasyTalkingModelLoader",
         "HuMoEmbeds",
@@ -573,15 +552,17 @@
         "QwenLoader",
         "WanVideoATITracksVisualize",
         "WanVideoAddOviAudioToLatents",
+        "WanVideoBlockList",
         "WanVideoControlEmbeds",
         "WanVideoControlnetLoader",
         "WanVideoEasyCache",
-        "WanVideoExtraModelSelect",
+        "WanVideoEmptyEmbeds",
+        "WanVideoEmptyMMAudioLatents",
+        "WanVideoEnhanceAVideo",
         "WanVideoFlashVSRDecoderLoader",
         "WanVideoImageResizeToClosest",
         "WanVideoImageToVideoEncode",
         "WanVideoLatentReScale",
-        "WanVideoLoopArgs",
         "WanVideoLoraSelectMulti",
         "WanVideoModelLoader",
         "WanVideoPassImagesFromSamples",
@@ -589,15 +570,17 @@
         "WanVideoPromptExtenderSelect",
         "WanVideoReCamMasterDefaultCamera",
         "WanVideoRealisDanceLatents",
+        "WanVideoRoPEFunction",
+        "WanVideoSLG",
         "WanVideoSVIProEmbeds",
+        "WanVideoSigmaToStep",
+        "WanVideoTeaCache",
         "WanVideoTextEncode",
         "WanVideoTextEncodeCached",
         "WanVideoTextEncodeSingle",
         "WanVideoTinyVAELoader",
-        "WanVideoTorchCompileSettings",
         "WanVideoUni3C_ControlnetLoader",
         "WanVideoUniAnimateDWPoseDetector",
-        "WanVideoUniAnimatePoseInput",
         "WanVideoVACEStartToEndFrame",
         "WanVideoVAELoader",
         "WhisperModelLoader"
@@ -609,7 +592,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["AssertContainsColor", "AssertEqual"],
-      "expectedNodeCount": 9,
+      "expectedNodeCount": 17,
       "expectedExtensions": ["comfyui.test.framework.auto.save.api"],
       "disabledNodes": {},
       "timeoutMs": 30000,
@@ -639,18 +622,14 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "AudioAmplify",
         "AudioBPMDetector",
-        "AudioConcatenate",
         "AudioFadeOut",
-        "AudioMix",
         "AudioNormalize",
-        "AudioPad",
-        "AudioParametricEQ",
-        "AudioPitchTime",
         "AudioReactiveParam",
-        "AudioRemoveSilence",
         "AudioReverb",
+        "AudioSpeechDenoise",
+        "AudioSpeechToTextWhisper",
+        "AudioStandardize",
         "AudioVocalCompressor"
       ]
     },
@@ -666,7 +645,8 @@
       "expectedNodeCount": 5,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["FL_ChatterboxDialogTTS"]
     },
     {
       "pack": "ComfyUI_Fill-Nodes",
@@ -883,20 +863,21 @@
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "FL_ImageNotes",
-        "FL_ImageSelector",
-        "FL_ImageSlicer",
+        "FL_KsamplerSettings",
         "FL_PasteOnCanvas",
+        "FL_SchedulerStrings",
+        "FL_SeparateMaskComponents",
+        "FL_Switch",
         "FL_Switch_Big",
+        "FL_TextOverlayNode",
+        "FL_TextToPDF",
         "FL_UnloadAllModels",
         "FL_VideoBatchSplitter",
-        "FL_VideoCadenceCompile",
+        "FL_VideoCadence",
         "FL_VideoCropMask",
-        "FL_VideoCrossfade",
-        "FL_VideoTrim",
         "FL_WanVideoBlender",
         "FL_WanVideoBlender3Way",
-        "FL_WanVideoContinuationBlender",
-        "FL_WanVideoContinue"
+        "FL_WanVideoContinuationBlender"
       ]
     },
     {
@@ -948,17 +929,21 @@
         "LayerMask: LoadBenModel",
         "LayerMask: LoadBiRefNetModel",
         "LayerMask: LoadBiRefNetModelV2",
+        "LayerMask: MaskByDifferent",
         "LayerMask: ObjectDetectorYOLOWorld",
         "LayerMask: PersonMaskUltra",
         "LayerMask: SegmentAnythingUltra",
+        "LayerMask: SegmentAnythingUltra V2",
         "LayerMask: TransparentBackgroundUltra",
         "LayerMask: YoloV8Detect",
         "LayerUtility: DecodeQRCode",
-        "LayerUtility: GetColorToneV2",
+        "LayerUtility: GetColorTone",
         "LayerUtility: ImageAutoCrop",
         "LayerUtility: ImageAutoCrop V2",
         "LayerUtility: LaMa",
-        "LayerUtility: QWenImage2Prompt"
+        "LayerUtility: LoadSmolLM2Model",
+        "LayerUtility: QWenImage2Prompt",
+        "LayerUtility: UserPromptGeneratorTxt2ImgPrompt"
       ]
     },
     {
@@ -987,7 +972,7 @@
       "expectedExtensions": [],
       "disabledNodes": {},
       "timeoutMs": 30000,
-      "cannotRunAlone": ["CoordinatePlotter", "SeCModelLoader"]
+      "cannotRunAlone": ["SeCModelLoader"]
     },
     {
       "pack": "ControlAltAI-Nodes",
@@ -1046,40 +1031,43 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "ClownGuides_Sync",
-        "ClownGuides_Sync_Advanced",
         "ClownInpaint",
         "ClownInpaintSimple",
         "ClownModelLoader",
-        "ClownOptions_Automation_Beta",
         "ClownOptions_Cycles_Beta",
-        "ClownOptions_ExtraOptions_Beta",
+        "ClownOptions_DetailBoost_Beta",
         "ClownOptions_FlowGuide",
         "ClownOptions_ImplicitSteps_Beta",
-        "ClownOptions_Momentum_Beta",
+        "ClownOptions_SDE_Beta",
         "ClownOptions_SDE_Mask_Beta",
         "ClownOptions_SDE_Noise",
         "ClownOptions_StepSize_Beta",
-        "ClownOptions_Tile_Advanced_Beta",
         "ClownRegionalConditioning",
         "ClownRegionalConditioning2",
         "ClownRegionalConditioning3",
         "ClownRegionalConditioning_AB",
         "ClownRegionalConditioning_ABC",
         "ClownRegionalConditionings",
-        "ClownSamplerAdvanced",
+        "ClownSampler_Beta",
         "ClownScheduler",
+        "ClownStyle_Attn_MMDiT",
+        "ClownStyle_Attn_UNet",
+        "ClownStyle_Block_MMDiT",
+        "ClownStyle_Block_UNet",
+        "ClownStyle_Boost",
+        "ClownStyle_SpatialBlock_UNet",
+        "ClownStyle_TransformerBlock_UNet",
         "ClownStyle_UNet",
         "ClownsharKSamplerAutomation",
+        "ClownsharKSamplerAutomation_Advanced",
+        "ClownsharKSamplerGuide",
         "ClownsharKSampler_Beta",
         "ClownsharkChainsampler_Beta",
-        "Constant Scheduler",
         "EmptyLatentImageCustom",
         "FluxLoader",
         "Frame Select Latent",
         "Frame Select Latent Raw",
         "Frames Concat Latent Raw",
-        "Frames Concat Masks",
         "Frames Latent ReverseOrder",
         "Frames Slice Latent",
         "Frames Slice Latent Raw",
@@ -1087,21 +1075,36 @@
         "Frequency Separation Hard Light LAB",
         "Frequency Separation Linear Light",
         "Image Channels LAB",
+        "Image Crop Location Exact",
+        "Image Gaussian Blur",
         "Image Get Color Swatches",
+        "Image Grain Add",
         "Image Pair Split",
-        "Image Sharpen FS",
-        "Latent Batcher",
+        "Latent Channels From To",
+        "Latent Clear State Info",
         "Latent Get Channel Means",
+        "Latent Normalize Channels",
+        "Latent Replace State Info",
         "Latent Transfer State Info",
+        "Latent TrimVideo State Info",
+        "Latent to Cuda",
+        "Latent to RawX",
+        "LatentBatch_channels",
         "LatentBatch_channels_16",
         "LatentNoiseBatch_fractal",
         "LatentNoiseBatch_gaussian",
         "LatentNoiseBatch_gaussian_channels",
         "LatentNoiseBatch_perlin",
+        "LatentNoiseList",
+        "LatentNoised",
         "LatentPhaseMagnitude",
         "LatentPhaseMagnitudePower",
+        "Legacy_ClownsharKSamplerGuides",
         "Mask Bounding Box Aspect Ratio",
         "Mask Sketch",
+        "MaskEdge",
+        "MaskFloatToBoolean",
+        "MaskToggle",
         "Masks From Colors",
         "Masks Unpack 16",
         "Masks Unpack 4",
@@ -1112,21 +1115,14 @@
         "Set Precision",
         "Set Precision Advanced",
         "Set Precision Universal",
-        "SetImageSize",
-        "SetImageSizeWithScale",
         "SharkChainsampler_Beta",
-        "SharkOptions_GuideCond_Beta",
-        "SharkOptions_GuideConds_Beta",
-        "SharkOptions_StartStep_Beta",
-        "SharkOptions_UltraCascade_Latent_Beta",
+        "SharkOptions_Beta",
         "SharkSampler_Beta",
-        "Sigmas ConwaySequence",
         "Sigmas RiemannianFlow",
         "TextConcatenate",
         "TextShuffle",
         "TextShuffleAndTruncate",
-        "TextTruncateTokens",
-        "VAEEncodeAdvanced"
+        "TextTruncateTokens"
       ]
     },
     {
@@ -1166,7 +1162,13 @@
       "expectedNodeCount": 7,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "AudioGetTempo",
+        "AudioSeparation",
+        "AudioSpeedShift",
+        "AudioTempoMatch"
+      ]
     },
     {
       "pack": "basic_data_handling",
@@ -1215,10 +1217,7 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "Basic data handling: CastToBoolean",
         "Basic data handling: CastToDict",
-        "Basic data handling: CastToFloat",
-        "Basic data handling: CastToInt",
         "Basic data handling: DataListCreate",
         "Basic data handling: DataListCreateFromBoolean",
         "Basic data handling: DataListCreateFromFloat",
@@ -1230,9 +1229,12 @@
         "Basic data handling: DataListFilterSelect",
         "Basic data handling: DataListFirst",
         "Basic data handling: DataListZip",
+        "Basic data handling: DictCreate",
+        "Basic data handling: DictCreateFromBoolean",
         "Basic data handling: DictCreateFromFloat",
         "Basic data handling: DictCreateFromInt",
         "Basic data handling: DictCreateFromItemsDataList",
+        "Basic data handling: DictCreateFromString",
         "Basic data handling: FloatAdd",
         "Basic data handling: FloatSubtract",
         "Basic data handling: FlowSelect",
@@ -1243,10 +1245,6 @@
         "Basic data handling: IfElifElse",
         "Basic data handling: IfElse",
         "Basic data handling: IntAdd",
-        "Basic data handling: IntCreate",
-        "Basic data handling: IntDivide",
-        "Basic data handling: IntDivideSafe",
-        "Basic data handling: IntModulus",
         "Basic data handling: IntToBytes",
         "Basic data handling: IsConnected",
         "Basic data handling: IsNull",
@@ -1258,13 +1256,25 @@
         "Basic data handling: ListCreateFromInt",
         "Basic data handling: ListCreateFromString",
         "Basic data handling: MathExp",
+        "Basic data handling: MathFloor",
         "Basic data handling: MathFormula",
         "Basic data handling: MathLog",
         "Basic data handling: MathLog10",
         "Basic data handling: MathMax",
         "Basic data handling: MathMin",
         "Basic data handling: MathPi",
+        "Basic data handling: MathRadians",
         "Basic data handling: MathSin",
+        "Basic data handling: MathSqrt",
+        "Basic data handling: MathTan",
+        "Basic data handling: NotEqual",
+        "Basic data handling: NumberInRange",
+        "Basic data handling: RegexFindallDataList",
+        "Basic data handling: RegexFindallList",
+        "Basic data handling: RegexGroupDict",
+        "Basic data handling: RegexSearchGroupsDataList",
+        "Basic data handling: RegexSearchGroupsList",
+        "Basic data handling: RegexSplitDataList",
         "Basic data handling: RegexSplitList",
         "Basic data handling: RegexSub",
         "Basic data handling: RegexTest",
@@ -1276,8 +1286,6 @@
         "Basic data handling: StringCapitalize",
         "Basic data handling: StringCasefold",
         "Basic data handling: TimeParse",
-        "TensorCreate",
-        "TensorInfo",
         "TensorJoin",
         "TensorPermute",
         "TensorSlice"
@@ -1328,19 +1336,16 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
+        "ACN_ControlNet++InputNode",
         "ACN_ControlNet++LoaderSingle",
+        "ACN_ControlNetLoaderAdvanced",
         "ACN_CtrLoRALoader",
         "ACN_CustomControlNetWeightsFlux",
         "ACN_CustomControlNetWeightsSD15",
-        "ACN_ReferenceControlNet",
-        "ACN_ReferenceControlNetFinetune",
-        "ACN_ScaledSoftControlNetWeights",
-        "ACN_SoftControlNetWeightsSD15",
-        "ACN_SoftT2IAdapterWeights",
-        "ACN_SparseCtrlIndexMethodNode",
+        "ACN_CustomT2IAdapterWeights",
+        "ACN_ExtrasMiddleMult",
         "ACN_SparseCtrlLoaderAdvanced",
-        "ACN_SparseCtrlMergedLoaderAdvanced",
-        "ACN_SparseCtrlSpreadMethodNode"
+        "ACN_SparseCtrlMergedLoaderAdvanced"
       ]
     },
     {
@@ -1356,18 +1361,20 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "ADE_FloatToFloats",
         "ADE_LoadAnimateDiffModelWithCameraCtrl",
         "ADE_LoadAnimateLCMI2VModel",
-        "ADE_LoraHookKeyframe",
         "ADE_LoraHookKeyframeFromStrengthList",
         "ADE_LoraHookKeyframeInterpolation",
+        "ADE_MultivalDynamic",
         "ADE_MultivalDynamicFloatInput",
+        "ADE_MultivalScaledMask",
         "ADE_NoiseLayerAddWeighted",
-        "ADE_NoiseLayerNormalizedSum",
+        "ADE_NoiseLayerReplace",
         "ADE_NoisedImageInjectOptions",
+        "ADE_StandardStaticViewOptions",
         "ADE_StandardUniformContextOptions",
         "ADE_StandardUniformViewOptions",
+        "ADE_TimestepsConditioning",
         "ADE_ValueScheduling",
         "ADE_ValueSchedulingLatents",
         "CheckpointLoaderSimpleWithNoiseSelect"
@@ -1384,12 +1391,16 @@
       "disabledNodes": {},
       "timeoutMs": 30000,
       "cannotRunAlone": [
+        "CogVideoContextOptions",
+        "CogVideoEnhanceAVideo",
         "CogVideoLatentPreview",
+        "CogVideoXFasterCache",
+        "CogVideoXFunResizeToClosestBucket",
         "CogVideoXModelLoader",
+        "CogVideoXTorchCompileSettings",
         "CogVideoXVAELoader",
         "DownloadAndLoadCogVideoControlNet",
         "DownloadAndLoadCogVideoGGUFModel",
-        "DownloadAndLoadCogVideoModel",
         "DownloadAndLoadToraModel"
       ]
     },
@@ -1403,7 +1414,11 @@
       "expectedExtensions": ["ComfyUI.Enrico.ColorPicker"],
       "disabledNodes": {},
       "timeoutMs": 30000,
-      "cannotRunAlone": ["CompositorTools3", "CompositorTransformsOutV3"]
+      "cannotRunAlone": [
+        "CompositorColorPicker",
+        "CompositorTools3",
+        "CompositorTransformsOutV3"
+      ]
     },
     {
       "pack": "comfyui-florence2",
@@ -1419,7 +1434,11 @@
       "disabledNodes": {
         "Florence2ModelLoader": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "DownloadAndLoadFlorence2Lora",
+        "DownloadAndLoadFlorence2Model"
+      ]
     },
     {
       "pack": "comfyui-frame-interpolation",
@@ -1427,7 +1446,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["CAIN VFI", "FILM VFI"],
-      "expectedNodeCount": 9,
+      "expectedNodeCount": 11,
       "expectedExtensions": [],
       "disabledNodes": {
         "AMT VFI": ["NetworkAccess"],
@@ -1437,7 +1456,13 @@
         "Sepconv VFI": ["NetworkAccess"]
       },
       "timeoutMs": 30000,
-      "cannotRunAlone": ["CAIN VFI", "FLAVR VFI", "IFRNet VFI", "IFUnet VFI"]
+      "cannotRunAlone": [
+        "CAIN VFI",
+        "FLAVR VFI",
+        "IFRNet VFI",
+        "IFUnet VFI",
+        "VFI FloatToInt"
+      ]
     },
     {
       "pack": "comfyui-ic-light-native",
@@ -1453,21 +1478,6 @@
     {
       "pack": "comfyui-impact-pack",
       "deployRef": "comfyui-impact-pack@8.28.2",
-      "cannotRunAlone": [
-        "AnyPipeToBasic",
-        "BitwiseAndMask",
-        "CLIPSegDetectorProvider",
-        "CfgScheduleHookProvider",
-        "EmptySegs",
-        "ImpactMakeImageBatch",
-        "ImpactMakeMaskBatch",
-        "LatentSender",
-        "MasksToMaskList",
-        "MediaPipeFaceMeshToSEGS",
-        "ONNXDetectorProvider",
-        "SAMLoader",
-        "SEGSOrderedFilterDetailerHookProvider"
-      ],
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["AddMask", "AnyPipeToBasic"],
@@ -1487,7 +1497,23 @@
         "PreviewBridge": ["DisabledOnCloud"],
         "PreviewBridgeLatent": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "AnyPipeToBasic",
+        "CLIPSegDetectorProvider",
+        "CoreMLDetailerHookProvider",
+        "DenoiseSchedulerDetailerHookProvider",
+        "ImpactInt",
+        "ImpactLatentInfo",
+        "ImpactListBridge",
+        "ImpactLogicalOperators",
+        "ImpactMakeAnyList",
+        "ImpactMakeImageBatch",
+        "ImpactMakeMaskBatch",
+        "LatentSender",
+        "MasksToMaskList",
+        "SAMLoader"
+      ]
     },
     {
       "pack": "comfyui-impact-subpack",
@@ -1523,12 +1549,9 @@
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "INPAINT_ColorMatch",
-        "INPAINT_DenoiseToCompositingMask",
-        "INPAINT_ExpandMask",
         "INPAINT_LoadFooocusInpaint",
-        "INPAINT_MaskedBlur",
         "INPAINT_MaskedFill",
-        "INPAINT_StabilizeMask"
+        "INPAINT_ShrinkMask"
       ]
     },
     {
@@ -1591,7 +1614,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["QwenMultiangleCameraNode"],
-      "expectedNodeCount": 1,
+      "expectedNodeCount": 2,
       "expectedExtensions": ["ComfyUI.QwenMultiangle"],
       "disabledNodes": {},
       "timeoutMs": 30000
@@ -1617,8 +1640,18 @@
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "AILab_CropObject",
+        "AILab_Florence2",
+        "AILab_ImageCrop",
+        "AILab_LamaRemover",
+        "AILab_MaskCombiner",
+        "AILab_MaskEnhancer",
+        "AILab_MaskToList",
         "AILab_SDMatte",
-        "SAM2Segment",
+        "BodySegment",
+        "ClothesSegment",
+        "FashionSegmentAccessories",
+        "FashionSegmentClothing",
+        "RMBG",
         "SAM3Segment"
       ]
     },
@@ -1717,13 +1750,18 @@
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "JWAudioBlend",
-        "JWFloat",
         "JWFloatDiv",
-        "JWFloatMax",
+        "JWIntegerAdd",
         "JWIntegerDiv",
+        "JWIntegerMin",
+        "JWIntegerSub",
+        "JWIntegerToFloat",
+        "JWIntegerToString",
+        "JWLoopImageSequence",
+        "JWMaskLikeImageSize",
         "JWMaskSequenceFromMask",
-        "JWString",
-        "JWStringGetLine"
+        "JWStringGetLine",
+        "JWStringReplace"
       ]
     },
     {
@@ -1731,7 +1769,7 @@
       "deployRef": "comfyui-videohelpersuite@1.7.9",
       "tiers": ["load", "connectivity", "run"],
       "workflow": "assets/customNodes/vhs_video_pipeline_cloud_run.json",
-      "expectedNodes": ["VHS_AudioToVHSAudio", "VHS_DuplicateImages"],
+      "expectedNodes": ["VHS_LoadVideo", "VHS_VideoInfo"],
       "expectedNodeCount": 32,
       "expectedExtensions": ["VideoHelperSuite.Core"],
       "disabledNodes": {
@@ -1788,26 +1826,18 @@
       "disabledNodes": {},
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "DiffusionEdge_Preprocessor",
+        "ControlNetPreprocessorSelector",
+        "DSINE-NormalMapPreprocessor",
+        "DensePosePreprocessor",
         "ExecuteAllControlNetPreprocessors",
-        "HintImageEnchance",
-        "ImageGenResolutionFromImage",
-        "ImageGenResolutionFromLatent",
-        "LineArtPreprocessor",
+        "FakeScribblePreprocessor",
+        "HEDPreprocessor",
+        "MediaPipe-FaceMeshPreprocessor",
+        "MeshGraphormer-DepthMapPreprocessor",
         "MiDaS-DepthMapPreprocessor",
         "MiDaS-NormalMapPreprocessor",
-        "PiDiNetPreprocessor",
-        "PyraCannyPreprocessor",
-        "SAMPreprocessor",
-        "ScribblePreprocessor",
-        "Scribble_XDoG_Preprocessor",
-        "TTPlanet_TileGF_Preprocessor",
-        "TTPlanet_TileSimple_Preprocessor",
-        "TilePreprocessor",
-        "UniFormer-SemSegPreprocessor",
-        "Unimatch_OptFlowPreprocessor",
-        "Zoe-DepthMapPreprocessor",
-        "Zoe_DepthAnythingPreprocessor"
+        "OneFormer-ADE20K-SemSegPreprocessor",
+        "Unimatch_OptFlowPreprocessor"
       ]
     },
     {
@@ -1823,22 +1853,18 @@
       "cannotRunAlone": [
         "ImageRandomTransform+",
         "ImageRemoveAlpha+",
-        "ImageResize+",
-        "ImageSeamCarving+",
         "ImageTile+",
-        "ImageToDevice+",
         "ImageUntile+",
         "InjectLatentNoise+",
+        "MaskBlur+",
         "MaskFix+",
-        "MaskFlip+",
         "MaskFromBatch+",
+        "MaskFromColor+",
         "MaskFromList+",
-        "MaskFromRGBCMYBW+",
-        "MaskFromSegmentation+",
-        "NoiseFromImage+",
         "PixelOEPixelize+",
-        "RemBGSession+",
-        "SimpleMath+"
+        "RemoveLatentMask+",
+        "SimpleMath+",
+        "TransparentBGSession+"
       ]
     },
     {
@@ -1874,7 +1900,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["LayerColor: AutoAdjust", "LayerColor: AutoAdjustV2"],
-      "expectedNodeCount": 156,
+      "expectedNodeCount": 162,
       "expectedExtensions": [],
       "disabledNodes": {
         "LayerFilter: LightLeak": ["DisabledOnCloud"],
@@ -1889,29 +1915,35 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "LayerColor: AutoAdjustV2",
+        "LayerColor: AutoAdjust",
         "LayerColor: AutoBrightness",
         "LayerColor: Brightness & Contrast",
-        "LayerColor: Color of Shadow & Highlight",
-        "LayerColor: ColorAdapter",
-        "LayerColor: ColorofShadowHighlightV2",
-        "LayerFilter: Sharp & Soft",
         "LayerFilter: SkinBeauty",
         "LayerFilter: SoftLight",
         "LayerFilter: WaterColor",
         "LayerMask: BlendIf Mask",
-        "LayerMask: CreateGradientMask",
         "LayerMask: MaskEdgeShrink",
         "LayerMask: MaskEdgeUltraDetail",
         "LayerMask: MaskEdgeUltraDetail V2",
+        "LayerMask: MaskEdgeUltraDetail V3",
         "LayerMask: MaskGradient",
-        "LayerMask: MaskGrain",
+        "LayerMask: MaskGrow",
+        "LayerMask: MaskInvert",
+        "LayerMask: MaskMotionBlur",
+        "LayerUtility: FluxKontextImageScale",
+        "LayerUtility: GetImageSize",
+        "LayerUtility: GetMainColors",
+        "LayerUtility: GetMainColorsV2",
+        "LayerUtility: GradientImage",
+        "LayerUtility: GradientImage V2",
         "LayerUtility: GrayValue",
+        "LayerUtility: HLFrequencyDetailRestore",
+        "LayerUtility: HSV Value",
         "LayerUtility: ICMask",
         "LayerUtility: ImageMaskScaleAs",
         "LayerUtility: ImageMaskScaleAsV2",
-        "LayerUtility: Restore Pad Image Batch",
-        "LayerUtility: Seed"
+        "LayerUtility: ImageOpacity",
+        "LayerUtility: Restore Pad Image Batch"
       ]
     },
     {
@@ -1996,21 +2028,28 @@
       "expectedExtensions": ["Radiance.IO"],
       "disabledNodes": {
         "RadianceLUTApply": ["DisabledOnCloud"],
-        "◎ RadianceDigitalCinemaRead": ["ReadsArbitraryFile"],
-        "◎ RadianceNukeBridge": ["NetworkAccess", "WritesToDisk"],
-        "◎ RadianceQCExport": ["WritesToDisk"]
+        "\u25ce RadianceDigitalCinemaRead": ["ReadsArbitraryFile"],
+        "\u25ce RadianceNukeBridge": ["NetworkAccess", "WritesToDisk"],
+        "\u25ce RadianceQCExport": ["WritesToDisk"]
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "HDRExposureBlend",
+        "HDRHistogram",
+        "HDRShadowHighlightRecovery",
+        "HDRToneMap",
+        "ImageToFloat32",
         "RadianceAIUpscale",
         "RadianceAdvancedReroute",
         "RadianceApplyGradeInfo",
         "RadianceBitDepthConvert",
-        "RadianceLUTBlend",
+        "RadianceCompressionArtifacts",
         "RadianceMux",
+        "RadianceOCIOCDL",
+        "RadianceOCIOColorTransform",
+        "RadianceRollingShutter",
         "RadianceUnifiedLoader",
-        "◎ RadianceDigitalCinemaWrite"
+        "\u25ce RadianceDigitalCinemaWrite"
       ]
     },
     {

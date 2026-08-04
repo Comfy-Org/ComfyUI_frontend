@@ -231,6 +231,35 @@ describe('curated overlay', () => {
     ).toBe(90_000)
   })
 
+  it('applies an overlay expectedNodes override in place of the generated sentinels', () => {
+    const overlay = fixtureOverlay()
+    overlay['ComfyUI-VideoHelperSuite'].expectedNodes = ['VHS_VideoInfo']
+    const manifest = buildCloudManifest(
+      fixtureDoc(),
+      fixtureSnapshot(),
+      overlay
+    )
+    const rows = Object.fromEntries(
+      manifest.packs.map((row) => [row.pack, row.expectedNodes])
+    )
+    expect(rows['ComfyUI-VideoHelperSuite']).toEqual(['VHS_VideoInfo'])
+    // Unkeyed rows keep the generated first-two sentinels.
+    expect(rows['ComfyUI-KJNodes']).toEqual(['FloatConstant', 'INTConstant'])
+  })
+
+  it('rejects overlay expectedNodes the pack does not leave enabled', () => {
+    for (const nodes of [
+      ['VHS_Nope'],
+      ['VHS_VideoInfo', 'VHS_LoadVideoPath']
+    ]) {
+      const overlay = fixtureOverlay()
+      overlay['ComfyUI-VideoHelperSuite'].expectedNodes = nodes
+      expect(() =>
+        buildCloudManifest(fixtureDoc(), fixtureSnapshot(), overlay)
+      ).toThrow(/expectedNodes.*are not enabled nodes/s)
+    }
+  })
+
   it('emits merged rows the cloud loader validation accepts', () => {
     const manifest = buildCloudManifest(
       fixtureDoc(),
@@ -291,6 +320,17 @@ describe('curated overlay', () => {
           Pack: { workflow: 'a.json', tiers: ['run'], timeoutMs: bad }
         })
       ).toThrow(/timeoutMs/)
+    const withNodes = fixtureOverlay()
+    withNodes['ComfyUI-VideoHelperSuite'].expectedNodes = ['VHS_VideoInfo']
+    expect(validateCuratedCloudOverlay(structuredClone(withNodes))).toEqual(
+      withNodes
+    )
+    for (const bad of [[], ['A', 'A'], [''], 'VHS_VideoInfo'])
+      expect(() =>
+        validateCuratedCloudOverlay({
+          Pack: { workflow: 'a.json', tiers: ['run'], expectedNodes: bad }
+        })
+      ).toThrow(/expectedNodes/)
   })
 
   it('the vendored overlay validates and every workflow it references exists', () => {
@@ -312,6 +352,22 @@ describe('curated overlay', () => {
         entry.tiers,
         `${pack}: overlay must enroll the run tier`
       ).toContain('run')
+      // The override exists so the load tier asserts the nodes the curated
+      // workflow actually opens; an entry naming anything else is rot.
+      const opened = new Set(
+        (
+          JSON.parse(
+            readFileSync(`browser_tests/${entry.workflow}`, 'utf-8')
+          ) as {
+            nodes: Array<{ type: string }>
+          }
+        ).nodes.map((node) => node.type)
+      )
+      for (const node of entry.expectedNodes ?? [])
+        expect(
+          opened,
+          `${pack}: overlay expectedNodes ${node} is not in ${entry.workflow}`
+        ).toContain(node)
     }
   })
 })
