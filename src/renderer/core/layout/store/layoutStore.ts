@@ -71,6 +71,14 @@ type YEventChange = {
   oldValue: unknown
 }
 
+function isNodeRect(value: unknown): value is [number, number, number, number] {
+  return (
+    Array.isArray(value) &&
+    value.length === 4 &&
+    value.every((coordinate) => typeof coordinate === 'number')
+  )
+}
+
 const logger = log.getLogger('LayoutStore')
 
 type ScopedLayoutKey = string & { readonly __brand: 'ScopedLayoutKey' }
@@ -350,8 +358,8 @@ class LayoutStore {
   readNodeRect(rootGraphId: UUID, nodeId: NodeId, out: Float64Array): boolean {
     const rect = this.ynodes
       .get(makeScopedLayoutKey(rootGraphId, nodeId))
-      ?.get('rect') as number[] | undefined
-    if (!rect) return false
+      ?.get('rect')
+    if (!isNodeRect(rect)) return false
 
     out[0] = rect[0]
     out[1] = rect[1]

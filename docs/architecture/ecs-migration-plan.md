@@ -457,14 +457,11 @@ and nothing queries them positionally — and geometry is a single
 is deleted, `pos` reads the stored point, and a reroute registers its own
 geometry in its constructor, which removed two seeding sites.
 
-**The store -> legacy direction is unchanged and still needed.** `useLayoutSync`
-stays, because `LGraphNode.serialize()` reads `this.pos` / `this.size` and the
-canvas renders from `_posSize`. Removing it means the class getters read from
-the store, but they return `Point` / `Size` views onto one buffer and hundreds
-of element-indexed reads across the renderer depend on that. Yjs cannot hold a
-`Float64Array` by reference, so this needs a store-backed geometry view type,
-not a refactor. The re-entrancy the draft worried about did not materialise: the
-writeback compares before writing, so an equal write-back is a no-op.
+**The store -> legacy copy is gone.** `LGraphNode` refreshes `_posSize` from the
+layout store when its geometry version changes, so serialization and legacy
+rendering still read current geometry through `this.pos` / `this.size`.
+`notifyLayoutChanges` forwards store-originated resize callbacks and canvas
+invalidation without copying geometry back into the node.
 
 **Not done, and each needs a decision rather than more inference:**
 
