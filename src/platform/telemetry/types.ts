@@ -529,6 +529,34 @@ export interface WidgetFavoriteToggledMetadata {
 }
 
 /**
+ * Fired once per node when its `widgets_values_named` restore path
+ * disagrees with what the legacy positional `widgets_values` restore
+ * would have produced. Diagnostic only — never reflects an actual
+ * mis-restored widget value, since the legacy side is a shadow
+ * computation that's never applied when the flag is on.
+ */
+export interface NamedValuesShadowDiffMismatchMetadata {
+  node_type: string
+  pack_id?: string
+  mismatch_widget_count: number
+  checked_widget_count: number
+  had_named_field: boolean
+  has_on_serialize_hook: boolean
+  has_on_configure_hook: boolean
+}
+
+/**
+ * Fired once per workflow load (sampled), aggregating the shadow-diff
+ * results across every node checked during that load.
+ */
+export interface NamedValuesShadowDiffSummaryMetadata {
+  total_nodes_checked: number
+  nodes_with_mismatch: number
+  distinct_node_types: string[]
+  distinct_pack_ids: string[]
+}
+
+/**
  * Help center opened metadata
  */
 export interface HelpCenterOpenedMetadata {
@@ -937,6 +965,14 @@ export interface TelemetryProvider {
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
+  // Named values shadow-diff diagnostics
+  trackNamedValuesShadowDiffMismatch?(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void
+  trackNamedValuesShadowDiffSummary?(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
 }
@@ -1073,6 +1109,10 @@ export const TelemetryEvents = {
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
+  // Named Values Shadow Diff (Comfy.Workflow.NamedValuesRestore diagnostics)
+  NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
+  NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
+
   // Page View
   PAGE_VIEW: 'app:page_view'
 } as const
@@ -1150,6 +1190,8 @@ export type TelemetryEventProperties =
   | SettingChangedMetadata
   | UiButtonClickMetadata
   | WidgetFavoriteToggledMetadata
+  | NamedValuesShadowDiffMismatchMetadata
+  | NamedValuesShadowDiffSummaryMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata

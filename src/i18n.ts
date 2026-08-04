@@ -6,6 +6,7 @@ import {
   resolveSupportedLocale
 } from '@/locales/localeConfig'
 import type { SupportedLocale } from '@/locales/localeConfig'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 // Import only English locale eagerly as the default/fallback
 import enCommands from './locales/en/commands.json' with { type: 'json' }
@@ -130,6 +131,111 @@ export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
       i18n.global.mergeLocaleMessage(locale, message)
     }
   }
+}
+
+export type NodeDefTextField = 'display_name' | 'description'
+
+/**
+ * Raw `/object_info` text, kept out of the vue-i18n message tree so English
+ * never reaches the message compiler. Rebuilt on every fetch, so a def that
+ * stops sending a field stops resolving to the previous value.
+ */
+const backendNodeText = new Map<
+  string,
+  Partial<Record<NodeDefTextField, string>>
+>()
+
+export function setBackendNodeText(
+  defs: Iterable<{
+    name?: unknown
+    display_name?: unknown
+    description?: unknown
+  }>
+): void {
+  backendNodeText.clear()
+  for (const def of defs) {
+    if (typeof def?.name !== 'string') continue
+    const entry: Partial<Record<NodeDefTextField, string>> = {}
+    if (typeof def.display_name === 'string' && def.display_name) {
+      entry.display_name = def.display_name
+    }
+    if (typeof def.description === 'string' && def.description) {
+      entry.description = def.description
+    }
+    if (entry.display_name ?? entry.description)
+      backendNodeText.set(def.name, entry)
+  }
+}
+
+function customNodesProvide(
+  nodeName: string,
+  field: NodeDefTextField
+): boolean {
+  const data = customNodesI18nData[i18n.global.locale.value]
+  if (typeof data !== 'object' || data === null) return false
+  const nodeDefs = (data as Record<string, unknown>)['nodeDefs']
+  if (typeof nodeDefs !== 'object' || nodeDefs === null) return false
+
+  for (const path of nodeDefKeyCandidates(nodeName)) {
+    let cursor: unknown = nodeDefs
+    for (const segment of path.split('.')) {
+      if (typeof cursor !== 'object' || cursor === null) break
+      cursor = (cursor as Record<string, unknown>)[segment]
+    }
+    if (typeof cursor === 'object' && cursor !== null) {
+      if (typeof (cursor as Record<string, unknown>)[field] === 'string')
+        return true
+    }
+  }
+  return false
+}
+
+/**
+ * Generated locales key dotted node ids flat (`my_node`). Locales written by
+ * hand before that convention nest them (`my.node`), which vue-i18n resolves by
+ * path traversal, so both are tried.
+ */
+function nodeDefKeyCandidates(nodeName: string): string[] {
+  const normalized = normalizeI18nKey(nodeName)
+  return normalized === nodeName ? [normalized] : [normalized, nodeName]
+}
+
+function translateNodeDefText(
+  nodeName: string,
+  field: NodeDefTextField,
+  fallback: string
+): string {
+  for (const path of nodeDefKeyCandidates(nodeName)) {
+    const key = `nodeDefs.${path}.${field}`
+    if (te(key)) return st(key, fallback)
+  }
+  return fallback
+}
+
+/**
+ * Resolves node text in priority order.
+ *
+ * `en`: custom-node `/api/i18n` translations, then the live backend value, then
+ * the bundled snapshot. English is the source language, so a backend value is
+ * data rather than a translation and is returned without being compiled.
+ *
+ * Other locales: translations stay authoritative, falling back to the live
+ * backend value rather than the stale English snapshot.
+ */
+export function resolveNodeDefText(
+  field: NodeDefTextField,
+  nodeName: string,
+  backendValue?: string
+): string {
+  const backend = backendValue ?? backendNodeText.get(nodeName)?.[field]
+  const fallback = backend ?? (field === 'display_name' ? nodeName : '')
+
+  if (customNodesProvide(nodeName, field)) {
+    return translateNodeDefText(nodeName, field, fallback)
+  }
+  if (i18n.global.locale.value === 'en' && backend !== undefined) return backend
+
+  return translateNodeDefText(nodeName, field, fallback)
 }
 
 // Only include English in the initial bundle; other locales lazy-load.
