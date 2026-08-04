@@ -179,11 +179,15 @@ test.describe(
           if (!subgraphNode) throw new Error('Failed to find subgraph node')
 
           const el = document.createElement('div')
+          el.dataset.testid = 'custom-node-widget'
           subgraphNode.addDOMWidget('testwidget', 'testwidget', el)
           return !!subgraphNode.widgets?.find((w) => w.type === 'testwidget')
         }),
         'widget exists on node'
       ).toBeTruthy()
+      await expect(
+        comfyPage.page.getByTestId('custom-node-widget')
+      ).toBeVisible()
     })
   }
 )
