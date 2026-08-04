@@ -4371,7 +4371,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const rootGraphId = graph.rootGraph.id
     layoutStore.batchUpdateNodeBounds(rootGraphId, newPositions, {
-      source: LayoutSource.Vue
+      source: LayoutSource.Canvas
     })
 
     // Bring cloned/pasted nodes to front so they render above the originals

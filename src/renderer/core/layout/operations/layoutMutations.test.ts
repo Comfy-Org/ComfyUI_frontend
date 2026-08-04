@@ -174,6 +174,19 @@ describe('batchMoveNodes', () => {
     })
     expect(layoutStore.getNodeLayoutRef(GRAPH, MISSING_NODE).value).toBeNull()
   })
+
+  it('reports the source it was built with, not the batch transport', async () => {
+    const sources: LayoutSource[] = []
+    const stop = layoutStore.onChange(({ source }) => sources.push(source))
+    onTestFinished(stop)
+
+    useLayoutMutations(LayoutSource.Canvas).batchMoveNodes(GRAPH, [
+      { nodeId: NODE_1, position: { x: 50, y: 60 } }
+    ])
+    await vi.waitFor(() => expect(sources).not.toHaveLength(0))
+
+    expect(sources).toEqual([LayoutSource.Canvas])
+  })
 })
 
 describe('bringNodeToFront', () => {

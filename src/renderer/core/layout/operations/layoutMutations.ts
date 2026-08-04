@@ -10,10 +10,10 @@ import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { GroupId } from '@/types/groupId'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   GroupLayout,
   LayoutOperationResult,
+  LayoutSource,
   NodeLayout,
   Point,
   RerouteId,
@@ -119,7 +119,7 @@ export function useLayoutMutations(source: LayoutSource): LayoutMutations {
 
     if (nodeBoundsUpdates.length === 0) return
     layoutStore.batchUpdateNodeBounds(rootGraphId, nodeBoundsUpdates, {
-      source: LayoutSource.Vue
+      source
     })
   }
 
