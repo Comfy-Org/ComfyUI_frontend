@@ -173,12 +173,18 @@ export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
 const TELEMETRY_HOSTS =
   /(^|\.)(mp\.comfy\.org|customer\.io|gist\.build|sy-d\.io|sentry\.io)$/
 async function blockThirdPartyTelemetry(page: Page): Promise<void> {
-  // Fulfill empty, never abort: an aborted request still logs a console error
-  // (net::ERR_FAILED, x4 per boot in run 30871208042), which is the exact
-  // noise this block exists to remove. A 204 logs nothing.
+  // Fulfill 200 + {} - never abort, never empty-body: an abort logs
+  // net::ERR_FAILED (x4 per boot, run 30871208042) and an empty 204 makes the
+  // SDK's response.json() throw 'Unexpected end of JSON input' (run
+  // 30871967215). An empty JSON object parses clean and logs nothing.
   await page.route(
     (url) => TELEMETRY_HOSTS.test(url.hostname),
-    (route) => route.fulfill({ status: 204, body: '' })
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: '{}'
+      })
   )
 }
 
