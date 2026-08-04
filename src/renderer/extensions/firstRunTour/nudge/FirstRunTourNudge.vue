@@ -70,15 +70,16 @@ const NUDGE_IMAGE = '/assets/images/og-image.png'
 const APPEAR_DELAY_MS = 1500
 
 const { t } = useI18n()
-const { nudgeArmed, tourWasShown, dismissNudge } = useFirstRunTourController()
+const { nudgeArmed, tourOutcome, dismissNudge } = useFirstRunTourController()
 const dialogStore = useDialogStore()
 const telemetry = useTelemetry()
 const titleId = useId()
 
-// A tour that never appeared made nothing to congratulate the user for.
+// Only a tour walked to the end made a first result to congratulate; every
+// other ending gets the same neutral pointer at the templates.
 const copyKey = computed(
   () =>
-    `onboardingCoachmarks.firstRun.nudge.${tourWasShown.value ? 'ran' : 'noTour'}`
+    `onboardingCoachmarks.firstRun.nudge.${tourOutcome.value === 'completed' ? 'ran' : 'noTour'}`
 )
 
 const onScreen = ref(false)
@@ -88,7 +89,12 @@ const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
     onScreen.value = true
     if (reported) return
     reported = true
-    telemetry?.trackOnboardingTour('nudge_shown', { tour: 'firstRun' })
+    // The nudge is shown to users the tour never reached as well as to users
+    // who saw one; the funnel can only read either if the event says which.
+    telemetry?.trackOnboardingTour('nudge_shown', {
+      tour: 'firstRun',
+      tour_outcome: tourOutcome.value
+    })
   },
   APPEAR_DELAY_MS,
   { immediate: false }
@@ -115,7 +121,8 @@ watch(
 function onExplore() {
   useWorkflowTemplateSelectorDialog().show('first_run_nudge')
   telemetry?.trackOnboardingTour('explore_templates_clicked', {
-    tour: 'firstRun'
+    tour: 'firstRun',
+    tour_outcome: tourOutcome.value
   })
   dismissNudge()
 }

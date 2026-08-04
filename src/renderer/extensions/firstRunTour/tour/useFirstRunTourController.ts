@@ -11,6 +11,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { OnboardingTourNudgeOutcome } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -43,8 +44,8 @@ function useFirstRunTourControllerInternal() {
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
-  /** A tour that never appeared leaves the user nothing to be congratulated for. */
-  const tourWasShown = ref(false)
+  /** Which ending the nudge is following, which is what it may say about it. */
+  const tourOutcome = ref<OnboardingTourNudgeOutcome>('not_started')
 
   // The tour's node ids are graph-local, so they only describe the workflow it
   // resolved against: swapping workflows leaves it pointing at strangers.
@@ -121,11 +122,34 @@ function useFirstRunTourControllerInternal() {
     { capture: true }
   )
 
+  /**
+   * The nudge follows the ending, not the fact that a tour ran. Only an ending
+   * the user themselves reached earns one:
+   *
+   * - `completed` — the tour was walked to the end, so there is a first result
+   *   to congratulate.
+   * - `skipped` by the user — no congratulation, but somewhere to go next is
+   *   still the right offer for someone who declined the guided path.
+   * - any other skip (`target_timeout`, `postponed`, `trigger_lost`) — the tour
+   *   was cut short by circumstance, is left unseen and will be offered again.
+   *   A target that never mounted also raises an error toast, and a panel
+   *   celebrating the same event is the bug in #14622.
+   * - no ending at all — the tour never resolved a step, so nothing happened to
+   *   congratulate, but the templates are still worth pointing at.
+   */
+  function armNudge() {
+    const ending = engine.lastEnding
+    if (ending && ending.tour !== 'firstRun') return
+    if (ending?.outcome === 'skipped' && ending.skipReason !== 'user') return
+    tourOutcome.value = ending?.outcome ?? 'not_started'
+    nudgeArmed.value = true
+  }
+
   watch(
     () => engine.activeTour === 'firstRun',
     (active) => {
       if (active) return
-      nudgeArmed.value = true
+      armNudge()
       stopOfflineGrace()
       releaseFirstRunTargets()
       tourWorkflow.value = null
@@ -147,7 +171,7 @@ function useFirstRunTourControllerInternal() {
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     nudgeArmed.value = false
-    tourWasShown.value = false
+    tourOutcome.value = 'not_started'
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),
@@ -155,7 +179,6 @@ function useFirstRunTourControllerInternal() {
     )
     await delay(INTRO_PREVIEW_MS)
     const started = await engine.startTour('firstRun')
-    tourWasShown.value = started
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null
@@ -168,7 +191,7 @@ function useFirstRunTourControllerInternal() {
   return {
     beginTour,
     nudgeArmed: readonly(nudgeArmed),
-    tourWasShown: readonly(tourWasShown),
+    tourOutcome: readonly(tourOutcome),
     dismissNudge
   }
 }

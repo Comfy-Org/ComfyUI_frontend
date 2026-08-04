@@ -15,7 +15,7 @@ const mocks = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   return {
     nudgeArmed: ref(false),
-    tourWasShown: ref(true),
+    tourOutcome: ref<'completed' | 'skipped' | 'not_started'>('completed'),
     openDialogs: ref<string[]>([]),
     dismissNudge: vi.fn(() => {
       mocks.nudgeArmed.value = false
@@ -28,7 +28,7 @@ const mocks = await vi.hoisted(async () => {
 vi.mock('../tour/useFirstRunTourController', () => ({
   useFirstRunTourController: () => ({
     nudgeArmed: mocks.nudgeArmed,
-    tourWasShown: mocks.tourWasShown,
+    tourOutcome: mocks.tourOutcome,
     dismissNudge: mocks.dismissNudge
   })
 }))
@@ -71,6 +71,7 @@ describe('FirstRunTourNudge', () => {
     vi.clearAllMocks()
     vi.useFakeTimers()
     mocks.nudgeArmed.value = false
+    mocks.tourOutcome.value = 'completed'
     mocks.openDialogs.value = []
   })
 
@@ -96,7 +97,8 @@ describe('FirstRunTourNudge', () => {
       'a nudge armed before this mounted still has to appear'
     ).not.toBeNull()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
-      tour: 'firstRun'
+      tour: 'firstRun',
+      tour_outcome: 'completed'
     })
   })
 
@@ -157,8 +159,17 @@ describe('FirstRunTourNudge', () => {
     ).toHaveLength(1)
   })
 
+  it('congratulates a tour the user walked to the end', async () => {
+    mocks.tourOutcome.value = 'completed'
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(screen.getByText(nudgeCopy.ran.title)).toBeTruthy()
+  })
+
   it('offers no congratulation for a tour that never appeared', async () => {
-    mocks.tourWasShown.value = false
+    mocks.tourOutcome.value = 'not_started'
     mocks.nudgeArmed.value = true
     renderNudge()
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
@@ -168,6 +179,34 @@ describe('FirstRunTourNudge', () => {
       'a user whose tour never ran made nothing to be congratulated for'
     ).toBeNull()
     expect(screen.getByText(nudgeCopy.noTour.title)).toBeTruthy()
+  })
+
+  it('offers no congratulation for a tour the user skipped', async () => {
+    mocks.tourOutcome.value = 'skipped'
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(
+      screen.queryByText(nudgeCopy.ran.title),
+      'a user who waved the tour away made no first result to be congratulated for'
+    ).toBeNull()
+    expect(screen.getByText(nudgeCopy.noTour.title)).toBeTruthy()
+  })
+
+  it('says which population it was shown to', async () => {
+    mocks.tourOutcome.value = 'not_started'
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(
+      mocks.trackOnboardingTour,
+      'a nudge_shown that cannot tell a tour-less user from a toured one counts two funnels as one'
+    ).toHaveBeenCalledWith('nudge_shown', {
+      tour: 'firstRun',
+      tour_outcome: 'not_started'
+    })
   })
 
   it('stays gone once the user closes it', async () => {
@@ -205,7 +244,7 @@ describe('FirstRunTourNudge', () => {
     expect(mocks.dismissNudge).toHaveBeenCalled()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
       'explore_templates_clicked',
-      { tour: 'firstRun' }
+      { tour: 'firstRun', tour_outcome: 'completed' }
     )
   })
 })

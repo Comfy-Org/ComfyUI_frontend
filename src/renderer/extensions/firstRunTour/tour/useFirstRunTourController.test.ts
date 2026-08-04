@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
+import type { TourEnding } from '@/platform/onboarding/onboardingTourStore'
+import type { OnboardingTourSkipReason } from '@/platform/telemetry/types'
 import type {
   CoachStep,
   SpotlightStep
@@ -28,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   releaseFirstRunTargets: vi.fn(),
   engine: {
     activeTour: null as string | null,
+    lastEnding: null as TourEnding | null,
     step: null as CoachStep | null,
     isLast: false,
     startTour: vi.fn(),
@@ -147,6 +150,8 @@ async function tourOnRunStep() {
   mocks.activeWorkflow.value = TOUR_WORKFLOW
   mocks.engine.startTour.mockImplementation(async () => {
     await resolveRegisteredTour()
+    // The store drops the previous run's ending as soon as one is requested.
+    mocks.engine.lastEnding = null
     mocks.engine.activeTour = 'firstRun'
     mocks.engine.step = runStep()
     return true
@@ -157,6 +162,20 @@ async function tourOnRunStep() {
   await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
 
   return { controller, started: await starting }
+}
+
+/** The engine ending the tour, recording how, the way `finish()` leaves it. */
+function endTour(ending: TourEnding | null) {
+  mocks.engine.lastEnding = ending
+  mocks.engine.activeTour = null
+  mocks.engine.step = null
+  return nextTick()
+}
+
+const COMPLETED: TourEnding = { tour: 'firstRun', outcome: 'completed' }
+
+function skippedBecause(skipReason: OnboardingTourSkipReason): TourEnding {
+  return { tour: 'firstRun', outcome: 'skipped', skipReason }
 }
 
 function finishRun(workflow: unknown, status: string) {
@@ -209,6 +228,7 @@ describe('useFirstRunTourController', () => {
     mocks.vueNodesEnabled = true
     mocks.steps = []
     mocks.engine.activeTour = null
+    mocks.engine.lastEnding = null
     mocks.engine.step = null
     mocks.engine.isLast = false
   })
@@ -608,8 +628,7 @@ describe('useFirstRunTourController', () => {
         'a nudge fighting a live tour for the screen helps nobody'
       ).toBe(false)
 
-      mocks.engine.activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
 
       expect(controller.nudgeArmed.value).toBe(true)
     })
@@ -619,8 +638,7 @@ describe('useFirstRunTourController', () => {
       mountRunButton('queue-button', () => {}).click()
       await finishRun(TOUR_WORKFLOW, 'failed')
 
-      mocks.engine.activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
 
       expect(
         controller.nudgeArmed.value,
@@ -630,8 +648,7 @@ describe('useFirstRunTourController', () => {
 
     it('takes an armed nudge off the screen when a second tour starts', async () => {
       const { controller } = await tourOnRunStep()
-      mocks.engine.activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
       expect(controller.nudgeArmed.value).toBe(true)
 
       const starting = controller.beginTour('image_z_image_turbo')
@@ -644,11 +661,24 @@ describe('useFirstRunTourController', () => {
       ).toBe(false)
     })
 
+    it('congratulates a tour the user walked to the end', async () => {
+      const { controller } = await tourOnRunStep()
+
+      await endTour(COMPLETED)
+
+      expect(controller.tourOutcome.value).toBe('completed')
+    })
+
     it('congratulates nobody when the tour never appeared', async () => {
       mocks.steps = []
       mocks.activeWorkflow.value = TOUR_WORKFLOW
       mocks.engine.startTour.mockImplementation(async () => {
         await resolveRegisteredTour()
+        // The store requests the run, resolves no steps and returns to idle,
+        // so nothing ever calls `finish()` and no ending is recorded.
+        mocks.engine.activeTour = 'firstRun'
+        await nextTick()
+        mocks.engine.activeTour = null
         return false
       })
       const controller = await freshController()
@@ -656,17 +686,69 @@ describe('useFirstRunTourController', () => {
       const starting = controller.beginTour('image_z_image_turbo')
       await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
       await starting
+      await nextTick()
 
       expect(
-        controller.tourWasShown.value,
+        controller.nudgeArmed.value,
+        'a user the tour declined still has templates worth pointing at'
+      ).toBe(true)
+      expect(
+        controller.tourOutcome.value,
         'a tour that resolved no steps made nothing for the nudge to celebrate'
+      ).toBe('not_started')
+    })
+
+    it('congratulates nobody for a tour the user skipped', async () => {
+      const { controller } = await tourOnRunStep()
+
+      await endTour(skippedBecause('user'))
+
+      expect(
+        controller.nudgeArmed.value,
+        'someone who declined the guided path is exactly who the templates are for'
+      ).toBe(true)
+      expect(
+        controller.tourOutcome.value,
+        'skipping on step 1 makes no first result to be congratulated for'
+      ).toBe('skipped')
+    })
+
+    it('stays away from a tour a missing target tore down', async () => {
+      const { controller } = await tourOnRunStep()
+
+      await endTour(skippedBecause('target_timeout'))
+
+      expect(
+        controller.nudgeArmed.value,
+        'the same event already raised an error toast; a panel beside it congratulates a failure'
+      ).toBe(false)
+    })
+
+    it('stays away from a tour the paywall parked', async () => {
+      const { controller } = await tourOnRunStep()
+
+      await endTour(skippedBecause('postponed'))
+
+      expect(
+        controller.nudgeArmed.value,
+        'a postponed tour is left unseen and offered again, so it has not ended for the user yet'
+      ).toBe(false)
+    })
+
+    it('stays away from a tour whose context walked off', async () => {
+      const { controller } = await tourOnRunStep()
+
+      await endTour(skippedBecause('trigger_lost'))
+
+      expect(
+        controller.nudgeArmed.value,
+        'the user moved on to something else; the nudge would land on top of it'
       ).toBe(false)
     })
 
     it('stops offering the nudge once it is waved away', async () => {
       const { controller } = await tourOnRunStep()
-      mocks.engine.activeTour = null
-      await nextTick()
+      await endTour(COMPLETED)
 
       controller.dismissNudge()
 

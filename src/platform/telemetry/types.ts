@@ -153,9 +153,17 @@ export interface OnboardingTourStepMetadata {
   not_started_reason?: OnboardingTourNotStartedReason
 }
 
+/**
+ * How the tour the nudge follows ended. `not_started` is the population the
+ * tour never reached at all — it still gets a nudge, and the funnel has to be
+ * able to tell it apart from the users who saw a tour.
+ */
+export type OnboardingTourNudgeOutcome = 'completed' | 'skipped' | 'not_started'
+
 /** The nudge is post-tour, so it reports no step and no count. */
 export interface OnboardingTourNudgeMetadata {
   tour: string
+  tour_outcome: OnboardingTourNudgeOutcome
 }
 
 export type OnboardingTourMetadata =
