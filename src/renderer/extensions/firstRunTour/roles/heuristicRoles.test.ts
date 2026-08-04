@@ -358,6 +358,36 @@ describe('heuristicRoles', () => {
     ).toBeNull()
   })
 
+  it('reads the anti_prompt input a box feeds as a negative prompt', () => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    const text = addNode(graph, 'CLIPTextEncode', {
+      prompts: ['text'],
+      outputs: ['CONDITIONING']
+    })
+    const sampler = addNode(graph, 'CustomSampler', {
+      inputs: ['anti_prompt'],
+      inputType: 'CONDITIONING'
+    })
+    text.connect(0, sampler, 0)
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'the input a box feeds names it, the same as its own title would'
+    ).toBeNull()
+  })
+
+  it('reads a subgraph port named Anti-Prompt as a negative prompt', () => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    addExposedPrompt(graph, 'Anti-Prompt')
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'the exposed port is the only label on an interior node titled nothing useful'
+    ).toBeNull()
+  })
+
   it.for([
     'Antique portrait',
     'Negro',
