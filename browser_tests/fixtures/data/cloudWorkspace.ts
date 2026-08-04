@@ -83,16 +83,15 @@ export const TEAM_BILLING_STATUS = {
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
   team_credit_stop: null
-} satisfies IngestBillingStatusResponse & {
-  max_seats: number
-  occupied_seats: number
-}
+} satisfies IngestBillingStatusResponse
 
 export const ENDED_STANDARD_BILLING_STATUS = {
   billing_rail: 'stripe',
   billing_status: 'inactive',
   has_funds: true,
   is_active: false,
+  max_seats: 30,
+  occupied_seats: DEFAULT_TEAM_MEMBERS.length,
   plan_slug: 'standard-monthly',
   subscription_duration: 'MONTHLY',
   subscription_status: 'ended',
