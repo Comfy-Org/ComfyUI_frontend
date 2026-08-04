@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onKeyStroke, useWindowSize } from '@vueuse/core'
-import { ref, watchEffect } from 'vue'
+import { nextTick, ref, watchEffect } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
@@ -25,9 +25,10 @@ const MARGIN = 8
 const cardStyle = ref<Record<string, string> | null>(null)
 
 watchEffect(
-  () => {
+  async () => {
     cardStyle.value = null
     if (!active.value) return
+    await nextTick()
     const target = document.querySelector(step.target)
     if (!target) return
     const rect = target.getBoundingClientRect()

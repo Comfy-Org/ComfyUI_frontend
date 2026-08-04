@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { NodeState } from '@/types/nodeState'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -237,35 +237,14 @@ describe('NodeWidgets', () => {
     expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
   })
 
-  it('marks widgets with host execution errors', () => {
-    const nodeId = toNodeId('test_node')
-    const id = widgetId(GRAPH_ID, nodeId, 'seed')
-
-    const { container } = renderComponent({
-      nodeData: createMockNodeData('TestNode', nodeId),
-      widgetIds: [id],
-      setupStores: () => {
-        useExecutionErrorStore().recordNodeErrors({
-          [createNodeExecutionId([nodeId])]: {
-            errors: [
-              {
-                type: 'value_not_in_list',
-                message: 'seed is invalid',
-                details: '',
-                extra_info: { input_name: 'seed' }
-              }
-            ],
-            class_type: 'TestNode',
-            dependent_outputs: []
-          }
-        })
-        registerWidgetState(id, { type: 'text' })
-      }
+  it('becomes non-interactive during agent node selection', () => {
+    const nodeData = createMockNodeData('TestNode', [createMockWidget()])
+    const { container } = renderComponent(nodeData, () => {
+      useAgentNodeSelectionStore().isActive = true
     })
 
-    expect(container.querySelector('.widget-stub')).toHaveAttribute(
-      'aria-invalid',
-      'true'
-    )
+    const widgetsRoot = container.querySelector('[data-testid="node-widgets"]')!
+    expect(widgetsRoot.classList).toContain('pointer-events-none')
+    expect(widgetsRoot.classList).not.toContain('pointer-events-auto')
   })
 })

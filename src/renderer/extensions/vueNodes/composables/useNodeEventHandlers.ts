@@ -22,7 +22,10 @@ function useNodeEventHandlersIndividual() {
   const { shouldHandleNodePointerEvents } = useCanvasInteractions()
 
   function getNode(nodeId: NodeId) {
-    return canvasStore.currentGraph?.getNodeById(nodeId) ?? undefined
+    return (
+      canvasStore.canvas?.graph?.getNodeById(nodeId) ??
+      nodeManager.value?.getNode(nodeId)
+    )
   }
 
   /**

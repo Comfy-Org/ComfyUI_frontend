@@ -9,9 +9,12 @@
     :can-select-inputs
     :node-id="nodeData?.id"
     :class="
-      shouldHandleNodePointerEvents
-        ? 'pointer-events-auto'
-        : 'pointer-events-none'
+      cn(
+        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1',
+        shouldHandleNodePointerEvents && !agentNodeSelectionStore.isActive
+          ? 'pointer-events-auto'
+          : 'pointer-events-none'
+      )
     "
     @pointerdown.capture="handleBringToFront"
     @pointerdown="handleWidgetPointerEvent"
@@ -31,6 +34,11 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
   nodeData?: NodeState
@@ -42,6 +50,7 @@ const { nodeData, widgetIds } = defineProps<NodeWidgetsProps>()
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return

@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import type { LGraph,LGraphCanvas,LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -15,14 +14,13 @@ import type { UUID } from '@/utils/uuid'
 
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 const canvasSelectedItems = vi.hoisted(() => [] as Array<{ id?: string }>)
-const graphNode = vi.hoisted(() => ({
-  id: 'node-1',
-  selected: false,
-  flags: { pinned: false }
-}))
+const getCurrentGraphNode = vi.hoisted(() => vi.fn())
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => {
   const canvas: Partial<LGraphCanvas> = {
+    graph: {
+      getNodeById: getCurrentGraphNode
+    } as unknown as LGraph,
     select: vi.fn(),
     deselect: vi.fn(),
     deselectAll: vi.fn()
@@ -242,6 +240,19 @@ describe('useNodeEventHandlers', () => {
   })
 
   describe('toggleNodeSelectionAfterPointerUp', () => {
+    it('uses the current graph when the lifecycle manager is stale', () => {
+      const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
+      const { canvas, updateSelectedItems } = useCanvasStore()
+      vi.mocked(mockNodeManager.value!.getNode).mockReturnValueOnce(undefined)
+      getCurrentGraphNode.mockReturnValueOnce(mockNode)
+      mockNode!.selected = false
+
+      toggleNodeSelectionAfterPointerUp(testNodeId, true)
+
+      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      expect(updateSelectedItems).toHaveBeenCalledOnce()
+    })
+
     it('on pointer up with multi-select: deselects node that was selected at pointer down', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
       const { canvas, updateSelectedItems } = useCanvasStore()

@@ -9,6 +9,7 @@ import {
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -24,7 +25,12 @@ export function useNodePointerInteractions(
     useCanvasInteractions()
   const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
     useNodeEventHandlers()
-  const isPinned = () => !!toValue(nodeStateRef).flags.pinned
+  const { nodeManager } = useVueNodeLifecycle()
+  const agentNodeSelectionStore = useAgentNodeSelectionStore()
+
+  function isPinnedNode(nodeId: NodeId): boolean {
+    return nodeManager.value?.getNode(nodeId)?.flags?.pinned ?? false
+  }
 
   const forwardMiddlePointerIfNeeded = (
     event: PointerEvent,
@@ -53,7 +59,10 @@ export function useNodePointerInteractions(
 
     if (isPinned()) return
 
-    const nodeId = toValue(nodeStateRef).id
+    // IMPORTANT: Read from actual LGraphNode to get correct state
+    if (isPinnedNode(nodeId) || agentNodeSelectionStore.isActive) {
+      return
+    }
 
     dragGuard.recordStart(event)
 
@@ -68,7 +77,9 @@ export function useNodePointerInteractions(
 
     if (isPinned()) return
 
-    const nodeId = toValue(nodeStateRef).id
+    if (isPinnedNode(nodeId) || agentNodeSelectionStore.isActive) {
+      return
+    }
 
     const multiSelect = isMultiSelectKey(event)
 
@@ -144,7 +155,8 @@ export function useNodePointerInteractions(
     // Skip selection handling for right-click (button 2) - context menu handles its own selection
     if (event.button === 2) return
 
-    const multiSelect = isMultiSelectKey(event)
+    const multiSelect =
+      isMultiSelectKey(event) || agentNodeSelectionStore.isActive
 
     toggleNodeSelectionAfterPointerUp(toValue(nodeStateRef).id, multiSelect)
   }

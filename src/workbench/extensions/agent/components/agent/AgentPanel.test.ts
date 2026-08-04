@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -57,5 +59,33 @@ describe('AgentPanel', () => {
         'The AI agent can make mistakes. Double check your response.'
       )
     ).toBeInTheDocument()
+  })
+
+  it('focuses the composer input body after a suggestion and clears on blur', async () => {
+    const user = userEvent.setup()
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    render(AgentPanel, {
+      props: { entries: [], historyGroups },
+      global: {
+        plugins: [pinia, i18n],
+        directives: { tooltip: {} },
+        stubs: {
+          WorkflowSelectorChip: true
+        }
+      }
+    })
+    const prompt = 'Generate a yellow duck with a hockey mask'
+    const suggestion = screen.getByRole('button', { name: prompt })
+    const textarea = screen.getByRole('textbox')
+
+    await user.click(suggestion)
+
+    expect(textarea).toHaveValue(prompt)
+    expect(textarea).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'New chat' }))
+
+    expect(textarea).not.toHaveFocus()
   })
 })

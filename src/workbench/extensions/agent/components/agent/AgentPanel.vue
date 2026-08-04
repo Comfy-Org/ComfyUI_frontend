@@ -11,6 +11,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -37,6 +38,7 @@ const {
   workflowTabs = [],
   workflowDetached = false,
   getMentionNodes = () => [],
+  getMentionAssets = async () => [],
   sessionId = null,
   customTitle,
   historyGroups
@@ -53,6 +55,7 @@ const {
   workflowTabs?: ActiveTab[]
   workflowDetached?: boolean
   getMentionNodes?: () => SelectedNode[]
+  getMentionAssets?: () => AssetItem[] | Promise<AssetItem[]>
   sessionId?: string | null
   customTitle?: string
   historyGroups: HistoryGroups
@@ -73,6 +76,7 @@ const emit = defineEmits<{
   selectHistory: [id: string]
   deleteHistory: [id: string]
   copyHistory: [id: string]
+  renameHistory: [id: string, title: string]
   renameChat: [title: string]
 }>()
 
@@ -183,6 +187,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         @select="onSelectHistory"
         @delete="emit('deleteHistory', $event)"
         @copy-markdown="emit('copyHistory', $event)"
+        @rename="(id, title) => emit('renameHistory', id, title)"
       />
     </template>
 
@@ -280,6 +285,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :can-open-assets="canOpenAssets"
             :selection-tags="selectionTags"
             :get-mention-nodes="getMentionNodes"
+            :get-mention-assets="getMentionAssets"
             @send="(text, attachments) => emit('send', text, attachments)"
             @stop="emit('stop')"
             @attach="emit('attach')"
