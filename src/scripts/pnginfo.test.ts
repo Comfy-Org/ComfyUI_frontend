@@ -284,6 +284,7 @@ describe('importA1111', () => {
     const beforeGraphClear = vi.fn()
     vi.mocked(api.getEmbeddings).mockResolvedValue([])
     vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(graph, 'arrange').mockImplementation(() => {})
     vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
       const node = new LGraphNode(type)
       node.type = type

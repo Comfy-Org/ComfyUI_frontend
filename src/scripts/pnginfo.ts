@@ -180,7 +180,10 @@ interface LoraEntry {
   weight: number
 }
 
-type A1111ImportOutcome = 'imported' | 'not-a1111' | 'core-nodes-unavailable'
+export type A1111ImportOutcome =
+  | 'imported'
+  | 'not-a1111'
+  | 'core-nodes-unavailable'
 
 export async function importA1111(
   graph: LGraph,
@@ -554,7 +557,9 @@ export async function importA1111(
         delete opts[opt]
       }
 
-      console.warn('Unhandled parameters:', opts)
+      if (Object.keys(opts).length) {
+        console.warn('Unhandled parameters:', opts)
+      }
       return 'imported'
     }
   }

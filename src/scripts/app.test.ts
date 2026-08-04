@@ -40,6 +40,9 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { importA1111 } from './pnginfo'
+import type { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+
+type WorkflowService = ReturnType<typeof useWorkflowService>
 
 const {
   mockApiKeyAuthStore,
@@ -80,9 +83,9 @@ const {
   mockRefreshMissingModelPipeline: vi.fn(),
   mockImportA1111: vi.fn<typeof importA1111>(),
   mockWorkflowService: {
-    beforeLoadNewGraph: vi.fn(),
-    afterLoadNewGraph: vi.fn<(...args: unknown[]) => Promise<void>>(),
-    showPendingWarnings: vi.fn()
+    beforeLoadNewGraph: vi.fn<WorkflowService['beforeLoadNewGraph']>(),
+    afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
+    showPendingWarnings: vi.fn<WorkflowService['showPendingWarnings']>()
   }
 }))
 
@@ -205,7 +208,7 @@ describe('ComfyApp', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
@@ -214,10 +217,8 @@ describe('ComfyApp', () => {
     mockAuthStore.getAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
-    mockImportA1111.mockReset().mockResolvedValue('imported')
-    mockWorkflowService.beforeLoadNewGraph.mockReset()
-    mockWorkflowService.afterLoadNewGraph.mockReset().mockResolvedValue()
-    mockWorkflowService.showPendingWarnings.mockReset()
+    mockImportA1111.mockResolvedValue('imported')
+    mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
@@ -1237,6 +1238,9 @@ describe('ComfyApp', () => {
       await app.handleFile(createTestFile('broken.json', 'application/json'))
 
       expect(mockToastStore.addAlert).toHaveBeenCalledTimes(1)
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'Unable to find workflow in broken.json'
+      )
       consoleError.mockRestore()
     })
 
@@ -1280,7 +1284,7 @@ describe('ComfyApp', () => {
       expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
     })
 
-    it('runs A1111 lifecycle in order and awaits persistence', async () => {
+    it('awaits persistence and orders its clear callback before setGraph', async () => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
       Reflect.set(app, 'rootGraphInternal', graph)
