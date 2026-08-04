@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -75,11 +75,15 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
+  const seatCapacity = shallowRef<{
+    maxSeats: number
+    occupiedSeats: number
+  } | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
   // Prevent older status and balance responses from overwriting newer state.
   const latestBillingReadIds = { status: 0, balance: 0 }
 
-  const isActiveSubscription = computed(
+  const canAccessSubscriptionFeatures = computed(
     () => statusData.value?.is_active ?? false
   )
   const isFreeTier = computed(
@@ -133,6 +137,17 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
   )
+  const maxSeats = computed(() => seatCapacity.value?.maxSeats ?? null)
+  const occupiedSeats = computed(
+    () => seatCapacity.value?.occupiedSeats ?? null
+  )
+
+  watch(
+    () => workspaceStore.activeWorkspace?.id,
+    () => {
+      seatCapacity.value = null
+    }
+  )
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -167,6 +182,22 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         workspaceId !== workspaceStore.activeWorkspace?.id
       ) {
         return
+      }
+
+      if (
+        typeof status.max_seats === 'number' &&
+        Number.isInteger(status.max_seats) &&
+        status.max_seats >= 0 &&
+        typeof status.occupied_seats === 'number' &&
+        Number.isInteger(status.occupied_seats) &&
+        status.occupied_seats >= 0
+      ) {
+        seatCapacity.value = {
+          maxSeats: status.max_seats,
+          occupiedSeats: status.occupied_seats
+        }
+      } else {
+        seatCapacity.value = null
       }
 
       statusData.value = status
@@ -400,7 +431,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
-    if (!isActiveSubscription.value) {
+    if (!canAccessSubscriptionFeatures.value) {
       subscriptionDialog.show({ reason: 'subscription_required' })
     }
   }
@@ -418,9 +449,11 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    maxSeats,
+    occupiedSeats,
     isLoading,
     error,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isFreeTier,
     billingStatus,
     subscriptionStatus,
