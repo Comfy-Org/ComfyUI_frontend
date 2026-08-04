@@ -2884,6 +2884,7 @@
     "mage": "mage",
     "mask": "mask",
     "merging": "merging",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "model",
     "model specific": "מותאם למודל",
@@ -3870,6 +3871,7 @@
     "beta": "בטא",
     "billedMonthly": "חיוב חודשי",
     "billedYearly": "{total} בחיוב שנתי",
+    "billingAndInvoices": "חיוב וחשבוניות",
     "billingComingSoon": {
       "message": "חיוב צוותי יגיע בקרוב. תוכל להירשם למסלול עבור סביבת העבודה שלך עם תמחור לפי מושב. הישאר מעודכן.",
       "title": "בקרוב"
@@ -3951,6 +3953,9 @@
       "memberTitle": "המנוי של מרחב עבודה זה אינו פעיל",
       "runLabel": "הרץ"
     },
+    "inactiveTeamDescription": "הפעילו מחדש את תוכנית הצוות כדי להוסיף חברים ולהריץ תהליכי עבודה",
+    "inactiveTeamPlanIncludes": "תוכנית פעילה כוללת את כל מה שיש ב-{plan}, בנוסף ל:",
+    "inactiveTeamTitle": "מנוי צוות לא פעיל",
     "inviteUpTo": "הזמן עד",
     "invoiceHistory": "היסטוריית חשבוניות",
     "learnMore": "מידע נוסף",
@@ -4070,6 +4075,7 @@
     "pricingBlurbQuestions": "שאלות",
     "pricingBlurbSeeDetails": "ראה פרטים",
     "reactivatePlan": "הפעל מחדש את התוכנית",
+    "reactivateToUseCredits": "הפעילו מחדש את התוכנית כדי להשתמש בקרדיטים אלו",
     "refillsDate": "מתמלא מחדש ב-{date}",
     "refillsNextCycle": "מתמלא מחדש במחזור הבא",
     "refreshCredits": "רענון הקרדיטים",
