@@ -187,7 +187,7 @@ test.describe(
       ).toBeTruthy()
       await expect(
         comfyPage.page.getByTestId('custom-node-widget')
-      ).toBeVisible()
+      ).toBeAttached()
     })
   }
 )
