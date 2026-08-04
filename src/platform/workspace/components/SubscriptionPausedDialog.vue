@@ -32,7 +32,7 @@
 
     <div class="flex items-center justify-end p-4">
       <Button
-        :variant="canManage ? 'subscribe' : 'secondary'"
+        :variant="canManage ? 'inverted' : 'secondary'"
         size="lg"
         :disabled="canManage && isUpdatingPayment"
         @click="canManage ? onUpdatePayment() : onClose()"

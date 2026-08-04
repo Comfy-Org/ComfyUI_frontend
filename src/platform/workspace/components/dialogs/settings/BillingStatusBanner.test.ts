@@ -98,7 +98,6 @@ const i18n = createI18n({
         billingStatus: {
           warning: {
             title: 'Payment failed',
-            body: 'Your payment failed to process. Your subscription will pause on {date} unless payment is updated.',
             bodyNoDate:
               'Your payment failed to process. Update payment to avoid a pause.'
           },
@@ -263,14 +262,16 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('shows the payment-failed banner with Update payment for owners', () => {
+  it('shows immediate payment-failed copy with Update payment for owners', () => {
     paymentFailedState()
     state.renewalDate = '2026-08-01T00:00:00Z'
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
-    expect(screen.getByRole('status')).toHaveTextContent(/will pause on \S+/)
-    expect(screen.getByRole('status')).not.toHaveTextContent('{date}')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Update payment to avoid a pause'
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
     expect(
       screen.getByRole('button', { name: 'Update payment' })
     ).toBeInTheDocument()
@@ -300,18 +301,6 @@ describe('BillingStatusBanner', () => {
     exhausted()
     renderBanner()
     expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
-  })
-
-  it('falls back to the no-date payment-declined copy when there is no renewal date', () => {
-    paymentFailedState()
-    state.renewalDate = null
-    renderBanner()
-
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Update payment to avoid a pause'
-    )
-    expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
-    expect(screen.getByRole('status')).not.toHaveTextContent('{date}')
   })
 
   it('lets a promoted owner reactivate an ending plan', async () => {

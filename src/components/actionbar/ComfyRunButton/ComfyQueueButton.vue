@@ -10,7 +10,12 @@
       }"
       :variant="queueButtonVariant"
       size="unset"
-      :class="queueActionButtonClass"
+      :class="
+        cn(
+          'h-full gap-1.5 rounded-lg px-4',
+          paymentRecoveryLock ? 'font-medium' : 'font-light'
+        )
+      "
       data-testid="queue-button"
       :data-variant="queueButtonVariant"
       @click="queuePrompt"
@@ -204,7 +209,6 @@ const queueButtonVariant = computed<
         ? 'destructive'
         : 'primary'
 )
-const queueActionButtonClass = 'h-full rounded-lg gap-1.5 px-4 font-light'
 const queueMenuTriggerClass =
   'h-full w-6 rounded-l-none rounded-r-lg border-l border-border-subtle p-0 text-muted-foreground data-[state=open]:bg-secondary-background-hover'
 const queueMenuItemButtonClass = 'w-full justify-start font-normal'

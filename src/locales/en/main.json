@@ -3005,7 +3005,6 @@
     "billingStatus": {
       "warning": {
         "title": "Payment failed",
-        "body": "Your payment failed to process. Your subscription will pause on {date} unless payment is updated.",
         "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause."
       },
       "paused": {
