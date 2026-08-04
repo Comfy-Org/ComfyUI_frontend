@@ -51,6 +51,13 @@ const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   has_funds: true
 }
 
+const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
+  is_active: false,
+  subscription_tier: 'FREE',
+  subscription_duration: 'MONTHLY',
+  has_funds: false
+}
+
 const NO_ASSETS: AssetResponse = {
   assets: [],
   total: 0,
@@ -239,6 +246,9 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('without a subscription', () => {
     test.beforeEach(async ({ page }) => {
       await mockBilling(page)
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill(jsonRoute(INACTIVE_SUBSCRIPTION))
+      )
     })
 
     test('leaves the nudge until the upgrade dialog closes', async ({
