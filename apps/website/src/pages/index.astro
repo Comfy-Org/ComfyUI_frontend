@@ -2,6 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductCardsSection from "../components/home/ProductCardsSection.vue";
 import HeroSection from "../components/home/HeroSection.vue";
+import CardSplitContent01 from "../components/blocks/CardSplitContent01.vue";
 import SocialProofBarSection from "../components/common/SocialProofBarSection.vue";
 import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
 import UseCaseSection from "../components/home/UseCaseSection.vue";
@@ -44,6 +45,16 @@ const { siteUrl } = pageContext(
   ]}
 >
   <HeroSection client:load />
+  <CardSplitContent01
+    client:visible
+    eyebrow={t("modelRelease.eyebrow", "en")}
+    title={t("modelRelease.title", "en")}
+    body={t("modelRelease.body", "en")}
+    primaryCta={{ label: t("modelRelease.viewFeatures", "en"), href: "#" }}
+    secondaryCta={{ label: t("modelRelease.tryWorkflows", "en"), href: "#" }}
+    tags={[t("tags.openWeights", "en"), t("tags.partnerNodes", "en")]}
+    videoSrc="https://media.comfy.org/website/minimax/hero.mp4"
+  />
   <SocialProofBarSection />
   <ProductShowcaseSection client:load />
   <UseCaseSection client:load />

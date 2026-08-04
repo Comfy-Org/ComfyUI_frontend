@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../components/home/ProductCardsSection.vue'
 import HeroSection from '../../components/home/HeroSection.vue'
+import CardSplitContent01 from '../../components/blocks/CardSplitContent01.vue'
 import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
 import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
 import UseCaseSection from '../../components/home/UseCaseSection.vue'
@@ -31,6 +32,17 @@ const { siteUrl } = pageContext(
   keywords={['comfyui app', 'comfyui web app', 'comfyui application', 'ComfyUI 应用', 'ComfyUI 网页版', 'ComfyUI 桌面应用', 'ComfyUI 下载', '可视化 AI', '节点式 AI', '生成式 AI 工作流']}
 >
   <HeroSection locale="zh-CN" client:load />
+  <CardSplitContent01
+    client:visible
+    locale="zh-CN"
+    eyebrow={t('modelRelease.eyebrow', 'zh-CN')}
+    title={t('modelRelease.title', 'zh-CN')}
+    body={t('modelRelease.body', 'zh-CN')}
+    primaryCta={{ label: t('modelRelease.viewFeatures', 'zh-CN'), href: '#' }}
+    secondaryCta={{ label: t('modelRelease.tryWorkflows', 'zh-CN'), href: '#' }}
+    tags={[t('tags.openWeights', 'zh-CN'), t('tags.partnerNodes', 'zh-CN')]}
+    videoSrc="https://media.comfy.org/website/minimax/hero.mp4"
+  />
   <SocialProofBarSection />
   <ProductShowcaseSection locale="zh-CN" client:load />
   <UseCaseSection locale="zh-CN" client:load />

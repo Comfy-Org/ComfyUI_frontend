@@ -14,6 +14,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { t } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
+import VolumeMutedIcon from '../icons/VolumeMutedIcon.vue'
+import VolumeUnmutedIcon from '../icons/VolumeUnmutedIcon.vue'
 import PlayPauseButton from './PlayPauseButton.vue'
 
 export type VideoTrack = {
@@ -32,6 +34,7 @@ const {
   autoplayUnmuted = false,
   loop = false,
   minimal = false,
+  muteOnly = false,
   hideControls = false,
   fit = 'cover',
   ariaLabel,
@@ -47,6 +50,8 @@ const {
   autoplayUnmuted?: boolean
   loop?: boolean
   minimal?: boolean
+  /** Show only a persistent mute toggle in the top-right corner. */
+  muteOnly?: boolean
   hideControls?: boolean
   fit?: 'cover' | 'contain'
   ariaLabel?: string
@@ -259,7 +264,7 @@ function toggleFullscreen() {
       :autoplay
       :loop
       muted
-      @click="hideControls ? undefined : (playing = !playing)"
+      @click="hideControls || muteOnly ? undefined : (playing = !playing)"
     >
       <track
         v-for="track in tracks"
@@ -271,9 +276,22 @@ function toggleFullscreen() {
       />
     </video>
 
+    <!-- Persistent corner mute toggle -->
+    <button
+      v-if="src && muteOnly && !hideControls"
+      class="bg-primary-comfy-yellow absolute top-4 right-4 flex size-8 items-center justify-center rounded-xl lg:top-6 lg:right-6"
+      :aria-label="
+        muted ? t('player.unmute', locale) : t('player.mute', locale)
+      "
+      @click="muted = !muted"
+    >
+      <VolumeMutedIcon v-if="muted" class="size-4 text-primary-comfy-ink" />
+      <VolumeUnmutedIcon v-else class="size-4 text-primary-comfy-ink" />
+    </button>
+
     <!-- Minimal centered play/pause button -->
     <div
-      v-if="minimal && src && !hideControls"
+      v-if="minimal && src && !hideControls && !muteOnly"
       :class="
         cn(
           'absolute inset-0 flex items-center justify-center transition-opacity duration-300',
@@ -293,7 +311,7 @@ function toggleFullscreen() {
 
     <!-- Bottom control bar -->
     <div
-      v-if="src && !minimal && !hideControls"
+      v-if="src && !minimal && !hideControls && !muteOnly"
       :class="
         cn(
           'absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 transition-opacity duration-300 lg:px-6 lg:py-5',
@@ -386,52 +404,14 @@ function toggleFullscreen() {
         "
         @click="muted = !muted"
       >
-        <!-- Muted icon -->
-        <svg
+        <VolumeMutedIcon
           v-if="muted"
           class="size-3.5 text-primary-comfy-ink lg:size-4"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          stroke="currentColor"
-          stroke-width="1.5"
-          aria-hidden="true"
-        >
-          <path
-            d="M11 5L6 9H2v6h4l5 4V5z"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <line x1="23" y1="9" x2="17" y2="15" stroke-width="2.5" />
-          <line x1="17" y1="9" x2="23" y2="15" stroke-width="2.5" />
-        </svg>
-        <!-- Unmuted icon -->
-        <svg
+        />
+        <VolumeUnmutedIcon
           v-else
           class="size-3.5 text-primary-comfy-ink lg:size-4"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          stroke="currentColor"
-          stroke-width="1.5"
-          aria-hidden="true"
-        >
-          <path
-            d="M11 5L6 9H2v6h4l5 4V5z"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M15.54 8.46a5 5 0 0 1 0 7.07"
-            fill="none"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-          <path
-            d="M19.07 4.93a10 10 0 0 1 0 14.14"
-            fill="none"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </svg>
+        />
       </button>
     </div>
   </div>
