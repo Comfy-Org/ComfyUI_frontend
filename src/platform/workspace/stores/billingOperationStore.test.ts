@@ -1,4 +1,5 @@
-import { setActivePinia, createPinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest'
 import { ref } from 'vue'
 
@@ -80,7 +81,7 @@ import { useBillingOperationStore } from './billingOperationStore'
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     vi.useFakeTimers()
     mockActiveWorkspaceId.value = 'workspace-1'
