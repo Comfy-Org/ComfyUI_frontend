@@ -404,6 +404,7 @@ describe('CreditsTile', () => {
   it('keeps offering add-credits on the free tier for non-cloud distributions', () => {
     mockIsCloud.value = false
     activeProSubscription()
+    state.tier = 'FREE'
     renderTile()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
