@@ -249,8 +249,9 @@ export function useFeatureFlags() {
       )
     },
     get supportsModelTypeTags() {
-      return api.getServerFeature(
+      return resolveFlag(
         ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+        remoteConfig.value.supports_model_type_tags,
         false
       )
     },
