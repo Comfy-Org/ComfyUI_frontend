@@ -12,9 +12,11 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
   <div
     v-if="!dismissed"
     role="note"
-    class="bg-agent-surface border-l-agent-accent flex items-start gap-2 rounded-lg border-l-4 p-4 shadow-[0_0_1px_var(--color-smoke-200)]"
+    class="bg-agent-surface before:bg-agent-accent relative flex items-start gap-2 overflow-hidden rounded-lg p-4 shadow-[0_0_1px_var(--color-smoke-200)] before:absolute before:inset-y-0 before:left-0 before:w-1"
   >
-    <span class="text-agent-accent icon-[lucide--info] size-5 shrink-0" />
+    <span
+      class="text-agent-accent icon-[heroicons--information-circle-20-solid] size-5 shrink-0"
+    />
     <p class="text-agent-fg my-0 min-w-0 flex-1 text-sm font-medium">
       {{ $t(expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice') }}
     </p>

@@ -103,7 +103,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         'The first graph edit is complete. I will check the remaining work.'
       )
     ).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
+    await expect(panel.getByText('Set widget')).toBeVisible()
 
     pushEvent(ws, RESUMED_THINKING_EVENT)
     await expect(
@@ -116,6 +117,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       name: 'Ran 1 tool call for 0.5 seconds'
     })
     await expect(secondSummary).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
+    await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toHaveCount(0)
@@ -136,7 +139,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(secondSummary).toHaveCount(0)
 
     const toolRows = panel.getByRole('listitem')
-    await expect(toolRows).toHaveCount(2)
+    await expect(toolRows).toHaveCount(3)
+    await expect(toolRows.filter({ hasText: 'Set widget' })).toBeVisible()
     await expect(
       toolRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
     ).toBeVisible()
@@ -153,8 +157,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
-    await expect(finalSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Opened a new tab')).toBeHidden()
+    await expect(finalSummary).toHaveAttribute('aria-expanded', 'true')
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
+    await expect(panel.getByText('Opened a new tab')).toBeVisible()
 
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
@@ -163,6 +168,28 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       panel.getByRole('button', { name: /ran 2 tool calls/i })
     ).toHaveAttribute('aria-expanded', 'false')
     await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('keeps the Agent scrollbar track transparent', async ({ comfyPage }) => {
+    const page = comfyPage.page
+    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+    const scrollContainer = page
+      .locator('#agent-panel-root div.overflow-y-auto')
+      .first()
+    await expect(scrollContainer).toBeVisible()
+
+    const track = await scrollContainer.evaluate((element) => ({
+      backgroundColor: getComputedStyle(element, '::-webkit-scrollbar-track')
+        .backgroundColor,
+      backgroundImage: getComputedStyle(element, '::-webkit-scrollbar-track')
+        .backgroundImage,
+      scrollbarColor: getComputedStyle(element).scrollbarColor
+    }))
+
+    expect(track.backgroundColor).toBe('rgba(0, 0, 0, 0)')
+    expect(track.backgroundImage).toBe('none')
+    expect(track.scrollbarColor).toMatch(/rgba\(0, 0, 0, 0\)$/)
   })
 
   test('applies a draft_patch graph to the canvas', async ({

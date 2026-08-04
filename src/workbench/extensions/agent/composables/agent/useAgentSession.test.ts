@@ -417,6 +417,32 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
+  it('(d3) stopTurn before the POST acknowledgement cancels the acknowledged turn once', async () => {
+    let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const cancelMessage = vi.fn<
+      (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
+    >(async () => ({ status: 'cancelling' }))
+    const rest = fakeRest({ postMessage, cancelMessage })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    const sending = session.sendMessage('go')
+    await session.stopTurn()
+    expect(cancelMessage).not.toHaveBeenCalled()
+
+    resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
+    await sending
+
+    expect(cancelMessage).toHaveBeenCalledTimes(1)
+    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+  })
+
   it('(e) foreign chat events are ignored, but a mid-turn draft_patch still adopts', async () => {
     const rest = fakeRest()
     const { source, emit } = fakeEvents()

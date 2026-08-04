@@ -64,6 +64,22 @@ describe('OnboardingCoach', () => {
     expect(Number.parseFloat(card.style.top)).toBe(108)
   })
 
+  it('finds a target mounted in the same render', async () => {
+    render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ step: STEP }),
+        template:
+          '<div id="coach-target" /><OnboardingCoach :step="step" storage-key="coach-same-render" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet the agent' })
+    ).toBeInTheDocument()
+  })
+
   it('offers a single Got it action and no Skip', async () => {
     mountWithTarget({ left: 700, top: 100 })
 

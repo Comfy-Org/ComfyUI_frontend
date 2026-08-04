@@ -53,21 +53,23 @@ const markdown = computed(() =>
 const showActions = computed(
   () => !message.streaming && markdown.value.length > 0
 )
+
+const activeToolGroupIndex = computed(() =>
+  message.streaming && !message.thinking
+    ? groups.value.findLastIndex((group) => group.kind === 'tools')
+    : -1
+)
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-2 pb-4">
     <template v-for="(group, index) in groups" :key="index">
       <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
       <ToolCallGroup
         v-else-if="group.kind === 'tools'"
         :tools="group.parts"
-        :streaming="
-          message.streaming && !message.thinking && index === groups.length - 1
-        "
-        :active="
-          message.streaming && !message.thinking && index === groups.length - 1
-        "
+        :streaming="message.streaming"
+        :active="index === activeToolGroupIndex"
       />
       <div v-else-if="group.kind === 'tabLinks'" class="flex flex-col gap-1">
         <TabLinkCard
@@ -105,7 +107,6 @@ const showActions = computed(
 
     <MessageFeedback
       v-if="showActions"
-      class="-mt-1"
       :markdown
       @feedback="emit('feedback', $event)"
     />

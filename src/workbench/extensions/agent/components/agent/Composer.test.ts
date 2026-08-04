@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
+import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -11,7 +13,13 @@ import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 
 function mount(props: ComponentProps<typeof Composer> = {}) {
-  return render(Composer, { props, global: { plugins: [i18n] } })
+  return render(Composer, {
+    props,
+    global: {
+      plugins: [PrimeVue, i18n],
+      directives: { tooltip: Tooltip }
+    }
+  })
 }
 
 describe('Composer', () => {
@@ -41,9 +49,8 @@ describe('Composer', () => {
     ).toBeNull()
   })
 
-  it('opens the graph picker from the empty-composer hint', async () => {
-    const node = { id: '5', title: 'KSampler' }
-    const getMentionNodes = vi.fn(() => [node])
+  it('enters graph selection mode from the empty-composer hint', async () => {
+    const getMentionNodes = vi.fn(() => [])
     const { emitted } = mount({ getMentionNodes })
     const hintButton = screen.getByRole('button', {
       name: 'add nodes from graph,'
@@ -53,12 +60,9 @@ describe('Composer', () => {
     await userEvent.tab()
     expect(hintButton).toHaveFocus()
     await userEvent.keyboard('{Enter}')
-    await userEvent.click(
-      await screen.findByRole('option', { name: 'KSampler' })
-    )
 
-    expect(getMentionNodes).toHaveBeenCalledOnce()
-    expect(emitted().mentionPick[0]).toEqual([node])
+    expect(emitted().selectNodes).toHaveLength(1)
+    expect(getMentionNodes).not.toHaveBeenCalled()
   })
 
   it('disables send when empty and enables once text is typed', async () => {
@@ -215,6 +219,24 @@ describe('Composer', () => {
       ).not.toBeInTheDocument()
     })
 
+    it.for([
+      ['ask', 'Ask', 'Ask for permission'],
+      ['auto', 'Auto', 'Run workflow without permission'],
+      ['auto-limit', 'Auto (limited)', 'Ask when credit limit is reached']
+    ] as const)(
+      'shows the %s mode tooltip copy',
+      async ([mode, triggerName, tooltipCopy]) => {
+        useAgentRunModeStore().save(mode, 450)
+        mount()
+
+        await userEvent.hover(screen.getByRole('button', { name: triggerName }))
+
+        expect(
+          await screen.findByRole('tooltip', { hidden: true })
+        ).toHaveTextContent(tooltipCopy)
+      }
+    )
+
     it('discards an unsaved draft when the popover closes without saving', async () => {
       mount()
       const store = useAgentRunModeStore()
@@ -238,6 +260,22 @@ describe('Composer', () => {
       { id: '5', title: 'KSampler' },
       { id: '7', title: 'KSampler' },
       { id: '9', title: 'VAE Decode' }
+    ]
+    const ASSETS = [
+      {
+        id: 'asset-1',
+        name: 'sunset-original.png',
+        hash: 'sunset-hash.png',
+        tags: ['input'],
+        display_name: 'Sunset.png',
+        thumbnail_url: '/api/assets/asset-1/thumbnail'
+      },
+      {
+        id: 'asset-2',
+        name: 'forest.png',
+        tags: ['input'],
+        user_metadata: { name: 'Forest reference' }
+      }
     ]
 
     it('lists matching nodes alphabetically', async () => {
@@ -292,6 +330,52 @@ describe('Composer', () => {
 
       expect(emitted().mentionPick[0]).toEqual([NODES[0]])
       expect(emitted().send).toBeUndefined()
+    })
+
+    it('filters assets, stages a keyboard pick, removes its token, and sends its ref', async () => {
+      const { emitted } = mount({
+        getMentionNodes: () => NODES,
+        getMentionAssets: async () => ASSETS
+      })
+      const box = screen.getByRole('textbox')
+
+      await userEvent.type(box, '@sun')
+      const option = await screen.findByRole('option', { name: 'Sunset.png' })
+      expect(screen.getAllByRole('option')).toEqual([option])
+
+      await userEvent.keyboard('{Enter}')
+      expect(box).toHaveValue('')
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+      expect(screen.getByText('Sunset.png')).toBeInTheDocument()
+
+      await userEvent.type(box, 'use this')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      expect(emitted().send[0]).toEqual([
+        'use this',
+        [
+          {
+            id: 'asset:asset-1',
+            name: 'Sunset.png',
+            ref: 'sunset-hash.png',
+            previewUrl: '/api/assets/asset-1/thumbnail'
+          }
+        ]
+      ])
+    })
+
+    it('stages an asset with the mouse and removes its chip', async () => {
+      mount({ getMentionAssets: async () => ASSETS })
+      const box = screen.getByRole('textbox')
+
+      await userEvent.type(box, '@forest')
+      await userEvent.click(
+        await screen.findByRole('option', { name: 'Forest reference' })
+      )
+
+      expect(box).toHaveValue('')
+      expect(screen.getByText('Forest reference')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+      expect(screen.queryByText('Forest reference')).not.toBeInTheDocument()
     })
 
     it('keeps a duplicate-title id visible when filtering by id', async () => {
@@ -418,6 +502,18 @@ describe('Composer', () => {
 
     expect(screen.getByText('KSampler')).toBeInTheDocument()
     expect(screen.queryByText('#5')).not.toBeInTheDocument()
+  })
+
+  it('shows the id on a lone selection chip with a graph title twin', () => {
+    const selected = { id: '5', title: 'KSampler' }
+    mount({
+      selectionTags: [selected],
+      getMentionNodes: () => [selected, { id: '7', title: 'KSampler' }]
+    })
+
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    expect(screen.getByText('#5')).toBeInTheDocument()
+    expect(screen.queryByText('#7')).not.toBeInTheDocument()
   })
 
   it('shows ids when selection chips have duplicate titles', () => {
