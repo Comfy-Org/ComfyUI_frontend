@@ -2884,6 +2884,7 @@
     "mage": "mage",
     "mask": "máscara",
     "merging": "mesclagem",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "modelo específico",
@@ -3870,6 +3871,7 @@
     "beta": "BETA",
     "billedMonthly": "Cobrado mensalmente",
     "billedYearly": "{total} Cobrado anualmente",
+    "billingAndInvoices": "Faturamento e faturas",
     "billingComingSoon": {
       "message": "A cobrança para equipes estará disponível em breve. Você poderá assinar um plano para seu workspace com preço por usuário. Fique atento para novidades.",
       "title": "Em breve"
@@ -3951,6 +3953,9 @@
       "memberTitle": "A assinatura deste workspace está inativa",
       "runLabel": "Executar"
     },
+    "inactiveTeamDescription": "Reative seu plano de equipe para adicionar mais membros e executar fluxos de trabalho",
+    "inactiveTeamPlanIncludes": "Um plano ativo inclui tudo do {plan}, além de:",
+    "inactiveTeamTitle": "Assinatura de equipe inativa",
     "inviteUpTo": "Convide até",
     "invoiceHistory": "Histórico de faturas",
     "learnMore": "Saiba mais",
@@ -4070,6 +4075,7 @@
     "pricingBlurbQuestions": "dúvidas",
     "pricingBlurbSeeDetails": "ver detalhes",
     "reactivatePlan": "Reativar plano",
+    "reactivateToUseCredits": "Reative seu plano para usar esses créditos",
     "refillsDate": "Recargas em {date}",
     "refillsNextCycle": "Recargas no próximo ciclo",
     "refreshCredits": "Atualizar créditos",
