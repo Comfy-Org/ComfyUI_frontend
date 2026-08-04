@@ -73,6 +73,8 @@ const TEAM_PLAN_SLUG = 'team-pro-monthly'
 
 export const TEAM_BILLING_STATUS = {
   is_active: true,
+  max_seats: 30,
+  occupied_seats: 4,
   subscription_status: 'active',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -88,6 +90,8 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   billing_status: 'inactive',
   has_funds: true,
   is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
   plan_slug: 'standard-monthly',
   subscription_duration: 'MONTHLY',
   subscription_status: 'ended',
