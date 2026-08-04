@@ -249,17 +249,22 @@ describe('LGraphNode', () => {
     expect(overlay).toHaveClass('border-node-stroke-executing')
   })
 
-  it('should initialize height CSS vars for collapsed nodes', () => {
-    const { container } = renderLGraphNode({
-      nodeData: {
-        ...mockNodeData,
-        flags: { collapsed: true }
-      }
+  it('drops the height var while collapsed and restores the size on expand', async () => {
+    const { container, rerender } = renderLGraphNode({
+      nodeData: { ...mockNodeData, flags: { collapsed: false } }
     })
     const root = getNodeRoot(container)
+    expect(root.style.getPropertyValue('--node-height')).toBe('130px')
 
+    await rerender({
+      nodeData: { ...mockNodeData, flags: { collapsed: true } }
+    })
     expect(root.style.getPropertyValue('--node-height')).toBe('')
-    expect(root.style.getPropertyValue('--node-height-x')).toBe('130px')
+
+    await rerender({
+      nodeData: { ...mockNodeData, flags: { collapsed: false } }
+    })
+    expect(root.style.getPropertyValue('--node-height')).toBe('130px')
   })
 
   it('should initialize height CSS vars for expanded nodes', () => {

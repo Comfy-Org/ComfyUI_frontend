@@ -4,7 +4,6 @@
   </div>
   <div
     v-else
-    ref="nodeContainerRef"
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
@@ -30,6 +29,7 @@
       )
     "
     :style="{
+      ...nodeSizeStyle,
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
       transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
       zIndex: zIndex,
@@ -237,15 +237,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  nextTick,
-  onErrorCaptured,
-  onMounted,
-  onUnmounted,
-  ref,
-  watch
-} from 'vue'
+import { computed, nextTick, onErrorCaptured, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@/types/nodeState'
@@ -272,7 +264,8 @@ import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { LayoutChange } from '@/renderer/core/layout/types'
+import type { Size } from '@/renderer/core/layout/types'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -396,6 +389,27 @@ onErrorCaptured((error) => {
 })
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
+
+/**
+ * The store tracks rendered geometry, so a collapsed node's stored size is its
+ * header. The expanded size survives only here.
+ */
+const renderedSize = ref<Size>({ ...size.value })
+
+watch(size, (next) => {
+  if (isCollapsed.value || layoutStore.isResizingVueNodes.value) return
+  renderedSize.value = next
+})
+
+const nodeSizeStyle = computed(() =>
+  isCollapsed.value
+    ? {}
+    : {
+        '--node-width': `${renderedSize.value.width}px`,
+        '--node-height': `${renderedSize.value.height + LiteGraph.NODE_TITLE_HEIGHT}px`
+      }
+)
+
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
@@ -430,70 +444,18 @@ const handleContextMenu = (event: MouseEvent) => {
   showNodeOptions(event)
 }
 
-/**
- * Set initial DOM size from layout store.
- */
-function initSizeStyles() {
-  const el = nodeContainerRef.value
-  const { width, height } = size.value
-  if (!el) return
-
-  const suffix = isCollapsed.value ? '-x' : ''
-  const fullHeight = height + LiteGraph.NODE_TITLE_HEIGHT
-
-  el.style.setProperty(`--node-width${suffix}`, `${width}px`)
-  el.style.setProperty(`--node-height${suffix}`, `${fullHeight}px`)
-}
-
-/**
- * Updates CSS variables when the layout store changes from the canvas side.
- */
-function handleLayoutChange(change: LayoutChange) {
-  if (change.source !== LayoutSource.Canvas) return
-  if (layoutStore.isResizingVueNodes.value) return
-  if (isCollapsed.value) return
-
-  const el = nodeContainerRef.value
-  if (!el) return
-
-  const newSize = size.value
-  const fullHeight = newSize.height + LiteGraph.NODE_TITLE_HEIGHT
-  el.style.setProperty('--node-width', `${newSize.width}px`)
-  el.style.setProperty('--node-height', `${fullHeight}px`)
-}
-
-let unsubscribeLayoutChange: (() => void) | null = null
-
-onMounted(() => {
-  initSizeStyles()
-  const { rootGraphId } = canvasStore
-  if (!rootGraphId) return
-
-  unsubscribeLayoutChange = layoutStore.onNodeChange(
-    rootGraphId,
-    nodeData.id,
-    handleLayoutChange
-  )
-})
-
-onUnmounted(() => {
-  unsubscribeLayoutChange?.()
-})
-
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
 const mutations = useLayoutMutations(LayoutSource.Vue)
 
-const { startResize } = useNodeResize((result, element) => {
+const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
 
-  // Clamp width to minimum to avoid conflicts with CSS min-width
-  const clampedWidth = Math.max(result.size.width, MIN_NODE_WIDTH)
-
-  // Apply size directly to DOM element - ResizeObserver will pick this up
-  element.style.setProperty('--node-width', `${clampedWidth}px`)
-  element.style.setProperty('--node-height', `${result.size.height}px`)
+  renderedSize.value = {
+    width: Math.max(result.size.width, MIN_NODE_WIDTH),
+    height: removeNodeTitleHeight(result.size.height)
+  }
 
   // Update position for non-SE corner resizing
   const { rootGraphId } = canvasStore
@@ -512,19 +474,6 @@ const handleResizePointerDown = (
   if (nodeData.resizable === false) return
   startResize(event, corner)
 }
-
-watch(isCollapsed, (collapsed) => {
-  const element = nodeContainerRef.value
-  if (!element) return
-  const [from, to] = collapsed ? ['', '-x'] : ['-x', '']
-  const currentWidth = element.style.getPropertyValue(`--node-width${from}`)
-  element.style.setProperty(`--node-width${to}`, currentWidth)
-  element.style.setProperty(`--node-width${from}`, '')
-
-  const currentHeight = element.style.getPropertyValue(`--node-height${from}`)
-  element.style.setProperty(`--node-height${to}`, currentHeight)
-  element.style.setProperty(`--node-height${from}`, '')
-})
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
@@ -757,8 +706,6 @@ const nodeMedia = computed(() => {
 
   return { type, urls } as const
 })
-
-const nodeContainerRef = ref<HTMLDivElement>()
 
 // Drag and drop support
 const isDraggingOver = ref(false)
