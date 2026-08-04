@@ -99,19 +99,15 @@ describe('refreshRemoteConfig', () => {
       expect(init?.signal).toBeInstanceOf(AbortSignal)
     })
 
-    it('retains the last-known-good config when the request aborts', async () => {
-      const existingConfig = { subscription_required: true }
-      remoteConfig.value = existingConfig
-      window.__CONFIG__ = existingConfig
-
+    it('falls back to empty config when the request aborts', async () => {
       vi.mocked(global.fetch).mockRejectedValue(
         new DOMException('Aborted', 'AbortError')
       )
 
       await refreshRemoteConfig({ useAuth: false })
 
-      expect(remoteConfig.value).toEqual(existingConfig)
-      expect(window.__CONFIG__).toEqual(existingConfig)
+      expect(remoteConfig.value).toEqual({})
+      expect(window.__CONFIG__).toEqual({})
     })
   })
 
@@ -138,17 +134,13 @@ describe('refreshRemoteConfig', () => {
       expect(window.__CONFIG__).toEqual({})
     })
 
-    it('retains the last-known-good config on a transient fetch error', async () => {
-      const existingConfig = { subscription_required: true }
-      remoteConfig.value = existingConfig
-      window.__CONFIG__ = existingConfig
-
+    it('clears config on fetch error', async () => {
       vi.mocked(api.fetchApi).mockRejectedValue(new Error('Network error'))
 
       await refreshRemoteConfig()
 
-      expect(remoteConfig.value).toEqual(existingConfig)
-      expect(window.__CONFIG__).toEqual(existingConfig)
+      expect(remoteConfig.value).toEqual({})
+      expect(window.__CONFIG__).toEqual({})
     })
 
     it('preserves config on 500 response', async () => {
