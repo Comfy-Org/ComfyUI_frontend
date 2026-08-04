@@ -35,7 +35,7 @@
       v-if="canAccessSubscriptionFeatures"
       class="flex items-center gap-2 px-4 py-2"
     >
-      <i class="icon-[lucide--component] text-sm text-amber-400" />
+      <i class="icon-[lucide--component] text-sm text-credit" />
       <Skeleton v-if="isLoading" width="4rem" height="1.25rem" class="w-full" />
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance

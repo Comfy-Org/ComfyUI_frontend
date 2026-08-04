@@ -305,8 +305,9 @@ const showManagePlan = computed(
 )
 const showSubscribeAction = computed(
   () =>
-    permissions.value.canManageSubscription &&
-    (!canAccessSubscriptionFeatures.value || isCancelled.value)
+    (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
+    (!canAccessSubscriptionFeatures.value &&
+      permissions.value.canManageSubscription)
 )
 
 const handleOpenUserSettings = () => {
