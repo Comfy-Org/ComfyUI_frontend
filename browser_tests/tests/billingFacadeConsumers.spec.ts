@@ -167,24 +167,22 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       'legacy_stripe'
     )
     await bootApp(page)
+    await page.evaluate((storageKey) => {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          attempt_id: 'rail-selection-regression',
+          started_at_ms: Date.now(),
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'change'
+        })
+      )
+    }, PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+    billingRequests.workspaceStatus = 0
     await page.evaluate(
-      ({ eventName, storageKey }) => {
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify({
-            attempt_id: 'rail-selection-regression',
-            started_at_ms: Date.now(),
-            tier: 'pro',
-            cycle: 'monthly',
-            checkout_type: 'upgrade'
-          })
-        )
-        window.dispatchEvent(new Event(eventName))
-      },
-      {
-        eventName: PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
-        storageKey: PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-      }
+      (eventName) => window.dispatchEvent(new Event(eventName)),
+      PENDING_SUBSCRIPTION_CHECKOUT_EVENT
     )
 
     await page.getByRole('button', { name: 'Current user' }).click()

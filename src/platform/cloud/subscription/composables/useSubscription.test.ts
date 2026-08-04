@@ -16,12 +16,14 @@ const {
   mockIsCloud,
   mockAuthStoreInitialized,
   mockGetBillingStatus,
+  mockSetWorkspaceBillingRail,
   mockLocalStorage
 } = vi.hoisted(() => ({
   mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
   mockAuthStoreInitialized: { value: true },
   mockGetBillingStatus: vi.fn(),
+  mockSetWorkspaceBillingRail: vi.fn(),
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
   mockShowSubscriptionRequiredDialog: vi.fn(),
@@ -140,6 +142,13 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
     getBillingStatus: mockGetBillingStatus
   }
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    activeWorkspaceId: 'workspace-123',
+    setWorkspaceBillingRail: mockSetWorkspaceBillingRail
+  })
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -287,6 +296,21 @@ describe('useSubscription', () => {
 
       expect(subscriptionTier.value).toBeNull()
     })
+
+    it('derives cancellation state and end date from cancel_at', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        cancel_at: '2025-12-01T12:00:00Z'
+      })
+
+      const { isCancelled, formattedEndDate, fetchStatus } =
+        useSubscriptionWithScope()
+      await fetchStatus()
+
+      expect(isCancelled.value).toBe(true)
+      expect(formattedEndDate.value).toBe('Dec 1, 2025')
+    })
   })
 
   describe('fetchStatus', () => {
@@ -315,7 +339,25 @@ describe('useSubscription', () => {
 
       const { fetchStatus } = useSubscriptionWithScope()
 
-      await expect(fetchStatus()).rejects.toThrow()
+      await expect(fetchStatus()).rejects.toThrow(
+        'Failed to fetch subscription status: Subscription not found'
+      )
+    })
+
+    it('updates the active workspace billing rail from status', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        billing_rail: 'stripe'
+      })
+
+      const { fetchStatus } = useSubscriptionWithScope()
+      await fetchStatus()
+
+      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
+        'workspace-123',
+        'stripe'
+      )
     })
 
     it('coalesces concurrent callers into one fetch', async () => {

@@ -32,6 +32,7 @@ const {
   mockPurchaseCredits,
   mockUpdateActiveWorkspace,
   mockSetWorkspaceBillingRail,
+  mockLegacyStatus,
   mockBillingStatus
 } = vi.hoisted(() => ({
   mockConsolidatedBillingEnabled: { value: true },
@@ -45,6 +46,13 @@ const {
   mockPurchaseCredits: vi.fn(),
   mockUpdateActiveWorkspace: vi.fn(),
   mockSetWorkspaceBillingRail: vi.fn(),
+  mockLegacyStatus: {
+    value: {
+      is_active: true,
+      has_funds: true,
+      renewal_date: '2025-01-01T00:00:00Z'
+    } as BillingStatusResponse
+  },
   mockBillingStatus: {
     value: {
       is_active: true,
@@ -109,13 +117,15 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
     subscriptionTier: { value: 'PRO' },
     subscriptionDuration: { value: 'MONTHLY' },
     subscriptionStatus: {
-      value: {
-        is_active: true,
-        has_funds: true,
-        renewal_date: '2025-01-01T00:00:00Z'
+      get value() {
+        return mockLegacyStatus.value
       }
     },
-    isCancelled: { value: false },
+    isCancelled: {
+      get value() {
+        return Boolean(mockLegacyStatus.value.cancel_at)
+      }
+    },
     fetchStatus: mockLegacyFetchStatus,
     manageSubscription: vi.fn().mockResolvedValue(undefined),
     subscribe: mockLegacySubscribe,
@@ -186,6 +196,11 @@ describe('useBillingContext', () => {
       }
     )
     mockPlans.value = []
+    mockLegacyStatus.value = {
+      is_active: true,
+      has_funds: true,
+      renewal_date: '2025-01-01T00:00:00Z'
+    }
     mockBillingStatus.value = { ...DEFAULT_BILLING_STATUS }
   })
 
@@ -237,6 +252,31 @@ describe('useBillingContext', () => {
       effectiveBalanceMicros: 5000000,
       prepaidBalanceMicros: 0,
       cloudCreditBalanceMicros: 0
+    })
+  })
+
+  it('passes canonical status fields through legacy billing', () => {
+    mockBillingRail.value = 'legacy_stripe'
+    mockLegacyStatus.value = {
+      ...DEFAULT_BILLING_STATUS,
+      billing_status: 'payment_failed',
+      subscription_status: 'ended',
+      team_credit_stop: {
+        id: 'stop-1',
+        credits_monthly: 1000,
+        stop_usd: 10
+      }
+    }
+
+    const { billingStatus, subscriptionStatus, currentTeamCreditStop } =
+      useBillingContext()
+
+    expect(billingStatus.value).toBe('payment_failed')
+    expect(subscriptionStatus.value).toBe('ended')
+    expect(currentTeamCreditStop.value).toEqual({
+      id: 'stop-1',
+      credits_monthly: 1000,
+      stop_usd: 10
     })
   })
 
