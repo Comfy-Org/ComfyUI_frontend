@@ -79,9 +79,14 @@ jobs:
               numbers="$PR_FROM_REVIEW"
               ;;
             schedule)
-              # Sweep every open backport PR.
-              numbers=$(gh pr list --repo "$GH_REPO" --state open --label backport --label Release \
-                --limit 100 --json number --jq '.[].number')
+              # Sweep every open backport and version-bump PR. Separate queries:
+              # repeating --label is AND, which would match neither set.
+              numbers=$(
+                gh pr list --repo "$GH_REPO" --state open --label backport \
+                  --limit 100 --json number --jq '.[].number'
+                gh pr list --repo "$GH_REPO" --state open --label Release \
+                  --limit 100 --json number --jq '.[].number'
+              )
               ;;
           esac
           # De-duplicate and emit space-separated, digit-only tokens.
@@ -116,7 +121,7 @@ jobs:
 
             state=$(echo "$info" | jq -r '.state')
             is_draft=$(echo "$info" | jq -r '.isDraft')
-            is_backport=$(echo "$info" | jq -r '[.labels[].name] | any(. == "backport" or . == "Release")')
+            has_supported_label=$(echo "$info" | jq -r '[.labels[].name] | any(. == "backport" or . == "Release")')
             base=$(echo "$info" | jq -r '.baseRefName')
             review=$(echo "$info" | jq -r '.reviewDecision')
             merge_state=$(echo "$info" | jq -r '.mergeStateStatus')

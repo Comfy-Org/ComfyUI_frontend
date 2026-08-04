@@ -189,11 +189,4 @@ describe('evaluatePin', () => {
       evaluatePin({ pinned: '1.47.11', newestOnPinnedLine: '1.47.11' })
     ).toBeNull()
   })
-
-  it('does not fail merely because a newer minor line exists', () => {
-    // Stable intentionally trails the newest line; only same-line lag is a defect.
-    expect(
-      evaluatePin({ pinned: '1.47.11', newestOnPinnedLine: '1.47.11' })
-    ).toBeNull()
-  })
 })
