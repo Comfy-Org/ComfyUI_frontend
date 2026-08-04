@@ -26,7 +26,7 @@ const tab = computed(() => {
     : workflowStore.openWorkflows.find((open) => open.path === path)
 })
 
-const label = computed(() => tab.value?.filename || name)
+const label = computed(() => name || tab.value?.filename)
 
 const nodeCountId = useId()
 const nodeCount = ref<number>()
@@ -61,25 +61,34 @@ async function open(): Promise<void> {
     type="button"
     :aria-label="t('agent.openWorkflowTab', { name: label })"
     :aria-describedby="nodeCount === undefined ? undefined : nodeCountId"
-    class="rounded-agent border-agent-border hover:bg-agent-surface-hover flex w-full cursor-pointer items-center gap-2.5 border p-2.5 text-left transition-colors"
+    class="border-agent-border hover:bg-agent-surface-hover flex h-[53px] w-full cursor-pointer items-center gap-2.5 rounded-[10px] border px-3 py-2.5 text-left transition-colors"
     @click="open"
   >
     <span
-      class="border-agent-border text-agent-fg-subtle flex size-8 shrink-0 items-center justify-center rounded-md border"
+      aria-hidden="true"
+      data-testid="workflow-link-media"
+      class="border-agent-border bg-agent-surface-raised text-agent-fg-subtle flex size-8 shrink-0 items-center justify-center rounded-md border"
     >
-      <span class="icon-[lucide--folder] size-4" />
+      <span class="icon-[comfy--workflow] size-4" />
     </span>
-    <span class="min-w-0 flex-1">
-      <span class="text-agent-fg block truncate text-sm">{{ label }}</span>
+    <span
+      data-testid="workflow-link-content"
+      class="flex min-w-0 flex-1 flex-col gap-0.5"
+    >
+      <span class="text-agent-fg truncate text-sm/4 font-medium">{{
+        label
+      }}</span>
       <span
         v-if="nodeCount !== undefined"
         :id="nodeCountId"
-        class="text-agent-fg-subtle block text-xs"
+        class="text-agent-fg-subtle text-xs"
       >
         {{ t('g.nodesCount', nodeCount) }}
       </span>
     </span>
     <span
+      aria-hidden="true"
+      data-testid="workflow-link-navigation"
       class="text-agent-fg-subtle icon-[lucide--arrow-right] size-4 shrink-0"
     />
   </button>

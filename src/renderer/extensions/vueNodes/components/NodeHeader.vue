@@ -18,7 +18,19 @@
       <!-- Collapse/Expand Button -->
       <div class="relative mr-auto flex min-w-0 shrink items-center gap-1">
         <div class="flex shrink-0 items-center px-0.5">
+          <Checkbox
+            v-if="isSelectionModeActive"
+            :model-value="isSelected"
+            :aria-label="selectNodeLabel"
+            data-testid="node-selection-checkbox"
+            @pointerdown.stop
+            @pointerup.stop
+            @click.stop
+            @dblclick.stop
+            @update:model-value="handleToggleSelect"
+          />
           <Button
+            v-else
             size="icon-sm"
             variant="textonly"
             class="hover:bg-transparent"
@@ -72,17 +84,22 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import CreditBadge from '@/components/node/CreditBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -113,6 +130,21 @@ onErrorCaptured((error) => {
 
 // Editing state
 const isEditing = ref(false)
+
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const isSelectionModeActive = computed(() => agentNodeSelectionStore.isActive)
+const { selectedNodeIds } = storeToRefs(useCanvasStore())
+const isSelected = computed(() => {
+  const id = nodeData?.id
+  return id != null && selectedNodeIds.value.has(id)
+})
+const selectNodeLabel = st('agent.nodeSelection.selectNode', 'Select node')
+const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
+
+function handleToggleSelect(): void {
+  const id = nodeData?.id
+  if (id != null) toggleNodeSelectionAfterPointerUp(id, true)
+}
 
 const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
   nodeData?.type || ''
@@ -191,6 +223,7 @@ const handleCollapse = () => {
 }
 
 const handleDoubleClick = () => {
+  if (isSelectionModeActive.value) return
   isEditing.value = true
 }
 

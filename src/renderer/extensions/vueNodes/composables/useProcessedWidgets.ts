@@ -31,6 +31,7 @@ import {
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -90,6 +91,7 @@ interface ComputeProcessedWidgetsOptions {
   isGraphReady: boolean
   rootGraph: LGraph | null
   ui: WidgetUiCallbacks
+  forceDisabled?: boolean
 }
 
 function createWidgetUpdateHandler(
@@ -223,7 +225,8 @@ export function computeProcessedWidgets({
   showAdvanced,
   isGraphReady,
   rootGraph,
-  ui
+  ui,
+  forceDisabled = false
 }: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData?.widgets) return []
 
@@ -326,7 +329,8 @@ export function computeProcessedWidgets({
 
     const value = widgetState?.value as WidgetValue
 
-    const isDisabled = slotMetadata?.linked || widgetState?.disabled
+    const isDisabled =
+      forceDisabled || slotMetadata?.linked || widgetState?.disabled
     const widgetOptions = isDisabled
       ? { ...mergedOptions, disabled: true }
       : mergedOptions
@@ -427,6 +431,7 @@ export function useProcessedWidgets(
   const settingStore = useSettingStore()
   const { isSelectInputsMode } = useAppMode()
   const { handleNodeRightClick } = useNodeEventHandlers()
+  const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
   const nodeType = computed(() => nodeDataGetter()?.type || '')
   const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(nodeType)
@@ -462,7 +467,8 @@ export function useProcessedWidgets(
       showAdvanced: showAdvanced.value,
       isGraphReady: app.isGraphReady,
       rootGraph: app.isGraphReady ? app.rootGraph : null,
-      ui
+      ui,
+      forceDisabled: agentNodeSelectionStore.isActive
     })
   )
 

@@ -6,12 +6,30 @@
     @mouseleave="isTopMenuHovered = false"
   >
     <div class="flex gap-x-0.5">
-      <div class="min-w-0 flex-1">
+      <div
+        :inert="isActionBarsHidden"
+        :aria-hidden="isActionBarsHidden"
+        :class="
+          cn(
+            'max-h-16 min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-in-out',
+            isActionBarsHidden && 'max-h-0 -translate-x-8 opacity-0'
+          )
+        "
+      >
         <SubgraphBreadcrumb />
       </div>
 
       <div class="mx-1 flex flex-col items-end gap-1">
-        <div class="flex items-start gap-2">
+        <div
+          :inert="isActionBarsHidden"
+          :aria-hidden="isActionBarsHidden"
+          :class="
+            cn(
+              'flex max-h-12 items-start gap-2 overflow-hidden transition-all duration-300 ease-in-out',
+              isActionBarsHidden && 'max-h-0 translate-x-8 opacity-0'
+            )
+          "
+        >
           <div
             v-if="managerState.shouldShowManagerButtons.value || isCloud"
             class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
@@ -166,6 +184,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -185,6 +204,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const isActionBarsHidden = computed(
+  () => agentNodeSelectionStore.isActionBarsHidden
+)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
 const { flags } = useFeatureFlags()

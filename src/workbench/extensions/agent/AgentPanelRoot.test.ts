@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
+import { assetService } from '@/platform/assets/services/assetService'
 import { app } from '@/scripts/app'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -64,6 +66,8 @@ const appMock = vi.hoisted(() => {
           selectedItems: Set<unknown>
           selectItems: ReturnType<typeof vi.fn>
           multi_select: boolean
+          allow_dragnodes: boolean
+          selectOnly: boolean
           canvas: { focus: ReturnType<typeof vi.fn> }
         }
       | undefined
@@ -359,7 +363,7 @@ describe('AgentPanelRoot session notices', () => {
 // checks before opening a dropped workflow.
 function dispatchDrag(
   target: Element,
-  type: 'dragover' | 'drop',
+  type: 'dragenter' | 'dragleave' | 'dragover' | 'drop',
   data: { files?: File[]; types?: string[]; getData?: (t: string) => string }
 ): boolean {
   const event = new Event(type, { bubbles: true, cancelable: true })
@@ -419,6 +423,8 @@ function setupNodeSelectionCanvas() {
     selectedItems,
     selectItems,
     multi_select: false,
+    allow_dragnodes: true,
+    selectOnly: false,
     canvas: { focus }
   }
   appMock.canvas = canvas
@@ -727,6 +733,45 @@ describe('AgentPanelRoot attach flow', () => {
     )
   })
 
+  it('shows the asset drop target during a trusted drag and clears it on leave', async () => {
+    stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+    const target = screen.getByRole('textbox')
+    const data = {
+      types: ['application/x-comfy-asset-info', 'text/uri-list']
+    }
+
+    dispatchDrag(target, 'dragenter', data)
+    await nextTick()
+
+    const dropTarget = screen.getByRole('status')
+    expect(dropTarget).toHaveTextContent('Drag and drop assets here')
+
+    dispatchDrag(dropTarget, 'dragleave', data)
+    await nextTick()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('rejects URI-only drags without showing or claiming the asset target', async () => {
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+    const target = screen.getByRole('textbox')
+    const data = {
+      types: ['text/uri-list'],
+      getData: () => 'https://example.com/image.png'
+    }
+
+    expect(dispatchDrag(target, 'dragenter', data)).toBe(false)
+    await nextTick()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(dispatchDrag(target, 'dragover', data)).toBe(false)
+    expect(dispatchDrag(target, 'drop', data)).toBe(false)
+    expect(uploaded).toEqual([])
+  })
+
   it.for([
     { mime: 'image/png', filename: 'gen.png' },
     { mime: 'video/mp4', filename: 'movie.mp4' }
@@ -764,21 +809,26 @@ describe('AgentPanelRoot attach flow', () => {
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await nextTick()
       const target = screen.getByRole('textbox')
-
-      expect(
-        dispatchDrag(target, 'dragover', {
-          types: ['application/x-comfy-asset-info', 'text/uri-list']
-        })
-      ).toBe(true)
-
-      const claimed = dispatchDrag(target, 'drop', {
+      const dragData = {
         types: ['application/x-comfy-asset-info', 'text/uri-list'],
         getData: (type: string) =>
           type === 'application/x-comfy-asset-info'
-            ? JSON.stringify({ filename, type: 'output' })
+            ? JSON.stringify({ filename, type: 'input' })
             : `http://localhost/api/view?filename=${filename}`
-      })
+      }
+
+      dispatchDrag(target, 'dragenter', dragData)
+      await nextTick()
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Drag and drop assets here'
+      )
+
+      expect(dispatchDrag(target, 'dragover', dragData)).toBe(true)
+
+      const claimed = dispatchDrag(target, 'drop', dragData)
       expect(claimed).toBe(true)
+      await nextTick()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
 
       expect(await screen.findByText(filename)).toBeInTheDocument()
 
@@ -1287,6 +1337,37 @@ describe('AgentPanelRoot history', () => {
     expect(useAgentChatHistoryStore().titleFor('th-active')).toBeUndefined()
   })
 
+  it('renames a conversation from Chat History', async () => {
+    await renderWithActiveThread()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChatTitle') })
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.chatOptions')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.rename') })
+    )
+    const input = await screen.findByRole<HTMLInputElement>('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    expect(input.value).toBe('build a duck')
+    expect(input.selectionStart).toBe(0)
+    expect(input.selectionEnd).toBe(input.value.length)
+
+    await userEvent.type(input, 'Findable duck chat{Enter}', {
+      skipClick: true
+    })
+
+    expect(await screen.findByText('Findable duck chat')).toBeInTheDocument()
+    expect(useAgentChatHistoryStore().titleFor('th-active')).toBe(
+      'Findable duck chat'
+    )
+  })
+
   it('deletes the current chat from the title menu and starts fresh', async () => {
     await renderWithActiveThread()
     await vi.waitFor(() =>
@@ -1653,10 +1734,11 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
-        if (url.includes('/messages')) {
-          bodies.push(JSON.parse(String(init?.body)))
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
           return json(202, ack(ackWorkflowId, `m-${bodies.length}`))
         }
+        if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {
           return json(200, { threads: [], pagination: { page: 1 } })
         }
@@ -3341,7 +3423,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('omits the snapshot entirely when no open tab has a cloud id', async () => {
+  it('skips the draft on first send from an unbound empty tab', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42', {
       status: 404,
@@ -3350,6 +3432,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('first message')
 
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).not.toHaveProperty('draft')
     expect(bodies[0]).not.toHaveProperty('open_tabs')
     expect(bodies[0]).not.toHaveProperty('current_tab')
   })
@@ -3393,7 +3477,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('sends the node selected from a typed mention with the prompt', async () => {
+  it('inserts an ArrowDown + Tab mention as a chip and clears its token', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     appMock.graph.nodes = [
@@ -3407,8 +3491,11 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.type(textbox, '@')
     expect(screen.getByText('#5')).toBeInTheDocument()
     expect(screen.getByText('#7')).toBeInTheDocument()
-    await userEvent.keyboard('{ArrowDown}{Enter}')
+    await userEvent.keyboard('{ArrowDown}{Tab}')
 
+    expect(textbox).toHaveValue('')
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(screen.getAllByText('KSampler')).toHaveLength(1)
     expect(screen.getByText('#7')).toBeInTheDocument()
     await sendFromComposer('tune it')
 
@@ -3416,6 +3503,42 @@ describe('AgentPanelRoot workflow binding', () => {
       content: 'tune it',
       selection: { node_ids: ['7'] }
     })
+  })
+
+  it('sends an existing @ asset reference without uploading it again', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    vi.spyOn(assetService, 'getInputAssetsIncludingPublic').mockResolvedValue([
+      {
+        id: 'asset-1',
+        name: 'sunset-original.png',
+        hash: 'sunset-hash.png',
+        tags: ['input'],
+        display_name: 'Sunset.png',
+        preview_url: '/api/assets/asset-1/content'
+      }
+    ])
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, '@sun')
+    await userEvent.click(
+      await screen.findByRole('option', { name: 'Sunset.png' })
+    )
+
+    expect(textbox).toHaveValue('')
+    expect(screen.getByText('Sunset.png')).toBeInTheDocument()
+    await sendFromComposer('use this asset')
+
+    expect(bodies[0]).toMatchObject({
+      content: 'use this asset',
+      attachments: ['sunset-hash.png']
+    })
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.some(([url]) => String(url).includes('/upload/'))
+    ).toBe(false)
   })
 
   it('does not report a mention pick that stages nothing', async () => {
@@ -3552,7 +3675,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('sends only the surviving chip ids after one is dismissed', async () => {
+  it('sends only the remaining chip after one is dismissed', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
 
@@ -3626,12 +3749,13 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[1]).toMatchObject({ selection: { node_ids: ['7'] } })
   })
 
-  it('sends no selection after the user dismisses every chip', async () => {
+  it('keeps a cleared selection dismissed across a panel remount until the selection changes', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    useAgentPanelStore().isOpen = true
+    const panelStore = useAgentPanelStore()
+    const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    panelStore.isOpen = true
 
     hostStores.canvas.selectedItems = [
       { isNodeFake: true, id: 7, title: 'KSampler' }
@@ -3641,12 +3765,25 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.remove') })
     )
+    panelStore.isOpen = false
+    await nextTick()
+    first.unmount()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    panelStore.isOpen = true
+    await nextTick()
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
     await sendFromComposer('no nodes please')
 
     expect(bodies[0]).not.toHaveProperty('selection')
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 7, title: 'KSampler' }
+    ]
+    await nextTick()
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
     await sendFromComposer('still no nodes')
     expect(bodies[1]).not.toHaveProperty('selection')
 
@@ -3658,6 +3795,42 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(await screen.findByText('VAEDecode')).toBeInTheDocument()
     await sendFromComposer('use the new selection')
     expect(bodies[2]).toMatchObject({ selection: { node_ids: ['8'] } })
+  })
+
+  it('stages the same node id in another unsaved workflow after a panel remount', async () => {
+    hostStores.workflow.activeWorkflow = addTab(
+      'workflows/Unsaved Workflow.json',
+      { isTemporary: true }
+    )
+    const bodies = mockMessagesEndpoint('wf-42')
+    const panelStore = useAgentPanelStore()
+    const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    panelStore.isOpen = true
+
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 7, title: 'First KSampler' }
+    ]
+    expect(await screen.findByText('First KSampler')).toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.remove') })
+    )
+    panelStore.isOpen = false
+    await nextTick()
+    first.unmount()
+
+    hostStores.workflow.activeWorkflow = addTab(
+      'workflows/Unsaved Workflow (2).json',
+      { isTemporary: true }
+    )
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 7, title: 'Second KSampler' }
+    ]
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    panelStore.isOpen = true
+
+    expect(await screen.findByText('Second KSampler')).toBeInTheDocument()
+    await sendFromComposer('use this workflow')
+    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
   })
 
   it('coalesces patches that stream faster than the canvas apply settles', async () => {
@@ -3736,12 +3909,46 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(state.selectItems).not.toHaveBeenCalled()
   })
 
+  it('does not restore a deselected node after selecting another node', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    const thirdNode: SelectionTestNode = {
+      isNodeFake: true,
+      id: 15,
+      title: 'Save Image'
+    }
+    state.nodes.push(thirdNode)
+    const toggleNode = (node: SelectionTestNode) => {
+      if (state.selectedItems.has(node)) state.selectedItems.delete(node)
+      else state.selectedItems.add(node)
+      hostStores.canvas.updateSelectedItems()
+    }
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderCanvasNodeButtons(state.nodes, toggleNode)
+    useAgentPanelStore().isOpen = true
+
+    await enterNodeSelectionMode()
+    const buttons = state.nodes.map((node) =>
+      screen.getByRole('button', { name: `Canvas ${node.title}` })
+    )
+    await userEvent.click(buttons[0])
+    await userEvent.click(buttons[1])
+    await userEvent.click(buttons[0])
+    await userEvent.click(buttons[2])
+
+    expect([...state.selectedItems]).toEqual([state.nodes[1], thirdNode])
+    expect(state.selectItems).not.toHaveBeenCalled()
+  })
+
   it('restores collapsed Vue-node selections and sends every node id', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()
 
     expect(selection.canvas.multi_select).toBe(true)
+    expect(selection.canvas.allow_dragnodes).toBe(false)
+    expect(selection.canvas.selectOnly).toBe(true)
     expect(selection.focus).toHaveBeenCalledOnce()
     expect(selection.collapseToClickedNode).toHaveBeenCalledTimes(2)
     expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
@@ -3750,10 +3957,28 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('explain this')
 
     expect(selection.canvas.multi_select).toBe(false)
+    expect(selection.canvas.allow_dragnodes).toBe(true)
+    expect(selection.canvas.selectOnly).toBe(false)
     expect(bodies[0]).toMatchObject({
       selection: { node_ids: ['9', '12'] }
     })
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
+  })
+
+  it('exits selection mode on Escape and keeps the selected-node chips', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const selection = await startVueNodeSelection()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await nextTick()
+
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(selection.canvas.multi_select).toBe(false)
+    expect(selection.canvas.allow_dragnodes).toBe(true)
+    expect(selection.canvas.selectOnly).toBe(false)
+    expect(screen.getByText('VAE Decode')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
   it('ends node selection when the active workflow changes', async () => {
@@ -3796,6 +4021,8 @@ describe('AgentPanelRoot workflow binding', () => {
       selectedItems: new Set(),
       selectItems: vi.fn(),
       multi_select: false,
+      allow_dragnodes: true,
+      selectOnly: false,
       canvas: { focus: vi.fn() }
     }
 
@@ -3809,7 +4036,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['12'] } })
   })
 
-  it('uploads the canvas once per change and binds the minted id for in-place applies', async () => {
+  it('uploads the current canvas every turn and binds the minted id for in-place applies', async () => {
     const tab = makeTab()
     const bodies = mockMessagesEndpoint('wf-mint')
     appMock.graph.nodes = [{ id: 1 }]
@@ -3830,7 +4057,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.type(screen.getByRole('textbox'), 'and more')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(2))
-    expect(bodies[1]).not.toHaveProperty('draft')
+    expect(bodies[1]).toMatchObject({
+      draft: {
+        content: { version: 0.4, nodes: [{ id: 1 }] },
+        version: null
+      }
+    })
 
     ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
@@ -3850,6 +4082,32 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
     )
+  })
+
+  it('re-uploads a bound empty canvas after the panel remounts', async () => {
+    makeTab('wf-42')
+    appMock.graph.nodes = [{ id: 1 }]
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await sendFromComposer('use this graph')
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-42',
+      draft: { content: { version: 0.4, nodes: [{ id: 1 }] } }
+    })
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    first.unmount()
+    appMock.graph.nodes = []
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await sendFromComposer('I deleted every node')
+
+    expect(bodies[1]).toMatchObject({
+      workflow_id: 'wf-42',
+      draft: { content: { version: 0.4, nodes: [] } }
+    })
   })
 
   it('parks an empty draft even for the bound tab', async () => {

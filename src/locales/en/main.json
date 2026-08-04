@@ -4756,6 +4756,13 @@
     "attachFiles": "Attach images or files",
     "addToPrompt": "Add to prompt",
     "addNodesFromGraph": "Add nodes from graph",
+    "dragAndDropAssets": "Drag and drop assets here",
+    "nodeSelection": {
+      "bannerTitle": "Add nodes from graph",
+      "bannerSubtitle": "Select one or many nodes to add as reference",
+      "exit": "Exit mode",
+      "selectNode": "Select node"
+    },
     "addFromAssets": "Add from assets panel",
     "assetNotAttachable": "Only images and videos can be attached",
     "attachmentTooLarge": "{name} is larger than {limit}",

@@ -171,14 +171,14 @@ const options: {
             </RadioGroupItem>
             <div
               v-if="option.mode === 'auto-limit' && draftMode === 'auto-limit'"
-              class="flex items-center gap-3 pr-2.5 pb-2.5 pl-9.5"
+              class="flex items-center gap-3 px-9.5 pb-2.5"
             >
               <input
                 v-model.number="draftLimit"
                 type="number"
                 min="1"
                 :aria-label="t('agent.credits')"
-                class="border-agent-border bg-agent-surface text-agent-fg focus:border-agent-fg-muted h-8 min-w-0 flex-1 rounded-[10px] border px-2.5 text-sm/5 outline-none"
+                class="border-agent-border text-agent-fg focus:border-agent-fg-muted h-8 min-w-0 flex-1 rounded-[10px] border bg-transparent px-2.5 text-sm/5 outline-none"
               />
               <span class="text-agent-fg-muted text-xs/4">
                 {{ t('agent.credits') }}

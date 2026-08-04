@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -61,30 +61,53 @@ describe('TabLinkCard', () => {
     openTabs()
   })
 
-  it('links the bound tab and focuses it on click', async () => {
+  it('uses the backend display name and focuses the bound tab on click', async () => {
     const tab = { path: 'flows/portrait.json', filename: 'portrait' }
     openTabs(tab)
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
 
-    mount('wf-1', 'stale name from the wire')
+    mount('wf-1', 'Portrait upscale')
     const link = screen.getByRole('button')
-    expect(link).toHaveAccessibleName('Open portrait')
+    expect(link).toHaveAccessibleName('Open Portrait upscale')
 
     await userEvent.click(link)
 
     expect(mocks.openWorkflow).toHaveBeenCalledWith(tab)
   })
 
-  it('falls back to the wire name when the tab carries a blank filename', () => {
-    const tab = { path: 'flows/portrait.json', filename: '' }
+  it('falls back to the local tab name when no backend name is present', () => {
+    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    openTabs(tab)
+    useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
+
+    mount('wf-1')
+
+    expect(screen.getByRole('button')).toHaveAccessibleName('Open portrait')
+  })
+
+  it('renders one action with media, title and node-count content, then navigation affordance', () => {
+    const tab = {
+      path: 'flows/portrait.json',
+      filename: 'portrait',
+      activeState: { nodes: [{}, {}] }
+    }
     openTabs(tab)
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
 
     mount('wf-1', 'Portrait upscale')
 
-    expect(screen.getByRole('button')).toHaveAccessibleName(
-      'Open Portrait upscale'
+    const content = screen.getByTestId('workflow-link-content')
+    expect(screen.getByTestId('workflow-link-media')).toHaveAttribute(
+      'aria-hidden',
+      'true'
     )
+    expect(within(content).getByText('Portrait upscale')).toBeVisible()
+    expect(within(content).getByText('2 nodes')).toBeVisible()
+    expect(screen.getByTestId('workflow-link-navigation')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    expect(screen.getAllByRole('button')).toHaveLength(1)
   })
 
   it('keeps the active workflow node count current and accessible', async () => {

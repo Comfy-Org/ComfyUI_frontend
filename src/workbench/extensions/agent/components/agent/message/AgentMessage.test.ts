@@ -95,18 +95,25 @@ describe('AgentMessage thinking narration', () => {
   it('shows resumed thinking after a completed tool group', () => {
     const message = thinkingMessage('Planning the next step')
     message.parts = [
-      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' }
+      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
+      { type: 'text', text: 'The first edit is complete.', state: 'done' }
     ]
     render(AgentMessage, {
       props: { message },
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
-    expect(screen.getByText('Planning the next step')).toBeInTheDocument()
+    const summary = screen.getByText('Ran 1 tool call')
+    const thinking = screen.getByText('Planning the next step')
+
+    expect(summary).toBeInTheDocument()
+    expect(screen.getByText('The first edit is complete.')).toBeInTheDocument()
+    expect(thinking).toHaveClass('agent-shimmer-text')
+    expect(summary).not.toHaveClass('agent-shimmer-text')
     expect(
       screen.getByRole('button', { name: /ran 1 tool call/i })
-    ).toHaveAttribute('aria-expanded', 'false')
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Set widget')).toBeInTheDocument()
   })
 
   it('keeps text-separated tool runs as distinct summaries', () => {
@@ -128,7 +135,7 @@ describe('AgentMessage thinking narration', () => {
     const narration = screen.getByText('Between calls')
 
     expect(summaries).toHaveLength(2)
-    expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
+    expect(screen.getByText('Set widget')).toBeInTheDocument()
     expect(screen.getByText('Add node')).toBeInTheDocument()
     expect(
       summaries[0].compareDocumentPosition(narration) &

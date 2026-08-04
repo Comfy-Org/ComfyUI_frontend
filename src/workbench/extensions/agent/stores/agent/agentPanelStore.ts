@@ -13,6 +13,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false)
   const width = ref(PANEL_MIN_WIDTH)
+  const dismissedSelectionSignature = ref<string | null>(null)
 
   let openedAt: number | null = null
 
@@ -63,6 +64,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isOpen,
     width,
     isMaximized,
+    dismissedSelectionSignature,
     toggle,
     close,
     setWidth,

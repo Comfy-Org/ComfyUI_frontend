@@ -14,7 +14,7 @@ import {
   TooltipRoot,
   TooltipTrigger
 } from 'reka-ui'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -52,6 +52,10 @@ const workflowTooltipClass =
 const open = ref(false)
 const query = ref('')
 const searchInput = ref<HTMLInputElement>()
+const selectorRoot = useTemplateRef<HTMLElement>('selectorRoot')
+const composerReference = computed(
+  () => selectorRoot.value?.parentElement?.parentElement ?? undefined
+)
 
 watch(open, async (isOpen) => {
   if (!isOpen) return
@@ -76,7 +80,10 @@ function onSearchKeydown(event: KeyboardEvent): void {
 
 <template>
   <TooltipProvider :delay-duration="300">
-    <div class="flex w-full items-center justify-between gap-1.5">
+    <div
+      ref="selectorRoot"
+      class="flex w-full items-center justify-between gap-1.5"
+    >
       <DropdownMenuRoot v-model:open="open">
         <DropdownMenuTrigger as-child>
           <button
@@ -86,7 +93,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
             :class="
               cn(
                 'group text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-medium transition-colors',
-                !current && 'text-agent-fg-muted hover:text-agent-fg'
+                !current && 'text-agent-fg-muted hover:text-agent-fg flex-1'
               )
             "
             @pointerenter="workflowTooltipOpen = true"
@@ -96,10 +103,17 @@ function onSearchKeydown(event: KeyboardEvent): void {
             @click="workflowTooltipOpen = false"
           >
             <span
-              data-testid="workflow-selector-icon"
-              class="text-agent-fg-subtle group-hover:text-agent-fg icon-[lucide--workflow] size-3.5 shrink-0"
+              v-if="tabActivity.editingTabPath === current?.path"
+              role="img"
+              :aria-label="t('g.agentWorking')"
+              class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
             />
-            <span class="max-w-40 truncate">{{
+            <span
+              v-else
+              data-testid="workflow-selector-icon"
+              class="text-agent-fg-subtle group-hover:text-agent-fg icon-[comfy--workflow] size-3.5 shrink-0"
+            />
+            <span class="min-w-0 truncate">{{
               current?.name ?? t('agent.chooseWorkflow')
             }}</span>
             <span
@@ -134,8 +148,9 @@ function onSearchKeydown(event: KeyboardEvent): void {
           <DropdownMenuContent
             side="top"
             align="start"
-            :side-offset="4"
-            class="agent-scope bg-agent-surface-raised z-1100 box-border max-h-64 w-[372px] overflow-y-auto rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
+            :side-offset="8"
+            :reference="composerReference"
+            class="agent-scope bg-agent-surface-raised z-1100 box-border max-h-64 w-(--reka-dropdown-menu-trigger-width) overflow-y-auto rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
           >
             <input
               ref="searchInput"
@@ -161,7 +176,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 />
                 <span
                   v-else
-                  class="text-agent-fg-subtle icon-[lucide--folder-closed] size-4 shrink-0"
+                  class="text-agent-fg-subtle icon-[comfy--workflow] size-4 shrink-0"
                 />
                 <span class="truncate">{{ tab.name }}</span>
                 <span

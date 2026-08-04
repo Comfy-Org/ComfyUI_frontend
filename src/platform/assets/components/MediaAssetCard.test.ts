@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({ isAssetDeleting: () => false })
@@ -15,27 +16,14 @@ vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => ({ downloadAssets: vi.fn() })
 }))
 
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: () => ({
-    allOutputs: [
-      {
-        filename: 'a.png',
-        subfolder: '',
-        type: 'output',
-        display_name: 'Display A'
-      }
-    ]
-  })
-}))
-
 const asset: AssetItem = {
   id: 'a',
   name: 'a.png',
-  tags: [],
+  tags: ['input'],
   preview_url: '/preview.png'
 }
 
-function renderCard() {
+function renderCard(cardAsset: AssetItem = asset) {
   setActivePinia(createTestingPinia({ stubActions: false }))
   const i18n = createI18n({
     legacy: false,
@@ -45,7 +33,7 @@ function renderCard() {
     fallbackWarn: false
   })
   return render(MediaAssetCard, {
-    props: { asset, loading: true },
+    props: { asset: cardAsset, loading: true },
     global: {
       plugins: [i18n],
       stubs: {
@@ -71,7 +59,9 @@ function dispatchDragStart(
     ctrlKey: { value: init.ctrlKey ?? false, configurable: true },
     metaKey: { value: init.metaKey ?? false, configurable: true }
   })
-  screen.getByRole('button').dispatchEvent(event)
+  screen
+    .getByRole('button', { name: 'assetBrowser.ariaLabel.assetCard' })
+    .dispatchEvent(event)
   return { event, add }
 }
 
@@ -98,20 +88,89 @@ describe('MediaAssetCard', () => {
       expect(event.defaultPrevented).toBe(true)
     })
 
-    it('includes the asset metadata with display_name in the drag payload', () => {
-      renderCard()
+    it.for([
+      { name: 'photo.png', display_name: 'Photo', mime: 'image' },
+      { name: 'clip.mp4', display_name: 'Clip', mime: 'video' }
+    ])(
+      'includes trusted metadata for an imported $mime card',
+      ({ name, display_name }) => {
+        renderCard({
+          id: name,
+          name,
+          display_name,
+          tags: ['input'],
+          preview_url: `/api/view?filename=${name}`
+        })
 
-      const { event, add } = dispatchDragStart()
+        const { event, add } = dispatchDragStart()
 
-      expect(event.defaultPrevented).toBe(false)
+        expect(event.defaultPrevented).toBe(false)
+        expect(add).toHaveBeenCalledWith(
+          JSON.stringify({ filename: name, type: 'input', display_name }),
+          MIME_ASSET_INFO
+        )
+        expect(add).toHaveBeenCalledWith(
+          expect.stringContaining(`/api/view?filename=${name}`),
+          'text/uri-list'
+        )
+      }
+    )
+
+    it('preserves generated-output metadata instead of replacing it with card fallbacks', () => {
+      renderCard({
+        id: 'job-1',
+        name: 'card-name.png',
+        display_name: 'Card name',
+        tags: ['output'],
+        preview_url: '/preview.png',
+        user_metadata: {
+          jobId: 'job-1',
+          nodeId: '9',
+          subfolder: '',
+          allOutputs: [
+            {
+              filename: 'generated.png',
+              subfolder: 'outputs',
+              type: 'output',
+              display_name: 'Generated image'
+            }
+          ]
+        }
+      })
+
+      const { add } = dispatchDragStart()
+
       expect(add).toHaveBeenCalledWith(
         JSON.stringify({
-          filename: 'a.png',
-          subfolder: '',
+          filename: 'generated.png',
+          subfolder: 'outputs',
           type: 'output',
-          display_name: 'Display A'
+          display_name: 'Generated image'
         }),
-        expect.any(String)
+        MIME_ASSET_INFO
+      )
+    })
+
+    it('uses the asset content URL when an imported card has no preview URL', () => {
+      renderCard({
+        id: 'plain-video',
+        name: 'plain_video.mp4',
+        tags: ['input']
+      })
+
+      const { add } = dispatchDragStart()
+
+      expect(add).toHaveBeenCalledWith(
+        JSON.stringify({
+          filename: 'plain_video.mp4',
+          type: 'input',
+          display_name: undefined
+        }),
+        MIME_ASSET_INFO
+      )
+      expect(add).toHaveBeenCalledWith(
+        expect.stringContaining('/assets/plain-video/content'),
+        'text/uri-list'
       )
     })
   })

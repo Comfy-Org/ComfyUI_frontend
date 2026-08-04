@@ -94,10 +94,10 @@ watch(
       v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
       type="button"
       :aria-label="t('agent.latest')"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted hover:text-agent-fg absolute bottom-3 left-1/2 flex size-8 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border shadow-md transition-colors"
+      class="text-secondary-foreground absolute bottom-2 left-1/2 flex size-8 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-secondary-background shadow-md ring-1 ring-muted-foreground transition-colors hover:bg-secondary-background-hover"
       @click="scrollToLatest"
     >
-      <span class="icon-[lucide--arrow-down] size-4" />
+      <span class="icon-[lucide--chevron-down] size-4" />
     </button>
   </div>
 </template>

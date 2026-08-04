@@ -155,6 +155,7 @@ import {
 } from '@/utils/formatUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
+import { resolvePreviewUrl } from '../utils/assetPreviewUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
@@ -322,24 +323,27 @@ function dragStart(e: DragEvent) {
     return
   }
 
-  if (!asset?.preview_url) return
+  if (!asset) return
 
   const { dataTransfer } = e
   if (!dataTransfer) return
 
-  const { filename, subfolder, type, display_name } =
-    getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
-  if (filename) {
-    const outputString = JSON.stringify({
-      filename,
-      subfolder,
-      type,
-      display_name
-    })
-    dataTransfer.items.add(outputString, MIME_ASSET_INFO)
-  }
+  const output = getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0]
+  const assetInfo = output?.filename
+    ? {
+        filename: output.filename,
+        subfolder: output.subfolder,
+        type: output.type,
+        display_name: output.display_name
+      }
+    : {
+        filename: asset.name,
+        type: assetType.value,
+        display_name: asset.display_name
+      }
+  dataTransfer.items.add(JSON.stringify(assetInfo), MIME_ASSET_INFO)
 
-  const url = URL.parse(asset.preview_url, location.href)
+  const url = URL.parse(resolvePreviewUrl(asset), location.href)
   if (!url) return
 
   dataTransfer.items.add(url.toString(), 'text/uri-list')

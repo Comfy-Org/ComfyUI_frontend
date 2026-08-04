@@ -14,6 +14,7 @@ import type {
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
@@ -351,5 +352,16 @@ describe('NodeWidgets', () => {
     )
 
     expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
+  })
+
+  it('becomes non-interactive during agent node selection', () => {
+    const nodeData = createMockNodeData('TestNode', [createMockWidget()])
+    const { container } = renderComponent(nodeData, () => {
+      useAgentNodeSelectionStore().isActive = true
+    })
+
+    const widgetsRoot = container.querySelector('[data-testid="node-widgets"]')!
+    expect(widgetsRoot.classList).toContain('pointer-events-none')
+    expect(widgetsRoot.classList).not.toContain('pointer-events-auto')
   })
 })
