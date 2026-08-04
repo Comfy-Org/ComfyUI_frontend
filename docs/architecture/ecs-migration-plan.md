@@ -434,9 +434,9 @@ entity now has exactly one write path, and the workarounds that existed because
 writes bypassed it are gone.
 
 **One write path per entity.** Whole-value assignment through `pos` / `size` is
-the only way geometry is written; the setters commit. Element-wise writes reach
-the backing `Rectangle` and never the store, so all of them were converted —
-in three passes, as the forms became apparent:
+the normal path, and the setters commit to the store. `createGeometryView`
+commits indexed writes too. Most in-repo indexed writes now use whole-value
+assignments. The migration found three forms:
 
 | Form               | Example                              | Where it hid         |
 | ------------------ | ------------------------------------ | -------------------- |
@@ -450,31 +450,35 @@ reached the store, and `LGraph.configure` carried a local workaround
 others had none.
 
 **Groups and reroutes joined the store.** `GroupLayout` is id/position/size
-with no zIndex or spatial index — groups draw beneath nodes in insertion order
-and nothing queries them positionally — and geometry is a single
+with no zIndex or spatial index. Groups draw beneath nodes in insertion order,
+and nothing queries them positionally. Geometry is a single
 `setGroupBounds` operation, because `pos` and `size` are two views onto one
 `Rectangle` and must never be stored apart. Reroutes went further: `posInternal`
 is deleted, `pos` reads the stored point, and a reroute registers its own
 geometry in its constructor, which removed two seeding sites.
 
-**The store -> legacy copy is gone.** `LGraphNode` refreshes `_posSize` from the
-layout store when its geometry version changes, so serialization and legacy
-rendering still read current geometry through `this.pos` / `this.size`.
-`notifyLayoutChanges` forwards store-originated resize callbacks and canvas
-invalidation without copying geometry back into the node.
+**`LGraphNode` no longer runs a continuous store-to-class sync.** When code
+reads geometry, the node checks the global geometry version and copies the
+stored rectangle into `_posSize` if its cache is stale. Serialization and legacy
+rendering read current values through `this.pos` and `this.size` without walking
+every node after each layout change.
 
-**Not done, and each needs a decision rather than more inference:**
+While Vue-node rendering is active, `notifyLayoutChanges` dirties the canvas for
+node layout changes. It also calls `onResize` for `resizeNode` and
+`batchUpdateBounds` operations. It does not copy geometry into nodes.
+
+**Open decisions:**
 
 1. The geometry views. The hand-written `size` Proxy is gone, replaced by
    `createGeometryView` over `pos` and `size` on `LGraphNode` plus `pos`,
-   `size` and `bounding` on `LGraphGroup`. Every in-repo element write is gone,
-   so their only remaining job is third-party `node.size[1] = h`. Retiring them
-   means accepting that ecosystem writes stop reflowing, or landing a stable
-   resize API.
+   `size` and `bounding` on `LGraphGroup`. The views still handle the indexed
+   position write in `distributeNodes()` and extension writes such as
+   `node.size[1] = h`. Retiring them requires whole-value assignment in
+   `distributeNodes()` and a stable resize API for extensions.
 2. Subgraph IO nodes have conforming write paths but no store entry. A keyed
    entry needs subgraph scoping (`SUBGRAPH_INPUT_ID` is a constant shared by
    every subgraph) and `Subgraph.id` is reassigned by `clear()`, so the key can
-   go stale — the pattern rejected for the link store. Nothing needs keyed
+   go stale. The link store rejected the same pattern. Nothing needs keyed
    access, since callers reach them as `subgraph.inputNode`.
 3. Two hit-testing systems: litegraph against class geometry, `layoutStore`
    against a spatial index. Node bounds are duplicated between `_boundingRect`
