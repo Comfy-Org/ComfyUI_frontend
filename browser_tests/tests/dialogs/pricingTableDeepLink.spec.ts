@@ -14,6 +14,7 @@ import type {
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
+  BillingStatusResponse as FrontendBillingStatusResponse,
   Member,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
@@ -31,6 +32,9 @@ import {
   mockWorkspace,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+
+type BillingStatusWithSeatCapacity = BillingStatusResponse &
+  Pick<FrontendBillingStatusResponse, 'max_seats' | 'occupied_seats'>
 
 /**
  * The `?pricing=` deep link opens the pricing table on app load, gated to the
@@ -88,6 +92,8 @@ const STANDARD_ANNUAL_PLAN = {
 
 const ACTIVE_TEAM_STATUS = {
   is_active: true,
+  max_seats: 50,
+  occupied_seats: 1,
   subscription_status: 'active',
   subscription_tier: 'TEAM',
   subscription_duration: 'ANNUAL',
@@ -100,10 +106,12 @@ const ACTIVE_TEAM_STATUS = {
     credits_monthly: 147_700,
     stop_usd: 700
   }
-} satisfies BillingStatusResponse
+} satisfies BillingStatusWithSeatCapacity
 
 const ACTIVE_STANDARD_STATUS = {
   is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
   subscription_duration: 'ANNUAL',
@@ -112,13 +120,13 @@ const ACTIVE_STANDARD_STATUS = {
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
   team_credit_stop: null
-} satisfies BillingStatusResponse
+} satisfies BillingStatusWithSeatCapacity
 
 const ACTIVE_CREATOR_STATUS = {
   ...ACTIVE_STANDARD_STATUS,
   subscription_tier: 'CREATOR',
   plan_slug: 'creator-annual'
-} satisfies BillingStatusResponse
+} satisfies BillingStatusWithSeatCapacity
 
 const LEGACY_ACTIVE_STANDARD_STATUS = {
   ...ACTIVE_STANDARD_STATUS,
