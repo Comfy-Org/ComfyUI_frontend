@@ -17,7 +17,8 @@ import {
 } from '@e2e/fixtures/customNode/autoRun'
 import {
   cloudAutoRunExclusions,
-  disabledHarnessNodes
+  disabledHarnessNodes,
+  stalenessCheckedKeys
 } from '@e2e/fixtures/customNode/cloudExclusions'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
@@ -641,17 +642,18 @@ for (const entry of loadManifest()) {
           )
         const measuredGeometry: Record<string, NodeGeometry> = {}
         const geometryUnstable = GEOMETRY_UNSTABLE_NODES[entry.pack] ?? {}
-        for (const ledgered of Object.keys(geometryUnstable))
+        for (const ledgered of stalenessCheckedKeys(entry, geometryUnstable))
           expect(
             keys,
             `stale GEOMETRY_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of Object.keys(ledger))
+        for (const ledgered of stalenessCheckedKeys(entry, ledger))
           expect(
             keys,
             `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of Object.keys(
+        for (const ledgered of stalenessCheckedKeys(
+          entry,
           MOUNT_WIDGET_ALLOWLIST[entry.pack] ?? {}
         ))
           expect(
@@ -1189,15 +1191,15 @@ for (const entry of loadManifest()) {
           ...(AUTO_RUN_EXCLUDE[entry.pack] ?? {}),
           ...cloudAutoRunExclusions(entry)
         }
-        for (const [key, reason] of Object.entries(excluded)) {
+        for (const key of stalenessCheckedKeys(entry, excluded))
           expect(
             keys,
             `stale AUTO_RUN_EXCLUDE entry: ${key} is not registered by ${entry.pack}`
           ).toContain(key)
+        for (const [key, reason] of Object.entries(excluded))
           console.log(
             `${entry.pack}: ${key} excluded from auto-run (${reason})`
           )
-        }
         const verdicts = planAutoRuns(
           defs,
           keys.filter((key) => !(key in excluded))
@@ -1249,7 +1251,7 @@ for (const entry of loadManifest()) {
         // that runs clean (or is not auto-runnable) = stale entry.
         const baseline = new Set(entry.cannotRunAlone ?? [])
         const unstable = AUTO_RUN_UNSTABLE_NODES[entry.pack] ?? {}
-        for (const ledgered of Object.keys(unstable))
+        for (const ledgered of stalenessCheckedKeys(entry, unstable))
           expect(
             keys,
             `stale AUTO_RUN_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
