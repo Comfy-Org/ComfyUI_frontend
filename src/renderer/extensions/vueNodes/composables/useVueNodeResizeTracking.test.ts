@@ -41,7 +41,7 @@ const resizeObserverState = vi.hoisted(() => {
   return state
 })
 
-const ROOT_GRAPH_ID = vi.hoisted(() => 'root-graph' as UUID)
+const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 
 const testState = vi.hoisted(() => ({
   linearMode: false,

@@ -10,7 +10,7 @@ import type { UUID } from '@/utils/uuid'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
 // of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765
-const ROOT_GRAPH_ID = vi.hoisted(() => 'root-graph' as UUID)
+const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 
 const testState = vi.hoisted(() => {
   // Imports are unavailable inside vi.hoisted() so shoehorn's fromAny cannot

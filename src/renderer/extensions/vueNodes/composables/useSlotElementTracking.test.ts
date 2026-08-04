@@ -24,9 +24,12 @@ import {
 
 const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
 const ROOT_GRAPH_ID = createUuidv4()
-const mockCanvasState = vi.hoisted(() => ({
-  canvas: {} as object | null,
-  rootGraphId: undefined as UUID | undefined
+const mockCanvasState = vi.hoisted<{
+  canvas: object | null
+  rootGraphId: UUID | undefined
+}>(() => ({
+  canvas: {},
+  rootGraphId: undefined
 }))
 const mockClientPosToCanvasPos = vi.hoisted(() =>
   vi.fn(([x, y]: [number, number]) => [x * 0.5, y * 0.5] as [number, number])

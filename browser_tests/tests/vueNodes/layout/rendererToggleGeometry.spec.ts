@@ -3,10 +3,9 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Point } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
-
-type Point = [number, number]
 
 const LEGACY_TITLE_HEIGHT = 30
 
@@ -26,13 +25,15 @@ async function readGeometry(
   comfyPage: ComfyPage,
   nodeId: NodeId
 ): Promise<NodeGeometry> {
-  return comfyPage.page.evaluate((id) => {
-    const node = window.app!.canvas.graph!.getNodeById(id)!
+  return comfyPage.page.evaluate((id): NodeGeometry => {
+    const node = window.app?.canvas.graph?.getNodeById(id)
+    if (!node) throw new Error(`Node ${id} not found`)
+
     return {
-      pos: [node.pos[0], node.pos[1]] as Point,
-      size: [node.size[0], node.size[1]] as Point,
-      inputs: node.inputs.map((_, i) => node.getInputPos(i) as Point),
-      outputs: node.outputs.map((_, i) => node.getOutputPos(i) as Point)
+      pos: [node.pos[0], node.pos[1]],
+      size: [node.size[0], node.size[1]],
+      inputs: node.inputs.map((_, i) => node.getInputPos(i)),
+      outputs: node.outputs.map((_, i) => node.getOutputPos(i))
     }
   }, nodeId)
 }
@@ -48,7 +49,9 @@ function expectSlotsTrackedNode(after: NodeGeometry, before: NodeGeometry) {
   expect(Math.abs(dx) + Math.abs(dy), 'drag moved the node').toBeGreaterThan(1)
 
   const beforeSlots = slotsOf(before)
-  slotsOf(after).forEach(([x, y], i) => {
+  const afterSlots = slotsOf(after)
+  expect(afterSlots, 'slot count after drag').toHaveLength(beforeSlots.length)
+  afterSlots.forEach(([x, y], i) => {
     expect(x, `slot ${i} x tracked the node`).toBeCloseTo(
       beforeSlots[i][0] + dx,
       0
@@ -127,7 +130,9 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
     ).toBeGreaterThan(0)
 
     const { header } = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    const headerBox = (await header.boundingBox())!
+    const headerBox = await header.boundingBox()
+    if (!headerBox) throw new Error('KSampler header not found')
+
     const startX = headerBox.x + headerBox.width / 2
     const startY = headerBox.y + headerBox.height / 2
     await comfyPage.page.mouse.move(startX, startY)

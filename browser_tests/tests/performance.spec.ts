@@ -163,12 +163,17 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     // Dragging a node writes through layoutStore on every frame, in both
     // renderers, since layout registration stopped being Vue-gated.
     const nodePos = await comfyPage.page.evaluate(() => {
-      const { canvas } = window.app!
-      const node = window.app!.graph.nodes[0]
+      const app = window.app
+      if (!app) throw new Error('window.app is not available')
+
+      const { canvas } = app
+      const node = app.graph.nodes[0]
+      if (!node) throw new Error('Graph has no nodes')
+
       canvas.ds.scale = 1
       canvas.centerOnNode(node)
       canvas.setDirty(true, true)
-      const [x, y] = window.app!.canvasPosToClientPos(node.pos)
+      const [x, y] = app.canvasPosToClientPos(node.pos)
       return { id: node.id, x, y, graphX: node.pos[0] }
     })
     await comfyPage.nextFrame()
@@ -190,10 +195,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     recordMeasurement(m)
 
     // Without this the measurement silently degrades into a canvas pan.
-    const movedX = await comfyPage.page.evaluate(
-      (id) => window.app!.graph.getNodeById(id)!.pos[0],
-      nodePos.id
-    )
+    const movedX = await comfyPage.page.evaluate((id) => {
+      const node = window.app?.graph.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+      return node.pos[0]
+    }, nodePos.id)
     expect(movedX).not.toBeCloseTo(nodePos.graphX, 0)
 
     console.log(

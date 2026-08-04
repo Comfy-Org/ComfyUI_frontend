@@ -12,7 +12,7 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-const ROOT_GRAPH_ID = vi.hoisted(() => 'root-graph' as UUID)
+const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 const canvasSelectedItems = vi.hoisted(() => [] as Array<{ id?: string }>)
 const graphNode = vi.hoisted(() => ({
   id: 'node-1',

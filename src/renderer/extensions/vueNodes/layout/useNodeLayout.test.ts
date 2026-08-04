@@ -8,12 +8,12 @@ import type { UUID } from '@/utils/uuid'
 
 import { useNodeLayout } from './useNodeLayout'
 
-const FIRST_WORKFLOW = 'first-workflow' as UUID
-const SECOND_WORKFLOW = 'second-workflow' as UUID
+const FIRST_WORKFLOW: UUID = 'first-workflow'
+const SECOND_WORKFLOW: UUID = 'second-workflow'
 const NODE = toNodeId('7')
 
-const canvasStore = vi.hoisted(() => ({
-  rootGraphId: undefined as UUID | undefined
+const canvasStore = vi.hoisted<{ rootGraphId: UUID | undefined }>(() => ({
+  rootGraphId: undefined
 }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({

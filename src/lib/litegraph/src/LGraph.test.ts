@@ -1502,8 +1502,12 @@ describe('node layout registration', () => {
     ).toBeNull()
   })
 
-  const zIndexOf = (graph: LGraph, node: LGraphNode) =>
-    layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.zIndex
+  function zIndexOf(graph: LGraph, node: LGraphNode): number {
+    const zIndex = layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id)
+      .value?.zIndex
+    if (zIndex === undefined) throw new Error(`Node ${node.id} has no layout`)
+    return zIndex
+  }
 
   it('stacks later nodes above earlier ones', () => {
     const graph = new LGraph()
@@ -1512,7 +1516,7 @@ describe('node layout registration', () => {
     graph.add(first)
     graph.add(second)
 
-    expect(zIndexOf(graph, second)).toBeGreaterThan(zIndexOf(graph, first)!)
+    expect(zIndexOf(graph, second)).toBeGreaterThan(zIndexOf(graph, first))
   })
 
   it('keeps stacking order distinct from position in the graph', () => {
@@ -1527,7 +1531,7 @@ describe('node layout registration', () => {
     const third = new LGraphNode('third')
     graph.add(third)
 
-    expect(zIndexOf(graph, third)).toBeGreaterThan(zIndexOf(graph, second)!)
+    expect(zIndexOf(graph, third)).toBeGreaterThan(zIndexOf(graph, second))
   })
 
   it('registers after node:added so deferred listener work is queued first', () => {

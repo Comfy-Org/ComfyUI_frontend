@@ -36,7 +36,9 @@ async function expectGrowthRenders(
 
   await comfyPage.page.evaluate(
     ({ id, growWidth, growHeight }) => {
-      const node = window.app!.canvas.graph!.getNodeById(id)!
+      const node = window.app?.canvas.graph?.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+
       node.setSize([node.size[0] + growWidth, node.size[1] + growHeight])
     },
     { id: toNodeId(nodeId), growWidth: GROWTH[0], growHeight: GROWTH[1] }
