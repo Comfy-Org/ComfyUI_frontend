@@ -438,6 +438,32 @@ describe('billingOperationStore', () => {
       })
     })
 
+    it('stays silent when a checkout was superseded by a new plan choice', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'checkout_superseded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')?.status).toBe('failed')
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stage: 'failed',
+          billing_op_id: 'op-1',
+          failure_category: 'stale_operation'
+        })
+      )
+    })
+
     it('uses default message when no error_message in response', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
