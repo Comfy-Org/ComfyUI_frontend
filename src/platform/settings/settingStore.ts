@@ -121,9 +121,13 @@ export const useSettingStore = defineStore('setting', () => {
   }
 
   /**
-   * Apply a setting value locally: clone, migrate, fire onChange, and
-   * update the in-memory store. Returns the migrated value, or
-   * `undefined` when the value is unchanged and was skipped.
+   * Apply a setting value locally: clone, migrate, update the in-memory
+   * store, and fire onChange. Returns the migrated value, or `undefined`
+   * when the value is unchanged and was skipped.
+   *
+   * The store is updated before `onChange` runs so that handlers reading
+   * this setting — including handlers of other settings this one cascades
+   * into — observe the new value rather than the one it replaced.
    */
   function applySettingLocally<K extends keyof Settings>(
     key: K,
@@ -137,9 +141,9 @@ export const useSettingStore = defineStore('setting', () => {
     const oldValue = get(key)
     if (newValue === oldValue) return undefined
 
-    onChange(settingsById.value[key], newValue, oldValue)
     const typedNewValue = newValue as Settings[K]
     settingValues.value[key] = typedNewValue
+    onChange(settingsById.value[key], newValue, oldValue)
     return {
       previousValue: oldValue,
       newValue: typedNewValue

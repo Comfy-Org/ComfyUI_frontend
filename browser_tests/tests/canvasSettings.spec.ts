@@ -188,6 +188,60 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
     })
   })
 
+  test.describe('Comfy.Canvas.NavigationMode', () => {
+    test('picking a preset never persists custom', async ({ comfyPage }) => {
+      const modeWrites: unknown[] = []
+      comfyPage.page.on('request', (request) => {
+        if (
+          request.method() === 'POST' &&
+          request.url().endsWith('/api/settings/Comfy.Canvas.NavigationMode')
+        ) {
+          modeWrites.push(request.postDataJSON())
+        }
+      })
+
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.NavigationMode',
+        'standard'
+      )
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      // A preset also writes the two overrides it implies; those writes must
+      // not read back as the user hand-picking an override.
+      expect(modeWrites).not.toContain('custom')
+      expect(
+        await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+      ).toBe('standard')
+    })
+
+    // A mode stored before the overrides shipped in 1.27.4 is the only value on
+    // record, so they load as their defaults — which describe a different mode.
+    test.describe('stored without the override settings', () => {
+      test.use({
+        initialSettings: { 'Comfy.Canvas.NavigationMode': 'standard' }
+      })
+
+      test('keeps the stored preset through load', async ({ comfyPage }) => {
+        expect(
+          await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+        ).toBe('standard')
+      })
+
+      test('applies the stored preset to the overrides', async ({
+        comfyPage
+      }) => {
+        expect(
+          await comfyPage.settings.getSetting(
+            'Comfy.Canvas.LeftMouseClickBehavior'
+          )
+        ).toBe('select')
+        expect(
+          await comfyPage.settings.getSetting('Comfy.Canvas.MouseWheelScroll')
+        ).toBe('panning')
+      })
+    })
+  })
+
   test.describe('Comfy.Canvas.LeftMouseClickBehavior', () => {
     test('override to panning makes empty left-drag pan the canvas', async ({
       comfyPage

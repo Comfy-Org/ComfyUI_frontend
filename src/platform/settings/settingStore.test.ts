@@ -420,6 +420,21 @@ describe('useSettingStore', () => {
       )
     })
 
+    it('exposes the new value to onChange handlers', async () => {
+      const observed: unknown[] = []
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'text',
+        defaultValue: 'default',
+        onChange: () => observed.push(store.get('test.setting'))
+      })
+
+      await store.set('test.setting', 'newvalue')
+
+      expect(observed).toEqual(['default', 'newvalue'])
+    })
+
     it('tracks visible settings with values by default', async () => {
       store.addSetting({
         id: 'test.setting',
