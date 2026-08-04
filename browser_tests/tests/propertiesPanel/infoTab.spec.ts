@@ -26,7 +26,7 @@ test.describe('Properties panel - Info tab', () => {
 test.describe('Properties panel - Info tab dynamic combo inputs', () => {
   const NODE_TYPE = 'DevToolsNodeWithStringInput'
   const NODE_TITLE = 'Node With String Input'
-  const ADVANCED_INPUT_NAME = 'hidden_advanced_param'
+  const NESTED_ADVANCED_INPUT_NAME = 'nested_advanced_param'
   const ADVANCED_INPUT_TOOLTIP =
     'Tooltip only reachable through the dynamic combo option.'
 
@@ -36,11 +36,6 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
       throw new Error(`Missing object_info entry for ${NODE_TYPE}`)
     }
 
-    // Widgets nested inside a dynamic combo option (e.g. an API node's
-    // "model" selector revealing model-specific parameters) aren't part of
-    // the node's top-level required/optional inputs. Model that shape here
-    // to reproduce the case where such a widget is also marked `advanced`
-    // and hidden behind the "Show advanced inputs" toggle.
     nodeInfo.input.optional = {
       ...nodeInfo.input.optional,
       model: [
@@ -51,7 +46,7 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
               key: 'opt-a',
               inputs: {
                 optional: {
-                  [ADVANCED_INPUT_NAME]: [
+                  [NESTED_ADVANCED_INPUT_NAME]: [
                     'INT',
                     { advanced: true, tooltip: ADVANCED_INPUT_TOOLTIP }
                   ]
@@ -90,13 +85,17 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
     await comfyPage.nodeOps.selectNodes([NODE_TITLE])
     await panel.switchToTab('Info')
 
-    await expect(
-      panel.contentArea.getByRole('cell', { name: ADVANCED_INPUT_NAME })
-    ).toBeVisible()
-    await expect(
-      panel.contentArea.getByRole('cell', { name: ADVANCED_INPUT_TOOLTIP })
-    ).toBeVisible()
-
-    await unrouteObjectInfo()
+    try {
+      await expect(
+        panel.contentArea.getByRole('cell', {
+          name: NESTED_ADVANCED_INPUT_NAME
+        })
+      ).toBeVisible()
+      await expect(
+        panel.contentArea.getByRole('cell', { name: ADVANCED_INPUT_TOOLTIP })
+      ).toBeVisible()
+    } finally {
+      await unrouteObjectInfo()
+    }
   })
 })

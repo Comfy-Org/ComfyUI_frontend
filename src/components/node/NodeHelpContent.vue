@@ -81,7 +81,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
-import { flattenInputSpecs } from '@/schemas/nodeDef/migration'
+import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const { node } = defineProps<{
