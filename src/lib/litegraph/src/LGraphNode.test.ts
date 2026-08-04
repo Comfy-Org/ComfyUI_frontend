@@ -900,7 +900,9 @@ describe('layout geometry projection', () => {
     expect(node.size).toBe(size)
     expect([...pos]).toEqual([50, 40])
     expect([...size]).toEqual([200, 90])
-    expect(layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value).toMatchObject({
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toMatchObject({
       position: { x: 50, y: 40 },
       size: { width: 200, height: 90 }
     })

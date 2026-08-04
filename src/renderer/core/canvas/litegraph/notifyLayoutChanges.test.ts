@@ -26,7 +26,10 @@ describe('notifyLayoutChanges', () => {
     const onResize = vi.fn()
     node.onResize = onResize
 
-    useLayoutMutations().resizeNode(graph.rootGraph.id, node.id, { width: 300, height: 200 })
+    useLayoutMutations().resizeNode(graph.rootGraph.id, node.id, {
+      width: 300,
+      height: 200
+    })
     await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
     stop()
   })

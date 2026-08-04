@@ -347,16 +347,10 @@ class LayoutStore {
     return this.version.value
   }
 
-  readNodeRect(
-    rootGraphId: UUID,
-    nodeId: NodeId,
-    out: Float64Array
-  ): boolean {
+  readNodeRect(rootGraphId: UUID, nodeId: NodeId, out: Float64Array): boolean {
     const rect = this.ynodes
       .get(makeScopedLayoutKey(rootGraphId, nodeId))
-      ?.get('rect') as
-      | number[]
-      | undefined
+      ?.get('rect') as number[] | undefined
     if (!rect) return false
 
     out[0] = rect[0]
