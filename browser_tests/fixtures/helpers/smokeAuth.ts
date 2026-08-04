@@ -167,9 +167,14 @@ export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
 // packs in gate run 30719735171, all before the first backend 502. Aborting
 // (not stubbing) makes the requests fail fast and keeps CI out of production
 // analytics. Hosts mirror ComfyPage's TRACE_TELEMETRY third-party set.
+// Host-anchored: a bare URL regex also matched the app's own same-origin
+// vendor-sentry-*.js chunk and aborted the entry module (runs 30855533100 and
+// 30868067295 - every test failed at boot on Failed to fetch main-*.js).
+const TELEMETRY_HOSTS =
+  /(^|\.)(mp\.comfy\.org|customer\.io|gist\.build|sy-d\.io|sentry\.io)$/
 async function blockThirdPartyTelemetry(page: Page): Promise<void> {
   await page.route(
-    /mp\.comfy\.org|customer\.io|gist\.build|sy-d\.io|sentry/,
+    (url) => TELEMETRY_HOSTS.test(url.hostname),
     (route) => route.abort()
   )
 }

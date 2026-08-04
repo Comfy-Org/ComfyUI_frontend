@@ -161,8 +161,11 @@ class ComfyMenu {
 // external and never ours to fix. Everything ambiguous - a Three.js
 // double-instance, a double-registered extension, a bare ERR_FAILED, a CORS
 // error to any other host - is kept, because it can be a real bundling bug.
+// sentry\.io, not bare sentry: the app ships a same-origin vendor-sentry-*.js
+// chunk, and the bare word suppressed the trace line naming its load failure
+// (run 30855533100 - the filter hid the outage the telemetry blocker caused).
 const TRACE_TELEMETRY =
-  /mp\.comfy\.org|customer\.io|gist\.build|sy-d\.io|sentry/
+  /mp\.comfy\.org|customer\.io|gist\.build|sy-d\.io|sentry\.io/
 
 // Dedupe over filter. The app boots against real Cloud, so the same error (a
 // per-node widget warning, a repeated failed poll) fires thousands of times
