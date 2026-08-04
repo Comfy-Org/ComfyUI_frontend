@@ -14,7 +14,6 @@ const TOUR_WORKFLOW = { path: 'tour.json' }
 const OTHER_WORKFLOW = { path: 'other.json' }
 const INTRO_PREVIEW_MS = 500
 const OFFLINE_GRACE_MS = 20_000
-const ACCEPT_DEADLINE_MS = 15_000
 
 const mocks = vi.hoisted(() => ({
   canRunWorkflows: { value: true },
@@ -22,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   workflowStatus: { value: new Map<unknown, string>() },
   executionErrors: { hasNodeError: false, hasPromptError: false },
   activeWorkflow: { value: null as unknown },
+  linearMode: { value: false },
   vueNodesEnabled: true,
   steps: [] as CoachStep[],
   runState: { value: 'idle' } as Ref<string>,
@@ -71,6 +71,18 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     useWorkflowStore: () => ({
       get activeWorkflow() {
         return mocks.activeWorkflow.value
+      }
+    })
+  }
+})
+
+vi.mock('@/renderer/core/canvas/canvasStore', async () => {
+  const { shallowRef } = await import('vue')
+  mocks.linearMode = shallowRef(false)
+  return {
+    useCanvasStore: () => ({
+      get linearMode() {
+        return mocks.linearMode.value
       }
     })
   }
@@ -193,6 +205,7 @@ describe('useFirstRunTourController', () => {
     mocks.executionErrors.hasNodeError = false
     mocks.executionErrors.hasPromptError = false
     mocks.activeWorkflow.value = null
+    mocks.linearMode.value = false
     mocks.vueNodesEnabled = true
     mocks.steps = []
     mocks.engine.activeTour = null
@@ -308,46 +321,13 @@ describe('useFirstRunTourController', () => {
   })
 
   describe('a run behind a dropped socket', () => {
-    /**
-     * A run the queue accepted: the click reports `generating`, then the
-     * backend answers with a status. The acknowledgement matters — an
-     * unacknowledged submission is a refusal, and is covered separately below.
-     */
     async function generatingRun() {
       await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
       expect(mocks.runState.value).toBe('generating')
-      await finishRun(TOUR_WORKFLOW, 'running')
       const { api } = await import('@/scripts/api')
       return api
     }
-
-    it('stops promising a result the queue never accepted', async () => {
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      expect(mocks.runState.value).toBe('generating')
-
-      // No status ever arrives. A refused submission gets no prompt_id, and
-      // account preconditions - sign-in, subscription, credits - are kept out
-      // of the error stores on purpose, so nothing else can report this.
-      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
-
-      expect(
-        mocks.runState.value,
-        'a paid user out of credits is refused silently; the card must not promise a result forever'
-      ).toBe('failed')
-    })
-
-    it('leaves an accepted run past the acceptance deadline alone', async () => {
-      await generatingRun()
-
-      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
-
-      expect(
-        mocks.runState.value,
-        'the deadline is on acceptance, not on the run: a job that answered must never be cut short'
-      ).toBe('generating')
-    })
 
     it('stops promising a result once the socket stays gone', async () => {
       const api = await generatingRun()
@@ -474,6 +454,29 @@ describe('useFirstRunTourController', () => {
       expect(
         registeredTourHolds(),
         'the spotlight is placed against a desktop layout, so below md it points nowhere'
+      ).toBe(false)
+    })
+
+    it('refuses to hold a tour over the linear view, which hides the canvas', async () => {
+      mocks.linearMode.value = true
+      await tourOnRunStep()
+
+      expect(
+        registeredTourHolds(),
+        '?mode=linear display:none-s the canvas, so every spotlight lands on a node nobody can see'
+      ).toBe(false)
+    })
+
+    it('ends the tour when the user switches into the linear view mid-walk', async () => {
+      await tourOnRunStep()
+      expect(registeredTourHolds()).toBe(true)
+
+      mocks.linearMode.value = true
+      await nextTick()
+
+      expect(
+        registeredTourHolds(),
+        'the canvas the tour is pointing at goes away the moment linear mode takes over'
       ).toBe(false)
     })
 

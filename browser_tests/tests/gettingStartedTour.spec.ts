@@ -29,6 +29,7 @@ const CARD_TESTID_PREFIX = 'getting-started-card-'
 
 /** The prompt id the tour's run is queued under, so WS events can address it. */
 const TOUR_JOB_ID = 'first-run-tour-prompt'
+const LINKED_TEMPLATE_ID: SupportedTemplateId = 'image_z_image_turbo'
 
 /** A prompt the queue accepts, so the walk does not depend on the backend's models. */
 const QUEUED_PROMPT: PromptResponse = {
@@ -65,6 +66,13 @@ async function tourLength(card: Locator): Promise<number> {
   return Number(/Step \d+ of (\d+)/.exec(label ?? '')?.[1])
 }
 
+async function clearWorkflowHistory(page: Page) {
+  await page.evaluate(() => {
+    for (const key of Object.keys(localStorage))
+      if (key.startsWith('Comfy.Workflow.')) localStorage.removeItem(key)
+  })
+}
+
 /**
  * The grid backfills whichever curated templates a backend does not serve, so
  * the walk tours a card that is actually on screen rather than a fixed id.
@@ -72,19 +80,27 @@ async function tourLength(card: Locator): Promise<number> {
 async function firstPinnedTemplateOnScreen(
   page: Page
 ): Promise<SupportedTemplateId> {
-  const testIds = await page
-    .locator(`[data-testid^="${CARD_TESTID_PREFIX}"]`)
-    .evaluateAll((cards) =>
-      cards.map((card) => card.getAttribute('data-testid') ?? '')
+  const cardTestIds = () =>
+    page
+      .locator(`[data-testid^="${CARD_TESTID_PREFIX}"]`)
+      .evaluateAll((cards) =>
+        cards.map((card) => card.getAttribute('data-testid') ?? '')
+      )
+
+  await expect
+    .poll(
+      async () =>
+        (await cardTestIds()).some((testId) =>
+          isPinned(testId.slice(CARD_TESTID_PREFIX.length))
+        ),
+      { message: 'the Getting Started grid never rendered a pinned template' }
     )
-  const templateId = testIds
+    .toBe(true)
+
+  const templateId = (await cardTestIds())
     .map((testId) => testId.slice(CARD_TESTID_PREFIX.length))
     .find(isPinned)
 
-  expect(
-    templateId,
-    `this backend serves none of the pinned templates: ${testIds.join(', ')}`
-  ).toBeDefined()
   return templateId!
 }
 
@@ -262,5 +278,43 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       page.getByRole('dialog', { name: GETTING_STARTED_TITLE })
     ).toBeHidden()
     await expect(page.getByTestId('coach-spotlight')).toBeHidden()
+  })
+
+  test.describe('arriving on a template link', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await clearWorkflowHistory(comfyPage.page)
+      await comfyPage.setup({
+        clearStorage: false,
+        url: `/?template=${LINKED_TEMPLATE_ID}`
+      })
+    })
+
+    test('tours the template the link loaded', async ({ comfyPage }) => {
+      const { page } = comfyPage
+
+      await expect(
+        page.getByRole('dialog', { name: GETTING_STARTED_TITLE }),
+        'the link already chose a workflow, so there is nothing to choose'
+      ).toBeHidden()
+      await expect(page.getByTestId('coach-spotlight')).toBeVisible()
+      await expect(page.getByTestId('coach-card')).toContainText('Step 1 of')
+    })
+  })
+
+  test.describe('arriving on a link that loads nothing', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await clearWorkflowHistory(comfyPage.page)
+      await comfyPage.setup({
+        clearStorage: false,
+        url: '/?template=no_such_template_exists'
+      })
+    })
+
+    test('offers no tour', async ({ comfyPage }) => {
+      await expect(
+        comfyPage.page.getByTestId('coach-spotlight'),
+        'touring a graph the user never asked for is worse than no tour'
+      ).toBeHidden()
+    })
   })
 })
