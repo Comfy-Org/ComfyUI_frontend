@@ -886,6 +886,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
       this._clearPromotedWidget(input)
     }
+    for (const widget of this._extraWidgets) widget.onRemove?.()
   }
   override drawTitleBox(
     ctx: CanvasRenderingContext2D,
