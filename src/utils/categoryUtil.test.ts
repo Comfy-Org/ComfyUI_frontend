@@ -38,6 +38,10 @@ describe('getProviderIcon', () => {
     )
   })
 
+  it('returns the Comfy logo for Comfy Cloud', () => {
+    expect(getProviderIcon('Comfy Cloud')).toBe('icon-[comfy--comfy-c]')
+  })
+
   it('converts to lowercase', () => {
     expect(getProviderIcon('GEMINI')).toBe('icon-[comfy--gemini]')
   })
@@ -69,6 +73,7 @@ describe('getProviderBorderStyle', () => {
       'linear-gradient(90deg, #9D39FF, #E80000)'
     )
     expect(getProviderBorderStyle('Moonvalley Marey')).toBe('#DAD9C5')
+    expect(getProviderBorderStyle('Comfy Cloud')).toBe('#F0FF41')
   })
 })
 
