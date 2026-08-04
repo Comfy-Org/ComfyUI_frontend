@@ -17,7 +17,9 @@ const CTA_HEADING = t('minimax.cta.heading', 'en')
 const CTA_PRIMARY = t('minimax.cta.primaryCta', 'en')
 const CLOUD_URL = externalLinks.cloud
 const CLOUD_RUN_URL = minimaxLinks.cloudRun
-const FAQS = minimaxPage.faq.items
+const { faq } = minimaxPage
+if (!faq) throw new Error('minimax page is expected to define an FAQ section')
+const FAQS = faq.items
 const FAQ_COUNT = FAQS.length
 const FIRST_FAQ = FAQS[0]
 const PRICING_HEADING = t('pricing.title', 'en')
