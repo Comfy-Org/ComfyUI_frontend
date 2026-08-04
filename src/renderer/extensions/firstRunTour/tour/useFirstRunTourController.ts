@@ -171,7 +171,10 @@ function useFirstRunTourControllerInternal() {
       tourContextHolds
     )
     await delay(INTRO_PREVIEW_MS)
-    const started = await engine.startTour('firstRun')
+    // The preview is long enough for the canvas to go away underneath it, and
+    // the holds watcher cannot catch that: there is no active tour to end yet.
+    const started =
+      canvasContextHolds.value && (await engine.startTour('firstRun'))
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null
