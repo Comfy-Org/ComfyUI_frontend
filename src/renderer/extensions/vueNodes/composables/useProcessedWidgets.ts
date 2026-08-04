@@ -210,11 +210,11 @@ function getWidgetNodeLocatorId(
 export function isWidgetVisible(
   options: IWidgetOptions,
   showAdvanced: boolean,
-  linked = false
+  ignoreAdvanced = false
 ): boolean {
   const hidden = options.hidden ?? false
   const advanced = options.advanced ?? false
-  return !hidden && (!advanced || showAdvanced || linked)
+  return !hidden && (!advanced || showAdvanced || ignoreAdvanced)
 }
 
 export function computeProcessedWidgets({
@@ -268,10 +268,11 @@ export function computeProcessedWidgets({
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})
     }
+    const isPromotedWidget = widget.sourceWidgetName !== undefined
     const visible = isWidgetVisible(
       mergedOptions,
       showAdvanced,
-      widget.slotMetadata?.linked
+      widget.slotMetadata?.linked || isPromotedWidget
     )
     if (!identity.dedupeIdentity) {
       uniqueWidgets.push({
