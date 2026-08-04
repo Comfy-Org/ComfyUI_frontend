@@ -166,6 +166,9 @@ export const useAuthStore = defineStore('auth', () => {
     } else if (isCloud) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
       // no-op when unified_cloud_auth is off).
+      console.warn(
+        `[cloud-auth-probe] onAuthStateChanged: uid=${user.uid} unifiedFlag=${flags.unifiedCloudAuthEnabled} -> mintAtLogin`
+      )
       void useWorkspaceAuthStore().mintAtLogin()
     }
 
@@ -243,8 +246,14 @@ export const useAuthStore = defineStore('auth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
+    console.warn(
+      `[cloud-auth-probe] getAuthHeader: unifiedFlag=${flags.unifiedCloudAuthEnabled} teamWsFlag=${flags.teamWorkspacesEnabled} currentUser=${!!currentUser.value}`
+    )
     if (flags.unifiedCloudAuthEnabled) {
       const token = useWorkspaceAuthStore().getUnifiedToken()
+      console.warn(
+        `[cloud-auth-probe] getAuthHeader unified: tokenPresent=${!!token}`
+      )
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
@@ -255,13 +264,22 @@ export const useAuthStore = defineStore('auth', () => {
       // Recover the workspace token rather than downgrade to the personal
       // identity, which is what makes cloud requests oscillate.
       if (activeWorkspaceId) {
+        console.warn(
+          `[cloud-auth-probe] getAuthHeader workspace: activeWorkspaceId=${!!activeWorkspaceId} -> ensureWorkspaceAuthHeader`
+        )
         return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
       }
 
       const wsHeader = workspaceAuth.getWorkspaceAuthHeader()
+      console.warn(
+        `[cloud-auth-probe] getAuthHeader workspace: activeWorkspaceId=false wsHeaderPresent=${!!wsHeader}`
+      )
       if (wsHeader) return wsHeader
     }
 
+    console.warn(
+      `[cloud-auth-probe] getAuthHeader firebase-fallback: currentUser=${!!currentUser.value}`
+    )
     const token = await getIdToken()
     if (token) {
       return {

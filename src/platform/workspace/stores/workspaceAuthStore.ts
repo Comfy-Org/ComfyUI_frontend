@@ -360,6 +360,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       },
       body: JSON.stringify(workspaceId ? { workspace_id: workspaceId } : {})
     })
+    console.warn(
+      `[cloud-auth-probe] requestToken: POST /auth/token -> ${response.status} (ownerUid=${!!ownerUid} firebaseToken=${!!firebaseToken})`
+    )
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
@@ -856,6 +859,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   const mintAtLogin = async (): Promise<boolean> => {
+    console.warn(
+      `[cloud-auth-probe] mintAtLogin: unifiedFlag=${flags.unifiedCloudAuthEnabled} existingToken=${!!getUnifiedToken()}`
+    )
     if (!flags.unifiedCloudAuthEnabled) {
       return false
     }
