@@ -7,6 +7,7 @@
   <SubscribeToRunButton v-else />
 </template>
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed, onUnmounted, ref } from 'vue'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
@@ -20,8 +21,13 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'subscription-paused'
-const { canRunWorkflows, billingStatus, manageSubscription } =
-  useBillingContext()
+const {
+  canRunWorkflows,
+  billingStatus,
+  manageSubscription,
+  fetchStatus,
+  fetchBalance
+} = useBillingContext()
 const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
 const dialogService = useDialogService()
@@ -30,9 +36,16 @@ const { toastErrorHandler } = useErrorHandling()
 const isUpdatingPayment = ref(false)
 let paymentPortalRequest: Promise<void> | null = null
 let isUnmounted = false
+let refreshBillingOnFocus = false
 
 onUnmounted(() => {
   isUnmounted = true
+})
+
+useEventListener(window, 'focus', () => {
+  if (!refreshBillingOnFocus) return
+  refreshBillingOnFocus = false
+  void Promise.allSettled([fetchStatus(), fetchBalance()])
 })
 
 const paymentRecoveryLock = computed<'owner' | 'member' | null>(() =>
@@ -58,7 +71,10 @@ function updatePayment(): Promise<void> {
     })
     try {
       await manageSubscription()
-      if (!isUnmounted) closePaymentRecoveryDialog()
+      if (!isUnmounted) {
+        refreshBillingOnFocus = true
+        closePaymentRecoveryDialog()
+      }
     } catch (error) {
       if (!isUnmounted) toastErrorHandler(error)
     } finally {

@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -11,6 +11,8 @@ const state = vi.hoisted(() => ({
   v1PaymentRecovery: true,
   canManageSubscription: true,
   manageSubscription: vi.fn(),
+  fetchStatus: vi.fn(),
+  fetchBalance: vi.fn(),
   toastErrorHandler: vi.fn(),
   showLayoutDialog: vi.fn(),
   closeDialog: vi.fn(),
@@ -21,7 +23,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     canRunWorkflows: mockCanRunWorkflows,
     billingStatus: mockBillingStatus,
-    manageSubscription: state.manageSubscription
+    manageSubscription: state.manageSubscription,
+    fetchStatus: state.fetchStatus,
+    fetchBalance: state.fetchBalance
   })
 }))
 
@@ -163,6 +167,33 @@ describe('CloudRunButtonWrapper', () => {
 
     expect(state.toastErrorHandler).toHaveBeenCalledWith(error)
     expect(state.closeDialog).not.toHaveBeenCalled()
+  })
+
+  it('refreshes billing once on focus after returning from the portal', async () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'paused'
+    state.fetchStatus.mockImplementationOnce(() => {
+      mockBillingStatus.value = 'paid'
+      mockCanRunWorkflows.value = true
+    })
+    renderWrapper()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment to run' })
+    )
+    const dialog = state.showLayoutDialog.mock.calls[0][0]
+    await dialog.props.onUpdatePayment()
+
+    window.dispatchEvent(new Event('focus'))
+    await waitFor(() => {
+      expect(state.fetchStatus).toHaveBeenCalledOnce()
+      expect(state.fetchBalance).toHaveBeenCalledOnce()
+      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
+    })
+
+    window.dispatchEvent(new Event('focus'))
+    expect(state.fetchStatus).toHaveBeenCalledOnce()
+    expect(state.fetchBalance).toHaveBeenCalledOnce()
   })
 
   it('reuses a pending portal request across rapid clicks and reopen', async () => {
