@@ -520,6 +520,30 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await expect(page).not.toHaveURL(/[?&]pricing=/)
   })
 
+  test('keeps an error toast dismissable over the open dialog', async ({
+    page
+  }) => {
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+
+    await page.goto(`${APP_URL}/?pricing=1`)
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
+    await page.evaluate(() => {
+      window.app!.extensionManager.toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Another subscription change is already in progress',
+        life: 30_000
+      })
+    })
+
+    const toast = page.locator('.p-toast-message.p-toast-message-error')
+    await expect(toast).toBeVisible()
+    await toast.locator('.p-toast-close-button').click()
+
+    await expect(toast).toHaveCount(0)
+    await expect(pricingHeading(page)).toBeVisible()
+  })
+
   test('opens on the Team tab for ?pricing=team', async ({ page }) => {
     await setupCloudApp(page, workspace('personal', 'owner'), [])
 
