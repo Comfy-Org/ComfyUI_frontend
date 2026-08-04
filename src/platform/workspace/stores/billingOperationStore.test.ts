@@ -396,6 +396,25 @@ describe('billingOperationStore', () => {
 
       expect(mockToastRemove).toHaveBeenCalledWith(receivedToast)
     })
+
+    it('resolves the terminal promise even if a success side effect throws', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      mockToastAdd.mockImplementationOnce(() => {})
+      mockToastAdd.mockImplementationOnce(() => {
+        throw new Error('toast rendering failed')
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+    })
   })
 
   describe('polling failure', () => {
