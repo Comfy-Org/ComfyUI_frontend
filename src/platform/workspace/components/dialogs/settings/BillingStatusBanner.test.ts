@@ -34,6 +34,21 @@ const creatorAnnualPlan: Plan = {
   }
 }
 
+const teamAnnualPlan: Plan = {
+  slug: 'team-pro-annual',
+  tier: 'PRO',
+  duration: 'ANNUAL',
+  price_cents: 12000,
+  credits_cents: 4000,
+  max_seats: 10,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 3,
+    total_cost_cents: 36000,
+    total_credits_cents: 12000
+  }
+}
+
 const state = vi.hoisted(() => ({
   billingControlEnabled: true,
   v1PaymentRecovery: true,
@@ -150,6 +165,7 @@ const i18n = createI18n({
         }
       },
       subscription: {
+        teamPlanName: 'Team',
         tierNameYearly: '{name} Yearly',
         tiers: {
           creator: { name: 'Creator' }
@@ -370,6 +386,26 @@ describe('BillingStatusBanner', () => {
       "We'll automatically charge $336.00 to your card on file."
     )
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('shows the Team plan name and whole-subscription charge', () => {
+    state.plans = [teamAnnualPlan]
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'team-pro-annual',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan changes to Team on August 3, 2026.'
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "We'll automatically charge $360.00 to your card on file."
+    )
   })
 
   it('hides a scheduled change whose destination plan cannot be resolved', () => {

@@ -105,6 +105,9 @@ const planEndDate = computed(() => {
 const scheduledPlan = computed(() =>
   plans.value.find(({ slug }) => slug === subscription.value?.scheduledPlanSlug)
 )
+const isScheduledTeamPlan = computed(() =>
+  scheduledPlan.value?.slug.startsWith('team')
+)
 const planChangeDate = computed(() => {
   const raw = subscription.value?.changeAt
   if (!raw) return ''
@@ -118,14 +121,17 @@ const planChangeDate = computed(() => {
         timeZone: 'UTC'
       })
 })
-const scheduledPlanName = computed(() =>
-  formatTierName(
+const scheduledPlanName = computed(() => {
+  if (isScheduledTeamPlan.value) return t('subscription.teamPlanName')
+  return formatTierName(
     scheduledPlan.value?.tier,
     scheduledPlan.value?.duration === 'ANNUAL'
   )
-)
+})
 const scheduledPlanCharge = computed(() => {
-  const amountCents = scheduledPlan.value?.price_cents
+  const amountCents = isScheduledTeamPlan.value
+    ? scheduledPlan.value?.seat_summary.total_cost_cents
+    : scheduledPlan.value?.price_cents
   return amountCents === undefined
     ? ''
     : n(amountCents / 100, {
