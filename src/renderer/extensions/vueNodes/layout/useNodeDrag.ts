@@ -18,7 +18,7 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
 
 function useNodeDragIndividual() {
-  const mutations = useLayoutMutations()
+  const mutations = useLayoutMutations(LayoutSource.Vue)
   const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
 
   // Get transform utilities from TransformPane if available
@@ -94,8 +94,6 @@ function useNodeDragIndividual() {
             .map((item) => [item, { x: item.pos[0], y: item.pos[1] }])
         )
       : null
-
-    mutations.setSource(LayoutSource.Vue)
   }
 
   function startAutoPan(event: PointerEvent, nodeId: NodeId) {

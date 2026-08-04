@@ -165,7 +165,7 @@ interface ArrangeOptions {
 
 export function useArrangeNodes() {
   const { selectedNodes, hasMultipleSelection } = useSelectionState()
-  const mutations = useLayoutMutations()
+  const mutations = useLayoutMutations(LayoutSource.Canvas)
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
 
@@ -180,7 +180,6 @@ export function useArrangeNodes() {
     const updates = computeArrangement(selectedNodes.value, layout, gap)
     if (updates.length === 0) return
 
-    mutations.setSource(LayoutSource.Canvas)
     mutations.batchMoveNodes(rootGraphId, updates)
     app.canvas?.setDirty(true, true)
     if (captureUndo) {

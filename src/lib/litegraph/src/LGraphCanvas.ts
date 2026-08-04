@@ -4375,8 +4375,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     })
 
     // Bring cloned/pasted nodes to front so they render above the originals
-    const { setNodeZIndex, setSource } = useLayoutMutations()
-    setSource(LayoutSource.Canvas)
+    const { setNodeZIndex } = useLayoutMutations(LayoutSource.Canvas)
     for (const { nodeId } of newPositions) {
       setNodeZIndex(rootGraphId, nodeId, layoutStore.allocateZIndex())
     }

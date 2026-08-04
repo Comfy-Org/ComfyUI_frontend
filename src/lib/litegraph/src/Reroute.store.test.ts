@@ -587,7 +587,7 @@ describe('Reroute position lives only in layoutStore', () => {
     const graph = new LGraph()
     const originalId = graph.id
     const originalLayout = { x: 70, y: 80 }
-    useLayoutMutations().createReroute(
+    useLayoutMutations(LayoutSource.Canvas).createReroute(
       originalId,
       toRerouteId(17),
       originalLayout

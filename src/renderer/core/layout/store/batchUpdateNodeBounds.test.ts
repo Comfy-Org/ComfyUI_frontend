@@ -18,7 +18,7 @@ function storedHeight() {
 describe('batchUpdateNodeBounds height normalization', () => {
   beforeEach(() => {
     layoutStore.resetForTests()
-    canvasLayoutMutations().createNode(GRAPH, NODE, {
+    canvasLayoutMutations.createNode(GRAPH, NODE, {
       position: { x: 0, y: 0 },
       size: { width: 100, height: HEIGHT }
     })

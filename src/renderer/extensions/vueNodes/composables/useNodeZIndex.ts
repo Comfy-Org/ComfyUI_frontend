@@ -10,7 +10,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 export function useNodeZIndex() {
-  const layoutMutations = useLayoutMutations()
+  const layoutMutations = useLayoutMutations(LayoutSource.Vue)
   const canvasStore = useCanvasStore()
 
   /** Bring node to front (highest z-index) */
@@ -18,7 +18,6 @@ export function useNodeZIndex() {
     const { rootGraphId } = canvasStore
     if (!rootGraphId) return
 
-    layoutMutations.setSource(LayoutSource.Vue)
     layoutMutations.bringNodeToFront(rootGraphId, nodeId)
   }
 

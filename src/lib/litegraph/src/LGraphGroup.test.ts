@@ -15,6 +15,7 @@ import {
   unregisterGroupLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   LayoutOperationError,
   layoutStore
@@ -426,7 +427,7 @@ describe('group layout in layoutStore', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')
     node.id = toNodeId(812)
-    useLayoutMutations().createNode(graph.id, node.id, {})
+    useLayoutMutations(LayoutSource.Canvas).createNode(graph.id, node.id, {})
 
     expect(graph.add(node)).toBeUndefined()
     expect(node.graph).toBeNull()
@@ -825,7 +826,10 @@ describe('group layout in layoutStore', () => {
   test('keeps geometry locally when the store entry is gone', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(809))
-    useLayoutMutations().deleteGroup(graph.rootGraph.id, group.id)
+    useLayoutMutations(LayoutSource.Canvas).deleteGroup(
+      graph.rootGraph.id,
+      group.id
+    )
 
     group.pos = [11, 22]
 

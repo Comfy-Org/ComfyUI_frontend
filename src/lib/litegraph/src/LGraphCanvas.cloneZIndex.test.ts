@@ -80,7 +80,11 @@ function createCanvas(graph: LGraph): LGraphCanvas {
 }
 
 function setZIndex(rootGraphId: UUID, nodeId: NodeId, zIndex: number) {
-  useLayoutMutations().setNodeZIndex(rootGraphId, nodeId, zIndex)
+  useLayoutMutations(LayoutSource.Canvas).setNodeZIndex(
+    rootGraphId,
+    nodeId,
+    zIndex
+  )
 }
 
 function getNodeLayout(rootGraphId: UUID, nodeId: NodeId): NodeLayout {

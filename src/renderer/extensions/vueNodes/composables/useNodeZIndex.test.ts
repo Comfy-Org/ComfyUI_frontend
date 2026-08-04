@@ -25,12 +25,10 @@ describe('useNodeZIndex', () => {
   })
 
   it('scopes the mutation to the viewed root graph, attributed to Vue', () => {
-    const mockSetSource = vi.fn()
     const mockBringNodeToFront = vi.fn()
 
     mockedUseLayoutMutations.mockReturnValue(
       fromPartial({
-        setSource: mockSetSource,
         bringNodeToFront: mockBringNodeToFront
       })
     )
@@ -39,7 +37,7 @@ describe('useNodeZIndex', () => {
 
     bringNodeToFront(toNodeId('node1'))
 
-    expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Vue)
+    expect(mockedUseLayoutMutations).toHaveBeenCalledWith(LayoutSource.Vue)
     expect(mockBringNodeToFront).toHaveBeenCalledWith(ROOT_GRAPH_ID, 'node1')
   })
 })

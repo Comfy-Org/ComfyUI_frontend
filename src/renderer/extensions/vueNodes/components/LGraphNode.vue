@@ -489,7 +489,7 @@ onUnmounted(() => {
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
-const mutations = useLayoutMutations()
+const mutations = useLayoutMutations(LayoutSource.Vue)
 
 const { startResize } = useNodeResize((result, element) => {
   if (isCollapsed.value) return
@@ -504,7 +504,6 @@ const { startResize } = useNodeResize((result, element) => {
   // Update position for non-SE corner resizing
   const { rootGraphId } = canvasStore
   if (result.position && rootGraphId) {
-    mutations.setSource(LayoutSource.Vue)
     mutations.moveNode(rootGraphId, nodeData.id, result.position)
   }
 })

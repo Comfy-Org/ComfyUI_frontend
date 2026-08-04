@@ -15,6 +15,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
@@ -179,7 +180,7 @@ export const useCanvasStore = defineStore('canvas', () => {
           isGhostPlacing.value = e.detail.active
           const graphId = rootGraphId.value
           if (e.detail.active && graphId) {
-            const mutations = useLayoutMutations()
+            const mutations = useLayoutMutations(LayoutSource.Canvas)
             mutations.bringNodeToFront(graphId, e.detail.nodeId)
           }
         }

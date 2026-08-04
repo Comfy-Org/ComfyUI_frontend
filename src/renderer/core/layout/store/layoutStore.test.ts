@@ -1444,7 +1444,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.onNodeChange(GRAPH, nodeId, staleListener)
 
     layoutStore.clearViewGeometry()
-    canvasLayoutMutations().createNode(GRAPH, nodeId, {
+    canvasLayoutMutations.createNode(GRAPH, nodeId, {
       position: { x: 0, y: 0 },
       size: { width: 200, height: 100 },
       zIndex: 0,
