@@ -56,6 +56,29 @@
 # Model-to-node mappings (cloud team)
 /src/platform/assets/mappings/                    @deepme987 @Comfy-Org/comfy_frontend_devs
 
+# Translations - native-language reviewers
+# NOTE: GitHub only honors a code owner that has WRITE access to this repo.
+# Owners without write access are silently ignored: they are never auto-requested
+# and never satisfy a required-review rule. The entries below therefore list only
+# reviewers who currently have write access.
+#
+# Scoped to the per-language directories on purpose - /src/locales/en/ is left
+# unowned so ordinary feature PRs that add English keys do not trigger a review
+# request. Only changes to an actual translation route here.
+#
+# Pending (needs a write grant before adding, otherwise the line is inert):
+#   /src/locales/it/     @PorkItaly              (#13880)
+#   /src/locales/uk/     @necyryl                (#13028)
+#   /src/locales/he/     @yosef-chai
+#   /src/locales/fa/     @danialshirali16
+#   /src/locales/tr/     @snomiao
+#   /src/locales/ar/     @arab-future-academy
+#   /src/locales/pt-BR/  @JonatanAtila
+# See the PR description for the proposed `translation-reviewers` team.
+/src/locales/zh/                                  @comfyui-wiki @Comfy-Org/comfy_frontend_devs
+/src/locales/zh-TW/                               @comfyui-wiki @Comfy-Org/comfy_frontend_devs
+/src/locales/ko/                                  @ltdrdata @Comfy-Org/comfy_frontend_devs
+
 # LLM Instructions (blank on purpose)
 .claude/
 .cursor/
