@@ -58,7 +58,7 @@ function classifyInput(spec: InputSpec): 'widget' | 'socket' | 'empty-combo' {
   const specArray = Array.isArray(spec) ? spec : [spec]
   const rawType = specArray[0]
   const options = specArray[1] as
-    | { forceInput?: boolean; options?: unknown }
+    | { forceInput?: boolean; options?: unknown; widgetType?: string }
     | undefined
   // forceInput beats every form, combos included: no widget materializes,
   // so no default exists to run on - the input must be wired.
@@ -75,7 +75,9 @@ function classifyInput(spec: InputSpec): 'widget' | 'socket' | 'empty-combo' {
       ? 'widget'
       : 'empty-combo'
   }
-  return WIDGET_TYPES.has(rawType) ? 'widget' : 'socket'
+  return options?.widgetType !== undefined || WIDGET_TYPES.has(rawType)
+    ? 'widget'
+    : 'socket'
 }
 
 function socketType(spec: InputSpec): string {

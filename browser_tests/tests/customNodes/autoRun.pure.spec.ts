@@ -136,6 +136,50 @@ test.describe('autoRun classifier', () => {
     expect(verdict.requiredSockets).toEqual([{ name: 'text', type: 'STRING' }])
   })
 
+  test('a declared widgetType makes an unproducible type a widget', () => {
+    const declared = classifyAutoRunnable(
+      'PainterLike',
+      {
+        input: {
+          required: { mask: ['FILE_3D', { default: '', widgetType: 'STRING' }] }
+        },
+        output: ['IMAGE'],
+        output_node: false
+      },
+      SYNTH
+    )
+    expect(declared.verdict).toBe('AUTO_RUNNABLE')
+
+    const undeclared = classifyAutoRunnable(
+      'PainterLike',
+      {
+        input: { required: { mask: ['FILE_3D', { default: '' }] } },
+        output: ['IMAGE'],
+        output_node: false
+      },
+      SYNTH
+    )
+    expect(undeclared.verdict).toBe('NEEDS_WIRES')
+  })
+
+  test('forceInput beats a declared widgetType', () => {
+    const verdict = classifyAutoRunnable(
+      'ForcedPainterLike',
+      {
+        input: {
+          required: {
+            mask: ['FILE_3D', { widgetType: 'STRING', forceInput: true }]
+          }
+        },
+        output: ['IMAGE'],
+        output_node: false
+      },
+      SYNTH
+    )
+    expect(verdict.verdict).toBe('NEEDS_WIRES')
+    expect(verdict.reason).toContain('mask')
+  })
+
   test('an empty required combo means NEEDS_MODELS', () => {
     const verdict = classifyAutoRunnable(
       'CheckpointLoader',
