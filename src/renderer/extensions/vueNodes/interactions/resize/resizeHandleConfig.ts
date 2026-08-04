@@ -15,7 +15,7 @@ export const RESIZE_HANDLES: ResizeHandle[] = [
     positionClasses: '-right-3 -bottom-3',
     cursorClass: 'cursor-se-resize',
     i18nKey: 'g.resizeFromBottomRight',
-    svgPositionClasses: 'top-1 left-1',
+    svgPositionClasses: 'top-0 left-0',
     svgTransform: ''
   },
   {
@@ -23,7 +23,7 @@ export const RESIZE_HANDLES: ResizeHandle[] = [
     positionClasses: '-right-3 -top-3',
     cursorClass: 'cursor-ne-resize',
     i18nKey: 'g.resizeFromTopRight',
-    svgPositionClasses: 'bottom-1 left-1',
+    svgPositionClasses: 'bottom-0 left-0',
     svgTransform: 'scaleY(-1)'
   },
   {
@@ -31,7 +31,7 @@ export const RESIZE_HANDLES: ResizeHandle[] = [
     positionClasses: '-left-3 -bottom-3',
     cursorClass: 'cursor-sw-resize',
     i18nKey: 'g.resizeFromBottomLeft',
-    svgPositionClasses: 'top-1 right-1',
+    svgPositionClasses: 'top-0 right-0',
     svgTransform: 'scaleX(-1)'
   },
   {
@@ -39,7 +39,7 @@ export const RESIZE_HANDLES: ResizeHandle[] = [
     positionClasses: '-left-3 -top-3',
     cursorClass: 'cursor-nw-resize',
     i18nKey: 'g.resizeFromTopLeft',
-    svgPositionClasses: 'bottom-1 right-1',
+    svgPositionClasses: 'bottom-0 right-0',
     svgTransform: 'scale(-1, -1)'
   }
 ] as const
