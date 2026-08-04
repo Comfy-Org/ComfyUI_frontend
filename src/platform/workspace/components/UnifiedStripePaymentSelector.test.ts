@@ -93,7 +93,8 @@ describe('UnifiedStripePaymentSelector', () => {
           amount: 66500,
           currency: 'usd',
           paymentMethodOptions: {
-            card: { setup_future_usage: 'off_session' }
+            card: { setup_future_usage: 'off_session' },
+            alipay: { setup_future_usage: 'off_session' }
           },
           paymentMethodTypes: ['card', 'alipay']
         })

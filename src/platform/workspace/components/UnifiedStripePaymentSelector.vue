@@ -111,12 +111,15 @@ onMounted(async () => {
     mode: 'subscription',
     amount: amountCents,
     currency: currency.toLowerCase(),
-    // Off-session reuse is a card property here, exactly as the server
-    // confirms it: intent-wide off_session would make Stripe hide methods
-    // that cannot be reused off-session (Alipay renews through its own
-    // agreement instead).
+    // Off-session reuse is declared per method, exactly as the server
+    // confirms it: intent-wide off_session would make Stripe hide any
+    // configuration-added method that cannot be reused off-session. Alipay
+    // off-session is an account permission this organization holds — the flag
+    // is what turns the customer's Alipay authorization into the renewal
+    // agreement.
     paymentMethodOptions: {
-      card: { setup_future_usage: 'off_session' }
+      card: { setup_future_usage: 'off_session' },
+      alipay: { setup_future_usage: 'off_session' }
     },
     // The environment's dashboard-managed configuration decides the method
     // mix; the static pair is only the fallback for environments (or older
