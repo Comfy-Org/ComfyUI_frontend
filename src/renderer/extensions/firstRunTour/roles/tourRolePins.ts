@@ -17,6 +17,7 @@ export type TourMediaKind = 'image' | 'video'
  */
 export const MEDIA_KIND_BY_SINK_TYPE: Record<string, TourMediaKind> = {
   SaveImage: 'image',
+  SaveImageAdvanced: 'image',
   SaveVideo: 'video',
   SaveAnimatedWEBP: 'video',
   SaveAnimatedPNG: 'video',
@@ -74,10 +75,15 @@ export const TOUR_ROLE_PINS: Record<SupportedTemplateId, RolePins> = {
     sink: { id: 18, type: 'SaveImage' },
     mediaKind: 'image'
   },
+  /**
+   * Restructured upstream: the body moved into an `Image Edit (Qwen 2509)`
+   * subgraph, so the prompt is the positive `TextEncodeQwenImageEditPlus`
+   * inside it — spotlit through its host — and the sink is now advanced.
+   */
   image_qwen_image_edit_2509: {
     source: { id: 78, type: 'LoadImage' },
-    prompt: { id: 435, type: 'PrimitiveStringMultiline' },
-    sink: { id: 60, type: 'SaveImage' },
+    prompt: { id: 111, type: 'TextEncodeQwenImageEditPlus' },
+    sink: { id: 469, type: 'SaveImageAdvanced' },
     mediaKind: 'image'
   },
   flux_fill_inpaint_example: {
