@@ -36,15 +36,15 @@ function copyPlainText(): void {
 </script>
 
 <template>
-  <div class="text-agent-fg-muted flex w-full items-center gap-1">
+  <div class="text-agent-fg-muted flex w-full items-center justify-end gap-1">
     <button
       type="button"
       :aria-label="t('agent.helpful')"
       :aria-pressed="vote === 'up'"
       :class="
         cn(
-          'rounded-agent hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none',
-          vote === 'up' && 'text-agent-fg'
+          'hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none',
+          vote === 'up' ? 'text-agent-fg' : 'text-agent-fg-muted'
         )
       "
       @click="setVote('up')"
@@ -57,22 +57,24 @@ function copyPlainText(): void {
       :aria-pressed="vote === 'down'"
       :class="
         cn(
-          'rounded-agent hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none',
-          vote === 'down' && 'text-agent-fg'
+          'hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none',
+          vote === 'down' ? 'text-agent-fg' : 'text-agent-fg-muted'
         )
       "
       @click="setVote('down')"
     >
       <span class="icon-[lucide--thumbs-down] size-4" />
     </button>
-    <div class="flex h-6 w-14">
+    <div
+      class="hover:bg-agent-surface-hover hover:text-agent-fg has-[[data-state=open]]:bg-agent-surface-hover has-[[data-state=open]]:text-agent-fg flex h-6 w-14 rounded-lg transition-colors"
+    >
       <button
         type="button"
         :aria-label="copied ? t('agent.copied') : t('agent.copy')"
         :class="
           cn(
-            'rounded-l-agent hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex h-6 w-8 cursor-pointer items-center justify-center transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none',
-            copied && 'text-agent-fg'
+            'focus-visible:ring-agent-accent flex h-6 w-8 cursor-pointer items-center justify-center rounded-l-lg focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none',
+            copied ? 'text-agent-fg' : 'text-inherit'
           )
         "
         @click="copyPlainText()"
@@ -89,18 +91,18 @@ function copyPlainText(): void {
       <DropdownMenuRoot>
         <DropdownMenuTrigger
           :aria-label="t('agent.copyMarkdown')"
-          class="rounded-r-agent hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent data-[state=open]:bg-agent-surface-hover data-[state=open]:text-agent-fg flex size-6 cursor-pointer items-center justify-center transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none"
+          class="focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center rounded-r-lg text-inherit focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none"
         >
           <span class="icon-[lucide--chevron-down] size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuPortal>
           <DropdownMenuContent
-            align="start"
+            align="end"
             :side-offset="4"
-            class="rounded-agent bg-agent-surface-raised z-1100 h-9 w-36 -translate-x-8 p-1 shadow-lg"
+            class="bg-agent-surface-raised z-1100 h-9 w-36 rounded-[10px] border border-[rgba(10,10,10,0.1)] p-1 shadow-lg"
           >
             <DropdownMenuItem
-              class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent flex h-7 w-full cursor-pointer items-center px-2 text-xs whitespace-nowrap outline-none"
+              class="text-agent-fg data-highlighted:bg-agent-surface-hover flex h-7 w-full cursor-pointer items-center rounded-lg px-1.5 text-[14px]/5 font-normal whitespace-nowrap outline-none"
               @select="copy(markdown)"
             >
               {{ t('agent.copyMarkdown') }}
