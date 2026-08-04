@@ -278,6 +278,18 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'succeeded',
+      outcome: 'success',
+      billing_op_id: opId,
+      operation_type: operation.type,
+      tier: operation.tier,
+      cycle: operation.cycle,
+      checkout_type: operation.checkoutType,
+      payment_intent_source: operation.paymentIntentSource
+    })
+
     if (operation.type === 'subscription') {
       telemetry?.trackBillingEvent({
         operation: 'subscription_checkout',
@@ -307,14 +319,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: opId
-      })
-    } else {
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'succeeded',
-        outcome: 'success',
-        billing_op_id: opId,
-        operation_type: 'cancel'
       })
     }
 

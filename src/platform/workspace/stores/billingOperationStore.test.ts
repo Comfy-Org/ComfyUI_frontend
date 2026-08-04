@@ -362,6 +362,42 @@ describe('billingOperationStore', () => {
       })
     })
 
+    // Parity with .failed/.timeout, which fire for all three types: a
+    // succeeded/(succeeded+failed) ratio reads a permanent 0% for any type
+    // missing from the numerator.
+    it.for(['subscription', 'topup', 'cancel'] as const)(
+      'fires billing.operation.succeeded for a %s operation',
+      async (type) => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-1',
+          status: 'succeeded',
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-1', type, {
+          tier: 'creator',
+          cycle: 'monthly',
+          checkoutType: 'new',
+          paymentIntentSource: 'subscription_required'
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+          operation: 'operation',
+          stage: 'succeeded',
+          outcome: 'success',
+          billing_op_id: 'op-1',
+          operation_type: type,
+          tier: 'creator',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          payment_intent_source: 'subscription_required'
+        })
+      }
+    )
+
     it('shows topup success message for topup operations', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
