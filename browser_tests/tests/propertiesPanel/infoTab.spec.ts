@@ -59,43 +59,48 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
     }
   }
 
-  test('lists a dynamic combo option advanced input with its tooltip', async ({
-    comfyPage
-  }) => {
-    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
-      comfyPage.page,
-      addAdvancedDynamicComboInput
-    )
-    // Reload so the node definition store boots from the patched object_info.
-    await comfyPage.workflow.reloadAndWaitForApp()
-    await comfyPage.workflow.loadWorkflow('inputs/string_input')
+  test(
+    'lists a dynamic combo option advanced input with its tooltip',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+        comfyPage.page,
+        addAdvancedDynamicComboInput
+      )
+      // Reload so the node definition store boots from the patched object_info.
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await comfyPage.workflow.loadWorkflow('inputs/string_input')
 
-    const panel = new PropertiesPanelHelper(comfyPage.page)
-    await comfyPage.actionbar.propertiesButton.click()
+      const panel = new PropertiesPanelHelper(comfyPage.page)
+      await comfyPage.actionbar.propertiesButton.click()
 
-    // The workflow's only node sits at (15, 48), close enough to the canvas
-    // origin that its title bar renders under the fixed top toolbar at the
-    // default view offset/scale. Center on it first so the title-click below
-    // (used by selectNodes) actually lands on the node instead of the
-    // toolbar. See BuilderSelectHelper.selectInputWidget for the same pattern.
-    const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle(NODE_TITLE)
-    if (!nodeRef) throw new Error(`Node ${NODE_TITLE} not found`)
-    await nodeRef.centerOnNode()
+      // The workflow's only node sits at (15, 48), close enough to the canvas
+      // origin that its title bar renders under the fixed top toolbar at the
+      // default view offset/scale. Center on it first so the title-click below
+      // (used by selectNodes) actually lands on the node instead of the
+      // toolbar. See BuilderSelectHelper.selectInputWidget for the same pattern.
+      const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle(NODE_TITLE)
+      if (!nodeRef) throw new Error(`Node ${NODE_TITLE} not found`)
+      await nodeRef.centerOnNode()
 
-    await comfyPage.nodeOps.selectNodes([NODE_TITLE])
-    await panel.switchToTab('Info')
+      await comfyPage.nodeOps.selectNodes([NODE_TITLE])
+      await panel.switchToTab('Info')
 
-    try {
-      await expect(
-        panel.contentArea.getByRole('cell', {
-          name: NESTED_ADVANCED_INPUT_NAME
-        })
-      ).toBeVisible()
-      await expect(
-        panel.contentArea.getByRole('cell', { name: ADVANCED_INPUT_TOOLTIP })
-      ).toBeVisible()
-    } finally {
-      await unrouteObjectInfo()
+      try {
+        await expect(
+          panel.contentArea.getByRole('cell', {
+            name: NESTED_ADVANCED_INPUT_NAME
+          })
+        ).toBeVisible()
+        await expect(
+          panel.contentArea.getByRole('cell', { name: ADVANCED_INPUT_TOOLTIP })
+        ).toBeVisible()
+        await expect(panel.contentArea).toHaveScreenshot(
+          'info-tab-dynamic-combo-advanced-input.png'
+        )
+      } finally {
+        await unrouteObjectInfo()
+      }
     }
-  })
+  )
 })
