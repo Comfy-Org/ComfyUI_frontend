@@ -1,5 +1,6 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -30,7 +31,7 @@ const options = [
 ]
 
 function renderInParent(
-  multiSelectProps: Record<string, unknown> = {},
+  multiSelectProps: Partial<ComponentProps<typeof MultiSelect>> = {},
   modelValue: { name: string; value: string }[] = []
 ) {
   const parentEscapeCount = { value: 0 }
@@ -89,6 +90,23 @@ describe('MultiSelect', () => {
     const dialogZIndex = Number(openModal.style.zIndex)
     const user = userEvent.setup()
     const { unmount } = renderInParent()
+
+    await user.click(screen.getByRole('button'))
+    await nextTick()
+
+    const content = findContentElement()
+    expect(content).not.toBeNull()
+    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+
+    unmount()
+  })
+
+  it('opens above a dialog even when the caller passes its own contentStyle z-index', async () => {
+    openModal = document.createElement('div')
+    ZIndex.set('modal', openModal, 3702)
+    const dialogZIndex = Number(openModal.style.zIndex)
+    const user = userEvent.setup()
+    const { unmount } = renderInParent({ contentStyle: { zIndex: 3000 } })
 
     await user.click(screen.getByRole('button'))
     await nextTick()
