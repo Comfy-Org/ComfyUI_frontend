@@ -138,6 +138,11 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.currentTeamCreditStop)
   )
 
+  const maxSeats = computed(() => toValue(activeContext.value.maxSeats))
+  const occupiedSeats = computed(() =>
+    toValue(activeContext.value.occupiedSeats)
+  )
+
   const canAccessSubscriptionFeatures = computed(() =>
     toValue(activeContext.value.canAccessSubscriptionFeatures)
   )
@@ -343,6 +348,8 @@ function useBillingContextInternal(): BillingContext {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    maxSeats,
+    occupiedSeats,
     isLoading,
     error,
     isActiveSubscription,
