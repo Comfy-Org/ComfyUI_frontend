@@ -16,8 +16,9 @@ test.describe(
       await comfyPage.canvasOps.rightClick()
       await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
       await comfyPage.page.getByText('Add Node').click()
+      await comfyPage.page.getByText('model', { exact: true }).click()
       await comfyPage.page.getByText('loaders').click()
-      await comfyPage.page.getByText('Load VAE').click()
+      await comfyPage.page.getByText('Load VAE', { exact: true }).click()
       await comfyPage.contextMenu.waitForHidden()
       await comfyPage.expectScreenshot(
         comfyPage.canvas,
