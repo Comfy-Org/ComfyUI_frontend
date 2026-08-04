@@ -19,5 +19,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     }"
     :tags="[t('tags.openWeights', locale), t('tags.partnerNodes', locale)]"
     video-src="https://media.comfy.org/website/minimax/hero.mp4"
+    video-poster="https://media.comfy.org/website/minimax/hero-fallback.jpg"
   />
 </template>
