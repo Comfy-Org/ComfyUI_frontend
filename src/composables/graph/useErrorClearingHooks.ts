@@ -88,13 +88,7 @@ function installNodeHooks(node: LGraphNode): void {
       if (isConnected) {
         useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
       }
-      // Linking hands value ownership to the upstream node and unlinking hands
-      // it back, so the media error surface follows the same way it follows
-      // promotion.
       queueMicrotask(() => {
-        // LGraphNode.configure fires this for every input slot while a
-        // workflow loads, so a load would prune candidates against a graph
-        // that is still being wired.
         if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
         dropOutOfScopeMissingMedia()
         if (!isConnected) scanSingleNodeMedia(node)
@@ -405,9 +399,8 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
   dropOutOfScopeMissingMedia()
 }
 
+/** Removes candidates whose widget is no longer the editable value owner. */
 function dropOutOfScopeMissingMedia(): void {
-  // No root graph means every candidate reads out of scope, which would empty
-  // the store rather than no-op.
   if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
 
   const mediaStore = useMissingMediaStore()
@@ -422,7 +415,7 @@ function dropOutOfScopeMissingMedia(): void {
 
 export function installErrorClearingHooks(graph: LGraph): () => void {
   const promotionErrors = createPromotionErrorReconciler({
-    pruneOutOfScope: dropOutOfScopeMissingMedia,
+    dropOutOfScope: dropOutOfScopeMissingMedia,
     rescanHost: (subgraphNode) =>
       scanNodeErrorTargets(subgraphNode, scanSingleNodeMedia),
     removeHostWidgetCandidate: (subgraphNode, widgetName) => {
