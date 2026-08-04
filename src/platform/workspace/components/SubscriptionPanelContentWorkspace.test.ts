@@ -677,11 +677,16 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockResubscribe).not.toHaveBeenCalled()
   })
 
-  it('does not show stale renewal copy for an explicitly ended active state', () => {
+  it('keeps an explicitly ended active Personal plan visible without stale renewal copy', () => {
     mockSubscriptionStatus.value = 'ended'
+    mockIsInPersonalWorkspace.value = true
     renderComponent()
 
     expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
   })
 
