@@ -12,34 +12,34 @@ interface ResizeHandle {
 export const RESIZE_HANDLES: ResizeHandle[] = [
   {
     corner: 'SE',
-    positionClasses: '-right-3 -bottom-3',
+    positionClasses: 'right-0 bottom-0',
     cursorClass: 'cursor-se-resize',
     i18nKey: 'g.resizeFromBottomRight',
-    svgPositionClasses: 'top-0 left-0',
+    svgPositionClasses: 'right-0 bottom-0',
     svgTransform: ''
   },
   {
     corner: 'NE',
-    positionClasses: '-right-3 -top-3',
+    positionClasses: 'right-0 top-0',
     cursorClass: 'cursor-ne-resize',
     i18nKey: 'g.resizeFromTopRight',
-    svgPositionClasses: 'bottom-0 left-0',
+    svgPositionClasses: 'top-0 right-0',
     svgTransform: 'scaleY(-1)'
   },
   {
     corner: 'SW',
-    positionClasses: '-left-3 -bottom-3',
+    positionClasses: 'bottom-0 left-0',
     cursorClass: 'cursor-sw-resize',
     i18nKey: 'g.resizeFromBottomLeft',
-    svgPositionClasses: 'top-0 right-0',
+    svgPositionClasses: 'bottom-0 left-0',
     svgTransform: 'scaleX(-1)'
   },
   {
     corner: 'NW',
-    positionClasses: '-left-3 -top-3',
+    positionClasses: 'top-0 left-0',
     cursorClass: 'cursor-nw-resize',
     i18nKey: 'g.resizeFromTopLeft',
-    svgPositionClasses: 'bottom-0 right-0',
+    svgPositionClasses: 'top-0 left-0',
     svgTransform: 'scale(-1, -1)'
   }
 ] as const

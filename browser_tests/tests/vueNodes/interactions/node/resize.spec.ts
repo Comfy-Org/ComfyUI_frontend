@@ -102,6 +102,51 @@ test.describe(
       }
     })
 
+    test('resize handles only receive pointer hits inside the node', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const box = await node.boundingBox()
+      if (!box) throw new Error('Node bounding box not found')
+
+      const points = [
+        {
+          corner: 'NW',
+          inside: [box.x + 1, box.y + 1],
+          outside: [box.x - 1, box.y - 1]
+        },
+        {
+          corner: 'NE',
+          inside: [box.x + box.width - 1, box.y + 1],
+          outside: [box.x + box.width + 1, box.y - 1]
+        },
+        {
+          corner: 'SW',
+          inside: [box.x + 1, box.y + box.height - 1],
+          outside: [box.x - 1, box.y + box.height + 1]
+        },
+        {
+          corner: 'SE',
+          inside: [box.x + box.width - 1, box.y + box.height - 1],
+          outside: [box.x + box.width + 1, box.y + box.height + 1]
+        }
+      ] as const
+
+      const hitResizeCorner = ([x, y]: readonly [number, number]) =>
+        comfyPage.page.evaluate(
+          ([clientX, clientY]) =>
+            document
+              .elementFromPoint(clientX, clientY)
+              ?.closest<HTMLElement>('[data-corner]')?.dataset.corner ?? null,
+          [x, y] as const
+        )
+
+      for (const { corner, inside, outside } of points) {
+        expect(await hitResizeCorner(inside)).toBe(corner)
+        expect(await hitResizeCorner(outside)).toBeNull()
+      }
+    })
+
     test.describe('minimum size enforcement', () => {
       test('SW resize clamps width, keeping right edge fixed', async ({
         comfyPage
