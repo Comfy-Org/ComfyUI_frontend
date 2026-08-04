@@ -5,7 +5,7 @@ import {
   useEventListener
 } from '@vueuse/core'
 import { delay } from 'es-toolkit'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
@@ -14,6 +14,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 
 import {
@@ -37,10 +38,17 @@ function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
   const billing = useBillingContext()
   const executionStore = useExecutionStore()
+  const executionErrorStore = useExecutionErrorStore()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
+  const nudgeArmed = ref(false)
+  /** A tour that never appeared leaves the user nothing to be congratulated for. */
+  const tourWasShown = ref(false)
+
+  // The tour's node ids are graph-local, so they only describe the workflow it
+  // resolved against: swapping workflows leaves it pointing at strangers.
   const tourContextHolds = computed(
     () =>
       desktopLayout.value && workflowStore.activeWorkflow === tourWorkflow.value
@@ -56,13 +64,20 @@ function useFirstRunTourControllerInternal() {
   /** Recorded, not derived: the queue clears a status as soon as it turns terminal. */
   const runState = ref<RunState>('idle')
   watch(
-    () => executionStore.getWorkflowStatus(tourWorkflow.value),
-    (status, previous) => {
+    () => [
+      executionStore.getWorkflowStatus(tourWorkflow.value),
+      executionErrorStore.hasNodeError || executionErrorStore.hasPromptError
+    ],
+    ([status, refused], previous) => {
       if (status !== undefined) stopAcceptDeadline()
       if (status === 'running') runState.value = 'generating'
       else if (status === 'completed') runState.value = 'succeeded'
       else if (status === 'failed') runState.value = 'failed'
-      else if (status === undefined && previous === 'running')
+      // A refused run never queues; a stopped one drops its status rather than
+      // reporting an outcome. Both end the run, and neither says so.
+      else if (refused && runState.value === 'generating')
+        runState.value = 'failed'
+      else if (status === undefined && previous?.[0] === 'running')
         runState.value = 'failed'
     }
   )
@@ -131,6 +146,7 @@ function useFirstRunTourControllerInternal() {
     () => engine.activeTour === 'firstRun',
     (active) => {
       if (active) return
+      nudgeArmed.value = true
       stopOfflineGrace()
       stopAcceptDeadline()
       releaseFirstRunTargets()
@@ -138,6 +154,10 @@ function useFirstRunTourControllerInternal() {
       runState.value = 'idle'
     }
   )
+
+  function dismissNudge() {
+    nudgeArmed.value = false
+  }
 
   /** False when there is no tour to give; any renderer switch is undone. */
   async function beginTour(templateId: string): Promise<boolean> {
@@ -148,6 +168,8 @@ function useFirstRunTourControllerInternal() {
 
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
+    nudgeArmed.value = false
+    tourWasShown.value = false
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),
@@ -155,6 +177,7 @@ function useFirstRunTourControllerInternal() {
     )
     await delay(INTRO_PREVIEW_MS)
     const started = await engine.startTour('firstRun')
+    tourWasShown.value = started
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null
@@ -164,7 +187,12 @@ function useFirstRunTourControllerInternal() {
     return started
   }
 
-  return { beginTour }
+  return {
+    beginTour,
+    nudgeArmed: readonly(nudgeArmed),
+    tourWasShown: readonly(tourWasShown),
+    dismissNudge
+  }
 }
 
 export const useFirstRunTourController = createSharedComposable(

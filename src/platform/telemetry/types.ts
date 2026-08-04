@@ -108,12 +108,22 @@ export interface SurveyResponses {
   usage?: string
 }
 
-export type OnboardingTourStage =
+/** Stages inside the coachmark sequence, which is what `step_count` counts. */
+export type OnboardingTourStepStage =
   | 'not_started'
   | 'started'
   | 'step_shown'
   | 'completed'
   | 'skipped'
+
+/** The nudge follows the tour, so it has no step to report. */
+export type OnboardingTourNudgeStage =
+  | 'nudge_shown'
+  | 'explore_templates_clicked'
+
+export type OnboardingTourStage =
+  | OnboardingTourStepStage
+  | OnboardingTourNudgeStage
 
 export type OnboardingTourSkipReason =
   | 'user'
@@ -134,7 +144,7 @@ export type OnboardingTourNotStartedReason =
  * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
  * present only on the `skipped` stage.
  */
-export interface OnboardingTourMetadata {
+export interface OnboardingTourStepMetadata {
   tour: string
   step_count: number
   step_number?: number
@@ -142,6 +152,15 @@ export interface OnboardingTourMetadata {
   skip_reason?: OnboardingTourSkipReason
   not_started_reason?: OnboardingTourNotStartedReason
 }
+
+/** The nudge is post-tour, so it reports no step and no count. */
+export interface OnboardingTourNudgeMetadata {
+  tour: string
+}
+
+export type OnboardingTourMetadata =
+  | OnboardingTourStepMetadata
+  | OnboardingTourNudgeMetadata
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -368,7 +387,7 @@ export type WorkflowOpenSource = NonNullable<
  * Template library metadata
  */
 export interface TemplateLibraryMetadata {
-  source: 'sidebar' | 'menu' | 'command' | 'appbuilder'
+  source: 'sidebar' | 'menu' | 'command' | 'appbuilder' | 'first_run_nudge'
 }
 
 /**
@@ -879,8 +898,12 @@ export interface TelemetryProvider {
 
   // Onboarding coachmark tour events
   trackOnboardingTour?(
-    stage: OnboardingTourStage,
-    metadata: OnboardingTourMetadata
+    stage: OnboardingTourStepStage,
+    metadata: OnboardingTourStepMetadata
+  ): void
+  trackOnboardingTour?(
+    stage: OnboardingTourNudgeStage,
+    metadata: OnboardingTourNudgeMetadata
   ): void
 
   // Email verification events
@@ -1027,6 +1050,9 @@ export const TelemetryEvents = {
   ONBOARDING_TOUR_STEP_SHOWN: 'app:onboarding_tour_step_shown',
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
   ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
+  ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
+  ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
+    'app:onboarding_tour_explore_templates_clicked',
 
   // Email Verification
   USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
@@ -1106,7 +1132,10 @@ export const OnboardingTourEvents: Record<
   started: TelemetryEvents.ONBOARDING_TOUR_STARTED,
   step_shown: TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
-  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED
+  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED,
+  nudge_shown: TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN,
+  explore_templates_clicked:
+    TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED
 }
 
 export const CANCELLATION_STAGE_EVENTS = {
