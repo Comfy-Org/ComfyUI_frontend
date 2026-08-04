@@ -207,6 +207,33 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('onboardingTourEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('defaults to false when nothing enables it', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(
+        flags.onboardingTourEnabled,
+        'This flag gates a full-screen first-run takeover; defaulting it on would ship the takeover to every user the moment config is unreachable'
+      ).toBe(false)
+    })
+
+    it('turns on from remote config', () => {
+      remoteConfig.value = { onboarding_tour_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.onboardingTourEnabled).toBe(true)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()
@@ -380,6 +407,47 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.signupTurnstileMode).toBe('shadow')
+    })
+  })
+
+  describe('supportsModelTypeTags', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('uses the remote config value', () => {
+      remoteConfig.value = { supports_model_type_tags: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(true)
+    })
+
+    it('falls back to the server feature flag when remote config omits it', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+        false
+      )
+    })
+
+    it('defaults to false when neither source has the flag', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(false)
     })
   })
 

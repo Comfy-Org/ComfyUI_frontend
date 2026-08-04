@@ -16,7 +16,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   GraphOrSubgraph,
@@ -32,6 +32,9 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
@@ -82,6 +85,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   declare widgets: IBaseWidget[]
 
+  /** Widgets added programmatically (e.g. addDOMWidget) outside the promotion system. */
+  private readonly _extraWidgets: IBaseWidget[] = []
+
   /**
    * Retained as a no-op for extension compatibility: promoted host widgets are
    * now store-backed and addressed by widgetId, so there is no view cache to
@@ -100,11 +106,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.graph = graph
 
     Object.defineProperty(this, 'widgets', {
-      get: () =>
-        this.inputs.flatMap((input) => {
+      get: () => [
+        ...this.inputs.flatMap((input) => {
           const widget = this._projectPromotedWidget(input)
           return widget ? [widget] : []
         }),
+        ...this._extraWidgets
+      ],
       set: () => {
         if (import.meta.env.DEV)
           console.warn(
@@ -871,12 +879,34 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return nodes
   }
 
+  override addCustomWidget<TPlainWidget extends IBaseWidget>(
+    customWidget: TPlainWidget
+  ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
+    const widget = toConcreteWidget(customWidget, this, false) ?? customWidget
+    this._extraWidgets.push(widget)
+    this._widgetSlotsDirty = true
+
+    if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
+      widget.setNodeId(this.id)
+    }
+
+    return widget
+  }
+
   override removeWidget(widget: IBaseWidget): void {
     this.ensureWidgetRemoved(widget)
   }
 
   override ensureWidgetRemoved(widget: IBaseWidget): void {
     widget.onRemove?.()
+
+    const index = this._extraWidgets.indexOf(widget)
+    if (index !== -1) {
+      this._extraWidgets.splice(index, 1)
+      this._widgetSlotsDirty = true
+      return
+    }
+
     this.subgraph.events.dispatch('widget-demoted', {
       widget,
       subgraphNode: this
@@ -895,6 +925,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
       this._clearPromotedWidget(input)
     }
+    for (const widget of this._extraWidgets) widget.onRemove?.()
   }
   override drawTitleBox(
     ctx: CanvasRenderingContext2D,

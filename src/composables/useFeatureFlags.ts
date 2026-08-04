@@ -39,7 +39,8 @@ export enum ServerFeatureFlag {
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
-  SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags'
+  SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
 }
 
 /**
@@ -248,8 +249,16 @@ export function useFeatureFlags() {
       )
     },
     get supportsModelTypeTags() {
-      return api.getServerFeature(
+      return resolveFlag(
         ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+        remoteConfig.value.supports_model_type_tags,
+        false
+      )
+    },
+    get onboardingTourEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.ONBOARDING_TOUR_ENABLED,
+        remoteConfig.value.onboarding_tour_enabled,
         false
       )
     }

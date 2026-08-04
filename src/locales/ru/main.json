@@ -812,6 +812,9 @@
       "buy": "Купить",
       "buyCredits": "Перейти к оплате",
       "buyNow": "Купить сейчас",
+      "chargedImmediatelyNote": "С вашей сохранённой карты будет списана сумма немедленно.",
+      "confirmSubtitle": "Кредиты будут добавлены в это рабочее пространство сразу после завершения оплаты.",
+      "confirmTitle": "Подтвердить",
       "contactUs": "Свяжитесь с нами",
       "creditsDescription": "Кредиты используются для запуска рабочих процессов или партнерских узлов.",
       "creditsPerDollar": "кредитов за доллар",
@@ -826,6 +829,7 @@
       "minRequired": "Минимум {credits} кредитов",
       "minimumPurchase": "Минимум ${amount} ({credits} кредитов)",
       "needMore": "Нужно больше?",
+      "payAmount": "Оплатить {amount}",
       "purchaseError": "Покупка не удалась",
       "purchaseErrorDetail": "Не удалось купить кредиты: {error}",
       "purchaseSuccess": "Кредиты успешно добавлены!",
@@ -836,6 +840,8 @@
       "topUp": "Пополнить",
       "unknownError": "Произошла неизвестная ошибка",
       "usdAmount": "${amount}",
+      "verifyBody": "Ваш банк требует дополнительную проверку для завершения этого платежа.",
+      "verifyTitle": "Подтвердите ваш платеж",
       "videosEstimate": "~{count} видео",
       "viewPricing": "Посмотреть детали цен",
       "youGet": "Кредиты",
@@ -1875,6 +1881,26 @@
     "workflow": "Рабочий процесс",
     "you": "Вы"
   },
+  "gettingStarted": {
+    "loadFailed": "Не удалось загрузить шаблоны.",
+    "retry": "Попробовать снова",
+    "retryTemplate": "Повторить {title}",
+    "startBlank": "Начать с пустого холста",
+    "subtitle": "Выберите готовый рабочий процесс или начните с пустого холста.",
+    "tabs": {
+      "templates": "Шаблоны",
+      "tutorials": "Учебники"
+    },
+    "tabsLabel": "Варианты начала работы",
+    "templateFailed": "Не удалось открыть этот шаблон.",
+    "title": "Давайте создадим что-нибудь",
+    "tutorials": {
+      "imageToImage": "Изображение в изображение",
+      "inpaint": "Инпейтинг",
+      "interfaceOverview": "Обзор интерфейса",
+      "textToImage": "Текст в изображение"
+    }
+  },
   "graphCanvasMenu": {
     "canvasMode": "Режим холста",
     "canvasToolbar": "Панель инструментов холста",
@@ -2905,6 +2931,7 @@
     "mage": "mage",
     "mask": "маска",
     "merging": "слияние",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "модель",
     "model specific": "модель-специфичный",
@@ -3865,6 +3892,7 @@
     "beta": "БЕТА",
     "billedMonthly": "Оплата ежемесячно",
     "billedYearly": "{total} Оплата ежегодно",
+    "billingAndInvoices": "Оплата и счета",
     "billingComingSoon": {
       "message": "Скоро появится командная оплата. Вы сможете оформить подписку на тариф для вашего рабочего пространства с оплатой за каждого участника. Следите за обновлениями.",
       "title": "Скоро будет"
@@ -3875,7 +3903,9 @@
       "endOfBillingPeriod": "конец расчетного периода",
       "failed": "Не удалось отменить подписку",
       "keepSubscription": "Сохранить подписку",
-      "title": "Отмена подписки"
+      "offerUnavailable": "Эта опция недоступна. Пожалуйста, выберите другую опцию.",
+      "title": "Отмена подписки",
+      "workspaceChanged": "Ваше активное рабочее пространство изменилось. Переключитесь обратно и попробуйте снова."
     },
     "cancelPlan": "Отменить тариф",
     "cancelSuccess": "Подписка успешно отменена",
@@ -3944,6 +3974,9 @@
       "memberTitle": "Подписка этого рабочего пространства неактивна",
       "runLabel": "Запустить"
     },
+    "inactiveTeamDescription": "Активируйте командный план, чтобы добавить больше участников и запускать рабочие процессы",
+    "inactiveTeamPlanIncludes": "Активный план включает всё из {plan}, а также:",
+    "inactiveTeamTitle": "Неактивная командная подписка",
     "inviteUpTo": "Пригласить до",
     "invoiceHistory": "История счетов",
     "learnMore": "Узнать больше",
@@ -4063,6 +4096,7 @@
     "pricingBlurbQuestions": "вопросам",
     "pricingBlurbSeeDetails": "подробнее",
     "reactivatePlan": "Возобновить тариф",
+    "reactivateToUseCredits": "Активируйте ваш план, чтобы использовать эти кредиты",
     "refillsDate": "Пополнение {date}",
     "refillsNextCycle": "Пополнение в следующем цикле",
     "refreshCredits": "Обновить кредиты",
@@ -4314,6 +4348,7 @@
     "fileTooLarge": "Файл слишком большой ({size} МБ). Максимально поддерживаемый размер — {maxSize} МБ",
     "fileUploadFailed": "Не удалось загрузить файл",
     "interrupted": "Выполнение было прервано",
+    "invalidBillingPortalUrl": "Недопустимый URL портала",
     "invalidTemplateData": "Не удалось загрузить шаблон узла: неверные данные",
     "legacyMaskEditorDeprecated": "Устаревший редактор масок будет скоро удалён.",
     "migrateToLitegraphReroute": "Узлы перенаправления будут удалены в будущих версиях. Нажмите, чтобы перейти на litegraph-native reroute.",

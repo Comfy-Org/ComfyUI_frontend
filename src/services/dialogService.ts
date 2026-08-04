@@ -333,8 +333,11 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription, isFreeTier, type } = useBillingContext()
-    if (!isActiveSubscription.value || isFreeTier.value) {
+    const { canAccessSubscriptionFeatures, isFreeTier, type } =
+      useBillingContext()
+    // Subscribing to unlock top-ups is a Cloud-only concept; local/desktop
+    // users always keep the purchase flow regardless of tier.
+    if (isCloud && (!canAccessSubscriptionFeatures.value || isFreeTier.value)) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'

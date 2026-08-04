@@ -812,6 +812,9 @@
       "buy": "Acheter",
       "buyCredits": "Continuer vers le paiement",
       "buyNow": "Acheter maintenant",
+      "chargedImmediatelyNote": "Votre carte enregistrée est débitée immédiatement.",
+      "confirmSubtitle": "Les crédits sont ajoutés à cet espace de travail dès que le paiement est effectué.",
+      "confirmTitle": "Confirmer",
       "contactUs": "Contactez-nous",
       "creditsDescription": "Les crédits sont utilisés pour exécuter des workflows ou des nœuds partenaires.",
       "creditsPerDollar": "crédits par dollar",
@@ -826,6 +829,7 @@
       "minRequired": "Minimum {credits} crédits",
       "minimumPurchase": "Achat minimum de ${amount} ({credits} crédits)",
       "needMore": "Besoin de plus ?",
+      "payAmount": "Payer {amount}",
       "purchaseError": "Échec de l'achat",
       "purchaseErrorDetail": "Échec de l'achat de crédits : {error}",
       "purchaseSuccess": "Crédits ajoutés avec succès !",
@@ -836,6 +840,8 @@
       "topUp": "Recharger",
       "unknownError": "Une erreur inconnue est survenue",
       "usdAmount": "${amount}",
+      "verifyBody": "Votre banque requiert une vérification supplémentaire pour finaliser ce paiement.",
+      "verifyTitle": "Vérifiez votre paiement",
       "videosEstimate": "~{count} vidéos",
       "viewPricing": "Voir les détails des tarifs",
       "youGet": "Crédits",
@@ -1875,6 +1881,26 @@
     "workflow": "Flux de travail",
     "you": "Vous"
   },
+  "gettingStarted": {
+    "loadFailed": "Nous n'avons pas pu charger les modèles.",
+    "retry": "Réessayer",
+    "retryTemplate": "Réessayer {title}",
+    "startBlank": "Commencer avec un canevas vierge",
+    "subtitle": "Choisissez un workflow prêt à l'emploi pour commencer, ou débutez avec un canevas vierge.",
+    "tabs": {
+      "templates": "Modèles",
+      "tutorials": "Tutoriels"
+    },
+    "tabsLabel": "Options de démarrage",
+    "templateFailed": "Nous n'avons pas pu ouvrir ce modèle.",
+    "title": "Créons quelque chose",
+    "tutorials": {
+      "imageToImage": "Image vers image",
+      "inpaint": "Inpainting",
+      "interfaceOverview": "Présentation de l'interface",
+      "textToImage": "Texte vers image"
+    }
+  },
   "graphCanvasMenu": {
     "canvasMode": "Mode canevas",
     "canvasToolbar": "Barre d’outils du canevas",
@@ -2905,6 +2931,7 @@
     "mage": "mage",
     "mask": "masque",
     "merging": "fusion",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "modèle",
     "model specific": "spécifique au modèle",
@@ -3865,6 +3892,7 @@
     "beta": "BÊTA",
     "billedMonthly": "Facturé mensuellement",
     "billedYearly": "{total} facturé annuellement",
+    "billingAndInvoices": "Facturation et factures",
     "billingComingSoon": {
       "message": "La facturation d'équipe arrive bientôt. Vous pourrez souscrire à un abonnement pour votre espace de travail avec un tarif par utilisateur. Restez à l'écoute pour les mises à jour.",
       "title": "Bientôt disponible"
@@ -3875,7 +3903,9 @@
       "endOfBillingPeriod": "fin de la période de facturation",
       "failed": "Échec de l'annulation de l'abonnement",
       "keepSubscription": "Conserver l'abonnement",
-      "title": "Annuler l'abonnement"
+      "offerUnavailable": "Cette option n’est pas disponible. Veuillez en choisir une autre.",
+      "title": "Annuler l'abonnement",
+      "workspaceChanged": "Votre espace de travail actif a changé. Revenez à l’espace précédent et réessayez."
     },
     "cancelPlan": "Annuler l’abonnement",
     "cancelSuccess": "Abonnement annulé avec succès",
@@ -3944,6 +3974,9 @@
       "memberTitle": "L’abonnement de cet espace de travail est inactif",
       "runLabel": "Exécuter"
     },
+    "inactiveTeamDescription": "Réactivez votre abonnement d'équipe pour ajouter des membres et exécuter des workflows",
+    "inactiveTeamPlanIncludes": "Un abonnement actif comprend tout ce qui est dans {plan}, plus :",
+    "inactiveTeamTitle": "Abonnement d'équipe inactif",
     "inviteUpTo": "Invitez jusqu’à",
     "invoiceHistory": "Historique des factures",
     "learnMore": "En savoir plus",
@@ -4063,6 +4096,7 @@
     "pricingBlurbQuestions": "questions",
     "pricingBlurbSeeDetails": "voir les détails",
     "reactivatePlan": "Réactiver l’abonnement",
+    "reactivateToUseCredits": "Réactivez votre abonnement pour utiliser ces crédits",
     "refillsDate": "Recharge le {date}",
     "refillsNextCycle": "Recharge au prochain cycle",
     "refreshCredits": "Actualiser les crédits",
@@ -4314,6 +4348,7 @@
     "fileTooLarge": "Fichier trop volumineux ({size} Mo). La taille maximale prise en charge est de {maxSize} Mo",
     "fileUploadFailed": "Échec du téléchargement du fichier",
     "interrupted": "L'exécution a été interrompue",
+    "invalidBillingPortalUrl": "URL du portail invalide",
     "invalidTemplateData": "Échec du chargement du modèle de nœud : données invalides",
     "legacyMaskEditorDeprecated": "L’éditeur de masque hérité est obsolète et sera bientôt supprimé.",
     "migrateToLitegraphReroute": "Les nœuds de reroute seront supprimés dans les futures versions. Cliquez pour migrer vers le reroute natif de litegraph.",
