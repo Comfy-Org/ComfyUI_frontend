@@ -52,24 +52,24 @@ jobs:
       - name: Check for proprietary fonts in dist
         run: |
           set -euo pipefail
-          echo '🔍 Checking dist for proprietary ABCROM fonts...'
+          echo '🔍 Checking dist for proprietary fonts...'
 
           if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
             echo '❌ ERROR: dist/ directory missing or empty!'
             exit 1
           fi
 
-          # Check for ABCROM font files
-          if find dist/ -type f -iname '*abcrom*' \
+          # Check for ABCROM and PP Formula font files
+          if find dist/ -type f \( -iname '*abcrom*' -o -iname '*ppformula*' \) \
             \( -name '*.woff' -o -name '*.woff2' -o -name '*.ttf' -o -name '*.otf' \) \
             -print -quit | grep -q .; then
             echo ''
-            echo '❌ ERROR: Found proprietary ABCROM font files in dist!'
+            echo '❌ ERROR: Found proprietary font files in dist!'
             echo ''
-            find dist/ -type f -iname '*abcrom*' \
+            find dist/ -type f \( -iname '*abcrom*' -o -iname '*ppformula*' \) \
               \( -name '*.woff' -o -name '*.woff2' -o -name '*.ttf' -o -name '*.otf' \)
             echo ''
-            echo 'ABCROM fonts are proprietary and should not ship to OSS builds.'
+            echo 'ABCROM and PP Formula fonts are proprietary and should not ship to OSS builds.'
             echo ''
             echo 'To fix this:'
             echo '1. Use conditional font loading based on isCloud'
