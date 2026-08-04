@@ -184,10 +184,18 @@ export class DragDropHelper {
 
     const files = fileNames.map((fileName) => readDroppedFile(fileName))
 
+    // One DragEvent can carry N files, each triggering its own upload
+    // request - wait for a response per file, not just the first one, or
+    // callers uploading multiple files get a false all-clear.
     const uploadResponsePromise = waitForUpload
-      ? this.page.waitForResponse(
-          (resp) => resp.url().includes('/upload/') && resp.status() === 200,
-          { timeout: 10000 }
+      ? Promise.all(
+          files.map(() =>
+            this.page.waitForResponse(
+              (resp) =>
+                resp.url().includes('/upload/') && resp.status() === 200,
+              { timeout: 10000 }
+            )
+          )
         )
       : null
 
