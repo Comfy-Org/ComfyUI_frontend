@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   activeWorkflow: { value: null as unknown },
   linearMode: { value: false },
   vueNodesEnabled: true,
+  setSetting: vi.fn(),
   steps: [] as CoachStep[],
   runState: { value: 'idle' } as Ref<string>,
   releaseFirstRunTargets: vi.fn(),
@@ -91,10 +92,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: () => mocks.vueNodesEnabled,
-    set: (_key: string, value: boolean) => {
-      mocks.vueNodesEnabled = value
-      return Promise.resolve()
-    }
+    // A spy, not a plain writer: a value that was flipped and put back reads
+    // the same as one that was never touched.
+    set: mocks.setSetting
   })
 }))
 
@@ -207,6 +207,10 @@ describe('useFirstRunTourController', () => {
     mocks.activeWorkflow.value = null
     mocks.linearMode.value = false
     mocks.vueNodesEnabled = true
+    mocks.setSetting.mockImplementation((_key: string, value: boolean) => {
+      mocks.vueNodesEnabled = value
+      return Promise.resolve()
+    })
     mocks.steps = []
     mocks.engine.activeTour = null
     mocks.engine.step = null
@@ -308,9 +312,9 @@ describe('useFirstRunTourController', () => {
         'the cards would sit over a hidden canvas until their targets timed out'
       ).not.toHaveBeenCalled()
       expect(
-        mocks.vueNodesEnabled,
-        'a tour that never opened must not leave the renderer switched behind it'
-      ).toBe(false)
+        mocks.setSetting,
+        'a tour that never opened must not touch the renderer setting at all'
+      ).not.toHaveBeenCalledWith('Comfy.VueNodes.Enabled', true)
     })
 
     it('refuses to open on a viewport below the desktop layout', async () => {
@@ -327,7 +331,30 @@ describe('useFirstRunTourController', () => {
         'the spotlights are placed against a desktop layout, so below md they point nowhere'
       ).toBe(false)
       expect(mocks.engine.startTour).not.toHaveBeenCalled()
-      expect(mocks.vueNodesEnabled).toBe(false)
+      expect(mocks.setSetting).not.toHaveBeenCalledWith(
+        'Comfy.VueNodes.Enabled',
+        true
+      )
+    })
+
+    it('refuses to open when the canvas goes away during the intro preview', async () => {
+      mocks.vueNodesEnabled = false
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      mocks.linearMode.value = true
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      expect(
+        await starting,
+        'the holds watcher cannot catch this — there is no active tour to end yet'
+      ).toBe(false)
+      expect(mocks.engine.startTour).not.toHaveBeenCalled()
+      expect(
+        mocks.vueNodesEnabled,
+        'the renderer switch thrown for a tour that never opened is handed back'
+      ).toBe(false)
     })
 
     it('leaves the workflow undimmed before taking the screen over', async () => {
