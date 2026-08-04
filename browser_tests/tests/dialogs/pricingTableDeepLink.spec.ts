@@ -101,9 +101,7 @@ const ACTIVE_TEAM_STATUS = {
     id: 'team_700',
     credits_monthly: 147_700,
     stop_usd: 700
-  },
-  max_seats: 30,
-  occupied_seats: 1
+  }
 } satisfies BillingStatusResponse
 
 const ACTIVE_STANDARD_STATUS = {
@@ -117,9 +115,7 @@ const ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
-  team_credit_stop: null,
-  max_seats: STANDARD_ANNUAL_PLAN.max_seats,
-  occupied_seats: 1
+  team_credit_stop: null
 } satisfies BillingStatusResponse
 
 const ACTIVE_CREATOR_STATUS = {

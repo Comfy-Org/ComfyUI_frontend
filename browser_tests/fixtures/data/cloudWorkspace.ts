@@ -70,7 +70,6 @@ export const DEFAULT_TEAM_MEMBERS: Member[] = [
 ]
 
 const TEAM_PLAN_SLUG = 'team-pro-monthly'
-const TEAM_PLAN_MAX_SEATS = 30
 
 export const TEAM_BILLING_STATUS = {
   is_active: true,
@@ -83,9 +82,7 @@ export const TEAM_BILLING_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
-  team_credit_stop: null,
-  max_seats: TEAM_PLAN_MAX_SEATS,
-  occupied_seats: DEFAULT_TEAM_MEMBERS.length
+  team_credit_stop: null
 } satisfies IngestBillingStatusResponse
 
 export const ENDED_STANDARD_BILLING_STATUS = {
@@ -108,7 +105,7 @@ export const TEAM_PRO_PLAN: Plan = {
   duration: 'MONTHLY',
   price_cents: 10000,
   credits_cents: 21100,
-  max_seats: TEAM_PLAN_MAX_SEATS,
+  max_seats: 30,
   availability: { available: true },
   seat_summary: {
     seat_count: 4,
