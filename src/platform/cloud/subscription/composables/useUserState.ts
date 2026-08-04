@@ -43,6 +43,8 @@ export function deriveUserState(input: {
       return { kind: `${distribution}AndFounders` }
     case null:
       return { kind: `${distribution}AndUnknown` }
+    default:
+      return input.tier satisfies never
   }
 }
 

@@ -22,7 +22,6 @@ const state = vi.hoisted(() => ({
   subscription: null as Subscription | null,
   isActiveSubscription: false,
   isTeamPlan: false,
-  isFreeTier: false,
   tier: null as SubscriptionInfo['tier'],
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
@@ -58,7 +57,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     subscription: computed(() => state.subscription),
     isActiveSubscription: computed(() => state.isActiveSubscription),
     isTeamPlan: computed(() => state.isTeamPlan),
-    isFreeTier: computed(() => state.isFreeTier),
     tier: computed(() => state.tier),
     currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     isLoading: computed(() => state.isLoading),
@@ -177,7 +175,6 @@ describe('CreditsTile', () => {
     state.subscription = null
     state.isActiveSubscription = false
     state.isTeamPlan = false
-    state.isFreeTier = false
     state.tier = null
     state.currentTeamCreditStop = null
     state.isLoading = false
@@ -397,7 +394,6 @@ describe('CreditsTile', () => {
 
   it('offers the upgrade path instead of add-credits on the free tier', async () => {
     activeProSubscription()
-    state.isFreeTier = true
     state.tier = 'FREE'
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
@@ -408,7 +404,6 @@ describe('CreditsTile', () => {
   it('keeps offering add-credits on the free tier for non-cloud distributions', () => {
     mockIsCloud.value = false
     activeProSubscription()
-    state.isFreeTier = true
     renderTile()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
     expect(screen.getByText('Add credits')).toBeInTheDocument()

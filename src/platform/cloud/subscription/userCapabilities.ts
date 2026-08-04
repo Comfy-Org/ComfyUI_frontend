@@ -36,7 +36,7 @@ export function getUserCapabilities(state: UserState): UserCapabilities {
     case 'CloudWithoutActiveSubscription':
       return { canTopUpCredits: false, showsSubscribeUpsellUI: true }
     case 'CloudTeamWithoutActiveSubscription':
-      return { canTopUpCredits: false, showsSubscribeUpsellUI: true }
+      return { canTopUpCredits: false, showsSubscribeUpsellUI: false }
     case 'CloudAndUnknown':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
     case 'CloudAndFree':

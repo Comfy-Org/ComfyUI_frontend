@@ -38,7 +38,7 @@ describe('getUserCapabilities', () => {
     ],
     [
       'CloudTeamWithoutActiveSubscription',
-      { canTopUpCredits: false, showsSubscribeUpsellUI: true }
+      { canTopUpCredits: false, showsSubscribeUpsellUI: false }
     ],
     [
       'CloudAndUnknown',
