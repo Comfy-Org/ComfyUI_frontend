@@ -9,10 +9,10 @@ export const buildTooltipConfig = (value: string) => ({
   pt: {
     text: {
       class:
-        'border-node-component-tooltip-border bg-node-component-tooltip-surface text-node-component-tooltip border rounded-md px-2 py-1 text-xs leading-none shadow-none'
+        'rounded-lg bg-[#171717] px-3 py-1.5 font-inter text-xs leading-4 text-[#fafafa] shadow-none ring-1 ring-inset ring-charcoal-200'
     },
     arrow: {
-      class: 'border-t-node-component-tooltip-border'
+      class: 'hidden'
     }
   }
 })

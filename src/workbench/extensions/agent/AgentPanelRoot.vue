@@ -2,7 +2,16 @@
 import './agentPanel.css'
 
 import { useClipboard } from '@vueuse/core'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  provide,
+  readonly,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -14,6 +23,7 @@ import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/wo
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { assetService } from '@/platform/assets/services/assetService'
 import {
   extractFilesFromDragEvent,
   hasImageType,
@@ -24,6 +34,7 @@ import { appendWorkflowJsonExt } from '@/utils/formatUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -83,6 +94,8 @@ const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const draftStore = useAgentDraftStore()
 const agentPanelStore = useAgentPanelStore()
+const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
 
 const canvasStore = useCanvasStore()
@@ -100,7 +113,9 @@ const {
   add: addSelectionTag
 } = useCanvasSelection({
   selection: selectedNodes,
-  isLive: () => agentPanelStore.isOpen
+  isLive: () => agentPanelStore.isOpen,
+  scope: () => workflowStore.activeWorkflow?.path ?? null,
+  dismissedSignature: dismissedSelectionSignature
 })
 
 function viewedGraphNodes() {
@@ -112,6 +127,10 @@ function mentionableNodes(): SelectedNode[] {
     id: String(node.id),
     title: node.title || node.type
   }))
+}
+
+function mentionableAssets() {
+  return assetService.getInputAssetsIncludingPublic()
 }
 
 let cloudIdsByName = new Map<string, string>()
@@ -155,7 +174,10 @@ let lastKnownGraph: { serialized: string; workflowId: string } | null = null
 function reclaimMovedBinding(activePath: string): string | undefined {
   if (lastKnownGraph === null) return undefined
   const graph = app.graph?.serialize()
-  if (!graph || JSON.stringify(graph) !== lastKnownGraph.serialized)
+  if (
+    !graph?.nodes?.length ||
+    JSON.stringify(graph) !== lastKnownGraph.serialized
+  )
     return undefined
   const { workflowId } = lastKnownGraph
   bindingStore.bind(workflowId, activePath)
@@ -204,10 +226,16 @@ let snapshotTabPath: string | null = null
 function takeWorkflowSnapshot(): DraftUpload | undefined {
   if (workflowDetached.value) return undefined
   const graph = app.graph?.serialize()
-  if (!graph?.nodes?.length) return undefined
+  if (!graph) return undefined
   const serialized = JSON.stringify(graph)
-  const activePath = workflowStore.activeWorkflow?.path ?? null
-  if (serialized === lastSentGraph && activePath === snapshotTabPath)
+  const active = workflowStore.activeWorkflow
+  const activePath = active?.path ?? null
+  const hasBoundWorkflow = active != null && cloudIdFor(active) !== undefined
+  if (
+    !graph.nodes?.length &&
+    !hasBoundWorkflow &&
+    (lastSentGraph === null || activePath !== snapshotTabPath)
+  )
     return undefined
   lastSentGraph = serialized
   snapshotTabPath = activePath
@@ -712,15 +740,12 @@ const coachStep: CoachStep = {
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   exitNodeSelectionMode()
   void applyDraft()
-  // PM-124: an already-consumed selection stays staged-out of the chips, but
-  // the turn must still tell the agent what is selected right now - unless the
-  // user dismissed every chip for this exact selection.
   const consumed = consumeSelection()
   const nodeTags =
     consumed.length > 0 || selectionDismissed() ? consumed : selectedNodes.value
   useTelemetry()?.trackAgentMessageSent({
     attachment_count: attachments.length,
-    node_tag_count: consumed.length
+    node_tag_count: nodeTags.length
   })
   void sendMessage(text, attachments, nodeTags).then((ok) => {
     if (!ok) resetSnapshotGuard()
@@ -733,6 +758,10 @@ function onStop(): void {
 
 function onRenameChat(title: string): void {
   if (threadId.value !== null) history.rename(threadId.value, title)
+}
+
+function onRenameHistory(id: string, title: string): void {
+  history.rename(id, title)
 }
 
 function onDeleteHistory(id: string): void {
@@ -750,23 +779,36 @@ function onNewChat(): void {
 
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
 const fileInput = ref<HTMLInputElement>()
+const assetDragActive = ref(false)
+let assetDragDepth = 0
+provide('agentAssetDragActive', readonly(assetDragActive))
 let selectingNodes = false
 let nodeSelectionCanvas: LGraphCanvas | undefined
 let selectedGraphNodes = new Map<string, LGraphNode>()
+let restoreAllowDragNodes: boolean | undefined
+let restoreSelectOnly: boolean | undefined
 
 watch(
   () => canvasStore.selectedItems,
   (items) => {
     if (!selectingNodes) return
     const nodes = items.filter(isLGraphNode)
-    let added = false
+    const currentNodes = new Map(
+      nodes.map((node) => [String(node.id), node] as const)
+    )
+    const added = nodes.some((node) => !selectedGraphNodes.has(String(node.id)))
+    const removed = [...selectedGraphNodes.keys()].some(
+      (id) => !currentNodes.has(id)
+    )
+    if (!added || !removed) {
+      selectedGraphNodes = currentNodes
+      return
+    }
+
     for (const node of nodes) {
       const key = String(node.id)
-      if (selectedGraphNodes.has(key)) continue
       selectedGraphNodes.set(key, node)
-      added = true
     }
-    if (!added || selectedGraphNodes.size === nodes.length) return
 
     const canvas = app.canvas
     if (!canvas) return
@@ -776,13 +818,26 @@ watch(
 )
 
 function exitNodeSelectionMode(): void {
-  if (!selectingNodes) return
   const canvas = nodeSelectionCanvas
-  if (canvas) canvas.multi_select = false
+  if (canvas) {
+    canvas.multi_select = false
+    canvas.allow_dragnodes = restoreAllowDragNodes ?? true
+    canvas.selectOnly = restoreSelectOnly ?? false
+  }
   nodeSelectionCanvas = undefined
+  restoreAllowDragNodes = undefined
+  restoreSelectOnly = undefined
   selectedGraphNodes.clear()
   selectingNodes = false
+  if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
 }
+
+watch(
+  () => agentNodeSelectionStore.isActive,
+  (active) => {
+    if (!active) exitNodeSelectionMode()
+  }
+)
 
 watch(
   [() => workflowStore.activeWorkflow?.path, () => canvasStore.currentGraph],
@@ -790,6 +845,7 @@ watch(
 )
 
 function onSelectNodes(): void {
+  if (selectingNodes) return
   const canvas = app.canvas
   if (!canvas) return
   selectedGraphNodes = new Map(
@@ -797,9 +853,14 @@ function onSelectNodes(): void {
       .filter(isLGraphNode)
       .map((node) => [String(node.id), node] as const)
   )
+  restoreAllowDragNodes = canvas.allow_dragnodes
+  restoreSelectOnly = canvas.selectOnly
+  canvas.allow_dragnodes = false
+  canvas.selectOnly = true
   canvas.multi_select = true
   nodeSelectionCanvas = canvas
   selectingNodes = true
+  agentNodeSelectionStore.enter()
   void nextTick(() => {
     if (selectingNodes) canvas.canvas.focus()
   })
@@ -864,6 +925,29 @@ function isAssetDrag(event: DragEvent): boolean {
   return (event.dataTransfer?.types ?? []).includes(MIME_ASSET_INFO)
 }
 
+function isAttachableDrag(event: DragEvent): boolean {
+  return (
+    (event.dataTransfer?.types ?? []).includes('Files') || isAssetDrag(event)
+  )
+}
+
+function clearAssetDrag(): void {
+  assetDragDepth = 0
+  assetDragActive.value = false
+}
+
+function onPanelDragEnter(event: DragEvent): void {
+  if (!isAttachableDrag(event)) return
+  assetDragDepth += 1
+  assetDragActive.value = true
+}
+
+function onPanelDragLeave(): void {
+  if (assetDragDepth === 0) return
+  assetDragDepth -= 1
+  if (assetDragDepth === 0) assetDragActive.value = false
+}
+
 async function attachDroppedAsset(event: DragEvent): Promise<void> {
   const files = (await extractFilesFromDragEvent(event)).filter(
     (file) => hasImageType(file) || hasVideoType(file)
@@ -880,11 +964,11 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
 }
 
 function onPanelDragOver(event: DragEvent): void {
-  if (event.dataTransfer?.types.includes('Files') || isAssetDrag(event))
-    event.preventDefault()
+  if (isAttachableDrag(event)) event.preventDefault()
 }
 
 function onPanelDrop(event: DragEvent): void {
+  clearAssetDrag()
   // A dropped asset card carries a URI, not a File, so the claim must happen
   // before the async fetch resolves it into one.
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
@@ -907,6 +991,8 @@ function onPanelDrop(event: DragEvent): void {
   <div
     id="agent-panel-root"
     class="size-full"
+    @dragenter="onPanelDragEnter"
+    @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
     @drop="onPanelDrop"
   >
@@ -936,6 +1022,7 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-tabs="workflowTabs"
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
+      :get-mention-assets="mentionableAssets"
       @select-tab="onSelectTab"
       @clear-workflow="onClearWorkflow"
       @send="onSend"
@@ -952,6 +1039,7 @@ function onPanelDrop(event: DragEvent): void {
       @open-history="refreshHistory()"
       @select-history="onSelectHistory"
       @delete-history="onDeleteHistory"
+      @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
     />

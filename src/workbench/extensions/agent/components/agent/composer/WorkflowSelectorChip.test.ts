@@ -63,9 +63,6 @@ describe('WorkflowSelectorChip', () => {
   it('names the active workflow on the trigger and lists every open tab', async () => {
     const { user } = renderChip()
     expect(trigger()).toHaveTextContent('portrait')
-    expect(screen.getByTestId('workflow-selector-icon')).toHaveClass(
-      'icon-[lucide--workflow]'
-    )
 
     await user.hover(trigger())
     expect(
@@ -204,6 +201,29 @@ describe('WorkflowSelectorChip', () => {
     const row = await screen.findByRole('menuitemradio', { name: /upscale/ })
     expect(
       within(row).getByRole('img', { name: enMessages.g.agentWorking })
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the active workflow selector usable while showing its spinner', async () => {
+    const activity = useWorkflowTabActivityStore()
+    activity.setEditing('workflows/portrait.json')
+    const { user } = renderChip()
+    const selector = trigger()
+
+    expect(
+      within(selector).getByRole('img', {
+        name: enMessages.g.agentWorking
+      })
+    ).toBeInTheDocument()
+    expect(within(selector).queryByTestId('workflow-selector-icon')).toBeNull()
+
+    await user.click(selector)
+    expect(await screen.findAllByRole('menuitemradio')).toHaveLength(2)
+    await user.keyboard('{Escape}')
+
+    activity.setEditing(null)
+    expect(
+      await within(selector).findByTestId('workflow-selector-icon')
     ).toBeInTheDocument()
   })
 

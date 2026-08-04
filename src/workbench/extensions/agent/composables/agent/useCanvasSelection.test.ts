@@ -54,4 +54,46 @@ describe('useCanvasSelection', () => {
     remove('1')
     expect(staged.value).toEqual([nodeB])
   })
+
+  it('keeps a cleared selection dismissed until the selection changes', () => {
+    const selection = ref<SelectedNode[]>([nodeA])
+    const { staged, dismissed, remove } = useCanvasSelection({
+      selection,
+      isLive: ref(true)
+    })
+
+    remove('1')
+    expect(dismissed()).toBe(true)
+
+    selection.value = [{ ...nodeA }]
+    expect(dismissed()).toBe(true)
+
+    selection.value = [nodeB]
+    expect(dismissed()).toBe(false)
+    expect(staged.value).toEqual([nodeB])
+  })
+
+  it('preserves dismissal through hydration only in the same workflow', () => {
+    const selection = ref<SelectedNode[]>([nodeA])
+    const isLive = ref(true)
+    const scope = ref<string | null>('workflows/Unsaved Workflow.json')
+    const dismissedSignature = ref<string | null>(null)
+    const { staged, remove } = useCanvasSelection({
+      selection,
+      isLive,
+      scope,
+      dismissedSignature
+    })
+
+    remove('1')
+    isLive.value = false
+    selection.value = []
+    selection.value = [nodeA]
+    isLive.value = true
+    expect(staged.value).toEqual([])
+
+    scope.value = 'workflows/Unsaved Workflow (2).json'
+    expect(staged.value).toEqual([nodeA])
+    expect(dismissedSignature.value).toBeNull()
+  })
 })
