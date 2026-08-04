@@ -6,6 +6,7 @@ import {
   FIREBASE_WEB_API_KEY,
   seedFirebaseAuthUser
 } from '@e2e/fixtures/helpers/firebaseAuthStorage'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 export const SMOKE_ENV_VARS = [
   'SMOKE_ACCOUNT_EMAIL',
@@ -102,6 +103,162 @@ export function identityToolkitErrorCode(body: unknown): string | undefined {
   return typeof message === 'string' ? message : undefined
 }
 
+export interface WorkspaceSession {
+  token: string
+  expiresAt: number
+  workspace: { id: string; name: string; type: string; role: string }
+  ownerUid: string
+}
+
+// Mirrors WorkspaceTokenResponseSchema in
+// src/platform/workspace/stores/workspaceAuthStore.ts.
+export function workspaceSessionFromResponse(
+  tokenResponse: unknown,
+  ownerUid: string
+): WorkspaceSession {
+  const fields =
+    typeof tokenResponse === 'object' && tokenResponse !== null
+      ? (tokenResponse as Record<string, unknown>)
+      : {}
+  const workspaceFields =
+    typeof fields.workspace === 'object' && fields.workspace !== null
+      ? (fields.workspace as Record<string, unknown>)
+      : {}
+  const token = stringField(fields, 'token')
+  const expiresAtIso = stringField(fields, 'expires_at')
+  const role = stringField(fields, 'role')
+  const id = stringField(workspaceFields, 'id')
+  const name = stringField(workspaceFields, 'name')
+  const type = stringField(workspaceFields, 'type')
+  if (
+    token === undefined ||
+    expiresAtIso === undefined ||
+    role === undefined ||
+    id === undefined ||
+    name === undefined ||
+    type === undefined
+  ) {
+    const missing = Object.entries({
+      token,
+      expires_at: expiresAtIso,
+      role,
+      'workspace.id': id,
+      'workspace.name': name,
+      'workspace.type': type
+    })
+      .filter(([, value]) => value === undefined)
+      .map(([field]) => field)
+    throw new Error(
+      `workspace token response is missing ${missing.join(', ')} - cannot seed a real workspace JWT`
+    )
+  }
+  const expiresAt = Date.parse(expiresAtIso)
+  if (!Number.isFinite(expiresAt))
+    throw new Error(
+      'workspace token response carries an unparsable expires_at - cannot compute the workspace token expiration'
+    )
+  return { token, expiresAt, workspace: { id, name, type, role }, ownerUid }
+}
+
+// Since ~08-03 testcloud 403s data requests that carry a raw Firebase ID token
+// (probe run 30873678137: session restores, currentUser true, every settings
+// write 403). /auth/token is the exchange the app itself uses; an empty body
+// mints the caller's personal workspace.
+async function mintWorkspaceSession(
+  appUrl: string,
+  user: FirebaseAuthUserRecord
+): Promise<WorkspaceSession> {
+  const response = await fetch(`${appUrl}/api/auth/token`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${user.stsTokenManager.accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: '{}',
+    signal: AbortSignal.timeout(30_000)
+  })
+  const body: unknown = await response.json().catch(() => undefined)
+  if (!response.ok)
+    throw new Error(
+      `workspace token mint failed (HTTP ${response.status} POST /api/auth/token) - ` +
+        `testcloud refused to exchange the smoke user's Firebase identity for a ` +
+        `workspace JWT; the account must exist in the project testcloud reports ` +
+        `at /api/features and own a personal workspace`
+    )
+  return workspaceSessionFromResponse(body, user.uid)
+}
+
+const WORKSPACE_TOKEN_MIN_REMAINING_MS = 5 * 60 * 1000
+
+let workspaceSession: Promise<WorkspaceSession> | undefined
+
+async function ensureWorkspaceSession(
+  appUrl: string,
+  user: FirebaseAuthUserRecord
+): Promise<WorkspaceSession> {
+  const cached = await workspaceSession?.catch(() => undefined)
+  if (
+    cached &&
+    cached.expiresAt - Date.now() > WORKSPACE_TOKEN_MIN_REMAINING_MS
+  )
+    return cached
+  workspaceSession = mintWorkspaceSession(appUrl, user).catch(
+    (error: unknown) => {
+      workspaceSession = undefined
+      throw error
+    }
+  )
+  return workspaceSession
+}
+
+// workspaceAuthStore.initializeFromSession restores from exactly these four keys.
+async function seedWorkspaceSession(
+  page: Page,
+  session: WorkspaceSession
+): Promise<void> {
+  await page.addInitScript(
+    ({ keys, entries }) => {
+      sessionStorage.setItem(keys.CURRENT_WORKSPACE, entries.workspace)
+      sessionStorage.setItem(keys.TOKEN, entries.token)
+      sessionStorage.setItem(keys.EXPIRES_AT, entries.expiresAt)
+      sessionStorage.setItem(keys.OWNER_UID, entries.ownerUid)
+    },
+    {
+      keys: WORKSPACE_STORAGE_KEYS,
+      entries: {
+        workspace: JSON.stringify(session.workspace),
+        token: session.token,
+        expiresAt: String(session.expiresAt),
+        ownerUid: session.ownerUid
+      }
+    }
+  )
+}
+
+// The restored session only feeds getAuthHeader's teamWorkspaces branch, and on
+// testcloud unified_cloud_auth returns above it (authStore.ts) from an in-memory
+// token no fixture can seed - probe run 30873678137 shows both flag states
+// within one boot. Attaching the minted JWT on the wire serves either branch.
+// /auth/token keeps its Firebase bearer: that exchange is what mints this token.
+async function attachWorkspaceAuthHeader(
+  page: Page,
+  appUrl: string,
+  token: string
+): Promise<void> {
+  const apiPrefix = new URL('/api/', appUrl).toString()
+  await page.route(
+    (url) =>
+      url.href.startsWith(apiPrefix) && url.pathname !== '/api/auth/token',
+    (route) =>
+      route.continue({
+        headers: {
+          ...route.request().headers(),
+          authorization: `Bearer ${token}`
+        }
+      })
+  )
+}
+
 async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
   const missing = missingSmokeEnvVars(process.env)
   if (missing.length > 0)
@@ -157,6 +314,11 @@ export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
     const key = `firebase:authUser:${record.apiKey}:${record.appName}`
     localStorage.setItem(key, JSON.stringify(record))
   }, user)
+  const session = await ensureWorkspaceSession(appUrl, user)
+  await seedWorkspaceSession(page, session)
+  // Registered before the routes below: Playwright matches handlers in reverse
+  // registration order, so this one is the fallback the others defer to.
+  await attachWorkspaceAuthHeader(page, appUrl, session.token)
   await bypassOnboardingSurvey(page)
   await blockThirdPartyTelemetry(page)
 }
@@ -191,7 +353,8 @@ async function blockThirdPartyTelemetry(page: Page): Promise<void> {
 async function bypassOnboardingSurvey(page: Page): Promise<void> {
   await page.route('**/settings/onboarding_survey', async (route) => {
     if (route.request().method() !== 'GET') {
-      await route.continue()
+      // fallback, not continue: continue skips the workspace-auth handler.
+      await route.fallback()
       return
     }
     console.warn(`[cloud] survey gate intercepted: ${route.request().url()}`)

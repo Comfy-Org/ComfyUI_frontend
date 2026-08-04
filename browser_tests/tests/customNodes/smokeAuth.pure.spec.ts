@@ -7,7 +7,8 @@ import {
   SMOKE_ENV_VARS,
   identityToolkitErrorCode,
   missingSmokeEnvVars,
-  smokeAuthUserRecord
+  smokeAuthUserRecord,
+  workspaceSessionFromResponse
 } from '@e2e/fixtures/helpers/smokeAuth'
 
 const NOW = 1_700_000_000_000
@@ -110,6 +111,63 @@ test.describe('smokeAuthUserRecord', () => {
         NOW
       )
     ).toThrow(/expiresIn/)
+  })
+})
+
+function tokenResponse(): Record<string, unknown> {
+  return {
+    token: 'workspace.jwt.signature',
+    expires_at: '2026-08-04T05:00:00Z',
+    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+    role: 'owner',
+    permissions: ['read', 'write']
+  }
+}
+
+test.describe('workspaceSessionFromResponse', () => {
+  test('shapes the mint response into what the session restore reads', () => {
+    expect(workspaceSessionFromResponse(tokenResponse(), 'smoke-uid')).toEqual({
+      token: 'workspace.jwt.signature',
+      expiresAt: Date.parse('2026-08-04T05:00:00Z'),
+      workspace: {
+        id: 'ws-1',
+        name: 'Personal',
+        type: 'personal',
+        role: 'owner'
+      },
+      ownerUid: 'smoke-uid'
+    })
+  })
+
+  test('a response missing fields throws naming them, never the token', () => {
+    const { token: _token, role: _role, ...partial } = tokenResponse()
+    let thrown = ''
+    try {
+      workspaceSessionFromResponse(partial, 'smoke-uid')
+    } catch (error) {
+      thrown = String(error)
+    }
+    expect(thrown).toContain('token')
+    expect(thrown).toContain('role')
+    expect(thrown).not.toContain('workspace.jwt.signature')
+  })
+
+  test('non-object, nested-miss and unparsable-expiry responses fail loudly', () => {
+    expect(() => workspaceSessionFromResponse(undefined, 'smoke-uid')).toThrow(
+      /missing token/
+    )
+    expect(() =>
+      workspaceSessionFromResponse(
+        { ...tokenResponse(), workspace: { name: 'Personal' } },
+        'smoke-uid'
+      )
+    ).toThrow(/workspace\.id/)
+    expect(() =>
+      workspaceSessionFromResponse(
+        { ...tokenResponse(), expires_at: 'whenever' },
+        'smoke-uid'
+      )
+    ).toThrow(/expires_at/)
   })
 })
 
