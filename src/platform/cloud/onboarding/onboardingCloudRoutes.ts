@@ -91,8 +91,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         path: 'forgot-password',
         name: 'cloud-forgot-password',
         component: () =>
-          import('@/platform/cloud/onboarding/CloudForgotPasswordView.vue'),
-        meta: { hideFooter: true }
+          import('@/platform/cloud/onboarding/CloudForgotPasswordView.vue')
       },
       {
         path: 'survey',

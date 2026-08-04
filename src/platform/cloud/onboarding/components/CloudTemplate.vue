@@ -21,9 +21,7 @@
           </div>
 
           <CloudTermsNotice v-if="route.meta.showTermsNotice" />
-          <CloudTemplateFooter
-            v-if="!route.meta.showTermsNotice && !route.meta.hideFooter"
-          />
+          <CloudTemplateFooter v-if="!route.meta.showTermsNotice" />
         </div>
       </div>
     </div>
