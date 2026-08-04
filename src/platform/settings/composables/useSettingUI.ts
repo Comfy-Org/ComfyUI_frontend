@@ -62,10 +62,6 @@ export function useSettingUI(
     useBillingContext()
   const { workspaceRole } = useWorkspaceUI()
 
-  const teamWorkspacesEnabled = computed(
-    () => isCloud && flags.teamWorkspacesEnabled
-  )
-
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
       Object.values(settingStore.settingsById).filter(
@@ -229,9 +225,7 @@ export function useSettingUI(
     props: { section: 'allowlist' }
   }
 
-  const shouldShowWorkspacePanel = computed(
-    () => teamWorkspacesEnabled.value && isLoggedIn.value
-  )
+  const shouldShowWorkspacePanel = computed(() => isCloud && isLoggedIn.value)
   const shouldShowWorkspaceAllowlist = computed(
     () =>
       shouldShowWorkspacePanel.value &&
@@ -349,7 +343,7 @@ export function useSettingUI(
     )
   })
 
-  // Sidebar structure when team workspaces is enabled
+  // Cloud workspace sidebar structure
   const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [
     // Workspace settings
     translateCategory({
@@ -395,7 +389,7 @@ export function useSettingUI(
       : [])
   ])
 
-  // Sidebar structure when team workspaces is disabled (legacy)
+  // OSS legacy sidebar structure
   const legacyMenuTreeNodes = computed<SettingTreeNode[]>(() => [
     // Account settings - show different panels based on distribution and auth state
     {
@@ -433,9 +427,7 @@ export function useSettingUI(
   ])
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() =>
-    teamWorkspacesEnabled.value
-      ? workspaceMenuTreeNodes.value
-      : legacyMenuTreeNodes.value
+    isCloud ? workspaceMenuTreeNodes.value : legacyMenuTreeNodes.value
   )
 
   const navGroups = computed<NavGroupData[]>(() =>
@@ -483,7 +475,6 @@ export function useSettingUI(
     groupedMenuTreeNodes,
     settingCategories,
     navGroups,
-    teamWorkspacesEnabled,
     findCategoryByKey,
     findPanelByKey
   }
