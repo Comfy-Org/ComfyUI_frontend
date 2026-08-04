@@ -178,6 +178,7 @@ import {
   handleAudioFileList,
   handleFileList,
   handleVideoFileList,
+  positionBatchNodes,
   positionNodes
 } from '@/composables/useDrop'
 
@@ -406,6 +407,45 @@ export class ComfyApp {
    */
   static isImageNode(node: LGraphNode) {
     return isImageNode(node)
+  }
+
+  /**
+   * @deprecated Use {@link handleFileList} from @/composables/useDrop instead
+   */
+  async handleFileList(fileList: File[]): Promise<LGraphNode[]> {
+    return handleFileList(this.canvas, fileList)
+  }
+
+  /**
+   * @deprecated Use {@link handleAudioFileList} from @/composables/useDrop instead
+   */
+  async handleAudioFileList(fileList: File[]): Promise<LGraphNode[]> {
+    return handleAudioFileList(this.canvas, fileList)
+  }
+
+  /**
+   * @deprecated Use {@link handleVideoFileList} from @/composables/useDrop instead
+   */
+  async handleVideoFileList(fileList: File[]): Promise<LGraphNode[]> {
+    return handleVideoFileList(this.canvas, fileList)
+  }
+
+  /**
+   * @deprecated Use {@link positionNodes} from @/composables/useDrop instead
+   */
+  positionNodes(nodes: LGraphNode[], precedingNodes: LGraphNode[] = []): void {
+    positionNodes(this.canvas, nodes, precedingNodes)
+  }
+
+  /**
+   * @deprecated Use {@link positionBatchNodes} from @/composables/useDrop instead
+   */
+  positionBatchNodes(
+    nodes: LGraphNode[],
+    batchNode: LGraphNode,
+    precedingNodes: LGraphNode[] = []
+  ): void {
+    positionBatchNodes(this.canvas, nodes, batchNode, precedingNodes)
   }
 
   /**
@@ -735,7 +775,14 @@ export class ComfyApp {
             }
           }
 
-          positionNodes(this.canvas, createdNodes, dropBatchNodes)
+          // A file above (e.g. a dropped workflow JSON) may have called
+          // loadGraphData and replaced the graph out from under us. Any
+          // dropBatchNodes from before that point are now detached, and
+          // positioning against their stale coordinates would be wrong.
+          const liveDropBatchNodes = dropBatchNodes.filter(
+            (node) => node.graph === this.canvas.graph
+          )
+          positionNodes(this.canvas, createdNodes, liveDropBatchNodes)
         } finally {
           workspace.spinner = false
         }
