@@ -235,11 +235,23 @@ async function seedWorkspaceSession(
   )
 }
 
+// /auth/token keeps its Firebase bearer: that exchange is what mints this token.
+// /features must answer anonymously the way prod's boot ordering asks it, so the
+// flag payload the router guard reads carries unified_cloud_auth false; answered
+// authenticated it flips true before the app has minted a unified token, and the
+// guard's exit path hard-reloads away the in-memory token in a loop.
+const ANONYMOUS_API_PATHS = new Set(['/api/auth/token', '/api/features'])
+
+export function shouldRewriteAuthHeader(url: URL, apiPrefix: string): boolean {
+  return (
+    url.href.startsWith(apiPrefix) && !ANONYMOUS_API_PATHS.has(url.pathname)
+  )
+}
+
 // The restored session only feeds getAuthHeader's teamWorkspaces branch, and on
 // testcloud unified_cloud_auth returns above it (authStore.ts) from an in-memory
 // token no fixture can seed - probe run 30873678137 shows both flag states
 // within one boot. Attaching the minted JWT on the wire serves either branch.
-// /auth/token keeps its Firebase bearer: that exchange is what mints this token.
 async function attachWorkspaceAuthHeader(
   page: Page,
   appUrl: string,
@@ -247,8 +259,7 @@ async function attachWorkspaceAuthHeader(
 ): Promise<void> {
   const apiPrefix = new URL('/api/', appUrl).toString()
   await page.route(
-    (url) =>
-      url.href.startsWith(apiPrefix) && url.pathname !== '/api/auth/token',
+    (url) => shouldRewriteAuthHeader(url, apiPrefix),
     (route) =>
       route.continue({
         headers: {

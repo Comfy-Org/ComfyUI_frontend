@@ -7,6 +7,7 @@ import {
   SMOKE_ENV_VARS,
   identityToolkitErrorCode,
   missingSmokeEnvVars,
+  shouldRewriteAuthHeader,
   smokeAuthUserRecord,
   workspaceSessionFromResponse
 } from '@e2e/fixtures/helpers/smokeAuth'
@@ -186,6 +187,30 @@ test.describe('identityToolkitErrorCode', () => {
     expect(identityToolkitErrorCode({ error: null })).toBeUndefined()
     expect(identityToolkitErrorCode({ error: 'flat' })).toBeUndefined()
     expect(identityToolkitErrorCode({ error: { message: 42 } })).toBeUndefined()
+  })
+})
+
+test.describe('shouldRewriteAuthHeader', () => {
+  const API_PREFIX = 'http://localhost:4173/api/'
+  const rewrites = (href: string) =>
+    shouldRewriteAuthHeader(new URL(href), API_PREFIX)
+
+  test('rewrites same-origin api traffic and nothing else', () => {
+    expect(rewrites('http://localhost:4173/api/userdata/workflows')).toBe(true)
+    expect(rewrites('http://localhost:4173/api/prompt')).toBe(true)
+    expect(rewrites('http://localhost:4173/assets/main.js')).toBe(false)
+    expect(rewrites('https://mp.comfy.org/api/track')).toBe(false)
+  })
+
+  test('leaves the token exchange and the boot feature payload anonymous', () => {
+    expect(rewrites('http://localhost:4173/api/auth/token')).toBe(false)
+    expect(rewrites('http://localhost:4173/api/features')).toBe(false)
+    expect(rewrites('http://localhost:4173/api/features?flags=1')).toBe(false)
+  })
+
+  test('excludes whole paths, never prefixes of a longer one', () => {
+    expect(rewrites('http://localhost:4173/api/featuresfoo')).toBe(true)
+    expect(rewrites('http://localhost:4173/api/features/detail')).toBe(true)
   })
 })
 
