@@ -219,11 +219,17 @@ async function main(): Promise<void> {
       continue
     }
 
+    // The newest version published for *this* line. Comparing the tag against
+    // ComfyUI's pin instead would pass silently when a tag was never published,
+    // which is the release failure this check exists to catch.
     const minor = branch.replace('core/', '')
+    const publishedOnLine = newestStableVersion(
+      Object.keys(pypi.releases).filter((v) => minorLineOf(v) === minor)
+    )
     const { findings } = evaluateLine({
       branch,
       latestTag,
-      publishedVersion: minorLineOf(published) === minor ? published : pinned,
+      publishedVersion: publishedOnLine,
       commits: commitsPastTag(latestTag, branch)
     })
     allFindings.push(...findings)
