@@ -64,7 +64,7 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     ).toHaveCount(0)
     await expect(
       creditsContent.getByRole('button', { name: 'Invoice history' })
-    ).toHaveCount(0)
+    ).toBeVisible()
 
     const settingsAddCredits = creditsContent.getByRole('button', {
       name: 'Add credits'
@@ -110,12 +110,12 @@ test.describe('Local paid invoice actions (non-cloud)', () => {
     content = comfyPage.settingDialog.contentArea
   })
 
-  test('keeps Manage subscription and Invoice history connected to the portal', async ({
+  test('keeps Manage billing and Invoice history connected to the portal', async ({
     comfyPage
   }) => {
     const page = comfyPage.page
     const manageRequest = page.waitForRequest('**/customers/billing')
-    await content.getByRole('button', { name: 'Manage subscription' }).click()
+    await content.getByRole('button', { name: 'Manage billing' }).click()
     expect((await manageRequest).method()).toBe('POST')
     await expect
       .poll(() => page.locator('html').getAttribute('data-opened-url'))
