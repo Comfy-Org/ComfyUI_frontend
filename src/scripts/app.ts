@@ -11,7 +11,8 @@ import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/com
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { st, t } from '@/i18n'
+import { resolveNodeDefText, setBackendNodeText, st, t } from '@/i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
@@ -1099,26 +1100,46 @@ export class ComfyApp {
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
-      // Use object info display_name as fallback before using name
-      const objectInfoDisplayName = def.display_name || def.name
-
       return {
         ...def,
-        display_name: st(
-          `nodeDefs.${def.name}.display_name`,
-          objectInfoDisplayName
+        display_name: resolveNodeDefText(
+          'display_name',
+          def.name,
+          def.display_name || undefined
         ),
-        description: def.description
-          ? st(`nodeDefs.${def.name}.description`, def.description)
-          : '',
-        category: def.category
+        description: resolveNodeDefText(
+          'description',
+          def.name,
+          def.description || undefined
+        ),
+        category: (typeof def.category === 'string' ? def.category : '')
           .split('/')
-          .map((category: string) => st(`nodeCategories.${category}`, category))
+          .map((category: string) =>
+            st(`nodeCategories.${normalizeI18nKey(category)}`, category)
+          )
           .join('/')
       }
     }
 
-    return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
+    const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
+      typeof value === 'object' &&
+      value !== null &&
+      typeof (value as { name?: unknown }).name === 'string'
+
+    const response: unknown = await api.getNodeDefs()
+    const entries =
+      typeof response === 'object' &&
+      response !== null &&
+      !Array.isArray(response)
+        ? Object.entries(response)
+        : []
+    const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
+      entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
+        isNodeDef(entry[1])
+      )
+    )
+    setBackendNodeText(Object.values(defs))
+    return _.mapValues(defs, (def) => translateNodeDef(def))
   }
 
   /**

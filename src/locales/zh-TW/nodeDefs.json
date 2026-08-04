@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 的聯合視訊+音訊潛空間。時長會對齊至模型的 17k+5 幀格（24 fps）。",
+    "display_name": "Empty MiniMax H3 AV 潛空間",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度",
+        "tooltip": "以 24 fps 計算的幀數，會自動對齊至模型的 17k+5 幀格（124 ≈ 5 秒；訓練範圍約為 124-362，超出範圍未經測試）"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -5703,6 +5724,15 @@
       },
       "model_resolution": {
         "name": "解析度"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       },
       "prompt": {
         "name": "提示詞",
@@ -8685,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "將視訊潛空間與音訊潛空間合併為聯合 AV 潛空間（適用於任何 AV 模型，如 LTXV 或 MiniMax H3）。",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11370,6 +11401,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 圖片轉影片",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "首幀"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "last_frame": {
+        "name": "末幀"
+      },
+      "length": {
+        "name": "長度",
+        "tooltip": "以 24 fps 計算的幀數，會自動對齊至模型的 17k+5 幀格（124 ≈ 5 秒；訓練範圍約為 124-362，超出範圍未經測試）"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<圖片 i> / <影片 k> / <音訊 j> 參考條件設定，適用於 MiniMax H3。提示時請使用相同標籤。",
+    "display_name": "MiniMax H3 參考轉影片",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度",
+        "tooltip": "以 24 fps 計算的幀數（124 ≈ 5 秒，訓練範圍約為 124-362）"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "ref_audios": {
+        "name": "參考音訊"
+      },
+      "ref_image_size": {
+        "name": "參考圖片尺寸",
+        "tooltip": "參考圖片尺寸設定。「match」會將每張參考圖（僅縮小，保持比例）縮放至生成圖的像素面積；「max」則使用參考流程的 2048px 短邊以獲得最佳身份保真度。參考標記會貫穿每個取樣步驟，因此「max」模式可能會慢上數倍。"
+      },
+      "ref_images": {
+        "name": "參考圖片"
+      },
+      "ref_video_audios": {
+        "name": "參考影片音訊"
+      },
+      "ref_videos": {
+        "name": "參考影片"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "設定視訊/音訊流的偏移量。",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "shift_audio"
+      },
+      "shift_video": {
+        "name": "shift_video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

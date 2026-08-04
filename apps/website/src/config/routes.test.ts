@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { localizeHref } from './routes'
+import { getRoutes, localizeHref } from './routes'
 
 describe('localizeHref', () => {
   it('prefixes an internal path for a non-default locale', () => {
@@ -19,5 +19,15 @@ describe('localizeHref', () => {
 
   it('never prefixes locale-invariant routes', () => {
     expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
+  })
+})
+
+describe('getRoutes minimax', () => {
+  it('serves the minimax page at its canonical path for en', () => {
+    expect(getRoutes('en').minimax).toBe('/minimax')
+  })
+
+  it('serves a localized minimax path for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimax).toBe('/zh-CN/minimax')
   })
 })

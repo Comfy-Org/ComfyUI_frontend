@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "Latente conjunto de video+audio para MiniMax H3. La duración se ajusta a la cuadrícula de 17k+5 fotogramas del modelo a 24 fps.",
+    "display_name": "Latente AV MiniMax H3 Vacío",
+    "inputs": {
+      "height": {
+        "name": "alto"
+      },
+      "length": {
+        "name": "duración",
+        "tooltip": "Cantidad de fotogramas a 24 fps, ajustada a la cuadrícula de 17k+5 del modelo (124 = ~5s; el rango entrenado es ~124-362, valores mayores no están probados)"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -5703,6 +5724,15 @@
       },
       "model_resolution": {
         "name": "resolución"
+      },
+      "model_voice_1": {
+        "name": "voz_1"
+      },
+      "model_voice_2": {
+        "name": "voz_2"
+      },
+      "model_voice_3": {
+        "name": "voz_3"
       },
       "prompt": {
         "name": "prompt",
@@ -8685,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "Fusiona un latente de video y un latente de audio en un latente AV conjunto (cualquier modelo AV, por ejemplo LTXV o MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11370,6 +11401,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Imagen a Video",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "primer_fotograma"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "last_frame": {
+        "name": "último_fotograma"
+      },
+      "length": {
+        "name": "duración",
+        "tooltip": "Cantidad de fotogramas a 24 fps, ajustada a la cuadrícula de 17k+5 del modelo (124 = ~5s; el rango entrenado es ~124-362, valores mayores no están probados)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "Condicionamiento de referencia <Imagen i> / <Video k> / <Audio j> para MiniMax H3. Usa las mismas etiquetas al generar el prompt.",
+    "display_name": "MiniMax H3 Referencia a Video",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "length": {
+        "name": "duración",
+        "tooltip": "Cantidad de fotogramas a 24 fps, (124 = ~5s, rango entrenado es ~124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "audios_ref"
+      },
+      "ref_image_size": {
+        "name": "tamaño_imagen_ref",
+        "tooltip": "Tamaño de la imagen de referencia. 'match' escala cada referencia (solo reducción, manteniendo la proporción) al área de píxeles de la generación; 'max' usa el borde corto de 2048px del pipeline de referencia para mejor fidelidad de identidad. Los tokens de referencia se mantienen en cada paso de muestreo, por lo que 'max' puede ser varias veces más lento."
+      },
+      "ref_images": {
+        "name": "imágenes_ref"
+      },
+      "ref_video_audios": {
+        "name": "audios_video_ref"
+      },
+      "ref_videos": {
+        "name": "videos_ref"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "Establece los desplazamientos del flujo de video/audio.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "shift_audio": {
+        "name": "desplazamiento de audio"
+      },
+      "shift_video": {
+        "name": "desplazamiento de video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
