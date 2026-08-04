@@ -194,7 +194,7 @@ jobs:
         with:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: e2e
-          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
             ## 🌐 Website E2E
@@ -274,6 +274,6 @@ jobs:
         with:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: e2e
-          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: ${{ steps.content.outputs.section-content }}

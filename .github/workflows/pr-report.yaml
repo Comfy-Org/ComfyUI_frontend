@@ -142,6 +142,7 @@ jobs:
               '<!-- COMFYUI_FRONTEND_PERF -->',
               '<!-- PLAYWRIGHT_TEST_STATUS -->',
               '<!-- STORYBOOK_BUILD_STATUS -->',
+              '<!-- WEBSITE_CI_REPORT -->',
             ];
 
             const comments = await github.paginate(github.rest.issues.listComments, {
