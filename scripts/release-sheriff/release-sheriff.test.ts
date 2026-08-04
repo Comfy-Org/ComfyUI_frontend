@@ -320,7 +320,7 @@ describe('planActions', () => {
       pr({
         number: 2,
         labels: [{ name: 'backport' }],
-        author: { login: 'sheriff' }
+        author: { login: 'Sheriff' }
       })
     ]
 
@@ -336,7 +336,7 @@ describe('planActions', () => {
         number: 1,
         labels: [{ name: 'backport' }],
         assignees: [{ login: 'dev' }],
-        latestReviews: [{ author: { login: 'sheriff' } }],
+        latestReviews: [{ author: { login: 'Sheriff' } }],
         reviewDecision: 'CHANGES_REQUESTED'
       }),
       pr({

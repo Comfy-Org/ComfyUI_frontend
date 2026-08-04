@@ -219,6 +219,8 @@ export function planActions(
   prs: PullRequestSummary[],
   sheriffLogin: string
 ): SheriffAction[] {
+  const normalizedSheriffLogin = sheriffLogin.toLowerCase()
+
   return prs.flatMap((pr) => {
     if (pr.isDraft || !isSheriffPr(pr)) return []
 
@@ -226,8 +228,11 @@ export function planActions(
     const requestReview =
       pr.reviewRequests.length === 0 &&
       pr.reviewDecision !== 'APPROVED' &&
-      pr.author?.login !== sheriffLogin &&
-      !pr.latestReviews.some((review) => review.author?.login === sheriffLogin)
+      pr.author?.login.toLowerCase() !== normalizedSheriffLogin &&
+      !pr.latestReviews.some(
+        (review) =>
+          review.author?.login.toLowerCase() === normalizedSheriffLogin
+      )
 
     return assign || requestReview
       ? [{ number: pr.number, assign, requestReview }]
