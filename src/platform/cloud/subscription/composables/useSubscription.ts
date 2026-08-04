@@ -9,10 +9,8 @@ import {
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -46,7 +44,7 @@ function useSubscriptionInternal() {
   const telemetry = useTelemetry()
   const isInitialized = ref(false)
 
-  const isSubscribedOrIsNotCloud = computed(() => {
+  const canAccessSubscriptionFeatures = computed(() => {
     if (!isCloud || !window.__CONFIG__?.subscription_required) return true
 
     return subscriptionStatus.value?.is_active ?? false
@@ -55,8 +53,7 @@ function useSubscriptionInternal() {
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
-  const { getAuthHeader } = authStore
-  const { flags } = useFeatureFlags()
+  const { getAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -226,7 +223,7 @@ function useSubscriptionInternal() {
     recordPendingSubscriptionCheckoutAttempt({
       tier: 'standard',
       cycle: 'monthly',
-      checkout_type: isSubscribedOrIsNotCloud.value ? 'change' : 'new',
+      checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
       ...(subscriptionTier.value
         ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] }
         : {}),
@@ -254,7 +251,7 @@ function useSubscriptionInternal() {
   const { startCancellationWatcher, stopCancellationWatcher } =
     useSubscriptionCancellationWatcher({
       fetchStatus,
-      isActiveSubscription: isSubscribedOrIsNotCloud,
+      canAccessSubscriptionFeatures: canAccessSubscriptionFeatures,
       subscriptionStatus,
       telemetry,
       shouldWatchCancellation: isSubscriptionEnabled
@@ -272,7 +269,7 @@ function useSubscriptionInternal() {
   const requireActiveSubscription = async (): Promise<void> => {
     await fetchSubscriptionStatus()
 
-    if (!isSubscribedOrIsNotCloud.value) {
+    if (!canAccessSubscriptionFeatures.value) {
       showSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
@@ -331,12 +328,11 @@ function useSubscriptionInternal() {
   async function performFetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
     const headers = await buildAuthHeaders()
 
-    const response = await fetchWithUnifiedRemint(
+    const response = await fetchWithCustomerRecovery(
       buildApiUrl('/customers/cloud-subscription-status'),
       {
         headers
-      },
-      isCloud && flags.unifiedCloudAuthEnabled
+      }
     )
 
     if (!response.ok) {
@@ -422,14 +418,13 @@ function useSubscriptionInternal() {
       const headers = await buildAuthHeaders()
       const checkoutAttribution = await getCheckoutAttributionForCloud()
 
-      const response = await fetchWithUnifiedRemint(
+      const response = await fetchWithCustomerRecovery(
         buildApiUrl('/customers/cloud-subscription-checkout'),
         {
           method: 'POST',
           headers,
           body: JSON.stringify(checkoutAttribution)
-        },
-        isCloud && flags.unifiedCloudAuthEnabled
+        }
       )
 
       if (!response.ok) {
@@ -446,7 +441,7 @@ function useSubscriptionInternal() {
 
   return {
     // State
-    isActiveSubscription: isSubscribedOrIsNotCloud,
+    canAccessSubscriptionFeatures: canAccessSubscriptionFeatures,
     isInitialized,
     isCancelled,
     formattedRenewalDate,

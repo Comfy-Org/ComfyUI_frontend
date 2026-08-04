@@ -5,7 +5,6 @@ import Button from '@/components/ui/button/Button.vue'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import PrimeVue from 'primevue/config'
-import ProgressSpinner from 'primevue/progressspinner'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -98,8 +97,7 @@ function globalOptions() {
       FormField,
       Button,
       InputText,
-      Password,
-      ProgressSpinner
+      Password
     }
   }
 }
@@ -206,6 +204,30 @@ describe('SignUpForm', () => {
         'autocomplete',
         'new-password'
       )
+    })
+  })
+
+  describe('submit while loading', () => {
+    const submitButton = () =>
+      screen.getByRole('button', { name: signUpButton })
+
+    it('keeps its accessible name and disables while loading', async () => {
+      mockLoadingRef.value = true
+      renderComponent()
+      await nextTick()
+
+      expect(submitButton()).toBeDisabled()
+      expect(submitButton()).toHaveAttribute('aria-busy', 'true')
+    })
+
+    it('does not emit submit when clicked', async () => {
+      mockLoadingRef.value = true
+      const { user, emitted } = renderComponent()
+      await nextTick()
+
+      await user.click(submitButton())
+
+      expect(emitted().submit).toBeUndefined()
     })
   })
 

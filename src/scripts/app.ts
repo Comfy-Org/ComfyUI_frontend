@@ -11,7 +11,8 @@ import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/com
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { st, t } from '@/i18n'
+import { resolveNodeDefText, setBackendNodeText, st, t } from '@/i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
@@ -41,7 +42,6 @@ import type {
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
@@ -116,12 +116,8 @@ import {
 } from '@/platform/missingModel/missingModelPipeline'
 import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import {
-  scanAllMediaCandidates,
-  verifyMediaCandidates
-} from '@/platform/missingMedia/missingMediaScan'
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
@@ -130,7 +126,6 @@ import {
   forEachNode,
   getNodeByExecutionId,
   isAncestorPathActive,
-  isMissingCandidateActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
 import {
@@ -1099,26 +1094,46 @@ export class ComfyApp {
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
-      // Use object info display_name as fallback before using name
-      const objectInfoDisplayName = def.display_name || def.name
-
       return {
         ...def,
-        display_name: st(
-          `nodeDefs.${def.name}.display_name`,
-          objectInfoDisplayName
+        display_name: resolveNodeDefText(
+          'display_name',
+          def.name,
+          def.display_name || undefined
         ),
-        description: def.description
-          ? st(`nodeDefs.${def.name}.description`, def.description)
-          : '',
-        category: def.category
+        description: resolveNodeDefText(
+          'description',
+          def.name,
+          def.description || undefined
+        ),
+        category: (typeof def.category === 'string' ? def.category : '')
           .split('/')
-          .map((category: string) => st(`nodeCategories.${category}`, category))
+          .map((category: string) =>
+            st(`nodeCategories.${normalizeI18nKey(category)}`, category)
+          )
           .join('/')
       }
     }
 
-    return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
+    const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
+      typeof value === 'object' &&
+      value !== null &&
+      typeof (value as { name?: unknown }).name === 'string'
+
+    const response: unknown = await api.getNodeDefs()
+    const entries =
+      typeof response === 'object' &&
+      response !== null &&
+      !Array.isArray(response)
+        ? Object.entries(response)
+        : []
+    const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
+      entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
+        isNodeDef(entry[1])
+      )
+    )
+    setBackendNodeText(Object.values(defs))
+    return _.mapValues(defs, (def) => translateNodeDef(def))
   }
 
   /**
@@ -1541,7 +1556,10 @@ export class ComfyApp {
           silent: silentAssetErrors
         })
 
-        await this.runMissingMediaPipeline(silentAssetErrors)
+        await runMissingMediaPipeline({
+          rootGraph: this.rootGraph,
+          silent: silentAssetErrors
+        })
       }
 
       if (!deferWarnings) {
@@ -1569,73 +1587,6 @@ export class ComfyApp {
       missingModelStore: useMissingModelStore(),
       silent: options.silent ?? true
     })
-  }
-
-  private cacheMediaCandidates(
-    wf: ComfyWorkflow | null,
-    confirmed: MissingMediaCandidate[]
-  ) {
-    if (!wf) return
-    updatePendingWarnings(wf, {
-      missingMediaCandidates: confirmed
-    })
-  }
-
-  private async runMissingMediaPipeline(
-    silent: boolean = false
-  ): Promise<void> {
-    const missingMediaStore = useMissingMediaStore()
-    const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    const allCandidates = scanAllMediaCandidates(this.rootGraph, isCloud)
-    // Drop candidates whose enclosing subgraph is muted/bypassed.
-    const candidates = allCandidates.filter((c) =>
-      isAncestorPathActive(this.rootGraph, String(c.nodeId))
-    )
-
-    if (!candidates.length) {
-      this.cacheMediaCandidates(activeWf, [])
-      return
-    }
-
-    const pending = candidates.some((c) => c.isMissing === undefined)
-    if (pending) {
-      const controller = missingMediaStore.createVerificationAbortController()
-      void verifyMediaCandidates(candidates, {
-        isCloud,
-        signal: controller.signal
-      })
-        .then(() => {
-          if (controller.signal.aborted) return
-          // Re-check ancestor after async verification (see model pipeline).
-          const confirmed = candidates.filter((c) =>
-            isMissingCandidateActive(this.rootGraph, c)
-          )
-          if (confirmed.length) {
-            useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-          }
-          this.cacheMediaCandidates(activeWf, confirmed)
-        })
-        .catch((err) => {
-          console.warn(
-            '[Missing Media Pipeline] Asset verification failed:',
-            err
-          )
-          useToastStore().add({
-            severity: 'warn',
-            summary: st(
-              'toastMessages.missingMediaVerificationFailed',
-              'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
-            ),
-            life: 5000
-          })
-        })
-    } else {
-      const confirmed = candidates.filter((c) => c.isMissing === true)
-      if (confirmed.length) {
-        useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-      }
-      this.cacheMediaCandidates(activeWf, confirmed)
-    }
   }
 
   async graphToPrompt(graph = this.rootGraph) {

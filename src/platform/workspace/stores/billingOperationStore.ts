@@ -26,6 +26,10 @@ const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
 const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
+// Failure reason for a checkout the user replaced by picking a different plan
+// mid-flow. The operation is terminal-failed only because it never completed —
+// its replacement is proceeding normally, so there is nothing to report.
+const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
@@ -365,6 +369,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation) return
 
+    const superseded = errorMessage === CHECKOUT_SUPERSEDED_REASON
     const defaultMessage = failureMessage(operation.type)
     const detail =
       operation.type === 'subscription'
@@ -375,7 +380,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
-    const failureCategory = categorizePollFailure(operation.type)
+    const failureCategory = superseded
+      ? 'stale_operation'
+      : categorizePollFailure(operation.type)
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
@@ -401,7 +408,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel') {
+    if (operation.type !== 'cancel' && !superseded) {
       useToastStore().add({
         severity: 'error',
         summary: defaultMessage,

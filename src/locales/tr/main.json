@@ -812,6 +812,9 @@
       "buy": "Satın Al",
       "buyCredits": "Ödemeye devam et",
       "buyNow": "Şimdi al",
+      "chargedImmediatelyNote": "Kayıtlı kartınız hemen ücretlendirilir.",
+      "confirmSubtitle": "Ödeme tamamlandığında krediler bu çalışma alanına eklenir.",
+      "confirmTitle": "Onayla",
       "contactUs": "Bize ulaşın",
       "creditsDescription": "Krediler, iş akışlarını veya partner düğümlerini çalıştırmak için kullanılır.",
       "creditsPerDollar": "dolar başına kredi",
@@ -826,6 +829,7 @@
       "minRequired": "En az {credits} kredi",
       "minimumPurchase": "En az ${amount} ({credits} kredi)",
       "needMore": "Daha fazlasına mı ihtiyacınız var?",
+      "payAmount": "{amount} öde",
       "purchaseError": "Satın Alma Başarısız",
       "purchaseErrorDetail": "Kredi satın alınamadı: {error}",
       "purchaseSuccess": "Krediler başarıyla eklendi!",
@@ -836,6 +840,8 @@
       "topUp": "Yükleme Yap",
       "unknownError": "Bilinmeyen bir hata oluştu",
       "usdAmount": "${amount}",
+      "verifyBody": "Bankanız bu ödemeyi tamamlamak için ek doğrulama gerektiriyor.",
+      "verifyTitle": "Ödemenizi doğrulayın",
       "videosEstimate": "~{count} video",
       "viewPricing": "Fiyatlandırma detaylarını görüntüle",
       "youGet": "Kredi",
@@ -1875,6 +1881,26 @@
     "workflow": "İş Akışı",
     "you": "Sen"
   },
+  "gettingStarted": {
+    "loadFailed": "Şablonları yükleyemedik.",
+    "retry": "Tekrar dene",
+    "retryTemplate": "{title} şablonunu tekrar dene",
+    "startBlank": "Boş bir tuval ile başla",
+    "subtitle": "Başlamak için hazır bir iş akışı seçin veya boş bir tuval ile başlayın.",
+    "tabs": {
+      "templates": "Şablonlar",
+      "tutorials": "Eğitimler"
+    },
+    "tabsLabel": "Başlangıç seçenekleri",
+    "templateFailed": "Bu şablonu açamadık.",
+    "title": "Haydi bir şeyler yapalım",
+    "tutorials": {
+      "imageToImage": "Görselden görsele",
+      "inpaint": "Boyama",
+      "interfaceOverview": "Arayüz genel bakış",
+      "textToImage": "Metinden görsele"
+    }
+  },
   "graphCanvasMenu": {
     "canvasMode": "Tuval Modu",
     "canvasToolbar": "Tuval Araç Çubuğu",
@@ -2905,6 +2931,7 @@
     "mage": "mage",
     "mask": "maske",
     "merging": "birleştirme",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "model",
     "model specific": "model özel",
@@ -3865,6 +3892,7 @@
     "beta": "BETA",
     "billedMonthly": "Aylık faturalandırılır",
     "billedYearly": "{total} Yıllık faturalandırılır",
+    "billingAndInvoices": "Faturalandırma ve faturalar",
     "billingComingSoon": {
       "message": "Takım faturalandırması yakında geliyor. Çalışma alanınız için koltuk başına fiyatlandırma ile bir plana abone olabileceksiniz. Güncellemeler için bizi takip edin.",
       "title": "Yakında"
@@ -3946,6 +3974,9 @@
       "memberTitle": "Bu çalışma alanının aboneliği etkin değil",
       "runLabel": "Çalıştır"
     },
+    "inactiveTeamDescription": "Daha fazla üye eklemek ve iş akışlarını çalıştırmak için ekip planınızı yeniden etkinleştirin",
+    "inactiveTeamPlanIncludes": "Aktif bir plan, {plan} içeriğine ek olarak şunları da içerir:",
+    "inactiveTeamTitle": "Pasif ekip aboneliği",
     "inviteUpTo": "Şu kadar kişiyi davet et:",
     "invoiceHistory": "Fatura geçmişi",
     "learnMore": "Daha fazla bilgi edinin",
@@ -4065,6 +4096,7 @@
     "pricingBlurbQuestions": "sorular",
     "pricingBlurbSeeDetails": "detayları gör",
     "reactivatePlan": "Planı yeniden etkinleştir",
+    "reactivateToUseCredits": "Bu kredileri kullanmak için planınızı yeniden etkinleştirin",
     "refillsDate": "{date} tarihinde yenilenecek",
     "refillsNextCycle": "Sonraki döngüde yenilenecek",
     "refreshCredits": "Kredileri yenile",

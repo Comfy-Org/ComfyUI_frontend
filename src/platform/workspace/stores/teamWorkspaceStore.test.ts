@@ -393,14 +393,11 @@ describe('useTeamWorkspaceStore', () => {
 
       const store = useTeamWorkspaceStore()
       const initialization = store.initialize()
-      const rejection = expect(initialization).rejects.toThrow(
-        'Token exchange failed'
-      )
 
       await vi.advanceTimersByTimeAsync(1000)
       await vi.advanceTimersByTimeAsync(2000)
       await vi.advanceTimersByTimeAsync(4000)
-      await rejection
+      await expect(initialization).rejects.toThrow('Token exchange failed')
 
       expect(store.initState).toBe('error')
       expect(store.activeWorkspaceId).toBeNull()
