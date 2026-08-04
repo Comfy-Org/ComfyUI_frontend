@@ -42,7 +42,7 @@ const {
 <template>
   <section
     :class="
-      cn('max-w-9xl mx-auto w-full px-6 py-24 md:py-48 lg:px-16', className)
+      cn('max-w-9xl mx-auto w-full px-6 py-14 md:py-20 lg:px-12', className)
     "
   >
     <div
