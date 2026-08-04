@@ -179,4 +179,30 @@ describe('flattenInputSpecs', () => {
     const result = flattenInputSpecs(nodeDefImpl.inputs)
     expect(result.map((spec) => spec.name)).toEqual(['model'])
   })
+
+  it('skips a dynamic combo whose options field is not an array', () => {
+    const nodeDef: ComfyNodeDefV1 = {
+      name: 'MalformedOptionsNode',
+      display_name: 'Malformed Options Node',
+      category: 'Test',
+      python_module: 'test_module',
+      description: 'A node with a dynamic combo missing an options array',
+      input: {
+        required: {
+          model: ['COMFY_DYNAMICCOMBO_V3', {}]
+        },
+        optional: {}
+      },
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false
+    } as ComfyNodeDefV1
+
+    const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+
+    expect(() => flattenInputSpecs(nodeDefImpl.inputs)).not.toThrow()
+    const result = flattenInputSpecs(nodeDefImpl.inputs)
+    expect(result.map((spec) => spec.name)).toEqual(['model'])
+  })
 })
