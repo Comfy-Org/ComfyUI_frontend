@@ -329,6 +329,7 @@ jobs:
           # the failure stays visible and retryable.
 
       - name: Create PR for each successful backport
+        id: create-prs
         if: steps.filter-targets.outputs.skip != 'true' && steps.backport.outputs.success
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
@@ -364,10 +365,16 @@ jobs:
               fi
             else
               echo "::error::Failed to create PR for ${target}: ${PR_URL}"
+              # Record it: a pushed branch with no PR must keep needs-backport
+              # and re-red the run, otherwise the branch is stranded silently
+              # and nothing retries it.
+              PR_CREATE_FAILED="${PR_CREATE_FAILED} ${target}"
               # Still try to comment on the original PR about the failure
               gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport branch created but PR creation failed for \`${target}\`. Please create the PR manually from branch \`${branch}\`"
             fi
           done
+
+          echo "pr-create-failed=${PR_CREATE_FAILED# }" >> $GITHUB_OUTPUT
 
       # Runs whenever a target failed, independent of whether the PR-creation
       # step for the clean targets succeeded — a hiccup there must not suppress
@@ -495,7 +502,10 @@ jobs:
       # failed, the label stays so a re-run retries the remainder (targets that
       # already landed are skipped by "Filter already backported targets").
       - name: Remove needs-backport label
-        if: steps.filter-targets.outputs.skip != 'true' && steps.backport.outputs.failed == ''
+        if: >-
+          steps.filter-targets.outputs.skip != 'true' &&
+          steps.backport.outputs.failed == '' &&
+          steps.create-prs.outputs.pr-create-failed == ''
         run: gh api --method DELETE "repos/${{ github.repository }}/issues/${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}/labels/needs-backport" || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -506,9 +516,16 @@ jobs:
         if: >-
           !cancelled() &&
           steps.filter-targets.outputs.skip != 'true' &&
-          steps.backport.outputs.failed != ''
+          (steps.backport.outputs.failed != '' ||
+           steps.create-prs.outputs.pr-create-failed != '')
         env:
           FAILED_TARGETS: ${{ steps.backport.outputs.failed }}
+          PR_CREATE_FAILED: ${{ steps.create-prs.outputs.pr-create-failed }}
         run: |
-          echo "::error::One or more backport targets failed: ${FAILED_TARGETS}"
+          if [ -n "${FAILED_TARGETS}" ]; then
+            echo "::error::One or more backport targets failed: ${FAILED_TARGETS}"
+          fi
+          if [ -n "${PR_CREATE_FAILED}" ]; then
+            echo "::error::Backport branches were pushed but PR creation failed: ${PR_CREATE_FAILED}"
+          fi
           exit 1
