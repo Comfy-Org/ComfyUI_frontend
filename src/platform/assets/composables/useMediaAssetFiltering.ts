@@ -1,9 +1,12 @@
 import { refDebounced } from '@vueuse/core'
 import { sortBy as sortByUtil } from 'es-toolkit'
 import Fuse from 'fuse.js'
+import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { useMediaAssetFilterStore } from '@/platform/assets/composables/useMediaAssetFilterStore'
+import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -27,6 +30,26 @@ const getAssetExecutionTime = (asset: AssetItem): number => {
   return (asset.user_metadata?.executionTimeInSeconds as number) ?? 0
 }
 
+function getDateThreshold(filter: MediaAssetDateFilter): number | null {
+  const now = Date.now()
+
+  switch (filter) {
+    case 'today': {
+      const startOfToday = new Date(now)
+      startOfToday.setHours(0, 0, 0, 0)
+      return startOfToday.getTime()
+    }
+    case 'week':
+      return now - 7 * 86_400_000
+    case 'month':
+      return now - 30 * 86_400_000
+    case 'year':
+      return new Date(new Date(now).getFullYear(), 0, 1).getTime()
+    default:
+      return null
+  }
+}
+
 const compareAssetNames = (a: AssetItem, b: AssetItem): number =>
   getAssetDisplayName(a).localeCompare(getAssetDisplayName(b), undefined, {
     numeric: true,
@@ -41,7 +64,9 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
   const searchQuery = ref('')
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
   const sortBy = ref<SortOption>('newest')
-  const mediaTypeFilters = ref<string[]>([])
+  const { mediaTypeFilters, dateFilter } = storeToRefs(
+    useMediaAssetFilterStore()
+  )
 
   const fuseOptions = {
     keys: ['display_name', 'name'],
@@ -60,42 +85,38 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
     return results.map((result) => result.item)
   })
 
-  const typeFiltered = computed(() => {
-    // Apply media type filter
-    if (mediaTypeFilters.value.length === 0) {
-      return searchFiltered.value
-    }
-
-    return searchFiltered.value.filter((asset) => {
-      const mediaType = getMediaTypeFromFilename(asset.name)
-      // Convert '3D' to '3d' for comparison
-      const normalizedType = mediaType.toLowerCase()
-      return mediaTypeFilters.value.includes(normalizedType)
-    })
-  })
-
   const filteredAssets = computed(() => {
+    const threshold = getDateThreshold(dateFilter.value)
+    const filtered = searchFiltered.value.filter((asset) => {
+      const matchesMediaType =
+        mediaTypeFilters.value.length === 0 ||
+        mediaTypeFilters.value.includes(
+          getMediaTypeFromFilename(asset.name).toLowerCase()
+        )
+      const matchesDate = threshold === null || getAssetTime(asset) >= threshold
+
+      return matchesMediaType && matchesDate
+    })
+
     // Sort by create_time (output assets) or created_at (input assets)
     switch (sortBy.value) {
       case 'oldest':
         // Ascending order (oldest first)
-        return sortByUtil(typeFiltered.value, [getAssetTime])
+        return sortByUtil(filtered, [getAssetTime])
       case 'longest':
         // Descending order (longest execution time first)
-        return sortByUtil(typeFiltered.value, [
-          (asset) => -getAssetExecutionTime(asset)
-        ])
+        return sortByUtil(filtered, [(asset) => -getAssetExecutionTime(asset)])
       case 'fastest':
         // Ascending order (fastest execution time first)
-        return sortByUtil(typeFiltered.value, [getAssetExecutionTime])
+        return sortByUtil(filtered, [getAssetExecutionTime])
       case 'az':
-        return [...typeFiltered.value].sort(compareAssetNames)
+        return [...filtered].sort(compareAssetNames)
       case 'za':
-        return [...typeFiltered.value].sort((a, b) => compareAssetNames(b, a))
+        return [...filtered].sort((a, b) => compareAssetNames(b, a))
       case 'newest':
       default:
         // Descending order (newest first) - negate for descending
-        return sortByUtil(typeFiltered.value, [(asset) => -getAssetTime(asset)])
+        return sortByUtil(filtered, [(asset) => -getAssetTime(asset)])
     }
   })
 
@@ -103,6 +124,7 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
     searchQuery,
     sortBy,
     mediaTypeFilters,
+    dateFilter,
     filteredAssets
   }
 }
