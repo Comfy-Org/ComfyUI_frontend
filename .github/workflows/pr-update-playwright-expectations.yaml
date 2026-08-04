@@ -172,9 +172,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Run tests with snapshot updates (browsers pre-installed in container)
+      # continue-on-error is required: --update-snapshots reports a rewritten
+      # baseline as a test failure. It also swallows genuine breakage, so the
+      # JSON report is kept and checked by the next step.
       - name: Update snapshots (${{ matrix.shard == 'cloud' && 'cloud' || format('Shard {0}/4', matrix.shard) }})
         id: playwright-tests
-        run: pnpm exec playwright test --update-snapshots --grep @screenshot ${{ matrix.shard == 'cloud' && '--project=cloud' || format('--grep-invert @cloud --shard={0}/4', matrix.shard) }}
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: /tmp/playwright-results.json
+        run: pnpm exec playwright test --update-snapshots --reporter=json,html --grep @screenshot ${{ matrix.shard == 'cloud' && '--project=cloud' || format('--grep-invert @cloud --shard={0}/4', matrix.shard) }}
         continue-on-error: true
 
       - name: Stage changed snapshot files
@@ -211,6 +216,71 @@ jobs:
             mkdir -p "/tmp/changed_snapshots_shard/$(dirname "$file_without_prefix")"
             cp "$file" "/tmp/changed_snapshots_shard/$file_without_prefix"
           done <<< "$changed_files"
+
+      # A shard that reported test failures but rewrote nothing did not
+      # "find no drift" - it broke (server never came up, container wrong,
+      # Playwright died). Without this the shard is green, merge-and-commit
+      # logs "No changes to commit", and the whole run reports success having
+      # done nothing.
+      - name: Verify shard did the work it claims
+        shell: bash
+        env:
+          SHARD: ${{ matrix.shard }}
+          HAS_CHANGES: ${{ steps.changed-snapshots.outputs.has-changes }}
+        run: |
+          set -uo pipefail
+
+          results='/tmp/playwright-results.json'
+
+          # No JSON at all means the process died before reporting. Playwright
+          # still writes the report when zero tests match, so absence is fatal.
+          if [ ! -f "$results" ]; then
+            echo "::error::Shard ${SHARD}: Playwright wrote no JSON report, so it never completed a run. Refusing to report success."
+            exit 1
+          fi
+
+          # Parsed with node, not jq: this step runs inside the CI container,
+          # where node is guaranteed (it just ran pnpm/playwright) but jq is not.
+          if ! summary=$(node -e '
+            const fs = require("fs");
+            const r = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            const s = r.stats;
+            if (!s) throw new Error("no stats in report");
+            const n = (v) => (typeof v === "number" ? v : 0);
+            const notPassing = n(s.unexpected) + n(s.flaky);
+            const ran = n(s.expected) + notPassing;
+            const errs = Array.isArray(r.errors) ? r.errors.length : 0;
+            console.log(ran + " " + notPassing + " " + errs);
+            console.log(JSON.stringify(s));
+          ' "$results" 2>&1); then
+            echo "::error::Shard ${SHARD}: Playwright JSON report is unreadable or has no stats. Refusing to report success."
+            echo "$summary"
+            exit 1
+          fi
+
+          read -r ran not_passing error_count <<< "$(printf '%s\n' "$summary" | head -1)"
+          echo "Shard ${SHARD} stats: $(printf '%s\n' "$summary" | tail -1)"
+
+          # Zero tests matched is legitimate for a leg whose grep selects
+          # nothing (Playwright exits non-zero AND records a top-level error
+          # for it, which is why neither signal can be trusted on its own).
+          if [ "$ran" -eq 0 ]; then
+            echo "::notice::Shard ${SHARD}: no tests matched this shard's filters; nothing to regenerate."
+            exit 0
+          fi
+
+          if [ "$error_count" -gt 0 ]; then
+            echo "::warning::Shard ${SHARD}: Playwright reported ${error_count} top-level error(s); the regenerated baselines for this shard may be incomplete."
+          fi
+
+          # A rewritten baseline surfaces as unexpected/flaky, so failures with
+          # zero rewritten files is the broken-run signature.
+          if [ "$not_passing" -gt 0 ] && [ "${HAS_CHANGES:-false}" != 'true' ]; then
+            echo "::error::Shard ${SHARD}: ${not_passing} test(s) did not pass yet no snapshot was rewritten. That is a broken run, not an absence of drift. Refusing to report success."
+            exit 1
+          fi
+
+          echo "Shard ${SHARD}: ${ran} test(s) ran, ${not_passing} not passing, snapshot changes=${HAS_CHANGES:-false}"
 
       # Upload ONLY the changed files from this shard
       - name: Upload changed snapshots
@@ -351,6 +421,7 @@ jobs:
           echo "has-changes=true" >> $GITHUB_OUTPUT
 
           git add browser_tests/
+
           git commit -m "[automated] Update test expectations"
 
           echo "Pushing to ${{ needs.setup.outputs.branch }}..."
