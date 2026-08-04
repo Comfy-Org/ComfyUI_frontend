@@ -387,6 +387,21 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
+  it('hides a scheduled change whose effective date is invalid', () => {
+    state.isTeamPlan = false
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'creator-annual',
+      changeAt: 'invalid-date'
+    }
+
+    renderBanner()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
   it('does not expose reactivation controls to a member', () => {
     state.subscription = {
       hasFunds: true,

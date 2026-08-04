@@ -27,7 +27,7 @@ const stubs = {
   PartnerNodeAccessPanel: { template: '<div data-testid="allowlist-body" />' },
   PlanCreditsPanelContent: {
     template:
-      '<div data-testid="plan-body"><div data-testid="billing-banner" /></div>'
+      '<div data-testid="plan-body"><div role="status">Billing status</div></div>'
   },
   WorkspaceProfilePic: { template: '<div />' }
 }
@@ -50,7 +50,7 @@ describe('WorkspaceSettingsPanelContent', () => {
     expect(
       screen.getByRole('heading', { name: 'Acme Team' })
     ).toBeInTheDocument()
-    expect(screen.getByTestId('billing-banner')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeInTheDocument()
 
     await rerender({ section: 'members' })
 
@@ -58,7 +58,7 @@ describe('WorkspaceSettingsPanelContent', () => {
     expect(screen.getByTestId('members-body')).toBeInTheDocument()
     expect(mockFetchMembers).toHaveBeenCalledTimes(1)
     expect(mockFetchPendingInvites).toHaveBeenCalledTimes(1)
-    expect(screen.queryByTestId('billing-banner')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
 
     await rerender({ section: 'allowlist' })
 
@@ -66,6 +66,6 @@ describe('WorkspaceSettingsPanelContent', () => {
     expect(screen.getByTestId('allowlist-body')).toBeInTheDocument()
     expect(mockFetchMembers).toHaveBeenCalledTimes(1)
     expect(mockFetchPendingInvites).toHaveBeenCalledTimes(1)
-    expect(screen.queryByTestId('billing-banner')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })

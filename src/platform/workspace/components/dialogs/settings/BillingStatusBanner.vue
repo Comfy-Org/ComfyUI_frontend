@@ -111,7 +111,12 @@ const planChangeDate = computed(() => {
   const date = new Date(raw)
   return Number.isNaN(date.getTime())
     ? ''
-    : d(date, { year: 'numeric', month: 'long', day: 'numeric' })
+    : d(date, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC'
+      })
 })
 const scheduledPlanName = computed(() =>
   formatTierName(
