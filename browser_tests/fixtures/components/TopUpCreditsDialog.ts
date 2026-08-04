@@ -11,6 +11,9 @@ export class TopUpCreditsDialog extends BaseDialog {
   readonly preset50: Locator
   readonly preset100: Locator
   readonly payAmountInput: Locator
+  readonly getAmountInput: Locator
+  readonly incrementPayAmountButton: Locator
+  readonly incrementGetAmountButton: Locator
   readonly pricingLink: Locator
 
   constructor(page: Page) {
@@ -50,6 +53,15 @@ export class TopUpCreditsDialog extends BaseDialog {
     this.payAmountInput = this.root
       .getByTestId('top-up-pay-amount')
       .locator('input')
+    this.getAmountInput = this.root
+      .getByTestId('top-up-get-amount')
+      .locator('input')
+    this.incrementPayAmountButton = this.root
+      .getByTestId('top-up-pay-amount')
+      .getByRole('button', { name: 'Increment' })
+    this.incrementGetAmountButton = this.root
+      .getByTestId('top-up-get-amount')
+      .getByRole('button', { name: 'Increment' })
     this.pricingLink = this.root.getByRole('link', {
       name: 'View pricing details'
     })
