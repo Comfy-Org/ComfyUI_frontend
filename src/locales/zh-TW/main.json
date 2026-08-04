@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "忘記密碼",
   "cloudHero": {
     "nextSlide": "下一張幻燈片",
-    "previousSlide": "上一張幻燈片",
-    "slidePagerLabel": "前往第 {index} 張幻燈片",
-    "slides": {
-      "cloud": {
-        "description": "最適合希望隨時隨地工作，並使用經商業授權驗證模型的大多數用戶。",
-        "title": "雲端"
-      },
-      "models": {
-        "description": "精選、具商業授權的模型，零設定即可運行。",
-        "title": "模型"
-      },
-      "team": {
-        "description": "立即邀請您的團隊加入。於組織內共享工作流程與資產。",
-        "title": "團隊"
-      },
-      "workflows": {
-        "description": "從想法到成果只需幾分鐘。可同時產生多種變化。",
-        "title": "工作流程"
-      }
-    }
+    "previousSlide": "上一張幻燈片"
   },
   "cloudNotification": {
     "continueLocally": "在本地繼續",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "雲端服務目前處於私人測試階段",
   "cloudSorryContactSupport_title": "抱歉，請聯絡支援團隊",
   "cloudStart_desc": "無需設定。可在任何裝置上使用。",
-  "cloudStart_download": "下載 ComfyUI",
   "cloudStart_explain": "一次生成多個輸出。輕鬆分享工作流程。",
   "cloudStart_learnAboutButton": "了解雲端服務",
   "cloudStart_title": "數秒內開始創作",
-  "cloudStart_wantToRun": "想要在本機運行 ComfyUI？",
   "cloudSurvey_steps_experience": "您對 ComfyUI 的熟悉程度？",
   "cloudSurvey_steps_focus": "您正在製作什麼？",
   "cloudSurvey_steps_intent": "您想用 ComfyUI 創作什麼？",
