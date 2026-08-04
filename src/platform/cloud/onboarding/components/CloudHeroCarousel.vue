@@ -7,13 +7,13 @@
       role="group"
       :aria-roledescription="t('cloudHero.carouselRoleDescription')"
       :aria-label="t('cloudHero.carouselLabel')"
-      class="flex min-h-0 w-auto max-w-3xl flex-1 flex-col justify-center gap-4 xl:gap-5 2xl:gap-6"
+      class="flex min-h-0 w-full max-w-3xl flex-1 flex-col gap-4 xl:gap-5 2xl:gap-6"
     >
       <p class="sr-only" role="status" aria-live="polite">
         {{ announcement }}
       </p>
       <div
-        class="relative aspect-769/889 max-h-full min-h-0 w-auto max-w-full shrink overflow-clip rounded-[2.5rem] bg-primary-comfy-canvas/4"
+        class="relative min-h-0 w-full flex-1 overflow-clip rounded-[2.5rem] bg-primary-comfy-canvas/4"
       >
         <div
           ref="trackEl"
