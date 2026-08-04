@@ -46,16 +46,7 @@ jobs:
           retention-days: 1
 
       - name: Build cloud frontend
-        run: pnpm build:cloud
-        env:
-          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
-
-      - name: Upload cloud frontend
-        uses: actions/upload-artifact@v6
-        with:
-          name: frontend-dist-cloud
-          path: dist/
-          retention-days: 1
+        uses: ./.github/actions/build-cloud-frontend
 
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
