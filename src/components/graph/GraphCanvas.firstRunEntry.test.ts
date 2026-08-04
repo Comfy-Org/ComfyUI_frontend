@@ -168,6 +168,13 @@ describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    // Startup writes to the workspace store, and clearAllMocks does not undo
+    // writes to a plain object.
+    Object.assign(mocks.workspaceStore, {
+      spinner: false,
+      focusMode: false,
+      sidebarTab: { activeSidebarTab: null }
+    })
     mocks.initializeWorkflow.mockResolvedValue('url-intent')
     mocks.loadTemplateFromUrlIfPresent.mockResolvedValue('image_to_image')
     mocks.loadSharedWorkflowFromUrlIfPresent.mockResolvedValue(undefined)
