@@ -72,7 +72,11 @@ describe('MobileDownloadEmailForm', () => {
       screen.getByRole('button', { name: /send download link/i })
     )
 
-    expect(await screen.findByText(/enter a valid email address/i)).toBeTruthy()
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toMatch(/enter a valid email address/i)
+    const input = screen.getByRole('textbox')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(input.getAttribute('aria-describedby')).toBe(alert.id)
     expect(hoisted.mockSubmit).not.toHaveBeenCalled()
   })
 
@@ -161,6 +165,23 @@ describe('MobileDownloadEmailForm', () => {
       await screen.findByText(/link is sent to someone@example\.com/i)
     ).toBeTruthy()
     expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('moves focus to the success message when the form is removed', async () => {
+    const user = userEvent.setup()
+    render(MobileDownloadEmailForm)
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    await user.click(
+      screen.getByRole('button', { name: /send download link/i })
+    )
+
+    const successRegion = await screen.findByRole('status')
+    expect(successRegion.textContent).toMatch(
+      /link is sent to someone@example\.com/i
+    )
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(successRegion)
   })
 
   it('forwards a non-default locale to requestDownloadLink', async () => {

@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
-import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, useId } from 'vue'
 
-import type { Locale, TranslationKey } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/translations'
 
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { useDownloadUrl } from '../../../composables/useDownloadUrl'
@@ -31,18 +30,31 @@ const isVisible = computed(
   () => isDownloadLinkRequestEnabled && isMobileUa.value
 )
 
-const STATUS_MESSAGE_KEYS: Partial<Record<FormStatus, TranslationKey>> = {
-  success: 'download.emailForm.success',
-  invalid: 'download.emailForm.invalidEmail',
-  error: 'download.emailForm.error'
-}
+const errorMessageId = useId()
+const successRegion = ref<HTMLParagraphElement | null>(null)
 
-const statusMessage = computed(() => {
-  const key = STATUS_MESSAGE_KEYS[status.value]
-  return key
-    ? t(key, locale).replace('{email}', () => submittedEmail.value)
+const successMessage = computed(() =>
+  status.value === 'success'
+    ? t('download.emailForm.success', locale).replace(
+        '{email}',
+        () => submittedEmail.value
+      )
     : ''
+)
+
+const errorMessage = computed(() => {
+  if (status.value === 'invalid')
+    return t('download.emailForm.invalidEmail', locale)
+  if (status.value === 'error') return t('download.emailForm.error', locale)
+  return ''
 })
+
+// Removing the form drops keyboard/SR focus, so move it to the success message.
+async function showSuccess() {
+  status.value = 'success'
+  await nextTick()
+  successRegion.value?.focus()
+}
 
 // The component mounts on every client; only visible (mobile) forms may load the SDK.
 onMounted(() => {
@@ -53,7 +65,7 @@ async function onSubmit() {
   if (status.value === 'pending') return
   if (decoy.value !== '') {
     submittedEmail.value = email.value
-    status.value = 'success'
+    await showSuccess()
     return
   }
   if (!EMAIL_PATTERN.test(email.value)) {
@@ -64,7 +76,7 @@ async function onSubmit() {
   status.value = 'pending'
   try {
     await requestDownloadLink(submittedEmail.value, locale)
-    status.value = 'success'
+    await showSuccess()
   } catch {
     status.value = 'error'
   }
@@ -98,6 +110,8 @@ async function onSubmit() {
           required
           autocomplete="email"
           :aria-label="t('download.emailForm.emailLabel', locale)"
+          :aria-invalid="status === 'invalid' || undefined"
+          :aria-describedby="errorMessage ? errorMessageId : undefined"
           :placeholder="t('download.emailForm.placeholder', locale)"
           class="bg-transparency-white-t4 h-16 w-full rounded-3xl border border-primary-comfy-canvas pr-14 pl-4 text-[13px] font-semibold text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/60"
         />
@@ -118,19 +132,28 @@ async function onSubmit() {
           <ArrowRight v-else class="size-5" aria-hidden="true" />
         </IconButton>
       </div>
+      <p
+        v-if="errorMessage"
+        :id="errorMessageId"
+        role="alert"
+        class="text-primary-comfy-orange -mt-2 text-sm"
+      >
+        {{ errorMessage }}
+      </p>
     </form>
+    <!-- Persistent live region: role="status" only announces reliably when the
+         element exists in the accessibility tree before its content changes. -->
     <p
+      ref="successRegion"
       role="status"
+      tabindex="-1"
       :class="
-        cn(
-          status === 'success' &&
-            'bg-transparency-white-t4 text-primary-warm-gray flex h-16 items-center rounded-3xl px-4 text-[13px] font-semibold wrap-break-word',
-          (status === 'invalid' || status === 'error') &&
-            'text-primary-comfy-orange mt-2 text-sm'
-        )
+        status === 'success'
+          ? 'bg-transparency-white-t4 text-primary-warm-gray flex h-16 items-center rounded-3xl px-4 text-[13px] font-semibold wrap-break-word focus:outline-none'
+          : undefined
       "
     >
-      {{ statusMessage }}
+      {{ successMessage }}
     </p>
   </div>
 </template>

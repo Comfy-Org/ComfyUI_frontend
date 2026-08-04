@@ -12,20 +12,25 @@ export const isDownloadLinkRequestEnabled = CUSTOMER_IO_WEBSITE_WRITE_KEY !== ''
 let analyticsPromise: Promise<Analytics> | null = null
 
 function loadAnalytics(): Promise<Analytics> {
-  analyticsPromise ??= import('@customerio/cdp-analytics-browser').then(
-    async ({ AnalyticsBrowser }) => {
+  analyticsPromise ??= import('@customerio/cdp-analytics-browser')
+    .then(async ({ AnalyticsBrowser }) => {
       const [analytics] = await AnalyticsBrowser.load({
         writeKey: CUSTOMER_IO_WEBSITE_WRITE_KEY
       })
       return analytics
-    }
-  )
+    })
+    .catch((err: unknown) => {
+      // Don't cache failures - let the next call retry the load.
+      analyticsPromise = null
+      throw err
+    })
   return analyticsPromise
 }
 
 export function preloadDownloadLinkAnalytics() {
   if (!isDownloadLinkRequestEnabled) return
-  void loadAnalytics()
+  // Preload is best-effort; a failure here will be retried on submit.
+  void loadAnalytics().catch(() => {})
 }
 
 export async function requestDownloadLink(email: string, locale: Locale) {

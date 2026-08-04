@@ -67,6 +67,22 @@ describe('customerio', () => {
     )
   })
 
+  it('retries the SDK load on the next submit instead of caching a failed load', async () => {
+    const { preloadDownloadLinkAnalytics, requestDownloadLink } =
+      await importModule('test-key')
+
+    hoisted.mockLoad.mockRejectedValueOnce(new Error('offline'))
+    preloadDownloadLinkAnalytics()
+    await expect(requestDownloadLink('a@example.com', 'en')).rejects.toThrow(
+      'offline'
+    )
+
+    await requestDownloadLink('a@example.com', 'en')
+
+    expect(hoisted.mockLoad).toHaveBeenCalledTimes(2)
+    expect(hoisted.mockTrack).toHaveBeenCalledTimes(1)
+  })
+
   it('loads the SDK once across preload and repeated submits', async () => {
     const { preloadDownloadLinkAnalytics, requestDownloadLink } =
       await importModule('test-key')

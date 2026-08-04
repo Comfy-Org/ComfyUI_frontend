@@ -204,11 +204,17 @@ test.describe('Download page @smoke', () => {
     ).toBeVisible()
 
     const events = () => captured.filter((capture) => capture.method === 'POST')
-    await expect
-      .poll(() => events().map((capture) => capture.path))
-      .toEqual(['/v1/i', '/v1/t'])
+    const paths = () => events().map((capture) => capture.path)
 
-    const [identify, track] = events()
+    // Poll until both expected calls arrive; tolerate unrelated SDK posts
+    // (e.g. sampled /m metrics), but keep identify-before-track ordering.
+    await expect
+      .poll(() => paths())
+      .toEqual(expect.arrayContaining(['/v1/i', '/v1/t']))
+    expect(paths().indexOf('/v1/i')).toBeLessThan(paths().indexOf('/v1/t'))
+
+    const identify = events().find((capture) => capture.path === '/v1/i')!
+    const track = events().find((capture) => capture.path === '/v1/t')!
     expect(identify.body?.userId).toBe('someone@example.com')
     expect(identify.body?.traits).toMatchObject({
       email: 'someone@example.com'
