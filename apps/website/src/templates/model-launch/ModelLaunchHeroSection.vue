@@ -22,7 +22,7 @@ const { locale = 'en', hero } = defineProps<{
       aria-hidden="true"
       width="1440"
       height="810"
-      class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+      class="aspect-21/9 w-full rounded-4xl border border-white/10 object-cover"
     />
 
     <div v-if="hero.videoSrc" class="relative">
