@@ -1,4 +1,5 @@
-import { setActivePinia, createPinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest'
 import { ref } from 'vue'
 
@@ -80,7 +81,7 @@ import { useBillingOperationStore } from './billingOperationStore'
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     vi.useFakeTimers()
     mockActiveWorkspaceId.value = 'workspace-1'
@@ -436,6 +437,72 @@ describe('billingOperationStore', () => {
         payment_intent_source: undefined,
         failure_category: 'unknown'
       })
+    })
+
+    it('stays silent when a checkout was superseded by a new plan choice', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'checkout_superseded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')?.status).toBe('failed')
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stage: 'failed',
+          billing_op_id: 'op-1',
+          failure_category: 'stale_operation'
+        })
+      )
+    })
+
+    it('categorises both events when a superseded op was a downgrade', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'checkout_superseded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription', {
+        downgradeToPersonal: {
+          memberRemovalCount: 2,
+          memberRemovalFailures: 0,
+          targetTier: 'free'
+        }
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      // Both emissions must agree: a downgrade that was merely replaced is not
+      // an unexplained billing failure in either event stream.
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'operation',
+          stage: 'failed',
+          failure_category: 'stale_operation'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'downgrade_to_personal',
+          stage: 'failed',
+          failure_category: 'stale_operation'
+        })
+      )
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ failure_category: 'unknown' })
+      )
     })
 
     it('uses default message when no error_message in response', async () => {
