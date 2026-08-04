@@ -179,7 +179,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       ) {
         void billingOperationStore.startOperation(
           status.pending_billing_op_id,
-          'subscription',
+          status.pending_billing_op_type === 'topup' ? 'topup' : 'subscription',
           undefined,
           status.action_url
         )
