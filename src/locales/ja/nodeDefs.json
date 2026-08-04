@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 用の映像＋音声のジョイントラテント。持続時間はモデルの 17k+5 フレームグリッド（24fps）に合わせて調整されます。",
+    "display_name": "Empty MiniMax H3 AV ラテント",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "24fps でのフレーム数。モデルの 17k+5 グリッドに切り上げられます（124 = 約5秒、学習範囲は約124-362、これ以上は未検証）"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "空のMochi潜在ビデオ",
     "inputs": {
@@ -5703,6 +5724,15 @@
       },
       "model_resolution": {
         "name": "解像度"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       },
       "prompt": {
         "name": "プロンプト",
@@ -8685,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "ビデオラテントとオーディオラテントを結合し、ジョイントAVラテントを作成します（任意のAVモデル、例：LTXVまたはMiniMax H3）。",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11370,6 +11401,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 画像から動画へ",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "最初のフレーム"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "last_frame": {
+        "name": "最後のフレーム"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "24fps でのフレーム数。モデルの 17k+5 グリッドに切り上げられます（124 = 約5秒、学習範囲は約124-362、これ以上は未検証）"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> のリファレンスコンディショニング（MiniMax H3用）。プロンプト時に同じタグを使用してください。",
+    "display_name": "MiniMax H3 リファレンスから動画へ",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "24fps でのフレーム数（124 = 約5秒、学習範囲は約124-362）"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "ref_audios": {
+        "name": "リファレンス音声"
+      },
+      "ref_image_size": {
+        "name": "リファレンス画像サイズ",
+        "tooltip": "リファレンス画像のサイズ設定。「match」は各リファレンスを生成画像のピクセル面積に合わせて縮小（アスペクト比維持）、「max」はリファレンスパイプラインの2048px短辺を使用し、最も高いアイデンティティ精度を実現します。リファレンストークンは全サンプリングステップで適用されるため、「max」は数倍遅くなる場合があります。"
+      },
+      "ref_images": {
+        "name": "リファレンス画像"
+      },
+      "ref_video_audios": {
+        "name": "リファレンス動画音声"
+      },
+      "ref_videos": {
+        "name": "リファレンス動画"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "ビデオ／オーディオフローのシフトを設定します。",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "オーディオシフト"
+      },
+      "shift_video": {
+        "name": "ビデオシフト"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
