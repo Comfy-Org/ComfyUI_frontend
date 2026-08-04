@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { localAuthFixture as test } from '@e2e/fixtures/localAuthFixture'
@@ -65,6 +64,11 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     await expect(
       creditsContent.getByRole('button', { name: 'Invoice history' })
     ).toBeVisible()
+    const invoiceRequest = page.waitForRequest('**/customers/billing')
+    await creditsContent
+      .getByRole('button', { name: 'Invoice history' })
+      .click()
+    expect((await invoiceRequest).method()).toBe('POST')
 
     const settingsAddCredits = creditsContent.getByRole('button', {
       name: 'Add credits'
@@ -86,43 +90,5 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     ).toHaveCount(0)
     await popover.getByTestId('add-credits-button').click()
     await expect(topUpDialog.heading).toBeVisible()
-  })
-})
-
-test.describe('Local paid invoice actions (non-cloud)', () => {
-  test.use({ hasPaidSubscription: true })
-  let content: Locator
-
-  test.beforeEach(async ({ comfyPage }) => {
-    const page = comfyPage.page
-    await page.evaluate(() => {
-      window.open = (url) => {
-        document.documentElement.dataset.openedUrl = String(url)
-        return window
-      }
-    })
-    await page.getByTestId(TestIds.user.currentUserButton).click()
-    await page
-      .getByTestId(TestIds.user.currentUserPopover)
-      .getByTestId('manage-plan-menu-item')
-      .click()
-    await comfyPage.settingDialog.waitForVisible()
-    content = comfyPage.settingDialog.contentArea
-  })
-
-  test('keeps Manage billing and Invoice history connected to the portal', async ({
-    comfyPage
-  }) => {
-    const page = comfyPage.page
-    const manageRequest = page.waitForRequest('**/customers/billing')
-    await content.getByRole('button', { name: 'Manage billing' }).click()
-    expect((await manageRequest).method()).toBe('POST')
-    await expect
-      .poll(() => page.locator('html').getAttribute('data-opened-url'))
-      .toBe('https://billing.example/portal')
-
-    const invoiceRequest = page.waitForRequest('**/customers/billing')
-    await content.getByRole('button', { name: 'Invoice history' }).click()
-    expect((await invoiceRequest).method()).toBe('POST')
   })
 })

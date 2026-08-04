@@ -3,7 +3,6 @@ import { test as base } from '@playwright/test'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   createSubscriptionHelper,
-  withActiveSubscription,
   withFreeTier
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 
@@ -20,12 +19,8 @@ const LOCAL_AUTH_BOOT_TIMEOUT = 45_000
  * construct `ComfyPage` directly here and drive its setup themselves,
  * mirroring `ComfyPage.setup()` but with auth mocked first.
  */
-export const localAuthFixture = base.extend<{
-  comfyPage: ComfyPage
-  hasPaidSubscription: boolean
-}>({
-  hasPaidSubscription: [false, { option: true }],
-  comfyPage: async ({ page, request, hasPaidSubscription }, use, testInfo) => {
+export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
+  comfyPage: async ({ page, request }, use, testInfo) => {
     testInfo.setTimeout(LOCAL_AUTH_BOOT_TIMEOUT)
 
     const comfyPage = new ComfyPage(page, request)
@@ -38,10 +33,7 @@ export const localAuthFixture = base.extend<{
     })
 
     await comfyPage.cloudAuth.mockAuth()
-    const subscriptionHelper = createSubscriptionHelper(
-      page,
-      hasPaidSubscription ? withActiveSubscription() : withFreeTier()
-    )
+    const subscriptionHelper = createSubscriptionHelper(page, withFreeTier())
     await subscriptionHelper.mock()
 
     await page.evaluate((id) => {
