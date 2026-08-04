@@ -1,58 +1,20 @@
-/* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
 import { cleanup, render } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
+const toastService = vi.hoisted(() => ({
+  add: vi.fn(),
+  remove: vi.fn(),
+  removeAllGroups: vi.fn()
+}))
 
 vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn(), remove: vi.fn(), removeAllGroups: vi.fn() })
+  useToast: () => toastService
 }))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => 'left' })
-}))
-
-const WINDOW_WIDTH = 1200
-const DEBOUNCE_MS = 100
-
-function stubRect(
-  element: HTMLElement,
-  left: number,
-  width: number,
-  top = 0,
-  height = 0
-): void {
-  element.getBoundingClientRect = () =>
-    ({
-      top,
-      bottom: top + height,
-      left,
-      right: left + width,
-      width,
-      height,
-      x: left,
-      y: top,
-      toJSON: () => ({})
-    }) as DOMRect
-}
-
-function addCanvasElement(
-  className: string,
-  left: number,
-  width: number,
-  top = 0,
-  height = 0
-): HTMLElement {
-  const element = document.createElement('div')
-  element.className = className
-  stubRect(element, left, width, top, height)
-  document.body.appendChild(element)
-  return element
-}
 
 function renderToast() {
   return render(GlobalToast, {
@@ -63,207 +25,44 @@ function renderToast() {
   })
 }
 
-function injectedToastStyle(): string {
-  return document.getElementById('dynamic-toast-style')?.textContent ?? ''
-}
-
-async function flushDebouncedPosition(): Promise<void> {
-  await nextTick()
-  vi.advanceTimersByTime(DEBOUNCE_MS)
-  await nextTick()
-}
-
-describe('GlobalToast dynamic positioning', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    localStorage.clear()
-    Object.defineProperty(window, 'innerWidth', {
-      configurable: true,
-      value: WINDOW_WIDTH
-    })
-  })
-
+describe('GlobalToast', () => {
   afterEach(() => {
     cleanup()
-    document.getElementById('dynamic-toast-style')?.remove()
-    document.body.replaceChildren()
-    vi.useRealTimers()
+    vi.clearAllMocks()
   })
 
-  it('anchors the toast offset to the graph panel while the agent panel is open', async () => {
-    addCanvasElement('graph-canvas-container', 0, 1000)
-    addCanvasElement('graph-canvas-panel', 0, 600)
-
+  it('forwards queued messages and clears the queue', async () => {
     renderToast()
-    useAgentPanelStore().isOpen = true
-    await flushDebouncedPosition()
+    const toastStore = useToastStore()
+    const message = { severity: 'error' as const, summary: 'Failed' }
 
-    expect(injectedToastStyle()).toContain('right: 620px')
-    expect(injectedToastStyle()).not.toContain('right: 220px')
-    expect(injectedToastStyle()).toContain(
-      '.graph-toast.p-toast.p-component.p-toast-top-right'
-    )
-    expect(injectedToastStyle()).toContain('width: 400px')
-    expect(injectedToastStyle()).toContain('min-height: 73px')
-    expect(injectedToastStyle()).toContain('margin-bottom: 16px')
-    expect(injectedToastStyle()).toContain('padding: 12px')
-    expect(injectedToastStyle()).toContain('gap: 8px')
-    expect(injectedToastStyle()).toContain('font-size: 18px')
-    expect(injectedToastStyle()).toContain('font-size: 16px')
-    expect(injectedToastStyle()).toContain('font-size: 14px')
-    expect(injectedToastStyle()).toContain('width: 28px')
-    expect(injectedToastStyle()).not.toContain('width: 400px !important')
+    toastStore.messagesToAdd = [message]
+    await nextTick()
+
+    expect(toastService.add).toHaveBeenCalledWith(message)
+    expect(toastStore.messagesToAdd).toEqual([])
   })
 
-  it('keeps the toast eight pixels from an adjacent docked agent panel', async () => {
-    addCanvasElement('graph-canvas-container', 0, 1000)
-    addCanvasElement('graph-canvas-panel', 0, 795)
-    addCanvasElement('docked-agent-panel', 800, 400)
-
+  it('forwards queued removals and clears the queue', async () => {
     renderToast()
-    useAgentPanelStore().isOpen = true
-    await flushDebouncedPosition()
+    const toastStore = useToastStore()
+    const message = { severity: 'info' as const, summary: 'Complete' }
 
-    expect(injectedToastStyle()).toContain('right: 408px')
+    toastStore.messagesToRemove = [message]
+    await nextTick()
+
+    expect(toastService.remove).toHaveBeenCalledWith(message)
+    expect(toastStore.messagesToRemove).toEqual([])
   })
 
-  it('matches the container anchor while the agent panel is closed', async () => {
-    addCanvasElement('graph-canvas-container', 0, 1000)
-    addCanvasElement('graph-canvas-panel', 0, 600)
-
+  it('removes all toast groups when requested', async () => {
     renderToast()
+    const toastStore = useToastStore()
+
+    toastStore.removeAllRequested = true
     await nextTick()
 
-    expect(injectedToastStyle()).toContain('right: 220px')
-  })
-
-  it('falls back to the graph canvas container when the graph panel is absent', async () => {
-    addCanvasElement('graph-canvas-container', 0, 1000)
-
-    renderToast()
-    await nextTick()
-
-    expect(injectedToastStyle()).toContain('right: 220px')
-  })
-
-  it('re-anchors when the agent panel opens', async () => {
-    addCanvasElement('graph-canvas-container', 0, 1000)
-    const panel = addCanvasElement('graph-canvas-panel', 0, 600)
-
-    renderToast()
-    await nextTick()
-    expect(injectedToastStyle()).toContain('right: 220px')
-
-    stubRect(panel, 0, 400)
-    useAgentPanelStore().isOpen = true
-    await flushDebouncedPosition()
-
-    expect(injectedToastStyle()).toContain('right: 820px')
-  })
-
-  it('re-anchors while the agent panel width changes during a drag', async () => {
-    addCanvasElement('graph-canvas-container', 0, 1000)
-    const panel = addCanvasElement('graph-canvas-panel', 0, 600)
-
-    renderToast()
-    useAgentPanelStore().isOpen = true
-    await flushDebouncedPosition()
-
-    stubRect(panel, 0, 350)
-    useAgentPanelStore().width = 720
-    await flushDebouncedPosition()
-
-    expect(injectedToastStyle()).toContain('right: 870px')
-  })
-
-  it('takes the vertical offset from the container even when the panel anchors the edge', async () => {
-    addCanvasElement('graph-canvas-container', 0, 1000, 0)
-    addCanvasElement('graph-canvas-panel', 0, 600, 88)
-
-    renderToast()
-    useAgentPanelStore().isOpen = true
-    await flushDebouncedPosition()
-
-    expect(injectedToastStyle()).toContain('top: 100px')
-    expect(injectedToastStyle()).toContain('right: 620px')
-    expect(injectedToastStyle()).not.toContain('top: 188px')
-  })
-
-  it('places the toast eight pixels below the action bar', async () => {
-    addCanvasElement('graph-canvas-container', 0, 1000)
-    const actionBar = addCanvasElement('action-bar', 700, 316, 80, 48)
-    const actionBarContainer = document.createElement('div')
-    actionBarContainer.className = 'actionbar-container'
-    actionBar.appendChild(actionBarContainer)
-
-    renderToast()
-    await nextTick()
-
-    const graphToast = document.querySelector('.graph-toast')
-    expect(graphToast).not.toBeNull()
-    graphToast!.classList.add('p-toast', 'p-component', 'p-toast-top-right')
-
-    const toastTop = Number.parseFloat(getComputedStyle(graphToast!).top)
-    expect(toastTop - actionBar.getBoundingClientRect().bottom).toBe(8)
-  })
-
-  it('keeps the last good position when the graph anchors are hidden', async () => {
-    const container = addCanvasElement('graph-canvas-container', 0, 1000)
-    const panel = addCanvasElement('graph-canvas-panel', 0, 600)
-
-    renderToast()
-    useAgentPanelStore().isOpen = true
-    await flushDebouncedPosition()
-    expect(injectedToastStyle()).toContain('right: 620px')
-
-    stubRect(container, 0, 0)
-    stubRect(panel, 0, 0)
-    useToastStore().messagesToAdd = [
-      { severity: 'info', summary: 'hidden anchors' }
-    ]
-    await nextTick()
-    await nextTick()
-
-    expect(injectedToastStyle()).toContain('right: 620px')
-  })
-
-  it('anchors beside the docked panel when the graph container is hidden', async () => {
-    const container = addCanvasElement('graph-canvas-container', 0, 1000)
-
-    renderToast()
-    await nextTick()
-    expect(injectedToastStyle()).toContain('right: 220px')
-
-    stubRect(container, 0, 0)
-    const panel = document.createElement('div')
-    panel.className = 'docked-agent-panel'
-    stubRect(panel, 780, 420, 40)
-    document.body.appendChild(panel)
-
-    useToastStore().messagesToAdd = [{ severity: 'info', summary: 'app mode' }]
-    await nextTick()
-    await nextTick()
-
-    expect(injectedToastStyle()).toContain('right: 440px')
-    expect(injectedToastStyle()).toContain('top: 140px')
-  })
-
-  it('re-anchors from the live DOM whenever a toast is shown', async () => {
-    addCanvasElement('graph-canvas-container', 0, 1000)
-    const panel = addCanvasElement('graph-canvas-panel', 0, 600)
-
-    renderToast()
-    useAgentPanelStore().isOpen = true
-    await flushDebouncedPosition()
-    expect(injectedToastStyle()).toContain('right: 620px')
-
-    stubRect(panel, 0, 500)
-    useToastStore().messagesToAdd = [
-      { severity: 'info', summary: 'position test' }
-    ]
-    await nextTick()
-    await nextTick()
-
-    expect(injectedToastStyle()).toContain('right: 720px')
+    expect(toastService.removeAllGroups).toHaveBeenCalledOnce()
+    expect(toastStore.removeAllRequested).toBe(false)
   })
 })

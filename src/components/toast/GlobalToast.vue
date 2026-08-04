@@ -1,5 +1,8 @@
 <template>
-  <Toast class="graph-toast" />
+  <Toast
+    position="bottom-right"
+    class="graph-toast top-[calc(anchor(--graph-canvas-panel_top,1rem)+0.25rem)] left-[calc(anchor(--graph-canvas-panel_right,anchor(--docked-agent-panel_left,calc(100vw-0.75rem)))-25.5rem)] z-10000 h-fit w-100 [&_.p-toast-close-button]:size-7 [&_.p-toast-close-icon]:size-4 [&_.p-toast-close-icon]:text-base [&_.p-toast-detail]:text-sm [&_.p-toast-message]:mb-4 [&_.p-toast-message]:min-h-[73px] [&_.p-toast-message-content]:gap-2 [&_.p-toast-message-content]:p-3 [&_.p-toast-message-icon]:size-4.5 [&_.p-toast-message-icon]:text-lg [&_.p-toast-message-text]:gap-2 [&_.p-toast-summary]:text-base"
+  />
   <Toast group="billing-operation" position="top-right">
     <template #message="slotProps">
       <div class="flex items-center gap-2">
@@ -11,21 +14,14 @@
 </template>
 
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { nextTick, watch } from 'vue'
+import { watch } from 'vue'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const toast = useToast()
 const toastStore = useToastStore()
-const settingStore = useSettingStore()
-const { isOpen: agentPanelOpen, width: agentPanelWidth } =
-  storeToRefs(useAgentPanelStore())
 
 watch(
   () => toastStore.messagesToAdd,
@@ -38,7 +34,6 @@ watch(
       toast.add(message)
     })
     toastStore.messagesToAdd = []
-    void nextTick(updateToastPosition)
   },
   { deep: true }
 )
@@ -66,107 +61,5 @@ watch(
       toastStore.removeAllRequested = false
     }
   }
-)
-
-function visibleRect(target: string | Element | null): DOMRect | undefined {
-  const element =
-    typeof target === 'string' ? document.querySelector(target) : target
-  const rect = element?.getBoundingClientRect()
-  return rect !== undefined && rect.width > 0 ? rect : undefined
-}
-
-function updateToastPosition() {
-  const container = visibleRect('.graph-canvas-container')
-  // App mode hides the graph container; anchor beside the docked panel there.
-  const anchor = container ?? visibleRect('.docked-agent-panel')
-  if (anchor === undefined) return
-  // With the agent panel closed the pane gutter still offsets the splitter
-  // rect, so only its edge counts while the panel actually takes space.
-  const edge = container
-    ? agentPanelOpen.value
-      ? (visibleRect('.graph-canvas-panel') ?? container)
-      : container
-    : undefined
-  const dockedPanel = agentPanelOpen.value
-    ? visibleRect('.docked-agent-panel')
-    : undefined
-  const actionBar = visibleRect(
-    document.querySelector('.actionbar-container')?.parentElement ?? null
-  )
-  const rightEdge =
-    edge === undefined
-      ? anchor.left - 20
-      : dockedPanel !== undefined && dockedPanel.left - 8 <= edge.right
-        ? dockedPanel.left - 8
-        : edge.right - 20
-  const right = window.innerWidth - rightEdge
-  const top = actionBar === undefined ? anchor.top + 100 : actionBar.bottom + 8
-  const styleElement =
-    document.getElementById('dynamic-toast-style') || createStyleElement()
-
-  styleElement.textContent = `
-    .p-toast.p-component.p-toast-top-right {
-      top: ${top}px !important;
-      right: ${right}px !important;
-       z-index: 10000 !important;
-    }
-    .graph-toast.p-toast.p-component.p-toast-top-right {
-      width: 400px;
-    }
-    .graph-toast .p-toast-message {
-      min-height: 73px;
-      margin-bottom: 16px;
-    }
-    .graph-toast .p-toast-message-content {
-      padding: 12px;
-      gap: 8px;
-    }
-    .graph-toast .p-toast-message-icon {
-      width: 18px;
-      height: 18px;
-      font-size: 18px;
-    }
-    .graph-toast .p-toast-message-text {
-      gap: 8px;
-    }
-    .graph-toast .p-toast-summary {
-      font-size: 16px;
-    }
-    .graph-toast .p-toast-detail {
-      font-size: 14px;
-    }
-    .graph-toast .p-toast-close-button {
-      width: 28px;
-      height: 28px;
-    }
-    .graph-toast .p-toast-close-icon {
-      width: 16px;
-      height: 16px;
-      font-size: 16px;
-    }
-  `
-}
-
-function createStyleElement() {
-  const style = document.createElement('style')
-  style.id = 'dynamic-toast-style'
-  document.head.appendChild(style)
-  return style
-}
-
-watch(
-  () => settingStore.get('Comfy.UseNewMenu'),
-  () => nextTick(updateToastPosition),
-  { immediate: true }
-)
-watch(
-  () => settingStore.get('Comfy.Sidebar.Location'),
-  () => nextTick(updateToastPosition),
-  { immediate: true }
-)
-watchDebounced(
-  [agentPanelOpen, agentPanelWidth],
-  () => nextTick(updateToastPosition),
-  { debounce: 100 }
 )
 </script>
