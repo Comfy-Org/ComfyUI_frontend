@@ -402,6 +402,88 @@ jobs:
             echo "$CHANGES" | wc -l
           fi
 
+      # Regeneration has no notion of *whether* a baseline drifted: it rewrites
+      # whatever it captured. Screenshot capture is not bit-deterministic (text
+      # glyph rasterization varies run to run), so a baseline that never
+      # actually changed can be rewritten, and a baseline failing from a real
+      # visual regression can be laundered into an accepted one. Reviewing that
+      # means eyeballing binary diffs, which is exactly the review binary files
+      # defeat. Publish a per-file magnitude so there is a number to review.
+      - name: Report snapshot diff magnitudes
+        id: diff-report
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          report='/tmp/diff-report.md'
+          : > "$report"
+
+          mapfile -t changed < <(
+            git status --porcelain=v1 --untracked-files=all -- browser_tests/ |
+              sed -e 's/^...//' -e 's/^"//' -e 's/"$//'
+          )
+          if [ "${#changed[@]}" -eq 0 ]; then
+            echo "No snapshot changes to measure"
+            exit 0
+          fi
+
+          if command -v compare >/dev/null 2>&1; then
+            echo "Measuring ${#changed[@]} rewritten snapshot(s) with ImageMagick"
+          else
+            echo "::warning::ImageMagick 'compare' unavailable; falling back to byte sizes, which cannot distinguish a real visual change from rasterization noise."
+          fi
+
+          small=0
+          {
+            echo "| snapshot | status | changed pixels |"
+            echo "| --- | --- | --- |"
+          } >> "$report"
+
+          tmp_old="$(mktemp)"
+          for f in "${changed[@]}"; do
+            [ -f "$f" ] || continue
+            name="${f#browser_tests/}"
+
+            if ! git show "HEAD:$f" > "$tmp_old" 2>/dev/null; then
+              echo "| \`${name}\` | new | n/a |" >> "$report"
+              continue
+            fi
+
+            px=''
+            if command -v compare >/dev/null 2>&1; then
+              px=$(compare -metric AE "$tmp_old" "$f" null: 2>&1 >/dev/null)
+              # Non-numeric means differing geometry or a decode failure.
+              case "$px" in
+                ''|*[!0-9]*) px='' ;;
+              esac
+            fi
+
+            if [ -n "$px" ]; then
+              echo "| \`${name}\` | modified | ${px} |" >> "$report"
+              # Sub-threshold rewrites match the glyph-rasterization signature
+              # rather than an intended visual change. Advisory only.
+              if [ "$px" -gt 0 ] && [ "$px" -le 2000 ]; then
+                small=$((small + 1))
+              fi
+            else
+              old_b=$(wc -c < "$tmp_old" | tr -d ' ')
+              new_b=$(wc -c < "$f" | tr -d ' ')
+              echo "| \`${name}\` | modified | ${old_b}B -> ${new_b}B |" >> "$report"
+            fi
+          done
+          rm -f "$tmp_old"
+
+          if [ "$small" -gt 0 ]; then
+            echo "::warning::${small} rewritten baseline(s) changed by <=2000 pixels. Screenshot capture is not bit-deterministic - small diffs are usually text rasterization noise, not an intended change. Confirm each rewrite corresponds to a test you expected to change before merging."
+          fi
+
+          cat "$report"
+          {
+            echo "### Rewritten snapshots (${#changed[@]})"
+            echo
+            cat "$report"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Commit updated expectations
         id: commit
         run: |
@@ -422,7 +504,23 @@ jobs:
 
           git add browser_tests/
 
-          git commit -m "[automated] Update test expectations"
+          # Carry the magnitude table into the commit body so the numbers live
+          # with the binary diff a reviewer would otherwise have to eyeball.
+          # Built with cat, never a heredoc: the table contains backticks and
+          # arbitrary file names that must not be evaluated by the shell.
+          {
+            echo '[automated] Update test expectations'
+            if [ -s /tmp/diff-report.md ]; then
+              echo
+              cat /tmp/diff-report.md
+              echo
+              echo 'Screenshot capture is not bit-deterministic; small pixel'
+              echo 'deltas are usually text rasterization noise. Confirm each'
+              echo 'rewrite corresponds to a test expected to change.'
+            fi
+          } > /tmp/commit-msg.txt
+
+          git commit -F /tmp/commit-msg.txt
 
           echo "Pushing to ${{ needs.setup.outputs.branch }}..."
           git push origin ${{ needs.setup.outputs.branch }}
