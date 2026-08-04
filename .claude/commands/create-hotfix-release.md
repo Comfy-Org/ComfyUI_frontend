@@ -280,7 +280,7 @@ For each commit:
 5. **Click "Publish release"**
 6. **CONFIRMATION REQUIRED**: Draft release published with "latest" unchecked?
 
-Note: the `enforce-latest-release.yml` workflow now auto-corrects the "latest" flag back to the highest stable semver release within a minute if this step is missed, so this checkbox is no longer a silent single point of failure. Still uncheck it manually — the workflow is a safety net, not a replacement for doing this right the first time.
+Note: the `release-enforce-latest.yaml` workflow now auto-corrects the "latest" flag back to the highest stable semver release within a minute if this step is missed, so this checkbox is no longer a silent single point of failure. Still uncheck it manually — the workflow is a safety net, not a replacement for doing this right the first time.
 
 ### Step 14: Create ComfyUI Requirements.txt Update PR
 
