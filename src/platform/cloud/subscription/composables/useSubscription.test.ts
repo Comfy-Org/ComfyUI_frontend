@@ -16,6 +16,7 @@ const {
   mockIsCloud,
   mockAuthStoreInitialized,
   mockGetBillingStatus,
+  mockActiveWorkspaceId,
   mockSetWorkspaceBillingRail,
   mockLocalStorage
 } = vi.hoisted(() => ({
@@ -23,6 +24,7 @@ const {
   mockIsCloud: { value: true },
   mockAuthStoreInitialized: { value: true },
   mockGetBillingStatus: vi.fn(),
+  mockActiveWorkspaceId: { value: 'workspace-123' as string | null },
   mockSetWorkspaceBillingRail: vi.fn(),
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
@@ -146,7 +148,9 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    activeWorkspaceId: 'workspace-123',
+    get activeWorkspaceId() {
+      return mockActiveWorkspaceId.value
+    },
     setWorkspaceBillingRail: mockSetWorkspaceBillingRail
   })
 }))
@@ -200,6 +204,7 @@ describe('useSubscription', () => {
     mockUserId.value = 'user-123'
     mockIsCloud.value = true
     mockAuthStoreInitialized.value = true
+    mockActiveWorkspaceId.value = 'workspace-123'
     mockGetBillingStatus.mockResolvedValue({
       is_active: false,
       has_funds: false,
@@ -358,6 +363,31 @@ describe('useSubscription', () => {
         'workspace-123',
         'stripe'
       )
+    })
+
+    it('does not apply status after the active workspace changes', async () => {
+      let resolveStatus: (value: {
+        is_active: boolean
+        has_funds: boolean
+        billing_rail: 'stripe'
+      }) => void = () => {}
+      mockGetBillingStatus.mockReturnValue(
+        new Promise((resolve) => {
+          resolveStatus = resolve
+        })
+      )
+
+      const { fetchStatus } = useSubscriptionWithScope()
+      const statusRequest = fetchStatus()
+      mockActiveWorkspaceId.value = 'workspace-456'
+      resolveStatus({
+        is_active: true,
+        has_funds: true,
+        billing_rail: 'stripe'
+      })
+      await statusRequest
+
+      expect(mockSetWorkspaceBillingRail).not.toHaveBeenCalled()
     })
 
     it('coalesces concurrent callers into one fetch', async () => {

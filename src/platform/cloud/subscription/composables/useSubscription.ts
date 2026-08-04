@@ -313,6 +313,7 @@ function useSubscriptionInternal() {
 
   // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
   let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
+  let latestStatusRequestId = 0
 
   async function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
     if (inFlightStatusFetch) return inFlightStatusFetch
@@ -325,6 +326,8 @@ function useSubscriptionInternal() {
   async function performFetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
     if (!isCloud) return null
 
+    const requestId = ++latestStatusRequestId
+    const workspaceId = workspaceStore.activeWorkspaceId
     let statusData: BillingStatusResponse
     try {
       statusData = await workspaceApi.getBillingStatus()
@@ -335,10 +338,16 @@ function useSubscriptionInternal() {
         })
       )
     }
+    if (
+      requestId !== latestStatusRequestId ||
+      workspaceId !== workspaceStore.activeWorkspaceId
+    ) {
+      return null
+    }
     subscriptionStatus.value = statusData
-    if (workspaceStore.activeWorkspaceId && statusData.billing_rail) {
+    if (workspaceId && statusData.billing_rail) {
       workspaceStore.setWorkspaceBillingRail(
-        workspaceStore.activeWorkspaceId,
+        workspaceId,
         statusData.billing_rail
       )
     }
