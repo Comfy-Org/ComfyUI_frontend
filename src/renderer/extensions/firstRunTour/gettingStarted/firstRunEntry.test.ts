@@ -16,7 +16,8 @@ const mocks = vi.hoisted(() => ({
   tourFlag: true,
   execute: vi.fn(),
   settings: {} as Record<string, unknown>,
-  setSetting: vi.fn()
+  setSetting: vi.fn(),
+  beginTour: vi.fn()
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -65,6 +66,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
     get: (key: string) => mocks.settings[key],
     set: mocks.setSetting
   })
+}))
+
+vi.mock('../tour/useFirstRunTourController', () => ({
+  useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
 
 // createSharedComposable caches across calls; each test needs its own instance.
@@ -171,6 +176,99 @@ describe('useFirstRunEntry', () => {
       ).toBe(true)
     }
   )
+
+  describe('a workflow that arrived by URL', () => {
+    it.for(['loaded', 'loaded-without-assets'] as const)(
+      'offers the tour over a shared workflow that %s, which has no template id',
+      async (sharedStatus) => {
+        const entry = await freshEntry()
+
+        await entry.handleUrlWorkflow('url-intent', undefined, sharedStatus)
+
+        expect(
+          mocks.beginTour,
+          'a share link is the case no pin can ever cover'
+        ).toHaveBeenCalledWith(undefined)
+      }
+    )
+
+    it('passes a template id through so its pins beat the heuristic', async () => {
+      const entry = await freshEntry()
+
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(mocks.beginTour).toHaveBeenCalledWith('image_z_image_turbo')
+    })
+
+    it('drops the template pins when a share link replaced the graph', async () => {
+      const entry = await freshEntry()
+
+      await entry.handleUrlWorkflow(
+        'url-intent',
+        'image_z_image_turbo',
+        'loaded'
+      )
+
+      expect(
+        mocks.beginTour,
+        'pinned ids are graph-local, so validating them against a stranger workflow spotlights whichever node happens to share the id'
+      ).toHaveBeenCalledWith(undefined)
+    })
+
+    it('leaves the completion flag to the startup handler that already settled it', async () => {
+      const entry = await freshEntry()
+      await entry.handleStartupOutcome('url-intent')
+      mocks.setSetting.mockClear()
+      mocks.beginTour.mockResolvedValue(false)
+
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(
+        mocks.setSetting,
+        'writing it again here would mark onboarding done for a user whose tour never started, and postpone() exists to offer that user the tour again'
+      ).not.toHaveBeenCalled()
+    })
+
+    it.for(['failed', 'cancelled', 'not-present'] as const)(
+      'offers no tour when nothing the user asked for arrived (%s)',
+      async (sharedStatus) => {
+        const entry = await freshEntry()
+
+        await entry.handleUrlWorkflow('url-intent', undefined, sharedStatus)
+
+        expect(
+          mocks.beginTour,
+          'touring a graph the user never asked for is worse than no tour'
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    it('leaves a non-candidate alone', async () => {
+      mocks.isNewUser = false
+      const entry = await freshEntry()
+
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(
+        mocks.beginTour,
+        'a returning user opening a share link must not be toured'
+      ).not.toHaveBeenCalled()
+    })
+
+    it.for(['fresh', 'restored'] as const)(
+      'does not fire on a %s startup',
+      async (outcome: StartupOutcome) => {
+        const entry = await freshEntry()
+
+        await entry.handleUrlWorkflow(outcome, 'image_z_image_turbo')
+
+        expect(
+          mocks.beginTour,
+          'only a URL intent has a workflow on the canvas to tour'
+        ).not.toHaveBeenCalled()
+      }
+    )
+  })
 
   it('leaves a completed user alone', async () => {
     mocks.settings['Comfy.TutorialCompleted'] = true

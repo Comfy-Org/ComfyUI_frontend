@@ -26,6 +26,10 @@ const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
 const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
+// Failure reason for a checkout the user replaced by picking a different plan
+// mid-flow. The operation is terminal-failed only because it never completed —
+// its replacement is proceeding normally, so there is nothing to report.
+const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
@@ -289,6 +293,19 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     const telemetry = useTelemetry()
     const durationMs = Date.now() - operation.attemptStartedAt
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'succeeded',
+      outcome: 'success',
+      billing_op_id: opId,
+      operation_type: operation.type,
+      tier: operation.tier,
+      cycle: operation.cycle,
+      checkout_type: operation.checkoutType,
+      payment_intent_source: operation.paymentIntentSource,
+      duration_ms: durationMs
+    })
+
     if (operation.type === 'subscription') {
       telemetry?.trackBillingEvent({
         operation: 'subscription_checkout',
@@ -328,15 +345,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: opId,
-        duration_ms: durationMs
-      })
-    } else {
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'succeeded',
-        outcome: 'success',
-        billing_op_id: opId,
-        operation_type: 'cancel',
         duration_ms: durationMs
       })
     }
@@ -383,6 +391,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation) return
 
+    const superseded = errorMessage === CHECKOUT_SUPERSEDED_REASON
+    const failureCategory = superseded
+      ? 'stale_operation'
+      : categorizePollFailure(operation.type)
     const defaultMessage = failureMessage(operation.type)
     const detail =
       operation.type === 'subscription'
@@ -393,7 +405,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
-    const failureCategory = categorizePollFailure(operation.type)
     const durationMs = Date.now() - operation.attemptStartedAt
     telemetry?.trackBillingEvent({
       operation: 'operation',
@@ -422,7 +433,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel') {
+    if (operation.type !== 'cancel' && !superseded) {
       useToastStore().add({
         severity: 'error',
         summary: defaultMessage,
