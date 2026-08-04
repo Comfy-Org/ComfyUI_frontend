@@ -436,11 +436,17 @@ export class ComfyPage {
         if (type !== 'xhr' && type !== 'fetch') return
         const url = response.url()
         if (!url.includes('localhost') || !url.includes('/api/')) return
-        reject(
-          new Error(
-            `cloud auth failed: HTTP ${status} ${response.request().method()} ${url}`
-          )
-        )
+        const method = response.request().method()
+        // testcloud started 403ing the Firebase-token settings write
+        // (~2026-08-03, probe run 30873678137: currentUser=true, firebase
+        // fallback taken, write still 403) while other endpoints may still
+        // accept the token. A boot-window settings-write rejection must not
+        // kill the test before that is observable.
+        const settingsWrite =
+          (method === 'POST' || method === 'PUT') &&
+          url.includes('/api/settings')
+        if (settingsWrite) return
+        reject(new Error(`cloud auth failed: HTTP ${status} ${method} ${url}`))
       }
       this.page.on('response', onAuthFail)
     })
