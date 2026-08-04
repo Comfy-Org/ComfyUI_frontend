@@ -14,7 +14,17 @@ export class TopUpCreditsDialog extends BaseDialog {
   readonly pricingLink: Locator
 
   constructor(page: Page) {
-    super(page)
+    // Scope to the dialog containing the top-up heading rather than the
+    // generic `[role="dialog"]` fallback: this dialog can be opened from
+    // within another already-open dialog (e.g. Settings > Credits), and
+    // Reka renders each stacked dialog as its own independent `role="dialog"`
+    // root, so the generic fallback would match both simultaneously.
+    super(
+      page,
+      page.getByRole('dialog').filter({
+        has: page.getByRole('heading', { name: 'Add more credits' })
+      })
+    )
     this.heading = this.root.getByRole('heading', { name: 'Add more credits' })
     this.insufficientHeading = this.root.getByRole('heading', {
       name: 'Add more credits to run'
