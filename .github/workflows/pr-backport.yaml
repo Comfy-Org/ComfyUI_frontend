@@ -411,6 +411,8 @@ jobs:
             manually onto branch `${BACKPORT_BRANCH}` (from `origin/${target}`) and
             open a PR to `${target}`.
 
+            ${STACK_HINT}
+
             <details>
             <summary>📄 Conflicting files</summary>
 
@@ -489,8 +491,25 @@ jobs:
               CONFLICTS_BLOCK=$(echo "${conflicts}" | tr ',' '\n')
               MERGE_COMMIT_SHORT="${MERGE_COMMIT:0:7}"
 
-              export target MERGE_COMMIT_SHORT BACKPORT_BRANCH CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR
-              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${BACKPORT_BRANCH} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR}' <<<"$COMMENT_BODY_TEMPLATE")
+              # Each labelled PR is cherry-picked onto the target independently,
+              # so a *stack* of PRs conflicts at every level above the first
+              # until the PR below it has actually merged into the target
+              # branch. Those conflicts are an artifact of picking in isolation,
+              # not a real incompatibility. If other backport PRs are still open
+              # against this target, say so rather than let the failure read as
+              # a genuine conflict. Best-effort only: never fail the comment.
+              STACK_HINT=""
+              OPEN_BACKPORTS=$(
+                gh pr list --repo "${GITHUB_REPOSITORY}" --state open \
+                  --base "${target}" --label backport --json number \
+                  --jq '[.[].number | "#\(.)"] | join(", ")' 2>/dev/null
+              ) || OPEN_BACKPORTS=""
+              if [ -n "${OPEN_BACKPORTS}" ]; then
+                STACK_HINT="> **This may be a stacking conflict rather than a real one.** ${OPEN_BACKPORTS} are still open against \`${target}\`. If this PR sits on top of any of them, the conflict will disappear once they merge — wait for that, then remove and re-add the \`needs-backport\` label to re-run this workflow."
+              fi
+
+              export target MERGE_COMMIT_SHORT BACKPORT_BRANCH CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR STACK_HINT
+              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${BACKPORT_BRANCH} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR} ${STACK_HINT}' <<<"$COMMENT_BODY_TEMPLATE")
 
               post_comment "${COMMENT_BODY}" "cherry-pick conflict on ${target} (backport manually onto ${BACKPORT_BRANCH})"
             fi
