@@ -34,6 +34,7 @@ import type {
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
@@ -842,7 +843,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override addCustomWidget<TPlainWidget extends IBaseWidget>(
     customWidget: TPlainWidget
-  ): TPlainWidget {
+  ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
     const widget = toConcreteWidget(customWidget, this, false) ?? customWidget
     this._extraWidgets.push(widget)
     this._widgetSlotsDirty = true
@@ -851,7 +852,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       widget.setNodeId(this.id)
     }
 
-    return widget as TPlainWidget
+    return widget
   }
 
   override removeWidget(widget: IBaseWidget): void {
