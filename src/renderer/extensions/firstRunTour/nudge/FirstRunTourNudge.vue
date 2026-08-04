@@ -7,7 +7,12 @@
     class="fixed right-0 bottom-0 z-1000 flex w-80 animate-in flex-col overflow-hidden rounded-tl-xl border-t border-l border-border-default/50 bg-base-background shadow-lg duration-500 fade-in-0"
   >
     <div class="relative h-50 w-full bg-secondary-background">
-      <img :src="NUDGE_IMAGE" alt="" class="size-full object-cover" />
+      <img
+        :src="NUDGE_IMAGE"
+        alt=""
+        data-testid="first-run-nudge-image"
+        class="size-full object-cover"
+      />
       <Button
         class="absolute top-2 right-2 opacity-50 hover:opacity-100"
         variant="secondary"
@@ -64,7 +69,16 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 
-const NUDGE_IMAGE = '/assets/images/og-image.png'
+/**
+ * The card placeholder the template thumbnails already fall back to — sized and
+ * framed for a card, and owned by the UI.
+ *
+ * This must never point back at `og-image.png`: that file is the site's Open
+ * Graph card, so whoever rotates the social preview would silently redraw
+ * onboarding, and it is a Comfy Cloud ad besides. A dedicated illustration from
+ * design belongs here; a placeholder is the stopgap, not the OG banner.
+ */
+const NUDGE_IMAGE = '/assets/images/default-template.png'
 
 /** Delayed, so the finished workflow is seen before this fades in over it. */
 const APPEAR_DELAY_MS = 1500

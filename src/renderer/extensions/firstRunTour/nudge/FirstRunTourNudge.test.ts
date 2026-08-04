@@ -100,6 +100,21 @@ describe('FirstRunTourNudge', () => {
     })
   })
 
+  it('never illustrates itself with the Open Graph card', async () => {
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    const src = screen.getByTestId('first-run-nudge-image').getAttribute('src')
+    expect(src, 'the nudge renders an illustration').toBe(
+      '/assets/images/default-template.png'
+    )
+    expect(
+      src,
+      'og-image.png is the social preview: rotating it would silently redraw onboarding'
+    ).not.toContain('og-image')
+  })
+
   it('waits out a dialog that is already open', async () => {
     mocks.nudgeArmed.value = true
     mocks.openDialogs.value = ['some-dialog']
