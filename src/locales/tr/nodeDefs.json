@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 için birleşik video+ses latent. Süre, modelin 17k+5 kare ızgarasına 24 fps'de yuvarlanır.",
+    "display_name": "Empty MiniMax H3 AV Latent",
+    "inputs": {
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "24 fps'de kare sayısı, modelin 17k+5 ızgarasına yukarı yuvarlanır (124 = ~5sn; eğitilmiş aralık ~124-362, daha uzun test edilmemiştir)"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "BoşMochiGizliVideo",
     "inputs": {
@@ -5703,6 +5724,15 @@
       },
       "model_resolution": {
         "name": "çözünürlük"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       },
       "prompt": {
         "name": "istem",
@@ -8685,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "Bir video latent ve bir ses latentini birleşik bir AV latentine birleştirir (herhangi bir AV modeli, örn. LTXV veya MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11370,6 +11401,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Görüntüden Videoya",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "ilk_kare"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "last_frame": {
+        "name": "son_kare"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "24 fps'de kare sayısı, modelin 17k+5 ızgarasına yukarı yuvarlanır (124 = ~5sn; eğitilmiş aralık ~124-362, daha uzun test edilmemiştir)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> referans koşullandırması MiniMax H3 için. Prompt verirken aynı etiketleri kullanın.",
+    "display_name": "MiniMax H3 Referanstan Videoya",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "24 fps'de kare sayısı (124 = ~5sn, eğitilmiş aralık ~124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "ref_sesler"
+      },
+      "ref_image_size": {
+        "name": "ref_görüntü_boyutu",
+        "tooltip": "Referans görüntü boyutlandırması. 'match', her referansı (sadece küçültülerek, oranı koruyarak) oluşturulan piksel alanına ölçekler; 'max', referans hattının 2048px kısa kenarını en iyi kimlik benzerliği için kullanır. Referans tokenları her örnekleme adımında kalır, bu yüzden 'max' birkaç kat daha yavaş olabilir."
+      },
+      "ref_images": {
+        "name": "ref_görüntüler"
+      },
+      "ref_video_audios": {
+        "name": "ref_video_sesleri"
+      },
+      "ref_videos": {
+        "name": "ref_videolar"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "Video/ses akış kaymalarını ayarlayın.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "ses_kaydır"
+      },
+      "shift_video": {
+        "name": "video_kaydır"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

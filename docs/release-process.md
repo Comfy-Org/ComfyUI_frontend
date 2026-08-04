@@ -76,10 +76,9 @@ and npm (`@comfyorg/comfyui-frontend-types`).
 
 ## Weekly ComfyUI Integration
 
-`release-biweekly-comfyui.yaml` runs every Monday — if the next `core/`
+`release-weekly-comfyui.yaml` runs every Monday — if the next `core/`
 branch has unreleased commits, it triggers a patch bump and drafts a PR to
-`Comfy-Org/ComfyUI` updating `requirements.txt`. (Filename retains the
-`biweekly` name for run history; the cadence is now weekly.)
+`Comfy-Org/ComfyUI` updating `requirements.txt`.
 
 ## Workflows
 
@@ -88,7 +87,7 @@ branch has unreleased commits, it triggers a patch bump and drafts a PR to
 | `release-version-bump.yaml`      | Bump version, create Release PR                  |
 | `release-draft-create.yaml`      | Build + publish to GitHub/PyPI/npm               |
 | `release-branch-create.yaml`     | Create `core/` + `cloud/` branches (minor/major) |
-| `release-biweekly-comfyui.yaml`  | Weekly auto-patch + ComfyUI requirements PR      |
+| `release-weekly-comfyui.yaml`    | Weekly auto-patch + ComfyUI requirements PR      |
 | `pr-backport.yaml`               | Cherry-pick fixes to stable branches             |
 | `cloud-backport-tag.yaml`        | Tag cloud branch merges                          |
 | `pr-assign-release-sheriff.yaml` | Assign on-call sheriff to backport/release PRs   |

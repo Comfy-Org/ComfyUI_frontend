@@ -12,7 +12,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import {
   mockWorkspaceTokenMint,
   workspace
@@ -78,6 +77,7 @@ async function mockCloudBoot(page: Page, billingControlEnabled = true) {
     r.fulfill(
       jsonRoute({
         team_workspaces_enabled: true,
+        consolidated_billing_enabled: true,
         billing_control_enabled: billingControlEnabled
       } satisfies RemoteConfig)
     )
@@ -338,7 +338,7 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
         return window
       }
     })
-    await new CloudWorkspaceMockHelper(page).setup()
+    await mockCloudBoot(page)
     await page.route('**/api/settings/**', (route) => {
       if (route.request().method() !== 'GET') return route.fallback()
       return route.fulfill(jsonRoute({}))
@@ -373,14 +373,10 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
       )
     })
 
-    const settingsDialog = await openSettings(page)
-    await settingsDialog
-      .getByRole('combobox', { name: 'Search Settings...' })
-      .focus()
-    await page.keyboard.press('Escape')
-    await expect(settingsDialog).toBeHidden()
+    const content = await openPlanAndCredits(page)
     topupDialog = new TopUpCreditsDialog(page)
-    await topupDialog.open()
+    await content.getByRole('button', { name: 'Add credits' }).click()
+    await topupDialog.waitForVisible()
   })
 
   test('opens verification when the top-up operation requires authentication', async ({
@@ -388,6 +384,19 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
   }) => {
     await topupDialog.root.getByRole('button', { name: 'Add credits' }).click()
 
+    await expect(
+      topupDialog.root.getByRole('heading', { name: 'Confirm' })
+    ).toBeVisible()
+    await expect(
+      topupDialog.root.getByRole('button', { name: 'Back' })
+    ).toBeEnabled()
+    expect(operationPollRequests).toHaveLength(0)
+
+    await topupDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
+
+    await expect(
+      topupDialog.root.getByRole('button', { name: 'Back' })
+    ).toBeDisabled()
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
     const verificationButton = topupDialog.root.getByRole('button', {
       name: 'Complete verification'
