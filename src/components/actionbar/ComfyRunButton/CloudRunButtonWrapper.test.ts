@@ -203,6 +203,35 @@ describe('CloudRunButtonWrapper', () => {
     })
   })
 
+  it('does not update a replacement dialog after unmount', async () => {
+    let resolvePortal!: () => void
+    state.manageSubscription.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolvePortal = resolve
+        })
+    )
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'paused'
+    const { unmount } = renderWrapper()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment to run' })
+    )
+    const dialog = state.showLayoutDialog.mock.calls[0][0]
+    const portalRequest = dialog.props.onUpdatePayment()
+    unmount()
+
+    resolvePortal()
+    await portalRequest
+    expect(state.closeDialog).not.toHaveBeenCalled()
+    expect(state.updateDialog).toHaveBeenCalledTimes(1)
+    expect(state.updateDialog).toHaveBeenCalledWith({
+      key: 'subscription-paused',
+      contentProps: { isUpdatingPayment: true }
+    })
+  })
+
   it('opens member-safe recovery copy without a payment action', async () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'

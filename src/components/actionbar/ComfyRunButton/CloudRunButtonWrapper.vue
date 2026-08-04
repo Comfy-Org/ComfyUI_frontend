@@ -7,7 +7,7 @@
   <SubscribeToRunButton v-else />
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -29,6 +29,11 @@ const dialogStore = useDialogStore()
 const { toastErrorHandler } = useErrorHandling()
 const isUpdatingPayment = ref(false)
 let paymentPortalRequest: Promise<void> | null = null
+let isUnmounted = false
+
+onUnmounted(() => {
+  isUnmounted = true
+})
 
 const paymentRecoveryLock = computed<'owner' | 'member' | null>(() =>
   flags.v1PaymentRecovery && billingStatus.value === 'paused'
@@ -53,16 +58,18 @@ function updatePayment(): Promise<void> {
     })
     try {
       await manageSubscription()
-      closePaymentRecoveryDialog()
+      if (!isUnmounted) closePaymentRecoveryDialog()
     } catch (error) {
-      toastErrorHandler(error)
+      if (!isUnmounted) toastErrorHandler(error)
     } finally {
       isUpdatingPayment.value = false
       paymentPortalRequest = null
-      dialogStore.updateDialog({
-        key: DIALOG_KEY,
-        contentProps: { isUpdatingPayment: false }
-      })
+      if (!isUnmounted) {
+        dialogStore.updateDialog({
+          key: DIALOG_KEY,
+          contentProps: { isUpdatingPayment: false }
+        })
+      }
     }
   })()
 

@@ -34,17 +34,13 @@
       <Button
         :variant="canManage ? 'subscribe' : 'secondary'"
         size="lg"
-        :loading="canManage && isUpdatingPayment"
         :disabled="canManage && isUpdatingPayment"
-        :aria-label="
-          $t(
-            canManage
-              ? 'subscription.paymentRecovery.ownerCta'
-              : 'subscription.paymentRecovery.memberCta'
-          )
-        "
         @click="canManage ? onUpdatePayment() : onClose()"
       >
+        <i
+          v-if="canManage && isUpdatingPayment"
+          class="pi pi-spin pi-spinner"
+        />
         {{
           $t(
             canManage
