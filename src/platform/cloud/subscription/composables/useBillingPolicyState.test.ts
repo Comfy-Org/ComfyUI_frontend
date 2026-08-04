@@ -10,7 +10,7 @@ describe('deriveBillingPolicyState', () => {
     expect(
       deriveBillingPolicyState({
         isCloud,
-        isActiveSubscription: false,
+        canAccessSubscriptionFeatures: false,
         isTeamPlan: false,
         tier: null
       })
@@ -31,7 +31,7 @@ describe('deriveBillingPolicyState', () => {
       expect(
         deriveBillingPolicyState({
           isCloud: false,
-          isActiveSubscription: true,
+          canAccessSubscriptionFeatures: true,
           isTeamPlan: false,
           tier
         })
@@ -39,7 +39,7 @@ describe('deriveBillingPolicyState', () => {
       expect(
         deriveBillingPolicyState({
           isCloud: true,
-          isActiveSubscription: true,
+          canAccessSubscriptionFeatures: true,
           isTeamPlan: false,
           tier
         })
@@ -56,7 +56,7 @@ describe('deriveBillingPolicyState', () => {
       expect(
         deriveBillingPolicyState({
           isCloud,
-          isActiveSubscription: true,
+          canAccessSubscriptionFeatures: true,
           isTeamPlan: false,
           tier: null
         })
@@ -71,7 +71,7 @@ describe('deriveBillingPolicyState', () => {
     expect(
       deriveBillingPolicyState({
         isCloud,
-        isActiveSubscription: true,
+        canAccessSubscriptionFeatures: true,
         isTeamPlan: true,
         tier: 'PRO'
       })
@@ -87,7 +87,7 @@ describe('deriveBillingPolicyState', () => {
       expect(
         deriveBillingPolicyState({
           isCloud,
-          isActiveSubscription: false,
+          canAccessSubscriptionFeatures: false,
           isTeamPlan: true,
           tier: 'STANDARD'
         })

@@ -9,7 +9,9 @@
         />
       </div>
       <div class="flex flex-1 items-center justify-center overflow-auto">
-        <slot />
+        <div class="w-full max-w-md px-6 lg:max-w-lg 2xl:max-w-xl">
+          <slot />
+        </div>
       </div>
       <CloudTemplateFooter />
     </div>

@@ -17,6 +17,8 @@ export async function mockBilling(page: Page) {
         subscription_tier: 'PRO',
         subscription_duration: 'MONTHLY',
         billing_status: 'paid',
+        max_seats: 1,
+        occupied_seats: 1,
         team_credit_stop: null
       } satisfies BillingStatusResponse)
     )

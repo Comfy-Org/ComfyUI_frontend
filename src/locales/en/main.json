@@ -2278,6 +2278,7 @@
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "dropFileError": "Unable to process dropped item: {error}",
+    "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Errors tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
     "interrupted": "Execution has been interrupted",
     "pendingTasksDeleted": "Pending tasks deleted",
@@ -2408,6 +2409,9 @@
       "newUser": "New here?",
       "userAvatar": "User Avatar",
       "signUp": "Sign up",
+      "cloudNewUser": "New to Comfy?",
+      "cloudSignUp": "Sign up here",
+      "freeRunsSuffix": "to get {count} free run. | to get {count} free runs.",
       "signUpFreeTierPromo": "New here? {signUp} with Google to get {credits} free credits every month.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
@@ -4869,6 +4873,18 @@
           "title": "And there it is",
           "body": "Your new video lands right here — ready to download or share."
         }
+      },
+      "nudge": {
+        "ran": {
+          "title": "That was one of hundreds",
+          "body": "You just made your first. Explore what else you can build."
+        },
+        "noTour": {
+          "title": "Hundreds more where that came from",
+          "body": "Browse the templates and pick something to build."
+        },
+        "dismiss": "Not now",
+        "explore": "Explore templates"
       }
     }
   }

@@ -12,7 +12,7 @@ import type { BillingPolicyState } from '../billingPolicyState'
  */
 export function deriveBillingPolicyState(input: {
   isCloud: boolean
-  isActiveSubscription: boolean
+  canAccessSubscriptionFeatures: boolean
   isTeamPlan: boolean
   tier: SubscriptionTier | null
 }): BillingPolicyState {
@@ -20,13 +20,13 @@ export function deriveBillingPolicyState(input: {
 
   if (input.isTeamPlan) {
     return {
-      kind: input.isActiveSubscription
+      kind: input.canAccessSubscriptionFeatures
         ? `${distribution}AndTeam`
         : `${distribution}TeamWithoutActiveSubscription`
     }
   }
 
-  if (!input.isActiveSubscription) {
+  if (!input.canAccessSubscriptionFeatures) {
     return { kind: `${distribution}WithoutActiveSubscription` }
   }
 
@@ -54,12 +54,13 @@ export function deriveBillingPolicyState(input: {
  * and the local backend stay exactly as they are today.
  */
 export function useBillingPolicyState() {
-  const { isActiveSubscription, isTeamPlan, tier } = useBillingContext()
+  const { canAccessSubscriptionFeatures, isTeamPlan, tier } =
+    useBillingContext()
 
   const billingPolicyState = computed<BillingPolicyState>(() =>
     deriveBillingPolicyState({
       isCloud,
-      isActiveSubscription: isActiveSubscription.value,
+      canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
       isTeamPlan: isTeamPlan.value,
       tier: tier.value
     })

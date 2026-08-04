@@ -92,7 +92,7 @@ function toCoachStep(
     coachId: COACH_ID[step.kind],
     deferTarget: true,
     cursor: true,
-    interactive: step.kind === 'prompt' || step.kind === 'run'
+    interactive: step.kind !== 'result'
   }
 
   if (step.kind === 'run')
@@ -120,13 +120,13 @@ function toCoachStep(
 }
 
 /**
- * Builds the first-run tour for a template. A template the tour does not
- * support, or one whose pins have all drifted, leaves nothing worth guiding
- * anyone through — "click Run" alone is not a tour — so it yields no steps and
- * the engine reports that it did not start.
+ * Builds the first-run tour for a template, or for whatever is on the canvas
+ * when no template id came with it. A graph the roles cannot be read off
+ * leaves nothing worth guiding anyone through — "click Run" alone is not a
+ * tour — so it yields no steps and the engine reports that it did not start.
  */
 export async function firstRunTourSteps(
-  templateId: string,
+  templateId: string | undefined,
   runState: Readonly<Ref<RunState>>
 ): Promise<TourResolution> {
   releaseFirstRunTargets()
