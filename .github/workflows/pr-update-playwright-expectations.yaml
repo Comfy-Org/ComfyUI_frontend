@@ -7,8 +7,11 @@ on:
   issue_comment:
     types: [created]
 
+# Key on the PR number, not github.ref: for issue_comment events github.ref is
+# always the default branch, so a ref-keyed group makes a comment on any issue
+# or PR cancel an in-flight regeneration on every other PR.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,6 +31,7 @@ jobs:
       pr-number: ${{ steps.pr-info.outputs.pr-number }}
       branch: ${{ steps.pr-info.outputs.branch }}
       comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
+      container-image: ${{ steps.container-image.outputs.image }}
     steps:
       - name: Get PR info
         id: pr-info
@@ -59,6 +63,58 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ steps.pr-info.outputs.branch }}
+
+      # issue_comment runs execute the DEFAULT BRANCH's copy of this workflow
+      # file, so a literal container image here would be main's tag even when
+      # the PR under test is the one bumping it. Read the tag out of the PR's
+      # checked-out ci-tests-e2e.yaml instead: that is the workflow which will
+      # verify these snapshots, so it defines the environment they must match.
+      - name: Resolve CI container image from PR branch
+        id: container-image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          e2e_workflow='.github/workflows/ci-tests-e2e.yaml'
+          if [ ! -f "$e2e_workflow" ]; then
+            echo "::error::${e2e_workflow} not found on this PR branch; cannot resolve the CI container image"
+            exit 1
+          fi
+
+          mapfile -t images < <(
+            grep -oE 'ghcr\.io/comfy-org/comfyui-ci-container:[A-Za-z0-9._-]+' "$e2e_workflow" | sort -u
+          )
+          if [ "${#images[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one comfyui-ci-container image in ${e2e_workflow}, found ${#images[@]}: ${images[*]:-none}"
+            exit 1
+          fi
+
+          echo "Regenerating snapshots with ${images[0]} (resolved from the PR branch)"
+          echo "image=${images[0]}" >> "$GITHUB_OUTPUT"
+
+      # The container image is resolved from the PR above, but the rest of this
+      # workflow's definition still comes from the default branch on the comment
+      # path. Surface that so a stale regeneration is visible rather than silent.
+      - name: Warn when this workflow differs from the default branch
+        if: github.event_name == 'issue_comment'
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          workflow='.github/workflows/pr-update-playwright-expectations.yaml'
+          default_branch="$DEFAULT_BRANCH"
+
+          if ! git fetch --depth=1 origin "$default_branch"; then
+            echo "::notice::Could not fetch ${default_branch}; skipping workflow drift check"
+            exit 0
+          fi
+
+          if ! git diff --quiet FETCH_HEAD -- "$workflow"; then
+            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${default_branch} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run. Use the 'New Browser Test Expectations' label instead to run the PR's own copy."
+          fi
+
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -81,7 +137,8 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
+      # Resolved from the PR branch by the setup job - see the note there.
+      image: ${{ needs.setup.outputs.container-image }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
