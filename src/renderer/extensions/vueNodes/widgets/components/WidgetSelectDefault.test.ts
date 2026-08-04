@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
@@ -42,7 +42,7 @@ describe('WidgetSelectDefault', () => {
 
   function renderComponent(
     widget: SimplifiedWidget<string | undefined>,
-    modelValue?: string,
+    modelValue?: WidgetValue,
     slots?: Record<string, string>
   ) {
     const onUpdate = vi.fn()
@@ -204,6 +204,27 @@ describe('WidgetSelectDefault', () => {
       expect(onUpdate).toHaveBeenCalledWith('b')
     })
 
+    it('keeps numeric values numeric when an option is selected', async () => {
+      const { onUpdate, user } = renderComponent(createWidget([5, 10]), 5)
+
+      await openDropdown(user)
+      await user.click(screen.getByRole('option', { name: '10' }))
+
+      expect(onUpdate).toHaveBeenCalledWith(10)
+    })
+
+    it('keeps boolean values boolean when an option is selected', async () => {
+      const { onUpdate, user } = renderComponent(
+        createWidget([true, false]),
+        false
+      )
+
+      await openDropdown(user)
+      await user.click(screen.getByRole('option', { name: 'true' }))
+
+      expect(onUpdate).toHaveBeenCalledWith(true)
+    })
+
     it('allows selecting an explicit empty string option', async () => {
       const { onUpdate, user } = renderComponent(
         createWidget(['filled', ''], {
@@ -344,6 +365,14 @@ describe('WidgetSelectDefault', () => {
       expect(
         screen.getByTestId('widget-select-default-trigger')
       ).toHaveAttribute('aria-invalid', 'true')
+    })
+
+    it('does not mark a valid numeric option as invalid', () => {
+      renderComponent(createWidget([5, 10]), 5)
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger).not.toHaveAttribute('aria-invalid')
+      expect(trigger).toHaveTextContent('5')
     })
 
     it('disables the trigger when widget options are disabled', () => {
