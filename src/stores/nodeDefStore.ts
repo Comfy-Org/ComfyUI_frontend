@@ -19,9 +19,9 @@ import type {
   ComfyInputsSpec as ComfyInputSpecV1,
   ComfyNodeDef as ComfyNodeDefV1,
   ComfyOutputTypesSpec as ComfyOutputSpecV1,
-  NodeDisabled,
   PriceBadge
 } from '@/schemas/nodeDefSchema'
+import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -50,7 +50,6 @@ export class ComfyNodeDefImpl
   readonly deprecated: boolean
   readonly experimental: boolean
   readonly dev_only: boolean
-  readonly disabled?: NodeDisabled
   readonly output_node: boolean
   readonly api_node: boolean
   /**
@@ -327,6 +326,7 @@ export interface NodeDefFilter {
 
 export const useNodeDefStore = defineStore('nodeDef', () => {
   const settingStore = useSettingStore()
+  const { isNodeDisabled } = useNodeDisabledState()
 
   const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
   const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
@@ -335,21 +335,18 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const showDevOnly = computed(() => settingStore.get('Comfy.DevMode'))
   const nodeDefFilters = ref<NodeDefFilter[]>([])
 
-  // Update skip_list on all registered node types when dev mode changes
-  // This ensures LiteGraph's getNodeTypesCategories/getNodeTypesInCategory
-  // correctly filter dev-only nodes from the right-click context menu
   watchEffect(() => {
     const devModeEnabled = showDevOnly.value
+    const registeredNodeDefs = nodeDefsByName.value
     for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
-      const nodeData = nodeType.nodeData
-      if (
-        nodeData &&
-        'disabled' in nodeData &&
-        nodeData.disabled !== undefined
-      ) {
+      const nodeData =
+        registeredNodeDefs[nodeType.nodeData?.name ?? ''] ?? nodeType.nodeData
+      if (nodeData && isNodeDisabled(nodeData)) {
         nodeType.skip_list = true
       } else if (nodeData?.dev_only) {
         nodeType.skip_list = !devModeEnabled
+      } else if (nodeData?.api_node) {
+        nodeType.skip_list = false
       }
     }
   })
@@ -389,7 +386,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     return nodeDefs.value.filter(
       (nodeDef) =>
         nodeDefFilters.value.every((filter) => filter.predicate(nodeDef)) &&
-        nodeDef.disabled === undefined
+        !isNodeDisabled(nodeDef)
     )
   })
   const nodeSearchService = computed(

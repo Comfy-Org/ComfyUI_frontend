@@ -27,41 +27,6 @@ describe('validateNodeDef', () => {
     expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })
 
-  it('preserves disabled metadata', () => {
-    expect(
-      validateComfyNodeDef({
-        ...EXAMPLE_NODE_DEF,
-        disabled: {
-          reasons: [
-            {
-              type: 'workspace_provider_disabled',
-              provider_id: 'provider-1'
-            }
-          ]
-        }
-      })?.disabled
-    ).toEqual({
-      reasons: [
-        {
-          type: 'workspace_provider_disabled',
-          provider_id: 'provider-1'
-        }
-      ]
-    })
-  })
-
-  it('rejects malformed disabled metadata', () => {
-    expect(
-      validateComfyNodeDef(
-        {
-          ...EXAMPLE_NODE_DEF,
-          disabled: { reasons: 'workspace_provider_disabled' }
-        },
-        () => undefined
-      )
-    ).toBeNull()
-  })
-
   describe.for([
     [{ ckpt_name: ['foo', { default: 1 }] }, ['foo', { default: 1 }]],
     [{ ckpt_name: ['foo', { bar: 1 }] }, ['foo', { bar: 1 }]],

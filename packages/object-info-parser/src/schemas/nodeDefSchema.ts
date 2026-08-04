@@ -273,18 +273,6 @@ const zPriceBadge = z.object({
 
 export type PriceBadge = z.infer<typeof zPriceBadge>
 
-const zNodeDisabled = z.object({
-  reasons: z.array(
-    z
-      .object({
-        type: z.string()
-      })
-      .passthrough()
-  )
-})
-
-export type NodeDisabled = z.infer<typeof zNodeDisabled>
-
 export const zComfyNodeDef = z.object({
   input: zComfyInputsSpec.optional(),
   output: zComfyOutputTypesSpec.optional(),
@@ -303,7 +291,6 @@ export const zComfyNodeDef = z.object({
   deprecated: z.boolean().optional(),
   experimental: z.boolean().optional(),
   dev_only: z.boolean().optional(),
-  disabled: zNodeDisabled.optional(),
   /**
    * Whether the node is an API node. Running API nodes requires login to
    * Comfy Org account.

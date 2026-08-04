@@ -10,6 +10,7 @@ vi.mock('@/scripts/app', () => ({
 
 import { app } from '@/scripts/app'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -52,30 +53,55 @@ describe('useLitegraphService().registerNodeDef', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('keeps disabled nodes hidden when developer mode changes', async () => {
-    useNodeDefStore()
+  it('reactively applies policy-disabled discovery state in developer mode', async () => {
+    const nodeDefStore = useNodeDefStore()
     const settingStore = useSettingStore()
+    const governanceStore = usePartnerNodeGovernanceStore()
+    governanceStore.providers = [
+      {
+        id: 'openai',
+        displayName: 'OpenAI',
+        nodeCategories: ['OpenAI']
+      }
+    ]
+    governanceStore.policy = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
     const nodeDef: ComfyNodeDef = {
       name: 'DisabledTestNode',
       display_name: 'Disabled Test Node',
-      category: 'test',
+      category: '_for_testing/partner-governance/OpenAI',
       python_module: 'test',
       description: '',
       input: {},
       output: [],
       output_node: false,
       dev_only: true,
-      disabled: {
-        reasons: [{ type: 'workspace_provider_disabled' }]
-      }
+      api_node: true
     }
 
+    settingStore.settingValues['Comfy.DevMode'] = true
+    await nextTick()
     await useLitegraphService().registerNodeDef(nodeDef.name, nodeDef)
+    nodeDefStore.updateNodeDefs([nodeDef])
 
     try {
-      settingStore.settingValues['Comfy.DevMode'] = true
+      expect(LiteGraph.getNodeTypesCategories()).toContain(nodeDef.category)
+
+      governanceStore.policy = {
+        enforcementEnabled: true,
+        providers: [{ providerId: 'openai', enabled: false }]
+      }
       await nextTick()
-      expect(LiteGraph.registered_node_types[nodeDef.name].skip_list).toBe(true)
+      expect(LiteGraph.getNodeTypesCategories()).not.toContain(nodeDef.category)
+
+      governanceStore.policy = {
+        enforcementEnabled: true,
+        providers: [{ providerId: 'openai', enabled: true }]
+      }
+      await nextTick()
+      expect(LiteGraph.getNodeTypesCategories()).toContain(nodeDef.category)
     } finally {
       LiteGraph.unregisterNodeType(nodeDef.name)
     }
