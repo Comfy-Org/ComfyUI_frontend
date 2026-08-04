@@ -44,7 +44,10 @@ vi.mock('@/stores/modelToNodeStore', () => {
   const nodeTypeCategories: Record<string, string> = {
     CheckpointLoaderSimple: 'checkpoints',
     LoraLoader: 'loras',
-    AILab_QwenVL: 'LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct'
+    // First of the three `segformer_*` directories registered for this node in
+    // MODEL_NODE_MAPPINGS. The store resolves a node type to a single category,
+    // so the other two are unreachable — see the `it.fails` case below.
+    LS_LoadSegformerModel: 'segformer_b2_clothes'
   }
   return {
     useModelToNodeStore: vi.fn(() => ({
@@ -1210,17 +1213,41 @@ describe(assetService.getAssetsPageForNodeType, () => {
     expect(params.has('after')).toBe(false)
   })
 
-  describe('QwenVL model directories', () => {
-    it.fails('lists models from every registered QwenVL directory, not just the first one (Qwen3-VL-8B-Instruct is currently unreachable in the dropdown)', async () => {
+  describe('nodes registered against multiple model directories', () => {
+    // KNOWN BUG (BE-5071 / FE-1080 / FE-1181). A node type can be registered
+    // against several model directories in MODEL_NODE_MAPPINGS, but the asset
+    // browser resolves a node type to exactly ONE category and queries only
+    // that directory. Every other directory is unreachable from the widget.
+    //
+    // Originally written against AILab_QwenVL (10 directories, of which only
+    // LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct was reachable — the reported symptom
+    // in BE-5071). #14489 de-registered the QwenVL family entirely so those
+    // widgets fall back to the node's own combo, which fixed the *symptom*.
+    // The *bug class* is untouched: as of 2026-08-03 it is still live on main
+    // for five node/input pairs. Retargeted onto LS_LoadSegformerModel, the
+    // worst remaining case at three directories:
+    //
+    //   LS_LoadSegformerModel.model_name      segformer_b2_clothes,
+    //                                         segformer_b3_clothes,
+    //                                         segformer_b3_fashion
+    //   UpscaleModelLoader.model_name         upscale_models, onnx
+    //   CLIPVisionLoader.clip_name            clip_vision, clip
+    //   FlashVSRNode (auto)                   FlashVSR, FlashVSR-v1.1
+    //   UltralyticsDetectorProvider.model_name  ultralytics/bbox,
+    //                                           ultralytics/segm
+    //
+    // Expected to fail until FE-1177 (query model_type: rather than a single
+    // directory) or FE-1181 (generate the mapping from object_info) lands.
+    it.fails('lists models from every registered directory, not just the first one (segformer_b3_* are currently unreachable in the dropdown)', async () => {
       fetchApiMock.mockResolvedValueOnce(
-        buildAssetListResponse([validAsset({ id: 'qwen3-vl-8b-instruct' })])
+        buildAssetListResponse([validAsset({ id: 'segformer-b3-fashion' })])
       )
 
-      await assetService.getAssetsPageForNodeType('AILab_QwenVL')
+      await assetService.getAssetsPageForNodeType('LS_LoadSegformerModel')
 
       const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
       const params = new URL(requestedUrl, 'http://localhost').searchParams
-      expect(params.get('include_tags')).toContain('Qwen3-VL-8B-Instruct')
+      expect(params.get('include_tags')).toContain('segformer_b3_fashion')
     })
   })
 })
