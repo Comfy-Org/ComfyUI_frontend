@@ -99,6 +99,18 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   team_credit_stop: null
 } satisfies IngestBillingStatusResponse & { billing_rail: 'stripe' }
 
+export const PAYMENT_FAILED_TEAM_BILLING_STATUS = {
+  ...TEAM_BILLING_STATUS,
+  is_active: false,
+  billing_status: 'payment_failed'
+} satisfies IngestBillingStatusResponse
+
+export const PAUSED_TEAM_BILLING_STATUS = {
+  ...TEAM_BILLING_STATUS,
+  is_active: false,
+  billing_status: 'paused'
+} satisfies IngestBillingStatusResponse
+
 export const TEAM_PRO_PLAN: Plan = {
   slug: TEAM_PLAN_SLUG,
   tier: 'PRO',
