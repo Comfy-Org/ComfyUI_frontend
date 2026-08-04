@@ -4,7 +4,7 @@
     data-testid="docked-agent-panel"
     role="complementary"
     aria-labelledby="agent-panel-title"
-    class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden"
+    class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]"
     :style="{ width: `${width}px` }"
   >
     <div
