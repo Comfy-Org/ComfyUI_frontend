@@ -2,7 +2,9 @@ import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { nextTick, watch } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -60,6 +62,177 @@ describe('layoutStore CRDT operations', () => {
     zIndex: 0,
     visible: true,
     bounds: { x: 100, y: 100, width: 200, height: 100 }
+  })
+
+  function createRemoteDoc(): Y.Doc {
+    const remote = new Y.Doc()
+    Y.applyUpdate(remote, layoutStore.getStateAsUpdate())
+    return remote
+  }
+
+  function readRect(nodeId: NodeId): number[] | null {
+    const out = new Float64Array(4)
+    return layoutStore.readNodeRect(GRAPH, nodeId, out) ? [...out] : null
+  }
+
+  function applyRemoteChanges(remote: Y.Doc, change: () => void): void {
+    const stateVector = Y.encodeStateVector(layoutStore.getYDoc())
+    change()
+    layoutStore.applyUpdate(Y.encodeStateAsUpdate(remote, stateVector))
+  }
+
+  it('notifies geometry once for one remote transaction across entity maps', () => {
+    const remote = createRemoteDoc()
+    const onGeometryChange = vi.fn()
+    const stop = layoutStore.onGeometryChange(onGeometryChange)
+
+    applyRemoteChanges(remote, () => {
+      remote.transact(() => {
+        const node = new Y.Map<unknown>()
+        node.set('id', 'remote-transaction-node')
+        node.set('position', { x: 10, y: 20 })
+        node.set('size', { width: 30, height: 40 })
+        node.set('zIndex', 0)
+        node.set('visible', true)
+        remote
+          .getMap<Y.Map<unknown>>('nodes')
+          .set('remote-transaction-node', node)
+
+        const group = new Y.Map<unknown>()
+        group.set('id', 1)
+        group.set('bounds', { x: 50, y: 60, width: 70, height: 80 })
+        remote.getMap<Y.Map<unknown>>('groups').set('remote-graph:1', group)
+
+        const reroute = new Y.Map<unknown>()
+        reroute.set('id', 2)
+        reroute.set('position', { x: 90, y: 100 })
+        remote.getMap<Y.Map<unknown>>('reroutes').set('remote-graph:2', reroute)
+      })
+    })
+
+    expect(onGeometryChange).toHaveBeenCalledOnce()
+    stop()
+  })
+
+  it('isolates errors between geometry change listeners', () => {
+    const listenerError = new Error('geometry listener failed')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const stopThrowing = layoutStore.onGeometryChange(() => {
+      throw listenerError
+    })
+    const laterListener = vi.fn()
+    const stopLater = layoutStore.onGeometryChange(laterListener)
+
+    expect(() => {
+      layoutStore.applyOperation({
+        type: 'createNode',
+        entity: 'node',
+        graphId: GRAPH,
+        nodeId: toNodeId('listener-error-node'),
+        layout: createTestNode(toNodeId('listener-error-node')),
+        timestamp: Date.now(),
+        source: LayoutSource.External,
+        actor: 'test'
+      })
+    }).not.toThrow()
+
+    expect(laterListener).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      'Error in geometry change listener:',
+      listenerError
+    )
+    stopThrowing()
+    stopLater()
+    consoleError.mockRestore()
+  })
+
+  it('projects remote node moves into reactive geometry', async () => {
+    const nodeId = toNodeId('remote-move')
+    const layout = createTestNode(nodeId)
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      graphId: GRAPH,
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
+    const refChanges = vi.fn()
+    const stop = watch(nodeRef, refChanges)
+    const version = layoutStore.geometryVersion
+    const remote = createRemoteDoc()
+
+    applyRemoteChanges(remote, () => {
+      remote
+        .getMap<Y.Map<unknown>>('nodes')
+        .get(`${GRAPH}:${nodeId}`)
+        ?.set('position', { x: 500, y: 600 })
+    })
+    await nextTick()
+
+    expect(layoutStore.geometryVersion).toBe(version + 1)
+    expect(nodeRef.value?.position).toEqual({ x: 500, y: 600 })
+    expect(refChanges).toHaveBeenCalledOnce()
+    expect(readRect(nodeId)).toEqual([500, 600, 200, 100])
+    stop()
+  })
+
+  it('projects remote node creation and deletion into readable geometry', () => {
+    const nodeId = toNodeId('remote-create-delete')
+    const remote = createRemoteDoc()
+
+    applyRemoteChanges(remote, () => {
+      const node = new Y.Map<unknown>()
+      node.set('id', nodeId)
+      node.set('position', { x: 300, y: 400 })
+      node.set('size', { width: 50, height: 60 })
+      node.set('zIndex', 0)
+      node.set('visible', true)
+      remote.getMap<Y.Map<unknown>>('nodes').set(`${GRAPH}:${nodeId}`, node)
+    })
+    expect(readRect(nodeId)).toEqual([300, 400, 50, 60])
+
+    applyRemoteChanges(remote, () => {
+      remote.getMap('nodes').delete(`${GRAPH}:${nodeId}`)
+    })
+    expect(readRect(nodeId)).toBeNull()
+  })
+
+  it('projects remote reroute moves into layout and spatial queries', () => {
+    const graphId = createUuidv4() as UUID
+    const rerouteId = toRerouteId(42)
+    layoutStore.applyOperation({
+      type: 'createReroute',
+      entity: 'reroute',
+      graphId,
+      rerouteId,
+      position: { x: 20, y: 30 },
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    const remote = createRemoteDoc()
+
+    applyRemoteChanges(remote, () => {
+      remote
+        .getMap<Y.Map<unknown>>('reroutes')
+        .get(`${graphId}:${rerouteId}`)
+        ?.set('position', { x: 400, y: 500 })
+    })
+
+    expect(layoutStore.getRerouteLayout(graphId, rerouteId)?.position).toEqual({
+      x: 400,
+      y: 500
+    })
+    expect(
+      layoutStore.queryRerouteAtPoint(graphId, { x: 20, y: 30 })
+    ).toBeNull()
+    expect(
+      layoutStore.queryRerouteAtPoint(graphId, { x: 400, y: 500 })?.id
+    ).toBe(rerouteId)
   })
 
   it('should create and retrieve nodes', () => {
