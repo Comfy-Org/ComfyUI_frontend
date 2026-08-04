@@ -69,7 +69,8 @@ const {
     invokeExtensionsAsync: vi.fn()
   },
   mockNodeOutputStore: {
-    refreshNodeOutputs: vi.fn()
+    refreshNodeOutputs: vi.fn(),
+    updateNodeImages: vi.fn()
   },
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null
@@ -160,6 +161,7 @@ function createMockCanvas(): Partial<LGraphCanvas> {
   return {
     graph: mockGraph as LGraph,
     draw: vi.fn(),
+    setDirty: vi.fn(),
     selectItems: vi.fn()
   }
 }
@@ -1201,6 +1203,37 @@ describe('ComfyApp', () => {
         expect.any(DataTransferItemList),
         mockNode
       )
+    })
+  })
+
+  describe('clipspace', () => {
+    it('pastes the image the user selected when outputs contain degenerate entries', () => {
+      singletonApp.canvas = mockCanvas
+      const good = { filename: 'good.png', subfolder: '', type: 'output' }
+      const source = createMockNode({
+        imgs: [{ src: 'a' }, { src: 'b' }],
+        imageIndex: 1,
+        images: [
+          null,
+          { status: 'unavailable', reason: 'upload_failed' },
+          { filename: 'stale.png', subfolder: '', type: 'output' },
+          good
+        ]
+      })
+
+      ComfyApp.copyToClipspace(source)
+
+      const imageWidget = { name: 'image', type: 'combo', value: 'before.png' }
+      const target = createMockNode({
+        id: 2,
+        imgs: [],
+        widgets: [imageWidget]
+      })
+
+      ComfyApp.pasteFromClipspace(target)
+
+      expect(imageWidget.value).toBe('good.png [output]')
+      expect(target.images).toEqual([good])
     })
   })
 

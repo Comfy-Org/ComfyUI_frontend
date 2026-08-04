@@ -121,6 +121,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { viewableResultItems } from '@/utils/resultItemUtil'
 import {
   collectAllNodes,
   forEachNode,
@@ -502,15 +503,17 @@ export class ComfyApp {
     const paintedIndex = imgs ? imgs.length + 1 : 1
     const combinedIndex = imgs ? imgs.length + 2 : 2
 
-    // for vueNodes mode
-    const images =
+    // for vueNodes mode. Filtered to match the compacted `imgs` preview list
+    // that `selectedIndex` indexes into.
+    const images = viewableResultItems(
       node.images ?? useNodeOutputStore().getNodeOutputs(node)?.images
+    )
 
     ComfyApp.clipspace = {
       widgets: widgets,
       imgs: imgs,
       original_imgs: orig_imgs,
-      images: images,
+      images: images.length ? images : undefined,
       selectedIndex: selectedIndex,
       img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
       paintedIndex: paintedIndex,
@@ -526,6 +529,9 @@ export class ComfyApp {
 
   static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
+      const selectedImage =
+        ComfyApp.clipspace.images?.[ComfyApp.clipspace['selectedIndex']]
+
       // image paste
       let combinedImgSrc: string | undefined
       if (
@@ -540,9 +546,7 @@ export class ComfyApp {
         // Update node.images even if it's initially undefined (vueNodes mode)
         if (ComfyApp.clipspace.images) {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-            node.images = [
-              ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-            ]
+            if (selectedImage) node.images = [selectedImage]
           } else {
             node.images = ComfyApp.clipspace.images
           }
@@ -594,21 +598,19 @@ export class ComfyApp {
 
       if (node.widgets) {
         if (ComfyApp.clipspace.images) {
-          const clip_image =
-            ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
           const index = node.widgets.findIndex((obj) => obj.name === 'image')
-          if (index >= 0) {
+          if (index >= 0 && selectedImage) {
             if (
               node.widgets[index].type != 'image' &&
               typeof node.widgets[index].value == 'string' &&
-              clip_image.filename
+              selectedImage.filename
             ) {
               node.widgets[index].value =
-                (clip_image.subfolder ? clip_image.subfolder + '/' : '') +
-                clip_image.filename +
-                (clip_image.type ? ` [${clip_image.type}]` : '')
+                (selectedImage.subfolder ? selectedImage.subfolder + '/' : '') +
+                selectedImage.filename +
+                (selectedImage.type ? ` [${selectedImage.type}]` : '')
             } else {
-              node.widgets[index].value = clip_image
+              node.widgets[index].value = selectedImage
             }
           }
         }
