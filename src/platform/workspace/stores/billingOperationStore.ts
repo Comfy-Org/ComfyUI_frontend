@@ -40,6 +40,15 @@ export interface StartOperationMetadata {
     memberRemovalFailures: number
     targetTier?: TierKey
   }
+  /**
+   * The timestamp the caller used for its own canonical `started` telemetry
+   * event (i.e. before the initiating subscribe/top-up/cancel API call), so
+   * `duration_ms` on the poller's terminal events spans the full emitted
+   * lifecycle instead of just the poll-observation window. Defaults to
+   * `Date.now()` (poll-start time) when the caller has no such timestamp,
+   * e.g. recovering a pending operation on page load.
+   */
+  attemptStartedAt?: number
 }
 
 interface BillingOperation {
@@ -48,6 +57,8 @@ interface BillingOperation {
   status: OperationStatus
   errorMessage: string | null
   startedAt: number
+  /** See `StartOperationMetadata.attemptStartedAt`. Used only for `duration_ms`. */
+  attemptStartedAt: number
   actionUrl: string | null
   authenticationRequiredSeen: boolean
   workspaceId: string | null
@@ -128,12 +139,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (existing) clearOperation(opId)
 
     const actionUrl = validateActionUrl(initialActionUrl)
+    const now = Date.now()
     const operation: BillingOperation = {
       opId,
       type,
       status: 'pending',
       errorMessage: null,
-      startedAt: Date.now(),
+      startedAt: now,
+      attemptStartedAt: metadata?.attemptStartedAt ?? now,
       actionUrl,
       authenticationRequiredSeen: actionUrl !== null,
       workspaceId: workspaceStore.activeWorkspaceId,
@@ -275,7 +288,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
-    const durationMs = Date.now() - operation.startedAt
+    const durationMs = Date.now() - operation.attemptStartedAt
     if (operation.type === 'subscription') {
       telemetry?.trackBillingEvent({
         operation: 'subscription_checkout',
@@ -381,7 +394,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     const telemetry = useTelemetry()
     const failureCategory = categorizePollFailure(operation.type)
-    const durationMs = Date.now() - operation.startedAt
+    const durationMs = Date.now() - operation.attemptStartedAt
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
@@ -430,7 +443,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
-    const durationMs = Date.now() - operation.startedAt
+    const durationMs = Date.now() - operation.attemptStartedAt
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'timeout',

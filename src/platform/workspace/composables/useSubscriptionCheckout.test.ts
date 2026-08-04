@@ -2296,7 +2296,8 @@ describe('useSubscriptionCheckout', () => {
           tier: 'standard',
           cycle: 'yearly',
           checkoutType: 'new',
-          paymentIntentSource: undefined
+          paymentIntentSource: undefined,
+          attemptStartedAt: expect.any(Number)
         }
       )
       expect(checkout.checkoutStep.value).toBe('success')
@@ -2327,7 +2328,8 @@ describe('useSubscriptionCheckout', () => {
           tier: 'standard',
           cycle: 'yearly',
           checkoutType: 'new',
-          paymentIntentSource: undefined
+          paymentIntentSource: undefined,
+          attemptStartedAt: expect.any(Number)
         }
       )
       expect(checkout.checkoutStep.value).toBe('success')
@@ -2354,7 +2356,8 @@ describe('useSubscriptionCheckout', () => {
           tier: 'standard',
           cycle: 'yearly',
           checkoutType: 'new',
-          paymentIntentSource: undefined
+          paymentIntentSource: undefined,
+          attemptStartedAt: expect.any(Number)
         }
       )
       expect(checkout.checkoutStep.value).toBe('preview')
@@ -3049,6 +3052,9 @@ describe('useSubscriptionCheckout', () => {
         source: 'pricing_dialog',
         payment_intent_source: 'subscribe_to_run'
       })
+      // Exactly one started event on the legacy success rail: the pre-call start,
+      // with no duplicate post-await started/pending emitted after resubscribe() resolves.
+      expect(mockTrackBillingEvent).toHaveBeenCalledTimes(1)
     })
 
     it('fires resubscribe failure telemetry on the legacy rail too', async () => {

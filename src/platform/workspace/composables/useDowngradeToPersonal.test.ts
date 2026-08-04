@@ -541,7 +541,8 @@ describe('useDowngradeToPersonal', () => {
           memberRemovalCount: 1,
           memberRemovalFailures: 0,
           targetTier: undefined
-        }
+        },
+        attemptStartedAt: expect.any(Number)
       })
     })
 
@@ -604,7 +605,8 @@ describe('useDowngradeToPersonal', () => {
           memberRemovalCount: 1,
           memberRemovalFailures: 0,
           targetTier: undefined
-        }
+        },
+        attemptStartedAt: expect.any(Number)
       })
       expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'succeeded' })

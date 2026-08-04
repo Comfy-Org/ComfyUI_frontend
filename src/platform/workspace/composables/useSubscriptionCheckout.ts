@@ -677,6 +677,7 @@ export function useSubscriptionCheckout(
         await refreshPreviewOnReactivationBlock(planSlug)
         return
       }
+      const attemptStartedAt = Date.now()
       trackSubscriptionStarted({
         tier: tierKey,
         cycle: billingCycle,
@@ -709,7 +710,8 @@ export function useSubscriptionCheckout(
       await handleSubscribeResponse(response, {
         tier: tierKey,
         cycle: billingCycle,
-        checkoutType
+        checkoutType,
+        attemptStartedAt
       })
     } catch (error) {
       trackSubscriptionFailure(
@@ -747,6 +749,13 @@ export function useSubscriptionCheckout(
     tier: CheckoutTierKey | 'team'
     cycle: BillingCycle
     checkoutType: SubscriptionCheckoutType
+    /**
+     * Timestamp captured alongside the canonical `subscription_checkout`
+     * `started` event, threaded through to the billing-op poller so its
+     * `duration_ms` spans the full attempt (including the initiating
+     * subscribe call), not just the poll-observation window.
+     */
+    attemptStartedAt?: number
   }
 
   function trackSubscriptionStarted(context: SubscriptionOutcomeContext) {
@@ -860,7 +869,8 @@ export function useSubscriptionCheckout(
         tier: context.tier,
         cycle: context.cycle,
         checkoutType: context.checkoutType,
-        paymentIntentSource
+        paymentIntentSource,
+        attemptStartedAt: context.attemptStartedAt
       }
     )
     if (
@@ -908,6 +918,7 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      const attemptStartedAt = Date.now()
       trackSubscriptionStarted({
         tier: 'team',
         cycle: billingCycle,
@@ -945,7 +956,8 @@ export function useSubscriptionCheckout(
       await handleSubscribeResponse(response, {
         tier: 'team',
         cycle: billingCycle,
-        checkoutType
+        checkoutType,
+        attemptStartedAt
       })
     } catch (error) {
       trackSubscriptionFailure(
@@ -994,25 +1006,18 @@ export function useSubscriptionCheckout(
     isResubscribing.value = true
     try {
       await resubscribe()
-      // Workspace's resubscribe() is terminal; legacy only opens Stripe, so it reports
-      // started/pending and lets useSubscription.ts's pending-checkout recovery own the terminal.
-      telemetry?.trackBillingEvent(
-        shouldUseWorkspaceBilling.value
-          ? {
-              operation: 'resubscribe',
-              stage: 'succeeded',
-              outcome: 'success',
-              source: 'pricing_dialog',
-              payment_intent_source: paymentIntentSource
-            }
-          : {
-              operation: 'resubscribe',
-              stage: 'started',
-              outcome: 'pending',
-              source: 'pricing_dialog',
-              payment_intent_source: paymentIntentSource
-            }
-      )
+      // Workspace's resubscribe() is terminal, so it reports succeeded here. Legacy
+      // only opens Stripe; the started/pending event fired above already covers it,
+      // and useSubscription.ts's pending-checkout recovery owns the eventual terminal.
+      if (shouldUseWorkspaceBilling.value) {
+        telemetry?.trackBillingEvent({
+          operation: 'resubscribe',
+          stage: 'succeeded',
+          outcome: 'success',
+          source: 'pricing_dialog',
+          payment_intent_source: paymentIntentSource
+        })
+      }
       toast.add({
         severity: 'success',
         summary: t('subscription.resubscribeSuccess'),

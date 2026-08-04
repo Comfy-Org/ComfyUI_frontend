@@ -451,6 +451,36 @@ describe('billingOperationStore', () => {
       expect(successCall?.[0].duration_ms).toBeGreaterThanOrEqual(1500)
     })
 
+    it('computes duration_ms from the caller-supplied attemptStartedAt, not from when startOperation() itself ran', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-1',
+          status: 'pending',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-1',
+          status: 'succeeded',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      // Simulate the canonical `started` event having fired 300ms before the
+      // initiating API call returned and startOperation() itself ran.
+      const attemptStartedAt = Date.now() - 300
+      void store.startOperation('op-1', 'topup', { attemptStartedAt })
+
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1500)
+
+      const successCall = mockTrackBillingEvent.mock.calls.find(
+        ([event]) => event.operation === 'topup' && event.stage === 'succeeded'
+      )
+      // Poll-observed time alone is ~1500ms; duration_ms must also include the
+      // 300ms initiation latency that preceded startOperation() running.
+      expect(successCall?.[0].duration_ms).toBeGreaterThanOrEqual(1800)
+    })
+
     it('removes the received toast when operation succeeds', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',

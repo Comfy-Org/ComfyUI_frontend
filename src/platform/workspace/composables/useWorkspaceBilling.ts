@@ -319,6 +319,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function cancelSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
+    const attemptStartedAt = Date.now()
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'started',
@@ -332,7 +333,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       billingOpId = response.billing_op_id
       const operation = await billingOperationStore.startOperation(
         billingOpId,
-        'cancel'
+        'cancel',
+        { attemptStartedAt }
       )
 
       if (operation.status !== 'succeeded') {

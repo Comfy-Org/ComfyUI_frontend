@@ -349,7 +349,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
     expect(payButton).toBeDisabled()
-    expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
+    expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup', {
+      attemptStartedAt: expect.any(Number)
+    })
 
     payButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(mockTopup).toHaveBeenCalledOnce()
@@ -428,7 +430,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
+    expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup', {
+      attemptStartedAt: expect.any(Number)
+    })
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
     expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(

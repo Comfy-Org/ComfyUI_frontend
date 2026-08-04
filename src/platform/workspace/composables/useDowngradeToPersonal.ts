@@ -152,6 +152,7 @@ export function useDowngradeToPersonal() {
     let targetCycle: BillingCycle | undefined
     let telemetryFailure: BillingFailure | undefined
 
+    const attemptStartedAt = Date.now()
     telemetry?.trackBillingEvent({
       operation: 'downgrade_to_personal',
       stage: 'started',
@@ -296,7 +297,8 @@ export function useDowngradeToPersonal() {
               memberRemovalCount: membersToRemove.length,
               memberRemovalFailures,
               targetTier
-            }
+            },
+            attemptStartedAt
           }
         )
         return null
@@ -314,7 +316,8 @@ export function useDowngradeToPersonal() {
               memberRemovalCount: membersToRemove.length,
               memberRemovalFailures,
               targetTier
-            }
+            },
+            attemptStartedAt
           }
         )
         return null

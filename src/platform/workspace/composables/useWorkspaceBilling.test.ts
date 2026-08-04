@@ -758,7 +758,9 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.cancelSubscription()
 
-      expect(mockStartOperation).toHaveBeenCalledWith('op-cancel', 'cancel')
+      expect(mockStartOperation).toHaveBeenCalledWith('op-cancel', 'cancel', {
+        attemptStartedAt: expect.any(Number)
+      })
       expect(billing.error.value).toBeNull()
     })
 

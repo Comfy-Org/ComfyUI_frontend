@@ -409,6 +409,7 @@ async function handleBuy() {
   loading.value = true
   paymentSubmitted.value = true
   try {
+    const attemptStartedAt = Date.now()
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
     telemetry?.trackBillingEvent({
       operation: 'topup',
@@ -446,7 +447,7 @@ async function handleBuy() {
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
       void billingOperationStore
-        .startOperation(response.billing_op_id, 'topup')
+        .startOperation(response.billing_op_id, 'topup', { attemptStartedAt })
         .then(() => {
           paymentSubmitted.value = false
         })

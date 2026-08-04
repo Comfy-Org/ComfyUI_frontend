@@ -114,6 +114,9 @@ describe('useResubscribe', () => {
       outcome: 'pending',
       source: 'settings_billing_panel'
     })
+    // Exactly one started event on the legacy success rail: the pre-call start,
+    // with no duplicate post-await started/pending emitted after resubscribe() resolves.
+    expect(state.trackBillingEvent).toHaveBeenCalledTimes(1)
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )
