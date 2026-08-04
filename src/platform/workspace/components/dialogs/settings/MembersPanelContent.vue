@@ -125,12 +125,21 @@
             <Button
               variant="muted-textonly"
               size="sm"
-              class="justify-end"
+              :class="
+                uiConfig.showCreditsColumn ? 'justify-start' : 'justify-end'
+              "
               @click="toggleSort('role')"
             >
               {{ $t('workspacePanel.members.columns.role') }}
               <i class="icon-[lucide--chevrons-up-down] size-4" />
             </Button>
+            <div
+              v-if="uiConfig.showCreditsColumn"
+              class="flex items-center gap-1 text-sm text-muted-foreground"
+            >
+              <i class="icon-[lucide--coins] size-4" />
+              {{ $t('workspacePanel.members.columns.creditsUsed') }}
+            </div>
             <!-- Empty cell for action column header (OWNER only) -->
             <div v-if="permissions.canManageMembers" />
           </template>
@@ -164,9 +173,9 @@
                 :show-role-column="
                   uiConfig.showRoleColumn && hasMultipleMembers
                 "
+                :show-credits-column="uiConfig.showCreditsColumn"
                 :can-manage-members="permissions.canManageMembers"
                 :is-single-seat-plan="!isOnTeamPlan"
-                :is-original-owner="isOriginalOwner(member)"
                 :striped="index % 2 === 1"
                 :menu-items="memberMenus.get(member.id)"
               />
@@ -212,13 +221,15 @@
 <script setup lang="ts">
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useExternalLink } from '@/composables/useExternalLink'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
+
+const TEAM_PLAN_REQUEST_URL =
+  'https://comfy-org.portal.usepylon.com/forms/team-plan-requests'
 
 const {
   searchQuery,
@@ -245,16 +256,13 @@ const {
   uiConfig,
   userPhotoUrl,
   isCurrentUser,
-  isOriginalOwner,
   toggleSort,
   showTeamPlans,
   handleResendInvite,
   handleRevokeInvite
 } = useMembersPanel()
 
-const { staticUrls } = useExternalLink()
-
 function handleContactUs() {
-  window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
+  window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
 }
 </script>

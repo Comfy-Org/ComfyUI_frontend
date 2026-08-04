@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "اعمال Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "درصد پایان"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "mask": {
+        "name": "ماسک"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_patch": {
+        "name": "patch مدل"
+      },
+      "start_percent": {
+        "name": "درصد شروع"
+      },
+      "strength": {
+        "name": "شدت"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "تنظیم حجم صدا به میزان مشخص بر حسب دسی‌بل (dB).",
     "display_name": "تنظیم حجم صدا",
@@ -1177,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "بلندی صدا. ۰ = عادی، ۱۰۰ = ۲.۰ برابر، ‎-۵۰ = ۰.۵ برابر."
       },
+      "model": {
+        "name": "مدل",
+        "tooltip": "seed-audio-1.0-multilingual: پشتیبانی از ۲۰ زبان (انگلیسی، چینی، ژاپنی، کره‌ای، اسپانیایی مکزیکی و کاستیل، اندونزیایی، آلمانی، پرتغالی برزیلی، فرانسوی، تایلندی، ویتنامی، مالایی، فیلیپینی، ایتالیایی، روسی، هلندی، لهستانی، ترکی، سوئدی) به همراه کنترل زمان‌بندی هر جمله با استفاده از برچسب‌های زمانی مانند \"[۵.۵s:۸.۰s] ...\". seed-audio-1.0: فقط انگلیسی و چینی، بدون کنترل زمان‌بندی."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "تغییر گام به نیم‌پرده (‎-۱۲ تا ۱۲)."
@@ -2010,9 +2040,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "دمای مدل"
       },
       "prompt": {
         "name": "پرامپت",
@@ -4071,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "لاتنت مشترک ویدیو + صدا برای MiniMax H3. مدت زمان به شبکه فریم ۱۷۰۰۰+۵ مدل در ۲۴ فریم بر ثانیه تنظیم می‌شود.",
+    "display_name": "لاتنت AV MiniMax H3 خالی",
+    "inputs": {
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم در ۲۴ فریم بر ثانیه، به شبکه ۱۷۰۰۰+۵ مدل گرد می‌شود (۱۲۴ = تقریباً ۵ ثانیه؛ بازه آموزش تقریباً ۱۲۴ تا ۳۶۲، مقادیر بالاتر تست نشده است)"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "ویدیوی نهفته خالی Mochi",
     "inputs": {
@@ -5677,6 +5725,15 @@
       "model_resolution": {
         "name": "وضوح"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "راهنمای متنی",
         "tooltip": "توضیح متنی درباره ویدیوی مورد نظر."
@@ -5853,6 +5910,212 @@
       "watermark": {
         "name": "واترمارک",
         "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatarVideoNode": {
+    "description": "تولید ویدئوی ارائه‌دهنده سخنگو از یک آواتار HeyGen. شامل محبوب‌ترین آواتارهای عمومی HeyGen؛ هر شناسه ظاهر (look ID) را می‌توان به عنوان جایگزین وارد کرد.",
+    "display_name": "ویدئوی آواتار HeyGen",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "نسبت تصویر خروجی. 'auto' از منبع آواتار پیروی می‌کند."
+      },
+      "background_color": {
+        "name": "رنگ پس‌زمینه",
+        "tooltip": "رنگ پس‌زمینه یکدست به صورت کد هگزادسیمال (مثلاً '#00ff00'). برای استفاده از پس‌زمینه خود آواتار، خالی بگذارید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "custom_avatar_id": {
+        "name": "شناسه آواتار سفارشی",
+        "tooltip": "شناسه ظاهر آواتار HeyGen (اختیاری). در صورت تنظیم، آواتار انتخاب‌شده بالا را جایگزین می‌کند. هر یک از بیش از ۳۰۰۰ ظاهر عمومی HeyGen (یا آواتارهای خصوصی شما) قابل استفاده است."
+      },
+      "engine": {
+        "name": "موتور",
+        "tooltip": "موتور رندر؛ هر گزینه فقط آواتارهایی را نمایش می‌دهد که از آن پشتیبانی می‌کنند. 'auto' همه آواتارها را ارائه می‌دهد و بهترین موتور را انتخاب می‌کند (Avatar IV ترجیح داده می‌شود). Avatar V بالاترین کیفیت را دارد، Avatar III مقرون‌به‌صرفه‌ترین است."
+      },
+      "engine_avatar": {
+        "name": "آواتار"
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح خروجی ویدئو."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "برای HeyGen ارسال نمی‌شود؛ تغییر آن باعث اجرای مجدد می‌شود."
+      },
+      "speech": {
+        "name": "گفتار",
+        "tooltip": "آواتار را با یک متن (HeyGen text-to-speech) یا صدای خودتان هدایت کنید."
+      },
+      "speech_custom_voice_id": {
+        "name": "شناسه صدای سفارشی"
+      },
+      "speech_text": {
+        "name": "متن"
+      },
+      "speech_voice": {
+        "name": "صدا"
+      },
+      "speech_voice_speed": {
+        "name": "سرعت صدا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "آواتار قابل استفاده مجدد خود را از عکس یک فرد یا یک پرامپت متنی (شخصیت تولیدشده) بسازید. شناسه آواتار به‌دست‌آمده را در custom_avatar_id ویدئوی آواتار HeyGen وارد کنید — و این شناسه را برای استفاده مجدد در جریان‌های کاری آینده ذخیره نمایید.",
+    "display_name": "ساخت آواتار HeyGen",
+    "inputs": {
+      "source": {
+        "name": "منبع",
+        "tooltip": "یک شخصیت جدید از طریق پرامپت متنی تولید کنید یا آواتار را از عکس متصل‌شده یک فرد بسازید."
+      },
+      "source_prompt": {
+        "name": "پرامپت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه آواتار",
+        "tooltip": "شناسه ظاهر آواتار. آن را به custom_avatar_id ویدئوی آواتار HeyGen بدهید؛ برای استفاده بعدی ذخیره کنید."
+      },
+      "1": {
+        "name": "پیش‌نمایش",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "هر تصویر از یک فرد را به یک ویدیوی صحبت‌کننده با هماهنگی لب (HeyGen Avatar IV) تبدیل کنید. می‌توانید آن را با یک متن یا صدای خود هدایت کنید.",
+    "display_name": "HeyGen Talking Photo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "نسبت تصویر خروجی. مقدار 'auto' مطابق با تصویر ورودی خواهد بود."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "expressiveness": {
+        "name": "بیان‌گری",
+        "tooltip": "میزان بیان‌گری چهره و حرکات متحرک."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر فردی که قرار است متحرک شود. در صورت بزرگ‌تر بودن از ۲K به طور خودکار کوچک می‌شود."
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح ویدیوی خروجی."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "به HeyGen ارسال نمی‌شود؛ با تغییر آن اجرای مجدد انجام می‌شود."
+      },
+      "speech": {
+        "name": "گفتار",
+        "tooltip": "آواتار را با یک متن (HeyGen text-to-speech) یا صدای خود هدایت کنید."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "متن"
+      },
+      "speech_voice": {
+        "name": "صدا"
+      },
+      "speech_voice_speed": {
+        "name": "سرعت صدا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "تولید صدای گفتاری از متن با استفاده از موتور Starfish TTS شرکت HeyGen. شامل محبوب‌ترین صداهای HeyGen در ۱۷ زبان.",
+    "display_name": "HeyGen تبدیل متن به گفتار",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "custom_voice_id": {
+        "name": "custom_voice_id",
+        "tooltip": "شناسه صدای HeyGen اختیاری. در صورت تنظیم، جایگزین صدای انتخاب‌شده می‌شود. صدا باید از موتور Starfish پشتیبانی کند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "به HeyGen ارسال نمی‌شود؛ با تغییر آن اجرای مجدد انجام می‌شود."
+      },
+      "speed": {
+        "name": "سرعت",
+        "tooltip": "ضریب سرعت گفتار."
+      },
+      "ssml": {
+        "name": "SSML",
+        "tooltip": "متن را به عنوان نشانه‌گذاری SSML در نظر بگیرید (برای مکث، تأکید و کنترل تلفظ)."
+      },
+      "text": {
+        "name": "متن",
+        "tooltip": "متنی که باید به گفتار تبدیل شود (حداکثر ۵۰۰۰ کاراکتر). صدای تولید شده باید حداقل ۱ ثانیه باشد."
+      },
+      "voice": {
+        "name": "صدا",
+        "tooltip": "صدایی که استفاده می‌شود (منتخب از محبوب‌ترین صداهای سازگار با Starfish شرکت HeyGen)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "یک ویدیوی گفتاری را به زبان دیگری ترجمه می‌کند. صدای گوینده اصلی را شبیه‌سازی کرده و حرکات دهان را با گفتار ترجمه‌شده هماهنگ می‌کند.",
+    "display_name": "ترجمه ویدیو HeyGen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "حالت 'speed' سریع‌تر است؛ 'precision' هماهنگی لب با کیفیت بالاتر و هزینه دو برابر را ارائه می‌دهد."
+      },
+      "output_language": {
+        "name": "زبان خروجی",
+        "tooltip": "زبان مقصد برای ویدیوی ترجمه‌شده."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "به HeyGen ارسال نمی‌شود؛ برای اجرای مجدد مقدار آن را تغییر دهید."
+      },
+      "speaker_count": {
+        "name": "تعداد گویندگان",
+        "tooltip": "تعداد گویندگان در ویدیو. ۰ = تشخیص خودکار."
+      },
+      "translate_audio_only": {
+        "name": "فقط ترجمه صدا",
+        "tooltip": "فقط ترک صوتی را جایگزین می‌کند و حرکات دهان اصلی را حفظ می‌کند (بدون هماهنگی لب)."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیویی با گفتار برای ترجمه."
       }
     },
     "outputs": {
@@ -6264,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "تولید تصویر با استفاده از P-Image، مدل سریع تبدیل متن به تصویر ایدوگرام. دارای تایپوگرافی قوی و فوتورئالیسم؛ پشتیبانی از کپشن ساختاریافته JSON نسخه ۴.۰ ایدوگرام برای متن، رنگ و چیدمان دقیق.",
+    "display_name": "ایدوگرام P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "نسبت تصویر برای تولید تصویر."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرومپت متنی. همچنین کپشن ساختاریافته JSON نسخه ۴.۰ ایدوگرام را می‌پذیرد (رنگ‌های دقیق به صورت #RRGGBB هگز، رشته‌های متنی دقیق، چیدمان جعبه‌بندی) — برای استفاده عیناً، گزینه prompt_upsampling را روی OFF قرار دهید."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "پرومپت‌های کوتاه را به کپشن ساختاریافته و دقیق قبل از تولید گسترش می‌دهد (پرومپت بازنویسی‌شده به عنوان final_prompt بازگردانده می‌شود). هنگام ارائه کپشن JSON یا متن دقیق خودتان، آن را روی OFF قرار دهید."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "سطح سرعت/قیمت/کیفیت. MEDIUM پیش‌فرض روزمره است؛ HIGH برای پرومپت‌های پیچیده، جزئیات دقیق و متن دشوار؛ VERY_LOW/LOW برای پیش‌نویس‌های انبوه. متن‌های دشوار در سطوح پایین‌تر از MEDIUM به‌درستی نمایش داده نمی‌شوند."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "کلاس اندازه خروجی (پیکسل دقیق بر اساس نسبت تصویر، مثلاً ۱۶:۹ در ۱K برابر با ۱۲۸۰×۷۲۰ و در ۲K برابر با ۲۵۶۰×۱۴۴۰). برای تایپوگرافی شفاف، HIGH + 2K را ترجیح دهید."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر (Seed) برای تولید قابل تکرار. با prompt_upsampling روی OFF، همان بذر و تنظیمات تصویر یکسانی را بازمی‌گرداند؛ با ON/AUTO بازنویسی پرومپت در هر اجرا متفاوت است — برای بازتولید نتیجه، خروجی final_prompt را با prompt_upsampling روی OFF و همان بذر استفاده کنید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "پرومپتی که تصویر واقعاً با آن تولید شده است (کپشن ساختاریافته بازنویسی‌شده در صورت اجرای prompt_upsampling، در غیر این صورت پرومپت شما). برای بازتولید این تصویر، آن را با prompt_upsampling روی OFF و همان بذر وارد کنید."
       }
     }
   },
@@ -8410,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "ادغام یک لاتنت ویدیویی و یک لاتنت صوتی در یک لاتنت AV مشترک (هر مدل AV، مانند LTXV یا MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -9493,6 +9799,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "یک مجموعه داده از ویدیوها را از پوشه مشخص‌شده بارگذاری کرده و فهرستی از ویدیوها بازمی‌گرداند. فرمت‌های پشتیبانی‌شده: MP4، AVI، MOV، WEBM، MKV، FLV.",
+    "display_name": "بارگذاری ویدیو (از پوشه)",
+    "inputs": {
+      "folder": {
+        "name": "پوشه",
+        "tooltip": "پوشه حاوی فایل‌های ویدیویی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیوها",
+        "tooltip": "ارجاعات ویدیویی Lazy؛ فریم‌ها فقط در صورت نیاز در مراحل بعدی رمزگشایی می‌شوند."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "یک مجموعه داده از جفت‌های ویدیو و کپشن متنی را از پوشه مشخص‌شده بارگذاری کرده و به صورت فهرست بازمی‌گرداند. فرمت‌های پشتیبانی‌شده: MP4، AVI، MOV، WEBM، MKV، FLV.",
+    "display_name": "بارگذاری ویدیو-متن (از پوشه)",
+    "inputs": {
+      "folder": {
+        "name": "پوشه",
+        "tooltip": "پوشه حاوی فایل‌های ویدیویی و کپشن‌های .txt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیوها",
+        "tooltip": "ارجاعات ویدیویی Lazy؛ فریم‌ها فقط در صورت نیاز در مراحل بعدی رمزگشایی می‌شوند."
+      },
+      "1": {
+        "name": "متن‌ها",
+        "tooltip": "فهرست کپشن‌های متنی."
       }
     }
   },
@@ -11059,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "تبدیل تصویر به ویدیو MiniMax H3",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "اولین فریم"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "last_frame": {
+        "name": "آخرین فریم"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم در ۲۴ فریم بر ثانیه، به شبکه ۱۷۰۰۰+۵ مدل گرد می‌شود (۱۲۴ = تقریباً ۵ ثانیه؛ بازه آموزش تقریباً ۱۲۴ تا ۳۶۲، مقادیر بالاتر تست نشده است)"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> شرط مرجع برای MiniMax H3. هنگام استفاده از پرامپت، از همان تگ‌ها استفاده کنید.",
+    "display_name": "تبدیل مرجع به ویدیو MiniMax H3",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم در ۲۴ فریم بر ثانیه (۱۲۴ = تقریباً ۵ ثانیه، بازه آموزش تقریباً ۱۲۴ تا ۳۶۲)"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "ref_audios": {
+        "name": "صداهای مرجع"
+      },
+      "ref_image_size": {
+        "name": "اندازه تصویر مرجع",
+        "tooltip": "تنظیم اندازه تصویر مرجع. 'match' هر مرجع را (فقط کاهش، با حفظ نسبت تصویر) به مساحت پیکسلی تولید شده مقیاس می‌کند؛ 'max' از لبه کوتاه ۲۰۴۸ پیکسلی پایپ‌لاین مرجع برای بهترین حفظ هویت استفاده می‌کند. توکن‌های مرجع در هر مرحله نمونه‌گیری باقی می‌مانند، بنابراین 'max' می‌تواند چندین برابر کندتر باشد."
+      },
+      "ref_images": {
+        "name": "تصاویر مرجع"
+      },
+      "ref_video_audios": {
+        "name": "صداهای ویدیوی مرجع"
+      },
+      "ref_videos": {
+        "name": "ویدیوهای مرجع"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "تنظیم شیفت‌های جریان ویدیو/صدا.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "مدل"
+      },
+      "shift_audio": {
+        "name": "شیفت صدا"
+      },
+      "shift_video": {
+        "name": "شیفت ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "تولید ویدیو از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم با استفاده از مدل MiniMax H3. نسبت تصویر ویدیو مطابق تصاویر ارائه‌شده خواهد بود.",
+    "display_name": "تبدیل اولین و آخرین فریم MiniMax H3 به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "تصویر اولین فریم برای ویدیو."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "تصویر اختیاری آخرین فریم برای ویدیو."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل مورد استفاده برای تولید ویدیو."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی. درخواست یکسان با بذر یکسان نتایج مشابه (اما نه الزاماً یکسان) می‌دهد."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "آیا واترمارک AIGC به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "تولید ویدیو بر اساس تصاویر مرجع، ویدیوها و صدا با استفاده از مدل MiniMax H3. به مراجع در پرامپت بر اساس ترتیب آن‌ها اشاره کنید: «تصویر ۱»، «تصویر ۲»، «ویدیو ۱»، «صدا ۱» و به همین ترتیب.",
+    "display_name": "تبدیل مرجع MiniMax H3 به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی. درخواست یکسان با بذر یکسان نتایج مشابه (اما نه لزوماً یکسان) ارائه می‌دهد."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک AIGC به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "تولید ویدیو از طریق پرامپت متنی با استفاده از مدل MiniMax H3.",
+    "display_name": "تبدیل متن به ویدیو MiniMax H3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی. درخواست یکسان با بذر یکسان نتایج مشابه (اما نه لزوماً یکسان) ارائه می‌دهد."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک AIGC به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18445,6 +19018,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "ترتیب ویدیوها را به صورت تصادفی در یک فهرست جابجا می‌کند.",
+    "display_name": "درهم‌ریختن فهرست ویدیوها",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تصادفی."
+      },
+      "videos": {
+        "name": "ویدیوها",
+        "tooltip": "فهرست ویدیوهایی که باید درهم‌ریخته شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیوها",
+        "tooltip": "ویدیوهای درهم‌ریخته"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "ترتیب جفت‌های ویدیو-متن را به صورت تصادفی در یک فهرست جابجا می‌کند.",
+    "display_name": "درهم‌ریختن جفت‌های ویدیو-متن",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تصادفی."
+      },
+      "texts": {
+        "name": "متن‌ها",
+        "tooltip": "فهرست متن‌هایی که باید درهم‌ریخته شوند."
+      },
+      "videos": {
+        "name": "ویدیوها",
+        "tooltip": "فهرست ویدیوهایی که باید درهم‌ریخته شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیوها",
+        "tooltip": "ویدیوهای درهم‌ریخته"
+      },
+      "1": {
+        "name": "متن‌ها",
+        "tooltip": "متن‌های درهم‌ریخته"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "نسخه عمومی نود SkipLayerGuidance که می‌تواند روی هر مدل DiT استفاده شود.",
     "display_name": "SkipLayerGuidanceDiT",
@@ -19648,6 +20275,75 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "یک دستور ویرایش را با یک یا چند تصویر مرجع برای Mage-Flow-Edit رمزگذاری کنید. latentهای مرجع به وضوح خروجی (عرض/ارتفاع، یا اندازه اولین تصویر در صورت ۰ بودن) تغییر اندازه می‌یابند. برای نمونه‌گیری از خروجی latent استفاده کنید تا اندازه‌ها همیشه مطابقت داشته باشند.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه بچ"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "ارتفاع خروجی. ۰ = استفاده از اندازه اولین تصویر مرجع."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصویر(های) مرجع برای ویرایش. همه تصاویر مرجع پیش از رمزگذاری به وضوح خروجی تغییر اندازه می‌یابند."
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض",
+        "tooltip": "عرض خروجی. ۰ = استفاده از اندازه اولین تصویر مرجع."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -21644,6 +22340,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "تعداد ثابتی از فریم‌های یک ویدیو را با استفاده از استراتژی‌های مختلف نمونه‌گیری کنید.",
+    "display_name": "نمونه‌گیری فریم ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "num_frames": {
+        "name": "تعداد فریم‌ها",
+        "tooltip": "تعداد فریم‌هایی که باید نمونه‌گیری شوند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی (فقط در حالت 'random' استفاده می‌شود)."
+      },
+      "strategy": {
+        "name": "استراتژی",
+        "tooltip": "uniform: با فاصله مساوی، head: اولین N فریم، tail: آخرین N فریم، random: تصادفی مرتب‌شده."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی ورودی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی نمونه‌گیری‌شده."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "VideoLinearCFGGuidance",
     "inputs": {
@@ -21652,6 +22379,57 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "یک بازه پیوسته از فریم‌های ویدیو را به صورت تصادفی برش دهید.",
+    "display_name": "برش تصادفی زمانی ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "length": {
+        "name": "تعداد فریم‌ها",
+        "tooltip": "تعداد فریم‌هایی که باید نگه داشته شوند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی ورودی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی برش‌خورده (به صورت lazy)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "یک بازه پیوسته از فریم‌های ویدیو را برش دهید.",
+    "display_name": "برش زمانی ویدیو",
+    "inputs": {
+      "length": {
+        "name": "تعداد فریم‌ها",
+        "tooltip": "تعداد فریم‌هایی که باید نگه داشته شوند."
+      },
+      "start_frame": {
+        "name": "فریم شروع",
+        "tooltip": "اندیس فریم شروع."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی ورودی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی برش‌خورده (به صورت lazy)."
       }
     }
   },
@@ -23886,6 +24664,33 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "اعمال Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "درصد پایان"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_patch": {
+        "name": "patch مدل"
+      },
+      "render_video": {
+        "name": "رندر ویدیو",
+        "tooltip": "ویدیوی راهنما که از مسیر دوربین رندر شده است، معمولاً رندرهای point cloud تغییر شکل یافته از تصویر ورودی."
+      },
+      "start_percent": {
+        "name": "درصد شروع"
+      },
+      "strength": {
+        "name": "شدت"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

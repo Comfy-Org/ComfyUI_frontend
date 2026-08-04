@@ -48,6 +48,8 @@ vi.mock(
 )
 
 import { useExecutionErrorStore } from './executionErrorStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { toNodeId } from '@/types/nodeId'
 
@@ -789,6 +791,50 @@ describe('recordNodeErrors', () => {
     store.recordNodeErrors(null)
 
     expect(store.lastNodeErrors).toBeNull()
+  })
+})
+
+describe('hasMissingError', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it.for([
+    {
+      type: 'nodes',
+      seedMissingError: () => {
+        useMissingNodesErrorStore().missingNodesError = fromAny({})
+      }
+    },
+    {
+      type: 'models',
+      seedMissingError: () => {
+        useMissingModelStore().missingModelCandidates = [fromAny({})]
+      }
+    },
+    {
+      type: 'media',
+      seedMissingError: () => {
+        useMissingMediaStore().missingMediaCandidates = [fromAny({})]
+      }
+    }
+  ])('includes missing $type', ({ seedMissingError }) => {
+    const executionErrorStore = useExecutionErrorStore()
+
+    expect(executionErrorStore.hasMissingError).toBe(false)
+
+    seedMissingError()
+
+    expect(executionErrorStore.hasMissingError).toBe(true)
+  })
+
+  it('excludes node validation errors', () => {
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordNodeErrors({
+      '1': nodeError([validationError('required_input_missing', 'input')])
+    })
+
+    expect(executionErrorStore.hasMissingError).toBe(false)
   })
 })
 

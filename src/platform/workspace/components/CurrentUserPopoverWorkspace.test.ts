@@ -1,6 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -134,10 +136,11 @@ function renderComponent(
             }
           }
         }),
+        PrimeVue,
         i18n
       ],
       directives: {
-        tooltip: {}
+        tooltip: Tooltip
       },
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
@@ -177,6 +180,17 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('workspace-switcher-panel')
     ).not.toBeInTheDocument()
+  })
+
+  it('exposes the full workspace name on hover', async () => {
+    const user = userEvent.setup()
+    renderComponent('team', 'member')
+
+    await user.hover(screen.getByTestId('workspace-switcher-trigger'))
+
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Team Workspace')
+    })
   })
 
   it('closes the switcher panel after selecting a workspace', async () => {

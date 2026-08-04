@@ -3,6 +3,8 @@
     "dockToTop": "چسباندن به بالا",
     "feedback": "بازخورد",
     "feedbackTooltip": "بازخورد",
+    "freeTierPartner": "نودهای Partner نیاز به پلن پولی دارند",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} اجرا باقی مانده",
     "share": "اشتراک‌گذاری",
     "shareTooltip": "اشتراک‌گذاری گردش‌کار"
   },
@@ -140,6 +142,8 @@
       "modelDescription": "توضیحات مدل",
       "modelTagging": "برچسب‌گذاری مدل",
       "modelType": "نوع مدل",
+      "modelTypeCoreReadonly": "نوع مدل در core قابل تغییر نیست، انتقال فایل هنوز پشتیبانی نمی‌شود.",
+      "modelTypeImmutableReadonly": "نوع مدل برای مدل فقط‌خواندنی قابل تغییر نیست.",
       "noAdditionalTags": "برچسب اضافی وجود ندارد",
       "selectModelPrompt": "یک مدل را برای مشاهده اطلاعات آن انتخاب کنید",
       "selectModelType": "انتخاب نوع مدل...",
@@ -170,6 +174,7 @@
     "rename": {
       "failed": "امکان تغییر نام دارایی وجود ندارد."
     },
+    "searchModels": "جستجوی مدل‌ها",
     "selectFrameworks": "فریم‌ورک‌ها را انتخاب کنید",
     "selectModelType": "نوع مدل را انتخاب کنید",
     "selectProjects": "پروژه‌ها را انتخاب کنید",
@@ -261,6 +266,7 @@
       "freeTierBadge": "واجد شرایط طرح رایگان",
       "freeTierDescription": "با ثبت‌نام از طریق Google هر ماه {credits} اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
       "freeTierDescriptionGeneric": "با ثبت‌نام از طریق Google هر ماه اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
+      "googleSsoInAppBrowserNotice": "اگر این صفحه را از طریق مرورگر داخلی برنامه (مانند اینستاگرام یا لینکدین) باز کرده‌اید، ورود با Google ممکن است کار نکند. لطفاً از GitHub یا ایمیل استفاده کنید یا این صفحه را در مرورگر پیش‌فرض دستگاه خود باز کنید.",
       "insecureContextWarning": "این اتصال ناامن است (HTTP) - در صورت ادامه ورود، اطلاعات شما ممکن است توسط مهاجمان رهگیری شود.",
       "loginButton": "ورود",
       "loginWithGithub": "ورود با Github",
@@ -339,6 +345,7 @@
     "cancelFailed": "لغو اشتراک ناموفق بود",
     "cancelTimeout": "مهلت لغو اشتراک به پایان رسید",
     "subscriptionFailed": "به‌روزرسانی اشتراک ناموفق بود",
+    "subscriptionFailedDetail": "امکان به‌روزرسانی اشتراک شما وجود ندارد. لطفاً دوباره تلاش کنید.",
     "subscriptionProcessing": "در حال پردازش پرداخت — در حال راه‌اندازی فضای کاری...",
     "subscriptionSuccess": "اشتراک با موفقیت به‌روزرسانی شد",
     "subscriptionTimeout": "تأیید اشتراک زمان‌بر شد",
@@ -607,14 +614,14 @@
     "chooseProfilePicture": "انتخاب تصویر پروفایل",
     "createProfile": "ساخت پروفایل",
     "createProfileButton": "ساخت پروفایل من",
-    "createProfileTitle": "ساخت پروفایل Comfy Hub",
+    "createProfileTitle": "ساخت پروفایل Comfy Workflows",
     "creatingProfile": "در حال ساخت پروفایل...",
     "descriptionLabel": "توضیحات شما",
     "descriptionPlaceholder": "درباره خودتان به جامعه توضیح دهید...",
     "introDescription": "جریان‌کارهای خود را منتشر کنید، نمونه‌کار بسازید و توسط میلیون‌ها کاربر دیده شوید",
-    "introSubtitle": "برای اشتراک‌گذاری جریان‌کار خود در ComfyHub، ابتدا پروفایل خود را بسازید.",
-    "introTitle": "انتشار در ComfyHub",
-    "modalTitle": "ساخت پروفایل در ComfyHub",
+    "introSubtitle": "برای اشتراک‌گذاری جریان‌کار خود در Comfy Workflows، ابتدا پروفایل خود را بسازید.",
+    "introTitle": "انتشار در Comfy Workflows",
+    "modalTitle": "ساخت پروفایل در Comfy Workflows",
     "nameLabel": "نام شما",
     "namePlaceholder": "نام خود را اینجا وارد کنید",
     "profileCreationNav": "ساخت پروفایل",
@@ -624,8 +631,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "صفحه پروفایل شما فعال است در",
     "successTitle": "عالی به نظر می‌رسد، {'@'}{username}!",
-    "updateIntroDescription": "آخرین تغییرات خود را به ComfyHub ارسال کنید. لینک اشتراک‌گذاری و آمار شما بدون تغییر باقی می‌ماند.",
-    "updateIntroTitle": "به‌روزرسانی workflow شما در ComfyHub",
+    "updateIntroDescription": "آخرین تغییرات خود را به Comfy Workflows ارسال کنید. لینک اشتراک‌گذاری و آمار شما بدون تغییر باقی می‌ماند.",
+    "updateIntroTitle": "به‌روزرسانی workflow شما در Comfy Workflows",
     "uploadCover": "+ بارگذاری کاور",
     "uploadProfilePicture": "+ بارگذاری تصویر پروفایل",
     "uploadWorkflowButton": "بارگذاری جریان‌کار من",
@@ -637,20 +644,19 @@
     "additionalInfo": "اطلاعات تکمیلی",
     "back": "بازگشت",
     "createProfileCta": "ساخت پروفایل",
-    "createProfileToPublish": "برای انتشار در ComfyHub یک پروفایل بسازید",
+    "createProfileToPublish": "برای انتشار در Comfy Workflows یک پروفایل بسازید",
     "exampleImage": "تصویر نمونه {index}",
     "exampleImagePosition": "تصویر نمونه {index} از {total}",
     "examplesDescription": "تا {total} تصویر نمونه اضافی اضافه کنید",
     "maxExamples": "شما می‌توانید تا {max} نمونه انتخاب کنید",
     "next": "بعدی",
-    "publishButton": "انتشار در ComfyHub",
+    "publishButton": "انتشار در Comfy Workflows",
     "publishFailedDescription": "در هنگام انتشار گردش‌کار شما مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
+    "publishFailedDescriptionWithReason": "هنگام انتشار ورک‌فلو شما مشکلی پیش آمد: {reason}",
     "publishFailedTitle": "انتشار ناموفق بود",
-    "publishSuccessDescription": "گردش‌کار شما اکنون در ComfyHub فعال است.",
+    "publishSuccessDescription": "گردش‌کار شما اکنون در Comfy Workflows فعال است.",
     "publishSuccessTitle": "با موفقیت منتشر شد",
     "removeExampleImage": "حذف تصویر نمونه",
-    "renameFailedDescription": "workflow شما با موفقیت منتشر شد، اما تغییر نام فایل محلی انجام نشد. لطفاً دوباره نام آن را مطابق‌سازی کنید.",
-    "renameFailedTitle": "تغییر نام ناموفق بود",
     "selectAThumbnail": "یک تصویر بندانگشتی انتخاب کنید",
     "shareAs": "اشتراک‌گذاری به عنوان",
     "showLessTags": "نمایش کمتر...",
@@ -666,8 +672,8 @@
     "thumbnailImageComparison": "مقایسه تصویر",
     "thumbnailPreview": "پیش‌نمایش بندانگشتی",
     "thumbnailVideo": "ویدیو",
-    "title": "انتشار در ComfyHub",
-    "unsavedDescription": "شما باید گردش‌کار خود را قبل از انتشار در ComfyHub ذخیره کنید. اکنون ذخیره کنید تا ادامه دهید.",
+    "title": "انتشار در Comfy Workflows",
+    "unsavedDescription": "شما باید گردش‌کار خود را قبل از انتشار در Comfy Workflows ذخیره کنید. اکنون ذخیره کنید تا ادامه دهید.",
     "updateButton": "به‌روزرسانی workflow",
     "uploadAnImage": "برای انتخاب کلیک کنید یا تصویر را بکشید",
     "uploadComparison": "بارگذاری قبل و بعد",
@@ -785,6 +791,11 @@
       "gpuUsage": "استفاده از GPU"
     },
     "faqs": "سؤالات متداول",
+    "insufficient": {
+      "memberCta": "متوجه شدم",
+      "memberDescription": "تیم شما همه اعتبار خود را مصرف کرده است. مدیران ورک‌اسپیس باید اعتبار بیشتری اضافه کنند تا ورک‌فلوها اجرا شوند.",
+      "memberTitle": "اعتبار این ورک‌اسپیس به پایان رسیده است"
+    },
     "invoiceHistory": "تاریخچه فاکتورها",
     "lastUpdated": "آخرین به‌روزرسانی",
     "loadEventsError": "بارگذاری فعالیت ناموفق بود. لطفاً دوباره تلاش کنید.",
@@ -1259,6 +1270,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "این node توسط سیاست workspace شما غیرفعال شده است. از node دیگری استفاده کنید.",
+        "title": "node غیرفعال",
+        "toastMessage": "این node توسط سیاست workspace شما غیرفعال شده است.",
+        "toastTitle": "nodeهای شریک"
+      },
       "bad_linked_input": {
         "details": "{nodeName} دارای اتصال نامعتبر برای {inputName} است.",
         "itemLabel": "{nodeName} - {inputName}",
@@ -1452,6 +1470,9 @@
     "noExportsInQueue": "هیچ خروجی {filter} در صف نیست",
     "preparingExport": "در حال آماده‌سازی خروجی...",
     "retryDownload": "تلاش مجدد برای دانلود"
+  },
+  "feedback": {
+    "title": "ارسال بازخورد"
   },
   "g": {
     "1x": "۱x",
@@ -2087,6 +2108,7 @@
     "arrange": {
       "atLeastOne": "یک",
       "connectAtLeastOne": "حداقل {atLeastOne} node خروجی را متصل کنید تا کاربران پس از اجرا نتایج را مشاهده کنند.",
+      "descriptionPlaceholder": "برای افزودن توضیح، دوبار کلیک کنید",
       "noOutputs": "هنوز هیچ خروجی اضافه نشده است",
       "outputExamples": "مثال‌ها: «ذخیره تصویر» یا «ذخیره ویدیو»",
       "outputs": "خروجی‌ها",
@@ -2603,8 +2625,8 @@
     "resetView": "بازنشانی نمای بوم",
     "run": "اجرا",
     "runWorkflow": "اجرای workflow (Shift برای صف در ابتدا)",
-    "runWorkflowDisabled": "workflow شامل nodeهای پشتیبانی‌نشده است (با رنگ قرمز مشخص شده‌اند). برای اجرا، این موارد را حذف کنید.",
     "runWorkflowFront": "اجرای workflow (صف در ابتدا)",
+    "runWorkflowMissingResources": "workflow شامل منابع ناقص است.",
     "settings": "تنظیمات",
     "showMenu": "نمایش منو",
     "stopRunInstant": "توقف اجرا (فوری)",
@@ -2783,7 +2805,6 @@
     "accept": "بله، کمک می‌کنم!",
     "description": "شما از این قابلیت استفاده کرده‌اید. آیا مایل هستید بازخورد خود را با ما به اشتراک بگذارید؟",
     "dontAskAgain": "دیگر نمایش نده",
-    "loadError": "بارگذاری نظرسنجی ناموفق بود. لطفاً بعداً دوباره تلاش کنید.",
     "notNow": "فعلاً نه",
     "title": "به ما در بهبود کمک کنید"
   },
@@ -2798,6 +2819,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2849,7 @@
     "ace": "ace",
     "adjustments": "تنظیمات",
     "advanced": "پیشرفته",
+    "anima": "anima",
     "animate": "انیمیت",
     "attention_experiments": "آزمایش‌های توجه",
     "audio": "صدا",
@@ -2849,6 +2872,7 @@
     "create": "ایجاد",
     "custom": "سفارشی",
     "dancer": "رقصنده",
+    "dataset": "dataset",
     "debug": "اشکال‌زدایی",
     "detection": "شناسایی",
     "experimental": "آزمایشی",
@@ -2870,6 +2894,7 @@
     "image": "تصویر",
     "infinite talk": "گفتگوی بی‌نهایت",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "لاتنت",
     "loaders": "بارگذارها",
@@ -2877,11 +2902,14 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
+    "mage": "mage",
     "mask": "ماسک",
     "merging": "ادغام",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "مدل",
     "model specific": "مدل خاص",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "چند GPU",
     "noise": "نویز",
@@ -3001,6 +3029,7 @@
       "appTypeNative": "برنامه بومی",
       "appTypeWeb": "برنامه وب",
       "deny": "لغو",
+      "detailsHeader": "جزئیات",
       "errorExpired": "این درخواست تأیید منقضی شده یا قبلاً استفاده شده است. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
       "errorScopeBroadening": "دسترسی‌های قبلاً تأییدشده این درخواست را پوشش نمی‌دهند. لازم است با دسترسی‌های جدید مجدداً تأیید کنید.",
       "errorUnavailable": "این قابلیت در حال حاضر در دسترس نیست. در صورت تداوم مشکل با پشتیبانی تماس بگیرید.",
@@ -3015,7 +3044,6 @@
       "sessionErrorToastSummary": "ورود با OAuth ادامه نیافت",
       "subtitle": "برای ادامه وارد {resource} شوید",
       "title": "{client} درخواست دسترسی دارد",
-      "workspaceHelp": "دسترسی‌ها فقط برای این ورک‌اسپیس اعمال می‌شوند.",
       "workspaceLabel": "ورک‌اسپیس"
     },
     "scopes": {
@@ -3031,6 +3059,38 @@
       "owner": "مالک",
       "personal": "شخصی"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "هر تولید و وارداتی در دارایی‌های رسانه‌ای ذخیره می‌شود. هر زمان خواستید آن را باز کنید تا مرور، دانلود یا استفاده مجدد از کارهای قبلی داشته باشید.",
+        "title": "همه دارایی‌های خود را پیدا کنید"
+      },
+      "inputs": {
+        "body": "آنچه می‌خواهید با آن کار کنید اضافه کنید. ورودی‌های شما همان چیزی است که برنامه به نتیجه تبدیل می‌کند.",
+        "title": "ورودی‌های خود را اضافه کنید"
+      },
+      "landing": {
+        "body": "یک راهنمای سریع از موارد ضروری، در حدود یک دقیقه. به شما نشان می‌دهیم کجا ورودی‌ها را اضافه کنید، برنامه خود را اجرا کنید و نتایج را بیابید.",
+        "primary": "شروع آموزش",
+        "title": "به برنامه‌ها خوش آمدید"
+      },
+      "outputs": {
+        "body": "نتایج نهایی شما اینجا در مرکز نمایش داده می‌شوند. آن‌ها را دانلود کنید یا ورودی را تغییر دهید و دوباره اجرا کنید.",
+        "title": "نتایج خود را دریافت کنید"
+      },
+      "replay": "بازدید مجدد از حالت برنامه",
+      "run": {
+        "body": "از ورودی‌های خود راضی هستید؟ روی اجرا بزنید و نتیجه شما به محض آماده شدن در مرکز نمایش داده می‌شود.",
+        "title": "برنامه خود را اجرا کنید"
+      }
+    },
+    "back": "قبلی",
+    "done": "پایان",
+    "loadError": "در نمایش این راهنما مشکلی پیش آمد",
+    "next": "بعدی",
+    "skip": "رد کردن",
+    "stepLabel": "گام {current} از {total}"
   },
   "openSharedWorkflow": {
     "author": "نویسنده:",
@@ -3204,12 +3264,18 @@
       "copyUrl": "کپی نشانی اینترنتی",
       "customNodeDownloadDisabled": "محیط ابری از وارد کردن مدل برای custom nodeها در این بخش پشتیبانی نمی‌کند. لطفاً از nodeهای بارگذار استاندارد استفاده کنید یا مدلی از کتابخانه زیر جایگزین نمایید.",
       "downloadAll": "دانلود همه",
+      "downloadModel": "دانلود {model}",
       "expandNodes": "نمایش nodeهای مرتبط",
+      "gatedModelDownloadTooltip": "دانلود ممکن است ابتدا نیاز به ورود به Hugging Face داشته باشد.",
+      "gatedModelTooltip": "این مدل محدود است و نیاز به ورود به Hugging Face و پذیرش توافق‌نامه مجوز دارد.",
+      "gatedModelsHint": "برخی مدل‌ها محدود هستند. برای دانلود آن‌ها، وارد حساب Hugging Face شوید و با توافق‌نامه مجوز مدل موافقت کنید.",
+      "gatedModelsHintLabel": "توجه:",
       "import": "وارد کردن",
       "importNotSupported": "وارد کردن پشتیبانی نمی‌شود",
       "importing": "در حال وارد کردن...",
       "locateNode": "یافتن node در بوم",
       "missingModelsTitle": "مدل‌های مفقود شده",
+      "openHuggingFaceRepo": "باز کردن مخزن Hugging Face برای {model}",
       "refresh": "بازآوری",
       "refreshFailed": "بازآوری مدل‌های مفقود انجام نشد. لطفاً دوباره تلاش کنید.",
       "refreshing": "در حال بازآوری مدل‌های مفقود.",
@@ -3257,6 +3323,8 @@
   "secrets": {
     "addSecret": "افزودن کلید محرمانه",
     "createdAt": "ایجاد شده در {date}",
+    "credentialType": "نوع اعتبارنامه",
+    "credentialTypeHint": "نحوه ارائه این اعتبارنامه را انتخاب کنید.",
     "deleteConfirmMessage": "آیا مطمئن هستید که می‌خواهید «{name}» را حذف کنید؟ این عملیات قابل بازگشت نیست.",
     "deleteConfirmTitle": "حذف کلید محرمانه",
     "description": "اسرار به صورت رمزگذاری‌شده ذخیره می‌شوند و برای داده‌های حساس مانند کلیدهای API استفاده می‌شوند.",
@@ -3469,6 +3537,7 @@
     "3DViewer": "نمایشگر سه‌بعدی",
     "API Nodes": "Nodeهای API",
     "About": "درباره",
+    "Allowlist": "لیست مجاز",
     "Appearance": "ظاهر",
     "BrushAdjustment": "تنظیم قلم‌مو",
     "Camera": "دوربین",
@@ -3496,6 +3565,7 @@
     "Load 3D": "بارگذاری ۳بعدی و انیمیشن",
     "Locale": "زبان",
     "Mask Editor": "ویرایشگر Mask",
+    "Members": "اعضا",
     "Menu": "منو",
     "ModelLibrary": "کتابخانه مدل",
     "Node": "Node",
@@ -3546,9 +3616,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "متوجه شدم که این رسانه‌ها منتشر و عمومی خواهند شد",
     "checkingAssets": "در حال بررسی وضعیت رسانه‌ها…",
-    "comfyHubButton": "بارگذاری در ComfyHub",
-    "comfyHubDescription": "ComfyHub مرکز رسمی جامعه ComfyUI است.\nگردش‌کار شما یک صفحه عمومی خواهد داشت که برای همه قابل مشاهده است.",
-    "comfyHubTitle": "بارگذاری در ComfyHub",
+    "comfyHubButton": "بارگذاری در Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows مرکز رسمی جامعه ComfyUI است.\nگردش‌کار شما یک صفحه عمومی خواهد داشت که برای همه قابل مشاهده است.",
+    "comfyHubTitle": "بارگذاری در Comfy Workflows",
     "copyLink": "کپی",
     "createLinkButton": "ایجاد لینک",
     "createLinkDescription": "هنگام ایجاد لینک برای گردش‌کار، این رسانه‌ها نیز همراه با گردش‌کار شما به اشتراک گذاشته می‌شوند",
@@ -3621,19 +3691,34 @@
     },
     "logout": "خروج",
     "mediaAssets": {
+      "clearFilters": "پاک‌کردن همه",
+      "dateAll": "تمام زمان‌ها",
+      "datePastMonth": "۳۰ روز گذشته",
+      "datePastWeek": "۷ روز گذشته",
+      "dateThisYear": "امسال",
+      "dateToday": "امروز",
       "filter3D": "سه‌بعدی",
       "filterAudio": "صوت",
+      "filterDate": "تاریخ",
+      "filterGroupAttribute": "ویژگی",
       "filterImage": "تصویر",
+      "filterMediaType": "نوع رسانه",
       "filterText": "متن",
       "filterVideo": "ویدیو",
+      "removeFilter": "حذف فیلتر {label}",
+      "sortAToZ": "نام (الف → ی)",
       "sortFastestFirst": "زمان تولید (کمترین ابتدا)",
       "sortLongestFirst": "زمان تولید (بیشترین ابتدا)",
       "sortNewestFirst": "جدیدترین ابتدا",
       "sortOldestFirst": "قدیمی‌ترین ابتدا",
+      "sortZToA": "نام (ی → الف)",
       "title": "دارایی‌های رسانه‌ای",
+      "viewGridLarge": "نمای شبکه (بزرگ)",
+      "viewGridSmall": "نمای شبکه (کوچک)",
       "viewSettings": "نمایش تنظیمات"
     },
     "modelLibrary": "کتابخانه مدل",
+    "modelLibraryLoadFailed": "بارگذاری مدل‌ها انجام نشد. اتصال به سرور را بررسی کنید و برای تلاش مجدد، دکمه تازه‌سازی را بزنید.",
     "newBlankWorkflow": "ایجاد Workflow جدید خالی",
     "noFilesFound": "فایلی یافت نشد",
     "noFilesFoundMessage": "برای مشاهده فایل‌ها، فایل بارگذاری یا محتوا تولید کنید",
@@ -3739,6 +3824,7 @@
       "viewList": "نمای لیستی"
     },
     "searchAssets": "جستجوی دارایی‌ها",
+    "searchResultsCapped": "نمایش اولین {limit} نتیجه. جستجوی خود را دقیق‌تر کنید تا نتایج خاص‌تری ببینید.",
     "sidebar": "نوار کناری",
     "templates": "قالب‌ها",
     "themeToggle": "تغییر تم",
@@ -3806,6 +3892,7 @@
     "beta": "بتا",
     "billedMonthly": "صورتحساب ماهانه",
     "billedYearly": "{total} صورتحساب سالانه",
+    "billingAndInvoices": "صورتحساب و فاکتورها",
     "billingComingSoon": {
       "message": "صورت‌حساب تیمی به‌زودی ارائه می‌شود. به‌زودی می‌توانید برای فضای کاری خود با قیمت هر نفر اشتراک تهیه کنید. برای به‌روزرسانی‌ها همراه ما باشید.",
       "title": "به‌زودی"
@@ -3816,17 +3903,23 @@
       "endOfBillingPeriod": "پایان دوره صورتحساب",
       "failed": "لغو اشتراک ناموفق بود",
       "keepSubscription": "حفظ اشتراک",
-      "title": "لغو اشتراک"
+      "offerUnavailable": "این گزینه در دسترس نیست. لطفاً گزینه دیگری را انتخاب کنید.",
+      "title": "لغو اشتراک",
+      "workspaceChanged": "محیط کاری فعال شما تغییر کرده است. لطفاً بازگردید و دوباره تلاش کنید."
     },
     "cancelPlan": "لغو پلن",
     "cancelSuccess": "اشتراک با موفقیت لغو شد",
     "canceled": "لغو شد",
     "canceledCard": {
       "description": "دیگر هزینه‌ای از شما دریافت نمی‌شود. امکانات شما تا تاریخ {date} فعال خواهد بود.",
+      "descriptionWithoutDate": "دیگر هزینه‌ای از شما دریافت نمی‌شود. امکانات شما تا پایان دوره صورتحساب فعال خواهد بود.",
+      "endedDescription": "اشتراک شما دیگر فعال نیست.",
+      "endedTitle": "اشتراک شما به پایان رسیده است",
       "title": "اشتراک شما لغو شده است"
     },
     "changePlan": "تغییر پلن",
     "changeTo": "تغییر به {plan}",
+    "changesToPlanOnDate": "تغییر به {plan} در تاریخ {date}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "لوگوی Comfy Cloud",
     "contactOwnerToSubscribe": "برای فعال‌سازی اشتراک با مالک محیط کاری تماس بگیرید",
@@ -3843,6 +3936,8 @@
     "descriptionWorkspace": "بهترین طرح را برای فضای کاری خود انتخاب کنید",
     "downgrade": {
       "body": "تمام اعضای دیگر این فضای کاری بلافاصله حذف خواهند شد.",
+      "bodyReactivation": "اشتراک شما لغو شده است. تغییر پلن باعث فعال‌سازی مجدد آن می‌شود و امروز مبلغ {amount} از شما دریافت خواهد شد.",
+      "bodyRemovalAndReactivation": "تمام اعضای دیگر این فضای کاری بلافاصله حذف خواهند شد. اشتراک شما لغو شده است، بنابراین تغییر پلن باعث فعال‌سازی مجدد آن می‌شود و امروز مبلغ {amount} از شما دریافت خواهد شد.",
       "confirm": "تغییر پلن",
       "confirmationPhrase": "متوجه شدم",
       "confirmationPrompt": "برای تأیید، عبارت «{phrase}» را وارد کنید.",
@@ -3852,6 +3947,8 @@
       "notAllowed": "این تغییر پلن در دسترس نیست",
       "paymentMethodRequired": "برای تغییر پلن، نیاز به روش پرداخت است",
       "paymentPageBlocked": "امکان باز کردن صفحه پرداخت وجود ندارد — لطفاً دوباره تلاش کنید",
+      "reactivationAmountChanged": "مبلغ پرداختی از زمان تأیید شما تغییر کرده است — لطفاً بررسی و دوباره تلاش کنید",
+      "reactivationConfirmationRequired": "لطفاً قبل از ادامه، تأیید پرداخت فعال‌سازی را انجام دهید",
       "title": "تغییر به پلن {plan}؟"
     },
     "endsOnDate": "پایان در تاریخ {date}",
@@ -3865,22 +3962,8 @@
     "everythingInPlus": "همه امکانات {plan}، به‌علاوه:",
     "expiresDate": "انقضا در {date}",
     "freePerks": {
+      "freeRuns": "{count} اجرای رایگان | {count} اجرای رایگان",
       "maxRuntime": "حداکثر زمان اجرا {duration}"
-    },
-    "freeTier": {
-      "description": "طرح رایگان شما شامل {credits} اعتبار در هر ماه برای استفاده از Comfy Cloud است.",
-      "descriptionGeneric": "طرح رایگان شما شامل اعتبار ماهانه برای استفاده از Comfy Cloud است.",
-      "nextRefresh": "اعتبار شما در تاریخ {date} به‌روزرسانی می‌شود.",
-      "outOfCredits": {
-        "subtitle": "با اشتراک، امکان شارژ مجدد و امکانات بیشتر را فعال کنید",
-        "title": "اعتبار رایگان شما تمام شده است"
-      },
-      "subscribeCta": "اشتراک برای اعتبار بیشتر",
-      "title": "شما در طرح رایگان هستید",
-      "topUpBlocked": {
-        "title": "امکان شارژ مجدد و امکانات بیشتر را فعال کنید"
-      },
-      "upgradeCta": "مشاهده طرح‌ها"
     },
     "gpuLabel": "RTX 6000 Pro (۹۶ گیگابایت VRAM)",
     "haveQuestions": "سوالی دارید یا به دنبال راهکار سازمانی هستید؟",
@@ -3891,6 +3974,9 @@
       "memberTitle": "اشتراک این فضای کاری غیرفعال است",
       "runLabel": "اجرا"
     },
+    "inactiveTeamDescription": "برای افزودن اعضای جدید و اجرای workflowها، طرح تیمی خود را مجدداً فعال کنید.",
+    "inactiveTeamPlanIncludes": "یک طرح فعال شامل همه امکانات {plan} و همچنین:",
+    "inactiveTeamTitle": "اشتراک تیمی غیرفعال",
     "inviteUpTo": "دعوت تا سقف",
     "invoiceHistory": "تاریخچه فاکتورها",
     "learnMore": "اطلاعات بیشتر",
@@ -3950,6 +4036,7 @@
       "backToAllPlans": "بازگشت به همه طرح‌ها",
       "billedEachMonth": "{amount} هر ماه صورتحساب می‌شود. در هر زمان قابل لغو است.",
       "commitment": "تعهد",
+      "completeVerification": "تکمیل احراز هویت",
       "confirm": "تأیید",
       "confirmChange": "تأیید تغییر",
       "confirmChangeTitle": "بررسی تغییر زمان‌بندی‌شده شما",
@@ -3974,6 +4061,20 @@
       "privacyPolicy": "سیاست حفظ حریم خصوصی",
       "proratedCharge": "هزینه متناسب برای {plan}",
       "proratedRefund": "بازپرداخت متناسب برای {plan}",
+      "reactivation": {
+        "amountChanged": "مبلغ پرداختی از زمان تأیید شما تغییر کرده است — لطفاً بررسی و دوباره تلاش کنید",
+        "checkboxLabel": "متوجه شدم که امروز مبلغ {amount} از من دریافت خواهد شد",
+        "confirmButton": "تأیید و فعال‌سازی مجدد",
+        "confirmButtonWithCharge": "تأیید و فعال‌سازی مجدد — {amount} امروز",
+        "confirmationRequired": "اشتراک شما لغو شده است — لطفاً قبل از ادامه، هزینه فعال‌سازی مجدد را تأیید کنید",
+        "downgradeBody": "اشتراک {plan} شما قرار بود در تاریخ {date} به پایان برسد. با تغییر به {newPlan}، اشتراک شما مجدداً فعال می‌شود — امروز مبلغی از شما دریافت نمی‌شود، اما اکنون در تاریخ {nextDate} با قیمت جدید به صورت خودکار تمدید خواهد شد و به جای پایان یافتن ادامه می‌یابد.",
+        "durationChangeBody": "اشتراک {plan} شما قرار بود در تاریخ {date} به پایان برسد. با تغییر به پرداخت سالانه، اشتراک شما مجدداً فعال می‌شود و هزینه یک سال کامل، یعنی {amount}، امروز دریافت می‌شود. سپس هر سال در تاریخ {nextDate} به صورت خودکار تمدید خواهد شد و به جای پایان یافتن ادامه می‌یابد.",
+        "durationChangeBodyMonthly": "اشتراک {plan} شما قرار بود در تاریخ {date} به پایان برسد. با تغییر به پرداخت ماهانه، اشتراک شما مجدداً فعال می‌شود — امروز مبلغ {amount} از شما دریافت می‌شود و به جای پایان یافتن، در تاریخ {nextDate} به صورت خودکار تمدید خواهد شد.",
+        "title": "فعال‌سازی مجدد اشتراک شما",
+        "titleAnnual": "فعال‌سازی مجدد اشتراک شما — هزینه یک سال کامل امروز دریافت می‌شود",
+        "unavailable": "در حال حاضر امکان تأیید فعال‌سازی مجدد وجود ندارد — لطفاً دوباره پلن خود را انتخاب کنید",
+        "upgradeBody": "اشتراک {plan} شما قرار بود در تاریخ {date} به پایان برسد. با ارتقاء اکنون، اشتراک شما مجدداً فعال می‌شود — امروز مبلغ {amount} از شما دریافت می‌شود و به جای پایان یافتن، در تاریخ {nextDate} به صورت خودکار تمدید خواهد شد."
+      },
       "refillReplacesNote": "جایگزین شارژ ماهانه شما می‌شود. موجودی فعلی حفظ می‌شود.",
       "showMoreFeatures": "نمایش امکانات بیشتر",
       "starting": "شروع از {date}",
@@ -3995,6 +4096,7 @@
     "pricingBlurbQuestions": "سؤالات",
     "pricingBlurbSeeDetails": "جزئیات را ببینید",
     "reactivatePlan": "فعال‌سازی مجدد پلن",
+    "reactivateToUseCredits": "برای استفاده از این اعتبارها، طرح خود را مجدداً فعال کنید.",
     "refillsDate": "شارژ مجدد در {date}",
     "refillsNextCycle": "شارژ مجدد در چرخه بعدی",
     "refreshCredits": "به‌روزرسانی اعتبارها",
@@ -4010,6 +4112,7 @@
       "waitingForSubscription": "اشتراک خود را در تب جدید تکمیل کنید. ما به صورت خودکار اتمام را تشخیص می‌دهیم!"
     },
     "resubscribe": "تمدید اشتراک",
+    "resubscribeFailed": "فعال‌سازی مجدد اشتراک ناموفق بود",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
     "resubscribeTo": "تمدید اشتراک {plan}",
     "saveYearly": "٪۲۰ صرفه‌جویی",
@@ -4135,7 +4238,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "فیلترها:",
     "allTemplates": "همه قالب‌ها",
     "categories": "دسته‌بندی‌ها",
     "category": {
@@ -4160,9 +4262,12 @@
       "Video": "ویدیو",
       "Video API": "رابط برنامه‌نویسی ویدیو"
     },
+    "clearAllFilters": "حذف همه فیلترها",
     "error": {
       "templateNotFound": "قالب \"{templateName}\" یافت نشد"
     },
+    "filtersApplied": "{count} فیلتر اعمال شد | {count} فیلتر اعمال شدند",
+    "filtersButton": "فیلترها",
     "licenseFilter": "مجوز",
     "loading": "در حال بارگذاری قالب‌ها...",
     "loadingMore": "در حال بارگذاری قالب‌های بیشتر...",
@@ -4170,7 +4275,11 @@
     "modelsSelected": "{count} مدل",
     "noResults": "قالبی یافت نشد",
     "noResultsHint": "لطفاً جستجو یا فیلترهای خود را تغییر دهید",
-    "resetFilters": "پاک‌کردن فیلترها",
+    "paidTemplate": {
+      "badgeLabel": "API شریک",
+      "credits": "با اعتبار اجرا می‌شود",
+      "title": "قالب ویژه"
+    },
     "resultsCount": "نمایش {count} از {total} قالب",
     "runsOnFilter": "اجرا روی",
     "runsOnSelected": "{count} اجرا روی",
@@ -4239,6 +4348,7 @@
     "fileTooLarge": "فایل بیش از حد بزرگ است ({size} مگابایت). حداکثر اندازه مجاز {maxSize} مگابایت است",
     "fileUploadFailed": "بارگذاری فایل انجام نشد",
     "interrupted": "اجرا متوقف شد",
+    "invalidBillingPortalUrl": "آدرس پورتال نامعتبر است",
     "invalidTemplateData": "بارگذاری قالب نود ناموفق بود: داده نامعتبر",
     "legacyMaskEditorDeprecated": "ویرایشگر mask قدیمی منسوخ شده و به‌زودی حذف خواهد شد.",
     "migrateToLitegraphReroute": "nodeهای reroute در نسخه‌های آینده حذف خواهند شد. برای مهاجرت به reroute بومی litegraph کلیک کنید.",
@@ -4261,6 +4371,9 @@
     "updateRequested": "درخواست به‌روزرسانی ثبت شد",
     "useApiKeyTip": "نکته: به ورود عادی دسترسی ندارید؟ از گزینه Comfy API Key استفاده کنید.",
     "userNotAuthenticated": "کاربر احراز هویت نشده است"
+  },
+  "typeform": {
+    "loadError": "بارگذاری فرم ناموفق بود. لطفاً بعداً دوباره تلاش کنید."
   },
   "userSelect": {
     "enterUsername": "نام کاربری را وارد کنید",
@@ -4304,6 +4417,34 @@
     "frontendOutdated": "نسخه رابط کاربری {frontendVersion} قدیمی است. نسخه پشتی نیاز به نسخه {requiredVersion} یا بالاتر دارد.",
     "title": "هشدار ناسازگاری نسخه",
     "updateFrontend": "به‌روزرسانی رابط کاربری"
+  },
+  "videoEdit": {
+    "adjustCrop": "تنظیم ناحیه برش",
+    "adjustEndFrame": "تنظیم فریم پایان",
+    "adjustStartFrame": "تنظیم فریم شروع",
+    "cropVideo": "برش تصویر ویدیو",
+    "duration": "مدت زمان",
+    "durationSeconds": "{count} ثانیه",
+    "durationZero": "۰ ثانیه",
+    "endFrame": "فریم پایان",
+    "fileSize": "حجم فایل",
+    "fileSizeBytes": "{count} بایت",
+    "fileSizeKilobytes": "{count} کیلوبایت",
+    "fileSizeMegabytes": "{count} مگابایت",
+    "fileSizeUnknown": "—",
+    "frames": "تعداد فریم‌ها",
+    "loadingFilmstrip": "در حال بارگذاری نوار فیلم…",
+    "loadingVideo": "در حال بارگذاری پیش‌نمایش ویدیو",
+    "noVideoSource": "برای پیش‌نمایش و ویرایش، یک ویدیو انتخاب یا متصل کنید",
+    "pause": "توقف",
+    "play": "پخش",
+    "resolution": "{width} × {height}",
+    "seekVideo": "جستجوی ویدیو",
+    "selectedOfTotal": "{selected} / {total}",
+    "setEndFrame": "تنظیم مجدد فریم پایان",
+    "setStartFrame": "تنظیم مجدد فریم شروع",
+    "startFrame": "فریم شروع",
+    "trimVideo": "برش ویدیو"
   },
   "vueNodesBanner": {
     "desc": "– workflowهای منعطف‌تر، ابزارک‌های قدرتمند جدید، ساخته‌شده برای توسعه‌پذیری",
@@ -4397,6 +4538,48 @@
     }
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "اعتبار مصرف‌شده",
+        "date": "تاریخ",
+        "eventDetails": "جزئیات رویداد",
+        "eventType": "نوع رویداد",
+        "user": "کاربر"
+      },
+      "empty": "هنوز فعالیتی وجود ندارد.",
+      "fullActivity": "تمام فعالیت‌ها",
+      "hoverCard": {
+        "lastActivity": "آخرین فعالیت",
+        "partnerNodeUsed": "گره شریک استفاده‌شده",
+        "totalCreditsUsed": "مجموع اعتبار مصرف‌شده"
+      }
+    },
+    "billingStatus": {
+      "ending": {
+        "body": "اعضا تا آن زمان دسترسی کامل خواهند داشت. برای حفظ اعتبار و ظرفیت اشتراکی، پلن را مجدداً فعال کنید.",
+        "reactivate": "فعال‌سازی مجدد پلن",
+        "title": "پلن تیم شما در تاریخ {date} به پایان می‌رسد"
+      },
+      "outOfCredits": {
+        "addCredits": "افزودن اعتبار",
+        "body": "تیم شما همه اعتبار خود را مصرف کرده است. برای ادامه تولید، اعتبار بیشتری اضافه کنید یا تا تاریخ {date} منتظر بمانید تا اعتبار شارژ شود.",
+        "bodyNoDate": "تیم شما همه اعتبار خود را مصرف کرده است. برای ادامه تولید، اعتبار بیشتری اضافه کنید.",
+        "dismiss": "بستن",
+        "memberBody": "تیم شما همه اعتبار خود را مصرف کرده است. مدیران ورک‌اسپیس باید اعتبار بیشتری اضافه کنند تا تولید ادامه یابد.",
+        "title": "اعتبار به پایان رسیده است"
+      },
+      "paused": {
+        "body": "اشتراک این ورک‌اسپیس متوقف شده است. برای ادامه، پرداخت را به‌روزرسانی کنید.",
+        "memberBody": "اشتراک این ورک‌اسپیس متوقف شده است. مدیران ورک‌اسپیس باید روش پرداخت را به‌روزرسانی کنند.",
+        "title": "اشتراک متوقف شده است"
+      },
+      "updatePayment": "به‌روزرسانی پرداخت",
+      "warning": {
+        "body": "آخرین پرداخت شما انجام نشد. اشتراک شما در تاریخ {date} متوقف می‌شود مگر اینکه پرداخت به‌روزرسانی شود.",
+        "bodyNoDate": "آخرین پرداخت شما انجام نشد. برای جلوگیری از توقف، پرداخت را به‌روزرسانی کنید.",
+        "title": "پرداخت ناموفق بود"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "تنزل به عضو",
       "demoteMessage": "دسترسی مدیریتی را از دست خواهد داد.",
@@ -4458,14 +4641,31 @@
         "cancelInvite": "لغو دعوت‌نامه",
         "changeRole": "تغییر نقش",
         "removeMember": "حذف عضو",
-        "resendInvite": "ارسال مجدد دعوت‌نامه"
+        "resendInvite": "ارسال مجدد دعوت‌نامه",
+        "setCreditLimit": "تنظیم سقف اعتبار"
+      },
+      "activity": {
+        "daysAgo": "{count} روز پیش",
+        "hoursAgo": "{n} ساعت پیش",
+        "justNow": "همین حالا",
+        "minutesAgo": "{n} دقیقه پیش"
       },
       "columns": {
+        "creditsUsed": "اعتبار ماهانه",
         "expiryDate": "تاریخ انقضا",
         "inviteDate": "تاریخ دعوت",
         "role": "نقش"
       },
       "contactUs": "با ما تماس بگیرید",
+      "creditLimitDialog": {
+        "description": "پس از رسیدن به این سقف، امکان اجرای workflow برای او وجود نخواهد داشت.",
+        "invalidLimit": "لطفاً سقف اعتباری بیشتر از صفر وارد کنید.",
+        "limitOption": "محدود کردن مصرف اعتبار ماهانه به:",
+        "noLimit": "بدون محدودیت",
+        "title": "تنظیم سقف اعتبار ماهانه برای {name}",
+        "update": "به‌روزرسانی سقف",
+        "warning": "این کاربر تاکنون {credits} اعتبار مصرف کرده است. تعیین سقف برابر یا کمتر از مصرف فعلی، اجرای بیشتر را تا ماه آینده غیرممکن می‌کند."
+      },
       "header": "اعضا",
       "membersCount": "{count}/۵۰ عضو",
       "needMoreMembers": "به اعضای بیشتری نیاز دارید؟",
@@ -4488,6 +4688,45 @@
       "deleteWorkspaceDisabledTooltip": "ابتدا اشتراک فعال محیط کاری خود را لغو کنید",
       "editWorkspace": "ویرایش جزئیات محیط کاری",
       "leaveWorkspace": "خروج از محیط کاری"
+    },
+    "partnerNodes": {
+      "accessMode": "حالت دسترسی nodeهای شریک",
+      "allowAllAccessHint": "اعمال این تغییر ممکن است تا ۱۰ دقیقه در workspace شما طول بکشد.",
+      "allowAllAccessMessage": "تمام nodeهای شریک از هر ارائه‌دهنده‌ای برای همه اعضای workspace در دسترس قرار می‌گیرند.",
+      "allowAllAccessTitle": "دسترسی به همه nodeهای شریک مجاز شود؟",
+      "columns": {
+        "nodes": "nodeها",
+        "provider": "ارائه‌دهنده"
+      },
+      "disableAll": "غیرفعال‌سازی همه",
+      "disableAllMessage": "همه ارائه‌دهندگان غیرفعال خواهند شد. در حالت محدود، nodeهای شریک در دسترس نخواهند بود.",
+      "disableAllTitle": "همه ارائه‌دهندگان غیرفعال شوند؟",
+      "enableAll": "فعال‌سازی همه",
+      "loadError": "بارگذاری دسترسی به nodeهای شریک انجام نشد.",
+      "loading": "در حال بارگذاری دسترسی به nodeهای شریک",
+      "noResults": "هیچ ارائه‌دهنده یا node شریکی یافت نشد.",
+      "nodeCount": "{count} فعال",
+      "ownerOnly": "فقط مالک workspace می‌تواند دسترسی به nodeهای شریک را به‌روزرسانی کند.",
+      "restrictAccessHint": "اعمال این تغییر ممکن است تا ۱۰ دقیقه در workspace شما طول بکشد.",
+      "restrictAccessMessage": "اعضای workspace فقط می‌توانند از nodeهای شریک ارائه‌دهندگانی که فعال می‌کنید استفاده کنند.",
+      "restrictAccessTitle": "دسترسی به nodeهای شریک محدود شود؟",
+      "restricted": "محدود",
+      "restrictedDescription": "فقط nodeهای شریک از ارائه‌دهندگان فعال در دسترس هستند. اعمال تغییرات ممکن است تا ۱۰ دقیقه طول بکشد.",
+      "retry": "تلاش مجدد",
+      "saveError": "به‌روزرسانی دسترسی به nodeهای شریک انجام نشد. دوباره تلاش کنید.",
+      "searchPlaceholder": "جستجوی ارائه‌دهندگان و nodeهای شریک...",
+      "tableLabel": "ارائه‌دهندگان nodeهای شریک",
+      "title": "دسترسی به nodeهای شریک",
+      "toggleProvider": "تنظیم دسترسی برای {provider}",
+      "unavailable": "دسترسی به nodeهای شریک برای این workspace در دسترس نیست.",
+      "unrestricted": "بدون محدودیت",
+      "unrestrictedDescription": "تمام nodeهای شریک از هر ارائه‌دهنده‌ای برای همه در دسترس هستند. غیرفعال کردن ارائه‌دهندگان این حالت را به محدود تغییر می‌دهد."
+    },
+    "planCredits": {
+      "tabs": {
+        "activity": "فعالیت",
+        "overview": "اعتبارها"
+      }
     },
     "removeMemberDialog": {
       "error": "حذف عضو ناموفق بود",

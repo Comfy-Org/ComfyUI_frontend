@@ -15,6 +15,13 @@ All releases use `release-version-bump.yaml`. Effects differ by bump type:
 and `cloud/1.41`, branched from the commit _before_ the bump. Nightly patch
 bumps on `main` are convenience snapshots — no branches created.
 
+The minor bump is scheduled automatically: `release-version-bump.yaml` runs a
+**minor** bump on `main` every Monday 20:00 UTC and enables auto-merge on the
+resulting `version-bump-*` PR (marked with the `weekly-release-cut` label, which
+exempts it from the nightly stale-PR closer), so once its checks pass the merge
+triggers `release-branch-create.yaml` and the `core/` + `cloud/` cut is
+hands-off. The separate nightly `0 0 * * *` cron stays a **patch** bump.
+
 **Patch on `core/X.Y`**: publishes a hotfix draft release. Must not be marked
 "latest" so `main` stays current.
 
@@ -38,25 +45,70 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 2. `pr-backport.yaml` cherry-picks and creates a backport PR
 3. Conflicts produce a comment with details and an agent prompt
 
+## Release Sheriff Assignment
+
+`pr-assign-release-sheriff.yaml` assigns the on-call release sheriff to any
+open backport PR (label `backport`, or a `[backport ...]` title) and any
+release version-bump PR (label `Release`, or a `version-bump-<version>`
+branch) that has no assignee. It also requests their review, since backport merges are
+gated on an approval. Existing assignees and review requests are never
+overwritten.
+
+It runs on PR events and hourly — the hourly sweep is what catches strays that
+were opened while nobody was looking.
+
+The rotation itself lives in Datadog On-Call ("Frontend Team – Oncall
+Schedule", layer "Release Sheriff") and is read at execution time, so handovers
+need no commit.
+
+Datadog exposes no GitHub identity, and GitHub only resolves commit emails its
+users chose to publish, so the two have to be bridged explicitly. That bridge
+lives on the Datadog schedule as tags, one per sheriff:
+
+```text
+github:<datadog-email-local-part>:<github-login>
+```
+
+So `ben@comfy.org` → GitHub `benceruleanlu` is the tag `github:ben:benceruleanlu`.
+**Adding someone to the rotation therefore means adding their tag in the Datadog
+UI — no commit.** Tags are only settable at schedule-creation time over the API,
+so edit them in the on-call UI. Datadog rejects `@` and `+` in tags and
+lower-cases what it accepts; GitHub logins are case-insensitive, so a
+lower-cased login still resolves.
+
+Only `scheduleId`, `datadogSite` and `fallbackGithubLogin` stay in the `CONFIG`
+object of `scripts/release-sheriff/release-sheriff.ts`. Note `datadogSite` is
+`us5.datadoghq.com` — the Comfy org lives on that sub-domain and the default
+`api.datadoghq.com` returns 403.
+
+Requires repo secrets `DATADOG_API_KEY` and `DATADOG_APP_KEY` (scope:
+`on_call_read`).
+
+If the on-call user cannot be mapped — a missing tag, missing secrets, an
+unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
+never left unowned, but **exits non-zero** so the degradation is visible. A
+green run means a real sheriff was resolved from Datadog.
+
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,
 publishing to GitHub Releases (`dist.zip`), PyPI (`comfyui-frontend-package`),
 and npm (`@comfyorg/comfyui-frontend-types`).
 
-## Bi-weekly ComfyUI Integration
+## Weekly ComfyUI Integration
 
-`release-biweekly-comfyui.yaml` runs every other Monday — if the next `core/`
+`release-weekly-comfyui.yaml` runs every Monday — if the next `core/`
 branch has unreleased commits, it triggers a patch bump and drafts a PR to
 `Comfy-Org/ComfyUI` updating `requirements.txt`.
 
 ## Workflows
 
-| Workflow                        | Purpose                                          |
-| ------------------------------- | ------------------------------------------------ |
-| `release-version-bump.yaml`     | Bump version, create Release PR                  |
-| `release-draft-create.yaml`     | Build + publish to GitHub/PyPI/npm               |
-| `release-branch-create.yaml`    | Create `core/` + `cloud/` branches (minor/major) |
-| `release-biweekly-comfyui.yaml` | Auto-patch + ComfyUI requirements PR             |
-| `pr-backport.yaml`              | Cherry-pick fixes to stable branches             |
-| `cloud-backport-tag.yaml`       | Tag cloud branch merges                          |
+| Workflow                         | Purpose                                          |
+| -------------------------------- | ------------------------------------------------ |
+| `release-version-bump.yaml`      | Bump version, create Release PR                  |
+| `release-draft-create.yaml`      | Build + publish to GitHub/PyPI/npm               |
+| `release-branch-create.yaml`     | Create `core/` + `cloud/` branches (minor/major) |
+| `release-weekly-comfyui.yaml`    | Weekly auto-patch + ComfyUI requirements PR      |
+| `pr-backport.yaml`               | Cherry-pick fixes to stable branches             |
+| `cloud-backport-tag.yaml`        | Tag cloud branch merges                          |
+| `pr-assign-release-sheriff.yaml` | Assign on-call sheriff to backport/release PRs   |

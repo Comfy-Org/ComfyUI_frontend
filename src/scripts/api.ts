@@ -58,6 +58,7 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type {
+  JobAssetsResult,
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -67,6 +68,7 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
+  fetchJobAssets,
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -145,6 +147,16 @@ interface QueuePromptOptions {
 /** Dictionary of Frontend-generated API calls */
 interface FrontendApiCalls {
   graphChanged: ComfyWorkflowJSON
+  /**
+   * Signals that auto-queue should treat the active workflow as changed.
+   * Local change-tracker edits are filtered through the prompt-relevant
+   * projection and evaluated only while Run (on change) is active. For those
+   * edits, position, size, title, collapse, group, viewport, and slot-label
+   * changes do not trigger this signal.
+   * Server-pushed `graphChanged` messages are forwarded unfiltered.
+   * Third-party presentation-only nodes are treated as prompt-relevant.
+   */
+  autoQueueGraphChanged: never
   promptQueueing: { requestId: number; batchCount: number; number?: number }
   promptQueued: { number: number; batchCount: number; requestId?: number }
   graphCleared: never
@@ -344,6 +356,16 @@ export class ComfyApi extends EventTarget {
    */
   user: string
   socket: WebSocket | null = null
+
+  /**
+   * Monotonic id bumped by every createSocket() attempt. Because createSocket()
+   * holds `this.socket === null` across its async token fetch, two attempts can
+   * overlap (an identity reset racing the close-handler's reconnect, or two
+   * resets in quick succession). Each attempt captures its generation and, once
+   * its awaits settle, only proceeds if it is still the latest — so the newest
+   * identity always wins and superseded attempts never open a leaked socket.
+   */
+  private socketGeneration = 0
 
   /**
    * Cache Firebase auth store composable function.
@@ -645,6 +667,7 @@ export class ComfyApi extends EventTarget {
     if (this.socket) {
       return
     }
+    const generation = ++this.socketGeneration
 
     let opened = false
     let existingSession = window.name
@@ -679,14 +702,20 @@ export class ComfyApi extends EventTarget {
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
-    this.socket = new WebSocket(wsUrl)
-    this.socket.binaryType = 'arraybuffer'
+    // A newer connect attempt (an identity reset, or a later reconnect) began
+    // while this one awaited its token. Abandon this attempt so only the latest
+    // generation owns this.socket and no superseded socket is opened.
+    if (generation !== this.socketGeneration) return
 
-    this.socket.addEventListener('open', () => {
+    const socket = new WebSocket(wsUrl)
+    this.socket = socket
+    socket.binaryType = 'arraybuffer'
+
+    socket.addEventListener('open', () => {
       opened = true
 
       // Send feature flags as the first message
-      this.socket!.send(
+      socket.send(
         JSON.stringify({
           type: 'feature_flags',
           data: this.getClientFeatureFlags()
@@ -698,15 +727,23 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    this.socket.addEventListener('error', () => {
-      if (this.socket) this.socket.close()
+    socket.addEventListener('error', () => {
+      // A replaced socket (e.g. after resetSocket on an account switch) is
+      // already being torn down; ignore its late errors so it cannot start an
+      // unnecessary permanent polling loop for the previous identity.
+      if (this.socket !== socket) return
+      socket.close()
       if (!isReconnect && !opened) {
         this._pollQueue()
       }
     })
 
-    this.socket.addEventListener('close', () => {
+    socket.addEventListener('close', () => {
+      // A replaced socket (e.g. after resetSocket on an account switch) must
+      // not reconnect; only the active socket owns the reconnect lifecycle.
+      if (this.socket !== socket) return
       setTimeout(async () => {
+        if (this.socket !== socket) return
         this.socket = null
         await this.createSocket(true)
       }, 300)
@@ -716,7 +753,10 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    this.socket.addEventListener('message', (event) => {
+    socket.addEventListener('message', (event) => {
+      // Ignore late messages from a replaced socket so previous-account
+      // realtime data is not dispatched after an identity switch.
+      if (this.socket !== socket) return
       try {
         if (event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
@@ -837,12 +877,18 @@ export class ComfyApi extends EventTarget {
             case 'progress':
             case 'progress_state':
             case 'executed':
-            case 'graphChanged':
             case 'promptQueued':
             case 'logs':
             case 'b_preview':
             case 'notification':
               this.dispatchCustomEvent(msg.type, msg.data)
+              break
+            case 'graphChanged':
+              this.dispatchCustomEvent('graphChanged', msg.data)
+              this.dispatchCustomEvent('autoQueueGraphChanged')
+              break
+            case 'autoQueueGraphChanged':
+              this.dispatchCustomEvent('autoQueueGraphChanged')
               break
             case 'feature_flags':
               // Store server feature flags
@@ -876,6 +922,36 @@ export class ComfyApi extends EventTarget {
    */
   init() {
     this.createSocket()
+  }
+
+  /**
+   * Tears down the active realtime socket and reconnects, re-authenticating
+   * with the currently active account's token. Invoked on a direct identity
+   * change so a tab cannot keep receiving the previous account's realtime
+   * events over a handshake that was authenticated as that account.
+   */
+  async resetSocket(): Promise<void> {
+    const previous = this.socket
+    // Detach before closing so the previous socket's close handler sees it is
+    // no longer the active socket and does not start a competing reconnect.
+    this.socket = null
+    // Clear every handshake identity source: createSocket() reads the client id
+    // from window.name (mirrored in session storage), not this.clientId, so the
+    // next connect must not inherit the prior account's id.
+    this.clientId = undefined
+    window.name = ''
+    sessionStorage.removeItem('clientId')
+    if (previous && previous.readyState !== WebSocket.CLOSED) {
+      try {
+        previous.close()
+      } catch {
+        // Already-terminating socket; nothing to clean up.
+      }
+    }
+    // createSocket() bumps the generation; any overlapping reset or reconnect
+    // that is still awaiting its token will see it lost the race and bail,
+    // leaving this the sole owner of the reconnected socket.
+    await this.createSocket()
   }
 
   /**
@@ -1142,6 +1218,17 @@ export class ComfyApi extends EventTarget {
    */
   async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
     return fetchJobDetail(this.fetchApi.bind(this), jobId)
+  }
+
+  /**
+   * Gets a job's output assets, each resolved to a real asset entity with
+   * per-output node context. Returns an empty list when the endpoint is
+   * unavailable (e.g. non-cloud distributions).
+   * @param jobId The job ID
+   * @returns The job's output assets and whether the list is exhaustive
+   */
+  async getJobAssets(jobId: string): Promise<JobAssetsResult> {
+    return fetchJobAssets(this.fetchApi.bind(this), jobId)
   }
 
   /**

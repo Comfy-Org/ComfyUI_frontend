@@ -9,7 +9,10 @@ import type { Page, Route } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  cloudAppFixture as test,
+  waitForCloudApp
+} from '@e2e/fixtures/cloudAppFixture'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -167,8 +170,6 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
   test('an entitled account can add, list, and delete a provider key', async ({
     page
   }) => {
-    test.slow()
-
     await mockCloudBoot(page, {
       features: BOOT_FEATURES,
       settings: BOOT_SETTINGS
@@ -177,9 +178,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     const backend = await mockSecretsBackend(page, ['runway', 'gemini'])
 
     await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
 
     const settingsDialog = await openSecretsPanel(page)
 
@@ -194,9 +193,15 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
       .filter({ hasText: 'Secret Value' })
     await expect(formDialog).toBeVisible()
 
-    // Pick the entitled Runway provider from the server-driven dropdown.
+    await formDialog.locator('#secret-provider').click()
+    await page.getByRole('option', { name: 'Gemini' }).click()
+    await expect(formDialog.locator('#secret-provider')).toContainText('Gemini')
+    await expect(formDialog).toBeVisible()
+
     await formDialog.locator('#secret-provider').click()
     await page.getByRole('option', { name: 'Runway' }).click()
+    await expect(formDialog.locator('#secret-provider')).toContainText('Runway')
+    await expect(formDialog).toBeVisible()
 
     await formDialog.locator('#secret-name').fill('My Runway Key')
     await formDialog.locator('input[type="password"]').fill(RUNWAY_KEY_VALUE)
@@ -236,11 +241,36 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     expect(backend.store).toHaveLength(0)
   })
 
+  test('the Add Secret backdrop closes only Add Secret', async ({ page }) => {
+    await mockCloudBoot(page, {
+      features: BOOT_FEATURES,
+      settings: BOOT_SETTINGS
+    })
+    await bootCloud(page)
+    await mockSecretsBackend(page, ['runway'])
+
+    await page.goto(APP_URL)
+    await waitForCloudApp(page)
+
+    const settingsDialog = await openSecretsPanel(page)
+    await settingsDialog.getByRole('button', { name: 'Add Secret' }).click()
+
+    const formDialog = page
+      .getByRole('dialog')
+      .filter({ hasText: 'Secret Value' })
+    await expect(formDialog).toBeVisible()
+
+    const dialogOverlays = page.getByTestId('dialog-overlay')
+    await expect(dialogOverlays).toHaveCount(2)
+    await dialogOverlays.last().click({ position: { x: 8, y: 8 } })
+
+    await expect(formDialog).toBeHidden()
+    await expect(settingsDialog).toBeVisible()
+  })
+
   test('a non-entitled account never sees the gated providers', async ({
     page
   }) => {
-    test.slow()
-
     await mockCloudBoot(page, {
       features: BOOT_FEATURES,
       settings: BOOT_SETTINGS
@@ -250,9 +280,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     await mockSecretsBackend(page, [])
 
     await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
 
     const settingsDialog = await openSecretsPanel(page)
     await expect(settingsDialog.getByText(/No secrets stored/)).toBeVisible()

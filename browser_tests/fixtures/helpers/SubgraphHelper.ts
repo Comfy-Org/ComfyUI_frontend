@@ -7,7 +7,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
@@ -360,8 +360,36 @@ export class SubgraphHelper {
   ): Promise<void> {
     const widget = nodeLocator.getByLabel(widgetName, { exact: true })
     await this.comfyPage.contextMenu
-      .openFor(widget)
+      .openForDisabledElement(widget)
       .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
+  }
+
+  async enterSubgraphWithFallback(nodeId: string): Promise<void> {
+    const targetNodeId = parseNodeId(nodeId)
+    if (!targetNodeId) {
+      throw new Error(`Expected a subgraph node id, got ${nodeId}`)
+    }
+
+    const enterButton =
+      this.comfyPage.vueNodes.getSubgraphEnterButton(targetNodeId)
+    if ((await enterButton.count()) > 0) {
+      await this.comfyPage.vueNodes.enterSubgraph(targetNodeId)
+    } else {
+      await this.page.evaluate((id) => {
+        const graph = window.app?.canvas.graph
+        const node = graph?.getNodeById(id)
+        if (!node?.isSubgraphNode()) {
+          throw new Error(`Expected visible subgraph node ${id}`)
+        }
+        window.app!.canvas.setGraph(node.subgraph)
+      }, targetNodeId)
+    }
+
+    await this.comfyPage.nextFrame()
+    await expect.poll(async () => this.isInSubgraph()).toBe(true)
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async isInSubgraph(): Promise<boolean> {
@@ -469,6 +497,14 @@ export class SubgraphHelper {
     }
     await this.comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
     await this.comfyPage.contextMenu.waitForHidden()
+  }
+
+  /** Promoted-widget name order as the subgraph host node exposes it. */
+  async getPromotedWidgetOrder(subgraphNodeId: string): Promise<string[]> {
+    return this.page.evaluate((id) => {
+      const node = window.app!.graph.nodes.find((n) => String(n.id) === id)
+      return (node?.widgets ?? []).map((w) => w.name)
+    }, subgraphNodeId)
   }
 
   async findSubgraphNodeId(): Promise<string> {
