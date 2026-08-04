@@ -1,4 +1,4 @@
-export type UserState =
+export type BillingPolicyState =
   | { kind: 'LocalWithoutActiveSubscription' }
   | { kind: 'LocalTeamWithoutActiveSubscription' }
   | { kind: 'LocalAndUnknown' }

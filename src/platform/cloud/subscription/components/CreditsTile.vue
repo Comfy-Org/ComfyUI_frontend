@@ -188,7 +188,7 @@
 
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
-        v-if="capabilities.showsSubscribeUpsellUI"
+        v-if="billingPolicyCapabilities.showsSubscribeUpsellUI"
         variant="subscribe"
         size="lg"
         class="w-full font-normal"
@@ -228,7 +228,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { useUserCapabilities } from '@/platform/cloud/subscription/composables/useUserCapabilities'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
@@ -257,7 +257,7 @@ const {
   fetchStatus,
   type
 } = useBillingContext()
-const { capabilities } = useUserCapabilities()
+const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
 const {
   monthlyBonusCredits,
   prepaidCredits,

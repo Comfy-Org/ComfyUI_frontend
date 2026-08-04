@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { deriveUserState } from './useUserState'
+import { deriveBillingPolicyState } from './useBillingPolicyState'
 
-describe('deriveUserState', () => {
+describe('deriveBillingPolicyState', () => {
   it.for<[string, boolean]>([
     ['LocalWithoutActiveSubscription', false],
     ['CloudWithoutActiveSubscription', true]
   ])('maps no active subscription to %s (isCloud=%s)', ([kind, isCloud]) => {
     expect(
-      deriveUserState({
+      deriveBillingPolicyState({
         isCloud,
         isActiveSubscription: false,
         isTeamPlan: false,
@@ -17,7 +17,9 @@ describe('deriveUserState', () => {
     ).toEqual({ kind })
   })
 
-  it.for<[Parameters<typeof deriveUserState>[0]['tier'], string, string]>([
+  it.for<
+    [Parameters<typeof deriveBillingPolicyState>[0]['tier'], string, string]
+  >([
     ['FREE', 'LocalAndFree', 'CloudAndFree'],
     ['STANDARD', 'LocalAndStandard', 'CloudAndStandard'],
     ['CREATOR', 'LocalAndCreator', 'CloudAndCreator'],
@@ -27,7 +29,7 @@ describe('deriveUserState', () => {
     'maps an active subscription tier %s to %s off Cloud and %s on Cloud',
     ([tier, localKind, cloudKind]) => {
       expect(
-        deriveUserState({
+        deriveBillingPolicyState({
           isCloud: false,
           isActiveSubscription: true,
           isTeamPlan: false,
@@ -35,7 +37,7 @@ describe('deriveUserState', () => {
         })
       ).toEqual({ kind: localKind })
       expect(
-        deriveUserState({
+        deriveBillingPolicyState({
           isCloud: true,
           isActiveSubscription: true,
           isTeamPlan: false,
@@ -52,7 +54,7 @@ describe('deriveUserState', () => {
     'treats an active subscription with no resolved tier yet as %s (isCloud=%s)',
     ([kind, isCloud]) => {
       expect(
-        deriveUserState({
+        deriveBillingPolicyState({
           isCloud,
           isActiveSubscription: true,
           isTeamPlan: false,
@@ -67,7 +69,7 @@ describe('deriveUserState', () => {
     ['CloudAndTeam', true]
   ])('maps an active Team plan to %s (isCloud=%s)', ([kind, isCloud]) => {
     expect(
-      deriveUserState({
+      deriveBillingPolicyState({
         isCloud,
         isActiveSubscription: true,
         isTeamPlan: true,
@@ -83,7 +85,7 @@ describe('deriveUserState', () => {
     'preserves an inactive Team plan as %s (isCloud=%s)',
     ([kind, isCloud]) => {
       expect(
-        deriveUserState({
+        deriveBillingPolicyState({
           isCloud,
           isActiveSubscription: false,
           isTeamPlan: true,

@@ -4,18 +4,18 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 
-import type { UserState } from '../userState'
+import type { BillingPolicyState } from '../billingPolicyState'
 
 /**
  * Pure derivation, kept separate from the composable so it can be unit
  * tested without mocking Vue reactivity or `useBillingContext`.
  */
-export function deriveUserState(input: {
+export function deriveBillingPolicyState(input: {
   isCloud: boolean
   isActiveSubscription: boolean
   isTeamPlan: boolean
   tier: SubscriptionTier | null
-}): UserState {
+}): BillingPolicyState {
   const distribution = input.isCloud ? 'Cloud' : 'Local'
 
   if (input.isTeamPlan) {
@@ -49,15 +49,15 @@ export function deriveUserState(input: {
 }
 
 /**
- * Computes the current `UserState` from existing frontend signals only.
+ * Computes the current billing policy state from existing frontend signals.
  * PoC: this does not plumb anything new through either backend — comfy-api
  * and the local backend stay exactly as they are today.
  */
-export function useUserState() {
+export function useBillingPolicyState() {
   const { isActiveSubscription, isTeamPlan, tier } = useBillingContext()
 
-  const userState = computed<UserState>(() =>
-    deriveUserState({
+  const billingPolicyState = computed<BillingPolicyState>(() =>
+    deriveBillingPolicyState({
       isCloud,
       isActiveSubscription: isActiveSubscription.value,
       isTeamPlan: isTeamPlan.value,
@@ -65,5 +65,5 @@ export function useUserState() {
     })
   )
 
-  return { userState }
+  return { billingPolicyState }
 }
