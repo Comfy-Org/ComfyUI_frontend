@@ -2,6 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 const apiNodeName = 'Node With Price Badge'
 
@@ -62,53 +63,71 @@ test.describe('Price badge', { tag: '@vue-nodes' }, () => {
     ).toBeGreaterThan(0)
   })
 
-  test('Price badge stays within node bounds on a narrow node', async ({
-    comfyPage
-  }) => {
-    await comfyPage.menu.topbar.newWorkflowButton.click()
-    await comfyPage.nextFrame()
+  test.describe('Price badge on a narrow node', () => {
+    let node: VueNodeFixture
+    let initialRequiredText: string
+    let initialRequiredWidth: number
 
-    await comfyPage.searchBoxV2.addNode(apiNodeName)
-    const node = await comfyPage.vueNodes.getFixtureByTitle(apiNodeName)
-    await expect(node.priceBadge.required).toBeVisible()
-    await expect(node.priceBadge.requiredText).toBeVisible()
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await comfyPage.nextFrame()
 
-    const initialRequiredText = await node.priceBadge.requiredText.innerText()
-    const initialRequiredBox = await node.priceBadge.required.boundingBox()
-    if (!initialRequiredBox)
-      throw new Error('Required price badge layout is unavailable')
+      await comfyPage.searchBoxV2.addNode(apiNodeName)
+      node = await comfyPage.vueNodes.getFixtureByTitle(apiNodeName)
+      await expect(node.priceBadge.required).toBeVisible()
+      await expect(node.priceBadge.requiredText).toBeVisible()
 
-    // Shrink the node down to its clamped minimum width - narrower than the
-    // title + badge content naturally wants.
-    const startBox = (await node.boundingBox())!
-    await node.resizeFromCorner('SW', startBox.width + 200, 0)
+      initialRequiredText = await node.priceBadge.requiredText.innerText()
+      const initialRequiredBox = await node.priceBadge.required.boundingBox()
+      if (!initialRequiredBox)
+        throw new Error('Required price badge layout is unavailable')
+      initialRequiredWidth = initialRequiredBox.width
 
-    const getNodeBox = () => node.boundingBox()
-    const getRequiredBox = () => node.priceBadge.required.boundingBox()
-    await expect
-      .poll(async () => (await getNodeBox())?.width)
-      .toBeLessThan(startBox.width)
+      // Shrink the node down to its clamped minimum width - narrower than
+      // the title + badge content naturally wants.
+      const startBox = (await node.boundingBox())!
+      await node.resizeFromCorner('SW', startBox.width + 200, 0)
+      await expect
+        .poll(async () => (await node.boundingBox())?.width)
+        .toBeLessThan(startBox.width)
+    })
 
-    const nodeBox = await getNodeBox()
-    const requiredBox = await getRequiredBox()
-    const restBox = await node.priceBadge.rest.boundingBox()
-    if (!(nodeBox && requiredBox))
-      throw new Error('Pricing badge layout is unavailable after resize')
+    test(
+      'keeps the badge within the node bounds',
+      { tag: '@screenshot' },
+      async ({ comfyPage }) => {
+        const nodeBox = await node.boundingBox()
+        const requiredBox = await node.priceBadge.required.boundingBox()
+        const restBox = await node.priceBadge.rest.boundingBox()
+        if (!(nodeBox && requiredBox))
+          throw new Error('Pricing badge layout is unavailable after resize')
 
-    // The badge must never visually extend past the node's own bounds, even
-    // when the header is too narrow to fit the title and badge together.
-    for (const box of [requiredBox, restBox]) {
-      if (!box) continue
-      expect(box.x + box.width).toBeLessThanOrEqual(
-        nodeBox.x + nodeBox.width + 0.5
-      )
-      expect(box.x).toBeGreaterThanOrEqual(nodeBox.x - 0.5)
-    }
+        // The badge must never visually extend past the node's own bounds,
+        // even when the header is too narrow to fit the title and badge
+        // together.
+        for (const box of [requiredBox, restBox]) {
+          if (!box) continue
+          expect(box.x + box.width).toBeLessThanOrEqual(
+            nodeBox.x + nodeBox.width + 0.5
+          )
+          expect(box.x).toBeGreaterThanOrEqual(nodeBox.x - 0.5)
+        }
 
-    // The credit number itself must stay fully legible: its text and pill
-    // width must be unaffected by the squeeze (only the title or the unit
-    // label are allowed to truncate/shrink first).
-    await expect(node.priceBadge.requiredText).toHaveText(initialRequiredText)
-    expect(requiredBox.width).toBeCloseTo(initialRequiredBox.width, 0)
+        await comfyPage.nextFrame()
+        await expect(node.root).toHaveScreenshot(
+          'price-badge-narrow-node-overflow.png'
+        )
+      }
+    )
+
+    test('does not truncate the credit number', async () => {
+      // Only the title or the unit label are allowed to truncate/shrink
+      // first - the credit number itself must stay fully legible.
+      await expect(node.priceBadge.requiredText).toHaveText(initialRequiredText)
+      const requiredBox = await node.priceBadge.required.boundingBox()
+      if (!requiredBox)
+        throw new Error('Required price badge layout is unavailable')
+      expect(requiredBox.width).toBeCloseTo(initialRequiredWidth, 0)
+    })
   })
 })
