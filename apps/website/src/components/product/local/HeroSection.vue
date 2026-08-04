@@ -167,9 +167,9 @@ onUnmounted(() => {
   <section
     class="max-w-9xl relative mx-auto flex flex-col items-center overflow-visible lg:flex-row lg:items-center lg:pb-[min(8vw,10rem)]"
   >
-    <!-- Illustration (stacks above on mobile, left on lg) -->
+    <!-- Illustration (hidden below lg, left on lg) -->
     <div
-      class="aspect-550/800 w-4/5 max-w-xs self-center overflow-visible md:max-w-sm lg:pointer-events-none lg:z-1 lg:-mr-12 lg:max-w-md lg:translate-x-[10%] lg:translate-y-20 lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
+      class="hidden aspect-550/800 w-4/5 max-w-xs self-center overflow-visible lg:pointer-events-none lg:z-1 lg:-mr-12 lg:block lg:max-w-md lg:translate-x-[10%] lg:translate-y-20 lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <svg
         ref="svgRef"
