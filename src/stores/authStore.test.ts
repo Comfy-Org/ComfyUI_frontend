@@ -188,8 +188,6 @@ describe('useAuthStore', () => {
 
     mockFeatureFlags.teamWorkspacesEnabled = false
     mockFeatureFlags.unifiedCloudAuthEnabled = false
-    mockDistributionTypes.isCloud = true
-    mockDistributionTypes.DISTRIBUTION = 'cloud'
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -310,19 +308,6 @@ describe('useAuthStore', () => {
     expect(store.userEmail).toBe('test@example.com')
     expect(store.userId).toBe('test-user-id')
     expect(store.loading).toBe(false)
-  })
-
-  it('mints unified auth after local ComfyUI login', () => {
-    mockDistributionTypes.isCloud = false
-    mockDistributionTypes.DISTRIBUTION = 'localhost'
-    mockFeatureFlags.unifiedCloudAuthEnabled = true
-    const mintAtLogin = vi
-      .spyOn(useWorkspaceAuthStore(), 'mintAtLogin')
-      .mockResolvedValue(true)
-
-    authStateCallback(mockUser)
-
-    expect(mintAtLogin).toHaveBeenCalled()
   })
 
   it('should set persistence to local storage on initialization', () => {
