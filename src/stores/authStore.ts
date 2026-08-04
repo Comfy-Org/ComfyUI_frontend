@@ -165,7 +165,7 @@ export const useAuthStore = defineStore('auth', () => {
     isInitialized.value = true
     if (user === null) {
       lastTokenUserId.value = null
-    } else if (isCloud) {
+    } else if (isCloud || flags.unifiedCloudAuthEnabled) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
       // no-op when unified_cloud_auth is off).
       void useWorkspaceAuthStore().mintAtLogin()
