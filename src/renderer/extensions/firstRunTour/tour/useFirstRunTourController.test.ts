@@ -724,26 +724,28 @@ describe('useFirstRunTourController', () => {
       ).toBe(false)
     })
 
-    it('stays away from a tour the paywall parked', async () => {
+    it('still offers somewhere to go when the paywall parks the tour', async () => {
       const { controller } = await tourOnRunStep()
 
       await endTour(skippedBecause('postponed'))
 
       expect(
         controller.nudgeArmed.value,
-        'a postponed tour is left unseen and offered again, so it has not ended for the user yet'
-      ).toBe(false)
+        'a tour parked on a button that will never run leaves the templates as the only way on'
+      ).toBe(true)
+      expect(
+        controller.tourOutcome.value,
+        'the run never happened, so there is no first result to congratulate'
+      ).toBe('skipped')
     })
 
-    it('stays away from a tour whose context walked off', async () => {
+    it('still offers somewhere to go when the tour loses its context', async () => {
       const { controller } = await tourOnRunStep()
 
       await endTour(skippedBecause('trigger_lost'))
 
-      expect(
-        controller.nudgeArmed.value,
-        'the user moved on to something else; the nudge would land on top of it'
-      ).toBe(false)
+      expect(controller.nudgeArmed.value).toBe(true)
+      expect(controller.tourOutcome.value).toBe('skipped')
     })
 
     it('stops offering the nudge once it is waved away', async () => {

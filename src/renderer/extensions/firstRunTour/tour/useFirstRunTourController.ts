@@ -123,24 +123,25 @@ function useFirstRunTourControllerInternal() {
   )
 
   /**
-   * The nudge follows the ending, not the fact that a tour ran. Only an ending
-   * the user themselves reached earns one:
+   * The nudge follows the ending, not the fact that a tour ran. Every ending
+   * still leaves the user somewhere to go next, so the nudge keeps appearing —
+   * but only a tour walked to the end made a first result to congratulate, so
+   * `completed` is the only outcome that earns the `ran` copy.
    *
-   * - `completed` — the tour was walked to the end, so there is a first result
-   *   to congratulate.
-   * - `skipped` by the user — no congratulation, but somewhere to go next is
-   *   still the right offer for someone who declined the guided path.
-   * - any other skip (`target_timeout`, `postponed`, `trigger_lost`) — the tour
-   *   was cut short by circumstance, is left unseen and will be offered again.
-   *   A target that never mounted also raises an error toast, and a panel
-   *   celebrating the same event is the bug in #14622.
-   * - no ending at all — the tour never resolved a step, so nothing happened to
-   *   congratulate, but the templates are still worth pointing at.
+   * The one ending that gets no nudge at all is a tour abandoned because a
+   * target never mounted: that same ending raises the `loadError` toast, and a
+   * panel arriving beside an error to celebrate it is the bug in #14622.
+   *
+   * Every other skip keeps its nudge. A paywalled tour in particular is parked
+   * on a button that will never run, so the templates are the *only* place left
+   * to send that user — see `gettingStartedTour.spec.ts`, "leaves the nudge
+   * until the upgrade dialog closes".
    */
   function armNudge() {
     const ending = engine.lastEnding
     if (ending && ending.tour !== 'firstRun') return
-    if (ending?.outcome === 'skipped' && ending.skipReason !== 'user') return
+    if (ending?.outcome === 'skipped' && ending.skipReason === 'target_timeout')
+      return
     tourOutcome.value = ending?.outcome ?? 'not_started'
     nudgeArmed.value = true
   }
