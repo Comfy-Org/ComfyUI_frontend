@@ -163,9 +163,9 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN': 'MiniMax H3 每次生成需要多少费用？'
         },
         answer: {
-          en: 'You can try MiniMax H3 for free on Comfy Cloud. After that, each generation draws from your credits, either a subscription or pay-as-you-go.',
+          en: 'You can try MiniMax H3 for free on Comfy Cloud. After that, each generation spends credits, which come with a subscription or can be bought as you go.',
           'zh-CN':
-            '你可以在 Comfy Cloud 上免费试用 MiniMax H3。之后每次生成都会消耗积分，可选择订阅或按量付费。'
+            '你可以在 Comfy Cloud 上免费试用 MiniMax H3。之后每次生成都会消耗积分，积分包含在订阅中，也可按需单独购买。'
         }
       },
       {
