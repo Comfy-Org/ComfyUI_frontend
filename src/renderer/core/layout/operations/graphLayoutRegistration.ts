@@ -1,9 +1,3 @@
-/**
- * Layout registration for litegraph entities.
- *
- * Geometry joins and leaves the layout store with the entity that owns it, so
- * every attach/detach path goes through these helpers.
- */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -11,14 +5,12 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
-/** Layout mutations attributed to the canvas, for direct delete calls. */
 export function canvasLayoutMutations() {
   const mutations = useLayoutMutations()
   mutations.setSource(LayoutSource.Canvas)
   return mutations
 }
 
-/** A newly attached node stacks above those already registered. */
 export function registerNodeLayout(graph: LGraph, node: LGraphNode): void {
   canvasLayoutMutations().createNode(graph.rootGraph.id, node.id, {
     position: { x: node.pos[0], y: node.pos[1] },
@@ -36,13 +28,11 @@ export function registerGroupLayout(graph: LGraph, group: LGraphGroup): void {
 }
 
 /**
- * Drops every layout entry a graph owns, including those inside the subgraph
- * definitions it holds. Mirrors `unregisterAllNodeStates`; call it from the
- * same places, before the entity containers are emptied.
+ * Remove graph and subgraph layouts alongside node state, before clearing
+ * entity containers.
  */
 export function unregisterAllGraphLayout(graph: LGraph): void {
-  // `LGraph`'s own constructor clears the graph, before a subgraph has a
-  // `rootGraph` to scope keys by.
+  // LGraph construction clears before a subgraph has a rootGraph.
   if (!graph.rootGraph) return
 
   const rootGraphId = graph.rootGraph.id

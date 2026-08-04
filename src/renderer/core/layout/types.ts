@@ -4,8 +4,6 @@
  * This file contains all type definitions for the layout system
  * that manages node positions, bounds, spatial data, and operations.
  */
-import type { ComputedRef, Ref } from 'vue'
-
 import type { GroupId } from '@/types/groupId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -118,7 +116,6 @@ interface OperationMeta {
   actor: string
   /** Source system that initiated the operation */
   source: LayoutSource
-  /** Root graph the entity belongs to; scopes every layout key */
   graphId: UUID
   /** Operation type discriminator */
   type: OperationType
@@ -256,9 +253,6 @@ interface DeleteGroupOperation extends GroupOpBase {
   type: 'deleteGroup'
 }
 
-/**
- * Drops every node, group and reroute entry scoped to one root graph.
- */
 interface ClearGraphOperation extends OperationMeta {
   entity: 'graph'
   type: 'clearGraph'
@@ -289,88 +283,4 @@ export interface LayoutChange {
   timestamp: number
   source: LayoutSource
   operation: LayoutOperation
-}
-
-// Store interfaces
-export interface LayoutStore {
-  // CustomRef accessors for shared write access
-  getNodeLayoutRef(rootGraphId: UUID, nodeId: NodeId): Ref<NodeLayout | null>
-  getAllGroups(
-    rootGraphId: UUID
-  ): ComputedRef<ReadonlyMap<GroupId, GroupLayout>>
-  getGroupLayout(rootGraphId: UUID, groupId: GroupId): GroupLayout | null
-  getVersion(): ComputedRef<number>
-
-  // Hit testing queries for links, slots, and reroutes
-  queryLinkAtPoint(point: Point, ctx?: CanvasRenderingContext2D): LinkId | null
-  queryLinkSegmentAtPoint(
-    point: Point,
-    ctx?: CanvasRenderingContext2D
-  ): { linkId: LinkId; rerouteId: RerouteId | null } | null
-  querySlotAtPoint(point: Point): SlotLayout | null
-  queryRerouteAtPoint(rootGraphId: UUID, point: Point): RerouteLayout | null
-
-  // Update methods for link, slot, and reroute layouts
-  updateLinkLayout(linkId: LinkId, layout: LinkLayout): void
-  updateLinkSegmentLayout(
-    linkId: LinkId,
-    rerouteId: RerouteId | null,
-    layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
-  ): void
-  updateSlotLayout(key: SlotId, layout: SlotLayout): void
-  updateRerouteLayout(
-    rootGraphId: UUID,
-    rerouteId: RerouteId,
-    layout: RerouteLayout
-  ): void
-
-  // Delete methods for cleanup
-  deleteLinkLayout(linkId: LinkId): void
-  deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void
-  deleteSlotLayout(key: SlotId): void
-  clearAllSlotLayouts(): void
-
-  // Get layout data
-  getLinkLayout(linkId: LinkId): LinkLayout | null
-  getSlotLayout(key: SlotId): SlotLayout | null
-  getRerouteLayout(
-    rootGraphId: UUID,
-    rerouteId: RerouteId
-  ): RerouteLayout | null
-
-  // Returns all slot layout keys currently tracked by the store
-  getAllSlotKeys(): SlotId[]
-
-  // Direct mutation API (CRDT-ready)
-  applyOperation(operation: LayoutOperation): void
-
-  // Change subscription
-  onChange(callback: (change: LayoutChange) => void): () => void
-  onNodeChange(
-    rootGraphId: UUID,
-    nodeId: NodeId,
-    callback: (change: LayoutChange) => void
-  ): () => void
-
-  /** @see {@link LayoutStoreImpl.clearViewGeometry} */
-  clearViewGeometry(): void
-
-  /** @see {@link LayoutStoreImpl.clearGraph} */
-  clearGraph(rootGraphId: UUID): void
-
-  /** @see {@link LayoutStoreImpl.allocateZIndex} */
-  allocateZIndex(): number
-
-  // Source and actor management
-  setSource(source: LayoutSource): void
-  setActor(actor: string): void
-  getCurrentSource(): LayoutSource
-  getCurrentActor(): string
-
-  // Batch updates
-  batchUpdateNodeBounds(rootGraphId: UUID, updates: NodeBoundsUpdate[]): void
-
-  batchUpdateSlotLayouts(
-    updates: Array<{ key: SlotId; layout: SlotLayout }>
-  ): void
 }

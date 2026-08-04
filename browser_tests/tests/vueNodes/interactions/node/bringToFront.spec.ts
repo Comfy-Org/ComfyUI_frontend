@@ -91,7 +91,6 @@ test.describe(
         })
         .toBeGreaterThan(0)
 
-      // Front means above every node, not just the one it was overlapping.
       const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
       const allZIndexes = await comfyPage.vueNodes.nodes.evaluateAll((nodes) =>
         nodes.map((node) => Number(getComputedStyle(node).zIndex))

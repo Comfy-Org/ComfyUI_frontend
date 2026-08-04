@@ -22,16 +22,13 @@ describe('arrangeForLegacyRender', () => {
     LiteGraph.vueNodesMode = false
   })
 
-  it('runs where the drawConnections gate cannot', () => {
+  it('arranges nodes after Vue rendering clears the legacy draw gate', () => {
     const graph = new LGraph()
     const node = addedNode(graph)
 
     LiteGraph.vueNodesMode = true
     node.arrange()
 
-    // drawConnections only arranges nodes with `_widgetSlotsDirty` set, and
-    // Vue-mode drawNode arranges every visible node every frame, so the gate
-    // is always clear by the time the renderer switches.
     expect(node._widgetSlotsDirty).toBe(false)
 
     LiteGraph.vueNodesMode = false

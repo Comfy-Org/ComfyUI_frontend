@@ -17,7 +17,6 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
   const mutations = useLayoutMutations()
   const canvasStore = useCanvasStore()
 
-  // The layout entry for this node in the graph currently being viewed
   const layout = computed(() => {
     const { rootGraphId } = canvasStore
     return rootGraphId
@@ -25,12 +24,12 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
       : null
   })
 
-  // Captured, not read at unmount: a workflow load flips `rootGraphId` before
-  // the outgoing graph's nodes unmount, which would strand their refs.
-  const ownerGraphId = canvasStore.rootGraphId
+  const rootGraphIdAtMount = canvasStore.rootGraphId
 
   onUnmounted(() => {
-    if (ownerGraphId) layoutStore.cleanupNodeRef(ownerGraphId, nodeId)
+    if (rootGraphIdAtMount) {
+      layoutStore.cleanupNodeRef(rootGraphIdAtMount, nodeId)
+    }
   })
 
   // Computed properties for easy access

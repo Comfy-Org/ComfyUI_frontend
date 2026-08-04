@@ -5,16 +5,11 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 const logger = log.getLogger('arrangeForLegacyRender')
 
 /**
- * Computes slot positions for every node so the legacy canvas has them before
- * it draws.
+ * `drawConnections` normally arranges slots, but Vue-mode `drawNode` clears
+ * `_widgetSlotsDirty`, so that pass is skipped after switching to legacy mode.
+ * Vue DOM measurements also differ slightly from legacy slot positions.
  *
- * `drawConnections` has its own arrange pass, but it is gated on
- * `_widgetSlotsDirty`, which Vue-mode `drawNode` clears every frame — so that
- * gate never fires after a mode switch. Meanwhile Vue-mode `_measureSlots`
- * derived widget-input positions from DOM slot layouts, which sit a couple of
- * pixels off the values the legacy canvas computes.
- *
- * Delete this once `getSlotPosition` returns the same numbers in both modes.
+ * Delete when `getSlotPosition` is consistent across both renderers.
  */
 export function arrangeForLegacyRender(graph: LGraph): void {
   for (const node of graph._nodes) {

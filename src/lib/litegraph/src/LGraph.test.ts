@@ -1519,7 +1519,7 @@ describe('node layout registration', () => {
     expect(zIndexOf(graph, second)).toBeGreaterThan(zIndexOf(graph, first))
   })
 
-  it('keeps stacking order distinct from position in the graph', () => {
+  it('does not reuse z-indexes after removing an earlier node', () => {
     const graph = new LGraph()
     const first = new LGraphNode('first')
     const second = new LGraphNode('second')
@@ -1527,7 +1527,6 @@ describe('node layout registration', () => {
     graph.add(second)
     graph.remove(first)
 
-    // `second` is now at index 0, so an index-derived zIndex would collide.
     const third = new LGraphNode('third')
     graph.add(third)
 
@@ -1560,8 +1559,7 @@ describe('graph teardown drops layout entries', () => {
     layoutStore.resetForTests()
   })
 
-  /** Root node, group and reroute, plus a subgraph definition holding a node. */
-  function populatedGraph() {
+  function createGraphWithEveryLayoutEntryType() {
     const graph = new LGraph()
     graph.id = createUuidv4()
 
@@ -1583,7 +1581,7 @@ describe('graph teardown drops layout entries', () => {
     root,
     group,
     interior
-  }: ReturnType<typeof populatedGraph>) {
+  }: ReturnType<typeof createGraphWithEveryLayoutEntryType>) {
     const rootGraphId = graph.rootGraph.id
     return [
       layoutStore.getNodeLayoutRef(rootGraphId, root.id).value,
@@ -1600,7 +1598,7 @@ describe('graph teardown drops layout entries', () => {
       (graph: LGraph) => graph.configure(new LGraph().serialize())
     ]
   ] as const)('drops every entry on %s', ([, teardown]) => {
-    const populated = populatedGraph()
+    const populated = createGraphWithEveryLayoutEntryType()
     expect(survivingEntries(populated)).toBe(4)
 
     teardown(populated.graph)
@@ -1609,7 +1607,7 @@ describe('graph teardown drops layout entries', () => {
   })
 
   it('drops interior entries when the last SubgraphNode is removed', () => {
-    const { graph, subgraph, interior } = populatedGraph()
+    const { graph, subgraph, interior } = createGraphWithEveryLayoutEntryType()
     const subgraphNode = createTestSubgraphNode(subgraph)
     graph.add(subgraphNode)
 

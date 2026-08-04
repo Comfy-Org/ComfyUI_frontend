@@ -71,7 +71,6 @@ export function requestSlotLayoutSyncForAllNodes(): void {
   }
 }
 
-/** Slot geometry only ever concerns the graph on screen. */
 function viewedNodeLayout(nodeId: NodeId) {
   const { rootGraphId } = useCanvasStore()
   if (!rootGraphId) return null

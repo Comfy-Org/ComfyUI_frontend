@@ -647,7 +647,6 @@ export class LGraphNode
     this._positionUpdated()
   }
 
-  /** A node detached from its graph has no bucket to write to, so it no-ops. */
   private _positionUpdated(): void {
     if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 

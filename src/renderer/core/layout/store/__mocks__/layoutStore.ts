@@ -3,12 +3,7 @@ import { vi } from 'vitest'
 
 import type { layoutStore as RealLayoutStore } from '../layoutStore'
 
-/**
- * Inert stand-in for the layout store, for suites that exercise canvas code
- * incidentally touching layout. Enable with a bare
- * `vi.mock('@/renderer/core/layout/store/layoutStore')`, then set per-test
- * behaviour through `vi.mocked(layoutStore.someMethod)`.
- */
+/** Inert layout store for tests that exercise canvas behavior. */
 export const layoutStore = fromPartial<typeof RealLayoutStore>({
   allocateZIndex: vi.fn(() => 1),
   applyOperation: vi.fn(),

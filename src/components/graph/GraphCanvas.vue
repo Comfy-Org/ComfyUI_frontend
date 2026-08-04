@@ -272,7 +272,7 @@ async function enterVueRendering(graph: LGraph | null) {
   layoutStore.clearViewGeometry()
   await nextTick()
 
-  // The awaited tick may have switched mode or graph out from under us.
+  // Revalidate after nextTick: rendering mode or the current graph may change.
   if (!shouldRenderVueNodes.value || canvasStore.currentGraph !== graph) return
   startSync(canvasStore.canvas)
 }

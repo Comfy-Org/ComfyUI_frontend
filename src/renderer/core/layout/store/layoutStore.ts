@@ -27,7 +27,6 @@ import type {
   GroupLayout,
   LayoutChange,
   LayoutOperation,
-  LayoutStore,
   LinkId,
   LinkLayout,
   LinkSegmentLayout,
@@ -108,11 +107,7 @@ interface TypedYMap<T> {
   get<K extends keyof T>(key: K, defaultValue: T[K]): T[K]
 }
 
-// TODO: Delete the `LayoutStore` interface and rename this to `LayoutStore`.
-// The interface has no consumers other than this `implements` clause — it
-// duplicates every signature to express visibility that `private` already
-// expresses on the class.
-class LayoutStoreImpl implements LayoutStore {
+class LayoutStore {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
     position: { x: 0, y: 0 }
@@ -218,7 +213,7 @@ class LayoutStoreImpl implements LayoutStore {
   private getRerouteField<K extends keyof RerouteData>(
     yreroute: Y.Map<unknown>,
     field: K,
-    defaultValue: RerouteData[K] = LayoutStoreImpl.REROUTE_DEFAULTS[field]
+    defaultValue: RerouteData[K] = LayoutStore.REROUTE_DEFAULTS[field]
   ): RerouteData[K] {
     const typedReroute = yreroute as TypedYMap<RerouteData>
     const value = typedReroute.get(field)
@@ -894,29 +889,18 @@ class LayoutStoreImpl implements LayoutStore {
     return this.currentActor
   }
 
-  /**
-   * Claims a stacking order above every node the store has seen. Stacking is
-   * the store's own sequence, independent of a node's position in
-   * {@link LGraph._nodes}.
-   */
+  /** Allocates store-local stacking order, independent of `LGraph._nodes`. */
   allocateZIndex(): number {
     return ++this.highestZIndex
   }
 
-  /**
-   * Clean up refs and triggers for a node when its Vue component unmounts.
-   * This should be called from the component's onUnmounted hook.
-   */
   cleanupNodeRef(rootGraphId: UUID, nodeId: NodeId): void {
     const nodeKey = makeScopedLayoutKey(rootGraphId, nodeId)
     this.nodeRefs.delete(nodeKey)
     this.nodeTriggers.delete(nodeKey)
   }
 
-  /**
-   * Drops every node, group and reroute entry scoped to a root graph, including
-   * the entries owned by the subgraph definitions it holds.
-   */
+  /** Drops entity layout owned by a root graph and its subgraph definitions. */
   clearGraph(rootGraphId: UUID): void {
     this.applyOperation({
       type: 'clearGraph',
@@ -928,11 +912,7 @@ class LayoutStoreImpl implements LayoutStore {
     })
   }
 
-  /**
-   * Test-only escape hatch: drops everything, including entity entries that
-   * production drops through `unregisterAllGraphLayout`. Calling it with a
-   * graph attached desyncs the store from every entity in it.
-   */
+  /** Test-only full reset; attached graph entities become desynchronized. */
   resetForTests(): void {
     this.highestZIndex = 0
     this.ydoc.transact(() => {
@@ -946,15 +926,12 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Drops the geometry scoped to the graph being left: slot and link layouts,
-   * the spatial indexes over them, and the listeners and queues bound to them.
-   * Entity geometry lives with the entity, and leaves through
-   * `unregisterAllGraphLayout`.
+   * Clears view geometry and subscriptions; entity geometry has separate
+   * lifecycle cleanup.
    */
   clearViewGeometry(): void {
     this.ydoc.transact(() => {
-      // nodeRefs and nodeTriggers outlive the view: components already hold
-      // these refs, and reusing them keeps the reactivity chain intact.
+      // Preserve refs held by components so reactivity survives view changes.
       this.nodeChangeListeners.clear()
       this.linkSegmentSpatialIndex.clear()
       this.slotSpatialIndex.clear()
@@ -1312,4 +1289,4 @@ class LayoutStoreImpl implements LayoutStore {
 }
 
 // Create singleton instance
-export const layoutStore = new LayoutStoreImpl()
+export const layoutStore = new LayoutStore()

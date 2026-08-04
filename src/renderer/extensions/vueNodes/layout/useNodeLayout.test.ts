@@ -33,11 +33,10 @@ describe('useNodeLayout', () => {
     canvasStore.rootGraphId = FIRST_WORKFLOW
   })
 
-  it('releases the ref from the graph it was created in', () => {
+  it('releases the original graph ref when workflow changes before unmount', () => {
     const { unmount } = render(NodeLayoutHost)
     const cleanupNodeRef = vi.spyOn(layoutStore, 'cleanupNodeRef')
 
-    // Loading a workflow flips rootGraphId before the outgoing graph unmounts.
     canvasStore.rootGraphId = SECOND_WORKFLOW
     unmount()
 

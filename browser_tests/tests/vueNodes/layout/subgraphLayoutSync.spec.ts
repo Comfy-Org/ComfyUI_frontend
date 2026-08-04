@@ -17,13 +17,8 @@ async function renderedBounds(comfyPage: ComfyPage, nodeId: string) {
 }
 
 /**
- * Grows a node the way a legacy custom node would — a direct graph mutation,
- * which is the path under test and has no click or keystroke equivalent — then
- * waits for the rendered node to follow.
- *
- * A node only follows while its component still holds a layout subscription.
- * `clearViewGeometry` drops every subscription on each graph transition, so
- * this has to be re-checked after every one.
+ * Mutate graph size directly to reproduce the legacy custom-node path, which
+ * has no user-interaction equivalent.
  */
 async function expectGrowthRenders(
   comfyPage: ComfyPage,

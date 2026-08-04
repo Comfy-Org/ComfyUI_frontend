@@ -1146,7 +1146,8 @@ export class LGraph
     this.onNodeAdded?.(node)
     this.events.dispatch('node:added', { node })
 
-    // Must follow onNodeAdded: its microtask-deferred hooks must run before the Vue flush these writes schedule
+    // Keep after onNodeAdded so its deferred hooks run before these writes
+    // flush Vue.
     registerNodeLayout(this, node)
     this.incrementVersion()
 
@@ -2214,9 +2215,8 @@ export class LGraph
     }
     this.remove(subgraphNode)
 
-    // The definition survives if another instance remains, so unpacked groups
-    // take fresh ids rather than share its root-scoped layout keys, as the
-    // reroutes below already did.
+    // Shared definitions may survive, so unpacked groups need fresh layout
+    // ids, like the reroutes below.
     for (const g_info of groups) {
       g_info.id = ++this.rootGraph.state.lastGroupId
       const group = new LGraphGroup(g_info.title, g_info.id)

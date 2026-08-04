@@ -17,9 +17,8 @@ interface NodeGeometry {
 }
 
 /**
- * Slot positions are what the legacy canvas draws links against, so they are
- * read through the same accessors `drawConnections` uses rather than off the
- * raw geometry fields, which bypass the store projection.
+ * Read slots through the accessors used by `drawConnections`; raw fields
+ * bypass the store projection under test.
  */
 async function readGeometry(
   comfyPage: ComfyPage,
@@ -42,7 +41,6 @@ function slotsOf(geometry: NodeGeometry): Point[] {
   return [...geometry.inputs, ...geometry.outputs]
 }
 
-/** Every slot sits at a fixed offset from the node, so all move together. */
 function expectSlotsTrackedNode(after: NodeGeometry, before: NodeGeometry) {
   const dx = after.pos[0] - before.pos[0]
   const dy = after.pos[1] - before.pos[1]
@@ -84,9 +82,8 @@ function expectGeometryPreserved(
 }
 
 /**
- * The two renderers compute slot offsets differently, so slots are only
- * required to sit on the node they belong to. An unarranged node reports
- * offsets that collapse to its origin, which lands outside this box.
+ * Renderers compute different slot offsets, so require slots only to remain
+ * within their node bounds.
  */
 function expectSlotsOnNode(geometry: NodeGeometry, label: string) {
   const MARGIN = 20
@@ -146,13 +143,11 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
 
     await setVueMode(comfyPage, false)
 
-    // The legacy canvas draws links from these positions; a stale arrange or a
-    // dropped geometry projection leaves slots at the pre-move location.
-    const inLegacy = await readGeometry(comfyPage, nodeId)
-    expect(inLegacy.pos[0], 'legacy x').toBeCloseTo(moved.pos[0], 0)
-    expect(inLegacy.pos[1], 'legacy y').toBeCloseTo(moved.pos[1], 0)
-    expect(inLegacy.size, 'legacy size').toEqual(moved.size)
-    expectSlotsOnNode(inLegacy, 'after switching to legacy')
+    const legacyGeometry = await readGeometry(comfyPage, nodeId)
+    expect(legacyGeometry.pos[0], 'legacy x').toBeCloseTo(moved.pos[0], 0)
+    expect(legacyGeometry.pos[1], 'legacy y').toBeCloseTo(moved.pos[1], 0)
+    expect(legacyGeometry.size, 'legacy size').toEqual(moved.size)
+    expectSlotsOnNode(legacyGeometry, 'after switching to legacy')
 
     await setVueMode(comfyPage, true)
 

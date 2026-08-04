@@ -160,8 +160,8 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
   test('large graph legacy node drag', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
 
-    // Dragging a node writes through layoutStore on every frame, in both
-    // renderers, since layout registration stopped being Vue-gated.
+    // Legacy drags write to layoutStore every frame because registration is
+    // renderer-independent.
     const nodePos = await comfyPage.page.evaluate(() => {
       const app = window.app
       if (!app) throw new Error('window.app is not available')
@@ -194,7 +194,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     const m = await comfyPage.perf.stopMeasuring('legacy-node-drag')
     recordMeasurement(m)
 
-    // Without this the measurement silently degrades into a canvas pan.
+    // Verify the measured interaction was a node drag, not a canvas pan.
     const movedX = await comfyPage.page.evaluate((id) => {
       const node = window.app?.graph.getNodeById(id)
       if (!node) throw new Error(`Node ${id} not found`)
