@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { OnboardingTourNudgeOutcome } from '@/platform/telemetry/types'
 
 import FirstRunTourNudge from './FirstRunTourNudge.vue'
 
@@ -15,7 +16,7 @@ const mocks = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   return {
     nudgeArmed: ref(false),
-    tourOutcome: ref<'completed' | 'skipped' | 'not_started'>('completed'),
+    tourOutcome: ref<OnboardingTourNudgeOutcome>('completed'),
     openDialogs: ref<string[]>([]),
     dismissNudge: vi.fn(() => {
       mocks.nudgeArmed.value = false
@@ -194,8 +195,14 @@ describe('FirstRunTourNudge', () => {
     expect(screen.getByText(nudgeCopy.noTour.title)).toBeTruthy()
   })
 
-  it('says which population it was shown to', async () => {
-    mocks.tourOutcome.value = 'not_started'
+  const OUTCOMES: OnboardingTourNudgeOutcome[] = [
+    'completed',
+    'skipped',
+    'not_started'
+  ]
+
+  it.for(OUTCOMES)('says it was shown to a %s tour', async (outcome) => {
+    mocks.tourOutcome.value = outcome
     mocks.nudgeArmed.value = true
     renderNudge()
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
@@ -205,9 +212,30 @@ describe('FirstRunTourNudge', () => {
       'a nudge_shown that cannot tell a tour-less user from a toured one counts two funnels as one'
     ).toHaveBeenCalledWith('nudge_shown', {
       tour: 'firstRun',
-      tour_outcome: 'not_started'
+      tour_outcome: outcome
     })
   })
+
+  it.for(OUTCOMES)(
+    'carries the %s outcome through to the templates click',
+    async (outcome) => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      mocks.tourOutcome.value = outcome
+      mocks.nudgeArmed.value = true
+      renderNudge()
+      await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+      await user.click(screen.getByTestId('first-run-nudge-explore'))
+
+      expect(
+        mocks.trackOnboardingTour,
+        'conversion is only readable per population if both ends of the funnel carry it'
+      ).toHaveBeenCalledWith('explore_templates_clicked', {
+        tour: 'firstRun',
+        tour_outcome: outcome
+      })
+    }
+  )
 
   it('stays gone once the user closes it', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })

@@ -33,12 +33,13 @@ const DEFER_TIMEOUT_MS = 8000
  * ending it is following: "a tour ran" cannot tell a walked-to-the-end tour
  * apart from one the user waved away, or one a missing target tore down.
  */
-export interface TourEnding {
-  tour: EntryPath
-  outcome: 'completed' | 'skipped'
-  /** Present only when `outcome` is `skipped`. */
-  skipReason?: OnboardingTourSkipReason
-}
+export type TourEnding =
+  | { tour: EntryPath; outcome: 'completed' }
+  | {
+      tour: EntryPath
+      outcome: 'skipped'
+      skipReason: OnboardingTourSkipReason
+    }
 
 /** Empty when a runtime resolver fails, so one bad graph costs only its own tour. */
 async function resolveDefinition(
@@ -297,11 +298,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     if (!dispatch({ type: 'ended', run })) return
 
     if (ending.tour)
-      lastEnding.value = {
-        tour: ending.tour,
-        outcome,
-        ...(outcome === 'skipped' && { skipReason })
-      }
+      lastEnding.value =
+        outcome === 'skipped'
+          ? { tour: ending.tour, outcome, skipReason }
+          : { tour: ending.tour, outcome }
     trackTour(
       outcome,
       outcome === 'skipped' ? skipReason : undefined,
