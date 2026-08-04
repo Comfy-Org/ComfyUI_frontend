@@ -104,6 +104,9 @@ test.describe('Team member billing permissions', { tag: '@cloud' }, () => {
 
   test('does not expose owner billing actions', async () => {
     await expect(
+      content.getByRole('heading', { name: 'Team', exact: true })
+    ).toBeVisible()
+    await expect(
       content.getByRole('button', { name: 'Billing & invoices' })
     ).toHaveCount(0)
     await expect(

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
@@ -65,6 +65,7 @@ const teamCreditStops: TeamCreditStops = {
 
 const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
 const mockBillingStatus = ref<BillingStatus>('paid')
+const mockBillingType = ref<BillingType>('workspace')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockRenewalDate = ref<string | null>(RENEWAL_DATE_ISO)
 const mockEndDate = ref<string | null>(END_DATE_ISO)
@@ -162,10 +163,11 @@ const mockError = ref<string | null>(null)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    type: mockBillingType,
     canAccessSubscriptionFeatures: computed(
       () => mockIsActiveSubscription.value
     ),
-    isFreeTier: computed(() => false),
+    isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
     billingStatus: mockBillingStatus,
     subscriptionStatus: mockSubscriptionStatus,
     isTeamPlan: mockIsTeamPlan,
@@ -314,6 +316,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'
+    mockBillingType.value = 'workspace'
     mockRenewalDate.value = RENEWAL_DATE_ISO
     mockEndDate.value = END_DATE_ISO
     mockScheduledPlanSlug.value = null
@@ -547,6 +550,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   it('keeps billing access in the ended state for an inactive paid Personal workspace', async () => {
     const user = userEvent.setup()
+    mockBillingType.value = 'legacy'
     mockIsInPersonalWorkspace.value = true
     mockIsActiveSubscription.value = false
     mockBillingStatus.value = 'inactive'
@@ -862,6 +866,33 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
   })
+
+  it.for([
+    { state: 'never-subscribed', hasSubscription: false, tier: 'PRO' },
+    { state: 'Free', hasSubscription: true, tier: 'FREE' }
+  ] as const)(
+    'hides legacy billing access from $state personal workspaces',
+    ({ hasSubscription, tier }) => {
+      mockBillingType.value = 'legacy'
+      mockBillingStatus.value = 'inactive'
+      mockSubscriptionTier.value = tier
+      mockIsInPersonalWorkspace.value = true
+      mockIsActiveSubscription.value = false
+      mockHasSubscription.value = hasSubscription
+      mockIsWorkspaceSubscribed.value = false
+      mockUiConfig.value = personalUiConfig
+      mockCanLeaveWorkspace.value = false
+      renderComponent()
+
+      expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Billing & invoices' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Subscribe' })
+      ).toBeInTheDocument()
+    }
+  )
 
   it('lets a Free personal workspace only rename itself (no Cancel or Delete)', async () => {
     const user = userEvent.setup()
