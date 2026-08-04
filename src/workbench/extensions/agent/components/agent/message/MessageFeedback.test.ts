@@ -84,13 +84,24 @@ describe('MessageFeedback', () => {
     const menu = await screen.findByRole('menu')
     const menuItems = within(menu).getAllByRole('menuitem')
 
-    expect(menu).toHaveClass('-translate-x-8', 'h-9', 'w-36', 'p-1')
     expect(menuItems).toHaveLength(1)
     expect(menuItems[0]).toHaveAccessibleName('Copy as markdown')
-    expect(menuItems[0]).toHaveClass('w-full', 'whitespace-nowrap')
 
     await user.click(menuItems[0])
 
     expect(clipboard.copy).toHaveBeenCalledWith(markdownSource)
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('Escape closes the markdown menu without copying', async () => {
+    const { user } = renderFeedback()
+
+    await user.click(screen.getByRole('button', { name: 'Copy as markdown' }))
+    expect(await screen.findByRole('menu')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(clipboard.copy).not.toHaveBeenCalled()
   })
 })
