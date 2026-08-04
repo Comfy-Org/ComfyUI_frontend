@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * Guards the network block installed by `vitest.setup.ts`.
@@ -9,6 +9,12 @@ import { describe, expect, it, vi } from 'vitest'
  * explains. Keep this covered so the guard cannot be dropped silently.
  */
 describe('unit test network guard', () => {
+  // Runs even when an assertion throws mid-test, so a stubbed fetch cannot
+  // leak into the tests below (or into a CI retry of this file).
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('rejects absolute http requests instead of dialling out', async () => {
     await expect(fetch('https://example.com/thing')).rejects.toThrow(
       /Blocked a real network request/
@@ -25,6 +31,14 @@ describe('unit test network guard', () => {
     await expect(
       fetch(new Request('https://example.com/thing'))
     ).rejects.toThrow(/Blocked a real network request/)
+  })
+
+  it('delegates non-http schemes to the real fetch', async () => {
+    // The guard only blocks http(s). Anything else has to reach the original
+    // fetch untouched - a `data:` URL round-tripping its body proves it did.
+    const response = await fetch('data:text/plain,delegated')
+
+    expect(await response.text()).toBe('delegated')
   })
 
   it('lets a test stub its own fetch', async () => {
