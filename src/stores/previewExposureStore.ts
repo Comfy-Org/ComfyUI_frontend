@@ -10,7 +10,7 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
@@ -34,6 +34,13 @@ function normalizePreviewExposure(
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
   const exposures = ref(new Map<UUID, Map<string, PreviewExposure[]>>())
+  /**
+   * Sources explicitly demoted while they had no exposure entry to remove
+   * (e.g. a virtual/implicit preview). Per ADR 0009, an exposure removed by
+   * explicit user action stays removed until the host is destroyed/unpacked
+   * -- tracked here so derived preview promotion doesn't resurrect it.
+   */
+  const removedImplicitSources = ref(new Map<UUID, Map<string, Set<NodeId>>>())
 
   function _getHostsForGraph(
     rootGraphId: UUID
@@ -89,6 +96,10 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
       sourcePreviewName: source.sourcePreviewName
     }
     hosts.set(hostNodeLocator, [...current, entry])
+    removedImplicitSources.value
+      .get(rootGraphId)
+      ?.get(hostNodeLocator)
+      ?.delete(entry.sourceNodeId)
     return entry
   }
 
@@ -99,13 +110,49 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   ): void {
     const current = _getExposuresRef(rootGraphId, hostNodeLocator)
     if (!current?.length) return
+    const removed = current.find((e) => e.name === name)
     const next = current.filter((e) => e.name !== name)
     if (next.length === current.length) return
     setExposures(rootGraphId, hostNodeLocator, next)
+    if (removed) {
+      markSourceRemoved(rootGraphId, hostNodeLocator, removed.sourceNodeId)
+    }
+  }
+
+  function markSourceRemoved(
+    rootGraphId: UUID,
+    hostNodeLocator: string,
+    sourceNodeId: NodeId
+  ): void {
+    let hosts = removedImplicitSources.value.get(rootGraphId)
+    if (!hosts) {
+      hosts = new Map()
+      removedImplicitSources.value.set(rootGraphId, hosts)
+    }
+    let sourceIds = hosts.get(hostNodeLocator)
+    if (!sourceIds) {
+      sourceIds = new Set()
+      hosts.set(hostNodeLocator, sourceIds)
+    }
+    sourceIds.add(sourceNodeId)
+  }
+
+  function isSourceExplicitlyRemoved(
+    rootGraphId: UUID,
+    hostNodeLocator: string,
+    sourceNodeId: NodeId
+  ): boolean {
+    return (
+      removedImplicitSources.value
+        .get(rootGraphId)
+        ?.get(hostNodeLocator)
+        ?.has(sourceNodeId) ?? false
+    )
   }
 
   function clearGraph(rootGraphId: UUID): void {
     exposures.value.delete(rootGraphId)
+    removedImplicitSources.value.delete(rootGraphId)
   }
 
   function getExposuresAsPromotionShape(
@@ -141,6 +188,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     setExposures,
     addExposure,
     removeExposure,
+    isSourceExplicitlyRemoved,
     clearGraph,
     resolveChain
   }

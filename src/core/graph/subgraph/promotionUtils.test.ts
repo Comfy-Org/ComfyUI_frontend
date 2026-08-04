@@ -46,11 +46,6 @@ function promotedWidgetRef(host: SubgraphNode, name: string): IBaseWidget {
   return widget
 }
 
-const updatePreviewsMock = vi.hoisted(() => vi.fn())
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: updatePreviewsMock })
-}))
-
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   autoExposeKnownPreviewNodes,
@@ -308,7 +303,6 @@ describe('getPromotableWidgets', () => {
 describe('promoteRecommendedWidgets', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    updatePreviewsMock.mockReset()
   })
 
   it('promotes recommended value widgets through linked subgraph inputs', () => {
@@ -374,7 +368,7 @@ describe('promoteRecommendedWidgets', () => {
     expect(subgraphNode.serialize().properties?.proxyWidgets).toBeUndefined()
   })
 
-  it('skips deferred updatePreviews when a preview widget already exists', () => {
+  it('exposes an existing real preview widget instead of the virtual fallback', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const interiorNode = new LGraphNode('TestNode')
@@ -391,7 +385,18 @@ describe('promoteRecommendedWidgets', () => {
 
     promoteRecommendedWidgets(subgraphNode)
 
-    expect(updatePreviewsMock).not.toHaveBeenCalled()
+    expect(
+      usePreviewExposureStore().getExposures(
+        subgraphNode.rootGraph.id,
+        String(subgraphNode.id)
+      )
+    ).toEqual([
+      {
+        name: 'videopreview',
+        sourceNodeId: String(interiorNode.id),
+        sourcePreviewName: 'videopreview'
+      }
+    ])
   })
 
   it('eagerly exposes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
@@ -414,14 +419,12 @@ describe('promoteRecommendedWidgets', () => {
       sourceNodeId: String(glslNode.id),
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
-    expect(updatePreviewsMock).not.toHaveBeenCalled()
   })
 })
 
 describe('autoExposeKnownPreviewNodes', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    updatePreviewsMock.mockReset()
   })
 
   it('auto-exposes previews when host has no persisted previewExposures property', () => {
@@ -489,7 +492,6 @@ describe('autoExposeKnownPreviewNodes', () => {
 describe('autoExposeKnownPreviewNodes — unlisted node types', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    updatePreviewsMock.mockReset()
   })
 
   it('does not eagerly persist an exposure for an unlisted node type', () => {

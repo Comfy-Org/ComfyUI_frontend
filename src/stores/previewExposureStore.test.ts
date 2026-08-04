@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import { usePreviewExposureStore } from './previewExposureStore'
@@ -121,6 +122,58 @@ describe(usePreviewExposureStore, () => {
       const before = store.getExposures(rootGraphA, hostA)
       store.removeExposure(rootGraphA, hostA, 'does-not-exist')
       expect(store.getExposures(rootGraphA, hostA)).toEqual(before)
+    })
+  })
+
+  describe('isSourceExplicitlyRemoved', () => {
+    it('returns false for a source that was never removed', () => {
+      expect(
+        store.isSourceExplicitlyRemoved(rootGraphA, hostA, toNodeId('42'))
+      ).toBe(false)
+    })
+
+    it('returns true after removeExposure removes that source', () => {
+      const entry = store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+
+      store.removeExposure(rootGraphA, hostA, entry.name)
+
+      expect(
+        store.isSourceExplicitlyRemoved(rootGraphA, hostA, toNodeId('42'))
+      ).toBe(true)
+    })
+
+    it('clears the flag once the source is re-exposed', () => {
+      const entry = store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+      store.removeExposure(rootGraphA, hostA, entry.name)
+
+      store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+
+      expect(
+        store.isSourceExplicitlyRemoved(rootGraphA, hostA, toNodeId('42'))
+      ).toBe(false)
+    })
+
+    it('clears removed sources for a graph on clearGraph', () => {
+      const entry = store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+      store.removeExposure(rootGraphA, hostA, entry.name)
+
+      store.clearGraph(rootGraphA)
+
+      expect(
+        store.isSourceExplicitlyRemoved(rootGraphA, hostA, toNodeId('42'))
+      ).toBe(false)
     })
   })
 

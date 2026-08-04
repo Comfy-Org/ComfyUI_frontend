@@ -187,6 +187,9 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   wstest(
     'Promotes a live sampler preview from inside a subgraph to the outer SubgraphNode',
     async ({ comfyPage, getWebSocket }) => {
+      // Expected-fail for incident-94's `LGraphNode.vue:172` guard
+      // (`!lgraphNode?.isSubgraphNode()`), not this PR's allowlist gap.
+      // Remove this marker (don't just delete the test) once that guard ships.
       test.fail()
 
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())

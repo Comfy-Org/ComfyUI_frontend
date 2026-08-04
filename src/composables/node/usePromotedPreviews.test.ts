@@ -459,4 +459,103 @@ describe(usePromotedPreviews, () => {
       }
     ])
   })
+
+  it('does not resurrect a removed exposure as an implicit preview once live data exists', () => {
+    const setup = createSetup()
+    addInteriorNode(setup, { id: 10 })
+    exposePreview(setup, '10')
+
+    const blobUrl = 'blob:http://localhost/removed-preview'
+    seedPreviewImages(setup.subgraph.id, [
+      { nodeId: toNodeId(10), urls: [blobUrl] }
+    ])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([
+      {
+        sourceNodeId: '10',
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+        type: 'image',
+        urls: [blobUrl]
+      }
+    ])
+
+    usePreviewExposureStore().removeExposure(
+      setup.subgraphNode.rootGraph.id,
+      String(setup.subgraphNode.id),
+      CANVAS_IMAGE_PREVIEW_WIDGET
+    )
+
+    expect(promotedPreviews.value).toEqual([])
+  })
+
+  it('does not implicitly promote a committed input-preview output (e.g. LoadImage restored on load)', () => {
+    const setup = createSetup()
+    const loadImageNode = addInteriorNode(setup, { id: 10 })
+    loadImageNode.type = 'LoadImage'
+
+    const store = useNodeOutputStore()
+    const locatorId = createNodeLocatorId(setup.subgraph.id, toNodeId(10))
+    store.nodeOutputs[locatorId] = {
+      images: [{ filename: 'input.png', type: 'input' }]
+    }
+    vi.mocked(store.getNodeImageUrls).mockReturnValue([
+      '/view?filename=input.png&type=input'
+    ])
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([])
+  })
+
+  it('still promotes an implicit preview after the node gains a canvas-image-preview pseudo widget', () => {
+    const setup = createSetup()
+    const samplerNode = addInteriorNode(setup, { id: 10 })
+    samplerNode.type = 'SamplerCustomAdvanced'
+    samplerNode.widgets = [
+      {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
+        type: 'IMAGE_PREVIEW',
+        options: { serialize: false },
+        serialize: false,
+        y: 0,
+        computedDisabled: false
+      }
+    ]
+
+    const blobUrl = 'blob:http://localhost/sampler-preview'
+    seedPreviewImages(setup.subgraph.id, [
+      { nodeId: toNodeId(10), urls: [blobUrl] }
+    ])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([
+      {
+        sourceNodeId: '10',
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+        type: 'image',
+        urls: [blobUrl]
+      }
+    ])
+  })
+
+  it('derives video type from the output payload when previewMediaType was never set', () => {
+    const setup = createSetup()
+    addInteriorNode(setup, { id: 10 })
+    exposePreview(setup, '10')
+
+    const store = useNodeOutputStore()
+    const locatorId = createNodeLocatorId(setup.subgraph.id, toNodeId(10))
+    store.nodeOutputs[locatorId] = {
+      images: [{ filename: 'output.webm' }],
+      animated: [true]
+    }
+    vi.mocked(store.getNodeImageUrls).mockReturnValue([
+      '/view?filename=output.webm'
+    ])
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value[0].type).toBe('video')
+  })
 })
