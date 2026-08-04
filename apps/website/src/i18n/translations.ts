@@ -4953,7 +4953,7 @@ const translations = {
   },
   'flux3.hero.eyebrow': { en: 'New', 'zh-CN': '全新' },
   'flux3.hero.title': {
-    en: 'Flux 3 coming soon',
+    en: 'Flux 3 Coming Soon',
     'zh-CN': 'Flux 3 即将推出'
   },
   'flux3.hero.primaryCta': {
