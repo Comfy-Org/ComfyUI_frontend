@@ -149,6 +149,7 @@ const slides = HERO_SLIDES
 
 const {
   activeIndex,
+  lastStep,
   setVideoRef,
   isCarouselActive,
   next,
@@ -211,8 +212,7 @@ watch(activeIndex, (to, from) => {
   const track = trackEl.value
   if (!track || to === from) return
 
-  const isForwards = wrapIndex(to - from, slides.length) === 1
-  const offscreenX = RESTING_X + (isForwards ? 100 : -100)
+  const offscreenX = RESTING_X + lastStep.value * 100
 
   const slideFrom = (x: number) => {
     track.style.transition = 'none'

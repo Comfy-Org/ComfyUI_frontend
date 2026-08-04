@@ -83,6 +83,31 @@ describe('useVideoCarousel', () => {
     expect(carousel.activeIndex.value).toBe(2)
   })
 
+  it('reports forwards travel even when a failed slide is skipped over', async () => {
+    const { carousel } = await mountCarousel(3)
+
+    carousel.onError(1)
+    carousel.next()
+
+    expect(
+      carousel.activeIndex.value,
+      'landing two slots away is what makes the index gap unreadable as a direction'
+    ).toBe(2)
+    expect(carousel.lastStep.value).toBe(1)
+  })
+
+  it('reports backwards travel across the wrap of a two-slide carousel', async () => {
+    const { carousel } = await mountCarousel(2)
+
+    carousel.previous()
+
+    expect(carousel.activeIndex.value).toBe(1)
+    expect(
+      carousel.lastStep.value,
+      'either direction moves one slot in a pair, so only the request distinguishes them'
+    ).toBe(-1)
+  })
+
   it('retries from the start once every slide has failed', async () => {
     const { carousel } = await mountCarousel(3)
 

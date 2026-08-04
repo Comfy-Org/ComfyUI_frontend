@@ -56,6 +56,11 @@ export function useVideoCarousel({
   }
   const activeVideo = computed(() => videoEls.value[activeIndex.value] ?? null)
 
+  /** The direction the last move was asked to travel. Skipping a failed slide
+   *  can land further than one slot, so the gap between indices does not
+   *  reveal it. */
+  const lastStep = ref<1 | -1>(1)
+
   /** Nearest slide in `delta`'s direction that has not failed. */
   const step = (delta: 1 | -1) => {
     if (count === 0) return
@@ -68,6 +73,7 @@ export function useVideoCarousel({
       candidate = wrapIndex(candidate + delta, count)
       if (!failedIndices.value.has(candidate)) break
     }
+    lastStep.value = delta
     activeIndex.value = candidate
   }
 
@@ -133,6 +139,7 @@ export function useVideoCarousel({
 
   return {
     activeIndex,
+    lastStep,
     setVideoRef,
     isCarouselActive: computed(() => shouldPlay.value || isPlaying.value),
     next: goToNextSlide,
