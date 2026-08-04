@@ -2801,6 +2801,17 @@
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
       "runLabel": "Run"
     },
+    "paymentRecovery": {
+      "title": "Subscription paused",
+      "ownerDescription": "Update your payment method to restore the workspace's subscription and run workflows.",
+      "memberDescription": "Ask your workspace owner to restore the workspace's subscription.",
+      "ownerCta": "Update payment",
+      "memberCta": "Ok, got it",
+      "ownerRunLabel": "Update payment to run",
+      "memberRunLabel": "Run",
+      "ownerRunTooltip": "Update payment to restore this subscription",
+      "memberRunTooltip": "Ask your workspace owner to restore this subscription"
+    },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeForMore": "Upgrade",
@@ -2991,14 +3002,13 @@
     },
     "billingStatus": {
       "warning": {
-        "title": "Payment declined",
-        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
-        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause."
+        "title": "Payment failed",
+        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause."
       },
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+        "memberBody": "Ask your workspace owner to restore the workspace's subscription."
       },
       "outOfCredits": {
         "title": "Out of credits",
