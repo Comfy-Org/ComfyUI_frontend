@@ -76,11 +76,16 @@ const logger = log.getLogger('LayoutStore')
 
 type ScopedLayoutKey = string & { readonly __brand: 'ScopedLayoutKey' }
 
+/** Yjs surfaces its own keys as raw strings; brand them back on the way in. */
+function toScopedLayoutKey(key: string): ScopedLayoutKey {
+  return key as ScopedLayoutKey
+}
+
 function makeScopedLayoutKey(
   graphId: UUID,
   localId: number | string
 ): ScopedLayoutKey {
-  return (graphId + ':' + localId) as ScopedLayoutKey
+  return toScopedLayoutKey(graphId + ':' + localId)
 }
 
 /** A UUID never contains `:`, so the first one always ends the graph id. */
@@ -193,7 +198,7 @@ class LayoutStoreImpl implements LayoutStore {
 
       // Trigger all affected node refs
       event.changes.keys.forEach((_change: YEventChange, key: string) => {
-        this.nodeTriggers.get(key as ScopedLayoutKey)?.()
+        this.nodeTriggers.get(toScopedLayoutKey(key))?.()
       })
     })
 
@@ -205,7 +210,7 @@ class LayoutStoreImpl implements LayoutStore {
     this.yreroutes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
       this.version.value++
       event.changes.keys.forEach((change, rerouteIdStr) => {
-        this.handleRerouteChange(change, rerouteIdStr)
+        this.handleRerouteChange(change, toScopedLayoutKey(rerouteIdStr))
       })
     })
   }
@@ -1164,14 +1169,17 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Handle reroute change events
    */
-  private handleRerouteChange(change: YEventChange, key: string): void {
+  private handleRerouteChange(
+    change: YEventChange,
+    key: ScopedLayoutKey
+  ): void {
     const parsed = parseLayoutKey(key)
     const graphId = parsed.graphId
     const rerouteId = toRerouteId(Number(parsed.localId))
 
     if (change.action === 'delete') {
-      this.rerouteLayouts.delete(key as ScopedLayoutKey)
-      this.rerouteSpatialIndex.remove(key as ScopedLayoutKey)
+      this.rerouteLayouts.delete(key)
+      this.rerouteSpatialIndex.remove(key)
       return
     }
 
