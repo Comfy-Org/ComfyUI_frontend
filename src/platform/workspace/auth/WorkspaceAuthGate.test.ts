@@ -24,9 +24,12 @@ const mockLogout = vi.fn()
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     isInitialized: mockIsInitialized,
-    currentUser: mockCurrentUser,
-    logout: mockLogout
+    currentUser: mockCurrentUser
   })
+}))
+
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: () => ({ logout: mockLogout })
 }))
 
 const mockRefreshRemoteConfig = vi.fn()

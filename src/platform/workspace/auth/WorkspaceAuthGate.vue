@@ -63,6 +63,7 @@ import { storeToRefs } from 'pinia'
 import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -216,7 +217,7 @@ async function retryInitialization(): Promise<void> {
 
 async function handleSignOut(): Promise<void> {
   cancelInitialization()
-  await useAuthStore().logout()
+  await useAuthActions().logout()
 }
 
 async function initializeWorkspaceMode(): Promise<void> {
