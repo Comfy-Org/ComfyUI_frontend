@@ -207,6 +207,33 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('onboardingTourEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('defaults to false when nothing enables it', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(
+        flags.onboardingTourEnabled,
+        'This flag gates a full-screen first-run takeover; defaulting it on would ship the takeover to every user the moment config is unreachable'
+      ).toBe(false)
+    })
+
+    it('turns on from remote config', () => {
+      remoteConfig.value = { onboarding_tour_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.onboardingTourEnabled).toBe(true)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()
