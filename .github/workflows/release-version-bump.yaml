@@ -26,7 +26,7 @@ on:
     - cron: '0 0 * * *'
     # Weekly RC cut: MINOR bump on main every Monday 20:00 UTC (noon PST /
     # 13:00 PDT), aligned
-    # with the release freeze in release-biweekly-comfyui.yaml. Merging this minor
+    # with the release freeze in release-weekly-comfyui.yaml. Merging this minor
     # `Release` PR advances main to the next dev minor AND makes
     # release-branch-create.yaml cut the outgoing core/x.y + cloud/x.y pair. This
     # is what makes the Monday branch cut hands-off (no manual minor bump).

@@ -2905,6 +2905,7 @@
     "mage": "mage",
     "mask": "maske",
     "merging": "birleştirme",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "model",
     "model specific": "model özel",
@@ -3865,6 +3866,7 @@
     "beta": "BETA",
     "billedMonthly": "Aylık faturalandırılır",
     "billedYearly": "{total} Yıllık faturalandırılır",
+    "billingAndInvoices": "Faturalandırma ve faturalar",
     "billingComingSoon": {
       "message": "Takım faturalandırması yakında geliyor. Çalışma alanınız için koltuk başına fiyatlandırma ile bir plana abone olabileceksiniz. Güncellemeler için bizi takip edin.",
       "title": "Yakında"
@@ -3946,6 +3948,9 @@
       "memberTitle": "Bu çalışma alanının aboneliği etkin değil",
       "runLabel": "Çalıştır"
     },
+    "inactiveTeamDescription": "Daha fazla üye eklemek ve iş akışlarını çalıştırmak için ekip planınızı yeniden etkinleştirin",
+    "inactiveTeamPlanIncludes": "Aktif bir plan, {plan} içeriğine ek olarak şunları da içerir:",
+    "inactiveTeamTitle": "Pasif ekip aboneliği",
     "inviteUpTo": "Şu kadar kişiyi davet et:",
     "invoiceHistory": "Fatura geçmişi",
     "learnMore": "Daha fazla bilgi edinin",
@@ -4065,6 +4070,7 @@
     "pricingBlurbQuestions": "sorular",
     "pricingBlurbSeeDetails": "detayları gör",
     "reactivatePlan": "Planı yeniden etkinleştir",
+    "reactivateToUseCredits": "Bu kredileri kullanmak için planınızı yeniden etkinleştirin",
     "refillsDate": "{date} tarihinde yenilenecek",
     "refillsNextCycle": "Sonraki döngüde yenilenecek",
     "refreshCredits": "Kredileri yenile",
