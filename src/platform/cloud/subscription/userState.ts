@@ -1,5 +1,6 @@
 export type UserState =
-  | { kind: 'LocalAndUnsubscribed' }
+  | { kind: 'LocalWithoutActiveSubscription' }
+  | { kind: 'LocalTeamWithoutActiveSubscription' }
   | { kind: 'LocalAndUnknown' }
   | { kind: 'LocalAndFree' }
   | { kind: 'LocalAndStandard' }
@@ -7,7 +8,8 @@ export type UserState =
   | { kind: 'LocalAndPro' }
   | { kind: 'LocalAndFounders' }
   | { kind: 'LocalAndTeam' }
-  | { kind: 'CloudAndUnsubscribed' }
+  | { kind: 'CloudWithoutActiveSubscription' }
+  | { kind: 'CloudTeamWithoutActiveSubscription' }
   | { kind: 'CloudAndUnknown' }
   | { kind: 'CloudAndFree' }
   | { kind: 'CloudAndStandard' }

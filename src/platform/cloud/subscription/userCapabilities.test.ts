@@ -6,7 +6,11 @@ import type { UserState } from './userState'
 describe('getUserCapabilities', () => {
   it.for<[UserState['kind'], ReturnType<typeof getUserCapabilities>]>([
     [
-      'LocalAndUnsubscribed',
+      'LocalWithoutActiveSubscription',
+      { canTopUpCredits: true, showsSubscribeUpsellUI: false }
+    ],
+    [
+      'LocalTeamWithoutActiveSubscription',
       { canTopUpCredits: true, showsSubscribeUpsellUI: false }
     ],
     [
@@ -29,7 +33,11 @@ describe('getUserCapabilities', () => {
     ],
     ['LocalAndTeam', { canTopUpCredits: true, showsSubscribeUpsellUI: false }],
     [
-      'CloudAndUnsubscribed',
+      'CloudWithoutActiveSubscription',
+      { canTopUpCredits: false, showsSubscribeUpsellUI: true }
+    ],
+    [
+      'CloudTeamWithoutActiveSubscription',
       { canTopUpCredits: false, showsSubscribeUpsellUI: true }
     ],
     [

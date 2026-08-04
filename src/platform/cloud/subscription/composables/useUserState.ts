@@ -18,12 +18,16 @@ export function deriveUserState(input: {
 }): UserState {
   const distribution = input.isCloud ? 'Cloud' : 'Local'
 
-  if (!input.isActiveSubscription) {
-    return { kind: `${distribution}AndUnsubscribed` }
+  if (input.isTeamPlan) {
+    return {
+      kind: input.isActiveSubscription
+        ? `${distribution}AndTeam`
+        : `${distribution}TeamWithoutActiveSubscription`
+    }
   }
 
-  if (input.isTeamPlan) {
-    return { kind: `${distribution}AndTeam` }
+  if (!input.isActiveSubscription) {
+    return { kind: `${distribution}WithoutActiveSubscription` }
   }
 
   switch (input.tier) {

@@ -15,7 +15,9 @@ export interface UserCapabilities {
  */
 export function getUserCapabilities(state: UserState): UserCapabilities {
   switch (state.kind) {
-    case 'LocalAndUnsubscribed':
+    case 'LocalWithoutActiveSubscription':
+      return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
+    case 'LocalTeamWithoutActiveSubscription':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
     case 'LocalAndUnknown':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
@@ -31,7 +33,9 @@ export function getUserCapabilities(state: UserState): UserCapabilities {
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
     case 'LocalAndTeam':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }
-    case 'CloudAndUnsubscribed':
+    case 'CloudWithoutActiveSubscription':
+      return { canTopUpCredits: false, showsSubscribeUpsellUI: true }
+    case 'CloudTeamWithoutActiveSubscription':
       return { canTopUpCredits: false, showsSubscribeUpsellUI: true }
     case 'CloudAndUnknown':
       return { canTopUpCredits: true, showsSubscribeUpsellUI: false }

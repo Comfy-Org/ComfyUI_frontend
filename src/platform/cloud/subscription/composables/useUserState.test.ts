@@ -4,8 +4,8 @@ import { deriveUserState } from './useUserState'
 
 describe('deriveUserState', () => {
   it.for<[string, boolean]>([
-    ['LocalAndUnsubscribed', false],
-    ['CloudAndUnsubscribed', true]
+    ['LocalWithoutActiveSubscription', false],
+    ['CloudWithoutActiveSubscription', true]
   ])('maps no active subscription to %s (isCloud=%s)', ([kind, isCloud]) => {
     expect(
       deriveUserState({
@@ -75,4 +75,21 @@ describe('deriveUserState', () => {
       })
     ).toEqual({ kind })
   })
+
+  it.for<[string, boolean]>([
+    ['LocalTeamWithoutActiveSubscription', false],
+    ['CloudTeamWithoutActiveSubscription', true]
+  ])(
+    'preserves an inactive Team plan as %s (isCloud=%s)',
+    ([kind, isCloud]) => {
+      expect(
+        deriveUserState({
+          isCloud,
+          isActiveSubscription: false,
+          isTeamPlan: true,
+          tier: 'STANDARD'
+        })
+      ).toEqual({ kind })
+    }
+  )
 })
