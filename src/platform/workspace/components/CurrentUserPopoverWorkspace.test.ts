@@ -237,6 +237,69 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it.for([
+    {
+      name: 'allows a lifecycle manager to resubscribe a cancelled plan',
+      canAccessSubscriptionFeatures: true,
+      isCancelled: true,
+      canManageSubscription: false,
+      canManageSubscriptionLifecycle: true,
+      action: 'Resubscribe',
+      visible: true
+    },
+    {
+      name: 'does not let a subscription manager resubscribe a cancelled plan',
+      canAccessSubscriptionFeatures: true,
+      isCancelled: true,
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: false,
+      action: 'Resubscribe',
+      visible: false
+    },
+    {
+      name: 'allows a subscription manager to subscribe an inaccessible plan',
+      canAccessSubscriptionFeatures: false,
+      isCancelled: false,
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: false,
+      action: 'Subscribe',
+      visible: true
+    },
+    {
+      name: 'does not let a lifecycle manager subscribe an inaccessible plan',
+      canAccessSubscriptionFeatures: false,
+      isCancelled: false,
+      canManageSubscription: false,
+      canManageSubscriptionLifecycle: true,
+      action: 'Subscribe',
+      visible: false
+    }
+  ])(
+    '$name',
+    ({
+      canAccessSubscriptionFeatures,
+      isCancelled,
+      canManageSubscription,
+      canManageSubscriptionLifecycle,
+      action,
+      visible
+    }) => {
+      state.canAccessSubscriptionFeatures = canAccessSubscriptionFeatures
+      state.isCancelled = isCancelled
+      state.canManageSubscription = canManageSubscription
+      state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
+
+      renderComponent('team', 'owner')
+
+      const subscribeAction = screen.queryByRole('button', { name: action })
+      if (visible) {
+        expect(subscribeAction).toBeInTheDocument()
+      } else {
+        expect(subscribeAction).not.toBeInTheDocument()
+      }
+    }
+  )
+
   it('keeps billing controls and resubscribe available to a promoted owner', async () => {
     const user = userEvent.setup()
     state.isCancelled = true
