@@ -22,7 +22,7 @@ import {
 } from '@e2e/fixtures/customNode/cloudExclusions'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
-  CONSOLE_ERROR_ALLOWLIST,
+  allowlistRulesFor,
   isForeignExecutionNoise
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import type {
@@ -271,7 +271,7 @@ const MOUNT_WIDGET_ALLOWLIST: Record<string, Record<string, string>> = {
 
 // The pack-attributed console-noise ledger moved to a shared fixture module
 // (consoleErrorLedger.ts) so the curated run tier applies the same
-// exceptions; this spec imports CONSOLE_ERROR_ALLOWLIST above.
+// exceptions; this spec reads it through allowlistRulesFor above.
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -809,7 +809,7 @@ for (const entry of loadManifest()) {
             failures,
             `VueNodes=${vueNodesEnabled}: ${JSON.stringify(failures, null, 1)}`
           ).toEqual([])
-          const allowlist = CONSOLE_ERROR_ALLOWLIST[entry.pack] ?? []
+          const allowlist = allowlistRulesFor(entry.pack)
           const allowed = consoleErrors.errors.filter((error) =>
             allowlist.some((rule) => rule.pattern.test(error))
           )
@@ -1149,7 +1149,7 @@ for (const entry of loadManifest()) {
             )
           }
           consoleErrors.stop()
-          const allowlist = CONSOLE_ERROR_ALLOWLIST[entry.pack] ?? []
+          const allowlist = allowlistRulesFor(entry.pack)
           expect(
             consoleErrors.errors.filter(
               (error) =>

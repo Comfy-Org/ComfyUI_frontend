@@ -29,6 +29,16 @@ test.describe('consoleErrorLedger', () => {
     expect(unallowlistedErrors('ComfyUI-Custom-Scripts', [error])).toEqual([])
   })
 
+  test('matches the pack key case-insensitively: cloud installs it lower-cased', () => {
+    const errors = [
+      'Failed to load resource: the server responded with a status of 404 () http://host/example.png',
+      'TypeError: something real broke'
+    ]
+    expect(unallowlistedErrors('comfyui-impact-pack', errors)).toEqual([
+      'TypeError: something real broke'
+    ])
+  })
+
   test('unknown pack fails open: every error surfaces', () => {
     // The first error would match an Impact pattern; with no ledger for the
     // pack, nothing may be filtered.
@@ -37,6 +47,39 @@ test.describe('consoleErrorLedger', () => {
       'boom'
     ]
     expect(unallowlistedErrors('Some-Future-Pack', errors)).toEqual(errors)
+  })
+
+  test('cloud environment noise is ledgered for every pack, and only on cloud', () => {
+    const viewError =
+      'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:4173/api/view?type=input&filename=beach.jpg&subfolder=]'
+    const challengeError =
+      'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:4173/cdn-cgi/challenge-platform/scripts/jsd/main.js]'
+    const real = 'TypeError: something real broke'
+    const errors = [viewError, challengeError, real]
+    expect(unallowlistedErrors('radiance', errors)).toEqual(errors)
+    const previous = process.env.CUSTOM_NODES_ENV
+    process.env.CUSTOM_NODES_ENV = 'cloud'
+    try {
+      expect(unallowlistedErrors('radiance', errors)).toEqual([real])
+      // The sweep variant applies them with no pack in scope too.
+      expect(unallowlistedErrorsForPacks([], errors)).toEqual([real])
+      // Query order is the backend's choice; the rule cannot depend on it.
+      expect(
+        unallowlistedErrors('any-pack', [
+          viewError.replace(
+            'type=input&filename=beach.jpg',
+            'filename=beach.jpg&type=input'
+          )
+        ])
+      ).toEqual([])
+      // Scoped to the 404: a served-but-failing /api/view still reds.
+      expect(
+        unallowlistedErrors('any-pack', [viewError.replace('404', '500')])
+      ).toHaveLength(1)
+    } finally {
+      if (previous === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = previous
+    }
   })
 
   test('cross-pack variant filters only via packs in scope', () => {

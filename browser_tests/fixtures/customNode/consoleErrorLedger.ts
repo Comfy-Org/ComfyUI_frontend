@@ -1,13 +1,17 @@
+import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
+
+interface AllowlistRule {
+  pattern: RegExp
+  reason: string
+}
+
 // Pack-attributed console noise with no visible error surface. Shared by
 // the all-nodes tiers and the curated run tier so one ledger covers every
 // surface a pack's script can emit on. Filter-guarded: a pattern suppresses
 // matching errors for its pack only; stale entries are caught by review,
 // not observation (several patterns are environment-conditional, so
 // observed-firing guards would false-fail - see docs/custom-node-regression-suite.md section 10 (evidence model)).
-export const CONSOLE_ERROR_ALLOWLIST: Record<
-  string,
-  Array<{ pattern: RegExp; reason: string }>
-> = {
+const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
   'ComfyUI-Impact-Pack': [
     {
       // Media/text widgets preview their value via root-relative URLs at
@@ -69,11 +73,54 @@ export const CONSOLE_ERROR_ALLOWLIST: Record<
   ]
 }
 
-export function unallowlistedErrors(pack: string, errors: string[]): string[] {
-  const allowlist = CONSOLE_ERROR_ALLOWLIST[pack] ?? []
+// Noise owned by the target deployment rather than by any pack, so it applies
+// to every pack's collector on that environment.
+const ENV_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
+  cloud: [
+    {
+      // Cloud's /object_info advertises input-dir media (beach.jpg,
+      // bedroom.mp4, eth3d.png) that /api/view then refuses to serve the
+      // smoke account, so every media widget previewing its combo default
+      // 404s - across packs, which is why it is env-scoped and not pack
+      // -attributed. Backend-side finding, tracked for escalation; console
+      // -only, no visible error surface.
+      pattern: /Failed to load resource.*404.*\/api\/view\?.*type=input/,
+      reason:
+        'cloud advertises input files /api/view will not serve the smoke account'
+    },
+    {
+      // Cloudflare fronts the cloud origin and injects its bot-challenge
+      // script tag; the vite preview origin the suite loads does not serve
+      // /cdn-cgi, so the tag 404s. Environment, not the app.
+      pattern: /Failed to load resource.*404.*\/cdn-cgi\/challenge-platform\//,
+      reason: 'Cloudflare bot-challenge script is not served by this origin'
+    }
+  ]
+}
+
+// Cloud installs some packs under a lower-cased dirname
+// (comfyui-impact-pack for ComfyUI-Impact-Pack), so an exact-key lookup
+// ledgers nothing there and the pack's known noise reds the run. Fold the
+// key so one entry covers both targets; fold-equal keys merge rather than
+// shadow each other.
+export function allowlistRulesFor(pack: string): AllowlistRule[] {
+  const folded = pack.toLowerCase()
+  return [
+    ...Object.entries(CONSOLE_ERROR_ALLOWLIST)
+      .filter(([ledgered]) => ledgered.toLowerCase() === folded)
+      .flatMap(([, rules]) => rules),
+    ...(ENV_ERROR_ALLOWLIST[customNodesEnv()] ?? [])
+  ]
+}
+
+function withoutMatches(rules: AllowlistRule[], errors: string[]): string[] {
   return errors.filter(
-    (error) => !allowlist.some((rule) => rule.pattern.test(error))
+    (error) => !rules.some((rule) => rule.pattern.test(error))
   )
+}
+
+export function unallowlistedErrors(pack: string, errors: string[]): string[] {
+  return withoutMatches(allowlistRulesFor(pack), errors)
 }
 
 // For the cross-pack wiring sweep, where an error's owning pack cannot be
@@ -86,7 +133,7 @@ export function unallowlistedErrorsForPacks(
 ): string[] {
   return packs.reduce(
     (remaining, pack) => unallowlistedErrors(pack, remaining),
-    errors
+    withoutMatches(ENV_ERROR_ALLOWLIST[customNodesEnv()] ?? [], errors)
   )
 }
 
