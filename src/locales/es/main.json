@@ -2905,6 +2905,7 @@
     "mage": "mage",
     "mask": "mask",
     "merging": "fusión",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "específico del modelo",
@@ -3865,6 +3866,7 @@
     "beta": "BETA",
     "billedMonthly": "Facturado mensualmente",
     "billedYearly": "{total} facturado anualmente",
+    "billingAndInvoices": "Facturación y facturas",
     "billingComingSoon": {
       "message": "La facturación para equipos estará disponible pronto. Podrás suscribirte a un plan para tu espacio de trabajo con precios por usuario. Mantente atento para más actualizaciones.",
       "title": "Próximamente"
@@ -3946,6 +3948,9 @@
       "memberTitle": "La suscripción de este espacio de trabajo está inactiva",
       "runLabel": "Ejecutar"
     },
+    "inactiveTeamDescription": "Reactiva tu plan de equipo para añadir más miembros y ejecutar flujos de trabajo",
+    "inactiveTeamPlanIncludes": "Un plan activo incluye todo lo de {plan}, además de:",
+    "inactiveTeamTitle": "Suscripción de equipo inactiva",
     "inviteUpTo": "Invita hasta",
     "invoiceHistory": "Historial de facturas",
     "learnMore": "Más información",
@@ -4065,6 +4070,7 @@
     "pricingBlurbQuestions": "preguntas",
     "pricingBlurbSeeDetails": "ver detalles",
     "reactivatePlan": "Reactivar plan",
+    "reactivateToUseCredits": "Reactiva tu plan para usar estos créditos",
     "refillsDate": "Recargas {date}",
     "refillsNextCycle": "Recargas en el próximo ciclo",
     "refreshCredits": "Actualizar créditos",

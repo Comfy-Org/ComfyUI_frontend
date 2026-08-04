@@ -109,6 +109,7 @@ export interface SurveyResponses {
 }
 
 export type OnboardingTourStage =
+  | 'not_started'
   | 'started'
   | 'step_shown'
   | 'completed'
@@ -118,6 +119,14 @@ export type OnboardingTourSkipReason =
   | 'user'
   | 'target_timeout'
   | 'trigger_lost'
+  | 'postponed'
+
+export type OnboardingTourNotStartedReason =
+  | 'already_seen'
+  | 'no_roles'
+  | 'run_only'
+  | 'no_steps'
+  | 'resolver_failed'
 
 /**
  * `step_number` is 1-based and matches the "Step N of M" indicator the user
@@ -131,6 +140,7 @@ export interface OnboardingTourMetadata {
   step_number?: number
   coach_id?: string
   skip_reason?: OnboardingTourSkipReason
+  not_started_reason?: OnboardingTourNotStartedReason
 }
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
@@ -601,7 +611,11 @@ export interface SubscriptionMetadata {
 }
 
 export interface AddCreditsClickMetadata {
-  source: 'credits_panel' | 'avatar_menu' | 'settings_billing_panel'
+  source:
+    | 'credits_panel'
+    | 'avatar_menu'
+    | 'settings_billing_panel'
+    | 'deep_link'
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -1008,6 +1022,7 @@ export const TelemetryEvents = {
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
 
   // Onboarding Coachmarks
+  ONBOARDING_TOUR_NOT_STARTED: 'app:onboarding_tour_not_started',
   ONBOARDING_TOUR_STARTED: 'app:onboarding_tour_started',
   ONBOARDING_TOUR_STEP_SHOWN: 'app:onboarding_tour_step_shown',
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
@@ -1087,6 +1102,7 @@ export const OnboardingTourEvents: Record<
   OnboardingTourStage,
   TelemetryEventName
 > = {
+  not_started: TelemetryEvents.ONBOARDING_TOUR_NOT_STARTED,
   started: TelemetryEvents.ONBOARDING_TOUR_STARTED,
   step_shown: TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,

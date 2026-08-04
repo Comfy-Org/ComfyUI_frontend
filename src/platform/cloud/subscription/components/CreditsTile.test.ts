@@ -185,6 +185,7 @@ describe('CreditsTile', () => {
     state.type = 'workspace'
     mockIsCloud.value = true
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {
@@ -266,6 +267,15 @@ describe('CreditsTile', () => {
     }
     const { container } = renderTile()
     expect(container.textContent).toContain('253,200 left of 253,200')
+  })
+
+  it('formats the renewal date in the local timezone, not UTC', () => {
+    activeProSubscription()
+    expect(renderTile().container.textContent).toContain('Refills Feb 20')
+
+    // The suite is pinned to TZ=UTC, so opt this render into a UTC+13 viewer.
+    vi.stubEnv('TZ', 'Pacific/Auckland')
+    expect(renderTile().container.textContent).toContain('Refills Feb 21')
   })
 
   it('falls back to a dateless refills label when renewal date is missing', () => {
