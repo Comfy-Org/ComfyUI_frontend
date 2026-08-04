@@ -323,7 +323,7 @@ describe('computeProcessedWidgets visibility', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('keeps a promoted advanced widget visible when advanced widgets are hidden', () => {
+  it('keeps a promoted advanced widget visible without source metadata', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     subgraph.rootGraph.add(subgraphNode)
@@ -351,8 +351,16 @@ describe('computeProcessedWidgets visibility', () => {
       .spyOn(app, 'rootGraph', 'get')
       .mockReturnValue(subgraph.rootGraph)
     try {
+      const nodeData = extractVueNodeData(subgraphNode)
       const processedWidgets = computeProcessedWidgets({
-        nodeData: extractVueNodeData(subgraphNode),
+        nodeData: {
+          ...nodeData,
+          widgets: nodeData.widgets?.map((widget) => ({
+            ...widget,
+            sourceExecutionId: undefined,
+            sourceWidgetName: undefined
+          }))
+        },
         graphId: subgraph.rootGraph.id,
         showAdvanced: false,
         isGraphReady: false,

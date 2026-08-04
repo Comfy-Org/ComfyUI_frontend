@@ -268,11 +268,10 @@ export function computeProcessedWidgets({
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})
     }
-    const isPromotedWidget = widget.sourceWidgetName !== undefined
     const visible = isWidgetVisible(
       mergedOptions,
       showAdvanced,
-      widget.slotMetadata?.linked || isPromotedWidget
+      widget.slotMetadata?.linked || widget.slotMetadata?.promoted
     )
     if (!identity.dedupeIdentity) {
       uniqueWidgets.push({

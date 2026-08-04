@@ -48,6 +48,7 @@ export interface WidgetSlotMetadata {
   linked: boolean
   originNodeId?: NodeId
   originOutputName?: string
+  promoted: boolean
   type: string
 }
 
@@ -352,6 +353,7 @@ function buildSlotMetadata(
       linked: input.link != null,
       originNodeId,
       originOutputName,
+      promoted: input.widgetId !== undefined,
       type: String(input.type)
     }
     if (input.name) metadata.set(input.name, slotInfo)
