@@ -1,10 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 describe('flattenInputSpecs', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('includes a dynamic combo input alongside its nested per-option inputs', () => {
     const nodeDef: ComfyNodeDefV1 = {
       name: 'SyncLipSyncNode',
@@ -201,7 +205,12 @@ describe('flattenInputSpecs', () => {
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
 
-    expect(() => flattenInputSpecs(nodeDefImpl.inputs)).not.toThrow()
+    // assert() throws in DEV (Vitest's default); it only skips in production.
+    expect(() => flattenInputSpecs(nodeDefImpl.inputs)).toThrow(
+      /expected an options array on dynamic combo/
+    )
+
+    vi.stubEnv('DEV', false)
     const result = flattenInputSpecs(nodeDefImpl.inputs)
     expect(result.map((spec) => spec.name)).toEqual(['model'])
   })

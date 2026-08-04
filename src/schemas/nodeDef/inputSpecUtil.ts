@@ -1,3 +1,4 @@
+import { assert } from '@/base/assert'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyInputsSpec } from '@/schemas/nodeDefSchema'
@@ -30,12 +31,10 @@ export function flattenInputSpecs(
       spec as { options?: Array<{ key: string; inputs: ComfyInputsSpec }> }
     ).options
     if (!Array.isArray(options)) {
-      if (import.meta.env.DEV) {
-        console.warn(
-          '[flattenInputSpecs] expected an options array on dynamic combo',
-          spec.name
-        )
-      }
+      assert(
+        false,
+        `flattenInputSpecs: expected an options array on dynamic combo "${spec.name}"`
+      )
       continue
     }
 
