@@ -189,15 +189,19 @@ describe('firstRunTourSteps', () => {
   it('lets every step but the result take pointer input', async () => {
     loadTemplate(FROM_IMAGE)
 
-    const interactive = (await buildSteps(FROM_IMAGE))
-      .filter((step) => step.kind === 'spotlight' && step.interactive)
-      .map((step) => step.name)
+    const byName = new Map(
+      (await buildSteps(FROM_IMAGE)).map((step) => [
+        step.name,
+        step.kind === 'spotlight' && step.interactive === true
+      ])
+    )
 
-    expect(interactive).toEqual([
-      'upload.image-edit',
-      'prompt.image-edit',
-      'run'
-    ])
+    expect(Object.fromEntries(byName)).toEqual({
+      'upload.image-edit': true,
+      'prompt.image-edit': true,
+      run: true,
+      'result.image': false
+    })
   })
 
   it('registers each spotlit node so the engine can find it', async () => {
