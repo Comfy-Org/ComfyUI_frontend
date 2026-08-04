@@ -488,6 +488,13 @@ describe('billingOperationStore', () => {
       // an unexplained billing failure in either event stream.
       expect(mockTrackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
+          operation: 'operation',
+          stage: 'failed',
+          failure_category: 'stale_operation'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
           operation: 'downgrade_to_personal',
           stage: 'failed',
           failure_category: 'stale_operation'
