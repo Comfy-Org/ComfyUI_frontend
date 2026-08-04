@@ -75,7 +75,6 @@ async function mockCloudBoot(page: Page, billingControlEnabled = true) {
   await page.route('**/api/features', (r) =>
     r.fulfill(
       jsonRoute({
-        consolidated_billing_enabled: true,
         billing_control_enabled: billingControlEnabled
       } satisfies RemoteConfig)
     )
