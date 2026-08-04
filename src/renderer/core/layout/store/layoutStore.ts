@@ -17,8 +17,8 @@ import { toRerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
-import type { LayoutSource } from '@/renderer/core/layout/types'
 import type {
+  LayoutSource,
   BatchUpdateBoundsOperation,
   BatchUpdateBoundsOptions,
   CreateNodeOperation,
