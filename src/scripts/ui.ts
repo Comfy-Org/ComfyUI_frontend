@@ -155,25 +155,41 @@ function dragElement(dragEl): () => void {
 
     // @ts-expect-error fixme ts strict error
     if (savePos) {
-      localStorage.setItem(
-        'Comfy.MenuPosition',
-        JSON.stringify({
-          x: dragEl.offsetLeft,
-          y: dragEl.offsetTop
-        })
-      )
+      try {
+        localStorage.setItem(
+          'Comfy.MenuPosition',
+          JSON.stringify({
+            x: dragEl.offsetLeft,
+            y: dragEl.offsetTop
+          })
+        )
+      } catch {
+        // Persisting the menu position is cosmetic; storage can be unavailable
+        // (private browsing, quota exceeded). Never let it break dragging.
+      }
     }
   }
 
   function restorePos() {
-    let posString = localStorage.getItem('Comfy.MenuPosition')
-    if (posString) {
-      const pos = JSON.parse(posString) as Position2D
-      newPosX = pos.x
-      newPosY = pos.y
-      positionElement()
-      ensureInBounds()
+    // `dragElement` is reached from ComfyUI's constructor, which runs at module
+    // scope via `export const app = new ComfyApp()` in app.ts. A throw here
+    // therefore breaks *importing* that module, not just the menu. Restoring a
+    // remembered position is cosmetic, so degrade quietly instead: localStorage
+    // may be absent or degraded outside a real browser (e.g. Node >= 25 without
+    // `--no-experimental-webstorage`), and the stored value may be corrupt.
+    let pos: Position2D
+    try {
+      const posString = localStorage.getItem('Comfy.MenuPosition')
+      if (!posString) return
+      pos = JSON.parse(posString) as Position2D
+    } catch {
+      return
     }
+
+    newPosX = pos.x
+    newPosY = pos.y
+    positionElement()
+    ensureInBounds()
   }
 
   // @ts-expect-error fixme ts strict error
