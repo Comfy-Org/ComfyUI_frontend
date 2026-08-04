@@ -231,6 +231,68 @@ describe('useNewUserService', () => {
     })
   })
 
+  describe('Comfy.EmulateNewUser', () => {
+    function emulationOn(otherSettings: Record<string, unknown> = {}) {
+      const settings: Record<string, unknown> = {
+        'Comfy.EmulateNewUser': true,
+        ...otherSettings
+      }
+      mockSettingStore.settingValues = settings
+      mockSettingStore.get.mockImplementation((key: string) => settings[key])
+    }
+
+    it('treats an account with completed tutorial and existing drafts as new', async () => {
+      emulationOn({ 'Comfy.TutorialCompleted': true })
+      mockLocalStorage.getItem.mockImplementation((key: string) =>
+        key === 'Comfy.Workflow.Drafts' ? '{"a":{}}' : null
+      )
+
+      await service.initializeIfNewUser()
+
+      expect(
+        service.isNewUser(),
+        'the whole point is re-testing onboarding without hand-clearing state'
+      ).toBe(true)
+    })
+
+    it('leaves Comfy.InstalledVersion alone while emulating', async () => {
+      emulationOn({ 'Comfy.TutorialCompleted': true })
+
+      await service.initializeIfNewUser()
+
+      expect(
+        mockSettingStore.set,
+        'overwriting a real account’s install version outlives the emulation and changes its versioned defaults'
+      ).not.toHaveBeenCalledWith('Comfy.InstalledVersion', expect.anything())
+    })
+
+    it('still runs new-user init callbacks while emulating', async () => {
+      const callback = vi.fn().mockResolvedValue(undefined)
+      await service.registerInitCallback(callback)
+      emulationOn({ 'Comfy.TutorialCompleted': true })
+
+      await service.initializeIfNewUser()
+
+      expect(callback).toHaveBeenCalledTimes(1)
+    })
+
+    it('changes nothing for an existing user when off', async () => {
+      mockSettingStore.settingValues = {
+        'Comfy.EmulateNewUser': false,
+        'Comfy.TutorialCompleted': true
+      }
+      mockSettingStore.get.mockImplementation(
+        (key: string) => mockSettingStore.settingValues[key]
+      )
+      mockLocalStorage.getItem.mockReturnValue(null)
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(false)
+      expect(mockSettingStore.set).not.toHaveBeenCalled()
+    })
+  })
+
   describe('registerInitCallback', () => {
     it('should execute callback immediately if new user is already determined', async () => {
       const mockCallback = vi.fn().mockResolvedValue(undefined)

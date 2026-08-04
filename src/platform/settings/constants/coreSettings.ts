@@ -986,6 +986,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.8.7'
   },
   {
+    id: 'Comfy.EmulateNewUser',
+    name: 'Treat this account as a brand-new user on every load',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.50.0'
+  },
+  {
     id: TOUR_SEEN_SETTING,
     name: 'Onboarding coachmark tours the user has already seen',
     type: 'hidden',

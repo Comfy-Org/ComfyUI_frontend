@@ -162,6 +162,33 @@ describe('useFirstRunEntry', () => {
     ).not.toHaveBeenCalled()
   })
 
+  describe('Comfy.EmulateNewUser', () => {
+    it('onboards over a restored startup so the setting is not a silent no-op', async () => {
+      mocks.settings = {
+        'Comfy.EmulateNewUser': true,
+        'Comfy.TutorialCompleted': true
+      }
+      const entry = await freshEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(
+        entry.gettingStartedVisible.value,
+        'every tester who already ran onboarding has a draft and a completed tutorial; both bail before candidacy, so forcing isNewUser() true alone would show them nothing'
+      ).toBe(true)
+    })
+
+    it('does not relax the restored guard when off', async () => {
+      mocks.settings = { 'Comfy.EmulateNewUser': false }
+      const entry = await freshEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(entry.gettingStartedVisible.value).toBe(false)
+      expect(mocks.execute).not.toHaveBeenCalled()
+    })
+  })
+
   it.for(['fresh', 'url-intent'] as const)(
     'settles the first-run decision on a %s startup rather than leaving it pending',
     async (outcome: StartupOutcome) => {
