@@ -4866,6 +4866,18 @@
           "title": "And there it is",
           "body": "Your new video lands right here — ready to download or share."
         }
+      },
+      "nudge": {
+        "ran": {
+          "title": "That was one of hundreds",
+          "body": "You just made your first. Explore what else you can build."
+        },
+        "noTour": {
+          "title": "Hundreds more where that came from",
+          "body": "Browse the templates and pick something to build."
+        },
+        "dismiss": "Not now",
+        "explore": "Explore templates"
       }
     }
   }
