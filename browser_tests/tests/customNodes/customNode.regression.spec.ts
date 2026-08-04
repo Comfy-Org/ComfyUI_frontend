@@ -294,10 +294,25 @@ for (const entry of loadManifest()) {
               null,
               `RECORD_OUTPUT_HASHES: wrote ${Object.keys(observed).length} hash(es) for ${workflowKey} - the artifact is the product, this is not a pass`
             ).not.toBeNull()
-          } else if (process.env.CI) {
+          } else if (!process.env.CI) {
             // Compare on CI only, like the geometry tier: hashes encode the
             // recording environment (pinned core + packs), and a local
             // unpinned backend would red with a misattributed message.
+            console.log(
+              `S15 compare skipped off-CI for ${workflowKey} - baselines encode the CI recording environment; CI enforces`
+            )
+          } else if (
+            curatedOutputHashes === null &&
+            customNodesEnv() === 'cloud'
+          ) {
+            // S15 is deferred on cloud until its baselines are recorded (none
+            // exist yet). Self-expiring, like the S14 geometry defer: the first
+            // committed cloud hashes file makes this non-null and cloud flips
+            // back to fail-closed. Core keeps the fail-closed gate throughout.
+            console.log(
+              `S15 compare skipped for ${workflowKey} - deferred on cloud until baselines are recorded (record run, docs/custom-node-regression-suite.md Step 5c)`
+            )
+          } else {
             expect(
               curatedOutputHashes,
               `S15: no committed hashes for this environment (${outputHashesPath}) - record them with RECORD_OUTPUT_HASHES=1`
@@ -310,10 +325,6 @@ for (const entry of loadManifest()) {
               }),
               'S15 output regression'
             ).toEqual([])
-          } else {
-            console.log(
-              `S15 compare skipped off-CI for ${workflowKey} - baselines encode the CI recording environment; CI enforces`
-            )
           }
         }
         await expectNoVisibleErrors(comfyPage.page, 'after run')
