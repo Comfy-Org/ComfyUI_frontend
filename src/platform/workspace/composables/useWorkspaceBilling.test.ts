@@ -291,6 +291,27 @@ describe('useWorkspaceBilling', () => {
       )
     })
 
+    it('recovers a pending top-up as a top-up, not a subscription', async () => {
+      const actionUrl = 'https://invoice.stripe.com/sensitive-token'
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        billing_status: 'pending_payment',
+        pending_billing_op_id: 'op-topup',
+        pending_billing_op_type: 'topup',
+        action_url: actionUrl
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-topup',
+        'topup',
+        undefined,
+        actionUrl
+      )
+    })
+
     it('does not restart an operation recovered by an earlier status read', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
