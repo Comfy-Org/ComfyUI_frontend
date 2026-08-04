@@ -201,7 +201,10 @@ describe('FirstRunTourNudge', () => {
 
     await user.click(screen.getByTestId('first-run-nudge-explore'))
 
-    expect(mocks.showTemplates).toHaveBeenCalled()
+    expect(
+      mocks.showTemplates,
+      'the source is what separates a nudge conversion from a command-palette one, and it defaults to command'
+    ).toHaveBeenCalledWith('first_run_nudge')
     expect(mocks.dismissNudge).toHaveBeenCalled()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
       'explore_templates_clicked',

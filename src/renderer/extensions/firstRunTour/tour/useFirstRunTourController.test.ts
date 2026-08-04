@@ -587,6 +587,19 @@ describe('useFirstRunTourController', () => {
       ).toBe('failed')
     })
 
+    it('gives up on a run the validator refused before it reached a node', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+
+      mocks.executionErrors.hasPromptError = true
+      await nextTick()
+
+      expect(
+        mocks.runState.value,
+        'a prompt refused whole never reaches a node, so no node error and no status will ever end the wait'
+      ).toBe('failed')
+    })
+
     it('leaves errors alone until the tour has run something', async () => {
       await tourOnRunStep()
 
