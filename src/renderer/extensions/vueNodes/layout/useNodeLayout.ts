@@ -25,10 +25,12 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
       : null
   })
 
-  // Clean up refs and triggers when Vue component unmounts
+  // Captured, not read at unmount: a workflow load flips `rootGraphId` before
+  // the outgoing graph's nodes unmount, which would strand their refs.
+  const ownerGraphId = canvasStore.rootGraphId
+
   onUnmounted(() => {
-    const { rootGraphId } = canvasStore
-    if (rootGraphId) layoutStore.cleanupNodeRef(rootGraphId, nodeId)
+    if (ownerGraphId) layoutStore.cleanupNodeRef(ownerGraphId, nodeId)
   })
 
   // Computed properties for easy access
