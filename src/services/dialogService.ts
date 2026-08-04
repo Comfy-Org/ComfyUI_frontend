@@ -334,7 +334,9 @@ export const useDialogService = () => {
     isInsufficientCredits?: boolean
   }) {
     const { isActiveSubscription, isFreeTier, type } = useBillingContext()
-    if (!isActiveSubscription.value || isFreeTier.value) {
+    // Subscribing to unlock top-ups is a Cloud-only concept; local/desktop
+    // users always keep the purchase flow regardless of tier.
+    if (isCloud && (!isActiveSubscription.value || isFreeTier.value)) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'
@@ -653,16 +655,29 @@ export const useDialogService = () => {
     })
   }
 
-  async function showCancelSubscriptionDialog(cancelAt?: string) {
+  async function showCancelSubscriptionDialog(
+    cancelAt?: string,
+    flowAlreadyOpened = false
+  ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
     return dialogStore.showDialog({
       key: 'cancel-subscription',
       component,
-      props: { cancelAt },
+      props: { cancelAt, flowAlreadyOpened },
       dialogComponentProps: {
         ...workspaceDialogProps
       }
+    })
+  }
+
+  async function showCancelSubscriptionFlow(cancelAt?: string) {
+    const cancellationFlow =
+      await import('@/platform/cloud/subscription/launchCancellationFlow')
+    return cancellationFlow.launchCancellationFlow({
+      cancelAt,
+      showFallback: ({ flowAlreadyOpened = false } = {}) =>
+        showCancelSubscriptionDialog(cancelAt, flowAlreadyOpened)
     })
   }
 
@@ -837,6 +852,7 @@ export const useDialogService = () => {
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
+    showCancelSubscriptionFlow,
     showDowngradeToPersonalDialog
   }
 }

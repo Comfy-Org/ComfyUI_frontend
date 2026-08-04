@@ -110,6 +110,14 @@ const onVideoEnded = (index: number) => {
   goTo(activeIndex.value + 1)
 }
 
+// A video that finished while the carousel was paused advances as soon as the
+// hover/focus pause lifts; `ended` has already fired and won't again.
+watch(autoplayPaused, (paused) => {
+  if (!paused && isVisible.value && activeVideo.value?.ended) {
+    goTo(activeIndex.value + 1)
+  }
+})
+
 // A broken video is skipped even while paused; retrying it would loop the error.
 const onVideoError = (index: number) => {
   if (index === activeIndex.value) goTo(activeIndex.value + 1)
@@ -148,7 +156,7 @@ useCarouselAutoplay({
           <div
             v-for="(slide, index) in slides"
             :key="slide.id"
-            class="relative aspect-video w-full shrink-0 md:aspect-1406/622"
+            class="relative aspect-video w-full shrink-0"
             :aria-hidden="index !== activeIndex"
           >
             <img

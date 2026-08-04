@@ -237,7 +237,9 @@ describe('useWorkspaceBilling', () => {
         ...activeStatus,
         billing_rail: 'stripe',
         subscription_status: 'canceled',
-        cancel_at: '2026-06-01T00:00:00Z'
+        cancel_at: '2026-06-01T00:00:00Z',
+        scheduled_plan_slug: 'pro-annual',
+        change_at: '2026-07-01T00:00:00Z'
       })
 
       const billing = setupBilling()
@@ -248,6 +250,8 @@ describe('useWorkspaceBilling', () => {
         tier: 'CREATOR',
         duration: 'MONTHLY',
         planSlug: 'creator-monthly',
+        scheduledPlanSlug: 'pro-annual',
+        changeAt: '2026-07-01T00:00:00Z',
         renewalDate: '2026-05-01T00:00:00Z',
         endDate: '2026-06-01T00:00:00Z',
         isCancelled: true,

@@ -80,21 +80,73 @@
             <!-- OWNER Unsubscribed TEAM workspace -->
             <template v-if="showTeamSubscribePrompt">
               <div class="flex flex-col gap-2">
-                <h3 class="m-0 text-sm font-bold text-text-primary">
-                  {{ $t('subscription.workspaceNotSubscribed') }}
+                <h3
+                  :class="
+                    cn(
+                      'm-0 font-bold text-text-primary',
+                      showInactiveTeamSubscription ? 'text-base' : 'text-sm'
+                    )
+                  "
+                >
+                  {{
+                    $t(
+                      showInactiveTeamSubscription
+                        ? 'subscription.inactiveTeamTitle'
+                        : 'subscription.workspaceNotSubscribed'
+                    )
+                  }}
                 </h3>
                 <div class="text-sm text-text-secondary">
-                  {{ $t('subscription.subscriptionRequiredMessage') }}
+                  {{
+                    $t(
+                      showInactiveTeamSubscription
+                        ? 'subscription.inactiveTeamDescription'
+                        : 'subscription.subscriptionRequiredMessage'
+                    )
+                  }}
                 </div>
               </div>
-              <Button
-                variant="primary"
-                size="lg"
-                class="ml-auto rounded-lg px-4 py-2 text-sm font-normal"
-                @click="handleSubscribeWorkspace"
-              >
-                {{ $t('subscription.subscribeNow') }}
-              </Button>
+              <div class="flex flex-wrap gap-2 md:ml-auto">
+                <Button
+                  v-if="showInactiveTeamSubscription"
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="manageSubscription"
+                >
+                  {{ $t('subscription.billingAndInvoices') }}
+                </Button>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  class="rounded-lg px-4 py-2 text-sm font-normal"
+                  @click="handleSubscribeWorkspace"
+                >
+                  {{
+                    $t(
+                      showInactiveTeamSubscription
+                        ? 'subscription.reactivatePlan'
+                        : 'subscription.subscribeNow'
+                    )
+                  }}
+                </Button>
+                <DropdownMenu
+                  v-if="showInactiveTeamSubscription && menuEntries.length > 0"
+                  :entries="menuEntries"
+                >
+                  <template #button>
+                    <Button
+                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      variant="secondary"
+                      size="icon-lg"
+                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      :aria-label="$t('g.moreOptions')"
+                    >
+                      <i class="pi pi-ellipsis-h" />
+                    </Button>
+                  </template>
+                </DropdownMenu>
+              </div>
             </template>
 
             <!-- MEMBER View - read-only, workspace not subscribed -->
@@ -235,16 +287,27 @@
 
         <div class="flex flex-col gap-6 pt-6 lg:flex-row lg:items-stretch">
           <div class="w-full lg:max-w-md">
-            <CreditsTile :zero-state="showZeroState" />
+            <CreditsTile
+              :zero-state="showZeroState"
+              :inactive-plan="showInactiveTeamSubscription"
+            />
           </div>
 
           <div
-            v-if="isActiveSubscription || isPersonalFree"
+            v-if="
+              isActiveSubscription ||
+              isPersonalFree ||
+              showInactiveTeamSubscription
+            "
             class="flex flex-col gap-2"
           >
             <i18n-t
-              v-if="isTeamActive"
-              keypath="subscription.teamPlanIncludes"
+              v-if="isTeamActive || showInactiveTeamSubscription"
+              :keypath="
+                showInactiveTeamSubscription
+                  ? 'subscription.inactiveTeamPlanIncludes'
+                  : 'subscription.teamPlanIncludes'
+              "
               tag="div"
               class="text-sm text-muted"
             >
@@ -269,7 +332,14 @@
               >
                 <i
                   v-if="benefit.type === 'feature'"
-                  class="pi pi-check text-xs text-text-primary"
+                  :class="
+                    cn(
+                      'pi pi-check text-xs',
+                      showInactiveTeamSubscription
+                        ? 'text-muted'
+                        : 'text-text-primary'
+                    )
+                  "
                 />
                 <span
                   v-else-if="benefit.type === 'metric' && benefit.value"
@@ -307,6 +377,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -356,6 +427,8 @@ const {
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
+  plans,
+  billingStatus,
   subscriptionStatus,
   isLoading,
   error,
@@ -370,17 +443,25 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
+const isTerminalPersonalSubscription = computed(
+  () =>
+    isInPersonalWorkspace.value &&
+    !isActiveSubscription.value &&
+    billingStatus.value === 'inactive'
+)
+
 const isSubscriptionEnded = computed(
   () =>
     subscriptionStatus.value === 'ended' ||
-    (isSubscriptionCancelled.value && !isActiveSubscription.value)
+    (isSubscriptionCancelled.value && !isActiveSubscription.value) ||
+    isTerminalPersonalSubscription.value
 )
 
 // Show subscribe prompt to owners without active subscription. A cancelled plan
 // stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
-  if (isSubscriptionEnded.value && !isActiveSubscription.value) return true
+  if (isSubscriptionEnded.value) return true
   if (isSubscriptionCancelled.value) return false
   if (
     subscription.value &&
@@ -394,6 +475,13 @@ const showSubscribePrompt = computed(() => {
 
 const showTeamSubscribePrompt = computed(
   () => showSubscribePrompt.value && !isInPersonalWorkspace.value
+)
+
+const showInactiveTeamSubscription = computed(
+  () =>
+    showTeamSubscribePrompt.value &&
+    isSubscriptionEnded.value &&
+    isTeamPlan.value
 )
 
 const isPersonalFree = computed(
@@ -447,6 +535,23 @@ const formattedEndDate = computed(() =>
   formatSubscriptionDate(subscription.value?.endDate, locale.value)
 )
 
+const formattedChangeDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.changeAt, locale.value)
+)
+
+const scheduledPlanName = computed(() => {
+  const scheduledPlan = plans.value.find(
+    (plan) => plan.slug === subscription.value?.scheduledPlanSlug
+  )
+  if (!scheduledPlan) return ''
+  if (scheduledPlan.slug.startsWith('team')) {
+    return t('subscription.teamPlanName')
+  }
+  return t(
+    `subscription.tiers.${resolveSubscriptionTierKey(scheduledPlan.tier)}.name`
+  )
+})
+
 const showSubscriptionStateCard = computed(
   () => isSubscriptionCancelled.value || isSubscriptionEnded.value
 )
@@ -474,6 +579,14 @@ const planDateDisplay = computed(() => {
   if (isSubscriptionCancelled.value) {
     return formattedEndDate.value
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })
+      : ''
+  }
+  if (subscription.value?.scheduledPlanSlug || subscription.value?.changeAt) {
+    return scheduledPlanName.value && formattedChangeDate.value
+      ? t('subscription.changesToPlanOnDate', {
+          plan: scheduledPlanName.value,
+          date: formattedChangeDate.value
+        })
       : ''
   }
   return formattedRenewalDate.value
@@ -507,7 +620,7 @@ const TEAM_PERK_KEYS = [
 ] as const
 
 const tierBenefits = computed((): TierBenefit[] => {
-  if (isTeamActive.value) {
+  if (isTeamActive.value || showInactiveTeamSubscription.value) {
     return TEAM_PERK_KEYS.map((key) => ({
       key,
       type: 'feature',
