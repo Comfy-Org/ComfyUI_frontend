@@ -1829,7 +1829,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toHaveTextContent('other')
   })
 
-  it('flags the bound tab as agent-edited for exactly the turn duration', async () => {
+  it('transitions the bound tab from editing to modified when the turn completes', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
@@ -1841,6 +1841,9 @@ describe('AgentPanelRoot workflow binding', () => {
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
     expect(activity.editingTabPath).toBeNull()
+    expect(activity.unseenModifiedPaths.has('workflows/current.json')).toBe(
+      true
+    )
   })
 
   it('marks a backgrounded bound tab modified without touching the canvas', async () => {

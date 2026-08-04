@@ -179,12 +179,10 @@ describe('WorkflowTab - workflow status indicator', () => {
   it('renders the normal saved tab frame without activity indicators', () => {
     renderTab()
 
-    expect(screen.getByTestId('workflow-tab')).toHaveClass('h-9', 'w-34')
+    expect(screen.getByTestId('workflow-tab')).toHaveClass('h-9')
     expect(screen.getByText('test.json')).toHaveClass('text-sm')
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass('visible')
     expect(screen.getByTestId('close-workflow-icon')).toBeInTheDocument()
-    expect(screen.getByTestId('close-workflow-button')).not.toHaveClass(
-      'invisible'
-    )
     expect(screen.queryByRole('img')).toBeNull()
     expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
   })
@@ -320,7 +318,7 @@ describe('WorkflowTab - close button', () => {
     mockCloseWorkflow.mockClear()
   })
 
-  it('replaces the close control with each tab state marker', async () => {
+  it('keeps the close control available alongside each tab state marker', async () => {
     const { rerender } = renderTab()
     const activity = useWorkflowTabActivityStore()
 
@@ -331,28 +329,34 @@ describe('WorkflowTab - close button', () => {
     await nextTick()
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
-    ).toBeInTheDocument()
-    expect(screen.queryByTestId('close-workflow-button')).toBeNull()
-    expect(screen.queryByTestId('close-workflow-icon')).toBeNull()
+    ).toHaveClass('group-hover:hidden')
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass(
+      'invisible',
+      'group-hover:visible'
+    )
+    expect(screen.getByTestId('close-workflow-icon')).toBeInTheDocument()
 
     activity.setEditing(null)
     activity.markModified('/workflows/test.json')
     await nextTick()
     expect(screen.getByTestId('agent-modified-indicator')).toBeInTheDocument()
-    expect(screen.queryByTestId('close-workflow-button')).toBeNull()
-    expect(screen.queryByTestId('close-workflow-icon')).toBeNull()
+    expect(screen.getByTestId('close-workflow-button')).toBeInTheDocument()
+    expect(screen.getByTestId('close-workflow-icon')).toBeInTheDocument()
 
     activity.markSeen('/workflows/test.json')
     await rerender({
       workflowOption: makeWorkflowOption({ isPersisted: false })
     })
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeInTheDocument()
-    expect(screen.queryByTestId('close-workflow-button')).toBeNull()
-    expect(screen.queryByTestId('close-workflow-icon')).toBeNull()
+    expect(screen.getByTestId('close-workflow-button')).toBeInTheDocument()
+    expect(screen.getByTestId('close-workflow-icon')).toBeInTheDocument()
   })
 
-  it('delegates close to workflow service with the tab workflow', async () => {
+  it('closes a tab while its modified marker is active', async () => {
     renderTab()
+    useWorkflowTabActivityStore().markModified('/workflows/test.json')
+    await nextTick()
+
     const user = userEvent.setup()
     await user.click(screen.getByTestId('close-workflow-button'))
 

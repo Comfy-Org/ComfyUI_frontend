@@ -4,7 +4,7 @@
       <div
         ref="workflowTabRef"
         data-testid="workflow-tab"
-        class="workflow-tab group flex h-9 w-34 items-center justify-center gap-2 px-4 py-2"
+        class="workflow-tab group flex h-9 items-center justify-center gap-2 px-4 py-2"
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -31,14 +31,14 @@
             v-if="isAgentEditing"
             role="img"
             :aria-label="t('g.agentWorking')"
-            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 motion-safe:animate-spin"
+            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 group-hover:hidden motion-safe:animate-spin"
           />
           <span
             v-else-if="showUnseenAgentDot"
             role="img"
             :aria-label="t('g.agentModified')"
             data-testid="agent-modified-indicator"
-            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background"
+            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-hover:hidden"
           />
           <i
             v-else-if="workflowStatus"
@@ -46,7 +46,7 @@
             :aria-label="workflowStatusLabel"
             :class="
               cn(
-                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2',
+                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
                 workflowStatusIconClasses[workflowStatus]
               )
             "
@@ -54,11 +54,15 @@
           <span
             v-else-if="shouldShowUnsavedIndicator"
             data-testid="workflow-dirty-indicator"
-            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-base-foreground"
+            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-base-foreground group-hover:hidden"
           />
           <Button
-            v-else
-            class="close-button size-4 rounded-none p-0 text-smoke-800 hover:bg-transparent"
+            :class="
+              cn(
+                'close-button size-4 rounded-none p-0 text-smoke-800 hover:bg-transparent',
+                hasTabStateMarker ? 'invisible group-hover:visible' : 'visible'
+              )
+            "
             variant="muted-textonly"
             size="unset"
             :aria-label="t('g.close')"
@@ -228,6 +232,14 @@ const showUnseenAgentDot = computed(
   () =>
     tabActivity.unseenModifiedPaths.has(props.workflowOption.workflow.path) &&
     workflowStatus.value !== 'failed'
+)
+
+const hasTabStateMarker = computed(
+  () =>
+    isAgentEditing.value ||
+    showUnseenAgentDot.value ||
+    workflowStatus.value !== undefined ||
+    shouldShowUnsavedIndicator.value
 )
 
 const workflowStatusLabel = computed(() =>
