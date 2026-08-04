@@ -446,7 +446,26 @@
   "cloudForgotPassword_title": "Mot de passe oublié",
   "cloudHero": {
     "nextSlide": "Diapositive suivante",
-    "previousSlide": "Diapositive précédente"
+    "previousSlide": "Diapositive précédente",
+    "slidePagerLabel": "Aller à la diapositive {index}",
+    "slides": {
+      "cloud": {
+        "description": "Idéal pour la plupart des utilisateurs souhaitant travailler de n'importe où avec des modèles vérifiés pour une licence commerciale.",
+        "title": "Cloud"
+      },
+      "models": {
+        "description": "Modèles sélectionnés et licenciés commercialement, prêts à l’emploi sans configuration.",
+        "title": "Modèles"
+      },
+      "team": {
+        "description": "Intégrez votre équipe dès aujourd'hui. Partagez des workflows et des ressources dans toute votre organisation.",
+        "title": "Équipe"
+      },
+      "workflows": {
+        "description": "De l’idée au résultat en quelques minutes. Générez plusieurs variantes côte à côte.",
+        "title": "Workflows"
+      }
+    }
   },
   "cloudNotification": {
     "continueLocally": "Continuer localement",
@@ -558,9 +577,11 @@
   "cloudPrivateBeta_title": "Cloud est actuellement en bêta privée",
   "cloudSorryContactSupport_title": "Désolé, contactez le support",
   "cloudStart_desc": "Aucune configuration requise. Fonctionne sur tous les appareils.",
+  "cloudStart_download": "Télécharger ComfyUI",
   "cloudStart_explain": "Générez plusieurs résultats à la fois. Partagez facilement vos flux de travail.",
   "cloudStart_learnAboutButton": "En savoir plus sur Cloud",
   "cloudStart_title": "créez en quelques secondes",
+  "cloudStart_wantToRun": "Vous préférez exécuter ComfyUI localement ?",
   "cloudSurvey_steps_experience": "Quel est votre niveau de connaissance de ComfyUI ?",
   "cloudSurvey_steps_focus": "Qu'êtes-vous en train de créer ?",
   "cloudSurvey_steps_intent": "Que souhaitez-vous créer avec ComfyUI ?",
