@@ -2884,6 +2884,7 @@
     "mage": "mage",
     "mask": "遮罩",
     "merging": "合并",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "模型",
     "model specific": "模型专用",
@@ -3870,6 +3871,7 @@
     "beta": "测试版",
     "billedMonthly": "每月付款",
     "billedYearly": "{total} 每年付款",
+    "billingAndInvoices": "账单与发票",
     "billingComingSoon": {
       "message": "团队计费功能即将上线。您将可以为您的工作区按成员数订阅套餐。敬请关注后续更新。",
       "title": "即将推出"
@@ -3951,6 +3953,9 @@
       "memberTitle": "此工作区的订阅已失效",
       "runLabel": "运行"
     },
+    "inactiveTeamDescription": "重新激活您的团队套餐以添加更多成员并运行工作流",
+    "inactiveTeamPlanIncludes": "激活套餐包含 {plan} 的所有内容，以及：",
+    "inactiveTeamTitle": "团队订阅已失效",
     "inviteUpTo": "可邀请多达",
     "invoiceHistory": "发票历史",
     "learnMore": "了解更多",
@@ -4070,6 +4075,7 @@
     "pricingBlurbQuestions": "问题咨询",
     "pricingBlurbSeeDetails": "查看详情",
     "reactivatePlan": "重新激活套餐",
+    "reactivateToUseCredits": "请重新激活您的套餐以使用这些积分",
     "refillsDate": "补充 {date}",
     "refillsNextCycle": "下个周期补充",
     "refreshCredits": "刷新额度",

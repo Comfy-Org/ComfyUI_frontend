@@ -2884,6 +2884,7 @@
     "mage": "mage",
     "mask": "маска",
     "merging": "слияние",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "модель",
     "model specific": "модель-специфичный",
@@ -3844,6 +3845,7 @@
     "beta": "БЕТА",
     "billedMonthly": "Оплата ежемесячно",
     "billedYearly": "{total} Оплата ежегодно",
+    "billingAndInvoices": "Оплата и счета",
     "billingComingSoon": {
       "message": "Скоро появится командная оплата. Вы сможете оформить подписку на тариф для вашего рабочего пространства с оплатой за каждого участника. Следите за обновлениями.",
       "title": "Скоро будет"
@@ -3925,6 +3927,9 @@
       "memberTitle": "Подписка этого рабочего пространства неактивна",
       "runLabel": "Запустить"
     },
+    "inactiveTeamDescription": "Активируйте командный план, чтобы добавить больше участников и запускать рабочие процессы",
+    "inactiveTeamPlanIncludes": "Активный план включает всё из {plan}, а также:",
+    "inactiveTeamTitle": "Неактивная командная подписка",
     "inviteUpTo": "Пригласить до",
     "invoiceHistory": "История счетов",
     "learnMore": "Узнать больше",
@@ -4044,6 +4049,7 @@
     "pricingBlurbQuestions": "вопросам",
     "pricingBlurbSeeDetails": "подробнее",
     "reactivatePlan": "Возобновить тариф",
+    "reactivateToUseCredits": "Активируйте ваш план, чтобы использовать эти кредиты",
     "refillsDate": "Пополнение {date}",
     "refillsNextCycle": "Пополнение в следующем цикле",
     "refreshCredits": "Обновить кредиты",
