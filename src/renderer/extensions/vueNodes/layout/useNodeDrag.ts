@@ -283,7 +283,9 @@ function useNodeDragIndividual() {
 
       // Apply all snap updates in a single batched transaction
       if (boundsUpdates.length > 0) {
-        layoutStore.batchUpdateNodeBounds(rootGraphId, boundsUpdates)
+        layoutStore.batchUpdateNodeBounds(rootGraphId, boundsUpdates, {
+          source: LayoutSource.Vue
+        })
       }
     }
 

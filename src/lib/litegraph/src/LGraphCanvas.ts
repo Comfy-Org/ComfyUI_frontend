@@ -4370,11 +4370,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }))
 
     const rootGraphId = graph.rootGraph.id
-    if (newPositions.length) layoutStore.setSource(LayoutSource.Canvas)
-    layoutStore.batchUpdateNodeBounds(rootGraphId, newPositions)
+    layoutStore.batchUpdateNodeBounds(rootGraphId, newPositions, {
+      source: LayoutSource.Vue
+    })
 
     // Bring cloned/pasted nodes to front so they render above the originals
-    const { setNodeZIndex } = useLayoutMutations()
+    const { setNodeZIndex, setSource } = useLayoutMutations()
+    setSource(LayoutSource.Canvas)
     for (const { nodeId } of newPositions) {
       setNodeZIndex(rootGraphId, nodeId, layoutStore.allocateZIndex())
     }

@@ -1540,7 +1540,9 @@ describe('layoutStore CRDT operations', () => {
     })
 
     const newBounds = { x: 40, y: 60, width: 220, height: 120 }
-    layoutStore.batchUpdateNodeBounds(GRAPH, [{ nodeId, bounds: newBounds }])
+    layoutStore.batchUpdateNodeBounds(GRAPH, [{ nodeId, bounds: newBounds }], {
+      source: LayoutSource.Vue
+    })
 
     // onChange notifications are deferred to a microtask.
     await vi.waitFor(() => {
@@ -1577,18 +1579,21 @@ describe('layoutStore CRDT operations', () => {
       actor: 'test'
     })
 
-    layoutStore.setSource(LayoutSource.DOM)
-    layoutStore.batchUpdateNodeBounds(GRAPH, [
-      {
-        nodeId,
-        bounds: {
-          x: layout.bounds.x,
-          y: layout.bounds.y,
-          width: layout.size.width,
-          height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+    layoutStore.batchUpdateNodeBounds(
+      GRAPH,
+      [
+        {
+          nodeId,
+          bounds: {
+            x: layout.bounds.x,
+            y: layout.bounds.y,
+            width: layout.size.width,
+            height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+          }
         }
-      }
-    ])
+      ],
+      { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+    )
 
     const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.size.height).toBe(layout.size.height)
@@ -1640,18 +1645,21 @@ describe('layoutStore CRDT operations', () => {
       actor: 'test'
     })
 
-    layoutStore.setSource(LayoutSource.DOM)
-    layoutStore.batchUpdateNodeBounds(GRAPH, [
-      {
-        nodeId,
-        bounds: {
-          x: layout.bounds.x,
-          y: layout.bounds.y,
-          width: layout.size.width,
-          height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+    layoutStore.batchUpdateNodeBounds(
+      GRAPH,
+      [
+        {
+          nodeId,
+          bounds: {
+            x: layout.bounds.x,
+            y: layout.bounds.y,
+            width: layout.size.width,
+            height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+          }
         }
-      }
-    ])
+      ],
+      { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+    )
 
     const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.size.height).toBeGreaterThanOrEqual(0)
@@ -1683,18 +1691,21 @@ describe('layoutStore CRDT operations', () => {
     })
 
     try {
-      layoutStore.setSource(LayoutSource.DOM)
-      layoutStore.batchUpdateNodeBounds(GRAPH, [
-        {
-          nodeId,
-          bounds: {
-            x: layout.bounds.x,
-            y: layout.bounds.y,
-            width: layout.size.width,
-            height: layout.size.height
+      layoutStore.batchUpdateNodeBounds(
+        GRAPH,
+        [
+          {
+            nodeId,
+            bounds: {
+              x: layout.bounds.x,
+              y: layout.bounds.y,
+              width: layout.size.width,
+              height: layout.size.height
+            }
           }
-        }
-      ])
+        ],
+        { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+      )
 
       const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
       expect(nodeRef.value?.size.height).toBe(layout.size.height)

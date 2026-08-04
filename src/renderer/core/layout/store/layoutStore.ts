@@ -17,9 +17,10 @@ import { toRerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   BatchUpdateBoundsOperation,
+  BatchUpdateBoundsOptions,
   CreateNodeOperation,
   CreateRerouteOperation,
   DeleteNodeOperation,
@@ -1658,48 +1659,46 @@ class LayoutStore {
   /**
    * Batch update node bounds using Yjs transaction for atomicity.
    */
-  batchUpdateNodeBounds(rootGraphId: UUID, updates: NodeBoundsUpdate[]): void {
+  batchUpdateNodeBounds(
+    rootGraphId: UUID,
+    updates: NodeBoundsUpdate[],
+    options: BatchUpdateBoundsOptions
+  ): void {
     if (updates.length === 0) return
 
-    const originalSource = this.currentSource
-    const shouldNormalizeHeights = originalSource === LayoutSource.DOM
-    this.currentSource = LayoutSource.Vue
-    try {
-      const nodeIds: NodeId[] = []
-      const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
-      const registrationIds: NonNullable<
-        BatchUpdateBoundsOperation['registrationIds']
-      > = {}
+    const { source, boundsIncludeTitleHeight = false } = options
+    const nodeIds: NodeId[] = []
+    const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
+    const registrationIds: NonNullable<
+      BatchUpdateBoundsOperation['registrationIds']
+    > = {}
 
-      for (const { nodeId, bounds } of updates) {
-        const ynode = this.ynodes.get(makeScopedLayoutKey(rootGraphId, nodeId))
-        if (!ynode) continue
+    for (const { nodeId, bounds } of updates) {
+      const ynode = this.ynodes.get(makeScopedLayoutKey(rootGraphId, nodeId))
+      if (!ynode) continue
 
-        boundsRecord[nodeId] = shouldNormalizeHeights
-          ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
-          : bounds
-        const resolvedRegistrationId = ynode.get('registrationId')
-        if (typeof resolvedRegistrationId === 'string')
-          registrationIds[nodeId] = resolvedRegistrationId
-        nodeIds.push(nodeId)
-      }
-
-      if (!nodeIds.length) return
-
-      this.applyOperation({
-        type: 'batchUpdateBounds',
-        entity: 'node',
-        graphId: rootGraphId,
-        nodeIds,
-        registrationIds,
-        bounds: boundsRecord,
-        timestamp: Date.now(),
-        source: this.currentSource,
-        actor: this.currentActor
-      })
-    } finally {
-      this.currentSource = originalSource
+      boundsRecord[nodeId] = boundsIncludeTitleHeight
+        ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
+        : bounds
+      const resolvedRegistrationId = ynode.get('registrationId')
+      if (typeof resolvedRegistrationId === 'string')
+        registrationIds[nodeId] = resolvedRegistrationId
+      nodeIds.push(nodeId)
     }
+
+    if (!nodeIds.length) return
+
+    this.applyOperation({
+      type: 'batchUpdateBounds',
+      entity: 'node',
+      graphId: rootGraphId,
+      nodeIds,
+      registrationIds,
+      bounds: boundsRecord,
+      timestamp: Date.now(),
+      source,
+      actor: this.currentActor
+    })
   }
 }
 

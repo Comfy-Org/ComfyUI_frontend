@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -245,7 +246,8 @@ describe('useNodeDrag', () => {
             height: 110
           }
         }
-      ]
+      ],
+      { source: LayoutSource.Vue }
     )
   })
 })
