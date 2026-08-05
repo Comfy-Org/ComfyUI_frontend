@@ -16,7 +16,15 @@ import { applyEdits } from '../../src/workbench/extensions/magicPatch/conversion
 import { verifyPack } from './harness/verifyPack.mjs'
 
 function entryFiles(dir, depth = 0) {
-  if (depth > 4) return []
+  // Deep enough for `<pack>/<sha>/<packRoot>/<nested dirs>/<file>.json`, which
+  // is six levels before a pack's own directory nesting is counted. The cap only
+  // exists to stop a symlink loop, so it announces itself rather than silently
+  // returning a short list — a truncated walk here compiles an empty artifact
+  // and reports success.
+  if (depth > 12) {
+    console.error(`warning: stopped descending at ${dir} (depth limit)`)
+    return []
+  }
   let names = []
   try {
     names = readdirSync(dir)
