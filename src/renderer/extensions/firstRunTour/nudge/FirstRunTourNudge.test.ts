@@ -15,7 +15,7 @@ const mocks = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   return {
     nudgeArmed: ref(false),
-    tourWasShown: ref(true),
+    tourWasCompleted: ref(true),
     openDialogs: ref<string[]>([]),
     dismissNudge: vi.fn(() => {
       mocks.nudgeArmed.value = false
@@ -28,7 +28,7 @@ const mocks = await vi.hoisted(async () => {
 vi.mock('../tour/useFirstRunTourController', () => ({
   useFirstRunTourController: () => ({
     nudgeArmed: mocks.nudgeArmed,
-    tourWasShown: mocks.tourWasShown,
+    tourWasCompleted: mocks.tourWasCompleted,
     dismissNudge: mocks.dismissNudge
   })
 }))
@@ -71,6 +71,7 @@ describe('FirstRunTourNudge', () => {
     vi.clearAllMocks()
     vi.useFakeTimers()
     mocks.nudgeArmed.value = false
+    mocks.tourWasCompleted.value = true
     mocks.openDialogs.value = []
   })
 
@@ -157,18 +158,42 @@ describe('FirstRunTourNudge', () => {
     ).toHaveLength(1)
   })
 
-  it('offers no congratulation for a tour that never appeared', async () => {
-    mocks.tourWasShown.value = false
+  it('congratulates a tour the user walked to the end', async () => {
+    mocks.tourWasCompleted.value = true
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(screen.getByText(nudgeCopy.ran.title)).toBeTruthy()
+  })
+
+  it('offers no congratulation for a tour nobody finished', async () => {
+    mocks.tourWasCompleted.value = false
     mocks.nudgeArmed.value = true
     renderNudge()
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
 
     expect(
       screen.queryByText(nudgeCopy.ran.title),
-      'a user whose tour never ran made nothing to be congratulated for'
+      'a user who skipped, was cut off or saw no tour made no first result'
     ).toBeNull()
     expect(screen.getByText(nudgeCopy.noTour.title)).toBeTruthy()
   })
+
+  it.for([{ finished: true }, { finished: false }])(
+    'appears whether or not the tour finished ($finished)',
+    async ({ finished }) => {
+      mocks.tourWasCompleted.value = finished
+      mocks.nudgeArmed.value = true
+      renderNudge()
+      await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+      expect(
+        nudge(),
+        'the copy is all that the ending changes; the way forward is offered either way'
+      ).not.toBeNull()
+    }
+  )
 
   it('stays gone once the user closes it', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
