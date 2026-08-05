@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { chunk } from 'es-toolkit'
 
 import {
   comfyExpect as expect,
@@ -29,6 +30,19 @@ import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 
 const CORE_PROOF_NODE_COUNT = 16
+// Pairs per page.evaluate. The sweep's cost is one round of createNode,
+// connect, serialize/configure and graphToPrompt per pair, all on the page's
+// main thread; batching keeps any single evaluate short enough to stay
+// interruptible and to report progress rather than holding the renderer for
+// the whole corpus.
+const SWEEP_CHUNK = 1_000
+// Budget the sweep per pair instead of flat: the corpus grows with every pack
+// added, and a flat cap silently becomes a hang the day it stops fitting. Run
+// 30961895204 swept 16832 pairs and did not finish inside a flat 120s cap, so
+// the real rate is above 6.5ms/pair; the multiplier below carries margin over
+// that floor and the sweep logs its actual rate so it can be tightened.
+const SWEEP_SETUP_MS = 120_000
+const SWEEP_MS_PER_PAIR = 40
 // A node may legitimately veto a wiring via onConnectInput; committed
 // entries here must name the veto. Green means actual rejections are a
 // subset of this list.
@@ -151,8 +165,14 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // values and links flow through the same stores in both renderers). The
   // curated drag test below covers real pointer wiring under BOTH renderers.
   const consoleErrors = collectConsoleErrors(comfyPage.page)
+  test.setTimeout(SWEEP_SETUP_MS + plan.pairs.length * SWEEP_MS_PER_PAIR)
+  const sweepStart = Date.now()
   const results = await runPairsInPage(comfyPage.page, plan.pairs)
+  const sweepMs = Date.now() - sweepStart
   consoleErrors.stop()
+  console.log(
+    `connectivity sweep: ${plan.pairs.length} pairs in ${sweepMs}ms (${(sweepMs / plan.pairs.length).toFixed(1)}ms/pair)`
+  )
   // Routed through the pack console ledger scoped to the packs actually in
   // the corpus (the escape hatch this assert always documented): a KJNodes
   // SplineEditor creation crash fired on 2026-07-18 when core's new partner
@@ -283,7 +303,17 @@ function firstMaterializedPair(
 
 // The self-check below runs THIS SAME executor on poisoned pairs; if it stops
 // being able to reject, every green sweep above is meaningless.
-function runPairsInPage(
+async function runPairsInPage(
+  page: Page,
+  pairs: PlannedPair[]
+): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
+  const report: Array<{ key: string; outcome: string; detail?: string }> = []
+  for (const batch of chunk(pairs, SWEEP_CHUNK))
+    report.push(...(await evaluatePairs(page, batch)))
+  return report
+}
+
+function evaluatePairs(
   page: Page,
   pairs: PlannedPair[]
 ): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
