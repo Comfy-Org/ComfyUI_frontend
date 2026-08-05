@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "שכחת סיסמה",
   "cloudHero": {
     "nextSlide": "השקופית הבאה",
-    "previousSlide": "השקופית הקודמת",
-    "slidePagerLabel": "מעבר לשקופית {index}",
-    "slides": {
-      "cloud": {
-        "description": "מתאים ביותר לרוב המשתמשים שרוצים לעבוד מכל מקום עם מודלים מאומתים לרישיון מסחרי.",
-        "title": "ענן"
-      },
-      "models": {
-        "description": "מודלים נבחרים ברישיון מסחרי, מוכנים להרצה ללא התקנה.",
-        "title": "מודלים"
-      },
-      "team": {
-        "description": "צרף את הצוות שלך עוד היום. שתף תהליכי עבודה ונכסים ברחבי הארגון שלך.",
-        "title": "צוות"
-      },
-      "workflows": {
-        "description": "מרעיון לפלט תוך דקות. צור וריאציות מרובות זו לצד זו.",
-        "title": "תהליכי עבודה"
-      }
-    }
+    "previousSlide": "השקופית הקודמת"
   },
   "cloudNotification": {
     "continueLocally": "המשך מקומית",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "הענן נמצא כעת בבטא פרטית",
   "cloudSorryContactSupport_title": "מצטערים, צור קשר עם התמיכה",
   "cloudStart_desc": "אפס התקנה נדרשת. עובד על כל מכשיר.",
-  "cloudStart_download": "הורדת ComfyUI",
   "cloudStart_explain": "צור פלטים מרובים בו-זמנית. שתף תהליכי עבודה בקלות.",
   "cloudStart_learnAboutButton": "למד על הענן",
   "cloudStart_title": "התחל ליצור תוך שניות",
-  "cloudStart_wantToRun": "מעדיף להריץ את ComfyUI מקומית?",
   "cloudSurvey_steps_experience": "עד כמה אתם מכירים את ComfyUI?",
   "cloudSurvey_steps_focus": "מה אתם בונים?",
   "cloudSurvey_steps_intent": "מה ברצונך ליצור עם ComfyUI?",

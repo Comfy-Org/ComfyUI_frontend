@@ -11,7 +11,7 @@ import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/com
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { setBackendNodeText, st, t } from '@/i18n'
+import { resolveNodeDefText, setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -1096,6 +1096,16 @@ export class ComfyApp {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
       return {
         ...def,
+        display_name: resolveNodeDefText(
+          'display_name',
+          def.name,
+          def.display_name || undefined
+        ),
+        description: resolveNodeDefText(
+          'description',
+          def.name,
+          def.description || undefined
+        ),
         category: (typeof def.category === 'string' ? def.category : '')
           .split('/')
           .map((category: string) =>
@@ -1117,15 +1127,6 @@ export class ComfyApp {
       !Array.isArray(response)
         ? Object.entries(response)
         : []
-    const droppedNames = entries
-      .filter(([, value]) => !isNodeDef(value))
-      .map(([name]) => name)
-    if (droppedNames.length > 0) {
-      console.warn(
-        `Ignored ${droppedNames.length} malformed node definition(s) from /object_info: ${droppedNames.join(', ')}`
-      )
-    }
-
     const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
       entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
         isNodeDef(entry[1])
