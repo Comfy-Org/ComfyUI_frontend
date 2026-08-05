@@ -38,12 +38,28 @@ function mergeOutputTooltipMessage(tooltip: string | null) {
   })
 }
 
+function mergeBundledMessages(messages: {
+  description: string | null
+  inputTooltip: string | null
+  outputTooltip: string | null
+}) {
+  i18n.global.mergeLocaleMessage('en', {
+    nodeDefs: {
+      SAM3_Detect: {
+        description: messages.description,
+        inputs: { positive_coords: { tooltip: messages.inputTooltip } },
+        outputs: { 0: { tooltip: messages.outputTooltip } }
+      }
+    }
+  })
+}
+
 const sam3DetectNodeDef: ComfyNodeDef = {
   name: 'SAM3_Detect',
   display_name: 'SAM3 Detect',
   category: 'detection/',
   python_module: 'comfy_extras.nodes_sam3',
-  description: '',
+  description: 'Live SAM3 description',
   input: {
     required: {},
     optional: {
@@ -116,5 +132,50 @@ describe('useNodeTooltips', () => {
     expect(te(outputTooltipKey)).toBe(true)
     expect(getOutputSlotTooltip(0)).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('preserves the newline separating a widget label from its long value', () => {
+    const { createTooltipConfig } = useNodeTooltips('SAM3_Detect')
+
+    const config = createTooltipConfig(`${jsonTooltip}\n\na-long-value`)
+
+    // Without a whitespace-preserving rule the \n\n separator collapses to a
+    // space and the label runs into the value (BUG-020).
+    const pt = config.pt as { text?: { class?: string } } | undefined
+    const textClass = pt?.text?.class ?? ''
+    expect(textClass).toContain('whitespace-pre-line')
+    expect(config.value).toContain('\n\n')
+  })
+
+  describe('when the bundled snapshot has gone stale', () => {
+    beforeEach(() => {
+      mergeBundledMessages({
+        description: 'stale bundled description',
+        inputTooltip: 'stale bundled input tooltip',
+        outputTooltip: 'stale bundled output tooltip'
+      })
+    })
+
+    afterEach(() => {
+      mergeBundledMessages({
+        description: null,
+        inputTooltip: jsonTooltip,
+        outputTooltip: null
+      })
+    })
+
+    it('prefers the live backend text over the snapshot', () => {
+      const {
+        getNodeDescription,
+        getInputSlotTooltip,
+        getOutputSlotTooltip,
+        getWidgetTooltip
+      } = useNodeTooltips('SAM3_Detect')
+
+      expect(getNodeDescription.value).toBe('Live SAM3 description')
+      expect(getInputSlotTooltip('positive_coords')).toBe(jsonTooltip)
+      expect(getOutputSlotTooltip(0)).toBe(jsonTooltip)
+      expect(getWidgetTooltip(positiveCoordsWidget)).toBe(jsonTooltip)
+    })
   })
 })

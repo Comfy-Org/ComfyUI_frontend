@@ -29,7 +29,8 @@ const router = useRouter()
 const { reportError, accessBillingPortal } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-const { isActiveSubscription, isInitialized, initialize } = useBillingContext()
+const { canAccessSubscriptionFeatures, isInitialized, initialize } =
+  useBillingContext()
 
 const selectedTierKey = ref<TierKey | null>(null)
 
@@ -94,7 +95,9 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
       return
     }
     isTeamCheckout.value = true
-    await performTeamSubscriptionCheckout(stopId, billingCycle)
+    await performTeamSubscriptionCheckout(stopId, billingCycle, {
+      paymentIntentSource: 'deep_link'
+    })
     return
   }
 
@@ -109,10 +112,13 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     await initialize()
   }
 
-  if (isActiveSubscription.value) {
+  if (canAccessSubscriptionFeatures.value) {
     await accessBillingPortal(undefined, false)
   } else {
-    await performSubscriptionCheckout(tierKeyParam, billingCycle, false)
+    await performSubscriptionCheckout(tierKeyParam, billingCycle, {
+      openInNewTab: false,
+      paymentIntentSource: 'deep_link'
+    })
   }
 }, reportError)
 

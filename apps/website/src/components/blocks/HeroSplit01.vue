@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { HTMLAttributes } from 'vue'
+
 import type { Locale } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import ProductHeroBadge from '../common/ProductHeroBadge.vue'
@@ -27,6 +29,7 @@ const {
   badgeLogoAlt,
   title,
   titleHighlight,
+  subtitle,
   features = [],
   primaryCta,
   secondaryCta,
@@ -41,14 +44,17 @@ const {
   videoAutoplay = false,
   videoLoop = false,
   videoMinimal = false,
-  videoHideControls = false
+  videoHideControls = false,
+  class: className
 } = defineProps<{
   locale?: Locale
+  class?: HTMLAttributes['class']
   badgeText: string
   badgeLogoSrc?: string
   badgeLogoAlt?: string
   title: string
   titleHighlight?: string
+  subtitle?: string
   features?: string[]
   primaryCta: Cta
   secondaryCta?: Cta
@@ -72,7 +78,8 @@ const {
     :class="
       cn(
         'max-w-9xl relative mx-auto flex flex-col items-center gap-12 px-6 pt-20 pb-16 md:pt-28 md:pb-24 lg:items-center lg:gap-16 lg:px-16',
-        imagePosition === 'right' ? 'lg:flex-row' : 'lg:flex-row-reverse'
+        imagePosition === 'right' ? 'lg:flex-row' : 'lg:flex-row-reverse',
+        className
       )
     "
   >
@@ -84,7 +91,7 @@ const {
       />
 
       <h1
-        class="mt-8 text-2xl leading-[125%] font-light tracking-[-1.44px] text-primary-comfy-canvas md:text-4xl lg:text-5xl"
+        class="mt-8 text-2xl leading-[125%] font-light tracking-[-1.44px] whitespace-pre-line text-primary-comfy-canvas md:text-4xl lg:text-5xl"
       >
         <template v-if="titleHighlight">
           <span class="text-primary-warm-white">{{ titleHighlight }}</span>
@@ -92,6 +99,13 @@ const {
         </template>
         <template v-else>{{ title }}</template>
       </h1>
+
+      <p
+        v-if="subtitle"
+        class="mt-6 max-w-xl text-base text-primary-comfy-canvas/80"
+      >
+        {{ subtitle }}
+      </p>
 
       <ul v-if="features.length" class="mt-8 space-y-3">
         <li
@@ -127,27 +141,29 @@ const {
     </div>
 
     <div class="order-first w-full lg:order-last lg:flex-1">
-      <VideoPlayer
-        v-if="videoSrc"
-        :locale
-        :src="videoSrc"
-        :poster="videoPoster"
-        :tracks="videoTracks"
-        :autoplay="videoAutoplay"
-        :loop="videoLoop"
-        :minimal="videoMinimal"
-        :hide-controls="videoHideControls"
-      />
-      <img
-        v-else-if="imageSrc"
-        :src="imageSrc"
-        :alt="imageAlt"
-        :width="imageWidth"
-        :height="imageHeight"
-        fetchpriority="high"
-        decoding="async"
-        class="aspect-4/3 w-full rounded-3xl object-cover"
-      />
+      <slot name="media">
+        <VideoPlayer
+          v-if="videoSrc"
+          :locale
+          :src="videoSrc"
+          :poster="videoPoster"
+          :tracks="videoTracks"
+          :autoplay="videoAutoplay"
+          :loop="videoLoop"
+          :minimal="videoMinimal"
+          :hide-controls="videoHideControls"
+        />
+        <img
+          v-else-if="imageSrc"
+          :src="imageSrc"
+          :alt="imageAlt"
+          :width="imageWidth"
+          :height="imageHeight"
+          fetchpriority="high"
+          decoding="async"
+          class="aspect-4/3 w-full rounded-3xl object-cover"
+        />
+      </slot>
     </div>
   </section>
 </template>

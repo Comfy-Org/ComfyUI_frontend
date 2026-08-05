@@ -17,7 +17,10 @@ import {
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import type { LinkId } from '@/types/linkId'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 import {
   createMockNodeInputSlot,
   createMockNodeOutputSlot
@@ -39,11 +42,11 @@ interface TestContext {
 const test = baseTest.extend<TestContext>({
   network: async ({}, use) => {
     const graph = new LGraph()
-    const floatingLinks = new Map<number, LLink>()
-    const reroutes = new Map<number, Reroute>()
+    const floatingLinks = new Map<LinkId, LLink>()
+    const reroutes = new Map<RerouteId, Reroute>()
 
     await use({
-      links: new Map<number, LLink>(),
+      links: new Map<LinkId, LLink>(),
       reroutes,
       floatingLinks,
       getLink: graph.getLink.bind(graph),
@@ -55,7 +58,7 @@ const test = baseTest.extend<TestContext>({
       removeFloatingLink: (link: LLink) => floatingLinks.delete(link.id),
       getReroute: ((id: RerouteId | null | undefined) =>
         id == null ? undefined : reroutes.get(id)) as LinkNetwork['getReroute'],
-      removeReroute: (id: number) => reroutes.delete(id),
+      removeReroute: (id: RerouteId) => reroutes.delete(id),
       add: (node: LGraphNode) => graph.add(node)
     })
   },
@@ -88,7 +91,7 @@ const test = baseTest.extend<TestContext>({
         targetId: number,
         slotType: ISlotType = 'number'
       ): LLink => {
-        const link = new LLink(id, slotType, sourceId, 0, targetId, 0)
+        const link = new LLink(toLinkId(id), slotType, sourceId, 0, targetId, 0)
         network.links.set(link.id, link)
         return link
       }
@@ -122,7 +125,7 @@ describe('LinkConnector', () => {
       sourceNode.addOutput('out', slotType)
       targetNode.addInput('in', slotType)
 
-      const link = new LLink(1, slotType, 1, 0, 2, 0)
+      const link = new LLink(toLinkId(1), slotType, 1, 0, 2, 0)
       network.links.set(link.id, link)
       targetNode.inputs[0].link = link.id
 
@@ -141,7 +144,10 @@ describe('LinkConnector', () => {
       connector.state.connectingTo = 'input'
 
       expect(() => {
-        connector.moveInputLink(network, createMockNodeInputSlot({ link: 1 }))
+        connector.moveInputLink(
+          network,
+          createMockNodeInputSlot({ link: toLinkId(1) })
+        )
       }).toThrow('Already dragging links.')
     })
   })
@@ -159,7 +165,7 @@ describe('LinkConnector', () => {
       sourceNode.addOutput('out', slotType)
       targetNode.addInput('in', slotType)
 
-      const link = new LLink(1, slotType, 1, 0, 2, 0)
+      const link = new LLink(toLinkId(1), slotType, 1, 0, 2, 0)
       network.links.set(link.id, link)
       sourceNode.outputs[0].links = [link.id]
 
@@ -181,7 +187,7 @@ describe('LinkConnector', () => {
       expect(() => {
         connector.moveOutputLink(
           network,
-          createMockNodeOutputSlot({ links: [1] })
+          createMockNodeOutputSlot({ links: [toLinkId(1)] })
         )
       }).toThrow('Already dragging links.')
     })
@@ -235,7 +241,9 @@ describe('LinkConnector', () => {
       targetNode.addInput('in', 'number')
 
       const link = createTestLink(1, 1, 2)
-      const reroute = new Reroute(1, network, [0, 0], undefined, [link.id])
+      const reroute = new Reroute(toRerouteId(1), network, [0, 0], undefined, [
+        link.id
+      ])
       network.reroutes.set(reroute.id, reroute)
       link.parentId = reroute.id
 
@@ -262,11 +270,11 @@ describe('LinkConnector', () => {
       connector.state.multi = true
       connector.state.draggingExistingLinks = true
 
-      const link = new LLink(1, 'number', 1, 0, 2, 0)
+      const link = new LLink(toLinkId(1), 'number', 1, 0, 2, 0)
       link._dragging = true
       connector.inputLinks.push(link)
 
-      const reroute = new Reroute(1, network)
+      const reroute = new Reroute(toRerouteId(1), network)
       reroute.pos = [0, 0]
       reroute._dragging = true
       connector.hiddenReroutes.add(reroute)
@@ -303,7 +311,7 @@ describe('LinkConnector', () => {
         fromPos: [0, 0],
         fromDirection: LinkDirection.RIGHT,
         toType: 'input',
-        link: new LLink(1, 'number', 1, 0, 2, 0)
+        link: new LLink(toLinkId(1), 'number', 1, 0, 2, 0)
       } as MovingInputLink
 
       connector.events.dispatch('input-moved', mockRenderLink)
@@ -320,7 +328,7 @@ describe('LinkConnector', () => {
       connector.state.connectingTo = 'input'
       connector.state.multi = true
 
-      const link = new LLink(1, 'number', 1, 0, 2, 0)
+      const link = new LLink(toLinkId(1), 'number', 1, 0, 2, 0)
       connector.inputLinks.push(link)
 
       const exported = connector.export(network)

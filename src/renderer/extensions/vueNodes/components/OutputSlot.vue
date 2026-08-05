@@ -98,9 +98,9 @@ const shouldDim = computed(() => {
 
 const slotWrapperClass = computed(() =>
   cn(
-    'lg-slot lg-slot--output group flex h-6 items-center justify-end rounded-l-lg',
+    'lg-slot lg-slot--output group flex h-5 items-center justify-end rounded-l-lg',
     'cursor-crosshair',
-    dotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-6',
+    dotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-2',
     {
       'lg-slot--connected': props.connected,
       'lg-slot--compatible': props.compatible,

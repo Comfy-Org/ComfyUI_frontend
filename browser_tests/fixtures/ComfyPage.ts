@@ -4,6 +4,10 @@ import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
+import {
+  ENTRY_PATHS,
+  TOUR_SEEN_SETTING
+} from '@/platform/onboarding/onboardingTours'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
@@ -28,6 +32,7 @@ import {
   ModelLibrarySidebarTab,
   NodeLibrarySidebarTab,
   NodeLibrarySidebarTabV2,
+  SidebarTab,
   WorkflowsSidebarTab
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
@@ -70,6 +75,7 @@ class ComfyPropertiesPanel {
 }
 
 class ComfyMenu {
+  private _appsTab: SidebarTab | null = null
   private _assetsTab: AssetsSidebarTab | null = null
   private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
@@ -102,6 +108,11 @@ class ComfyMenu {
   get nodeLibraryTabV2() {
     this._nodeLibraryTabV2 ??= new NodeLibrarySidebarTabV2(this.page)
     return this._nodeLibraryTabV2
+  }
+
+  get appsTab() {
+    this._appsTab ??= new SidebarTab(this.page, 'apps')
+    return this._appsTab
   }
 
   get assetsTab() {
@@ -535,9 +546,10 @@ export const comfyPageFixture = base.extend<{
         'Comfy.userId': userId,
         // Set tutorial completed to true to avoid loading the tutorial workflow.
         'Comfy.TutorialCompleted': true,
+        // An auto-opened tour's blocker would break unrelated tests.
+        [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
         'Comfy.Queue.MaxHistoryItems': 64,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-        'Comfy.VueNodes.AutoScaleLayout': false,
         // Disable toast warning about version compatibility, as they may or
         // may not appear - depending on upstream ComfyUI dependencies
         'Comfy.VersionCompatibility.DisableWarnings': true,

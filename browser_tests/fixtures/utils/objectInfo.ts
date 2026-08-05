@@ -8,21 +8,18 @@ import {
 import type {
   ComboInputSpec,
   ComboInputSpecV2,
-  ComfyNodeDef,
-  InputSpec
+  InputSpec,
+  ObjectInfoResponse
 } from '@/schemas/nodeDefSchema'
-
-type ObjectInfoResponse = Record<string, ComfyNodeDef>
 
 type ComboInput = ComboInputSpec | ComboInputSpecV2
 
 const OBJECT_INFO_ROUTE = '**/object_info'
 
-function getRequiredInput(
+function getRequiredInputs(
   objectInfo: ObjectInfoResponse,
-  nodeType: string,
-  inputName: string
-): InputSpec {
+  nodeType: string
+): Record<string, InputSpec> {
   const nodeInfo = objectInfo[nodeType]
   if (!nodeInfo) {
     throw new Error(`Missing object_info entry for ${nodeType}`)
@@ -33,12 +30,48 @@ function getRequiredInput(
     throw new Error(`Missing required inputs for ${nodeType}`)
   }
 
-  const input = requiredInputs[inputName]
+  return requiredInputs
+}
+
+function getRequiredInput(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  inputName: string
+): InputSpec {
+  const input = getRequiredInputs(objectInfo, nodeType)[inputName]
   if (!input) {
     throw new Error(`Missing input ${nodeType}.${inputName}`)
   }
 
   return input
+}
+
+export function setNodeDisplayName(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  displayName: string
+): void {
+  const nodeInfo = objectInfo[nodeType]
+  if (!nodeInfo) {
+    throw new Error(`Missing object_info entry for ${nodeType}`)
+  }
+
+  nodeInfo.display_name = displayName
+}
+
+export function setStringInputTooltip(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  inputName: string,
+  tooltip: string
+): void {
+  const requiredInputs = getRequiredInputs(objectInfo, nodeType)
+  if (!requiredInputs[inputName]) {
+    throw new Error(`Missing input ${nodeType}.${inputName}`)
+  }
+
+  const input: InputSpec = ['STRING', { tooltip }]
+  requiredInputs[inputName] = input
 }
 
 function getComboInput(
@@ -120,7 +153,25 @@ export async function routeObjectInfoFromSetupApi(
       return
     }
 
-    await customize?.(objectInfo)
+    try {
+      await customize?.(objectInfo)
+    } catch (error) {
+      // A throwing mutator (e.g. a node type that disappeared from a newer
+      // ComfyUI build) must still fulfill the route. An unfulfilled request
+      // hangs the page, so the test dies on an opaque Playwright timeout
+      // instead of reporting the reason.
+      const message = error instanceof Error ? error.message : String(error)
+      console.error(`Failed to customize object_info: ${message}`)
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: `Failed to customize object_info from ${objectInfoUrl}: ${message}`
+        })
+      })
+      return
+    }
+
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

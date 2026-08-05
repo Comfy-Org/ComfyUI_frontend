@@ -1,4 +1,9 @@
 import { groupBy } from 'es-toolkit'
+import { hasActivePromotedWidgetConsumer } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   MissingMediaCandidate,
   MissingMediaViewModel,
@@ -13,7 +18,9 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import {
   collectAllNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getNodeByExecutionId,
+  isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
@@ -30,19 +37,30 @@ import {
 } from './missingMediaAssetResolver'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 
-/** Map of node types to their media widget name and media type. */
-const MEDIA_NODE_WIDGETS: Record<
-  string,
-  { widgetName: string; mediaType: MediaType }
-> = {
-  LoadImage: { widgetName: 'image', mediaType: 'image' },
-  LoadImageMask: { widgetName: 'image', mediaType: 'image' },
-  LoadVideo: { widgetName: 'file', mediaType: 'video' },
-  LoadAudio: { widgetName: 'audio', mediaType: 'audio' }
-}
-
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
+}
+
+/**
+ * The widget a user can actually edit. A linked slot means the value comes
+ * from upstream; a promoted host owns the value only while some interior
+ * consumer is still live.
+ */
+function isEditableValueOwner(node: LGraphNode, widget: IBaseWidget): boolean {
+  const input = node.getSlotFromWidget(widget)
+  if (input?.link != null) return false
+  if (!node.isSubgraphNode()) return true
+  return !!input?.widgetId && hasActivePromotedWidgetConsumer(node, input.name)
+}
+
+function mediaTypeFromSpec(
+  spec: InputSpecV2 | undefined
+): MediaType | undefined {
+  if (!spec || !isComboInputSpec(spec)) return undefined
+  if (spec.video_upload) return 'video'
+  if (spec.image_upload || spec.animated_image_upload) return 'image'
+  if (spec.audio_upload) return 'audio'
+  return undefined
 }
 
 /**
@@ -63,7 +81,6 @@ export function scanAllMediaCandidates(
 
   for (const node of allNodes) {
     if (!node.widgets?.length) continue
-    if (node.isSubgraphNode?.()) continue
     if (
       node.mode === LGraphEventMode.NEVER ||
       node.mode === LGraphEventMode.BYPASS
@@ -84,17 +101,25 @@ export function scanNodeMediaCandidates(
 ): MissingMediaCandidate[] {
   if (!node.widgets?.length) return []
 
-  const mediaInfo = MEDIA_NODE_WIDGETS[node.type]
-  if (!mediaInfo) return []
-  if (node.isUploading) return []
-
   const executionId = getExecutionIdByNode(rootGraph, node)
   if (!executionId) return []
 
+  if (node.isUploading) return []
+
+  const nodeDefStore = useNodeDefStore()
   const candidates: MissingMediaCandidate[] = []
   for (const widget of node.widgets) {
     if (!isComboWidget(widget)) continue
-    if (widget.name !== mediaInfo.widgetName) continue
+
+    // getInputSpecForWidget projects a promoted host input to its interior
+    // spec itself, so the scan reads schema through the store rather than
+    // walking the subgraph. Media-ness is the cheaper question, so it runs
+    // before the ownership walk.
+    const mediaType = mediaTypeFromSpec(
+      nodeDefStore.getInputSpecForWidget(node, widget.name)
+    )
+    if (!mediaType) continue
+    if (!isEditableValueOwner(node, widget)) continue
 
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
@@ -116,11 +141,16 @@ export function scanNodeMediaCandidates(
       }
     }
 
+    // Label only, and leaf-derived to match missingModelScan: the overlay
+    // formats nodeType directly and a SubgraphNode's own type is a UUID.
+    const labelNode =
+      resolvePromotedWidgetSource(rootGraph, node, widget)?.sourceNode ?? node
+
     candidates.push({
       nodeId: executionId,
-      nodeType: node.type,
+      nodeType: labelNode.type,
       widgetName: widget.name,
-      mediaType: mediaInfo.mediaType,
+      mediaType,
       name: value,
       isMissing
     })
@@ -129,10 +159,45 @@ export function scanNodeMediaCandidates(
   return candidates
 }
 
+export function isMissingMediaCandidateScopeActive(
+  rootGraph: LGraph | null | undefined,
+  candidate: MissingMediaCandidate
+): boolean {
+  if (!rootGraph) return false
+
+  const executionId = String(candidate.nodeId)
+  if (!isExecutionPathActive(rootGraph, executionId)) return false
+
+  const node = getNodeByExecutionId(rootGraph, executionId)
+  if (!node) return false
+  const widget = node.widgets?.find(
+    (candidateWidget) => candidateWidget.name === candidate.widgetName
+  )
+  // Removed or renamed while verification was pending: nothing owns the value.
+  if (!widget) return false
+
+  return isEditableValueOwner(node, widget)
+}
+
+export function isMissingMediaCandidateActive(
+  rootGraph: LGraph | null | undefined,
+  candidate: MissingMediaCandidate
+): boolean {
+  return (
+    candidate.isMissing === true &&
+    isMissingMediaCandidateScopeActive(rootGraph, candidate)
+  )
+}
+
 interface MediaVerificationOptions {
   isCloud: boolean
   signal?: AbortSignal
   resolveAssetSources?: MissingMediaAssetResolver
+}
+
+interface GeneratedCandidateMatchNames {
+  names: Set<string>
+  hashRequiredNames: Set<string>
 }
 
 /**
@@ -165,6 +230,7 @@ export async function verifyMediaCandidates(
   const pathOptions = { allowCompactSuffix: isCloud }
   const generatedMatchNames = getGeneratedCandidateMatchNames(
     pending,
+    isCloud,
     pathOptions
   )
 
@@ -174,8 +240,9 @@ export async function verifyMediaCandidates(
     const assetSources = await resolveAssetSources({
       signal,
       isCloud,
-      includeGeneratedAssets: generatedMatchNames.size > 0,
-      generatedMatchNames,
+      includeGeneratedAssets: generatedMatchNames.names.size > 0,
+      generatedMatchNames: generatedMatchNames.names,
+      generatedHashRequiredNames: generatedMatchNames.hashRequiredNames,
       allowCompactSuffix: isCloud
     })
     inputAssets = assetSources.inputAssets
@@ -189,37 +256,58 @@ export async function verifyMediaCandidates(
 
   const inputAssetIdentifiers = new Set<string>()
   const outputAssetIdentifiers = new Set<string>()
+  const outputAssetHashIdentifiers = new Set<string>()
   addAssetIdentifiers(inputAssetIdentifiers, inputAssets, pathOptions)
   addAssetIdentifiers(outputAssetIdentifiers, generatedAssets, pathOptions)
+  addAssetHashIdentifiers(
+    outputAssetHashIdentifiers,
+    generatedAssets,
+    pathOptions
+  )
 
   for (const candidate of pending) {
-    const detectionNames = getMediaPathDetectionNames(
-      candidate.name,
-      pathOptions
-    )
     const type = getAnnotatedMediaPathTypeForDetection(
       candidate.name,
       pathOptions
     )
-    const identifiers =
-      type === 'output' ? outputAssetIdentifiers : inputAssetIdentifiers
-    candidate.isMissing = !detectionNames.some((name) => identifiers.has(name))
+    const isOutputCandidate = type === 'output'
+    const identifiers = isOutputCandidate
+      ? outputAssetIdentifiers
+      : inputAssetIdentifiers
+    candidate.isMissing = !isCandidateResolved(
+      candidate,
+      identifiers,
+      isOutputCandidate,
+      isCloud,
+      outputAssetHashIdentifiers,
+      pathOptions
+    )
   }
 }
 
 function getGeneratedCandidateMatchNames(
   candidates: MissingMediaCandidate[],
+  isCloud: boolean,
   pathOptions: { allowCompactSuffix: boolean }
-): Set<string> {
+): GeneratedCandidateMatchNames {
   const names = new Set<string>()
+  const hashRequiredNames = new Set<string>()
+
   for (const candidate of candidates) {
     if (!isGeneratedCandidate(candidate, pathOptions)) continue
 
-    names.add(
-      normalizeAnnotatedMediaPathForDetection(candidate.name, pathOptions)
+    const normalized = normalizeAnnotatedMediaPathForDetection(
+      candidate.name,
+      pathOptions
     )
+    const lookupName = isCloud ? getMediaPathBasename(normalized) : normalized
+    names.add(lookupName)
+    if (isCloud && lookupName !== normalized) {
+      hashRequiredNames.add(lookupName)
+    }
   }
-  return names
+
+  return { names, hashRequiredNames }
 }
 
 function isGeneratedCandidate(
@@ -233,6 +321,34 @@ function isGeneratedCandidate(
   return type === 'output'
 }
 
+function isCandidateResolved(
+  candidate: MissingMediaCandidate,
+  identifiers: ReadonlySet<string>,
+  isOutputCandidate: boolean,
+  isCloud: boolean,
+  outputAssetHashIdentifiers: ReadonlySet<string>,
+  pathOptions: { allowCompactSuffix: boolean }
+): boolean {
+  const detectionNames = getMediaPathDetectionNames(candidate.name, pathOptions)
+  if (detectionNames.some((name) => identifiers.has(name))) return true
+  if (!isOutputCandidate || !isCloud) return false
+
+  const normalized = normalizeAnnotatedMediaPathForDetection(
+    candidate.name,
+    pathOptions
+  )
+  const basename = getMediaPathBasename(normalized)
+  return basename !== normalized && outputAssetHashIdentifiers.has(basename)
+}
+
+function getMediaPathBasename(value: string): string {
+  const separatorIndex = Math.max(
+    value.lastIndexOf('/'),
+    value.lastIndexOf('\\')
+  )
+  return separatorIndex === -1 ? value : value.slice(separatorIndex + 1)
+}
+
 function addAssetIdentifiers(
   identifiers: Set<string>,
   assets: AssetItem[],
@@ -240,6 +356,19 @@ function addAssetIdentifiers(
 ) {
   for (const asset of assets) {
     for (const name of getAssetDetectionNames(asset, pathOptions)) {
+      identifiers.add(name)
+    }
+  }
+}
+
+function addAssetHashIdentifiers(
+  identifiers: Set<string>,
+  assets: AssetItem[],
+  pathOptions: { allowCompactSuffix: boolean }
+) {
+  for (const asset of assets) {
+    if (!asset.hash) continue
+    for (const name of getMediaPathDetectionNames(asset.hash, pathOptions)) {
       identifiers.add(name)
     }
   }

@@ -143,6 +143,8 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
     getAuthHeader: mockGetAuthHeader,
+    fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
+      fetch(input, init),
     get isInitialized() {
       return mockAuthStoreInitialized.value
     },
@@ -195,7 +197,7 @@ describe('useSubscription', () => {
   })
 
   describe('computed properties', () => {
-    it('should compute isActiveSubscription correctly when subscription is active', async () => {
+    it('should compute canAccessSubscriptionFeatures correctly when subscription is active', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -206,13 +208,14 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures, fetchStatus } =
+        useSubscriptionWithScope()
 
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
     })
 
-    it('should compute isActiveSubscription as false when subscription is inactive', async () => {
+    it('should compute canAccessSubscriptionFeatures as false when subscription is inactive', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -223,10 +226,11 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures, fetchStatus } =
+        useSubscriptionWithScope()
 
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(false)
+      expect(canAccessSubscriptionFeatures.value).toBe(false)
     })
 
     it('should format renewal date correctly', async () => {
@@ -318,6 +322,45 @@ describe('useSubscription', () => {
       const { fetchStatus } = useSubscriptionWithScope()
 
       await expect(fetchStatus()).rejects.toThrow()
+    })
+
+    it('coalesces concurrent callers into one fetch', async () => {
+      let resolveFetch: (value: Response) => void = () => {}
+      vi.mocked(global.fetch).mockReturnValue(
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve
+        })
+      )
+      const { fetchStatus } = useSubscriptionWithScope()
+
+      const first = fetchStatus()
+      const second = fetchStatus()
+      resolveFetch({
+        ok: true,
+        json: async () => ({ is_active: true })
+      } as Response)
+      await Promise.all([first, second])
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not downgrade known-good status on a failed fetch', async () => {
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ is_active: true, subscription_id: 'sub_1' })
+      } as Response)
+      const { fetchStatus, canAccessSubscriptionFeatures } =
+        useSubscriptionWithScope()
+      await fetchStatus()
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: 'Invalid token' })
+      } as Response)
+      await fetchStatus().catch(() => {})
+
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
     })
   })
 
@@ -604,12 +647,12 @@ describe('useSubscription', () => {
       expect(global.fetch).not.toHaveBeenCalled()
     })
 
-    it('should report isActiveSubscription as true when not on cloud', () => {
+    it('should report canAccessSubscriptionFeatures as true when not on cloud', () => {
       mockIsCloud.value = false
 
-      const { isActiveSubscription } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures } = useSubscriptionWithScope()
 
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
     })
   })
 
@@ -721,7 +764,6 @@ describe('useSubscription', () => {
 
       vi.mocked(global.fetch)
         .mockResolvedValueOnce(activeResponse as Response)
-        .mockResolvedValueOnce(activeResponse as Response)
         .mockResolvedValueOnce(cancelledResponse as Response)
 
       try {
@@ -764,7 +806,6 @@ describe('useSubscription', () => {
       }
 
       vi.mocked(global.fetch)
-        .mockResolvedValueOnce(activeResponse as Response)
         .mockResolvedValueOnce(activeResponse as Response)
         .mockResolvedValueOnce(cancelledResponse as Response)
 

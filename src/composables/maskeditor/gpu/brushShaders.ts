@@ -152,10 +152,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     b = b / a;
   }
 
-  let ir = u32(clamp(r * 255.0, 0.0, 255.0));
-  let ig = u32(clamp(g * 255.0, 0.0, 255.0));
-  let ib = u32(clamp(b * 255.0, 0.0, 255.0));
-  let ia = u32(clamp(a * 255.0, 0.0, 255.0));
+  let ir = u32(clamp(r * 255.0 + 0.5, 0.0, 255.0));
+  let ig = u32(clamp(g * 255.0 + 0.5, 0.0, 255.0));
+  let ib = u32(clamp(b * 255.0 + 0.5, 0.0, 255.0));
+  let ia = u32(clamp(a * 255.0 + 0.5, 0.0, 255.0));
 
   // Pack RGBA channels into a single u32 (Little Endian)
   let packed = ir | (ig << 8u) | (ib << 16u) | (ia << 24u);

@@ -34,18 +34,13 @@ export function member(
 }
 
 /**
- * Stub the workspace resolution + members list so the cloud app boots into the
- * given workspace with the given roster (drives the original-owner gate).
+ * Stub `POST /api/auth/token` with a valid workspace token for `ws`. Without
+ * this the mint fails and auth cannot resolve the active workspace.
  */
-export async function mockWorkspace(
+export async function mockWorkspaceTokenMint(
   page: Page,
-  ws: WorkspaceWithRole,
-  members: Member[]
+  ws: Pick<WorkspaceWithRole, 'id' | 'name' | 'type' | 'role'>
 ) {
-  await page.route('**/api/workspaces', async (route) => {
-    if (route.request().method() !== 'GET') return route.fallback()
-    await route.fulfill(jsonRoute({ workspaces: [ws] }))
-  })
   await page.route('**/api/auth/token', (r) =>
     r.fulfill(
       jsonRoute({
@@ -57,6 +52,34 @@ export async function mockWorkspace(
       })
     )
   )
+}
+
+/**
+ * Stub `GET /api/workspaces` with the given roster. Reusable across specs that
+ * need to (re)mock the workspace list, including mid-test overrides ahead of a
+ * reload.
+ */
+export async function mockWorkspaceList(
+  page: Page,
+  workspaces: WorkspaceWithRole[]
+): Promise<void> {
+  await page.route('**/api/workspaces', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    await route.fulfill(jsonRoute({ workspaces }))
+  })
+}
+
+/**
+ * Stub the workspace resolution + members list so the cloud app boots into the
+ * given workspace with the given roster (drives the original-owner gate).
+ */
+export async function mockWorkspace(
+  page: Page,
+  ws: WorkspaceWithRole,
+  members: Member[]
+) {
+  await mockWorkspaceList(page, [ws])
+  await mockWorkspaceTokenMint(page, ws)
   await page.route('**/api/workspace/members**', (r) =>
     r.fulfill(
       jsonRoute({
