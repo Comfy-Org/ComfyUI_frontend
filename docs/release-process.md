@@ -95,6 +95,14 @@ failing scheduled workflow otherwise only notifies whoever last pushed to
 weeks. Needs the `SLACK_BOT_TOKEN` secret; the post is `continue-on-error`, so
 Slack being down never masks the underlying result.
 
+It alerts on the **transition** into failure, not on every failing run: the job
+runs hourly, so a lasting breakage would otherwise post around the clock until
+someone fixed it, and a channel that cries wolf gets muted. The check reads this
+workflow's own run history for the last run that actually decided something —
+`skipped` runs, which the `pull_request_target` gate produces in bulk, are
+ignored, and without that filter nothing would ever be throttled. If the check
+itself cannot run it fails open and alerts, since a duplicate beats a silence.
+
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,

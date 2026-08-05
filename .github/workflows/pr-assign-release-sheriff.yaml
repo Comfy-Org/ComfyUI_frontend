@@ -33,6 +33,9 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
+      # Reading this workflow's own run history, to alert only on the
+      # transition into failure rather than once an hour forever.
+      actions: read
 
     steps:
       # pull_request_target checks out the base branch, never PR head code.
@@ -54,11 +57,35 @@ jobs:
       # A failed scheduled run only notifies whoever last pushed to main, which
       # in practice is nobody — the reason the placeholder config went unnoticed
       # for weeks. Post where the rotation actually watches instead.
+      # This job runs hourly, so a lasting breakage would otherwise post ~24
+      # times a day until someone fixed it — and a channel that cries wolf gets
+      # muted, which is the failure this alert exists to prevent. Alert on the
+      # transition into failure: skip if the previous decisive run already did.
+      # Skipped runs (the pull_request_target gate) are not decisive.
+      - name: Check whether this failure is already known
+        id: known
+        if: failure() && steps.sheriff.outcome == 'failure'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          PREVIOUS=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/pr-assign-release-sheriff.yaml/runs?status=completed&per_page=40" \
+            --jq "[.workflow_runs[]
+                   | select(.id != ($RUN_ID|tonumber))
+                   | select(.conclusion == \"success\" or .conclusion == \"failure\")]
+                  | first.conclusion // \"none\"")
+          echo "previous=$PREVIOUS" >> "$GITHUB_OUTPUT"
+
       # Scoped to this step, not the job: a checkout or pnpm blip is CI noise
       # that is already visible elsewhere, and paging the rotation for it is
       # how an alert channel gets muted.
       - name: Report a degraded run to Slack
-        if: failure() && steps.sheriff.outcome == 'failure'
+        if: >-
+          failure() && steps.sheriff.outcome == 'failure' &&
+          steps.known.outputs.previous != 'failure'
         continue-on-error: true
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
