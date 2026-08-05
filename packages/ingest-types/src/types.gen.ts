@@ -1900,14 +1900,25 @@ export type BillingStatusResponse = {
    * client recover a payment it has lost the local reference to — a
    * cleared browser, or simply a different device from the one that
    * started it — by polling /billing/ops/{id} without having stored the
-   * id. Absent when no operation is pending.
+   * id. Absent when no operation is pending, and for non-owners, who
+   * cannot act on one.
    *
    */
   pending_billing_op_id?: string
   /**
+   * How the client should resume `pending_billing_op_id`, not the
+   * internal operation type: a plan change reports `subscription`,
+   * because it resumes exactly like one. A top-up resumes with a
+   * different timeout and completion path, so the two cannot be
+   * told apart by the client. Present whenever
+   * `pending_billing_op_id` is.
+   *
+   */
+  pending_billing_op_type?: 'subscription' | 'topup'
+  /**
    * Present when the pending operation cannot proceed without the
-   * customer. Today this is a Stripe-hosted payment page for a
-   * subscription whose first invoice needs authentication (SCA/3DS);
+   * customer. Today this is a Stripe-hosted payment page for an invoice
+   * needing authentication (SCA/3DS);
    * send the customer there to complete payment. Mirrors the field of
    * the same name on BillingOpStatusResponse. This bearer capability is
    * returned only to workspace billing managers or a recorded initiating

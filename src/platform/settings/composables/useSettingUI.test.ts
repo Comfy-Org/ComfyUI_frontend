@@ -43,7 +43,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: env.fakeRef('isActiveSubscription'),
+    canAccessSubscriptionFeatures: env.fakeRef('isActiveSubscription'),
     type: env.fakeRef('billingType')
   })
 }))
@@ -197,6 +197,16 @@ describe('useSettingUI', () => {
       'NonExistent.Setting'
     )
     expect(defaultCategory.value).toBe(settingCategories.value[0])
+  })
+
+  it('hides the empty Workspace navigation group for logged-out Cloud users', () => {
+    env.state.isCloud = true
+    env.state.isLoggedIn = false
+    env.state.teamWorkspacesEnabled = true
+
+    const { navGroups } = useSettingUI()
+
+    expect(navGroups.value.map(({ title }) => title)).not.toContain('Workspace')
   })
 
   it('gives defaultPanel precedence over scrollToSettingId', () => {

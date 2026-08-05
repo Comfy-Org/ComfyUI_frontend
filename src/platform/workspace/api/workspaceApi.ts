@@ -319,6 +319,8 @@ export interface CurrentTeamCreditStop {
 
 export interface BillingStatusResponse {
   is_active: boolean
+  max_seats?: number | null
+  occupied_seats?: number | null
   billing_rail?: BillingRail
   subscription_status?: BillingSubscriptionStatus
   subscription_tier?: SubscriptionTier
@@ -328,6 +330,7 @@ export interface BillingStatusResponse {
   change_at?: string
   billing_status?: BillingStatus
   pending_billing_op_id?: string
+  pending_billing_op_type?: 'subscription' | 'topup'
   action_url?: string
   has_funds: boolean
   cancel_at?: string
@@ -675,7 +678,11 @@ export const workspaceApi = {
         api.apiURL('/billing/status'),
         { headers }
       )
-      return response.data
+      return {
+        ...response.data,
+        max_seats: response.data.max_seats ?? null,
+        occupied_seats: response.data.occupied_seats ?? null
+      }
     } catch (err) {
       handleAxiosError(err)
     }

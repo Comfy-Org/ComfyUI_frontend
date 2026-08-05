@@ -135,16 +135,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  MAX_WORKSPACE_MEMBERS,
-  useTeamWorkspaceStore
-} from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import InviteMembersForm from './InviteMembersForm.vue'
 
@@ -152,14 +149,12 @@ const {
   tierKey,
   previewData = null,
   teamPlan = null,
-  isTeam = false,
   darkSurface = false,
   promoApplied = null
 } = defineProps<{
   tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
   teamPlan?: TeamPlanSelection | null
-  isTeam?: boolean
   /** Dialog paints base-background; the plan card elevates to stay visible. */
   darkSurface?: boolean
   /** Applied promotion feedback (Figma 5379-30077 S3). Display-ready strings;
@@ -177,7 +172,7 @@ defineEmits<{
 
 const { t, n } = useI18n()
 const { flags } = useFeatureFlags()
-const workspaceStore = useTeamWorkspaceStore()
+const { maxSeats, occupiedSeats } = useBillingContext()
 
 const tierName = computed(() =>
   teamPlan
@@ -199,26 +194,32 @@ const displayCredits = computed(() =>
   n(teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0)
 )
 
-const occupiedSeats = computed(() =>
-  Math.max(
-    1,
-    workspaceStore.members.length + workspaceStore.pendingInvites.length
-  )
-)
-const invitableSeats = computed(() =>
-  Math.max(0, MAX_WORKSPACE_MEMBERS - occupiedSeats.value)
-)
+const invitableSeats = computed(() => {
+  if (maxSeats.value === null || occupiedSeats.value === null) return undefined
+  if (maxSeats.value === 0) return undefined
+  return Math.max(0, maxSeats.value - occupiedSeats.value)
+})
 
-const showInviteBlock = computed(() => isTeam && flags.teamWorkspacesEnabled)
+const showInviteBlock = computed(
+  () =>
+    flags.teamWorkspacesEnabled &&
+    (maxSeats.value === 0 || (maxSeats.value ?? 0) > 1)
+)
 
 const invitedEmails = ref<string[]>([])
 const invitedMessage = ref<HTMLElement>()
 
 const inviteForm = ref<InstanceType<typeof InviteMembersForm>>()
-const canSendInvites = computed(() => inviteForm.value?.canSubmit ?? false)
+const canSendInvites = computed(
+  () =>
+    maxSeats.value !== null &&
+    occupiedSeats.value !== null &&
+    (inviteForm.value?.canSubmit ?? false)
+)
 const isSendingInvites = computed(() => inviteForm.value?.loading ?? false)
 
 function handleSendInvites() {
+  if (maxSeats.value === null || occupiedSeats.value === null) return
   void inviteForm.value?.submit()?.catch(console.error)
 }
 

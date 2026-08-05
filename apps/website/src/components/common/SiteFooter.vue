@@ -74,6 +74,16 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         external: true
       },
       {
+        label: t('nav.instagram', locale),
+        href: externalLinks.instagram,
+        external: true
+      },
+      {
+        label: t('nav.x', locale),
+        href: externalLinks.x,
+        external: true
+      },
+      {
         label: t('footer.affiliateProgram', locale),
         href: routes.affiliates
       }
@@ -123,7 +133,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div
-      class="border-primary-warm-gray grid gap-12 border-t pt-16 lg:grid-cols-2 lg:gap-4"
+      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-2 lg:gap-4"
     >
       <!-- Tagline -->
       <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">

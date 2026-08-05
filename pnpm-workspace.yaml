@@ -31,12 +31,9 @@ catalog:
   '@lucide/vue': ^1.17.0
   '@pinia/testing': ^2.0.1
   '@playwright/test': ^1.61.1
-  '@primeuix/forms': 0.0.2
-  '@primeuix/styled': 0.3.2
   '@primeuix/utils': ^0.3.2
   '@primevue/core': 4.2.5
   '@primevue/forms': 4.2.5
-  '@primevue/icons': 4.2.5
   '@primevue/themes': 4.2.5
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
@@ -100,7 +97,6 @@ catalog:
   gsap: ^3.14.2
   happy-dom: 20.9.0
   husky: ^9.1.7
-  jiti: 2.7.0
   jsdom: ^29.1.1
   jsonata: ^2.1.0
   knip: ^6.27.0
@@ -172,7 +168,6 @@ allowBuilds:
 overrides:
   vite: 'catalog:'
   '@tiptap/pm': 2.27.2
-  '@types/eslint': '-'
   # Security overrides
   lodash: ^4.18.0
   yaml: ^2.8.3

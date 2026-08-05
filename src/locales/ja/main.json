@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "パスワードを忘れた場合",
   "cloudHero": {
     "nextSlide": "次のスライド",
-    "previousSlide": "前のスライド",
-    "slidePagerLabel": "スライド{index}へ移動",
-    "slides": {
-      "cloud": {
-        "description": "商用ライセンスが確認されたモデルを使い、どこからでも作業したいほとんどのユーザーに最適です。",
-        "title": "クラウド"
-      },
-      "models": {
-        "description": "厳選された商用ライセンス付きモデルが、セットアップ不要ですぐに利用可能です。",
-        "title": "モデル"
-      },
-      "team": {
-        "description": "今すぐチームをオンボードしましょう。ワークフローやアセットを組織全体で共有できます。",
-        "title": "チーム"
-      },
-      "workflows": {
-        "description": "アイデアから出力まで数分で。複数のバリエーションを並べて生成できます。",
-        "title": "ワークフロー"
-      }
-    }
+    "previousSlide": "前のスライド"
   },
   "cloudNotification": {
     "continueLocally": "ローカルで続行",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "クラウドは現在プライベートベータ版です",
   "cloudSorryContactSupport_title": "申し訳ありません、サポートに連絡してください",
   "cloudStart_desc": "セットアップ不要。あらゆるデバイスで動作します。",
-  "cloudStart_download": "ComfyUIをダウンロード",
   "cloudStart_explain": "複数の出力を一度に生成。ワークフローを簡単に共有。",
   "cloudStart_learnAboutButton": "クラウドについて学ぶ",
   "cloudStart_title": "数秒で作成を開始",
-  "cloudStart_wantToRun": "代わりにローカルでComfyUIを実行したいですか？",
   "cloudSurvey_steps_experience": "ComfyUIの知識レベルは？",
   "cloudSurvey_steps_focus": "何を作成していますか？",
   "cloudSurvey_steps_intent": "ComfyUIで何を作成したいですか？",
@@ -812,6 +791,9 @@
       "buy": "購入",
       "buyCredits": "支払いに進む",
       "buyNow": "今すぐ購入",
+      "chargedImmediatelyNote": "ご登録のカードには即時に請求されます。",
+      "confirmSubtitle": "お支払いが完了すると、クレジットがこのワークスペースに追加されます。",
+      "confirmTitle": "確認",
       "contactUs": "お問い合わせ",
       "creditsDescription": "クレジットはワークフローやパートナーノードの実行に使用されます。",
       "creditsPerDollar": "1ドルあたりのクレジット数",
@@ -826,6 +808,7 @@
       "minRequired": "最低{credits}クレジット",
       "minimumPurchase": "最低購入額：${amount}（{credits}クレジット）",
       "needMore": "さらに必要ですか？",
+      "payAmount": "{amount} を支払う",
       "purchaseError": "購入に失敗しました",
       "purchaseErrorDetail": "クレジットの購入に失敗しました: {error}",
       "purchaseSuccess": "クレジットが正常に追加されました！",
@@ -836,6 +819,8 @@
       "topUp": "チャージ",
       "unknownError": "不明なエラーが発生しました",
       "usdAmount": "${amount}",
+      "verifyBody": "お支払いを完了するために、銀行による追加認証が必要です。",
+      "verifyTitle": "お支払いの認証",
       "videosEstimate": "約{count}本の動画",
       "viewPricing": "料金詳細を見る",
       "youGet": "クレジット",
@@ -1874,6 +1859,26 @@
     "warning": "警告",
     "workflow": "ワークフロー",
     "you": "あなた"
+  },
+  "gettingStarted": {
+    "loadFailed": "テンプレートの読み込みに失敗しました。",
+    "retry": "再試行",
+    "retryTemplate": "{title} を再試行",
+    "startBlank": "空白のキャンバスから始める",
+    "subtitle": "すぐに使えるワークフローから始めるか、空白のキャンバスから始めましょう。",
+    "tabs": {
+      "templates": "テンプレート",
+      "tutorials": "チュートリアル"
+    },
+    "tabsLabel": "はじめに選択",
+    "templateFailed": "このテンプレートを開くことができませんでした。",
+    "title": "何かを作ってみましょう",
+    "tutorials": {
+      "imageToImage": "画像から画像へ",
+      "inpaint": "インペイント",
+      "interfaceOverview": "インターフェース概要",
+      "textToImage": "テキストから画像へ"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "キャンバスモード",

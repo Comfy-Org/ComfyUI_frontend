@@ -1180,6 +1180,7 @@ export const zBillingStatusResponse = z.object({
   plan_slug: z.string().optional(),
   billing_status: zBillingStatus.optional(),
   pending_billing_op_id: z.string().optional(),
+  pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   action_url: z.string().optional(),
   has_funds: z.boolean(),
   max_seats: z.number().int(),

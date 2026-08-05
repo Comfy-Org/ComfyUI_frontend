@@ -191,7 +191,6 @@
       :tier-key="selectedTierKey"
       :team-plan="selectedTeamStop"
       :preview-data="previewData"
-      :is-team="isTeamCheckout"
       :dark-surface="isEmbeddedSuccessStep"
       @close="handleSuccessClose"
     />

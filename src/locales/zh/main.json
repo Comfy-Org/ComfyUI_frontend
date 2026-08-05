@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "忘记密码",
   "cloudHero": {
     "nextSlide": "下一张幻灯片",
-    "previousSlide": "上一张幻灯片",
-    "slidePagerLabel": "跳转到第 {index} 张幻灯片",
-    "slides": {
-      "cloud": {
-        "description": "适合大多数希望随时随地使用、并需要经过商业授权验证模型的用户。",
-        "title": "云端"
-      },
-      "models": {
-        "description": "精选、具备商业授权的模型，开箱即用，无需配置。",
-        "title": "模型"
-      },
-      "team": {
-        "description": "立即邀请您的团队加入。可在组织内共享工作流和资源。",
-        "title": "团队"
-      },
-      "workflows": {
-        "description": "从创意到成果只需几分钟。可并排生成多个变体。",
-        "title": "工作流"
-      }
-    }
+    "previousSlide": "上一张幻灯片"
   },
   "cloudNotification": {
     "continueLocally": "本地继续",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "云服务目前处于内测阶段",
   "cloudSorryContactSupport_title": "抱歉，请联系客服",
   "cloudStart_desc": "无需任何设置。可在任何设备上使用。",
-  "cloudStart_download": "下载 ComfyUI",
   "cloudStart_explain": "一次性生成多个输出。轻松分享工作流。",
   "cloudStart_learnAboutButton": "了解云服务",
   "cloudStart_title": "几秒钟内开始创作",
-  "cloudStart_wantToRun": "想在本地运行 ComfyUI 吗？",
   "cloudSurvey_steps_experience": "你对 ComfyUI 有多了解？",
   "cloudSurvey_steps_focus": "你正在构建什么？",
   "cloudSurvey_steps_intent": "您希望用 ComfyUI 创作什么？",
@@ -812,6 +791,9 @@
       "buy": "购买",
       "buyCredits": "继续付款",
       "buyNow": "立即购买",
+      "chargedImmediatelyNote": "您的已保存银行卡将立即扣款。",
+      "confirmSubtitle": "付款完成后，积分将立即添加到此工作区。",
+      "confirmTitle": "确认",
       "contactUs": "联系我们",
       "creditsDescription": "该工作流需要积分运行。",
       "creditsPerDollar": "每美元积分数",
@@ -826,6 +808,7 @@
       "minRequired": "最少{credits}积分",
       "minimumPurchase": "最低${amount}（{credits}积分）",
       "needMore": "需要更多？",
+      "payAmount": "支付 {amount}",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",
       "purchaseSuccess": "积分添加成功！",
@@ -836,6 +819,8 @@
       "topUp": "充值",
       "unknownError": "发生未知错误",
       "usdAmount": "${amount}",
+      "verifyBody": "您的银行需要额外验证以完成此次付款。",
+      "verifyTitle": "验证您的付款",
       "videosEstimate": "~{count} 个视频*",
       "viewPricing": "查看定价详情",
       "youGet": "获得积分",
@@ -1874,6 +1859,26 @@
     "warning": "警告",
     "workflow": "工作流",
     "you": "你"
+  },
+  "gettingStarted": {
+    "loadFailed": "我们无法加载模板。",
+    "retry": "重试",
+    "retryTemplate": "重试 {title}",
+    "startBlank": "从空白画布开始",
+    "subtitle": "选择一个现成的工作流开始，或从空白画布起步。",
+    "tabs": {
+      "templates": "模板",
+      "tutorials": "教程"
+    },
+    "tabsLabel": "入门选项",
+    "templateFailed": "我们无法打开此模板。",
+    "title": "让我们开始创作",
+    "tutorials": {
+      "imageToImage": "图像生成图像",
+      "inpaint": "图像修复",
+      "interfaceOverview": "界面总览",
+      "textToImage": "文本生成图像"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "画布模式",
