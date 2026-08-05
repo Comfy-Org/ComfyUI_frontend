@@ -84,15 +84,6 @@ const { permissions } = useWorkspaceUI()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 let recoveryPortalController: AbortController | null = null
-
-watch(
-  () => flags.v1PaymentRecovery,
-  (enabled) => {
-    if (!enabled) recoveryPortalController?.abort()
-  }
-)
-
-onUnmounted(() => recoveryPortalController?.abort())
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
@@ -100,6 +91,18 @@ const canManageLifecycle = computed(
   () => permissions.value.canManageSubscriptionLifecycle
 )
 const canTopUp = computed(() => permissions.value.canTopUp)
+
+watch(
+  () =>
+    flags.v1PaymentRecovery &&
+    canManage.value &&
+    (kind.value === 'paused' || kind.value === 'paymentFailed'),
+  (canUseRecoveryPortal) => {
+    if (!canUseRecoveryPortal) recoveryPortalController?.abort()
+  }
+)
+
+onUnmounted(() => recoveryPortalController?.abort())
 
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value

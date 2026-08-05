@@ -8,8 +8,8 @@ import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 const mockCanRunWorkflows = ref(true)
 const mockBillingStatus = ref<string | null>('paid')
 const mockV1PaymentRecovery = ref(true)
+const mockCanManageSubscription = ref(true)
 const state = vi.hoisted(() => ({
-  canManageSubscription: true,
   manageSubscription: vi.fn(),
   fetchStatus: vi.fn(),
   fetchBalance: vi.fn(),
@@ -48,7 +48,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
   return {
     useWorkspaceUI: () => ({
       permissions: computed(() => ({
-        canManageSubscription: state.canManageSubscription
+        canManageSubscription: mockCanManageSubscription.value
       }))
     })
   }
@@ -91,7 +91,7 @@ describe('CloudRunButtonWrapper', () => {
     mockCanRunWorkflows.value = true
     mockBillingStatus.value = 'paid'
     mockV1PaymentRecovery.value = true
-    state.canManageSubscription = true
+    mockCanManageSubscription.value = true
     vi.clearAllMocks()
   })
 
@@ -294,8 +294,10 @@ describe('CloudRunButtonWrapper', () => {
     )
     const dialog = state.showLayoutDialog.mock.calls[0][0]
     const portalRequest = dialog.props.onUpdatePayment()
+    const signal = state.manageSubscription.mock.calls[0][0]
     unmount()
 
+    expect(signal.aborted).toBe(true)
     resolvePortal()
     await portalRequest
     expect(state.closeDialog).toHaveBeenCalledOnce()
@@ -322,7 +324,7 @@ describe('CloudRunButtonWrapper', () => {
   it('opens member-safe recovery copy without a payment action', async () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'
-    state.canManageSubscription = false
+    mockCanManageSubscription.value = false
     renderWrapper()
 
     expect(screen.getByTestId('queue-button')).toHaveTextContent('Run')
@@ -380,11 +382,14 @@ describe('CloudRunButtonWrapper', () => {
     await userEvent.click(screen.getByTestId('queue-button'))
     const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
     const portalRequest = dialogOptions.props.onUpdatePayment()
+    const signal = state.manageSubscription.mock.calls[0][0]
 
     mockV1PaymentRecovery.value = false
     await nextTick()
+    expect(signal.aborted).toBe(true)
     resolvePortal()
     await portalRequest
+    window.dispatchEvent(new Event('focus'))
 
     expect(state.closeDialog).toHaveBeenCalledOnce()
     expect(state.updateDialog).toHaveBeenCalledOnce()
@@ -392,7 +397,86 @@ describe('CloudRunButtonWrapper', () => {
       key: 'subscription-paused',
       contentProps: { isUpdatingPayment: true }
     })
+    expect(state.fetchStatus).not.toHaveBeenCalled()
+    expect(state.fetchBalance).not.toHaveBeenCalled()
   })
+
+  it('aborts portal-return refreshes on rollback', async () => {
+    state.fetchStatus.mockReturnValueOnce(new Promise(() => {}))
+    state.fetchBalance.mockReturnValueOnce(new Promise(() => {}))
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'paused'
+    renderWrapper()
+
+    await userEvent.click(screen.getByTestId('queue-button'))
+    const dialog = state.showLayoutDialog.mock.calls[0][0]
+    await dialog.props.onUpdatePayment()
+    window.dispatchEvent(new Event('focus'))
+    const statusSignal = state.fetchStatus.mock.calls[0][0]
+    const balanceSignal = state.fetchBalance.mock.calls[0][0]
+
+    mockV1PaymentRecovery.value = false
+    await nextTick()
+
+    expect(statusSignal.aborted).toBe(true)
+    expect(balanceSignal.aborted).toBe(true)
+  })
+
+  it('aborts portal-return refreshes on unmount', async () => {
+    state.fetchStatus.mockReturnValueOnce(new Promise(() => {}))
+    state.fetchBalance.mockReturnValueOnce(new Promise(() => {}))
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'paused'
+    const { unmount } = renderWrapper()
+
+    await userEvent.click(screen.getByTestId('queue-button'))
+    const dialog = state.showLayoutDialog.mock.calls[0][0]
+    await dialog.props.onUpdatePayment()
+    window.dispatchEvent(new Event('focus'))
+    const statusSignal = state.fetchStatus.mock.calls[0][0]
+    const balanceSignal = state.fetchBalance.mock.calls[0][0]
+
+    unmount()
+
+    expect(statusSignal.aborted).toBe(true)
+    expect(balanceSignal.aborted).toBe(true)
+  })
+
+  it.for([
+    [
+      'owner loses permission',
+      () => {
+        mockCanManageSubscription.value = false
+      }
+    ],
+    [
+      'billing recovers',
+      () => {
+        mockBillingStatus.value = 'paid'
+      }
+    ]
+  ] as const)(
+    'invalidates payment recovery when %s',
+    async ([, invalidateRecovery]) => {
+      state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
+      mockCanRunWorkflows.value = false
+      mockBillingStatus.value = 'paused'
+      renderWrapper()
+
+      await userEvent.click(screen.getByTestId('queue-button'))
+      const dialog = state.showLayoutDialog.mock.calls[0][0]
+      void dialog.props.onUpdatePayment()
+      const signal = state.manageSubscription.mock.calls[0][0]
+
+      invalidateRecovery()
+      await nextTick()
+
+      expect(signal.aborted).toBe(true)
+      expect(state.closeDialog).toHaveBeenCalledWith({
+        key: 'subscription-paused'
+      })
+    }
+  )
 
   it('isolates a re-enabled recovery dialog from an older portal request', async () => {
     let resolveOldPortal!: () => void
