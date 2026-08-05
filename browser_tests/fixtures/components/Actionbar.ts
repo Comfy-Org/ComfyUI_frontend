@@ -62,7 +62,7 @@ export class ComfyActionbar {
           boundingBox(this.card),
           boundingBox(this.inlineProgressNodeFill)
         ])
-        return card.y + card.height - (fill.y + fill.height)
+        return Math.abs(card.y + card.height - (fill.y + fill.height))
       })
       .toBeLessThanOrEqual(FLUSH_TOLERANCE_PX)
   }
@@ -77,6 +77,18 @@ export class ComfyActionbar {
         return fill.y - (controls.y + controls.height)
       })
       .toBeGreaterThanOrEqual(0)
+  }
+
+  async expectInlineProgressFilledFraction(fraction: number) {
+    await expect
+      .poll(async () => {
+        const [track, fill] = await Promise.all([
+          boundingBox(this.inlineProgress),
+          boundingBox(this.inlineProgressNodeFill)
+        ])
+        return fill.width / track.width
+      })
+      .toBeCloseTo(fraction, 2)
   }
 
   async isDocked() {

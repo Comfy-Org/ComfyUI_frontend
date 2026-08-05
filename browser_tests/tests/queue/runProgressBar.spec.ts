@@ -33,16 +33,15 @@ wstest.describe('Docked actionbar run progress bar', { tag: ['@ui'] }, () => {
     'grows with reported progress and clears when the job ends',
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const fill = comfyPage.actionbar.inlineProgressNodeFill
 
       const jobId = await execution.run()
       execution.executionStart(jobId)
       execution.nodeRunning(jobId, '3', 5, 20)
 
-      await expect(fill).toHaveAttribute('style', 'width: 25%;')
+      await comfyPage.actionbar.expectInlineProgressFilledFraction(0.25)
 
       execution.nodeRunning(jobId, '3', 18, 20)
-      await expect(fill).toHaveAttribute('style', 'width: 90%;')
+      await comfyPage.actionbar.expectInlineProgressFilledFraction(0.9)
       await comfyPage.actionbar.expectInlineProgressFlushWithCardBottom()
 
       execution.executionSuccess(jobId)
