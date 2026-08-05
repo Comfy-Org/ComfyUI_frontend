@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "comfy-charcoal",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev", "--", "--port", "5199", "--strictPort"],
+      "port": 5199
+    },
+    {
+      "name": "comfy-charcoal-oss",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev:test", "--", "--port", "5202", "--strictPort"],
+      "port": 5202
+    }
+  ]
+}
