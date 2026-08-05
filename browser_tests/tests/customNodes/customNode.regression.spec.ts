@@ -22,10 +22,7 @@ import {
   drainBackendToIdle,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
-import {
-  referencedRunMedia,
-  uploadRunMedia
-} from '@e2e/fixtures/customNode/cloudMedia'
+import { uploadRunMedia } from '@e2e/fixtures/customNode/cloudMedia'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   isForeignExecutionNoise,
@@ -219,7 +216,9 @@ for (const entry of loadManifest()) {
         const consoleErrors = collectConsoleErrors(comfyPage.page)
         const workflow = readWorkflow(workflowRelative)
         if (customNodesEnv() === 'cloud')
-          await uploadRunMedia(comfyPage.page, referencedRunMedia(workflow))
+          console.log(
+            `run-tier media stored as: ${JSON.stringify(await uploadRunMedia(comfyPage.page, workflow))}`
+          )
         await comfyPage.workflow.loadGraphData(workflow)
         // A drifted fixture that dropped an expected node would silently
         // shrink the executed-set assertion (an empty id list PASSes on

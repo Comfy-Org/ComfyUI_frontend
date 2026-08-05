@@ -6,7 +6,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { referencedRunMedia } from '@e2e/fixtures/customNode/cloudMedia'
+import {
+  rebindRunMedia,
+  referencedRunMedia
+} from '@e2e/fixtures/customNode/cloudMedia'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 function readAsset(name: string): ComfyWorkflowJSON {
@@ -28,6 +31,30 @@ test.describe('referencedRunMedia', () => {
     expect(
       referencedRunMedia(readAsset('customNodes/core_smoke.json'))
     ).toEqual([])
+  })
+})
+
+test.describe('rebindRunMedia', () => {
+  test('repoints only the uploaded names, leaving other widget values alone', () => {
+    const workflow = readAsset('customNodes/vhs_video_pipeline_cloud_run.json')
+    rebindRunMedia(workflow, { 'plain_video.mp4': 'smoke/plain_video.mp4' })
+    expect(workflow.nodes[0].widgets_values).toEqual([
+      'smoke/plain_video.mp4',
+      0,
+      0,
+      0,
+      0,
+      0,
+      1
+    ])
+  })
+
+  test('an empty map leaves the workflow untouched', () => {
+    const workflow = readAsset('customNodes/vhs_video_pipeline_cloud_run.json')
+    rebindRunMedia(workflow, {})
+    expect(workflow).toEqual(
+      readAsset('customNodes/vhs_video_pipeline_cloud_run.json')
+    )
   })
 })
 
