@@ -173,9 +173,16 @@ for (const entry of loadManifest()) {
         consoleErrors.stop()
         // T0 loads and renders nodes but queues no prompt; a prompt-execution
         // error here is a prior tier's async stray (isForeignExecutionNoise).
+        // Mounting a pack's nodes is one of the surfaces its ledgered noise
+        // emits on, so this tier reads the ledger like T1 and the all-nodes
+        // tiers do - the environment rules in particular apply to every pack
+        // and were never reaching this gate.
         expect(
-          consoleErrors.errors.filter(
-            (error) => !isForeignExecutionNoise(error)
+          unallowlistedErrors(
+            entry.pack,
+            consoleErrors.errors.filter(
+              (error) => !isForeignExecutionNoise(error)
+            )
           ),
           `console errors with VueNodes=${vueNodesEnabled}`
         ).toEqual([])

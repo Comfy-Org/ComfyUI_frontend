@@ -8,9 +8,9 @@ import {
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 
-// unallowlistedErrors is the sole enforcement point of the curated-run
-// console gate (customNode.regression.spec.ts T1): a degradation to
-// "always empty" would turn that gate vacuously green, so the filter's
+// unallowlistedErrors is the sole enforcement point of the curated load and
+// run console gates (customNode.regression.spec.ts T0 and T1): a degradation
+// to "always empty" would turn those gates vacuously green, so the filter's
 // three behaviors are pinned here directly.
 test.describe('consoleErrorLedger', () => {
   test('filters only errors matching the pack own patterns', () => {
