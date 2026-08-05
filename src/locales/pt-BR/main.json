@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "Esqueceu a senha",
   "cloudHero": {
     "nextSlide": "Próximo slide",
-    "previousSlide": "Slide anterior",
-    "slidePagerLabel": "Ir para o slide {index}",
-    "slides": {
-      "cloud": {
-        "description": "Melhor opção para a maioria dos usuários que desejam trabalhar de qualquer lugar com modelos verificados para uso comercial.",
-        "title": "Nuvem"
-      },
-      "models": {
-        "description": "Modelos selecionados e licenciados comercialmente, prontos para uso sem configuração.",
-        "title": "Modelos"
-      },
-      "team": {
-        "description": "Adicione sua equipe hoje mesmo. Compartilhe workflows e ativos em toda a sua organização.",
-        "title": "Equipe"
-      },
-      "workflows": {
-        "description": "Da ideia ao resultado em minutos. Gere múltiplas variações lado a lado.",
-        "title": "Workflows"
-      }
-    }
+    "previousSlide": "Slide anterior"
   },
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "Cloud está atualmente em beta privado",
   "cloudSorryContactSupport_title": "Desculpe, entre em contato com o suporte",
   "cloudStart_desc": "Nenhuma configuração necessária. Funciona em qualquer dispositivo.",
-  "cloudStart_download": "Baixar ComfyUI",
   "cloudStart_explain": "Gere múltiplos resultados de uma vez. Compartilhe fluxos de trabalho com facilidade.",
   "cloudStart_learnAboutButton": "Saiba mais sobre a Nuvem",
   "cloudStart_title": "comece a criar em segundos",
-  "cloudStart_wantToRun": "Prefere rodar o ComfyUI localmente?",
   "cloudSurvey_steps_experience": "Qual o seu nível de conhecimento do ComfyUI?",
   "cloudSurvey_steps_focus": "O que você está construindo?",
   "cloudSurvey_steps_intent": "O que você deseja criar com o ComfyUI?",
@@ -812,6 +791,9 @@
       "buy": "Comprar",
       "buyCredits": "Continuar para o pagamento",
       "buyNow": "Comprar agora",
+      "chargedImmediatelyNote": "Seu cartão salvo será cobrado imediatamente.",
+      "confirmSubtitle": "Os créditos são adicionados a este workspace assim que o pagamento for concluído.",
+      "confirmTitle": "Confirmar",
       "contactUs": "Fale conosco",
       "creditsDescription": "Os créditos são usados para executar fluxos de trabalho ou nós parceiros.",
       "creditsPerDollar": "créditos por dólar",
@@ -826,6 +808,7 @@
       "minRequired": "Mínimo de {credits} créditos",
       "minimumPurchase": "Mínimo de ${amount} ({credits} créditos)",
       "needMore": "Precisa de mais?",
+      "payAmount": "Pagar {amount}",
       "purchaseError": "Falha na compra",
       "purchaseErrorDetail": "Falha ao comprar créditos: {error}",
       "purchaseSuccess": "Créditos adicionados com sucesso!",
@@ -836,6 +819,8 @@
       "topUp": "Adicionar créditos",
       "unknownError": "Ocorreu um erro desconhecido",
       "usdAmount": "${amount}",
+      "verifyBody": "Seu banco exige uma verificação adicional para concluir este pagamento.",
+      "verifyTitle": "Verifique seu pagamento",
       "videosEstimate": "~{count} vídeos",
       "viewPricing": "Ver detalhes de preços",
       "youGet": "Créditos",
@@ -1875,6 +1860,26 @@
     "workflow": "Fluxo de trabalho",
     "you": "Você"
   },
+  "gettingStarted": {
+    "loadFailed": "Não foi possível carregar os templates.",
+    "retry": "Tentar novamente",
+    "retryTemplate": "Tentar novamente {title}",
+    "startBlank": "Começar com tela em branco",
+    "subtitle": "Escolha um fluxo de trabalho pronto para começar ou inicie com uma tela em branco.",
+    "tabs": {
+      "templates": "Templates",
+      "tutorials": "Tutoriais"
+    },
+    "tabsLabel": "Opções para começar",
+    "templateFailed": "Não foi possível abrir este template.",
+    "title": "Vamos criar algo",
+    "tutorials": {
+      "imageToImage": "Imagem para imagem",
+      "inpaint": "Inpainting",
+      "interfaceOverview": "Visão geral da interface",
+      "textToImage": "Texto para imagem"
+    }
+  },
   "graphCanvasMenu": {
     "canvasMode": "Modo de tela",
     "canvasToolbar": "Barra de ferramentas da tela",
@@ -2905,6 +2910,7 @@
     "mage": "mage",
     "mask": "máscara",
     "merging": "mesclagem",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "modelo específico",
@@ -3891,6 +3897,7 @@
     "beta": "BETA",
     "billedMonthly": "Cobrado mensalmente",
     "billedYearly": "{total} Cobrado anualmente",
+    "billingAndInvoices": "Faturamento e faturas",
     "billingComingSoon": {
       "message": "A cobrança para equipes estará disponível em breve. Você poderá assinar um plano para seu workspace com preço por usuário. Fique atento para novidades.",
       "title": "Em breve"
@@ -3972,6 +3979,9 @@
       "memberTitle": "A assinatura deste workspace está inativa",
       "runLabel": "Executar"
     },
+    "inactiveTeamDescription": "Reative seu plano de equipe para adicionar mais membros e executar fluxos de trabalho",
+    "inactiveTeamPlanIncludes": "Um plano ativo inclui tudo do {plan}, além de:",
+    "inactiveTeamTitle": "Assinatura de equipe inativa",
     "inviteUpTo": "Convide até",
     "invoiceHistory": "Histórico de faturas",
     "learnMore": "Saiba mais",
@@ -4091,6 +4101,7 @@
     "pricingBlurbQuestions": "dúvidas",
     "pricingBlurbSeeDetails": "ver detalhes",
     "reactivatePlan": "Reativar plano",
+    "reactivateToUseCredits": "Reative seu plano para usar esses créditos",
     "refillsDate": "Recargas em {date}",
     "refillsNextCycle": "Recargas no próximo ciclo",
     "refreshCredits": "Atualizar créditos",

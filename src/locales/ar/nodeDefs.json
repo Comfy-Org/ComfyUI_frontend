@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "كامن مشترك للفيديو والصوت لـ MiniMax H3. يتم ضبط المدة تلقائيًا على شبكة الإطارات 17k+5 الخاصة بالنموذج بسرعة 24 إطارًا في الثانية.",
+    "display_name": "فراغ MiniMax H3 AV كامن",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات بسرعة 24 إطارًا في الثانية، يتم ضبطه تلقائيًا على شبكة 17k+5 الخاصة بالنموذج (124 ≈ ٥ ثوانٍ؛ النطاق المدرب تقريبًا 124-362، القيم الأطول غير مجربة)"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "فيديو موتشي كامن فارغ",
     "inputs": {
@@ -5703,6 +5724,15 @@
       },
       "model_resolution": {
         "name": "الدقة"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       },
       "prompt": {
         "name": "الوصف النصي",
@@ -8685,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "دمج كامن فيديو وكامن صوت في كامن AV مشترك (أي نموذج AV مثل LTXV أو MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11370,6 +11401,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "تحويل صورة MiniMax H3 إلى فيديو",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "الإطار الأول"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "last_frame": {
+        "name": "الإطار الأخير"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات بسرعة 24 إطارًا في الثانية، يتم ضبطه تلقائيًا على شبكة 17k+5 الخاصة بالنموذج (124 ≈ ٥ ثوانٍ؛ النطاق المدرب تقريبًا 124-362، القيم الأطول غير مجربة)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<صورة i> / <فيديو k> / <صوت j> تكييف مرجعي لـ MiniMax H3. استخدم نفس العلامات عند كتابة البرومبت.",
+    "display_name": "تحويل مرجع MiniMax H3 إلى فيديو",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات بسرعة 24 إطارًا في الثانية (124 ≈ ٥ ثوانٍ، النطاق المدرب تقريبًا 124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "الصوتيات المرجعية"
+      },
+      "ref_image_size": {
+        "name": "حجم الصورة المرجعية",
+        "tooltip": "تغيير حجم الصورة المرجعية. 'match' يقوم بتصغير كل مرجع (مع الحفاظ على النسبة) لمساحة بكسل التوليد؛ 'max' يستخدم الحافة القصيرة 2048 بكسل في خط أنابيب المرجع لأفضل دقة هوية. تمر رموز المرجع في كل خطوة توليد، لذا 'max' قد يكون أبطأ بعدة مرات."
+      },
+      "ref_images": {
+        "name": "الصور المرجعية"
+      },
+      "ref_video_audios": {
+        "name": "الصوتيات المرجعية للفيديو"
+      },
+      "ref_videos": {
+        "name": "الفيديوهات المرجعية"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "تعيين تحولات تدفق الفيديو/الصوت.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "النموذج"
+      },
+      "shift_audio": {
+        "name": "تحويل الصوت"
+      },
+      "shift_video": {
+        "name": "تحويل الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -223,7 +223,7 @@
               </div>
 
               <div
-                v-if="isActiveSubscription"
+                v-if="canAccessSubscriptionFeatures"
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
                 <Button
@@ -295,7 +295,7 @@
 
           <div
             v-if="
-              isActiveSubscription ||
+              canAccessSubscriptionFeatures ||
               isPersonalFree ||
               showInactiveTeamSubscription
             "
@@ -423,7 +423,7 @@ function openSubscriptionVerification() {
 }
 
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
@@ -446,14 +446,14 @@ const { menuEntries } = useWorkspaceMenuItems()
 const isTerminalPersonalSubscription = computed(
   () =>
     isInPersonalWorkspace.value &&
-    !isActiveSubscription.value &&
+    !canAccessSubscriptionFeatures.value &&
     billingStatus.value === 'inactive'
 )
 
 const isSubscriptionEnded = computed(
   () =>
     subscriptionStatus.value === 'ended' ||
-    (isSubscriptionCancelled.value && !isActiveSubscription.value) ||
+    (isSubscriptionCancelled.value && !canAccessSubscriptionFeatures.value) ||
     isTerminalPersonalSubscription.value
 )
 
@@ -469,7 +469,7 @@ const showSubscribePrompt = computed(() => {
     (subscription.value.planSlug || subscription.value.tier)
   )
     return false
-  if (isInPersonalWorkspace.value) return !isActiveSubscription.value
+  if (isInPersonalWorkspace.value) return !canAccessSubscriptionFeatures.value
   return !isWorkspaceSubscribed.value
 })
 
@@ -491,13 +491,13 @@ const isPersonalFree = computed(
 )
 
 const isTeamActive = computed(
-  () => isTeamPlan.value && isActiveSubscription.value
+  () => isTeamPlan.value && canAccessSubscriptionFeatures.value
 )
 
 const isMemberView = computed(
   () =>
     !permissions.value.canManageSubscription &&
-    !isActiveSubscription.value &&
+    !canAccessSubscriptionFeatures.value &&
     !isWorkspaceSubscribed.value
 )
 
@@ -575,7 +575,8 @@ const subscriptionStateCardDescription = computed(() => {
 })
 
 const planDateDisplay = computed(() => {
-  if (!isActiveSubscription.value || isSubscriptionEnded.value) return ''
+  if (!canAccessSubscriptionFeatures.value || isSubscriptionEnded.value)
+    return ''
   if (isSubscriptionCancelled.value) {
     return formattedEndDate.value
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })

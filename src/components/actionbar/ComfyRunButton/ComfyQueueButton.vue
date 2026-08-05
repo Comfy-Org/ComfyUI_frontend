@@ -10,7 +10,12 @@
       }"
       :variant="queueButtonVariant"
       size="unset"
-      :class="queueActionButtonClass"
+      :class="
+        cn(
+          'h-full gap-1.5 rounded-lg px-4',
+          paymentRecoveryLock ? 'font-medium' : 'font-light'
+        )
+      "
       data-testid="queue-button"
       :data-variant="queueButtonVariant"
       @click="queuePrompt"
@@ -24,6 +29,7 @@
         <Button
           variant="secondary"
           size="unset"
+          :disabled="Boolean(paymentRecoveryLock)"
           :class="queueMenuTriggerClass"
           :aria-label="t('menu.run')"
           data-testid="queue-mode-menu-trigger"
@@ -71,7 +77,7 @@ import {
   DropdownMenuTrigger
 } from 'reka-ui'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
@@ -96,6 +102,22 @@ const { hasMissingError } = storeToRefs(useExecutionErrorStore())
 
 const { t } = useI18n()
 type QueueModeMenuKey = 'disabled' | 'change' | 'instant-idle'
+type PaymentRecoveryLock = 'owner' | 'member'
+
+const { paymentRecoveryLock = null } = defineProps<{
+  paymentRecoveryLock?: PaymentRecoveryLock | null
+}>()
+const emit = defineEmits<{
+  paymentRecoveryClick: []
+}>()
+
+watch(
+  () => paymentRecoveryLock,
+  (lock) => {
+    if (lock) queueMode.value = 'disabled'
+  },
+  { immediate: true }
+)
 
 interface QueueModeMenuItem {
   key: QueueModeMenuKey
@@ -167,20 +189,34 @@ const isStopInstantAction = computed(() =>
 )
 
 const queueButtonLabel = computed(() =>
-  isStopInstantAction.value
-    ? t('menu.stopRunInstant')
-    : String(activeQueueModeMenuItem.value?.label ?? '')
+  paymentRecoveryLock === 'owner'
+    ? t('subscription.paymentRecovery.ownerRunLabel')
+    : paymentRecoveryLock === 'member'
+      ? t('subscription.paymentRecovery.memberRunLabel')
+      : isStopInstantAction.value
+        ? t('menu.stopRunInstant')
+        : String(activeQueueModeMenuItem.value?.label ?? '')
 )
 
-const queueButtonVariant = computed<'destructive' | 'primary'>(() =>
-  isStopInstantAction.value ? 'destructive' : 'primary'
+const queueButtonVariant = computed<
+  'destructive' | 'primary' | 'secondary' | 'subscribe'
+>(() =>
+  paymentRecoveryLock === 'owner'
+    ? 'subscribe'
+    : paymentRecoveryLock === 'member'
+      ? 'secondary'
+      : isStopInstantAction.value
+        ? 'destructive'
+        : 'primary'
 )
-const queueActionButtonClass = 'h-full rounded-lg gap-1.5 px-4 font-light'
 const queueMenuTriggerClass =
   'h-full w-6 rounded-l-none rounded-r-lg border-l border-border-subtle p-0 text-muted-foreground data-[state=open]:bg-secondary-background-hover'
 const queueMenuItemButtonClass = 'w-full justify-start font-normal'
 
 const iconClass = computed(() => {
+  if (paymentRecoveryLock) {
+    return 'icon-[lucide--lock]'
+  }
   if (isStopInstantAction.value) {
     return 'icon-[lucide--square]'
   }
@@ -203,6 +239,12 @@ const iconClass = computed(() => {
 })
 
 const queueButtonTooltip = computed(() => {
+  if (paymentRecoveryLock === 'owner') {
+    return t('subscription.paymentRecovery.ownerRunTooltip')
+  }
+  if (paymentRecoveryLock === 'member') {
+    return t('subscription.paymentRecovery.memberRunTooltip')
+  }
   if (isStopInstantAction.value) {
     return t('menu.stopRunInstantTooltip')
   }
@@ -217,6 +259,10 @@ const queueButtonTooltip = computed(() => {
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
+  if (paymentRecoveryLock) {
+    emit('paymentRecoveryClick')
+    return
+  }
   if (isStopInstantAction.value) {
     queueMode.value = 'instant-idle'
     return

@@ -341,14 +341,13 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
-    // Exclude proprietary ABCROM fonts from non-cloud builds
+    // Exclude proprietary fonts from non-cloud builds
     {
       name: 'exclude-proprietary-fonts',
       generateBundle(_options, bundle) {
         if (DISTRIBUTION !== 'cloud') {
-          // Remove ABCROM font files from bundle
           for (const [fileName] of Object.entries(bundle)) {
-            if (/ABCROM.*\.(woff2?|ttf|otf)$/i.test(fileName)) {
+            if (/(ABCROM|PPFormula).*\.(woff2?|ttf|otf)$/i.test(fileName)) {
               delete bundle[fileName]
             }
           }
@@ -729,6 +728,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom',
+    // Pin the timezone so date-formatting assertions are deterministic
+    // regardless of the contributor's local timezone (CI runs in UTC).
+    env: { TZ: 'UTC' },
     setupFiles: ['./vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
     include: [

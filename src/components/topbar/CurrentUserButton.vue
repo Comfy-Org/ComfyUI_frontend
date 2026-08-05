@@ -48,17 +48,13 @@
       }"
       @show="onPopoverShow"
     >
-      <!-- Workspace mode: workspace-aware popover (only when ready) -->
       <CurrentUserPopoverWorkspace
-        v-if="teamWorkspacesEnabled && initState === 'ready'"
+        v-if="teamWorkspacesEnabled"
         ref="workspacePopoverContent"
+        :account-actions-only="initState !== 'ready'"
         @close="closePopover"
       />
-      <!-- Legacy mode: original popover -->
-      <CurrentUserPopoverLegacy
-        v-else-if="!teamWorkspacesEnabled"
-        @close="closePopover"
-      />
+      <CurrentUserPopoverLegacy v-else @close="closePopover" />
     </Popover>
   </div>
 </template>

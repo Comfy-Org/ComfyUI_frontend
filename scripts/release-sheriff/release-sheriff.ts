@@ -4,14 +4,12 @@ import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-// Datadog stores no GitHub identity and GitHub resolves only public commit
-// emails, so each rotation member's Datadog email maps to a login by hand here.
-const CONFIG = {
-  datadogSite: 'datadoghq.com',
-  // Empty until the Datadog schedule exists; the fallback owns PRs meanwhile.
-  scheduleId: '',
-  fallbackGithubLogin: 'christian-byrne',
-  githubLoginByEmail: {} as Record<string, string>
+export const CONFIG = {
+  // The Comfy org lives on the us5 sub-domain; api.datadoghq.com 403s.
+  datadogSite: 'us5.datadoghq.com',
+  // "Frontend Team – Oncall Schedule", whose sole layer is "Release Sheriff".
+  scheduleId: 'f3258942-c040-4c33-8228-63a03e9092d6',
+  fallbackGithubLogin: 'christian-byrne'
 }
 
 export interface PullRequestSummary {
@@ -50,39 +48,77 @@ export function parseOnCallEmails(payload: unknown): string[] {
   return [...new Set(emails)]
 }
 
+// Datadog holds no GitHub identity, and GitHub only resolves commit emails its
+// users chose to make public — three of seven sheriffs are unresolvable that
+// way. The bridge is therefore declared on the schedule itself, as tags of the
+// form github:<datadog-email-local-part>:<github-login>, so a rotation change
+// stays a Datadog edit. Datadog rejects "@" and "+" outright and lower-cases
+// what it does accept; GitHub logins are case-insensitive, so that is lossless.
+const GITHUB_LOGIN_TAG = /^github:([^:]+):([^:]+)$/
+
+export function emailKey(email: string): string {
+  return email.split('@')[0].trim().toLowerCase()
+}
+
+export function parseGithubLogins(payload: unknown): Record<string, string> {
+  if (!isRecord(payload) || !isRecord(payload.data)) return {}
+  const { attributes } = payload.data
+  if (!isRecord(attributes) || !Array.isArray(attributes.tags)) return {}
+
+  return Object.fromEntries(
+    attributes.tags.flatMap((tag) => {
+      const match = typeof tag === 'string' ? GITHUB_LOGIN_TAG.exec(tag) : null
+      return match ? [[match[1].toLowerCase(), match[2]]] : []
+    })
+  )
+}
+
 export interface OnCallLookup {
   emails: string[]
   warning: string | null
 }
 
-// Every failure degrades to an empty result plus a returned warning: PRs must
+export interface DirectoryLookup {
+  githubLoginByUser: Record<string, string>
+  warning: string | null
+}
+
+interface DatadogResponse {
+  payload: unknown
+  warning: string | null
+}
+
+// Every failure degrades to an empty payload plus a returned warning: PRs must
 // end up with the fallback owner, never unowned, and the caller owns logging.
-export async function fetchOnCallEmails(
+async function datadogGet(
   config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
-  credentials: { apiKey?: string; appKey?: string }
-): Promise<OnCallLookup> {
+  credentials: { apiKey?: string; appKey?: string },
+  path: string,
+  query: Record<string, string> = {}
+): Promise<DatadogResponse> {
   const { datadogSite, scheduleId } = config
   const { apiKey, appKey } = credentials
 
   if (!scheduleId) {
     return {
-      emails: [],
+      payload: null,
       warning: 'No Datadog On-Call schedule configured — using the fallback.'
     }
   }
   if (!apiKey || !appKey) {
     return {
-      emails: [],
+      payload: null,
       warning:
         'DATADOG_API_KEY / DATADOG_APP_KEY unavailable — using the fallback.'
     }
   }
 
   const url = new URL(
-    `https://api.${datadogSite}/api/v2/on-call/schedules/${scheduleId}/responders`
+    `https://api.${datadogSite}/api/v2/on-call/schedules/${scheduleId}${path}`
   )
-  url.searchParams.set('include', 'responders.shifts.user')
-  url.searchParams.set('filter[position]', 'current')
+  for (const [key, value] of Object.entries(query)) {
+    url.searchParams.set(key, value)
+  }
 
   try {
     const response = await fetch(url, {
@@ -95,17 +131,38 @@ export async function fetchOnCallEmails(
     })
     if (!response.ok) {
       return {
-        emails: [],
+        payload: null,
         warning: `Datadog On-Call responded ${response.status} ${response.statusText} — using the fallback.`
       }
     }
-    return { emails: parseOnCallEmails(await response.json()), warning: null }
+    return { payload: await response.json(), warning: null }
   } catch (error) {
     return {
-      emails: [],
+      payload: null,
       warning: `Datadog On-Call lookup failed (${String(error)}) — using the fallback.`
     }
   }
+}
+
+export async function fetchOnCallEmails(
+  config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
+  credentials: { apiKey?: string; appKey?: string }
+): Promise<OnCallLookup> {
+  const { payload, warning } = await datadogGet(
+    config,
+    credentials,
+    '/responders',
+    { include: 'responders.shifts.user', 'filter[position]': 'current' }
+  )
+  return { emails: parseOnCallEmails(payload), warning }
+}
+
+export async function fetchGithubLogins(
+  config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
+  credentials: { apiKey?: string; appKey?: string }
+): Promise<DirectoryLookup> {
+  const { payload, warning } = await datadogGet(config, credentials, '')
+  return { githubLoginByUser: parseGithubLogins(payload), warning }
 }
 
 export interface SheriffResolution {
@@ -116,18 +173,13 @@ export interface SheriffResolution {
 
 export function resolveSheriff(
   emails: string[],
-  config: Pick<typeof CONFIG, 'fallbackGithubLogin' | 'githubLoginByEmail'>
+  config: Pick<typeof CONFIG, 'fallbackGithubLogin'> & {
+    githubLoginByUser: Record<string, string>
+  }
 ): SheriffResolution {
-  const loginByEmail = new Map(
-    Object.entries(config.githubLoginByEmail).map(([email, login]) => [
-      email.toLowerCase(),
-      login
-    ])
-  )
-
   const unmappedEmails: string[] = []
   for (const email of emails) {
-    const login = loginByEmail.get(email.toLowerCase())
+    const login = config.githubLoginByUser[emailKey(email)]
     if (login) return { login, source: 'datadog', unmappedEmails }
     unmappedEmails.push(email)
   }
@@ -167,6 +219,8 @@ export function planActions(
   prs: PullRequestSummary[],
   sheriffLogin: string
 ): SheriffAction[] {
+  const normalizedSheriffLogin = sheriffLogin.toLowerCase()
+
   return prs.flatMap((pr) => {
     if (pr.isDraft || !isSheriffPr(pr)) return []
 
@@ -174,8 +228,11 @@ export function planActions(
     const requestReview =
       pr.reviewRequests.length === 0 &&
       pr.reviewDecision !== 'APPROVED' &&
-      pr.author?.login !== sheriffLogin &&
-      !pr.latestReviews.some((review) => review.author?.login === sheriffLogin)
+      pr.author?.login.toLowerCase() !== normalizedSheriffLogin &&
+      !pr.latestReviews.some(
+        (review) =>
+          review.author?.login.toLowerCase() === normalizedSheriffLogin
+      )
 
     return assign || requestReview
       ? [{ number: pr.number, assign, requestReview }]
@@ -244,19 +301,39 @@ async function main() {
   const repo = process.env.GH_REPO
   if (!repo) throw new Error('GH_REPO is required')
 
-  const { emails, warning } = await fetchOnCallEmails(CONFIG, {
+  const credentials = {
     apiKey: process.env.DATADOG_API_KEY,
     appKey: process.env.DATADOG_APP_KEY
-  })
-  if (warning) warn(warning)
+  }
+  const [oncall, directory] = await Promise.all([
+    fetchOnCallEmails(CONFIG, credentials),
+    fetchGithubLogins(CONFIG, credentials)
+  ])
+  for (const warning of [oncall.warning, directory.warning]) {
+    if (warning) warn(warning)
+  }
 
-  const { login, source, unmappedEmails } = resolveSheriff(emails, CONFIG)
+  const { login, source, unmappedEmails } = resolveSheriff(oncall.emails, {
+    ...CONFIG,
+    githubLoginByUser: directory.githubLoginByUser
+  })
   for (const email of unmappedEmails) {
-    warn(`Datadog on-call user ${email} has no githubLoginByEmail entry.`)
+    warn(
+      `Datadog on-call user ${email} has no GitHub login. Add the tag ` +
+        `"github:${emailKey(email)}:<github-login>" to the Datadog schedule.`
+    )
   }
   if (!login) {
     warn('No release sheriff could be resolved — nothing will be assigned.')
+    process.exitCode = 1
     return
+  }
+
+  // Falling back still assigns, so PRs stay owned, but the run must not go
+  // green: this job warned "No Datadog On-Call schedule configured" on every
+  // run for weeks and nobody noticed, because a warning alone reports success.
+  if (source !== 'datadog') {
+    process.exitCode = 1
   }
 
   const actions = planActions(collectCandidatePrs(), login)

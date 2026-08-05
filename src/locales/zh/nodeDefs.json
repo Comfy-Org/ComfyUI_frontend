@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 的联合视频+音频潜空间。时长会对齐到模型的 17k+5 帧网格（24 帧/秒）。",
+    "display_name": "空 MiniMax H3 AV 潜空间",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "以 24 帧/秒计算的帧数，上调到模型的 17k+5 网格（124 ≈ 5秒；训练范围约为 124-362，超过此范围未测试）"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "空Latent视频（Mochi）",
     "inputs": {
@@ -5703,6 +5724,15 @@
       },
       "model_resolution": {
         "name": "分辨率"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       },
       "prompt": {
         "name": "提示词",
@@ -8685,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "将视频潜空间和音频潜空间合并为联合 AV 潜空间（适用于任意 AV 模型，如 LTXV 或 MiniMax H3）。",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11370,6 +11401,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 图像转视频",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "首帧"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "last_frame": {
+        "name": "末帧"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "以 24 帧/秒计算的帧数，上调到模型的 17k+5 网格（124 ≈ 5秒；训练范围约为 124-362，超过此范围未测试）"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<图片 i> / <视频 k> / <音频 j> 参考条件输入，适用于 MiniMax H3。提示时请使用相同标签。",
+    "display_name": "MiniMax H3 参考转视频",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "以 24 帧/秒计算的帧数（124 ≈ 5秒，训练范围约为 124-362）"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "ref_audios": {
+        "name": "参考音频"
+      },
+      "ref_image_size": {
+        "name": "参考图像尺寸",
+        "tooltip": "参考图像尺寸。'match' 会将每个参考（仅缩小，保持比例）缩放到生成图像的像素面积；'max' 使用参考流程的 2048px 短边以获得最佳身份一致性。参考 token 会贯穿每一步采样，因此 'max' 速度会慢数倍。"
+      },
+      "ref_images": {
+        "name": "参考图像"
+      },
+      "ref_video_audios": {
+        "name": "参考视频音频"
+      },
+      "ref_videos": {
+        "name": "参考视频"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "设置视频/音频流的偏移。",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "音频偏移"
+      },
+      "shift_video": {
+        "name": "视频偏移"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

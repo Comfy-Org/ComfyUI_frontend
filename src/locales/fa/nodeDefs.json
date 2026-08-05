@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "لاتنت مشترک ویدیو + صدا برای MiniMax H3. مدت زمان به شبکه فریم ۱۷۰۰۰+۵ مدل در ۲۴ فریم بر ثانیه تنظیم می‌شود.",
+    "display_name": "لاتنت AV MiniMax H3 خالی",
+    "inputs": {
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم در ۲۴ فریم بر ثانیه، به شبکه ۱۷۰۰۰+۵ مدل گرد می‌شود (۱۲۴ = تقریباً ۵ ثانیه؛ بازه آموزش تقریباً ۱۲۴ تا ۳۶۲، مقادیر بالاتر تست نشده است)"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "ویدیوی نهفته خالی Mochi",
     "inputs": {
@@ -5703,6 +5724,15 @@
       },
       "model_resolution": {
         "name": "وضوح"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       },
       "prompt": {
         "name": "راهنمای متنی",
@@ -8685,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "ادغام یک لاتنت ویدیویی و یک لاتنت صوتی در یک لاتنت AV مشترک (هر مدل AV، مانند LTXV یا MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11370,6 +11401,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "تبدیل تصویر به ویدیو MiniMax H3",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "اولین فریم"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "last_frame": {
+        "name": "آخرین فریم"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم در ۲۴ فریم بر ثانیه، به شبکه ۱۷۰۰۰+۵ مدل گرد می‌شود (۱۲۴ = تقریباً ۵ ثانیه؛ بازه آموزش تقریباً ۱۲۴ تا ۳۶۲، مقادیر بالاتر تست نشده است)"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> شرط مرجع برای MiniMax H3. هنگام استفاده از پرامپت، از همان تگ‌ها استفاده کنید.",
+    "display_name": "تبدیل مرجع به ویدیو MiniMax H3",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم در ۲۴ فریم بر ثانیه (۱۲۴ = تقریباً ۵ ثانیه، بازه آموزش تقریباً ۱۲۴ تا ۳۶۲)"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "ref_audios": {
+        "name": "صداهای مرجع"
+      },
+      "ref_image_size": {
+        "name": "اندازه تصویر مرجع",
+        "tooltip": "تنظیم اندازه تصویر مرجع. 'match' هر مرجع را (فقط کاهش، با حفظ نسبت تصویر) به مساحت پیکسلی تولید شده مقیاس می‌کند؛ 'max' از لبه کوتاه ۲۰۴۸ پیکسلی پایپ‌لاین مرجع برای بهترین حفظ هویت استفاده می‌کند. توکن‌های مرجع در هر مرحله نمونه‌گیری باقی می‌مانند، بنابراین 'max' می‌تواند چندین برابر کندتر باشد."
+      },
+      "ref_images": {
+        "name": "تصاویر مرجع"
+      },
+      "ref_video_audios": {
+        "name": "صداهای ویدیوی مرجع"
+      },
+      "ref_videos": {
+        "name": "ویدیوهای مرجع"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "تنظیم شیفت‌های جریان ویدیو/صدا.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "مدل"
+      },
+      "shift_audio": {
+        "name": "شیفت صدا"
+      },
+      "shift_video": {
+        "name": "شیفت ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

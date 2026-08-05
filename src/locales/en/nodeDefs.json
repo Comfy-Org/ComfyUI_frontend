@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "display_name": "Empty MiniMax H3 AV Latent",
+    "description": "Joint video+audio latent for MiniMax H3. Duration snaps to the model's 17k+5 frame grid at 24 fps.",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, snapped up to the model's 17k+5 grid (124 = ~5s; trained range is ~124-362, longer is untested)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -5648,11 +5669,11 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 currently always requires an input image."
+        "tooltip": "The model to use for video generation."
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Text description of the desired video."
+        "tooltip": "Text description of the desired video. Optional for grok-imagine-video-1.5 when an input image is provided."
       },
       "resolution": {
         "name": "resolution",
@@ -5672,7 +5693,7 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Optional starting image for grok-imagine-video. Required for grok-imagine-video-1.5."
+        "tooltip": "Optional starting image. If omitted, the video is generated from the text prompt alone."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5686,7 +5707,7 @@
   },
   "GrokVideoReferenceNode": {
     "display_name": "Grok Reference-to-Video",
-    "description": "Generate video guided by reference images as style and content references.",
+    "description": "Generate video guided by reference images, with optional preset voice references.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -5711,6 +5732,15 @@
       },
       "model_resolution": {
         "name": "resolution"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       }
     },
     "outputs": {
@@ -9700,7 +9730,8 @@
     }
   },
   "LTXVConcatAVLatent": {
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "Concat AV Latent",
+    "description": "Merge a video latent and an audio latent into a joint AV latent (any AV model, e.g. LTXV or MiniMax H3).",
     "inputs": {
       "video_latent": {
         "name": "video_latent"
@@ -10035,8 +10066,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "display_name": "LTXVSeparateAVLatent",
-    "description": "LTXV Separate AV Latent",
+    "display_name": "Separate AV Latent",
+    "description": "Split a joint AV latent into its video and audio latents (any AV model, e.g. LTXV or MiniMax H3).",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -11370,6 +11401,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Image to Video",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, snapped up to the model's 17k+5 grid (124 = ~5s; trained range is ~124-362, longer is untested)"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "display_name": "MiniMax H3 Reference to Video",
+    "description": "<Picture i> / <Video k> / <Audio j> reference conditioning for MiniMax H3. Use the same tags when prompting.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, (124 = ~5s, trained range is ~124-362)"
+      },
+      "ref_image_size": {
+        "name": "ref_image_size",
+        "tooltip": "Reference image sizing. 'match' scales each ref (down only, keeping aspect) to the generation's pixel area; 'max' uses the reference pipeline's 2048px short edge for best identity fidelity. Reference tokens ride through every sampling step, so 'max' can be several times slower."
+      },
+      "ref_images": {
+        "name": "ref_images"
+      },
+      "ref_videos": {
+        "name": "ref_videos"
+      },
+      "ref_video_audios": {
+        "name": "ref_video_audios"
+      },
+      "ref_audios": {
+        "name": "ref_audios"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "display_name": "MiniMax H3 Sigma Shift",
+    "description": "Set the video/audio flow shifts.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_video": {
+        "name": "shift_video"
+      },
+      "shift_audio": {
+        "name": "shift_audio"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

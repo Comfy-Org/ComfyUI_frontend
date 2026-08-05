@@ -1237,4 +1237,53 @@ describe('ChangeTracker', () => {
       expect(tracker.activeState).toEqual(changed)
     })
   })
+
+  describe('keyboard shortcuts', () => {
+    function createRekaDialog() {
+      const dialog = document.createElement('div')
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('data-state', 'open')
+      return dialog
+    }
+
+    function createNativeDialog() {
+      const dialog = document.createElement('dialog')
+      dialog.setAttribute('open', '')
+      return dialog
+    }
+
+    function createLegacyComfyModal() {
+      const modal = document.createElement('div')
+      modal.className = 'comfy-modal'
+      modal.style.display = 'flex'
+      return modal
+    }
+
+    it.each([
+      ['a reka dialog', createRekaDialog],
+      ['a native dialog', createNativeDialog],
+      ['a legacy comfy modal', createLegacyComfyModal]
+    ])('does not undo while %s is open', async (_kind, createModal) => {
+      const previousState = createState(1)
+      const currentState = createState(2)
+      const tracker = createTracker(currentState)
+      tracker.undoQueue.push(previousState)
+      const modal = createModal()
+      document.body.appendChild(modal)
+
+      try {
+        ChangeTracker.init()
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+        )
+        await vi.runAllTimersAsync()
+
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(tracker.activeState).toEqual(currentState)
+        expect(tracker.undoQueue).toEqual([previousState])
+      } finally {
+        document.body.removeChild(modal)
+      }
+    })
+  })
 })

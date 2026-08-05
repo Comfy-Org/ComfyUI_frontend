@@ -60,6 +60,8 @@ const mockSubscriptionStatus: CloudSubscriptionStatusResponse = {
 // visible (free tier would swap it for "Upgrade to add credits").
 const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',

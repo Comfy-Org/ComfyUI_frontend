@@ -85,3 +85,12 @@ export interface OpenPathsPointer {
 export const MAX_DRAFTS = 32
 
 export const PERSIST_DEBOUNCE_MS = 512
+
+/** What startup did with the workflow, for callers deciding what to show next. */
+export type StartupOutcome =
+  /** A previously open workflow was loaded. */
+  | 'restored'
+  /** Nothing to restore; a blank workflow was loaded. */
+  | 'fresh'
+  /** Blank, but a `?share=`/`?template=` load is still inbound. */
+  | 'url-intent'

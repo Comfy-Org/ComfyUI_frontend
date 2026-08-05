@@ -180,10 +180,16 @@ interface LoraEntry {
   weight: number
 }
 
+export type A1111ImportOutcome =
+  | 'imported'
+  | 'not-a1111'
+  | 'core-nodes-unavailable'
+
 export async function importA1111(
   graph: LGraph,
-  parameters: string
-): Promise<void> {
+  parameters: string,
+  beforeGraphClear?: () => void
+): Promise<A1111ImportOutcome> {
   const p = parameters.lastIndexOf('\nSteps:')
   if (p > -1) {
     const embeddings = await api.getEmbeddings()
@@ -193,7 +199,7 @@ export async function importA1111(
       .match(
         new RegExp('\\s*([^:]+:\\s*([^"\\{].*?|".*?"|\\{.*?\\}))\\s*(,|$)', 'g')
       )
-    if (!matchResult) return
+    if (!matchResult) return 'not-a1111'
 
     const opts: Record<string, string> = matchResult.reduce(
       (acc: Record<string, string>, n: string) => {
@@ -231,7 +237,7 @@ export async function importA1111(
         !saveNode
       ) {
         console.error('Failed to create required nodes for A1111 import')
-        return
+        return 'core-nodes-unavailable'
       }
 
       let hrSamplerNode: LGraphNode | null = null
@@ -331,6 +337,7 @@ export async function importA1111(
         return v
       }
 
+      beforeGraphClear?.()
       graph.clear()
       graph.add(ckptNode)
       graph.add(clipSkipNode)
@@ -550,7 +557,11 @@ export async function importA1111(
         delete opts[opt]
       }
 
-      console.warn('Unhandled parameters:', opts)
+      if (Object.keys(opts).length) {
+        console.warn('Unhandled parameters:', opts)
+      }
+      return 'imported'
     }
   }
+  return 'not-a1111'
 }

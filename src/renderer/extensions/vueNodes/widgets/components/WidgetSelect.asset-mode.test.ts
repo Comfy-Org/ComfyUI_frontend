@@ -79,4 +79,35 @@ describe('WidgetSelect asset mode', () => {
 
     expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
   })
+
+  it('does not fabricate a selection for a null model value', async () => {
+    const widget = createMockWidget<string | undefined>({
+      value: undefined,
+      name: 'image',
+      type: 'combo',
+      options: { values: ['first.png', 'second.png'] },
+      spec: {
+        type: 'COMBO',
+        name: 'image',
+        image_upload: true
+      }
+    })
+    render(WidgetSelect, {
+      props: {
+        widget,
+        modelValue: null,
+        nodeType: 'ImageLoader'
+      },
+      global: {
+        plugins: [PrimeVue, createTestingPinia(), i18n],
+        stubs: {
+          WidgetSelectDefault: stubs.WidgetSelectDefault,
+          WidgetWithControl: stubs.WidgetWithControl
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(screen.queryByText('first.png')).not.toBeInTheDocument()
+  })
 })

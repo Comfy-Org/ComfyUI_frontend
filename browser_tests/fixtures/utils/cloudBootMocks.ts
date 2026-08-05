@@ -52,7 +52,7 @@ export async function mockCloudBoot(
 
 /**
  * Mock Firebase auth and pre-select the e2e user so the cloud app boots
- * signed-in. The signed-in email (`e2e@test.comfy.org`) is what the
+ * signed-in. The signed-in email (`CLOUD_SELF_EMAIL`) is what the
  * original-owner gate matches against the members self-row.
  */
 export async function bootCloud(page: Page) {

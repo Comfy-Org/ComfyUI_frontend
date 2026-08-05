@@ -13,6 +13,8 @@ import { useBillingContext } from './useBillingContext'
 
 const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
+  max_seats: 73,
+  occupied_seats: 72,
   has_funds: true,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY'
@@ -51,7 +53,7 @@ const {
       has_funds: true,
       subscription_tier: 'PRO',
       subscription_duration: 'MONTHLY'
-    } as BillingStatusResponse
+    } as Partial<BillingStatusResponse>
   }
 }))
 
@@ -125,7 +127,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
-    isActiveSubscription: { value: true },
+    canAccessSubscriptionFeatures: { value: true },
     subscriptionTier: { value: 'PRO' },
     subscriptionDuration: { value: 'MONTHLY' },
     subscriptionStatus: {
@@ -177,7 +179,9 @@ vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
-    getBillingStatus: vi.fn(() => Promise.resolve(mockBillingStatus.value)),
+    getBillingStatus: vi.fn(() =>
+      Promise.resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
+    ),
     getBillingBalance: vi.fn().mockResolvedValue({
       amount_micros: 10000000,
       currency: 'usd'
@@ -398,9 +402,9 @@ describe('useBillingContext', () => {
     await expect(topup(99.5)).rejects.toThrow()
   })
 
-  it('provides isActiveSubscription convenience computed', () => {
-    const { isActiveSubscription } = useBillingContext()
-    expect(isActiveSubscription.value).toBe(true)
+  it('provides canAccessSubscriptionFeatures convenience computed', () => {
+    const { canAccessSubscriptionFeatures } = useBillingContext()
+    expect(canAccessSubscriptionFeatures.value).toBe(true)
   })
 
   it('exposes requireActiveSubscription action', async () => {
