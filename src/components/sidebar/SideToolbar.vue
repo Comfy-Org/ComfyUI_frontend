@@ -306,11 +306,11 @@ onMounted(() => {
 
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
-  background-color: var(--sidebar-surface, var(--comfy-menu-bg));
+  background-color: var(--sidebar-surface);
 }
 
 .sidebar-item-group {
-  background-color: var(--sidebar-surface, var(--comfy-menu-bg));
+  background-color: var(--sidebar-surface);
   border: 1px solid transparent;
 }
 
@@ -318,6 +318,6 @@ onMounted(() => {
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: var(--sidebar-surface, var(--comfy-menu-bg));
+  background-color: var(--sidebar-surface);
 }
 </style>
