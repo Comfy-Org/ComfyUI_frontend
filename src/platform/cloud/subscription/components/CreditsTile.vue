@@ -189,12 +189,12 @@
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
         v-if="isCloud && isFreeTier"
-        variant="subscribe"
+        variant="secondary"
         size="lg"
-        class="w-full font-normal"
+        class="w-full font-normal text-base-foreground"
         @click="handleUpgradeToAddCredits"
       >
-        {{ $t('subscription.upgradeToAddCredits') }}
+        {{ $t('subscription.subscribeForMore') }}
       </Button>
       <Button
         v-else

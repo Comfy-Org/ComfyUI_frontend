@@ -91,8 +91,9 @@ describe('SubscribeToRun', () => {
     renderButton()
 
     const button = screen.getByTestId('subscribe-to-run-button')
-    expect(button).toHaveTextContent('Run')
-    expect(button).not.toHaveTextContent('Upgrade')
+    // Exact match: a substring check on 'Run' would also pass for the owner
+    // label 'Upgrade to Run'.
+    expect(button).toHaveTextContent(/^Run$/)
   })
 
   it('opens the subscription dialog for owners on click', async () => {

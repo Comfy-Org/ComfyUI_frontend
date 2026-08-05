@@ -78,85 +78,103 @@ const mockBalance: CustomerBalanceResponse = {
   currency: 'usd'
 }
 
-const test = comfyPageFixture.extend({
-  page: async ({ page }, use) => {
-    await page.route('**/api/features', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockRemoteConfig)
+// Free tier on the workspace backend: the popover swaps "Add credits" for the
+// single contextual "Upgrade" action (DES-534).
+const mockFreeTierBillingStatus: BillingStatusResponse = {
+  is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
+  subscription_status: 'active',
+  subscription_tier: 'FREE',
+  subscription_duration: 'MONTHLY',
+  has_funds: false,
+  renewal_date: FUTURE_DATE
+}
+
+function extendWithWorkspaceMocks(billingStatus: BillingStatusResponse) {
+  return comfyPageFixture.extend({
+    page: async ({ page }, use) => {
+      await page.route('**/api/features', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockRemoteConfig)
+        })
+      )
+
+      await page.route('**/api/workspaces', async (route) => {
+        if (route.request().method() !== 'GET') {
+          await route.fallback()
+          return
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockListWorkspacesResponse)
+        })
       })
-    )
 
-    await page.route('**/api/workspaces', async (route) => {
-      if (route.request().method() !== 'GET') {
-        await route.fallback()
-        return
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockListWorkspacesResponse)
-      })
-    })
+      await page.route('**/api/auth/token', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockTokenResponse)
+        })
+      )
 
-    await page.route('**/api/auth/token', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockTokenResponse)
-      })
-    )
+      await page.route('**/api/auth/session', (route) =>
+        route.fulfill({ status: 204 })
+      )
 
-    await page.route('**/api/auth/session', (route) =>
-      route.fulfill({ status: 204 })
-    )
+      await page.route('**/customers/cloud-subscription-status', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockSubscriptionStatus)
+        })
+      )
 
-    await page.route('**/customers/cloud-subscription-status', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockSubscriptionStatus)
-      })
-    )
+      await page.route('**/customers/balance', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockBalance)
+        })
+      )
 
-    await page.route('**/customers/balance', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBalance)
-      })
-    )
+      // Flag-on (team workspaces enabled) routes a personal workspace through the
+      // workspace billing endpoints, so the popover sources its data from here.
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(billingStatus)
+        })
+      )
 
-    // Flag-on (team workspaces enabled) routes a personal workspace through the
-    // workspace billing endpoints, so the popover sources its data from here.
-    await page.route('**/api/billing/status', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBillingStatus)
-      })
-    )
+      await page.route('**/api/billing/balance', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockBalance)
+        })
+      )
 
-    await page.route('**/api/billing/balance', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBalance)
-      })
-    )
+      await page.route('**/api/billing/plans', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ plans: [] })
+        })
+      )
 
-    await page.route('**/api/billing/plans', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ plans: [] })
-      })
-    )
+      await use(page)
+    }
+  })
+}
 
-    await use(page)
-  }
-})
+const test = extendWithWorkspaceMocks(mockBillingStatus)
+const freeTierTest = extendWithWorkspaceMocks(mockFreeTierBillingStatus)
 
 test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
   test('keeps both action buttons inside the popover when cancelled but active', async ({
@@ -185,3 +203,31 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
   })
 })
+
+freeTierTest.describe(
+  'Current user popover credits row — free tier',
+  { tag: '@cloud' },
+  () => {
+    freeTierTest(
+      'workspace popover shows the single contextual Upgrade action',
+      async ({ comfyPage }) => {
+        const page = comfyPage.page
+
+        await comfyPage.toast.closeToasts()
+        await page.getByRole('button', { name: 'Current user' }).click()
+
+        const popover = page.locator('.current-user-popover')
+        await expect(popover).toBeVisible()
+
+        // DES-534: one toned-down "Upgrade" action instead of the old gold
+        // "Upgrade to add credits"; plain "Add credits" is paid-tier only.
+        const upgrade = popover.getByTestId('upgrade-to-add-credits-button')
+        await expect(upgrade).toBeVisible()
+        await expect(upgrade).toHaveText('Upgrade')
+        await expect(
+          popover.getByTestId('add-credits-button')
+        ).toBeHidden()
+      }
+    )
+  }
+)

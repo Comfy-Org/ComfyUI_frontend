@@ -28,7 +28,7 @@ vi.mock(
 
 const mockBilling = vi.hoisted(() => ({
   isFreeTier: true,
-  isActiveSubscription: true
+  canRunWorkflows: true
 }))
 
 vi.mock('@/composables/billing/useBillingContext', async () => {
@@ -36,7 +36,7 @@ vi.mock('@/composables/billing/useBillingContext', async () => {
   return {
     useBillingContext: vi.fn(() => ({
       isFreeTier: computed(() => mockBilling.isFreeTier),
-      isActiveSubscription: computed(() => mockBilling.isActiveSubscription)
+      canRunWorkflows: computed(() => mockBilling.canRunWorkflows)
     }))
   }
 })
@@ -74,10 +74,10 @@ describe('TopbarSubscribeButton', () => {
   beforeEach(() => {
     mockIsCloud.value = true
     mockBilling.isFreeTier = true
-    mockBilling.isActiveSubscription = true
+    mockBilling.canRunWorkflows = true
   })
 
-  it('renders on cloud when isFreeTier is true', () => {
+  it('renders for a free-tier user who can still run', () => {
     renderComponent()
     expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
   })
@@ -90,8 +90,16 @@ describe('TopbarSubscribeButton', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('hides while the run bar shows Upgrade to Run (inactive subscription)', () => {
-    mockBilling.isActiveSubscription = false
+  it('hides for a paid tier', () => {
+    mockBilling.isFreeTier = false
+    renderComponent()
+    expect(
+      screen.queryByTestId('topbar-subscribe-button')
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides when the user cannot run (e.g. free-tier quota exhausted)', () => {
+    mockBilling.canRunWorkflows = false
     renderComponent()
     expect(
       screen.queryByTestId('topbar-subscribe-button')

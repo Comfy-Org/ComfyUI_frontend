@@ -184,14 +184,14 @@ freeTierTest.describe(
   () => {
     freeTierTest(
       'Topbar Upgrade visible while a free-tier user can still run',
-      async ({ comfyPage }) => {
+      async ({ comfyPage, subscriptionHelper }) => {
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
         ).toBeVisible()
 
-        await comfyPage.page.getByTestId(TestIds.user.currentUserButton).click()
+        const popover = await subscriptionHelper.openUserPopover()
         await expect(
-          comfyPage.page.getByTestId(TestIds.user.upgradeToAddCreditsButton)
+          popover.getByTestId(TestIds.user.upgradeToAddCreditsButton)
         ).toBeVisible()
       }
     )

@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-if="isCloud && isFreeTier && isActiveSubscription"
+    v-if="isCloud && isFreeTier && canRunWorkflows"
     class="mr-2 shrink-0 whitespace-nowrap"
     variant="subscribe"
     size="sm"
@@ -18,7 +18,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 
-const { isFreeTier, isActiveSubscription } = useBillingContext()
+const { isFreeTier, canRunWorkflows } = useBillingContext()
 const subscriptionDialog = useSubscriptionDialog()
 
 function handleClick() {
