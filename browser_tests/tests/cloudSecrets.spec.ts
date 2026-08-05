@@ -126,10 +126,13 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     expect(backend.store).toHaveLength(0)
   })
 
-  test('the Add Secret backdrop closes only Add Secret', async ({ page }) => {
+  test('the Add Secret backdrop closes only Add Secret', async ({
+    page,
+    request
+  }) => {
     await mockCloudBoot(page, {
-      features: BOOT_FEATURES,
-      settings: BOOT_SETTINGS
+      features: SECRETS_BOOT_FEATURES,
+      settings: SECRETS_BOOT_SETTINGS
     })
     await bootCloud(page)
     await mockSecretsBackend(page, ['runway'])
@@ -137,7 +140,8 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     await page.goto(APP_URL)
     await waitForCloudApp(page)
 
-    const settingsDialog = await openSecretsPanel(page)
+    const comfyPage = new ComfyPage(page, request)
+    const settingsDialog = await openSecretsPanel(comfyPage.settingDialog)
     await settingsDialog.getByRole('button', { name: 'Add Secret' }).click()
 
     const formDialog = page
