@@ -54,8 +54,11 @@ jobs:
       # A failed scheduled run only notifies whoever last pushed to main, which
       # in practice is nobody — the reason the placeholder config went unnoticed
       # for weeks. Post where the rotation actually watches instead.
+      # Scoped to this step, not the job: a checkout or pnpm blip is CI noise
+      # that is already visible elsewhere, and paging the rotation for it is
+      # how an alert channel gets muted.
       - name: Report a degraded run to Slack
-        if: failure()
+        if: failure() && steps.sheriff.outcome == 'failure'
         continue-on-error: true
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
