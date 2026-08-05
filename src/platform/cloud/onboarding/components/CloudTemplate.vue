@@ -11,7 +11,7 @@
           class="mx-auto flex min-h-full w-full max-w-md flex-col px-6 py-8 lg:max-w-lg xl:py-10 2xl:max-w-xl"
         >
           <img
-            src="/icons/logo.svg"
+            src="/assets/images/comfy-logo-wordmark.svg"
             :alt="t('g.comfyOrgLogoAlt')"
             class="h-9 w-auto shrink-0 object-contain object-left lg:h-10 2xl:h-11"
           />
