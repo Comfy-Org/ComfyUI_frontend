@@ -1127,6 +1127,15 @@ export class ComfyApp {
       !Array.isArray(response)
         ? Object.entries(response)
         : []
+    const droppedNames = entries
+      .filter(([, value]) => !isNodeDef(value))
+      .map(([name]) => name)
+    if (droppedNames.length > 0) {
+      console.warn(
+        `Ignored ${droppedNames.length} malformed node definition(s) from /object_info: ${droppedNames.join(', ')}`
+      )
+    }
+
     const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
       entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
         isNodeDef(entry[1])
