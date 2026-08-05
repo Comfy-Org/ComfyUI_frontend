@@ -182,8 +182,16 @@
   --workflow-tab-selected-surface: oklch(
     from var(--comfy-menu-bg) calc(l - 0.0274) c h
   );
-  --base-background-sunken: oklch(
-    from var(--comfy-menu-bg) calc(l - 0.0648) c h
+  /* The backdrop behind the canvas. LiteGraph stops filling its clear
+     background past 1.5x zoom, exposing this, so it must be the palette's
+     own CLEAR_BACKGROUND_COLOR — colorPaletteService sets
+     --canvas-clear-background from the completed palette. The derivation is
+     only a pre-boot fallback: custom palettes set their clear colour
+     independently of the menu colour (obsidian #222222 vs obsidian_dark
+     #000 share one menu colour), so deriving from the menu would mismatch. */
+  --base-background-sunken: var(
+    --canvas-clear-background,
+    oklch(from var(--comfy-menu-bg) calc(l - 0.0648) c h)
   );
   --workflow-tab-hover-surface: var(--content-hover-bg);
 
@@ -313,7 +321,6 @@
   --sidebar-surface: var(--color-charcoal-900);
   --workflow-tab-selected-surface: var(--color-charcoal-900);
   --workflow-tab-hover-surface: var(--color-charcoal-700);
-  --base-background-sunken: var(--color-charcoal-950);
 }
 
 :root[data-color-palette='light'] {
@@ -326,9 +333,6 @@
     transparent
   );
   --region-stroke: color-mix(in srgb, var(--color-smoke-300) 50%, transparent);
-  /* Match light.json's litegraph CLEAR_BACKGROUND_COLOR (lightgray) so the
-     backdrop doesn't shift when litegraph stops painting past 150% zoom. */
-  --base-background-sunken: #d3d3d3;
 }
 
 .dark-theme {
