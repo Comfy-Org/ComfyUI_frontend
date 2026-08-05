@@ -80,41 +80,89 @@
         </Popover>
       </div>
 
-      <div class="flex items-center gap-2" data-testid="template-type-tabs">
-        <Button
-          v-for="tab in typeTabs"
-          :key="tab.value"
-          size="md"
-          :variant="selectedType === tab.value ? 'inverted' : 'secondary'"
-          :aria-pressed="selectedType === tab.value"
-          class="h-8 shrink-0 px-3 text-xs"
-          @click="selectedType = tab.value"
+      <!-- Type and generation type share one line: they are two halves of the
+           same question. The generation-type half collapses into a dropdown
+           when the panel is too narrow for both. -->
+      <div class="flex items-center gap-2">
+        <div
+          class="flex shrink-0 items-center gap-2"
+          data-testid="template-type-tabs"
         >
-          <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
-          <span>{{ tab.label }}</span>
-        </Button>
-      </div>
+          <Button
+            v-for="tab in typeTabs"
+            :key="tab.value"
+            size="md"
+            :variant="selectedType === tab.value ? 'inverted' : 'secondary'"
+            :aria-pressed="selectedType === tab.value"
+            class="h-8 shrink-0 px-3 text-xs"
+            @click="selectedType = tab.value"
+          >
+            <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
+            <span>{{ tab.label }}</span>
+          </Button>
+        </div>
 
-      <!-- What you want to generate is the one thing a user always knows
-           (Pablo, 08-05), so these sit in the header rather than two clicks
-           deep in the filter sheet. Clicking the active one clears it. -->
-      <TemplatesFilterChipRow
-        v-if="generationTypeOptions.length"
-        data-testid="template-generation-types"
-      >
-        <button
-          v-for="opt in generationTypeOptions"
-          :key="opt.value"
-          type="button"
-          :aria-pressed="selectedCategory === opt.value"
-          :class="
-            cn('shrink-0', filterChipClass(selectedCategory === opt.value))
-          "
-          @click="toggleGenerationType(opt.value)"
-        >
-          {{ opt.name }}
-        </button>
-      </TemplatesFilterChipRow>
+        <template v-if="generationTypeOptions.length">
+          <div class="h-5 w-px shrink-0 bg-border-subtle" />
+
+          <div
+            class="hidden min-w-0 flex-1 @2xl/templates-panel:block"
+            data-testid="template-generation-types"
+          >
+            <TemplatesFilterChipRow>
+              <button
+                v-for="opt in generationTypeOptions"
+                :key="opt.value"
+                type="button"
+                :aria-pressed="selectedCategory === opt.value"
+                :class="
+                  cn(
+                    'shrink-0',
+                    filterChipClass(selectedCategory === opt.value)
+                  )
+                "
+                @click="toggleGenerationType(opt.value)"
+              >
+                {{ opt.name }}
+              </button>
+            </TemplatesFilterChipRow>
+          </div>
+
+          <DropdownMenu
+            :modal="false"
+            class="@2xl/templates-panel:hidden"
+            data-testid="template-generation-type-menu"
+          >
+            <template #button>
+              <Button
+                variant="secondary"
+                size="md"
+                class="h-8 shrink-0 px-3 text-xs"
+              >
+                <span class="max-w-28 truncate">
+                  {{ selectedGenerationType?.name ?? generationTypeLabel }}
+                </span>
+                <i class="icon-[lucide--chevron-down] size-3.5" />
+              </Button>
+            </template>
+            <DropdownMenuRadioGroup :model-value="selectedCategory">
+              <DropdownMenuRadioItem
+                v-for="opt in generationTypeOptions"
+                :key="opt.value"
+                :value="opt.value"
+                class="flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover"
+                @click="toggleGenerationType(opt.value)"
+                @select.prevent
+              >
+                <span class="flex-1">{{ opt.name }}</span>
+                <DropdownMenuItemIndicator class="size-4 shrink-0">
+                  <i class="icon-[lucide--check]" />
+                </DropdownMenuItemIndicator>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenu>
+        </template>
+      </div>
 
       <!-- Applied filters as removable chips + Clear all, same shape as the
            Media Assets filter bar (#14166). -->
@@ -543,6 +591,11 @@ import TemplatesFilterMenu from '@/components/sidebar/tabs/TemplatesFilterMenu.v
 import type { FilterMenuFacet } from '@/components/sidebar/tabs/TemplatesFilterMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import {
+  DropdownMenuItemIndicator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem
+} from 'reka-ui'
 import Popover from '@/components/ui/Popover.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import type { SelectOption } from '@/components/ui/select/types'
@@ -661,6 +714,24 @@ const generationTypeOptions = computed<SelectOption[]>(() => {
       : (item.items ?? []).map((sub) => ({ name: sub.label, value: sub.id }))
   )
 })
+
+/** The catalog's own name for the group, for the collapsed dropdown's label. */
+const generationTypeLabel = computed(() => {
+  const navItems = workflowTemplatesStore.navGroupedTemplates as (
+    | NavItemData
+    | NavGroupData
+  )[]
+  const group = navItems.find((item) => !('id' in item)) as
+    | NavGroupData
+    | undefined
+  return group?.title ?? t('templateWorkflows.category', 'Category')
+})
+
+const selectedGenerationType = computed(() =>
+  generationTypeOptions.value.find(
+    (option) => option.value === selectedCategory.value
+  )
+)
 
 /** Clicking the active one clears it, so the row doubles as its own reset. */
 const toggleGenerationType = (value: string) => {
