@@ -287,6 +287,19 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect(content.getByText('11K left of 21K')).toBeVisible()
   })
 
+  test('BILL-A02 renders the reachable workspace Activity empty state', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await mockCloudBoot(page)
+
+    const content = await openPlanAndCredits(page)
+    await content.getByRole('button', { name: 'Activity' }).click()
+
+    await expect(content.getByText('No activity yet.')).toBeVisible()
+    await expect(content.getByRole('textbox', { name: 'Search' })).toBeHidden()
+  })
+
   test('renders the depleted-credit empty states', async ({ page }) => {
     test.setTimeout(60_000)
 
