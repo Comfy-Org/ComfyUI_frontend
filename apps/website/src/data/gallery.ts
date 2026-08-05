@@ -181,10 +181,6 @@ export const galleryItems: GalleryItem[] = [
   }
 ]
 
-export const visibleGalleryItems: GalleryItem[] = galleryItems.filter(
-  (item) => item.visible !== false
-)
-
 /** @knipIgnoreUsedByStackedPR */
 export function getGalleryItemById(id: string): GalleryItem | undefined {
   return galleryItems.find((item) => item.id === id)

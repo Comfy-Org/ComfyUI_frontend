@@ -2,6 +2,15 @@
 
 Marketing/brand website built with Astro + Vue.
 
+## Gallery CMS integration
+
+`/gallery` and `/zh-CN/gallery` are built from the Payload CMS
+(`apps/cms`) at build time via `src/utils/galleryCms.ts`. The build
+**requires** `WEBSITE_CMS_URL` (build-time only, never `PUBLIC_`-prefixed)
+and fails if it is unset or the CMS is unreachable — there is no static
+fallback. For local dev: `cp .env.example .env`, then start the CMS
+first (see `apps/cms/README.md`).
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board
