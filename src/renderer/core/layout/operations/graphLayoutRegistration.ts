@@ -25,6 +25,7 @@ export function registerNodeLayout(graph: LGraph, node: LGraphNode): void {
 export function unregisterNodeLayout(graph: LGraph, node: LGraphNode): void {
   if (!node._layoutRegistered) return
 
+  layoutStore.readNodeRect(graph.rootGraph.id, node.id, node._posSize)
   node._layoutRegistered = false
   canvasLayoutMutations().deleteNode(graph.rootGraph.id, node.id)
 }

@@ -914,6 +914,28 @@ describe('layout geometry projection', () => {
     ).toEqual({ x: 100, y: 100 })
   })
 
+  test('preserves stored geometry when removed and re-added', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
+      {
+        nodeId: node.id,
+        bounds: { x: 30, y: 40, width: 200, height: 80 }
+      }
+    ])
+
+    graph.remove(node)
+    graph.add(node)
+
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toMatchObject({
+      position: { x: 30, y: 40 },
+      size: { width: 200, height: 80 }
+    })
+  })
+
   test('refreshes stable views before indexed mutations', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

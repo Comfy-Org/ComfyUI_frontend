@@ -3,10 +3,17 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 export function notifyLayoutChanges(canvas: LGraphCanvas): () => void {
   return layoutStore.onChange((change) => {
-    if (change.nodeIds.length === 0) return
+    const graph = canvas.graph
+    if (
+      !graph ||
+      change.operation.graphId !== graph.rootGraph.id ||
+      change.nodeIds.length === 0
+    ) {
+      return
+    }
 
     for (const nodeId of change.sizeChangedNodeIds) {
-      const node = canvas.graph?.getNodeById(nodeId)
+      const node = graph.getNodeById(nodeId)
       node?.onResize?.(node.size)
     }
 

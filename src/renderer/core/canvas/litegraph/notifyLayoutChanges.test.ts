@@ -6,12 +6,14 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { createUuidv4 } from '@/utils/uuid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function setup() {
   const graph = new LGraph()
+  graph.id = createUuidv4()
   const node = new LGraphNode('test')
   graph.add(node)
 
@@ -75,6 +77,27 @@ describe('notifyLayoutChanges', () => {
     await vi.waitFor(() => expect(setDirtyCalled()).toBe(true))
 
     expect(onResize).not.toHaveBeenCalled()
+    stop()
+  })
+
+  it('ignores changes from another root graph', async () => {
+    const otherGraph = new LGraph()
+    otherGraph.id = createUuidv4()
+    const otherNode = new LGraphNode('other')
+    otherGraph.add(otherNode)
+    const { node, setDirty, stop } = setup()
+    const onResize = vi.fn()
+    node.onResize = onResize
+
+    useLayoutMutations().resizeNode(otherGraph.rootGraph.id, otherNode.id, {
+      width: 300,
+      height: 200
+    })
+    await Promise.resolve()
+
+    expect(otherNode.id).toBe(node.id)
+    expect(onResize).not.toHaveBeenCalled()
+    expect(setDirty).not.toHaveBeenCalled()
     stop()
   })
 
