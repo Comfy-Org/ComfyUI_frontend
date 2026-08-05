@@ -13,7 +13,8 @@ const meta: Meta<typeof CardSplitContent01> = {
     primaryCta: { label: 'View Model Features', href: '#' },
     secondaryCta: { label: 'Try Workflows', href: '#' },
     tags: ['Open Weights', 'Partner Nodes'],
-    videoSrc: 'https://media.comfy.org/website/minimax/hero.mp4'
+    videoSrc: 'https://media.comfy.org/website/minimax/hero.mp4',
+    videoAriaLabel: 'MiniMax H3 preview'
   }
 }
 

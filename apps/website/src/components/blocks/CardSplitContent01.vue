@@ -24,6 +24,7 @@ const {
   tags = [],
   videoSrc,
   videoPoster,
+  videoAriaLabel,
   class: className
 } = defineProps<{
   locale?: Locale
@@ -35,6 +36,7 @@ const {
   tags?: string[]
   videoSrc: string
   videoPoster?: string
+  videoAriaLabel?: string
   class?: HTMLAttributes['class']
 }>()
 </script>
@@ -53,6 +55,7 @@ const {
           :locale
           :src="videoSrc"
           :poster="videoPoster"
+          :aria-label="videoAriaLabel ?? title"
           autoplay
           lazy-autoplay
           loop

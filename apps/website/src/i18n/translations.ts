@@ -138,6 +138,10 @@ const translations = {
     en: 'Try Workflows',
     'zh-CN': '试用工作流'
   },
+  'modelRelease.videoAriaLabel': {
+    en: 'MiniMax H3 preview',
+    'zh-CN': 'MiniMax H3 预览'
+  },
 
   // ProductShowcaseSection
   'showcase.subtitle1': {
