@@ -2,19 +2,12 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { isModalOpen } from '@/utils/modalUtil'
 
 import { CORE_KEYBINDINGS } from './defaults'
 import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
-
-function hasOpenRekaDialog(): boolean {
-  return Array.from(
-    document.querySelectorAll('[role="dialog"][data-state="open"]')
-  ).some(
-    (dialog) => dialog.closest('[data-reka-popper-content-wrapper]') === null
-  )
-}
 
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
@@ -52,11 +45,7 @@ export function useKeybindingService() {
           return
         }
       }
-      if (
-        dialogStore.dialogStack.length > 0 ||
-        document.querySelector('[role="dialog"][aria-modal="true"]') ||
-        hasOpenRekaDialog()
-      ) {
+      if (isModalOpen(dialogStore.dialogStack.length)) {
         return
       }
 
