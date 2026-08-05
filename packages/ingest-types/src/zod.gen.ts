@@ -2057,6 +2057,7 @@ export const zBillingStatusResponse = z.object({
   max_seats: z.number().int(),
   occupied_seats: z.number().int(),
   pending_billing_op_id: z.string().optional(),
+  pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
   subscription_duration: zSubscriptionDuration.optional(),

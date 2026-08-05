@@ -17243,13 +17243,18 @@ export interface components {
         };
         TopazEnhanceGenRequest: {
             /**
-             * @description To preserve the original color - available for Reimagine only (must be string "true" or "false" due to Topaz API requirement)
+             * @description Automatically generate a prompt from the input image - available for Bloom 2 only
+             * @default true
+             */
+            autoprompt: boolean;
+            /**
+             * @description To preserve the original color - available for Reimagine and Bloom 2 only (must be string "true" or "false" due to Topaz API requirement)
              * @default true
              * @enum {string}
              */
             color_preservation: "true" | "false";
             /**
-             * @description Creativity settings range from 1 to 9 -  - available for Reimagine only
+             * @description Creativity settings range from 1 to 9 - available for Reimagine and Bloom 2 only
              * @default 3
              */
             creativity: number;
@@ -17258,6 +17263,11 @@ export interface components {
              * @default false
              */
             crop_to_fill: boolean;
+            /**
+             * @description Strength of the enhancement - low, medium or high - available for Wonder 3.5 only
+             * @default high
+             */
+            enhancement_strength: string;
             /**
              * @description By default, faces (if any) are enhanced during image processing as well. Set face_enhancement to false if you don't want this
              * @default true
@@ -17280,16 +17290,45 @@ export interface components {
              */
             face_preservation: "true" | "false";
             /**
+             * @description Whether to add grain to the output image - available for Wonder 3.5 and Bloom 2 only
+             * @default false
+             */
+            grain: boolean;
+            /**
+             * @description Density of the added grain from 0 to 1 - ignored if grain is false - available for Wonder 3.5 and Bloom 2 only
+             * @default 0.5
+             */
+            grain_density: number;
+            /**
+             * @description Grain model - silver, gaussian or grey - ignored if grain is false - available for Wonder 3.5 and Bloom 2 only
+             * @default silver
+             */
+            grain_model: string;
+            /**
+             * @description Size of the added grain from 1 to 5 - ignored if grain is false - available for Wonder 3.5 and Bloom 2 only
+             * @default 1
+             */
+            grain_size: number;
+            /**
+             * @description Strength of the added grain from 0 to 1 - ignored if grain is false - available for Wonder 3.5 and Bloom 2 only
+             * @default 0.5
+             */
+            grain_strength: number;
+            /**
              * Format: binary
              * @description The image file to be processed. Supported formats - jpeg (or jpg), png, tiff (or tif)
              */
             image?: string;
+            /** @description Height of the input image in pixels - available for Wonder 3.5 and Bloom 2 only */
+            input_height?: number;
+            /** @description Width of the input image in pixels - available for Wonder 3.5 and Bloom 2 only */
+            input_width?: number;
             /**
-             * @description The model to use for processing the image (Bloom - Creative Upscale)
+             * @description The model to use for processing the image
              * @default Reimagine
              * @enum {string}
              */
-            model: "Reimagine";
+            model: "Reimagine" | "Wonder 3.5" | "Bloom 2";
             /**
              * @description The desired format of the output image
              * @default jpeg
@@ -17301,10 +17340,14 @@ export interface components {
             /** @description The desired width of the output image in pixels */
             output_width?: number;
             /**
-             * @description Text prompt for creative upscaling guidance - available for Reimagine only
+             * @description Text prompt for creative upscaling guidance - available for Reimagine and Bloom 2 only
              * @example enter-your-prompt-here
              */
             prompt?: string;
+            /** @description URI of a reference image to guide generation - available for Bloom 2 only */
+            reference_uri?: string;
+            /** @description Seed for reproducible generation - available for Bloom 2 only */
+            seed?: number;
             /**
              * @description Unique identifier of the source image
              * @example d7b3b3b3-7b3b-4b3b-8b3b-3b3b3b3b3b3b
