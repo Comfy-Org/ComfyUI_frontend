@@ -6,14 +6,14 @@ import { describe, expect, it } from 'vitest'
 import { brandColors } from './brandColors'
 
 const require = createRequire(import.meta.url)
-const paletteCss = readFileSync(
-  require.resolve('@comfyorg/design-system/css/_palette.css'),
-  'utf-8'
-)
+const packageCss = (name: string) =>
+  readFileSync(require.resolve(`@comfyorg/design-system/css/${name}`), 'utf-8')
+const brandCss = packageCss('_brand.css')
+const paletteCss = packageCss('_palette.css')
 
 function token(name: string): string {
   const match = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`).exec(
-    paletteCss
+    brandCss + paletteCss
   )
   if (!match) throw new Error(`token --${name} not found in the design system`)
   return match[1].toLowerCase()
@@ -224,5 +224,46 @@ describe('yellowsIn', () => {
       `<path fill="${yellow}"/><path fill="url(#ffee00)"/>`
     expect(yellowsIn(gradientRef)).toEqual([yellow])
     expect(unreadableColorsIn(gradientRef)).toEqual([])
+  })
+})
+
+/*
+ * The brand layer is only a single source of truth while it is the *only*
+ * place these tokens are declared. A second declaration anywhere in the
+ * website's own theme silently wins over the package and is invisible until
+ * the two values disagree — which is exactly how the yellow drifted.
+ */
+describe('the brand layer is declared in exactly one place', () => {
+  const declarationsIn = (css: string) =>
+    new Set(
+      [...css.matchAll(/^\s*(--(?:color|font)-[\w-]+)\s*:/gm)].map((m) => m[1])
+    )
+
+  const brand = declarationsIn(brandCss)
+  const palette = declarationsIn(paletteCss)
+  const website = declarationsIn(read('src/styles/global.css'))
+
+  const overlap = (a: Set<string>, b: Set<string>) =>
+    [...a].filter((name) => b.has(name)).sort()
+
+  it('declares no brand token twice inside the package', () => {
+    expect(overlap(brand, palette)).toEqual([])
+  })
+
+  it('lets the website add site tokens without shadowing the package', () => {
+    expect(overlap(website, brand)).toEqual([])
+    expect(overlap(website, palette)).toEqual([])
+  })
+
+  it('keeps the brand typeface in the brand layer', () => {
+    expect(brand.has('--font-formula')).toBe(true)
+    expect(brand.has('--font-formula-narrow')).toBe(true)
+  })
+
+  it('catches a redeclaration', () => {
+    const shadowed = declarationsIn(
+      '@theme {\n  --color-brand-yellow: #fff;\n}'
+    )
+    expect(overlap(shadowed, brand)).toEqual(['--color-brand-yellow'])
   })
 })
