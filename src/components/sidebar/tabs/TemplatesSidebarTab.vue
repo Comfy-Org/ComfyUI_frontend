@@ -55,24 +55,29 @@
                 >
                   {{ $t('templateWorkflows.category', 'Category') }}
                 </span>
-                <div class="flex flex-wrap gap-1.5">
+                <TemplatesFilterChipRow>
                   <button
                     v-for="opt in categoryOptions"
                     :key="opt.value"
                     type="button"
                     :aria-pressed="selectedCategory === opt.value"
-                    :class="filterChipClass(selectedCategory === opt.value)"
+                    :class="
+                      cn(
+                        'shrink-0',
+                        filterChipClass(selectedCategory === opt.value)
+                      )
+                    "
                     @click="selectedCategory = opt.value"
                   >
                     {{ opt.name }}
                   </button>
-                </div>
+                </TemplatesFilterChipRow>
               </section>
 
               <section
                 v-for="facet in filterFacets"
                 :key="facet.key"
-                class="flex flex-col gap-2"
+                class="flex flex-col gap-2 border-t border-border-subtle pt-4"
               >
                 <span
                   class="text-2xs font-semibold tracking-wider text-muted-foreground uppercase"
@@ -99,24 +104,29 @@
                     @keydown.escape.stop="closeFacetList"
                   />
                 </div>
-                <div class="flex flex-wrap items-center gap-1.5">
+                <TemplatesFilterChipRow>
                   <button
                     v-for="opt in facetVisibleOptions(facet.key)"
                     :key="opt.value"
                     type="button"
                     :aria-pressed="facetIsSelected(facet.key, opt)"
-                    :class="filterChipClass(facetIsSelected(facet.key, opt))"
+                    :class="
+                      cn(
+                        'shrink-0',
+                        filterChipClass(facetIsSelected(facet.key, opt))
+                      )
+                    "
                     @click="toggleFacetOption(facet.key, opt)"
                   >
                     {{ opt.name }}
                   </button>
                   <span
                     v-if="facetHiddenCount(facet.key) > 0"
-                    class="px-1 text-xs text-muted-foreground"
+                    class="flex shrink-0 items-center px-1 text-xs text-muted-foreground"
                   >
                     +{{ facetHiddenCount(facet.key) }}
                   </span>
-                </div>
+                </TemplatesFilterChipRow>
               </section>
 
               <Button
@@ -474,11 +484,25 @@
           @mousedown.prevent
           @click="toggleFacetOption(openFacetKey, opt)"
         >
+          <!-- Checkbox, not a trailing tick: these facets are multi-select, so
+               the control has to say "pick as many as you like" before you
+               click. Same indicator as the DS MultiSelect. -->
+          <span
+            :class="
+              cn(
+                'flex size-4 shrink-0 items-center justify-center rounded-sm transition-colors duration-200',
+                facetIsSelected(openFacetKey, opt)
+                  ? 'bg-primary-background'
+                  : 'bg-secondary-background'
+              )
+            "
+          >
+            <i
+              v-if="facetIsSelected(openFacetKey, opt)"
+              class="icon-[lucide--check] text-xs font-bold text-base-foreground"
+            />
+          </span>
           <span class="min-w-0 flex-1 truncate">{{ opt.name }}</span>
-          <i
-            v-if="facetIsSelected(openFacetKey, opt)"
-            class="ml-auto icon-[lucide--check] size-4 shrink-0"
-          />
         </button>
         <p
           v-if="facetListOptions(openFacetKey).length === 0"
@@ -612,6 +636,7 @@ import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSli
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
+import TemplatesFilterChipRow from '@/components/sidebar/tabs/TemplatesFilterChipRow.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
