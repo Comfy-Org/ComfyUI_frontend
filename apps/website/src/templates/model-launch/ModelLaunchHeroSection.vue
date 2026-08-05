@@ -33,7 +33,7 @@ const { locale = 'en', hero } = defineProps<{
         class="bg-transparency-white-t4 pointer-events-none absolute top-6 right-6 flex size-12 items-center justify-center rounded-2xl backdrop-blur-sm lg:top-10 lg:right-10 lg:size-[70px] lg:rounded-3xl"
       >
         <span
-          class="text-primary-warm-white inline-block size-6 bg-current lg:size-[35px]"
+          class="inline-block size-6 bg-current text-primary-warm-white lg:size-[35px]"
           :style="{
             maskImage: `url(${hero.logoSrc})`,
             maskSize: 'contain',
@@ -103,7 +103,7 @@ const { locale = 'en', hero } = defineProps<{
         </Badge>
       </div>
 
-      <p v-if="hero.footnoteKey" class="text-primary-warm-gray mt-6 text-xs">
+      <p v-if="hero.footnoteKey" class="mt-6 text-xs text-primary-warm-gray">
         {{ t(hero.footnoteKey, locale) }}
       </p>
     </div>

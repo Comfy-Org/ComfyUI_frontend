@@ -1,3 +1,5 @@
+import { readDesignToken } from '@comfyorg/shared-frontend-utils/designTokens'
+
 interface Cell {
   i: number
   j: number
@@ -34,16 +36,12 @@ const LIFT = HEX_H * 0.35
 const TICK_MS = 200
 
 function readColors() {
-  const style = getComputedStyle(document.documentElement)
-  const get = (name: string, fallback: string): string =>
-    style.getPropertyValue(name).trim() || fallback
-
   return {
-    bg: get('--color-primary-comfy-ink', '#211927'),
-    fieldStroke: get('--color-secondary-mauve', '#4D3762'),
-    snakeA: get('--color-primary-comfy-plum', '#49378B'),
-    snakeB: get('--color-secondary-mauve', '#4D3762'),
-    accent: get('--color-primary-comfy-yellow', '#F2FF59')
+    bg: readDesignToken('--color-primary-comfy-ink'),
+    fieldStroke: readDesignToken('--color-secondary-mauve'),
+    snakeA: readDesignToken('--color-primary-comfy-plum'),
+    snakeB: readDesignToken('--color-secondary-mauve'),
+    accent: readDesignToken('--color-primary-comfy-yellow')
   }
 }
 

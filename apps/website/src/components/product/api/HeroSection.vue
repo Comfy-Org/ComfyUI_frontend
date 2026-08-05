@@ -3,6 +3,8 @@ import { onMounted, onUnmounted, ref } from 'vue'
 
 import type { Locale } from '../../../i18n/translations'
 
+import { readDesignToken } from '@comfyorg/shared-frontend-utils/designTokens'
+
 import { prefersReducedMotion } from '../../../composables/useReducedMotion'
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
@@ -17,6 +19,10 @@ let animationId: number | null = null
 onMounted(() => {
   const canvas = canvasRef.value!
   const ctx = canvas.getContext('2d')!
+
+  const ink = readDesignToken('--color-primary-comfy-ink')
+  const plum = readDesignToken('--color-primary-comfy-plum')
+  const yellow = readDesignToken('--color-primary-comfy-yellow')
 
   const path1 = new Path2D(
     'M686.495 69.9406C690.817 69.9406 695.056 70.8239 697.978 72.5099L772.061 115.256C776.797 117.989 781.141 122.719 784.303 128.193C787.466 133.667 789.392 139.792 789.392 145.257V230.748C789.392 234.111 788.038 238.14 785.878 241.801C783.718 245.46 780.832 248.616 777.909 250.303L703.826 293.049C699.09 295.782 692.818 297.177 686.493 297.177C680.168 297.177 673.897 295.782 669.161 293.049L595.078 250.303C592.155 248.616 589.27 245.46 587.111 241.801C584.951 238.14 583.597 234.111 583.597 230.748V145.257L583.603 144.742C583.719 139.409 585.623 133.495 588.686 128.193C591.849 122.719 596.193 117.989 600.929 115.256L675.011 72.5099C677.933 70.8239 682.173 69.9406 686.495 69.9406Z'
@@ -33,22 +39,22 @@ onMounted(() => {
 
   const elementLayers: Array<(c: CanvasRenderingContext2D) => void> = [
     (c) => {
-      c.fillStyle = '#211927'
-      c.strokeStyle = '#49378B'
+      c.fillStyle = ink
+      c.strokeStyle = plum
       c.lineWidth = 2
       c.fill(path1)
       c.stroke(path1)
     },
     (c) => {
       c.fillStyle = '#251D2B'
-      c.strokeStyle = '#49378B'
+      c.strokeStyle = plum
       c.lineWidth = 2
       c.fill(path2)
       c.stroke(path2)
     },
     (c) => {
       c.fillStyle = '#37303F'
-      c.strokeStyle = '#49378B'
+      c.strokeStyle = plum
       c.lineWidth = 2.88
       c.fill(path3)
       c.stroke(path3)
@@ -56,8 +62,8 @@ onMounted(() => {
     (c) => {
       c.save()
       c.transform(3.69127e-8, 1, -0.866025, 0.5, 1195.48, 143.45)
-      c.fillStyle = '#211927'
-      c.strokeStyle = '#49378B'
+      c.fillStyle = ink
+      c.strokeStyle = plum
       c.lineWidth = 2
       c.beginPath()
       if (c.roundRect) c.roundRect(-0.866025, 1.5, 341.2, 341.2, 53.8242)
@@ -67,7 +73,7 @@ onMounted(() => {
       c.restore()
     },
     (c) => {
-      c.fillStyle = '#F2FF59'
+      c.fillStyle = yellow
       c.fill(path4)
     }
   ]
@@ -78,8 +84,8 @@ onMounted(() => {
     c.translate(170.6, 170.6)
     c.scale(scaleAmt, scaleAmt)
     c.translate(-170.6, -170.6)
-    c.fillStyle = '#211927'
-    c.strokeStyle = '#49378B'
+    c.fillStyle = ink
+    c.strokeStyle = plum
     c.beginPath()
     if (c.roundRect) c.roundRect(-0.866025, 1.5, 341.2, 341.2, 53.8242)
     else c.rect(-0.866025, 1.5, 341.2, 341.2)
@@ -92,7 +98,7 @@ onMounted(() => {
 
   function drawLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.fillStyle = '#211927'
+    ctx.fillStyle = ink
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     ctx.save()
@@ -100,15 +106,15 @@ onMounted(() => {
 
     ctx.save()
     ctx.transform(-1, 0, 0, 1, 1516, 112)
-    ctx.fillStyle = '#211927'
+    ctx.fillStyle = ink
     ctx.fillRect(0, 0, 800, 800)
     ctx.restore()
 
     const time = Date.now() / 1000
     const cycle = time % 1.0
 
-    let stampAmt = 0
-    let conveyorEject = 0
+    let stampAmt: number
+    let conveyorEject: number
 
     if (cycle < 0.35) {
       const p = cycle / 0.35
@@ -210,13 +216,13 @@ onUnmounted(() => {
       <ProductHeroBadge text="API" />
 
       <h1
-        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light whitespace-pre-line md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
+        class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
         {{ t('api.hero.heading', locale) }}
       </h1>
 
       <p
-        class="text-primary-comfy-canvas mt-6 max-w-md text-sm lg:mt-6 lg:text-base"
+        class="mt-6 max-w-md text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
       >
         {{ t('api.hero.subtitle', locale) }}
       </p>
