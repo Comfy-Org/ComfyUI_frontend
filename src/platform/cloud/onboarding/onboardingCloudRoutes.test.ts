@@ -33,6 +33,17 @@ describe('cloudOnboardingRoutes', () => {
     expect(consentRoute?.path).toBe('consent')
   })
 
+  it('forgot-password keeps the footer its terms and help links live in', () => {
+    const cloudLayout = cloudOnboardingRoutes.find((r) => r.path === '/cloud')
+    const forgotPassword = cloudLayout?.children?.find(
+      (c) => c.name === 'cloud-forgot-password'
+    )
+
+    expect(forgotPassword).toBeDefined()
+    expect(forgotPassword?.meta?.hideFooter).toBeFalsy()
+    expect(forgotPassword?.meta?.showTermsNotice).toBeFalsy()
+  })
+
   it('consent route carries no requiresAuth meta', () => {
     const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
     const consentRoute = oauthLayout?.children?.find(
