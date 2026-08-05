@@ -355,6 +355,29 @@ describe('downloadUtil', () => {
       expect(mockTab.location.href).toBe('blob:mock-url')
     })
 
+    it('neutralizes non-media content types before creating the blob URL', async () => {
+      mockIsCloud.value = true
+      const htmlBlob = new Blob(
+        ['<script>globalThis.__pwned = true</script>'],
+        {
+          type: 'text/html'
+        }
+      )
+      const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
+      windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
+      fetchMock.mockResolvedValue(
+        fromPartial<Response>({
+          ok: true,
+          blob: vi.fn().mockResolvedValue(htmlBlob)
+        })
+      )
+
+      await openFileInNewTab('https://storage.googleapis.com/bucket/evil.png')
+
+      const [created] = createObjectURLSpy.mock.calls[0] as unknown as [Blob]
+      expect(created.type).toBe('application/octet-stream')
+    })
+
     it('revokes blob URL after timeout in cloud mode', async () => {
       mockIsCloud.value = true
       const blob = new Blob(['test'], { type: 'image/png' })

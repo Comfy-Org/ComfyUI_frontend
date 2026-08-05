@@ -152,6 +152,23 @@ async function downloadViaBlobFetch(
  * (browsers block window.open after an await), then navigates it to
  * the blob URL once the fetch completes.
  */
+const RENDERABLE_MEDIA_TYPES = new Set([
+  'image/apng',
+  'image/avif',
+  'image/bmp',
+  'image/gif',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'audio/mpeg',
+  'audio/ogg',
+  'audio/wav',
+  'audio/webm',
+  'video/mp4',
+  'video/ogg',
+  'video/webm'
+])
+
 export async function openFileInNewTab(url: string): Promise<void> {
   if (!isCloud) {
     window.open(url, '_blank')
@@ -163,7 +180,10 @@ export async function openFileInNewTab(url: string): Promise<void> {
 
   try {
     const response = await fetchAsBlob(url)
-    const blob = await response.blob()
+    const fetched = await response.blob()
+    const blob = RENDERABLE_MEDIA_TYPES.has(fetched.type)
+      ? fetched
+      : new Blob([fetched], { type: 'application/octet-stream' })
     const blobUrl = URL.createObjectURL(blob)
 
     if (tab && !tab.closed) {
