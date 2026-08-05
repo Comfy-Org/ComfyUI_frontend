@@ -81,6 +81,14 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   lines: 70
 }
 
+// WebGL2 / pixel-processing passes that need a real rendering context;
+// exercised via browser tests rather than happy-dom unit tests
+const LAYER_EDITOR_GPU_COVERAGE_EXCLUDE = [
+  'src/core/layerEditor/engine/compositor/webglCompositor.ts',
+  'src/core/layerEditor/engine/render/fxGpu.ts',
+  'src/core/layerEditor/engine/render/layerFx.ts'
+]
+
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
   'src/lib/litegraph/imgs/**',
   'src/lib/litegraph/public/**',
@@ -653,6 +661,11 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/](yjs|lib0)[\\/]/,
               priority: 15
             },
+            {
+              name: 'vendor-ag-psd',
+              test: /[\\/]node_modules[\\/]ag-psd[\\/]/,
+              priority: 15
+            },
 
             // Utilities and validation
             {
@@ -749,6 +762,7 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/locales/**',
         'src/assets/**',
+        ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
       thresholds: {

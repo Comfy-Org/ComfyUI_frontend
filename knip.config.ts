@@ -52,6 +52,8 @@ const config: KnipConfig = {
     '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
+    // Layer editor engine — consumed by the editor/tools/UI stacked PRs
+    'src/core/layerEditor/**',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
     'apps/website/src/utils/marketingImage.ts',
