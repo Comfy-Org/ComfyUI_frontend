@@ -2277,6 +2277,7 @@
     "failedToExportModel": "Failed to export model as {format}",
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
+    "a1111CoreNodesUnavailable": "Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.",
     "dropFileError": "Unable to process dropped item: {error}",
     "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Errors tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
