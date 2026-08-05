@@ -13,6 +13,10 @@
  */
 const HOST_MODULES = {
   '/comfy/api/v1.js': 'comfyApi',
+  // Not a pack import: litegraph reaches i18n via BaseWidget, and `src/i18n.ts`
+  // uses Vite's `import.meta.glob`, which throws under plain Node.
+  '@/i18n': 'i18n',
+  'src/i18n.ts': 'i18n',
   'scripts/app.js': 'app',
   'scripts/api.js': 'api',
   'scripts/widgets.js': 'widgets',

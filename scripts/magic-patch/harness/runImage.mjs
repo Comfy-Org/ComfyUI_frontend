@@ -8,6 +8,11 @@
  *   tsx runImage.mjs <spec.json>
  */
 import { readFileSync } from 'node:fs'
+import { register } from 'node:module'
+
+// Before every other import: the hook has to be in place prior to anything
+// pulling in litegraph, which reaches i18n at module scope.
+register('./loader.mjs', import.meta.url)
 
 // The DOM has to exist before anything else is imported: litegraph reaches
 // DOMPurify at module scope, and DOMPurify degrades to a no-op export when it
@@ -27,6 +32,11 @@ globalThis.window ??= window
 globalThis.document ??= window.document
 globalThis.requestAnimationFrame ??= (fn) => setTimeout(() => fn(0), 0)
 globalThis.cancelAnimationFrame ??= clearTimeout
+
+// Entity state lives in Pinia stores, so the graph cannot register a node
+// without an active instance.
+const { createPinia, setActivePinia } = await import('pinia')
+setActivePinia(createPinia())
 
 const { runPack } = await import('./runPack.mjs')
 const spec = JSON.parse(readFileSync(process.argv[2], 'utf8'))
