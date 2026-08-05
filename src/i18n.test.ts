@@ -5,6 +5,8 @@ import type * as I18nModule from './i18n'
 let i18n: typeof I18nModule.i18n
 let loadLocale: typeof I18nModule.loadLocale
 let resolveNodeDefText: typeof I18nModule.resolveNodeDefText
+let resolveNodeDefInputText: typeof I18nModule.resolveNodeDefInputText
+let resolveNodeDefOutputText: typeof I18nModule.resolveNodeDefOutputText
 let setBackendNodeText: typeof I18nModule.setBackendNodeText
 let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
 let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
@@ -16,6 +18,8 @@ async function importI18nModule() {
   i18n = i18nModule.i18n
   loadLocale = i18nModule.loadLocale
   resolveNodeDefText = i18nModule.resolveNodeDefText
+  resolveNodeDefInputText = i18nModule.resolveNodeDefInputText
+  resolveNodeDefOutputText = i18nModule.resolveNodeDefOutputText
   setBackendNodeText = i18nModule.setBackendNodeText
   mergeCustomNodesI18n = i18nModule.mergeCustomNodesI18n
   resolveSupportedLocale = i18nModule.resolveSupportedLocale
@@ -37,7 +41,18 @@ function restoreEnNodeDefsMock() {
   }
   Object.assign(enNodeDefsMock, {
     testNode: 'Test Node',
-    KSampler: { display_name: 'KSampler (bundled)' }
+    KSampler: {
+      display_name: 'KSampler (bundled)',
+      inputs: {
+        seed: { name: 'seed (bundled)', tooltip: 'Seed tooltip (bundled)' },
+        // The serializer escapes `name` and leaves `tooltip` verbatim, so the
+        // same source text is stored differently per field.
+        syntax: { name: "50{'%'} {'@'}", tooltip: "50{'%'} {'@'}" }
+      },
+      outputs: {
+        0: { name: 'LATENT (bundled)', tooltip: 'Latent tooltip (bundled)' }
+      }
+    }
   })
 }
 
@@ -52,12 +67,17 @@ vi.mock('./locales/en/settings.json', () => ({
 }))
 
 // Mock lazy-loaded locales
-vi.mock('./locales/zh/main.json', () => ({ default: { welcome: 'æ¬¢è¿Ž' } }))
+vi.mock('./locales/zh/main.json', () => ({ default: { welcome: '欢迎' } }))
 vi.mock('./locales/zh/nodeDefs.json', () => ({
-  default: { testNode: 'æµ‹è¯•èŠ‚ç‚¹' }
+  default: {
+    testNode: '测试节点',
+    KSampler: {
+      inputs: { seed: { name: '种子', tooltip: '种子提示' } }
+    }
+  }
 }))
-vi.mock('./locales/zh/commands.json', () => ({ default: { save: 'ä¿å­˜' } }))
-vi.mock('./locales/zh/settings.json', () => ({ default: { theme: 'ä¸»é¢˜' } }))
+vi.mock('./locales/zh/commands.json', () => ({ default: { save: '保存' } }))
+vi.mock('./locales/zh/settings.json', () => ({ default: { theme: '主题' } }))
 
 describe('i18n', () => {
   beforeEach(async () => {
@@ -90,7 +110,7 @@ describe('i18n', () => {
       mergeCustomNodesI18n({
         zh: {
           customNode: {
-            title: 'è‡ªå®šä¹‰èŠ‚ç‚¹æ ‡é¢˜'
+            title: '自定义节点标题'
           }
         }
       })
@@ -111,7 +131,7 @@ describe('i18n', () => {
       mergeCustomNodesI18n({
         zh: {
           customNode: {
-            title: 'è‡ªå®šä¹‰èŠ‚ç‚¹æ ‡é¢˜'
+            title: '自定义节点标题'
           }
         }
       })
@@ -123,8 +143,8 @@ describe('i18n', () => {
         string,
         unknown
       >
-      expect(zhMessages.welcome).toBe('æ¬¢è¿Ž')
-      expect(zhMessages.customNode).toEqual({ title: 'è‡ªå®šä¹‰èŠ‚ç‚¹æ ‡é¢˜' })
+      expect(zhMessages.welcome).toBe('欢迎')
+      expect(zhMessages.customNode).toEqual({ title: '自定义节点标题' })
     })
 
     it('should preserve custom node data when locale is loaded after merge', async () => {
@@ -133,10 +153,10 @@ describe('i18n', () => {
       mergeCustomNodesI18n({
         zh: {
           customNode: {
-            title: 'è‡ªå®šä¹‰èŠ‚ç‚¹æ ‡é¢˜'
+            title: '自定义节点标题'
           },
           settingsCategories: {
-            Hotkeys: 'å¿«æ·é”®'
+            Hotkeys: '快捷键'
           }
         }
       })
@@ -149,12 +169,14 @@ describe('i18n', () => {
         string,
         unknown
       >
-      expect(zhMessages.customNode).toEqual({ title: 'è‡ªå®šä¹‰èŠ‚ç‚¹æ ‡é¢˜' })
-      expect(zhMessages.settingsCategories).toEqual({ Hotkeys: 'å¿«æ·é”®' })
+      expect(zhMessages.customNode).toEqual({ title: '自定义节点标题' })
+      expect(zhMessages.settingsCategories).toEqual({ Hotkeys: '快捷键' })
 
       // 4. Also verify base locale data is present
-      expect(zhMessages.welcome).toBe('æ¬¢è¿Ž')
-      expect(zhMessages.nodeDefs).toEqual({ testNode: 'æµ‹è¯•èŠ‚ç‚¹' })
+      expect(zhMessages.welcome).toBe('欢迎')
+      expect(zhMessages.nodeDefs).toEqual(
+        expect.objectContaining({ testNode: '测试节点' })
+      )
     })
 
     it('should handle multiple locales in custom nodes i18n data', async () => {
@@ -164,7 +186,7 @@ describe('i18n', () => {
           customPlugin: { name: 'Easy Use' }
         },
         zh: {
-          customPlugin: { name: 'ç®€å•ä½¿ç”¨' }
+          customPlugin: { name: '简单使用' }
         }
       })
 
@@ -180,7 +202,7 @@ describe('i18n', () => {
         string,
         unknown
       >
-      expect(zhMessages.customPlugin).toEqual({ name: 'ç®€å•ä½¿ç”¨' })
+      expect(zhMessages.customPlugin).toEqual({ name: '简单使用' })
     })
 
     it('should handle calling mergeCustomNodesI18n multiple times', async () => {
@@ -189,11 +211,11 @@ describe('i18n', () => {
       await importI18nModule()
 
       mergeCustomNodesI18n({
-        zh: { plugin1: { name: 'æ’ä»¶1' } }
+        zh: { plugin1: { name: '插件1' } }
       })
 
       mergeCustomNodesI18n({
-        zh: { plugin2: { name: 'æ’ä»¶2' } }
+        zh: { plugin2: { name: '插件2' } }
       })
 
       await loadLocale('zh')
@@ -203,7 +225,7 @@ describe('i18n', () => {
         unknown
       >
       // Only the second call's data should be present
-      expect(zhMessages.plugin2).toEqual({ name: 'æ’ä»¶2' })
+      expect(zhMessages.plugin2).toEqual({ name: '插件2' })
       // First call's data is overwritten
       expect(zhMessages.plugin1).toBeUndefined()
     })
@@ -362,6 +384,129 @@ describe('i18n', () => {
         setBackendNodeText([])
 
         expect(resolveNodeDefText('description', 'Unknown')).toBe('')
+      })
+    })
+  })
+
+  describe('slot text', () => {
+    describe('precedence', () => {
+      it('en: the live backend value beats the bundled snapshot', () => {
+        expect(
+          resolveNodeDefInputText('name', 'KSampler', 'seed', 'Live Seed')
+        ).toBe('Live Seed')
+        expect(
+          resolveNodeDefInputText('tooltip', 'KSampler', 'seed', 'Live tooltip')
+        ).toBe('Live tooltip')
+        expect(
+          resolveNodeDefOutputText('name', 'KSampler', 0, 'Live Latent')
+        ).toBe('Live Latent')
+        expect(
+          resolveNodeDefOutputText('tooltip', 'KSampler', 0, 'Live tooltip')
+        ).toBe('Live tooltip')
+      })
+
+      it('en: the bundled snapshot is used when the backend sends nothing', () => {
+        expect(resolveNodeDefInputText('name', 'KSampler', 'seed')).toBe(
+          'seed (bundled)'
+        )
+        expect(resolveNodeDefInputText('tooltip', 'KSampler', 'seed')).toBe(
+          'Seed tooltip (bundled)'
+        )
+        expect(resolveNodeDefOutputText('tooltip', 'KSampler', 0)).toBe(
+          'Latent tooltip (bundled)'
+        )
+      })
+
+      it('en: falls back to the caller fallback when nothing supplies text', () => {
+        expect(
+          resolveNodeDefInputText('name', 'Unknown', 'seed', undefined, 'seed')
+        ).toBe('seed')
+        expect(resolveNodeDefOutputText('tooltip', 'Unknown', 0)).toBe('')
+      })
+
+      it('en: a custom-node translation beats the backend', () => {
+        mergeCustomNodesI18n({
+          en: {
+            nodeDefs: {
+              KSampler: { inputs: { seed: { name: 'Custom Seed' } } }
+            }
+          }
+        })
+
+        expect(
+          resolveNodeDefInputText('name', 'KSampler', 'seed', 'Live Seed')
+        ).toBe('Custom Seed')
+      })
+
+      it('non-en: the translation stays authoritative over the backend', async () => {
+        await setActiveLocale('zh')
+
+        expect(
+          resolveNodeDefInputText('name', 'KSampler', 'seed', 'Live Seed')
+        ).toBe('种子')
+        expect(
+          resolveNodeDefInputText('tooltip', 'KSampler', 'seed', 'Live tooltip')
+        ).toBe('种子提示')
+      })
+
+      it('non-en: falls back to the live backend value, not the en snapshot', async () => {
+        await setActiveLocale('zh')
+
+        expect(
+          resolveNodeDefOutputText('name', 'KSampler', 0, 'Live Latent')
+        ).toBe('Live Latent')
+      })
+    })
+
+    describe('raw / compiled split', () => {
+      it('compiles a bundled name but returns a bundled tooltip uncompiled', () => {
+        expect(resolveNodeDefInputText('name', 'KSampler', 'syntax')).toBe(
+          '50% @'
+        )
+        expect(resolveNodeDefInputText('tooltip', 'KSampler', 'syntax')).toBe(
+          "50{'%'} {'@'}"
+        )
+      })
+
+      it('returns backend slot text verbatim, never through the compiler', () => {
+        const raw = "Mask {'@'} 100% | D:\\output"
+
+        expect(
+          resolveNodeDefInputText('tooltip', 'KSampler', 'seed', raw)
+        ).toBe(raw)
+        expect(resolveNodeDefInputText('name', 'KSampler', 'seed', raw)).toBe(
+          raw
+        )
+      })
+    })
+
+    describe('key resolution', () => {
+      it('normalizes dotted input names', () => {
+        mergeCustomNodesI18n({
+          en: {
+            nodeDefs: {
+              KSampler: { inputs: { a_b: { name: 'Dotted Input' } } }
+            }
+          }
+        })
+
+        expect(resolveNodeDefInputText('name', 'KSampler', 'a.b', 'Live')).toBe(
+          'Dotted Input'
+        )
+      })
+
+      it('resolves the legacy nested shape hand-written locales use', () => {
+        mergeCustomNodesI18n({
+          en: {
+            nodeDefs: {
+              my: { node: { inputs: { seed: { name: 'Nested Seed' } } } }
+            }
+          }
+        })
+
+        expect(resolveNodeDefInputText('name', 'my.node', 'seed', 'Live')).toBe(
+          'Nested Seed'
+        )
       })
     })
   })

@@ -812,6 +812,9 @@
       "buy": "קנה",
       "buyCredits": "המשך לתשלום",
       "buyNow": "קנה עכשיו",
+      "chargedImmediatelyNote": "הכרטיס השמור שלך מחויב מיידית.",
+      "confirmSubtitle": "קרדיטים מתווספים לסביבת עבודה זו מיד עם סיום התשלום.",
+      "confirmTitle": "אישור",
       "contactUs": "צור קשר",
       "creditsDescription": "קרדיטים משמשים להרצת תהליכי עבודה או צמתי שותפים.",
       "creditsPerDollar": "קרדיטים לדולר",
@@ -826,6 +829,7 @@
       "minRequired": "{credits} קרדיטים מינימום",
       "minimumPurchase": "{amount}$ מינימום ({credits} קרדיטים)",
       "needMore": "צריך עוד?",
+      "payAmount": "שלם {amount}",
       "purchaseError": "הרכישה נכשלה",
       "purchaseErrorDetail": "רכישת הקרדיטים נכשלה: {error}",
       "purchaseSuccess": "הקרדיטים נוספו בהצלחה!",
@@ -836,6 +840,8 @@
       "topUp": "טעינה",
       "unknownError": "אירעה שגיאה לא ידועה",
       "usdAmount": "{amount}$",
+      "verifyBody": "הבנק שלך דורש אימות נוסף להשלמת התשלום.",
+      "verifyTitle": "אמת את התשלום שלך",
       "videosEstimate": "~{count} סרטונים*",
       "viewPricing": "הצגת פרטי התמחור",
       "youGet": "קרדיטים",
@@ -1874,6 +1880,26 @@
     "warning": "אזהרה",
     "workflow": "תהליך עבודה",
     "you": "אתה"
+  },
+  "gettingStarted": {
+    "loadFailed": "לא הצלחנו לטעון את התבניות.",
+    "retry": "נסו שוב",
+    "retryTemplate": "נסה שוב {title}",
+    "startBlank": "התחלה עם קנבס ריק",
+    "subtitle": "בחרו תהליך עבודה מוכן להתחלה, או התחילו עם קנבס ריק.",
+    "tabs": {
+      "templates": "תבניות",
+      "tutorials": "מדריכים"
+    },
+    "tabsLabel": "אפשרויות התחלה",
+    "templateFailed": "לא הצלחנו לפתוח את התבנית הזו.",
+    "title": "בואו ניצור משהו",
+    "tutorials": {
+      "imageToImage": "תמונה לתמונה",
+      "inpaint": "Inpainting",
+      "interfaceOverview": "סקירת ממשק",
+      "textToImage": "טקסט לתמונה"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "מצב הקנבס",

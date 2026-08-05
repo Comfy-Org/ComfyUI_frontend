@@ -111,6 +111,7 @@ export type RemoteConfig = {
   partner_node_governance_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
+  supports_model_type_tags?: boolean
   free_tier_credits?: number
   free_tier_balance?: {
     allowance: number
@@ -124,6 +125,7 @@ export type RemoteConfig = {
   unified_cloud_auth?: boolean
   consolidated_billing_enabled?: boolean
   billing_control_enabled?: boolean
+  v1_payment_recovery?: boolean
   churnkey_app_id?: string
   sentry_dsn?: string
   turnstile_sitekey?: string
