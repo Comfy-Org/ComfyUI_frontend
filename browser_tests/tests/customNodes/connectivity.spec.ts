@@ -322,16 +322,12 @@ function evaluatePairs(
 ): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
   return page.evaluate(async (pairsInPage) => {
     const graph = window.app!.graph
-    // graph.clear() detaches nodes without disconnecting them, so a swept
-    // node keeps output.links pointing at ids the graph no longer holds, and
-    // pack JS resolving its own async work later reads graph.links[staleId]
-    // and throws (VideoHelperSuite's VHS_SelectLatest, from its /vhs/getpath
-    // fetch callback). Removing each node disconnects it first, so the late
-    // callback sees an empty link list and returns.
-    const resetGraph = () => {
-      for (const node of [...graph.nodes]) graph.remove(node)
-      graph.clear()
-    }
+    // Teardown is plain clear(): per-node remove() detaches nodes
+    // (node.graph = null) and VideoHelperSuite's delayed callbacks then
+    // throw NullGraphError from disconnectInput (run 31047330949, four of
+    // four attempts). clear() leaves the older, rarer stale-link read
+    // (VHS_SelectLatest via /vhs/getpath) which the assert ordering below
+    // keeps from masking tier signals.
     const report: Array<{
       key: string
       outcome: string
@@ -340,7 +336,7 @@ function evaluatePairs(
     for (const pair of pairsInPage) {
       const key = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
       try {
-        resetGraph()
+        graph.clear()
         const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
         const consumer = window.LiteGraph!.createNode(pair.consumer.nodeType)
         if (!producer || !consumer) {
@@ -414,7 +410,7 @@ function evaluatePairs(
         })
       }
     }
-    resetGraph()
+    graph.clear()
     return report
   }, pairs)
 }
