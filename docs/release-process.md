@@ -89,6 +89,12 @@ unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
 never left unowned, but **exits non-zero** so the degradation is visible. A
 green run means a real sheriff was resolved from Datadog.
 
+A failed run also posts to **#frontend-releases** with the reason, because a
+failing scheduled workflow otherwise only notifies whoever last pushed to
+`main` — in practice nobody, which is how the placeholder config survived for
+weeks. Needs the `SLACK_BOT_TOKEN` secret; the post is `continue-on-error`, so
+Slack being down never masks the underlying result.
+
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,

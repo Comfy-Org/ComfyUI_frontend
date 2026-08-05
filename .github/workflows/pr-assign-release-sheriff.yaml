@@ -43,9 +43,35 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Assign release sheriff
+        id: sheriff
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
           DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
         run: pnpm exec tsx scripts/release-sheriff/release-sheriff.ts
+
+      # A failed scheduled run only notifies whoever last pushed to main, which
+      # in practice is nobody — the reason the placeholder config went unnoticed
+      # for weeks. Post where the rotation actually watches instead.
+      - name: Report a degraded run to Slack
+        if: failure()
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: 'C09K9TPU2G7' # #frontend-releases
+          REASON: ${{ steps.sheriff.outputs.degraded }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          DETAIL="${REASON:-The job failed before it could resolve a sheriff.}"
+          TEXT=":rotating_light: *Release sheriff assignment degraded.* ${DETAIL} <${RUN_URL}|View run>"
+          BODY=$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg text "$TEXT" '{channel: $ch, text: $text}')
+          RESPONSE=$(curl -sS -X POST \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            https://slack.com/api/chat.postMessage)
+          echo "$RESPONSE" | jq -e '.ok == true' >/dev/null

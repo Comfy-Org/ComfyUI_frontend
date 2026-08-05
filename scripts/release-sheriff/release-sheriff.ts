@@ -288,6 +288,13 @@ function summary(line: string) {
   if (file) appendFileSync(file, `${line}\n`)
 }
 
+// Read by the workflow's failure step to say why in Slack, so the alert is
+// actionable without opening the run.
+function output(key: string, value: string) {
+  const file = process.env.GITHUB_OUTPUT
+  if (file) appendFileSync(file, `${key}<<__EOF__\n${value}\n__EOF__\n`)
+}
+
 function ghPost(path: string, field: string): boolean {
   try {
     gh(['api', '--method', 'POST', path, '-f', field, '--silent'])
@@ -309,22 +316,27 @@ async function main() {
     fetchOnCallEmails(CONFIG, credentials),
     fetchGithubLogins(CONFIG, credentials)
   ])
-  for (const warning of [oncall.warning, directory.warning]) {
-    if (warning) warn(warning)
-  }
+  // Both lookups hit the same API, so a credentials or outage failure arrives
+  // twice; the Slack alert should say it once.
+  const problems = [
+    ...new Set([oncall.warning, directory.warning].filter((w) => w !== null))
+  ]
 
   const { login, source, unmappedEmails } = resolveSheriff(oncall.emails, {
     ...CONFIG,
     githubLoginByUser: directory.githubLoginByUser
   })
   for (const email of unmappedEmails) {
-    warn(
+    problems.push(
       `Datadog on-call user ${email} has no GitHub login. Add the tag ` +
         `"github:${emailKey(email)}:<github-login>" to the Datadog schedule.`
     )
   }
+  for (const problem of problems) warn(problem)
   if (!login) {
-    warn('No release sheriff could be resolved — nothing will be assigned.')
+    const message = 'No release sheriff could be resolved — nothing assigned.'
+    warn(message)
+    output('degraded', [message, ...problems].join(' '))
     process.exitCode = 1
     return
   }
@@ -333,6 +345,11 @@ async function main() {
   // green: this job warned "No Datadog On-Call schedule configured" on every
   // run for weeks and nobody noticed, because a warning alone reports success.
   if (source !== 'datadog') {
+    output(
+      'degraded',
+      `Fell back to \`${login}\` instead of the Datadog on-call user. ` +
+        problems.join(' ')
+    )
     process.exitCode = 1
   }
 
