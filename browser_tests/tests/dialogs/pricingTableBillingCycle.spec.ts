@@ -45,76 +45,80 @@ async function setupCloudPricing(page: Page) {
   await bootCloud(page)
 }
 
-test.describe(
-  'Pricing table billing cycle',
-  { tag: ['@cloud', '@mobile'] },
-  () => {
-    test('BILL-P01 switches Creator pricing from monthly to yearly', async ({
-      billingApi,
-      page
-    }) => {
-      test.slow()
-      const annualPlan = DEFAULT_BILLING_PLANS.plans.find(
-        ({ slug }) => slug === 'creator-annual'
-      )
-      if (!annualPlan) throw new Error('Missing creator-annual plan')
+test.describe('Pricing table billing cycle', () => {
+  for (const { viewport, tag } of [
+    { viewport: 'desktop', tag: '@cloud' },
+    { viewport: 'mobile', tag: '@mobile-ios' }
+  ] as const) {
+    test(
+      `BILL-P01 switches Creator pricing from monthly to yearly on ${viewport}`,
+      { tag },
+      async ({ billingApi, page }) => {
+        test.slow()
+        const annualPlan = DEFAULT_BILLING_PLANS.plans.find(
+          ({ slug }) => slug === 'creator-annual'
+        )
+        if (!annualPlan) throw new Error('Missing creator-annual plan')
 
-      await billingApi.setup({
-        previewResponse: {
-          ...DEFAULT_PREVIEW_SUBSCRIBE_RESPONSE,
-          cost_today_cents: annualPlan.price_cents,
-          cost_next_period_cents: annualPlan.price_cents,
-          credits_today_cents: annualPlan.credits_cents,
-          credits_next_period_cents: annualPlan.credits_cents,
-          new_plan: annualPlan
-        }
-      })
-      await setupCloudPricing(page)
-      await page.goto(APP_URL)
-      await waitForCloudApp(page)
-      await page.getByTestId('current-user-button').click()
-      const userPopover = page.getByTestId('current-user-popover')
-      await expect(userPopover).toBeVisible()
-      await userPopover.getByTestId('plans-pricing-menu-item').click()
+        await billingApi.setup({
+          previewResponse: {
+            ...DEFAULT_PREVIEW_SUBSCRIBE_RESPONSE,
+            cost_today_cents: annualPlan.price_cents,
+            cost_next_period_cents: annualPlan.price_cents,
+            credits_today_cents: annualPlan.credits_cents,
+            credits_next_period_cents: annualPlan.credits_cents,
+            new_plan: annualPlan
+          }
+        })
+        await setupCloudPricing(page)
+        await page.goto(APP_URL)
+        await waitForCloudApp(page)
+        await page.getByTestId('current-user-button').click()
+        const userPopover = page.getByTestId('current-user-popover')
+        await expect(userPopover).toBeVisible()
+        await userPopover.getByTestId('plans-pricing-menu-item').click()
 
-      const dialog = page.getByRole('dialog').filter({
-        has: page.getByRole('heading', { name: 'Choose a Plan' })
-      })
-      await expect(dialog).toBeVisible({ timeout: 45_000 })
+        const dialog = page.getByRole('dialog').filter({
+          has: page.getByRole('heading', { name: 'Choose a Plan' })
+        })
+        await expect(dialog).toBeVisible({ timeout: 45_000 })
 
-      await dialog.getByRole('button', { name: 'Monthly', exact: true }).click()
-      const monthlyPlan = dialog.getByRole('button', {
-        name: 'Subscribe to Creator',
-        exact: true
-      })
-      await expect(monthlyPlan).toBeVisible()
-      expect(await monthlyPlan.locator('../..').innerText()).toContain('$35')
+        await dialog
+          .getByRole('button', { name: 'Monthly', exact: true })
+          .click()
+        const monthlyPlan = dialog.getByRole('button', {
+          name: 'Subscribe to Creator',
+          exact: true
+        })
+        await expect(monthlyPlan).toBeVisible()
+        expect(await monthlyPlan.locator('../..').innerText()).toContain('$35')
 
-      const yearlyToggle = dialog.getByRole('button', {
-        name: 'Yearly Save 20%',
-        exact: true
-      })
-      await expect(
-        yearlyToggle.getByText('Save 20%', { exact: true })
-      ).toBeVisible()
-      await yearlyToggle.click()
+        const yearlyToggle = dialog.getByRole('button', {
+          name: 'Yearly Save 20%',
+          exact: true
+        })
+        await expect(
+          yearlyToggle.getByText('Save 20%', { exact: true })
+        ).toBeVisible()
+        await yearlyToggle.click()
 
-      const yearlyPlan = dialog.getByRole('button', {
-        name: 'Subscribe to Creator Yearly',
-        exact: true
-      })
-      await expect(yearlyPlan).toBeVisible()
-      const yearlyPlanText = await yearlyPlan.locator('../..').innerText()
-      expect(yearlyPlanText).toContain('$28')
-      expect(yearlyPlanText).toContain('$336 Billed yearly')
-      await yearlyPlan.click()
+        const yearlyPlan = dialog.getByRole('button', {
+          name: 'Subscribe to Creator Yearly',
+          exact: true
+        })
+        await expect(yearlyPlan).toBeVisible()
+        const yearlyPlanText = await yearlyPlan.locator('../..').innerText()
+        expect(yearlyPlanText).toContain('$28')
+        expect(yearlyPlanText).toContain('$336 Billed yearly')
+        await yearlyPlan.click()
 
-      await expect(
-        page.getByRole('heading', { name: 'Confirm your payment' })
-      ).toBeVisible()
-      expect(billingApi.requests.previewSubscribe).toEqual([
-        expect.objectContaining({ plan_slug: 'creator-annual' })
-      ])
-    })
+        await expect(
+          page.getByRole('heading', { name: 'Confirm your payment' })
+        ).toBeVisible()
+        expect(billingApi.requests.previewSubscribe).toEqual([
+          expect.objectContaining({ plan_slug: 'creator-annual' })
+        ])
+      }
+    )
   }
-)
+})
