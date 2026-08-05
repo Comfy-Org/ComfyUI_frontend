@@ -172,7 +172,6 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
 
       canvas.ds.scale = 1
       canvas.centerOnNode(node)
-      canvas.setDirty(true, true)
       const [x, y] = app.canvasPosToClientPos(node.pos)
       return { id: node.id, x, y, graphX: node.pos[0] }
     })
