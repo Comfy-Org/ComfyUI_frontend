@@ -464,8 +464,17 @@ rendering read current values through `this.pos` and `this.size` without walking
 every node after each layout change.
 
 While Vue-node rendering is active, `notifyLayoutChanges` dirties the canvas for
-node layout changes. It also calls `onResize` for `resizeNode` and
-`batchUpdateBounds` operations. It does not copy geometry into nodes.
+node layout changes. For non-canvas `resizeNode` and `batchUpdateBounds`
+operations, it also calls `onResize`; canvas resizes already own that callback
+through `LGraphNode.setSize()`. It does not copy geometry into nodes.
+
+**Stack verification for whole-value setters.** PR 14133 carries two
+`test.fails` cases for complementary geometry: a store resize followed by a
+whole-value `node.pos` assignment must preserve the stored size, and a store
+move followed by a whole-value `node.size` assignment must preserve the stored
+position. They document known failures in the facade alone. After rebasing PR
+14480, both should report unexpected passes; remove the `.fails` markers to make
+them permanent regressions before merging that child PR.
 
 **Deferred follow-up: extract geometry projection ownership.** Land this after
 the node geometry facade and its CRDT-safety follow-up (PRs 14133 and 14480) so
