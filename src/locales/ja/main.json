@@ -812,6 +812,9 @@
       "buy": "購入",
       "buyCredits": "支払いに進む",
       "buyNow": "今すぐ購入",
+      "chargedImmediatelyNote": "ご登録のカードには即時に請求されます。",
+      "confirmSubtitle": "お支払いが完了すると、クレジットがこのワークスペースに追加されます。",
+      "confirmTitle": "確認",
       "contactUs": "お問い合わせ",
       "creditsDescription": "クレジットはワークフローやパートナーノードの実行に使用されます。",
       "creditsPerDollar": "1ドルあたりのクレジット数",
@@ -826,6 +829,7 @@
       "minRequired": "最低{credits}クレジット",
       "minimumPurchase": "最低購入額：${amount}（{credits}クレジット）",
       "needMore": "さらに必要ですか？",
+      "payAmount": "{amount} を支払う",
       "purchaseError": "購入に失敗しました",
       "purchaseErrorDetail": "クレジットの購入に失敗しました: {error}",
       "purchaseSuccess": "クレジットが正常に追加されました！",
@@ -836,6 +840,8 @@
       "topUp": "チャージ",
       "unknownError": "不明なエラーが発生しました",
       "usdAmount": "${amount}",
+      "verifyBody": "お支払いを完了するために、銀行による追加認証が必要です。",
+      "verifyTitle": "お支払いの認証",
       "videosEstimate": "約{count}本の動画",
       "viewPricing": "料金詳細を見る",
       "youGet": "クレジット",
@@ -1875,6 +1881,26 @@
     "workflow": "ワークフロー",
     "you": "あなた"
   },
+  "gettingStarted": {
+    "loadFailed": "テンプレートの読み込みに失敗しました。",
+    "retry": "再試行",
+    "retryTemplate": "{title} を再試行",
+    "startBlank": "空白のキャンバスから始める",
+    "subtitle": "すぐに使えるワークフローから始めるか、空白のキャンバスから始めましょう。",
+    "tabs": {
+      "templates": "テンプレート",
+      "tutorials": "チュートリアル"
+    },
+    "tabsLabel": "はじめに選択",
+    "templateFailed": "このテンプレートを開くことができませんでした。",
+    "title": "何かを作ってみましょう",
+    "tutorials": {
+      "imageToImage": "画像から画像へ",
+      "inpaint": "インペイント",
+      "interfaceOverview": "インターフェース概要",
+      "textToImage": "テキストから画像へ"
+    }
+  },
   "graphCanvasMenu": {
     "canvasMode": "キャンバスモード",
     "canvasToolbar": "キャンバスツールバー",
@@ -2905,6 +2931,7 @@
     "mage": "mage",
     "mask": "マスク",
     "merging": "マージ",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "モデル",
     "model specific": "モデル固有",
@@ -3865,6 +3892,7 @@
     "beta": "ベータ版",
     "billedMonthly": "毎月請求",
     "billedYearly": "{total} 年間請求",
+    "billingAndInvoices": "請求と請求書",
     "billingComingSoon": {
       "message": "チーム向けの請求機能が近日中に追加されます。ワークスペースごとに席数単位でプランに加入できるようになります。今後のアップデートをお待ちください。",
       "title": "近日公開"
@@ -3946,6 +3974,9 @@
       "memberTitle": "このワークスペースのサブスクリプションは無効です",
       "runLabel": "実行"
     },
+    "inactiveTeamDescription": "チームプランを再有効化して、メンバーを追加したりワークフローを実行したりできます",
+    "inactiveTeamPlanIncludes": "有効なプランには{plan}のすべてに加えて、以下が含まれます：",
+    "inactiveTeamTitle": "チームサブスクリプションが無効です",
     "inviteUpTo": "最大 {count} 人を招待",
     "invoiceHistory": "請求履歴",
     "learnMore": "詳細を見る",
@@ -4065,6 +4096,7 @@
     "pricingBlurbQuestions": "ご質問",
     "pricingBlurbSeeDetails": "詳細を見る",
     "reactivatePlan": "プランを再開",
+    "reactivateToUseCredits": "これらのクレジットを使用するにはプランを再有効化してください",
     "refillsDate": "{date}に補充",
     "refillsNextCycle": "次のサイクルで補充",
     "refreshCredits": "クレジットを更新",

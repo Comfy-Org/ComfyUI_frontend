@@ -66,12 +66,11 @@
     var(--color-primary-comfy-ink) 88%,
     black 12%
   );
-  /* comfy-ink and comfy-canvas are provided by base.css — never redeclare them */
+  /* comfy-ink, comfy-canvas, warm-white and warm-gray are provided by
+     base.css — never redeclare them */
   --color-primary-comfy-yellow: var(--color-brand-yellow);
   --color-primary-comfy-orange: #fabc25;
   --color-primary-comfy-ink-light: #2a2330;
-  --color-primary-warm-white: #f0efed;
-  --color-primary-warm-gray: #7e7c78;
   --color-secondary-mauve: #4d3762;
   --color-destructive: #f44336;
   --color-primary-comfy-plum: var(--color-plum-600);

@@ -188,7 +188,7 @@
 
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
-        v-if="isFreeTier"
+        v-if="isCloud && isFreeTier"
         variant="subscribe"
         size="lg"
         class="w-full font-normal"
@@ -234,6 +234,7 @@ import {
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -250,11 +251,12 @@ const { locale, t } = useI18n()
 const {
   subscription,
   balance,
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   currentTeamCreditStop,
   fetchBalance,
-  fetchStatus
+  fetchStatus,
+  type
 } = useBillingContext()
 const {
   monthlyBonusCredits,
@@ -352,7 +354,7 @@ const monthlyUsageLabel = computed(() =>
 )
 
 const showBreakdown = computed(
-  () => isActiveSubscription.value && !zeroState && !inactivePlan
+  () => canAccessSubscriptionFeatures.value && !zeroState && !inactivePlan
 )
 const showBar = computed(
   () =>
@@ -360,12 +362,14 @@ const showBar = computed(
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
+// Workspace-owner gating only applies to team billing; legacy (personal,
+// including local/desktop) accounts have no workspace concept to gate on.
 const showActionButton = computed(
   () =>
-    isActiveSubscription.value &&
+    canAccessSubscriptionFeatures.value &&
     !zeroState &&
     !inactivePlan &&
-    permissions.value.canTopUp
+    (type.value !== 'workspace' || permissions.value.canTopUp)
 )
 
 const isMonthlyDepleted = computed(
