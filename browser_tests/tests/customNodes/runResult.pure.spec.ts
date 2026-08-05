@@ -20,13 +20,42 @@ test.describe('classifyRun', () => {
     expect(result.executedNodes).toEqual(['1', '2'])
   })
 
-  test('PARTIAL when a succeeding run replays a cached node that never emitted executing', () => {
+  test('PASS when an expected node was served from cache instead of run', () => {
     const result = classifyRun({
-      events: [{ type: 'executing', node: '1' }, { type: 'execution_success' }],
+      events: [
+        { type: 'executing', node: '1' },
+        { type: 'execution_cached', nodes: ['2'] },
+        { type: 'execution_success' }
+      ],
+      expectedNodeIds: ['1', '2']
+    })
+    expect(result.outcome).toBe('PASS')
+    expect(result.executedNodes).toEqual(['1', '2'])
+  })
+
+  test('PARTIAL when a node appears in neither the executing nor the cached stream', () => {
+    const result = classifyRun({
+      events: [
+        { type: 'execution_cached', nodes: ['1'] },
+        { type: 'execution_success' }
+      ],
       expectedNodeIds: ['1', '2']
     })
     expect(result.outcome).toBe('PARTIAL')
     expect(result.executedNodes).toEqual(['1'])
+  })
+
+  test('a node named by both streams is counted once', () => {
+    const result = classifyRun({
+      events: [
+        { type: 'executing', node: '1' },
+        { type: 'execution_cached', nodes: ['1', '2'] },
+        { type: 'execution_success' }
+      ],
+      expectedNodeIds: ['1', '2']
+    })
+    expect(result.outcome).toBe('PASS')
+    expect(result.executedNodes).toEqual(['1', '2'])
   })
 
   test('EXECUTION_ERROR captures the failing node details', () => {

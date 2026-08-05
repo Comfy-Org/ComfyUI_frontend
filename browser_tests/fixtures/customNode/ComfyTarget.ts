@@ -14,6 +14,9 @@ import { onPromptIdResponse } from '@e2e/fixtures/utils/customNodeSuite'
 interface RawEvent {
   type: string
   node?: string | null
+  // execution_cached carries every cache-served node id (apiSchema
+  // zExecutionCachedWsMessage); NodeId is number | string on the wire.
+  nodes?: (string | number)[]
   prompt_id?: string
   output?: unknown
   exception_type?: string
@@ -58,6 +61,8 @@ function toPromptEvent(raw: RawEvent): PromptEvent {
     return { type: 'executing', node: raw.node ?? null }
   if (raw.type === 'executed')
     return { type: 'executed', node: raw.node ?? null, output: raw.output }
+  if (raw.type === 'execution_cached')
+    return { type: 'execution_cached', nodes: (raw.nodes ?? []).map(String) }
   if (raw.type === 'execution_error' || raw.type === 'execution_interrupted') {
     const error: ExecutionError = {
       exceptionType: raw.exception_type,
@@ -135,7 +140,13 @@ export class LocalDesktopTarget {
           )
         return sink.__cnSeenPromptIds
       },
-      ['execution_start', ...TERMINAL, 'executing', 'executed']
+      [
+        'execution_start',
+        ...TERMINAL,
+        'executing',
+        'execution_cached',
+        'executed'
+      ]
     )
 
     // Positively identify THIS attempt: the /prompt POST response body

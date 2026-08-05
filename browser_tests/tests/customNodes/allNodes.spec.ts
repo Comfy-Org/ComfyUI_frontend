@@ -1267,7 +1267,7 @@ for (const entry of loadManifest()) {
         for (const key of baseline) {
           if (ranClean.has(key))
             hardFailures.push(
-              `${key}: ran clean but is listed in cannotRunAlone - remove the stale entry`
+              `${key}: ran clean but is listed in cannotRunAlone - remove the stale entry, or re-derive the baseline if it predates execution_cached accounting (a PARTIAL from a warm backend cache used to read as cannot-run)`
             )
           else if (!runnable.has(key))
             hardFailures.push(
