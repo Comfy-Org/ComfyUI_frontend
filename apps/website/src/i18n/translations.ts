@@ -2472,6 +2472,7 @@ const translations = {
   'nav.reddit': { en: 'Reddit', 'zh-CN': 'Reddit' },
   'nav.x': { en: 'X', 'zh-CN': 'X' },
   'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
+  'nav.linkedin': { en: 'LinkedIn', 'zh-CN': 'LinkedIn' },
   'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
   'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
