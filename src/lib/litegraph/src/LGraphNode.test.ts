@@ -965,6 +965,42 @@ describe('layout geometry projection', () => {
       size: { width: 200, height: 90 }
     })
   })
+
+  test.fails('preserves stored size when assigning position', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [10, 20]
+    node.size = [100, 50]
+    graph.add(node)
+    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
+      {
+        nodeId: node.id,
+        bounds: { x: 30, y: 40, width: 200, height: 80 }
+      }
+    ])
+
+    node.pos = [50, 60]
+
+    expect([...node.size]).toEqual([200, 80])
+  })
+
+  test.fails('preserves stored position when assigning size', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [10, 20]
+    node.size = [100, 50]
+    graph.add(node)
+    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
+      {
+        nodeId: node.id,
+        bounds: { x: 30, y: 40, width: 200, height: 80 }
+      }
+    ])
+
+    node.size = [300, 90]
+
+    expect([...node.pos]).toEqual([30, 40])
+  })
 })
 
 describe('_setConcreteSlots', () => {
