@@ -37,6 +37,7 @@ import type {
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
+  ExecutionNodeErrorWsMessage,
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
@@ -177,6 +178,7 @@ interface BackendApiCalls {
   execution_start: ExecutionStartWsMessage
   execution_success: ExecutionSuccessWsMessage
   execution_error: ExecutionErrorWsMessage
+  execution_node_error: ExecutionNodeErrorWsMessage
   execution_interrupted: ExecutionInterruptedWsMessage
   execution_cached: ExecutionCachedWsMessage
   logs: LogsWsMessage
@@ -871,6 +873,7 @@ export class ComfyApi extends EventTarget {
               break
             case 'execution_start':
             case 'execution_error':
+            case 'execution_node_error':
             case 'execution_interrupted':
             case 'execution_cached':
             case 'execution_success':

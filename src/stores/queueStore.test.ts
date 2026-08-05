@@ -677,6 +677,32 @@ describe('useQueueStore', () => {
       expect(updatedTask).not.toBe(initialTask)
     })
 
+    it('should recreate TaskItemImpl when completion metadata changes', async () => {
+      const job = createHistoryJob(10, 'job-1')
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([job])
+
+      await store.update()
+      const initialTask = store.historyTasks[0]
+      expect(initialTask.isPartialSuccess).toBe(false)
+
+      mockGetHistory.mockResolvedValue([
+        {
+          ...job,
+          completion_status: 'partial_success',
+          has_errors: true,
+          execution_error_count: 2
+        }
+      ])
+
+      await store.update()
+
+      expect(store.historyTasks[0]).not.toBe(initialTask)
+      expect(store.historyTasks[0].isPartialSuccess).toBe(true)
+      expect(store.historyTasks[0].executionErrorCount).toBe(2)
+    })
+
     it('should reuse TaskItemImpl when outputs_count unchanged', async () => {
       const job = {
         ...createHistoryJob(10, 'job-1'),
