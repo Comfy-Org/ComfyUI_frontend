@@ -163,7 +163,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
         renewal_date: '2099-02-20T10:00:00Z',
         has_funds: true
       },
-      { consolidated_billing_enabled: true },
+      {},
       'legacy_stripe'
     )
     await bootApp(page)
@@ -222,8 +222,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
         has_funds: false
       },
       {
-        subscription_required: true,
-        consolidated_billing_enabled: true
+        subscription_required: true
       },
       'stripe'
     )
