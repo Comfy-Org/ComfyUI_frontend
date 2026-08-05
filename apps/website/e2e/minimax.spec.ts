@@ -69,9 +69,18 @@ test.describe('MiniMax H3 page — hero video', () => {
   })
 
   test('hydrates the hero video for a desktop viewport', async ({ page }) => {
-    const video = page.locator('video')
-    await expect(video).toHaveAttribute('src', HERO_VIDEO_PATTERN)
-    await expect(page.locator(HERO_FALLBACK_IMAGE_SELECTOR)).toHaveCount(0)
+    // The models showcase further down the page renders its own <video>
+    // previews, so the hero's must be scoped to its own section.
+    const heroSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
+    })
+    await expect(heroSection.locator('video')).toHaveAttribute(
+      'src',
+      HERO_VIDEO_PATTERN
+    )
+    await expect(heroSection.locator(HERO_FALLBACK_IMAGE_SELECTOR)).toHaveCount(
+      0
+    )
   })
 })
 
@@ -309,8 +318,13 @@ test.describe('MiniMax H3 page — mobile @mobile', () => {
 
     await page.goto(PATH)
 
-    await expect(page.locator(HERO_FALLBACK_IMAGE_SELECTOR)).toBeVisible()
-    await expect(page.locator('video')).toHaveCount(0)
+    const heroSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
+    })
+    await expect(
+      heroSection.locator(HERO_FALLBACK_IMAGE_SELECTOR)
+    ).toBeVisible()
+    await expect(heroSection.locator('video')).toHaveCount(0)
     expect(videoRequests).toEqual([])
   })
 
