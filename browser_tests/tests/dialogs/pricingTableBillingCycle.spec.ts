@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { cloudBillingApiFixture as test } from '@e2e/fixtures/cloudBillingApiFixture'
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import {
   DEFAULT_BILLING_PLANS,
   DEFAULT_PREVIEW_SUBSCRIBE_RESPONSE
@@ -52,12 +53,12 @@ test.describe(
       billingApi,
       page
     }) => {
+      test.slow()
       const annualPlan = DEFAULT_BILLING_PLANS.plans.find(
         ({ slug }) => slug === 'creator-annual'
       )
       if (!annualPlan) throw new Error('Missing creator-annual plan')
 
-      await page.setViewportSize({ width: 390, height: 844 })
       await billingApi.setup({
         previewResponse: {
           ...DEFAULT_PREVIEW_SUBSCRIBE_RESPONSE,
@@ -69,7 +70,12 @@ test.describe(
         }
       })
       await setupCloudPricing(page)
-      await page.goto(`${APP_URL}/?pricing=1`)
+      await page.goto(APP_URL)
+      await waitForCloudApp(page)
+      await page.getByTestId('current-user-button').click()
+      const userPopover = page.getByTestId('current-user-popover')
+      await expect(userPopover).toBeVisible()
+      await userPopover.getByTestId('plans-pricing-menu-item').click()
 
       const dialog = page.getByRole('dialog').filter({
         has: page.getByRole('heading', { name: 'Choose a Plan' })
