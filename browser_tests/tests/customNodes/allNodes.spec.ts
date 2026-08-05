@@ -780,16 +780,32 @@ for (const entry of loadManifest()) {
                           hidden?: boolean
                           name?: string
                           type?: string
+                          options?: {
+                            advanced?: boolean
+                            hidden?: boolean
+                            canvasOnly?: boolean
+                          }
                         }>
-                      ).filter(
-                        (widget) =>
-                          !widget.advanced &&
-                          !widget.hidden &&
+                      ).filter((widget) => {
+                        // Mirror the app's own render rule: shouldRenderAsVue
+                        // (truthy type, not canvasOnly) then isWidgetVisible
+                        // (options.advanced/hidden). advanced lives in options,
+                        // not top-level, so a top-level-only check counts rows
+                        // the app deliberately does not draw.
+                        const options = widget.options ?? {}
+                        return (
+                          !!widget.type &&
                           widget.type !== 'converted-widget' &&
+                          !options.canvasOnly &&
+                          !widget.advanced &&
+                          !options.advanced &&
+                          !widget.hidden &&
+                          !options.hidden &&
                           // Vue renders the seed-control combo inside its
                           // parent widget row, not as its own row.
                           widget.name !== 'control_after_generate'
-                      ).length
+                        )
+                      }).length
                       const domWidgets = root.querySelectorAll(
                         '[data-testid="node-widget"]'
                       ).length
