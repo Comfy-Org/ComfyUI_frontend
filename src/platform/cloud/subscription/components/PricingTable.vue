@@ -372,7 +372,7 @@ const tiers: PricingTierConfig[] = [
   }
 ]
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   tier: subscriptionTier,
   subscription
@@ -392,7 +392,7 @@ const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 const hasPaidSubscription = computed(
-  () => isActiveSubscription.value && !isFreeTier.value
+  () => canAccessSubscriptionFeatures.value && !isFreeTier.value
 )
 
 const currentTierKey = computed<TierKey | null>(() =>
@@ -528,9 +528,25 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           }
         }
       } else {
-        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
-          paymentIntentSource: reason
-        })
+        try {
+          await performSubscriptionCheckout(
+            tierKey,
+            currentBillingCycle.value,
+            { paymentIntentSource: reason }
+          )
+        } catch (error) {
+          telemetry?.trackBillingEvent({
+            operation: 'subscription_checkout',
+            stage: 'failed',
+            outcome: 'failure',
+            tier: tierKey,
+            cycle: currentBillingCycle.value,
+            checkout_type: 'new',
+            payment_intent_source: reason,
+            failure_category: 'unknown'
+          })
+          throw error
+        }
       }
     } finally {
       isLoading.value = false

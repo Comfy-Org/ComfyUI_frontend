@@ -14,6 +14,7 @@ import {
 } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -35,7 +36,9 @@ const CATEGORY_ICONS: Record<string, string> = {
   'server-config': 'icon-[lucide--server]',
   subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
-  workspace: 'icon-[lucide--building-2]'
+  workspace: 'icon-[lucide--building-2]',
+  'workspace-allowlist': 'icon-[lucide--list-checks]',
+  'workspace-members': 'icon-[lucide--users]'
 }
 
 interface SettingPanelItem {
@@ -55,7 +58,9 @@ export function useSettingUI(
 
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const { isActiveSubscription, type: billingType } = useBillingContext()
+  const { canAccessSubscriptionFeatures, type: billingType } =
+    useBillingContext()
+  const { workspaceRole } = useWorkspaceUI()
 
   const teamWorkspacesEnabled = computed(
     () => isCloud && flags.teamWorkspacesEnabled
@@ -156,7 +161,7 @@ export function useSettingUI(
 
   const shouldShowPlanCreditsPanel = computed(() => {
     if (!subscriptionPanel) return false
-    return isActiveSubscription.value
+    return canAccessSubscriptionFeatures.value
   })
 
   const shouldShowLegacyPlanCreditsPanel = computed(
@@ -214,8 +219,24 @@ export function useSettingUI(
     props: { section: 'members' }
   }
 
+  const allowlistPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-allowlist',
+      label: 'Allowlist',
+      children: []
+    },
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'allowlist' }
+  }
+
   const shouldShowWorkspacePanel = computed(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
+  )
+  const shouldShowWorkspaceAllowlist = computed(
+    () =>
+      shouldShowWorkspacePanel.value &&
+      flags.partnerNodeGovernanceEnabled &&
+      workspaceRole.value === 'owner'
   )
 
   const billingControlsEnabled = computed(
@@ -224,9 +245,12 @@ export function useSettingUI(
 
   const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
     if (!shouldShowWorkspacePanel.value) return []
-    return billingControlsEnabled.value
+    const workspacePanels = billingControlsEnabled.value
       ? [planCreditsPanel, membersPanel]
       : [workspacePanel]
+    return shouldShowWorkspaceAllowlist.value
+      ? [...workspacePanels, allowlistPanel]
+      : workspacePanels
   })
 
   const secretsPanel: SettingPanelItem = {
@@ -415,23 +439,25 @@ export function useSettingUI(
   )
 
   const navGroups = computed<NavGroupData[]>(() =>
-    groupedMenuTreeNodes.value.map((group) => ({
-      title:
-        (group as SettingTreeNode & { translatedLabel?: string })
-          .translatedLabel ?? group.label,
-      items: (group.children ?? []).map((child) => ({
-        id: child.key,
-        label:
-          (child as SettingTreeNode & { translatedLabel?: string })
-            .translatedLabel ?? child.label,
-        icon:
-          child.key === 'workspace' && billingControlsEnabled.value
-            ? CATEGORY_ICONS.PlanCredits
-            : (CATEGORY_ICONS[child.key] ??
-              CATEGORY_ICONS[child.label] ??
-              'icon-[lucide--plug]')
+    groupedMenuTreeNodes.value
+      .filter((group) => group.children?.length)
+      .map((group) => ({
+        title:
+          (group as SettingTreeNode & { translatedLabel?: string })
+            .translatedLabel ?? group.label,
+        items: (group.children ?? []).map((child) => ({
+          id: child.key,
+          label:
+            (child as SettingTreeNode & { translatedLabel?: string })
+              .translatedLabel ?? child.label,
+          icon:
+            child.key === 'workspace' && billingControlsEnabled.value
+              ? CATEGORY_ICONS.PlanCredits
+              : (CATEGORY_ICONS[child.key] ??
+                CATEGORY_ICONS[child.label] ??
+                'icon-[lucide--plug]')
+        }))
       }))
-    }))
   )
 
   function findCategoryByKey(key: string): SettingTreeNode | null {

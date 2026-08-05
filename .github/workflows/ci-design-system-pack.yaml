@@ -1,0 +1,50 @@
+name: 'CI: Design System Pack Check'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'packages/design-system/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-pack-contents:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Typecheck
+        run: pnpm -C packages/design-system typecheck
+
+      - name: Verify packed tarball only contains src/css and src/icons
+        shell: bash
+        run: |
+          set -euo pipefail
+          UNEXPECTED=$(
+            pnpm -C packages/design-system pack --dry-run --json |
+              jq -r '
+                .files[].path
+                | select(
+                    . != "package.json"
+                    and . != "LICENSE"
+                    and . != "README.md"
+                    and (startswith("src/css/") | not)
+                    and (startswith("src/icons/") | not)
+                  )
+              '
+          )
+          if [ -n "$UNEXPECTED" ]; then
+            echo "::error title=Unexpected files in tarball::Packed tarball contains files outside src/css and src/icons:" >&2
+            echo "$UNEXPECTED" >&2
+            exit 1
+          fi
+          echo 'Packed tarball contains only expected files.'

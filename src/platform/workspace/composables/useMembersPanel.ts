@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
@@ -14,10 +15,7 @@ import type {
   PendingInvite,
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
-import {
-  MAX_WORKSPACE_MEMBERS,
-  useTeamWorkspaceStore
-} from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
 type ActiveView = 'active' | 'pending'
@@ -105,11 +103,10 @@ export function useMembersPanel() {
   const workspaceStore = useTeamWorkspaceStore()
   const {
     activeWorkspace,
+    isInPersonalWorkspace,
     members,
     pendingInvites,
-    originalOwnerId,
-    totalMemberSlots,
-    isInviteLimitReached
+    originalOwnerId
   } = storeToRefs(workspaceStore)
   const { resendInvite } = workspaceStore
   const {
@@ -122,30 +119,28 @@ export function useMembersPanel() {
     isOnTeamPlan,
     isCancelled,
     hasLapsedTeamPlan,
+    hasMemberSeats,
     isPlanLoading
   } = useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
-
-  // The team plan caps members at a flat MAX_WORKSPACE_MEMBERS, independent of
-  // the subscription tier.
-  const maxSeats = computed(() => MAX_WORKSPACE_MEMBERS)
+  const { maxSeats, occupiedSeats } = useBillingContext()
 
   const permissions = computed(() => {
     const canManageMembers =
-      hasTeamPlan.value && workspaceRole.value === 'owner'
+      hasMemberSeats.value && workspaceRole.value === 'owner'
 
     return {
       ...workspacePermissions.value,
-      canViewOtherMembers: hasTeamPlan.value,
+      canViewOtherMembers: hasMemberSeats.value,
       canViewPendingInvites: canManageMembers,
-      canInviteMembers: canManageMembers,
+      canInviteMembers: canManageMembers && !isCancelled.value,
       canManageInvites: canManageMembers,
       canManageMembers
     }
   })
 
   const uiConfig = computed(() => {
-    if (!hasTeamPlan.value) {
+    if (!hasMemberSeats.value) {
       return {
         ...workspaceUiConfig.value,
         showMembersList: false,
@@ -196,36 +191,45 @@ export function useMembersPanel() {
 
   const showViewTabs = computed(
     () =>
-      isOnTeamPlan.value &&
+      hasMemberSeats.value &&
       (hasMultipleMembers.value || pendingInvites.value.length > 0)
   )
 
   const showInviteButton = computed(() => workspaceRole.value === 'owner')
 
-  // Plan seat limit, with the flat backend cap (isInviteLimitReached) as backstop
   const isMemberLimitReached = computed(
-    () => isInviteLimitReached.value || totalMemberSlots.value >= maxSeats.value
+    () =>
+      maxSeats.value !== null &&
+      occupiedSeats.value !== null &&
+      maxSeats.value > 0 &&
+      occupiedSeats.value >= maxSeats.value
   )
 
-  // Invite is allowed only on an active (non-cancelled) team plan that is under
-  // the member cap.
   const isInviteDisabled = computed(
     () =>
       isPlanLoading.value ||
-      !isOnTeamPlan.value ||
       isCancelled.value ||
+      maxSeats.value === null ||
+      occupiedSeats.value === null ||
+      !hasMemberSeats.value ||
       isMemberLimitReached.value
   )
 
   const inviteTooltip = computed(() => {
-    if (!isOnTeamPlan.value) return null
+    if (!hasMemberSeats.value) return null
+    if (maxSeats.value === null || occupiedSeats.value === null) return null
     if (!isMemberLimitReached.value) return null
     return t('workspacePanel.inviteLimitReached', { count: maxSeats.value })
   })
 
   function handleInviteMember() {
-    if (isPlanLoading.value) return
-    if (!isOnTeamPlan.value) {
+    if (
+      isPlanLoading.value ||
+      maxSeats.value === null ||
+      occupiedSeats.value === null
+    )
+      return
+    if (!hasMemberSeats.value) {
       void showInviteMemberUpsellDialog()
       return
     }
@@ -273,13 +277,8 @@ export function useMembersPanel() {
         })
     }
 
-    const creditLimitEnabled = flags.billingControlEnabled
-
-    // The creator and the current user can't change their own role or be
-    // removed; their only possible action is capping their own usage, so they
-    // get a menu at all only when credit limits are enabled.
     if (isCurrentUser(member) || isOriginalOwner(member)) {
-      return creditLimitEnabled ? [creditLimitItem] : []
+      return []
     }
 
     return [
@@ -290,7 +289,9 @@ export function useMembersPanel() {
           roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
         ]
       },
-      ...(creditLimitEnabled ? [creditLimitItem] : []),
+      ...(flags.billingControlEnabled && member.role === 'member'
+        ? [creditLimitItem]
+        : []),
       {
         label: t('workspacePanel.members.actions.removeMember'),
         command: () => handleRemoveMember(member)
@@ -386,9 +387,12 @@ export function useMembersPanel() {
     sortField,
     sortDirection,
     maxSeats,
+    isInPersonalWorkspace,
     hasTeamPlan,
     isOnTeamPlan,
+    isCancelled,
     hasLapsedTeamPlan,
+    hasMemberSeats,
     isPlanLoading,
     hasMultipleMembers,
     showSearch,

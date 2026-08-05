@@ -5,7 +5,6 @@
     "feedbackTooltip": "反馈",
     "freeTierPartner": "合作节点需要付费套餐",
     "freeTierRuns": "剩余 {available} / {MAX_AVAILABLE} 次运行",
-    "freeTierRunsExhausted": "没有剩余运行次数",
     "share": "分享",
     "shareTooltip": "分享工作流"
   },
@@ -143,6 +142,8 @@
       "modelDescription": "模型描述",
       "modelTagging": "模型标签",
       "modelType": "模型类型",
+      "modelTypeCoreReadonly": "核心上的模型类型无法更改，暂不支持移动文件。",
+      "modelTypeImmutableReadonly": "只读模型的模型类型无法更改。",
       "noAdditionalTags": "无附加标签",
       "selectModelPrompt": "选择一个模型以查看其信息",
       "selectModelType": "选择模型类型...",
@@ -173,6 +174,7 @@
     "rename": {
       "failed": "无法重命名资产。"
     },
+    "searchModels": "搜索模型",
     "selectFrameworks": "选择框架",
     "selectModelType": "选择模型类型",
     "selectProjects": "选择项目",
@@ -343,6 +345,7 @@
     "cancelFailed": "取消订阅失败",
     "cancelTimeout": "订阅取消超时",
     "subscriptionFailed": "订阅更新失败",
+    "subscriptionFailedDetail": "我们无法更新您的订阅。请重试。",
     "subscriptionProcessing": "正在处理付款 — 正在设置您的工作区...",
     "subscriptionSuccess": "订阅更新成功",
     "subscriptionTimeout": "订阅验证超时",
@@ -443,26 +446,7 @@
   "cloudForgotPassword_title": "忘记密码",
   "cloudHero": {
     "nextSlide": "下一张幻灯片",
-    "previousSlide": "上一张幻灯片",
-    "slidePagerLabel": "跳转到第 {index} 张幻灯片",
-    "slides": {
-      "cloud": {
-        "description": "适合大多数希望随时随地使用、并需要经过商业授权验证模型的用户。",
-        "title": "云端"
-      },
-      "models": {
-        "description": "精选、具备商业授权的模型，开箱即用，无需配置。",
-        "title": "模型"
-      },
-      "team": {
-        "description": "立即邀请您的团队加入。可在组织内共享工作流和资源。",
-        "title": "团队"
-      },
-      "workflows": {
-        "description": "从创意到成果只需几分钟。可并排生成多个变体。",
-        "title": "工作流"
-      }
-    }
+    "previousSlide": "上一张幻灯片"
   },
   "cloudNotification": {
     "continueLocally": "本地继续",
@@ -574,11 +558,9 @@
   "cloudPrivateBeta_title": "云服务目前处于内测阶段",
   "cloudSorryContactSupport_title": "抱歉，请联系客服",
   "cloudStart_desc": "无需任何设置。可在任何设备上使用。",
-  "cloudStart_download": "下载 ComfyUI",
   "cloudStart_explain": "一次性生成多个输出。轻松分享工作流。",
   "cloudStart_learnAboutButton": "了解云服务",
   "cloudStart_title": "几秒钟内开始创作",
-  "cloudStart_wantToRun": "想在本地运行 ComfyUI 吗？",
   "cloudSurvey_steps_experience": "你对 ComfyUI 有多了解？",
   "cloudSurvey_steps_focus": "你正在构建什么？",
   "cloudSurvey_steps_intent": "您希望用 ComfyUI 创作什么？",
@@ -611,14 +593,14 @@
     "chooseProfilePicture": "选择头像",
     "createProfile": "创建个人资料",
     "createProfileButton": "创建我的个人资料",
-    "createProfileTitle": "创建你的 Comfy Hub 个人资料",
+    "createProfileTitle": "创建你的 Comfy Workflows 个人资料",
     "creatingProfile": "正在创建个人资料...",
     "descriptionLabel": "你的简介",
     "descriptionPlaceholder": "向社区介绍一下你自己...",
     "introDescription": "发布你的工作流，打造你的作品集，被数百万用户发现",
-    "introSubtitle": "要在 ComfyHub 分享你的工作流，首先请创建你的个人资料。",
-    "introTitle": "发布到 ComfyHub",
-    "modalTitle": "在 ComfyHub 创建你的个人资料",
+    "introSubtitle": "要在 Comfy Workflows 分享你的工作流，首先请创建你的个人资料。",
+    "introTitle": "发布到 Comfy Workflows",
+    "modalTitle": "在 Comfy Workflows 创建你的个人资料",
     "nameLabel": "你的姓名",
     "namePlaceholder": "请输入你的姓名",
     "profileCreationNav": "个人资料创建",
@@ -628,8 +610,8 @@
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "你的个人主页已上线：",
     "successTitle": "看起来不错，{'@'}{username}！",
-    "updateIntroDescription": "将您的最新更改推送到 ComfyHub。分享链接和统计数据保持不变。",
-    "updateIntroTitle": "更新您的 ComfyHub 工作流",
+    "updateIntroDescription": "将您的最新更改推送到 Comfy Workflows。分享链接和统计数据保持不变。",
+    "updateIntroTitle": "更新您的 Comfy Workflows 工作流",
     "uploadCover": "+ 上传封面",
     "uploadProfilePicture": "+ 上传头像",
     "uploadWorkflowButton": "上传我的工作流",
@@ -641,20 +623,19 @@
     "additionalInfo": "附加信息",
     "back": "返回",
     "createProfileCta": "创建个人资料",
-    "createProfileToPublish": "创建个人资料以发布到 ComfyHub",
+    "createProfileToPublish": "创建个人资料以发布到 Comfy Workflows",
     "exampleImage": "示例图片 {index}",
     "exampleImagePosition": "示例图像 {index} / {total}",
     "examplesDescription": "最多可添加 {total} 个额外示例图片",
     "maxExamples": "最多可选择 {max} 个示例",
     "next": "下一步",
-    "publishButton": "发布到 ComfyHub",
+    "publishButton": "发布到 Comfy Workflows",
     "publishFailedDescription": "发布您的工作流时出现问题。请重试。",
+    "publishFailedDescriptionWithReason": "发布您的工作流时出现问题：{reason}",
     "publishFailedTitle": "发布失败",
-    "publishSuccessDescription": "您的工作流已在 ComfyHub 上上线。",
+    "publishSuccessDescription": "您的工作流已在 Comfy Workflows 上上线。",
     "publishSuccessTitle": "发布成功",
     "removeExampleImage": "移除示例图像",
-    "renameFailedDescription": "您的工作流已成功发布，但本地文件重命名失败。请再次重命名以保持一致。",
-    "renameFailedTitle": "重命名失败",
     "selectAThumbnail": "选择缩略图",
     "shareAs": "分享为",
     "showLessTags": "显示更少...",
@@ -670,8 +651,8 @@
     "thumbnailImageComparison": "图片对比",
     "thumbnailPreview": "缩略图预览",
     "thumbnailVideo": "视频",
-    "title": "发布到 ComfyHub",
-    "unsavedDescription": "在发布到 ComfyHub 之前，您必须先保存您的工作流。请先保存以继续。",
+    "title": "发布到 Comfy Workflows",
+    "unsavedDescription": "在发布到 Comfy Workflows 之前，您必须先保存您的工作流。请先保存以继续。",
     "updateButton": "更新工作流",
     "uploadAnImage": "点击浏览或拖拽图片",
     "uploadComparison": "上传前后对比",
@@ -810,6 +791,9 @@
       "buy": "购买",
       "buyCredits": "继续付款",
       "buyNow": "立即购买",
+      "chargedImmediatelyNote": "您的已保存银行卡将立即扣款。",
+      "confirmSubtitle": "付款完成后，积分将立即添加到此工作区。",
+      "confirmTitle": "确认",
       "contactUs": "联系我们",
       "creditsDescription": "该工作流需要积分运行。",
       "creditsPerDollar": "每美元积分数",
@@ -824,6 +808,7 @@
       "minRequired": "最少{credits}积分",
       "minimumPurchase": "最低${amount}（{credits}积分）",
       "needMore": "需要更多？",
+      "payAmount": "支付 {amount}",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",
       "purchaseSuccess": "积分添加成功！",
@@ -834,6 +819,8 @@
       "topUp": "充值",
       "unknownError": "发生未知错误",
       "usdAmount": "${amount}",
+      "verifyBody": "您的银行需要额外验证以完成此次付款。",
+      "verifyTitle": "验证您的付款",
       "videosEstimate": "~{count} 个视频*",
       "viewPricing": "查看定价详情",
       "youGet": "获得积分",
@@ -1268,6 +1255,13 @@
       }
     },
     "validationErrors": {
+      "PARTNER_NODE_DISABLED": {
+        "itemLabel": "{nodeName}",
+        "message": "此节点已被你的工作区策略禁用。请使用其他节点。",
+        "title": "节点已禁用",
+        "toastMessage": "此节点已被你的工作区策略禁用。",
+        "toastTitle": "合作伙伴节点"
+      },
       "bad_linked_input": {
         "details": "{nodeName} 的 {inputName} 连接无效。",
         "itemLabel": "{nodeName} - {inputName}",
@@ -1865,6 +1859,26 @@
     "warning": "警告",
     "workflow": "工作流",
     "you": "你"
+  },
+  "gettingStarted": {
+    "loadFailed": "我们无法加载模板。",
+    "retry": "重试",
+    "retryTemplate": "重试 {title}",
+    "startBlank": "从空白画布开始",
+    "subtitle": "选择一个现成的工作流开始，或从空白画布起步。",
+    "tabs": {
+      "templates": "模板",
+      "tutorials": "教程"
+    },
+    "tabsLabel": "入门选项",
+    "templateFailed": "我们无法打开此模板。",
+    "title": "让我们开始创作",
+    "tutorials": {
+      "imageToImage": "图像生成图像",
+      "inpaint": "图像修复",
+      "interfaceOverview": "界面总览",
+      "textToImage": "文本生成图像"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "画布模式",
@@ -2616,8 +2630,8 @@
     "resetView": "重置视图",
     "run": "运行",
     "runWorkflow": "运行工作流（Shift排在前面）",
-    "runWorkflowDisabled": "工作流包含不支持的节点（已用红色突出显示）。删除这些节点以运行工作流。",
     "runWorkflowFront": "运行工作流（排在前面）",
+    "runWorkflowMissingResources": "工作流包含缺失的资源。",
     "settings": "设定",
     "showMenu": "显示菜单",
     "stopRunInstant": "立即停止运行",
@@ -2896,6 +2910,7 @@
     "mage": "mage",
     "mask": "遮罩",
     "merging": "合并",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "模型",
     "model specific": "模型专用",
@@ -3049,6 +3064,38 @@
       "owner": "所有者",
       "personal": "个人"
     }
+  },
+  "onboardingCoachmarks": {
+    "appMode": {
+      "assets": {
+        "body": "每次生成和导入的内容都保存在媒体资源中。随时打开浏览、下载或复用以往作品。",
+        "title": "查找所有资源"
+      },
+      "inputs": {
+        "body": "添加你想处理的内容。你的输入将由应用转化为结果。",
+        "title": "添加你的输入"
+      },
+      "landing": {
+        "body": "一分钟快速了解核心功能。我们将向你展示如何添加输入、运行应用以及查找结果。",
+        "primary": "开始教程",
+        "title": "欢迎使用应用"
+      },
+      "outputs": {
+        "body": "最终结果会显示在中央。你可以下载，或调整输入后再次运行。",
+        "title": "获取你的结果"
+      },
+      "replay": "体验应用模式导览",
+      "run": {
+        "body": "对输入满意了吗？点击运行，结果准备好后会显示在中央。",
+        "title": "运行你的应用"
+      }
+    },
+    "back": "上一步",
+    "done": "完成",
+    "loadError": "显示本次引导时出现问题",
+    "next": "下一步",
+    "skip": "跳过",
+    "stepLabel": "第 {current} 步，共 {total} 步"
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -3222,12 +3269,18 @@
       "copyUrl": "复制链接",
       "customNodeDownloadDisabled": "云环境不支持在此部分为自定义节点导入模型。请使用标准加载节点或在下方库中选择模型替代。",
       "downloadAll": "全部下载",
+      "downloadModel": "下载 {model}",
       "expandNodes": "显示引用节点",
+      "gatedModelDownloadTooltip": "下载前可能需要先登录 Hugging Face。",
+      "gatedModelTooltip": "该模型为受限模型，需要您登录 Hugging Face 并同意其许可协议。",
+      "gatedModelsHint": "部分模型为受限模型。要下载这些模型，请登录 Hugging Face 并同意模型许可协议。",
+      "gatedModelsHintLabel": "注意：",
       "import": "导入",
       "importNotSupported": "不支持导入",
       "importing": "正在导入...",
       "locateNode": "在画布上定位节点",
       "missingModelsTitle": "缺失模型",
+      "openHuggingFaceRepo": "打开 {model} 的 Hugging Face 仓库",
       "refresh": "刷新",
       "refreshFailed": "刷新缺失模型失败。请重试。",
       "refreshing": "正在刷新缺失模型。",
@@ -3275,6 +3328,8 @@
   "secrets": {
     "addSecret": "添加机密",
     "createdAt": "创建于 {date}",
+    "credentialType": "凭证类型",
+    "credentialTypeHint": "选择您将如何提供此凭证。",
     "deleteConfirmMessage": "确定要删除“{name}”吗？此操作无法撤销。",
     "deleteConfirmTitle": "删除机密",
     "description": "机密信息会被加密，用于存储诸如 API 密钥等敏感数据。",
@@ -3487,6 +3542,7 @@
     "3DViewer": "3D查看器",
     "API Nodes": "API 节点",
     "About": "关于",
+    "Allowlist": "允许列表",
     "Appearance": "外观",
     "BrushAdjustment": "画笔调整",
     "Camera": "相机",
@@ -3565,9 +3621,9 @@
   "shareWorkflow": {
     "acknowledgeCheckbox": "我了解这些媒体文件将被发布并公开",
     "checkingAssets": "正在检查媒体可见性…",
-    "comfyHubButton": "上传到 ComfyHub",
-    "comfyHubDescription": "ComfyHub 是 ComfyUI 的官方社区中心。\n你的工作流将拥有一个所有人可见的公开页面。",
-    "comfyHubTitle": "上传到 ComfyHub",
+    "comfyHubButton": "上传到 Comfy Workflows",
+    "comfyHubDescription": "Comfy Workflows 是 ComfyUI 的官方社区中心。\n你的工作流将拥有一个所有人可见的公开页面。",
+    "comfyHubTitle": "上传到 Comfy Workflows",
     "copyLink": "复制",
     "createLinkButton": "创建链接",
     "createLinkDescription": "当你为工作流创建链接时，这些媒体文件将与工作流一起分享",
@@ -3640,19 +3696,34 @@
     },
     "logout": "登出",
     "mediaAssets": {
+      "clearFilters": "清除全部",
+      "dateAll": "全部时间",
+      "datePastMonth": "过去30天",
+      "datePastWeek": "过去7天",
+      "dateThisYear": "今年",
+      "dateToday": "今天",
       "filter3D": "3D",
       "filterAudio": "音频",
+      "filterDate": "日期",
+      "filterGroupAttribute": "属性",
       "filterImage": "图像",
+      "filterMediaType": "媒体类型",
       "filterText": "文本",
       "filterVideo": "视频",
+      "removeFilter": "移除{label}筛选",
+      "sortAToZ": "名称（A → Z）",
       "sortFastestFirst": "生成时间（最快）",
       "sortLongestFirst": "生成时间（最慢）",
       "sortNewestFirst": "最新",
       "sortOldestFirst": "最旧",
+      "sortZToA": "名称（Z → A）",
       "title": "媒体资产",
+      "viewGridLarge": "网格（大）",
+      "viewGridSmall": "网格（小）",
       "viewSettings": "查看设置"
     },
     "modelLibrary": "模型库",
+    "modelLibraryLoadFailed": "模型加载失败。请检查服务器连接，并使用刷新重试。",
     "newBlankWorkflow": "创建空白工作流",
     "noFilesFound": "未找到文件",
     "noFilesFoundMessage": "上传文件或生成内容以在此处查看",
@@ -3758,6 +3829,7 @@
       "viewList": "列表视图"
     },
     "searchAssets": "搜索资产",
+    "searchResultsCapped": "显示前 {limit} 个匹配项。请优化搜索以查看更多结果。",
     "sidebar": "侧边栏",
     "templates": "模板",
     "themeToggle": "切换主题",
@@ -3825,6 +3897,7 @@
     "beta": "测试版",
     "billedMonthly": "每月付款",
     "billedYearly": "{total} 每年付款",
+    "billingAndInvoices": "账单与发票",
     "billingComingSoon": {
       "message": "团队计费功能即将上线。您将可以为您的工作区按成员数订阅套餐。敬请关注后续更新。",
       "title": "即将推出"
@@ -3835,17 +3908,23 @@
       "endOfBillingPeriod": "账单周期结束",
       "failed": "取消订阅失败",
       "keepSubscription": "保留订阅",
-      "title": "取消订阅"
+      "offerUnavailable": "该选项不可用。请选择其他选项。",
+      "title": "取消订阅",
+      "workspaceChanged": "您的活跃工作区已更改。请切换回去后重试。"
     },
     "cancelPlan": "取消套餐",
     "cancelSuccess": "订阅取消成功",
     "canceled": "已取消",
     "canceledCard": {
       "description": "您将不再被扣费。您的功能将在 {date} 前保持激活。",
+      "descriptionWithoutDate": "您将不会再次被扣费。您的功能将在本计费周期结束前保持激活状态。",
+      "endedDescription": "您的订阅已不再激活。",
+      "endedTitle": "您的订阅已结束",
       "title": "您的订阅已被取消"
     },
     "changePlan": "更改套餐",
     "changeTo": "更改为 {plan}",
+    "changesToPlanOnDate": "{date} 更改为 {plan}",
     "comfyCloud": "Comfy 云",
     "comfyCloudLogo": "Comfy Cloud Logo",
     "contactOwnerToSubscribe": "请联系工作区所有者进行订阅",
@@ -3862,6 +3941,8 @@
     "descriptionWorkspace": "为您的工作区选择最佳方案",
     "downgrade": {
       "body": "该工作区的所有其他成员将被立即移除。",
+      "bodyReactivation": "您的订阅已取消。更改套餐将恢复订阅，今天将收取 {amount}。",
+      "bodyRemovalAndReactivation": "此工作区的所有其他成员将被立即移除。您的订阅已取消，更改套餐也会恢复订阅，今天将收取 {amount}。",
       "confirm": "更改方案",
       "confirmationPhrase": "我已了解",
       "confirmationPrompt": "请输入“{phrase}”以确认。",
@@ -3871,6 +3952,8 @@
       "notAllowed": "无法进行此方案更改",
       "paymentMethodRequired": "更改方案需要添加支付方式",
       "paymentPageBlocked": "无法打开支付页面 — 请重试",
+      "reactivationAmountChanged": "费用自您确认后已发生变化 — 请重新检查并重试",
+      "reactivationConfirmationRequired": "请在继续前确认恢复订阅的费用",
       "title": "切换到 {plan} 方案？"
     },
     "endsOnDate": "将于 {date} 结束",
@@ -3884,23 +3967,8 @@
     "everythingInPlus": "包含 {plan} 的所有内容，并额外提供：",
     "expiresDate": "于 {date} 过期",
     "freePerks": {
+      "freeRuns": "{count} 次免费运行",
       "maxRuntime": "最长运行时长 {duration}"
-    },
-    "freeTier": {
-      "description": "您的免费套餐每月包含 {credits} 积分，可体验 Comfy Cloud。",
-      "descriptionGeneric": "您的免费套餐每月包含积分额度，可体验 Comfy Cloud。",
-      "descriptionQuota": "您的免费计划包含 {runs} 次运行，可开始使用 Comfy Cloud — 无需信用卡。",
-      "nextRefresh": "您的积分将在 {date} 刷新。",
-      "outOfCredits": {
-        "subtitle": "订阅以解锁补充积分和更多功能",
-        "title": "您的免费积分已用完"
-      },
-      "subscribeCta": "订阅获取更多",
-      "title": "您正在使用免费套餐",
-      "topUpBlocked": {
-        "title": "解锁补充积分和更多功能"
-      },
-      "upgradeCta": "查看套餐"
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "对企业级有疑问？",
@@ -3911,6 +3979,9 @@
       "memberTitle": "此工作区的订阅已失效",
       "runLabel": "运行"
     },
+    "inactiveTeamDescription": "重新激活您的团队套餐以添加更多成员并运行工作流",
+    "inactiveTeamPlanIncludes": "激活套餐包含 {plan} 的所有内容，以及：",
+    "inactiveTeamTitle": "团队订阅已失效",
     "inviteUpTo": "可邀请多达",
     "invoiceHistory": "发票历史",
     "learnMore": "了解更多",
@@ -3970,6 +4041,7 @@
       "backToAllPlans": "返回所有方案",
       "billedEachMonth": "每月收取 {amount}。随时可取消。",
       "commitment": "承诺",
+      "completeVerification": "完成验证",
       "confirm": "确认",
       "confirmChange": "确认更改",
       "confirmChangeTitle": "查看您的计划变更",
@@ -3994,6 +4066,20 @@
       "privacyPolicy": "隐私政策",
       "proratedCharge": "{plan} 按比例收费",
       "proratedRefund": "{plan} 按比例退款",
+      "reactivation": {
+        "amountChanged": "自您确认后，费用金额已发生变化 — 请检查并重试",
+        "checkboxLabel": "我已知晓今天将收取 {amount}",
+        "confirmButton": "确认并重新激活",
+        "confirmButtonWithCharge": "确认并重新激活 — 今天收取 {amount}",
+        "confirmationRequired": "您的订阅已取消 — 请在继续前确认重新激活的费用",
+        "downgradeBody": "您的 {plan} 原定于 {date} 结束。切换到 {newPlan} 将重新激活订阅 — 今天不会收取费用，但现在将在 {nextDate} 以新价格自动续订，而不是结束。",
+        "durationChangeBody": "您的 {plan} 原定于 {date} 结束。切换到年度计费将重新激活订阅，并于今天收取全年费用 {amount}。之后将在每年 {nextDate} 自动续订，而不是结束。",
+        "durationChangeBodyMonthly": "您的 {plan} 原定于 {date} 结束。切换到月度计费将重新激活订阅 — 今天将收取 {amount}，并将在 {nextDate} 自动续订，而不是结束。",
+        "title": "正在重新激活您的订阅",
+        "titleAnnual": "正在重新激活您的订阅 — 今天将收取全年费用",
+        "unavailable": "我们目前无法确认此次重新激活 — 请重新选择您的套餐",
+        "upgradeBody": "您的 {plan} 原定于 {date} 结束。现在升级将重新激活订阅 — 今天将收取 {amount}，并将在 {nextDate} 自动续订，而不是结束。"
+      },
       "refillReplacesNote": "替换您的月度补充。现有余额保留。",
       "showMoreFeatures": "显示更多功能",
       "starting": "{date} 开始",
@@ -4015,6 +4101,7 @@
     "pricingBlurbQuestions": "问题咨询",
     "pricingBlurbSeeDetails": "查看详情",
     "reactivatePlan": "重新激活套餐",
+    "reactivateToUseCredits": "请重新激活您的套餐以使用这些积分",
     "refillsDate": "补充 {date}",
     "refillsNextCycle": "下个周期补充",
     "refreshCredits": "刷新额度",
@@ -4193,6 +4280,11 @@
     "modelsSelected": "已选 {count} 个模型",
     "noResults": "未找到模板",
     "noResultsHint": "请尝试调整搜索或筛选条件",
+    "paidTemplate": {
+      "badgeLabel": "合作伙伴 API",
+      "credits": "使用积分运行",
+      "title": "高级模板"
+    },
     "resultsCount": "显示 {count} / 共 {total} 个模板",
     "runsOnFilter": "运行于",
     "runsOnSelected": "{count} 次运行",
@@ -4261,6 +4353,7 @@
     "fileTooLarge": "文件过大（{size} MB）。最大支持大小为 {maxSize} MB",
     "fileUploadFailed": "文件上传失败",
     "interrupted": "执行已被中断",
+    "invalidBillingPortalUrl": "无效的门户网址",
     "invalidTemplateData": "加载节点模板失败：数据无效",
     "legacyMaskEditorDeprecated": "旧版遮罩编辑器已弃用，即将删除。",
     "migrateToLitegraphReroute": "将来的版本中将删除重定向节点。点击以迁移到litegraph-native重定向。",
@@ -4329,6 +4422,34 @@
     "frontendOutdated": "前端版本 {frontendVersion} 已过时。后端需要 {requiredVersion} 版或更高版本。",
     "title": "版本相容性警告",
     "updateFrontend": "更新前端"
+  },
+  "videoEdit": {
+    "adjustCrop": "调整裁剪区域",
+    "adjustEndFrame": "调整结束帧",
+    "adjustStartFrame": "调整起始帧",
+    "cropVideo": "裁切视频",
+    "duration": "时长",
+    "durationSeconds": "{count}秒",
+    "durationZero": "0秒",
+    "endFrame": "结束帧",
+    "fileSize": "文件大小",
+    "fileSizeBytes": "{count} B",
+    "fileSizeKilobytes": "{count} KB",
+    "fileSizeMegabytes": "{count} MB",
+    "fileSizeUnknown": "—",
+    "frames": "帧数",
+    "loadingFilmstrip": "正在加载胶片条…",
+    "loadingVideo": "正在加载视频预览",
+    "noVideoSource": "请选择或连接一个视频以预览和编辑",
+    "pause": "暂停",
+    "play": "播放",
+    "resolution": "{width} × {height}",
+    "seekVideo": "定位视频",
+    "selectedOfTotal": "{selected} / {total}",
+    "setEndFrame": "重设结束帧",
+    "setStartFrame": "重设起始帧",
+    "startFrame": "起始帧",
+    "trimVideo": "裁剪视频"
   },
   "vueNodesBanner": {
     "desc": "– 更灵活的工作流，强力的新组件，为拓展性而生",
@@ -4436,9 +4557,7 @@
         "lastActivity": "最近活动",
         "partnerNodeUsed": "已使用合作节点",
         "totalCreditsUsed": "已用总积分"
-      },
-      "perUserHint": "想查看每位用户的总使用量？",
-      "seeMembers": "查看成员"
+      }
     },
     "billingStatus": {
       "ending": {
@@ -4574,6 +4693,39 @@
       "deleteWorkspaceDisabledTooltip": "请先取消工作区的有效订阅",
       "editWorkspace": "编辑工作区详情",
       "leaveWorkspace": "离开工作区"
+    },
+    "partnerNodes": {
+      "accessMode": "合作伙伴节点访问模式",
+      "allowAllAccessHint": "此更改在整个工作区生效可能需要最多 10 分钟。",
+      "allowAllAccessMessage": "所有提供商的合作伙伴节点将对每个工作区成员开放。",
+      "allowAllAccessTitle": "允许访问所有合作伙伴节点吗？",
+      "columns": {
+        "nodes": "节点",
+        "provider": "提供商"
+      },
+      "disableAll": "全部禁用",
+      "disableAllMessage": "所有提供商都将被关闭。在访问受限时，合作伙伴节点将不可用。",
+      "disableAllTitle": "要禁用所有提供商吗？",
+      "enableAll": "全部启用",
+      "loadError": "无法加载合作伙伴节点访问权限。",
+      "loading": "正在加载合作伙伴节点访问权限",
+      "noResults": "未找到提供商或合作伙伴节点",
+      "nodeCount": "已启用 {count} 个",
+      "ownerOnly": "只有工作区所有者可以更新合作伙伴节点访问权限。",
+      "restrictAccessHint": "此更改在整个工作区生效可能需要最多 10 分钟。",
+      "restrictAccessMessage": "工作区成员只能使用你启用的提供商的合作伙伴节点。",
+      "restrictAccessTitle": "要限制合作伙伴节点的访问吗？",
+      "restricted": "受限",
+      "restrictedDescription": "只有已启用提供商的合作伙伴节点可用。更改可能需要最多 10 分钟生效。",
+      "retry": "重试",
+      "saveError": "无法更新合作伙伴节点访问权限。请重试。",
+      "searchPlaceholder": "搜索提供商和合作伙伴节点...",
+      "tableLabel": "合作伙伴节点提供商",
+      "title": "合作伙伴节点访问",
+      "toggleProvider": "设置 {provider} 的访问权限",
+      "unavailable": "此工作区无法使用合作伙伴节点访问权限。",
+      "unrestricted": "无限制",
+      "unrestrictedDescription": "所有提供商的合作伙伴节点对所有人开放。禁用提供商后将设置为受限。"
     },
     "planCredits": {
       "tabs": {

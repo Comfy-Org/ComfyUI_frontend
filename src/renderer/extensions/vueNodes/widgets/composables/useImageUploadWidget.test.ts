@@ -84,6 +84,27 @@ function construct(node: LGraphNode) {
   )
 }
 
+const outputFolderCases: {
+  name: string
+  value: string | ResultItem
+  expected: string
+}[] = [
+  {
+    name: 'formats dropped ResultItems from their own type',
+    value: {
+      filename: 'generated.png',
+      subfolder: 'runs',
+      type: 'output'
+    },
+    expected: 'runs/generated.png [output]'
+  },
+  {
+    name: 'formats string uploads from the declared image folder',
+    value: 'uploaded.png',
+    expected: 'uploaded.png [output]'
+  }
+]
+
 describe('useImageUploadWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -141,5 +162,28 @@ describe('useImageUploadWidget', () => {
 
     expect(mocks.setNodeOutputs).not.toHaveBeenCalled()
     expect(mocks.showPreview).toHaveBeenCalled()
+  })
+
+  it.for(outputFolderCases)('$name', ({ value, expected }) => {
+    const { fileComboWidget, node } = createUploadNode()
+    const constructor = useImageUploadWidget()
+
+    constructor(
+      node,
+      'upload',
+      [
+        'IMAGEUPLOAD',
+        {
+          imageInputName: 'image',
+          image_upload: true,
+          image_folder: 'output'
+        }
+      ] as InputSpec,
+      fromPartial({})
+    )
+
+    mocks.capturedUploadOptions?.onUploadComplete([value])
+
+    expect(fileComboWidget.value).toBe(expected)
   })
 })

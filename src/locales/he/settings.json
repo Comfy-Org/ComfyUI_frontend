@@ -19,11 +19,11 @@
   },
   "Comfy-Desktop_WindowStyle": {
     "name": "סגנון החלון",
-    "tooltip": "מותאם אישית: החלפת שורת הכותרת של המערכת בתפריט העליון של ComfyUI",
     "options": {
-      "default": "ברירת מחדל",
-      "custom": "מותאם אישית"
-    }
+      "custom": "מותאם אישית",
+      "default": "ברירת מחדל"
+    },
+    "tooltip": "מותאם אישית: החלפת שורת הכותרת של המערכת בתפריט העליון של ComfyUI"
   },
   "Comfy_Appearance_DisableAnimations": {
     "name": "השבתת אנימציות",
@@ -50,9 +50,9 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "מצב ניווט",
     "options": {
-      "Standard (New)": "רגיל (חדש)",
+      "Custom": "מותאם אישית",
       "Drag Navigation": "ניווט בגרירה",
-      "Custom": "מותאם אישית"
+      "Standard (New)": "רגיל (חדש)"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -61,6 +61,9 @@
   },
   "Comfy_ConfirmClear": {
     "name": "דרישת אישור בעת ניקוי תהליך העבודה"
+  },
+  "Comfy_DOMClippingEnabled": {
+    "name": "הפעלת חיתוך רכיבי DOM (הפעלה עלולה לפגוע בביצועים)"
   },
   "Comfy_DevMode": {
     "name": "הפעלת אפשרויות מצב פיתוח (שמירת API וכו')"
@@ -71,9 +74,6 @@
   },
   "Comfy_DisableSliders": {
     "name": "השבתת מחווני הגרירה (sliders) בפקדי הצמתים"
-  },
-  "Comfy_DOMClippingEnabled": {
-    "name": "הפעלת חיתוך רכיבי DOM (הפעלה עלולה לפגוע בביצועים)"
   },
   "Comfy_EditAttention_Delta": {
     "name": "דיוק Ctrl+מעלה/מטה"
@@ -86,14 +86,14 @@
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "שיטת תצוגה מקדימה חיה",
-    "tooltip": "שיטת התצוגה המקדימה החיה במהלך יצירת התמונה. \"ברירת מחדל\" משתמשת בהגדרת ה-CLI של השרת.",
     "options": {
-      "default": "ברירת מחדל",
-      "none": "ללא",
       "auto": "אוטומטי",
+      "default": "ברירת מחדל",
       "latent2rgb": "latent2rgb",
+      "none": "ללא",
       "taesd": "taesd"
-    }
+    },
+    "tooltip": "שיטת התצוגה המקדימה החיה במהלך יצירת התמונה. \"ברירת מחדל\" משתמשת בהגדרת ה-CLI של השרת."
   },
   "Comfy_FloatRoundingPrecision": {
     "name": "מספר ספרות אחרי הנקודה בפקדי מספרים עשרוניים [0 = אוטומטי].",
@@ -119,9 +119,9 @@
   "Comfy_Graph_LinkMarkers": {
     "name": "סמני נקודת אמצע בקישורים",
     "options": {
-      "None": "ללא",
+      "Arrow": "חץ",
       "Circle": "עיגול",
-      "Arrow": "חץ"
+      "None": "ללא"
     }
   },
   "Comfy_Graph_LiveSelection": {
@@ -131,37 +131,37 @@
   "Comfy_Graph_ZoomSpeed": {
     "name": "מהירות הזום של הקנבס"
   },
-  "Comfy_Group_DoubleClickTitleToEdit": {
-    "name": "לחיצה כפולה על כותרת הקבוצה לעריכה"
-  },
   "Comfy_GroupSelectedNodes_Padding": {
     "name": "ריווח בעת קיבוץ צמתים נבחרים"
+  },
+  "Comfy_Group_DoubleClickTitleToEdit": {
+    "name": "לחיצה כפולה על כותרת הקבוצה לעריכה"
   },
   "Comfy_LinkRelease_Action": {
     "name": "פעולה בעת שחרור קישור (ללא מקש)",
     "options": {
       "context menu": "תפריט הקשר",
-      "search box": "תיבת חיפוש",
-      "no action": "ללא פעולה"
+      "no action": "ללא פעולה",
+      "search box": "תיבת חיפוש"
     }
   },
   "Comfy_LinkRelease_ActionShift": {
     "name": "פעולה בעת שחרור קישור (Shift)",
     "options": {
       "context menu": "תפריט הקשר",
-      "search box": "תיבת חיפוש",
-      "no action": "ללא פעולה"
+      "no action": "ללא פעולה",
+      "search box": "תיבת חיפוש"
     }
   },
   "Comfy_LinkRenderMode": {
     "name": "מצב הצגת הקישורים",
-    "tooltip": "שולט במראה ובנראות של קישורי החיבור בין הצמתים בקנבס.",
     "options": {
-      "Straight": "ישר",
+      "Hidden": "מוסתר",
       "Linear": "לינארי",
       "Spline": "עקומה (Spline)",
-      "Hidden": "מוסתר"
-    }
+      "Straight": "ישר"
+    },
+    "tooltip": "שולט במראה ובנראות של קישורי החיבור בין הצמתים בקנבס."
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "הפעלת מציג תלת-ממד (בטא)",
@@ -173,11 +173,11 @@
   },
   "Comfy_Load3D_CameraType": {
     "name": "סוג מצלמה התחלתי",
-    "tooltip": "שולט בשאלה האם המצלמה היא בפרספקטיבה או אורתוגרפית כברירת מחדל בעת יצירת פקד תלת-ממד חדש. ברירת מחדל זו ניתנת לשינוי בנפרד עבור כל פקד לאחר היצירה.",
     "options": {
-      "perspective": "פרספקטיבה",
-      "orthographic": "אורתוגרפית"
-    }
+      "orthographic": "אורתוגרפית",
+      "perspective": "פרספקטיבה"
+    },
+    "tooltip": "שולט בשאלה האם המצלמה היא בפרספקטיבה או אורתוגרפית כברירת מחדל בעת יצירת פקד תלת-ממד חדש. ברירת מחדל זו ניתנת לשינוי בנפרד עבור כל פקד לאחר היצירה."
   },
   "Comfy_Load3D_LightAdjustmentIncrement": {
     "name": "צעד כוונון התאורה",
@@ -197,11 +197,11 @@
   },
   "Comfy_Load3D_PLYEngine": {
     "name": "מנוע ענן נקודות",
-    "tooltip": "בחר את המנוע לטעינת קובצי ענן נקודות מסוג PLY. \"threejs\" משתמש ב-PLYLoader המקורי של Three.js (תומך בבינארי + ASCII, ויכול ליצור רשת). \"fastply\" משתמש במנתח מותאם לקובצי PLY מסוג ASCII. קובצי PLY מסוג 3D Gaussian Splat מזוהים אוטומטית ותמיד מעובדים באמצעות sparkjs ללא תלות בהגדרה זו.",
     "options": {
-      "threejs": "threejs",
-      "fastply": "fastply"
-    }
+      "fastply": "fastply",
+      "threejs": "threejs"
+    },
+    "tooltip": "בחר את המנוע לטעינת קובצי ענן נקודות מסוג PLY. \"threejs\" משתמש ב-PLYLoader המקורי של Three.js (תומך בבינארי + ASCII, ויכול ליצור רשת). \"fastply\" משתמש במנתח מותאם לקובצי PLY מסוג ASCII. קובצי PLY מסוג 3D Gaussian Splat מזוהים אוטומטית ותמיד מעובדים באמצעות sparkjs ללא תלות בהגדרה זו."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "נראות רשת התחלתית",
@@ -224,11 +224,76 @@
   },
   "Comfy_ModelLibrary_NameFormat": {
     "name": "איזה שם להציג בתצוגת העץ של ספריית המודלים",
-    "tooltip": "בחר \"שם קובץ\" כדי להציג תצוגה מפושטת של שם הקובץ הגולמי (ללא נתיב התיקייה וללא הסיומת \".safetensors\") ברשימת המודלים. בחר \"כותרת\" כדי להציג את כותרת המטא-נתונים הניתנת להגדרה של המודל.",
     "options": {
       "filename": "שם קובץ",
       "title": "כותרת"
+    },
+    "tooltip": "בחר \"שם קובץ\" כדי להציג תצוגה מפושטת של שם הקובץ הגולמי (ללא נתיב התיקייה וללא הסיומת \".safetensors\") ברשימת המודלים. בחר \"כותרת\" כדי להציג את כותרת המטא-נתונים הניתנת להגדרה של המודל."
+  },
+  "Comfy_NodeBadge_NodeIdBadgeMode": {
+    "name": "מצב תג מזהה הצומת",
+    "options": {
+      "None": "ללא",
+      "Show all": "הצג הכול"
     }
+  },
+  "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
+    "name": "מצב תג מחזור החיים של הצומת",
+    "options": {
+      "None": "ללא",
+      "Show all": "הצג הכול"
+    }
+  },
+  "Comfy_NodeBadge_NodeSourceBadgeMode": {
+    "name": "מצב תג מקור הצומת",
+    "options": {
+      "Hide built-in": "הסתר מובנים",
+      "None": "ללא",
+      "Show all": "הצג הכול"
+    }
+  },
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "הצגת תג תמחור עבור צמתי API"
+  },
+  "Comfy_NodeLibrary_NewDesign": {
+    "name": "עיצוב חדש לספריית הצמתים",
+    "tooltip": "הפעלת סרגל הצד המעוצב מחדש של ספריית הצמתים עם כרטיסיות (בסיסי, הכול, מותאם), חיפוש משופר ותצוגות מקדימות בריחוף."
+  },
+  "Comfy_NodeReplacement_Enabled": {
+    "name": "הפעלת הצעות להחלפת צמתים",
+    "tooltip": "כאשר מופעל, צמתים חסרים שקיימות להם חלופות ידועות יוצגו כניתנים להחלפה בחלון הצמתים החסרים, ויאפשרו לך לבחון ולהחיל החלפות."
+  },
+  "Comfy_NodeSearchBoxImpl": {
+    "name": "מימוש תיבת חיפוש הצמתים",
+    "options": {
+      "default": "ברירת מחדל",
+      "litegraph (legacy)": "litegraph (גרסה ישנה)",
+      "v1 (legacy)": "v1 (גרסה ישנה)"
+    }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "צמתים שנוספו עוקבים אחר הסמן",
+    "tooltip": "כאשר מופעל, צמתים שנוספו מתיבת החיפוש עוקבים אחר הסמן עד שלוחצים כדי למקם אותם. חל רק על מימוש ברירת המחדל."
+  },
+  "Comfy_NodeSearchBoxImpl_NodePreview": {
+    "name": "תצוגה מקדימה של צומת",
+    "tooltip": "חל רק על מימוש ברירת המחדל"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowCategory": {
+    "name": "הצגת קטגוריית הצומת בתוצאות החיפוש",
+    "tooltip": "חל רק על v1 (גרסה ישנה)"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowIdName": {
+    "name": "הצגת שם המזהה של הצומת בתוצאות החיפוש",
+    "tooltip": "לא חל על litegraph (גרסה ישנה)"
+  },
+  "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
+    "name": "הצגת תדירות השימוש בצומת בתוצאות החיפוש",
+    "tooltip": "חל רק על v1 (גרסה ישנה)"
+  },
+  "Comfy_NodeSuggestions_number": {
+    "name": "מספר הצעות הצמתים",
+    "tooltip": "רק עבור תיבת החיפוש / תפריט ההקשר של litegraph"
   },
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "הצגת רוחב × גובה מתחת לתצוגה המקדימה של התמונה"
@@ -266,71 +331,6 @@
     "name": "ההצמדה מדגישה את הצומת",
     "tooltip": "בעת גרירת קישור מעל צומת בעל חריץ קלט מתאים, הדגש את הצומת"
   },
-  "Comfy_NodeBadge_NodeIdBadgeMode": {
-    "name": "מצב תג מזהה הצומת",
-    "options": {
-      "None": "ללא",
-      "Show all": "הצג הכול"
-    }
-  },
-  "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-    "name": "מצב תג מחזור החיים של הצומת",
-    "options": {
-      "None": "ללא",
-      "Show all": "הצג הכול"
-    }
-  },
-  "Comfy_NodeBadge_NodeSourceBadgeMode": {
-    "name": "מצב תג מקור הצומת",
-    "options": {
-      "None": "ללא",
-      "Show all": "הצג הכול",
-      "Hide built-in": "הסתר מובנים"
-    }
-  },
-  "Comfy_NodeBadge_ShowApiPricing": {
-    "name": "הצגת תג תמחור עבור צמתי API"
-  },
-  "Comfy_NodeLibrary_NewDesign": {
-    "name": "עיצוב חדש לספריית הצמתים",
-    "tooltip": "הפעלת סרגל הצד המעוצב מחדש של ספריית הצמתים עם כרטיסיות (בסיסי, הכול, מותאם), חיפוש משופר ותצוגות מקדימות בריחוף."
-  },
-  "Comfy_NodeReplacement_Enabled": {
-    "name": "הפעלת הצעות להחלפת צמתים",
-    "tooltip": "כאשר מופעל, צמתים חסרים שקיימות להם חלופות ידועות יוצגו כניתנים להחלפה בחלון הצמתים החסרים, ויאפשרו לך לבחון ולהחיל החלפות."
-  },
-  "Comfy_NodeSearchBoxImpl": {
-    "name": "מימוש תיבת חיפוש הצמתים",
-    "options": {
-      "default": "ברירת מחדל",
-      "v1 (legacy)": "v1 (גרסה ישנה)",
-      "litegraph (legacy)": "litegraph (גרסה ישנה)"
-    }
-  },
-  "Comfy_NodeSearchBoxImpl_FollowCursor": {
-    "name": "צמתים שנוספו עוקבים אחר הסמן",
-    "tooltip": "כאשר מופעל, צמתים שנוספו מתיבת החיפוש עוקבים אחר הסמן עד שלוחצים כדי למקם אותם. חל רק על מימוש ברירת המחדל."
-  },
-  "Comfy_NodeSearchBoxImpl_NodePreview": {
-    "name": "תצוגה מקדימה של צומת",
-    "tooltip": "חל רק על מימוש ברירת המחדל"
-  },
-  "Comfy_NodeSearchBoxImpl_ShowCategory": {
-    "name": "הצגת קטגוריית הצומת בתוצאות החיפוש",
-    "tooltip": "חל רק על v1 (גרסה ישנה)"
-  },
-  "Comfy_NodeSearchBoxImpl_ShowIdName": {
-    "name": "הצגת שם המזהה של הצומת בתוצאות החיפוש",
-    "tooltip": "לא חל על litegraph (גרסה ישנה)"
-  },
-  "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
-    "name": "הצגת תדירות השימוש בצומת בתוצאות החיפוש",
-    "tooltip": "חל רק על v1 (גרסה ישנה)"
-  },
-  "Comfy_NodeSuggestions_number": {
-    "name": "מספר הצעות הצמתים",
-    "tooltip": "רק עבור תיבת החיפוש / תפריט ההקשר של litegraph"
-  },
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "הצגת עדכוני גרסה",
     "tooltip": "הצגת עדכונים על מודלים חדשים ותכונות מרכזיות חדשות."
@@ -354,6 +354,10 @@
   "Comfy_PromptFilename": {
     "name": "בקשת שם קובץ בעת שמירת תהליך העבודה"
   },
+  "Comfy_QueueButton_BatchCountLimit": {
+    "name": "מגבלת מספר האצוות (Batch)",
+    "tooltip": "המספר המרבי של משימות הנוספות לתור בלחיצת כפתור אחת"
+  },
   "Comfy_Queue_MaxHistoryItems": {
     "name": "גודל היסטוריית התור",
     "tooltip": "המספר המרבי של משימות המוצגות בהיסטוריית התור."
@@ -361,10 +365,6 @@
   "Comfy_Queue_QPOV2": {
     "name": "פאנל היסטוריית/תור משימות מעוגן",
     "tooltip": "מחליף את פאנל תור המשימות הצף בתור משימות מקביל המוטמע בפאנל הצד של היסטוריית המשימות. ניתן להשבית זאת כדי לחזור לפריסת הפאנל הצף."
-  },
-  "Comfy_QueueButton_BatchCountLimit": {
-    "name": "מגבלת מספר האצוות (Batch)",
-    "tooltip": "המספר המרבי של משימות הנוספות לתור בלחיצת כפתור אחת"
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
     "name": "הצגת כרטיסיית שגיאות בפאנל הצד",
@@ -387,8 +387,8 @@
   "Comfy_Sidebar_Style": {
     "name": "סגנון סרגל הצד",
     "options": {
-      "floating": "צף",
-      "connected": "מחובר"
+      "connected": "מחובר",
+      "floating": "צף"
     }
   },
   "Comfy_Sidebar_UnifiedWidth": {
@@ -409,26 +409,22 @@
   },
   "Comfy_UI_TabBarLayout": {
     "name": "פריסת שורת הכרטיסיות",
-    "tooltip": "שולט ברכיבים הכלולים בשורת הכרטיסיות המשולבת.",
     "options": {
       "Default": "ברירת מחדל",
       "Legacy": "גרסה ישנה"
-    }
+    },
+    "tooltip": "שולט ברכיבים הכלולים בשורת הכרטיסיות המשולבת."
   },
   "Comfy_UseNewMenu": {
     "name": "שימוש בתפריט החדש",
-    "tooltip": "הפעלת שורת התפריט העליונה המעוצבת מחדש.",
     "options": {
       "Disabled": "מושבת",
       "Top": "עליון"
-    }
+    },
+    "tooltip": "הפעלת שורת התפריט העליונה המעוצבת מחדש."
   },
   "Comfy_Validation_Workflows": {
     "name": "אימות תהליכי עבודה"
-  },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "התאמת קנה מידה אוטומטית לפריסה (Nodes 2.0)",
-    "tooltip": "התאמת קנה מידה אוטומטית של מיקומי הצמתים בעת מעבר לעיבוד Nodes 2.0 כדי למנוע חפיפה"
   },
   "Comfy_VueNodes_Enabled": {
     "name": "עיצוב צמתים מודרני (Nodes 2.0)",
@@ -436,11 +432,11 @@
   },
   "Comfy_WidgetControlMode": {
     "name": "מצב בקרת הפקדים",
-    "tooltip": "שולט במועד עדכון ערכי הפקדים (אקראי/הגדלה/הקטנה), לפני שתהליך העבודה נוסף לתור או אחריו.",
     "options": {
-      "before": "לפני",
-      "after": "אחרי"
-    }
+      "after": "אחרי",
+      "before": "לפני"
+    },
+    "tooltip": "שולט במועד עדכון ערכי הפקדים (אקראי/הגדלה/הקטנה), לפני שתהליך העבודה נוסף לתור או אחריו."
   },
   "Comfy_Window_UnloadConfirmation": {
     "name": "הצגת אישור בעת סגירת החלון"
@@ -448,8 +444,8 @@
   "Comfy_Workflow_AutoSave": {
     "name": "שמירה אוטומטית",
     "options": {
-      "off": "כבוי",
-      "after delay": "לאחר השהיה"
+      "after delay": "לאחר השהיה",
+      "off": "כבוי"
     }
   },
   "Comfy_Workflow_AutoSaveDelay": {
@@ -458,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "הצגת אישור בעת מחיקת תהליכי עבודה"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "שחזר ערכי פקדים לפי שם"
   },
   "Comfy_Workflow_Persist": {
     "name": "שמירת מצב תהליך העבודה ושחזורו בעת (טעינה מחדש של) הדף"

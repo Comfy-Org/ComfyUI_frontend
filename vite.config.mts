@@ -351,14 +351,13 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
-    // Exclude proprietary ABCROM fonts from non-cloud builds
+    // Exclude proprietary fonts from non-cloud builds
     {
       name: 'exclude-proprietary-fonts',
       generateBundle(_options, bundle) {
         if (DISTRIBUTION !== 'cloud') {
-          // Remove ABCROM font files from bundle
           for (const [fileName] of Object.entries(bundle)) {
-            if (/ABCROM.*\.(woff2?|ttf|otf)$/i.test(fileName)) {
+            if (/(ABCROM|PPFormula).*\.(woff2?|ttf|otf)$/i.test(fileName)) {
               delete bundle[fileName]
             }
           }
@@ -528,22 +527,14 @@ export default defineConfig({
           sentryVitePlugin({
             org: process.env.SENTRY_ORG,
             project: process.env.SENTRY_PROJECT,
-            authToken: process.env.SENTRY_AUTH_TOKEN,
-            sourcemaps: {
-              filesToDeleteAfterUpload: process.env.SENTRY_PROJECT_PROD
-                ? []
-                : ['**/*.map']
-            }
+            authToken: process.env.SENTRY_AUTH_TOKEN
           }),
           ...(process.env.SENTRY_PROJECT_PROD
             ? [
                 sentryVitePlugin({
                   org: process.env.SENTRY_ORG,
                   project: process.env.SENTRY_PROJECT_PROD,
-                  authToken: process.env.SENTRY_AUTH_TOKEN,
-                  sourcemaps: {
-                    filesToDeleteAfterUpload: ['**/*.map']
-                  }
+                  authToken: process.env.SENTRY_AUTH_TOKEN
                 })
               ]
             : [])
@@ -554,7 +545,11 @@ export default defineConfig({
   build: {
     minify: SHOULD_MINIFY,
     target: 'es2022',
-    sourcemap: GENERATE_SOURCEMAP,
+    // Use 'hidden' so sourcemaps are still generated (for Sentry upload) but the
+    // browser-facing `//# sourceMappingURL=` comment is NOT injected into the JS
+    // bundles. This kills the ~57k/3d `/assets/*.js.map` 404 noise in prod
+    // (the .map files aren't served) without losing Sentry symbolication. See FE-1405.
+    sourcemap: GENERATE_SOURCEMAP ? 'hidden' : false,
     // Exclude heavy optional vendor chunks from initial module preload
     // These chunks are only needed when their features are used (3D, terminal, etc.)
     modulePreload: {
@@ -743,6 +738,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom',
+    // Pin the timezone so date-formatting assertions are deterministic
+    // regardless of the contributor's local timezone (CI runs in UTC).
+    env: { TZ: 'UTC' },
     setupFiles: ['./vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
     include: [

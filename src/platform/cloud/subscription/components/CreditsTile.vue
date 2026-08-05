@@ -1,6 +1,11 @@
 <template>
   <div
-    class="@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5"
+    :class="
+      cn(
+        '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5',
+        inactivePlan && 'text-muted'
+      )
+    "
   >
     <Button
       variant="muted-textonly"
@@ -19,7 +24,14 @@
       </div>
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
-        <i class="icon-[lucide--component] size-4 self-center text-credit" />
+        <i
+          :class="
+            cn(
+              'icon-[lucide--component] size-4 self-center',
+              !inactivePlan && 'text-credit'
+            )
+          "
+        />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
@@ -144,9 +156,39 @@
       </div>
     </template>
 
+    <template v-else-if="inactivePlan">
+      <div class="h-px w-full bg-interface-stroke" />
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-2 text-sm">
+          <span class="flex items-center gap-1">
+            {{ $t('subscription.additionalCredits') }}
+            <Button
+              v-tooltip="{
+                value: $t('subscription.additionalCreditsTooltip'),
+                showDelay: 300
+              }"
+              variant="muted-textonly"
+              size="icon-sm"
+              :aria-label="$t('subscription.additionalCreditsInfo')"
+              class="text-muted"
+            >
+              <i class="icon-[lucide--info] size-4" />
+            </Button>
+          </span>
+          <span class="flex items-center gap-1 font-bold">
+            <i class="icon-[lucide--component] size-4" />
+            {{ displayPrepaid }}
+          </span>
+        </div>
+        <span class="text-sm">
+          {{ $t('subscription.reactivateToUseCredits') }}
+        </span>
+      </div>
+    </template>
+
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
-        v-if="isFreeTier"
+        v-if="billingPolicyCapabilities.showsSubscribeUpsellUI"
         variant="subscribe"
         size="lg"
         class="w-full font-normal"
@@ -186,6 +228,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
@@ -197,9 +240,10 @@ import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
-const { zeroState = false } = defineProps<{
+const { zeroState = false, inactivePlan } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
   zeroState?: boolean
+  inactivePlan?: boolean
 }>()
 
 const { locale, t } = useI18n()
@@ -207,12 +251,13 @@ const { locale, t } = useI18n()
 const {
   subscription,
   balance,
-  isActiveSubscription,
-  isFreeTier,
+  canAccessSubscriptionFeatures,
   currentTeamCreditStop,
   fetchBalance,
-  fetchStatus
+  fetchStatus,
+  type
 } = useBillingContext()
+const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
 const {
   monthlyBonusCredits,
   prepaidCredits,
@@ -292,8 +337,12 @@ const creditPoolTotalCompact = computed(() => {
   return total === null ? '—' : compactNumber.value.format(total)
 })
 
-const displayTotal = computed(() => (zeroState ? '0' : totalCredits.value))
-const displayPrepaid = computed(() => (zeroState ? '0' : prepaidCredits.value))
+const displayTotal = computed(() =>
+  zeroState || inactivePlan ? formatCreditCount(0) : totalCredits.value
+)
+const displayPrepaid = computed(() =>
+  zeroState || inactivePlan ? formatCreditCount(0) : prepaidCredits.value
+)
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )
@@ -304,15 +353,23 @@ const monthlyUsageLabel = computed(() =>
   })
 )
 
-const showBreakdown = computed(() => isActiveSubscription.value && !zeroState)
+const showBreakdown = computed(
+  () => canAccessSubscriptionFeatures.value && !zeroState && !inactivePlan
+)
 const showBar = computed(
   () =>
     showBreakdown.value &&
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
+// Workspace-owner gating only applies to team billing; legacy (personal,
+// including local/desktop) accounts have no workspace concept to gate on.
 const showActionButton = computed(
-  () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp
+  () =>
+    canAccessSubscriptionFeatures.value &&
+    !zeroState &&
+    !inactivePlan &&
+    (type.value !== 'workspace' || permissions.value.canTopUp)
 )
 
 const isMonthlyDepleted = computed(

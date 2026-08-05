@@ -7,6 +7,13 @@ import {
 } from '@e2e/fixtures/helpers/firebaseAuthStorage'
 
 /**
+ * The identity `mockAuth()` signs the cloud app in as. Specs arranging
+ * workspace members must use this email for the self-row so owner/member
+ * gates resolve against the signed-in user.
+ */
+export const CLOUD_SELF_EMAIL = 'e2e@test.comfy.org'
+
+/**
  * Mocks Firebase authentication for cloud E2E tests.
  *
  * The cloud build's router guard waits for Firebase `onAuthStateChanged`
@@ -42,7 +49,7 @@ export class CloudAuthHelper {
   private async seedFirebaseIndexedDB(): Promise<void> {
     await seedFirebaseAuthUser(this.page, this.appUrl, {
       uid: 'test-user-e2e',
-      email: 'e2e@test.comfy.org',
+      email: CLOUD_SELF_EMAIL,
       displayName: 'E2E Test User',
       emailVerified: true,
       isAnonymous: false,
@@ -51,7 +58,7 @@ export class CloudAuthHelper {
           providerId: 'google.com',
           uid: 'test-user-e2e',
           displayName: 'E2E Test User',
-          email: 'e2e@test.comfy.org',
+          email: CLOUD_SELF_EMAIL,
           phoneNumber: null,
           photoURL: null
         }
@@ -96,7 +103,7 @@ export class CloudAuthHelper {
           users: [
             {
               localId: 'test-user-e2e',
-              email: 'e2e@test.comfy.org',
+              email: CLOUD_SELF_EMAIL,
               displayName: 'E2E Test User',
               emailVerified: true,
               validSince: '0',
