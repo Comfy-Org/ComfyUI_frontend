@@ -82,7 +82,9 @@
         <i class="icon-[lucide--circle-help]" />
       </Button>
       <Button
-        v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
+        v-if="
+          canAccessSubscriptionFeatures && permissions.canTopUp && isFreeTier
+        "
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -92,7 +94,7 @@
         {{ $t('subscription.subscribeForMore') }}
       </Button>
       <Button
-        v-else-if="isActiveSubscription && permissions.canTopUp"
+        v-else-if="canAccessSubscriptionFeatures && permissions.canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -263,7 +265,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   subscription,
   balance,
@@ -297,12 +299,15 @@ const showPlansAndPricing = computed(
   () => permissions.value.canManageSubscription
 )
 const showManagePlan = computed(
-  () => permissions.value.canManageSubscription && isActiveSubscription.value
+  () =>
+    permissions.value.canManageSubscription &&
+    canAccessSubscriptionFeatures.value
 )
 const showSubscribeAction = computed(
   () =>
     (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
-    (!isActiveSubscription.value && permissions.value.canManageSubscription)
+    (!canAccessSubscriptionFeatures.value &&
+      permissions.value.canManageSubscription)
 )
 
 const handleOpenUserSettings = () => {
