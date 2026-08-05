@@ -108,7 +108,9 @@
       >
         <!-- Mask/Edit Button -->
         <button
-          v-if="!hasMultipleImages && !imageError && !currentImageIsHdr"
+          v-if="
+            !readOnly && !hasMultipleImages && !imageError && !currentImageIsHdr
+          "
           :class="actionButtonClass"
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
@@ -217,9 +219,10 @@ interface ImagePreviewProps {
   readonly imageUrls: readonly string[]
   /** Optional node ID for context-aware actions */
   readonly nodeId?: NodeId
+  readonly readOnly?: boolean
 }
 
-const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
+const { imageUrls, nodeId, readOnly = false } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()

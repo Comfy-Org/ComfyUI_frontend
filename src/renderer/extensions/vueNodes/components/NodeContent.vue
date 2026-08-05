@@ -23,6 +23,7 @@
         v-else-if="hasMedia && media?.type === 'image'"
         :image-urls="media.urls"
         :node-id="nodeId"
+        :read-only="readOnly"
         class="mt-2 flex-auto"
       />
     </slot>
@@ -42,6 +43,7 @@ import ImagePreview from './ImagePreview.vue'
 
 interface NodeContentProps {
   nodeData?: VueNodeData
+  readOnly?: boolean
   media?: {
     type: 'image' | 'video' | 'audio'
     urls: string[]

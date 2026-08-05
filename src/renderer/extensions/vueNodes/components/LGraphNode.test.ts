@@ -65,6 +65,12 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({
+    activeSubgraphHostExecutionId: undefined
+  })
+}))
+
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({
     toastErrorHandler: vi.fn()

@@ -151,6 +151,19 @@ describe('ImagePreview', () => {
     screen.getByRole('button', { name: 'Edit or mask image' })
   })
 
+  it('hides mask/edit while preserving view and download actions when read-only', () => {
+    renderImagePreview({
+      imageUrls: [defaultProps.imageUrls[0]],
+      readOnly: true
+    })
+
+    expect(screen.getByRole('img')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Edit or mask image' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Download image' })).toBeVisible()
+  })
+
   it('hides mask and download buttons when image fails to load', async () => {
     renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]

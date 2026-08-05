@@ -176,6 +176,8 @@
     "devOnly": "DEV",
     "loadWorkflow": "Load Workflow",
     "goToNode": "Go to Node",
+    "goToParentNode": "Go to parent node",
+    "parentNode": "Parent node",
     "setAsBackground": "Set as Background",
     "customBackground": "Custom Background",
     "settings": "Settings",

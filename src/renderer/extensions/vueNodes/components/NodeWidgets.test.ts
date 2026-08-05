@@ -32,6 +32,12 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({
+    activeSubgraphHostExecutionId: undefined
+  })
+}))
+
 const WidgetStub = {
   name: 'WidgetStub',
   props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
