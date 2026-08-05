@@ -12,7 +12,7 @@
       loop
       playsinline
       class="relative size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
-      @click.stop="onVideoClick"
+      @click="onVideoClick"
       @play="onVideoPlay"
       @pause="onVideoPause"
     >
@@ -67,8 +67,8 @@ const onVideoPause = () => {
   emit('videoPlayingStateChanged', false)
 }
 
-const onVideoClick = async () => {
-  if (shouldShowControls.value) return
+async function onVideoClick(event: MouseEvent) {
+  if (event.shiftKey) return
 
   const video = videoElement.value
   if (!video) return

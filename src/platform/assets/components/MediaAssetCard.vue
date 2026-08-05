@@ -24,7 +24,7 @@
     <!-- Top Area: Media Preview -->
     <div
       class="relative aspect-square overflow-hidden p-0"
-      @click.stop="fileKind !== 'video' && emit('select')"
+      @click.stop="handlePreviewClick"
       @dblclick.stop="fileKind === 'image' && handleZoomClick()"
     >
       <!-- Loading State -->
@@ -335,6 +335,11 @@ const showActionsOverlay = computed(() => {
     isHovered.value || isFocusedWithin.value || selected || isVideoPlaying.value
   )
 })
+
+function handlePreviewClick(event: MouseEvent) {
+  if (fileKind.value === 'video' && !event.shiftKey) return
+  emit('select')
+}
 
 const handleZoomClick = () => {
   if (asset && canInspect.value) {
