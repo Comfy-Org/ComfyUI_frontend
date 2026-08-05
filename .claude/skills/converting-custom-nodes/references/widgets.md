@@ -1,17 +1,23 @@
 # Converting widget-array mutation and the converted-widget protocol
 
+> **Accessor style.** The published handles follow `src/types/extensionV2.ts`
+> (PR #11251): reads and writes are methods, not properties —
+> `widget.getValue()` / `setValue(v)`, `isHidden()` / `setHidden(b)`,
+> `getOptions()` / `setOption(key, value)`, `setLabel(s)`, and `widgetType` for
+> the type. Node handles keep `getTitle()`/`setTitle()` style likewise.
+
 The largest cohort by pack count, and the one where naive conversions are most
 likely to be silently wrong.
 
-| Surface | Packs | Installs |
-|---|---|---|
-| `widgets.splice` | 286 | 21.6% |
-| `widget.type` overwrite | 270 | 18.6% |
-| converted-widget protocol | 238 | 25.1% |
-| `widgets = [...]` | 226 | 10.9% |
-| `widgets.push` | 142 | — |
-| `getCustomWidgets` POJO | 91 | 16.8% |
-| `widgets.length = 0` | 31 | — |
+| Surface                   | Packs | Installs |
+| ------------------------- | ----- | -------- |
+| `widgets.splice`          | 286   | 21.6%    |
+| `widget.type` overwrite   | 270   | 18.6%    |
+| converted-widget protocol | 238   | 25.1%    |
+| `widgets = [...]`         | 226   | 10.9%    |
+| `widgets.push`            | 142   | —        |
+| `getCustomWidgets` POJO   | 91    | 16.8%    |
+| `widgets.length = 0`      | 31    | —        |
 
 These overlap heavily; the same pack usually hits several.
 
@@ -54,13 +60,15 @@ function hideWidget(node, widget, suffix = '') {
   widget.origType = widget.type
   widget.origComputeSize = widget.computeSize
   widget.origSerializeValue = widget.serializeValue
-  widget.computeSize = () => [0, -4]   // -4 offsets litegraph's inter-widget gap
+  widget.computeSize = () => [0, -4] // -4 offsets litegraph's inter-widget gap
   widget.type = CONVERTED_TYPE + suffix
   widget.serializeValue = () => {
     if (!node.inputs) return undefined
     const input = node.inputs.find((i) => i.widget?.name === widget.name)
-    if (!input || !input.link) return undefined      // unlinked → do not serialize
-    return widget.origSerializeValue ? widget.origSerializeValue() : widget.value
+    if (!input || !input.link) return undefined // unlinked → do not serialize
+    return widget.origSerializeValue
+      ? widget.origSerializeValue()
+      : widget.value
   }
   if (widget.linkedWidgets) {
     for (const w of widget.linkedWidgets) hideWidget(node, w, ':' + widget.name)
@@ -90,7 +98,7 @@ it previously did not.
 So check what the pack relied on:
 
 - Hiding purely for presentation → `hidden = true` is complete.
-- Hiding *and* suppressing serialization → set `hidden`, and handle
+- Hiding _and_ suppressing serialization → set `hidden`, and handle
   serialization explicitly. If the value should persist only when the socket is
   connected, that condition belongs in the pack's own `onSerialize`.
 
@@ -106,15 +114,15 @@ escalate if the linkage is computed rather than fixed.
 ## `widget.type` overwrite — 270 packs
 
 Almost always the converted-widget hack above. If it is genuinely trying to
-change a widget's *kind*, there is no replacement: type is identity. Remove the
+change a widget's _kind_, there is no replacement: type is identity. Remove the
 widget and add the intended one.
 
 ```js
 // before
-widget.type = 'converted-widget'      // → widget.hidden = true
+widget.type = 'converted-widget' // → widget.setHidden(true)
 
 // before — genuinely changing kind
-widget.type = 'combo'                 // → remove + add, or escalate
+widget.type = 'combo' // → remove + add, or escalate
 ```
 
 ## Array assignment and truncation
@@ -148,8 +156,8 @@ and the `def` is plain data — no `node`, no `app`, no return-value unwrapping:
 ```js
 // before
 const w = ComfyWidgets.STRING(this, 'text', ['STRING', { multiline: true }], app).widget
-w.inputEl.readOnly = true
-w.inputEl.style.opacity = 0.6
+widget element.readOnly = true
+widget element.style.opacity = 0.6
 
 // after
 const widget = node.widgets.add({
@@ -164,22 +172,22 @@ const widget = node.widgets.add({
 use to fake a read-only widget. It is a real property, so the styling stays
 consistent with every other disabled widget instead of being hand-rolled.
 
-| Old factory | `type` |
-|---|---|
-| `ComfyWidgets.STRING(..., { multiline: true })` | `'textarea'` |
-| `ComfyWidgets.STRING(...)` | `'string'` |
-| `ComfyWidgets.INT` / `FLOAT` | `'number'` (or `'slider'` with `min`/`max`) |
-| `ComfyWidgets.BOOLEAN` | `'toggle'` |
-| `ComfyWidgets.COMBO` | `'combo'`, values via `options.values` |
-| `ComfyWidgets.MARKDOWN` | `'markdown'` |
-| `ComfyWidgets.COLOR` | `'color'` |
+| Old factory                                     | `type`                                      |
+| ----------------------------------------------- | ------------------------------------------- |
+| `ComfyWidgets.STRING(..., { multiline: true })` | `'textarea'`                                |
+| `ComfyWidgets.STRING(...)`                      | `'string'`                                  |
+| `ComfyWidgets.INT` / `FLOAT`                    | `'number'` (or `'slider'` with `min`/`max`) |
+| `ComfyWidgets.BOOLEAN`                          | `'toggle'`                                  |
+| `ComfyWidgets.COMBO`                            | `'combo'`, values via `options.values`      |
+| `ComfyWidgets.MARKDOWN`                         | `'markdown'`                                |
+| `ComfyWidgets.COLOR`                            | `'color'`                                   |
 
 ### Keeping a widget out of the saved workflow
 
 ```js
 // before
-widget.serializeValue = async () => {}        // per widget
-this.serialize_widgets = false                // whole node
+widget.serializeValue = async () => {} // per widget
+this.serialize_widgets = false // whole node
 
 // after
 node.widgets.add({ type: 'textarea', name: 'text', serialize: false })
@@ -201,27 +209,30 @@ is the entire thing the conversion exists to end. If the widget it needs has no
 ## Reordering
 
 ```js
-node.widgets.reorder(['prompt', 'seed', 'steps'])   // full permutation
-node.widgets.move('prompt', 0)                      // single move
+node.widgets.reorder(['prompt', 'seed', 'steps']) // full permutation
+node.widgets.move('prompt', 0) // single move
 ```
 
 `reorder` **throws on a partial list** rather than dropping the widgets you
 omitted — which is precisely how the splice idiom lost them. The error names
 what is missing.
 
-## `setOptions` preserves accessors — do not hand-merge
+## `setOption` preserves accessors — do not hand-merge
 
 ```js
 // kjnodes builds dynamic combos with a live getter
-Object.defineProperty(newOpts, 'values',
-  Object.getOwnPropertyDescriptor(comboOptions, 'values'))
+Object.defineProperty(
+  newOpts,
+  'values',
+  Object.getOwnPropertyDescriptor(comboOptions, 'values')
+)
 ```
 
-`setOptions` merges by **property descriptor**, so getters stay getters. If you
+`setOption` merges by **property descriptor**, so getters stay getters. If you
 hand-roll `{ ...widget.options(), ...patch }` you will invoke the getter and
 freeze its result — pinning a dynamic combo to a one-time snapshot, silently.
 
-`options()` returns a frozen *snapshot* by design; use `setOptions` to write.
+`options()` returns a frozen _snapshot_ by design; use `setOption` to write.
 
 ## `getCustomWidgets` — 91 packs
 
@@ -233,7 +244,9 @@ comfy.widgets.register({
   defaultValue: 0,
   mount(el, ctx) {
     /* build DOM, call ctx.setValue on change */
-    return () => { /* cleanup */ }
+    return () => {
+      /* cleanup */
+    }
   }
 })
 ```
@@ -244,14 +257,14 @@ A mount function is framework-agnostic and sidesteps the dual-instance problem.
 
 ## Traps summary
 
-| Trap | Consequence |
-|---|---|
-| Treating same-index splice as a reorder | Nonsense conversion of a cache-invalidation hack |
-| `hidden = true` alone, where the old code also suppressed serialization | Wire-format change |
-| Hand-merging options | Live getters flattened; dynamic combos freeze |
-| Assigning a new `widgets` array | Renderer stops tracking |
-| Assigning `widgets.length` | Widget teardown skipped |
-| Partial `reorder` list | Throws — by design; supply every name |
+| Trap                                                                    | Consequence                                      |
+| ----------------------------------------------------------------------- | ------------------------------------------------ |
+| Treating same-index splice as a reorder                                 | Nonsense conversion of a cache-invalidation hack |
+| `hidden = true` alone, where the old code also suppressed serialization | Wire-format change                               |
+| Hand-merging options                                                    | Live getters flattened; dynamic combos freeze    |
+| Assigning a new `widgets` array                                         | Renderer stops tracking                          |
+| Assigning `widgets.length`                                              | Widget teardown skipped                          |
+| Partial `reorder` list                                                  | Throws — by design; supply every name            |
 
 ## Source data
 

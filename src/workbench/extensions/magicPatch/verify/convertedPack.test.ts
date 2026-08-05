@@ -57,7 +57,7 @@ function runConvertedPack(comfy: Comfy) {
           disabled: true
         })
 
-      textWidget.value = result.text.join('')
+      textWidget.setValue(result.text.join(''))
     })
   })
 }
@@ -93,7 +93,7 @@ describe('converted comfyui_essentials/DisplayAny', () => {
   it('renders executed text into a widget', () => {
     execute(['hello ', 'world'])
     const widget = comfy.graph.node(String(node.id))!.widgets.get('displaytext')
-    expect(widget?.value).toBe('hello world')
+    expect(widget?.getValue()).toBe('hello world')
   })
 
   it('creates the readout as a disabled textarea', () => {
@@ -101,8 +101,8 @@ describe('converted comfyui_essentials/DisplayAny', () => {
     const widget = comfy.graph.node(String(node.id))!.widgets.get('displaytext')
     // The original faked this with inputEl.readOnly plus border and background
     // overrides; `disabled` is the published equivalent.
-    expect(widget?.type).toBe('textarea')
-    expect(widget?.disabled).toBe(true)
+    expect(widget?.widgetType).toBe('textarea')
+    expect(widget?.isDisabled()).toBe(true)
   })
 
   it('reuses the widget across executions instead of appending', () => {
@@ -112,7 +112,7 @@ describe('converted comfyui_essentials/DisplayAny', () => {
 
     const widgets = comfy.graph.node(String(node.id))!.widgets
     expect(widgets.names().filter((n) => n === 'displaytext')).toHaveLength(1)
-    expect(widgets.get('displaytext')?.value).toBe('third')
+    expect(widgets.get('displaytext')?.getValue()).toBe('third')
   })
 
   it('clears stale widgets the node accumulated, keeping the first', () => {

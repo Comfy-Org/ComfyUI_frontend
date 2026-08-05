@@ -36,7 +36,7 @@ describe('widget surface', () => {
   describe('reads', () => {
     it('exposes widgets by name and position', () => {
       expect(widgets.length).toBe(3)
-      expect(widgets.get('seed')?.value).toBe(1)
+      expect(widgets.get('seed')?.getValue()).toBe(1)
       expect(widgets.at(1)?.name).toBe('steps')
       expect(widgets.names()).toEqual(['seed', 'steps', 'prompt'])
     })
@@ -62,24 +62,26 @@ describe('widget surface', () => {
     })
 
     it('returns frozen options rather than the live object', () => {
-      const opts = widgets.get('seed')!.options()
+      const opts = widgets.get('seed')!.getOptions()
       expect(Object.isFrozen(opts)).toBe(true)
     })
   })
 
   describe('values', () => {
     it('writes through to the widget', () => {
-      widgets.get('seed')!.value = 42
+      widgets.get('seed')!.setValue(42)
       expect(node.widgets![0].value).toBe(42)
     })
 
     it('refuses to change widget type, pointing at hidden', () => {
       expect(() => {
-        ;(widgets.get('seed') as { type: string }).type = 'converted-widget'
+        ;(widgets.get('seed') as unknown as { widgetType: string }).widgetType =
+          'converted-widget'
       }).toThrow(ComfyReadonlyError)
       expect(() => {
-        ;(widgets.get('seed') as { type: string }).type = 'converted-widget'
-      }).toThrow(/hidden = true/)
+        ;(widgets.get('seed') as unknown as { widgetType: string }).widgetType =
+          'converted-widget'
+      }).toThrow(/setHidden\(true\)/)
     })
   })
 
@@ -100,7 +102,7 @@ describe('widget surface', () => {
       })
       w.options = opts as never
 
-      widgets.get('seed')!.setOptions({ tooltip: 'hi' } as never)
+      widgets.get('seed')!.setOption('tooltip', 'hi')
 
       const descriptor = Object.getOwnPropertyDescriptor(
         node.widgets![0].options,
@@ -113,9 +115,9 @@ describe('widget surface', () => {
     })
 
     it('merges the patch over existing options', () => {
-      widgets.get('seed')!.setOptions({ tooltip: 'hi' } as never)
-      widgets.get('seed')!.setOptions({ step: 2 } as never)
-      const opts = widgets.get('seed')!.options() as Record<string, unknown>
+      widgets.get('seed')!.setOption('tooltip', 'hi')
+      widgets.get('seed')!.setOption('step', 2)
+      const opts = widgets.get('seed')!.getOptions() as Record<string, unknown>
       expect(opts.tooltip).toBe('hi')
       expect(opts.step).toBe(2)
     })
@@ -124,16 +126,16 @@ describe('widget surface', () => {
   describe('hidden replaces the converted-widget hack', () => {
     it('defaults to false and toggles', () => {
       const seed = widgets.get('seed')!
-      expect(seed.hidden).toBe(false)
-      seed.hidden = true
+      expect(seed.isHidden()).toBe(false)
+      seed.setHidden(true)
       expect(node.widgets![0].hidden).toBe(true)
     })
 
     it('retains the value while hidden', () => {
       const seed = widgets.get('seed')!
-      seed.value = 7
-      seed.hidden = true
-      expect(seed.value).toBe(7)
+      seed.setValue(7)
+      seed.setHidden(true)
+      expect(seed.getValue()).toBe(7)
     })
   })
 
@@ -217,7 +219,7 @@ describe('widget surface', () => {
       expect(held.isDeleted).toBe(false)
       widgets.remove('steps')
       expect(held.isDeleted).toBe(true)
-      expect(held.value).toBeUndefined()
+      expect(held.getValue()).toBeUndefined()
     })
   })
 
