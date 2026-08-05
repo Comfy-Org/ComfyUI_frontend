@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
+  getAssetOutputKey,
   getOutputKey,
   resolveOutputAssetItems
 } from '@/platform/assets/utils/outputAssetUtil'
@@ -64,14 +65,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
   }
 
   function isDeletedOutput(jobId: string, asset: AssetItem): boolean {
-    const metadata = getOutputAssetMetadata(asset.user_metadata)
-    const outputKey =
-      getOutputKey({
-        nodeId: metadata?.nodeId,
-        subfolder: metadata?.subfolder,
-        filename: asset.name
-      }) ?? asset.name
-    return assetsStore.isHistoryOutputDeleted(jobId, outputKey)
+    return assetsStore.isHistoryOutputDeleted(jobId, getAssetOutputKey(asset))
   }
 
   function isStackExpanded(asset: AssetItem): boolean {

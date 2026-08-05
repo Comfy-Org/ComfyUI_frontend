@@ -1497,6 +1497,81 @@ describe('useMediaAssetActions', () => {
       )
     })
 
+    it('removes the history row when its only output is deleted', async () => {
+      mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockImplementation(
+        (metadata: Record<string, unknown> | undefined) =>
+          metadata && 'jobId' in metadata ? metadata : null
+      )
+      mockFindJobOutputAsset.mockResolvedValue({
+        id: 'only-output-uuid',
+        name: 'only-output.png'
+      })
+      const output = createMockAsset({
+        id: 'job-1-output-card',
+        name: 'only-output.png',
+        tags: ['output'],
+        user_metadata: {
+          jobId: 'job-1',
+          nodeId: 'node-1',
+          subfolder: '',
+          outputCount: 1
+        }
+      })
+      mockHistoryAssets.push(
+        createMockAsset({
+          ...output,
+          id: 'job-1'
+        })
+      )
+      mockResolveOutputAssetItems.mockResolvedValue([output])
+
+      const actions = useMediaAssetActions()
+      await actions.deleteAssets(output)
+
+      await vi.waitFor(() => {
+        expect(mockReplaceHistoryAsset).toHaveBeenCalledWith('job-1', undefined)
+      })
+    })
+
+    it('continues post-deletion cleanup when history reconciliation fails', async () => {
+      mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockImplementation(
+        (metadata: Record<string, unknown> | undefined) =>
+          metadata && 'jobId' in metadata ? metadata : null
+      )
+      const output = createMockAsset({
+        id: 'job-1-output-card',
+        name: 'output.png',
+        tags: ['output'],
+        user_metadata: {
+          jobId: 'job-1',
+          nodeId: 'node-1',
+          subfolder: '',
+          outputCount: 2
+        }
+      })
+      mockHistoryAssets.push(createMockAsset({ ...output, id: 'job-1' }))
+      mockResolveOutputAssetItems.mockRejectedValue(
+        new Error('history lookup failed')
+      )
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      const actions = useMediaAssetActions()
+      await actions.deleteAssets(output)
+
+      await vi.waitFor(() => {
+        expect(mockClearNodePreviewCache).toHaveBeenCalledTimes(1)
+      })
+      expect(mockClearWidgetValues).toHaveBeenCalledTimes(1)
+      expect(mockMarkMissingMedia).toHaveBeenCalledTimes(1)
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to reconcile history for job job-1:',
+        expect.any(Error)
+      )
+      errorSpy.mockRestore()
+    })
+
     it('keeps the job when the selected cloud asset cannot be resolved', async () => {
       mockIsCloud.value = true
       mockGetOutputAssetMetadata.mockReturnValue({

@@ -654,6 +654,22 @@ describe('assetsStore - Refactored (Option A)', () => {
       })
       expect(store.historyAssets).toHaveLength(2)
     })
+
+    it('removes a job when no surviving output remains', async () => {
+      vi.mocked(api.getHistory).mockResolvedValue([
+        createMockJobItem(0),
+        createMockJobItem(1)
+      ])
+      await store.updateHistory()
+      const jobId = store.historyAssets[0].id
+
+      store.replaceHistoryAsset(jobId)
+
+      expect(store.historyAssets.some((asset) => asset.id === jobId)).toBe(
+        false
+      )
+      expect(store.historyAssets).toHaveLength(1)
+    })
   })
 
   describe('deleted history outputs', () => {

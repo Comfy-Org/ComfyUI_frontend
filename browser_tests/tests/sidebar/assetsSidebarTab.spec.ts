@@ -1,5 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
+import type { z } from 'zod'
 
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -17,11 +18,16 @@ import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPane
 import type {
   JobDetail,
   JobOutputAsset,
-  RawJobListItem
+  RawJobListItem,
+  zJobAssetsResponse,
+  zJobsListResponse
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
+
+type JobAssetsResponse = z.infer<typeof zJobAssetsResponse>
+type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 interface ViewFile {
   body?: Buffer | string
@@ -273,13 +279,13 @@ const cloudAssetDeletionTest = test.extend({
             total: jobs.length,
             has_more: false
           }
-        }
+        } satisfies JobsListResponse
       })
     })
     await page.route('**/api/jobs/multi-output', (route) =>
       route.fulfill({ json: multiOutputJobDetail })
     )
-    await page.route('**/api/jobs/multi-output/assets?*', (route) => {
+    await page.route('**/api/jobs/multi-output/assets**', (route) => {
       const assets: JobOutputAsset[] = (outputAssetsByPage.get(page) ?? []).map(
         (asset, outputIndex) => ({
           id: asset.id,
@@ -293,8 +299,13 @@ const cloudAssetDeletionTest = test.extend({
       return route.fulfill({
         json: {
           assets,
-          pagination: { has_more: false }
-        }
+          pagination: {
+            offset: 0,
+            limit: 200,
+            total: assets.length,
+            has_more: false
+          }
+        } satisfies JobAssetsResponse
       })
     })
     await page.route('**/api/object_info', (route) =>
@@ -488,7 +499,10 @@ cloudAssetDeletionTest.describe(
           .getNodeByTitle('Load Image')
           .getByRole('button', { name: 'Select image...' })
         await imageWidgetButton.click()
-        const imagePicker = page.getByRole('dialog')
+        const imagePicker = page
+          .getByRole('dialog')
+          .filter({ has: page.getByRole('button', { name: 'All' }) })
+          .first()
         await expect(
           imagePicker.getByText('ComfyUI_multi-output-a.png [output]', {
             exact: true
@@ -500,6 +514,7 @@ cloudAssetDeletionTest.describe(
           })
         ).toBeVisible()
         await page.keyboard.press('Escape')
+        await expect(imagePicker).toBeHidden()
 
         const tab = comfyPage.menu.assetsTab
         await tab.open()
@@ -522,9 +537,9 @@ cloudAssetDeletionTest.describe(
         await expect
           .poll(() => deletedAssetIds)
           .toEqual(['multi-output-a-asset-id'])
-        expect(historyDeleteRequests).toEqual([])
         await expect(tab.getAssetCardByName('multi-output-a')).toHaveCount(0)
         await expect(tab.getAssetCardByName('multi-output-b')).toBeVisible()
+        expect(historyDeleteRequests).toEqual([])
         await tab.dismissToasts()
         await tab.close()
         await imageWidgetButton.click()

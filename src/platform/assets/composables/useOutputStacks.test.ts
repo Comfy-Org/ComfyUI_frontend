@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as OutputAssetUtil from '@/platform/assets/utils/outputAssetUtil'
@@ -59,7 +59,7 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 describe('useOutputStacks', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    mocks.deletedOutputKeys.clear()
+    mocks.deletedOutputKeys = reactive(new Set<string>())
   })
 
   it('expands stacks and exposes children as selectable assets', async () => {
@@ -212,7 +212,7 @@ describe('useOutputStacks', () => {
     ])
   })
 
-  it('removes deleted outputs from an already expanded stack', async () => {
+  it('reactively removes deleted outputs from an expanded stack', async () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
     const child = createAsset({
       id: 'child',
@@ -225,11 +225,12 @@ describe('useOutputStacks', () => {
     })
     vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([child])
 
-    const assets = ref([parent])
-    const { assetItems, toggleStack } = useOutputStacks({ assets })
+    const { assetItems, toggleStack } = useOutputStacks({
+      assets: ref([parent])
+    })
     await toggleStack(parent)
     mocks.deletedOutputKeys.add('job-1:node-1-outputs-child.png')
-    assets.value = [...assets.value]
+    await nextTick()
 
     expect(assetItems.value.map((item) => item.asset.id)).toEqual([parent.id])
   })

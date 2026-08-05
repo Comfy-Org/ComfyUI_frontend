@@ -28,9 +28,9 @@ import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetV
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import {
+  getAssetOutputKey,
   findJobOutputAsset,
   getAssetOutputCount,
-  getOutputKey,
   resolveOutputAssetItems
 } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -725,7 +725,8 @@ export function useMediaAssetActions() {
               })
 
               // Update stores after deletions
-              const hasOutputAssets = assetArray.some((asset) => {
+              const hasOutputAssets = assetArray.some((asset, index) => {
+                if (results[index].status !== 'fulfilled') return false
                 const type = getAssetType(asset)
                 return type === 'output' || type === 'temp'
               })
@@ -736,12 +737,7 @@ export function useMediaAssetActions() {
                 if (type !== 'output' && type !== 'temp') return
                 const metadata = getOutputAssetMetadata(asset.user_metadata)
                 if (!metadata) return
-                const outputKey =
-                  getOutputKey({
-                    nodeId: metadata.nodeId,
-                    subfolder: metadata.subfolder,
-                    filename: asset.name
-                  }) ?? asset.name
+                const outputKey = getAssetOutputKey(asset)
                 const deletedKeys =
                   deletedOutputKeysByJob.get(metadata.jobId) ?? new Set()
                 deletedKeys.add(outputKey)
@@ -757,50 +753,52 @@ export function useMediaAssetActions() {
                 await assetsStore.updateHistory()
                 await assetsStore.updateFlatOutputs()
                 for (const [jobId, deletedKeys] of deletedOutputKeysByJob) {
-                  assetsStore.markHistoryOutputsDeleted(jobId, deletedKeys)
-                  const historyAsset = assetsStore.historyAssets.find(
-                    (asset) => asset.id === jobId
-                  )
-                  const metadata = getOutputAssetMetadata(
-                    historyAsset?.user_metadata
-                  )
-                  if (!historyAsset || !metadata) continue
-
-                  const outputs = await resolveOutputAssetItems(metadata, {
-                    createdAt: historyAsset.created_at
-                  })
-                  if (
-                    typeof metadata.outputCount === 'number' &&
-                    outputs.length < metadata.outputCount
-                  ) {
-                    continue
-                  }
-
-                  const survivingOutputs = outputs.filter((output) => {
-                    const outputMetadata = getOutputAssetMetadata(
-                      output.user_metadata
+                  try {
+                    assetsStore.markHistoryOutputsDeleted(jobId, deletedKeys)
+                    const historyAsset = assetsStore.historyAssets.find(
+                      (asset) => asset.id === jobId
                     )
-                    const outputKey =
-                      getOutputKey({
-                        nodeId: outputMetadata?.nodeId,
-                        subfolder: outputMetadata?.subfolder,
-                        filename: output.name
-                      }) ?? output.name
-                    return !assetsStore.isHistoryOutputDeleted(jobId, outputKey)
-                  })
-                  const replacement = survivingOutputs[0]
-                  assetsStore.replaceHistoryAsset(
-                    jobId,
-                    replacement
-                      ? {
-                          ...replacement,
-                          user_metadata: {
-                            ...replacement.user_metadata,
-                            outputCount: survivingOutputs.length
+                    const metadata = getOutputAssetMetadata(
+                      historyAsset?.user_metadata
+                    )
+                    if (!historyAsset || !metadata) continue
+
+                    const outputs = await resolveOutputAssetItems(metadata, {
+                      createdAt: historyAsset.created_at
+                    })
+                    if (
+                      typeof metadata.outputCount === 'number' &&
+                      outputs.length < metadata.outputCount
+                    ) {
+                      continue
+                    }
+
+                    const survivingOutputs = outputs.filter((output) => {
+                      const outputKey = getAssetOutputKey(output)
+                      return !assetsStore.isHistoryOutputDeleted(
+                        jobId,
+                        outputKey
+                      )
+                    })
+                    const replacement = survivingOutputs[0]
+                    assetsStore.replaceHistoryAsset(
+                      jobId,
+                      replacement
+                        ? {
+                            ...replacement,
+                            user_metadata: {
+                              ...replacement.user_metadata,
+                              outputCount: survivingOutputs.length
+                            }
                           }
-                        }
-                      : undefined
-                  )
+                        : undefined
+                    )
+                  } catch (error) {
+                    console.error(
+                      `Failed to reconcile history for job ${jobId}:`,
+                      error
+                    )
+                  }
                 }
               }
               if (hasInputAssets) {
