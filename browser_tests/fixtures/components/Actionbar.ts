@@ -1,9 +1,18 @@
 import type { Locator, Page, Request } from '@playwright/test'
-import { errors } from '@playwright/test'
+import { errors, expect } from '@playwright/test'
 
 import type { AutoQueueMode } from '@/stores/queueSettingsStore'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { WorkspaceStore } from '@e2e/types/globals'
+
+/** Only the card's 1px border may sit below the run progress bar. */
+const FLUSH_TOLERANCE_PX = 2
+
+async function boundingBox(locator: Locator) {
+  const box = await locator.boundingBox()
+  if (!box) throw new Error('Expected element to be measurable')
+  return box
+}
 
 function isPromptRequest(request: Request): boolean {
   return (
@@ -22,15 +31,52 @@ async function waitForPromptRequest(page: Page, timeout: number) {
 
 export class ComfyActionbar {
   public readonly root: Locator
+  public readonly card: Locator
   public readonly queueButton: ComfyQueueButton
   public readonly propertiesButton: Locator
   public readonly dragHandle: Locator
+  public readonly inlineProgress: Locator
+  public readonly inlineProgressNodeFill: Locator
 
   constructor(public readonly page: Page) {
     this.root = page.locator('.actionbar-container')
+    this.card = page.getByTestId(TestIds.topbar.actionBarCard)
     this.queueButton = new ComfyQueueButton(this)
     this.propertiesButton = this.root.getByLabel('Toggle properties panel')
     this.dragHandle = this.root.locator('.drag-handle')
+    this.inlineProgress = page.getByTestId(TestIds.topbar.queueInlineProgress)
+    this.inlineProgressNodeFill = page.getByTestId(
+      TestIds.topbar.queueInlineProgressNodeFill
+    )
+  }
+
+  /**
+   * The run progress bar draws inside the actionbar card, so it must hug the
+   * card's bottom edge. Anything higher overlaps the Run/Cancel button row and
+   * gets painted over by it (FE-1504).
+   */
+  async expectInlineProgressFlushWithCardBottom() {
+    await expect
+      .poll(async () => {
+        const [card, fill] = await Promise.all([
+          boundingBox(this.card),
+          boundingBox(this.inlineProgressNodeFill)
+        ])
+        return card.y + card.height - (fill.y + fill.height)
+      })
+      .toBeLessThanOrEqual(FLUSH_TOLERANCE_PX)
+  }
+
+  async expectInlineProgressClearOfControls() {
+    await expect
+      .poll(async () => {
+        const [controls, fill] = await Promise.all([
+          boundingBox(this.root),
+          boundingBox(this.inlineProgressNodeFill)
+        ])
+        return fill.y - (controls.y + controls.height)
+      })
+      .toBeGreaterThanOrEqual(0)
   }
 
   async isDocked() {
