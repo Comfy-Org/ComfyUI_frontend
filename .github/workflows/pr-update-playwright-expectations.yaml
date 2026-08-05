@@ -9,7 +9,9 @@ on:
 
 # Key on the PR number, not github.ref: for issue_comment events github.ref is
 # always the default branch, so a ref-keyed group makes a comment on any issue
-# or PR cancel an in-flight regeneration on every other PR.
+# or PR cancel an in-flight regeneration on every other PR. Both triggers yield
+# the same number for a given PR, so its label and comment runs share a group -
+# they push snapshots to the same branch and must not run concurrently.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.number || github.ref }}
   cancel-in-progress: true
