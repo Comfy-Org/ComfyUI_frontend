@@ -75,11 +75,6 @@ export const TOUR_ROLE_PINS: Record<SupportedTemplateId, RolePins> = {
     sink: { id: 18, type: 'SaveImage' },
     mediaKind: 'image'
   },
-  /**
-   * Restructured upstream: the body moved into an `Image Edit (Qwen 2509)`
-   * subgraph, so the prompt is the positive `TextEncodeQwenImageEditPlus`
-   * inside it — spotlit through its host — and the sink is now advanced.
-   */
   image_qwen_image_edit_2509: {
     source: { id: 78, type: 'LoadImage' },
     prompt: { id: 111, type: 'TextEncodeQwenImageEditPlus' },
