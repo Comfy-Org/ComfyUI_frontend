@@ -70,15 +70,17 @@ const NUDGE_IMAGE = '/assets/images/og-image.png'
 const APPEAR_DELAY_MS = 1500
 
 const { t } = useI18n()
-const { nudgeArmed, tourWasShown, dismissNudge } = useFirstRunTourController()
+const { nudgeArmed, tourWasCompleted, dismissNudge } =
+  useFirstRunTourController()
 const dialogStore = useDialogStore()
 const telemetry = useTelemetry()
 const titleId = useId()
 
-// A tour that never appeared made nothing to congratulate the user for.
+// Only a tour walked to the end made a first result to congratulate; every
+// other ending still gets a nudge, pointing at the templates instead.
 const copyKey = computed(
   () =>
-    `onboardingCoachmarks.firstRun.nudge.${tourWasShown.value ? 'ran' : 'noTour'}`
+    `onboardingCoachmarks.firstRun.nudge.${tourWasCompleted.value ? 'ran' : 'noTour'}`
 )
 
 const onScreen = ref(false)
