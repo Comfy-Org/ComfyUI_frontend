@@ -220,8 +220,10 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
       const ksamplerNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
       const clipNode = comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode')
       const { header } = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const { header: clipHeader } =
+        await comfyPage.vueNodes.getFixtureByTitle('CLIP Text Encode')
       const headerBox = await header.boundingBox()
-      const clipBox = await clipNode.boundingBox()
+      const clipBox = await clipHeader.boundingBox()
       if (!headerBox || !clipBox) throw new Error('Fixture nodes not found')
 
       await comfyPage.canvasOps.dragAndDrop(
@@ -256,23 +258,27 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
       const clipGeometry = await readGeometry(comfyPage, clip.id)
       const overlap = {
         left: Math.max(ksamplerGeometry.pos[0], clipGeometry.pos[0]),
-        top: Math.max(ksamplerGeometry.pos[1], clipGeometry.pos[1]),
+        top: Math.max(
+          ksamplerGeometry.pos[1] - LEGACY_TITLE_HEIGHT,
+          clipGeometry.pos[1] - LEGACY_TITLE_HEIGHT
+        ),
         right: Math.min(
           ksamplerGeometry.pos[0] + ksamplerGeometry.size[0],
           clipGeometry.pos[0] + clipGeometry.size[0]
         ),
-        bottom: Math.min(
-          ksamplerGeometry.pos[1] + ksamplerGeometry.size[1],
-          clipGeometry.pos[1] + clipGeometry.size[1]
-        )
+        bottom: Math.min(ksamplerGeometry.pos[1], clipGeometry.pos[1])
       }
       if (overlap.left >= overlap.right || overlap.top >= overlap.bottom) {
         throw new Error('Fixture nodes do not overlap')
       }
 
-      const clickPosition = await comfyPage.canvasOps.convertOffsetToCanvas([
+      const overlapCenter: Point = [
         (overlap.left + overlap.right) / 2,
         (overlap.top + overlap.bottom) / 2
+      ]
+      const clickPosition = await comfyPage.canvasOps.convertOffsetToCanvas([
+        overlapCenter[0],
+        overlapCenter[1]
       ])
       await comfyPage.canvasOps.mouseClickAt({
         x: clickPosition[0],
