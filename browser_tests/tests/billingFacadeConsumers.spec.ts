@@ -167,6 +167,13 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       'legacy_stripe'
     )
     await bootApp(page)
+    await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(1)
+
+    await page.getByRole('button', { name: 'Current user' }).click()
+    const popover = page.locator('.current-user-popover')
+    await expect(popover).toBeVisible()
+    await expect(popover.getByText('12,660')).toBeVisible()
+
     await page.evaluate((storageKey) => {
       localStorage.setItem(
         storageKey,
@@ -184,10 +191,6 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       (eventName) => window.dispatchEvent(new Event(eventName)),
       PENDING_SUBSCRIPTION_CHECKOUT_EVENT
     )
-
-    await page.getByRole('button', { name: 'Current user' }).click()
-    const popover = page.locator('.current-user-popover')
-    await expect(popover).toBeVisible()
 
     await expect(popover.getByText('12,660')).toBeVisible()
     await expect(popover.getByText('0', { exact: true })).toHaveCount(0)
