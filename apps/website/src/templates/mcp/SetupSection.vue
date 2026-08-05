@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
-import { externalLinks } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { captureMcpClientTabClick } from '../../scripts/posthog'
@@ -127,6 +127,14 @@ const copiedLabel = t('ui.copied', locale)
       <template #subtitle>
         <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
           {{ t('mcp.setup.subtitle', locale) }}
+        </p>
+        <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
+          {{ t('mcp.setup.requirementPrefix', locale)
+          }}<a
+            :href="getRoutes(locale).cloudPricing"
+            class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+            >{{ t('mcp.setup.requirementLinkLabel', locale) }}</a
+          >{{ t('mcp.setup.requirementSuffix', locale) }}
         </p>
       </template>
     </SectionHeader>
