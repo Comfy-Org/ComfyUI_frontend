@@ -2,11 +2,39 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import {
+  routeObjectInfoFromSetupApi,
+  setNodeDisplayName
+} from '@e2e/fixtures/utils/objectInfo'
 import { toNodeId } from '@/types/nodeId'
 
 const IMAGE_COMPARE_NODE_ID = toNodeId(1)
+const IMAGE_COMPARE_NODE_TYPE = 'ImageCompare'
+const IMAGE_COMPARE_DISPLAY_NAME = 'Image Compare'
+
+// English node titles come from the backend, so any golden containing a node
+// header would otherwise track whatever ComfyUI build the CI container ships.
+// Pinning the name before the app boots keeps those baselines stable.
+const test = comfyPageFixture.extend({
+  page: async ({ page }, use) => {
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+      page,
+      (objectInfo) =>
+        setNodeDisplayName(
+          objectInfo,
+          IMAGE_COMPARE_NODE_TYPE,
+          IMAGE_COMPARE_DISPLAY_NAME
+        )
+    )
+    try {
+      await use(page)
+    } finally {
+      await unrouteObjectInfo()
+    }
+  }
+})
 
 test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
