@@ -97,11 +97,15 @@ Slack being down never masks the underlying result.
 
 It alerts on the **transition** into failure, not on every failing run: the job
 runs hourly, so a lasting breakage would otherwise post around the clock until
-someone fixed it, and a channel that cries wolf gets muted. The check reads this
-workflow's own run history for the last run that actually decided something —
-`skipped` runs, which the `pull_request_target` gate produces in bulk, are
-ignored, and without that filter nothing would ever be throttled. If the check
-itself cannot run it fails open and alerts, since a duplicate beats a silence.
+someone fixed it, and a channel that cries wolf gets muted.
+
+The check walks recent **scheduled** runs and reads the conclusion of the
+`Assign release sheriff` **step**, not of the run. A run that died in checkout
+failed without ever reaching the sheriff, and treating that as "already
+alerted" would swallow the next real failure. Scheduled runs are used because
+the `pull_request_target` gate skips most other runs, so they are the ones
+dense in runs that decided anything. If the check itself cannot run it fails
+open and alerts, since a duplicate beats a silence.
 
 ## Publishing
 

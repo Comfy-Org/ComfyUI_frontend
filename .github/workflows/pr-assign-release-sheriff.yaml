@@ -68,15 +68,29 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
-          PREVIOUS=$(gh api \
-            "repos/${{ github.repository }}/actions/workflows/pr-assign-release-sheriff.yaml/runs?status=completed&per_page=40" \
-            --jq "[.workflow_runs[]
-                   | select(.id != ($RUN_ID|tonumber))
-                   | select(.conclusion == \"success\" or .conclusion == \"failure\")]
-                  | first.conclusion // \"none\"")
+          # The run's conclusion is the wrong signal: a run that died in
+          # checkout failed without ever reaching the sheriff, and counting it
+          # as "already alerted" would swallow the next real one. Read the
+          # step's own conclusion. Only scheduled runs are considered — the
+          # pull_request_target gate skips most others, so they are the ones
+          # dense in runs that actually decided something.
+          PREVIOUS=none
+          RUNS=$(gh api \
+            "repos/$REPO/actions/workflows/pr-assign-release-sheriff.yaml/runs?event=schedule&status=completed&per_page=15" \
+            --jq "[.workflow_runs[] | select(.id != ($RUN_ID|tonumber))] | .[].id")
+          for RUN in $RUNS; do
+            STEP=$(gh api "repos/$REPO/actions/runs/$RUN/jobs" \
+              --jq '[.jobs[].steps[]? | select(.name == "Assign release sheriff")]
+                    | first.conclusion // ""')
+            if [ "$STEP" = "success" ] || [ "$STEP" = "failure" ]; then
+              PREVIOUS=$STEP
+              break
+            fi
+          done
           echo "previous=$PREVIOUS" >> "$GITHUB_OUTPUT"
 
       # Scoped to this step, not the job: a checkout or pnpm blip is CI noise
