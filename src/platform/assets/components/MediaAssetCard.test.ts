@@ -180,6 +180,35 @@ describe('MediaAssetCard', () => {
     expect(emitted().zoom).toBeUndefined()
   })
 
+  it('shift-clicks a video preview to select without starting playback', async () => {
+    const user = userEvent.setup()
+    const { container, emitted } = renderCard({
+      loading: false,
+      asset: { ...asset, name: 'clip.mp4' }
+    })
+    const video = await vi.waitFor(() => {
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const element = container.querySelector('video')
+      expect(element).toBeInTheDocument()
+      return element!
+    })
+    const playSpy = vi
+      .spyOn(video, 'play')
+      .mockImplementation(() => Promise.resolve())
+
+    Object.defineProperty(video, 'paused', {
+      value: true,
+      configurable: true
+    })
+
+    await user.keyboard('{Shift>}')
+    await user.click(video)
+    await user.keyboard('{/Shift}')
+
+    expect(playSpy).not.toHaveBeenCalled()
+    expect(emitted().select).toHaveLength(1)
+  })
+
   it('selects the asset from the info area or selection control', async () => {
     const user = userEvent.setup()
     const { emitted } = renderCard({ loading: false })

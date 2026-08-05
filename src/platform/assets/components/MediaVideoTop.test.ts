@@ -103,4 +103,31 @@ describe('MediaVideoTop', () => {
 
     expect(playSpy).toHaveBeenCalledTimes(1)
   })
+
+  it('pauses playback from a subsequent click while controls are visible', async () => {
+    const user = userEvent.setup()
+    const { container } = render(MediaVideoTop, {
+      props: {
+        asset: createVideoAsset('https://example.com/thumb.jpg')
+      }
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
+
+    Object.defineProperty(video, 'paused', {
+      value: false,
+      configurable: true
+    })
+
+    await fireEvent.play(video)
+    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
+    await user.hover(container.firstElementChild!)
+    expect(video.controls).toBe(true)
+
+    await user.click(video)
+
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
+  })
 })
