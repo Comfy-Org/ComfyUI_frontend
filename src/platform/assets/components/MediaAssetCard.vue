@@ -369,7 +369,8 @@ function handlePointerEnd() {
 }
 
 function handlePreviewClick(event: MouseEvent) {
-  if (fileKind.value === 'video' && !event.shiftKey) return
+  const hasSelectionModifier = event.shiftKey || event.metaKey || event.ctrlKey
+  if (fileKind.value === 'video' && !hasSelectionModifier) return
   emit('select')
 }
 

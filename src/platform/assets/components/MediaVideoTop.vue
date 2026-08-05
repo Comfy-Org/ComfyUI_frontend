@@ -71,7 +71,14 @@ const onVideoPause = () => {
 }
 
 async function onVideoClick(event: MouseEvent) {
-  if (event.shiftKey || shouldShowControls.value) return
+  if (
+    event.shiftKey ||
+    event.metaKey ||
+    event.ctrlKey ||
+    shouldShowControls.value
+  ) {
+    return
+  }
 
   const video = videoElement.value
   if (!video) return
