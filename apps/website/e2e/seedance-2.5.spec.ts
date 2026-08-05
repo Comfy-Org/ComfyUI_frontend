@@ -7,11 +7,11 @@ import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/seedance-2.5'
 const ZH_PATH = '/zh-CN/seedance-2.5'
-const HERO_TITLE = t('seedance.hero.title', 'en')
-const HERO_EYEBROW = t('seedance.hero.eyebrow', 'en')
-const HERO_CTA = t('seedance.hero.primaryCta', 'en')
-const RUN_OPTIONS_HEADING = t('seedance.runOptions.heading', 'en')
-const REVIEWS_HEADING = t('seedance.reviews.heading', 'en')
+const HERO_TITLE = t('seedance.hero.title')
+const HERO_EYEBROW = t('seedance.hero.eyebrow')
+const HERO_CTA = t('seedance.hero.primaryCta')
+const RUN_OPTIONS_HEADING = t('seedance.runOptions.heading')
+const REVIEWS_HEADING = t('seedance.reviews.heading')
 const MODELS_ROUTE = getRoutes('en').models
 
 test.describe('Seedance 2.5 announcement page @smoke', () => {
@@ -51,8 +51,8 @@ test.describe('Seedance 2.5 announcement page @smoke', () => {
 
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: t('ui.breadcrumb', 'en') })
-      .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
+      .getByRole('navigation', { name: t('ui.breadcrumb') })
+      .getByRole('link', { name: t('models.breadcrumb.models') })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
