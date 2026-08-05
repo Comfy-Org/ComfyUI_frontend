@@ -196,6 +196,33 @@ export function normalizeI18nKey(key: string) {
   return typeof key === 'string' ? key.replace(/\./g, '_') : ''
 }
 
+const VUE_I18N_BACKSLASH = /\\/g
+const VUE_I18N_SYNTAX_CHARS = /[@${}|%]/g
+
+/**
+ * Escapes vue-i18n message syntax so arbitrary text can be stored as a locale
+ * message and rendered verbatim by `t()`.
+ *
+ * Backslash is doubled rather than wrapped in a literal interpolation: since
+ * vue-i18n 11 the message compiler reads `\` as an escape introducer, so a
+ * backslash before an escaped character would swallow the `{` this emits, and
+ * `{'\'}` would escape its own closing quote. Doubling must therefore run
+ * first; the literal interpolations it emits contain no backslashes.
+ *
+ * Apply exactly once. This is NOT idempotent, because the escape output itself
+ * contains `{`/`}`.
+ *
+ * Apply only to values read back through `t()`/`st()`. Values read through
+ * `tm()`/`stRaw()` are never compiled, so escaping them renders the escape
+ * syntax literally.
+ */
+export function escapeI18nMessage(text: string): string {
+  if (typeof text !== 'string') return ''
+  return text
+    .replace(VUE_I18N_BACKSLASH, '\\\\')
+    .replace(VUE_I18N_SYNTAX_CHARS, (char) => `{'${char}'}`)
+}
+
 /**
  * Takes a dynamic prompt in the format {opt1|opt2|{optA|optB}|} and randomly replaces groups. Supports C style comments.
  * @param input The dynamic prompt to process
