@@ -20,7 +20,9 @@ const HOST_MODULES = {
   'scripts/app.js': 'app',
   'scripts/api.js': 'api',
   'scripts/widgets.js': 'widgets',
-  'scripts/ui.js': 'ui'
+  'scripts/ui.js': 'ui',
+  'scripts/utils.js': 'utils',
+  'scripts/ui/components/buttonGroup.js': 'buttonGroup'
 }
 
 export function resolve(specifier, context, nextResolve) {

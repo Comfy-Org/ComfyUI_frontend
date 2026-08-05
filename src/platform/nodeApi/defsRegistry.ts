@@ -20,7 +20,7 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
-import type { WidgetDef } from './widgetHandle'
+import type { Unsubscribe, WidgetDef } from './widgetHandle'
 
 /**
  * The read view of a node definition. Frozen and inert, like every read here.
@@ -108,9 +108,6 @@ export type DefSelector =
    * (`nodeData.category.startsWith('KJNodes')` → `{ category: /^KJNodes/ }`).
    */
   | { readonly category: string | RegExp }
-
-/** @knipIgnoreUnusedButUsedByCustomNodes */
-export type Unsubscribe = () => void
 
 export interface DefRegistry {
   get(type: string): NodeDef | undefined

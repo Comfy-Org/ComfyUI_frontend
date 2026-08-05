@@ -684,7 +684,10 @@ async function convertPack(work) {
       // editing the corpus on disk or shelling out.
       allowedTools: toolNames,
       permissionMode: 'bypassPermissions',
-      maxTurns: 60 + work.files.length * 12
+      // Crystools exhausted 72 turns mid-conversion on a single file it had
+      // previously converted correctly, so the budget was the limit rather
+      // than the work. verify_pack also costs turns the old figure predated.
+      maxTurns: 120 + work.files.length * 25
     }
   })
 
