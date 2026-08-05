@@ -69,12 +69,6 @@ catalogs:
     '@playwright/test':
       specifier: ^1.61.1
       version: 1.61.1
-    '@primeuix/forms':
-      specifier: 0.0.2
-      version: 0.0.2
-    '@primeuix/styled':
-      specifier: 0.3.2
-      version: 0.3.2
     '@primeuix/utils':
       specifier: ^0.3.2
       version: 0.3.2
@@ -82,9 +76,6 @@ catalogs:
       specifier: 4.2.5
       version: 4.2.5
     '@primevue/forms':
-      specifier: 4.2.5
-      version: 4.2.5
-    '@primevue/icons':
       specifier: 4.2.5
       version: 4.2.5
     '@primevue/themes':
@@ -270,9 +261,6 @@ catalogs:
     husky:
       specifier: ^9.1.7
       version: 9.1.7
-    jiti:
-      specifier: 2.7.0
-      version: 2.7.0
     jsdom:
       specifier: ^29.1.1
       version: 29.1.1
@@ -433,7 +421,6 @@ catalogs:
 overrides:
   vite: ^8.1.4
   '@tiptap/pm': 2.27.2
-  '@types/eslint': '-'
   lodash: ^4.18.0
   yaml: ^2.8.3
   minimatch@^9.0.0: ^9.0.7
@@ -489,12 +476,6 @@ importers:
       '@iconify/json':
         specifier: 'catalog:'
         version: 2.2.500
-      '@primeuix/forms':
-        specifier: 'catalog:'
-        version: 0.0.2
-      '@primeuix/styled':
-        specifier: 'catalog:'
-        version: 0.3.2
       '@primeuix/utils':
         specifier: 'catalog:'
         version: 0.3.2
@@ -502,9 +483,6 @@ importers:
         specifier: 'catalog:'
         version: 4.2.5(vue@3.5.39(typescript@6.0.3))
       '@primevue/forms':
-        specifier: 'catalog:'
-        version: 4.2.5(vue@3.5.39(typescript@6.0.3))
-      '@primevue/icons':
         specifier: 'catalog:'
         version: 4.2.5(vue@3.5.39(typescript@6.0.3))
       '@primevue/themes':
@@ -796,9 +774,6 @@ importers:
       husky:
         specifier: 'catalog:'
         version: 9.1.7
-      jiti:
-        specifier: 'catalog:'
-        version: 2.7.0
       jsdom:
         specifier: 'catalog:'
         version: 29.1.1

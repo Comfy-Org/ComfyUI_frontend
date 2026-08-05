@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "display_name": "Empty MiniMax H3 AV Latent",
+    "description": "Joint video+audio latent for MiniMax H3. Duration snaps to the model's 17k+5 frame grid at 24 fps.",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, snapped up to the model's 17k+5 grid (124 = ~5s; trained range is ~124-362, longer is untested)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -5648,11 +5669,11 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 currently always requires an input image."
+        "tooltip": "The model to use for video generation."
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Text description of the desired video."
+        "tooltip": "Text description of the desired video. Optional for grok-imagine-video-1.5 when an input image is provided."
       },
       "resolution": {
         "name": "resolution",
@@ -5672,7 +5693,7 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Optional starting image for grok-imagine-video. Required for grok-imagine-video-1.5."
+        "tooltip": "Optional starting image. If omitted, the video is generated from the text prompt alone."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5686,7 +5707,7 @@
   },
   "GrokVideoReferenceNode": {
     "display_name": "Grok Reference-to-Video",
-    "description": "Generate video guided by reference images as style and content references.",
+    "description": "Generate video guided by reference images, with optional preset voice references.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -5711,6 +5732,15 @@
       },
       "model_resolution": {
         "name": "resolution"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       }
     },
     "outputs": {
@@ -6497,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "display_name": "Ideogram P-Image",
+    "description": "Generates images using P-Image, Ideogram's fast text-to-image model. Strong typography and photorealism; supports Ideogram 4.0 structured JSON captions for exact text, colors and layout.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt. Also accepts an Ideogram 4.0 structured JSON caption (exact colors as #RRGGBB hexes, exact text strings, bounding-box layout) — set prompt_upsampling to OFF to use it verbatim."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Speed/price/quality tier. MEDIUM is the everyday default; HIGH for complex prompts, fine detail and difficult text; VERY_LOW/LOW for drafts at scale. Difficult text renders poorly below MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output size class (exact pixels follow the aspect ratio, e.g. 16:9 gives 1280x720 at 1K and 2560x1440 at 2K). Prefer HIGH + 2K for crisp typography."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio for image generation."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Expands short prompts into a detailed structured caption before generation (the rewritten prompt is returned as final_prompt). Set OFF when supplying your own JSON caption or exact wording."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducible generation. With prompt_upsampling OFF, the same seed and settings return the same image; with ON/AUTO the prompt rewrite varies per run — reproduce a result by reusing its final_prompt output with prompt_upsampling OFF and the same seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "The prompt the image was actually generated from (the rewritten structured caption when prompt_upsampling ran, else your prompt). Feed it back with prompt_upsampling OFF and the same seed to reproduce this image."
       }
     }
   },
@@ -9658,7 +9730,8 @@
     }
   },
   "LTXVConcatAVLatent": {
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "Concat AV Latent",
+    "description": "Merge a video latent and an audio latent into a joint AV latent (any AV model, e.g. LTXV or MiniMax H3).",
     "inputs": {
       "video_latent": {
         "name": "video_latent"
@@ -9993,8 +10066,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "display_name": "LTXVSeparateAVLatent",
-    "description": "LTXV Separate AV Latent",
+    "display_name": "Separate AV Latent",
+    "description": "Split a joint AV latent into its video and audio latents (any AV model, e.g. LTXV or MiniMax H3).",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -11332,9 +11405,240 @@
       }
     }
   },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Image to Video",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, snapped up to the model's 17k+5 grid (124 = ~5s; trained range is ~124-362, longer is untested)"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "display_name": "MiniMax H3 Reference to Video",
+    "description": "<Picture i> / <Video k> / <Audio j> reference conditioning for MiniMax H3. Use the same tags when prompting.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, (124 = ~5s, trained range is ~124-362)"
+      },
+      "ref_image_size": {
+        "name": "ref_image_size",
+        "tooltip": "Reference image sizing. 'match' scales each ref (down only, keeping aspect) to the generation's pixel area; 'max' uses the reference pipeline's 2048px short edge for best identity fidelity. Reference tokens ride through every sampling step, so 'max' can be several times slower."
+      },
+      "ref_images": {
+        "name": "ref_images"
+      },
+      "ref_videos": {
+        "name": "ref_videos"
+      },
+      "ref_video_audios": {
+        "name": "ref_video_audios"
+      },
+      "ref_audios": {
+        "name": "ref_audios"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "display_name": "MiniMax H3 Sigma Shift",
+    "description": "Set the video/audio flow shifts.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_video": {
+        "name": "shift_video"
+      },
+      "shift_audio": {
+        "name": "shift_audio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "display_name": "MiniMax H3 First-Last-Frame to Video",
+    "description": "Generate video from a first frame image and an optional last frame image using the MiniMax H3 model. The aspect ratio of the video follows the supplied images.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image for the video."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed. The same request with the same seed gives similar, but not guaranteed identical, results."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AIGC watermark to the video."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Optional last frame image for the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "display_name": "MiniMax H3 Reference to Video",
+    "description": "Generate video conditioned on reference images, videos, and audio using the MiniMax H3 model. Refer to the references in the prompt by their order: 'Image 1', 'Image 2', 'Video 1', 'Audio 1', and so on.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed. The same request with the same seed gives similar, but not guaranteed identical, results."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AIGC watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "display_name": "MiniMax H3 Text to Video",
+    "description": "Generate video from a text prompt using the MiniMax H3 model.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed. The same request with the same seed gives similar, but not guaranteed identical, results."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AIGC watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
-    "display_name": "MiniMax Hailuo Video",
-    "description": "Generates videos from prompt, with optional start frame using the new MiniMax Hailuo-02 model.",
+    "display_name": "MiniMax Hailuo 02 Video",
+    "description": "Generates videos from prompt, with optional start frame using the MiniMax Hailuo-02 model.",
     "inputs": {
       "prompt_text": {
         "name": "prompt_text",
