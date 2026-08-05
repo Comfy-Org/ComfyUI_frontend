@@ -29,15 +29,15 @@ export interface ConformanceContext {
   readonly run?: { readonly before: RunOutcome; readonly after: RunOutcome }
 }
 
-export type CheckStatus = 'passed' | 'failed' | 'skipped'
+type CheckStatus = 'passed' | 'failed' | 'skipped'
 
-export interface CheckResult {
+interface CheckResult {
   readonly id: string
   readonly status: CheckStatus
   readonly detail: string
 }
 
-export interface Check {
+interface Check {
   readonly id: string
   readonly description: string
   run(context: ConformanceContext): CheckResult

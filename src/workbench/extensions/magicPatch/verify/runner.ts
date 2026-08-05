@@ -17,7 +17,7 @@ import { recordDeprecations } from './deprecationRecorder'
 import type { Observation, VerificationInput, WireFormat } from './verdict'
 
 /** What the pack is given when it runs. */
-export interface Sandbox {
+interface Sandbox {
   readonly graph: LGraph
 }
 

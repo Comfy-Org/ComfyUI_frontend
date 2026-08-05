@@ -23,7 +23,9 @@ import type {
 } from './slotHandle'
 import type { WidgetCollection } from './widgetHandle'
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type NodeMode = 'always' | 'never' | 'bypass' | 'on-event' | 'on-trigger'
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type NodeShape = 'default' | 'box' | 'round' | 'circle' | 'card'
 
 export interface Point {

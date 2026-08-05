@@ -27,6 +27,7 @@ import type {
 import { createWidgetCollection, createWidgetHandles } from './widgetHandle'
 import type { WidgetCollection } from './widgetHandle'
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface NodeInit {
   title?: string
   position?: { x: number; y: number }

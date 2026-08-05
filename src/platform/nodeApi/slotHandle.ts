@@ -39,6 +39,8 @@ export interface LinkInfo {
  * step rather than two. Retyping deliberately **keeps existing links**: dynamic
  * retyping (`*` -> `MODEL`) is the whole point for `SetNode`-style packs, and
  * silently dropping connections is the failure mode this API exists to end.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface SlotPatch {
   name?: string
@@ -46,6 +48,7 @@ export interface SlotPatch {
   type?: string
 }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface SlotSnapshot {
   readonly id: SlotId
   readonly index: number

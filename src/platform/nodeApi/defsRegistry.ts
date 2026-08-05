@@ -22,7 +22,11 @@ import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
 import type { WidgetDef } from './widgetHandle'
 
-/** The read view of a node definition. Frozen and inert, like every read here. */
+/**
+ * The read view of a node definition. Frozen and inert, like every read here.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
 export interface NodeDef {
   readonly type: string
   readonly title: string
@@ -41,6 +45,8 @@ export interface NodeDef {
  * `raw` carries everything else verbatim — ADR 0007's passthrough schema
  * guarantees custom output keys survive, so a pack reading a bespoke key keeps
  * working.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface ExecutionResult {
   readonly images: readonly Readonly<Record<string, unknown>>[]
@@ -48,12 +54,14 @@ export interface ExecutionResult {
   readonly raw: Readonly<Record<string, unknown>>
 }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   readonly index: number
   readonly connected: boolean
 }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface NodeDefBuilder {
   /** Current state of the definition, after any earlier extensions ran. */
   readonly def: NodeDef
@@ -101,6 +109,7 @@ export type DefSelector =
    */
   | { readonly category: string | RegExp }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type Unsubscribe = () => void
 
 export interface DefRegistry {

@@ -12,7 +12,7 @@
  * automation.
  */
 
-export type WidgetMutationKind =
+type WidgetMutationKind =
   /** `splice(i,1)` then `splice(i,0,w)` — forces re-read, array unchanged. */
   | 'invalidate'
   /** Same, and the line before assigns `.options` — the kjnodes shape. */

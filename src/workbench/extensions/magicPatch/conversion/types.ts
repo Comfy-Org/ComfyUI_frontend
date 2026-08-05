@@ -28,7 +28,7 @@ import type { Edit } from './edits'
  * What a rule reports. The rule id is injected by `convert`, so a rule cannot
  * misattribute its own findings.
  */
-export type Finding = Omit<Match, 'rule'>
+type Finding = Omit<Match, 'rule'>
 
 export interface ConversionResult {
   /** Full converted text. Convenient locally; not what ships. */

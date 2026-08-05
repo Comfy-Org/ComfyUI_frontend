@@ -80,7 +80,7 @@ export function generateTests(
  *   demonstrates it. This is the only genuinely alarming state, and it is where
  *   agent output lands by default.
  */
-export type Confidence = 'proven' | 'demonstrated' | 'unverified'
+type Confidence = 'proven' | 'demonstrated' | 'unverified'
 
 export interface Assessment {
   readonly confidence: Confidence
