@@ -153,9 +153,11 @@ describe('ComfyApp.getNodeDefs', () => {
 
     await comfyApp.getNodeDefs()
 
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('NullEntry, NamelessEntry')
-    )
+    expect(warn).toHaveBeenCalledTimes(1)
+    const [message] = warn.mock.calls[0]
+    expect(message).toContain('NullEntry')
+    expect(message).toContain('NamelessEntry')
+    expect(message).not.toContain('TestNode')
     warn.mockRestore()
   })
 
