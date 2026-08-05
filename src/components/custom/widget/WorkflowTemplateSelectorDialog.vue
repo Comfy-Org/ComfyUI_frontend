@@ -22,7 +22,6 @@
           {{ pageTitle }}
         </h2>
         <AsyncSearchInput
-          ref="searchInputRef"
           v-model="searchInput"
           :searcher="applySearchQuery"
           :debounce-ms="400"
@@ -912,35 +911,6 @@ const { isLoading } = useAsyncState(
     immediate: true // Start loading immediately
   }
 )
-
-// The dialog's focus scope grabs focus to the dialog container both on open and
-// again when the async template grid mounts, which undoes the search field's
-// autofocus. The exact timing depends on whether the catalog is already cached,
-// so a one-shot re-focus races unreliably. Instead, while the modal is settling
-// (~1.5s), bounce any focus that lands on the dialog container itself back to
-// the search field. Focusing a real control (a card, the nav, the filters)
-// targets that element, not the container, so this never fights the user.
-const searchInputRef = ref<{ focus: () => void }>()
-onMounted(() => {
-  // The dialog's focus scope parks focus on the dialog shell both on open and
-  // again when the async template grid mounts, undoing the search field's
-  // autofocus. The timing shifts with whether the catalog is cached, so racing
-  // it with a single re-focus is unreliable. Instead, poll briefly while the
-  // modal settles and, whenever focus is sitting on the dialog shell itself,
-  // move it to the search field. Focusing a real control (card, nav, filters)
-  // parks focus on that element, not the shell, so this never fights the user.
-  let ticks = 0
-  const timer = window.setInterval(() => {
-    const active = document.activeElement
-    if (
-      active instanceof HTMLElement &&
-      active.getAttribute('role') === 'dialog'
-    ) {
-      searchInputRef.value?.focus()
-    }
-    if (++ticks >= 15) window.clearInterval(timer)
-  }, 100)
-})
 
 onBeforeUnmount(() => {
   cardRefs.value = [] // Release DOM refs
