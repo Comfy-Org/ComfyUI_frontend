@@ -6,7 +6,7 @@ const config: KnipConfig = {
   workspaces: {
     '.': {
       entry: [
-        '{build,scripts}/**/*.{js,ts}',
+        '{build,scripts}/**/*.{js,mjs,ts}',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',

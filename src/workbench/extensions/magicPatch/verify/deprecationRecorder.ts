@@ -15,13 +15,13 @@
  */
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-export interface DeprecationRecord {
+interface DeprecationRecord {
   readonly message: string
   /** Stack at the point of warning, when the runtime provides one. */
   readonly stack: string | undefined
 }
 
-export interface Recording {
+interface Recording {
   readonly all: readonly DeprecationRecord[]
   /** Records whose stack mentions `attribution`. */
   readonly attributed: readonly DeprecationRecord[]
