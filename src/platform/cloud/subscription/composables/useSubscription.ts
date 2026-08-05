@@ -54,7 +54,6 @@ function useSubscriptionInternal() {
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
   const { getAuthHeader, fetchWithCustomerRecovery } = authStore
-  const { flags } = useFeatureFlags()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
