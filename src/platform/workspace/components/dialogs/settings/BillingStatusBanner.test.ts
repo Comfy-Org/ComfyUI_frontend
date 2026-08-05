@@ -6,7 +6,9 @@ import { createI18n } from 'vue-i18n'
 
 import type {
   BillingStatus,
+  CurrentTeamCreditStop,
   Plan,
+  TeamCreditStops,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
@@ -64,6 +66,8 @@ const state = vi.hoisted(() => ({
     endDate: null
   } as Subscription | null,
   plans: [] as RuntimePlan[],
+  teamCreditStops: null as TeamCreditStops | null,
+  currentTeamCreditStop: null as CurrentTeamCreditStop | null,
   renewalDate: null as string | null,
   workspaceType: 'team' as string,
   canManageSubscription: true,
@@ -96,6 +100,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
     subscription: computed(() => state.subscription),
     plans: computed(() => state.plans),
+    teamCreditStops: computed(() => state.teamCreditStops),
+    currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     renewalDate: computed(() => state.renewalDate),
     manageSubscription: state.manageSubscription,
     fetchStatus: vi.fn(),
@@ -219,6 +225,8 @@ describe('BillingStatusBanner', () => {
     state.billingStatus = 'paid'
     state.subscription = { hasFunds: true, isCancelled: false, endDate: null }
     state.plans = [creatorAnnualPlan]
+    state.teamCreditStops = null
+    state.currentTeamCreditStop = null
     state.renewalDate = null
     state.workspaceType = 'team'
     state.canManageSubscription = true
@@ -412,6 +420,42 @@ describe('BillingStatusBanner', () => {
     )
     expect(screen.getByRole('status')).toHaveTextContent(
       "We'll automatically charge $360.00 to your card on file."
+    )
+  })
+
+  it('shows a current per-credit Team cadence change from its credit stop', () => {
+    state.plans = []
+    state.teamCreditStops = {
+      default_stop_index: 0,
+      stops: [
+        {
+          id: 'team_700',
+          credits: 147700,
+          monthly: { list_price_cents: 70000, price_cents: 66500 },
+          yearly: { list_price_cents: 70000, price_cents: 63000 }
+        }
+      ]
+    }
+    state.currentTeamCreditStop = {
+      id: 'team_700',
+      credits_monthly: 147700,
+      stop_usd: 700
+    }
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'team_per_credit_annual',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan changes to Team on August 3, 2026.'
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "We'll automatically charge $7,560.00 to your card on file."
     )
   })
 

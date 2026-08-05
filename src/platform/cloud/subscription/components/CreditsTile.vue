@@ -237,6 +237,7 @@ import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/credits
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
+import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -295,14 +296,11 @@ const usage = computed(() =>
   )
 )
 
-const refillsDateShort = computed(() => {
-  const raw = subscription.value?.renewalDate
-  if (!raw) return ''
-  const date = new Date(raw)
-  return Number.isNaN(date.getTime())
-    ? ''
-    : date.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' })
-})
+const refillsDateShort = computed(() =>
+  formatSubscriptionDate(subscription.value?.renewalDate, locale.value, {
+    year: false
+  })
+)
 
 const hasRefillsDate = computed(() => refillsDateShort.value !== '')
 

@@ -79,8 +79,14 @@ import { useDialogService } from '@/services/dialogService'
 type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
 const { t, d, n, locale } = useI18n()
-const { renewalDate, subscription, plans, manageSubscription } =
-  useBillingContext()
+const {
+  renewalDate,
+  subscription,
+  plans,
+  teamCreditStops,
+  currentTeamCreditStop,
+  manageSubscription
+} = useBillingContext()
 const { permissions } = useWorkspaceUI()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
@@ -100,16 +106,28 @@ const cycleResetDate = computed(() => {
     : ''
 })
 const planEndDate = computed(() =>
-  formatSubscriptionDate(subscription.value?.endDate, locale.value, 'long')
+  formatSubscriptionDate(subscription.value?.endDate, locale.value, {
+    month: 'long'
+  })
+)
+const scheduledPlanSlug = computed(
+  () => subscription.value?.scheduledPlanSlug ?? ''
 )
 const scheduledPlan = computed(() =>
-  plans.value.find(({ slug }) => slug === subscription.value?.scheduledPlanSlug)
+  plans.value.find(({ slug }) => slug === scheduledPlanSlug.value)
 )
-const isScheduledTeamPlan = computed(() =>
-  scheduledPlan.value?.slug.startsWith('team')
+const isScheduledPerCreditTeamPlan = computed(() =>
+  scheduledPlanSlug.value.startsWith('team_per_credit_')
+)
+const isScheduledTeamPlan = computed(
+  () =>
+    isScheduledPerCreditTeamPlan.value ||
+    scheduledPlan.value?.slug.startsWith('team')
 )
 const planChangeDate = computed(() =>
-  formatSubscriptionDate(subscription.value?.changeAt, locale.value, 'long')
+  formatSubscriptionDate(subscription.value?.changeAt, locale.value, {
+    month: 'long'
+  })
 )
 const scheduledPlanName = computed(() => {
   if (isScheduledTeamPlan.value) return t('subscription.teamPlanName')
@@ -118,10 +136,23 @@ const scheduledPlanName = computed(() => {
     scheduledPlan.value?.duration === 'ANNUAL'
   )
 })
+const scheduledPlanAmountCents = computed(() => {
+  if (!isScheduledPerCreditTeamPlan.value) {
+    return isScheduledTeamPlan.value
+      ? scheduledPlan.value?.seat_summary?.total_cost_cents
+      : scheduledPlan.value?.price_cents
+  }
+
+  const stop = teamCreditStops.value?.stops.find(
+    ({ id }) => id === currentTeamCreditStop.value?.id
+  )
+  if (!stop) return undefined
+  return scheduledPlanSlug.value.endsWith('_annual')
+    ? stop.yearly.price_cents * 12
+    : stop.monthly.price_cents
+})
 const scheduledPlanCharge = computed(() => {
-  const amountCents = isScheduledTeamPlan.value
-    ? scheduledPlan.value?.seat_summary?.total_cost_cents
-    : scheduledPlan.value?.price_cents
+  const amountCents = scheduledPlanAmountCents.value
   return amountCents === undefined
     ? ''
     : n(amountCents / 100, {

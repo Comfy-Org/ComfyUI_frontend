@@ -264,13 +264,16 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('253,200 left of 253,200')
   })
 
-  it('formats the renewal date in the local timezone, not UTC', () => {
+  it('formats the renewal date as a UTC calendar date', () => {
     activeProSubscription()
-    expect(renderTile().container.textContent).toContain('Refills Feb 20')
+    state.subscription = {
+      tier: 'PRO',
+      duration: 'MONTHLY',
+      renewalDate: '2026-09-03T00:00:00Z'
+    }
+    vi.stubEnv('TZ', 'America/Los_Angeles')
 
-    // The suite is pinned to TZ=UTC, so opt this render into a UTC+13 viewer.
-    vi.stubEnv('TZ', 'Pacific/Auckland')
-    expect(renderTile().container.textContent).toContain('Refills Feb 21')
+    expect(renderTile().container.textContent).toContain('Refills Sep 3')
   })
 
   it('falls back to a dateless refills label when renewal date is missing', () => {
