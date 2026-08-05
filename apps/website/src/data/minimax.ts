@@ -24,7 +24,7 @@ export const minimaxLinks = {
   blog: 'https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui'
 } as const
 
-export const minimaxPage: ModelLaunchPage = {
+export const minimaxPage = {
   metaTitleKey: 'minimax.meta.title',
   metaDescriptionKey: 'minimax.meta.description',
   breadcrumbLabelKey: 'minimax.breadcrumb.model',
@@ -242,4 +242,4 @@ export const minimaxPage: ModelLaunchPage = {
       ctaKey: 'minimax.reviews.highlightCta'
     }
   }
-}
+} satisfies ModelLaunchPage
