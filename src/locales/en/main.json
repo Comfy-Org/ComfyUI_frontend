@@ -3725,7 +3725,7 @@
     "buildPrompt": {
       "title": "Make this workflow an App",
       "description": "Pick which nodes become inputs and outputs, and we'll generate a simple form anyone can run.",
-      "button": "Build your App"
+      "button": "Build your app"
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
