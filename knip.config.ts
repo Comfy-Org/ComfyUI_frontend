@@ -39,7 +39,6 @@ const config: KnipConfig = {
   },
   ignoreDependencies: [
     // Weird importmap things
-    '@iconify-json/lucide',
     '@iconify/json'
   ],
   ignore: [
