@@ -1,6 +1,11 @@
+import type {
+  BillingStatusResponse as GeneratedBillingStatusResponse,
+  ChurnkeyAuthResponse
+} from '@comfyorg/ingest-types'
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
+import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -12,7 +17,9 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = 'legacy_stripe' | 'stripe'
+export type BillingRail = NonNullable<
+  GeneratedBillingStatusResponse['billing_rail']
+>
 
 interface Workspace {
   id: WorkspaceId
@@ -276,6 +283,8 @@ export interface CurrentTeamCreditStop {
 
 export interface BillingStatusResponse {
   is_active: boolean
+  max_seats?: number | null
+  occupied_seats?: number | null
   billing_rail?: BillingRail
   subscription_status?: BillingSubscriptionStatus
   subscription_tier?: SubscriptionTier
@@ -285,6 +294,7 @@ export interface BillingStatusResponse {
   change_at?: string
   billing_status?: BillingStatus
   pending_billing_op_id?: string
+  pending_billing_op_type?: 'subscription' | 'topup'
   action_url?: string
   has_funds: boolean
   cancel_at?: string
@@ -619,7 +629,11 @@ export const workspaceApi = {
         api.apiURL('/billing/status'),
         { headers }
       )
-      return response.data
+      return {
+        ...response.data,
+        max_seats: response.data.max_seats ?? null,
+        occupied_seats: response.data.occupied_seats ?? null
+      }
     } catch (err) {
       handleAxiosError(err)
     }
@@ -731,6 +745,19 @@ export const workspaceApi = {
           { headers }
         )
       return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        api.apiURL('/billing/churnkey/auth'),
+        { headers }
+      )
+      return churnkeyAuthResponseSchema.parse(response.data)
     } catch (err) {
       handleAxiosError(err)
     }

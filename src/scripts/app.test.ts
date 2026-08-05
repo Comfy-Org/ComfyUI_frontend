@@ -51,6 +51,9 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import type { importA1111 } from './pnginfo'
+
+type WorkflowService = ReturnType<typeof useWorkflowService>
 
 const {
   mockApiKeyAuthStore,
@@ -60,7 +63,9 @@ const {
   mockExtensionService,
   mockNodeOutputStore,
   mockWorkspaceWorkflow,
-  mockRefreshMissingModelPipeline
+  mockRefreshMissingModelPipeline,
+  mockImportA1111,
+  mockWorkflowService
 } = vi.hoisted(() => ({
   mockApiKeyAuthStore: {
     getApiKey: vi.fn()
@@ -90,7 +95,13 @@ const {
     openWorkflow: vi.fn(),
     getWorkflowByPath: vi.fn(() => null)
   },
-  mockRefreshMissingModelPipeline: vi.fn()
+  mockRefreshMissingModelPipeline: vi.fn(),
+  mockImportA1111: vi.fn<typeof importA1111>(),
+  mockWorkflowService: {
+    beforeLoadNewGraph: vi.fn<WorkflowService['beforeLoadNewGraph']>(),
+    afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
+    showPendingWarnings: vi.fn<WorkflowService['showPendingWarnings']>()
+  }
 }))
 
 vi.mock('@/utils/litegraphUtil', () => ({
@@ -134,6 +145,14 @@ vi.mock('@/utils/eventUtils', async (importOriginal) => {
     extractFilesFromDragEvent: vi.fn()
   }
 })
+
+vi.mock('./pnginfo', () => ({
+  importA1111: mockImportA1111
+}))
+
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
+  useWorkflowService: vi.fn(() => mockWorkflowService)
+}))
 
 vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   default: {
@@ -201,6 +220,27 @@ function createTestFile(name: string, type: string): File {
   return new File([''], name, { type })
 }
 
+/**
+ * Point the workflowService mock at the real implementation for tests that
+ * exercise the load lifecycle itself rather than app.ts's calls into it.
+ */
+async function useRealWorkflowService(): Promise<WorkflowService> {
+  const actual = await vi.importActual<
+    typeof import('@/platform/workflow/core/services/workflowService')
+  >('@/platform/workflow/core/services/workflowService')
+  const real = actual.useWorkflowService()
+  mockWorkflowService.beforeLoadNewGraph.mockImplementation(
+    real.beforeLoadNewGraph
+  )
+  mockWorkflowService.afterLoadNewGraph.mockImplementation(
+    real.afterLoadNewGraph
+  )
+  mockWorkflowService.showPendingWarnings.mockImplementation(
+    real.showPendingWarnings
+  )
+  return real
+}
+
 function markLoaded(workflow: ComfyWorkflow): LoadedComfyWorkflow {
   workflow.changeTracker = createMockChangeTracker()
   workflow.content = '{}'
@@ -227,7 +267,7 @@ describe('ComfyApp', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
@@ -247,6 +287,8 @@ describe('ComfyApp', () => {
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
+    mockImportA1111.mockResolvedValue('imported')
+    mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
@@ -964,6 +1006,7 @@ describe('ComfyApp', () => {
       vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
       vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
       const missingNodesStore = useMissingNodesErrorStore()
+      const workflowService = await useRealWorkflowService()
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         prompt: {
           '1': {
@@ -986,7 +1029,7 @@ describe('ComfyApp', () => {
         expect.objectContaining({ type: 'UninstalledDeferredNode' })
       ])
 
-      useWorkflowService().showPendingWarnings(deferredWorkflow)
+      workflowService.showPendingWarnings(deferredWorkflow)
 
       expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
         expect.objectContaining({ type: 'UninstalledDeferredNode' })
@@ -1500,6 +1543,103 @@ describe('ComfyApp', () => {
         mockNode
       )
     })
+
+    it.each([
+      ['an invalid structure', '[]'],
+      ['invalid JSON', '{invalid']
+    ])('shows one error for %s', async (_case, workflow) => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ workflow })
+
+      await app.handleFile(createTestFile('broken.json', 'application/json'))
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledTimes(1)
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'Unable to find workflow in broken.json'
+      )
+      consoleError.mockRestore()
+    })
+
+    it('preserves the current graph when A1111 core nodes are unavailable', async () => {
+      const graph = new LGraph()
+      const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
+      mockImportA1111.mockResolvedValue('core-nodes-unavailable')
+
+      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+
+      expect(mockImportA1111).toHaveBeenCalledWith(
+        graph,
+        parameters,
+        expect.any(Function)
+      )
+      expect(mockCanvas.setGraph).not.toHaveBeenCalled()
+      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.'
+      )
+    })
+
+    it('shows one file-load error when parameters are not A1111-shaped', async () => {
+      const graph = new LGraph()
+      const parameters = 'positive\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
+      mockImportA1111.mockResolvedValue('not-a1111')
+
+      await app.handleFile(createTestFile('parameters.png', 'image/png'))
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'Unable to find workflow in parameters.png'
+      )
+      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+    })
+
+    it('awaits persistence and orders its clear callback before setGraph', async () => {
+      const graph = new LGraph()
+      const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
+      mockImportA1111.mockImplementation(
+        async (_graph, _parameters, beforeGraphClear) => {
+          beforeGraphClear?.()
+          return 'imported'
+        }
+      )
+      let resolveAfterLoad: (() => void) | undefined
+      const afterLoad = new Promise<void>((resolve) => {
+        resolveAfterLoad = resolve
+      })
+      mockWorkflowService.afterLoadNewGraph.mockReturnValue(afterLoad)
+
+      let settled = false
+      const handleFile = app
+        .handleFile(createTestFile('a1111.png', 'image/png'))
+        .then(() => {
+          settled = true
+        })
+      await vi.waitFor(() =>
+        expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalled()
+      )
+
+      expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
+      ).toBeLessThan(vi.mocked(mockCanvas.setGraph).mock.invocationCallOrder[0])
+      expect(settled).toBe(false)
+
+      resolveAfterLoad?.()
+      await handleFile
+      expect(settled).toBe(true)
+    })
   })
 
   describe('drop handler', () => {
@@ -1531,6 +1671,7 @@ describe('ComfyApp', () => {
       realWorkflowStore.activeWorkflow = markLoaded(outgoingWorkflow)
       const missingNodesStore = useMissingNodesErrorStore()
       missingNodesStore.setMissingNodeTypes(['OutgoingMissingNode'])
+      await useRealWorkflowService()
 
       const nodeType = 'test/UninstalledDroppedApiNode'
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({

@@ -40,7 +40,10 @@ const createTestI18n = () =>
   })
 
 vi.mock('@/i18n', () => ({
-  st: vi.fn((key: string, fallback?: string) => `i18n(${key})-${fallback}`)
+  st: vi.fn((key: string, fallback?: string) => `i18n(${key})-${fallback}`),
+  resolveNodeDefText: vi.fn(
+    (field: string, nodeName: string) => `i18n(${nodeName}.${field})`
+  )
 }))
 
 let totalPercent: Ref<number>
@@ -553,7 +556,7 @@ describe('useJobList', () => {
     }
     await flush()
     expect(instance.currentNodeName.value).toBe(
-      'i18n(nodeDefs.My Node Type.display_name)-My Node Type'
+      'i18n(My Node Type.display_name)'
     )
   })
 

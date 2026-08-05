@@ -22,6 +22,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0010](0010-remove-nx-orchestration.md)                                     | Remove Nx Orchestration                                     | Accepted | 2026-05-19 |
 | [0011](0011-derived-credential-lifecycle.md)                                | Derived Credential Lifecycle for Cloud Auth                 | Proposed | 2026-07-09 |
 | [0012](0012-cloud-release-notes-use-comfyui-version.md)                     | Cloud Release Notes Use the ComfyUI Version                 | Accepted | 2026-07-13 |
+| [0013](0013-telemetry-service-selection.md)                                 | Telemetry Service Selection                                 | Accepted | 2026-07-28 |
 | [0014](0014-billing-telemetry-attempt-correlation-and-workspace-scoping.md) | Billing Telemetry Attempt Correlation and Workspace Scoping | Proposed | 2026-07-28 |
 
 ## Creating a New ADR
