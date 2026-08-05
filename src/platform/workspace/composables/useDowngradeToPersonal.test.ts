@@ -3,7 +3,10 @@ import { ref } from 'vue'
 
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import { useDowngradeToPersonal } from './useDowngradeToPersonal'
+import {
+  ReactivationConfirmationRequiredError,
+  useDowngradeToPersonal
+} from './useDowngradeToPersonal'
 
 const mockMembers = ref<WorkspaceMember[]>([])
 const mockUserEmail = ref<string | null>(null)
@@ -219,7 +222,7 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('stops before submit when downgrade access is revoked during member removal', async () => {
-      mockMembers.value = teamWithOwnerAnd('m1')
+      mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       mockRemoveMember.mockImplementation(async () => {
         mockPermissions.value.canDowngradeToPersonal = false
       })
@@ -330,6 +333,35 @@ describe('useDowngradeToPersonal', () => {
       expect(mockSubscribe).not.toHaveBeenCalled()
     })
 
+    it('surfaces a hidden cancellation after member cleanup and forwards the quote timestamp', async () => {
+      mockSubscription.value = { isCancelled: false }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 1500,
+        proration_at: '2026-07-30T00:00:00Z'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('reactivation confirmation required'), {
+          code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+        })
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        ReactivationConfirmationRequiredError
+      )
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'founder-monthly',
+        expect.objectContaining({
+          confirmReactivation: false,
+          prorationAt: '2026-07-30T00:00:00Z'
+        })
+      )
+      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
+    })
+
     it('requires reactivation confirmation when subscription state has not loaded yet', async () => {
       // isInitialized false means "cancelled or not" is unknown; must not
       // default to "not cancelled" and skip disclosure.
@@ -404,7 +436,7 @@ describe('useDowngradeToPersonal', () => {
       expect(mockSubscribe).toHaveBeenCalled()
     })
 
-    it('validates the transition before removing, then removes, then subscribes', async () => {
+    it('validates the transition before removing members, then subscribes', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
       const calls: string[] = []
       mockPreviewSubscribe.mockImplementation(() => {
@@ -588,7 +620,7 @@ describe('useDowngradeToPersonal', () => {
       )
     })
 
-    it('reports members were already removed when subscribe fails after removal', async () => {
+    it('reports members were already removed when subscribe returns no response', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
       mockSubscribe.mockResolvedValue(undefined)
       const { downgradeToPersonal } = useDowngradeToPersonal()
@@ -596,9 +628,10 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.failedAfterMemberRemoval'
       )
+      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
     })
 
-    it('surfaces which member failed and skips the plan change when removal throws', async () => {
+    it('surfaces which member failed and skips the plan change', async () => {
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       mockRemoveMember.mockImplementation((id: string) =>
         id === 'm2' ? Promise.reject(new Error('network')) : Promise.resolve()

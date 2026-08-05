@@ -902,6 +902,18 @@
       "filterAudio": "Audio",
       "filter3D": "3D",
       "filterText": "Text",
+      "filterMediaType": "Media type",
+      "filterDate": "Date",
+      "filterGroupAttribute": "Attribute",
+      "filterBy": "Filter by...",
+      "filterNoMatches": "No matches",
+      "dateAll": "All time",
+      "dateToday": "Today",
+      "datePastWeek": "Past 7 days",
+      "datePastMonth": "Past 30 days",
+      "dateThisYear": "This year",
+      "clearFilters": "Clear all",
+      "removeFilter": "Remove {label} filter",
       "viewGridSmall": "Grid (small)",
       "viewGridLarge": "Grid (large)",
       "viewSettings": "View settings"
@@ -1774,6 +1786,7 @@
     "hunyhuan video": "hunyhuan video",
     "mochi": "mochi",
     "ltxv": "ltxv",
+    "minimax": "minimax",
     "preprocessors": "preprocessors",
     "hooks": "hooks",
     "create": "create",
@@ -1968,7 +1981,6 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
-    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -2265,7 +2277,9 @@
     "failedToExportModel": "Failed to export model as {format}",
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
+    "a1111CoreNodesUnavailable": "Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.",
     "dropFileError": "Unable to process dropped item: {error}",
+    "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Errors tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
     "interrupted": "Execution has been interrupted",
     "pendingTasksDeleted": "Pending tasks deleted",
@@ -2294,6 +2308,7 @@
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
+    "invalidBillingPortalUrl": "Invalid portal URL",
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",
     "failedToFetchSubscription": "Failed to fetch subscription status: {error}",
     "failedToInitiateSubscription": "Failed to initiate subscription: {error}",
@@ -2395,6 +2410,9 @@
       "newUser": "New here?",
       "userAvatar": "User Avatar",
       "signUp": "Sign up",
+      "cloudNewUser": "New to Comfy?",
+      "cloudSignUp": "Sign up here",
+      "freeRunsSuffix": "to get {count} free run. | to get {count} free runs.",
       "signUpFreeTierPromo": "New here? {signUp} with Google to get {credits} free credits every month.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
@@ -2548,6 +2566,9 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
+      "chargedImmediatelyNote": "Your saved card is charged immediately.",
+      "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
+      "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
       "usdAmount": "${amount}",
       "videosEstimate": "~{count} videos*",
@@ -2556,7 +2577,10 @@
       "purchaseSuccess": "Credits added successfully!",
       "purchaseError": "Purchase Failed",
       "purchaseErrorDetail": "Failed to purchase credits: {error}",
+      "payAmount": "Pay {amount}",
       "unknownError": "An unknown error occurred",
+      "verifyBody": "Your bank requires additional verification to complete this payment.",
+      "verifyTitle": "Verify your payment",
       "viewPricing": "View pricing details",
       "youPay": "Amount (USD)",
       "youGet": "Credits",
@@ -2629,7 +2653,9 @@
     "expiresDate": "Expires {date}",
     "renewsOnDate": "Renews on {date}",
     "endsOnDate": "Ends on {date}",
+    "changesToPlanOnDate": "Changes to {plan} on {date}",
     "manageSubscription": "Manage subscription",
+    "billingAndInvoices": "Billing & invoices",
     "manageBilling": "Manage billing",
     "changePlan": "Change plan",
     "cancelPlan": "Cancel plan",
@@ -2654,7 +2680,9 @@
       "endOfBillingPeriod": "end of billing period",
       "keepSubscription": "Keep subscription",
       "confirmCancel": "Cancel subscription",
-      "failed": "Failed to cancel subscription"
+      "failed": "Failed to cancel subscription",
+      "workspaceChanged": "Your active workspace changed. Switch back and try again.",
+      "offerUnavailable": "This option isn't available. Please choose another option."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",
@@ -2712,6 +2740,10 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
+    "inactiveTeamTitle": "Inactive team subscription",
+    "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
+    "inactiveTeamPlanIncludes": "An active plan features everything in {plan}, plus:",
+    "reactivateToUseCredits": "Reactivate your plan to use these credits",
     "teamPerks": {
       "inviteMembers": "Invite members",
       "concurrentRuns": "Members can run workflows concurrently",
@@ -2774,6 +2806,17 @@
       "memberCta": "Ok, got it",
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
       "runLabel": "Run"
+    },
+    "paymentRecovery": {
+      "title": "Subscription paused",
+      "ownerDescription": "Update your payment method to restore the workspace's subscription and run workflows.",
+      "memberDescription": "Ask your workspace owner to restore the workspace's subscription.",
+      "ownerCta": "Update payment",
+      "memberCta": "Ok, got it",
+      "ownerRunLabel": "Update payment to run",
+      "memberRunLabel": "Run",
+      "ownerRunTooltip": "Update payment to restore this subscription",
+      "memberRunTooltip": "Ask your workspace owner to restore this subscription"
     },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
@@ -2965,14 +3008,13 @@
     },
     "billingStatus": {
       "warning": {
-        "title": "Payment declined",
-        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
-        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause."
+        "title": "Payment failed",
+        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause."
       },
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+        "memberBody": "Ask your workspace owner to restore the workspace's subscription."
       },
       "outOfCredits": {
         "title": "Out of credits",
@@ -3834,6 +3876,7 @@
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
     "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
+    "publishFailedDescriptionWithReason": "Something went wrong while publishing your workflow: {reason}",
     "publishSuccessTitle": "Published successfully",
     "publishSuccessDescription": "Your workflow is now live on Comfy Workflows."
   },
@@ -4129,15 +4172,17 @@
       "importNotSupported": "Import Not Supported",
       "copyModelName": "Copy model name",
       "copyUrl": "Copy URL",
+      "gatedModelsHintLabel": "Note:",
       "gatedModelsHint": "Some models are gated. To download them, sign in to Hugging Face and accept the model license agreement.",
       "gatedModelTooltip": "This model is gated and requires you to be logged in to Hugging Face and to accept its license agreement.",
       "gatedModelDownloadTooltip": "Download may require signing in to Hugging Face first.",
       "locateNode": "Locate node on canvas",
-      "openHuggingFaceRepo": "Open Hugging Face repo",
+      "openHuggingFaceRepo": "Open Hugging Face repository for {model}",
       "expandNodes": "Show referencing nodes",
       "collapseNodes": "Hide referencing nodes",
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
+      "downloadModel": "Download {model}",
       "downloadAll": "Download all",
       "refresh": "Refresh",
       "refreshing": "Refreshing missing models.",
@@ -4621,6 +4666,8 @@
     "namePlaceholder": "e.g., My API Key",
     "provider": "Provider",
     "providerHint": "Select a provider to enable automatic token usage.",
+    "credentialType": "Credential Type",
+    "credentialTypeHint": "Choose how you will provide this credential.",
     "providerHelp": {
       "runway": "Enter your Runway API key. You can find it in your Runway account settings under API keys.",
       "gemini": "Enter your Google Gemini API key. You can generate one in Google AI Studio."
@@ -4732,6 +4779,26 @@
     "processingVideo": "Processing video…",
     "running": "Running…"
   },
+  "gettingStarted": {
+    "title": "Let's make something",
+    "subtitle": "Pick a ready-made workflow to start from, or begin with a blank canvas.",
+    "tabsLabel": "Getting started options",
+    "startBlank": "Start with a blank canvas",
+    "retry": "Try again",
+    "loadFailed": "We couldn't load the templates.",
+    "templateFailed": "We couldn't open this template.",
+    "retryTemplate": "Retry {title}",
+    "tabs": {
+      "templates": "Templates",
+      "tutorials": "Tutorials"
+    },
+    "tutorials": {
+      "interfaceOverview": "Interface overview",
+      "textToImage": "Text to image",
+      "imageToImage": "Image to image",
+      "inpaint": "Inpainting"
+    }
+  },
   "onboardingCoachmarks": {
     "stepLabel": "Step {current} of {total}",
     "skip": "Skip",
@@ -4761,6 +4828,74 @@
       "assets": {
         "title": "Find all your assets",
         "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
+      }
+    },
+    "firstRun": {
+      "upload": {
+        "i2v": {
+          "title": "Start with an image",
+          "body": "This picture is your first frame. Swap in your own whenever you like."
+        },
+        "image-edit": {
+          "title": "Start with an image",
+          "body": "This is the picture you'll edit. Swap in your own whenever you like."
+        },
+        "other": {
+          "title": "Start with an image",
+          "body": "This image feeds the workflow. Swap in your own whenever you like."
+        }
+      },
+      "prompt": {
+        "t2i": {
+          "title": "Describe what you want",
+          "body": "Your image gets built from this description. Try anything you like."
+        },
+        "i2v": {
+          "title": "Describe how it should move",
+          "body": "The image sets the scene. This tells it what happens next."
+        },
+        "image-edit": {
+          "title": "Say what to change",
+          "body": "Your image stays as it is. Describe what you want different."
+        },
+        "other": {
+          "title": "Tell it what to make",
+          "body": "This is your prompt. Change it to change your result."
+        }
+      },
+      "run": {
+        "title": "Run your workflow",
+        "body": "Press Run to start generating your result."
+      },
+      "result": {
+        "generating": {
+          "title": "Hang tight",
+          "body": "Your result lands right here the moment it's ready."
+        },
+        "failed": {
+          "title": "That run didn't finish",
+          "body": "Nothing landed here. Close the tour and try running again."
+        },
+        "image": {
+          "title": "And there it is",
+          "body": "Your new image lands right here — ready to download or share."
+        },
+        "video": {
+          "title": "And there it is",
+          "body": "Your new video lands right here — ready to download or share."
+        }
+      },
+      "nudge": {
+        "ran": {
+          "title": "That was one of hundreds",
+          "body": "You just made your first. Explore what else you can build."
+        },
+        "noTour": {
+          "title": "Hundreds more where that came from",
+          "body": "Browse the templates and pick something to build."
+        },
+        "dismiss": "Not now",
+        "explore": "Explore templates"
       }
     }
   }
