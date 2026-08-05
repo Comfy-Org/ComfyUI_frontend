@@ -30,7 +30,7 @@
           "
         />
         <Suspense @resolve="comfyRunButtonResolved">
-          <ComfyRunButton />
+          <ComfyRunButton v-coachmark="FIRST_RUN_COACH_IDS.runButton" />
         </Suspense>
         <Button
           v-tooltip.bottom="cancelJobTooltipConfig"
@@ -115,6 +115,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { cn } from '@comfyorg/tailwind-utils'

@@ -17,9 +17,13 @@ const env = vi.hoisted(() => {
     isDesktop: false,
     isLoggedIn: false,
     teamWorkspacesEnabled: false,
+    billingControlEnabled: false,
+    authenticatedConfigLoaded: false,
+    partnerNodeGovernanceEnabled: false,
     userSecretsEnabled: false,
     isActiveSubscription: false,
-    billingType: 'legacy' as 'legacy' | 'workspace'
+    billingType: 'legacy' as 'legacy' | 'workspace',
+    workspaceRole: 'owner' as 'owner' | 'member'
   }
   const fakeRef = <K extends keyof typeof state>(key: K) => ({
     get value() {
@@ -39,7 +43,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: env.fakeRef('isActiveSubscription'),
+    canAccessSubscriptionFeatures: env.fakeRef('isActiveSubscription'),
     type: env.fakeRef('billingType')
   })
 }))
@@ -49,6 +53,12 @@ vi.mock('@/composables/useFeatureFlags', () => ({
     flags: {
       get teamWorkspacesEnabled() {
         return env.state.teamWorkspacesEnabled
+      },
+      get billingControlEnabled() {
+        return env.state.billingControlEnabled
+      },
+      get partnerNodeGovernanceEnabled() {
+        return env.state.partnerNodeGovernanceEnabled
       },
       get userSecretsEnabled() {
         return env.state.userSecretsEnabled
@@ -70,9 +80,19 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+  isAuthenticatedConfigLoaded: env.fakeRef('authenticatedConfigLoaded')
+}))
+
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(),
   getSettingInfo: vi.fn()
+}))
+
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    workspaceRole: env.fakeRef('workspaceRole')
+  })
 }))
 
 interface MockSettingParams {
@@ -114,9 +134,13 @@ describe('useSettingUI', () => {
       isDesktop: false,
       isLoggedIn: false,
       teamWorkspacesEnabled: false,
+      billingControlEnabled: false,
+      authenticatedConfigLoaded: false,
+      partnerNodeGovernanceEnabled: false,
       userSecretsEnabled: false,
       isActiveSubscription: false,
-      billingType: 'legacy'
+      billingType: 'legacy',
+      workspaceRole: 'owner'
     })
 
     vi.mocked(useSettingStore).mockReturnValue({
@@ -175,9 +199,94 @@ describe('useSettingUI', () => {
     expect(defaultCategory.value).toBe(settingCategories.value[0])
   })
 
+  it('hides the empty Workspace navigation group for logged-out Cloud users', () => {
+    env.state.isCloud = true
+    env.state.isLoggedIn = false
+    env.state.teamWorkspacesEnabled = true
+
+    const { navGroups } = useSettingUI()
+
+    expect(navGroups.value.map(({ title }) => title)).not.toContain('Workspace')
+  })
+
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
     expect(defaultCategory.value.key).toBe('about')
+  })
+
+  describe('billing-controlled workspace panels', () => {
+    beforeEach(() => {
+      Object.assign(env.state, {
+        isCloud: true,
+        isLoggedIn: true,
+        teamWorkspacesEnabled: true,
+        authenticatedConfigLoaded: true,
+        isActiveSubscription: true,
+        billingType: 'workspace'
+      })
+      window.__CONFIG__ = {
+        subscription_required: false
+      } as typeof window.__CONFIG__
+    })
+
+    it('keeps the legacy Workspace panel and standalone Credits when disabled', () => {
+      const { defaultCategory, findPanelByKey, navGroups } =
+        useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'Workspace' },
+        { id: 'credits', label: 'Credits' }
+      ])
+      expect(findPanelByKey('workspace')?.node.label).toBe('Workspace')
+      expect(findPanelByKey('workspace-members')).toBeNull()
+      expect(defaultCategory.value).toMatchObject({
+        key: 'workspace',
+        label: 'Workspace'
+      })
+    })
+
+    it('keeps the legacy Workspace panel until authenticated config loads', () => {
+      env.state.authenticatedConfigLoaded = false
+      env.state.billingControlEnabled = true
+
+      const { findPanelByKey, navGroups } = useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'Workspace' },
+        { id: 'credits', label: 'Credits' }
+      ])
+      expect(findPanelByKey('workspace')?.node.label).toBe('Workspace')
+      expect(findPanelByKey('workspace-members')).toBeNull()
+    })
+
+    it('shows Plan & Credits and Members separately when enabled', () => {
+      env.state.billingControlEnabled = true
+      const { defaultCategory, findPanelByKey, navGroups } =
+        useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+      const planCreditsPanel = findPanelByKey('workspace')
+      const membersPanel = findPanelByKey('workspace-members')
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'PlanCredits' },
+        { id: 'workspace-members', label: 'Members' }
+      ])
+      expect(planCreditsPanel?.component).toBe(membersPanel?.component)
+      expect(planCreditsPanel?.props).toEqual({ section: 'planCredits' })
+      expect(membersPanel?.props).toEqual({ section: 'members' })
+      expect(defaultCategory.value).toMatchObject({
+        key: 'workspace',
+        label: 'PlanCredits'
+      })
+    })
   })
 
   describe('plan and credits navigation', () => {
@@ -189,6 +298,9 @@ describe('useSettingUI', () => {
         isCloud: true,
         isLoggedIn: true,
         teamWorkspacesEnabled: true,
+        billingControlEnabled: true,
+        authenticatedConfigLoaded: true,
+        partnerNodeGovernanceEnabled: true,
         isActiveSubscription: true
       })
       window.__CONFIG__ = {
@@ -206,6 +318,35 @@ describe('useSettingUI', () => {
         expect(navKeys(navGroups.value)).toContain('workspace')
       }
     )
+
+    it('exposes workspace sections as Plan & Credits, Members, and Allowlist', () => {
+      const { navGroups } = useSettingUI()
+      const workspaceGroup = navGroups.value.find(
+        ({ title }) => title === 'Workspace'
+      )
+
+      expect(workspaceGroup?.items).toMatchObject([
+        { id: 'workspace', label: 'PlanCredits' },
+        { id: 'workspace-members', label: 'Members' },
+        { id: 'workspace-allowlist', label: 'Allowlist' }
+      ])
+    })
+
+    it('hides Allowlist from workspace members', () => {
+      env.state.workspaceRole = 'member'
+
+      const { navGroups } = useSettingUI()
+
+      expect(navKeys(navGroups.value)).not.toContain('workspace-allowlist')
+    })
+
+    it('hides Allowlist when governance is unavailable', () => {
+      env.state.partnerNodeGovernanceEnabled = false
+
+      const { navGroups } = useSettingUI()
+
+      expect(navKeys(navGroups.value)).not.toContain('workspace-allowlist')
+    })
 
     it('keeps the legacy plan panel in the legacy layout', () => {
       env.state.teamWorkspacesEnabled = false

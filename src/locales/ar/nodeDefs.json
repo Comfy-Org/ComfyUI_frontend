@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "مستوى الصوت. ٠ = عادي، ١٠٠ = ٢.٠×، -٥٠ = ٠.٥×."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: ٢٠ لغة (الإنجليزية، الصينية، اليابانية، الكورية، الإسبانية المكسيكية والإسبانية القشتالية، الإندونيسية، الألمانية، البرتغالية البرازيلية، الفرنسية، التايلاندية، الفيتنامية، الماليزية، الفلبينية، الإيطالية، الروسية، الهولندية، البولندية، التركية، السويدية) بالإضافة إلى التحكم في توقيت كل جملة عبر الطوابع الزمنية مثل \"[5.5s:8.0s] ...\". seed-audio-1.0: الإنجليزية والصينية فقط، بدون تحكم في التوقيت."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "تغيير طبقة الصوت بالنصف نغمة (-١٢ إلى ١٢)."
@@ -4094,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "كامن مشترك للفيديو والصوت لـ MiniMax H3. يتم ضبط المدة تلقائيًا على شبكة الإطارات 17k+5 الخاصة بالنموذج بسرعة 24 إطارًا في الثانية.",
+    "display_name": "فراغ MiniMax H3 AV كامن",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات بسرعة 24 إطارًا في الثانية، يتم ضبطه تلقائيًا على شبكة 17k+5 الخاصة بالنموذج (124 ≈ ٥ ثوانٍ؛ النطاق المدرب تقريبًا 124-362، القيم الأطول غير مجربة)"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "فيديو موتشي كامن فارغ",
     "inputs": {
@@ -5700,6 +5725,15 @@
       "model_resolution": {
         "name": "الدقة"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "الوصف النصي",
         "tooltip": "وصف نصي للفيديو المطلوب."
@@ -6493,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "يولّد صورًا باستخدام P-Image، نموذج Ideogram السريع لتحويل النص إلى صورة. يتميز بقوة في الطباعة والواقعية الفوتوغرافية؛ يدعم تسميات JSON المنظمة لإصدار Ideogram 4.0 من أجل نصوص دقيقة، ألوان وتخطيط محدد.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "نسبة العرض إلى الارتفاع لتوليد الصورة."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "وصف نصي. يقبل أيضًا تسميات JSON المنظمة لإصدار Ideogram 4.0 (ألوان دقيقة بصيغة #RRGGBB، نصوص محددة، وتخطيط بصناديق الإحاطة) — عيّن prompt_upsampling إلى إيقاف OFF لاستخدامها كما هي."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "يوسّع الأوصاف القصيرة إلى تسمية منظمة مفصلة قبل التوليد (يتم إرجاع الوصف المعاد كتابته كـ final_prompt). عيّن إلى إيقاف OFF عند تزويدك بتسمية JSON خاصة بك أو نص دقيق."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "فئة السرعة/السعر/الجودة. MEDIUM هو الافتراضي اليومي؛ HIGH للنصوص المعقدة، التفاصيل الدقيقة والنصوص الصعبة؛ VERY_LOW/LOW للمسودات على نطاق واسع. النصوص الصعبة تظهر بشكل سيء تحت MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "فئة حجم المخرجات (عدد البكسلات يتبع نسبة العرض إلى الارتفاع، مثلًا 16:9 يعطي 1280x720 عند 1K و2560x1440 عند 2K). يُفضل HIGH + 2K لطباعة واضحة."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة للتوليد القابل لإعادة الإنتاج. مع prompt_upsampling على إيقاف OFF، نفس البذرة والإعدادات تعطي نفس الصورة؛ مع ON/AUTO إعادة كتابة الوصف تختلف في كل مرة — لإعادة إنتاج نتيجة استخدم final_prompt مع prompt_upsampling على إيقاف OFF ونفس البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "الوصف الذي تم توليد الصورة بناءً عليه فعليًا (التسمية المنظمة المعاد كتابتها عند تشغيل prompt_upsampling، أو وصفك الأصلي). أعد استخدامه مع prompt_upsampling على إيقاف OFF ونفس البذرة لإعادة إنتاج هذه الصورة."
       }
     }
   },
@@ -8639,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "دمج كامن فيديو وكامن صوت في كامن AV مشترك (أي نموذج AV مثل LTXV أو MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11324,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "تحويل صورة MiniMax H3 إلى فيديو",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "الإطار الأول"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "last_frame": {
+        "name": "الإطار الأخير"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات بسرعة 24 إطارًا في الثانية، يتم ضبطه تلقائيًا على شبكة 17k+5 الخاصة بالنموذج (124 ≈ ٥ ثوانٍ؛ النطاق المدرب تقريبًا 124-362، القيم الأطول غير مجربة)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<صورة i> / <فيديو k> / <صوت j> تكييف مرجعي لـ MiniMax H3. استخدم نفس العلامات عند كتابة البرومبت.",
+    "display_name": "تحويل مرجع MiniMax H3 إلى فيديو",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات بسرعة 24 إطارًا في الثانية (124 ≈ ٥ ثوانٍ، النطاق المدرب تقريبًا 124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "الصوتيات المرجعية"
+      },
+      "ref_image_size": {
+        "name": "حجم الصورة المرجعية",
+        "tooltip": "تغيير حجم الصورة المرجعية. 'match' يقوم بتصغير كل مرجع (مع الحفاظ على النسبة) لمساحة بكسل التوليد؛ 'max' يستخدم الحافة القصيرة 2048 بكسل في خط أنابيب المرجع لأفضل دقة هوية. تمر رموز المرجع في كل خطوة توليد، لذا 'max' قد يكون أبطأ بعدة مرات."
+      },
+      "ref_images": {
+        "name": "الصور المرجعية"
+      },
+      "ref_video_audios": {
+        "name": "الصوتيات المرجعية للفيديو"
+      },
+      "ref_videos": {
+        "name": "الفيديوهات المرجعية"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "تعيين تحولات تدفق الفيديو/الصوت.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "النموذج"
+      },
+      "shift_audio": {
+        "name": "تحويل الصوت"
+      },
+      "shift_video": {
+        "name": "تحويل الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "توليد فيديو من صورة الإطار الأول وصورة إطار أخير اختيارية باستخدام نموذج MiniMax H3. نسبة العرض إلى الارتفاع للفيديو تتبع الصور المقدمة.",
+    "display_name": "MiniMax H3 من إطار أول/أخير إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "صورة الإطار الأول للفيديو."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "صورة إطار أخير اختيارية للفيديو."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة عشوائية. نفس الطلب مع نفس البذرة يعطي نتائج متشابهة، لكن ليس بالضرورة متطابقة."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "هل تريد إضافة علامة مائية AIGC إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "إنشاء فيديو بناءً على صور مرجعية، فيديوهات، وصوت باستخدام نموذج MiniMax H3. ارجع إلى المراجع في النص حسب ترتيبها: 'صورة 1'، 'صورة 2'، 'فيديو 1'، 'صوت 1'، وهكذا.",
+    "display_name": "MiniMax H3 مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء الفيديو."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "النص"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية. نفس الطلب مع نفس البذرة يعطي نتائج متشابهة، لكن ليست متطابقة بالضرورة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية AIGC إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "إنشاء فيديو من نص باستخدام نموذج MiniMax H3.",
+    "display_name": "MiniMax H3 تحويل نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء الفيديو."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "النص"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية. نفس الطلب مع نفس البذرة يعطي نتائج متشابهة، لكن ليست متطابقة بالضرورة."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة مائية AIGC إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19989,6 +20297,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "ترميز تعليمات التحرير مع صورة أو أكثر كمرجع لـ Mage-Flow-Edit. يتم تغيير حجم الـ latent المرجعي ليتطابق مع دقة الإخراج (العرض/الارتفاع، أو حجم الصورة الأولى إذا كان ٠). استخدم مخرجات latent لأخذ العينات حتى تتطابق الأحجام دائماً.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "ارتفاع الإخراج. ٠ = استخدم حجم الصورة المرجعية الأولى."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صورة أو صور مرجعية للتحرير. يتم تغيير حجم جميع المراجع لتتطابق مع دقة الإخراج قبل الترميز."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "عرض الإخراج. ٠ = استخدم حجم الصورة المرجعية الأولى."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

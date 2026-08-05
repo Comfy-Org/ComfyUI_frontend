@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "Volume. 0 = normal, 100 = 2.0x, -50 = 0.5x."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20 idiomas (Inglês, Chinês, Japonês, Coreano, Espanhol Mexicano e Castelhano, Indonésio, Alemão, Português Brasileiro, Francês, Tailandês, Vietnamita, Malaio, Filipino, Italiano, Russo, Holandês, Polonês, Turco, Sueco) além de controle de tempo por frase via timestamps como \"[5.5s:8.0s] ...\". seed-audio-1.0: Apenas Inglês e Chinês, sem controle de tempo."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "Alteração de tom em semitons (-12 a 12)."
@@ -4094,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "Latente conjunto de vídeo+áudio para MiniMax H3. A duração é ajustada para a grade de 17k+5 quadros do modelo a 24 fps.",
+    "display_name": "Latente AV MiniMax H3 Vazio",
+    "inputs": {
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração",
+        "tooltip": "Contagem de quadros a 24 fps, ajustada para cima na grade de 17k+5 do modelo (124 = ~5s; faixa treinada é ~124-362, valores maiores não testados)"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -5700,6 +5725,15 @@
       "model_resolution": {
         "name": "resolução"
       },
+      "model_voice_1": {
+        "name": "voz_1"
+      },
+      "model_voice_2": {
+        "name": "voz_2"
+      },
+      "model_voice_3": {
+        "name": "voz_3"
+      },
       "prompt": {
         "name": "prompt",
         "tooltip": "Descrição em texto do vídeo desejado."
@@ -6493,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "Gera imagens usando o P-Image, o modelo de texto para imagem rápido da Ideogram. Forte em tipografia e fotorrealismo; suporta legendas estruturadas em JSON do Ideogram 4.0 para texto, cores e layout exatos.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "A proporção da imagem a ser gerada."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto. Também aceita uma legenda estruturada em JSON do Ideogram 4.0 (cores exatas como hexadecimais #RRGGBB, textos exatos, layout de caixa delimitadora) — defina prompt_upsampling como DESLIGADO para usar exatamente como enviado."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Expande prompts curtos em uma legenda estruturada detalhada antes da geração (o prompt reescrito é retornado como final_prompt). Defina como DESLIGADO ao fornecer sua própria legenda JSON ou texto exato."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Nível de velocidade/preço/qualidade. MÉDIO é o padrão para uso diário; ALTO para prompts complexos, detalhes finos e textos difíceis; MUITO_BAIXO/BAIXO para rascunhos em escala. Textos difíceis têm baixa qualidade abaixo do MÉDIO."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Classe de tamanho de saída (os pixels exatos seguem a proporção, por exemplo, 16:9 gera 1280x720 em 1K e 2560x1440 em 2K). Prefira ALTO + 2K para tipografia nítida."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semente para geração reprodutível. Com prompt_upsampling DESLIGADO, a mesma semente e configurações retornam a mesma imagem; com LIGADO/AUTO, a reescrita do prompt varia a cada execução — reproduza um resultado reutilizando o final_prompt com prompt_upsampling DESLIGADO e a mesma semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "O prompt realmente utilizado para gerar a imagem (a legenda estruturada reescrita quando prompt_upsampling foi executado, ou seu prompt original). Use novamente com prompt_upsampling DESLIGADO e a mesma semente para reproduzir esta imagem."
       }
     }
   },
@@ -8639,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "Mescla um latente de vídeo e um latente de áudio em um latente AV conjunto (qualquer modelo AV, ex: LTXV ou MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11324,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Imagem para Vídeo",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "primeiro_quadro"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "last_frame": {
+        "name": "último_quadro"
+      },
+      "length": {
+        "name": "duração",
+        "tooltip": "Contagem de quadros a 24 fps, ajustada para cima na grade de 17k+5 do modelo (124 = ~5s; faixa treinada é ~124-362, valores maiores não testados)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> condicionamento de referência para MiniMax H3. Use as mesmas tags ao criar prompts.",
+    "display_name": "MiniMax H3 Referência para Vídeo",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração",
+        "tooltip": "Contagem de quadros a 24 fps, (124 = ~5s, faixa treinada é ~124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "áudios_ref"
+      },
+      "ref_image_size": {
+        "name": "tamanho_imagem_ref",
+        "tooltip": "Dimensionamento da imagem de referência. 'match' ajusta cada referência (apenas reduzindo, mantendo a proporção) para a área de pixels da geração; 'max' usa a borda curta de 2048px do pipeline de referência para melhor fidelidade de identidade. Os tokens de referência acompanham cada etapa de amostragem, então 'max' pode ser várias vezes mais lento."
+      },
+      "ref_images": {
+        "name": "imagens_ref"
+      },
+      "ref_video_audios": {
+        "name": "áudios_vídeo_ref"
+      },
+      "ref_videos": {
+        "name": "vídeos_ref"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "Defina os deslocamentos do fluxo de vídeo/áudio.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "shift_audio": {
+        "name": "deslocamento_áudio"
+      },
+      "shift_video": {
+        "name": "deslocamento_vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "Gere vídeo a partir de uma imagem de primeiro frame e, opcionalmente, uma imagem de último frame usando o modelo MiniMax H3. A proporção do vídeo segue as imagens fornecidas.",
+    "display_name": "MiniMax H3 Primeiro-Último-Frame para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Imagem do primeiro frame do vídeo."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Imagem opcional do último frame do vídeo."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semente aleatória. A mesma solicitação com a mesma semente gera resultados semelhantes, mas não garantidamente idênticos."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se deve adicionar uma marca d'água AIGC ao vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "Gere vídeo condicionado a imagens de referência, vídeos e áudio usando o modelo MiniMax H3. Consulte as referências no prompt pela ordem: 'Imagem 1', 'Imagem 2', 'Vídeo 1', 'Áudio 1' e assim por diante.",
+    "display_name": "MiniMax H3 Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente aleatória. A mesma solicitação com a mesma semente gera resultados semelhantes, mas não garantidamente idênticos."
+      },
+      "watermark": {
+        "name": "marca d'água",
+        "tooltip": "Se deve adicionar uma marca d'água AIGC ao vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "Gere vídeo a partir de um prompt de texto usando o modelo MiniMax H3.",
+    "display_name": "MiniMax H3 Texto para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente aleatória. A mesma solicitação com a mesma semente gera resultados semelhantes, mas não garantidamente idênticos."
+      },
+      "watermark": {
+        "name": "marca d'água",
+        "tooltip": "Se deve adicionar uma marca d'água AIGC ao vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19989,6 +20297,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Codifica uma instrução de edição com uma ou mais imagens de referência para Mage-Flow-Edit. Os latents de referência são redimensionados para a resolução de saída (largura/altura, ou o tamanho da primeira imagem quando 0). Use a saída latent para amostragem para que os tamanhos sempre correspondam.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Altura de saída. 0 = usar o tamanho da primeira imagem de referência."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imagem(ns) de referência para editar. Todas as referências são redimensionadas para a resolução de saída antes da codificação."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Largura de saída. 0 = usar o tamanho da primeira imagem de referência."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
