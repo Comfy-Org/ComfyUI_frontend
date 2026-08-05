@@ -326,6 +326,9 @@
     transparent
   );
   --region-stroke: color-mix(in srgb, var(--color-smoke-300) 50%, transparent);
+  /* Match light.json's litegraph CLEAR_BACKGROUND_COLOR (lightgray) so the
+     backdrop doesn't shift when litegraph stops painting past 150% zoom. */
+  --base-background-sunken: #d3d3d3;
 }
 
 .dark-theme {
@@ -453,10 +456,13 @@
 
 /* Custom dark palettes derive their surfaces from their own menu colour so
    they stop inheriting the charcoal scale that .dark-theme applies to every
-   non-light palette. Offsets are measured from the real charcoal scale. */
-:root[data-color-palette]:not([data-color-palette='dark']):not(
-  [data-color-palette='light']
-) {
+   non-light palette. Scoped on .dark-theme so user-imported LIGHT palettes
+   (light_theme: true, arbitrary id) keep the light defaults instead of
+   near-white lightness derivations. Offsets measured from the charcoal scale.
+   `--interface-stroke`/`--interface-panel-surface` are intentionally absent:
+   colorPaletteService inlines those on <html> for every palette that omits
+   them, and inline always wins. */
+:root.dark-theme[data-color-palette]:not([data-color-palette='dark']) {
   --palette-surface-700: oklch(from var(--comfy-menu-bg) calc(l + 0.0417) c h);
   --palette-surface-600: oklch(from var(--comfy-menu-bg) calc(l + 0.0675) c h);
   --palette-surface-400: oklch(from var(--comfy-menu-bg) calc(l + 0.1123) c h);
@@ -466,7 +472,6 @@
   --base-background: var(--comfy-menu-bg);
   --nav-background: var(--comfy-menu-bg);
   --interface-menu-surface: var(--comfy-menu-bg);
-  --interface-panel-surface: var(--comfy-menu-bg);
   --node-component-tooltip-surface: var(--comfy-menu-bg);
   --component-node-widget-background-disabled: var(--comfy-menu-bg);
 
@@ -481,7 +486,6 @@
   --component-node-background: var(--palette-surface-600);
   --modal-panel-background: var(--palette-surface-600);
 
-  --interface-stroke: var(--palette-surface-400);
   --interface-menu-component-surface-hovered: var(--palette-surface-400);
   --secondary-background-hover: var(--palette-surface-400);
   --tertiary-background: var(--palette-surface-400);
@@ -715,12 +719,19 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
-  background-color: var(--base-background-sunken, var(--bg-color));
+  /* Splash-controlled: index.html restores --bg-color from localStorage
+     before the app boots, keeping the loader on the last palette's color. */
+  background-color: var(--bg-color);
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
   min-width: -webkit-fill-available;
   max-width: -webkit-fill-available;
   font-family: Inter, Arial, sans-serif;
+}
+
+/* Once the app stamps the palette, the body backs the canvas backdrop. */
+:root[data-color-palette] body {
+  background-color: var(--base-background-sunken);
 }
 
 .comfy-multiline-input {

@@ -367,7 +367,8 @@ onUpdated(() => {
   opacity: 1;
 }
 
-:deep(.p-togglebutton:hover) .close-button {
+:deep(.p-togglebutton:hover) .close-button,
+:deep(.p-togglebutton:focus-within) .close-button {
   visibility: visible;
 }
 

@@ -231,9 +231,7 @@ describe('WorkflowTab - close button', () => {
     )
   })
 
-  // The active tab now only reveals its close button on hover (it used to be
-  // shown while selected); closing the active tab must still work.
-  it('still closes the active tab', async () => {
+  it('still closes the active tab now that its close button is hover-revealed', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
     const user = userEvent.setup()
     await user.click(screen.getByTestId('close-workflow-button'))

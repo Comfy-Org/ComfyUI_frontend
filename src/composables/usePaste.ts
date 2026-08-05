@@ -1,5 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 
+import { LAST_COPY_EVENT_PAYLOAD_KEY } from '@/composables/useCopy'
+
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -66,15 +68,19 @@ function pasteClipboardItems(data: DataTransfer): boolean {
 }
 
 /**
- * Node metadata on the clipboard is stale when it does not match the last
- * in-app copy (litegraph's internal clipboard). This happens when the user
- * copied a node and then copied something else outside the app, leaving the
- * old text/html node payload behind.
+ * Node metadata on the clipboard is stale when it matches no in-app copy:
+ * neither litegraph's internal clipboard (updated by every copy path,
+ * including menu/command copies that never touch the OS clipboard) nor the
+ * last payload useCopy wrote to the OS clipboard. Metadata matching either
+ * is an in-app copy, and the internal clipboard holds the newest one.
  */
 function hasStaleNodeMetadata(rawHtml: string): boolean {
   const decodedData = decodeNodeMetadata(rawHtml)
   if (decodedData === null) return false
-  return decodedData !== localStorage.getItem('litegrapheditor_clipboard')
+  return (
+    decodedData !== localStorage.getItem('litegrapheditor_clipboard') &&
+    decodedData !== localStorage.getItem(LAST_COPY_EVENT_PAYLOAD_KEY)
+  )
 }
 
 function pasteItemsOnNode(
