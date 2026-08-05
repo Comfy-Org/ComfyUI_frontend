@@ -791,6 +791,9 @@
       "buy": "Acheter",
       "buyCredits": "Continuer vers le paiement",
       "buyNow": "Acheter maintenant",
+      "chargedImmediatelyNote": "Votre carte enregistrée est débitée immédiatement.",
+      "confirmSubtitle": "Les crédits sont ajoutés à cet espace de travail dès que le paiement est effectué.",
+      "confirmTitle": "Confirmer",
       "contactUs": "Contactez-nous",
       "creditsDescription": "Les crédits sont utilisés pour exécuter des workflows ou des nœuds partenaires.",
       "creditsPerDollar": "crédits par dollar",
@@ -805,6 +808,7 @@
       "minRequired": "Minimum {credits} crédits",
       "minimumPurchase": "Achat minimum de ${amount} ({credits} crédits)",
       "needMore": "Besoin de plus ?",
+      "payAmount": "Payer {amount}",
       "purchaseError": "Échec de l'achat",
       "purchaseErrorDetail": "Échec de l'achat de crédits : {error}",
       "purchaseSuccess": "Crédits ajoutés avec succès !",
@@ -815,6 +819,8 @@
       "topUp": "Recharger",
       "unknownError": "Une erreur inconnue est survenue",
       "usdAmount": "${amount}",
+      "verifyBody": "Votre banque requiert une vérification supplémentaire pour finaliser ce paiement.",
+      "verifyTitle": "Vérifiez votre paiement",
       "videosEstimate": "~{count} vidéos",
       "viewPricing": "Voir les détails des tarifs",
       "youGet": "Crédits",
@@ -1853,6 +1859,26 @@
     "warning": "Avertissement",
     "workflow": "Flux de travail",
     "you": "Vous"
+  },
+  "gettingStarted": {
+    "loadFailed": "Nous n'avons pas pu charger les modèles.",
+    "retry": "Réessayer",
+    "retryTemplate": "Réessayer {title}",
+    "startBlank": "Commencer avec un canevas vierge",
+    "subtitle": "Choisissez un workflow prêt à l'emploi pour commencer, ou débutez avec un canevas vierge.",
+    "tabs": {
+      "templates": "Modèles",
+      "tutorials": "Tutoriels"
+    },
+    "tabsLabel": "Options de démarrage",
+    "templateFailed": "Nous n'avons pas pu ouvrir ce modèle.",
+    "title": "Créons quelque chose",
+    "tutorials": {
+      "imageToImage": "Image vers image",
+      "inpaint": "Inpainting",
+      "interfaceOverview": "Présentation de l'interface",
+      "textToImage": "Texte vers image"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "Mode canevas",

@@ -791,6 +791,9 @@
       "buy": "Купить",
       "buyCredits": "Перейти к оплате",
       "buyNow": "Купить сейчас",
+      "chargedImmediatelyNote": "С вашей сохранённой карты будет списана сумма немедленно.",
+      "confirmSubtitle": "Кредиты будут добавлены в это рабочее пространство сразу после завершения оплаты.",
+      "confirmTitle": "Подтвердить",
       "contactUs": "Свяжитесь с нами",
       "creditsDescription": "Кредиты используются для запуска рабочих процессов или партнерских узлов.",
       "creditsPerDollar": "кредитов за доллар",
@@ -805,6 +808,7 @@
       "minRequired": "Минимум {credits} кредитов",
       "minimumPurchase": "Минимум ${amount} ({credits} кредитов)",
       "needMore": "Нужно больше?",
+      "payAmount": "Оплатить {amount}",
       "purchaseError": "Покупка не удалась",
       "purchaseErrorDetail": "Не удалось купить кредиты: {error}",
       "purchaseSuccess": "Кредиты успешно добавлены!",
@@ -815,6 +819,8 @@
       "topUp": "Пополнить",
       "unknownError": "Произошла неизвестная ошибка",
       "usdAmount": "${amount}",
+      "verifyBody": "Ваш банк требует дополнительную проверку для завершения этого платежа.",
+      "verifyTitle": "Подтвердите ваш платеж",
       "videosEstimate": "~{count} видео",
       "viewPricing": "Посмотреть детали цен",
       "youGet": "Кредиты",
@@ -1853,6 +1859,26 @@
     "warning": "Предупреждение",
     "workflow": "Рабочий процесс",
     "you": "Вы"
+  },
+  "gettingStarted": {
+    "loadFailed": "Не удалось загрузить шаблоны.",
+    "retry": "Попробовать снова",
+    "retryTemplate": "Повторить {title}",
+    "startBlank": "Начать с пустого холста",
+    "subtitle": "Выберите готовый рабочий процесс или начните с пустого холста.",
+    "tabs": {
+      "templates": "Шаблоны",
+      "tutorials": "Учебники"
+    },
+    "tabsLabel": "Варианты начала работы",
+    "templateFailed": "Не удалось открыть этот шаблон.",
+    "title": "Давайте создадим что-нибудь",
+    "tutorials": {
+      "imageToImage": "Изображение в изображение",
+      "inpaint": "Инпейтинг",
+      "interfaceOverview": "Обзор интерфейса",
+      "textToImage": "Текст в изображение"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "Режим холста",

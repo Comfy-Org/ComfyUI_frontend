@@ -791,6 +791,9 @@
       "buy": "شراء",
       "buyCredits": "المتابعة للدفع",
       "buyNow": "اشترِ الآن",
+      "chargedImmediatelyNote": "سيتم خصم المبلغ من بطاقتك المحفوظة فوراً.",
+      "confirmSubtitle": "سيتم إضافة الرصيد إلى مساحة العمل هذه بمجرد إتمام الدفع.",
+      "confirmTitle": "تأكيد",
       "contactUs": "اتصل بنا",
       "creditsDescription": "يتم استخدام الرصيد لتشغيل سير العمل أو عقد الشركاء.",
       "creditsPerDollar": "أرصدة لكل دولار",
@@ -805,6 +808,7 @@
       "minRequired": "الحد الأدنى {credits} أرصدة",
       "minimumPurchase": "الحد الأدنى ${amount} ({credits} أرصدة)",
       "needMore": "تحتاج المزيد؟",
+      "payAmount": "ادفع {amount}",
       "purchaseError": "فشل الشراء",
       "purchaseErrorDetail": "فشل شراء الرصيد: {error}",
       "purchaseSuccess": "تمت إضافة الرصيد بنجاح!",
@@ -815,6 +819,8 @@
       "topUp": "شحن الرصيد",
       "unknownError": "حدث خطأ غير معروف",
       "usdAmount": "${amount} دولار أمريكي",
+      "verifyBody": "يتطلب بنكك تحققًا إضافيًا لإكمال عملية الدفع.",
+      "verifyTitle": "تحقق من الدفع",
       "videosEstimate": "~{count} فيديو",
       "viewPricing": "عرض تفاصيل التسعير",
       "youGet": "أرصدة",
@@ -1853,6 +1859,26 @@
     "warning": "تحذير",
     "workflow": "سير العمل",
     "you": "أنت"
+  },
+  "gettingStarted": {
+    "loadFailed": "تعذر تحميل القوالب.",
+    "retry": "حاول مرة أخرى",
+    "retryTemplate": "إعادة المحاولة {title}",
+    "startBlank": "ابدأ بلوحة فارغة",
+    "subtitle": "اختر سير عمل جاهز للانطلاق أو ابدأ من لوحة فارغة.",
+    "tabs": {
+      "templates": "قوالب",
+      "tutorials": "دروس"
+    },
+    "tabsLabel": "خيارات البدء",
+    "templateFailed": "تعذر فتح هذا القالب.",
+    "title": "لنبدأ الإبداع",
+    "tutorials": {
+      "imageToImage": "تحويل صورة إلى صورة",
+      "inpaint": "التلوين الداخلي",
+      "interfaceOverview": "نظرة عامة على الواجهة",
+      "textToImage": "تحويل النص إلى صورة"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "وضع اللوحة",

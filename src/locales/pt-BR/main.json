@@ -791,6 +791,9 @@
       "buy": "Comprar",
       "buyCredits": "Continuar para o pagamento",
       "buyNow": "Comprar agora",
+      "chargedImmediatelyNote": "Seu cartão salvo será cobrado imediatamente.",
+      "confirmSubtitle": "Os créditos são adicionados a este workspace assim que o pagamento for concluído.",
+      "confirmTitle": "Confirmar",
       "contactUs": "Fale conosco",
       "creditsDescription": "Os créditos são usados para executar fluxos de trabalho ou nós parceiros.",
       "creditsPerDollar": "créditos por dólar",
@@ -805,6 +808,7 @@
       "minRequired": "Mínimo de {credits} créditos",
       "minimumPurchase": "Mínimo de ${amount} ({credits} créditos)",
       "needMore": "Precisa de mais?",
+      "payAmount": "Pagar {amount}",
       "purchaseError": "Falha na compra",
       "purchaseErrorDetail": "Falha ao comprar créditos: {error}",
       "purchaseSuccess": "Créditos adicionados com sucesso!",
@@ -815,6 +819,8 @@
       "topUp": "Adicionar créditos",
       "unknownError": "Ocorreu um erro desconhecido",
       "usdAmount": "${amount}",
+      "verifyBody": "Seu banco exige uma verificação adicional para concluir este pagamento.",
+      "verifyTitle": "Verifique seu pagamento",
       "videosEstimate": "~{count} vídeos",
       "viewPricing": "Ver detalhes de preços",
       "youGet": "Créditos",
@@ -1853,6 +1859,26 @@
     "warning": "Aviso",
     "workflow": "Fluxo de trabalho",
     "you": "Você"
+  },
+  "gettingStarted": {
+    "loadFailed": "Não foi possível carregar os templates.",
+    "retry": "Tentar novamente",
+    "retryTemplate": "Tentar novamente {title}",
+    "startBlank": "Começar com tela em branco",
+    "subtitle": "Escolha um fluxo de trabalho pronto para começar ou inicie com uma tela em branco.",
+    "tabs": {
+      "templates": "Templates",
+      "tutorials": "Tutoriais"
+    },
+    "tabsLabel": "Opções para começar",
+    "templateFailed": "Não foi possível abrir este template.",
+    "title": "Vamos criar algo",
+    "tutorials": {
+      "imageToImage": "Imagem para imagem",
+      "inpaint": "Inpainting",
+      "interfaceOverview": "Visão geral da interface",
+      "textToImage": "Texto para imagem"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "Modo de tela",

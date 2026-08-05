@@ -791,6 +791,9 @@
       "buy": "구매",
       "buyCredits": "결제 계속하기",
       "buyNow": "지금 구매",
+      "chargedImmediatelyNote": "저장된 카드로 즉시 결제됩니다.",
+      "confirmSubtitle": "결제가 완료되면 크레딧이 이 워크스페이스에 즉시 추가됩니다.",
+      "confirmTitle": "확인",
       "contactUs": "문의하기",
       "creditsDescription": "크레딧은 워크플로우 또는 파트너 노드 실행에 사용됩니다.",
       "creditsPerDollar": "달러당 크레딧",
@@ -805,6 +808,7 @@
       "minRequired": "최소 {credits} 크레딧",
       "minimumPurchase": "최소 ${amount} ({credits} 크레딧)",
       "needMore": "더 필요하신가요?",
+      "payAmount": "{amount} 결제하기",
       "purchaseError": "구매 실패",
       "purchaseErrorDetail": "크레딧 구매 실패: {error}",
       "purchaseSuccess": "크레딧이 성공적으로 추가되었습니다!",
@@ -815,6 +819,8 @@
       "topUp": "충전하기",
       "unknownError": "알 수 없는 오류가 발생했습니다",
       "usdAmount": "${amount}",
+      "verifyBody": "결제를 완료하려면 은행의 추가 인증이 필요합니다.",
+      "verifyTitle": "결제 인증",
       "videosEstimate": "~{count}개 비디오",
       "viewPricing": "요금 세부정보 보기",
       "youGet": "크레딧",
@@ -1853,6 +1859,26 @@
     "warning": "경고",
     "workflow": "워크플로",
     "you": "당신"
+  },
+  "gettingStarted": {
+    "loadFailed": "템플릿을 불러올 수 없습니다.",
+    "retry": "다시 시도하기",
+    "retryTemplate": "{title} 다시 시도하기",
+    "startBlank": "빈 캔버스에서 시작하기",
+    "subtitle": "준비된 워크플로우를 선택하거나, 빈 캔버스에서 시작하세요.",
+    "tabs": {
+      "templates": "템플릿",
+      "tutorials": "튜토리얼"
+    },
+    "tabsLabel": "시작 옵션",
+    "templateFailed": "이 템플릿을 열 수 없습니다.",
+    "title": "무엇인가를 만들어봅시다",
+    "tutorials": {
+      "imageToImage": "이미지에서 이미지로",
+      "inpaint": "인페인팅",
+      "interfaceOverview": "인터페이스 개요",
+      "textToImage": "텍스트에서 이미지로"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "캔버스 모드",

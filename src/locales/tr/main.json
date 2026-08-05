@@ -791,6 +791,9 @@
       "buy": "Satın Al",
       "buyCredits": "Ödemeye devam et",
       "buyNow": "Şimdi al",
+      "chargedImmediatelyNote": "Kayıtlı kartınız hemen ücretlendirilir.",
+      "confirmSubtitle": "Ödeme tamamlandığında krediler bu çalışma alanına eklenir.",
+      "confirmTitle": "Onayla",
       "contactUs": "Bize ulaşın",
       "creditsDescription": "Krediler, iş akışlarını veya partner düğümlerini çalıştırmak için kullanılır.",
       "creditsPerDollar": "dolar başına kredi",
@@ -805,6 +808,7 @@
       "minRequired": "En az {credits} kredi",
       "minimumPurchase": "En az ${amount} ({credits} kredi)",
       "needMore": "Daha fazlasına mı ihtiyacınız var?",
+      "payAmount": "{amount} öde",
       "purchaseError": "Satın Alma Başarısız",
       "purchaseErrorDetail": "Kredi satın alınamadı: {error}",
       "purchaseSuccess": "Krediler başarıyla eklendi!",
@@ -815,6 +819,8 @@
       "topUp": "Yükleme Yap",
       "unknownError": "Bilinmeyen bir hata oluştu",
       "usdAmount": "${amount}",
+      "verifyBody": "Bankanız bu ödemeyi tamamlamak için ek doğrulama gerektiriyor.",
+      "verifyTitle": "Ödemenizi doğrulayın",
       "videosEstimate": "~{count} video",
       "viewPricing": "Fiyatlandırma detaylarını görüntüle",
       "youGet": "Kredi",
@@ -1853,6 +1859,26 @@
     "warning": "Uyarı",
     "workflow": "İş Akışı",
     "you": "Sen"
+  },
+  "gettingStarted": {
+    "loadFailed": "Şablonları yükleyemedik.",
+    "retry": "Tekrar dene",
+    "retryTemplate": "{title} şablonunu tekrar dene",
+    "startBlank": "Boş bir tuval ile başla",
+    "subtitle": "Başlamak için hazır bir iş akışı seçin veya boş bir tuval ile başlayın.",
+    "tabs": {
+      "templates": "Şablonlar",
+      "tutorials": "Eğitimler"
+    },
+    "tabsLabel": "Başlangıç seçenekleri",
+    "templateFailed": "Bu şablonu açamadık.",
+    "title": "Haydi bir şeyler yapalım",
+    "tutorials": {
+      "imageToImage": "Görselden görsele",
+      "inpaint": "Boyama",
+      "interfaceOverview": "Arayüz genel bakış",
+      "textToImage": "Metinden görsele"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "Tuval Modu",

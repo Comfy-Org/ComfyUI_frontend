@@ -791,6 +791,9 @@
       "buy": "購買",
       "buyCredits": "繼續付款",
       "buyNow": "立即購買",
+      "chargedImmediatelyNote": "您的已儲存信用卡將立即扣款。",
+      "confirmSubtitle": "付款完成後，點數將立即加到此工作區。",
+      "confirmTitle": "確認",
       "contactUs": "聯絡我們",
       "creditsDescription": "點數用於執行工作流程或合作夥伴節點。",
       "creditsPerDollar": "每美元點數",
@@ -805,6 +808,7 @@
       "minRequired": "最低需購買 {credits} 點",
       "minimumPurchase": "最低購買 ${amount}（${credits} 點）",
       "needMore": "需要更多？",
+      "payAmount": "支付 {amount}",
       "purchaseError": "購買失敗",
       "purchaseErrorDetail": "購買點數失敗：{error}",
       "purchaseSuccess": "點數儲值成功！",
@@ -815,6 +819,8 @@
       "topUp": "儲值",
       "unknownError": "發生未知錯誤",
       "usdAmount": "${amount}",
+      "verifyBody": "您的銀行需要進行額外驗證以完成此筆付款。",
+      "verifyTitle": "驗證您的付款",
       "videosEstimate": "約 {count} 部影片",
       "viewPricing": "查看價格詳情",
       "youGet": "點數",
@@ -1853,6 +1859,26 @@
     "warning": "警告",
     "workflow": "工作流程",
     "you": "你"
+  },
+  "gettingStarted": {
+    "loadFailed": "我們無法載入範本。",
+    "retry": "再試一次",
+    "retryTemplate": "重試 {title}",
+    "startBlank": "從空白畫布開始",
+    "subtitle": "選擇一個現成的工作流程開始，或從空白畫布開始。",
+    "tabs": {
+      "templates": "範本",
+      "tutorials": "教學"
+    },
+    "tabsLabel": "入門選項",
+    "templateFailed": "我們無法開啟此範本。",
+    "title": "開始創作吧",
+    "tutorials": {
+      "imageToImage": "圖像轉圖像",
+      "inpaint": "局部修補",
+      "interfaceOverview": "介面總覽",
+      "textToImage": "文字轉圖像"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "畫布模式",

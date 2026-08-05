@@ -791,6 +791,9 @@
       "buy": "خرید",
       "buyCredits": "ادامه به پرداخت",
       "buyNow": "هم‌اکنون خرید کنید",
+      "chargedImmediatelyNote": "کارت ذخیره‌شده شما بلافاصله شارژ می‌شود.",
+      "confirmSubtitle": "اعتبارها به محض تکمیل پرداخت به این ورک‌اسپیس افزوده می‌شوند.",
+      "confirmTitle": "تأیید",
       "contactUs": "با ما تماس بگیرید",
       "creditsDescription": "اعتبارها برای اجرای workflow یا nodeهای شریک استفاده می‌شوند.",
       "creditsPerDollar": "اعتبار به ازای هر دلار",
@@ -805,6 +808,7 @@
       "minRequired": "حداقل {credits} اعتبار",
       "minimumPurchase": "حداقل {amount} ({credits} اعتبار)",
       "needMore": "بیشتر نیاز دارید؟",
+      "payAmount": "پرداخت {amount}",
       "purchaseError": "خرید ناموفق بود",
       "purchaseErrorDetail": "خرید اعتبار ناموفق بود: {error}",
       "purchaseSuccess": "اعتبار با موفقیت افزوده شد!",
@@ -815,6 +819,8 @@
       "topUp": "افزایش اعتبار",
       "unknownError": "خطای ناشناخته رخ داد",
       "usdAmount": "{amount} دلار",
+      "verifyBody": "بانک شما برای تکمیل این پرداخت به تأییدیه اضافی نیاز دارد.",
+      "verifyTitle": "تأیید پرداخت شما",
       "videosEstimate": "~{count} ویدیو*",
       "viewPricing": "مشاهده جزئیات قیمت‌گذاری",
       "youGet": "اعتبار",
@@ -1853,6 +1859,26 @@
     "warning": "هشدار",
     "workflow": "workflow",
     "you": "شما"
+  },
+  "gettingStarted": {
+    "loadFailed": "قالب‌ها بارگذاری نشدند.",
+    "retry": "دوباره تلاش کنید",
+    "retryTemplate": "تلاش مجدد برای {title}",
+    "startBlank": "شروع با بوم خالی",
+    "subtitle": "یک ورک‌فلو آماده انتخاب کنید یا با یک بوم خالی شروع کنید.",
+    "tabs": {
+      "templates": "قالب‌ها",
+      "tutorials": "آموزش‌ها"
+    },
+    "tabsLabel": "گزینه‌های شروع",
+    "templateFailed": "امکان باز کردن این قالب وجود ندارد.",
+    "title": "بیایید چیزی بسازیم",
+    "tutorials": {
+      "imageToImage": "تبدیل تصویر به تصویر",
+      "inpaint": "بازسازی تصویر (Inpainting)",
+      "interfaceOverview": "مرور رابط کاربری",
+      "textToImage": "تبدیل متن به تصویر"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "حالت بوم",
