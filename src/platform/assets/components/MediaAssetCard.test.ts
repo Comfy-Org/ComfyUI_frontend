@@ -186,34 +186,41 @@ describe('MediaAssetCard', () => {
     expect(emitted().zoom).toBeUndefined()
   })
 
-  it('shift-clicks a video preview to select without starting playback', async () => {
-    const user = userEvent.setup()
-    const { container, emitted } = renderCard({
-      loading: false,
-      asset: { ...asset, name: 'clip.mp4' }
-    })
-    const video = await vi.waitFor(() => {
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-      const element = container.querySelector('video')
-      expect(element).toBeInTheDocument()
-      return element!
-    })
-    const playSpy = vi
-      .spyOn(video, 'play')
-      .mockImplementation(() => Promise.resolve())
+  it.for([
+    { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
+    { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
+    { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+  ])(
+    '$modifier-clicks a video preview to select without starting playback',
+    async ({ keyDown, keyUp }) => {
+      const user = userEvent.setup()
+      const { container, emitted } = renderCard({
+        loading: false,
+        asset: { ...asset, name: 'clip.mp4' }
+      })
+      const video = await vi.waitFor(() => {
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+        const element = container.querySelector('video')
+        expect(element).toBeInTheDocument()
+        return element!
+      })
+      const playSpy = vi
+        .spyOn(video, 'play')
+        .mockImplementation(() => Promise.resolve())
 
-    Object.defineProperty(video, 'paused', {
-      value: true,
-      configurable: true
-    })
+      Object.defineProperty(video, 'paused', {
+        value: true,
+        configurable: true
+      })
 
-    await user.keyboard('{Shift>}')
-    await user.click(video)
-    await user.keyboard('{/Shift}')
+      await user.keyboard(keyDown)
+      await user.click(video)
+      await user.keyboard(keyUp)
 
-    expect(playSpy).not.toHaveBeenCalled()
-    expect(emitted().select).toHaveLength(1)
-  })
+      expect(playSpy).not.toHaveBeenCalled()
+      expect(emitted().select).toHaveLength(1)
+    }
+  )
 
   it('disables native controls for compact video cards', async () => {
     const user = userEvent.setup()

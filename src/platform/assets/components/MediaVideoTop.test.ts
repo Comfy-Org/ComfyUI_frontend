@@ -104,6 +104,39 @@ describe('MediaVideoTop', () => {
     expect(playSpy).toHaveBeenCalledTimes(1)
   })
 
+  it.for([
+    { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
+    { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
+    { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+  ])(
+    'does not start playback from a $modifier-click',
+    async ({ keyDown, keyUp }) => {
+      const user = userEvent.setup()
+      const { container } = render(MediaVideoTop, {
+        props: {
+          asset: createVideoAsset('https://example.com/thumb.jpg')
+        }
+      })
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const video = container.querySelector('video')!
+      const playSpy = vi
+        .spyOn(video, 'play')
+        .mockImplementation(() => Promise.resolve())
+
+      Object.defineProperty(video, 'paused', {
+        value: true,
+        configurable: true
+      })
+
+      await user.keyboard(keyDown)
+      await user.click(video)
+      await user.keyboard(keyUp)
+
+      expect(playSpy).not.toHaveBeenCalled()
+    }
+  )
+
   it('pauses playback from a subsequent click when native controls are disabled', async () => {
     const user = userEvent.setup()
     const { container } = render(MediaVideoTop, {
