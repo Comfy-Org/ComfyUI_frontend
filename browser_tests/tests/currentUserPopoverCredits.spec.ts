@@ -224,9 +224,7 @@ freeTierTest.describe(
         const upgrade = popover.getByTestId('upgrade-to-add-credits-button')
         await expect(upgrade).toBeVisible()
         await expect(upgrade).toHaveText('Upgrade')
-        await expect(
-          popover.getByTestId('add-credits-button')
-        ).toBeHidden()
+        await expect(popover.getByTestId('add-credits-button')).toBeHidden()
       }
     )
   }
