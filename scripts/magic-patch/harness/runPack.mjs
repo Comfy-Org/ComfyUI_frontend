@@ -12,50 +12,12 @@
  * load in the same process would see the first one's registrations.
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { register } from 'node:module'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { registry } from './stubs/registry.mjs'
-
-/**
- * Node type names the pack cares about.
- *
- * Both images are driven over the same set, so a difference in the result is
- * attributable to the conversion. Derived from the source rather than from the
- * backend because the definitions are Python-side and not available here.
- */
-export function candidateTypes(sources) {
-  const found = new Set()
-  const patterns = [
-    // `nodeData.name === "X"`, `nodeData?.name == 'X'`
-    /\.name\s*===?\s*["'`]([^"'`]+)["'`]/g,
-    /["'`]([^"'`]+)["'`]\s*===?\s*\w*\.?name\b/g,
-    // `case "X":` inside the usual switch on the type name
-    /case\s+["'`]([^"'`]+)["'`]\s*:/g,
-    // `comfy.defs.extend("X"` and the array form
-    /defs\.extend\(\s*["'`]([^"'`]+)["'`]/g,
-    /defs\.extend\(\s*\[([^\]]+)\]/g,
-    // `["A","B"].includes(nodeData.name)`
-    /\[([^\]]+)\]\s*\.includes\(\s*\w+\.name/g
-  ]
-  for (const source of sources) {
-    for (const pattern of patterns) {
-      for (const [, captured] of source.matchAll(pattern)) {
-        for (const piece of captured.split(',')) {
-          const name = piece.trim().replace(/^["'`]|["'`]$/g, '')
-          // Type names are not empty, not sentences, not paths.
-          if (name && name.length < 80 && !/[\s/\\]{2,}/.test(name)) {
-            found.add(name)
-          }
-        }
-      }
-    }
-  }
-  return [...found].sort()
-}
 
 /** Writes a pack image to disk so relative imports between files resolve. */
 export function materialise(root, files) {
@@ -73,8 +35,13 @@ const SYNTHETIC_MESSAGE = { text: ['harness'], images: [] }
  * Loads every entry file, drives the registered extensions over `types`, and
  * reports what survived.
  */
-export async function runPack({ root, entries, types, apiMajor = 1 }) {
-  register('./loader.mjs', import.meta.url)
+export async function runPack({
+  root,
+  entries,
+  types,
+  category = 'harness',
+  apiMajor = 1
+}) {
   registry.reset()
 
   const loadErrors = []
@@ -98,7 +65,7 @@ export async function runPack({ root, entries, types, apiMajor = 1 }) {
     const def = {
       name: type,
       display_name: type,
-      category: 'harness',
+      category,
       python_module: 'custom_nodes.harness',
       output: [],
       output_name: [],
@@ -141,6 +108,12 @@ export async function runPack({ root, entries, types, apiMajor = 1 }) {
     }
     constructed[type] = Boolean(node)
     if (!node) continue
+
+    // Backend-derived nodes serialise their widgets, and without it the wire
+    // comparison cannot see widget changes — precisely what these conversions
+    // alter. Set on the instance because the class field shadows the prototype,
+    // and only when unset so a pack's own choice still wins.
+    node.serialize_widgets ??= true
 
     registry.graph.add(node)
     try {
