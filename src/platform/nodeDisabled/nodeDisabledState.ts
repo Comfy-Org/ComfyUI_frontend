@@ -1,4 +1,5 @@
 import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { PartnerProvider } from '@/platform/workspace/api/partnerNodePolicyApi'
@@ -19,23 +20,30 @@ export function isNodeFromPartnerProvider(
 }
 
 export function useNodeDisabledState() {
-  const governanceStore = usePartnerNodeGovernanceStore()
-  const disabledNodeCategories = computed(() => {
-    if (governanceStore.policy?.enforcementEnabled !== true) {
-      return new Set<string>()
-    }
+  let disabledNodeCategories: ComputedRef<Set<string>> | undefined
 
-    return new Set(
-      governanceStore.providers
-        .filter(({ id }) => !governanceStore.isProviderEnabled(id))
-        .flatMap(({ nodeCategories }) => nodeCategories)
-    )
-  })
+  function getDisabledNodeCategories() {
+    if (disabledNodeCategories) return disabledNodeCategories
+
+    const governanceStore = usePartnerNodeGovernanceStore()
+    disabledNodeCategories = computed(() => {
+      if (governanceStore.policy?.enforcementEnabled !== true) {
+        return new Set<string>()
+      }
+
+      return new Set(
+        governanceStore.providers
+          .filter(({ id }) => !governanceStore.isProviderEnabled(id))
+          .flatMap(({ nodeCategories }) => nodeCategories)
+      )
+    })
+    return disabledNodeCategories
+  }
 
   function isNodeDisabled(nodeDef: NodeDisabledInput): boolean {
     return (
       nodeDef.api_node === true &&
-      disabledNodeCategories.value.has(getProviderName(nodeDef.category))
+      getDisabledNodeCategories().value.has(getProviderName(nodeDef.category))
     )
   }
 
