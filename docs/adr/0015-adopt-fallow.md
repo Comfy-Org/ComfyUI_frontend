@@ -63,6 +63,11 @@ the cleanup and stop backsliding.
 
 ## Notes
 
-- Open follow-ups: declare the hoisted deps in `apps/desktop-ui/package.json`
-  and drop those `ignoreDependencies` exceptions; decide whether `fallow audit`
-  should run in CI or pre-push, and whether it replaces knip there.
+Open follow-ups, each with a tracking issue:
+
+- Declare the hoisted deps in `apps/desktop-ui/package.json` and drop those
+  `ignoreDependencies` exceptions:
+  [#14768](https://github.com/Comfy-Org/ComfyUI_frontend/issues/14768).
+- Decide whether `fallow audit` should run in CI or pre-push, and whether it
+  replaces knip there:
+  [#14769](https://github.com/Comfy-Org/ComfyUI_frontend/issues/14769).
