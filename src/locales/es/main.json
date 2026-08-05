@@ -4241,6 +4241,7 @@
       "Video": "Video",
       "Video API": "API de Video"
     },
+    "filteredBy": "Filtrado por:",
     "clearAllFilters": "Borrar todos los filtros",
     "error": {
       "templateNotFound": "Plantilla \"{templateName}\" no encontrada"

@@ -20,10 +20,7 @@
           autofocus
         />
         <!-- Filter popover: mirrors the Assets sidebar filter button -->
-        <Popover
-          :show-arrow="false"
-          @interact-outside="keepSheetOpenForFacetList"
-        >
+        <Popover :show-arrow="false">
           <template #button>
             <Button
               variant="secondary"
@@ -42,103 +39,11 @@
             </Button>
           </template>
           <template #default>
-            <div
-              id="templates-panel-filters"
-              class="flex scrollbar-custom max-h-[70vh] w-96 flex-col gap-4 overflow-y-auto p-3"
-              data-testid="template-filter-bar"
-            >
-              <!-- Flat, sectioned filter sheet (no nested dropdowns): label +
-                   inline chips, with a small search for the long facets. -->
-              <section class="flex flex-col gap-2">
-                <span
-                  class="text-2xs font-semibold tracking-wider text-muted-foreground uppercase"
-                >
-                  {{ $t('templateWorkflows.category', 'Category') }}
-                </span>
-                <TemplatesFilterChipRow>
-                  <button
-                    v-for="opt in categoryOptions"
-                    :key="opt.value"
-                    type="button"
-                    :aria-pressed="selectedCategory === opt.value"
-                    :class="
-                      cn(
-                        'shrink-0',
-                        filterChipClass(selectedCategory === opt.value)
-                      )
-                    "
-                    @click="selectedCategory = opt.value"
-                  >
-                    {{ opt.name }}
-                  </button>
-                </TemplatesFilterChipRow>
-              </section>
-
-              <section
-                v-for="facet in filterFacets"
-                :key="facet.key"
-                class="flex flex-col gap-2 border-t border-border-subtle pt-4"
-              >
-                <span
-                  class="text-2xs font-semibold tracking-wider text-muted-foreground uppercase"
-                >
-                  {{ facet.label }}
-                </span>
-                <!-- Search on its own row, chips underneath: the two read as
-                     one column instead of the search competing with the first
-                     chip for the same line. Focusing the search opens the
-                     complete option list. -->
-                <div
-                  v-if="facet.searchable"
-                  class="flex h-8 w-full items-center gap-1.5 rounded-lg border border-border-subtle px-2.5"
-                >
-                  <i
-                    class="icon-[lucide--search] size-3.5 shrink-0 text-muted-foreground"
-                  />
-                  <input
-                    v-model="facetSearch[facet.key]"
-                    :placeholder="facet.label"
-                    class="w-full min-w-0 border-none bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-                    @focus="openFacetList(facet.key, $event)"
-                    @blur="closeFacetList"
-                    @keydown.escape.stop="closeFacetList"
-                  />
-                </div>
-                <TemplatesFilterChipRow>
-                  <button
-                    v-for="opt in facetVisibleOptions(facet.key)"
-                    :key="opt.value"
-                    type="button"
-                    :aria-pressed="facetIsSelected(facet.key, opt)"
-                    :class="
-                      cn(
-                        'shrink-0',
-                        filterChipClass(facetIsSelected(facet.key, opt))
-                      )
-                    "
-                    @click="toggleFacetOption(facet.key, opt)"
-                  >
-                    {{ opt.name }}
-                  </button>
-                  <span
-                    v-if="facetHiddenCount(facet.key) > 0"
-                    class="flex shrink-0 items-center px-1 text-xs text-muted-foreground"
-                  >
-                    +{{ facetHiddenCount(facet.key) }}
-                  </span>
-                </TemplatesFilterChipRow>
-              </section>
-
-              <Button
-                v-if="hasClearableFilters"
-                variant="secondary"
-                size="md"
-                class="h-8 self-start px-3 text-xs"
-                @click="clearAllFilters"
-              >
-                {{ $t('templateWorkflows.clearAllFilters') }}
-              </Button>
-            </div>
+            <TemplatesFilterMenu
+              :facets="filterMenuFacets"
+              @toggle="toggleFilterValue"
+              @clear-all="clearAllFilters"
+            />
           </template>
         </Popover>
 
@@ -212,6 +117,37 @@
           {{ opt.name }}
         </button>
       </TemplatesFilterChipRow>
+
+      <!-- What's applied, and how to undo it, without reopening the menu. -->
+      <div
+        v-if="appliedFilters.length"
+        class="flex items-center gap-2"
+        data-testid="template-applied-filters"
+      >
+        <span class="shrink-0 text-xs text-muted-foreground">
+          {{ $t('templateWorkflows.filteredBy') }}
+        </span>
+        <TemplatesFilterChipRow class="min-w-0 flex-1">
+          <button
+            v-for="pill in appliedFilters"
+            :key="`${pill.facetKey}:${pill.value}`"
+            type="button"
+            :aria-label="`${$t('g.remove')}: ${pill.label}`"
+            class="flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-solid border-border-subtle bg-transparent px-2.5 text-xs text-base-foreground outline-none hover:bg-secondary-background-hover"
+            @click="toggleFilterValue(pill.facetKey, pill.value)"
+          >
+            <span class="max-w-32 truncate">{{ pill.label }}</span>
+            <i class="icon-[lucide--x] size-3 shrink-0 text-muted-foreground" />
+          </button>
+        </TemplatesFilterChipRow>
+        <button
+          type="button"
+          class="shrink-0 cursor-pointer border-none bg-transparent p-0 text-xs text-muted-foreground underline underline-offset-2 outline-none hover:text-base-foreground"
+          @click="clearAllFilters"
+        >
+          {{ $t('templateWorkflows.clearAllFilters') }}
+        </button>
+      </div>
     </div>
 
     <!-- Scrollable template grid -->
@@ -483,57 +419,6 @@
         }}
       </div>
     </div>
-    <!-- Full option list for a facet: focusing its search opens the complete
-         catalog (chips alone would hide the long tail). mousedown.prevent
-         keeps the input focused so several options can be toggled in a row. -->
-    <Teleport to="body">
-      <div
-        v-if="openFacetKey"
-        id="templates-facet-list"
-        class="fixed z-3000 scrollbar-custom max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-base-background p-1 shadow-xl"
-        :style="{
-          left: `${facetListPos.left}px`,
-          top: `${facetListPos.top}px`,
-          width: `${facetListPos.width}px`
-        }"
-      >
-        <button
-          v-for="opt in facetListOptions(openFacetKey)"
-          :key="opt.value"
-          type="button"
-          class="flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border-none bg-transparent px-2.5 text-left text-sm text-base-foreground outline-none hover:bg-secondary-background-hover"
-          @mousedown.prevent
-          @click="toggleFacetOption(openFacetKey, opt)"
-        >
-          <!-- Checkbox, not a trailing tick: these facets are multi-select, so
-               the control has to say "pick as many as you like" before you
-               click. Same indicator as the DS MultiSelect. -->
-          <span
-            :class="
-              cn(
-                'flex size-4 shrink-0 items-center justify-center rounded-sm transition-colors duration-200',
-                facetIsSelected(openFacetKey, opt)
-                  ? 'bg-primary-background'
-                  : 'bg-secondary-background'
-              )
-            "
-          >
-            <i
-              v-if="facetIsSelected(openFacetKey, opt)"
-              class="icon-[lucide--check] text-xs font-bold text-base-foreground"
-            />
-          </span>
-          <span class="min-w-0 flex-1 truncate">{{ opt.name }}</span>
-        </button>
-        <p
-          v-if="facetListOptions(openFacetKey).length === 0"
-          class="m-0 px-2.5 py-2 text-xs text-muted-foreground"
-        >
-          {{ $t('g.noResultsFound') }}
-        </p>
-      </div>
-    </Teleport>
-
     <!-- Hover quick-info flyout, floating right of the panel like the node
          search preview (Pablo, 08-03): what this template needs to run. -->
     <Teleport to="body">
@@ -546,26 +431,9 @@
         }"
         data-testid="template-hover-preview"
       >
+        <!-- No type badge here: the card being hovered already carries it, and
+             the flyout's job is what the card can't say. -->
         <div class="flex flex-wrap items-center gap-2">
-          <div
-            class="flex h-6 items-center gap-1 rounded-md bg-zinc-700/50 px-2"
-          >
-            <i
-              :class="
-                isAppTemplate(hoverPreview.template)
-                  ? 'icon-[lucide--app-window]'
-                  : 'icon-[comfy--workflow]'
-              "
-              class="size-3 text-white"
-            />
-            <span class="text-xs font-medium whitespace-nowrap text-white">
-              {{
-                isAppTemplate(hoverPreview.template)
-                  ? $t('builderToolbar.app')
-                  : $t('builderToolbar.nodeGraph')
-              }}
-            </span>
-          </div>
           <span
             :class="
               cn(
@@ -672,6 +540,8 @@ import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import TemplatesFilterChipRow from '@/components/sidebar/tabs/TemplatesFilterChipRow.vue'
+import TemplatesFilterMenu from '@/components/sidebar/tabs/TemplatesFilterMenu.vue'
+import type { FilterMenuFacet } from '@/components/sidebar/tabs/TemplatesFilterMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
@@ -954,89 +824,91 @@ const activeFilterCount = computed(
   () => addedFilterCount.value + (selectedCategory.value === 'all' ? 0 : 1)
 )
 
-const hasClearableFilters = computed(() => activeFilterCount.value > 0)
-
 const clearAllFilters = () => {
   resetFilters()
   selectedNavItem.value = 'all'
 }
 
-// ---- Flat filter sheet (Krea-style sections: label + search + chips) ----
-const FACET_VISIBLE_LIMIT = 8
+// ---- Linear-style filter menu ----
 
-type FilterFacetKey = 'model' | 'task' | 'runsOn'
+type FilterFacetKey = 'category' | 'model' | 'task' | 'runsOn'
 
-const facetSearch = ref<Record<FilterFacetKey, string>>({
-  model: '',
-  task: '',
-  runsOn: ''
-})
+/**
+ * One descriptor per facet, consumed by both the drill-down menu and the
+ * applied-filter pills so the two can never disagree about what is on.
+ */
+const filterMenuFacets = computed<FilterMenuFacet[]>(() => [
+  {
+    key: 'category',
+    label: t('templateWorkflows.category', 'Category'),
+    icon: 'icon-[lucide--layout-grid]',
+    options: categoryOptions.value,
+    selectedValues: [selectedCategory.value],
+    mode: 'single',
+    emptyValue: 'all'
+  },
+  {
+    key: 'model',
+    label: t('templateWorkflows.modelFilter', 'Model'),
+    icon: 'icon-[lucide--box]',
+    options: modelOptions.value,
+    selectedValues: activeModels.value,
+    mode: 'multiple'
+  },
+  {
+    key: 'task',
+    label: t('templateWorkflows.useCaseFilter', 'Task'),
+    icon: 'icon-[lucide--wand-sparkles]',
+    options: useCaseOptions.value,
+    selectedValues: activeUseCases.value,
+    mode: 'multiple'
+  },
+  {
+    key: 'runsOn',
+    label: t('templateWorkflows.runsOnFilter', 'Runs on'),
+    icon: 'icon-[lucide--cpu]',
+    options: runsOnOptions.value,
+    selectedValues: selectedRunsOn.value,
+    mode: 'multiple'
+  }
+])
 
-const filterFacets = computed(
-  (): { key: FilterFacetKey; label: string; searchable: boolean }[] => [
-    {
-      key: 'model',
-      label: t('templateWorkflows.modelFilter', 'Model'),
-      searchable: true
-    },
-    {
-      key: 'task',
-      label: t('templateWorkflows.useCaseFilter', 'Task'),
-      searchable: true
-    },
-    {
-      key: 'runsOn',
-      label: t('templateWorkflows.runsOnFilter', 'Runs on'),
-      searchable: false
-    }
-  ]
+const toggleFilterValue = (facetKey: string, value: string) => {
+  if (facetKey === 'category') {
+    // Re-picking the active category clears it rather than doing nothing.
+    selectedNavItem.value = selectedCategory.value === value ? 'all' : value
+    return
+  }
+  const target =
+    facetKey === 'model'
+      ? selectedModels
+      : facetKey === 'task'
+        ? selectedUseCases
+        : selectedRunsOn
+  target.value = target.value.includes(value)
+    ? target.value.filter((v) => v !== value)
+    : [...target.value, value]
+}
+
+interface AppliedFilter {
+  facetKey: FilterFacetKey
+  value: string
+  label: string
+}
+
+/** Flattened for the pills row; the option label, not the raw value. */
+const appliedFilters = computed<AppliedFilter[]>(() =>
+  filterMenuFacets.value.flatMap((facet) =>
+    facet.selectedValues
+      .filter((value) => value !== facet.emptyValue)
+      .map((value) => ({
+        facetKey: facet.key as FilterFacetKey,
+        value,
+        label:
+          facet.options.find((option) => option.value === value)?.name ?? value
+      }))
+  )
 )
-
-const facetOptions = (key: FilterFacetKey): SelectOption[] =>
-  key === 'model'
-    ? modelOptions.value
-    : key === 'task'
-      ? useCaseOptions.value
-      : runsOnOptions.value
-
-const facetSelectedList = (key: FilterFacetKey): SelectOption[] =>
-  key === 'model'
-    ? selectedModelObjects.value
-    : key === 'task'
-      ? selectedUseCaseObjects.value
-      : selectedRunsOnObjects.value
-
-const facetIsSelected = (key: FilterFacetKey, opt: SelectOption) =>
-  facetSelectedList(key).some((o) => o.value === opt.value)
-
-const toggleFacetOption = (key: FilterFacetKey, opt: SelectOption) => {
-  const current = facetSelectedList(key)
-  const next = facetIsSelected(key, opt)
-    ? current.filter((o) => o.value !== opt.value)
-    : [...current, opt]
-  if (key === 'model') selectedModelObjects.value = next
-  else if (key === 'task') selectedUseCaseObjects.value = next
-  else selectedRunsOnObjects.value = next
-}
-
-const facetMatches = (key: FilterFacetKey) => {
-  const query = facetSearch.value[key].toLowerCase().trim()
-  const unselected = facetOptions(key).filter((o) => !facetIsSelected(key, o))
-  return query
-    ? unselected.filter((o) => o.name.toLowerCase().includes(query))
-    : unselected
-}
-
-const facetVisibleOptions = (key: FilterFacetKey): SelectOption[] => {
-  const selected = facetSelectedList(key)
-  const room = Math.max(0, FACET_VISIBLE_LIMIT - selected.length)
-  return [...selected, ...facetMatches(key).slice(0, room)]
-}
-
-const facetHiddenCount = (key: FilterFacetKey) => {
-  const room = Math.max(0, FACET_VISIBLE_LIMIT - facetSelectedList(key).length)
-  return Math.max(0, facetMatches(key).length - room)
-}
 
 const filterChipClass = (active: boolean) =>
   cn(
@@ -1045,47 +917,6 @@ const filterChipClass = (active: boolean) =>
       ? 'border-transparent bg-base-foreground text-base-background'
       : 'border-border-subtle bg-transparent text-base-foreground hover:bg-secondary-background-hover'
   )
-
-// Focusing a facet search opens the FULL option list below it (teleported —
-// the sheet's own scroll container would clip an absolute dropdown).
-const openFacetKey = ref<FilterFacetKey | null>(null)
-const facetListPos = ref({ left: 0, top: 0, width: 0 })
-
-const openFacetList = (key: FilterFacetKey, event: FocusEvent) => {
-  const rect = (
-    event.target as HTMLElement
-  ).parentElement!.getBoundingClientRect()
-  facetListPos.value = {
-    left: rect.left,
-    top: rect.bottom + 4,
-    width: Math.max(rect.width, 288)
-  }
-  openFacetKey.value = key
-}
-
-const closeFacetList = () => {
-  openFacetKey.value = null
-}
-
-/** Full catalog for the open facet, narrowed by its search text. */
-const facetListOptions = (key: FilterFacetKey): SelectOption[] => {
-  const query = facetSearch.value[key].toLowerCase().trim()
-  const all = facetOptions(key)
-  return query ? all.filter((o) => o.name.toLowerCase().includes(query)) : all
-}
-
-/**
- * The teleported facet list lives outside the popover's DOM, so Reka would
- * treat clicks on it as outside interactions and dismiss the whole sheet.
- */
-const keepSheetOpenForFacetList = (event: CustomEvent) => {
-  const original = (event.detail as { originalEvent?: Event } | undefined)
-    ?.originalEvent
-  const target = original?.target ?? event.target
-  if (target instanceof Element && target.closest('#templates-facet-list')) {
-    event.preventDefault()
-  }
-}
 
 // UI state
 const loadingTemplate = ref<string | null>(null)

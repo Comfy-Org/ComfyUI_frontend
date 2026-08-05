@@ -1165,6 +1165,7 @@
       "Generation Type": "Generation Type"
     },
     "categories": "Categories",
+    "filteredBy": "Filtered by:",
     "clearAllFilters": "Clear all filters",
     "filtersApplied": "{count} filter applied | {count} filters applied",
     "filtersButton": "Filters",
