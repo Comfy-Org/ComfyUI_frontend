@@ -117,6 +117,17 @@
           <i-comfy:mask class="size-4" />
         </button>
 
+        <!-- Layer Editor Button -->
+        <button
+          v-if="hasMultipleImages && !imageError"
+          :class="actionButtonClass"
+          :title="$t('g.openLayerEditor')"
+          :aria-label="$t('g.openLayerEditor')"
+          @click="handleOpenLayerEditor"
+        >
+          <i class="icon-[lucide--layers] size-4" />
+        </button>
+
         <!-- Download Button -->
         <button
           v-if="!imageError"
@@ -202,6 +213,7 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { useLayerEditor } from '@/composables/layerEditor/useLayerEditor'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
@@ -222,6 +234,7 @@ interface ImagePreviewProps {
 const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
+const layerEditor = useLayerEditor()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
@@ -332,6 +345,13 @@ function handleEditMask() {
   const node = resolveNode(nodeId)
   if (!node) return
   maskEditor.openMaskEditor(node)
+}
+
+function handleOpenLayerEditor() {
+  if (!nodeId) return
+  const node = resolveNode(nodeId)
+  if (!node) return
+  layerEditor.openLayerEditor(node)
 }
 
 function handleDownload() {

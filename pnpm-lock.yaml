@@ -189,6 +189,9 @@ catalogs:
     '@webgpu/types':
       specifier: ^0.1.66
       version: 0.1.71
+    ag-psd:
+      specifier: ^31.0.2
+      version: 31.0.2
     algoliasearch:
       specifier: ^5.21.0
       version: 5.56.0
@@ -309,6 +312,9 @@ catalogs:
     oxlint-tsgolint:
       specifier: ^0.24.0
       version: 0.24.0
+    pentrado:
+      specifier: ^0.1.1
+      version: 0.1.1
     picocolors:
       specifier: ^1.1.1
       version: 1.1.1
@@ -564,6 +570,9 @@ importers:
       '@xterm/xterm':
         specifier: ^5.5.0
         version: 5.5.0
+      ag-psd:
+        specifier: 'catalog:'
+        version: 31.0.2
       algoliasearch:
         specifier: 'catalog:'
         version: 5.56.0
@@ -612,6 +621,9 @@ importers:
       minisearch:
         specifier: 'catalog:'
         version: 7.2.0
+      pentrado:
+        specifier: 'catalog:'
+        version: 0.1.1(ag-psd@31.0.2)(reka-ui@2.5.0(typescript@6.0.3)(vue@3.5.39(typescript@6.0.3)))(vue-i18n@11.4.6(vue@3.5.39(typescript@6.0.3)))(vue@3.5.39(typescript@6.0.3))
       pinia:
         specifier: 'catalog:'
         version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.39(typescript@6.0.3))
@@ -4861,6 +4873,9 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  ag-psd@31.0.2:
+    resolution: {integrity: sha512-5s5PvqbomPIIJ9YjL6robz55rT4RYPiQkww4brisyZEb5jzlHB1EKh47IJg7gIFj0RUrD0cMgdntM907qaZjXA==}
+
   agent-base@6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
     engines: {node: '>= 6.0.0'}
@@ -5059,6 +5074,9 @@ packages:
   base64-arraybuffer@1.0.2:
     resolution: {integrity: sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ==}
     engines: {node: '>= 0.6.0'}
+
+  base64-js@1.5.1:
+    resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
 
   baseline-browser-mapping@2.10.43:
     resolution: {integrity: sha512-AjYpR78kDWAY3Efj+cDTFH9t9SCoL7OoTp1BOb0mQV7S+6CiLwnWM3FyxhJtdPufDFKzmCSFoUncKjWgJEZTCQ==}
@@ -7574,6 +7592,9 @@ packages:
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
 
+  pako@2.1.0:
+    resolution: {integrity: sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==}
+
   pangu@4.0.7:
     resolution: {integrity: sha512-weZKJIwwy5gjt4STGVUH9bix3BGk7wZ2ahtIypwe3e/mllsrIZIvtfLx1dPX56GcpZFOCFKmeqI1qVuB9enRzA==}
     hasBin: true
@@ -7639,6 +7660,23 @@ packages:
   pathval@2.0.1:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
+
+  pentrado@0.1.1:
+    resolution: {integrity: sha512-N5/MWUBk0PCOIxM1aBMHzLgIM9VfOtzMDSpCHTzVYlwAkkSm3OPSBKL6+tgi7PnE02JOAgR8lCYVHHuwtk5Sow==}
+    peerDependencies:
+      ag-psd: '>=31'
+      reka-ui: '>=2'
+      vue: '>=3.4'
+      vue-i18n: '>=9'
+    peerDependenciesMeta:
+      ag-psd:
+        optional: true
+      reka-ui:
+        optional: true
+      vue:
+        optional: true
+      vue-i18n:
+        optional: true
 
   perfect-debounce@1.0.0:
     resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
@@ -13328,6 +13366,11 @@ snapshots:
 
   acorn@8.17.0: {}
 
+  ag-psd@31.0.2:
+    dependencies:
+      base64-js: 1.5.1
+      pako: 2.1.0
+
   agent-base@6.0.2:
     dependencies:
       debug: 4.4.3
@@ -13610,6 +13653,8 @@ snapshots:
   balanced-match@4.0.4: {}
 
   base64-arraybuffer@1.0.2: {}
+
+  base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.10.43: {}
 
@@ -16725,6 +16770,8 @@ snapshots:
 
   pako@1.0.11: {}
 
+  pako@2.1.0: {}
+
   pangu@4.0.7: {}
 
   param-case@3.0.4:
@@ -16800,6 +16847,13 @@ snapshots:
   pathe@2.0.3: {}
 
   pathval@2.0.1: {}
+
+  pentrado@0.1.1(ag-psd@31.0.2)(reka-ui@2.5.0(typescript@6.0.3)(vue@3.5.39(typescript@6.0.3)))(vue-i18n@11.4.6(vue@3.5.39(typescript@6.0.3)))(vue@3.5.39(typescript@6.0.3)):
+    optionalDependencies:
+      ag-psd: 31.0.2
+      reka-ui: 2.5.0(typescript@6.0.3)(vue@3.5.39(typescript@6.0.3))
+      vue: 3.5.39(typescript@6.0.3)
+      vue-i18n: 11.4.6(vue@3.5.39(typescript@6.0.3))
 
   perfect-debounce@1.0.0: {}
 
