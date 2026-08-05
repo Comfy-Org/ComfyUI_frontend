@@ -96,6 +96,12 @@ unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
 never left unowned, but **exits non-zero** so the degradation is visible. A
 green run means a real sheriff was resolved from Datadog.
 
+Tag coverage is checked for the **whole rotation**, not just whoever is on call,
+and a member without one fails the run. Someone added to the layer without a tag
+otherwise works fine until their own shift begins — the breakage surfaces weeks
+after the cause, on whoever happens to be sheriff. This is a configuration
+check, so it fails even when today's assignment succeeded.
+
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,

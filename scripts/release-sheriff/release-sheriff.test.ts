@@ -10,7 +10,7 @@ import {
   parseOnCallEmails,
   planActions,
   nextInRotation,
-  parseRotation,
+  parseRotationKeys,
   resolveSheriff
 } from './release-sheriff'
 
@@ -107,7 +107,7 @@ describe('nextInRotation', () => {
   })
 })
 
-describe('parseRotation', () => {
+describe('parseRotationKeys', () => {
   const payload = {
     included: [
       {
@@ -131,15 +131,12 @@ describe('parseRotation', () => {
   }
 
   it('preserves member order, which is what makes "next" meaningful', () => {
-    expect(parseRotation(payload, { ann: 'ann-gh', bo: 'bo-gh' })).toEqual([
-      'bo-gh',
-      'ann-gh'
-    ])
+    expect(parseRotationKeys(payload)).toEqual(['bo', 'ann'])
   })
 
-  it('drops members with no github tag rather than inventing one', () => {
-    expect(parseRotation(payload, { ann: 'ann-gh' })).toEqual(['ann-gh'])
-    expect(parseRotation(null, { ann: 'ann-gh' })).toEqual([])
+  it('reads nothing from a payload without a member graph', () => {
+    expect(parseRotationKeys(null)).toEqual([])
+    expect(parseRotationKeys({ included: 'nope' })).toEqual([])
   })
 })
 
@@ -254,6 +251,7 @@ describe('fetchOnCallEmails', () => {
     expect(result).toEqual({
       githubLoginByUser: { sheriff: 'sheriff-dev' },
       rotation: [],
+      unmappedMembers: [],
       warning: null
     })
     expect(String(fetchSpy.mock.calls[0][0])).toBe(
@@ -262,12 +260,56 @@ describe('fetchOnCallEmails', () => {
     )
   })
 
+  it('separates tagged members from those still missing a login', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: { attributes: { tags: ['github:ann:ann-gh'] } },
+            included: [
+              {
+                type: 'layers',
+                id: 'l1',
+                relationships: {
+                  members: { data: [{ id: 'm1' }, { id: 'm2' }] }
+                }
+              },
+              {
+                type: 'members',
+                id: 'm1',
+                relationships: { user: { data: { id: 'u1' } } }
+              },
+              {
+                type: 'members',
+                id: 'm2',
+                relationships: { user: { data: { id: 'u2' } } }
+              },
+              {
+                type: 'users',
+                id: 'u1',
+                attributes: { email: 'ann@comfy.org' }
+              },
+              { type: 'users', id: 'u2', attributes: { email: 'bo@comfy.org' } }
+            ]
+          })
+      })
+    )
+
+    const result = await fetchGithubLogins(datadog, creds)
+
+    expect(result.rotation).toEqual(['ann-gh'])
+    expect(result.unmappedMembers).toEqual(['bo'])
+  })
+
   it('degrades the directory to empty when Datadog is unreachable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('boom')))
 
     const result = await fetchGithubLogins(datadog, creds)
 
     expect(result.githubLoginByUser).toEqual({})
+    expect(result.unmappedMembers).toEqual([])
     expect(result.warning).toMatch(/lookup failed/)
   })
 })
