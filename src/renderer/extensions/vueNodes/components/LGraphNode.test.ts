@@ -391,10 +391,11 @@ describe('LGraphNode', () => {
     })
   })
 
-  describe('Subgraph live preview promotion (incident-94 regression)', () => {
-    // Expected-fail for incident-94's `LGraphNode.vue:172` guard
-    // (`!lgraphNode?.isSubgraphNode()`), not this PR's allowlist gap.
-    // Remove this marker (don't just delete the test) once that guard ships.
+  describe('Subgraph live preview promotion', () => {
+    // Expected-fail until the `!lgraphNode?.isSubgraphNode()` guard in
+    // LGraphNode.vue is relaxed to allow rendering previews on subgraph
+    // nodes. Keep this test (don't delete) so it flips green automatically
+    // once that guard changes.
     it.fails('renders the live preview image on a subgraph node with a populated preview', () => {
       mockData.mockLgraphNode = { isSubgraphNode: () => true }
       vi.mocked(useNodePreviewState).mockReturnValue({

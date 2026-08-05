@@ -142,8 +142,6 @@ describe(useAmbientSubgraphPreviews, () => {
     ])
   })
 
-  // Regression case for incident-94 bug #3: 2 KSamplers producing live
-  // previews concurrently in one subgraph must both surface, not just one.
   it('returns separate entries for two concurrently-executing interior nodes', () => {
     const setup = createSetup()
     const node10 = addInteriorNode(setup, {
@@ -184,10 +182,10 @@ describe(useAmbientSubgraphPreviews, () => {
     expect(ambientPreviews.value).toEqual([])
   })
 
-  // Regression case: an unpromoted LoadImage-style node's own selected file
-  // is an "input" preview, not a live execution result. Surfacing it
-  // ambiently would make every such node's thumbnail always visible on the
-  // host regardless of promotion, breaking exclusivity of the promotion UI.
+  // An unpromoted LoadImage-style node's own selected file is an "input"
+  // preview, not a live execution result. Surfacing it ambiently would make
+  // every such node's thumbnail always visible regardless of promotion,
+  // breaking exclusivity of the promotion UI.
   it('skips interior nodes whose only output is an input-type preview (e.g. LoadImage)', () => {
     const setup = createSetup()
     const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
