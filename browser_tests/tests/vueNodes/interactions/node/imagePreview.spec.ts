@@ -182,14 +182,13 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     }
   )
 
-  // Regression test for incident-94: a mid-execution sampler preview inside a
-  // subgraph must promote to the outer, non-entered SubgraphNode.
   wstest(
     'Promotes a live sampler preview from inside a subgraph to the outer SubgraphNode',
     async ({ comfyPage, getWebSocket }) => {
-      // Expected-fail for incident-94's `LGraphNode.vue:172` guard
-      // (`!lgraphNode?.isSubgraphNode()`), not this PR's allowlist gap.
-      // Remove this marker (don't just delete the test) once that guard ships.
+      // Expected-fail until the `!lgraphNode?.isSubgraphNode()` guard in
+      // LGraphNode.vue is relaxed to allow rendering previews on subgraph
+      // nodes. Keep this test (don't delete) so it flips green automatically
+      // once that guard changes.
       test.fail()
 
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())

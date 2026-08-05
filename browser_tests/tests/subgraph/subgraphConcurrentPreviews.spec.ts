@@ -10,17 +10,15 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const SUBGRAPH_NODE_ID = '1'
-// Only node 2 has an explicit exposure baked into the fixture's
-// `properties.previewExposures` — node 3 simulates a KSampler added to the
-// subgraph after the one-shot auto-expose already ran, so it has no
-// exposure at all (incident-94 bug #3).
+// Node 3 has no `properties.previewExposures` entry, simulating a KSampler
+// added to the subgraph after the one-shot auto-expose already ran.
 const FIRST_SAMPLER_ID = '2'
 const SECOND_SAMPLER_ID = '3'
 const FIRST_SAMPLER_EXECUTION_ID = `${SUBGRAPH_NODE_ID}:${FIRST_SAMPLER_ID}`
 const SECOND_SAMPLER_EXECUTION_ID = `${SUBGRAPH_NODE_ID}:${SECOND_SAMPLER_ID}`
 
 test.describe(
-  'Subgraph concurrent preview outputs (incident-94 bug #3)',
+  'Subgraph concurrent preview outputs',
   { tag: ['@vue-nodes', '@subgraph'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {

@@ -10,15 +10,10 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const SUBGRAPH_NODE_ID = '1'
-// `SamplerCustomAdvanced` is not in `CANVAS_IMAGE_PREVIEW_NODE_TYPES`
-// (src/composables/node/canvasImagePreviewTypes.ts), so
-// `autoExposeKnownPreviewNodes` never gives it a persisted
-// `previewExposures` entry. Unlike this file's sibling
-// `subgraphConcurrentPreviews.spec.ts` (two `KSampler`s, both
-// allowlisted), this fixture only passes if the ambient rollup
-// (`useAmbientSubgraphPreviews`) surfaces a live preview independent of
-// node type — reintroducing a type gate into that path would fail this
-// test while leaving the sibling spec green.
+// `SamplerCustomAdvanced` isn't in `CANVAS_IMAGE_PREVIEW_NODE_TYPES`, so it
+// never gets a persisted `previewExposures` entry — this fixture only
+// passes if the ambient rollup surfaces a live preview independent of node
+// type.
 const INTERIOR_SAMPLER_NODE_ID = '2'
 const SAMPLER_EXECUTION_ID = `${SUBGRAPH_NODE_ID}:${INTERIOR_SAMPLER_NODE_ID}`
 
