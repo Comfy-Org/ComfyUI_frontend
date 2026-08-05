@@ -14,7 +14,9 @@ export class TemplatesDialog {
 
   constructor(public readonly page: Page) {
     this.root = page.getByTestId('templates-sidebar-tab')
-    this.filtersToggle = this.root.getByRole('button', { name: 'Filters' })
+    // By testid, not accessible name: specs that switch locale would
+    // otherwise have to look up the translated label.
+    this.filtersToggle = this.root.getByTestId('templates-filters-toggle')
     // The sheet teleports into a popover portal, so it cannot be scoped to
     // the panel root.
     this.filterSheet = page.getByTestId('template-filter-bar')
