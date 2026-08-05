@@ -34,10 +34,10 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     storesLoaded = true
 
     const phaseSettings = bootstrapTracer.startPhase('bootstrap/settings')
-    void settingStore.load().then(() => phaseSettings.stop())
+    void settingStore.load()?.then(() => phaseSettings.stop())
 
     const phaseWorkflows = bootstrapTracer.startPhase('bootstrap/workflows')
-    void workflowStore.loadWorkflows().then(() => phaseWorkflows.stop())
+    void workflowStore.loadWorkflows()?.then(() => phaseWorkflows.stop())
   }
 
   async function startStoreBootstrap() {
