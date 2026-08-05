@@ -199,9 +199,15 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       route.continue()
     )
 
-    // Arm the listeners BEFORE flipping the locale: when the template store
-    // is already loaded, the locale watcher refetches immediately on the
-    // setting change, so listeners created after it can miss the requests.
+    // Load the catalog first, then switch locale. The other order races: the
+    // index may be fetched either by the browser opening or by the locale
+    // watcher, depending on how quickly setActiveLocale resolves, and a fetch
+    // that lands before the locale has actually changed never asks for the
+    // localized file at all. Loading first leaves the refetch as the only
+    // thing the locale change can trigger.
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+    await expect(comfyPage.templates.content).toBeVisible()
+
     const localeRequestPromise = comfyPage.page.waitForRequest(
       `**/templates/index.${locale}.json`
     )
@@ -210,9 +216,6 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     )
 
     await comfyPage.settings.setSetting('Comfy.Locale', locale)
-
-    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
-    await expect(comfyPage.templates.content).toBeVisible()
 
     const localeRequest = await localeRequestPromise
     const englishRequest = await englishRequestPromise
