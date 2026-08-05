@@ -84,7 +84,7 @@ const { stop } = useIntersectionObserver(
                   : t('modelLaunch.tagPremium', locale)
               }}
             </Badge>
-            <span class="text-primary-warm-gray text-xs">
+            <span class="text-xs text-primary-warm-gray">
               {{ card.note[locale] }}
             </span>
           </div>
@@ -96,7 +96,7 @@ const { stop } = useIntersectionObserver(
             rel="noopener"
             :aria-label="card.name[locale]"
             size="sm"
-            class="bg-primary-warm-gray hover:bg-primary-comfy-yellow rounded-xl text-primary-comfy-ink hover:text-primary-comfy-ink"
+            class="hover:bg-primary-comfy-yellow rounded-xl bg-primary-warm-gray text-primary-comfy-ink hover:text-primary-comfy-ink"
           >
             <ChevronRight class="size-5" :stroke-width="2" />
           </IconButton>
