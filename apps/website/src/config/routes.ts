@@ -25,6 +25,7 @@ const baseRoutes = {
   mcp: '/mcp',
   minimax: '/minimax',
   flux3: '/flux-3',
+  seedance25: '/seedance-2.5',
   brand: '/brand'
 } as const
 

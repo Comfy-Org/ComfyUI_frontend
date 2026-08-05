@@ -41,3 +41,13 @@ describe('getRoutes flux3', () => {
     expect(getRoutes('zh-CN').flux3).toBe('/zh-CN/flux-3')
   })
 })
+
+describe('getRoutes seedance25', () => {
+  it('serves the seedance 2.5 page at its canonical path for en', () => {
+    expect(getRoutes('en').seedance25).toBe('/seedance-2.5')
+  })
+
+  it('serves a localized seedance 2.5 path for zh-CN', () => {
+    expect(getRoutes('zh-CN').seedance25).toBe('/zh-CN/seedance-2.5')
+  })
+})

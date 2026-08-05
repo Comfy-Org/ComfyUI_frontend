@@ -7,6 +7,11 @@ const minimaxLabelZh = 'MiniMax H3'
 const minimaxRoute = '/minimax'
 const minimaxRouteZh = '/zh-CN/minimax'
 
+const seedance25Label = 'Seedance 2.5'
+const seedance25LabelZh = 'Seedance 2.5'
+const seedance25Route = '/seedance-2.5'
+const seedance25RouteZh = '/zh-CN/seedance-2.5'
+
 const TOP_LEVEL_LABELS = [
   'Products',
   'Pricing',
@@ -211,6 +216,19 @@ test.describe('Footer @smoke', () => {
     await link.click()
     await expect(page).toHaveURL(minimaxRoute)
   })
+
+  test('Seedance 2.5 link navigates to the coming-soon page', async ({
+    page
+  }) => {
+    const link = page
+      .locator('footer')
+      .getByRole('link', { name: seedance25Label })
+    await link.scrollIntoViewIfNeeded()
+    await expect(link).toHaveAttribute('href', seedance25Route)
+
+    await link.click()
+    await expect(page).toHaveURL(seedance25Route)
+  })
 })
 
 test.describe('Footer zh-CN @smoke', () => {
@@ -227,5 +245,20 @@ test.describe('Footer zh-CN @smoke', () => {
 
     await link.click()
     await expect(page).toHaveURL(minimaxRouteZh)
+  })
+
+  test('Seedance 2.5 link navigates to the localized coming-soon page', async ({
+    page
+  }) => {
+    await page.goto('/zh-CN/')
+
+    const link = page
+      .locator('footer')
+      .getByRole('link', { name: seedance25LabelZh })
+    await link.scrollIntoViewIfNeeded()
+    await expect(link).toHaveAttribute('href', seedance25RouteZh)
+
+    await link.click()
+    await expect(page).toHaveURL(seedance25RouteZh)
   })
 })
