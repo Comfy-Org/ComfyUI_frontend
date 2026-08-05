@@ -5,6 +5,7 @@ import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
+import { paymentReturnUrl } from './paymentReturnUrl'
 import type { BillingCycle } from './subscriptionTierRank'
 
 interface PerformTeamSubscriptionCheckoutOptions {
@@ -35,7 +36,7 @@ export async function performTeamSubscriptionCheckout(
 
   const planSlug = getTeamPlanSlug(billingCycle)
   const response = await workspaceApi.subscribe(planSlug, {
-    returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+    returnUrl: paymentReturnUrl(),
     cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
     teamCreditStopId
   })

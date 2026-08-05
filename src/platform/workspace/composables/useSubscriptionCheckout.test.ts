@@ -1476,7 +1476,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_monthly', {
         teamCreditStopId: 'team_700',
         billingCycle: 'monthly',
-        returnUrl: 'https://platform.comfy.org/payment/success',
+        returnUrl: 'https://app.test/subscribe',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
         confirmReactivation: false
       })
@@ -2311,7 +2311,7 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleAddCreditCard()
 
       expect(mockSubscribe).toHaveBeenCalledWith('standard-yearly', {
-        returnUrl: 'https://platform.comfy.org/payment/success',
+        returnUrl: 'https://app.test/subscribe',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
         confirmReactivation: false
       })

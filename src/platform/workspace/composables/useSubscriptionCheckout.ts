@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -786,7 +787,7 @@ export function useSubscriptionCheckout(
             quoteId: quote.quote_id,
             quoteVersion: quote.quote_version
           }),
-        returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+        returnUrl: paymentReturnUrl(),
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
@@ -1086,7 +1087,7 @@ export function useSubscriptionCheckout(
           }),
         teamCreditStopId: stop.id,
         billingCycle,
-        returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+        returnUrl: paymentReturnUrl(),
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
