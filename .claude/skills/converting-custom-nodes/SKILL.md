@@ -6,10 +6,10 @@ description: 'Converts third-party custom-node JS off deprecated/unpublished Com
 # Converting Custom Nodes
 
 Converts third-party pack JS from the old, unpublished ComfyUI internals onto
-the published node API (`src/platform/nodeApi/`, specified in `NODE_API.md`).
+the published node API (`src/platform/nodeApi/`, specified in `docs/node_api_WIP.md`).
 
 This is **migration, not compatibility work**. The goal is that the old surface
-can be *deleted*, so never add a shim — rewrite the call site.
+can be _deleted_, so never add a shim — rewrite the call site.
 
 ## When to Use
 
@@ -35,7 +35,7 @@ disconnect-and-reconnect, which allocates **new link ids**. Use
 
 **2. Behaviour must be equivalent, except where the old code threw.**
 The generated test has two halves: `equivalence` (must pass on the original
-*and* the converted source) and `fix` (must fail before, pass after). If you
+_and_ the converted source) and `fix` (must fail before, pass after). If you
 cannot state an equivalence claim, you do not yet understand the code well
 enough to convert it.
 
@@ -58,8 +58,8 @@ Do not pattern-match on the API name. The census surfaces are misleading:
 **The single most dangerous confusion in this work.** These look identical:
 
 ```js
-node.inputs[0].link = null                    // live slot — convert
-p.workflow.nodes[i].inputs[0].link = null     // serialized JSON — LEAVE ALONE
+node.inputs[0].link = null // live slot — convert
+p.workflow.nodes[i].inputs[0].link = null // serialized JSON — LEAVE ALONE
 ```
 
 The second is correct as written; rewriting it corrupts a working pack. Trace
@@ -69,35 +69,35 @@ the variable to its origin before touching anything named `link`, `links`,
 
 ### 3. Apply the mapping
 
-| Old | New | Notes |
-|---|---|---|
-| `output.links.push(id)` | `output.connectTo(nodeId, inputRef)` | creating a connection |
-| moving links between own outputs | `output.moveLinksTo(ref)` | **preserves link ids** — required for the wire gate |
-| `output.links` (read) | `output.links()` | frozen snapshot, safe to iterate while disconnecting |
-| `input.link = null` | `input.disconnect()` | check step 2 first |
-| `input.link` (read) | `input.source()` / `input.isConnected` | |
-| `node.type = x` | delete it, or `graph.replaceNode()` | usually a defensive no-op — just remove the line |
-| `slot.type = x`, `slot.name = x` | `slot.modify({ type, name })` | atomic, one undo step; keeps existing links |
-| `widget.type = 'converted-widget'` | `widget.hidden = true` | ⚠️ old hack also suppressed serialization — see `references/widgets.md` |
-| `widgets.splice` to reorder | `widgets.reorder(names)` | throws on a partial list instead of dropping widgets |
-| `widgets.splice(i,1)` + `splice(i,0,w)` | `widget.setOptions(...)` | same index in/out = cache invalidation, **not** a reorder |
-| `widgets.push(w)` | `widgets.add(def)` | |
-| `widgets = [...]` / `widgets.length = n` | `widgets.remove(name)` | assignment drops renderer tracking; length skips teardown |
-| `getCustomWidgets` POJO | `comfy.widgets.register({ type, mount })` | |
-| `{...input}` / `{...node}` | `.snapshot()` | accessors moved to the prototype, so spread yields nothing |
-| `nodeType.prototype.onNodeCreated = ...` | `defs.extend(sel, b => b.onCreated(...))` | selector = the hook's existing guard clause |
-| `nodeType.prototype.onExecuted = ...` | `b.onExecuted(node, result)` | see `references/node-definitions.md` |
-| `nodeType.prototype.onConfigure = ...` | `b.onConfigured(node, data)` | |
-| `nodeType.prototype.onRemoved = ...` | `b.onRemoved(node)` | |
-| `widget.inputEl` | `widget.element` | renamed in PR #8594 |
-| `this.widgets.length = n` | remove by name | assigning length skips widget teardown |
-| `+!!this.inputs[0].widget` | `input.isWidgetInput` | converted-widget sniffing |
-| `onDrawForeground` (drawing) | `node.decorations.set(key, dec)` | renders in canvas *and* Nodes 2.0 |
-| `onDrawForeground` (sizing) | `node.setSizeConstraints({ autoHeight })` | see `references/draw-callbacks.md` |
-| `onDrawForeground` (polling) | `node.onChange` / `graph.onChange` | pick the narrowest event |
-| `extends LGraphNode` | `defs.define({ type, ... })` | virtual nodes use `resolve(ctx)` |
+| Old                                      | New                                       | Notes                                                                   |
+| ---------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
+| `output.links.push(id)`                  | `output.connectTo(nodeId, inputRef)`      | creating a connection                                                   |
+| moving links between own outputs         | `output.moveLinksTo(ref)`                 | **preserves link ids** — required for the wire gate                     |
+| `output.links` (read)                    | `output.links()`                          | frozen snapshot, safe to iterate while disconnecting                    |
+| `input.link = null`                      | `input.disconnect()`                      | check step 2 first                                                      |
+| `input.link` (read)                      | `input.source()` / `input.isConnected`    |                                                                         |
+| `node.type = x`                          | delete it, or `graph.replaceNode()`       | usually a defensive no-op — just remove the line                        |
+| `slot.type = x`, `slot.name = x`         | `slot.modify({ type, name })`             | atomic, one undo step; keeps existing links                             |
+| `widget.type = 'converted-widget'`       | `widget.hidden = true`                    | ⚠️ old hack also suppressed serialization — see `references/widgets.md` |
+| `widgets.splice` to reorder              | `widgets.reorder(names)`                  | throws on a partial list instead of dropping widgets                    |
+| `widgets.splice(i,1)` + `splice(i,0,w)`  | `widget.setOptions(...)`                  | same index in/out = cache invalidation, **not** a reorder               |
+| `widgets.push(w)`                        | `widgets.add(def)`                        |                                                                         |
+| `widgets = [...]` / `widgets.length = n` | `widgets.remove(name)`                    | assignment drops renderer tracking; length skips teardown               |
+| `getCustomWidgets` POJO                  | `comfy.widgets.register({ type, mount })` |                                                                         |
+| `{...input}` / `{...node}`               | `.snapshot()`                             | accessors moved to the prototype, so spread yields nothing              |
+| `nodeType.prototype.onNodeCreated = ...` | `defs.extend(sel, b => b.onCreated(...))` | selector = the hook's existing guard clause                             |
+| `nodeType.prototype.onExecuted = ...`    | `b.onExecuted(node, result)`              | see `references/node-definitions.md`                                    |
+| `nodeType.prototype.onConfigure = ...`   | `b.onConfigured(node, data)`              |                                                                         |
+| `nodeType.prototype.onRemoved = ...`     | `b.onRemoved(node)`                       |                                                                         |
+| `widget.inputEl`                         | `widget.element`                          | renamed in PR #8594                                                     |
+| `this.widgets.length = n`                | remove by name                            | assigning length skips widget teardown                                  |
+| `+!!this.inputs[0].widget`               | `input.isWidgetInput`                     | converted-widget sniffing                                               |
+| `onDrawForeground` (drawing)             | `node.decorations.set(key, dec)`          | renders in canvas _and_ Nodes 2.0                                       |
+| `onDrawForeground` (sizing)              | `node.setSizeConstraints({ autoHeight })` | see `references/draw-callbacks.md`                                      |
+| `onDrawForeground` (polling)             | `node.onChange` / `graph.onChange`        | pick the narrowest event                                                |
+| `extends LGraphNode`                     | `defs.define({ type, ... })`              | virtual nodes use `resolve(ctx)`                                        |
 
-Prefer `comfy.supports('...')` over version comparisons — see `NODE_API.md` §2.
+Prefer `comfy.supports('...')` over version comparisons — see `docs/node_api_WIP.md` §2.
 
 ### 4. Watch for the frame-to-event shift
 
@@ -110,7 +110,7 @@ callback body will appear to work and quietly run on every repaint forever.
 
 State an equivalence claim and a fix claim. Run the file against both sources:
 equivalence green on both, fix red on the original and green on the converted.
-A fix-only test proves the conversion did *something*, not that it was safe.
+A fix-only test proves the conversion did _something_, not that it was safe.
 
 ### 6. Refuse when you should
 
@@ -120,7 +120,7 @@ Escalate or decline rather than guess when:
 - The replacement depends on intent you cannot recover — e.g. re-homing links
   versus rebuilding a mirror have different correct answers.
 - The published API has no destination. A missing API is a **core gap to file**,
-  not something to work around in a pack. `NODE_API.md` §1 lists what is and is
+  not something to work around in a pack. `docs/node_api_WIP.md` §1 lists what is and is
   not covered.
 
 A refusal costs a round trip. A wrong rewrite of working code is invisible until
@@ -145,11 +145,11 @@ Both of these caught real conversions that every other check passed.
 Deep dives, loaded only when relevant. `SKILL.md` stays short on purpose; detail
 lives here.
 
-| Reference | Covers |
-|---|---|
-| `references/node-definitions.md` | `beforeRegisterNodeDef` + prototype patching — **1,265 packs, 47.4% of installs, the largest surface**. The selector is already written as the hook's guard clause. |
-| `references/widgets.md` | Widget-array mutation and the converted-widget protocol — 286 packs / 21.6%, overlapping cohorts totalling more. Where naive conversions are most often silently wrong. |
-| `references/draw-callbacks.md` | `onDraw*` — 420 packs, 32.2% of installs. Measured breakdown showing 47% never draw at all, a decision tree, and the canvas→CSS mapping. |
+| Reference                        | Covers                                                                                                                                                                  |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `references/node-definitions.md` | `beforeRegisterNodeDef` + prototype patching — **1,265 packs, 47.4% of installs, the largest surface**. The selector is already written as the hook's guard clause.     |
+| `references/widgets.md`          | Widget-array mutation and the converted-widget protocol — 286 packs / 21.6%, overlapping cohorts totalling more. Where naive conversions are most often silently wrong. |
+| `references/draw-callbacks.md`   | `onDraw*` — 420 packs, 32.2% of installs. Measured breakdown showing 47% never draw at all, a decision tree, and the canvas→CSS mapping.                                |
 
 ### Adding a pattern
 
@@ -172,13 +172,13 @@ runs it. Prose is for the judgement calls.
 
 ## Where things live
 
-| | |
-|---|---|
-| Published API spec | `NODE_API.md` |
-| Published API code | `src/platform/nodeApi/` |
+|                                     |                                                           |
+| ----------------------------------- | --------------------------------------------------------- |
+| Published API spec                  | `docs/node_api_WIP.md`                                    |
+| Published API code                  | `src/platform/nodeApi/`                                   |
 | Rule catalog (per-pattern guidance) | `src/workbench/extensions/magicPatch/conversion/rules.ts` |
-| Verdict grading | `src/workbench/extensions/magicPatch/verify/verdict.ts` |
-| Programme design | `MAGIC_PATCH.md` |
+| Verdict grading                     | `src/workbench/extensions/magicPatch/verify/verdict.ts`   |
+| Programme design                    | `docs/magic_patch_WIP.md`                                 |
 
 The rule catalog's `guidance` field is injected into the agent prompt for
 **only the rules that matched**, so this skill covers method and the catalog
