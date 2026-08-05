@@ -36,6 +36,15 @@ vi.mock('@/i18n', () => ({
   te: () => false
 }))
 
+vi.mock('@/composables/sidebarTabs/useTemplatesSidebarTab', () => ({
+  useTemplatesSidebarTab: () => ({
+    id: 'templates',
+    title: 'templates',
+    type: 'vue',
+    component: {}
+  })
+}))
+
 vi.mock('@/composables/sidebarTabs/useAssetsSidebarTab', () => ({
   useAssetsSidebarTab: () => ({
     id: 'assets',
@@ -111,13 +120,14 @@ describe('useSidebarTabStore', () => {
 
     expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
       'job-history',
+      'templates',
       'assets',
       'node-library',
       'model-library',
       'workflows',
       'apps'
     ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
+    expect(mockRegisterCommand).toHaveBeenCalledTimes(7)
   })
 
   it('does not register the job history tab when QPO V2 is disabled', () => {
@@ -129,13 +139,14 @@ describe('useSidebarTabStore', () => {
     store.registerCoreSidebarTabs()
 
     expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
+      'templates',
       'assets',
       'node-library',
       'model-library',
       'workflows',
       'apps'
     ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(5)
+    expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
   })
 
   it('prepends the job history tab when QPO V2 is toggled on', async () => {
@@ -152,12 +163,13 @@ describe('useSidebarTabStore', () => {
 
     expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
       'job-history',
+      'templates',
       'assets',
       'node-library',
       'model-library',
       'workflows',
       'apps'
     ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
+    expect(mockRegisterCommand).toHaveBeenCalledTimes(7)
   })
 })

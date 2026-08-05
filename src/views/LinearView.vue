@@ -112,7 +112,7 @@ function dragDrop(e: DragEvent) {
     >
       <SideToolbar
         v-if="!isBuilderMode"
-        :visible-tab-ids="['assets', 'apps']"
+        :visible-tab-ids="['templates', 'assets', 'apps']"
         force-connected
         hide-workspace-toggles
       />

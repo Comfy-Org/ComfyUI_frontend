@@ -5,6 +5,7 @@ import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarT
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
+import { useTemplatesSidebarTab } from '@/composables/sidebarTabs/useTemplatesSidebarTab'
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAppsSidebarTab } from '@/platform/workflow/management/composables/useAppsSidebarTab'
@@ -53,6 +54,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         'model-library': 'sideToolbar.modelLibrary',
         workflows: 'sideToolbar.workflows',
         assets: 'sideToolbar.assets',
+        templates: 'sideToolbar.templates',
         'job-history': 'queue.jobHistory'
       }
 
@@ -132,6 +134,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       (enabled) => syncJobHistoryTab(enabled)
     )
 
+    registerSidebarTab(useTemplatesSidebarTab())
     registerSidebarTab(useAssetsSidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())

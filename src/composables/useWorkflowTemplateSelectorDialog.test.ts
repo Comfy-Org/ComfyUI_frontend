@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockDialogService = vi.hoisted(() => ({
@@ -16,6 +17,8 @@ const mockTelemetry = vi.hoisted(() => ({
   trackTemplateLibraryOpened: vi.fn()
 }))
 
+const mockAppMode = vi.hoisted(() => ({ isBuilderMode: false }))
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => mockDialogService
 }))
@@ -32,6 +35,16 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => mockTelemetry
 }))
 
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => ({
+    isBuilderMode: {
+      get value() {
+        return mockAppMode.isBuilderMode
+      }
+    }
+  })
+}))
+
 vi.mock(
   '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue',
   () => ({
@@ -39,14 +52,57 @@ vi.mock(
   })
 )
 
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useTemplatesPanelStore } from '@/stores/workspace/templatesPanelStore'
+
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 describe('useWorkflowTemplateSelectorDialog', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockAppMode.isBuilderMode = false
   })
 
-  describe('show', () => {
+  describe('show (panel path)', () => {
+    it('activates the templates sidebar tab instead of opening the modal', () => {
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('sidebar')
+
+      expect(useSidebarTabStore().activeSidebarTabId).toBe('templates')
+      expect(mockDialogService.showLayoutDialog).not.toHaveBeenCalled()
+    })
+
+    it('stashes the open context for the panel to consume', () => {
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('menu', { initialCategory: 'custom-category' })
+
+      const panelStore = useTemplatesPanelStore()
+      expect(panelStore.consumeRequestedCategory()).toBe('custom-category')
+      expect(panelStore.consumeOpenSource()).toBe('menu')
+    })
+
+    it('leaves opened telemetry to the panel component', () => {
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('sidebar')
+
+      expect(mockTelemetry.trackTemplateLibraryOpened).not.toHaveBeenCalled()
+    })
+
+    it('keeps the tab active when show is called while already open', () => {
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('sidebar')
+      dialog.show('command')
+
+      expect(useSidebarTabStore().activeSidebarTabId).toBe('templates')
+    })
+  })
+
+  describe('show (builder fallback to modal)', () => {
+    beforeEach(() => {
+      mockAppMode.isBuilderMode = true
+    })
+
     it('defaults to "all" category for non-new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)
 
@@ -72,21 +128,6 @@ describe('useWorkflowTemplateSelectorDialog', () => {
         expect.objectContaining({
           props: expect.objectContaining({
             initialCategory: 'basics-getting-started'
-          })
-        })
-      )
-    })
-
-    it('defaults to "all" when new user status is undetermined', () => {
-      mockNewUserService.isNewUser.mockReturnValue(null)
-
-      const dialog = useWorkflowTemplateSelectorDialog()
-      dialog.show()
-
-      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
-        expect.objectContaining({
-          props: expect.objectContaining({
-            initialCategory: 'all'
           })
         })
       )
@@ -122,17 +163,6 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       expect(afterClose).toHaveBeenCalled()
     })
 
-    it('does not fail when afterClose is not provided', () => {
-      mockNewUserService.isNewUser.mockReturnValue(false)
-
-      const dialog = useWorkflowTemplateSelectorDialog()
-      dialog.show('command')
-
-      const onClose =
-        mockDialogService.showLayoutDialog.mock.calls[0][0].props.onClose
-      expect(() => onClose()).not.toThrow()
-    })
-
     it('tracks telemetry with source', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)
 
@@ -153,6 +183,15 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       expect(mockDialogStore.closeDialog).toHaveBeenCalledWith({
         key: 'global-workflow-template-selector'
       })
+    })
+
+    it('deactivates the templates tab when it is open', () => {
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('sidebar')
+      expect(useSidebarTabStore().activeSidebarTabId).toBe('templates')
+
+      dialog.hide()
+      expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
     })
   })
 })

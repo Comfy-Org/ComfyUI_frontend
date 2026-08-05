@@ -188,7 +188,7 @@
 
           <!-- Actual Template Cards -->
           <CardContainer
-            v-for="{ template, tags } in isLoading ? [] : displayTemplates"
+            v-for="template in isLoading ? [] : displayTemplates"
             :key="template.name"
             ref="cardRefs"
             size="auto"
@@ -298,63 +298,44 @@
                     </span>
                   </div>
                 </template>
-                <template v-if="template.tutorialUrl" #top-right>
+                <template #top-right>
                   <Button
-                    v-tooltip.bottom="$t('g.seeTutorial')"
-                    :aria-label="$t('g.seeTutorial')"
-                    variant="inverted"
+                    v-tooltip.bottom="
+                      $t('templateWorkflows.detail.viewDetails')
+                    "
+                    :aria-label="$t('templateWorkflows.detail.viewDetails')"
+                    :data-testid="`template-detail-open-${template.name}`"
+                    variant="secondary"
                     size="icon"
-                    class="not-group-hover/card:opacity-0"
-                    @click.stop="openTutorial(template)"
+                    class="size-6 rounded-md bg-zinc-700/50 text-white backdrop-blur-[20px] not-group-hover/card:opacity-0 hover:bg-zinc-700/70 hover:text-white"
+                    @click.stop="openTemplateDetail(template)"
                   >
-                    <i class="icon-[lucide--info] size-4" />
+                    <i class="icon-[lucide--info] size-3.5" />
                   </Button>
+                  <PaidTemplateBadge v-if="template.isPartnerNode" />
                 </template>
               </CardTop>
             </template>
             <template #bottom>
               <CardBottom :full-height="false">
-                <div class="flex flex-col gap-2 pt-2">
-                  <h3
-                    class="m-0 line-clamp-1 text-sm font-semibold"
-                    :title="
-                      getTemplateTitle(
-                        template,
-                        getEffectiveSourceModule(template)
-                      )
-                    "
-                  >
-                    {{
-                      getTemplateTitle(
-                        template,
-                        getEffectiveSourceModule(template)
-                      )
-                    }}
-                  </h3>
-                  <div
-                    v-if="tags.visible.length"
-                    class="flex items-center gap-2 py-1"
-                  >
-                    <Tag
-                      v-for="tag in tags.visible"
-                      :key="tag"
-                      :label="tag"
-                      shape="square"
-                      class="bg-charcoal-500/50 opacity-80"
-                    />
-                    <AccessibleTooltip
-                      v-if="tags.hidden.length"
-                      :label="tags.hidden"
-                      trigger-class="rounded-sm"
-                    >
-                      <Tag
-                        :label="`+${tags.hidden.length}`"
-                        shape="square"
-                        class="bg-charcoal-500/50 opacity-80"
-                      />
-                    </AccessibleTooltip>
-                  </div>
-                </div>
+                <!-- Tags are search/filter data, not card chrome; readiness
+                     lives in the detail view (PM-243). -->
+                <h3
+                  class="m-0 line-clamp-1 pt-2 text-sm font-semibold"
+                  :title="
+                    getTemplateTitle(
+                      template,
+                      getEffectiveSourceModule(template)
+                    )
+                  "
+                >
+                  {{
+                    getTemplateTitle(
+                      template,
+                      getEffectiveSourceModule(template)
+                    )
+                  }}
+                </h3>
               </CardBottom>
             </template>
           </CardContainer>
@@ -424,7 +405,7 @@ import { useI18n } from 'vue-i18n'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
-import Tag from '@/components/chip/Tag.vue'
+import PaidTemplateBadge from '@/components/custom/widget/PaidTemplateBadge.vue'
 import TemplateFilterControls from '@/components/custom/widget/TemplateFilterControls.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
@@ -433,13 +414,13 @@ import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
+import { useTemplateDetailDialog } from '@/composables/useTemplateDetailDialog'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
@@ -450,7 +431,6 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import {
   filterTemplatesByType,
-  getTemplateTags,
   isAppTemplate
 } from '@/platform/workflow/templates/utils/templateDisplay'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
@@ -509,13 +489,6 @@ const getBaseThumbnailSrc = (template: TemplateInfo) => {
 const getOverlayThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
-}
-
-// Open tutorial in new tab
-const openTutorial = (template: TemplateInfo) => {
-  if (template.tutorialUrl) {
-    window.open(template.tutorialUrl, '_blank')
-  }
 }
 
 // Get navigation items from the store, with skeleton items while loading
@@ -848,10 +821,7 @@ const {
 
 // Display templates (all when searching, paginated when not)
 const displayTemplates = computed(() =>
-  (shouldUsePagination.value
-    ? paginatedTemplates.value
-    : filteredTemplates.value
-  ).map((template) => ({ template, tags: getTemplateTags(template) }))
+  shouldUsePagination.value ? paginatedTemplates.value : filteredTemplates.value
 )
 
 // Set up intersection observer for lazy loading
@@ -885,6 +855,18 @@ watch(
 )
 
 // Methods
+const templateDetailDialog = useTemplateDetailDialog()
+
+// Card click opens the detail view (stacked over this modal); loading only
+// happens from the detail's "Use template" action.
+const openTemplateDetail = (template: TemplateInfo) => {
+  templateDetailDialog.show({
+    template,
+    sourceModule: getEffectiveSourceModule(template),
+    onUse: () => onLoadWorkflow(template)
+  })
+}
+
 const onLoadWorkflow = async (template: TemplateInfo) => {
   loadingTemplate.value = template.name
   try {

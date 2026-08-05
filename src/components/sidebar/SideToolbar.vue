@@ -33,7 +33,6 @@
           :class="tab.id + '-tab-button'"
           @click="onTabClick(tab)"
         />
-        <SidebarTemplatesButton />
       </div>
 
       <div ref="bottomToolbarRef" class="mt-auto" :class="groupClasses">
@@ -93,7 +92,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
-import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
 const {
   visibleTabIds,
