@@ -10,10 +10,18 @@ export type SupportedTemplateId =
 
 export type TourMediaKind = 'image' | 'video'
 
-/** The kind a sink node type produces, so the drift guard can hold the two in step. */
+/**
+ * The kind a sink node type produces, so the drift guard can hold the two in
+ * step. Video sinks are listed because they are fed IMAGE frames, so the slot
+ * type alone would call their output an image.
+ */
 export const MEDIA_KIND_BY_SINK_TYPE: Record<string, TourMediaKind> = {
   SaveImage: 'image',
-  SaveVideo: 'video'
+  SaveVideo: 'video',
+  SaveAnimatedWEBP: 'video',
+  SaveAnimatedPNG: 'video',
+  SaveWEBM: 'video',
+  VHS_VideoCombine: 'video'
 }
 
 /**
@@ -72,9 +80,10 @@ export const TOUR_ROLE_PINS: Record<SupportedTemplateId, RolePins> = {
     sink: { id: 60, type: 'SaveImage' },
     mediaKind: 'image'
   },
-  'templates-qwen_multiangle.app': {
-    source: { id: 1, type: 'LoadImage' },
-    sink: { id: 2, type: 'SaveImage' },
+  flux_fill_inpaint_example: {
+    source: { id: 17, type: 'LoadImage' },
+    prompt: { id: 23, type: 'CLIPTextEncode' },
+    sink: { id: 9, type: 'SaveImage' },
     mediaKind: 'image'
   },
   video_ltx2_i2v_distilled: {

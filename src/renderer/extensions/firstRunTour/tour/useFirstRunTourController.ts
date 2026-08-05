@@ -13,6 +13,7 @@ import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -31,27 +32,28 @@ const INTRO_PREVIEW_MS = 500
 
 const OFFLINE_GRACE_MS = 20_000
 
-/** How long a submitted run has to be accepted before the card stops promising. */
-const ACCEPT_DEADLINE_MS = 15_000
-
 function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
   const billing = useBillingContext()
   const executionStore = useExecutionStore()
   const executionErrorStore = useExecutionErrorStore()
   const workflowStore = useWorkflowStore()
+  const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
-  /** A tour that never appeared leaves the user nothing to be congratulated for. */
-  const tourWasShown = ref(false)
+  /** Only a tour walked to the end made a first result to be congratulated for. */
+  const tourWasCompleted = ref(false)
 
   // The tour's node ids are graph-local, so they only describe the workflow it
   // resolved against: swapping workflows leaves it pointing at strangers.
+  // Linear mode hides the canvas entirely, so its nodes are nothing to point at.
   const tourContextHolds = computed(
     () =>
-      desktopLayout.value && workflowStore.activeWorkflow === tourWorkflow.value
+      desktopLayout.value &&
+      !canvasStore.linearMode &&
+      workflowStore.activeWorkflow === tourWorkflow.value
   )
 
   const onRunStep = computed(
@@ -69,7 +71,6 @@ function useFirstRunTourControllerInternal() {
       executionErrorStore.hasNodeError || executionErrorStore.hasPromptError
     ],
     ([status, refused], previous) => {
-      if (status !== undefined) stopAcceptDeadline()
       if (status === 'running') runState.value = 'generating'
       else if (status === 'completed') runState.value = 'succeeded'
       else if (status === 'failed') runState.value = 'failed'
@@ -81,27 +82,6 @@ function useFirstRunTourControllerInternal() {
         runState.value = 'failed'
     }
   )
-
-  /**
-   * A submission the backend refuses never gets a prompt_id, so no status ever
-   * appears and none of the branches above can fire. Account preconditions —
-   * sign-in, subscription, credits — are deliberately kept out of the error
-   * stores by `ComfyApp.queuePrompt`, so the refusal is invisible there too.
-   * Give acceptance a deadline. Only acceptance: any status at all clears it,
-   * so a run that is merely slow is never cut short.
-   */
-  let acceptTimer: ReturnType<typeof setTimeout> | undefined
-  function stopAcceptDeadline() {
-    clearTimeout(acceptTimer)
-    acceptTimer = undefined
-  }
-  function startAcceptDeadline() {
-    stopAcceptDeadline()
-    acceptTimer = setTimeout(() => {
-      stopAcceptDeadline()
-      if (runState.value === 'generating') runState.value = 'failed'
-    }, ACCEPT_DEADLINE_MS)
-  }
 
   let offlineTimer: ReturnType<typeof setTimeout> | undefined
   function stopOfflineGrace() {
@@ -136,7 +116,6 @@ function useFirstRunTourControllerInternal() {
       }
 
       runState.value = 'generating'
-      startAcceptDeadline()
       engine.next()
     },
     { capture: true }
@@ -146,9 +125,13 @@ function useFirstRunTourControllerInternal() {
     () => engine.activeTour === 'firstRun',
     (active) => {
       if (active) return
+      // Every ending leaves the user somewhere to go next, so every ending arms
+      // the nudge; only what it says depends on how the tour ended.
+      const ending = engine.lastEnding
+      tourWasCompleted.value =
+        ending?.tour === 'firstRun' && ending.outcome === 'completed'
       nudgeArmed.value = true
       stopOfflineGrace()
-      stopAcceptDeadline()
       releaseFirstRunTargets()
       tourWorkflow.value = null
       runState.value = 'idle'
@@ -160,7 +143,7 @@ function useFirstRunTourControllerInternal() {
   }
 
   /** False when there is no tour to give; any renderer switch is undone. */
-  async function beginTour(templateId: string): Promise<boolean> {
+  async function beginTour(templateId?: string): Promise<boolean> {
     if (engine.activeTour) return false
 
     const enabledForTour = !settingStore.get('Comfy.VueNodes.Enabled')
@@ -169,7 +152,6 @@ function useFirstRunTourControllerInternal() {
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     nudgeArmed.value = false
-    tourWasShown.value = false
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),
@@ -177,7 +159,6 @@ function useFirstRunTourControllerInternal() {
     )
     await delay(INTRO_PREVIEW_MS)
     const started = await engine.startTour('firstRun')
-    tourWasShown.value = started
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null
@@ -190,7 +171,7 @@ function useFirstRunTourControllerInternal() {
   return {
     beginTour,
     nudgeArmed: readonly(nudgeArmed),
-    tourWasShown: readonly(tourWasShown),
+    tourWasCompleted: readonly(tourWasCompleted),
     dismissNudge
   }
 }

@@ -251,7 +251,7 @@ const { locale, t } = useI18n()
 const {
   subscription,
   balance,
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   currentTeamCreditStop,
   fetchBalance,
@@ -354,7 +354,7 @@ const monthlyUsageLabel = computed(() =>
 )
 
 const showBreakdown = computed(
-  () => isActiveSubscription.value && !zeroState && !inactivePlan
+  () => canAccessSubscriptionFeatures.value && !zeroState && !inactivePlan
 )
 const showBar = computed(
   () =>
@@ -366,7 +366,7 @@ const showBar = computed(
 // including local/desktop) accounts have no workspace concept to gate on.
 const showActionButton = computed(
   () =>
-    isActiveSubscription.value &&
+    canAccessSubscriptionFeatures.value &&
     !zeroState &&
     !inactivePlan &&
     (type.value !== 'workspace' || permissions.value.canTopUp)

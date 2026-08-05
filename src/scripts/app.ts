@@ -11,7 +11,7 @@ import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/com
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolveNodeDefText, setBackendNodeText, st, t } from '@/i18n'
+import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -42,7 +42,6 @@ import type {
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
@@ -117,12 +116,8 @@ import {
 } from '@/platform/missingModel/missingModelPipeline'
 import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import {
-  scanAllMediaCandidates,
-  verifyMediaCandidates
-} from '@/platform/missingMedia/missingMediaScan'
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
@@ -131,7 +126,6 @@ import {
   forEachNode,
   getNodeByExecutionId,
   isAncestorPathActive,
-  isMissingCandidateActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
 import {
@@ -1102,16 +1096,6 @@ export class ComfyApp {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
       return {
         ...def,
-        display_name: resolveNodeDefText(
-          'display_name',
-          def.name,
-          def.display_name || undefined
-        ),
-        description: resolveNodeDefText(
-          'description',
-          def.name,
-          def.description || undefined
-        ),
         category: (typeof def.category === 'string' ? def.category : '')
           .split('/')
           .map((category: string) =>
@@ -1133,6 +1117,15 @@ export class ComfyApp {
       !Array.isArray(response)
         ? Object.entries(response)
         : []
+    const droppedNames = entries
+      .filter(([, value]) => !isNodeDef(value))
+      .map(([name]) => name)
+    if (droppedNames.length > 0) {
+      console.warn(
+        `Ignored ${droppedNames.length} malformed node definition(s) from /object_info: ${droppedNames.join(', ')}`
+      )
+    }
+
     const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
       entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
         isNodeDef(entry[1])
@@ -1562,7 +1555,10 @@ export class ComfyApp {
           silent: silentAssetErrors
         })
 
-        await this.runMissingMediaPipeline(silentAssetErrors)
+        await runMissingMediaPipeline({
+          rootGraph: this.rootGraph,
+          silent: silentAssetErrors
+        })
       }
 
       if (!deferWarnings) {
@@ -1590,73 +1586,6 @@ export class ComfyApp {
       missingModelStore: useMissingModelStore(),
       silent: options.silent ?? true
     })
-  }
-
-  private cacheMediaCandidates(
-    wf: ComfyWorkflow | null,
-    confirmed: MissingMediaCandidate[]
-  ) {
-    if (!wf) return
-    updatePendingWarnings(wf, {
-      missingMediaCandidates: confirmed
-    })
-  }
-
-  private async runMissingMediaPipeline(
-    silent: boolean = false
-  ): Promise<void> {
-    const missingMediaStore = useMissingMediaStore()
-    const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    const allCandidates = scanAllMediaCandidates(this.rootGraph, isCloud)
-    // Drop candidates whose enclosing subgraph is muted/bypassed.
-    const candidates = allCandidates.filter((c) =>
-      isAncestorPathActive(this.rootGraph, String(c.nodeId))
-    )
-
-    if (!candidates.length) {
-      this.cacheMediaCandidates(activeWf, [])
-      return
-    }
-
-    const pending = candidates.some((c) => c.isMissing === undefined)
-    if (pending) {
-      const controller = missingMediaStore.createVerificationAbortController()
-      void verifyMediaCandidates(candidates, {
-        isCloud,
-        signal: controller.signal
-      })
-        .then(() => {
-          if (controller.signal.aborted) return
-          // Re-check ancestor after async verification (see model pipeline).
-          const confirmed = candidates.filter((c) =>
-            isMissingCandidateActive(this.rootGraph, c)
-          )
-          if (confirmed.length) {
-            useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-          }
-          this.cacheMediaCandidates(activeWf, confirmed)
-        })
-        .catch((err) => {
-          console.warn(
-            '[Missing Media Pipeline] Asset verification failed:',
-            err
-          )
-          useToastStore().add({
-            severity: 'warn',
-            summary: st(
-              'toastMessages.missingMediaVerificationFailed',
-              'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
-            ),
-            life: 5000
-          })
-        })
-    } else {
-      const confirmed = candidates.filter((c) => c.isMissing === true)
-      if (confirmed.length) {
-        useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-      }
-      this.cacheMediaCandidates(activeWf, confirmed)
-    }
   }
 
   async graphToPrompt(graph = this.rootGraph) {
@@ -2052,11 +1981,9 @@ export class ComfyApp {
           console.error(
             'Invalid workflow structure, trying parameters fallback'
           )
-          this.showErrorOnFileLoad(file)
         }
       } catch (err) {
         console.error('Failed to parse workflow:', err)
-        this.showErrorOnFileLoad(file)
         // Fall through to check parameters as fallback
       }
     }
@@ -2079,9 +2006,19 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      useWorkflowService().beforeLoadNewGraph()
-      importA1111(this.rootGraph, parameters)
-      useWorkflowService().afterLoadNewGraph(
+      const outcome = await importA1111(this.rootGraph, parameters, () => {
+        useWorkflowService().beforeLoadNewGraph()
+        this.canvas.setGraph(this.rootGraph)
+      })
+      if (outcome === 'core-nodes-unavailable') {
+        useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+        return
+      }
+      if (outcome === 'not-a1111') {
+        this.showErrorOnFileLoad(file)
+        return
+      }
+      await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )

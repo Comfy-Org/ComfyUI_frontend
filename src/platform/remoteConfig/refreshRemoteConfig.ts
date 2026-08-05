@@ -2,6 +2,7 @@ import {
   cachedBillingControlEnabled,
   cachedConsolidatedBillingEnabled,
   cachedTeamWorkspacesEnabled,
+  cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
   remoteConfigState
@@ -81,6 +82,7 @@ export async function refreshRemoteConfig(
         cachedBillingControlEnabled.value = Boolean(
           config.billing_control_enabled
         )
+        cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
       }
       return
     }

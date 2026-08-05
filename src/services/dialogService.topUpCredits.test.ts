@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
 const state = vi.hoisted(() => ({
-  isActiveSubscription: true,
+  canAccessSubscriptionFeatures: true,
   isFreeTier: false,
   type: 'workspace' as 'workspace' | 'legacy',
   canTopUp: true
@@ -35,7 +35,9 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: { value: state.isActiveSubscription },
+    canAccessSubscriptionFeatures: {
+      value: state.canAccessSubscriptionFeatures
+    },
     isFreeTier: { value: state.isFreeTier },
     type: { value: state.type }
   })
@@ -65,7 +67,7 @@ import { useDialogService } from '@/services/dialogService'
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
     state.type = 'workspace'
     state.canTopUp = true
@@ -112,7 +114,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('routes a member of an inactive team to the subscription-required flow, not the credits notice', async () => {
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
     state.canTopUp = false
 
     await useDialogService().showTopUpCreditsDialog({
@@ -142,7 +144,7 @@ describe('showTopUpCreditsDialog', () => {
     })
 
     it('opens the purchase dialog even when the facade reports no active subscription', async () => {
-      state.isActiveSubscription = false
+      state.canAccessSubscriptionFeatures = false
 
       await useDialogService().showTopUpCreditsDialog()
 

@@ -71,3 +71,8 @@ export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
   'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
   undefined
 )
+
+export const cachedV1PaymentRecovery = useStorage<boolean | undefined>(
+  'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
+  undefined
+)
