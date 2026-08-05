@@ -1,0 +1,61 @@
+/*
+ * PP Formula — the brand typeface. Declarations only: the package never ships
+ * font binaries, so each consuming app serves the woff2 files from its own
+ * public/fonts. Imported by base.css (brand surfaces); the app loads Inter
+ * from fonts.css instead.
+ *
+ * PP Formula's native vertical metrics place the baseline too high, so caps
+ * sit in the upper half of the line box. Overriding ascent/descent would
+ * re-anchor it, but support is too thin to rely on:
+ *   ascent-override: 92%;
+ *   descent-override: 8%;
+ *   line-gap-override: 0%;
+ */
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Semibold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Formula Narrow';
+  src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}

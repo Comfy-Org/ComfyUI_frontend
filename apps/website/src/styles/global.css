@@ -1,64 +1,10 @@
-@import 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
-
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
 
-/* PP Formula's native vertical metrics place the baseline too high, so caps
-   sit in the upper half of the line box. Overriding ascent/descent re-anchors
-   the baseline so caps render optically centered when line-height is tight. 
-    BUT, IT IS NOT WELL SUPPORTED:
-    ascent-override: 92%;
-    descent-override: 8%;
-    line-gap-override: 0%; */
-@font-face {
-  font-family: 'PP Formula';
-  src: url('/fonts/PPFormula-Light.woff2') format('woff2');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Formula';
-  src: url('/fonts/PPFormula-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Formula';
-  src: url('/fonts/PPFormula-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Formula';
-  src: url('/fonts/PPFormula-Semibold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Formula';
-  src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Formula Narrow';
-  src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
+/* Every brand colour and both brand typefaces come from base.css. Declaring
+   one here shadows the package and reintroduces the drift this replaced —
+   add site-specific values only. */
 @theme {
   --color-site-dropdown: #332b38;
   --color-site-bg-soft: color-mix(
@@ -66,23 +12,11 @@
     var(--color-primary-comfy-ink) 88%,
     black 12%
   );
-  /* comfy-ink, comfy-canvas, warm-white and warm-gray are provided by
-     base.css — never redeclare them */
-  --color-primary-comfy-yellow: var(--color-brand-yellow);
-  --color-primary-comfy-orange: #fabc25;
-  --color-primary-comfy-ink-light: #2a2330;
-  --color-secondary-mauve: #4d3762;
   --color-destructive: #f44336;
-  --color-primary-comfy-plum: var(--color-plum-600);
-  --color-secondary-deep-plum: #2b2040;
-  --color-secondary-cool-gray: #3c3c3c;
-  --color-illustration-forest: #20464c;
   --color-transparency-white-t4: rgb(from var(--color-white) r g b / 0.04);
   --color-transparency-ink-t80: rgb(
     from var(--color-primary-comfy-ink) r g b / 0.8
   );
-  --font-formula: 'PP Formula', sans-serif;
-  --font-formula-narrow: 'PP Formula Narrow', sans-serif;
   --text-2xs: 0.6875rem;
   --text-3\.5xl: 2rem;
   --text-6\.5xl: 4.125rem;
