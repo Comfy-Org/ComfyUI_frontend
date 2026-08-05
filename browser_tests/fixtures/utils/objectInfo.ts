@@ -46,6 +46,19 @@ function getRequiredInput(
   return input
 }
 
+export function setNodeDisplayName(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  displayName: string
+): void {
+  const nodeInfo = objectInfo[nodeType]
+  if (!nodeInfo) {
+    throw new Error(`Missing object_info entry for ${nodeType}`)
+  }
+
+  nodeInfo.display_name = displayName
+}
+
 export function setStringInputTooltip(
   objectInfo: ObjectInfoResponse,
   nodeType: string,
