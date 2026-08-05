@@ -78,20 +78,20 @@ const mockBalance: CustomerBalanceResponse = {
   currency: 'usd'
 }
 
-// Free tier on the workspace backend: the popover swaps "Add credits" for the
-// single contextual "Upgrade" action (DES-534).
-const mockFreeTierBillingStatus: BillingStatusResponse = {
+// Free tier: the popover swaps "Add credits" for the single contextual
+// "Upgrade" action (DES-534). A personal workspace stays on the LEGACY
+// billing backend (consolidated billing is off by default), so the tier
+// must come from the legacy status response.
+const mockFreeTierSubscriptionStatus: CloudSubscriptionStatusResponse = {
   is_active: true,
-  max_seats: 1,
-  occupied_seats: 1,
-  subscription_status: 'active',
+  subscription_id: 'sub_e2e_free',
   subscription_tier: 'FREE',
-  subscription_duration: 'MONTHLY',
-  has_funds: false,
   renewal_date: FUTURE_DATE
 }
 
-function extendWithWorkspaceMocks(billingStatus: BillingStatusResponse) {
+function extendWithWorkspaceMocks(
+  legacyStatus: CloudSubscriptionStatusResponse
+) {
   return comfyPageFixture.extend({
     page: async ({ page }, use) => {
       // teamWorkspacesEnabled is auth-gated and stays false until the
@@ -138,7 +138,7 @@ function extendWithWorkspaceMocks(billingStatus: BillingStatusResponse) {
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(mockSubscriptionStatus)
+          body: JSON.stringify(legacyStatus)
         })
       )
 
@@ -150,13 +150,14 @@ function extendWithWorkspaceMocks(billingStatus: BillingStatusResponse) {
         })
       )
 
-      // Flag-on (team workspaces enabled) routes a personal workspace through the
-      // workspace billing endpoints, so the popover sources its data from here.
+      // A personal workspace stays on legacy billing (consolidated billing
+      // defaults off), so the popover's tier/status come from /customers/*
+      // above; these workspace endpoints are mocked so bootstrap never 404s.
       await page.route('**/api/billing/status', (route) =>
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(billingStatus)
+          body: JSON.stringify(mockBillingStatus)
         })
       )
 
@@ -181,8 +182,8 @@ function extendWithWorkspaceMocks(billingStatus: BillingStatusResponse) {
   })
 }
 
-const test = extendWithWorkspaceMocks(mockBillingStatus)
-const freeTierTest = extendWithWorkspaceMocks(mockFreeTierBillingStatus)
+const test = extendWithWorkspaceMocks(mockSubscriptionStatus)
+const freeTierTest = extendWithWorkspaceMocks(mockFreeTierSubscriptionStatus)
 
 test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
   test('keeps both action buttons inside the popover when cancelled but active', async ({

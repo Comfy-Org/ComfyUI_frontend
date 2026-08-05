@@ -128,7 +128,8 @@ const i18n = createI18n({
         outOfCreditsTitleNoDate: "You're out of credits",
         outOfCreditsDescription: 'Add more credits to continue generating.',
         addCredits: 'Add credits',
-        upgradeToAddCredits: 'Upgrade to add credits'
+        upgradeToAddCredits: 'Upgrade to add credits',
+        subscribeForMore: 'Upgrade'
       }
     }
   }
@@ -395,7 +396,7 @@ describe('CreditsTile', () => {
     state.isFreeTier = true
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
-    await userEvent.click(screen.getByText('Upgrade to add credits'))
+    await userEvent.click(screen.getByText('Upgrade'))
     expect(state.showPricingTable).toHaveBeenCalledOnce()
   })
 
@@ -404,7 +405,7 @@ describe('CreditsTile', () => {
     activeProSubscription()
     state.isFreeTier = true
     renderTile()
-    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    expect(screen.queryByText('Upgrade')).toBeNull()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 
