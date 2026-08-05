@@ -55,7 +55,8 @@ const {
   lazyAutoplay?: boolean
   loop?: boolean
   minimal?: boolean
-  /** Show only a persistent mute toggle in the top-right corner. */
+  /** Replace the control bar with persistent play/pause and mute toggles
+   * in the top-right corner. */
   muteOnly?: boolean
   hideControls?: boolean
   fit?: 'cover' | 'contain'
@@ -296,7 +297,7 @@ function toggleFullscreen() {
       />
       <button
         type="button"
-        class="bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-xl lg:size-10"
+        class="bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-lg lg:size-10"
         :aria-label="
           muted ? t('player.unmute', locale) : t('player.mute', locale)
         "
