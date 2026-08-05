@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "음량. 0 = 보통, 100 = 2.0배, -50 = 0.5배."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20개 언어(영어, 중국어, 일본어, 한국어, 멕시코 및 카스티야 스페인어, 인도네시아어, 독일어, 브라질 포르투갈어, 프랑스어, 태국어, 베트남어, 말레이어, 필리핀어, 이탈리아어, 러시아어, 네덜란드어, 폴란드어, 터키어, 스웨덴어) 및 문장별 타이밍 제어(\"[5.5s:8.0s] ...\" 타임스탬프 사용) 지원. seed-audio-1.0: 영어와 중국어만 지원, 타이밍 제어 없음."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "피치(음높이) 반음 단위 이동(-12 ~ 12)."
@@ -4094,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3용 비디오+오디오 결합 latent입니다. 지속 시간은 모델의 17k+5 프레임 그리드(24fps)에 맞춰집니다.",
+    "display_name": "Empty MiniMax H3 AV Latent",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "24fps 기준 프레임 수로, 모델의 17k+5 그리드에 맞춰 올림 처리됩니다 (124 = 약 5초; 학습 범위는 약 124-362, 더 길면 테스트되지 않음)"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "빈 잠재 비디오 (Mochi)",
     "inputs": {
@@ -5700,6 +5725,15 @@
       "model_resolution": {
         "name": "해상도"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "프롬프트",
         "tooltip": "원하는 비디오를 설명하는 텍스트입니다."
@@ -6493,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "Ideogram의 빠른 텍스트-투-이미지 모델인 P-Image를 사용하여 이미지를 생성합니다. 강력한 타이포그래피와 포토리얼리즘을 제공하며, 정확한 텍스트, 색상 및 레이아웃을 위한 Ideogram 4.0 구조화 JSON 캡션을 지원합니다.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "이미지 생성에 사용할 종횡비입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "텍스트 프롬프트입니다. Ideogram 4.0 구조화 JSON 캡션(정확한 색상은 #RRGGBB 헥스, 정확한 텍스트 문자열, 바운딩 박스 레이아웃)도 입력할 수 있습니다 — 이를 그대로 사용하려면 prompt_upsampling을 OFF로 설정하세요."
+      },
+      "prompt_upsampling": {
+        "name": "프롬프트 업샘플링",
+        "tooltip": "생성 전에 짧은 프롬프트를 자세한 구조화 캡션으로 확장합니다(재작성된 프롬프트는 final_prompt로 반환됨). 직접 JSON 캡션이나 정확한 문구를 제공할 때는 OFF로 설정하세요."
+      },
+      "quality": {
+        "name": "품질",
+        "tooltip": "속도/가격/품질 등급입니다. MEDIUM은 일상적인 기본값이며, HIGH는 복잡한 프롬프트, 세밀한 디테일 및 어려운 텍스트에 적합합니다. VERY_LOW/LOW는 대량 초안용입니다. MEDIUM 이하에서는 어려운 텍스트가 제대로 렌더링되지 않습니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "출력 크기 클래스(정확한 픽셀은 종횡비를 따릅니다. 예: 16:9는 1K에서 1280x720, 2K에서 2560x1440). 선명한 타이포그래피에는 HIGH + 2K를 권장합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "재현 가능한 생성을 위한 시드입니다. prompt_upsampling이 OFF일 때 동일한 시드와 설정으로 동일한 이미지를 반환합니다. ON/AUTO일 때는 프롬프트 재작성 결과가 매번 달라집니다 — 결과를 재현하려면 해당 final_prompt와 동일한 시드, prompt_upsampling OFF로 다시 사용하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "실제로 이미지가 생성된 프롬프트(프롬프트 업샘플링이 실행된 경우 재작성된 구조화 캡션, 아니면 입력한 프롬프트). prompt_upsampling을 OFF로 하고 동일한 시드로 다시 입력하면 이 이미지를 재현할 수 있습니다."
       }
     }
   },
@@ -8639,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "비디오 latent와 오디오 latent를 결합하여 하나의 AV latent로 만듭니다 (모든 AV 모델, 예: LTXV 또는 MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11324,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 이미지 → 비디오",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "height": {
+        "name": "height"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "24fps 기준 프레임 수로, 모델의 17k+5 그리드에 맞춰 올림 처리됩니다 (124 = 약 5초; 학습 범위는 약 124-362, 더 길면 테스트되지 않음)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> 참조 조건부 입력을 MiniMax H3에 사용합니다. 프롬프트 시 동일한 태그를 사용하세요.",
+    "display_name": "MiniMax H3 참조 → 비디오",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "24fps 기준 프레임 수 (124 = 약 5초, 학습 범위는 약 124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "ref_audios"
+      },
+      "ref_image_size": {
+        "name": "ref_image_size",
+        "tooltip": "참조 이미지 크기 설정. 'match'는 각 참조 이미지를 생성 픽셀 영역에 맞춰(비율 유지, 축소만) 스케일링합니다. 'max'는 참조 파이프라인의 2048px 짧은 변을 사용하여 최고의 동일성 보장. 참조 토큰은 모든 샘플링 단계에 적용되므로 'max'는 훨씬 느릴 수 있습니다."
+      },
+      "ref_images": {
+        "name": "ref_images"
+      },
+      "ref_video_audios": {
+        "name": "ref_video_audios"
+      },
+      "ref_videos": {
+        "name": "ref_videos"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "비디오/오디오 플로우 시프트를 설정합니다.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "shift_audio"
+      },
+      "shift_video": {
+        "name": "shift_video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "MiniMax H3 모델을 사용하여 첫 프레임 이미지와 선택적 마지막 프레임 이미지로부터 영상을 생성합니다. 영상의 종횡비는 제공된 이미지를 따릅니다.",
+    "display_name": "MiniMax H3 첫-마지막 프레임 영상 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "first_frame": {
+        "name": "첫 프레임",
+        "tooltip": "영상의 첫 프레임 이미지입니다."
+      },
+      "last_frame": {
+        "name": "마지막 프레임",
+        "tooltip": "영상의 선택적 마지막 프레임 이미지입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "영상 생성을 위해 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "랜덤 시드입니다. 동일한 요청과 시드로 유사하지만 완전히 동일하지는 않은 결과를 얻을 수 있습니다."
+      },
+      "watermark": {
+        "name": "워터마크",
+        "tooltip": "영상에 AIGC 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "MiniMax H3 모델을 사용하여 참조 이미지, 비디오, 오디오를 기반으로 비디오를 생성합니다. 프롬프트에서 참조는 순서대로 지정하세요: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' 등.",
+    "display_name": "MiniMax H3 참조 기반 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "랜덤 시드. 동일한 요청과 동일한 시드를 사용하면 유사하지만 반드시 동일하지는 않은 결과가 생성됩니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "비디오에 AIGC 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "MiniMax H3 모델을 사용하여 텍스트 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "MiniMax H3 텍스트 기반 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "랜덤 시드. 동일한 요청과 동일한 시드를 사용하면 유사하지만 반드시 동일하지는 않은 결과가 생성됩니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "비디오에 AIGC 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19989,6 +20297,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Mage-Flow-Edit를 위한 편집 지시문을 하나 이상의 참조 이미지와 함께 인코딩합니다. 참조 latent들은 출력 해상도(너비/높이, 또는 0일 경우 첫 번째 이미지의 크기)로 리사이즈됩니다. 항상 크기가 일치하도록 latent 출력을 샘플링에 사용하세요.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "출력 높이. 0 = 첫 번째 참조 이미지의 크기 사용."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "편집할 참조 이미지(들). 모든 참조 이미지는 인코딩 전에 출력 해상도로 리사이즈됩니다."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "출력 너비. 0 = 첫 번째 참조 이미지의 크기 사용."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

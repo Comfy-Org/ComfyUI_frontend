@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 
 import { refreshRemoteConfig } from './refreshRemoteConfig'
-import { remoteConfig } from './remoteConfig'
+import {
+  remoteConfig,
+  remoteConfigErrorStatus,
+  remoteConfigState
+} from './remoteConfig'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -17,7 +21,7 @@ vi.stubGlobal('fetch', vi.fn())
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }
 
-  function mockSuccessResponse(config = mockConfig) {
+  function mockSuccessResponse(config: Record<string, unknown> = mockConfig) {
     return {
       ok: true,
       json: async () => config
@@ -33,8 +37,11 @@ describe('refreshRemoteConfig', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.mocked(api.fetchApi).mockReset()
+    vi.mocked(global.fetch).mockReset()
     remoteConfig.value = {}
+    remoteConfigErrorStatus.value = null
+    remoteConfigState.value = 'unloaded'
     window.__CONFIG__ = {}
   })
 
@@ -62,13 +69,70 @@ describe('refreshRemoteConfig', () => {
       expect(global.fetch).not.toHaveBeenCalled()
     })
 
-    it('does not pass an abort signal on the authed branch (so it is never aborted)', async () => {
+    it('passes an AbortSignal on the authenticated branch', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
 
       await refreshRemoteConfig({ useAuth: true })
 
       const init = vi.mocked(api.fetchApi).mock.calls[0][1]
-      expect(init?.signal).toBeUndefined()
+      expect(init?.signal).toBeInstanceOf(AbortSignal)
+    })
+
+    it('discards a failed response from a superseded refresh', async () => {
+      let resolveFirst: ((response: Response) => void) | undefined
+      vi.mocked(api.fetchApi)
+        .mockImplementationOnce(
+          () =>
+            new Promise<Response>((resolve) => {
+              resolveFirst = resolve
+            })
+        )
+        .mockResolvedValueOnce(
+          mockSuccessResponse({ subscription_required: true })
+        )
+
+      const firstRefresh = refreshRemoteConfig({ useAuth: true })
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
+      await refreshRemoteConfig({ useAuth: true })
+      resolveFirst?.(mockErrorResponse(401, 'Unauthorized'))
+      await firstRefresh
+
+      expect(remoteConfig.value).toEqual({ subscription_required: true })
+      expect(remoteConfigState.value).toBe('authenticated')
+      expect(remoteConfigErrorStatus.value).toBeNull()
+    })
+
+    it('preserves shared state when the caller cancels the refresh', async () => {
+      const existingConfig = { subscription_required: true }
+      remoteConfig.value = existingConfig
+      remoteConfigState.value = 'authenticated'
+      remoteConfigErrorStatus.value = 500
+      window.__CONFIG__ = existingConfig
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route, options) =>
+          new Promise<Response>((_, reject) => {
+            if (options?.signal?.aborted) {
+              reject(new DOMException('Aborted', 'AbortError'))
+              return
+            }
+            options?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'))
+            })
+          })
+      )
+      const controller = new AbortController()
+
+      const refresh = refreshRemoteConfig({
+        useAuth: true,
+        signal: controller.signal
+      })
+      controller.abort()
+      await refresh
+
+      expect(remoteConfig.value).toEqual(existingConfig)
+      expect(remoteConfigState.value).toBe('authenticated')
+      expect(remoteConfigErrorStatus.value).toBe(500)
+      expect(window.__CONFIG__).toEqual(existingConfig)
     })
   })
 
@@ -156,6 +220,8 @@ describe('refreshRemoteConfig', () => {
 
       expect(remoteConfig.value).toEqual(existingConfig)
       expect(window.__CONFIG__).toEqual(existingConfig)
+      expect(remoteConfigState.value).toBe('error')
+      expect(remoteConfigErrorStatus.value).toBeNull()
     })
   })
 })

@@ -15,14 +15,17 @@ import type { AuthUserInfo } from '@/types/authTypes'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
-const LEGACY_CLOUD_RUM_EXTENSION = '/extensions/cloud/rum.js'
+const INLINED_CLOUD_EXTENSIONS = new Set([
+  '/extensions/cloud/rum.js',
+  '/extensions/cloud/sentry.js'
+])
 
 export function shouldLoadExtension(
   extension: string,
   isCloudBuild: boolean
 ): boolean {
   if (extension.includes('extensions/core')) return false
-  return !isCloudBuild || extension !== LEGACY_CLOUD_RUM_EXTENSION
+  return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
 }
 
 export const useExtensionService = () => {

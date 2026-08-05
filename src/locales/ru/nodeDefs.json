@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "Громкость. 0 = нормально, 100 = 2.0x, -50 = 0.5x."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20 языков (английский, китайский, японский, корейский, мексиканский и кастильский испанский, индонезийский, немецкий, бразильский португальский, французский, тайский, вьетнамский, малайский, филиппинский, итальянский, русский, нидерландский, польский, турецкий, шведский) плюс покадровое управление таймингом через временные метки вида \"[5.5s:8.0s] ...\". seed-audio-1.0: только английский и китайский, без управления таймингом."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "Сдвиг высоты тона в полутонах (-12 до 12)."
@@ -4094,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "Совмещённый видео+аудио латент для MiniMax H3. Длительность подгоняется под сетку модели 17k+5 кадров при 24 кадрах/с.",
+    "display_name": "Пустой MiniMax H3 AV латент",
+    "inputs": {
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина",
+        "tooltip": "Количество кадров при 24 кадрах/с, округляется вверх до сетки модели 17k+5 (124 = ~5с; обученный диапазон ~124-362, больше — не тестировалось)"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "Пустой MochiLatentVideo",
     "inputs": {
@@ -5700,6 +5725,15 @@
       "model_resolution": {
         "name": "разрешение"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "запрос",
         "tooltip": "Текстовое описание желаемого видео."
@@ -6493,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "Генерирует изображения с помощью P-Image, быстрого текст-в-изображение модели от Ideogram. Сильная типографика и фотореализм; поддерживает структурированные JSON-подписи Ideogram 4.0 для точного текста, цветов и макета.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Соотношение сторон для генерации изображения."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос. Также принимает структурированную JSON-подпись Ideogram 4.0 (точные цвета в формате #RRGGBB, точные текстовые строки, макет с ограничивающими рамками) — установите prompt_upsampling в OFF, чтобы использовать дословно."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Расширяет короткие запросы в подробную структурированную подпись перед генерацией (переписанный запрос возвращается как final_prompt). Установите OFF при использовании собственного JSON или точной формулировки."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Уровень скорости/цены/качества. MEDIUM — стандарт по умолчанию; HIGH — для сложных запросов, мелких деталей и трудного текста; VERY_LOW/LOW — для черновиков в большом объёме. Сложный текст плохо отображается ниже MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Класс размера вывода (точные пиксели соответствуют соотношению сторон, например, 16:9 даёт 1280x720 при 1K и 2560x1440 при 2K). Рекомендуется HIGH + 2K для чёткой типографики."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для воспроизводимой генерации. При prompt_upsampling OFF одинаковый сид и настройки возвращают то же изображение; при ON/AUTO переписанный запрос меняется при каждом запуске — воспроизведите результат, повторно используя его final_prompt с prompt_upsampling OFF и тем же сидом."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "Запрос, по которому фактически было сгенерировано изображение (переписанная структурированная подпись при работе prompt_upsampling, иначе ваш запрос). Используйте его с prompt_upsampling OFF и тем же сидом для воспроизведения этого изображения."
       }
     }
   },
@@ -8639,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "Объединяет видео латент и аудио латент в совместный AV латент (любой AV-модель, например LTXV или MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11324,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3: изображение в видео",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "первый_кадр"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "last_frame": {
+        "name": "последний_кадр"
+      },
+      "length": {
+        "name": "длина",
+        "tooltip": "Количество кадров при 24 кадрах/с, округляется вверх до сетки модели 17k+5 (124 = ~5с; обученный диапазон ~124-362, больше — не тестировалось)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> референс-условия для MiniMax H3. Используйте те же теги при генерации.",
+    "display_name": "MiniMax H3: референс в видео",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина",
+        "tooltip": "Количество кадров при 24 кадрах/с (124 = ~5с, обученный диапазон ~124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "реф_аудио"
+      },
+      "ref_image_size": {
+        "name": "размер_реф_изображения",
+        "tooltip": "Размер референс-изображения. 'match' масштабирует каждый референс (только уменьшение, с сохранением пропорций) до площади пикселей генерации; 'max' использует короткую сторону 2048px пайплайна референса для лучшей идентичности. Референс-токены проходят через каждый шаг сэмплинга, поэтому 'max' может быть значительно медленнее."
+      },
+      "ref_images": {
+        "name": "реф_изображения"
+      },
+      "ref_video_audios": {
+        "name": "реф_аудио_видео"
+      },
+      "ref_videos": {
+        "name": "реф_видео"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "Установите смещения потоков видео/аудио.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "shift_audio"
+      },
+      "shift_video": {
+        "name": "shift_video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "Генерирует видео по изображению первого кадра и, при необходимости, последнего кадра с помощью модели MiniMax H3. Соотношение сторон видео соответствует предоставленным изображениям.",
+    "display_name": "MiniMax H3: видео по первому и последнему кадру",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Изображение первого кадра для видео."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Необязательное изображение последнего кадра для видео."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайный сид. Один и тот же запрос с одинаковым сидом даёт схожие, но не гарантированно идентичные результаты."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак AIGC к видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "Генерируйте видео на основе референсных изображений, видео и аудио с помощью модели MiniMax H3. Ссылайтесь на референсы в промпте по их порядку: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' и так далее.",
+    "display_name": "MiniMax H3: Референс в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель, используемая для генерации видео."
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайное зерно. Один и тот же запрос с одинаковым seed дает схожие, но не гарантированно идентичные результаты."
+      },
+      "watermark": {
+        "name": "водяной знак",
+        "tooltip": "Добавлять ли водяной знак AIGC к видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "Генерируйте видео по текстовому промпту с помощью модели MiniMax H3.",
+    "display_name": "MiniMax H3: Текст в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель, используемая для генерации видео."
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайное зерно. Один и тот же запрос с одинаковым seed дает схожие, но не гарантированно идентичные результаты."
+      },
+      "watermark": {
+        "name": "водяной знак",
+        "tooltip": "Добавлять ли водяной знак AIGC к видео."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19989,6 +20297,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Кодирует инструкцию редактирования с одним или несколькими референсными изображениями для Mage-Flow-Edit. Референсные латенты изменяются до выходного разрешения (ширина/высота, либо размер первого изображения при 0). Используйте выход латент для сэмплирования, чтобы размеры всегда совпадали.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Выходная высота. 0 = использовать размер первого референсного изображения."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Референсное(ые) изображение(я) для редактирования. Все референсы изменяются до выходного разрешения перед кодированием."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Выходная ширина. 0 = использовать размер первого референсного изображения."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

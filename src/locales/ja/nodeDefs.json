@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "音量。0 = 通常、100 = 2.0倍、-50 = 0.5倍。"
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual：20言語対応（英語、中国語、日本語、韓国語、メキシコ・カスティーリャスペイン語、インドネシア語、ドイツ語、ブラジルポルトガル語、フランス語、タイ語、ベトナム語、マレー語、フィリピン語、イタリア語、ロシア語、オランダ語、ポーランド語、トルコ語、スウェーデン語）および「[5.5s:8.0s] ...」のタイムスタンプによる文ごとのタイミング制御。seed-audio-1.0：英語と中国語のみ対応、タイミング制御なし。"
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "ピッチのシフト（半音単位、-12～12）。"
@@ -4094,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 用の映像＋音声のジョイントラテント。持続時間はモデルの 17k+5 フレームグリッド（24fps）に合わせて調整されます。",
+    "display_name": "Empty MiniMax H3 AV ラテント",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "24fps でのフレーム数。モデルの 17k+5 グリッドに切り上げられます（124 = 約5秒、学習範囲は約124-362、これ以上は未検証）"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "空のMochi潜在ビデオ",
     "inputs": {
@@ -5700,6 +5725,15 @@
       "model_resolution": {
         "name": "解像度"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "プロンプト",
         "tooltip": "希望するビデオのテキスト説明。"
@@ -6493,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "P-Image（Ideogramの高速テキストから画像生成モデル）を使用して画像を生成します。強力なタイポグラフィとフォトリアリズムを実現し、Ideogram 4.0の構造化JSONキャプションによる正確なテキスト、色、レイアウト指定に対応しています。",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "画像生成時のアスペクト比。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "テキストプロンプト。Ideogram 4.0の構造化JSONキャプション（#RRGGBB形式の正確な色指定、正確なテキスト文字列、バウンディングボックスレイアウト）も入力可能です。verbatimで使用する場合はprompt_upsamplingをOFFにしてください。"
+      },
+      "prompt_upsampling": {
+        "name": "プロンプトアップサンプリング",
+        "tooltip": "短いプロンプトを詳細な構造化キャプションに展開してから生成します（書き換え後のプロンプトはfinal_promptとして返されます）。独自のJSONキャプションや正確な文言を使う場合はOFFにしてください。"
+      },
+      "quality": {
+        "name": "品質",
+        "tooltip": "速度／価格／品質のグレード。MEDIUMは日常利用のデフォルト、HIGHは複雑なプロンプトや細部・難しいテキスト向け、VERY_LOW/LOWは大量ドラフト用。MEDIUM未満では難しいテキストの描画品質が低下します。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力サイズクラス（アスペクト比に従いピクセル数が決まります。例：16:9の場合、1Kで1280x720、2Kで2560x1440）。鮮明なタイポグラフィにはHIGH＋2K推奨。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "再現性のある生成のためのシード値。prompt_upsamplingがOFFの場合、同じシードと設定で同じ画像が得られます。ON/AUTOの場合はプロンプトの書き換えが毎回異なります。結果を再現するには、出力されたfinal_promptと同じシードでprompt_upsamplingをOFFにして再実行してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "実際に画像生成に使用されたプロンプト（prompt_upsamplingが有効な場合は書き換え後の構造化キャプション、無効な場合は入力プロンプト）。prompt_upsamplingをOFF、同じシードで再入力すると同じ画像を再現できます。"
       }
     }
   },
@@ -8639,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "ビデオラテントとオーディオラテントを結合し、ジョイントAVラテントを作成します（任意のAVモデル、例：LTXVまたはMiniMax H3）。",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11324,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 画像から動画へ",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "最初のフレーム"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "last_frame": {
+        "name": "最後のフレーム"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "24fps でのフレーム数。モデルの 17k+5 グリッドに切り上げられます（124 = 約5秒、学習範囲は約124-362、これ以上は未検証）"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> のリファレンスコンディショニング（MiniMax H3用）。プロンプト時に同じタグを使用してください。",
+    "display_name": "MiniMax H3 リファレンスから動画へ",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "24fps でのフレーム数（124 = 約5秒、学習範囲は約124-362）"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "ref_audios": {
+        "name": "リファレンス音声"
+      },
+      "ref_image_size": {
+        "name": "リファレンス画像サイズ",
+        "tooltip": "リファレンス画像のサイズ設定。「match」は各リファレンスを生成画像のピクセル面積に合わせて縮小（アスペクト比維持）、「max」はリファレンスパイプラインの2048px短辺を使用し、最も高いアイデンティティ精度を実現します。リファレンストークンは全サンプリングステップで適用されるため、「max」は数倍遅くなる場合があります。"
+      },
+      "ref_images": {
+        "name": "リファレンス画像"
+      },
+      "ref_video_audios": {
+        "name": "リファレンス動画音声"
+      },
+      "ref_videos": {
+        "name": "リファレンス動画"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "ビデオ／オーディオフローのシフトを設定します。",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "オーディオシフト"
+      },
+      "shift_video": {
+        "name": "ビデオシフト"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "MiniMax H3モデルを使用し、最初のフレーム画像と（オプションで）最後のフレーム画像から動画を生成します。動画のアスペクト比は入力画像に従います。",
+    "display_name": "MiniMax H3 最初・最後フレームから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "動画の最初のフレーム画像。"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "動画の最後のフレーム画像（オプション）。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。同じリクエスト・同じシードで類似した（完全に同一ではない）結果が得られます。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "MiniMax H3 モデルを使用して、参照画像、ビデオ、音声に基づいてビデオを生成します。プロンプト内で参照を順番に指定してください：『Image 1』、『Image 2』、『Video 1』、『Audio 1』など。",
+    "display_name": "MiniMax H3 参照からビデオ生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ生成に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。同じリクエストと同じシードで、似た結果が得られますが、完全に同一とは限りません。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "ビデオにAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "MiniMax H3 モデルを使用してテキストプロンプトからビデオを生成します。",
+    "display_name": "MiniMax H3 テキストからビデオ生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ生成に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。同じリクエストと同じシードで、似た結果が得られますが、完全に同一とは限りません。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "ビデオにAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19989,6 +20297,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Mage-Flow-Edit用の編集指示を、1枚以上の参照画像とともにエンコードします。参照latentは出力解像度（幅・高さ、または0の場合は最初の画像サイズ）にリサイズされます。sampling時はlatent出力を使用することで、常にサイズが一致します。",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "出力高さ。0の場合は最初の参照画像のサイズを使用します。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "編集用の参照画像。すべての参照画像はエンコード前に出力解像度へリサイズされます。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "出力幅。0の場合は最初の参照画像のサイズを使用します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

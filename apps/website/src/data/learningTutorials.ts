@@ -9,11 +9,20 @@ import { t } from '../i18n/translations'
 
 export type LearningCategory = 'vfx' | 'animations' | 'ads'
 
+interface TutorialAuthor {
+  name: LocalizedText
+  /** Secondary line, e.g. "Studio · 1.2M subscribers". */
+  detail?: LocalizedText
+  avatar?: string
+}
+
 export interface LearningTutorial {
   id: string
   /** Kebab-case, human-readable — the SEO slug in /learning/<category>/<slug>. */
   slug: string
   category: LearningCategory
+  /** 1-based episode number within its category; drives "Episode N". */
+  episode: number
   tags: readonly TranslationKey[]
   title: LocalizedText
   /** Optional authored copy; when absent the detail page uses a template. */
@@ -26,6 +35,8 @@ export interface LearningTutorial {
   caption?: readonly VideoTrack[]
   /** ISO date the video was uploaded; feeds VideoObject.uploadDate. */
   publishedDate: string
+  /** Shown on the watch page's author card; the card hides when absent. */
+  author?: TutorialAuthor
 }
 
 /** Category slugs, in nav order — also drives the /learning/[slug] routes. */
@@ -98,12 +109,24 @@ const threeDTag: TranslationKey = 'tags.threeD'
 const inBetweeningTag: TranslationKey = 'tags.inBetweening'
 const compositingTag: TranslationKey = 'tags.compositing'
 
+const dougHogan: TutorialAuthor = {
+  name: { en: 'Doug Hogan', 'zh-CN': 'Doug Hogan' },
+  avatar: 'https://media.comfy.org/website/authors/doug-hogan.jpeg'
+}
+
+const shaneFu: TutorialAuthor = {
+  name: { en: 'Shane Fu', 'zh-CN': 'Shane Fu' },
+  avatar: 'https://media.comfy.org/website/authors/shane-fu.jpeg'
+}
+
 export const learningTutorials: readonly LearningTutorial[] = [
   {
     id: 'cleanplate_walkthrough_v03',
     publishedDate: '2026-05-26',
     slug: 'cleanplate-walkthrough',
     category: 'vfx',
+    episode: 1,
+    author: dougHogan,
     title: { en: 'Cleanplate Walkthrough', 'zh-CN': '净板演练' },
     videoSrc:
       'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03.mp4',
@@ -125,6 +148,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-05-26',
     slug: 'deaging-workflow',
     category: 'vfx',
+    episode: 2,
+    author: dougHogan,
     title: { en: 'Deaging Workflow', 'zh-CN': '减龄工作流' },
     videoSrc:
       'https://media.comfy.org/website/learning/deaging_workflow_v03.mp4',
@@ -146,6 +171,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-05-26',
     slug: 'frame-adjustments',
     category: 'vfx',
+    episode: 3,
+    author: dougHogan,
     title: { en: 'Frame Adjustments Demo', 'zh-CN': '帧调整演示' },
     videoSrc:
       'https://media.comfy.org/website/learning/frame_adjustments_demo_v03.mp4',
@@ -168,6 +195,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-05-26',
     slug: 'mattes-and-utilities',
     category: 'vfx',
+    episode: 4,
+    author: dougHogan,
     title: { en: 'Mattes and Utilities', 'zh-CN': '遮罩与实用工具' },
     videoSrc:
       'https://media.comfy.org/website/learning/mattes_and_utilities_v03.mp4',
@@ -190,6 +219,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-05-26',
     slug: 'seedance-demo',
     category: 'vfx',
+    episode: 5,
+    author: dougHogan,
     title: { en: 'Seedance Demo ComfyUI', 'zh-CN': 'Seedance ComfyUI 演示' },
     videoSrc:
       'https://media.comfy.org/website/learning/seedance_demo_comfyui_v03.mp4',
@@ -212,6 +243,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-05-26',
     slug: 'sky-replacement',
     category: 'vfx',
+    episode: 6,
+    author: dougHogan,
     title: { en: 'Sky Replacement', 'zh-CN': '天空替换' },
     videoSrc:
       'https://media.comfy.org/website/learning/skyreplacement_smaller_v06.mp4',
@@ -233,6 +266,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'character-sheet',
     category: 'animations',
+    episode: 1,
+    author: shaneFu,
     title: { en: 'Character Sheet', 'zh-CN': '角色设定表' },
     description: {
       en: 'Turn concept art into a full character sheet with this ComfyUI workflow — GPT Image 2 generates body turnarounds and face close-ups, then auto-stitches them.',
@@ -243,6 +278,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation1-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=d8414beacf91',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation1_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageGenerationTag, characterDesignTag]
   },
   {
@@ -250,6 +293,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'keyframe-exploration',
     category: 'animations',
+    episode: 2,
+    author: shaneFu,
     title: { en: 'Keyframe Exploration', 'zh-CN': '关键帧探索' },
     description: {
       en: 'Generate a character keyframe at any camera angle with this ComfyUI workflow — set direction, elevation, and distance, then GPT Image 2 renders the shot.',
@@ -260,6 +305,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation2-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=78a07a3ce040',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation2_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageGenerationTag, keyframingTag]
   },
   {
@@ -267,6 +320,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'background-and-asset-generation',
     category: 'animations',
+    episode: 3,
+    author: shaneFu,
     title: { en: 'Background and Asset Generation', 'zh-CN': '背景与素材生成' },
     description: {
       en: 'Apply a production frame’s style to backgrounds and props with this ComfyUI workflow — GPT Image 2 paints sketches to match, with auto background removal.',
@@ -277,6 +332,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation3-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=1d905d914f11',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation3_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [
       partnerNodesTag,
       imageGenerationTag,
@@ -289,6 +352,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'concept-exploration',
     category: 'animations',
+    episode: 4,
+    author: shaneFu,
     title: { en: 'Concept Exploration', 'zh-CN': '概念探索' },
     description: {
       en: 'Turn concept art into a poseable 3D proxy with this ComfyUI workflow — Tripo builds the model, then generate a styled still or camera-move video from any angle.',
@@ -299,6 +364,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation4-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=098f35ab854f',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation4_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageGenerationTag, imageToVideoTag, threeDTag]
   },
   {
@@ -306,6 +379,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'in-betweening',
     category: 'animations',
+    episode: 5,
+    author: shaneFu,
     title: { en: 'In-Betweening', 'zh-CN': '中间帧绘制' },
     description: {
       en: 'Generate the in-between frames from a sequence of keyframes with this ComfyUI workflow — Wan 2.2 interpolates each pair into one assembled character animation.',
@@ -316,6 +391,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation5-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=7e6419542193',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation5_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [imageToVideoTag, keyframingTag, inBetweeningTag]
   },
   {
@@ -323,6 +406,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-16',
     slug: 'background-and-compositing',
     category: 'animations',
+    episode: 6,
+    author: shaneFu,
     title: { en: 'Background and Compositing', 'zh-CN': '背景与合成' },
     description: {
       en: 'Animate backgrounds and composite characters with this ComfyUI workflow — Cdance loops still backgrounds, then blends the character with matched lighting.',
@@ -333,6 +418,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/animation6-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=ea6c80d417cf',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/animation6_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageToVideoTag, styleTransferTag, compositingTag]
   },
   {
@@ -340,6 +433,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'moodboard-creation',
     category: 'ads',
+    episode: 1,
+    author: shaneFu,
     title: { en: 'Moodboard Creation', 'zh-CN': '情绪板制作' },
     description: {
       en: 'Turn mood board selects into fresh, on-brand ad visuals with this ComfyUI workflow — extract a style with Recraft, or alter elements with GPT Image 2.',
@@ -350,6 +445,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising1-thumb.png',
     href: 'https://cloud.comfy.org/?share=62f892c540e3',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising1_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageGenerationTag, styleTransferTag, moodboardsTag]
   },
   {
@@ -357,6 +460,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'storyboard-creation',
     category: 'ads',
+    episode: 2,
+    author: shaneFu,
     title: { en: 'Storyboard Creation', 'zh-CN': '故事板制作' },
     description: {
       en: 'Generate an ad storyboard from a shot list, then render polished style frames — a ComfyUI workflow using GPT Image and NanoBanana Pro across two passes.',
@@ -367,6 +472,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising2-thumb.png',
     href: 'https://cloud.comfy.org/?share=a598339548b3',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising2_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [
       partnerNodesTag,
       imageGenerationTag,
@@ -379,6 +492,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'product-photography',
     category: 'ads',
+    episode: 3,
+    author: shaneFu,
     title: { en: 'Product Photography', 'zh-CN': '产品摄影' },
     description: {
       en: 'Generate, retouch, and animate product shots in one ComfyUI workflow — place products with GPT Image, mask-edit details, then create a hero video.',
@@ -389,6 +504,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising3-thumb.png',
     href: 'https://cloud.comfy.org/?share=2d5b0cdf915a',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising3_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [
       partnerNodesTag,
       imageGenerationTag,
@@ -401,6 +524,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'talent-casting',
     category: 'ads',
+    episode: 4,
+    author: shaneFu,
     title: { en: 'Talent Casting', 'zh-CN': '演员选角' },
     description: {
       en: 'Preview talent in a scene before the shoot with this ComfyUI workflow — generate a previs still with Gemini Image 2, then animate it into a clip with Kling.',
@@ -411,6 +536,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising4-thumb.png',
     href: 'https://cloud.comfy.org/?share=1233f85f1c96',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising4_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [
       partnerNodesTag,
       imageGenerationTag,
@@ -423,6 +556,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'b-roll-creation',
     category: 'ads',
+    episode: 5,
+    author: shaneFu,
     title: { en: 'B-Roll Creation', 'zh-CN': 'B-Roll 素材制作' },
     description: {
       en: 'Create or edit B-roll three ways in one ComfyUI workflow — generate a clip from a prompt, place a subject into a reference scene, or alter existing footage.',
@@ -433,6 +568,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising5-thumb.png',
     href: 'https://cloud.comfy.org/?share=dd1946bdd7c8',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising5_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageToVideoTag, bRollTag]
   },
   {
@@ -440,6 +583,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     publishedDate: '2026-07-20',
     slug: 'ooh-visualization',
     category: 'ads',
+    episode: 6,
+    author: shaneFu,
     title: { en: 'OOH Visualization', 'zh-CN': '户外广告可视化' },
     description: {
       en: 'Place a poster into real-world outdoor ad spots with this ComfyUI workflow — auto-generate billboard, transit, and building-wrap mockups with Gemini Image 2.',
@@ -450,6 +595,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster: 'https://media.comfy.org/website/learning/advertising6-thumb.png',
     href: 'https://cloud.comfy.org/?share=9e36b66e188b',
     newTab: true,
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/learning/advertising6_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
     tags: [partnerNodesTag, imageGenerationTag, outOfHomeTag]
   }
 ] as const
@@ -482,6 +635,23 @@ export const featuredFor = (
   const pool = filterByCategory(category)
   return pool.find((tutorial) => tutorial.id === FEATURED_ID) ?? pool[0]
 }
+
+/** Same-category siblings in episode order, excluding the tutorial itself. */
+export const categoryChapters = (
+  tutorial: LearningTutorial
+): readonly LearningTutorial[] =>
+  filterByCategory(tutorial.category)
+    .filter((item) => item.id !== tutorial.id)
+    .toSorted((a, b) => a.episode - b.episode)
+
+/** Tutorials from the other categories, in data order. */
+export const recommendedFor = (
+  tutorial: LearningTutorial,
+  limit = 3
+): readonly LearningTutorial[] =>
+  learningTutorials
+    .filter((item) => item.category !== tutorial.category)
+    .slice(0, limit)
 
 export const getTutorialByCategoryAndSlug = (
   category: string,

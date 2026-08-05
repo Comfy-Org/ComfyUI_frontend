@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "بلندی صدا. ۰ = عادی، ۱۰۰ = ۲.۰ برابر، ‎-۵۰ = ۰.۵ برابر."
       },
+      "model": {
+        "name": "مدل",
+        "tooltip": "seed-audio-1.0-multilingual: پشتیبانی از ۲۰ زبان (انگلیسی، چینی، ژاپنی، کره‌ای، اسپانیایی مکزیکی و کاستیل، اندونزیایی، آلمانی، پرتغالی برزیلی، فرانسوی، تایلندی، ویتنامی، مالایی، فیلیپینی، ایتالیایی، روسی، هلندی، لهستانی، ترکی، سوئدی) به همراه کنترل زمان‌بندی هر جمله با استفاده از برچسب‌های زمانی مانند \"[۵.۵s:۸.۰s] ...\". seed-audio-1.0: فقط انگلیسی و چینی، بدون کنترل زمان‌بندی."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "تغییر گام به نیم‌پرده (‎-۱۲ تا ۱۲)."
@@ -4094,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "لاتنت مشترک ویدیو + صدا برای MiniMax H3. مدت زمان به شبکه فریم ۱۷۰۰۰+۵ مدل در ۲۴ فریم بر ثانیه تنظیم می‌شود.",
+    "display_name": "لاتنت AV MiniMax H3 خالی",
+    "inputs": {
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم در ۲۴ فریم بر ثانیه، به شبکه ۱۷۰۰۰+۵ مدل گرد می‌شود (۱۲۴ = تقریباً ۵ ثانیه؛ بازه آموزش تقریباً ۱۲۴ تا ۳۶۲، مقادیر بالاتر تست نشده است)"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "ویدیوی نهفته خالی Mochi",
     "inputs": {
@@ -5700,6 +5725,15 @@
       "model_resolution": {
         "name": "وضوح"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "راهنمای متنی",
         "tooltip": "توضیح متنی درباره ویدیوی مورد نظر."
@@ -6493,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "تولید تصویر با استفاده از P-Image، مدل سریع تبدیل متن به تصویر ایدوگرام. دارای تایپوگرافی قوی و فوتورئالیسم؛ پشتیبانی از کپشن ساختاریافته JSON نسخه ۴.۰ ایدوگرام برای متن، رنگ و چیدمان دقیق.",
+    "display_name": "ایدوگرام P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "نسبت تصویر برای تولید تصویر."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرومپت متنی. همچنین کپشن ساختاریافته JSON نسخه ۴.۰ ایدوگرام را می‌پذیرد (رنگ‌های دقیق به صورت #RRGGBB هگز، رشته‌های متنی دقیق، چیدمان جعبه‌بندی) — برای استفاده عیناً، گزینه prompt_upsampling را روی OFF قرار دهید."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "پرومپت‌های کوتاه را به کپشن ساختاریافته و دقیق قبل از تولید گسترش می‌دهد (پرومپت بازنویسی‌شده به عنوان final_prompt بازگردانده می‌شود). هنگام ارائه کپشن JSON یا متن دقیق خودتان، آن را روی OFF قرار دهید."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "سطح سرعت/قیمت/کیفیت. MEDIUM پیش‌فرض روزمره است؛ HIGH برای پرومپت‌های پیچیده، جزئیات دقیق و متن دشوار؛ VERY_LOW/LOW برای پیش‌نویس‌های انبوه. متن‌های دشوار در سطوح پایین‌تر از MEDIUM به‌درستی نمایش داده نمی‌شوند."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "کلاس اندازه خروجی (پیکسل دقیق بر اساس نسبت تصویر، مثلاً ۱۶:۹ در ۱K برابر با ۱۲۸۰×۷۲۰ و در ۲K برابر با ۲۵۶۰×۱۴۴۰). برای تایپوگرافی شفاف، HIGH + 2K را ترجیح دهید."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر (Seed) برای تولید قابل تکرار. با prompt_upsampling روی OFF، همان بذر و تنظیمات تصویر یکسانی را بازمی‌گرداند؛ با ON/AUTO بازنویسی پرومپت در هر اجرا متفاوت است — برای بازتولید نتیجه، خروجی final_prompt را با prompt_upsampling روی OFF و همان بذر استفاده کنید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "پرومپتی که تصویر واقعاً با آن تولید شده است (کپشن ساختاریافته بازنویسی‌شده در صورت اجرای prompt_upsampling، در غیر این صورت پرومپت شما). برای بازتولید این تصویر، آن را با prompt_upsampling روی OFF و همان بذر وارد کنید."
       }
     }
   },
@@ -8639,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "ادغام یک لاتنت ویدیویی و یک لاتنت صوتی در یک لاتنت AV مشترک (هر مدل AV، مانند LTXV یا MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11324,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "تبدیل تصویر به ویدیو MiniMax H3",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "اولین فریم"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "last_frame": {
+        "name": "آخرین فریم"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم در ۲۴ فریم بر ثانیه، به شبکه ۱۷۰۰۰+۵ مدل گرد می‌شود (۱۲۴ = تقریباً ۵ ثانیه؛ بازه آموزش تقریباً ۱۲۴ تا ۳۶۲، مقادیر بالاتر تست نشده است)"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> شرط مرجع برای MiniMax H3. هنگام استفاده از پرامپت، از همان تگ‌ها استفاده کنید.",
+    "display_name": "تبدیل مرجع به ویدیو MiniMax H3",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم در ۲۴ فریم بر ثانیه (۱۲۴ = تقریباً ۵ ثانیه، بازه آموزش تقریباً ۱۲۴ تا ۳۶۲)"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "ref_audios": {
+        "name": "صداهای مرجع"
+      },
+      "ref_image_size": {
+        "name": "اندازه تصویر مرجع",
+        "tooltip": "تنظیم اندازه تصویر مرجع. 'match' هر مرجع را (فقط کاهش، با حفظ نسبت تصویر) به مساحت پیکسلی تولید شده مقیاس می‌کند؛ 'max' از لبه کوتاه ۲۰۴۸ پیکسلی پایپ‌لاین مرجع برای بهترین حفظ هویت استفاده می‌کند. توکن‌های مرجع در هر مرحله نمونه‌گیری باقی می‌مانند، بنابراین 'max' می‌تواند چندین برابر کندتر باشد."
+      },
+      "ref_images": {
+        "name": "تصاویر مرجع"
+      },
+      "ref_video_audios": {
+        "name": "صداهای ویدیوی مرجع"
+      },
+      "ref_videos": {
+        "name": "ویدیوهای مرجع"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "تنظیم شیفت‌های جریان ویدیو/صدا.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "مدل"
+      },
+      "shift_audio": {
+        "name": "شیفت صدا"
+      },
+      "shift_video": {
+        "name": "شیفت ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "تولید ویدیو از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم با استفاده از مدل MiniMax H3. نسبت تصویر ویدیو مطابق تصاویر ارائه‌شده خواهد بود.",
+    "display_name": "تبدیل اولین و آخرین فریم MiniMax H3 به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "تصویر اولین فریم برای ویدیو."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "تصویر اختیاری آخرین فریم برای ویدیو."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل مورد استفاده برای تولید ویدیو."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی. درخواست یکسان با بذر یکسان نتایج مشابه (اما نه الزاماً یکسان) می‌دهد."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "آیا واترمارک AIGC به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "تولید ویدیو بر اساس تصاویر مرجع، ویدیوها و صدا با استفاده از مدل MiniMax H3. به مراجع در پرامپت بر اساس ترتیب آن‌ها اشاره کنید: «تصویر ۱»، «تصویر ۲»، «ویدیو ۱»، «صدا ۱» و به همین ترتیب.",
+    "display_name": "تبدیل مرجع MiniMax H3 به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی. درخواست یکسان با بذر یکسان نتایج مشابه (اما نه لزوماً یکسان) ارائه می‌دهد."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک AIGC به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "تولید ویدیو از طریق پرامپت متنی با استفاده از مدل MiniMax H3.",
+    "display_name": "تبدیل متن به ویدیو MiniMax H3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی. درخواست یکسان با بذر یکسان نتایج مشابه (اما نه لزوماً یکسان) ارائه می‌دهد."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک AIGC به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19989,6 +20297,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "یک دستور ویرایش را با یک یا چند تصویر مرجع برای Mage-Flow-Edit رمزگذاری کنید. latentهای مرجع به وضوح خروجی (عرض/ارتفاع، یا اندازه اولین تصویر در صورت ۰ بودن) تغییر اندازه می‌یابند. برای نمونه‌گیری از خروجی latent استفاده کنید تا اندازه‌ها همیشه مطابقت داشته باشند.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه بچ"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "ارتفاع خروجی. ۰ = استفاده از اندازه اولین تصویر مرجع."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصویر(های) مرجع برای ویرایش. همه تصاویر مرجع پیش از رمزگذاری به وضوح خروجی تغییر اندازه می‌یابند."
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض",
+        "tooltip": "عرض خروجی. ۰ = استفاده از اندازه اولین تصویر مرجع."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
