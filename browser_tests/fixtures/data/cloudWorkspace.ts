@@ -20,6 +20,8 @@ export const LEGACY_PERSONAL_BILLING_STATUS = {
   billing_status: 'inactive',
   has_funds: true,
   is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_status: 'ended',
   subscription_tier: 'FREE',
   team_credit_stop: null

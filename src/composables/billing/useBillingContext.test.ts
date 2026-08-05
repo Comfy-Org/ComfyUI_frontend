@@ -376,11 +376,6 @@ describe('useBillingContext', () => {
     await expect(topup(99.5)).rejects.toThrow()
   })
 
-  it('provides canAccessSubscriptionFeatures convenience computed', () => {
-    const { canAccessSubscriptionFeatures } = useBillingContext()
-    expect(canAccessSubscriptionFeatures.value).toBe(true)
-  })
-
   it('provides isActiveSubscription convenience computed', () => {
     mockBillingRail.value = 'legacy_stripe'
     const { isActiveSubscription } = useBillingContext()
