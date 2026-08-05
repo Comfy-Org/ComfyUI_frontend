@@ -6,7 +6,15 @@ import type * as OutputAssetUtil from '@/platform/assets/utils/outputAssetUtil'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 
 const mocks = vi.hoisted(() => ({
-  resolveOutputAssetItems: vi.fn()
+  resolveOutputAssetItems: vi.fn(),
+  deletedOutputKeys: new Set<string>()
+}))
+
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({
+    isHistoryOutputDeleted: (jobId: string, outputKey: string) =>
+      mocks.deletedOutputKeys.has(`${jobId}:${outputKey}`)
+  })
 }))
 
 vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => {
@@ -51,6 +59,7 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 describe('useOutputStacks', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    mocks.deletedOutputKeys.clear()
   })
 
   it('expands stacks and exposes children as selectable assets', async () => {
@@ -201,5 +210,27 @@ describe('useOutputStacks', () => {
       parent.id,
       child.id
     ])
+  })
+
+  it('removes deleted outputs from an already expanded stack', async () => {
+    const parent = createAsset({ id: 'parent', name: 'parent.png' })
+    const child = createAsset({
+      id: 'child',
+      name: 'child.png',
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: 'node-1',
+        subfolder: 'outputs'
+      }
+    })
+    vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([child])
+
+    const assets = ref([parent])
+    const { assetItems, toggleStack } = useOutputStacks({ assets })
+    await toggleStack(parent)
+    mocks.deletedOutputKeys.add('job-1:node-1-outputs-child.png')
+    assets.value = [...assets.value]
+
+    expect(assetItems.value.map((item) => item.asset.id)).toEqual([parent.id])
   })
 })

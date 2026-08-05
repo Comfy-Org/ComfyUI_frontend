@@ -2,6 +2,7 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { api } from '@/scripts/api'
 import {
   getJobAssets,
   getJobDetail,
@@ -161,6 +162,24 @@ function nodeScopedName(name: string, nodeId: unknown): string | null {
   return typeof nodeId === 'string' || typeof nodeId === 'number'
     ? JSON.stringify([name, String(nodeId)])
     : null
+}
+
+export async function findJobOutputAsset(
+  metadata: OutputAssetMetadata,
+  name: string
+): Promise<JobOutputAsset | undefined> {
+  const { assets, complete } = await api.getJobAssets(metadata.jobId)
+  if (!complete) return undefined
+
+  const nameMatches = assets.filter((asset) => asset.name === name)
+  if (nameMatches.length === 1) return nameMatches[0]
+
+  const nodeScopedMatches = nameMatches.filter(
+    (asset) =>
+      nodeScopedName(asset.name, asset.node_id) ===
+      nodeScopedName(name, metadata.nodeId)
+  )
+  return nodeScopedMatches.length === 1 ? nodeScopedMatches[0] : undefined
 }
 
 /**

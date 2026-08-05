@@ -28,7 +28,9 @@ import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetV
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import {
+  findJobOutputAsset,
   getAssetOutputCount,
+  getOutputKey,
   resolveOutputAssetItems
 } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -112,14 +114,9 @@ export function useMediaAssetActions() {
         return
       }
 
-      const assetHash = asset.hash ?? asset.name
-      const assetId = await assetService.getJobAssetId(
-        metadata.jobId,
-        assetHash,
-        asset.display_name
-      )
-      if (!assetId) throw new Error(t('mediaAsset.failedToDeleteAsset'))
-      await assetService.deleteAsset(assetId)
+      const resolvedAsset = await findJobOutputAsset(metadata, asset.name)
+      if (!resolvedAsset) throw new Error(t('mediaAsset.failedToDeleteAsset'))
+      await assetService.deleteAsset(resolvedAsset.id)
     } else {
       // Input assets can only be deleted in cloud environment
       if (!isCloud) {
@@ -732,6 +729,24 @@ export function useMediaAssetActions() {
                 const type = getAssetType(asset)
                 return type === 'output' || type === 'temp'
               })
+              const deletedOutputKeysByJob = new Map<string, Set<string>>()
+              assetArray.forEach((asset, index) => {
+                if (results[index].status !== 'fulfilled') return
+                const type = getAssetType(asset)
+                if (type !== 'output' && type !== 'temp') return
+                const metadata = getOutputAssetMetadata(asset.user_metadata)
+                if (!metadata) return
+                const outputKey =
+                  getOutputKey({
+                    nodeId: metadata.nodeId,
+                    subfolder: metadata.subfolder,
+                    filename: asset.name
+                  }) ?? asset.name
+                const deletedKeys =
+                  deletedOutputKeysByJob.get(metadata.jobId) ?? new Set()
+                deletedKeys.add(outputKey)
+                deletedOutputKeysByJob.set(metadata.jobId, deletedKeys)
+              })
               const hasInputAssets = assetArray.some(
                 (asset, index) =>
                   results[index].status === 'fulfilled' &&
@@ -741,6 +756,52 @@ export function useMediaAssetActions() {
               if (hasOutputAssets) {
                 await assetsStore.updateHistory()
                 await assetsStore.updateFlatOutputs()
+                for (const [jobId, deletedKeys] of deletedOutputKeysByJob) {
+                  assetsStore.markHistoryOutputsDeleted(jobId, deletedKeys)
+                  const historyAsset = assetsStore.historyAssets.find(
+                    (asset) => asset.id === jobId
+                  )
+                  const metadata = getOutputAssetMetadata(
+                    historyAsset?.user_metadata
+                  )
+                  if (!historyAsset || !metadata) continue
+
+                  const outputs = await resolveOutputAssetItems(metadata, {
+                    createdAt: historyAsset.created_at
+                  })
+                  if (
+                    typeof metadata.outputCount === 'number' &&
+                    outputs.length < metadata.outputCount
+                  ) {
+                    continue
+                  }
+
+                  const survivingOutputs = outputs.filter((output) => {
+                    const outputMetadata = getOutputAssetMetadata(
+                      output.user_metadata
+                    )
+                    const outputKey =
+                      getOutputKey({
+                        nodeId: outputMetadata?.nodeId,
+                        subfolder: outputMetadata?.subfolder,
+                        filename: output.name
+                      }) ?? output.name
+                    return !assetsStore.isHistoryOutputDeleted(jobId, outputKey)
+                  })
+                  const replacement = survivingOutputs[0]
+                  assetsStore.replaceHistoryAsset(
+                    jobId,
+                    replacement
+                      ? {
+                          ...replacement,
+                          user_metadata: {
+                            ...replacement.user_metadata,
+                            outputCount: survivingOutputs.length
+                          }
+                        }
+                      : undefined
+                  )
+                }
               }
               if (hasInputAssets) {
                 await assetsStore.updateInputs()

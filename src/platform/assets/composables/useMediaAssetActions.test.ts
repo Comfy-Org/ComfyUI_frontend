@@ -57,6 +57,21 @@ const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
 const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
 const mockUpdateHistory = vi.hoisted(() => vi.fn())
 const mockUpdateFlatOutputs = vi.hoisted(() => vi.fn())
+const mockReplaceHistoryAsset = vi.hoisted(() => vi.fn())
+const mockDeletedHistoryOutputKeys = vi.hoisted(() => new Set<string>())
+const mockMarkHistoryOutputsDeleted = vi.hoisted(() =>
+  vi.fn((jobId: string, outputKeys: ReadonlySet<string>) => {
+    for (const outputKey of outputKeys) {
+      mockDeletedHistoryOutputKeys.add(`${jobId}:${outputKey}`)
+    }
+  })
+)
+const mockIsHistoryOutputDeleted = vi.hoisted(() =>
+  vi.fn((jobId: string, outputKey: string) =>
+    mockDeletedHistoryOutputKeys.has(`${jobId}:${outputKey}`)
+  )
+)
+const mockHistoryAssets = vi.hoisted<AssetItem[]>(() => [])
 const mockUpdateInputs = vi.hoisted(() => vi.fn())
 const mockHasCategory = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/assetsStore', () => ({
@@ -64,6 +79,10 @@ vi.mock('@/stores/assetsStore', () => ({
     setAssetDeleting: mockSetAssetDeleting,
     updateHistory: mockUpdateHistory,
     updateFlatOutputs: mockUpdateFlatOutputs,
+    replaceHistoryAsset: mockReplaceHistoryAsset,
+    markHistoryOutputsDeleted: mockMarkHistoryOutputsDeleted,
+    isHistoryOutputDeleted: mockIsHistoryOutputDeleted,
+    historyAssets: mockHistoryAssets,
     updateInputs: mockUpdateInputs,
     invalidateModelsForCategory: mockInvalidateModelsForCategory,
     hasCategory: mockHasCategory
@@ -139,23 +158,23 @@ vi.mock('../schemas/assetMetadataSchema', () => ({
 const mockResolveOutputAssetItems = vi.hoisted(() =>
   vi.fn().mockResolvedValue([])
 )
+const mockFindJobOutputAsset = vi.hoisted(() => vi.fn())
 vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
   const actual = await importOriginal<typeof outputAssetUtilModule>()
   return {
     ...actual,
+    findJobOutputAsset: mockFindJobOutputAsset,
     resolveOutputAssetItems: mockResolveOutputAssetItems
   }
 })
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
-const mockGetJobAssetId = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ task_id: 'test-task-id', status: 'pending' })
 )
 vi.mock('../services/assetService', () => ({
   assetService: {
     deleteAsset: mockDeleteAsset,
-    getJobAssetId: mockGetJobAssetId,
     createAssetExport: mockCreateAssetExport
   }
 }))
@@ -305,7 +324,12 @@ describe('useMediaAssetActions', () => {
     mockGetAssetType.mockReturnValue('input')
     mockResolveOutputAssetItems.mockReset()
     mockResolveOutputAssetItems.mockResolvedValue([])
-    mockGetJobAssetId.mockResolvedValue('output-asset-id')
+    mockHistoryAssets.length = 0
+    mockDeletedHistoryOutputKeys.clear()
+    mockFindJobOutputAsset.mockResolvedValue({
+      id: 'output-asset-id',
+      name: 'output.png'
+    })
   })
 
   describe('addWorkflow', () => {
@@ -1323,7 +1347,7 @@ describe('useMediaAssetActions', () => {
           'job-temp'
         )
       })
-      expect(mockGetJobAssetId).not.toHaveBeenCalled()
+      expect(mockFindJobOutputAsset).not.toHaveBeenCalled()
       expect(mockDeleteAsset).not.toHaveBeenCalled()
       expect(mockUpdateHistory).toHaveBeenCalled()
       expect(mockUpdateFlatOutputs).toHaveBeenCalled()
@@ -1342,32 +1366,135 @@ describe('useMediaAssetActions', () => {
 
     it('deletes only the selected cloud asset and preserves its history job', async () => {
       mockIsCloud.value = true
-      mockGetOutputAssetMetadata.mockReturnValue({
-        jobId: 'job-1',
-        nodeId: 'node-1'
+      mockGetOutputAssetMetadata.mockImplementation(
+        (metadata: Record<string, unknown> | undefined) =>
+          metadata && 'jobId' in metadata ? metadata : null
+      )
+      mockFindJobOutputAsset.mockResolvedValue({
+        id: 'selected-output-uuid',
+        name: 'ComfyUI_generated.png'
       })
-      mockGetJobAssetId.mockResolvedValue('selected-output-uuid')
       mockDeleteAsset.mockResolvedValue(undefined)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
         id: 'job-1-node-1--generated.png',
-        name: 'generated-content-hash',
+        name: 'ComfyUI_generated.png',
         display_name: 'ComfyUI_generated.png',
+        hash: 'blake3:generated-content-hash',
         tags: ['output'],
-        user_metadata: { jobId: 'job-1' }
+        user_metadata: { jobId: 'job-1', nodeId: 'node-1', subfolder: '' }
       })
+      mockHistoryAssets.push(
+        createMockAsset({
+          id: 'job-1',
+          name: 'ComfyUI_generated.png',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-1',
+            nodeId: 'node-1',
+            subfolder: '',
+            outputCount: 3
+          }
+        })
+      )
+      const previouslyDeletedOutput = createMockAsset({
+        id: 'previously-deleted-output-uuid',
+        name: 'previously-deleted.png',
+        tags: ['output'],
+        user_metadata: {
+          jobId: 'job-1',
+          nodeId: 'node-1',
+          subfolder: ''
+        }
+      })
+      const survivingOutput = createMockAsset({
+        id: 'surviving-output-uuid',
+        name: 'ComfyUI_surviving.png',
+        tags: ['output'],
+        user_metadata: {
+          jobId: 'job-1',
+          nodeId: 'node-1',
+          subfolder: ''
+        }
+      })
+      mockDeletedHistoryOutputKeys.add('job-1:node-1--previously-deleted.png')
+      mockResolveOutputAssetItems.mockResolvedValue([
+        previouslyDeletedOutput,
+        asset,
+        survivingOutput
+      ])
 
       await actions.deleteAssets(asset)
 
-      expect(mockGetJobAssetId).toHaveBeenCalledWith(
-        'job-1',
-        'generated-content-hash',
+      expect(mockFindJobOutputAsset).toHaveBeenCalledWith(
+        expect.objectContaining({ jobId: 'job-1' }),
         'ComfyUI_generated.png'
       )
       expect(mockDeleteAsset).toHaveBeenCalledWith('selected-output-uuid')
       expect(vi.mocked(api.deleteItem)).not.toHaveBeenCalled()
       expect(mockUpdateHistory).toHaveBeenCalled()
       expect(mockUpdateFlatOutputs).toHaveBeenCalled()
+      expect(mockReplaceHistoryAsset).toHaveBeenCalledWith(
+        'job-1',
+        expect.objectContaining({
+          id: 'surviving-output-uuid',
+          name: 'ComfyUI_surviving.png',
+          user_metadata: expect.objectContaining({ outputCount: 1 })
+        })
+      )
+    })
+
+    it('keeps outputs whose deletion failed during a bulk operation', async () => {
+      mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockImplementation(
+        (metadata: Record<string, unknown> | undefined) =>
+          metadata && 'jobId' in metadata ? metadata : null
+      )
+      mockFindJobOutputAsset
+        .mockResolvedValueOnce({ id: 'output-a-uuid', name: 'output-a.png' })
+        .mockResolvedValueOnce({ id: 'output-b-uuid', name: 'output-b.png' })
+      mockDeleteAsset
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('delete failed'))
+
+      const outputA = createMockAsset({
+        id: 'output-a-card',
+        name: 'output-a.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job-1', nodeId: '1', subfolder: '' }
+      })
+      const outputB = createMockAsset({
+        id: 'output-b-card',
+        name: 'output-b.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job-1', nodeId: '1', subfolder: '' }
+      })
+      mockHistoryAssets.push(
+        createMockAsset({
+          id: 'job-1',
+          name: 'output-a.png',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-1',
+            nodeId: '1',
+            subfolder: '',
+            outputCount: 2
+          }
+        })
+      )
+      mockResolveOutputAssetItems.mockResolvedValue([outputA, outputB])
+
+      const actions = useMediaAssetActions()
+      await actions.deleteAssets([outputA, outputB])
+
+      expect(mockReplaceHistoryAsset).toHaveBeenCalledWith(
+        'job-1',
+        expect.objectContaining({ name: 'output-b.png' })
+      )
+      expect(mockReplaceHistoryAsset).not.toHaveBeenCalledWith(
+        'job-1',
+        undefined
+      )
     })
 
     it('keeps the job when the selected cloud asset cannot be resolved', async () => {
@@ -1376,7 +1503,7 @@ describe('useMediaAssetActions', () => {
         jobId: 'job-1',
         nodeId: 'node-1'
       })
-      mockGetJobAssetId.mockResolvedValue(null)
+      mockFindJobOutputAsset.mockResolvedValue(undefined)
       const actions = useMediaAssetActions()
 
       await actions.deleteAssets(
@@ -1388,10 +1515,9 @@ describe('useMediaAssetActions', () => {
         })
       )
 
-      expect(mockGetJobAssetId).toHaveBeenCalledWith(
-        'job-1',
-        'missing-content-hash',
-        undefined
+      expect(mockFindJobOutputAsset).toHaveBeenCalledWith(
+        expect.objectContaining({ jobId: 'job-1' }),
+        'missing.png'
       )
       expect(mockDeleteAsset).not.toHaveBeenCalled()
       expect(vi.mocked(api.deleteItem)).not.toHaveBeenCalled()
@@ -1417,7 +1543,7 @@ describe('useMediaAssetActions', () => {
       )
 
       expect(vi.mocked(api.deleteItem)).toHaveBeenCalledWith('history', 'job-1')
-      expect(mockGetJobAssetId).not.toHaveBeenCalled()
+      expect(mockFindJobOutputAsset).not.toHaveBeenCalled()
       expect(mockDeleteAsset).not.toHaveBeenCalled()
     })
 
@@ -1428,7 +1554,10 @@ describe('useMediaAssetActions', () => {
         jobId: 'job-1',
         nodeId: 'node-1'
       })
-      mockGetJobAssetId.mockResolvedValue('temp-asset-uuid')
+      mockFindJobOutputAsset.mockResolvedValue({
+        id: 'temp-asset-uuid',
+        name: 'preview.png'
+      })
       const actions = useMediaAssetActions()
 
       await actions.deleteAssets(
@@ -1458,7 +1587,7 @@ describe('useMediaAssetActions', () => {
       )
 
       expect(mockDeleteAsset).toHaveBeenCalledWith('flat-output-uuid')
-      expect(mockGetJobAssetId).not.toHaveBeenCalled()
+      expect(mockFindJobOutputAsset).not.toHaveBeenCalled()
       expect(vi.mocked(api.deleteItem)).not.toHaveBeenCalled()
     })
   })

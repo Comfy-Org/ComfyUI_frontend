@@ -210,22 +210,6 @@ const uploadedAssetResponseSchema = assetItemSchema.extend({
   created_new: z.boolean()
 })
 
-const jobAssetsResponseSchema = z.object({
-  assets: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      hash: z.string().nullable().optional()
-    })
-  ),
-  pagination: z.object({
-    offset: z.number(),
-    limit: z.number(),
-    total: z.number(),
-    has_more: z.boolean()
-  })
-})
-
 function createAbortError(): DOMException {
   return new DOMException('Aborted', 'AbortError')
 }
@@ -885,76 +869,6 @@ function createAssetService() {
     invalidateInputAssetsIncludingPublic()
   }
 
-  async function getJobAssetId(
-    jobId: string,
-    assetHash: string,
-    assetName?: string
-  ): Promise<AssetId | null> {
-    if (!assetHash) return null
-
-    const matchingAssets: { id: AssetId; name: string }[] = []
-    let expectedTotal: number | undefined
-    let collectedCount = 0
-    let offset = 0
-    let batchCount = 0
-
-    while (true) {
-      if (batchCount++ >= MAX_PAGINATION_BATCHES) {
-        throw new Error(
-          `Job assets pagination exceeded ${MAX_PAGINATION_BATCHES} batches`
-        )
-      }
-
-      const query = new URLSearchParams({
-        limit: DEFAULT_LIMIT.toString(),
-        offset: offset.toString()
-      })
-      const res = await api.fetchApi(
-        `/jobs/${encodeURIComponent(jobId)}/assets?${query}`
-      )
-      if (res.status === 404 && offset === 0) return null
-      if (!res.ok) {
-        throw new Error(
-          `Unable to load assets for job ${jobId}: Server returned ${res.status}`
-        )
-      }
-
-      const result = jobAssetsResponseSchema.safeParse(await res.json())
-      if (!result.success) {
-        throw new Error(
-          `Invalid job assets response:\n${fromZodError(result.error)}`
-        )
-      }
-
-      if (result.data.pagination.offset !== offset) {
-        throw new Error('Invalid job assets pagination offset')
-      }
-      expectedTotal ??= result.data.pagination.total
-      if (result.data.pagination.total !== expectedTotal) {
-        throw new Error('Job assets changed during pagination')
-      }
-
-      matchingAssets.push(
-        ...result.data.assets.filter(
-          (candidate) => candidate.hash === assetHash
-        )
-      )
-      collectedCount += result.data.assets.length
-      if (!result.data.pagination.has_more) {
-        if (collectedCount !== expectedTotal || matchingAssets.length !== 1)
-          return null
-        const [asset] = matchingAssets
-        return !assetName || asset.name === assetName ? asset.id : null
-      }
-
-      const nextOffset = offset + result.data.assets.length
-      if (nextOffset <= offset) {
-        throw new Error('Job assets pagination made no progress')
-      }
-      offset = nextOffset
-    }
-  }
-
   /**
    * Update metadata of an asset by ID
    * Only available in cloud environment
@@ -1300,7 +1214,6 @@ function createAssetService() {
     getAllAssetsByTag,
     getInputAssetsIncludingPublic,
     invalidateInputAssetsIncludingPublic,
-    getJobAssetId,
     deleteAsset,
     updateAsset,
     addAssetTags,

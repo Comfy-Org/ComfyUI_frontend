@@ -16,6 +16,7 @@ import { mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type {
   JobDetail,
+  JobOutputAsset,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -275,6 +276,27 @@ const cloudAssetDeletionTest = test.extend({
         }
       })
     })
+    await page.route('**/api/jobs/multi-output', (route) =>
+      route.fulfill({ json: multiOutputJobDetail })
+    )
+    await page.route('**/api/jobs/multi-output/assets?*', (route) => {
+      const assets: JobOutputAsset[] = (outputAssetsByPage.get(page) ?? []).map(
+        (asset, outputIndex) => ({
+          id: asset.id,
+          name: asset.hash ?? asset.name,
+          hash: asset.hash,
+          node_id: '3',
+          output_key: 'images',
+          output_index: outputIndex
+        })
+      )
+      return route.fulfill({
+        json: {
+          assets,
+          pagination: { has_more: false }
+        }
+      })
+    })
     await page.route('**/api/object_info', (route) =>
       route.fulfill({ json: { LoadImage: loadImageNodeDef } })
     )
@@ -436,39 +458,13 @@ cloudAssetDeletionTest.describe(
       'deletes only the selected generated output',
       async ({ comfyPage, page }) => {
         const deletedAssetIds: string[] = []
-        await page.route('**/api/jobs/multi-output/assets?*', async (route) => {
-          await route.fulfill({
-            json: {
-              assets: [
-                {
-                  id: 'multi-output-a-asset-id',
-                  name: 'ComfyUI_multi-output-a.png',
-                  hash: 'multi-output-a.png',
-                  node_id: '3',
-                  output_key: 'images',
-                  output_index: 0
-                },
-                {
-                  id: 'multi-output-b-asset-id',
-                  name: 'ComfyUI_multi-output-b.png',
-                  hash: 'multi-output-b.png',
-                  node_id: '3',
-                  output_key: 'images',
-                  output_index: 1
-                }
-              ],
-              pagination: {
-                offset: 0,
-                limit: 500,
-                total: 2,
-                has_more: false
-              }
-            }
-          })
-        })
         await page.route(
           '**/api/assets/multi-output-a-asset-id',
           async (route) => {
+            if (route.request().method().toUpperCase() !== 'DELETE') {
+              await route.fallback()
+              return
+            }
             deletedAssetIds.push('multi-output-a-asset-id')
             outputAssetsByPage.set(page, [multiOutputBAsset])
             await route.fulfill({ status: 204, body: '' })
@@ -477,6 +473,10 @@ cloudAssetDeletionTest.describe(
         await page.route(
           '**/api/assets/multi-output-b-asset-id',
           async (route) => {
+            if (route.request().method().toUpperCase() !== 'DELETE') {
+              await route.fallback()
+              return
+            }
             deletedAssetIds.push('multi-output-b-asset-id')
             await route.fulfill({ status: 204, body: '' })
           }
@@ -506,6 +506,10 @@ cloudAssetDeletionTest.describe(
         await expect(tab.getAssetCardByName('multi-output-a')).toBeVisible()
         const historyDeleteRequests: { delete: string[] }[] = []
         await page.route('**/api/history', async (route) => {
+          if (route.request().method().toUpperCase() !== 'POST') {
+            await route.fallback()
+            return
+          }
           historyDeleteRequests.push(route.request().postDataJSON())
           await route.fulfill({ json: {} })
         })
@@ -519,7 +523,8 @@ cloudAssetDeletionTest.describe(
           .poll(() => deletedAssetIds)
           .toEqual(['multi-output-a-asset-id'])
         expect(historyDeleteRequests).toEqual([])
-        await expect(tab.getAssetCardByName('multi-output-a')).toBeVisible()
+        await expect(tab.getAssetCardByName('multi-output-a')).toHaveCount(0)
+        await expect(tab.getAssetCardByName('multi-output-b')).toBeVisible()
         await tab.dismissToasts()
         await tab.close()
         await imageWidgetButton.click()

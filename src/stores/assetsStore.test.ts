@@ -632,6 +632,41 @@ describe('assetsStore - Refactored (Option A)', () => {
     })
   })
 
+  describe('replaceHistoryAsset', () => {
+    it('replaces a job preview without removing its surviving outputs', async () => {
+      vi.mocked(api.getHistory).mockResolvedValue([
+        createMockJobItem(0),
+        createMockJobItem(1)
+      ])
+      await store.updateHistory()
+      const jobId = store.historyAssets[0].id
+      const replacement = {
+        ...store.historyAssets[0],
+        id: 'persisted-output-id',
+        name: 'surviving-output.png'
+      }
+
+      store.replaceHistoryAsset(jobId, replacement)
+
+      expect(store.historyAssets[0]).toMatchObject({
+        id: jobId,
+        name: 'surviving-output.png'
+      })
+      expect(store.historyAssets).toHaveLength(2)
+    })
+  })
+
+  describe('deleted history outputs', () => {
+    it('accumulates deleted output keys per job', () => {
+      store.markHistoryOutputsDeleted('job-1', new Set(['output-a']))
+      store.markHistoryOutputsDeleted('job-1', new Set(['output-b']))
+
+      expect(store.isHistoryOutputDeleted('job-1', 'output-a')).toBe(true)
+      expect(store.isHistoryOutputDeleted('job-1', 'output-b')).toBe(true)
+      expect(store.isHistoryOutputDeleted('job-2', 'output-a')).toBe(false)
+    })
+  })
+
   describe('jobDetailView Support', () => {
     it('should include outputCount and allOutputs in user_metadata', async () => {
       const mockHistory = Array.from({ length: 5 }, (_, i) =>
