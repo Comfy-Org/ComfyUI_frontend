@@ -262,6 +262,20 @@ describe('isSheriffPr', () => {
     )
   })
 
+  it('matches anything opened by automation, whatever it is about', () => {
+    for (const login of [
+      'app/dependabot',
+      'app/cloud-code-bot',
+      'comfy-pr-bot'
+    ])
+      expect(isSheriffPr(pr({ author: { login } }))).toBe(true)
+  })
+
+  it('ignores humans whose login merely resembles a bot', () => {
+    expect(isSheriffPr(pr({ author: { login: 'dependabot-fan' } }))).toBe(false)
+    expect(isSheriffPr(pr({ author: null }))).toBe(false)
+  })
+
   it('ignores feature branches that merely start with version-bump-', () => {
     expect(isSheriffPr(pr())).toBe(false)
     expect(isSheriffPr(pr({ headRefName: 'feat/version-bump-ui' }))).toBe(false)
