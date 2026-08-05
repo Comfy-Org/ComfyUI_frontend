@@ -81,8 +81,34 @@ const toHex = ({ r, g, b }: Rgb) =>
 
 const isYellow = ({ r, g, b }: Rgb) => r > 200 && g > 200 && b < 200
 
-const colorsIn = (svg: string) =>
-  svg.replace(/url\([^)]*\)/gi, '').match(COLOR_LITERAL) ?? []
+/*
+ * A bare colour keyword — `yellow`, `gold` — matches no literal pattern, so a
+ * scan for literals alone cannot see one and reports the file as clean. Rather
+ * than enumerate the ~140 CSS names, read the paint attributes directly: what
+ * they carry is a colour unless it is one of the few non-colour keywords, so
+ * anything left that does not parse gets reported as unreadable.
+ */
+const PAINT_ATTR =
+  /\b(?:fill|stroke|stop-color|flood-color|lighting-color)="([^"]*)"/gi
+const NON_COLOR_PAINT =
+  /^(?:none|transparent|currentcolor|inherit|context-(?:fill|stroke)|url\(.*)$/i
+
+const IS_COLOR_LITERAL = new RegExp(`^(?:${COLOR_LITERAL.source})$`, 'i')
+
+const paintKeywordsIn = (svg: string) =>
+  [...svg.matchAll(PAINT_ATTR)]
+    .map((m) => m[1].trim())
+    .filter(
+      (value) =>
+        value !== '' &&
+        !NON_COLOR_PAINT.test(value) &&
+        !IS_COLOR_LITERAL.test(value)
+    )
+
+const colorsIn = (svg: string) => [
+  ...(svg.replace(/url\([^)]*\)/gi, '').match(COLOR_LITERAL) ?? []),
+  ...paintKeywordsIn(svg)
+]
 
 function yellowsIn(svg: string): string[] {
   const yellows = colorsIn(svg)
@@ -216,6 +242,31 @@ describe('yellowsIn', () => {
     expect(unreadableColorsIn('<path d="M0 0h1v1H0z" fill="none"/>')).toEqual(
       []
     )
+  })
+
+  it('catches a yellow written as a bare colour keyword', () => {
+    expect(
+      unreadableColorsIn(`<path fill="${yellow}"/><path fill="gold"/>`)
+    ).toEqual(['gold'])
+    expect(unreadableColorsIn('<stop stop-color="yellow"/>')).toEqual([
+      'yellow'
+    ])
+  })
+
+  it('does not report paint keywords that name no colour', () => {
+    expect(
+      unreadableColorsIn(
+        '<path fill="none" stroke="currentColor"/>' +
+          '<path fill="transparent" stroke="inherit"/>' +
+          `<path fill="${yellow}"/>`
+      )
+    ).toEqual([])
+  })
+
+  it('reads paint attributes independently of scan order', () => {
+    const svg = `<path fill="gold"/><path fill="${yellow}"/><path stroke="gold"/>`
+    expect(unreadableColorsIn(svg)).toEqual(unreadableColorsIn(svg))
+    expect(yellowsIn(svg)).toEqual([yellow])
   })
 
   it('does not mistake a url() reference for a color', () => {
