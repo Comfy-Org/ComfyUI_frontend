@@ -32,7 +32,7 @@ export function useCompositorEditor() {
         renderer: 'reka',
         size: 'full',
         contentClass: 'layer-editor-dialog w-[90vw] h-[90vh] max-h-[90vh]',
-        headerClass: 'p-2',
+        headerClass: 'border-b border-border-default p-2',
         bodyClass: 'flex min-h-0 flex-col p-0',
         modal: true,
         maximizable: true,

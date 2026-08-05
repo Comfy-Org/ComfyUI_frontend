@@ -60,6 +60,7 @@ class FakeCompositor implements Compositor {
 }
 
 const scaleCalls: Array<[number, number]> = []
+const drawImageCalls: unknown[][] = []
 
 function stub2d(): () => void {
   const orig = HTMLCanvasElement.prototype.getContext
@@ -84,7 +85,7 @@ function stub2d(): () => void {
         scaleCalls.push([x, y])
       },
       setTransform: () => {},
-      drawImage: () => {},
+      drawImage: (...args: unknown[]) => drawImageCalls.push(args),
       fillRect: () => {},
       strokeRect: () => {},
       clearRect: () => {},
@@ -127,6 +128,7 @@ afterAll(() => {
 
 beforeEach(() => {
   scaleCalls.length = 0
+  drawImageCalls.length = 0
   const pending = new Map<number, FrameRequestCallback>()
   let nextId = 1
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
@@ -828,6 +830,29 @@ describe('useLayerEditorSession', () => {
       session.selectBackground()
       expect(session.activeNodeId.value).toBe(session.backgroundLayer.value?.id)
       expect(session.selectedContext.value).toBe('background')
+    })
+  })
+
+  describe('outside canvas preview', () => {
+    it('previews only selected layers that cross the canvas edge', async () => {
+      const { session } = await loadedSession()
+      const [inside, clipped] = session.imageLayers.value
+      session.setLayerPosition(clipped.id, 60, 10)
+      session.setElements(makeElements())
+      await flushFrames()
+
+      session.selectBackground()
+      await flushFrames()
+      drawImageCalls.length = 0
+
+      session.setSelectedNodes([clipped.id])
+      await flushFrames()
+      expect(drawImageCalls).toHaveLength(1)
+
+      drawImageCalls.length = 0
+      session.setSelectedNodes([inside.id])
+      await flushFrames()
+      expect(drawImageCalls).toHaveLength(0)
     })
   })
 

@@ -1,19 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <div class="flex min-h-0 flex-1">
-      <LayerPanel :session="session" />
-      <div class="relative flex min-h-0 min-w-0 flex-1">
-        <LayerEditorCanvas :session="session" />
-        <LayerEditorToolbar :session="session" />
-      </div>
-      <LayerPropertiesPanel :session="session" />
-    </div>
-    <div
-      class="flex items-center justify-end gap-2 border-t border-border-default bg-base-background px-4 py-3"
-    >
-      <Button variant="destructive" size="md" @click="onCancel">
-        {{ t('g.cancel') }}
-      </Button>
+    <Teleport defer to="#layer-editor-header-actions">
       <Button
         variant="primary"
         size="md"
@@ -22,6 +9,14 @@
       >
         {{ t('g.save') }}
       </Button>
+    </Teleport>
+    <div class="flex min-h-0 flex-1">
+      <LayerPanel :session="session" />
+      <div class="relative flex min-h-0 min-w-0 flex-1">
+        <LayerEditorCanvas :session="session" />
+        <LayerEditorToolbar :session="session" />
+      </div>
+      <LayerPropertiesPanel :session="session" />
     </div>
   </div>
 </template>
@@ -52,7 +47,6 @@ import { useLayerEditorSession } from '@/composables/layerEditor/useLayerEditorS
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const { node, mode = 'images' } = defineProps<{
@@ -75,10 +69,6 @@ function layerName(url: string, index: number): string {
     void 0
   }
   return t('layerEditor.layerN', { n: index + 1 })
-}
-
-function onCancel(): void {
-  useDialogStore().closeDialog({ key: 'global-layer-editor' })
 }
 
 async function onSave(): Promise<void> {
