@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "忘记密码",
   "cloudHero": {
     "nextSlide": "下一张幻灯片",
-    "previousSlide": "上一张幻灯片",
-    "slidePagerLabel": "跳转到第 {index} 张幻灯片",
-    "slides": {
-      "cloud": {
-        "description": "适合大多数希望随时随地使用、并需要经过商业授权验证模型的用户。",
-        "title": "云端"
-      },
-      "models": {
-        "description": "精选、具备商业授权的模型，开箱即用，无需配置。",
-        "title": "模型"
-      },
-      "team": {
-        "description": "立即邀请您的团队加入。可在组织内共享工作流和资源。",
-        "title": "团队"
-      },
-      "workflows": {
-        "description": "从创意到成果只需几分钟。可并排生成多个变体。",
-        "title": "工作流"
-      }
-    }
+    "previousSlide": "上一张幻灯片"
   },
   "cloudNotification": {
     "continueLocally": "本地继续",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "云服务目前处于内测阶段",
   "cloudSorryContactSupport_title": "抱歉，请联系客服",
   "cloudStart_desc": "无需任何设置。可在任何设备上使用。",
-  "cloudStart_download": "下载 ComfyUI",
   "cloudStart_explain": "一次性生成多个输出。轻松分享工作流。",
   "cloudStart_learnAboutButton": "了解云服务",
   "cloudStart_title": "几秒钟内开始创作",
-  "cloudStart_wantToRun": "想在本地运行 ComfyUI 吗？",
   "cloudSurvey_steps_experience": "你对 ComfyUI 有多了解？",
   "cloudSurvey_steps_focus": "你正在构建什么？",
   "cloudSurvey_steps_intent": "您希望用 ComfyUI 创作什么？",

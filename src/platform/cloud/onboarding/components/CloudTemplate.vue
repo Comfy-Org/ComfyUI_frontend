@@ -1,8 +1,8 @@
 <template>
   <div
-    class="dark-theme h-svh w-screen bg-primary-comfy-ink font-formula text-primary-comfy-canvas"
+    class="dark-theme flex h-svh w-screen items-center bg-primary-comfy-ink font-formula text-primary-comfy-canvas"
   >
-    <div class="mx-auto flex size-full max-w-[100rem]">
+    <div class="mx-auto flex size-full max-h-248 max-w-[100rem]">
       <div v-if="showHero" class="relative min-h-0 flex-1 overflow-hidden">
         <CloudHeroCarousel />
       </div>
