@@ -295,6 +295,7 @@ function toggleFullscreen() {
         @click="playing = !playing"
       />
       <button
+        type="button"
         class="bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-xl lg:size-10"
         :aria-label="
           muted ? t('player.unmute', locale) : t('player.mute', locale)
@@ -373,6 +374,7 @@ function toggleFullscreen() {
 
       <!-- Fullscreen button -->
       <button
+        type="button"
         class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
         :aria-label="t('player.fullscreen', locale)"
         @click="toggleFullscreen"
@@ -395,6 +397,7 @@ function toggleFullscreen() {
       <!-- CC button -->
       <button
         v-if="hasSubtitles"
+        type="button"
         :class="
           cn(
             'flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold lg:size-10 lg:text-sm',
@@ -415,6 +418,7 @@ function toggleFullscreen() {
 
       <!-- Mute / Unmute button -->
       <button
+        type="button"
         class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
         :aria-label="
           muted ? t('player.unmute', locale) : t('player.mute', locale)
