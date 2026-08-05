@@ -23,7 +23,8 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
-import { isCloud } from '@/platform/distribution/types'
+import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
+import type { Distribution } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
@@ -58,6 +59,7 @@ type CreateCustomerResponse =
  */
 type CreateCustomerPayload = {
   turnstile_token?: string
+  signup_source?: Distribution
 }
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -383,6 +385,11 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
+    const body: CreateCustomerPayload = {
+      ...payload,
+      signup_source: DISTRIBUTION
+    }
+
     const createCustomerRes = await fetchWithUnifiedRemint(
       buildApiUrl('/customers'),
       {
@@ -391,8 +398,7 @@ export const useAuthStore = defineStore('auth', () => {
           ...authHeader,
           'Content-Type': 'application/json'
         },
-        ...(payload &&
-          Object.keys(payload).length > 0 && { body: JSON.stringify(payload) })
+        body: JSON.stringify(body)
       },
       isCloud && flags.unifiedCloudAuthEnabled
     )
