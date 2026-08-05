@@ -53,5 +53,25 @@ export const Gallery: CollectionConfig = {
       name: 'href',
       type: 'text',
     },
+    {
+      name: 'publishedAt',
+      type: 'date',
+      admin: {
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+        position: 'sidebar',
+      },
+      hooks: {
+        beforeChange: [
+          ({ siblingData, value }) => {
+            if (!value && siblingData._status === 'published') {
+              return new Date()
+            }
+            return value
+          },
+        ],
+      },
+    },
   ],
 }

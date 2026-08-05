@@ -138,6 +138,7 @@ export interface Gallery {
   team?: (number | null) | Team;
   tool: number | Tool;
   href?: string | null;
+  publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -318,6 +319,7 @@ export interface GallerySelect<T extends boolean = true> {
   team?: T;
   tool?: T;
   href?: T;
+  publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

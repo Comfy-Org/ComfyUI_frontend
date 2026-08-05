@@ -12,6 +12,13 @@ const cacheDir = path.resolve(dirname, '../../.media-cache')
 
 const mediaExtension = (url: string): string => path.extname(new URL(url).pathname) || '.bin'
 
+// Dummy publish dates, one day apart, ascending with the static gallery order so
+// that sorting by publishedAt reproduces the hand-curated sequence on the site.
+const PUBLISHED_AT_BASE = Date.UTC(2024, 0, 1)
+const ONE_DAY_MS = 86_400_000
+const publishedAtForIndex = (index: number): string =>
+  new Date(PUBLISHED_AT_BASE + index * ONE_DAY_MS).toISOString()
+
 const seed = async (): Promise<void> => {
   const payload = await getPayload({ config })
 
@@ -25,7 +32,7 @@ const seed = async (): Promise<void> => {
     password,
   })
 
-  for (const item of galleryItems) {
+  for (const [index, item] of galleryItems.entries()) {
     const creator = await findOrCreateByField(payload, 'creators', 'name', item.userAlias, {
       name: item.userAlias,
     })
@@ -58,6 +65,7 @@ const seed = async (): Promise<void> => {
       team,
       tool,
       href: item.href,
+      publishedAt: publishedAtForIndex(index),
       _status: status,
     }
 
