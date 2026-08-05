@@ -1,6 +1,11 @@
 import { expect, mergeTests } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
+import type {
+  Asset,
+  GetAllSettingsResponse,
+  GetSettingByIdResponse,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
 
 import {
   assetRequestIncludesTag,
@@ -8,10 +13,16 @@ import {
 } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { WorkspaceStore } from '@e2e/types/globals'
 import {
   routeObjectInfoFromSetupApi,
   setComboInputOptions
 } from '@e2e/fixtures/utils/objectInfo'
+import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  selectVuePromotedMediaByTitle,
+  setPromotedMediaHostOptionsAndValue
+} from '@e2e/fixtures/utils/promotedMissingMedia'
 import {
   createRouteMockJob,
   jobsRouteFixture
@@ -19,14 +30,24 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { toNodeId } from '@/types/nodeId'
 
 const ossTest = mergeTests(comfyPageFixture, jobsRouteFixture)
 const outputHash =
   '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
+const outputVideoHash = 'cloud-video-hash.mp4'
 const plainVideoFileName = 'plain_video.mp4'
 const graphDropPosition = { x: 500, y: 300 }
-const missingMediaUploadObservationMs = 1_000
-const missingMediaUploadPollMs = 100
+const missingMediaObservationMs = 1_000
+const missingMediaPollMs = 100
+const promotedMediaWorkflow = 'missing/missing_media_promoted_widget'
+const promotedMediaHostTitle = 'Subgraph with Promoted Missing Media'
+const promotedMediaHostNodeId = toNodeId(2)
+const promotedMediaLeafNodeId = toNodeId(1)
+const promotedMediaHostWidgetName = 'outer_image'
+const promotedMediaLeafWidgetName = 'image'
+const validPromotedMedia = 'example.png'
+const hostOnlyPromotedMedia = 'host-only-promoted-image.png'
 const emptyMediaLoaderNodes = [
   {
     nodeType: 'LoadImage',
@@ -54,6 +75,18 @@ const cloudOutputAsset: Asset & { hash?: string } = {
   hash: outputHash,
   size: 4_194_304,
   mime_type: 'image/png',
+  tags: ['output'],
+  created_at: '2026-05-01T00:00:00Z',
+  updated_at: '2026-05-01T00:00:00Z',
+  last_access_time: '2026-05-01T00:00:00Z'
+}
+
+const cloudOutputVideoAsset: Asset & { hash?: string } = {
+  id: 'test-output-video-hash-001',
+  name: 'ComfyUI_00001_.mp4',
+  hash: outputVideoHash,
+  size: 4_194_304,
+  mime_type: 'video/mp4',
   tags: ['output'],
   created_at: '2026-05-01T00:00:00Z',
   updated_at: '2026-05-01T00:00:00Z',
@@ -92,10 +125,21 @@ interface CloudUploadAssetState {
 
 async function routeCloudBootstrapApis(page: Page) {
   await page.route('**/api/settings**', async (route) => {
+    const completedSurveySetting: GetSettingByIdResponse = {
+      value: { usage: 'personal' }
+    }
+    const allSettings: GetAllSettingsResponse = {}
+    const body = route
+      .request()
+      .url()
+      .includes('/api/settings/onboarding_survey')
+      ? completedSurveySetting
+      : allSettings
+
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({})
+      body: JSON.stringify(body)
     })
   })
   await page.route('**/api/userdata**', async (route) => {
@@ -121,7 +165,10 @@ async function routeCloudBootstrapApis(page: Page) {
   })
 }
 
-const cloudOutputTest = createCloudAssetsFixture([cloudOutputAsset]).extend({
+const cloudOutputTest = createCloudAssetsFixture([
+  cloudOutputAsset,
+  cloudOutputVideoAsset
+]).extend({
   page: async ({ page }, use) => {
     await routeCloudBootstrapApis(page)
     const unrouteObjectInfo = await routeObjectInfoFromSetupApi(page)
@@ -223,6 +270,33 @@ async function enableErrorsTab(comfyPage: ComfyPage) {
 
 function getErrorOverlay(comfyPage: ComfyPage) {
   return comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+}
+
+function isOutputAssetsRequest(url: string) {
+  return url.includes('/api/assets') && assetRequestIncludesTag(url, 'output')
+}
+
+async function waitForOutputAssetsResponse(comfyPage: ComfyPage) {
+  await comfyPage.page.waitForResponse(
+    (response) =>
+      response.status() === 200 && isOutputAssetsRequest(response.url())
+  )
+}
+
+async function getCachedMissingMediaWarningNames(
+  comfyPage: ComfyPage
+): Promise<string[] | null> {
+  return await comfyPage.page.evaluate(() => {
+    const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+      .activeWorkflow
+    if (!workflow) return null
+
+    return (
+      workflow.pendingWarnings?.missingMediaCandidates?.map(
+        (candidate) => candidate.name
+      ) ?? []
+    )
+  })
 }
 
 async function expectNoErrorsTab(comfyPage: ComfyPage) {
@@ -327,25 +401,31 @@ async function expectLoadVideoUploading(comfyPage: ComfyPage) {
     .toBe(true)
 }
 
-async function expectNoMissingMediaDuringUpload(comfyPage: ComfyPage) {
+async function expectNoMissingMediaForObservationWindow(comfyPage: ComfyPage) {
   await comfyPage.nextFrame()
   await comfyPage.nextFrame()
 
   let sawErrorOverlay = false
+  let sawCachedMissingMedia = false
   const startedAt = Date.now()
   await expect
     .poll(
       async () => {
+        const cachedMissingMedia =
+          await getCachedMissingMediaWarningNames(comfyPage)
+        sawCachedMissingMedia =
+          sawCachedMissingMedia || !!cachedMissingMedia?.length
         sawErrorOverlay =
           sawErrorOverlay || (await getErrorOverlay(comfyPage).isVisible())
         return (
           !sawErrorOverlay &&
-          Date.now() - startedAt >= missingMediaUploadObservationMs
+          !sawCachedMissingMedia &&
+          Date.now() - startedAt >= missingMediaObservationMs
         )
       },
       {
-        timeout: missingMediaUploadObservationMs + missingMediaUploadPollMs * 5,
-        intervals: [missingMediaUploadPollMs]
+        timeout: missingMediaObservationMs + missingMediaPollMs * 5,
+        intervals: [missingMediaPollMs]
       }
     )
     .toBe(true)
@@ -424,9 +504,111 @@ ossTest.describe(
         })
 
         await expectLoadVideoUploading(comfyPage)
-        await expectNoMissingMediaDuringUpload(comfyPage)
+        await expectNoMissingMediaForObservationWindow(comfyPage)
 
         await delayedUpload.finishUpload()
+        await expect(getErrorOverlay(comfyPage)).toBeHidden()
+      }
+    )
+  }
+)
+
+comfyPageFixture.describe(
+  'Errors tab - promoted missing media',
+  { tag: ['@ui', '@vue-nodes', '@widget', '@subgraph'] },
+  () => {
+    comfyPageFixture.beforeEach(async ({ comfyPage }) => {
+      await enableErrorsTab(comfyPage)
+    })
+
+    comfyPageFixture(
+      'shows missing media on the promoted host and not the interior widget',
+      async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(comfyPage, promotedMediaWorkflow)
+
+        const missingMediaRow = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingMediaRow
+        )
+        await expect(missingMediaRow).toHaveCount(1)
+        await expect(missingMediaRow).toContainText(
+          `${promotedMediaHostTitle} - ${promotedMediaHostWidgetName}`
+        )
+
+        const panel = new PropertiesPanelHelper(comfyPage.page)
+        await panel.close()
+        await comfyPage.subgraph.enterSubgraphWithFallback(
+          String(promotedMediaHostNodeId)
+        )
+        await panel.open(comfyPage.actionbar.propertiesButton)
+        await expect(missingMediaRow).toHaveCount(1)
+        await expect(missingMediaRow).toContainText(
+          `${promotedMediaHostTitle} - ${promotedMediaHostWidgetName}`
+        )
+      }
+    )
+
+    comfyPageFixture(
+      'clears promoted missing media after selecting a valid host image',
+      async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(comfyPage, promotedMediaWorkflow)
+        const missingMediaRow = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingMediaRow
+        )
+        await expect(missingMediaRow).toHaveCount(1)
+
+        await selectVuePromotedMediaByTitle(
+          comfyPage,
+          promotedMediaHostTitle,
+          promotedMediaHostWidgetName,
+          validPromotedMedia
+        )
+
+        await expectNoErrorsTab(comfyPage)
+        await expect(missingMediaRow).toHaveCount(0)
+
+        const panel = new PropertiesPanelHelper(comfyPage.page)
+        await panel.close()
+        await comfyPage.subgraph.enterSubgraphWithFallback(
+          String(promotedMediaHostNodeId)
+        )
+        await expectNoErrorsTab(comfyPage)
+        await expect(missingMediaRow).toHaveCount(0)
+      }
+    )
+
+    comfyPageFixture(
+      'keeps a host-only option value resolved after a promoted media rescan',
+      async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(comfyPage, promotedMediaWorkflow)
+
+        const optionState = await setPromotedMediaHostOptionsAndValue(
+          comfyPage,
+          promotedMediaHostNodeId,
+          promotedMediaLeafNodeId,
+          promotedMediaHostWidgetName,
+          promotedMediaLeafWidgetName,
+          hostOnlyPromotedMedia
+        )
+        expect(
+          optionState,
+          'Expected the uploaded value only in the promoted host options'
+        ).toEqual({
+          hostValue: hostOnlyPromotedMedia,
+          leafIncludesValue: false
+        })
+
+        await expectNoErrorsTab(comfyPage)
+
+        const host = comfyPage.vueNodes.getNodeByTitle(promotedMediaHostTitle)
+        await comfyPage.vueNodes.selectNode(String(promotedMediaHostNodeId))
+        await comfyPage.keyboard.bypass()
+        await expect(host.getByText('Bypassed', { exact: true })).toBeVisible()
+
+        await comfyPage.keyboard.bypass()
+        await expect(host.getByText('Bypassed', { exact: true })).toBeHidden()
+        const panel = new PropertiesPanelHelper(comfyPage.page)
+        await panel.open(comfyPage.actionbar.propertiesButton)
+        await expect(panel.errorsTab).toBeHidden()
         await expect(getErrorOverlay(comfyPage)).toBeHidden()
       }
     )
@@ -482,18 +664,30 @@ cloudOutputTest.describe(
 
     cloudOutputTest(
       'resolves compact annotated output media from output assets',
-      async ({ cloudAssetRequests, comfyPage }) => {
+      async ({ comfyPage }) => {
+        const outputAssetsResponse = waitForOutputAssetsResponse(comfyPage)
+
         await comfyPage.workflow.loadWorkflow(
           'missing/missing_media_cloud_output_annotation'
         )
 
-        await expect
-          .poll(() =>
-            cloudAssetRequests.some((url) =>
-              assetRequestIncludesTag(url, 'output')
-            )
-          )
-          .toBe(true)
+        await outputAssetsResponse
+        await expectNoMissingMediaForObservationWindow(comfyPage)
+        await expectNoErrorsTab(comfyPage)
+      }
+    )
+
+    cloudOutputTest(
+      'resolves subfoldered output video media from flat output asset hashes',
+      async ({ comfyPage }) => {
+        const outputAssetsResponse = waitForOutputAssetsResponse(comfyPage)
+
+        await comfyPage.workflow.loadWorkflow(
+          'missing/missing_media_cloud_output_video_subfolder'
+        )
+
+        await outputAssetsResponse
+        await expectNoMissingMediaForObservationWindow(comfyPage)
         await expectNoErrorsTab(comfyPage)
       }
     )
@@ -529,7 +723,7 @@ cloudUploadRaceTest.describe(
         })
 
         await expectLoadVideoUploading(comfyPage)
-        await expectNoMissingMediaDuringUpload(comfyPage)
+        await expectNoMissingMediaForObservationWindow(comfyPage)
 
         markUploadedCloudAssetAvailable()
         await delayedUpload.finishUpload()

@@ -8,7 +8,7 @@ test.describe('Cloud page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Comfy Cloud — AI in the Cloud')
+    await expect(page).toHaveTitle('Comfy Cloud - AI in the Cloud')
   })
 
   test('HeroSection heading and subtitle are visible', async ({ page }) => {
@@ -40,7 +40,7 @@ test.describe('Cloud page @smoke', () => {
     }
   })
 
-  test('AIModelsSection heading and 5 model cards are visible', async ({
+  test('AIModelsSection heading and 6 model cards are visible', async ({
     page
   }) => {
     const heading = page.getByRole('heading', { name: /leading AI models/i })
@@ -49,7 +49,7 @@ test.describe('Cloud page @smoke', () => {
     const section = heading.locator('xpath=ancestor::section')
     const grid = section.locator('.grid')
     const modelCards = grid.locator('a[href="https://comfy.org/workflows"]')
-    await expect(modelCards).toHaveCount(5)
+    await expect(modelCards).toHaveCount(6)
   })
 
   test('AIModelsSection CTA links to workflows', async ({ page }) => {
@@ -86,13 +86,6 @@ test.describe('Cloud page @smoke', () => {
     const cards = section.locator('a[href]')
     await expect(cards).toHaveCount(3)
   })
-
-  test('FAQSection heading is visible with 15 items', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /FAQ/i })).toBeVisible()
-
-    const faqButtons = page.locator('button[aria-controls^="faq-panel-"]')
-    await expect(faqButtons).toHaveCount(15)
-  })
 })
 
 test.describe('Cloud FAQ accordion @interaction', () => {
@@ -111,7 +104,6 @@ test.describe('Cloud FAQ accordion @interaction', () => {
       name: /What is Comfy Cloud/i
     })
     await firstQuestion.scrollIntoViewIfNeeded()
-    // Gate: wait for Vue hydration to bind aria-expanded
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
     await firstQuestion.click()
 
@@ -125,7 +117,6 @@ test.describe('Cloud FAQ accordion @interaction', () => {
       name: /What is Comfy Cloud/i
     })
     await firstQuestion.scrollIntoViewIfNeeded()
-    // Gate: wait for Vue hydration to bind aria-expanded
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
     await firstQuestion.click()

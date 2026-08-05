@@ -132,6 +132,7 @@ function updateItemSize(): void {
 }
 const onResize = debounce(updateItemSize, resizeDebounce)
 watch([width, height], onResize, { flush: 'post' })
+watch(() => gridStyle, updateItemSize, { flush: 'post' })
 whenever(() => items, updateItemSize, { flush: 'post' })
 onBeforeUnmount(() => {
   onResize.cancel()

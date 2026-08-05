@@ -30,6 +30,69 @@ const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
+const CRITICAL_COVERAGE_DIRS = [
+  'src/base',
+  'src/composables',
+  'src/core',
+  'src/lib/litegraph/src/node',
+  'src/lib/litegraph/src/subgraph',
+  'src/lib/litegraph/src/utils',
+  'src/platform/assets/composables',
+  'src/platform/assets/mappings',
+  'src/platform/assets/schemas',
+  'src/platform/assets/services',
+  'src/platform/assets/utils',
+  'src/platform/errorCatalog',
+  'src/platform/keybindings',
+  'src/platform/missingMedia',
+  'src/platform/missingModel',
+  'src/platform/navigation',
+  'src/platform/nodeReplacement',
+  'src/platform/remote',
+  'src/platform/remoteConfig',
+  'src/platform/secrets',
+  'src/platform/settings',
+  'src/platform/workflow',
+  'src/platform/workspace/api',
+  'src/platform/workspace/auth',
+  'src/platform/workspace/composables',
+  'src/platform/workspace/stores',
+  'src/platform/workspace/utils',
+  'src/schemas',
+  'src/scripts',
+  'src/services',
+  'src/stores',
+  'src/utils',
+  'src/workbench/extensions/manager/composables',
+  'src/workbench/extensions/manager/services',
+  'src/workbench/extensions/manager/stores',
+  'src/workbench/extensions/manager/utils',
+  'src/workbench/utils'
+]
+
+// A single glob key so vitest aggregates all critical dirs into one
+// thresholds bucket instead of one bucket per glob
+const CRITICAL_COVERAGE_GLOB = `{${CRITICAL_COVERAGE_DIRS.join(',')}}/**/*.{ts,vue}`
+
+const CRITICAL_COVERAGE_THRESHOLDS = {
+  statements: 69,
+  branches: 60,
+  functions: 67,
+  lines: 70
+}
+
+const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
+  'src/lib/litegraph/imgs/**',
+  'src/lib/litegraph/public/**',
+  'src/lib/litegraph/src/*.{ts,vue}',
+  'src/lib/litegraph/src/__fixtures__/**',
+  'src/lib/litegraph/src/__snapshots__/**',
+  'src/lib/litegraph/src/canvas/**',
+  'src/lib/litegraph/src/infrastructure/**',
+  'src/lib/litegraph/src/types/**',
+  'src/lib/litegraph/src/widgets/**'
+]
+
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
 const VITE_OG_TITLE =
@@ -222,7 +285,14 @@ export default defineConfig({
 
       '/oauth': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...cloudProxyConfig,
+        bypass: (req) => {
+          const path = (req.url ?? '').split('?')[0]
+          if (path === '/oauth/consent' || path.startsWith('/oauth/consent/')) {
+            return req.url
+          }
+          return null
+        }
       },
 
       '/ws': {
@@ -271,14 +341,13 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
-    // Exclude proprietary ABCROM fonts from non-cloud builds
+    // Exclude proprietary fonts from non-cloud builds
     {
       name: 'exclude-proprietary-fonts',
       generateBundle(_options, bundle) {
         if (DISTRIBUTION !== 'cloud') {
-          // Remove ABCROM font files from bundle
           for (const [fileName] of Object.entries(bundle)) {
-            if (/ABCROM.*\.(woff2?|ttf|otf)$/i.test(fileName)) {
+            if (/(ABCROM|PPFormula).*\.(woff2?|ttf|otf)$/i.test(fileName)) {
               delete bundle[fileName]
             }
           }
@@ -448,22 +517,14 @@ export default defineConfig({
           sentryVitePlugin({
             org: process.env.SENTRY_ORG,
             project: process.env.SENTRY_PROJECT,
-            authToken: process.env.SENTRY_AUTH_TOKEN,
-            sourcemaps: {
-              filesToDeleteAfterUpload: process.env.SENTRY_PROJECT_PROD
-                ? []
-                : ['**/*.map']
-            }
+            authToken: process.env.SENTRY_AUTH_TOKEN
           }),
           ...(process.env.SENTRY_PROJECT_PROD
             ? [
                 sentryVitePlugin({
                   org: process.env.SENTRY_ORG,
                   project: process.env.SENTRY_PROJECT_PROD,
-                  authToken: process.env.SENTRY_AUTH_TOKEN,
-                  sourcemaps: {
-                    filesToDeleteAfterUpload: ['**/*.map']
-                  }
+                  authToken: process.env.SENTRY_AUTH_TOKEN
                 })
               ]
             : [])
@@ -474,7 +535,11 @@ export default defineConfig({
   build: {
     minify: SHOULD_MINIFY,
     target: 'es2022',
-    sourcemap: GENERATE_SOURCEMAP,
+    // Use 'hidden' so sourcemaps are still generated (for Sentry upload) but the
+    // browser-facing `//# sourceMappingURL=` comment is NOT injected into the JS
+    // bundles. This kills the ~57k/3d `/assets/*.js.map` 404 noise in prod
+    // (the .map files aren't served) without losing Sentry symbolication. See FE-1405.
+    sourcemap: GENERATE_SOURCEMAP ? 'hidden' : false,
     // Exclude heavy optional vendor chunks from initial module preload
     // These chunks are only needed when their features are used (3D, terminal, etc.)
     modulePreload: {
@@ -542,6 +607,11 @@ export default defineConfig({
             {
               name: 'vendor-sentry',
               test: /[\\/]node_modules[\\/]@sentry[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-datadog',
+              test: /[\\/]node_modules[\\/]@datadog[\\/]/,
               priority: 15
             },
 
@@ -658,6 +728,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom',
+    // Pin the timezone so date-formatting assertions are deterministic
+    // regardless of the contributor's local timezone (CI runs in UTC).
+    env: { TZ: 'UTC' },
     setupFiles: ['./vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
     include: [
@@ -675,9 +748,12 @@ export default defineConfig({
         'src/**/*.stories.ts',
         'src/**/*.d.ts',
         'src/locales/**',
-        'src/lib/litegraph/**',
-        'src/assets/**'
-      ]
+        'src/assets/**',
+        ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
+      ],
+      thresholds: {
+        [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS
+      }
     },
     exclude: [
       '**/node_modules/**',

@@ -72,12 +72,16 @@ jobs:
           path: dist/
           retention-days: 1
 
-  # Sharded snapshot updates
+      - name: Build cloud frontend
+        uses: ./.github/actions/build-cloud-frontend
+
+  # Shards 1-4 run against the plain build; the `cloud` leg runs @cloud
+  # tests against the frontend-dist-cloud build.
   update-snapshots-sharded:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -87,8 +91,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4]
-        shardTotal: [4]
+        shard: [1, 2, 3, 4, cloud]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -97,7 +100,7 @@ jobs:
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
-          name: frontend-dist
+          name: ${{ matrix.shard == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -106,10 +109,10 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
-      # Run sharded tests with snapshot updates (browsers pre-installed in container)
-      - name: Update snapshots (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+      # Run tests with snapshot updates (browsers pre-installed in container)
+      - name: Update snapshots (${{ matrix.shard == 'cloud' && 'cloud' || format('Shard {0}/4', matrix.shard) }})
         id: playwright-tests
-        run: pnpm exec playwright test --update-snapshots --grep @screenshot --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: pnpm exec playwright test --update-snapshots --grep @screenshot ${{ matrix.shard == 'cloud' && '--project=cloud' || format('--grep-invert @cloud --shard={0}/4', matrix.shard) }}
         continue-on-error: true
 
       - name: Stage changed snapshot files
@@ -128,13 +131,13 @@ jobs:
           ) | sort -u | grep -E '\-snapshots/' || true )
 
           if [ -z "$changed_files" ]; then
-            echo "No snapshot changes in shard ${{ matrix.shardIndex }}"
+            echo "No snapshot changes in shard ${{ matrix.shard }}"
             echo "has-changes=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           file_count=$(echo "$changed_files" | wc -l)
-          echo "Shard ${{ matrix.shardIndex }}: $file_count changed snapshot(s):"
+          echo "Shard ${{ matrix.shard }}: $file_count changed snapshot(s):"
           echo "$changed_files"
           echo "has-changes=true" >> $GITHUB_OUTPUT
 
@@ -152,7 +155,7 @@ jobs:
         uses: actions/upload-artifact@v6
         if: steps.changed-snapshots.outputs.has-changes == 'true'
         with:
-          name: snapshots-shard-${{ matrix.shardIndex }}
+          name: snapshots-shard-${{ matrix.shard }}
           path: /tmp/changed_snapshots_shard/
           retention-days: 1
 
@@ -160,7 +163,7 @@ jobs:
         uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: playwright-report-shard-${{ matrix.shardIndex }}
+          name: playwright-report-shard-${{ matrix.shard }}
           path: ./playwright-report/
           retention-days: 30
 

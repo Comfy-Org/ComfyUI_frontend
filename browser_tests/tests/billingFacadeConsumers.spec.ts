@@ -11,6 +11,10 @@ import type {
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import {
+  mockWorkspaceTokenMint,
+  workspace
+} from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
  * Billing facade consumers — FE-933 (B3) regression.
@@ -37,6 +41,8 @@ const toWorkspaceStatus = (
   s: CloudSubscriptionStatusResponse
 ): BillingStatusResponse => ({
   is_active: s.is_active ?? false,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_tier: s.subscription_tier ?? undefined,
   subscription_duration: s.subscription_duration ?? undefined,
   renewal_date: s.renewal_date ?? undefined,
@@ -81,6 +87,7 @@ async function mockCloudBoot(
   await page.route('**/api/auth/session', (r) =>
     r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
   )
+  await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
   // Single personal workspace.
@@ -158,7 +165,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await expect(popover.getByTestId('add-credits-button')).toBeVisible()
   })
 
-  test('free-tier dialog shows the renewal date from the facade', async ({
+  test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -166,7 +173,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     // Boots with team workspaces enabled (production shape); the facade routes a
     // personal workspace through the workspace `/api/billing/*` endpoints. With
     // subscription gating on, an inactive FREE user gets the "Subscribe to run"
-    // button, which opens the free-tier dialog on click. (refreshRemoteConfig
+    // button, which opens the pricing table on click. (refreshRemoteConfig
     // overwrites window.__CONFIG__ from /api/features, so the flags must come
     // from the features mock, not an init script.)
     await mockCloudBoot(
@@ -185,10 +192,6 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
 
     await page.getByTestId('subscribe-to-run-button').click()
 
-    // T5: the dialog must source the date from facade renewalDate — when this
-    // line read the legacy store it silently vanished for team users.
-    await expect(
-      page.getByText('Your credits refresh on Feb 20, 2099.')
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Plans for/ })).toBeVisible()
   })
 })

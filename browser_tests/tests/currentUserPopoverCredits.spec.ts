@@ -60,6 +60,8 @@ const mockSubscriptionStatus: CloudSubscriptionStatusResponse = {
 // visible (free tier would swap it for "Upgrade to add credits").
 const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -104,6 +106,10 @@ const test = comfyPageFixture.extend({
         contentType: 'application/json',
         body: JSON.stringify(mockTokenResponse)
       })
+    )
+
+    await page.route('**/api/auth/session', (route) =>
+      route.fulfill({ status: 204 })
     )
 
     await page.route('**/customers/cloud-subscription-status', (route) =>

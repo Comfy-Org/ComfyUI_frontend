@@ -8,7 +8,6 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
-import { st } from '@/i18n'
 import { app } from '@/scripts/app'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
@@ -30,6 +29,7 @@ import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
 import TabNormalInputs from './parameters/TabNormalInputs.vue'
 import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
+import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
 import {
@@ -111,6 +111,11 @@ function closePanel() {
     element_group: 'right_side_panel'
   })
   rightSidePanelStore.closePanel()
+}
+
+function handleTabChange(newTab: RightSidePanelTab) {
+  trackRightSidePanelTabOpened(newTab)
+  rightSidePanelStore.openPanel(newTab)
 }
 
 type RightSidePanelTabList = Array<{
@@ -243,8 +248,7 @@ function resolveTitle() {
       const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
       return resolveNodeDisplayName(nodes[0], {
         emptyLabel: fallbackNodeTitle,
-        untitledLabel: fallbackNodeTitle,
-        st
+        untitledLabel: fallbackNodeTitle
       })
     }
   }
@@ -347,14 +351,7 @@ function handleTitleCancel() {
         </div>
       </div>
       <nav class="overflow-x-auto px-4 pt-1 pb-2">
-        <TabList
-          :model-value="activeTab"
-          @update:model-value="
-            (newTab: RightSidePanelTab) => {
-              rightSidePanelStore.openPanel(newTab)
-            }
-          "
-        >
+        <TabList :model-value="activeTab" @update:model-value="handleTabChange">
           <Tab
             v-for="tab in tabs"
             :key="tab.value"

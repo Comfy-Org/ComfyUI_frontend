@@ -46,16 +46,7 @@ jobs:
           retention-days: 1
 
       - name: Build cloud frontend
-        run: pnpm build:cloud
-        env:
-          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
-
-      - name: Upload cloud frontend
-        uses: actions/upload-artifact@v6
-        with:
-          name: frontend-dist-cloud
-          path: dist/
-          retention-days: 1
+        uses: ./.github/actions/build-cloud-frontend
 
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
@@ -63,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -73,8 +64,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
-        shardTotal: [8]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        shardTotal: [16]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -93,7 +84,7 @@ jobs:
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
+        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
           COLLECT_COVERAGE: 'true'
@@ -121,7 +112,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -131,14 +122,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium-2x, chromium-0.5x, mobile-chrome, cloud]
+        browser:
+          [chromium-2x, chromium-0.5x, mobile-chrome, cloud, mobile-safari]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
-          name: ${{ matrix.browser == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
+          name: ${{ (matrix.browser == 'cloud' || matrix.browser == 'mobile-safari') && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -150,7 +142,7 @@ jobs:
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: pnpm exec playwright test --project=${{ matrix.browser }} --reporter=blob
+        run: pnpm exec playwright test --project=${{ matrix.browser }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
@@ -178,7 +170,7 @@ jobs:
     if: ${{ !cancelled() && needs.changes.outputs.should-run == 'true' }}
     steps:
       - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           version: 10
 

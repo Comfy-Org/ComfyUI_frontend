@@ -166,7 +166,7 @@
             <div class="mt-auto flex flex-col gap-1">
               <div class="flex flex-row items-center gap-2">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span
@@ -244,7 +244,7 @@
               <div class="flex flex-col gap-1">
                 <div class="flex flex-row items-center gap-2">
                   <i
-                    class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                    class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
                     aria-hidden="true"
                   />
                   <span
@@ -436,6 +436,7 @@ import {
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -468,6 +469,7 @@ const emit = defineEmits<{
 
 const { t, n } = useI18n()
 const { flags } = useFeatureFlags()
+const { permissions } = useWorkspaceUI()
 
 /** Team plans only exist behind the flag (mirrors useBillingContext type). */
 const showTeam = computed(() => flags.teamWorkspacesEnabled)
@@ -552,7 +554,7 @@ const planScopeButtonPt = {
   }
 }
 
-const planScopeOptions: PlanScopeOption[] = [
+const allPlanScopeOptions: PlanScopeOption[] = [
   { label: t('subscription.planScope.personal'), value: 'personal' },
   { label: t('subscription.planScope.team'), value: 'team' }
 ]
@@ -611,13 +613,37 @@ const {
   plans: apiPlans,
   currentPlanSlug,
   fetchPlans,
+  isTeamPlan,
   subscription,
+  subscriptionStatus,
   currentTeamCreditStop
 } = useBillingContext()
+
+const canSelectPersonalPlan = computed(
+  () => !isTeamPlan.value || permissions.value.canDowngradeToPersonal
+)
+
+const planScopeOptions = computed(() =>
+  canSelectPersonalPlan.value
+    ? allPlanScopeOptions
+    : allPlanScopeOptions.filter((option) => option.value === 'team')
+)
+
+watch(
+  canSelectPersonalPlan,
+  (canSelect) => {
+    if (!canSelect) planMode.value = 'team'
+  },
+  { immediate: true }
+)
 
 const { teamCreditStops } = useBillingPlans()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+// An ended subscription still reports its plan slug and tier, so the plan it
+// held must not read as current — it is buyable again.
+const isEnded = computed(() => subscriptionStatus.value === 'ended')
 
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
@@ -655,7 +681,9 @@ const teamVideoEstimate = computed(() =>
 
 // The team's currently-subscribed stop (null when on no team plan). Matched to
 // the slider stops by list price so the current stop can be disabled.
-const isTeamSubscribed = computed(() => currentTeamCreditStop.value !== null)
+const isTeamSubscribed = computed(
+  () => currentTeamCreditStop.value !== null && !isEnded.value
+)
 
 // `teamUsd` is seeded at mount from the fallback default; when the API stops
 // resolve afterwards with different breakpoints that seed can match no stop,
@@ -722,6 +750,7 @@ const teamButtonLabel = computed(() => {
 
 const isTeamButtonDisabled = computed(
   () =>
+    !permissions.value.canManageSubscription ||
     isLoading ||
     (isTeamSubscribed.value &&
       isTeamCurrentPlanSelected.value &&
@@ -758,7 +787,9 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
 }
 
 const currentTierKey = computed<TierKey | null>(() =>
-  subscription.value?.tier ? TIER_TO_KEY[subscription.value.tier] : null
+  subscription.value?.tier && !isEnded.value
+    ? TIER_TO_KEY[subscription.value.tier]
+    : null
 )
 
 const isYearlySubscription = computed(
@@ -766,6 +797,7 @@ const isYearlySubscription = computed(
 )
 
 const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
+  if (isEnded.value) return false
   if (currentPlanSlug.value) {
     const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
     return plan?.slug === currentPlanSlug.value
@@ -810,7 +842,12 @@ const getButtonSeverity = (
 }
 
 const isButtonDisabled = (tier: PricingTierConfig): boolean => {
-  if (isLoading) return true
+  if (
+    isLoading ||
+    !permissions.value.canManageSubscription ||
+    !canSelectPersonalPlan.value
+  )
+    return true
   if (isCurrentPlan(tier.key)) {
     return !isCancelled.value
   }
@@ -836,7 +873,12 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
 }
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
-  if (isLoading) return
+  if (
+    isLoading ||
+    !permissions.value.canManageSubscription ||
+    !canSelectPersonalPlan.value
+  )
+    return
   if (isCurrentPlan(tierKey)) {
     if (isCancelled.value) {
       emit('resubscribe')
@@ -849,8 +891,13 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
 function handleSubscribeTeam() {
   if (isTeamButtonDisabled.value) return
   // Re-subscribe only when keeping the exact current plan; any other stop or
-  // cycle is a change.
-  if (isCancelled.value && isTeamCurrentPlanSelected.value) {
+  // cycle is a change. An ended subscription still reports its credit stop, so
+  // the stop alone is no proof there is a subscription left to resume.
+  if (
+    isTeamSubscribed.value &&
+    isCancelled.value &&
+    isTeamCurrentPlanSelected.value
+  ) {
     emit('resubscribe')
     return
   }

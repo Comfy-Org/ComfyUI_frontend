@@ -9,13 +9,11 @@ import {
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
@@ -46,7 +44,7 @@ function useSubscriptionInternal() {
   const telemetry = useTelemetry()
   const isInitialized = ref(false)
 
-  const isSubscribedOrIsNotCloud = computed(() => {
+  const canAccessSubscriptionFeatures = computed(() => {
     if (!isCloud || !window.__CONFIG__?.subscription_required) return true
 
     return subscriptionStatus.value?.is_active ?? false
@@ -55,8 +53,7 @@ function useSubscriptionInternal() {
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
-  const { getAuthHeader } = authStore
-  const { flags } = useFeatureFlags()
+  const { getAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -225,7 +222,7 @@ function useSubscriptionInternal() {
     recordPendingSubscriptionCheckoutAttempt({
       tier: 'standard',
       cycle: 'monthly',
-      checkout_type: isSubscribedOrIsNotCloud.value ? 'change' : 'new',
+      checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
       ...(subscriptionTier.value
         ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] }
         : {}),
@@ -237,14 +234,7 @@ function useSubscriptionInternal() {
     })
   }, reportError)
 
-  const showSubscriptionDialog = (options?: {
-    reason?: SubscriptionDialogReason
-  }) => {
-    useTelemetry()?.trackSubscription('modal_opened', {
-      current_tier: subscriptionTier.value?.toLowerCase(),
-      reason: options?.reason
-    })
-
+  const showSubscriptionDialog = (options?: SubscriptionDialogOptions) => {
     void showSubscriptionRequiredDialog(options)
   }
 
@@ -258,7 +248,7 @@ function useSubscriptionInternal() {
   const { startCancellationWatcher, stopCancellationWatcher } =
     useSubscriptionCancellationWatcher({
       fetchStatus,
-      isActiveSubscription: isSubscribedOrIsNotCloud,
+      canAccessSubscriptionFeatures: canAccessSubscriptionFeatures,
       subscriptionStatus,
       telemetry,
       shouldWatchCancellation: isSubscriptionEnabled
@@ -276,8 +266,8 @@ function useSubscriptionInternal() {
   const requireActiveSubscription = async (): Promise<void> => {
     await fetchSubscriptionStatus()
 
-    if (!isSubscribedOrIsNotCloud.value) {
-      showSubscriptionDialog()
+    if (!canAccessSubscriptionFeatures.value) {
+      showSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
 
@@ -320,19 +310,26 @@ function useSubscriptionInternal() {
     }
   }
 
-  /**
-   * Fetch the current cloud subscription status for the authenticated user
-   * @returns Subscription status or null if no subscription exists
-   */
+  // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
+  let inFlightStatusFetch: Promise<CloudSubscriptionStatusResponse | null> | null =
+    null
+
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
+    if (inFlightStatusFetch) return inFlightStatusFetch
+    inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
+      inFlightStatusFetch = null
+    })
+    return inFlightStatusFetch
+  }
+
+  async function performFetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
     const headers = await buildAuthHeaders()
 
-    const response = await fetchWithUnifiedRemint(
+    const response = await fetchWithCustomerRecovery(
       buildApiUrl('/customers/cloud-subscription-status'),
       {
         headers
-      },
-      isCloud && flags.unifiedCloudAuthEnabled
+      }
     )
 
     if (!response.ok) {
@@ -418,14 +415,13 @@ function useSubscriptionInternal() {
       const headers = await buildAuthHeaders()
       const checkoutAttribution = await getCheckoutAttributionForCloud()
 
-      const response = await fetchWithUnifiedRemint(
+      const response = await fetchWithCustomerRecovery(
         buildApiUrl('/customers/cloud-subscription-checkout'),
         {
           method: 'POST',
           headers,
           body: JSON.stringify(checkoutAttribution)
-        },
-        isCloud && flags.unifiedCloudAuthEnabled
+        }
       )
 
       if (!response.ok) {
@@ -442,7 +438,7 @@ function useSubscriptionInternal() {
 
   return {
     // State
-    isActiveSubscription: isSubscribedOrIsNotCloud,
+    canAccessSubscriptionFeatures: canAccessSubscriptionFeatures,
     isInitialized,
     isCancelled,
     formattedRenewalDate,

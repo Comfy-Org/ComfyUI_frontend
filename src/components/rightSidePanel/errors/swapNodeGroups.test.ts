@@ -17,6 +17,7 @@ vi.mock('@/scripts/app', () => ({
 vi.mock('@/utils/graphTraversalUtil', () => ({
   getNodeByExecutionId: vi.fn(),
   getExecutionIdByNode: vi.fn(),
+  getRootParentNode: vi.fn(() => null),
   forEachNode: vi.fn(),
   mapAllNodes: vi.fn(() => [])
 }))

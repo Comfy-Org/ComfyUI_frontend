@@ -7,7 +7,7 @@
       :delimiter="EMAIL_DELIMITER"
       :convert-value="normalizeEmail"
       :model-value="emails"
-      class="min-h-10 w-full bg-tertiary-background px-3 focus-within:bg-tertiary-background hover:bg-tertiary-background-hover"
+      :class="tagsInputClass"
       @update:model-value="onEmailsUpdate"
     >
       <TagsInputItem
@@ -49,7 +49,9 @@
       aria-live="polite"
       class="m-0 text-xs text-muted-foreground"
     >
-      {{ $t('workspacePanel.inviteMemberDialog.seatLimitReached', maxSeats) }}
+      {{
+        $t('workspacePanel.inviteMemberDialog.seatLimitReached', inviteLimit)
+      }}
     </p>
 
     <div
@@ -87,6 +89,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
 import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
@@ -104,14 +107,17 @@ import {
 } from '@/platform/workspace/utils/inviteEmails'
 import { cn } from '@comfyorg/tailwind-utils'
 
+const MAX_INVITES_PER_BATCH = 30
+
 const {
   submitLabel,
   placeholder,
   source,
   cancelLabel,
-  maxSeats = Number.POSITIVE_INFINITY,
+  maxSeats = MAX_INVITES_PER_BATCH,
   showSubmit = true,
-  autoFocus = false
+  autoFocus = false,
+  tagsInputClass = 'min-h-10 w-full bg-tertiary-background px-3 focus-within:bg-tertiary-background hover:bg-tertiary-background-hover'
 } = defineProps<{
   submitLabel: string
   placeholder: string
@@ -124,6 +130,7 @@ const {
   /** Focus the email input on mount. Off by default so an embedding dialog
    *  keeps control of its own focus order. */
   autoFocus?: boolean
+  tagsInputClass?: string
 }>()
 
 const emit = defineEmits<{
@@ -135,8 +142,10 @@ const { t } = useI18n()
 const toast = useToast()
 const telemetry = useTelemetry()
 const workspaceStore = useTeamWorkspaceStore()
+const { fetchStatus } = useBillingContext()
 
 const emails = ref<string[]>([])
+const invitedEmails = ref<string[]>([])
 const loading = ref(false)
 
 const invalidEmailsHintId = useId()
@@ -145,11 +154,12 @@ const seatLimitHintId = useId()
 const invalidEmails = computed(() =>
   emails.value.filter((email) => !isValidEmail(email))
 )
-const isAtSeatLimit = computed(() => emails.value.length >= maxSeats)
+const inviteLimit = computed(() => Math.min(maxSeats, MAX_INVITES_PER_BATCH))
+const isAtSeatLimit = computed(() => emails.value.length >= inviteLimit.value)
 const canSubmit = computed(
   () =>
     emails.value.length > 0 &&
-    emails.value.length <= maxSeats &&
+    emails.value.length <= inviteLimit.value &&
     invalidEmails.value.length === 0
 )
 
@@ -164,16 +174,12 @@ const describedBy = computed(
 )
 
 function onEmailsUpdate(value: string[]) {
-  emails.value = sanitizeInviteEmails(value, maxSeats)
+  emails.value = sanitizeInviteEmails(value, inviteLimit.value)
 }
 
 async function onSubmit() {
-  if (loading.value) return
+  if (loading.value || !canSubmit.value) return
   loading.value = true
-  if (!canSubmit.value) {
-    loading.value = false
-    return
-  }
   try {
     const emailSnapshot = [...emails.value]
     const results = await Promise.allSettled(
@@ -182,17 +188,29 @@ async function onSubmit() {
     const failedEmails = emailSnapshot.filter(
       (_, index) => results[index].status === 'rejected'
     )
-    const invitedCount = emailSnapshot.length - failedEmails.length
+    const successfulEmails = emailSnapshot.filter(
+      (_, index) => results[index].status === 'fulfilled'
+    )
 
-    if (invitedCount > 0) {
-      telemetry?.trackWorkspaceInviteSent({ source, count: invitedCount })
-      emit(
-        'submitted',
-        emailSnapshot.filter((email) => !failedEmails.includes(email))
-      )
+    if (successfulEmails.length > 0) {
+      invitedEmails.value.push(...successfulEmails)
+      telemetry?.trackWorkspaceInviteSent({
+        source,
+        count: successfulEmails.length
+      })
+      void fetchStatus().catch(console.error)
     }
 
-    if (failedEmails.length === 0) return
+    if (failedEmails.length === 0) {
+      emit('submitted', [...invitedEmails.value])
+      return
+    }
+
+    telemetry?.trackWorkspaceInviteFailed({
+      source,
+      attempted_count: emailSnapshot.length,
+      failed_count: failedEmails.length
+    })
 
     emails.value = failedEmails
     toast.add({
