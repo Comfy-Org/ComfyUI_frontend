@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 
 function addedNode(graph: LGraph) {
   const node = new LGraphNode('widgets')
@@ -44,5 +45,18 @@ describe('arrangeForLegacyRender', () => {
     arrangeForLegacyRender(graph)
 
     expect(node._widgetSlotsDirty).toBe(true)
+  })
+
+  it('projects authoritative z-index into legacy node order', () => {
+    const graph = new LGraph()
+    const first = addedNode(graph)
+    const second = addedNode(graph)
+    const mutations = canvasLayoutMutations()
+    mutations.setNodeZIndex(graph.id, first.id, 2)
+    mutations.setNodeZIndex(graph.id, second.id, 1)
+
+    arrangeForLegacyRender(graph)
+
+    expect(graph._nodes).toEqual([second, first])
   })
 })

@@ -1,6 +1,7 @@
 import log from 'loglevel'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 const logger = log.getLogger('arrangeForLegacyRender')
 
@@ -12,6 +13,13 @@ const logger = log.getLogger('arrangeForLegacyRender')
  * Delete when `getSlotPosition` is consistent across both renderers.
  */
 export function arrangeForLegacyRender(graph: LGraph): void {
+  const rootGraphId = graph.rootGraph.id
+  graph._nodes.sort(
+    (a, b) =>
+      (layoutStore.getNodeLayout(rootGraphId, a.id)?.zIndex ?? 0) -
+      (layoutStore.getNodeLayout(rootGraphId, b.id)?.zIndex ?? 0)
+  )
+
   for (const node of graph._nodes) {
     if (node.flags.collapsed) continue
     try {

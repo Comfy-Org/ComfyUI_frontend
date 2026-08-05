@@ -220,6 +220,11 @@ class LayoutStore {
     return value ?? defaultValue
   }
 
+  getNodeLayout(rootGraphId: UUID, nodeId: NodeId): NodeLayout | null {
+    const ynode = this.ynodes.get(makeScopedLayoutKey(rootGraphId, nodeId))
+    return ynode ? yNodeToLayout(ynode) : null
+  }
+
   /**
    * Get or create a customRef for a node layout
    */
@@ -234,9 +239,7 @@ class LayoutStore {
         return {
           get: () => {
             track()
-            const ynode = this.ynodes.get(nodeKey)
-            const layout = ynode ? yNodeToLayout(ynode) : null
-            return layout
+            return this.getNodeLayout(rootGraphId, nodeId)
           },
           set: (newLayout: NodeLayout | null) => {
             // No caller assigns null through this ref; deletion goes through
