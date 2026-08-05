@@ -21,10 +21,40 @@
         size="lg"
         class="w-full @2xl:w-64"
       />
+      <Button
+        v-if="activeView === 'activity' && !activityError"
+        variant="secondary"
+        size="lg"
+        :disabled="isActivityLoading"
+        @click="refreshActivity"
+      >
+        {{ $t('g.refresh') }}
+      </Button>
     </div>
 
     <SubscriptionPanelContentWorkspace v-if="activeView === 'overview'" />
-    <WorkspaceActivityContent v-else :search="searchQuery" />
+    <div
+      v-else-if="isActivityLoading"
+      role="status"
+      class="flex min-h-32 items-center justify-center text-sm text-muted-foreground"
+    >
+      {{ $t('g.loading') }}
+    </div>
+    <div
+      v-else-if="activityError"
+      role="alert"
+      class="flex min-h-32 flex-col items-center justify-center gap-3 text-sm text-muted-foreground"
+    >
+      <span>{{ $t('credits.loadEventsError') }}</span>
+      <Button variant="secondary" size="lg" @click="refreshActivity">
+        {{ $t('subscription.planLoadErrorRetry') }}
+      </Button>
+    </div>
+    <WorkspaceActivityContent
+      v-else
+      :search="searchQuery"
+      :events="activityEvents"
+    />
   </div>
 </template>
 
@@ -36,6 +66,7 @@ import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 import WorkspaceActivityContent from '@/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.vue'
+import { useWorkspaceActivitySource } from '@/platform/workspace/composables/useWorkspaceActivitySource'
 
 type View = 'overview' | 'activity'
 
@@ -50,6 +81,12 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 
 const activeView = ref<View>('overview')
 const searchQuery = ref('')
+const {
+  events: activityEvents,
+  isLoading: isActivityLoading,
+  error: activityError,
+  refresh: refreshActivity
+} = useWorkspaceActivitySource()
 
 function setView(view: View) {
   activeView.value = view

@@ -1,11 +1,21 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 
 import PlanCreditsPanelContent from './PlanCreditsPanelContent.vue'
+
+vi.mock('@/platform/workspace/composables/useWorkspaceActivitySource', () => ({
+  useWorkspaceActivitySource: () => ({
+    events: ref([]),
+    isLoading: ref(false),
+    error: ref(null),
+    refresh: vi.fn()
+  })
+}))
 
 const stubs = {
   SubscriptionPanelContentWorkspace: {

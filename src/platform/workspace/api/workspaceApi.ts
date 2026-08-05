@@ -336,7 +336,7 @@ export interface BillingOpStatusResponse {
   action_url?: string
 }
 
-interface BillingEvent {
+export interface BillingEvent {
   event_type: string
   event_id: string
   params?: Record<string, unknown>
