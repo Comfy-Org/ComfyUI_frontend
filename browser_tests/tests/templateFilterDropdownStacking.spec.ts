@@ -8,14 +8,15 @@ import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 const test = mergeTests(comfyPageFixture, templateApiFixture)
 
 /**
- * End-to-end guard that the templates filter options are on top and clickable.
+ * End-to-end guard that the templates filter sheet is on top and clickable.
  *
- * This does NOT reproduce the 1.47.10 stacking bug (#14063, #14131, #14351,
- * #14397): that needed the shared modal counter to have escalated past the
- * dropdown's static z-3000 (reporters saw 7306), whereas a freshly opened
- * dialog only reaches ~1702, so the broken build passes this test. The
- * mechanism is pinned deterministically in useModalLiftedZIndex.test.ts; this
- * covers the user-visible behaviour those unit tests cannot see.
+ * The original 1.47.10 stacking bug (#14063, #14131, #14351, #14397) hit the
+ * modal's filter dropdowns when the shared modal z-index counter escalated
+ * past their static z-3000; the mechanism is pinned deterministically in
+ * useModalLiftedZIndex.test.ts. The templates browser is a sidebar panel now
+ * and its filters are a flat popover sheet, but the user-visible guarantee is
+ * the same: the filter controls must paint above the rest of the UI and
+ * clicks must land on them.
  */
 test.describe('Template filter dropdown stacking', () => {
   test.beforeEach(async ({ comfyPage, templateApi }) => {
@@ -32,21 +33,23 @@ test.describe('Template filter dropdown stacking', () => {
     await comfyPage.setup()
   })
 
-  test('renders filter options above the dialog and keeps them clickable', async ({
+  test('renders filter chips above the panel and keeps them clickable', async ({
     comfyPage
   }) => {
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
     await comfyPage.templatesDialog.openFilters()
-    await comfyPage.templatesDialog.modelFilter.click()
 
-    const option = comfyPage.page.getByRole('option', { name: 'Wan 2.2' })
-    await expect(option).toBeVisible()
+    const chip = comfyPage.templatesDialog.filterSheet.getByRole('button', {
+      name: 'Wan 2.2',
+      exact: true
+    })
+    await expect(chip).toBeVisible()
 
-    // Visibility alone passes even when the dialog covers the option, so hit-test
-    // the option's centre: whatever paints there must belong to the option itself.
-    const optionIsOnTop = await option.evaluate((el) => {
+    // Visibility alone passes even when another surface covers the chip, so
+    // hit-test its centre: whatever paints there must belong to the chip.
+    const chipIsOnTop = await chip.evaluate((el) => {
       const { left, top, width, height } = el.getBoundingClientRect()
       const topMost = document.elementFromPoint(
         left + width / 2,
@@ -54,11 +57,11 @@ test.describe('Template filter dropdown stacking', () => {
       )
       return !!topMost && el.contains(topMost)
     })
-    expect(optionIsOnTop).toBe(true)
+    expect(chipIsOnTop).toBe(true)
 
-    // The user-facing consequence: the click lands on the option, not the dialog.
-    await option.click()
-    await comfyPage.page.keyboard.press('Escape')
+    // The user-facing consequence: the click toggles the filter.
+    await chip.click()
+    await comfyPage.templatesDialog.closeFilters()
 
     await expect(comfyPage.templates.allTemplateCards).toHaveCount(1)
   })

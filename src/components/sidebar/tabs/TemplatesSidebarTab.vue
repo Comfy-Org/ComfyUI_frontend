@@ -349,8 +349,24 @@
                     </span>
                   </div>
                 </template>
-                <template v-if="template.isPartnerNode" #top-right>
-                  <PaidTemplateBadge />
+                <template
+                  v-if="template.isPartnerNode || template.tutorialUrl"
+                  #top-right
+                >
+                  <!-- Production parity: templates can link a tutorial from
+                       the card; shown on hover only, styled like the blur
+                       badges. click.stop keeps it from loading the workflow. -->
+                  <button
+                    v-if="template.tutorialUrl"
+                    v-tooltip.bottom="$t('g.seeTutorial')"
+                    type="button"
+                    :aria-label="$t('g.seeTutorial')"
+                    class="flex size-7 cursor-pointer items-center justify-center rounded-lg border-none bg-black/30 p-0 text-white backdrop-blur-[20px] transition-opacity not-group-hover/card:opacity-0"
+                    @click.stop="openTutorial(template)"
+                  >
+                    <i class="icon-[lucide--graduation-cap] size-4" />
+                  </button>
+                  <PaidTemplateBadge v-if="template.isPartnerNode" />
                 </template>
               </CardTop>
             </template>
@@ -1229,6 +1245,12 @@ const hoverReadiness = computed(() =>
 const hoverMetaFields = computed<DetailMetaField[]>(() =>
   hoverPreview.value ? metaFieldsFor(hoverPreview.value.template) : []
 )
+
+const openTutorial = (template: TemplateInfo) => {
+  if (template.tutorialUrl) {
+    window.open(template.tutorialUrl, '_blank')
+  }
+}
 
 const onLoadWorkflow = async (template: TemplateInfo) => {
   hideHoverPreview()

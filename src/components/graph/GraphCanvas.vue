@@ -25,7 +25,13 @@
       <div
         class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto"
       >
-        <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
+        <!-- In linear mode LinearView owns the sidebar panel; mounting the
+        active tab here too renders it twice (duplicate testids, and double
+        telemetry from tabs that track their own mount lifetime). -->
+        <ExtensionSlot
+          v-if="activeSidebarTab && !linearMode"
+          :extension="activeSidebarTab"
+        />
       </div>
     </template>
     <template v-if="showUI && !isBuilderMode" #topmenu>

@@ -5,7 +5,6 @@ import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
-import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 
 async function checkTemplateFileExists(
   page: Page,
@@ -83,9 +82,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
-    await comfyPage.page
-      .getByRole('button', { name: 'Getting Started' })
-      .click()
+    // Categories are chips inside the panel's filter sheet
+    await comfyPage.templatesDialog.toggleFilterChip('Getting Started')
+    await comfyPage.templatesDialog.closeFilters()
     await comfyPage.templates.loadTemplate('default')
     await expect(comfyPage.templates.content).toBeHidden()
 
@@ -156,15 +155,17 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
 
-    const dialog = comfyPage.templatesDialog.filterByHeading('Modèles')
-    await expect(dialog).toBeVisible()
+    const panel = comfyPage.templatesDialog.filterByHeading('Modèles')
+    await expect(panel).toBeVisible()
 
-    // Validate that French-localized strings from the templates index are rendered
+    // Validate that French-localized category names from the templates index
+    // are rendered as chips in the filter sheet
+    await comfyPage.templatesDialog.openFilters()
     await expect(
-      dialog.getByRole('heading', { name: 'Modèles', exact: true })
-    ).toBeVisible()
-    await expect(
-      dialog.getByRole('button', { name: 'Tous les modèles', exact: true })
+      comfyPage.templatesDialog.filterSheet.getByRole('button', {
+        name: 'Tous les modèles',
+        exact: true
+      })
     ).toBeVisible()
 
     // Ensure the English fallback copy is not shown anywhere
@@ -198,14 +199,17 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       route.continue()
     )
 
-    await comfyPage.settings.setSetting('Comfy.Locale', locale)
-
+    // Arm the listeners BEFORE flipping the locale: when the template store
+    // is already loaded, the locale watcher refetches immediately on the
+    // setting change, so listeners created after it can miss the requests.
     const localeRequestPromise = comfyPage.page.waitForRequest(
       `**/templates/index.${locale}.json`
     )
     const englishRequestPromise = comfyPage.page.waitForRequest(
       '**/templates/index.json'
     )
+
+    await comfyPage.settings.setSetting('Comfy.Locale', locale)
 
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
@@ -233,55 +237,41 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     const templateGrid = comfyPage.page.getByTestId(
       'template-workflows-content'
     )
-    const nav = comfyPage.page.locator(
-      'header[data-component-id="LeftPanelHeader"]'
-    )
 
     await comfyPage.templates.expectMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
-    await expect(nav).toBeVisible() // Nav should be visible at desktop size
 
     const mobileSize = { width: 640, height: 800 }
     await comfyPage.page.setViewportSize(mobileSize)
     await comfyPage.templates.expectMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
-    // Nav header is clipped by overflow-hidden parent at mobile size
-    await expect(nav).not.toBeInViewport()
 
     const tabletSize = { width: 1024, height: 800 }
     await comfyPage.page.setViewportSize(tabletSize)
     await comfyPage.templates.expectMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
-    await expect(nav).toBeVisible() // Nav should be visible at tablet size
   })
 
   test(
-    'select components in filter bar render correctly',
+    'filter sheet renders correctly',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
 
-      // Selects collapse behind a toggle at narrow container widths
       await comfyPage.templatesDialog.openFilters()
 
-      const sortBySelect = comfyPage.templatesDialog.getCombobox(/Sort/)
-      await expect(sortBySelect).toBeVisible()
-
-      // Screenshot the filter bar containing MultiSelect and SingleSelect
-      const filterBar = comfyPage.templatesDialog.filterBar
-      await expect(filterBar).toBeVisible()
-      await expect(filterBar).toHaveScreenshot(
-        'template-filter-bar-select-components.png',
-        {
-          mask: [comfyPage.page.locator('.p-toast')]
-        }
-      )
+      // Screenshot the flat filter sheet (category/model/task/runs-on chips)
+      const filterSheet = comfyPage.templatesDialog.filterSheet
+      await expect(filterSheet).toBeVisible()
+      await expect(filterSheet).toHaveScreenshot('template-filter-sheet.png', {
+        mask: [comfyPage.page.locator('.p-toast')]
+      })
     }
   )
 
   test(
-    'template cards display overlay tags correctly',
+    'template cards keep tag chips out of card chrome',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.page.route('**/templates/index.json', async (route) => {
@@ -337,120 +327,16 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
         TestIds.templates.workflowCard('tagged-template')
       )
       await expect(taggedCard).toBeVisible()
-      await expect(taggedCard.getByText('Relight')).toBeVisible()
-      await expect(taggedCard.getByText('Image Edit')).toBeVisible()
+      // Tags are search/filter data only: they must not render on the card
+      await expect(taggedCard.getByText('Relight')).toHaveCount(0)
+      await expect(taggedCard.getByText('Image Edit')).toHaveCount(0)
 
       const templateGrid = comfyPage.page.getByTestId(TestIds.templates.content)
       await expect(templateGrid).toHaveScreenshot(
-        'template-cards-with-overlay-tags.png'
+        'template-cards-without-tag-chips.png'
       )
     }
   )
-
-  test('overflow tag disclosure opens on hover, focus, and tap without loading the workflow', async ({
-    comfyPage
-  }) => {
-    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-
-    await comfyPage.page.route('**/templates/index.json', async (route) => {
-      const response: WorkflowTemplates[] = [
-        {
-          moduleName: 'default',
-          title: 'Test Templates',
-          type: 'image',
-          templates: [
-            {
-              name: 'many-tags',
-              title: 'Many Tags',
-              mediaType: 'image',
-              mediaSubtype: 'webp',
-              description: 'A template with more tags than fit.',
-              tags: ['Relight', 'Image Edit', 'Upscale', 'Inpaint']
-            }
-          ]
-        }
-      ]
-      await route.fulfill({
-        status: 200,
-        body: JSON.stringify(response),
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store'
-        }
-      })
-    })
-
-    await comfyPage.page.route('**/templates/**.webp', async (route) => {
-      await route.fulfill({
-        status: 200,
-        path: 'browser_tests/assets/example.webp',
-        headers: {
-          'Content-Type': 'image/webp',
-          'Cache-Control': 'no-store'
-        }
-      })
-    })
-
-    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
-    await expect(comfyPage.templates.content).toBeVisible()
-
-    const card = comfyPage.page.getByTestId(
-      TestIds.templates.workflowCard('many-tags')
-    )
-    await expect(card).toBeVisible()
-
-    const overflow = card.getByRole('button', { name: 'Upscale, Inpaint' })
-    // Body-portalled, so unscopable to the card; the single-card mock keeps it unique.
-    const disclosure = comfyPage.page.getByTestId('disclosure-tooltip')
-
-    // toBeVisible() misses occlusion; assert the bubble is the top element at
-    // its centre so it can't regress behind the z-1702 dialog. Await the open
-    // state first so the hit-test doesn't race the enter animation.
-    const expectOnTop = async () => {
-      await expect(disclosure).toHaveAttribute('data-state', /-open$/)
-      await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const el = document.querySelector(
-                '[data-testid="disclosure-tooltip"]'
-              )
-              if (!el) return false
-              const r = el.getBoundingClientRect()
-              if (r.width === 0 || r.height === 0) return false
-              const top = document.elementFromPoint(
-                r.x + r.width / 2,
-                r.y + r.height / 2
-              )
-              return !!top && el.contains(top)
-            }),
-          { timeout: 2000 }
-        )
-        .toBe(true)
-    }
-
-    // Hover reveals the hidden tags (and the bubble is not occluded).
-    await overflow.hover()
-    await expect(disclosure).toHaveText('Upscale, Inpaint')
-    await expectOnTop()
-    await comfyPage.page.mouse.move(0, 0)
-    await expect(disclosure).toHaveCount(0)
-
-    // Keyboard focus reveals the hidden tags — the gap PrimeVue's tooltip left.
-    await overflow.focus()
-    await expect(disclosure).toBeVisible()
-    await expectOnTop()
-    await comfyPage.page.keyboard.press('Escape')
-    await expect(disclosure).toHaveCount(0)
-
-    // Tap/click reveals the hidden tags and must NOT load the workflow.
-    await overflow.click()
-    await expect(disclosure).toBeVisible()
-    await expectOnTop()
-    await expect(comfyPage.templates.content).toBeVisible()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-  })
 
   test('Can open associated tutorial', async ({ comfyPage }) => {
     const tutorialUrl = 'https://comfyanonymous.github.io/ComfyUI_examples/'
