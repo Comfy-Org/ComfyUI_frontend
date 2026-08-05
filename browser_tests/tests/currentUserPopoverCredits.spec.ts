@@ -94,6 +94,14 @@ const mockFreeTierBillingStatus: BillingStatusResponse = {
 function extendWithWorkspaceMocks(billingStatus: BillingStatusResponse) {
   return comfyPageFixture.extend({
     page: async ({ page }, use) => {
+      // teamWorkspacesEnabled is auth-gated and stays false until the
+      // authenticated remote config loads; seed the cached flag (what a
+      // returning user has) so the workspace popover — not the legacy one —
+      // is what these tests exercise.
+      await page.addInitScript(() => {
+        localStorage.setItem('team_workspaces_enabled', 'true')
+      })
+
       await page.route('**/api/features', (route) =>
         route.fulfill({
           status: 200,
