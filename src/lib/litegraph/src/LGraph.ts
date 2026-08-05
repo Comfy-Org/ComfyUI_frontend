@@ -2217,11 +2217,11 @@ export class LGraph
 
     // Shared definitions may survive, so unpacked groups need fresh layout
     // ids, like the reroutes below.
-    for (const g_info of groups) {
-      g_info.id = ++this.rootGraph.state.lastGroupId
-      const group = new LGraphGroup(g_info.title, g_info.id)
+    for (const groupInfo of groups) {
+      groupInfo.id = ++this.rootGraph.state.lastGroupId
+      const group = new LGraphGroup(groupInfo.title, groupInfo.id)
       this.add(group, true)
-      group.configure(g_info)
+      group.configure(groupInfo)
       group.pos = [group.pos[0] + offsetX, group.pos[1] + offsetY]
       toSelect.push(group)
     }
