@@ -129,6 +129,7 @@ describe('auth token priority chain', () => {
   beforeEach(() => {
     vi.resetAllMocks()
 
+    mockDistributionTypes.isCloud = true
     mockFeatureFlags.unifiedCloudAuthEnabled = false
     mockUnifiedToken = null
     mockActiveWorkspaceId = null
@@ -169,6 +170,19 @@ describe('auth token priority chain', () => {
 
     it('returns Firebase token when workspace is not active but user is authenticated', async () => {
       mockWorkspaceAuthHeader.mockReturnValue(null)
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({
+        Authorization: 'Bearer firebase-token'
+      })
+    })
+
+    it('ignores workspace auth header outside Cloud', async () => {
+      mockDistributionTypes.isCloud = false
+      mockWorkspaceAuthHeader.mockReturnValue({
+        Authorization: 'Bearer workspace-token'
+      })
 
       const header = await store.getAuthHeader()
 
