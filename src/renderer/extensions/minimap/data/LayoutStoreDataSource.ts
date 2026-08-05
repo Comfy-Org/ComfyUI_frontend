@@ -24,12 +24,13 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
 
   getNodes(): MinimapNodeData[] {
     const states = this.viewedNodes()
-    if (states.length === 0) return []
+    const rootGraphId = this.graph?.rootGraph.id
+    if (states.length === 0 || !rootGraphId) return []
 
     const nodeProgressStates = useExecutionStore().nodeLocationProgressStates
 
     return states.flatMap((state): MinimapNodeData[] => {
-      const layout = layoutStore.getNodeLayoutRef(state.id).value
+      const layout = layoutStore.getNodeLayoutRef(rootGraphId, state.id).value
       if (!layout) return []
 
       return [

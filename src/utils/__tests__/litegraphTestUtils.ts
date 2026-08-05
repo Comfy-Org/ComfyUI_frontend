@@ -20,6 +20,7 @@ import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 import type { LinkId } from '@/types/linkId'
+import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
@@ -64,7 +65,7 @@ export function createMockPositionable(
   overrides: Partial<Positionable> = {}
 ): Positionable {
   const partial: Partial<Positionable> = {
-    id: toLinkId(1),
+    id: toGroupId(1),
     pos: [0, 0],
     ...overrides
   }
@@ -78,7 +79,7 @@ export function createMockLGraphGroup(
   overrides: Partial<LGraphGroup> = {}
 ): LGraphGroup {
   const partial: Partial<LGraphGroup> = {
-    id: toLinkId(1),
+    id: toGroupId(1),
     pos: [0, 0],
     boundingRect: new Rectangle(0, 0, 100, 100),
     ...overrides

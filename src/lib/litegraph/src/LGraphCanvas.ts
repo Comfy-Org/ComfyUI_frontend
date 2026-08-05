@@ -8,6 +8,7 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -4368,18 +4369,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
       }))
 
+    const rootGraphId = graph.rootGraph.id
     if (newPositions.length) layoutStore.setSource(LayoutSource.Canvas)
-    layoutStore.batchUpdateNodeBounds(newPositions)
+    layoutStore.batchUpdateNodeBounds(rootGraphId, newPositions)
 
     // Bring cloned/pasted nodes to front so they render above the originals
-    const allNodes = layoutStore.getAllNodes().value
-    let maxZIndex = 0
-    for (const [, layout] of allNodes) {
-      if (layout.zIndex > maxZIndex) maxZIndex = layout.zIndex
-    }
     const { setNodeZIndex } = useLayoutMutations()
-    for (let i = 0; i < newPositions.length; i++) {
-      setNodeZIndex(newPositions[i].nodeId, maxZIndex + i + 1)
+    for (const { nodeId } of newPositions) {
+      setNodeZIndex(rootGraphId, nodeId, layoutStore.allocateZIndex())
     }
 
     this.selectItems(created)
@@ -5011,6 +5008,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const i = graph._nodes.indexOf(node)
     if (i == -1) return
+
+    canvasLayoutMutations().bringNodeToFront(graph.rootGraph.id, node.id)
 
     graph._nodes.splice(i, 1)
     graph._nodes.push(node)

@@ -796,70 +796,79 @@ describe('snapToGrid', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  /** Layout entries are seeded by the renderer, so stand one up by hand. */
-  function seededNode(graph: LGraph) {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function addedNode(graph: LGraph) {
     const node = new LGraphNode('test')
     node.pos = [103, 97]
     graph.add(node)
-    layoutStore.initializeFromLiteGraph([
-      { id: node.id, pos: [103, 97], size: [140, 60] }
-    ])
     return node
   }
 
   test('commits the snapped position to the layout store', () => {
-    const node = seededNode(new LGraph())
+    const graph = new LGraph()
+    const node = addedNode(graph)
 
     expect(node.snapToGrid(20)).toBe(true)
 
     expect([...node.pos]).toEqual([100, 100])
-    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
       x: 100,
       y: 100
     })
   })
 
   test('writes indexed position mutations through to the layout store', () => {
-    const node = seededNode(new LGraph())
+    const graph = new LGraph()
+    const node = addedNode(graph)
     const pos = node.pos
 
     node.pos[0] = 120
 
     expect(node.pos).toBe(pos)
-    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
       x: 120,
       y: 97
     })
   })
 
   test('does not re-commit the current stored position', () => {
-    const node = seededNode(new LGraph())
-    const operationCount = layoutStore.getOperationsSince(0).length
+    const node = addedNode(new LGraph())
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
 
     node.pos = [103, 97]
 
-    expect(layoutStore.getOperationsSince(0)).toHaveLength(operationCount)
+    expect(applyOperation).not.toHaveBeenCalled()
   })
 
   test('leaves a pinned node alone', () => {
-    const node = seededNode(new LGraph())
+    const graph = new LGraph()
+    const node = addedNode(graph)
     node.pin(true)
 
     expect(node.snapToGrid(20)).toBe(false)
     expect([...node.pos]).toEqual([103, 97])
-    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
       x: 103,
       y: 97
     })
   })
 
   test('does not report or store a change when already aligned', () => {
-    const node = seededNode(new LGraph())
+    const node = addedNode(new LGraph())
     node.snapToGrid(20)
-    const operationCount = layoutStore.getOperationsSince(0).length
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
 
     expect(node.snapToGrid(20)).toBe(false)
-    expect(layoutStore.getOperationsSince(0)).toHaveLength(operationCount)
+    expect(applyOperation).not.toHaveBeenCalled()
   })
 })
 

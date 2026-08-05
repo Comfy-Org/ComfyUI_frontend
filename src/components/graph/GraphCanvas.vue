@@ -153,7 +153,6 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { NodeState } from '@/types/nodeState'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
@@ -161,6 +160,7 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
@@ -173,7 +173,9 @@ import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/w
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -253,8 +255,7 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-// Vue node system
-const vueNodeLifecycle = useVueNodeLifecycle()
+const { startSync, stopSync } = useLayoutSync()
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
@@ -266,23 +267,41 @@ watch(
   }
 )
 
-const handleVueNodeLifecycleReset = async () => {
-  if (shouldRenderVueNodes.value) {
-    vueNodeLifecycle.disposeVueNodeLayout()
-    await nextTick()
-    vueNodeLifecycle.initializeVueNodeLayout()
-  }
+async function enterVueRendering(graph: LGraph | null) {
+  stopSync()
+  layoutStore.clearViewGeometry()
+  await nextTick()
+
+  // Revalidate after nextTick: rendering mode or the current graph may change.
+  if (!shouldRenderVueNodes.value || canvasStore.currentGraph !== graph) return
+  startSync(canvasStore.canvas)
 }
 
-watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
+function exitToLegacyRendering(graph: LGraph | null) {
+  stopSync()
+  layoutStore.clearViewGeometry()
+  if (graph) arrangeForLegacyRender(graph)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
+watch(
+  [shouldRenderVueNodes, () => canvasStore.currentGraph],
+  async ([enabled, graph], previous) => {
+    if (enabled) {
+      await enterVueRendering(graph)
+    } else if (previous?.[0]) {
+      exitToLegacyRendering(graph)
+    }
+  },
+  { immediate: true }
+)
 
 watch(
   () => canvasStore.isInSubgraph,
-  async (newValue, oldValue) => {
+  (newValue, oldValue) => {
     if (oldValue && !newValue) {
       useWorkflowStore().updateActiveGraph()
     }
-    await handleVueNodeLifecycleReset()
   }
 )
 
@@ -551,8 +570,6 @@ onMounted(async () => {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
     }
 
-    vueNodeLifecycle.setupEmptyGraphListener()
-
     // Load color palette
     colorPaletteStore.customPalettes = settingStore.get(
       'Comfy.CustomColorPalettes'
@@ -587,7 +604,7 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
-  vueNodeLifecycle.disposeVueNodeLayout()
+  stopSync()
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddlePointerInput)

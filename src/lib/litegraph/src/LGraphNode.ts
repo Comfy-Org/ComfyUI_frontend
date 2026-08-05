@@ -650,12 +650,13 @@ export class LGraphNode
   private _positionUpdated(): void {
     if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
+    const rootGraphId = this.graph.rootGraph.id
     const position = { x: this._pos[0], y: this._pos[1] }
-    const layout = layoutStore.getNodeLayoutRef(this.id).value
+    const layout = layoutStore.getNodeLayoutRef(rootGraphId, this.id).value
     if (layout && isPointEqual(layout.position, position)) return
 
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.moveNode(this.id, position)
+    layoutMutations.moveNode(rootGraphId, this.id, position)
   }
 
   /**
@@ -681,12 +682,13 @@ export class LGraphNode
   private _sizeUpdated(): void {
     if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
+    const rootGraphId = this.graph.rootGraph.id
     const size = { width: this._size[0], height: this._size[1] }
-    const layout = layoutStore.getNodeLayoutRef(this.id).value
+    const layout = layoutStore.getNodeLayoutRef(rootGraphId, this.id).value
     if (layout && isSizeEqual(layout.size, size)) return
 
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.resizeNode(this.id, size)
+    layoutMutations.resizeNode(rootGraphId, this.id, size)
   }
 
   /**

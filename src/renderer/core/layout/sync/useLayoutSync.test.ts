@@ -33,7 +33,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
         return testState.unsubscribe
       }
     ),
-    getNodeLayoutRef: vi.fn((nodeId: string) => ({
+    getNodeLayoutRef: vi.fn((_rootGraphId: string, nodeId: string) => ({
       value: testState.layoutByNodeId.get(nodeId) ?? null
     }))
   }
@@ -78,7 +78,8 @@ describe('useLayoutSync', () => {
     }
     const canvas = {
       graph: {
-        getNodeById: vi.fn(() => liteNode)
+        getNodeById: vi.fn(() => liteNode),
+        rootGraph: { id: 'root-graph' }
       },
       setDirty: vi.fn()
     }
@@ -125,7 +126,8 @@ describe('useLayoutSync', () => {
     }
     const canvas = {
       graph: {
-        getNodeById: vi.fn(() => liteNode)
+        getNodeById: vi.fn(() => liteNode),
+        rootGraph: { id: 'root-graph' }
       },
       setDirty: vi.fn()
     }
@@ -153,7 +155,8 @@ describe('useLayoutSync', () => {
     }
     const canvas = {
       graph: {
-        getNodeById: vi.fn(() => liteNode)
+        getNodeById: vi.fn(() => liteNode),
+        rootGraph: { id: 'root-graph' }
       },
       setDirty: vi.fn()
     }
@@ -186,7 +189,8 @@ describe('useLayoutSync', () => {
           pos: [0, 0],
           size: [100, 50],
           onResize: vi.fn()
-        }))
+        })),
+        rootGraph: { id: 'root-graph' }
       },
       setDirty: vi.fn()
     }

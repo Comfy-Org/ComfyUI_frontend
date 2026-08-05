@@ -8,9 +8,13 @@ import {
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import {
+  canvasLayoutMutations,
+  registerGroupLayout,
+  registerNodeLayout,
+  unregisterAllGraphLayout
+} from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
@@ -39,7 +43,7 @@ import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
-import type { GroupId } from './LGraphGroup'
+import { toGroupId } from '@/types/groupId'
 import {
   LGraphNode,
   registerNodeState,
@@ -164,7 +168,8 @@ export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 export type SubgraphId = UUID
 
 export interface LGraphState {
-  lastGroupId: GroupId
+  /** Counter, not an id — brand at the point a group is constructed. */
+  lastGroupId: number
   lastNodeId: number
   lastLinkId: LinkId
   lastRerouteId: RerouteId
@@ -497,31 +502,14 @@ export class LGraph
       useLinkStore().clearGraph(graphId)
       useRerouteStore().clearGraph(graphId)
       useNodeDataStore().clearGraph(graphId)
+      layoutStore.clearGraph(graphId)
     } else {
       // Subgraphs and unconfigured (zero-uuid) graphs share their store
       // bucket with other graphs, so unregister each entity individually.
       unregisterAllLinkTopologies(this)
       unregisterAllRerouteChains(this)
       unregisterAllNodeStates(this)
-    }
-
-    const graphsToClear = this.isRootGraph
-      ? [this, ...this.subgraphs.values()]
-      : [this]
-    if (
-      graphsToClear.some((graph) => graph._groups.length || graph.reroutes.size)
-    ) {
-      const rootGraphId = this.rootGraph.id
-      const layoutMutations = useLayoutMutations()
-      layoutMutations.setSource(LayoutSource.Canvas)
-      for (const graph of graphsToClear) {
-        for (const group of graph._groups) {
-          layoutMutations.deleteGroup(rootGraphId, group.id)
-        }
-        for (const rerouteId of graph.reroutes.keys()) {
-          layoutMutations.deleteReroute(rootGraphId, rerouteId)
-        }
-      }
+      unregisterAllGraphLayout(this)
     }
 
     this.id = zeroUuid
@@ -1089,20 +1077,15 @@ export class LGraph
     // groups
     if (node instanceof LGraphGroup) {
       // Assign group ID
-      if (node.id == null || node.id === -1) node.id = ++state.lastGroupId
+      if (node.id == null || node.id === -1)
+        node.id = toGroupId(++state.lastGroupId)
       if (node.id > state.lastGroupId) state.lastGroupId = node.id
 
       this._groups.push(node)
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
-      const { pos, size } = node
-      const layoutMutations = useLayoutMutations()
-      layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.createGroup(this.rootGraph.id, node.id, {
-        position: { x: pos[0], y: pos[1] },
-        size: { width: size[0], height: size[1] }
-      })
+      registerGroupLayout(this, node)
       this.incrementVersion()
       return
     }
@@ -1163,7 +1146,9 @@ export class LGraph
     this.onNodeAdded?.(node)
     this.events.dispatch('node:added', { node })
 
-    // Must follow onNodeAdded: its microtask-deferred hooks must run before the Vue flush this write schedules
+    // Keep after onNodeAdded so its deferred hooks run before these writes
+    // flush Vue.
+    registerNodeLayout(this, node)
     this.incrementVersion()
 
     this.setDirtyCanvas(true)
@@ -1197,9 +1182,7 @@ export class LGraph
       if (index != -1) {
         this._groups.splice(index, 1)
       }
-      const layoutMutations = useLayoutMutations()
-      layoutMutations.setSource(LayoutSource.Canvas)
-      layoutMutations.deleteGroup(this.rootGraph.id, node.id)
+      canvasLayoutMutations().deleteGroup(this.rootGraph.id, node.id)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)
@@ -1255,6 +1238,7 @@ export class LGraph
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
         unregisterAllNodeStates(subgraph)
+        unregisterAllGraphLayout(subgraph)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
     }
@@ -1263,6 +1247,7 @@ export class LGraph
     node.onRemoved?.()
 
     unregisterNodeState(node)
+    canvasLayoutMutations().deleteNode(this.rootGraph.id, node.id)
 
     node.graph = null
     this.incrementVersion()
@@ -1626,9 +1611,7 @@ export class LGraph
     if (!reroute) return
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
-    const layoutMutations = useLayoutMutations()
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteReroute(this.rootGraph.id, id)
+    canvasLayoutMutations().deleteReroute(this.rootGraph.id, id)
   }
 
   /**
@@ -2156,16 +2139,6 @@ export class LGraph
     const groups = structuredClone(
       [...subgraphNode.subgraph.groups].map((g) => g.serialize())
     )
-    for (const g_info of groups) {
-      // The definition survives if another instance remains, so its groups
-      // cannot share root-scoped layout keys with the unpacked copies.
-      g_info.id = ++this.rootGraph.state.lastGroupId
-      const group = new LGraphGroup(g_info.title, g_info.id)
-      this.add(group, true)
-      group.configure(g_info)
-      group.pos = [group.pos[0] + offsetX, group.pos[1] + offsetY]
-      toSelect.push(group)
-    }
     const newLinks: {
       oid: NodeId
       oslot: number
@@ -2241,6 +2214,17 @@ export class LGraph
       })
     }
     this.remove(subgraphNode)
+
+    // Shared definitions may survive, so unpacked groups need fresh layout
+    // ids, like the reroutes below.
+    for (const groupInfo of groups) {
+      groupInfo.id = ++this.rootGraph.state.lastGroupId
+      const group = new LGraphGroup(groupInfo.title, groupInfo.id)
+      this.add(group, true)
+      group.configure(groupInfo)
+      group.pos = [group.pos[0] + offsetX, group.pos[1] + offsetY]
+      toSelect.push(group)
+    }
 
     // Deduplicate links by (oid, oslot, tid, tslot) to prevent repeated
     // disconnect/reconnect cycles on widget inputs that can shift slot indices.
@@ -2547,6 +2531,7 @@ export class LGraph
       // TODO: Finish typing configure()
       if (!data) return
       if (options.clearGraph) this.clear()
+      else unregisterAllGraphLayout(this)
 
       this._configureBase(data)
 
@@ -2804,50 +2789,6 @@ export class LGraph
       return error
     } finally {
       this.events.dispatch('configured')
-    }
-  }
-
-  /**
-   * Ensures all node IDs are globally unique across the root graph and all
-   * subgraphs. Reassigns any colliding IDs found in subgraphs, preserving
-   * root graph IDs as canonical. Updates link references (`origin_id`,
-   * `target_id`) within the affected graph to match the new node IDs.
-   */
-  ensureGlobalIdUniqueness(reservedNodeIds?: Iterable<number>): void {
-    const { state } = this
-
-    const allGraphs: LGraph[] = [this, ...this._subgraphs.values()]
-
-    const usedNodeIds = new Set<number>(reservedNodeIds)
-    for (const graph of allGraphs) {
-      const remappedIds = new Map<NodeId, NodeId>()
-
-      for (const node of graph._nodes) {
-        const currentId = numericNodeId(node.id)
-        if (currentId === null) continue
-
-        if (usedNodeIds.has(currentId)) {
-          const oldId = node.id
-          while (usedNodeIds.has(++state.lastNodeId));
-          const newId = toNodeId(state.lastNodeId)
-          delete graph._nodes_by_id[oldId]
-          node.id = newId
-          graph._nodes_by_id[newId] = node
-          usedNodeIds.add(state.lastNodeId)
-          remappedIds.set(oldId, newId)
-          console.warn(
-            `LiteGraph: duplicate node ID ${oldId} reassigned to ${newId} in graph ${graph.id}`
-          )
-        } else {
-          usedNodeIds.add(currentId)
-          if (currentId > state.lastNodeId) state.lastNodeId = currentId
-        }
-      }
-
-      if (remappedIds.size > 0) {
-        patchLinkNodeIds(graph._links, remappedIds)
-        patchLinkNodeIds(graph.floatingLinksInternal, remappedIds)
-      }
     }
   }
 
@@ -3243,24 +3184,5 @@ export class Subgraph
         : undefined,
       extra: this.extra
     }
-  }
-}
-
-function patchLinkNodeIds(
-  links: Map<LinkId, LLink>,
-  remappedIds: Map<NodeId, NodeId>
-): void {
-  for (const link of links.values()) {
-    const newOrigin =
-      link.origin_id === UNASSIGNED_NODE_ID
-        ? undefined
-        : remappedIds.get(link.origin_id)
-    if (newOrigin !== undefined) link.origin_id = newOrigin
-
-    const newTarget =
-      link.target_id === UNASSIGNED_NODE_ID
-        ? undefined
-        : remappedIds.get(link.target_id)
-    if (newTarget !== undefined) link.target_id = newTarget
   }
 }

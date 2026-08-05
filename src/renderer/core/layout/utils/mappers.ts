@@ -1,6 +1,6 @@
 import * as Y from 'yjs'
 
-import type { GroupId } from '@/lib/litegraph/src/LGraphGroup'
+import type { GroupId } from '@/types/groupId'
 import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'

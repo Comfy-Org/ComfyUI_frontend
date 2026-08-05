@@ -1,3 +1,4 @@
+import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
@@ -37,17 +38,14 @@ function createNode(id: string, x: number, y: number, w: number, h: number) {
 
 type MockNode = ReturnType<typeof createNode>
 
-function createMockGraph(
-  nodes: MockNode[],
-  extra: LGraphExtra = {}
-): Partial<LGraph> {
-  const graph: Partial<LGraph> = {
+function createMockGraph(nodes: MockNode[], extra: LGraphExtra = {}): LGraph {
+  const graph = fromPartial<LGraph>({
     id: crypto.randomUUID(),
     nodes: fromAny<LGraph['nodes'], unknown>(nodes),
     groups: [],
-    reroutes: new Map() as LGraph['reroutes'],
+    reroutes: new Map(),
     extra
-  }
+  })
   Object.defineProperty(graph, 'rootGraph', { get: () => graph })
   return graph
 }
@@ -86,7 +84,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     })
 
     const beforeDistance = distanceBetweenNodes(nodes)
-    const result = ensureCorrectLayoutScale(undefined, graph as LGraph)
+    const result = ensureCorrectLayoutScale(undefined, graph)
 
     expect(result).toBe(true)
     expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
@@ -105,10 +103,10 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
       workflowRendererVersion: 'Vue'
     })
 
-    ensureCorrectLayoutScale(undefined, graph as LGraph)
+    ensureCorrectLayoutScale(undefined, graph)
     const afterFirst = snapshotGeometry(nodes)
 
-    const result = ensureCorrectLayoutScale(undefined, graph as LGraph)
+    const result = ensureCorrectLayoutScale(undefined, graph)
     expect(result).toBe(false)
 
     const afterSecond = snapshotGeometry(nodes)
@@ -122,7 +120,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     })
 
     const before = snapshotGeometry(nodes)
-    const result = ensureCorrectLayoutScale('Vue', graph as LGraph)
+    const result = ensureCorrectLayoutScale('Vue', graph)
 
     expect(result).toBe(false)
     expect(snapshotGeometry(nodes)).toEqual(before)
@@ -133,7 +131,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     const graph = createMockGraph(nodes)
 
     const beforeDistance = distanceBetweenNodes(nodes)
-    const result = ensureCorrectLayoutScale('Vue', graph as LGraph)
+    const result = ensureCorrectLayoutScale('Vue', graph)
 
     expect(result).toBe(true)
     expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
@@ -151,7 +149,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     })
 
     const before = snapshotGeometry(nodes)
-    const result = ensureCorrectLayoutScale(undefined, graph as LGraph)
+    const result = ensureCorrectLayoutScale(undefined, graph)
 
     expect(result).toBe(false)
     expect(snapshotGeometry(nodes)).toEqual(before)
@@ -164,7 +162,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     })
 
     const before = snapshotGeometry(nodes)
-    const result = ensureCorrectLayoutScale(undefined, graph as LGraph)
+    const result = ensureCorrectLayoutScale(undefined, graph)
 
     expect(result).toBe(false)
     expect(snapshotGeometry(nodes)).toEqual(before)
@@ -175,7 +173,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     const graph = createMockGraph(nodes)
 
     const before = snapshotGeometry(nodes)
-    const result = ensureCorrectLayoutScale(undefined, graph as LGraph)
+    const result = ensureCorrectLayoutScale(undefined, graph)
 
     expect(result).toBe(false)
     expect(snapshotGeometry(nodes)).toEqual(before)
@@ -211,7 +209,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     if (!graph.reroutes) throw new Error('reroutes is undefined')
     graph.reroutes.set(toRerouteId(1), reroute)
 
-    ensureCorrectLayoutScale(undefined, graph as LGraph)
+    ensureCorrectLayoutScale(undefined, graph)
 
     // createBounds adds 10px padding, so anchor is (90, 90)
     // Reroute at (200, 200). Relative: (110, 110). Downscaled: 110/1.2 ≈ 91.67
@@ -235,15 +233,15 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     })
 
     const group = new LGraphGroup('normalize-me', 810)
-    group.graph = graph as LGraph
-    layoutMutations.createGroup(graph.id!, 810, {
+    group.graph = graph
+    layoutMutations.createGroup(graph.id, toGroupId(810), {
       position: { x: 150, y: 150 },
       size: { width: 300, height: 200 }
     })
     graph.groups!.push(group)
 
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-    ensureCorrectLayoutScale(undefined, graph as LGraph)
+    ensureCorrectLayoutScale(undefined, graph)
 
     const boundsWrites = applyOperation.mock.calls.filter(
       ([operation]) => operation.type === 'setGroupBounds'
@@ -252,7 +250,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
 
     const anchor = 90 // min node pos (100) - createBounds padding (10)
     const relative = 150 - anchor
-    const layout = layoutStore.getGroupLayout(graph.id!, 810)
+    const layout = layoutStore.getGroupLayout(graph.id, toGroupId(810))
     expect(layout?.position.x).toBeCloseTo(
       anchor + relative / RENDER_SCALE_FACTOR,
       5
@@ -279,7 +277,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     const groupSize = group.size
     graph.groups!.push(group)
 
-    ensureCorrectLayoutScale(undefined, graph as LGraph)
+    ensureCorrectLayoutScale(undefined, graph)
 
     expect(group.pos).toBe(groupPos)
     expect(group.size).toBe(groupSize)
@@ -297,7 +295,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
         workflowRendererVersion: 'Vue'
       })
 
-      ensureCorrectLayoutScale(undefined, graph as LGraph)
+      ensureCorrectLayoutScale(undefined, graph)
       distances.push(distanceBetweenNodes(nodes))
     }
 

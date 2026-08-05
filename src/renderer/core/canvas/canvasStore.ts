@@ -177,9 +177,10 @@ export const useCanvasStore = defineStore('canvas', () => {
         'litegraph:ghost-placement',
         (e: CustomEvent<{ active: boolean; nodeId: NodeId }>) => {
           isGhostPlacing.value = e.detail.active
-          if (e.detail.active) {
+          const graphId = rootGraphId.value
+          if (e.detail.active && graphId) {
             const mutations = useLayoutMutations()
-            mutations.bringNodeToFront(e.detail.nodeId)
+            mutations.bringNodeToFront(graphId, e.detail.nodeId)
           }
         }
       )

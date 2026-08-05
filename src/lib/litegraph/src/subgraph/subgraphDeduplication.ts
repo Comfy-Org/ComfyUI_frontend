@@ -1,5 +1,4 @@
 import type { LGraph, LGraphState } from '../LGraph'
-import type { GroupId } from '../LGraphGroup'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -23,6 +22,10 @@ interface DeduplicationResult {
  * store key collisions, and patches any root-level legacy proxyWidgets that
  * reference the remapped inner IDs. Returns deep clones; inputs are not
  * mutated. `state.lastNodeId` is advanced.
+ *
+ * `GraphCanvas.vue` also keys Vue node instances by bare `NodeId`, so
+ * collisions could reuse a component across graph changes instead of
+ * remounting it.
  */
 export function deduplicateSubgraphNodeIds(
   subgraphs: ExportedSubgraph[],
@@ -191,7 +194,7 @@ export function deduplicateSubgraphGroupIds(
   }
 }
 
-function reserveGroupId(id: GroupId, state: LGraphState): void {
+function reserveGroupId(id: number, state: LGraphState): void {
   if (id > state.lastGroupId) state.lastGroupId = id
 }
 export function collectReservedRerouteIds(

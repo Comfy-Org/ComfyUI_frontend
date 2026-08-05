@@ -1,3 +1,4 @@
+import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
@@ -36,7 +37,7 @@ const getAllGroups = vi.hoisted(() =>
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getNodeLayoutRef: vi.fn((nodeId: NodeId) => ({
+    getNodeLayoutRef: vi.fn((_rootGraphId: UUID, nodeId: NodeId) => ({
       get value() {
         return layouts.get(String(nodeId)) ?? null
       }
@@ -212,8 +213,8 @@ describe('MinimapDataSource', () => {
 
     it('reads group geometry from the store, not the group', () => {
       LiteGraph.vueNodesMode = true
-      groupLayouts.set(7, {
-        id: 7,
+      groupLayouts.set(toGroupId(7), {
+        id: toGroupId(7),
         position: { x: 40, y: 60 },
         size: { width: 300, height: 200 }
       })

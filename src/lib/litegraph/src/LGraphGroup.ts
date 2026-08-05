@@ -2,6 +2,8 @@ import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphErro
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { toGroupId } from '@/types/groupId'
+import type { GroupId } from '@/types/groupId'
 
 import type { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -30,8 +32,6 @@ import {
 import type { ISerialisedGroup } from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
-
-export type GroupId = number
 
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
@@ -82,9 +82,9 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     }
   })
 
-  constructor(title?: string, id?: GroupId) {
+  constructor(title?: string, id?: number) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
-    this.id = id ?? -1
+    this.id = toGroupId(id ?? -1)
     this.title = title || 'Group'
 
     const { pale_blue } = LGraphCanvas.node_colors
@@ -207,7 +207,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   configure(o: ISerialisedGroup): void {
-    this.id = o.id
+    this.id = toGroupId(o.id)
     this.title = o.title
     const [x, y, width, height] = o.bounding
     this.setBounds(x, y, width, height)

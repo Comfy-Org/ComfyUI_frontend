@@ -1,3 +1,5 @@
+import { toGroupId } from '@/types/groupId'
+import type { GroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect } from 'vitest'
@@ -41,7 +43,7 @@ describe('LGraphGroup', () => {
       graph.add(inner)
 
       // Track the visited set to verify each group is only fully processed once
-      const visited = new Set<number>()
+      const visited = new Set<GroupId>()
       outer.recomputeInsideNodes(100, visited)
 
       // All nested groups should be in the visited set
@@ -88,7 +90,7 @@ describe('group layout in layoutStore', () => {
   // graph.add(node) registers node state, which needs a store.
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
-  function addedGroup(graph: LGraph, id: number) {
+  function addedGroup(graph: LGraph, id: GroupId) {
     const group = new LGraphGroup('group', id)
     group.pos = [100, 100]
     group.size = [300, 200]
@@ -98,50 +100,63 @@ describe('group layout in layoutStore', () => {
 
   test('registers geometry on add and drops it on remove', () => {
     const graph = new LGraph()
-    const group = addedGroup(graph, 801)
+    const group = addedGroup(graph, toGroupId(801))
 
-    expect(layoutStore.getGroupLayout(graph.rootGraph.id, 801)).toEqual({
-      id: 801,
+    expect(
+      layoutStore.getGroupLayout(graph.rootGraph.id, toGroupId(801))
+    ).toEqual({
+      id: toGroupId(801),
       position: { x: 100, y: 100 },
       size: { width: 300, height: 200 }
     })
 
     graph.remove(group)
-    expect(layoutStore.getGroupLayout(graph.rootGraph.id, 801)).toBeNull()
+    expect(
+      layoutStore.getGroupLayout(graph.rootGraph.id, toGroupId(801))
+    ).toBeNull()
   })
 
   test('drops entries when the graph is cleared', () => {
     const graph = new LGraph()
-    addedGroup(graph, 802)
+    addedGroup(graph, toGroupId(802))
 
     graph.clear()
 
-    expect(layoutStore.getGroupLayout(graph.rootGraph.id, 802)).toBeNull()
+    expect(
+      layoutStore.getGroupLayout(graph.rootGraph.id, toGroupId(802))
+    ).toBeNull()
   })
 
   test('isolates colliding group IDs across live root graphs', () => {
     const firstGraph = new LGraph()
+    const SHARED_GROUP = toGroupId(803)
     const secondGraph = new LGraph()
     firstGraph.id = createUuidv4()
     secondGraph.id = createUuidv4()
-    const firstGroup = addedGroup(firstGraph, 803)
-    const secondGroup = addedGroup(secondGraph, 803)
+    const firstGroup = addedGroup(firstGraph, SHARED_GROUP)
+    const secondGroup = addedGroup(secondGraph, SHARED_GROUP)
 
     firstGroup.pos = [20, 30]
     secondGroup.pos = [200, 300]
 
-    expect(layoutStore.getGroupLayout(firstGraph.id, 803)?.position).toEqual({
+    expect(
+      layoutStore.getGroupLayout(firstGraph.id, SHARED_GROUP)?.position
+    ).toEqual({
       x: 20,
       y: 30
     })
-    expect(layoutStore.getGroupLayout(secondGraph.id, 803)?.position).toEqual({
+    expect(
+      layoutStore.getGroupLayout(secondGraph.id, SHARED_GROUP)?.position
+    ).toEqual({
       x: 200,
       y: 300
     })
 
     firstGraph.remove(firstGroup)
-    expect(layoutStore.getGroupLayout(firstGraph.id, 803)).toBeNull()
-    expect(layoutStore.getGroupLayout(secondGraph.id, 803)).not.toBeNull()
+    expect(layoutStore.getGroupLayout(firstGraph.id, SHARED_GROUP)).toBeNull()
+    expect(
+      layoutStore.getGroupLayout(secondGraph.id, SHARED_GROUP)
+    ).not.toBeNull()
 
     firstGraph.clear()
     expect(
@@ -170,7 +185,7 @@ describe('group layout in layoutStore', () => {
 
     test.for(mutations)('%s', ([, mutate], { expect }) => {
       const graph = new LGraph()
-      const group = addedGroup(graph, 803)
+      const group = addedGroup(graph, toGroupId(803))
 
       mutate(group)
 
@@ -184,7 +199,7 @@ describe('group layout in layoutStore', () => {
 
   test('keeps geometry locally when the store entry is gone', () => {
     const graph = new LGraph()
-    const group = addedGroup(graph, 809)
+    const group = addedGroup(graph, toGroupId(809))
     useLayoutMutations().deleteGroup(graph.rootGraph.id, group.id)
 
     group.pos = [11, 22]
@@ -194,7 +209,7 @@ describe('group layout in layoutStore', () => {
 
   test('snapToGrid reports whether the group moved', () => {
     const graph = new LGraph()
-    const group = addedGroup(graph, 810)
+    const group = addedGroup(graph, toGroupId(810))
 
     group.pos = [70, 128]
     expect(group.snapToGrid(64)).toBe(true)
@@ -203,7 +218,7 @@ describe('group layout in layoutStore', () => {
 
   test('resizeTo fits contents and commits, still unclamped', () => {
     const graph = new LGraph()
-    const group = addedGroup(graph, 804)
+    const group = addedGroup(graph, toGroupId(804))
     const node = new LGraphNode('tiny')
     node.pos = [500, 500]
     node.size = [10, 10]
@@ -222,7 +237,7 @@ describe('group layout in layoutStore', () => {
 
   test('setters write through the shared Rectangle buffer', () => {
     const graph = new LGraph()
-    const group = addedGroup(graph, 805)
+    const group = addedGroup(graph, toGroupId(805))
     const pos = group.pos
     const size = group.size
 
@@ -236,7 +251,7 @@ describe('group layout in layoutStore', () => {
 
   test('legacy geometry buffers write through to the store', () => {
     const graph = new LGraph()
-    const group = addedGroup(graph, 806)
+    const group = addedGroup(graph, toGroupId(806))
 
     group.pos[0] = 25
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
@@ -270,7 +285,7 @@ describe('group layout in layoutStore', () => {
 
   test('reads geometry from the store', () => {
     const graph = new LGraph()
-    const group = addedGroup(graph, 807)
+    const group = addedGroup(graph, toGroupId(807))
     const pos = group.pos
     const size = group.size
 
@@ -297,7 +312,7 @@ describe('group layout in layoutStore', () => {
 
   test('group collections react to nested bounds updates', () => {
     const graph = new LGraph()
-    const group = addedGroup(graph, 808)
+    const group = addedGroup(graph, toGroupId(808))
     const groups = layoutStore.getAllGroups(graph.rootGraph.id)
 
     expect(groups.value.get(group.id)?.position.x).toBe(100)
