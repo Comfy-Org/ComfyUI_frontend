@@ -230,7 +230,7 @@ ${read(join(SKILL_DIR, 'SKILL.md'))}
 
 --- Published API specification ---
 
-${read(join(REPO, 'NODE_API.md'))}`
+${read(join(REPO, 'docs/node_api_WIP.md'))}`
 }
 
 /** Deep-dive references for the patterns this pack actually hit. */
