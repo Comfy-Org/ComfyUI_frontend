@@ -467,6 +467,29 @@ While Vue-node rendering is active, `notifyLayoutChanges` dirties the canvas for
 node layout changes. It also calls `onResize` for `resizeNode` and
 `batchUpdateBounds` operations. It does not copy geometry into nodes.
 
+**Deferred follow-up: extract geometry projection ownership.** Land this after
+the node geometry facade and its CRDT-safety follow-up (PRs 14133 and 14480) so
+the ownership and compensation rules are stable before moving them. Preserve
+behavior while making one focused projection module responsible for the legacy
+geometry cache:
+
+1. Move `_geometryVersion`, `_layoutRegistered`, and `refreshGeometry()` out of
+   `LGraphNode`. Keep ephemeral projection state private to the module, keyed by
+   node identity; do not add another entity store for compatibility-only state.
+2. Make layout registration and removal call that module instead of coordinating
+   node flags and backing buffers directly. `LGraphNode.pos` and `.size` remain
+   compatibility accessors, but delegate synchronization rather than owning its
+   lifecycle.
+3. Once the lifecycle has one owner, replace the store-wide geometry version
+   check with node-scoped invalidation. A geometry change should make only the
+   affected nodes refresh; unrelated node, group, and reroute operations should
+   not force every rendered node through a Yjs lookup.
+
+Completion requires no projection lifecycle fields or methods on `LGraphNode`,
+no registration code that mutates such fields, unchanged extension-facing
+`pos` / `size` behavior, and coverage for store-originated updates, indexed
+writes, removal/re-addition, and CRDT compensation.
+
 **Open decisions:**
 
 1. The geometry views. The hand-written `size` Proxy is gone, replaced by
@@ -915,6 +938,7 @@ Phase 3c (ConnectivitySystem)  ──── depends on 2c
 Phase 3->4 gate checklist  ──────── depends on 3a, 3b, 3c
 
 Phase 4a (Position writes)  ────── depends on 2a, 3b
+  Geometry projection ownership ── after PRs 14133, 14480; depends on 4a
 Phase 4b (Connectivity mutations) ─ depends on 3c, 3->4 gate
 Phase 4c (Widget writes)  ─────── ✅ largely shipped; depends on 2b
 Phase 4d (Layout decoupling)  ─── depends on 2a, 3->4 gate
