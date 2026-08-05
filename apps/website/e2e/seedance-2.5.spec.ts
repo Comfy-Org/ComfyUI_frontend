@@ -129,13 +129,21 @@ test.describe('Seedance 2.5 announcement page — mobile @mobile', () => {
       })
       .getByRole('link', { name: HERO_CTA })
 
+    await cta.scrollIntoViewIfNeeded()
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute('href', externalLinks.cloud)
 
     const box = await cta.boundingBox()
-    expect(box, 'hero CTA bounding box').not.toBeNull()
-    expect(box!.x + box!.width).toBeLessThanOrEqual(
-      page.viewportSize()!.width + 1
-    )
+    const viewport = page.viewportSize()
+    if (!box || !viewport) {
+      throw new Error('hero CTA has no layout box to measure')
+    }
+
+    // toBeVisible() does not imply the element sits inside the viewport, so
+    // check all four edges. One pixel of tolerance for subpixel rounding.
+    expect(box.x).toBeGreaterThanOrEqual(-1)
+    expect(box.y).toBeGreaterThanOrEqual(-1)
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1)
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1)
   })
 })
