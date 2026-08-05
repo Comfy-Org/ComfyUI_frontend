@@ -1,6 +1,6 @@
 services:
   frontend:
-    command: DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/ pnpm exec vite --config vite.config.mts --host 0.0.0.0 --port "$PORT"
+    command: pnpm dev:cloud --host 0.0.0.0 --port "$PORT"
     portal:
       title: ComfyUI Frontend
       description: Frontend dev server connected to the Comfy test cloud backend.
