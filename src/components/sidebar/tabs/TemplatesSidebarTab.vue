@@ -19,8 +19,10 @@
           class="h-9 w-full min-w-0 flex-1 border border-border-subtle bg-transparent"
           autofocus
         />
-        <!-- Filter popover: mirrors the Assets sidebar filter button -->
-        <Popover :show-arrow="false" @interact-outside="keepMenuOpenForSubmenu">
+        <!-- Filter menu: same primitives and behaviours as the Media Assets
+             filter (#14166) — nested submenus, menu stays open while picking,
+             a dot on the trigger when anything is applied. -->
+        <DropdownMenu :modal="false">
           <template #button>
             <Button
               variant="secondary"
@@ -32,21 +34,16 @@
               <i class="icon-[lucide--list-filter] size-4" />
               <span
                 v-if="activeFilterCount > 0"
-                :class="cn(selectCountBadgeClass, 'absolute -top-1 -right-1')"
-              >
-                {{ activeFilterCount }}
-              </span>
+                aria-hidden="true"
+                class="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-base-foreground"
+              />
             </Button>
           </template>
-          <template #default>
-            <TemplatesFilterMenu
-              :facets="filterMenuFacets"
-              @toggle="toggleFilterValue"
-              @clear-facet="clearFilterFacet"
-              @clear-all="clearAllFilters"
-            />
-          </template>
-        </Popover>
+          <TemplatesFilterMenu
+            :facets="filterMenuFacets"
+            @toggle="toggleFilterValue"
+          />
+        </DropdownMenu>
 
         <!-- Sort popover: mirrors the Assets sidebar settings menu -->
         <Popover :show-arrow="false">
@@ -119,35 +116,36 @@
         </button>
       </TemplatesFilterChipRow>
 
-      <!-- What's applied, and how to undo it, without reopening the menu. -->
+      <!-- Applied filters as removable chips + Clear all, same shape as the
+           Media Assets filter bar (#14166). -->
       <div
         v-if="appliedFilters.length"
-        class="flex items-center gap-2"
+        class="flex flex-wrap items-center gap-1.5"
         data-testid="template-applied-filters"
       >
-        <span class="shrink-0 text-xs text-muted-foreground">
-          {{ $t('templateWorkflows.filteredBy') }}
-        </span>
-        <TemplatesFilterChipRow class="min-w-0 flex-1">
-          <button
-            v-for="pill in appliedFilters"
-            :key="`${pill.facetKey}:${pill.value}`"
-            type="button"
+        <span
+          v-for="pill in appliedFilters"
+          :key="`${pill.facetKey}:${pill.value}`"
+          class="inline-flex items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap"
+        >
+          <span class="max-w-32 truncate">{{ pill.label }}</span>
+          <Button
+            variant="textonly"
+            size="icon"
+            class="size-4 rounded-sm p-0"
             :aria-label="`${$t('g.remove')}: ${pill.label}`"
-            class="flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-solid border-border-subtle bg-transparent px-2.5 text-xs text-base-foreground outline-none hover:bg-secondary-background-hover"
             @click="toggleFilterValue(pill.facetKey, pill.value)"
           >
-            <span class="max-w-32 truncate">{{ pill.label }}</span>
-            <i class="icon-[lucide--x] size-3 shrink-0 text-muted-foreground" />
-          </button>
-        </TemplatesFilterChipRow>
-        <button
-          type="button"
-          class="shrink-0 cursor-pointer border-none bg-transparent p-0 text-xs text-muted-foreground underline underline-offset-2 outline-none hover:text-base-foreground"
+            <i class="icon-[lucide--x] size-3" />
+          </Button>
+        </span>
+        <Button
+          variant="textonly"
+          class="h-6 px-1.5 text-xs text-muted-foreground"
           @click="clearAllFilters"
         >
           {{ $t('templateWorkflows.clearAllFilters') }}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -544,9 +542,9 @@ import TemplatesFilterChipRow from '@/components/sidebar/tabs/TemplatesFilterChi
 import TemplatesFilterMenu from '@/components/sidebar/tabs/TemplatesFilterMenu.vue'
 import type { FilterMenuFacet } from '@/components/sidebar/tabs/TemplatesFilterMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Popover from '@/components/ui/Popover.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
-import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
@@ -889,29 +887,6 @@ const toggleFilterValue = (facetKey: string, value: string) => {
   target.value = target.value.includes(value)
     ? target.value.filter((v) => v !== value)
     : [...target.value, value]
-}
-
-/**
- * The facet values panel is teleported to body, so Reka counts clicks in it as
- * outside interactions and would dismiss the whole filter popover.
- */
-const keepMenuOpenForSubmenu = (event: CustomEvent) => {
-  const original = (event.detail as { originalEvent?: Event } | undefined)
-    ?.originalEvent
-  const target = original?.target ?? event.target
-  if (
-    target instanceof Element &&
-    target.closest('#templates-filter-submenu')
-  ) {
-    event.preventDefault()
-  }
-}
-
-const clearFilterFacet = (facetKey: string) => {
-  if (facetKey === 'category') selectedNavItem.value = 'all'
-  else if (facetKey === 'model') selectedModels.value = []
-  else if (facetKey === 'task') selectedUseCases.value = []
-  else selectedRunsOn.value = []
 }
 
 interface AppliedFilter {
