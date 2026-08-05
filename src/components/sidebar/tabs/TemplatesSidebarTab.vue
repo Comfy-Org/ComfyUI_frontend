@@ -94,10 +94,10 @@
             size="md"
             :variant="selectedType === tab.value ? 'inverted' : 'secondary'"
             :aria-pressed="selectedType === tab.value"
-            class="h-8 shrink-0 px-3 text-xs"
+            class="h-7 shrink-0 rounded-md px-2.5 text-xs"
             @click="selectedType = tab.value"
           >
-            <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
+            <i v-if="tab.icon" :class="cn(tab.icon, 'size-3')" />
             <span>{{ tab.label }}</span>
           </Button>
         </div>
@@ -128,39 +128,43 @@
             </TemplatesFilterChipRow>
           </div>
 
-          <DropdownMenu
-            :modal="false"
-            class="@2xl/templates-panel:hidden"
+          <!-- Wrapper, not a class on DropdownMenu: that component sets
+               inheritAttrs false and forwards $attrs to the popup content, so
+               the class would hide the menu instead of its trigger. -->
+          <div
+            class="shrink-0 @2xl/templates-panel:hidden"
             data-testid="template-generation-type-menu"
           >
-            <template #button>
-              <Button
-                variant="secondary"
-                size="md"
-                class="h-8 shrink-0 px-3 text-xs"
-              >
-                <span class="max-w-28 truncate">
-                  {{ selectedGenerationType?.name ?? generationTypeLabel }}
-                </span>
-                <i class="icon-[lucide--chevron-down] size-3.5" />
-              </Button>
-            </template>
-            <DropdownMenuRadioGroup :model-value="selectedCategory">
-              <DropdownMenuRadioItem
-                v-for="opt in generationTypeOptions"
-                :key="opt.value"
-                :value="opt.value"
-                class="flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover"
-                @click="toggleGenerationType(opt.value)"
-                @select.prevent
-              >
-                <span class="flex-1">{{ opt.name }}</span>
-                <DropdownMenuItemIndicator class="size-4 shrink-0">
-                  <i class="icon-[lucide--check]" />
-                </DropdownMenuItemIndicator>
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenu>
+            <DropdownMenu :modal="false">
+              <template #button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  class="h-7 shrink-0 rounded-md px-2.5 text-xs"
+                >
+                  <span class="max-w-28 truncate">
+                    {{ selectedGenerationType?.name ?? generationTypeLabel }}
+                  </span>
+                  <i class="icon-[lucide--chevron-down] size-3.5" />
+                </Button>
+              </template>
+              <DropdownMenuRadioGroup :model-value="selectedCategory">
+                <DropdownMenuRadioItem
+                  v-for="opt in generationTypeOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                  class="flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover"
+                  @click="toggleGenerationType(opt.value)"
+                  @select.prevent
+                >
+                  <span class="flex-1">{{ opt.name }}</span>
+                  <DropdownMenuItemIndicator class="size-4 shrink-0">
+                    <i class="icon-[lucide--check]" />
+                  </DropdownMenuItemIndicator>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenu>
+          </div>
         </template>
       </div>
 
@@ -982,7 +986,7 @@ const appliedFilters = computed<AppliedFilter[]>(() =>
 
 const filterChipClass = (active: boolean) =>
   cn(
-    'h-8 cursor-pointer rounded-lg border border-solid px-3 text-xs font-medium transition-colors outline-none',
+    'h-7 cursor-pointer rounded-md border border-solid px-2.5 text-xs font-medium transition-colors outline-none',
     active
       ? 'border-transparent bg-base-foreground text-base-background'
       : 'border-border-subtle bg-transparent text-base-foreground hover:bg-secondary-background-hover'
