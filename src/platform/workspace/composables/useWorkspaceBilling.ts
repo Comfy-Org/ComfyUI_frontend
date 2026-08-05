@@ -239,7 +239,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       }
     } catch (err) {
       if (signal?.aborted) return
-      if (requestId === latestBillingReadIds.status) {
+      if (
+        requestId === latestBillingReadIds.status &&
+        workspaceId === workspaceStore.activeWorkspace?.id
+      ) {
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch billing status'
       }
@@ -252,16 +255,24 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function fetchBalance(signal?: AbortSignal): Promise<void> {
     if (signal?.aborted) return
     const requestId = ++latestBillingReadIds.balance
+    const workspaceId = workspaceStore.activeWorkspace?.id
     const releaseLoading = beginLoading(signal)
     error.value = null
     try {
       const balance = await workspaceApi.getBillingBalance(signal)
-      if (!signal?.aborted && requestId === latestBillingReadIds.balance) {
+      if (
+        !signal?.aborted &&
+        requestId === latestBillingReadIds.balance &&
+        workspaceId === workspaceStore.activeWorkspace?.id
+      ) {
         balanceData.value = balance
       }
     } catch (err) {
       if (signal?.aborted) return
-      if (requestId === latestBillingReadIds.balance) {
+      if (
+        requestId === latestBillingReadIds.balance &&
+        workspaceId === workspaceStore.activeWorkspace?.id
+      ) {
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch balance'
       }
@@ -363,7 +374,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       const returnUrl = window.location.href
-      const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
+      const response = await workspaceApi.getPaymentPortalUrl(returnUrl, signal)
       if (
         !signal?.aborted &&
         isCurrentRequest() &&

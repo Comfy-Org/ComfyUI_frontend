@@ -336,12 +336,15 @@ describe('useWorkspaceBilling', () => {
       )
     })
 
-    it('does not recover an operation from a stale workspace response', async () => {
+    it('does not publish billing data from a stale workspace response', async () => {
       const status = createDeferred<BillingStatusResponse>()
+      const balance = createDeferred<typeof positiveBalance>()
       mockWorkspaceApi.getBillingStatus.mockReturnValue(status.promise)
+      mockWorkspaceApi.getBillingBalance.mockReturnValue(balance.promise)
       const billing = setupBilling()
 
-      const fetch = billing.fetchStatus()
+      const statusRequest = billing.fetchStatus()
+      const balanceRequest = billing.fetchBalance()
       mockActiveWorkspaceId.value = 'workspace-2'
       status.resolve({
         ...activeStatus,
@@ -349,10 +352,30 @@ describe('useWorkspaceBilling', () => {
         pending_billing_op_id: 'op-workspace-1',
         action_url: 'https://invoice.stripe.com/sensitive-token'
       })
-      await fetch
+      balance.resolve(positiveBalance)
+      await Promise.all([statusRequest, balanceRequest])
 
       expect(mockStartOperation).not.toHaveBeenCalled()
       expect(billing.subscription.value).toBeNull()
+      expect(billing.balance.value).toBeNull()
+      expect(billing.error.value).toBeNull()
+    })
+
+    it('does not publish billing errors from stale workspace requests', async () => {
+      const status = createDeferred<BillingStatusResponse>()
+      const balance = createDeferred<typeof positiveBalance>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValue(status.promise)
+      mockWorkspaceApi.getBillingBalance.mockReturnValue(balance.promise)
+      const billing = setupBilling()
+
+      const statusRequest = billing.fetchStatus()
+      const balanceRequest = billing.fetchBalance()
+      mockActiveWorkspaceId.value = 'workspace-2'
+      status.reject(new Error('old workspace status failed'))
+      balance.reject(new Error('old workspace balance failed'))
+      await Promise.allSettled([statusRequest, balanceRequest])
+
+      expect(billing.error.value).toBeNull()
     })
 
     it("keeps a 'scheduled' subscription on the active treatment", async () => {
@@ -825,7 +848,8 @@ describe('useWorkspaceBilling', () => {
       await billing.manageSubscription()
 
       expect(mockWorkspaceApi.getPaymentPortalUrl).toHaveBeenCalledWith(
-        'https://app.example/settings'
+        'https://app.example/settings',
+        undefined
       )
       expect(openSpy).toHaveBeenCalledWith(
         'https://billing.example/portal',
@@ -870,6 +894,10 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
 
       const request = billing.manageSubscription(controller.signal)
+      expect(mockWorkspaceApi.getPaymentPortalUrl).toHaveBeenCalledWith(
+        'https://app.example/settings',
+        controller.signal
+      )
       controller.abort()
       portal.resolve({ url: 'https://billing.example/old-portal' })
       await request

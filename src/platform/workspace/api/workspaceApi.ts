@@ -788,14 +788,15 @@ export const workspaceApi = {
    * POST /api/billing/payment-portal
    */
   async getPaymentPortalUrl(
-    returnUrl?: string
+    returnUrl?: string,
+    signal?: AbortSignal
   ): Promise<PaymentPortalResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PaymentPortalResponse>(
         api.apiURL('/billing/payment-portal'),
         { return_url: returnUrl } satisfies PaymentPortalRequest,
-        { headers }
+        { headers, ...(signal ? { signal } : {}) }
       )
       return response.data
     } catch (err) {
