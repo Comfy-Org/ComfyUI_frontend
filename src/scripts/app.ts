@@ -1982,11 +1982,9 @@ export class ComfyApp {
           console.error(
             'Invalid workflow structure, trying parameters fallback'
           )
-          this.showErrorOnFileLoad(file)
         }
       } catch (err) {
         console.error('Failed to parse workflow:', err)
-        this.showErrorOnFileLoad(file)
         // Fall through to check parameters as fallback
       }
     }
@@ -2009,9 +2007,19 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      useWorkflowService().beforeLoadNewGraph()
-      importA1111(this.rootGraph, parameters)
-      useWorkflowService().afterLoadNewGraph(
+      const outcome = await importA1111(this.rootGraph, parameters, () => {
+        useWorkflowService().beforeLoadNewGraph()
+        this.canvas.setGraph(this.rootGraph)
+      })
+      if (outcome === 'core-nodes-unavailable') {
+        useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+        return
+      }
+      if (outcome === 'not-a1111') {
+        this.showErrorOnFileLoad(file)
+        return
+      }
+      await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )

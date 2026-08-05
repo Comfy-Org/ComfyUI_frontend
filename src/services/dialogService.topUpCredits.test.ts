@@ -9,7 +9,14 @@ const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
 const state = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
-  isFreeTier: false,
+  isTeamPlan: false,
+  tier: 'STANDARD' as
+    | 'FREE'
+    | 'STANDARD'
+    | 'CREATOR'
+    | 'PRO'
+    | 'FOUNDERS_EDITION'
+    | null,
   type: 'workspace' as 'workspace' | 'legacy',
   canTopUp: true
 }))
@@ -38,7 +45,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     canAccessSubscriptionFeatures: {
       value: state.canAccessSubscriptionFeatures
     },
-    isFreeTier: { value: state.isFreeTier },
+    isTeamPlan: { value: state.isTeamPlan },
+    tier: { value: state.tier },
     type: { value: state.type }
   })
 }))
@@ -68,7 +76,8 @@ describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     state.canAccessSubscriptionFeatures = true
-    state.isFreeTier = false
+    state.isTeamPlan = false
+    state.tier = 'STANDARD'
     state.type = 'workspace'
     state.canTopUp = true
     mockIsCloud.value = true
@@ -84,6 +93,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
+    state.isTeamPlan = true
     state.canTopUp = false
 
     await useDialogService().showTopUpCreditsDialog({
@@ -113,8 +123,20 @@ describe('showTopUpCreditsDialog', () => {
     expect(args.key).toBe('top-up-credits')
   })
 
+  it('routes an active Cloud free-tier user to the subscription-required flow', async () => {
+    state.tier = 'FREE'
+
+    await useDialogService().showTopUpCreditsDialog()
+
+    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+      reason: 'top_up_blocked'
+    })
+    expect(showDialog).not.toHaveBeenCalled()
+  })
+
   it('routes a member of an inactive team to the subscription-required flow, not the credits notice', async () => {
     state.canAccessSubscriptionFeatures = false
+    state.isTeamPlan = true
     state.canTopUp = false
 
     await useDialogService().showTopUpCreditsDialog({
@@ -134,7 +156,7 @@ describe('showTopUpCreditsDialog', () => {
     })
 
     it('opens the purchase dialog directly on the free tier instead of the subscription-required flow', async () => {
-      state.isFreeTier = true
+      state.tier = 'FREE'
 
       await useDialogService().showTopUpCreditsDialog()
 

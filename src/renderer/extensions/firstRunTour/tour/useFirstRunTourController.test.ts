@@ -5,10 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
+import type { TourEnding } from '@/platform/onboarding/onboardingTourStore'
 import type {
   CoachStep,
   SpotlightStep
 } from '@/platform/onboarding/onboardingTours'
+import type { OnboardingTourSkipReason } from '@/platform/telemetry/types'
 
 const TOUR_WORKFLOW = { path: 'tour.json' }
 const OTHER_WORKFLOW = { path: 'other.json' }
@@ -28,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   releaseFirstRunTargets: vi.fn(),
   engine: {
     activeTour: null as string | null,
+    lastEnding: null as TourEnding | null,
     step: null as CoachStep | null,
     isLast: false,
     startTour: vi.fn(),
@@ -159,6 +162,36 @@ async function tourOnRunStep() {
   return { controller, started: await starting }
 }
 
+/** The engine ending the tour and recording how, the way `finish()` leaves it. */
+function endTour(ending: TourEnding) {
+  mocks.engine.lastEnding = ending
+  mocks.engine.activeTour = null
+  mocks.engine.step = null
+  return nextTick()
+}
+
+const COMPLETED: TourEnding = { tour: 'firstRun', outcome: 'completed' }
+
+function skippedBecause(skipReason: OnboardingTourSkipReason): TourEnding {
+  return { tour: 'firstRun', outcome: 'skipped', skipReason }
+}
+
+/** Every ending short of walking the tour to the end. */
+const UNFINISHED_ENDINGS: { named: string; ending: TourEnding }[] = [
+  { named: 'the user waved away on step 1', ending: skippedBecause('user') },
+  {
+    named: 'a missing target tore down',
+    ending: skippedBecause('target_timeout')
+  },
+  { named: 'the paywall parked', ending: skippedBecause('postponed') },
+  { named: 'a lost context ended', ending: skippedBecause('trigger_lost') }
+]
+
+const EVERY_ENDING: { named: string; ending: TourEnding }[] = [
+  { named: 'the user walked to the end', ending: COMPLETED },
+  ...UNFINISHED_ENDINGS
+]
+
 function finishRun(workflow: unknown, status: string) {
   mocks.workflowStatus.value = new Map(mocks.workflowStatus.value).set(
     workflow,
@@ -209,6 +242,7 @@ describe('useFirstRunTourController', () => {
     mocks.vueNodesEnabled = true
     mocks.steps = []
     mocks.engine.activeTour = null
+    mocks.engine.lastEnding = null
     mocks.engine.step = null
     mocks.engine.isLast = false
   })
@@ -587,6 +621,19 @@ describe('useFirstRunTourController', () => {
       ).toBe('failed')
     })
 
+    it('gives up on a run the validator refused before it reached a node', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+
+      mocks.executionErrors.hasPromptError = true
+      await nextTick()
+
+      expect(
+        mocks.runState.value,
+        'a prompt refused whole never reaches a node, so no node error and no status will ever end the wait'
+      ).toBe('failed')
+    })
+
     it('leaves errors alone until the tour has run something', async () => {
       await tourOnRunStep()
 
@@ -644,11 +691,52 @@ describe('useFirstRunTourController', () => {
       ).toBe(false)
     })
 
+    it('congratulates a tour the user walked to the end', async () => {
+      const { controller } = await tourOnRunStep()
+
+      await endTour(COMPLETED)
+
+      expect(controller.tourWasCompleted.value).toBe(true)
+    })
+
+    it.for(UNFINISHED_ENDINGS)(
+      'congratulates nobody for a tour $named',
+      async ({ ending }) => {
+        const { controller } = await tourOnRunStep()
+
+        await endTour(ending)
+
+        expect(
+          controller.tourWasCompleted.value,
+          'a tour the user never walked to the end made no first result to congratulate'
+        ).toBe(false)
+      }
+    )
+
+    it.for(EVERY_ENDING)(
+      'still offers the nudge after a tour $named',
+      async ({ ending }) => {
+        const { controller } = await tourOnRunStep()
+
+        await endTour(ending)
+
+        expect(
+          controller.nudgeArmed.value,
+          'suppressing the nudge takes the way forward from the user who most needs it (#14144)'
+        ).toBe(true)
+      }
+    )
+
     it('congratulates nobody when the tour never appeared', async () => {
       mocks.steps = []
       mocks.activeWorkflow.value = TOUR_WORKFLOW
       mocks.engine.startTour.mockImplementation(async () => {
         await resolveRegisteredTour()
+        // The store requests the run, resolves no steps and returns to idle, so
+        // nothing ever calls `finish()` and no ending is recorded.
+        mocks.engine.activeTour = 'firstRun'
+        await nextTick()
+        mocks.engine.activeTour = null
         return false
       })
       const controller = await freshController()
@@ -656,11 +744,16 @@ describe('useFirstRunTourController', () => {
       const starting = controller.beginTour('image_z_image_turbo')
       await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
       await starting
+      await nextTick()
 
       expect(
-        controller.tourWasShown.value,
+        controller.tourWasCompleted.value,
         'a tour that resolved no steps made nothing for the nudge to celebrate'
       ).toBe(false)
+      expect(
+        controller.nudgeArmed.value,
+        'a user who saw no tour is the one who most needs somewhere to go next'
+      ).toBe(true)
     })
 
     it('stops offering the nudge once it is waved away', async () => {
