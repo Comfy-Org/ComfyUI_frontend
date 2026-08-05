@@ -1,0 +1,277 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
+
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+
+import {
+  LATEST_MAJOR,
+  NODE_API_VERSION,
+  SUPPORTED_MAJORS,
+  createComfyApi
+} from './comfyApi'
+import { ComfyUnsupportedError } from './errors'
+
+describe('comfy API root', () => {
+  let graph: LGraph
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    graph = new LGraph()
+  })
+
+  const api = () => createComfyApi(() => graph)
+
+  it('reports a version independent of the app version', () => {
+    expect(api().version).toBe(NODE_API_VERSION)
+    expect(api().version).toMatch(/^\d+\.\d+$/)
+    expect(api().major).toBe(1)
+  })
+
+  describe('capability probing', () => {
+    it('reports shipped capabilities', () => {
+      expect(api().supports('widgets.reorder')).toBe(true)
+      expect(api().supports('widgets.hidden')).toBe(true)
+      expect(api().supports('slots.identity')).toBe(true)
+    })
+
+    it('returns false for unknown capabilities instead of throwing', () => {
+      expect(api().supports('does.not.exist')).toBe(false)
+      expect(api().supports('')).toBe(false)
+    })
+
+    it('reports slots.named as false until the backend supplies names', () => {
+      // While false, '0' resolves positionally — see slotRef.
+      expect(api().supports('slots.named')).toBe(false)
+    })
+  })
+
+  describe('require()', () => {
+    it('passes silently for a supported capability', () => {
+      expect(() => api().require('widgets.reorder')).not.toThrow()
+    })
+
+    it('names the capability and host version when unsupported', () => {
+      expect(() => api().require('node.decorations')).toThrow(
+        ComfyUnsupportedError
+      )
+      expect(() => api().require('node.decorations')).toThrow(
+        /node\.decorations/
+      )
+      expect(() => api().require('node.decorations')).toThrow(
+        new RegExp(NODE_API_VERSION.replace(/\./g, '\\.'))
+      )
+    })
+
+    it('says which version a planned capability needs', () => {
+      expect(() => api().require('slots.named')).toThrow(/requires 1\.1/)
+    })
+
+    it('points at supports() so packs can degrade instead of crashing', () => {
+      expect(() => api().require('slots.named')).toThrow(/comfy\.supports/)
+    })
+
+    it('still fails clearly for an entirely unknown capability', () => {
+      expect(() => api().require('made.up')).toThrow(ComfyUnsupportedError)
+    })
+  })
+
+  describe('capabilities()', () => {
+    it('lists what this host provides', () => {
+      const caps = api().capabilities()
+      expect(caps).toContain('widgets.reorder')
+      expect(caps).not.toContain('slots.named')
+    })
+
+    it('is frozen', () => {
+      expect(Object.isFrozen(api().capabilities())).toBe(true)
+    })
+  })
+
+  describe('graph access', () => {
+    it('reaches the bound graph', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      expect(api().graph.nodes()).toHaveLength(1)
+      expect(api().graph.node(String(node.id))?.type).toBe('Alpha')
+    })
+
+    it('follows the graph it is bound to, rather than snapshotting it', () => {
+      let current: LGraph | null = null
+      const comfy = createComfyApi(() => current)
+      expect(comfy.graph.nodes()).toEqual([])
+
+      current = graph
+      graph.add(new LGraphNode('A', 'Alpha'))
+      expect(comfy.graph.nodes()).toHaveLength(1)
+    })
+  })
+
+  describe('the same node can have two different proxies', () => {
+    // Two API instances — or two majors — necessarily mint different proxy
+    // objects for one node, because one object cannot have two shapes.
+    it('produces non-identical handles across instances', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+      const a = one.graph.node(String(node.id))!
+      const b = two.graph.node(String(node.id))!
+
+      expect(a).not.toBe(b)
+      expect(a.id).toBe(b.id)
+    })
+
+    it('compares equal via sameEntity', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+
+      const a = one.graph.node(String(node.id))!
+      const b = two.graph.node(String(node.id))!
+      expect(one.sameEntity(a, b)).toBe(true)
+      expect(two.sameEntity(a, b)).toBe(true)
+    })
+
+    it('reports different nodes as different', () => {
+      const first = new LGraphNode('A', 'Alpha')
+      const second = new LGraphNode('B', 'Beta')
+      graph.add(first)
+      graph.add(second)
+      const comfy = createComfyApi(() => graph)
+
+      expect(
+        comfy.sameEntity(
+          comfy.graph.node(String(first.id)),
+          comfy.graph.node(String(second.id))
+        )
+      ).toBe(false)
+    })
+
+    it('does not mistake non-handles for entities', () => {
+      const comfy = createComfyApi(() => graph)
+      expect(comfy.sameEntity({}, {})).toBe(false)
+      expect(comfy.sameEntity(null, undefined)).toBe(false)
+      expect(comfy.sameEntity('a', 'a')).toBe(false)
+    })
+
+    it('adopts a foreign handle into this instance', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+
+      const foreign = one.graph.node(String(node.id))!
+      const adopted = two.adopt(foreign)
+
+      expect(adopted).toBeDefined()
+      expect(adopted).toBe(two.graph.node(String(node.id)))
+      expect(adopted).not.toBe(foreign)
+      expect(adopted!.title).toBe('A')
+    })
+
+    it('returns undefined when adopting a non-handle or a dead entity', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+      const foreign = one.graph.node(String(node.id))!
+
+      expect(two.adopt({})).toBeUndefined()
+      expect(two.adopt(undefined)).toBeUndefined()
+
+      graph.remove(node)
+      expect(two.adopt(foreign)).toBeUndefined()
+    })
+
+    it('keeps the identity token out of spreads and JSON', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      const handle = createComfyApi(() => graph).graph.node(String(node.id))!
+
+      expect(Object.keys({ ...handle })).not.toContain('kind')
+      expect(JSON.stringify(handle)).not.toContain('comfy.handle')
+    })
+  })
+
+  describe('majors', () => {
+    it('serves the latest major by default', () => {
+      expect(api().major).toBe(LATEST_MAJOR)
+    })
+
+    it('pins to a requested major', () => {
+      expect(api().forMajor(1).major).toBe(1)
+    })
+
+    it('returns a stable instance per major', () => {
+      const comfy = api()
+      expect(comfy.forMajor(1)).toBe(comfy.forMajor(1))
+    })
+
+    it('reports every supported major', () => {
+      expect(SUPPORTED_MAJORS).toContain(1)
+    })
+
+    it('fails clearly for a major this host does not know', () => {
+      expect(() => api().forMajor(99)).toThrow(ComfyUnsupportedError)
+      expect(() => api().forMajor(99)).toThrow(/API major 99/)
+    })
+  })
+
+  describe('handle caches are keyed by major', () => {
+    it('does not share handles between majors', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      const comfy = createComfyApi(() => graph)
+
+      const fromLatest = comfy.graph.node(String(node.id))!
+      const fromV1 = comfy.forMajor(1).graph.node(String(node.id))!
+
+      // Same major here, so the same instance is reused.
+      expect(fromV1).toBe(fromLatest)
+      // ...and identity holds regardless.
+      expect(comfy.sameEntity(fromV1, fromLatest)).toBe(true)
+    })
+
+    it('keeps slot identity agreeing across instances', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      node.addOutput('IMAGE', 'IMAGE')
+      graph.add(node)
+
+      // Slot ids are intentionally global: a slot is the same slot whichever
+      // API instance or major observes it.
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+      expect(one.graph.node(String(node.id))!.outputs.at(0)!.id).toBe(
+        two.graph.node(String(node.id))!.outputs.at(0)!.id
+      )
+    })
+
+    it('scopes widget handles per node, not globally by name', () => {
+      const a = new LGraphNode('A', 'Alpha')
+      const b = new LGraphNode('B', 'Alpha')
+      graph.add(a)
+      graph.add(b)
+      a.addWidget('number', 'seed', 1, () => undefined, {})
+      b.addWidget('number', 'seed', 2, () => undefined, {})
+
+      const comfy = createComfyApi(() => graph)
+      const wa = comfy.graph.node(String(a.id))!.widgets.get('seed')!
+      const wb = comfy.graph.node(String(b.id))!.widgets.get('seed')!
+
+      expect(wa).not.toBe(wb)
+      expect(wa.value).toBe(1)
+      expect(wb.value).toBe(2)
+    })
+  })
+
+  it('is frozen so packs cannot patch the root', () => {
+    const comfy = api()
+    expect(Object.isFrozen(comfy)).toBe(true)
+    expect(() => {
+      ;(comfy as { version: string }).version = '9.9.9'
+    }).toThrow()
+  })
+})

@@ -80,6 +80,7 @@ import {
   isVideoOutput,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
+import { applyDefExtensions } from '@/platform/nodeApi/comfyApi'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
@@ -625,6 +626,9 @@ export const useLitegraphService = () => {
       node,
       nodeDefV1 // Receives V1 NodeDef, and potentially make modifications to it
     )
+    // After the legacy hook, so a converted pack sees the same definition its
+    // unconverted neighbours have already had a chance to modify.
+    applyDefExtensions(node, nodeDefV1)
 
     const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
     node.nodeData = nodeDef

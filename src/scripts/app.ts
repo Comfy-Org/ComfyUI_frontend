@@ -29,6 +29,8 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { installComfyApi } from '@/platform/nodeApi/comfyApi'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -955,6 +957,10 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
+
+    // Before loadExtensions: extension modules run their top level during that
+    // call, so the API must already be reachable.
+    installComfyApi(() => useCanvasStore().currentGraph)
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
