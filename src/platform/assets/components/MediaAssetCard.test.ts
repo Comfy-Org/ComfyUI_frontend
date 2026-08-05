@@ -41,13 +41,9 @@ const asset: AssetItem = {
   preview_url: '/preview.png'
 }
 
-type MediaAssetCardTestProps = Partial<
-  ComponentProps<typeof MediaAssetCard>
-> & {
-  showNativeVideoControls?: boolean
-}
-
-function renderCard(props: MediaAssetCardTestProps = {}) {
+function renderCard(
+  props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
+) {
   setActivePinia(createTestingPinia({ stubActions: false }))
   const i18n = createI18n({
     legacy: false,
