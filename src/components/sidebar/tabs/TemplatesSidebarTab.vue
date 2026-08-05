@@ -85,23 +85,27 @@
                 >
                   {{ facet.label }}
                 </span>
+                <!-- Search on its own row, chips underneath: the two read as
+                     one column instead of the search competing with the first
+                     chip for the same line. Focusing the search opens the
+                     complete option list. -->
+                <div
+                  v-if="facet.searchable"
+                  class="flex h-8 w-full items-center gap-1.5 rounded-lg border border-border-subtle px-2.5"
+                >
+                  <i
+                    class="icon-[lucide--search] size-3.5 shrink-0 text-muted-foreground"
+                  />
+                  <input
+                    v-model="facetSearch[facet.key]"
+                    :placeholder="facet.label"
+                    class="w-full min-w-0 border-none bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                    @focus="openFacetList(facet.key, $event)"
+                    @blur="closeFacetList"
+                    @keydown.escape.stop="closeFacetList"
+                  />
+                </div>
                 <div class="flex flex-wrap items-center gap-1.5">
-                  <div
-                    v-if="facet.searchable"
-                    class="flex h-8 min-w-28 flex-1 basis-28 items-center gap-1.5 rounded-lg border border-border-subtle px-2.5"
-                  >
-                    <i
-                      class="icon-[lucide--search] size-3.5 shrink-0 text-muted-foreground"
-                    />
-                    <input
-                      v-model="facetSearch[facet.key]"
-                      :placeholder="facet.label"
-                      class="w-full min-w-0 border-none bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-                      @focus="openFacetList(facet.key, $event)"
-                      @blur="closeFacetList"
-                      @keydown.escape.stop="closeFacetList"
-                    />
-                  </div>
                   <button
                     v-for="opt in facetVisibleOptions(facet.key)"
                     :key="opt.value"
@@ -122,11 +126,11 @@
               </section>
 
               <Button
-                v-if="activeFilterCount > 0"
+                v-if="hasClearableFilters"
                 variant="secondary"
                 size="md"
                 class="h-8 self-start px-3 text-xs"
-                @click="resetFilters"
+                @click="clearAllFilters"
               >
                 {{ $t('templateWorkflows.clearAllFilters') }}
               </Button>
@@ -863,6 +867,20 @@ const activeFilterCount = computed(
     selectedUseCaseObjects.value.length +
     selectedRunsOnObjects.value.length
 )
+
+/**
+ * The category lives in this sheet too, so "Clear all" has to account for it:
+ * it isn't part of activeFilterCount (which drives the badge on the trigger,
+ * where a category is not an added filter but the browsing context).
+ */
+const hasClearableFilters = computed(
+  () => activeFilterCount.value > 0 || selectedCategory.value !== 'all'
+)
+
+const clearAllFilters = () => {
+  resetFilters()
+  selectedNavItem.value = 'all'
+}
 
 // ---- Flat filter sheet (Krea-style sections: label + search + chips) ----
 const FACET_VISIBLE_LIMIT = 8
