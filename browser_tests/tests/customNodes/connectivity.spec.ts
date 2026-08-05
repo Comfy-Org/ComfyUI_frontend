@@ -311,7 +311,11 @@ async function runPairsInPage(
   pairs: PlannedPair[]
 ): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
   const report: Array<{ key: string; outcome: string; detail?: string }> = []
-  for (const batch of chunk(pairs, SWEEP_CHUNK))
+  const batches =
+    process.env.CUSTOM_NODES_ENV === 'cloud'
+      ? chunk(pairs, SWEEP_CHUNK)
+      : [pairs]
+  for (const batch of batches)
     report.push(...(await evaluatePairs(page, batch)))
   return report
 }
@@ -322,16 +326,7 @@ function evaluatePairs(
 ): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
   return page.evaluate(async (pairsInPage) => {
     const graph = window.app!.graph
-    // graph.clear() detaches nodes without disconnecting them, so a swept
-    // node keeps output.links pointing at ids the graph no longer holds, and
-    // pack JS resolving its own async work later reads graph.links[staleId]
-    // and throws (VideoHelperSuite's VHS_SelectLatest, from its /vhs/getpath
-    // fetch callback). Removing each node disconnects it first, so the late
-    // callback sees an empty link list and returns.
-    const resetGraph = () => {
-      for (const node of [...graph.nodes]) graph.remove(node)
-      graph.clear()
-    }
+    const resetGraph = () => graph.clear()
     const report: Array<{
       key: string
       outcome: string

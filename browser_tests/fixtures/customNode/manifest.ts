@@ -299,6 +299,21 @@ function readCloudManifest(): CloudManifest {
   )
 }
 
+function readCoreManifest(): CoreManifestEntry[] {
+  const entries = JSON.parse(
+    readFileSync(dataPath('customNodeManifest.core.json'), 'utf-8')
+  ) as CoreManifestEntry[]
+  entries.forEach(assertCoreEntry)
+  return entries
+}
+
+export function loadAllManifestPackNames(): string[] {
+  return [
+    ...readCoreManifest().map((entry) => entry.pack),
+    ...readCloudManifest().packs.map((entry) => entry.pack)
+  ]
+}
+
 export function loadCloudCoreDisabledNodes(): Record<string, string[]> {
   return customNodesEnv() === 'cloud'
     ? readCloudManifest().coreDisabledNodes
@@ -316,9 +331,5 @@ export function loadCloudUnjoinedYamlPacks(): string[] {
 
 export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {
   if (customNodesEnv() === 'cloud') return readCloudManifest().packs
-  const entries = JSON.parse(
-    readFileSync(dataPath('customNodeManifest.core.json'), 'utf-8')
-  ) as CoreManifestEntry[]
-  entries.forEach(assertCoreEntry)
-  return entries
+  return readCoreManifest()
 }

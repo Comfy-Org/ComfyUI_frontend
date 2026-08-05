@@ -10,6 +10,7 @@ import {
   assertCloudEntry,
   assertCloudManifestShape,
   assertCoreEntry,
+  loadAllManifestPackNames,
   loadCloudCoreDisabledNodes,
   loadManifest,
   rendererPassesFor
@@ -54,6 +55,12 @@ test.describe('customNode manifest', () => {
       expect(entry.expectedNodes.length).toBeGreaterThan(0)
       expect(entry.tiers.length).toBeGreaterThan(0)
     }
+  })
+
+  test('loads pack names from both manifests for shared-ledger validation', () => {
+    const packs = loadAllManifestPackNames()
+    expect(packs).toContain('ComfyUI-VideoHelperSuite')
+    expect(packs).toContain('comfyui-videohelpersuite')
   })
 
   test('rendererPassesFor drops only the Vue pass, only on an explicit false', () => {

@@ -25,6 +25,7 @@ import {
   allowlistRulesFor,
   isForeignExecutionNoise
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import type {
   LitegraphNodeGeometry,
   NodeGeometry,
@@ -40,11 +41,16 @@ import {
 } from '@e2e/fixtures/customNode/geometry'
 import {
   customNodesEnv,
+  loadAllManifestPackNames,
   loadCloudCoreDisabledNodes,
   loadCloudUnjoinedYamlPacks,
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
+import {
+  assertPackLedgerKeys,
+  packLedgerFor
+} from '@e2e/fixtures/customNode/packLedger'
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
@@ -273,60 +279,18 @@ const MOUNT_WIDGET_ALLOWLIST: Record<string, Record<string, string>> = {
 // (consoleErrorLedger.ts) so the curated run tier applies the same
 // exceptions; this spec reads it through allowlistRulesFor above.
 
-// Every ledger above is keyed by pack, and the SAME pack is spelled
-// differently in the two manifests: core rows carry the GitHub repo name
-// (`ComfyUI-VideoHelperSuite`), cloud rows carry the registry id
-// (`comfyui-videohelpersuite`). A plain `LEDGER[entry.pack]` misses on cloud
-// and `?? {}` swallows the miss, so a correctly-ledgered node fails as if it
-// had no entry - and the staleness assertions read that same empty object, so
-// the mis-key never reports itself either. Gate run 30973706693 ran with
-// AUTO_RUN_EXCLUDE, WIDGET_SET_ALLOWLIST and ROUNDTRIP_VALUE_ALLOWLIST all
-// inert for Impact, VHS and essentials. Match case-folded so one entry serves
-// both manifests; AUTO_RUN_UNSTABLE_NODES is already keyed cloud-side, which
-// is why that one ledger alone applied.
-function ledgerKeyFor(
-  ledger: Record<string, Record<string, string>>,
-  pack: string
-): string | undefined {
-  if (pack in ledger) return pack
-  const folded = pack.toLowerCase()
-  return Object.keys(ledger).find((key) => key.toLowerCase() === folded)
-}
-
-function ledgerFor(
-  ledger: Record<string, Record<string, string>>,
-  pack: string
-): Record<string, string> {
-  const key = ledgerKeyFor(ledger, pack)
-  return key === undefined ? {} : ledger[key]
-}
-
-// Ledgers are shared by both manifests and each carries only its own packs, so
-// a key for an absent pack is expected, not a defect. What is worth surfacing
-// is a key that resolves only under case folding: it works now, but it is the
-// shape that silently broke before, so name it once per run and normalise at
-// leisure.
 const PACK_LEDGERS: Record<string, Record<string, Record<string, string>>> = {
   AUTO_RUN_EXCLUDE,
   AUTO_RUN_UNSTABLE_NODES,
-  WIDGET_SET_ALLOWLIST,
+  GEOMETRY_UNSTABLE_NODES,
+  MOUNT_WIDGET_ALLOWLIST,
   ROUNDTRIP_VALUE_ALLOWLIST,
-  MOUNT_WIDGET_ALLOWLIST
+  WIDGET_SET_ALLOWLIST
 }
 
-function reportCaseFoldedLedgerKeys(packs: readonly string[]): void {
-  const folded: string[] = []
-  for (const [name, ledger] of Object.entries(PACK_LEDGERS))
-    for (const pack of packs) {
-      const key = ledgerKeyFor(ledger, pack)
-      if (key !== undefined && key !== pack)
-        folded.push(`${name}['${key}'] -> ${pack}`)
-    }
-  if (folded.length > 0)
-    console.log(
-      `ledger keys resolved by case folding (normalise when convenient): ${folded.join(', ')}`
-    )
-}
+const manifestPacks = loadAllManifestPackNames()
+for (const [name, ledger] of Object.entries(PACK_LEDGERS))
+  assertPackLedgerKeys(name, ledger, manifestPacks)
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -643,8 +607,6 @@ if (unjoinedYamlPacks.length > 0) {
   })
 }
 
-reportCaseFoldedLedgerKeys(loadManifest().map((entry) => entry.pack))
-
 for (const entry of loadManifest()) {
   test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
     test('every registered node mounts, survives save/reload, and executes', async ({
@@ -698,7 +660,10 @@ for (const entry of loadManifest()) {
             `unrecognized CN_GEOMETRY value "${process.env.CN_GEOMETRY}" - the only mode is "record"`
           )
         const measuredGeometry: Record<string, NodeGeometry> = {}
-        const geometryUnstable = ledgerFor(GEOMETRY_UNSTABLE_NODES, entry.pack)
+        const geometryUnstable = packLedgerFor(
+          GEOMETRY_UNSTABLE_NODES,
+          entry.pack
+        )
         for (const ledgered of stalenessCheckedKeys(entry, geometryUnstable))
           expect(
             keys,
@@ -711,7 +676,7 @@ for (const entry of loadManifest()) {
           ).toContain(ledgered)
         for (const ledgered of stalenessCheckedKeys(
           entry,
-          ledgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
+          packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
         ))
           expect(
             keys,
@@ -852,7 +817,9 @@ for (const entry of loadManifest()) {
                   [
                     shapes.map((shape) => shape?.id ?? null),
                     Object.keys(ledger),
-                    Object.keys(ledgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack))
+                    Object.keys(
+                      packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
+                    )
                   ] as const
                 ))
               )
@@ -942,13 +909,13 @@ for (const entry of loadManifest()) {
       })
 
       await runTier('save/reload', async () => {
-        const allowedWidgets = ledgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
+        const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
         for (const ledgered of Object.keys(allowedWidgets))
           expect(
             keys,
             `stale WIDGET_SET_ALLOWLIST entry: ${ledgered} names a node not registered by ${entry.pack}`
           ).toContain(ledgered.slice(0, ledgered.indexOf('.')))
-        const allowedValueDrift = ledgerFor(
+        const allowedValueDrift = packLedgerFor(
           ROUNDTRIP_VALUE_ALLOWLIST,
           entry.pack
         )
@@ -1248,7 +1215,7 @@ for (const entry of loadManifest()) {
           'Cloud label-disables auto-run harness node(s); synthesized chains cannot run without them'
         ).toEqual([])
         const excluded = {
-          ...ledgerFor(AUTO_RUN_EXCLUDE, entry.pack),
+          ...packLedgerFor(AUTO_RUN_EXCLUDE, entry.pack),
           ...cloudAutoRunExclusions(entry)
         }
         for (const key of stalenessCheckedKeys(entry, excluded))
@@ -1310,7 +1277,7 @@ for (const entry of loadManifest()) {
         // Two-way reconciliation: unlisted failure = regression; listed node
         // that runs clean (or is not auto-runnable) = stale entry.
         const baseline = new Set(entry.cannotRunAlone ?? [])
-        const unstable = ledgerFor(AUTO_RUN_UNSTABLE_NODES, entry.pack)
+        const unstable = packLedgerFor(AUTO_RUN_UNSTABLE_NODES, entry.pack)
         for (const ledgered of stalenessCheckedKeys(entry, unstable))
           expect(
             keys,
@@ -1337,7 +1304,19 @@ for (const entry of loadManifest()) {
         console.log(
           `${entry.pack} auto-ran ${ranClean.size} node(s) clean; ${cannotRun.size} cannot run alone (baseline ${baseline.size})`
         )
-        expect(hardFailures, JSON.stringify(hardFailures, null, 1)).toEqual([])
+        if (hardFailures.length > 0)
+          await test.info().attach('auto-run-failures.json', {
+            body: JSON.stringify(hardFailures, null, 2),
+            contentType: 'application/json'
+          })
+        expect(
+          hardFailures.length === 0,
+          failureSummary(
+            `${entry.pack} auto-run failures`,
+            hardFailures,
+            'auto-run-failures.json'
+          )
+        ).toBe(true)
       })
 
       // Assert on the COUNT, not the array. `toEqual([])` renders every
@@ -1351,16 +1330,14 @@ for (const entry of loadManifest()) {
           body: JSON.stringify(tierFailures, null, 2),
           contentType: 'application/json'
         })
-      const failurePreview = tierFailures
-        .slice(0, 10)
-        .map((failure, index) => `  ${index + 1}. ${failure.split('\n')[0]}`)
-        .join('\n')
       expect(
-        tierFailures,
-        tierFailures.length === 0
-          ? 'tier failures'
-          : `${entry.pack}: ${tierFailures.length} tier failure(s); first ${Math.min(10, tierFailures.length)} below, full list in the tier-failures.json attachment:\n${failurePreview}`
-      ).toHaveLength(0)
+        tierFailures.length === 0,
+        failureSummary(
+          `${entry.pack} tier failures`,
+          tierFailures,
+          'tier-failures.json'
+        )
+      ).toBe(true)
     })
   })
 }

@@ -240,11 +240,18 @@ async function seedWorkspaceSession(
 // flag payload the router guard reads carries unified_cloud_auth false; answered
 // authenticated it flips true before the app has minted a unified token, and the
 // guard's exit path hard-reloads away the in-memory token in a loop.
-const ANONYMOUS_API_PATHS = new Set(['/api/auth/token', '/api/features'])
+// Session creation keeps its Firebase bearer. Rewriting it to the workspace
+// JWT returned 500 in the cloud gate.
+const WORKSPACE_AUTH_EXCLUDED_PATHS = new Set([
+  '/api/auth/session',
+  '/api/auth/token',
+  '/api/features'
+])
 
 export function shouldRewriteAuthHeader(url: URL, apiPrefix: string): boolean {
   return (
-    url.href.startsWith(apiPrefix) && !ANONYMOUS_API_PATHS.has(url.pathname)
+    url.href.startsWith(apiPrefix) &&
+    !WORKSPACE_AUTH_EXCLUDED_PATHS.has(url.pathname)
   )
 }
 

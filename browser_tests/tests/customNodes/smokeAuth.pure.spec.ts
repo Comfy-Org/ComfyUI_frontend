@@ -208,6 +208,10 @@ test.describe('shouldRewriteAuthHeader', () => {
     expect(rewrites('http://localhost:4173/api/features?flags=1')).toBe(false)
   })
 
+  test('preserves the Firebase bearer used to create a session cookie', () => {
+    expect(rewrites('http://localhost:4173/api/auth/session')).toBe(false)
+  })
+
   test('excludes whole paths, never prefixes of a longer one', () => {
     expect(rewrites('http://localhost:4173/api/featuresfoo')).toBe(true)
     expect(rewrites('http://localhost:4173/api/features/detail')).toBe(true)
