@@ -3007,10 +3007,20 @@
     },
     "billingStatus": {
       "warning": {
+        "title": "Payment declined",
+        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
+        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause."
+      },
+      "paused": {
+        "title": "Subscription paused",
+        "body": "This workspace's subscription is paused. Update payment to resume.",
+        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+      },
+      "recoveryWarning": {
         "title": "Payment failed",
         "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause."
       },
-      "paused": {
+      "recoveryPaused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
         "memberBody": "Ask your workspace owner to restore the workspace's subscription."

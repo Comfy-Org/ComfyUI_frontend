@@ -134,4 +134,24 @@ describe('useBillingBanner', () => {
     expect(b.fetchStatus).not.toHaveBeenCalled()
     expect(b.fetchBalance).not.toHaveBeenCalled()
   })
+
+  it('cancels an in-flight payment refresh when the flag is rolled back', async () => {
+    const b = mocks.billing!
+    b.fetchStatus.mockReturnValueOnce(new Promise(() => {}))
+    b.fetchBalance.mockReturnValueOnce(new Promise(() => {}))
+    useBillingBanner()
+    b.billingStatus.value = 'payment_failed'
+
+    window.dispatchEvent(new Event('focus'))
+    const statusSignal = b.fetchStatus.mock.calls[0][0]
+    const balanceSignal = b.fetchBalance.mock.calls[0][0]
+    expect(statusSignal).toBeInstanceOf(AbortSignal)
+    expect(balanceSignal).toBeInstanceOf(AbortSignal)
+
+    mocks.v1PaymentRecovery!.value = false
+    await nextTick()
+
+    expect(statusSignal.aborted).toBe(true)
+    expect(balanceSignal.aborted).toBe(true)
+  })
 })

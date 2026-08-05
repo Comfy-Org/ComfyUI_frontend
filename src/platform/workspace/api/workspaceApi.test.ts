@@ -378,6 +378,25 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('forwards abort signals for billing refreshes', async () => {
+      const controller = new AbortController()
+      mockAxiosInstance.get.mockResolvedValue({ data: {} })
+
+      await workspaceApi.getBillingStatus(controller.signal)
+      await workspaceApi.getBillingBalance(controller.signal)
+
+      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
+        1,
+        '/api/billing/status',
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
+        2,
+        '/api/billing/balance',
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+    })
+
     it('getBillingPlans() sends GET /billing/plans', async () => {
       const data = { plans: [] }
       mockAxiosInstance.get.mockResolvedValue({ data })

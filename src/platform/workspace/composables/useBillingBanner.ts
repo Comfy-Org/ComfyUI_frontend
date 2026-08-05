@@ -37,7 +37,7 @@ export function deriveBillingBanner(
     return null
   }
 
-  if (inputs.v1PaymentRecovery) {
+  if (inputs.billingControlEnabled || inputs.v1PaymentRecovery) {
     if (inputs.billingStatus === 'paused') return 'paused'
     if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
       return 'paymentFailed'
@@ -70,6 +70,7 @@ function useBillingBannerInternal() {
   const { flags } = useFeatureFlags()
 
   const dismissed = ref(false)
+  let paymentRefreshController: AbortController | null = null
 
   const kind = computed<BillingBannerKind | null>(() => {
     if (!isCloud) return null
@@ -99,9 +100,29 @@ function useBillingBannerInternal() {
     if (!exhausted) dismissed.value = false
   })
 
+  watch(
+    () => flags.v1PaymentRecovery,
+    (enabled) => {
+      if (enabled) return
+      paymentRefreshController?.abort()
+      paymentRefreshController = null
+    }
+  )
+
   useEventListener(window, 'focus', () => {
-    if (kind.value !== 'paymentFailed') return
-    void Promise.allSettled([fetchStatus(), fetchBalance()])
+    if (!flags.v1PaymentRecovery || kind.value !== 'paymentFailed') return
+
+    paymentRefreshController?.abort()
+    const controller = new AbortController()
+    paymentRefreshController = controller
+    void Promise.allSettled([
+      fetchStatus(controller.signal),
+      fetchBalance(controller.signal)
+    ]).finally(() => {
+      if (paymentRefreshController === controller) {
+        paymentRefreshController = null
+      }
+    })
   })
 
   function dismiss() {

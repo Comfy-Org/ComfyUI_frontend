@@ -455,6 +455,22 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.planSlug).toBe('pro-monthly')
     })
 
+    it('does not commit status after its caller aborts the read', async () => {
+      const status = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValue(status.promise)
+      const controller = new AbortController()
+      const billing = setupBilling()
+
+      const request = billing.fetchStatus(controller.signal)
+      controller.abort()
+      expect(billing.isLoading.value).toBe(false)
+      status.resolve(activeStatus)
+      await request
+
+      expect(billing.subscription.value).toBeNull()
+      expect(billing.error.value).toBeNull()
+    })
+
     it('surfaces a team credit stop from the status response', async () => {
       const teamStop = {
         id: 'team_2500',
@@ -522,6 +538,22 @@ describe('useWorkspaceBilling', () => {
       await olderRequest
 
       expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+    })
+
+    it('does not commit balance after its caller aborts the read', async () => {
+      const balance = createDeferred<typeof positiveBalance>()
+      mockWorkspaceApi.getBillingBalance.mockReturnValue(balance.promise)
+      const controller = new AbortController()
+      const billing = setupBilling()
+
+      const request = billing.fetchBalance(controller.signal)
+      controller.abort()
+      expect(billing.isLoading.value).toBe(false)
+      balance.resolve(positiveBalance)
+      await request
+
+      expect(billing.balance.value).toBeNull()
+      expect(billing.error.value).toBeNull()
     })
   })
 
@@ -798,6 +830,89 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.manageSubscription()).rejects.toThrow('portal down')
       expect(billing.error.value).toBe('portal down')
+    })
+
+    it('does not open a portal from a request aborted during rollback', async () => {
+      const portal = createDeferred<{ url: string }>()
+      const openSpy = vi.fn()
+      vi.stubGlobal('open', openSpy)
+      mockWorkspaceApi.getPaymentPortalUrl.mockReturnValue(portal.promise)
+      const controller = new AbortController()
+      const billing = setupBilling()
+
+      const request = billing.manageSubscription(controller.signal)
+      controller.abort()
+      portal.resolve({ url: 'https://billing.example/old-portal' })
+      await request
+
+      expect(openSpy).not.toHaveBeenCalled()
+      expect(billing.error.value).toBeNull()
+    })
+
+    it('keeps an older portal response out of a newer recovery session', async () => {
+      const oldPortal = createDeferred<{ url: string }>()
+      const openSpy = vi.fn()
+      vi.stubGlobal('open', openSpy)
+      mockWorkspaceApi.getPaymentPortalUrl
+        .mockReturnValueOnce(oldPortal.promise)
+        .mockResolvedValueOnce({ url: 'https://billing.example/new-portal' })
+      const oldController = new AbortController()
+      const billing = setupBilling()
+
+      const oldRequest = billing.manageSubscription(oldController.signal)
+      oldController.abort()
+      await billing.manageSubscription(new AbortController().signal)
+      oldPortal.resolve({ url: 'https://billing.example/old-portal' })
+      await oldRequest
+
+      expect(openSpy).toHaveBeenCalledOnce()
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://billing.example/new-portal',
+        '_blank'
+      )
+      expect(billing.isLoading.value).toBe(false)
+    })
+
+    it('preserves concurrent legacy portal requests without a signal', async () => {
+      const firstPortal = createDeferred<{ url: string }>()
+      const openSpy = vi.fn()
+      vi.stubGlobal('open', openSpy)
+      mockWorkspaceApi.getPaymentPortalUrl
+        .mockReturnValueOnce(firstPortal.promise)
+        .mockResolvedValueOnce({ url: 'https://billing.example/second-portal' })
+      const billing = setupBilling()
+
+      const firstRequest = billing.manageSubscription()
+      await billing.manageSubscription()
+      firstPortal.resolve({ url: 'https://billing.example/first-portal' })
+      await firstRequest
+
+      expect(openSpy).toHaveBeenCalledTimes(2)
+      expect(openSpy).toHaveBeenNthCalledWith(
+        1,
+        'https://billing.example/second-portal',
+        '_blank'
+      )
+      expect(openSpy).toHaveBeenNthCalledWith(
+        2,
+        'https://billing.example/first-portal',
+        '_blank'
+      )
+    })
+
+    it('does not open a recovery portal after the workspace changes', async () => {
+      const portal = createDeferred<{ url: string }>()
+      const openSpy = vi.fn()
+      vi.stubGlobal('open', openSpy)
+      mockWorkspaceApi.getPaymentPortalUrl.mockReturnValue(portal.promise)
+      const billing = setupBilling()
+
+      const request = billing.manageSubscription(new AbortController().signal)
+      mockActiveWorkspaceId.value = 'workspace-2'
+      portal.resolve({ url: 'https://billing.example/workspace-1-portal' })
+      await request
+
+      expect(openSpy).not.toHaveBeenCalled()
     })
   })
 

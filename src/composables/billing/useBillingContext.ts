@@ -274,12 +274,12 @@ function useBillingContextInternal(): BillingContext {
     }
   }
 
-  async function fetchStatus(): Promise<void> {
-    return activeContext.value.fetchStatus()
+  async function fetchStatus(signal?: AbortSignal): Promise<void> {
+    return activeContext.value.fetchStatus(signal)
   }
 
-  async function fetchBalance(): Promise<void> {
-    return activeContext.value.fetchBalance()
+  async function fetchBalance(signal?: AbortSignal): Promise<void> {
+    return activeContext.value.fetchBalance(signal)
   }
 
   async function reconcileSubscriptionSuccess(): Promise<void> {
@@ -302,8 +302,8 @@ function useBillingContextInternal(): BillingContext {
     return checkoutContext.value.previewSubscribe(planSlug, options)
   }
 
-  async function manageSubscription() {
-    return activeContext.value.manageSubscription()
+  async function manageSubscription(signal?: AbortSignal) {
+    return activeContext.value.manageSubscription(signal)
   }
 
   async function cancelSubscription() {
