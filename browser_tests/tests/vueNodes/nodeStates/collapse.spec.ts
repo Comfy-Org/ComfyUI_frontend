@@ -58,6 +58,43 @@ test.describe('Vue Node Collapse', { tag: '@vue-nodes' }, () => {
     await expect(vueNode.collapseIcon).not.toHaveClass(/-rotate-90/)
   })
 
+  test('should keep a resized width across a collapsed save and reload', async ({
+    comfyPage
+  }) => {
+    test.setTimeout(30000)
+
+    const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(vueNode.root).toBeVisible()
+
+    await vueNode.resizeFromCorner('SE', 120, 0)
+    await comfyPage.nextFrame()
+    const resized = await vueNode.boundingBox()
+    if (!resized) throw new Error('Failed to measure node after resize')
+
+    // Collapse by keybinding: the top-left resize handle overlaps the collapse
+    // button and intercepts the click.
+    await vueNode.select()
+    await comfyPage.keyboard.press('Alt+KeyC')
+    await expect
+      .poll(async () => (await vueNode.boundingBox())?.width)
+      .toBeLessThan(resized.width)
+
+    await comfyPage.workflow.waitForDraftPersisted()
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    const reloaded = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await expect(reloaded.root).toBeVisible()
+    await reloaded.select()
+    await comfyPage.keyboard.press('Alt+KeyC')
+    await comfyPage.nextFrame()
+
+    // The collapsed box is what the DOM measured, not what the user asked for;
+    // persisting it loses the resized width with nothing to restore it from.
+    await expect
+      .poll(async () => (await reloaded.boundingBox())?.width)
+      .toBeGreaterThan(resized.width - 5)
+  })
+
   test('should preserve title when collapsing/expanding', async ({
     comfyPage
   }) => {
