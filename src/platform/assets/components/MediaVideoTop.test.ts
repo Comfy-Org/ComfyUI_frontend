@@ -104,12 +104,13 @@ describe('MediaVideoTop', () => {
     expect(playSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('pauses playback from a subsequent click while controls are visible', async () => {
+  it('pauses playback from a subsequent click when native controls are disabled', async () => {
     const user = userEvent.setup()
     const { container } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('https://example.com/thumb.jpg')
-      }
+      },
+      attrs: { showNativeControls: false }
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -124,7 +125,7 @@ describe('MediaVideoTop', () => {
     await fireEvent.play(video)
     // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
     await user.hover(container.firstElementChild!)
-    expect(video.controls).toBe(true)
+    expect(video.controls).toBe(false)
 
     await user.click(video)
 

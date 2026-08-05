@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -41,9 +41,13 @@ const asset: AssetItem = {
   preview_url: '/preview.png'
 }
 
-function renderCard(
-  props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
-) {
+type MediaAssetCardTestProps = Partial<
+  ComponentProps<typeof MediaAssetCard>
+> & {
+  showNativeVideoControls?: boolean
+}
+
+function renderCard(props: MediaAssetCardTestProps = {}) {
   setActivePinia(createTestingPinia({ stubActions: false }))
   const i18n = createI18n({
     legacy: false,
@@ -207,6 +211,27 @@ describe('MediaAssetCard', () => {
 
     expect(playSpy).not.toHaveBeenCalled()
     expect(emitted().select).toHaveLength(1)
+  })
+
+  it('disables native controls for compact video cards', async () => {
+    const user = userEvent.setup()
+    const { container } = renderCard({
+      loading: false,
+      asset: { ...asset, name: 'clip.mp4' },
+      showNativeVideoControls: false
+    })
+    const video = await vi.waitFor(() => {
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const element = container.querySelector('video')
+      expect(element).toBeInTheDocument()
+      return element!
+    })
+
+    await fireEvent.play(video)
+    // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
+    await user.hover(video.parentElement!)
+
+    expect(video.controls).toBe(false)
   })
 
   it('selects the asset from the info area or selection control', async () => {
