@@ -1606,6 +1606,30 @@ describe('graph teardown drops layout entries', () => {
     expect(survivingEntries(populated)).toBe(0)
   })
 
+  it('drops nested definition entries during individual teardown', () => {
+    const graph = new LGraph()
+    const parent = graph.createSubgraph(createTestSubgraphData())
+    const nested = graph.createSubgraph(createTestSubgraphData())
+    parent.add(createTestSubgraphNode(nested, { parentGraph: parent }))
+
+    const node = new LGraphNode('nested')
+    const group = new LGraphGroup('nested')
+    const rerouteId = toRerouteId(2)
+    nested.add(node)
+    nested.add(group)
+    nested._addReroute(new Reroute(rerouteId, nested, [10, 10]))
+
+    expect(layoutStore.getNodeLayoutRef(graph.id, node.id).value).not.toBeNull()
+    expect(layoutStore.getGroupLayout(graph.id, group.id)).not.toBeNull()
+    expect(layoutStore.getRerouteLayout(graph.id, rerouteId)).not.toBeNull()
+
+    graph.clear()
+
+    expect(layoutStore.getNodeLayoutRef(zeroUuid, node.id).value).toBeNull()
+    expect(layoutStore.getGroupLayout(zeroUuid, group.id)).toBeNull()
+    expect(layoutStore.getRerouteLayout(zeroUuid, rerouteId)).toBeNull()
+  })
+
   it('drops interior entries when the last SubgraphNode is removed', () => {
     const { graph, subgraph, interior } = createGraphWithEveryLayoutEntryType()
     const subgraphNode = createTestSubgraphNode(subgraph)

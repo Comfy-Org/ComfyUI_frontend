@@ -38,15 +38,22 @@ export function unregisterAllGraphLayout(graph: LGraph): void {
   const rootGraphId = graph.rootGraph.id
   const mutations = canvasLayoutMutations()
 
-  for (const node of graph._nodes) mutations.deleteNode(rootGraphId, node.id)
-  for (const group of graph._groups) {
-    mutations.deleteGroup(rootGraphId, group.id)
-  }
-  for (const rerouteId of graph.reroutes.keys()) {
-    mutations.deleteReroute(rootGraphId, rerouteId)
+  function unregisterEntities(target: LGraph) {
+    for (const node of target._nodes) {
+      mutations.deleteNode(rootGraphId, node.id)
+    }
+    for (const group of target._groups) {
+      mutations.deleteGroup(rootGraphId, group.id)
+    }
+    for (const rerouteId of target.reroutes.keys()) {
+      mutations.deleteReroute(rootGraphId, rerouteId)
+    }
   }
 
-  for (const subgraph of graph._subgraphs.values()) {
-    unregisterAllGraphLayout(subgraph)
+  unregisterEntities(graph)
+  if (graph.isRootGraph) {
+    for (const subgraph of graph._subgraphs.values()) {
+      unregisterEntities(subgraph)
+    }
   }
 }
