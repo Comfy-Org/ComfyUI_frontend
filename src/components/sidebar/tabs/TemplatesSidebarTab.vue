@@ -20,7 +20,7 @@
           autofocus
         />
         <!-- Filter popover: mirrors the Assets sidebar filter button -->
-        <Popover :show-arrow="false">
+        <Popover :show-arrow="false" @interact-outside="keepMenuOpenForSubmenu">
           <template #button>
             <Button
               variant="secondary"
@@ -42,6 +42,7 @@
             <TemplatesFilterMenu
               :facets="filterMenuFacets"
               @toggle="toggleFilterValue"
+              @clear-facet="clearFilterFacet"
               @clear-all="clearAllFilters"
             />
           </template>
@@ -888,6 +889,29 @@ const toggleFilterValue = (facetKey: string, value: string) => {
   target.value = target.value.includes(value)
     ? target.value.filter((v) => v !== value)
     : [...target.value, value]
+}
+
+/**
+ * The facet values panel is teleported to body, so Reka counts clicks in it as
+ * outside interactions and would dismiss the whole filter popover.
+ */
+const keepMenuOpenForSubmenu = (event: CustomEvent) => {
+  const original = (event.detail as { originalEvent?: Event } | undefined)
+    ?.originalEvent
+  const target = original?.target ?? event.target
+  if (
+    target instanceof Element &&
+    target.closest('#templates-filter-submenu')
+  ) {
+    event.preventDefault()
+  }
+}
+
+const clearFilterFacet = (facetKey: string) => {
+  if (facetKey === 'category') selectedNavItem.value = 'all'
+  else if (facetKey === 'model') selectedModels.value = []
+  else if (facetKey === 'task') selectedUseCases.value = []
+  else selectedRunsOn.value = []
 }
 
 interface AppliedFilter {
