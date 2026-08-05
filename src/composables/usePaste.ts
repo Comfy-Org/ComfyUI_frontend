@@ -261,8 +261,10 @@ export const usePaste = () => {
         return
       }
 
-      // Litegraph default paste
-      canvas.pasteFromClipboard()
+      // Litegraph default paste. Skipped while a media node is selected:
+      // the user is targeting that node, so stale node data (e.g. a
+      // previously copied node) must not be deserialized onto the graph.
+      if (!isMediaNodeSelected) canvas.pasteFromClipboard()
     }
   })
 }

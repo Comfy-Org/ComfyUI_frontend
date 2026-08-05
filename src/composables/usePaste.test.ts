@@ -620,7 +620,10 @@ describe('usePaste', () => {
 
     await vi.waitFor(() => {
       expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+      // The litegraph default paste must not run either: it would paste a
+      // previously copied node onto the graph while the user is targeting
+      // the selected media node (see imagePastePriority e2e).
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
   })
 })
