@@ -22,6 +22,10 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({ workspaceRole: ref('owner') })
 }))
 
+vi.mock('@/platform/workspace/composables/useBillingBanner', () => ({
+  useBillingBanner: vi.fn()
+}))
+
 const stubs = {
   MembersPanelContent: { template: '<div data-testid="members-body" />' },
   PartnerNodeAccessPanel: { template: '<div data-testid="allowlist-body" />' },

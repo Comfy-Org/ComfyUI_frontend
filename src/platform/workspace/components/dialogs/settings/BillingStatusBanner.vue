@@ -95,14 +95,13 @@ const canTopUp = computed(() => permissions.value.canTopUp)
 
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
-  return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
-})
-const planEndDate = computed(() => {
-  const raw = subscription.value?.endDate
   return raw
-    ? d(new Date(raw), { year: 'numeric', month: 'long', day: 'numeric' })
+    ? d(new Date(raw), { month: 'short', day: 'numeric', timeZone: 'UTC' })
     : ''
 })
+const planEndDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.endDate, locale.value, 'long')
+)
 const scheduledPlan = computed(() =>
   plans.value.find(({ slug }) => slug === subscription.value?.scheduledPlanSlug)
 )

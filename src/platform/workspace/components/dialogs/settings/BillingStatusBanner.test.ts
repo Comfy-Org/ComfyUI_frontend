@@ -241,9 +241,13 @@ describe('BillingStatusBanner', () => {
 
   it('shows out-of-credits with an Add credits action for owners', async () => {
     state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
+    state.renewalDate = '2026-08-01T00:00:00Z'
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'credits refill on Aug 1'
+    )
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
   })
@@ -362,7 +366,7 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Your team plan ends on'
+      'Your team plan ends on August 1, 2026'
     )
     await userEvent.click(
       screen.getByRole('button', { name: 'Reactivate plan' })
