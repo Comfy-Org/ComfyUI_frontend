@@ -18,7 +18,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     }"
     :secondary-cta="{
       label: t('modelRelease.tryWorkflows', locale),
-      href: 'https://comfy.org/workflows/e8099b642c9f-e8099b642c9f/'
+      href: 'https://comfy.org/workflows/e8099b642c9f-e8099b642c9f/',
+      target: '_blank'
     }"
     :tags="[t('tags.openWeights', locale), t('tags.partnerNodes', locale)]"
     video-src="https://media.comfy.org/website/minimax/hero.mp4"
