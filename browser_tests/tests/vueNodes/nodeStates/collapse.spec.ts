@@ -73,13 +73,14 @@ test.describe('Vue Node Collapse', { tag: '@vue-nodes' }, () => {
 
     // Collapse by keybinding: the top-left resize handle overlaps the collapse
     // button and intercepts the click.
+    const beforeCollapse = Date.now()
     await vueNode.select()
     await comfyPage.keyboard.press('Alt+KeyC')
     await expect
       .poll(async () => (await vueNode.boundingBox())?.width)
       .toBeLessThan(resized.width)
 
-    await comfyPage.workflow.waitForDraftPersisted()
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeCollapse)
     await comfyPage.workflow.reloadAndWaitForApp()
 
     const reloaded = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
@@ -88,8 +89,6 @@ test.describe('Vue Node Collapse', { tag: '@vue-nodes' }, () => {
     await comfyPage.keyboard.press('Alt+KeyC')
     await comfyPage.nextFrame()
 
-    // The collapsed box is what the DOM measured, not what the user asked for;
-    // persisting it loses the resized width with nothing to restore it from.
     await expect
       .poll(async () => (await reloaded.boundingBox())?.width)
       .toBeGreaterThan(resized.width - 5)
