@@ -3,7 +3,6 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
@@ -58,8 +57,6 @@ export function useSettingUI(
 
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const { canAccessSubscriptionFeatures, type: billingType } =
-    useBillingContext()
   const { workspaceRole } = useWorkspaceUI()
 
   const settingRoot = computed<SettingTreeNode>(() => {
@@ -139,33 +136,6 @@ export function useSettingUI(
       () => import('@/components/dialog/content/setting/CreditsPanel.vue')
     )
   }
-
-  const subscriptionPanel: SettingPanelItem | null =
-    !isCloud || !window.__CONFIG__?.subscription_required
-      ? null
-      : {
-          node: {
-            key: 'subscription',
-            label: 'PlanCredits',
-            children: []
-          },
-          component: defineAsyncComponent(
-            () =>
-              import('@/platform/cloud/subscription/components/SubscriptionPanel.vue')
-          )
-        }
-
-  const shouldShowPlanCreditsPanel = computed(() => {
-    if (!subscriptionPanel) return false
-    return canAccessSubscriptionFeatures.value
-  })
-
-  const shouldShowLegacyPlanCreditsPanel = computed(
-    () =>
-      isLoggedIn.value &&
-      billingType.value === 'legacy' &&
-      shouldShowPlanCreditsPanel.value
-  )
 
   const userPanel: SettingPanelItem = {
     node: {
@@ -304,9 +274,6 @@ export function useSettingUI(
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
-      ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
-        ? [subscriptionPanel]
-        : []),
       ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
     ].filter((panel) => panel !== null && panel.component)
   )
@@ -397,9 +364,6 @@ export function useSettingUI(
       label: 'Account',
       children: [
         userPanel.node,
-        ...(shouldShowLegacyPlanCreditsPanel.value && subscriptionPanel
-          ? [subscriptionPanel.node]
-          : []),
         ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)

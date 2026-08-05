@@ -2,10 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type {
-  BillingStatusResponse,
-  WorkspaceWithRole
-} from '@/platform/workspace/api/workspaceApi'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -52,22 +49,6 @@ const mockSubscriptionStatus: CloudSubscriptionStatusResponse = {
   subscription_id: 'sub_e2e',
   renewal_date: FUTURE_DATE,
   end_date: FUTURE_DATE
-}
-
-// The facade routes a Cloud personal workspace through `/api/billing/*`. The
-// cancelled-but-active state maps to `is_active: true`
-// with `subscription_status: 'canceled'`; a paid tier keeps "Add credits"
-// visible (free tier would swap it for "Upgrade to add credits").
-const mockBillingStatus: BillingStatusResponse = {
-  is_active: true,
-  max_seats: 1,
-  occupied_seats: 1,
-  subscription_status: 'canceled',
-  subscription_tier: 'PRO',
-  subscription_duration: 'MONTHLY',
-  has_funds: true,
-  cancel_at: FUTURE_DATE,
-  renewal_date: FUTURE_DATE
 }
 
 // ~6.3M credits — a 7-digit balance is what pushes the second action button out
@@ -125,31 +106,6 @@ const test = comfyPageFixture.extend({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(mockBalance)
-      })
-    )
-
-    // The popover sources its data from the workspace billing endpoints.
-    await page.route('**/api/billing/status', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBillingStatus)
-      })
-    )
-
-    await page.route('**/api/billing/balance', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBalance)
-      })
-    )
-
-    await page.route('**/api/billing/plans', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ plans: [] })
       })
     )
 
