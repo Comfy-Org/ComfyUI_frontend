@@ -1209,7 +1209,8 @@
       "license": "License",
       "published": "Published",
       "customNodes": "Custom nodes",
-      "viewDetails": "View details"
+      "viewDetails": "View details",
+      "requirements": "Requirements"
     },
     "readiness": {
       "ready": "Ready to run",

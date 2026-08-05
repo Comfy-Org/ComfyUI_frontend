@@ -191,6 +191,27 @@
           <span>{{ tab.label }}</span>
         </Button>
       </div>
+
+      <!-- What you want to generate is the one thing a user always knows
+           (Pablo, 08-05), so these sit in the header rather than two clicks
+           deep in the filter sheet. Clicking the active one clears it. -->
+      <TemplatesFilterChipRow
+        v-if="generationTypeOptions.length"
+        data-testid="template-generation-types"
+      >
+        <button
+          v-for="opt in generationTypeOptions"
+          :key="opt.value"
+          type="button"
+          :aria-pressed="selectedCategory === opt.value"
+          :class="
+            cn('shrink-0', filterChipClass(selectedCategory === opt.value))
+          "
+          @click="toggleGenerationType(opt.value)"
+        >
+          {{ opt.name }}
+        </button>
+      </TemplatesFilterChipRow>
     </div>
 
     <!-- Scrollable template grid -->
@@ -582,32 +603,47 @@
           </p>
         </div>
 
-        <dl
+        <!-- Laid out like the design system's Model/Node/Asset info panels:
+             an uppercase section label, then label-left / value-right rows so
+             the values form a readable column, with list-valued fields
+             dropping to pills underneath instead of squeezing into the row. -->
+        <div
           v-if="hoverMetaFields.length"
-          class="m-0 -mx-4 flex flex-col gap-2 border-t border-border-subtle px-4 pt-3"
+          class="-mx-4 flex flex-col gap-2 border-t border-border-subtle px-4 pt-3"
         >
-          <div
-            v-for="field in hoverMetaFields"
-            :key="field.label"
-            class="flex items-baseline gap-3 text-xs"
+          <span
+            class="text-2xs font-semibold tracking-wider text-muted-foreground uppercase"
           >
-            <dt class="w-24 shrink-0 text-muted-foreground">
-              {{ field.label }}
-            </dt>
-            <dd class="m-0 min-w-0 flex-1 tabular-nums">
-              <div v-if="field.chips" class="flex flex-wrap gap-1">
-                <Tag
-                  v-for="chip in field.chips"
-                  :key="chip"
-                  :label="chip"
-                  shape="square"
-                  class="max-w-full bg-charcoal-500/50 opacity-80"
-                />
+            {{ $t('templateWorkflows.detail.requirements') }}
+          </span>
+          <dl class="m-0 flex flex-col gap-2">
+            <template v-for="field in hoverMetaFields" :key="field.label">
+              <div v-if="field.chips" class="flex flex-col gap-1.5 text-xs">
+                <dt class="text-muted-foreground">{{ field.label }}</dt>
+                <dd class="m-0 flex flex-wrap gap-1">
+                  <span
+                    v-for="chip in field.chips"
+                    :key="chip"
+                    class="max-w-full truncate rounded-full bg-secondary-background px-2 py-0.5 text-xs text-base-foreground"
+                  >
+                    {{ chip }}
+                  </span>
+                </dd>
               </div>
-              <template v-else>{{ field.value }}</template>
-            </dd>
-          </div>
-        </dl>
+              <div
+                v-else
+                class="flex items-baseline justify-between gap-3 text-xs"
+              >
+                <dt class="shrink-0 text-muted-foreground">
+                  {{ field.label }}
+                </dt>
+                <dd class="m-0 min-w-0 truncate text-right tabular-nums">
+                  {{ field.value }}
+                </dd>
+              </div>
+            </template>
+          </dl>
+        </div>
       </div>
     </Teleport>
   </div>
@@ -629,7 +665,6 @@ import { useI18n } from 'vue-i18n'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
-import Tag from '@/components/chip/Tag.vue'
 import PaidTemplateBadge from '@/components/custom/widget/PaidTemplateBadge.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
@@ -738,6 +773,30 @@ const categoryOptions = computed<SelectOption[]>(() => {
       : (item.items ?? []).map((sub) => ({ name: sub.label, value: sub.id }))
   )
 })
+
+/**
+ * The grouped categories — Image / Video / Audio / 3D Model / LLM in the
+ * current catalog. Pablo (08-05): "the one thing I know as a user is what I
+ * want to generate", so these get a row in the header instead of living two
+ * clicks deep in the filter sheet. Derived from the nav groups rather than a
+ * hardcoded list, so a catalog change carries over.
+ */
+const generationTypeOptions = computed<SelectOption[]>(() => {
+  const navItems = workflowTemplatesStore.navGroupedTemplates as (
+    | NavItemData
+    | NavGroupData
+  )[]
+  return navItems.flatMap((item) =>
+    'id' in item
+      ? []
+      : (item.items ?? []).map((sub) => ({ name: sub.label, value: sub.id }))
+  )
+})
+
+/** Clicking the active one clears it, so the row doubles as its own reset. */
+const toggleGenerationType = (value: string) => {
+  selectedCategory.value = selectedCategory.value === value ? 'all' : value
+}
 
 // Get enhanced templates for better filtering
 const allTemplates = computed(() => workflowTemplatesStore.enhancedTemplates)
@@ -879,7 +938,7 @@ const selectedRunsOnObjects = computed({
   }
 })
 
-const activeFilterCount = computed(
+const addedFilterCount = computed(
   () =>
     selectedModelObjects.value.length +
     selectedUseCaseObjects.value.length +
@@ -887,13 +946,15 @@ const activeFilterCount = computed(
 )
 
 /**
- * The category lives in this sheet too, so "Clear all" has to account for it:
- * it isn't part of activeFilterCount (which drives the badge on the trigger,
- * where a category is not an added filter but the browsing context).
+ * The category counts towards the trigger badge (Pablo, 08-05): picking one
+ * and closing the sheet left the button looking untouched, so the view was
+ * filtered with nothing on screen saying so.
  */
-const hasClearableFilters = computed(
-  () => activeFilterCount.value > 0 || selectedCategory.value !== 'all'
+const activeFilterCount = computed(
+  () => addedFilterCount.value + (selectedCategory.value === 'all' ? 0 : 1)
 )
+
+const hasClearableFilters = computed(() => activeFilterCount.value > 0)
 
 const clearAllFilters = () => {
   resetFilters()
@@ -1221,7 +1282,10 @@ const metaFieldsFor = (template: TemplateInfo): DetailMetaField[] => {
  * scroll, or when navigating into the detail.
  */
 
-const HOVER_PREVIEW_DELAY_MS = 350
+// Near-instant (Pablo, 08-05): the flyout is the whole point of hovering, and
+// 350ms read as lag. Not zero — a few frames still absorb the pointer sweeping
+// across the grid on its way somewhere else.
+const HOVER_PREVIEW_DELAY_MS = 100
 const HOVER_PREVIEW_WIDTH = 340
 const HOVER_PREVIEW_MAX_HEIGHT = 380
 const hoverPreview = ref<{

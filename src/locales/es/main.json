@@ -4287,7 +4287,8 @@
       "license": "Licencia",
       "published": "Publicación",
       "customNodes": "Nodos personalizados",
-      "viewDetails": "Ver detalles"
+      "viewDetails": "Ver detalles",
+      "requirements": "Requisitos"
     },
     "readiness": {
       "ready": "Listo para ejecutar",
