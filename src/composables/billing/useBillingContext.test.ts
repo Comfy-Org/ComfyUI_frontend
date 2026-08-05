@@ -342,10 +342,9 @@ describe('useBillingContext', () => {
       'creator-annual',
       undefined
     )
-    expect(workspaceApi.subscribe).toHaveBeenCalledWith(
-      'creator-annual',
-      undefined
-    )
+    expect(workspaceApi.subscribe).toHaveBeenCalledWith('creator-annual', {
+      idempotencyKey: expect.any(String)
+    })
     expect(mockLegacySubscribe).not.toHaveBeenCalled()
     expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
   })
