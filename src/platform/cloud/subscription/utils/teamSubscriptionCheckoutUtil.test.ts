@@ -58,6 +58,7 @@ describe('performTeamSubscriptionCheckout', () => {
     })
 
     expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_annual', {
+      idempotencyKey: expect.any(String),
       returnUrl: 'https://app.test/payment/success',
       cancelUrl: 'https://app.test/payment/failed',
       teamCreditStopId: 'team_700'
@@ -82,6 +83,7 @@ describe('performTeamSubscriptionCheckout', () => {
     await performTeamSubscriptionCheckout('team_1400', 'monthly')
 
     expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_monthly', {
+      idempotencyKey: expect.any(String),
       returnUrl: expect.any(String),
       cancelUrl: expect.any(String),
       teamCreditStopId: 'team_1400'

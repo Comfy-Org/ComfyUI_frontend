@@ -35,6 +35,7 @@ export async function performTeamSubscriptionCheckout(
 
   const planSlug = getTeamPlanSlug(billingCycle)
   const response = await workspaceApi.subscribe(planSlug, {
+    idempotencyKey: crypto.randomUUID(),
     returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
     cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
     teamCreditStopId

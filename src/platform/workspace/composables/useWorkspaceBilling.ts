@@ -298,7 +298,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      const response = await workspaceApi.subscribe(planSlug, options)
+      const response = await workspaceApi.subscribe(planSlug, {
+        ...options,
+        idempotencyKey: crypto.randomUUID()
+      })
       isLoading.value = false
       void reconcileBillingStateAfterSubscribe()
       return response
@@ -348,7 +351,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      const response = await workspaceApi.cancelSubscription()
+      const response = await workspaceApi.cancelSubscription(
+        crypto.randomUUID()
+      )
       const operation = await billingOperationStore.startOperation(
         response.billing_op_id,
         'cancel'
@@ -379,7 +384,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      await workspaceApi.resubscribe()
+      await workspaceApi.resubscribe(crypto.randomUUID())
       await Promise.allSettled([fetchStatus(), fetchBalance()])
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
@@ -404,7 +409,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.createTopup(amountCents)
+      return await workspaceApi.createTopup(amountCents, crypto.randomUUID())
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to top up credits'

@@ -521,6 +521,25 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('subscribe() sends POST with idempotency_key', async () => {
+      const data = { billing_op_id: 'op-1d', status: 'subscribed' }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      const result = await workspaceApi.subscribe('pro-monthly', {
+        idempotencyKey: 'key-0'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/subscribe',
+        expect.objectContaining({
+          plan_slug: 'pro-monthly',
+          idempotency_key: 'key-0'
+        }),
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
     it('cancelSubscription() sends POST with idempotency_key', async () => {
       const data = { billing_op_id: 'op-2', cancel_at: '2026-05-01' }
       mockAxiosInstance.post.mockResolvedValue({ data })

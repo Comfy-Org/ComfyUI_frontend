@@ -546,7 +546,8 @@ describe('useWorkspaceBilling', () => {
 
         expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith('pro', {
           returnUrl: 'return',
-          cancelUrl: 'cancel'
+          cancelUrl: 'cancel',
+          idempotencyKey: expect.any(String)
         })
         expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledOnce()
         expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledOnce()
@@ -1133,7 +1134,10 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       const result = await billing.topup(500)
 
-      expect(mockWorkspaceApi.createTopup).toHaveBeenCalledWith(500)
+      expect(mockWorkspaceApi.createTopup).toHaveBeenCalledWith(
+        500,
+        expect.any(String)
+      )
       expect(result).toBe(topupResponse)
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
       expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
@@ -1217,7 +1221,10 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       const result = await billing.topup(500)
 
-      expect(mockWorkspaceApi.createTopup).toHaveBeenCalledWith(500)
+      expect(mockWorkspaceApi.createTopup).toHaveBeenCalledWith(
+        500,
+        expect.any(String)
+      )
       expect(result).toBe(topupResponse)
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
       expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
@@ -1335,7 +1342,9 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.subscribe('pro')
 
-      expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith('pro', undefined)
+      expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith('pro', {
+        idempotencyKey: expect.any(String)
+      })
     })
 
     it('forwards team_credit_stop options to the api', async () => {
@@ -1354,7 +1363,11 @@ describe('useWorkspaceBilling', () => {
 
       expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith(
         'team_per_credit_annual',
-        { teamCreditStopId: 'team_700', billingCycle: 'yearly' }
+        {
+          teamCreditStopId: 'team_700',
+          billingCycle: 'yearly',
+          idempotencyKey: expect.any(String)
+        }
       )
     })
   })
@@ -1378,6 +1391,117 @@ describe('useWorkspaceBilling', () => {
 
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
       expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('idempotency keys', () => {
+    const uuids = [
+      '11111111-1111-1111-1111-111111111111',
+      '22222222-2222-2222-2222-222222222222'
+    ] as const
+
+    it('mints a fresh key per topup call instead of reusing the previous one', async () => {
+      const randomUUID = vi
+        .spyOn(crypto, 'randomUUID')
+        .mockReturnValueOnce(uuids[0])
+        .mockReturnValueOnce(uuids[1])
+      mockWorkspaceApi.createTopup.mockResolvedValue({
+        billing_op_id: 'op-topup',
+        topup_id: 'topup-1',
+        status: 'completed',
+        amount_cents: 500
+      })
+
+      const billing = setupBilling()
+      await billing.topup(500)
+      await billing.topup(500)
+
+      expect(mockWorkspaceApi.createTopup).toHaveBeenNthCalledWith(
+        1,
+        500,
+        uuids[0]
+      )
+      expect(mockWorkspaceApi.createTopup).toHaveBeenNthCalledWith(
+        2,
+        500,
+        uuids[1]
+      )
+      randomUUID.mockRestore()
+    })
+
+    it('mints a fresh key per cancelSubscription call', async () => {
+      const randomUUID = vi
+        .spyOn(crypto, 'randomUUID')
+        .mockReturnValueOnce(uuids[0])
+        .mockReturnValueOnce(uuids[1])
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-cancel',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      mockStartOperation.mockResolvedValue({
+        opId: 'op-cancel',
+        type: 'cancel',
+        status: 'succeeded',
+        errorMessage: null,
+        startedAt: 0
+      })
+
+      const billing = setupBilling()
+      await billing.cancelSubscription()
+      await billing.cancelSubscription()
+
+      expect(mockWorkspaceApi.cancelSubscription).toHaveBeenNthCalledWith(
+        1,
+        uuids[0]
+      )
+      expect(mockWorkspaceApi.cancelSubscription).toHaveBeenNthCalledWith(
+        2,
+        uuids[1]
+      )
+      randomUUID.mockRestore()
+    })
+
+    it('mints a fresh key per resubscribe call', async () => {
+      const randomUUID = vi
+        .spyOn(crypto, 'randomUUID')
+        .mockReturnValueOnce(uuids[0])
+        .mockReturnValueOnce(uuids[1])
+      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.resubscribe()
+      await billing.resubscribe()
+
+      expect(mockWorkspaceApi.resubscribe).toHaveBeenNthCalledWith(1, uuids[0])
+      expect(mockWorkspaceApi.resubscribe).toHaveBeenNthCalledWith(2, uuids[1])
+      randomUUID.mockRestore()
+    })
+
+    it('mints a fresh key per subscribe call, reusing the same call-scoped key for that request', async () => {
+      const randomUUID = vi
+        .spyOn(crypto, 'randomUUID')
+        .mockReturnValueOnce(uuids[0])
+        .mockReturnValueOnce(uuids[1])
+      mockWorkspaceApi.subscribe.mockResolvedValue({
+        billing_op_id: 'op-1',
+        status: 'subscribed'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.subscribe('pro')
+      await billing.subscribe('pro')
+
+      expect(mockWorkspaceApi.subscribe).toHaveBeenNthCalledWith(1, 'pro', {
+        idempotencyKey: uuids[0]
+      })
+      expect(mockWorkspaceApi.subscribe).toHaveBeenNthCalledWith(2, 'pro', {
+        idempotencyKey: uuids[1]
+      })
+      randomUUID.mockRestore()
     })
   })
 })
