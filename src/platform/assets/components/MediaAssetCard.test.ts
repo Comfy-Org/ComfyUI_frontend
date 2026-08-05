@@ -226,12 +226,34 @@ describe('MediaAssetCard', () => {
       expect(element).toBeInTheDocument()
       return element!
     })
+    const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
+
+    Object.defineProperty(video, 'paused', {
+      value: false,
+      configurable: true
+    })
 
     await fireEvent.play(video)
     // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
-    await user.hover(video.parentElement!)
+    const hoverTarget = video.parentElement!
+    await user.hover(hoverTarget)
 
     expect(video.controls).toBe(false)
+    expect(
+      screen.getByRole('button', { name: 'mediaAsset.actions.download' })
+    ).toBeInTheDocument()
+
+    await user.click(video)
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
+    await fireEvent.pause(video)
+    await user.unhover(hoverTarget)
+
+    expect(
+      screen.queryByRole('button', { name: 'mediaAsset.actions.download' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'mediaAsset.actions.moreOptions' })
+    ).not.toBeInTheDocument()
   })
 
   it('selects the asset from the info area or selection control', async () => {
