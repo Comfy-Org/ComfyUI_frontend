@@ -486,6 +486,42 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('omits the auto-selected saved method on a plan change', async () => {
+      const checkout = await setup()
+      mockListSavedPaymentMethods.mockResolvedValueOnce([
+        {
+          type: 'card',
+          id: 'pm_saved',
+          brand: 'visa',
+          last4: '4242',
+          is_default: true
+        }
+      ])
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true
+      })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-upgrade'
+      })
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.not.objectContaining({
+          savedPaymentMethodId: expect.anything()
+        })
+      )
+    })
+
     it('returns a stale quote to review with a refreshed quote', async () => {
       const checkout = await setup()
       mockPreviewSubscribe

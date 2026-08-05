@@ -216,6 +216,16 @@ export function useSubscriptionCheckout(
     return true
   }
 
+  // The transition workflows charge the subscription's existing default
+  // method and reject a payment-method selection outright, so only an
+  // initial-style checkout may carry the auto-selected saved method.
+  function subscribeAcceptsSavedMethod(): boolean {
+    return (
+      !previewData.value ||
+      previewData.value.transition_type === 'new_subscription'
+    )
+  }
+
   async function loadSavedPaymentMethods(): Promise<void> {
     if (!shouldUseWorkspaceBilling.value) return
     try {
@@ -766,6 +776,7 @@ export function useSubscriptionCheckout(
       const response = await subscribe(planSlug, {
         ...(confirmationToken && { confirmationToken }),
         ...(!confirmationToken &&
+          subscribeAcceptsSavedMethod() &&
           selectedSavedPaymentMethodId.value && {
             savedPaymentMethodId: selectedSavedPaymentMethodId.value
           }),
@@ -1063,6 +1074,7 @@ export function useSubscriptionCheckout(
       const response = await subscribe(planSlug, {
         ...(confirmationToken && { confirmationToken }),
         ...(!confirmationToken &&
+          subscribeAcceptsSavedMethod() &&
           selectedSavedPaymentMethodId.value && {
             savedPaymentMethodId: selectedSavedPaymentMethodId.value
           }),
