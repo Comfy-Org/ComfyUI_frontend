@@ -29,7 +29,6 @@ const EXPECTED_DEFAULT_TYPES = [
   'chatterbox/chatterbox_multilingual',
   'chatterbox/chatterbox_vc',
   'latent_upscale_models',
-  'sam2',
   'sams',
   'ipadapter',
   'nlf',
@@ -249,7 +248,6 @@ describe('useModelToNodeStore', () => {
     })
 
     it.for([
-      ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
       ['FlashVSR', 'FlashVSRNode', ''],
@@ -275,6 +273,16 @@ describe('useModelToNodeStore', () => {
         expect(modelToNodeStore.getNodeProvider(modelType)).toBeUndefined()
       }
     )
+
+    it('should not register DownloadAndLoadSAM2Model against sam2, so the node falls back to its static combo', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      expect(modelToNodeStore.getNodeProvider('sam2')).toBeUndefined()
+      expect(
+        modelToNodeStore.getCategoryForNodeType('DownloadAndLoadSAM2Model')
+      ).toBeUndefined()
+    })
   })
 
   describe('getAllNodeProviders', () => {
