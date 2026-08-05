@@ -108,9 +108,9 @@ describe('MediaVideoTop', () => {
     const user = userEvent.setup()
     const { container } = render(MediaVideoTop, {
       props: {
-        asset: createVideoAsset('https://example.com/thumb.jpg')
-      },
-      attrs: { showNativeControls: false }
+        asset: createVideoAsset('https://example.com/thumb.jpg'),
+        showNativeControls: false
+      }
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
