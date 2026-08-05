@@ -141,6 +141,8 @@ const banner = computed<BannerView | null>(() => {
       }
     }
     case 'paymentFailed': {
+      if (flags.v1PaymentRecovery && !canManage.value) return null
+
       const warningKey = flags.v1PaymentRecovery
         ? `${bs}.recoveryWarning`
         : `${bs}.warning`
@@ -189,6 +191,7 @@ function handleUpdatePayment() {
     void manageSubscription()
     return
   }
+  if (!canManage.value) return
 
   recoveryPortalController?.abort()
   const controller = new AbortController()

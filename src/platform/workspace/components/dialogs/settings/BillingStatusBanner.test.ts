@@ -302,6 +302,21 @@ describe('BillingStatusBanner', () => {
     expect(state.manageSubscription).not.toHaveBeenCalled()
   })
 
+  it('blocks stale payment controls immediately after permission loss', async () => {
+    paymentFailedState()
+    renderBanner()
+    const updatePayment = screen.getByRole('button', {
+      name: 'Update payment'
+    })
+
+    mockCanManageSubscription.value = false
+    updatePayment.click()
+
+    expect(state.manageSubscription).not.toHaveBeenCalled()
+    await nextTick()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
   it('restores the previous recovery banners and copy when the new flag is off', async () => {
     mockV1PaymentRecovery.value = false
     paymentFailedState()
