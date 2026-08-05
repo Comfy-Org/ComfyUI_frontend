@@ -1239,15 +1239,37 @@ describe('ChangeTracker', () => {
   })
 
   describe('keyboard shortcuts', () => {
-    it('does not undo while a modal is open', async () => {
+    function createRekaDialog() {
+      const dialog = document.createElement('div')
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('data-state', 'open')
+      return dialog
+    }
+
+    function createNativeDialog() {
+      const dialog = document.createElement('dialog')
+      dialog.setAttribute('open', '')
+      return dialog
+    }
+
+    function createLegacyComfyModal() {
+      const modal = document.createElement('div')
+      modal.className = 'comfy-modal'
+      modal.style.display = 'flex'
+      return modal
+    }
+
+    it.each([
+      ['a reka dialog', createRekaDialog],
+      ['a native dialog', createNativeDialog],
+      ['a legacy comfy modal', createLegacyComfyModal]
+    ])('does not undo while %s is open', async (_kind, createModal) => {
       const previousState = createState(1)
       const currentState = createState(2)
       const tracker = createTracker(currentState)
       tracker.undoQueue.push(previousState)
-      const dialog = document.createElement('div')
-      dialog.setAttribute('role', 'dialog')
-      dialog.setAttribute('data-state', 'open')
-      document.body.appendChild(dialog)
+      const modal = createModal()
+      document.body.appendChild(modal)
 
       try {
         ChangeTracker.init()
@@ -1260,7 +1282,7 @@ describe('ChangeTracker', () => {
         expect(tracker.activeState).toEqual(currentState)
         expect(tracker.undoQueue).toEqual([previousState])
       } finally {
-        document.body.removeChild(dialog)
+        document.body.removeChild(modal)
       }
     })
   })
