@@ -86,7 +86,7 @@ jobs:
           GIT_PR_ID: ${{ github.event.pull_request.number }}
           GIT_REPO: ${{ github.repository }}
         run: |
-          URL=$(vercel deploy --prebuilt \
+          URL=$(vercel deploy --prebuilt --archive=tgz \
             --meta githubCommitRef="$GIT_COMMIT_REF" \
             --meta githubCommitSha="$GIT_COMMIT_SHA" \
             --meta githubCommitAuthorLogin="$GIT_AUTHOR_LOGIN" \
@@ -171,7 +171,7 @@ jobs:
       - name: Deploy project artifacts to Vercel
         id: deploy
         run: |
-          URL=$(vercel deploy --prebuilt --prod)
+          URL=$(vercel deploy --prebuilt --prod --archive=tgz)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Add deployment URL to summary
