@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useMediaQuery, useMounted } from '@vueuse/core'
+import { computed } from 'vue'
+
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchHero } from './types'
 
@@ -11,6 +14,17 @@ const { locale = 'en', hero } = defineProps<{
   hero: ModelLaunchHero
   locale?: Locale
 }>()
+
+// SSR (and the first client tick, before onMounted) has no reliable viewport
+// to check, so it renders as if mobile: no <video> tag reaches the page at
+// all, meaning phones never start fetching hero.videoSrc. Only once mounted
+// on a >=768px viewport does the video swap in for the still.
+const isMounted = useMounted()
+const isDesktopViewport = useMediaQuery('(min-width: 768px)')
+const showVideo = computed(
+  () =>
+    !hero.mobileFallbackImageSrc || (isMounted.value && isDesktopViewport.value)
+)
 </script>
 
 <template>
@@ -26,14 +40,29 @@ const { locale = 'en', hero } = defineProps<{
     />
 
     <div v-if="hero.videoSrc" class="relative">
-      <VideoPlayer :locale :src="hero.videoSrc" autoplay loop />
+      <VideoPlayer
+        v-if="showVideo"
+        :locale
+        :src="hero.videoSrc"
+        autoplay
+        loop
+      />
+      <img
+        v-else-if="hero.mobileFallbackImageSrc"
+        :src="hero.mobileFallbackImageSrc"
+        alt=""
+        aria-hidden="true"
+        width="1280"
+        height="720"
+        class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+      />
       <div
         v-if="hero.logoSrc"
         aria-hidden="true"
         class="bg-transparency-white-t4 pointer-events-none absolute top-6 right-6 flex size-12 items-center justify-center rounded-2xl backdrop-blur-sm lg:top-10 lg:right-10 lg:size-[70px] lg:rounded-3xl"
       >
         <span
-          class="text-primary-warm-white inline-block size-6 bg-current lg:size-[35px]"
+          class="inline-block size-6 bg-current text-primary-warm-white lg:size-[35px]"
           :style="{
             maskImage: `url(${hero.logoSrc})`,
             maskSize: 'contain',
@@ -103,7 +132,7 @@ const { locale = 'en', hero } = defineProps<{
         </Badge>
       </div>
 
-      <p v-if="hero.footnoteKey" class="text-primary-warm-gray mt-6 text-xs">
+      <p v-if="hero.footnoteKey" class="mt-6 text-xs text-primary-warm-gray">
         {{ t(hero.footnoteKey, locale) }}
       </p>
     </div>

@@ -21,6 +21,10 @@ export interface ModelLaunchHero {
   // Still stand-in for the hero frame, for pages announcing a model whose
   // launch footage does not exist yet. Ignored once videoSrc is set.
   placeholderImageSrc?: string
+  // Still shown instead of the video below the 768px breakpoint, so phones
+  // never fetch videoSrc. Opt-in: pages that omit it keep playing the video
+  // at every viewport size, as they did before this field existed.
+  mobileFallbackImageSrc?: string
   // Small label above the heading, e.g. NEW.
   eyebrowKey?: TranslationKey
   // Brand mark drawn as a CSS mask over the top-right corner of the video.

@@ -5,7 +5,8 @@ import { externalLinks } from '../config/routes'
 // MiniMax H3 renders, encoded to the site's web video profile and served from
 // media.comfy.org.
 const media = {
-  hero: 'https://media.comfy.org/website/minimax/hero.mp4',
+  hero: 'https://media.comfy.org/website/minimax/hero-sizzle.mp4',
+  heroFallback: 'https://media.comfy.org/website/minimax/hero-fallback.jpg',
   iceRider: 'https://media.comfy.org/website/minimax/ice-rider.webm',
   sunkenTemple: 'https://media.comfy.org/website/minimax/sunken-temple.webm',
   nightAscent: 'https://media.comfy.org/website/minimax/night-ascent.webm',
@@ -31,6 +32,7 @@ export const minimaxPage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'minimax.breadcrumb.updated',
   hero: {
     videoSrc: media.hero,
+    mobileFallbackImageSrc: media.heroFallback,
     logoSrc: '/icons/ai-models/minimax.svg',
     titleKey: 'minimax.hero.titleModel',
     titleRestKey: 'minimax.hero.titleRest',
