@@ -378,6 +378,23 @@ describe('downloadUtil', () => {
       expect(created.type).toBe('application/octet-stream')
     })
 
+    it('preserves a media type carrying codec parameters', async () => {
+      mockIsCloud.value = true
+      const audioBlob = new Blob(['test'], { type: 'audio/ogg; codecs=opus' })
+      const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
+      windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
+      fetchMock.mockResolvedValue(
+        fromPartial<Response>({
+          ok: true,
+          blob: vi.fn().mockResolvedValue(audioBlob)
+        })
+      )
+
+      await openFileInNewTab('https://storage.googleapis.com/bucket/clip.ogg')
+
+      expect(createObjectURLSpy).toHaveBeenCalledWith(audioBlob)
+    })
+
     it('revokes blob URL after timeout in cloud mode', async () => {
       mockIsCloud.value = true
       const blob = new Blob(['test'], { type: 'image/png' })

@@ -169,6 +169,10 @@ const RENDERABLE_MEDIA_TYPES = new Set([
   'video/webm'
 ])
 
+function isRenderableMediaType(blobType: string): boolean {
+  return RENDERABLE_MEDIA_TYPES.has(blobType.split(';')[0].trim().toLowerCase())
+}
+
 export async function openFileInNewTab(url: string): Promise<void> {
   if (!isCloud) {
     window.open(url, '_blank')
@@ -181,7 +185,7 @@ export async function openFileInNewTab(url: string): Promise<void> {
   try {
     const response = await fetchAsBlob(url)
     const fetched = await response.blob()
-    const blob = RENDERABLE_MEDIA_TYPES.has(fetched.type)
+    const blob = isRenderableMediaType(fetched.type)
       ? fetched
       : new Blob([fetched], { type: 'application/octet-stream' })
     const blobUrl = URL.createObjectURL(blob)
