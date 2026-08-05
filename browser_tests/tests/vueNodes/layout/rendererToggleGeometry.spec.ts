@@ -3,6 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
@@ -157,4 +158,51 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
       'after switching back to Vue'
     )
   })
+
+  test(
+    'preserves frontmost order after a legacy drag',
+    { tag: ['@node'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+      await setVueMode(comfyPage, false)
+      await fitToViewInstant(comfyPage)
+
+      const [ksampler] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      const [clip] = await comfyPage.nodeOps.getNodeRefsByTitle(
+        'CLIP Text Encode (Prompt)'
+      )
+      const ksamplerPosition = await ksampler.getPosition()
+      const clipPosition = await clip.getPosition()
+
+      await ksampler.dragBy({
+        x: clipPosition.x - ksamplerPosition.x,
+        y: clipPosition.y - ksamplerPosition.y
+      })
+      await comfyPage.nextFrame()
+
+      const lastNodeId = await comfyPage.page.evaluate(
+        () => window.app?.graph.nodes.at(-1)?.id
+      )
+      expect(lastNodeId, 'KSampler is frontmost after the legacy drag').toBe(
+        ksampler.id
+      )
+
+      await setVueMode(comfyPage, true)
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
+
+      const ksamplerNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
+      const clipNode = comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode')
+      await expect
+        .poll(async () => {
+          const ksamplerZIndex = await ksamplerNode.evaluate((node) =>
+            Number(getComputedStyle(node).zIndex)
+          )
+          const clipZIndex = await clipNode.evaluate((node) =>
+            Number(getComputedStyle(node).zIndex)
+          )
+          return ksamplerZIndex - clipZIndex
+        })
+        .toBeGreaterThan(0)
+    }
+  )
 })
