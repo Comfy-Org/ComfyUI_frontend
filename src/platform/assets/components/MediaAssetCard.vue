@@ -39,6 +39,9 @@
         v-else-if="asset && adaptedAsset"
         :asset="adaptedAsset"
         :context="{ type: assetType }"
+        :show-native-controls="
+          fileKind === 'video' ? showNativeVideoControls : undefined
+        "
         class="absolute inset-0"
         @download="handleDownload"
         @video-playing-state-changed="isVideoPlaying = $event"
@@ -201,12 +204,20 @@ function getTopComponent(kind: PreviewKind) {
   return mediaComponents.top[kind] || mediaComponents.top.other
 }
 
-const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
+const {
+  asset,
+  loading,
+  selected,
+  showOutputCount,
+  outputCount,
+  showNativeVideoControls = true
+} = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
   showOutputCount?: boolean
   outputCount?: number
+  showNativeVideoControls?: boolean
 }>()
 
 const assetsStore = useAssetsStore()

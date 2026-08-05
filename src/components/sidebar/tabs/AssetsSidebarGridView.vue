@@ -13,6 +13,7 @@
           :selected="isSelected(item.asset.id)"
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
+          :show-native-video-controls="gridMode !== 'grid-small'"
           @select="emit('select-asset', item.asset)"
           @toggle-selection="emit('toggle-asset-selection', item.asset)"
           @context-menu="emit('context-menu', $event, item.asset)"

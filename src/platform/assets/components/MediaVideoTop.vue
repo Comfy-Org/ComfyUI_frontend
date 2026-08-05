@@ -33,8 +33,9 @@ import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 import VideoPlayOverlay from './VideoPlayOverlay.vue'
 
-const { asset } = defineProps<{
+const { asset, showNativeControls = true } = defineProps<{
   asset: AssetMeta
+  showNativeControls?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -47,7 +48,9 @@ const isHovered = ref(false)
 const isPlaying = ref(false)
 
 // Show native controls only while actively playing and hovered.
-const shouldShowControls = computed(() => isPlaying.value && isHovered.value)
+const shouldShowControls = computed(
+  () => showNativeControls && isPlaying.value && isHovered.value
+)
 
 watch(shouldShowControls, (controlsVisible) => {
   emit('videoControlsChanged', controlsVisible)
@@ -68,7 +71,7 @@ const onVideoPause = () => {
 }
 
 async function onVideoClick(event: MouseEvent) {
-  if (event.shiftKey) return
+  if (event.shiftKey || shouldShowControls.value) return
 
   const video = videoElement.value
   if (!video) return
