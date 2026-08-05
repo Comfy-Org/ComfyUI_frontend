@@ -15,6 +15,7 @@
  */
 import { ComfyDeletedError, ComfyReadonlyError } from './errors'
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface PropSpec<TTarget> {
   get(target: TTarget): unknown
   set?(target: TTarget, value: unknown): void
@@ -54,6 +55,8 @@ const RESERVED = 'isDeleted'
  * Every handle therefore carries `{ kind, id }` under a registry symbol. Any
  * major can read it, it exposes nothing internal, and being a symbol it stays
  * out of `Object.keys`, spreads and JSON.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export const COMFY_HANDLE = Symbol.for('comfy.handle')
 

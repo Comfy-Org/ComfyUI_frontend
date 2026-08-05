@@ -44,7 +44,7 @@ export interface VerificationInput {
   readonly wire?: { readonly before: WireFormat; readonly after: WireFormat }
 }
 
-export type Verdict =
+type Verdict =
   /** Something that worked before now fails. Blocks the artifact. */
   | 'REGRESSED'
   /** Wire format changed. Blocks the artifact. */

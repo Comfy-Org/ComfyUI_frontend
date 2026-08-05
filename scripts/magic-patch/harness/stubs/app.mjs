@@ -21,5 +21,3 @@ export const app = {
   nodeOutputs: {},
   lastNodeErrors: null
 }
-
-export default app

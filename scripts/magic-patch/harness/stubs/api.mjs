@@ -8,5 +8,3 @@ export const api = {
   apiURL: (path) => `/api${path}`,
   fileURL: (path) => path
 }
-
-export default api
