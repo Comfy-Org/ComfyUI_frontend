@@ -226,8 +226,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     const fallbackNodeTitle = st('rightSidePanel.fallbackNodeTitle', 'Node')
     const nodeTitle = resolveNodeDisplayName(node, {
       emptyLabel: fallbackNodeTitle,
-      untitledLabel: fallbackNodeTitle,
-      st
+      untitledLabel: fallbackNodeTitle
     })
     const widgetLabel = widget.label || widget.name
     return {

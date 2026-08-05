@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "¿Olvidaste tu contraseña?",
   "cloudHero": {
     "nextSlide": "Siguiente diapositiva",
-    "previousSlide": "Diapositiva anterior",
-    "slidePagerLabel": "Ir a la diapositiva {index}",
-    "slides": {
-      "cloud": {
-        "description": "Ideal para la mayoría de los usuarios que desean trabajar desde cualquier lugar con modelos verificados para uso comercial.",
-        "title": "Nube"
-      },
-      "models": {
-        "description": "Modelos seleccionados y con licencia comercial listos para usar sin configuración previa.",
-        "title": "Modelos"
-      },
-      "team": {
-        "description": "Incorpora a tu equipo hoy. Comparte flujos de trabajo y recursos en toda tu organización.",
-        "title": "Equipo"
-      },
-      "workflows": {
-        "description": "De la idea al resultado en minutos. Genera múltiples variaciones en paralelo.",
-        "title": "Flujos de trabajo"
-      }
-    }
+    "previousSlide": "Diapositiva anterior"
   },
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "Cloud está actualmente en beta privada",
   "cloudSorryContactSupport_title": "Lo sentimos, contacta al soporte",
   "cloudStart_desc": "Cero configuración requerida. Funciona en cualquier dispositivo.",
-  "cloudStart_download": "Descargar ComfyUI",
   "cloudStart_explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo con facilidad.",
   "cloudStart_learnAboutButton": "Conoce más sobre Cloud",
   "cloudStart_title": "comienza a crear en segundos",
-  "cloudStart_wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
   "cloudSurvey_steps_experience": "¿Qué tanto conoces ComfyUI?",
   "cloudSurvey_steps_focus": "¿Qué estás construyendo?",
   "cloudSurvey_steps_intent": "¿Qué quieres crear con ComfyUI?",
@@ -812,6 +791,9 @@
       "buy": "Comprar",
       "buyCredits": "Continuar al pago",
       "buyNow": "Comprar ahora",
+      "chargedImmediatelyNote": "Tu tarjeta guardada se cargará de inmediato.",
+      "confirmSubtitle": "Los créditos se añadirán a este espacio de trabajo tan pronto como se complete el pago.",
+      "confirmTitle": "Confirmar",
       "contactUs": "Contáctanos",
       "creditsDescription": "Los créditos se utilizan para ejecutar flujos de trabajo o nodos de socios.",
       "creditsPerDollar": "créditos por dólar",
@@ -826,6 +808,7 @@
       "minRequired": "Mínimo {credits} créditos",
       "minimumPurchase": "Mínimo ${amount} ({credits} créditos)",
       "needMore": "¿Necesitas más?",
+      "payAmount": "Pagar {amount}",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
       "purchaseSuccess": "¡Créditos añadidos correctamente!",
@@ -836,6 +819,8 @@
       "topUp": "Recargar",
       "unknownError": "Ocurrió un error desconocido",
       "usdAmount": "${amount}",
+      "verifyBody": "Tu banco requiere verificación adicional para completar este pago.",
+      "verifyTitle": "Verifica tu pago",
       "videosEstimate": "~{count} videos",
       "viewPricing": "Ver detalles de precios",
       "youGet": "Créditos",
@@ -1875,6 +1860,26 @@
     "workflow": "Flujo de trabajo",
     "you": "Tú"
   },
+  "gettingStarted": {
+    "loadFailed": "No pudimos cargar las plantillas.",
+    "retry": "Intentar de nuevo",
+    "retryTemplate": "Reintentar {title}",
+    "startBlank": "Comenzar con un lienzo en blanco",
+    "subtitle": "Elige un flujo de trabajo listo para usar o comienza con un lienzo en blanco.",
+    "tabs": {
+      "templates": "Plantillas",
+      "tutorials": "Tutoriales"
+    },
+    "tabsLabel": "Opciones para empezar",
+    "templateFailed": "No pudimos abrir esta plantilla.",
+    "title": "Vamos a crear algo",
+    "tutorials": {
+      "imageToImage": "Imagen a imagen",
+      "inpaint": "Relleno inteligente",
+      "interfaceOverview": "Resumen de la interfaz",
+      "textToImage": "Texto a imagen"
+    }
+  },
   "graphCanvasMenu": {
     "canvasMode": "Modo lienzo",
     "canvasToolbar": "Barra de herramientas del lienzo",
@@ -2905,6 +2910,7 @@
     "mage": "mage",
     "mask": "mask",
     "merging": "fusión",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "específico del modelo",
@@ -3865,6 +3871,7 @@
     "beta": "BETA",
     "billedMonthly": "Facturado mensualmente",
     "billedYearly": "{total} facturado anualmente",
+    "billingAndInvoices": "Facturación y facturas",
     "billingComingSoon": {
       "message": "La facturación para equipos estará disponible pronto. Podrás suscribirte a un plan para tu espacio de trabajo con precios por usuario. Mantente atento para más actualizaciones.",
       "title": "Próximamente"
@@ -3875,7 +3882,9 @@
       "endOfBillingPeriod": "fin del periodo de facturación",
       "failed": "Error al cancelar la suscripción",
       "keepSubscription": "Mantener suscripción",
-      "title": "Cancelar suscripción"
+      "offerUnavailable": "Esta opción no está disponible. Por favor, elige otra opción.",
+      "title": "Cancelar suscripción",
+      "workspaceChanged": "Tu espacio de trabajo activo ha cambiado. Vuelve al anterior e inténtalo de nuevo."
     },
     "cancelPlan": "Cancelar plan",
     "cancelSuccess": "Suscripción cancelada correctamente",
@@ -3944,6 +3953,9 @@
       "memberTitle": "La suscripción de este espacio de trabajo está inactiva",
       "runLabel": "Ejecutar"
     },
+    "inactiveTeamDescription": "Reactiva tu plan de equipo para añadir más miembros y ejecutar flujos de trabajo",
+    "inactiveTeamPlanIncludes": "Un plan activo incluye todo lo de {plan}, además de:",
+    "inactiveTeamTitle": "Suscripción de equipo inactiva",
     "inviteUpTo": "Invita hasta",
     "invoiceHistory": "Historial de facturas",
     "learnMore": "Más información",
@@ -4063,6 +4075,7 @@
     "pricingBlurbQuestions": "preguntas",
     "pricingBlurbSeeDetails": "ver detalles",
     "reactivatePlan": "Reactivar plan",
+    "reactivateToUseCredits": "Reactiva tu plan para usar estos créditos",
     "refillsDate": "Recargas {date}",
     "refillsNextCycle": "Recargas en el próximo ciclo",
     "refreshCredits": "Actualizar créditos",
@@ -4314,6 +4327,7 @@
     "fileTooLarge": "Archivo demasiado grande ({size} MB). El tamaño máximo soportado es {maxSize} MB",
     "fileUploadFailed": "Error al subir el archivo",
     "interrupted": "La ejecución ha sido interrumpida",
+    "invalidBillingPortalUrl": "URL del portal no válida",
     "invalidTemplateData": "No se pudo cargar la plantilla de nodo: datos no válidos",
     "legacyMaskEditorDeprecated": "El editor de máscaras heredado está obsoleto y se eliminará pronto.",
     "migrateToLitegraphReroute": "Los nodos de reroute se eliminarán en futuras versiones. Haz clic para migrar a reroute nativo de litegraph.",

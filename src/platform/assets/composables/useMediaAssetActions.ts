@@ -246,8 +246,9 @@ export function useMediaAssetActions() {
       let fileCount = 0
 
       for (const asset of assets) {
-        if (getAssetType(asset) === 'output') {
-          const metadata = getOutputAssetMetadata(asset.user_metadata)
+        const assetType = getAssetType(asset)
+        const metadata = getOutputAssetMetadata(asset.user_metadata)
+        if (assetType === 'output' || (assetType === 'temp' && metadata)) {
           const jobId = metadata?.jobId || asset.id
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
