@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -231,5 +231,78 @@ describe('widget surface', () => {
       expect(widgets.names()).toEqual([])
       expect(held.isDeleted).toBe(true)
     })
+  })
+})
+
+describe('widget listeners', () => {
+  let node: LGraphNode
+  let widgets: WidgetCollection
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    node = new LGraphNode('t')
+    node.addWidget('number', 'seed', 1, null, {})
+    graph.add(node)
+    const handles = createWidgetHandles(() => graph)
+    widgets = createWidgetCollection(
+      () => graph.getNodeById(node.id) ?? undefined,
+      handles,
+      String(node.id)
+    )
+  })
+
+  it('notifies on a value written through the handle', () => {
+    const seen: unknown[] = []
+    widgets.get('seed')!.on('change', (v, o) => seen.push([v, o]))
+    widgets.get('seed')!.setValue(42)
+    expect(seen).toEqual([[42, 1]])
+  })
+
+  it('notifies when litegraph invokes the widget callback', () => {
+    const seen: unknown[] = []
+    widgets.get('seed')!.on('change', (v) => seen.push(v))
+    node.widgets![0].callback?.(7)
+    expect(seen).toEqual([7])
+  })
+
+  it('still calls a callback the pack already had', () => {
+    const original = vi.fn()
+    node.widgets![0].callback = original
+    widgets.get('seed')!.on('change', () => {})
+    node.widgets![0].callback?.(3)
+    expect(original).toHaveBeenCalledWith(3)
+  })
+
+  it('runs every listener, so one pack cannot drop another', () => {
+    const a = vi.fn()
+    const b = vi.fn()
+    widgets.get('seed')!.on('change', a)
+    widgets.get('seed')!.on('change', b)
+    widgets.get('seed')!.setValue(9)
+    expect(a).toHaveBeenCalledOnce()
+    expect(b).toHaveBeenCalledOnce()
+  })
+
+  it('does not fire when the value is unchanged', () => {
+    const listener = vi.fn()
+    widgets.get('seed')!.on('change', listener)
+    widgets.get('seed')!.setValue(1)
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('stops notifying after unsubscribe', () => {
+    const listener = vi.fn()
+    const off = widgets.get('seed')!.on('change', listener)
+    off()
+    widgets.get('seed')!.setValue(5)
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('fires removed when the widget is taken off the node', () => {
+    const removed = vi.fn()
+    widgets.get('seed')!.on('removed', removed)
+    widgets.remove('seed')
+    expect(removed).toHaveBeenCalledOnce()
   })
 })
