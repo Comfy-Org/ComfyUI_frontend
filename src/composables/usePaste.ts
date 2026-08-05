@@ -40,21 +40,41 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
   return persistent
 }
 
-function pasteClipboardItems(data: DataTransfer): boolean {
-  const rawData = data.getData('text/html')
-  const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
-  if (!match) return false
+function decodeNodeMetadata(rawHtml: string): string | null {
+  const match = rawHtml.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+  if (!match) return null
   try {
     // Decode UTF-8 safe base64
     const binaryString = atob(match)
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
-    const decodedData = new TextDecoder().decode(bytes)
+    return new TextDecoder().decode(bytes)
+  } catch {
+    return null
+  }
+}
+
+function pasteClipboardItems(data: DataTransfer): boolean {
+  const decodedData = decodeNodeMetadata(data.getData('text/html'))
+  if (decodedData === null) return false
+  try {
     useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
     return true
   } catch (err) {
     console.error(err)
   }
   return false
+}
+
+/**
+ * Node metadata on the clipboard is stale when it does not match the last
+ * in-app copy (litegraph's internal clipboard). This happens when the user
+ * copied a node and then copied something else outside the app, leaving the
+ * old text/html node payload behind.
+ */
+function hasStaleNodeMetadata(rawHtml: string): boolean {
+  const decodedData = decodeNodeMetadata(rawHtml)
+  if (decodedData === null) return false
+  return decodedData !== localStorage.getItem('litegrapheditor_clipboard')
 }
 
 function pasteItemsOnNode(
@@ -233,6 +253,8 @@ export const usePaste = () => {
     const isMediaNodeSelected =
       isImageNodeSelected || isVideoNodeSelected || isAudioNodeSelected
     if (!isMediaNodeSelected && pasteClipboardItems(data)) return
+    const staleMetadataOnMediaNode =
+      isMediaNodeSelected && hasStaleNodeMetadata(data.getData('text/html'))
 
     // No image found. Look for node data
     data = data.getData('text/plain')
@@ -261,10 +283,11 @@ export const usePaste = () => {
         return
       }
 
-      // Litegraph default paste. Skipped while a media node is selected:
-      // the user is targeting that node, so stale node data (e.g. a
-      // previously copied node) must not be deserialized onto the graph.
-      if (!isMediaNodeSelected) canvas.pasteFromClipboard()
+      // Litegraph default paste. Skipped when a media node is selected and
+      // the clipboard carries stale node metadata: the user is targeting
+      // that node, and the leftover payload must not paste an old node
+      // (see the imagePastePriority e2e). A fresh in-app copy still pastes.
+      if (!staleMetadataOnMediaNode) canvas.pasteFromClipboard()
     }
   })
 }
