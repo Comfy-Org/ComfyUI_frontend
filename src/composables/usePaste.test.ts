@@ -607,6 +607,8 @@ describe('usePaste', () => {
 
     usePaste()
 
+    // Metadata that does not match litegraph's internal clipboard is stale
+    localStorage.removeItem('litegrapheditor_clipboard')
     const nodeData = { nodes: [{ type: 'KSampler' }] }
     const encoded = btoa(JSON.stringify(nodeData))
     const html = `<div data-metadata="${encoded}"></div>`
@@ -620,11 +622,44 @@ describe('usePaste', () => {
 
     await vi.waitFor(() => {
       expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-      // The litegraph default paste must not run either: it would paste a
-      // previously copied node onto the graph while the user is targeting
+      // The litegraph default paste must not run either: stale metadata
+      // would paste an old node onto the graph while the user is targeting
       // the selected media node (see imagePastePriority e2e).
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
+  })
+
+  it('should paste a freshly copied node while a media node is selected', async () => {
+    const mockNode = createMockLGraphNode({
+      is_selected: true,
+      pasteFile: vi.fn(),
+      pasteFiles: vi.fn()
+    })
+    mockCanvas.current_node = mockNode
+    vi.mocked(isImageNode).mockReturnValue(true)
+
+    usePaste()
+
+    // Clipboard metadata matching litegraph's internal clipboard means the
+    // user just copied a node in-app and expects the paste to duplicate it.
+    const serialized = JSON.stringify({ nodes: [{ type: 'LoadImage' }] })
+    localStorage.setItem('litegrapheditor_clipboard', serialized)
+    const encoded = btoa(serialized)
+    const html = `<div data-metadata="${encoded}"></div>`
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    dataTransfer.setData('text/plain', 'some text')
+
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+
+    localStorage.removeItem('litegrapheditor_clipboard')
   })
 })
 
