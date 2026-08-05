@@ -237,7 +237,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onErrorCaptured, ref, watch } from 'vue'
+import { computed, nextTick, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@/types/nodeState'
@@ -264,7 +264,6 @@ import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { Size } from '@/renderer/core/layout/types'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
@@ -390,23 +389,12 @@ onErrorCaptured((error) => {
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 
-/**
- * The store tracks rendered geometry, so a collapsed node's stored size is its
- * header. The expanded size survives only here.
- */
-const renderedSize = ref<Size>({ ...size.value })
-
-watch(size, (next) => {
-  if (isCollapsed.value) return
-  renderedSize.value = next
-})
-
 const nodeSizeStyle = computed(() =>
   isCollapsed.value
     ? {}
     : {
-        '--node-width': `${renderedSize.value.width}px`,
-        '--node-height': `${renderedSize.value.height + LiteGraph.NODE_TITLE_HEIGHT}px`
+        '--node-width': `${size.value.width}px`,
+        '--node-height': `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT}px`
       }
 )
 
