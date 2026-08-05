@@ -218,6 +218,13 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
     test('picking custom leaves the overrides untouched', async ({
       comfyPage
     }) => {
+      // Arrive on the standard pair first, so both overrides differ from their
+      // defaults and a handler that rewrote them would be caught.
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.NavigationMode',
+        'standard'
+      )
+
       await comfyPage.settings.setSetting(
         'Comfy.Canvas.NavigationMode',
         'custom'
@@ -231,10 +238,10 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
         await comfyPage.settings.getSetting(
           'Comfy.Canvas.LeftMouseClickBehavior'
         )
-      ).toBe('panning')
+      ).toBe('select')
       expect(
         await comfyPage.settings.getSetting('Comfy.Canvas.MouseWheelScroll')
-      ).toBe('zoom')
+      ).toBe('panning')
     })
 
     // A mode stored before the overrides shipped in 1.27.4 is the only value on

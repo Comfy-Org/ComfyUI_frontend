@@ -505,7 +505,9 @@ describe('useSettingStore', () => {
         name: 'test.setting',
         type: 'text',
         defaultValue: 'default',
-        onChange: () => observed.push(store.get('test.setting'))
+        onChange: () => {
+          observed.push(store.get('test.setting'))
+        }
       })
 
       await store.set('test.setting', 'newvalue')
