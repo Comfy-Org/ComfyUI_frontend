@@ -143,6 +143,34 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(result.TestNode.category).toBe('')
   })
 
+  test('names the malformed entries it discards', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.mocked(api.getNodeDefs).mockResolvedValue({
+      TestNode: nodeDef({}),
+      NullEntry: null,
+      NamelessEntry: { category: 'test' }
+    } as unknown as Record<string, ComfyNodeDefV1>)
+
+    await comfyApp.getNodeDefs()
+
+    expect(warn).toHaveBeenCalledTimes(1)
+    const [message] = warn.mock.calls[0]
+    expect(message).toContain('NullEntry')
+    expect(message).toContain('NamelessEntry')
+    expect(message).not.toContain('TestNode')
+    warn.mockRestore()
+  })
+
+  test('stays silent when every entry is well formed', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockDefs(nodeDef({}))
+
+    await comfyApp.getNodeDefs()
+
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   test('discards malformed entries inside an otherwise valid response', async () => {
     vi.mocked(api.getNodeDefs).mockResolvedValue({
       TestNode: nodeDef({ display_name: 'Good Node' }),
