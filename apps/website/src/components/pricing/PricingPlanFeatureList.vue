@@ -74,7 +74,7 @@ const { locale = 'en' } = defineProps<{
             }}:
           </span>
           <span
-            class="ppformula-text-center text-sm"
+            class="text-sm"
             :class="
               feature.highlight
                 ? 'text-primary-comfy-yellow'

@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import BrandButton from '../components/common/BrandButton.vue'
+import ButtonPill from '../components/ui/button-pill/ButtonPill.vue'
+import Button from '../components/ui/button/Button.vue'
+
+const brandVariants = ['solid', 'outline', 'outline-dark'] as const
+const brandSizes = ['xs', 'sm', 'nav', 'lg'] as const
+---
+
+<BaseLayout
+  title="Button centering test"
+  description="Throwaway page to verify PPFormula vertical centering in buttons"
+>
+  <main class="mx-auto flex max-w-4xl flex-col gap-12 bg-neutral-900 p-12">
+    <section class="flex flex-col gap-6">
+      <h2 class="text-xl font-bold text-white">
+        BrandButton (variant × size), red line = geometric midline
+      </h2>
+      {
+        brandVariants.map((variant) => (
+          <div class="flex flex-wrap items-center gap-6 bg-neutral-700 p-4">
+            {brandSizes.map((size) => (
+              <span class="relative inline-flex">
+                <BrandButton variant={variant} size={size}>
+                  DOWNLOAD
+                </BrandButton>
+                <span class="pointer-events-none absolute inset-x-0 top-1/2 z-10 h-px -translate-y-1/2 bg-red-500" />
+              </span>
+            ))}
+          </div>
+        ))
+      }
+    </section>
+
+    <section class="flex flex-col gap-6">
+      <h2 class="text-xl font-bold text-white">ButtonPill</h2>
+      <div class="flex flex-wrap items-center gap-6 bg-neutral-700 p-4">
+        <span class="relative inline-flex">
+          <ButtonPill>Get Started</ButtonPill>
+          <span
+            class="pointer-events-none absolute inset-x-0 top-1/2 z-10 h-px -translate-y-1/2 bg-red-500"
+          ></span>
+        </span>
+        <span class="relative inline-flex">
+          <ButtonPill size="lg">Get Started</ButtonPill>
+          <span
+            class="pointer-events-none absolute inset-x-0 top-1/2 z-10 h-px -translate-y-1/2 bg-red-500"
+          ></span>
+        </span>
+        <span class="relative inline-flex">
+          <ButtonPill variant="ghost">Get Started</ButtonPill>
+          <span
+            class="pointer-events-none absolute inset-x-0 top-1/2 z-10 h-px -translate-y-1/2 bg-red-500"
+          ></span>
+        </span>
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-6">
+      <h2 class="text-xl font-bold text-white">ui/Button</h2>
+      <div class="flex flex-wrap items-center gap-6 bg-neutral-700 p-4">
+        <span class="relative inline-flex">
+          <Button>Continue</Button>
+          <span
+            class="pointer-events-none absolute inset-x-0 top-1/2 z-10 h-px -translate-y-1/2 bg-red-500"
+          ></span>
+        </span>
+        <span class="relative inline-flex">
+          <Button variant="outline">Continue</Button>
+          <span
+            class="pointer-events-none absolute inset-x-0 top-1/2 z-10 h-px -translate-y-1/2 bg-red-500"
+          ></span>
+        </span>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

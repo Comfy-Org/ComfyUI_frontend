@@ -94,17 +94,13 @@ const planCards = computed(() =>
           value="monthly"
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
-          <span class="ppformula-text-center">{{
-            t('pricing.period.monthly', locale)
-          }}</span>
+          {{ t('pricing.period.monthly', locale) }}
         </ToggleGroupItem>
         <ToggleGroupItem
           value="yearly"
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
-          <span class="ppformula-text-center">{{
-            t('pricing.period.yearly', locale)
-          }}</span>
+          {{ t('pricing.period.yearly', locale) }}
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
@@ -133,7 +129,7 @@ const planCards = computed(() =>
         <div class="flex items-center gap-4">
           <PricingPlanLabel
             :label="t(plan.labelKey, locale)"
-            class="ppformula-text-center text-base uppercase"
+            class="text-base uppercase"
           />
           <Badge v-if="plan.isPopular" variant="callout" size="xs">
             {{ t('pricing.badge.popular', locale) }}</Badge
