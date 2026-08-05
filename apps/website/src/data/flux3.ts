@@ -14,8 +14,6 @@ const media = {
   card6: 'https://media.comfy.org/website/flux-3/card-6.webm'
 } as const
 
-// Flux 3 has not launched yet, so this page lives in the private repo. FAQ copy
-// is nav's prompting draft from Purz's guidance.
 export const flux3Page: ModelLaunchPage = {
   metaTitleKey: 'flux3.meta.title',
   metaDescriptionKey: 'flux3.meta.description',
@@ -36,7 +34,7 @@ export const flux3Page: ModelLaunchPage = {
       href: externalLinks.workflows,
       target: '_blank'
     },
-    badgeKeys: ['flux3.hero.tagPartnerNodes', 'flux3.hero.tagOpenWeights']
+    badgeKeys: ['flux3.hero.tagPartnerNodes', 'flux3.hero.tagOpenWeightsSoon']
   },
   gallery: {
     headingKey: 'flux3.models.heading',

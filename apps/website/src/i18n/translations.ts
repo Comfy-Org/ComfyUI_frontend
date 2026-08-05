@@ -4968,9 +4968,9 @@ const translations = {
     en: 'Partner nodes',
     'zh-CN': '合作伙伴节点'
   },
-  'flux3.hero.tagOpenWeights': {
-    en: 'Open weights',
-    'zh-CN': '开源权重'
+  'flux3.hero.tagOpenWeightsSoon': {
+    en: 'Open weights coming soon',
+    'zh-CN': '开源权重即将推出'
   },
   'flux3.hero.primaryCta': {
     en: 'RUN FLUX 3',
