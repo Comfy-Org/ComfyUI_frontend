@@ -252,6 +252,49 @@ describe('MediaAssetCard', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('hides card actions when the pointer leaves a playing compact video', async () => {
+    const user = userEvent.setup()
+    const { container } = renderCard({
+      loading: false,
+      asset: { ...asset, name: 'clip.mp4' },
+      showNativeVideoControls: false
+    })
+    const video = await vi.waitFor(() => {
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const element = container.querySelector('video')
+      expect(element).toBeInTheDocument()
+      return element!
+    })
+    const playSpy = vi
+      .spyOn(video, 'play')
+      .mockImplementation(() => Promise.resolve())
+
+    Object.defineProperty(video, 'paused', {
+      value: true,
+      configurable: true
+    })
+
+    // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
+    const hoverTarget = video.parentElement!
+    await user.hover(hoverTarget)
+    await user.click(video)
+    await fireEvent.play(video)
+
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    expect(
+      screen.getByRole('button', { name: 'mediaAsset.actions.download' })
+    ).toBeInTheDocument()
+
+    await user.unhover(hoverTarget)
+
+    expect(
+      screen.queryByRole('button', { name: 'mediaAsset.actions.download' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'mediaAsset.actions.moreOptions' })
+    ).not.toBeInTheDocument()
+  })
+
   it('selects the asset from the info area or selection control', async () => {
     const user = userEvent.setup()
     const { emitted } = renderCard({ loading: false })
@@ -278,6 +321,25 @@ describe('MediaAssetCard', () => {
       'group-hover:pointer-events-auto',
       'focus-visible:pointer-events-auto'
     )
+  })
+
+  it('does not keep card actions visible after pointer focus leaves the card', async () => {
+    const user = userEvent.setup()
+    renderCard({ loading: false })
+
+    const selectionControl = screen.getByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    await user.click(selectionControl)
+    await user.unhover(selectionControl)
+
+    expect(selectionControl).toHaveFocus()
+    expect(
+      screen.queryByRole('button', { name: 'mediaAsset.actions.download' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'mediaAsset.actions.moreOptions' })
+    ).not.toBeInTheDocument()
   })
 
   it('keeps card actions visible while keyboard focus is within the card', async () => {
