@@ -4936,45 +4936,86 @@ const translations = {
   // Shared by every model-launch gallery card (see templates/model-launch).
   'modelLaunch.tagFree': { en: 'Free', 'zh-CN': '免费' },
   'modelLaunch.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
-  // Flux 3 model page (/flux-3) — announcement only until the model ships
+  // Flux 3 model page (/flux-3)
   'flux3.meta.title': {
-    en: 'Flux 3 on Comfy — Coming Soon',
-    'zh-CN': 'Comfy 上的 Flux 3 — 即将推出'
+    en: 'Flux 3 on Comfy — Video With Native Audio',
+    'zh-CN': 'Comfy 上的 Flux 3 — 带原生音频的视频模型'
   },
   'flux3.meta.description': {
-    en: 'Flux 3 is coming to Comfy. Run it on Comfy Cloud the day it lands, or start building workflows for free now with every other model Comfy supports.',
+    en: "Run Flux 3 on Comfy: Black Forest Labs' multimodal model generates video with native audio, up to 20 seconds in one generation, from text, image, video or keyframes.",
     'zh-CN':
-      'Flux 3 即将登陆 Comfy。上线当天即可在 Comfy Cloud 上运行；现在就可以用 Comfy 支持的其他模型免费开始搭建工作流。'
+      '在 Comfy 上运行 Flux 3：Black Forest Labs 的多模态模型可生成带原生音频的视频，单次生成最长 20 秒，支持文本、图像、视频或关键帧输入。'
   },
   'flux3.breadcrumb.model': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
   'flux3.breadcrumb.updated': {
     en: 'Updated August 2026',
     'zh-CN': '更新于 2026 年 8 月'
   },
-  'flux3.hero.eyebrow': { en: 'New', 'zh-CN': '全新' },
   'flux3.hero.title': {
-    en: 'Flux 3 coming soon',
-    'zh-CN': 'Flux 3 即将推出'
+    en: 'Flux 3',
+    'zh-CN': 'Flux 3'
   },
-  'flux3.hero.primaryCta': {
-    en: 'RUN COMFY FOR FREE',
-    'zh-CN': '免费使用 Comfy'
+  'flux3.hero.titleRest': {
+    en: ' is here',
+    'zh-CN': ' 已上线'
+  },
+  'flux3.hero.description': {
+    en: 'Flux 3 generates video with native audio, up to 20 seconds in a single generation. Go text to video or image to video. Run it on Comfy Cloud today. Open weights coming soon.',
+    'zh-CN':
+      'Flux 3 可生成带原生音频的视频，单次生成最长 20 秒。支持文本生成视频与图像生成视频。今天就在 Comfy Cloud 上运行它。开源权重即将推出。'
   },
   'flux3.hero.tagPartnerNodes': {
-    en: 'Partner node',
+    en: 'Partner nodes',
     'zh-CN': '合作伙伴节点'
   },
-  'flux3.hero.tagImageToVideo': {
-    en: 'Image to video',
-    'zh-CN': '图像生成视频'
+  'flux3.hero.tagOpenWeights': {
+    en: 'Open weights',
+    'zh-CN': '开源权重'
+  },
+  'flux3.hero.primaryCta': {
+    en: 'RUN FLUX 3',
+    'zh-CN': '运行 Flux 3'
+  },
+  'flux3.hero.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
+  },
+  'flux3.cta.heading': {
+    en: 'Twenty seconds with sound, in one generation.',
+    'zh-CN': '二十秒，自带声音，一次生成。'
+  },
+  'flux3.cta.primaryCta': {
+    en: 'RUN FLUX 3',
+    'zh-CN': '运行 Flux 3'
+  },
+  'flux3.cta.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
+  },
+  'flux3.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'flux3.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'flux3.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'flux3.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+  'flux3.models.heading': {
+    en: 'Made with Flux 3',
+    'zh-CN': '用 Flux 3 制作'
   },
   'flux3.runOptions.heading': {
     en: 'One engine, every way to run it',
     'zh-CN': '同一引擎，多种运行方式'
   },
   'flux3.runOptions.subtitle': {
-    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
-    'zh-CN': '今天就在浏览器中搭建工作流。用 API 批量制作，或部署到自有环境。'
+    en: 'Run Flux 3 in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中运行 Flux 3。用 API 批量制作，或部署到自有环境。'
   },
   'flux3.runOptions.cta': {
     en: 'LEARN MORE',
