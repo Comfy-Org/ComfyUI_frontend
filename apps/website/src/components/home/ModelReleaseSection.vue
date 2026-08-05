@@ -12,10 +12,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     :eyebrow="t('modelRelease.eyebrow', locale)"
     :title="t('modelRelease.title', locale)"
     :body="t('modelRelease.body', locale)"
-    :primary-cta="{ label: t('modelRelease.viewFeatures', locale), href: '#' }"
+    :primary-cta="{
+      label: t('modelRelease.viewFeatures', locale),
+      href: '/minimax'
+    }"
     :secondary-cta="{
       label: t('modelRelease.tryWorkflows', locale),
-      href: '#'
+      href: 'https://comfy.org/workflows/e8099b642c9f-e8099b642c9f/'
     }"
     :tags="[t('tags.openWeights', locale), t('tags.partnerNodes', locale)]"
     video-src="https://media.comfy.org/website/minimax/hero.mp4"
