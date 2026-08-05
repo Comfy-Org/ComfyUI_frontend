@@ -81,10 +81,7 @@ export interface OnCallLookup {
 
 // Layer members carry the rotation order, which is what makes "next" well
 // defined. The graph is members -> user -> email, all in `included`.
-export function parseRotation(
-  payload: unknown,
-  githubLoginByUser: Record<string, string>
-): string[] {
+export function parseRotationKeys(payload: unknown): string[] {
   if (!isRecord(payload) || !Array.isArray(payload.included)) return []
 
   const resources = payload.included.filter(isRecord)
@@ -99,7 +96,7 @@ export function parseRotation(
     return members.data.filter(isRecord).map((member) => member.id)
   })
 
-  const logins = memberIds.flatMap((id) => {
+  const keys = memberIds.flatMap((id) => {
     const member = find('members', id)
     if (!member || !isRecord(member.relationships)) return []
     const { user } = member.relationships
@@ -107,17 +104,18 @@ export function parseRotation(
     const record = find('users', user.data.id)
     if (!record || !isRecord(record.attributes)) return []
     const { email } = record.attributes
-    if (typeof email !== 'string') return []
-    const login = githubLoginByUser[emailKey(email)]
-    return login ? [login] : []
+    return typeof email === 'string' && email.trim() ? [emailKey(email)] : []
   })
 
-  return [...new Set(logins)]
+  return [...new Set(keys)]
 }
 
 export interface DirectoryLookup {
   githubLoginByUser: Record<string, string>
   rotation: string[]
+  // Rotation members with no github: tag. They break silently when their own
+  // shift starts, weeks after the tag was forgotten, so surface them now.
+  unmappedMembers: string[]
   warning: string | null
 }
 
@@ -203,9 +201,14 @@ export async function fetchGithubLogins(
     include: 'layers.members.user'
   })
   const githubLoginByUser = parseGithubLogins(payload)
+  const keys = parseRotationKeys(payload)
   return {
     githubLoginByUser,
-    rotation: parseRotation(payload, githubLoginByUser),
+    rotation: keys.flatMap((key) => {
+      const login = githubLoginByUser[key]
+      return login ? [login] : []
+    }),
+    unmappedMembers: keys.filter((key) => !githubLoginByUser[key]),
     warning
   }
 }
@@ -428,6 +431,15 @@ async function main() {
         `the tag "github:${emailKey(email)}:<github-login>" to the schedule.`
     )
   }
+  // Checked for the whole rotation, not just whoever is on call: a member
+  // added without a tag works fine until their own shift begins, then falls
+  // back silently. Fail now, while it is still someone else's week.
+  for (const key of directory.unmappedMembers) {
+    problems.push(
+      `Rotation member "${key}" has no GitHub login and will fall back when ` +
+        `their shift starts. Add "github:${key}:<github-login>" to the schedule.`
+    )
+  }
   for (const problem of problems) warn(problem)
   if (!login) {
     const message = 'No release sheriff could be resolved — nothing assigned.'
@@ -435,6 +447,11 @@ async function main() {
     output('degraded', [message, ...problems].join(' '))
     process.exitCode = 1
     return
+  }
+
+  if (directory.unmappedMembers.length > 0) {
+    output('degraded', problems.join(' '))
+    process.exitCode = 1
   }
 
   // Falling back still assigns, so PRs stay owned, but the run must not go

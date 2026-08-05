@@ -107,6 +107,12 @@ unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
 never left unowned, but **exits non-zero** so the degradation is visible. A
 green run means a real sheriff was resolved from Datadog.
 
+Tag coverage is checked for the **whole rotation**, not just whoever is on call,
+and a member without one fails the run. Someone added to the layer without a tag
+otherwise works fine until their own shift begins — the breakage surfaces weeks
+after the cause, on whoever happens to be sheriff. This is a configuration
+check, so it fails even when today's assignment succeeded.
+
 A failed run also posts to **#frontend-releases** with the reason, because a
 failing scheduled workflow otherwise only notifies whoever last pushed to
 `main` — in practice nobody, which is how the placeholder config survived for
