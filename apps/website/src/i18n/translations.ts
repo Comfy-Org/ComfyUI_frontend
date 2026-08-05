@@ -2085,8 +2085,12 @@ const translations = {
     'zh-CN': '任意套餐的订阅'
   },
   'mcp.setup.requirementSuffix': {
-    en: ". A credit top-up alone isn't enough to run generations.",
-    'zh-CN': '。仅充值积分不足以运行生成任务。'
+    en: '.',
+    'zh-CN': '。'
+  },
+  'mcp.setup.requirementFootnote': {
+    en: "A credit top-up alone isn't enough to run generations.",
+    'zh-CN': '仅充值积分不足以运行生成任务。'
   },
   'mcp.setup.manual.title': {
     en: 'Install manually',

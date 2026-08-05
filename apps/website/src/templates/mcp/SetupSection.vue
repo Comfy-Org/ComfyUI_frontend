@@ -136,6 +136,9 @@ const copiedLabel = t('ui.copied', locale)
             >{{ t('mcp.setup.requirementLinkLabel', locale) }}</a
           >{{ t('mcp.setup.requirementSuffix', locale) }}
         </p>
+        <p class="mt-2 max-w-xl text-xs text-smoke-500 lg:text-sm">
+          {{ t('mcp.setup.requirementFootnote', locale) }}
+        </p>
       </template>
     </SectionHeader>
 
