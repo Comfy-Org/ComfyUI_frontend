@@ -37,6 +37,7 @@ import type {
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
+  ExecutionNodeErrorWsMessage,
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
@@ -77,6 +78,7 @@ interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
+  node_failure_policy?: 'continue_independent'
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -137,6 +139,7 @@ interface QueuePromptOptions {
    * Format: Colon-separated path of node IDs (e.g., "123:456:789")
    */
   partialExecutionTargets?: NodeExecutionId[]
+  nodeFailurePolicy?: 'continue_independent'
   /**
    * Override the preview method for this prompt execution.
    * 'default' uses the server's CLI setting and is not sent to backend.
@@ -177,6 +180,7 @@ interface BackendApiCalls {
   execution_start: ExecutionStartWsMessage
   execution_success: ExecutionSuccessWsMessage
   execution_error: ExecutionErrorWsMessage
+  execution_node_error: ExecutionNodeErrorWsMessage
   execution_interrupted: ExecutionInterruptedWsMessage
   execution_cached: ExecutionCachedWsMessage
   logs: LogsWsMessage
@@ -871,6 +875,7 @@ export class ComfyApi extends EventTarget {
               break
             case 'execution_start':
             case 'execution_error':
+            case 'execution_node_error':
             case 'execution_interrupted':
             case 'execution_cached':
             case 'execution_success':
@@ -1036,6 +1041,10 @@ export class ComfyApi extends EventTarget {
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
       }),
+      ...(options?.nodeFailurePolicy &&
+        this.serverSupportsFeature('supports_node_failure_policy') && {
+          node_failure_policy: options.nodeFailurePolicy
+        }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,

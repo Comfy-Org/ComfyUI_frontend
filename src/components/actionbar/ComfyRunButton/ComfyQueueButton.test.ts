@@ -14,6 +14,7 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { api } from '@/scripts/api'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { render, screen } from '@testing-library/vue'
@@ -46,6 +47,8 @@ const i18n = createI18n({
     en: {
       menu: {
         run: 'Run',
+        continueIndependentBranches:
+          'Continue independent branches if a node fails',
         disabledTooltip: 'Disabled tooltip',
         onChange: 'On Change',
         onChangeTooltip: 'On change tooltip',
@@ -142,7 +145,13 @@ const stubs = {
   DropdownMenuTrigger: { template: '<div><slot /></div>' },
   DropdownMenuPortal: { template: '<div><slot /></div>' },
   DropdownMenuContent: { template: '<div><slot /></div>' },
-  DropdownMenuItem: { template: '<div><slot /></div>' }
+  DropdownMenuItem: { template: '<div><slot /></div>' },
+  DropdownMenuCheckboxItem: {
+    props: ['modelValue'],
+    emits: ['update:modelValue'],
+    template: `<div :data-state="modelValue ? 'checked' : 'unchecked'" @click="$emit('update:modelValue', !modelValue)"><slot /></div>`
+  },
+  DropdownMenuItemIndicator: { template: '<span><slot /></span>' }
 }
 
 function renderQueueButton(
@@ -169,6 +178,35 @@ function renderQueueButton(
 }
 
 describe('ComfyQueueButton', () => {
+  it('only offers continuing independent branches when supported', async () => {
+    renderQueueButton()
+    expect(
+      screen.queryByTestId('continue-independent-branches')
+    ).not.toBeInTheDocument()
+
+    api.serverFeatureFlags.value = { supports_node_failure_policy: true }
+    await nextTick()
+
+    expect(
+      screen.getByTestId('continue-independent-branches')
+    ).toHaveTextContent('Continue independent branches if a node fails')
+  })
+  it('toggles the queue setting when clicked', async () => {
+    const { user } = renderQueueButton()
+    api.serverFeatureFlags.value = { supports_node_failure_policy: true }
+    await nextTick()
+
+    const settings = useQueueSettingsStore()
+    expect(settings.continueIndependentBranches).toBe(false)
+
+    const item = screen.getByTestId('continue-independent-branches')
+    await user.click(item)
+    expect(settings.continueIndependentBranches).toBe(true)
+    expect(item).toHaveAttribute('data-state', 'checked')
+
+    await user.click(item)
+    expect(settings.continueIndependentBranches).toBe(false)
+  })
   it('renders the batch count control before the run button', () => {
     renderQueueButton()
     const controls = screen.getAllByTestId(/batch-count-edit|queue-button/)
