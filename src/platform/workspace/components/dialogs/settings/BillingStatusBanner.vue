@@ -69,6 +69,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
@@ -77,7 +78,7 @@ import { useDialogService } from '@/services/dialogService'
 
 type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
-const { t, d, n } = useI18n()
+const { t, d, n, locale } = useI18n()
 const { renewalDate, subscription, plans, manageSubscription } =
   useBillingContext()
 const { permissions } = useWorkspaceUI()
@@ -108,19 +109,9 @@ const scheduledPlan = computed(() =>
 const isScheduledTeamPlan = computed(() =>
   scheduledPlan.value?.slug.startsWith('team')
 )
-const planChangeDate = computed(() => {
-  const raw = subscription.value?.changeAt
-  if (!raw) return ''
-  const date = new Date(raw)
-  return Number.isNaN(date.getTime())
-    ? ''
-    : d(date, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'UTC'
-      })
-})
+const planChangeDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.changeAt, locale.value, 'long')
+)
 const scheduledPlanName = computed(() => {
   if (isScheduledTeamPlan.value) return t('subscription.teamPlanName')
   return formatTierName(
