@@ -58,6 +58,13 @@ open PR that has no assignee and is either:
 It also requests their review, since backport merges are gated on an approval.
 Existing assignees and review requests are never overwritten.
 
+When the sheriff wrote the PR themselves, the review is requested from the
+**next person in the rotation** instead — GitHub rejects a self-review request,
+so previously those PRs were assigned to their own author with nobody asked to
+review, and then waited on an approval that had never been requested. The order
+comes from the Datadog layer's member list, so it needs no separate config. If
+nobody in the rotation can stand in, the run says so rather than staying quiet.
+
 Automation-authored PRs are included because nobody feels addressed by what a
 robot opens: they accumulated unassigned for weeks. Note these are matched by
 author rather than by content, so a dependency bump counts as sheriff work.
