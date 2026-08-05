@@ -4,6 +4,7 @@ export const MEDIA_ASSET_VIEW_MODE = {
   grid: 'grid'
 } as const
 
+// TODO: Introduce a shared ValueOf<T> for object-value unions across the codebase.
 export type MediaAssetViewMode =
   (typeof MEDIA_ASSET_VIEW_MODE)[keyof typeof MEDIA_ASSET_VIEW_MODE]
 
