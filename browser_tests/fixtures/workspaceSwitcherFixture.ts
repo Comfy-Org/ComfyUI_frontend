@@ -1,0 +1,57 @@
+import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
+
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  WORKSPACE_SWITCHER_REMOTE_CONFIG,
+  WORKSPACE_SWITCHER_WORKSPACES
+} from '@e2e/fixtures/data/workspaceSwitcher'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
+
+/**
+ * Boots the app with the workspace-switcher endpoints mocked: remote config
+ * (team workspaces enabled), the workspace list, workspace-token minting for
+ * whichever workspace is being switched to, and a no-op session refresh.
+ */
+export const workspaceSwitcherTest = comfyPageFixture.extend({
+  page: async ({ page }, use) => {
+    await page.route('**/api/features', (route) =>
+      route.fulfill(jsonRoute(WORKSPACE_SWITCHER_REMOTE_CONFIG))
+    )
+
+    await mockWorkspaceList(page, WORKSPACE_SWITCHER_WORKSPACES)
+
+    await page.route('**/api/auth/token', async (route) => {
+      const requestBody = route.request().postDataJSON() as {
+        workspace_id?: string
+      }
+      const workspaceId = requestBody.workspace_id ?? 'ws-personal'
+      const workspace = WORKSPACE_SWITCHER_WORKSPACES.find(
+        ({ id }) => id === workspaceId
+      )
+      if (!workspace) {
+        await route.fulfill({ status: 404 })
+        return
+      }
+
+      const response: WorkspaceTokenResponse = {
+        token: `mock-workspace-token-${workspace.id}`,
+        expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        workspace: {
+          id: workspace.id,
+          name: workspace.name,
+          type: workspace.type
+        },
+        role: workspace.role,
+        permissions: []
+      }
+      await route.fulfill(jsonRoute(response))
+    })
+
+    await page.route('**/api/auth/session', (route) =>
+      route.fulfill({ status: 204 })
+    )
+
+    await use(page)
+  }
+})

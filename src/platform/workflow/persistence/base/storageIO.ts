@@ -308,6 +308,16 @@ export function writeActivePath(
   )
 }
 
+/** Inverse of {@link writeActivePath}: drops both pointers it writes. */
+export function clearActivePath(clientId: string, workspaceId: string): void {
+  try {
+    sessionStorage.removeItem(StorageKeys.activePath(clientId))
+    localStorage.removeItem(StorageKeys.lastActivePath(workspaceId))
+  } catch {
+    // Storage access can throw in private-mode browsers; nothing to undo.
+  }
+}
+
 /**
  * Reads the open paths pointer from sessionStorage.
  * Falls back to workspace-based search when clientId changes after reload,

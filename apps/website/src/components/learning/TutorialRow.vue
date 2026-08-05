@@ -9,7 +9,7 @@ import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
-import PlayOverlay from './PlayOverlay.vue'
+import PlayOverlay from '../blocks/PlayOverlay.vue'
 
 const { tutorial, locale = 'en' } = defineProps<{
   tutorial: LearningTutorial
@@ -36,15 +36,16 @@ const { tutorial, locale = 'en' } = defineProps<{
     </a>
 
     <div class="w-full min-w-0 md:w-auto md:flex-1">
-      <Badge variant="category" size="xs">
-        {{ t(categoryLabelKeys[tutorial.category], locale) }}
-      </Badge>
+      <div class="flex items-center gap-2">
+        <Badge variant="category" size="xs">
+          {{ t(categoryLabelKeys[tutorial.category], locale) }}
+        </Badge>
+      </div>
       <h3 class="mt-1 text-sm/snug text-primary-comfy-canvas lg:text-base/snug">
         <a
           :href="localizeHref(tutorialPath(tutorial), locale)"
           class="text-left hover:underline"
         >
-          {{ t('learning.tutorials.titlePrefix', locale) }}
           {{ tutorial.title[locale] }}
         </a>
       </h3>

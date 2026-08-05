@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
+
 import { useBillingRouting } from './useBillingRouting'
 
 const { mockFlags, mockActiveWorkspace, mockActiveWorkspaceBillingRail } =
@@ -12,7 +14,7 @@ const { mockFlags, mockActiveWorkspace, mockActiveWorkspaceBillingRail } =
       value: null as { id: string; type: 'personal' | 'team' } | null
     },
     mockActiveWorkspaceBillingRail: {
-      value: null as 'legacy_stripe' | 'stripe' | null
+      value: null as BillingRail | null
     }
   }))
 

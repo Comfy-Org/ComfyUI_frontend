@@ -1,4 +1,9 @@
 import { groupBy } from 'es-toolkit'
+import { hasActivePromotedWidgetConsumer } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   MissingMediaCandidate,
   MissingMediaViewModel,
@@ -13,7 +18,9 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import {
   collectAllNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getNodeByExecutionId,
+  isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
@@ -30,19 +37,30 @@ import {
 } from './missingMediaAssetResolver'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 
-/** Map of node types to their media widget name and media type. */
-const MEDIA_NODE_WIDGETS: Record<
-  string,
-  { widgetName: string; mediaType: MediaType }
-> = {
-  LoadImage: { widgetName: 'image', mediaType: 'image' },
-  LoadImageMask: { widgetName: 'image', mediaType: 'image' },
-  LoadVideo: { widgetName: 'file', mediaType: 'video' },
-  LoadAudio: { widgetName: 'audio', mediaType: 'audio' }
-}
-
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
+}
+
+/**
+ * The widget a user can actually edit. A linked slot means the value comes
+ * from upstream; a promoted host owns the value only while some interior
+ * consumer is still live.
+ */
+function isEditableValueOwner(node: LGraphNode, widget: IBaseWidget): boolean {
+  const input = node.getSlotFromWidget(widget)
+  if (input?.link != null) return false
+  if (!node.isSubgraphNode()) return true
+  return !!input?.widgetId && hasActivePromotedWidgetConsumer(node, input.name)
+}
+
+function mediaTypeFromSpec(
+  spec: InputSpecV2 | undefined
+): MediaType | undefined {
+  if (!spec || !isComboInputSpec(spec)) return undefined
+  if (spec.video_upload) return 'video'
+  if (spec.image_upload || spec.animated_image_upload) return 'image'
+  if (spec.audio_upload) return 'audio'
+  return undefined
 }
 
 /**
@@ -63,7 +81,6 @@ export function scanAllMediaCandidates(
 
   for (const node of allNodes) {
     if (!node.widgets?.length) continue
-    if (node.isSubgraphNode?.()) continue
     if (
       node.mode === LGraphEventMode.NEVER ||
       node.mode === LGraphEventMode.BYPASS
@@ -84,17 +101,25 @@ export function scanNodeMediaCandidates(
 ): MissingMediaCandidate[] {
   if (!node.widgets?.length) return []
 
-  const mediaInfo = MEDIA_NODE_WIDGETS[node.type]
-  if (!mediaInfo) return []
-  if (node.isUploading) return []
-
   const executionId = getExecutionIdByNode(rootGraph, node)
   if (!executionId) return []
 
+  if (node.isUploading) return []
+
+  const nodeDefStore = useNodeDefStore()
   const candidates: MissingMediaCandidate[] = []
   for (const widget of node.widgets) {
     if (!isComboWidget(widget)) continue
-    if (widget.name !== mediaInfo.widgetName) continue
+
+    // getInputSpecForWidget projects a promoted host input to its interior
+    // spec itself, so the scan reads schema through the store rather than
+    // walking the subgraph. Media-ness is the cheaper question, so it runs
+    // before the ownership walk.
+    const mediaType = mediaTypeFromSpec(
+      nodeDefStore.getInputSpecForWidget(node, widget.name)
+    )
+    if (!mediaType) continue
+    if (!isEditableValueOwner(node, widget)) continue
 
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
@@ -116,17 +141,52 @@ export function scanNodeMediaCandidates(
       }
     }
 
+    // Label only, and leaf-derived to match missingModelScan: the overlay
+    // formats nodeType directly and a SubgraphNode's own type is a UUID.
+    const labelNode =
+      resolvePromotedWidgetSource(rootGraph, node, widget)?.sourceNode ?? node
+
     candidates.push({
       nodeId: executionId,
-      nodeType: node.type,
+      nodeType: labelNode.type,
       widgetName: widget.name,
-      mediaType: mediaInfo.mediaType,
+      mediaType,
       name: value,
       isMissing
     })
   }
 
   return candidates
+}
+
+export function isMissingMediaCandidateScopeActive(
+  rootGraph: LGraph | null | undefined,
+  candidate: MissingMediaCandidate
+): boolean {
+  if (!rootGraph) return false
+
+  const executionId = String(candidate.nodeId)
+  if (!isExecutionPathActive(rootGraph, executionId)) return false
+
+  const node = getNodeByExecutionId(rootGraph, executionId)
+  if (!node) return false
+  const widget = node.widgets?.find(
+    (candidateWidget) => candidateWidget.name === candidate.widgetName
+  )
+  // Removed or renamed while verification was pending: nothing owns the value.
+  if (!widget) return false
+
+  return isEditableValueOwner(node, widget)
+}
+
+export function isMissingMediaCandidateActive(
+  rootGraph: LGraph | null | undefined,
+  candidate: MissingMediaCandidate
+): boolean {
+  return (
+    candidate.isMissing === true &&
+    isMissingMediaCandidateScopeActive(rootGraph, candidate)
+  )
 }
 
 interface MediaVerificationOptions {

@@ -31,7 +31,10 @@ export function useMissingModelDownload() {
   // anchor fallback inside Electron hits shell.openExternal and strands the
   // provider cookies in the system browser.
   async function openModelAccessPage(repoUrl: string): Promise<void> {
-    if (!isTrustedHuggingFaceUrl(repoUrl)) return
+    if (!isTrustedHuggingFaceUrl(repoUrl)) {
+      console.warn('[missingModelDownload] Blocked untrusted access URL')
+      return
+    }
 
     const bridge = window.__comfyDesktop2
     if (bridge?.openModelAccessPage) {

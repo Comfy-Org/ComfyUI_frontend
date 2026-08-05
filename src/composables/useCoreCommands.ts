@@ -45,11 +45,8 @@ import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import {
-  useQueueSettingsStore,
-  useQueueStore,
-  useQueueUIStore
-} from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -76,7 +73,8 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
-  const { isActiveSubscription, showSubscriptionDialog } = useBillingContext()
+  const { canAccessSubscriptionFeatures, showSubscriptionDialog } =
+    useBillingContext()
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const settingsDialog = useSettingsDialog()
@@ -508,7 +506,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
+        if (!canAccessSubscriptionFeatures.value) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
@@ -531,7 +529,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
+        if (!canAccessSubscriptionFeatures.value) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
@@ -553,7 +551,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!isActiveSubscription.value) {
+        if (!canAccessSubscriptionFeatures.value) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }

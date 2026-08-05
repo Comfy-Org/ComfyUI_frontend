@@ -11,6 +11,7 @@ import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
   comfyUiSourceCodeNode,
+  faqPageNode,
   itemListNode,
   jsonLdId,
   organizationId,
@@ -55,6 +56,25 @@ describe('itemListNode', () => {
     const items = node.itemListElement as Record<string, unknown>[]
     expect('name' in items[0]).toBe(false)
     expect(items[1].name).toBe('Designer')
+  })
+})
+
+describe('faqPageNode', () => {
+  it('wraps each pair in a Question with its accepted answer', () => {
+    const node = faqPageNode('https://comfy.org/minimax/', [
+      { question: 'What is MiniMax H3?', answer: "MiniMax's video model." },
+      { question: 'Does it generate audio?', answer: 'Yes, native stereo.' }
+    ])
+    expect(node['@type']).toBe('FAQPage')
+    expect(node['@id']).toBe('https://comfy.org/minimax/#faq')
+    const questions = node.mainEntity as Record<string, unknown>[]
+    expect(questions).toHaveLength(2)
+    expect(questions[0]['@type']).toBe('Question')
+    expect(questions[0].name).toBe('What is MiniMax H3?')
+    expect(questions[1].acceptedAnswer).toEqual({
+      '@type': 'Answer',
+      text: 'Yes, native stereo.'
+    })
   })
 })
 

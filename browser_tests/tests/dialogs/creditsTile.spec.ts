@@ -1,10 +1,15 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingOpStatusResponse,
+  BillingStatusResponse,
+  CreateTopupResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
@@ -57,6 +62,8 @@ const DEFAULT_BALANCE = { amount: 6000, monthly: 5000, prepaid: 1000 }
 
 const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
@@ -72,6 +79,7 @@ async function mockCloudBoot(page: Page, billingControlEnabled = true) {
     r.fulfill(
       jsonRoute({
         team_workspaces_enabled: true,
+        consolidated_billing_enabled: true,
         billing_control_enabled: billingControlEnabled
       } satisfies RemoteConfig)
     )
@@ -313,5 +321,102 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toBeVisible()
+  })
+})
+
+test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
+  test.describe.configure({ timeout: 60_000 })
+
+  let operationPollRequests: Request[]
+  let topupDialog: TopUpCreditsDialog
+
+  test.beforeEach(async ({ page }) => {
+    operationPollRequests = []
+    await page.addInitScript(() => {
+      window.open = (url, target, features) => {
+        document.documentElement.dataset.openedUrl = String(url)
+        document.documentElement.dataset.openedTarget = target ?? ''
+        document.documentElement.dataset.openedFeatures = features ?? ''
+        return window
+      }
+    })
+    await mockCloudBoot(page)
+    await page.route('**/api/settings/**', (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      return route.fulfill(jsonRoute({}))
+    })
+    await page.route('**/api/prompt', (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      return route.fulfill(jsonRoute({ exec_info: { queue_remaining: 0 } }))
+    })
+    await page.route('**/api/queue', (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      return route.fulfill(jsonRoute({ queue_running: [], queue_pending: [] }))
+    })
+    await page.route('**/api/billing/topup', (route) =>
+      route.fulfill(
+        jsonRoute({
+          billing_op_id: 'topup-3ds-operation',
+          topup_id: 'topup-3ds-operation',
+          status: 'pending',
+          amount_cents: 5000
+        } satisfies CreateTopupResponse)
+      )
+    )
+    await page.route('**/api/billing/ops/topup-3ds-operation', (route) => {
+      operationPollRequests.push(route.request())
+      return route.fulfill(
+        jsonRoute({
+          id: 'topup-3ds-operation',
+          status: 'pending',
+          started_at: '2026-07-31T00:00:00Z',
+          action_url: 'https://verify.example/topup-3ds'
+        } satisfies BillingOpStatusResponse)
+      )
+    })
+
+    const content = await openPlanAndCredits(page)
+    topupDialog = new TopUpCreditsDialog(page)
+    await content.getByRole('button', { name: 'Add credits' }).click()
+    await topupDialog.waitForVisible()
+  })
+
+  test('opens verification when the top-up operation requires authentication', async ({
+    page
+  }) => {
+    await topupDialog.root.getByRole('button', { name: 'Add credits' }).click()
+
+    await expect(
+      topupDialog.root.getByRole('heading', { name: 'Confirm' })
+    ).toBeVisible()
+    await expect(
+      topupDialog.root.getByRole('button', { name: 'Back' })
+    ).toBeEnabled()
+    expect(operationPollRequests).toHaveLength(0)
+
+    await topupDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
+
+    await expect(
+      topupDialog.root.getByRole('button', { name: 'Back' })
+    ).toBeDisabled()
+    await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
+    const verificationButton = topupDialog.root.getByRole('button', {
+      name: 'Complete verification'
+    })
+    await expect(verificationButton).toBeVisible()
+
+    await verificationButton.click()
+
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe('https://verify.example/topup-3ds')
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-opened-target',
+      '_blank'
+    )
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-opened-features',
+      'noopener,noreferrer'
+    )
   })
 })

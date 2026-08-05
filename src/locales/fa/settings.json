@@ -426,10 +426,6 @@
   "Comfy_Validation_Workflows": {
     "name": "اعتبارسنجی workflowها"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "مقیاس‌بندی خودکار چیدمان (Nodes 2.0)",
-    "tooltip": "موقعیت nodeها را هنگام تغییر به رندر Nodes 2.0 به طور خودکار مقیاس‌بندی می‌کند تا از هم‌پوشانی جلوگیری شود"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "طراحی مدرن node (Nodes 2.0)",
     "tooltip": "مدرن: رندر مبتنی بر DOM با تعامل‌پذیری بیشتر، ویژگی‌های بومی مرورگر و طراحی بصری به‌روز. کلاسیک: رندر سنتی مبتنی بر canvas."
@@ -458,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "نمایش تأیید هنگام حذف ورک‌فلو"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "بازیابی مقادیر ویجت بر اساس نام"
   },
   "Comfy_Workflow_Persist": {
     "name": "حفظ وضعیت ورک‌فلو و بازیابی هنگام بارگذاری (مجدد) صفحه"

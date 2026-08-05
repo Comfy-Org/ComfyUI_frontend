@@ -144,6 +144,21 @@ export function itemListNode(
   }
 }
 
+export function faqPageNode(
+  pageUrl: string,
+  items: readonly { question: string; answer: string }[]
+): JsonLdNode {
+  return {
+    '@type': 'FAQPage',
+    '@id': jsonLdId(pageUrl, 'faq'),
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer }
+    }))
+  }
+}
+
 interface ArticleInput {
   siteUrl: string
   pageUrl: string

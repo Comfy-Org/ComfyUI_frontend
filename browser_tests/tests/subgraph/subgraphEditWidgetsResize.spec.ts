@@ -1,0 +1,68 @@
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
+
+test.describe(
+  'Subgraph node size across widget editing',
+  {
+    tag: ['@subgraph', '@node', '@widget', '@vue-nodes'],
+    annotation: {
+      type: 'issue',
+      description:
+        'FE-853: widget editing collapsed a user-resized subgraph node to its minimum size'
+    }
+  },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+    })
+
+    test('retains a manual resize when Edit Subgraph Widgets is clicked', async ({
+      comfyPage
+    }) => {
+      const { nodeRef, node, size } = await comfyPage.nodeOps.growNodeByDrag(
+        'New Subgraph',
+        { x: 250, y: 250 }
+      )
+
+      await comfyPage.subgraph.editor.openFromSelectionToolbox(node.root)
+      await comfyPage.nextFrame()
+
+      const sizeAfter = await nodeRef.getSize()
+      expect(sizeAfter.width).toBeCloseTo(size.width, 0)
+      expect(sizeAfter.height).toBeCloseTo(size.height, 0)
+    })
+
+    test('retains a manual resize when an interior widget is promoted', async ({
+      comfyPage
+    }) => {
+      const { nodeRef, size } = await comfyPage.nodeOps.growNodeByDrag(
+        'New Subgraph',
+        { x: 250, y: 250 }
+      )
+
+      await comfyPage.vueNodes.enterSubgraph(String(nodeRef.id))
+      await comfyPage.subgraph.promoteWidget(
+        comfyPage.vueNodes.getNodeByTitle('KSampler'),
+        'steps'
+      )
+      await comfyPage.subgraph.exitViaBreadcrumb()
+
+      // Guards against a vacuous pass: if promotion silently became a no-op,
+      // the size assertions below would hold without exercising the bug.
+      await expect
+        .poll(() =>
+          comfyPage.subgraph.getPromotedWidgetOrder(String(nodeRef.id))
+        )
+        .toContain('steps')
+
+      const sizeAfter = await nodeRef.getSize()
+      expect(sizeAfter.width).toBeCloseTo(size.width, 0)
+      // A newly promoted widget can legitimately raise the minimum height, so
+      // only a shrink below the user's size is a regression.
+      expect(sizeAfter.height).toBeGreaterThanOrEqual(size.height)
+    })
+  }
+)

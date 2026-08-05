@@ -15,14 +15,25 @@ const SPOTLIGHT_EDGE_INSET = 2
 export const CARD_WIDTH = 300
 export const VIEWPORT_MARGIN = 12
 export const CARD_GAP = 16
+/** Wide enough for the cursor glyph to sit centred between card and target. */
+export const CURSOR_GAP = 40
+/** The card's travel to a new target; whatever moves that target waits it out. */
+export const CARD_GLIDE_MS = 300
 // Kept tight so the spotlight glow doesn't spill onto an adjacent clickable control.
 export const SPOTLIGHT_PAD = 4
 
-export function clampSpotlight(
+export interface SpotlightRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export function clampSpotlightRect(
   r: DOMRect,
   pad: number,
   viewport: Viewport
-): BoxStyle {
+): SpotlightRect {
   const left = Math.max(SPOTLIGHT_EDGE_INSET, r.left - pad)
   const top = Math.max(SPOTLIGHT_EDGE_INSET, r.top - pad)
   const right = Math.min(viewport.width - SPOTLIGHT_EDGE_INSET, r.right + pad)
@@ -31,11 +42,36 @@ export function clampSpotlight(
     r.bottom + pad
   )
   return {
-    left: `${left}px`,
-    top: `${top}px`,
-    width: `${Math.max(0, right - left)}px`,
-    height: `${Math.max(0, bottom - top)}px`
+    x: left,
+    y: top,
+    width: Math.max(0, right - left),
+    height: Math.max(0, bottom - top)
   }
+}
+
+export function clampSpotlight(
+  r: DOMRect,
+  pad: number,
+  viewport: Viewport
+): BoxStyle {
+  const { x, y, width, height } = clampSpotlightRect(r, pad, viewport)
+  return {
+    left: `${x}px`,
+    top: `${y}px`,
+    width: `${width}px`,
+    height: `${height}px`
+  }
+}
+
+/** Under `fill-rule="evenodd"`, the hole subpath is what lets input through. */
+export function hitRegionPath(
+  viewport: Viewport,
+  hole: SpotlightRect | null
+): string {
+  const outer = `M0 0H${viewport.width}V${viewport.height}H0Z`
+  if (!hole) return outer
+  const { x, y, width, height } = hole
+  return `${outer}M${x} ${y}h${width}v${height}h${-width}Z`
 }
 
 export function noTargetCardLeft(viewportWidth: number): number {

@@ -1,10 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, effectScope, reactive } from 'vue'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type {
+  Plan,
+  PreviewSubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 import { findPlanSlug } from './useSubscriptionCheckout'
 
@@ -46,6 +49,74 @@ function allPlans(): Plan[] {
   return [makeStandardYearly(), makeCreatorMonthly()]
 }
 
+function errorWithCode(code: string, message = 'error') {
+  return Object.assign(new Error(message), { code })
+}
+
+interface ReactivationPreviewPlanInput {
+  slug: string
+  tier: PreviewSubscribeResponse['new_plan']['tier']
+  duration: PreviewSubscribeResponse['new_plan']['duration']
+  priceCents: number
+  creditsCents: number
+  periodEnd: string
+}
+
+interface ReactivationPreviewInput {
+  effectiveAt: string
+  costTodayCents: number
+  costNextPeriodCents: number
+  creditsTodayCents: number
+  creditsNextPeriodCents: number
+  currentPlan: ReactivationPreviewPlanInput
+  newPlan: ReactivationPreviewPlanInput
+}
+
+function makeReactivationAuthorityPreview({
+  effectiveAt,
+  costTodayCents,
+  costNextPeriodCents,
+  creditsTodayCents,
+  creditsNextPeriodCents,
+  currentPlan,
+  newPlan
+}: ReactivationPreviewInput): PreviewSubscribeResponse {
+  const makePlan = ({
+    slug,
+    tier,
+    duration,
+    priceCents,
+    creditsCents,
+    periodEnd
+  }: ReactivationPreviewPlanInput): PreviewSubscribeResponse['new_plan'] => ({
+    slug,
+    tier,
+    duration,
+    price_cents: priceCents,
+    credits_cents: creditsCents,
+    period_end: periodEnd,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: priceCents,
+      total_credits_cents: creditsCents
+    }
+  })
+
+  return {
+    allowed: true,
+    transition_type: 'upgrade',
+    effective_at: effectiveAt,
+    is_immediate: true,
+    cost_today_cents: costTodayCents,
+    cost_next_period_cents: costNextPeriodCents,
+    credits_today_cents: creditsTodayCents,
+    credits_next_period_cents: creditsNextPeriodCents,
+    proration_at: '2026-07-30T00:00:00Z',
+    current_plan: makePlan(currentPlan),
+    new_plan: makePlan(newPlan)
+  }
+}
+
 describe('findPlanSlug', () => {
   it('finds an annual plan by tier key and yearly billing cycle', () => {
     expect(findPlanSlug(allPlans(), 'standard', 'yearly')).toBe(
@@ -74,6 +145,9 @@ const {
   mockFetchPlans,
   mockFetchStatus,
   mockFetchBalance,
+  mockOpen,
+  mockGetBillingStatus,
+  mockGetPaymentPortalUrl,
   mockPlans,
   mockResubscribe,
   mockToastAdd,
@@ -95,6 +169,9 @@ const {
   mockFetchPlans: vi.fn(),
   mockFetchStatus: vi.fn(),
   mockFetchBalance: vi.fn(),
+  mockOpen: vi.fn(),
+  mockGetBillingStatus: vi.fn(),
+  mockGetPaymentPortalUrl: vi.fn(),
   mockPlans: { value: [] as Plan[] },
   mockResubscribe: vi.fn(),
   mockToastAdd: vi.fn(),
@@ -166,7 +243,11 @@ vi.mock('@/services/dialogService', () => ({
 
 // Shields the test from the real workspaceApi → @/scripts/api → app.ts import chain
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
-  workspaceApi: { resubscribe: mockResubscribe }
+  workspaceApi: {
+    resubscribe: mockResubscribe,
+    getBillingStatus: mockGetBillingStatus,
+    getPaymentPortalUrl: mockGetPaymentPortalUrl
+  }
 }))
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
@@ -228,6 +309,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
 
 describe('useSubscriptionCheckout', () => {
   let emit: ReturnType<typeof vi.fn>
+  const scopes: ReturnType<typeof effectScope>[] = []
 
   async function setup(
     paymentIntentSource?: PaymentIntentSource,
@@ -235,9 +317,23 @@ describe('useSubscriptionCheckout', () => {
   ) {
     const { useSubscriptionCheckout } =
       await import('./useSubscriptionCheckout')
-    return useSubscriptionCheckout(emit as never, paymentIntentSource, {
-      tierPlanType
+    const scope = effectScope()
+    scopes.push(scope)
+    return scope.run(() =>
+      useSubscriptionCheckout(emit as never, paymentIntentSource, {
+        tierPlanType
+      })
+    )!
+  }
+
+  async function submitRejectedPreview(code: string, message = 'error') {
+    const checkout = await setup()
+    mockPreviewSubscribe.mockRejectedValueOnce(errorWithCode(code, message))
+    await checkout.handleSubscribeClick({
+      tierKey: 'standard',
+      billingCycle: 'yearly'
     })
+    return checkout
   }
 
   beforeEach(() => {
@@ -254,6 +350,17 @@ describe('useSubscriptionCheckout', () => {
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     mockUserId.value = 'user-1'
     mockIsTeamPlan.value = false
+    mockOpen.mockReturnValue({} as Window)
+    mockGetBillingStatus.mockResolvedValue({ billing_status: 'paid' })
+    mockGetPaymentPortalUrl.mockResolvedValue({
+      url: 'https://billing.stripe.com/portal'
+    })
+    vi.stubGlobal('location', {
+      href: 'https://app.test/subscribe?invite=secret#token',
+      origin: 'https://app.test',
+      pathname: '/subscribe'
+    })
+    vi.stubGlobal('open', mockOpen)
     mockShouldUseWorkspaceBilling.value = true
     mockSetActiveWorkspaceId('workspace-1')
     mockPermissions.value = {
@@ -263,6 +370,10 @@ describe('useSubscriptionCheckout', () => {
     }
     mockSubscription.value = null
     emit = vi.fn()
+  })
+
+  afterEach(() => {
+    for (const scope of scopes.splice(0)) scope.stop()
   })
 
   describe('handleSubscribeClick', () => {
@@ -308,6 +419,96 @@ describe('useSubscriptionCheckout', () => {
         expect.objectContaining({
           severity: 'error',
           detail: 'Not allowed'
+        })
+      )
+    })
+
+    it.for([
+      ['SUBSCRIPTION_PAYMENT_REQUIRED', null],
+      ['TRANSITION_NOT_ALLOWED', 'payment_failed']
+    ] as const)(
+      'routes %s previews to the billing portal',
+      async ([code, status]) => {
+        if (status) {
+          mockGetBillingStatus.mockResolvedValueOnce({ billing_status: status })
+        }
+        await submitRejectedPreview(code)
+        expect(mockGetBillingStatus).toHaveBeenCalledTimes(status ? 1 : 0)
+        expect(mockGetPaymentPortalUrl).toHaveBeenCalledWith(
+          'https://app.test/subscribe'
+        )
+        expect(mockOpen).toHaveBeenCalledWith(
+          'https://billing.stripe.com/portal',
+          '_blank'
+        )
+        expect(globalThis.location.href).toBe(
+          'https://app.test/subscribe?invite=secret#token'
+        )
+        expect(mockFetchStatus).not.toHaveBeenCalled()
+
+        window.dispatchEvent(new Event('focus'))
+        await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
+        window.dispatchEvent(new Event('focus'))
+        expect(mockFetchStatus).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('preserves the checkout when the billing portal popup is blocked', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      const checkout = await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED'
+      )
+
+      expect(checkout.selectedTierKey.value).toBe('standard')
+      expect(globalThis.location.href).toBe(
+        'https://app.test/subscribe?invite=secret#token'
+      )
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'subscription.preview.paymentPopupBlocked'
+        })
+      )
+    })
+
+    it('keeps the original error path for non-payment transition failures', async () => {
+      await submitRejectedPreview(
+        'TRANSITION_NOT_ALLOWED',
+        'Plan change is unavailable'
+      )
+      expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Plan change is unavailable' })
+      )
+    })
+
+    it('shows the portal error when payment recovery cannot open', async () => {
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(
+        new Error('Portal unavailable')
+      )
+      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+      expect(globalThis.location.href).toBe(
+        'https://app.test/subscribe?invite=secret#token'
+      )
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Portal unavailable' })
+      )
+    })
+
+    it.for([
+      undefined,
+      '',
+      'javascript:alert(1)',
+      'https://billing.stripe.com.evil.test/portal'
+    ])('rejects an unsafe billing portal URL: %s', async (url) => {
+      mockGetPaymentPortalUrl.mockResolvedValueOnce({ url })
+      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+      expect(globalThis.location.href).toBe(
+        'https://app.test/subscribe?invite=secret#token'
+      )
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'toastMessages.failedToAccessBillingPortal'
         })
       )
     })
@@ -550,6 +751,26 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleSubscribeTeamClick', () => {
+    const teamStop = {
+      id: 'team_1400',
+      usd: 1400,
+      credits: 295_400,
+      discountedUsd: 1295
+    }
+
+    async function startTeamPaymentRecovery() {
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED')
+      )
+      const checkout = await setup()
+      const selection = checkout.handleSubscribeTeamClick({
+        stop: teamStop,
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      return { checkout, selection }
+    }
+
     it('transitions to preview with the selected team stop and cycle', async () => {
       const checkout = await setup()
 
@@ -596,6 +817,140 @@ describe('useSubscriptionCheckout', () => {
         { teamCreditStopId: 'team_1400', billingCycle: 'monthly' }
       )
       expect(checkout.previewData.value).toStrictEqual(transition)
+    })
+
+    it('blocks confirmation until the Team change preview resolves', async () => {
+      let resolvePreview!: (preview: Partial<PreviewSubscribeResponse>) => void
+      mockPreviewSubscribe.mockImplementationOnce(
+        () =>
+          new Promise<Partial<PreviewSubscribeResponse>>((resolve) => {
+            resolvePreview = resolve
+          })
+      )
+      const checkout = await setup()
+
+      const selectionPromise = checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(checkout.isLoadingPreview.value).toBe(true)
+      await checkout.handleTeamSubscribe()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+
+      resolvePreview({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000
+      })
+      await selectionPromise
+
+      expect(checkout.isLoadingPreview.value).toBe(false)
+      expect(checkout.previewVariant.value).toBe('team-change')
+    })
+
+    it('discards a Team preview for a superseded stop and cycle', async () => {
+      let resolveStalePreview!: (
+        preview: Partial<PreviewSubscribeResponse>
+      ) => void
+      mockPreviewSubscribe
+        .mockImplementationOnce(
+          () =>
+            new Promise<Partial<PreviewSubscribeResponse>>((resolve) => {
+              resolveStalePreview = resolve
+            })
+        )
+        .mockResolvedValueOnce({
+          allowed: true,
+          transition_type: 'downgrade',
+          is_immediate: false,
+          cost_today_cents: 0
+        })
+      const checkout = await setup()
+
+      const staleSelection = checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 630
+        },
+        billingCycle: 'yearly',
+        isChange: true
+      })
+
+      resolveStalePreview({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000
+      })
+      await staleSelection
+
+      expect(checkout.selectedTeamStop.value?.id).toBe('team_700')
+      expect(checkout.selectedBillingCycle.value).toBe('yearly')
+      expect(checkout.previewData.value).toMatchObject({
+        transition_type: 'downgrade',
+        cost_today_cents: 0
+      })
+      expect(checkout.isLoadingPreview.value).toBe(false)
+    })
+
+    it('ignores a stale Team payment recovery after returning to pricing', async () => {
+      let resolvePortal!: (portal: { url: string }) => void
+      mockGetPaymentPortalUrl.mockImplementationOnce(
+        () =>
+          new Promise<{ url: string }>((resolve) => {
+            resolvePortal = resolve
+          })
+      )
+      const { checkout, selection } = await startTeamPaymentRecovery()
+      await vi.waitFor(() => expect(mockGetPaymentPortalUrl).toHaveBeenCalled())
+      expect(checkout.isLoadingPreview.value).toBe(true)
+
+      checkout.handleBackToPricing()
+      resolvePortal({ url: 'https://billing.stripe.com/portal' })
+      await selection
+
+      expect(globalThis.location.href).toBe(
+        'https://app.test/subscribe?invite=secret#token'
+      )
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(mockOpen).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('returns a failed Team payment recovery to pricing', async () => {
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(
+        new Error('Portal unavailable')
+      )
+      const { checkout, selection } = await startTeamPaymentRecovery()
+      await selection
+
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.selectedTeamStop.value).toBeNull()
+      expect(mockToastAdd).toHaveBeenCalledOnce()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Portal unavailable' })
+      )
     })
 
     it('falls back to the display-only confirm when the preview is a fresh subscription', async () => {
@@ -668,7 +1023,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 70_000
+        cost_today_cents: 70_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       const checkout = await setup()
 
@@ -692,6 +1048,53 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(checkout.previewData.value).not.toBeNull()
       expect(checkout.previewVariant.value).toBe('team-change')
+    })
+
+    it('shows the reactivation preview for a cancelled Team downgrade scheduled at period end', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const preview = {
+        allowed: true,
+        transition_type: 'downgrade' as const,
+        is_immediate: false,
+        cost_today_cents: 0,
+        proration_at: '2026-07-29T12:00:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewData.value).toEqual(preview)
+      expect(checkout.previewVariant.value).toBe('team-change')
+      expect(mockToastAdd).not.toHaveBeenCalled()
+
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        ...preview,
+        proration_at: '2026-07-29T12:01:00Z'
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-scheduled-reactivation'
+      })
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({
+          confirmReactivation: true,
+          prorationAt: undefined
+        })
+      )
     })
 
     it('bounces a cancelled subscriber back to pricing when the preview does not qualify', async () => {
@@ -907,6 +1310,186 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('keeps the quoted Team charge when fresh material state is unchanged', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000,
+        credits_today_cents: 221_550,
+        proration_at: '2026-07-29T12:00:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 104_999,
+        credits_today_cents: 221_548,
+        proration_at: '2026-07-29T12:05:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-quoted-reactivation'
+      })
+
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockPreviewSubscribe).toHaveBeenCalledTimes(2)
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({
+          confirmReactivation: true,
+          prorationAt: '2026-07-29T12:00:00Z'
+        })
+      )
+    })
+
+    it('blocks a quoted Team charge when material preview state changed', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000,
+        credits_next_period_cents: 295_400,
+        proration_at: '2026-07-29T12:00:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000,
+        credits_next_period_cents: 300_000,
+        proration_at: '2026-07-29T12:05:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(checkout.previewData.value?.credits_next_period_cents).toBe(
+        300_000
+      )
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.reactivation.confirmationRequired'
+        })
+      )
+    })
+
+    it('refreshes an expired Team quote and submits only after reconfirmation', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000,
+        proration_at: '2026-07-29T12:00:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 104_999,
+        proration_at: '2026-07-29T12:14:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('Quote expired'), {
+          code: 'PRORATION_QUOTE_EXPIRED'
+        })
+      )
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000,
+        proration_at: '2026-07-29T12:16:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockSubscribe).toHaveBeenCalledTimes(1)
+      expect(checkout.previewData.value?.proration_at).toBe(
+        '2026-07-29T12:16:00Z'
+      )
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.reactivation.confirmationRequired'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: 'team'
+        })
+      )
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-refreshed-quote'
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 104_999,
+        proration_at: '2026-07-29T12:16:05Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockSubscribe).toHaveBeenLastCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({
+          confirmReactivation: true,
+          prorationAt: '2026-07-29T12:16:00Z'
+        })
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
+    })
+
     // Regression guard: confirmReactivation must come from the disclosure
     // banner's own confirm action, never be re-derived from
     // subscription.isCancelled. A path with no banner (team-new fallback)
@@ -941,7 +1524,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 105_000
+        cost_today_cents: 105_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -957,7 +1541,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 120_000
+        cost_today_cents: 120_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
 
       await checkout.handleTeamSubscribe(true)
@@ -980,7 +1565,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 120_000
+        cost_today_cents: 120_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       mockSubscribe.mockResolvedValueOnce({
         status: 'subscribed',
@@ -1037,9 +1623,9 @@ describe('useSubscriptionCheckout', () => {
 
     // Regression guard: drift recovery must reuse the same reactivation-
     // capable predicate as the initial cancelled-Team preview. A refreshed
-    // preview that comes back as a fresh subscribe can't feed the banner or
-    // emit confirm_reactivation, so installing it as a team-change would
-    // strand every retry; this must bounce back to pricing instead.
+    // preview without the current-plan date can't feed the banner or emit
+    // confirm_reactivation, so installing it as a team-change would strand
+    // every retry; this must bounce back to pricing instead.
     it('bounces to pricing when a status-drift refresh returns a preview that cannot collect reactivation consent', async () => {
       mockSubscription.value = { isCancelled: false }
       const checkout = await setup()
@@ -1063,11 +1649,12 @@ describe('useSubscriptionCheckout', () => {
 
       mockFetchStatus.mockImplementationOnce(() => {
         mockSubscription.value = { isCancelled: true }
+        checkout.reactivationRequired.value = true
         return Promise.resolve()
       })
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
-        transition_type: 'new_subscription',
+        transition_type: 'upgrade',
         is_immediate: true
       })
 
@@ -1079,6 +1666,87 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
+    })
+
+    it('recovers when the subscribe authority sees a cancellation omitted by the status read', async () => {
+      mockSubscription.value = { isCancelled: false }
+      const checkout = await setup()
+      const preview = makeReactivationAuthorityPreview({
+        effectiveAt: '2026-08-30T00:00:00Z',
+        costTodayCents: 18_999,
+        costNextPeriodCents: 39_000,
+        creditsTodayCents: 42_200,
+        creditsNextPeriodCents: 84_400,
+        currentPlan: {
+          slug: 'team_per_credit_monthly',
+          tier: 'TEAM',
+          duration: 'MONTHLY',
+          priceCents: 20_000,
+          creditsCents: 42_200,
+          periodEnd: '2026-08-29T00:00:00Z'
+        },
+        newPlan: {
+          slug: 'team_per_credit_monthly',
+          tier: 'TEAM',
+          duration: 'MONTHLY',
+          priceCents: 39_000,
+          creditsCents: 84_400,
+          periodEnd: '2026-08-30T00:00:00Z'
+        }
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_400',
+          usd: 400,
+          credits: 84_400,
+          discountedUsd: 390
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('reactivation confirmation required'), {
+          code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+        })
+      )
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+
+      await checkout.handleTeamSubscribe()
+
+      expect(checkout.reactivationRequired.value).toBe(true)
+      expect(checkout.previewData.value).toStrictEqual(preview)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.reactivation.confirmationRequired'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: 'team'
+        })
+      )
+
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-authoritative-reactivation'
+      })
+
+      await checkout.handleTeamSubscribe(true)
+
+      expect(mockSubscribe).toHaveBeenLastCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({
+          confirmReactivation: true,
+          prorationAt: '2026-07-30T00:00:00Z'
+        })
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
     })
 
     it('uses the annual plan slug for the yearly cycle', async () => {
@@ -1241,13 +1909,15 @@ describe('useSubscriptionCheckout', () => {
 
       mockFetchStatus.mockImplementationOnce(() => {
         mockSubscription.value = { isCancelled: true }
+        checkout.reactivationRequired.value = true
         return Promise.resolve()
       })
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 110_000
+        cost_today_cents: 110_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
 
       await checkout.handleTeamSubscribe()
@@ -1262,7 +1932,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 110_000
+        cost_today_cents: 110_000,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       mockSubscribe.mockResolvedValueOnce({
         status: 'subscribed',
@@ -1348,6 +2019,16 @@ describe('useSubscriptionCheckout', () => {
 
       resolveOperation({ status: 'failed' })
       await payment
+    })
+
+    it('keeps the confirmation open while a submit is in flight', async () => {
+      const checkout = await setup()
+      checkout.checkoutStep.value = 'preview'
+      checkout.isSubscribing.value = true
+
+      checkout.handleBackToPricing()
+
+      expect(checkout.checkoutStep.value).toBe('preview')
     })
 
     it('does not apply an operation result after switching workspaces', async () => {
@@ -1703,6 +2384,46 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('returns to pricing when reactivation payment recovery fails', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED')
+      )
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(
+        new Error('Portal unavailable')
+      )
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      checkout.previewData.value = {} as never
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(checkout.previewData.value).toBeNull()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('recovers payment failure while refreshing an expired quote', async () => {
+      mockSubscribe.mockRejectedValueOnce(
+        errorWithCode('PRORATION_QUOTE_EXPIRED', 'Quote expired')
+      )
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED')
+      )
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockOpen).toHaveBeenCalledWith(
+        'https://billing.stripe.com/portal',
+        '_blank'
+      )
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
     it('forwards confirmReactivation true when the disclosure banner reports consent', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
@@ -1719,6 +2440,242 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).toHaveBeenCalledWith(
         'standard-yearly',
         expect.objectContaining({ confirmReactivation: true })
+      )
+    })
+
+    it('recovers a personal transition when the subscribe authority requires reactivation consent', async () => {
+      mockSubscription.value = { isCancelled: false }
+      const checkout = await setup()
+      const preview = makeReactivationAuthorityPreview({
+        effectiveAt: '2026-08-29T00:00:00Z',
+        costTodayCents: 1500,
+        costNextPeriodCents: 1600,
+        creditsTodayCents: 3150,
+        creditsNextPeriodCents: 4200,
+        currentPlan: {
+          slug: 'creator-monthly',
+          tier: 'CREATOR',
+          duration: 'MONTHLY',
+          priceCents: 3500,
+          creditsCents: 7400,
+          periodEnd: '2026-08-29T00:00:00Z'
+        },
+        newPlan: {
+          slug: 'standard-yearly',
+          tier: 'STANDARD',
+          duration: 'ANNUAL',
+          priceCents: 1600,
+          creditsCents: 4200,
+          periodEnd: '2027-08-29T00:00:00Z'
+        }
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('reactivation confirmation required'), {
+          code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+        })
+      )
+      mockPreviewSubscribe.mockResolvedValueOnce(preview)
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.reactivationRequired.value).toBe(true)
+      expect(checkout.previewData.value).toStrictEqual(preview)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.reactivation.confirmationRequired'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: 'standard'
+        })
+      )
+    })
+
+    it('keeps a pinned immediate duration-change quote when time-derived values drift', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      const currentPlan = {
+        slug: 'creator-monthly',
+        tier: 'CREATOR',
+        duration: 'MONTHLY',
+        price_cents: 3500,
+        credits_cents: 7400,
+        period_end: '2026-08-29T00:00:00Z'
+      }
+      const newPlan = {
+        slug: 'standard-yearly',
+        tier: 'STANDARD',
+        duration: 'ANNUAL',
+        price_cents: 1600,
+        credits_cents: 4200,
+        period_end: '2027-08-29T00:00:00Z'
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'duration_change',
+        is_immediate: true,
+        cost_today_cents: 1500,
+        credits_today_cents: 3150,
+        proration_at: '2026-07-29T12:00:00Z',
+        current_plan: currentPlan,
+        new_plan: newPlan
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'duration_change',
+        is_immediate: true,
+        cost_today_cents: 1499,
+        credits_today_cents: 3148,
+        proration_at: '2026-07-29T12:05:00Z',
+        current_plan: currentPlan,
+        new_plan: newPlan
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-personal-quoted-reactivation'
+      })
+
+      await checkout.handleConfirmTransition(true)
+
+      expect(mockPreviewSubscribe).toHaveBeenCalledTimes(2)
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({
+          confirmReactivation: true,
+          prorationAt: '2026-07-29T12:00:00Z'
+        })
+      )
+    })
+
+    it('refreshes an expired personal quote and submits only after reconfirmation', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 1500,
+        proration_at: '2026-07-29T12:00:00Z'
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 1499,
+        proration_at: '2026-07-29T12:14:00Z'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('Quote expired'), {
+          code: 'PRORATION_QUOTE_EXPIRED'
+        })
+      )
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 1600,
+        proration_at: '2026-07-29T12:16:00Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+
+      await checkout.handleConfirmTransition(true)
+
+      expect(mockSubscribe).toHaveBeenCalledTimes(1)
+      expect(checkout.previewData.value?.proration_at).toBe(
+        '2026-07-29T12:16:00Z'
+      )
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.reactivation.amountChanged'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: 'standard'
+        })
+      )
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-personal-refreshed-quote'
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 1599,
+        proration_at: '2026-07-29T12:16:05Z',
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      await checkout.handleConfirmTransition(true)
+
+      expect(mockSubscribe).toHaveBeenLastCalledWith(
+        'standard-yearly',
+        expect.objectContaining({
+          confirmReactivation: true,
+          prorationAt: '2026-07-29T12:16:00Z'
+        })
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
+    })
+
+    it('keeps the confirmation open when an expired-quote refresh fails', async () => {
+      mockSubscription.value = { isCancelled: true }
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 1500,
+        proration_at: '2026-07-29T12:00:00Z'
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 1499
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        Object.assign(new Error('Quote expired'), {
+          code: 'PRORATION_QUOTE_EXPIRED'
+        })
+      )
+      mockPreviewSubscribe.mockRejectedValueOnce(new Error('Preview offline'))
+
+      await checkout.handleConfirmTransition(true)
+
+      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Preview offline' })
+      )
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'subscription.preview.reactivation.unavailable'
+        })
       )
     })
 
@@ -1878,7 +2835,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 1600
+        cost_today_cents: 1600,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
 
       await checkout.handleConfirmTransition()
@@ -1898,7 +2856,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
-        cost_today_cents: 1600
+        cost_today_cents: 1600,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       mockSubscribe.mockResolvedValueOnce({
         status: 'subscribed',

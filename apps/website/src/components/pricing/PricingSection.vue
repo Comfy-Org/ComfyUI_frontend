@@ -2,7 +2,7 @@
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref } from 'vue'
+import { computed, ref, useSlots } from 'vue'
 
 import { pricingPlans } from '../../data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
@@ -19,12 +19,19 @@ import PricingPlanLabel from './PricingPlanLabel.vue'
 import PricingPrice from './PricingPrice.vue'
 import PricingTeamCard from './PricingTeamCard.vue'
 
-const { locale = 'en', headingLevel = 'h1' } = defineProps<{
+const {
+  locale = 'en',
+  headingLevel = 'h1',
+  defaultBillingCycle = 'yearly'
+} = defineProps<{
   locale?: Locale
   headingLevel?: 'h1' | 'h2'
+  defaultBillingCycle?: BillingCycle
 }>()
 
-const selectedBillingPeriod = ref<BillingCycle>('yearly')
+const slots = useSlots()
+
+const selectedBillingPeriod = ref<BillingCycle>(defaultBillingCycle)
 
 const billingPeriod = computed({
   get: () => selectedBillingPeriod.value,
@@ -77,7 +84,11 @@ const planCards = computed(() =>
       </p>
     </div>
 
-    <div class="flex items-center justify-center pb-16">
+    <div
+      :class="
+        cn('flex items-center justify-center', slots.banner ? 'pb-10' : 'pb-16')
+      "
+    >
       <ToggleGroup v-model="billingPeriod" type="single">
         <ToggleGroupItem
           value="monthly"
@@ -97,6 +108,8 @@ const planCards = computed(() =>
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
+
+    <slot name="banner" />
 
     <div
       :class="

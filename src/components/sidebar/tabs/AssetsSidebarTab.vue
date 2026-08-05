@@ -54,6 +54,7 @@
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
+        v-model:date-filter="dateFilter"
         v-model:media-type-filters="mediaTypeFilters"
         bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
@@ -367,7 +368,7 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
+const { searchQuery, sortBy, dateFilter, mediaTypeFilters, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => {

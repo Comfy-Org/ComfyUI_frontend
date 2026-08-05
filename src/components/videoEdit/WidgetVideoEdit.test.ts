@@ -1,9 +1,14 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PropType } from 'vue'
 import { defineComponent, h, ref } from 'vue'
 
-import type { VideoEditValue } from '@/lib/litegraph/src/types/widgets'
+import type {
+  VideoEditFeature,
+  VideoEditValue
+} from '@/lib/litegraph/src/types/widgets'
+import type { Bounds } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -60,23 +65,23 @@ vi.mock('@/composables/video/useVideoFilmstrip', () => {
 const recorded: { props?: Record<string, unknown> } = {}
 
 const PanelStub = defineComponent({
-  props: [
-    'features',
-    'videoUrl',
-    'thumbnails',
-    'totalFrames',
-    'duration',
-    'fps',
-    'fileSize',
-    'width',
-    'height',
-    'loading',
-    'startFrame',
-    'endFrame',
-    'cropBounds',
-    'trimEnabled',
-    'cropEnabled'
-  ],
+  props: {
+    features: { type: Array as PropType<VideoEditFeature[]>, required: true },
+    videoUrl: { type: String, required: false },
+    thumbnails: { type: Array as PropType<string[]>, required: true },
+    totalFrames: { type: Number, required: true },
+    duration: { type: Number, required: true },
+    fps: { type: Number, required: true },
+    fileSize: { type: Number, required: false },
+    width: { type: Number, required: true },
+    height: { type: Number, required: true },
+    loading: { type: Boolean, required: false },
+    startFrame: { type: Number, required: true },
+    endFrame: { type: Number, required: true },
+    cropBounds: { type: Object as PropType<Bounds>, required: true },
+    trimEnabled: { type: Boolean, required: true },
+    cropEnabled: { type: Boolean, required: true }
+  },
   emits: [
     'update:startFrame',
     'update:endFrame',

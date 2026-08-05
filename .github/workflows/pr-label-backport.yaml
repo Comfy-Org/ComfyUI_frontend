@@ -1,0 +1,109 @@
+---
+# Description: Guarantees that every backport PR carries the `backport` label,
+# whoever opened it.
+#
+# Why: pr-backport.yaml applies the label in exactly one place — its own
+# `gh pr create --label "backport"` call. That call is only reached when the
+# cherry-pick applies cleanly. When it conflicts, the workflow fails and its
+# failure comment asks a human or an agent to finish the backport by hand,
+# including "create PR ... with label backport". That handoff gets missed.
+#
+# The cost of missing it is silent: backport-auto-merge.yaml sweeps
+# `gh pr list --label backport`, and pr-assign-release-sheriff.yaml keys off the
+# same label, so an unlabelled backport PR is invisible to both and sits open
+# until somebody notices. PRs #14018-#14021 are the worked example — all four
+# were opened by hand after #13875 and #13971 hit cherry-pick conflicts, and all
+# four ended up with only a `size:M` label.
+#
+# The label is derived from the branch naming convention instead
+# (`backport-<pr>-to-<target>`), which the workflow generates and which manual
+# backports follow because the failure comment tells them to. The rule itself
+# lives in scripts/cicd/backport-label.ts so it can be unit tested.
+name: 'PR: Label Backport'
+
+on:
+  pull_request_target:
+    types: [opened, reopened, edited]
+  # Backstop for PRs opened while this workflow was failing, and for backports
+  # retargeted onto their release branch after being opened. Offset from
+  # backport-auto-merge.yaml's `*/15` sweep so a backfilled label is in place
+  # before the next merge sweep looks for it.
+  schedule:
+    - cron: '5,20,35,50 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize every run so two runs cannot race on the same PR.
+concurrency:
+  group: label-backport
+  cancel-in-progress: false
+
+jobs:
+  label:
+    name: Apply the backport label
+    # Cheap gate so an unrelated PR does not spin up a runner. The real rule is
+    # in scripts/cicd/backport-label.ts and is re-applied to live PR state below.
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (github.event_name != 'pull_request_target' ||
+       startsWith(github.event.pull_request.head.ref, 'backport-'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # labels are applied through the issues API
+
+    steps:
+      # pull_request_target checks out the base branch, never PR head code.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Collect candidate PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          FIELDS=number,headRefName,baseRefName,labels
+
+          if [ "$EVENT_NAME" = "pull_request_target" ]; then
+            # Read the PR directly: a just-opened PR is not reliably in the
+            # search index yet.
+            gh pr view "$PR_NUMBER" --json "$FIELDS" | jq -s '.' > prs.json
+          else
+            gh pr list --state open --search 'head:backport-' --limit 100 \
+              --json "$FIELDS" > prs.json
+          fi
+
+          echo "Candidate PRs: $(jq 'length' prs.json)"
+
+      - name: Plan missing labels
+        id: plan
+        run: pnpm exec tsx scripts/cicd/plan-backport-labels.ts --prs prs.json
+
+      - name: Apply the backport label
+        if: steps.plan.outputs.numbers != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          NUMBERS: ${{ steps.plan.outputs.numbers }}
+        run: |
+          set -euo pipefail
+
+          # `gh pr edit --add-label` currently fails repo-wide on a deprecated
+          # projectCards GraphQL field, so add the label through REST.
+          for pr in $NUMBERS; do
+            if gh api --method POST "repos/${GH_REPO}/issues/${pr}/labels" \
+              -f "labels[]=backport" --silent; then
+              echo "- Labelled #${pr}" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning::Could not add the backport label to #${pr}"
+            fi
+          done

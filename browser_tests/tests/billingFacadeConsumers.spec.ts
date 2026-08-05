@@ -41,6 +41,8 @@ const toWorkspaceStatus = (
   s: CloudSubscriptionStatusResponse
 ): BillingStatusResponse => ({
   is_active: s.is_active ?? false,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_tier: s.subscription_tier ?? undefined,
   subscription_duration: s.subscription_duration ?? undefined,
   renewal_date: s.renewal_date ?? undefined,

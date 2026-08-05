@@ -42,6 +42,7 @@ import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -52,6 +53,7 @@ const { memberId } = defineProps<{
 
 const dialogStore = useDialogStore()
 const workspaceStore = useTeamWorkspaceStore()
+const { fetchStatus } = useBillingContext()
 const toast = useToast()
 const { t } = useI18n()
 const loading = ref(false)
@@ -64,6 +66,7 @@ async function onRemove() {
   loading.value = true
   try {
     await workspaceStore.removeMember(memberId)
+    void fetchStatus().catch(console.error)
     toast.add({
       severity: 'success',
       summary: t('workspacePanel.removeMemberDialog.success'),

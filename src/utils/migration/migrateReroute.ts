@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { cloneDeep, keyBy, omit } from 'es-toolkit/compat'
 
 import type {
   ComfyLinkObject,
@@ -57,8 +57,8 @@ class ConversionContext {
   private _rerouteIdCounter = 0
 
   constructor(public workflow: WorkflowJSON04) {
-    this.nodeById = _.keyBy(workflow.nodes.map(_.cloneDeep), 'id')
-    this.linkById = _.keyBy(
+    this.nodeById = keyBy(workflow.nodes.map(cloneDeep), 'id')
+    this.linkById = keyBy(
       workflow.links.map((l) => ({
         id: l[0],
         origin_id: l[1],
@@ -78,8 +78,8 @@ class ConversionContext {
     }))
     this._rerouteIdCounter = reroutes.length + 1
 
-    this.rerouteByNodeId = _.keyBy(reroutes, 'nodeId')
-    this.rerouteById = _.keyBy(reroutes, 'id')
+    this.rerouteByNodeId = keyBy(reroutes, 'nodeId')
+    this.rerouteById = keyBy(reroutes, 'id')
 
     this.linkExtensions = []
     this.validReroutes = new Set()
@@ -211,7 +211,7 @@ class ConversionContext {
       }
     }
 
-    const nodesById = _.keyBy(nodes, 'id')
+    const nodesById = keyBy(nodes, 'id')
 
     // Reconnect the links
     for (const link of links) {
@@ -302,7 +302,7 @@ class ConversionContext {
       extra: {
         ...this.workflow.extra,
         reroutes: Array.from(this.validReroutes).map(
-          (reroute) => _.omit(reroute, 'nodeId') as Reroute
+          (reroute) => omit(reroute, 'nodeId') as Reroute
         ),
         linkExtensions: this.linkExtensions
       }

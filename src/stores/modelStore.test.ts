@@ -1,8 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import {
@@ -27,6 +29,9 @@ vi.mock('@/scripts/api', () => ({
   api: {
     getModels: vi.fn(),
     getModelFolders: vi.fn(),
+    getServerFeature: vi.fn(
+      (_path: string, defaultValue?: unknown) => defaultValue
+    ),
     viewMetadata: vi.fn(),
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     addEventListener: vi.fn(),
@@ -110,6 +115,7 @@ describe('useModelStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.resetAllMocks()
     isCloudRef.value = false
+    remoteConfig.value = {}
   })
 
   it('should load models', async () => {
@@ -596,6 +602,59 @@ describe('useModelStore', () => {
         expect.any(Error)
       )
       error.mockRestore()
+    })
+  })
+
+  describe('model-type capability change', () => {
+    it('rebuilds the library when the capability turns on', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
+
+      remoteConfig.value = { supports_model_type_tags: true }
+
+      await vi.waitFor(() => {
+        expect(api.getModelFolders).toHaveBeenCalledTimes(2)
+        expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
+      })
+      expect(assetService.invalidateModelBuckets).toHaveBeenCalled()
+      expect(assetService.seedModelAssets).not.toHaveBeenCalled()
+    })
+
+    it('rebuilds again when the capability rolls back', async () => {
+      enableMocks(true)
+      remoteConfig.value = { supports_model_type_tags: true }
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
+
+      remoteConfig.value = { supports_model_type_tags: false }
+
+      await vi.waitFor(() => {
+        expect(api.getModelFolders).toHaveBeenCalledTimes(2)
+        expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
+      })
+      expect(assetService.invalidateModelBuckets).toHaveBeenCalled()
+    })
+
+    it('does not reload on the legacy listing path', async () => {
+      enableMocks(false)
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
+
+      remoteConfig.value = { supports_model_type_tags: true }
+
+      await nextTick()
+      await nextTick()
+      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
+      expect(assetService.invalidateModelBuckets).not.toHaveBeenCalled()
     })
   })
 

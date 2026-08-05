@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "Latente conjunto de video+audio para MiniMax H3. La duración se ajusta a la cuadrícula de 17k+5 fotogramas del modelo a 24 fps.",
+    "display_name": "Latente AV MiniMax H3 Vacío",
+    "inputs": {
+      "height": {
+        "name": "alto"
+      },
+      "length": {
+        "name": "duración",
+        "tooltip": "Cantidad de fotogramas a 24 fps, ajustada a la cuadrícula de 17k+5 del modelo (124 = ~5s; el rango entrenado es ~124-362, valores mayores no están probados)"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -5704,6 +5725,15 @@
       "model_resolution": {
         "name": "resolución"
       },
+      "model_voice_1": {
+        "name": "voz_1"
+      },
+      "model_voice_2": {
+        "name": "voz_2"
+      },
+      "model_voice_3": {
+        "name": "voz_3"
+      },
       "prompt": {
         "name": "prompt",
         "tooltip": "Descripción en texto del video deseado."
@@ -6497,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "Genera imágenes usando P-Image, el modelo rápido de texto a imagen de Ideogram. Tipografía fuerte y fotorrealismo; admite subtítulos estructurados en JSON de Ideogram 4.0 para texto, colores y diseño exactos.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "La relación de aspecto para la generación de imágenes."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto. También acepta un subtítulo estructurado en JSON de Ideogram 4.0 (colores exactos como hexadecimales #RRGGBB, cadenas de texto exactas, diseño de caja delimitadora) — establece prompt_upsampling en OFF para usarlo literalmente."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Expande prompts cortos en un subtítulo estructurado detallado antes de la generación (el prompt reescrito se devuelve como final_prompt). Establece en OFF cuando proporciones tu propio subtítulo JSON o texto exacto."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Nivel de velocidad/precio/calidad. MEDIUM es el valor predeterminado diario; HIGH para prompts complejos, detalles finos y texto difícil; VERY_LOW/LOW para borradores a gran escala. El texto difícil se representa mal por debajo de MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Clase de tamaño de salida (los píxeles exactos siguen la relación de aspecto, por ejemplo, 16:9 da 1280x720 en 1K y 2560x1440 en 2K). Prefiere HIGH + 2K para tipografía nítida."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla para generación reproducible. Con prompt_upsampling en OFF, la misma semilla y configuración devuelven la misma imagen; con ON/AUTO la reescritura del prompt varía en cada ejecución — reproduce un resultado reutilizando su salida final_prompt con prompt_upsampling en OFF y la misma semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "El prompt desde el que realmente se generó la imagen (el subtítulo estructurado reescrito cuando se ejecutó prompt_upsampling, de lo contrario tu prompt). Vuelve a usarlo con prompt_upsampling en OFF y la misma semilla para reproducir esta imagen."
       }
     }
   },
@@ -8643,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "Fusiona un latente de video y un latente de audio en un latente AV conjunto (cualquier modelo AV, por ejemplo LTXV o MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11328,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Imagen a Video",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "primer_fotograma"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "last_frame": {
+        "name": "último_fotograma"
+      },
+      "length": {
+        "name": "duración",
+        "tooltip": "Cantidad de fotogramas a 24 fps, ajustada a la cuadrícula de 17k+5 del modelo (124 = ~5s; el rango entrenado es ~124-362, valores mayores no están probados)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "Condicionamiento de referencia <Imagen i> / <Video k> / <Audio j> para MiniMax H3. Usa las mismas etiquetas al generar el prompt.",
+    "display_name": "MiniMax H3 Referencia a Video",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "length": {
+        "name": "duración",
+        "tooltip": "Cantidad de fotogramas a 24 fps, (124 = ~5s, rango entrenado es ~124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "audios_ref"
+      },
+      "ref_image_size": {
+        "name": "tamaño_imagen_ref",
+        "tooltip": "Tamaño de la imagen de referencia. 'match' escala cada referencia (solo reducción, manteniendo la proporción) al área de píxeles de la generación; 'max' usa el borde corto de 2048px del pipeline de referencia para mejor fidelidad de identidad. Los tokens de referencia se mantienen en cada paso de muestreo, por lo que 'max' puede ser varias veces más lento."
+      },
+      "ref_images": {
+        "name": "imágenes_ref"
+      },
+      "ref_video_audios": {
+        "name": "audios_video_ref"
+      },
+      "ref_videos": {
+        "name": "videos_ref"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "Establece los desplazamientos del flujo de video/audio.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "shift_audio": {
+        "name": "desplazamiento de audio"
+      },
+      "shift_video": {
+        "name": "desplazamiento de video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "Genera video a partir de una imagen de primer fotograma y una imagen opcional de último fotograma usando el modelo MiniMax H3. La relación de aspecto del video sigue las imágenes proporcionadas.",
+    "display_name": "MiniMax H3 Primer-Último Fotograma a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Imagen del primer fotograma para el video."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Imagen opcional de último fotograma para el video."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla aleatoria. La misma solicitud con la misma semilla da resultados similares, pero no idénticos garantizados."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Si se debe añadir una marca de agua AIGC al video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "Genera un video condicionado por imágenes de referencia, videos y audio usando el modelo MiniMax H3. Haz referencia a los elementos en el prompt según su orden: 'Imagen 1', 'Imagen 2', 'Video 1', 'Audio 1', y así sucesivamente.",
+    "display_name": "MiniMax H3 Referencia a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "relación de aspecto"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla aleatoria. La misma solicitud con la misma semilla da resultados similares, pero no idénticos garantizados."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se debe añadir una marca de agua AIGC al video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "Genera un video a partir de un prompt de texto usando el modelo MiniMax H3.",
+    "display_name": "MiniMax H3 Texto a Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "relación de aspecto"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla aleatoria. La misma solicitud con la misma semilla da resultados similares, pero no idénticos garantizados."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se debe añadir una marca de agua AIGC al video."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

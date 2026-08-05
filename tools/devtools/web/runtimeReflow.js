@@ -1,3 +1,4 @@
+// eslint-disable-next-line import-x/no-unresolved -- import is correct at time of test execution
 import { app } from '../../scripts/app.js'
 
 // 1x1 transparent PNG so `img.onload` fires deterministically in CI.

@@ -407,8 +407,14 @@ export class ComfyUI {
       onchange: async () => {
         const file = fileInput.files?.[0]
         if (file) {
-          await app.handleFile(file, 'file_button')
-          fileInput.value = ''
+          try {
+            await app.handleFile(file, 'file_button')
+          } catch (error) {
+            console.error('Failed to load file:', error)
+            app.showErrorOnFileLoad(file)
+          } finally {
+            fileInput.value = ''
+          }
         }
       }
     })
@@ -437,7 +443,7 @@ export class ComfyUI {
     )
     autoQueueModeEl.style.display = 'none'
 
-    api.addEventListener('graphChanged', () => {
+    api.addEventListener('autoQueueGraphChanged', () => {
       if (this.autoQueueMode === 'change' && this.autoQueueEnabled === true) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false

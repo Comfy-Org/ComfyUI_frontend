@@ -39,10 +39,7 @@ const config: KnipConfig = {
   },
   ignoreDependencies: [
     // Weird importmap things
-    '@iconify/json',
-    '@primeuix/forms',
-    '@primeuix/styled',
-    '@primevue/icons'
+    '@iconify/json'
   ],
   ignore: [
     // Auto generated API types

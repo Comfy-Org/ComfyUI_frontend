@@ -15,7 +15,7 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { ResultItemType } from '@/schemas/apiSchema'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
   PANEL_EXCLUDED_PROPS,
@@ -40,11 +40,20 @@ provide(
   computed(() => props.assetKind)
 )
 
-const modelValue = defineModel<string | undefined>({
+const modelValue = defineModel<WidgetValue>({
   default(modelProps: Record<string, unknown>) {
     const modelWidget = modelProps.widget as Props['widget'] | undefined
     const values = modelWidget?.options?.values
     return (Array.isArray(values) ? values[0] : undefined) ?? ''
+  }
+})
+const stringModelValue = computed({
+  get: () => {
+    const value = modelValue.value
+    return value == null ? undefined : String(value)
+  },
+  set: (value: string | undefined) => {
+    modelValue.value = value
   }
 })
 
@@ -83,7 +92,7 @@ const {
 } = useWidgetSelectItems({
   values: () => props.widget.options?.values as unknown[] | undefined,
   getOptionLabel: () => props.widget.options?.getOptionLabel,
-  modelValue,
+  modelValue: stringModelValue,
   assetKind: () => props.assetKind,
   outputMediaAssets,
   assetData,
@@ -91,7 +100,7 @@ const {
 })
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
-  modelValue,
+  modelValue: stringModelValue,
   dropdownItems,
   widget: () => props.widget,
   uploadFolder: () => props.uploadFolder,

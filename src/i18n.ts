@@ -6,6 +6,7 @@ import {
   resolveSupportedLocale
 } from '@/locales/localeConfig'
 import type { SupportedLocale } from '@/locales/localeConfig'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 // Import only English locale eagerly as the default/fallback
 import enCommands from './locales/en/commands.json' with { type: 'json' }
@@ -130,6 +131,186 @@ export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
       i18n.global.mergeLocaleMessage(locale, message)
     }
   }
+}
+
+export type NodeDefTextField = 'display_name' | 'description'
+
+/**
+ * Raw `/object_info` text, kept out of the vue-i18n message tree so English
+ * never reaches the message compiler. Rebuilt on every fetch, so a def that
+ * stops sending a field stops resolving to the previous value.
+ */
+const backendNodeText = new Map<
+  string,
+  Partial<Record<NodeDefTextField, string>>
+>()
+
+export function setBackendNodeText(
+  defs: Iterable<{
+    name?: unknown
+    display_name?: unknown
+    description?: unknown
+  }>
+): void {
+  backendNodeText.clear()
+  for (const def of defs) {
+    if (typeof def?.name !== 'string') continue
+    const entry: Partial<Record<NodeDefTextField, string>> = {}
+    if (typeof def.display_name === 'string' && def.display_name) {
+      entry.display_name = def.display_name
+    }
+    if (typeof def.description === 'string' && def.description) {
+      entry.description = def.description
+    }
+    if (entry.display_name ?? entry.description)
+      backendNodeText.set(def.name, entry)
+  }
+}
+
+function customNodesProvide(nodeName: string, path: string): boolean {
+  const data = customNodesI18nData[i18n.global.locale.value]
+  if (typeof data !== 'object' || data === null) return false
+  const nodeDefs = (data as Record<string, unknown>)['nodeDefs']
+  if (typeof nodeDefs !== 'object' || nodeDefs === null) return false
+
+  for (const candidate of nodeDefKeyCandidates(nodeName)) {
+    let cursor: unknown = nodeDefs
+    for (const segment of `${candidate}.${path}`.split('.')) {
+      if (typeof cursor !== 'object' || cursor === null) {
+        cursor = undefined
+        break
+      }
+      cursor = (cursor as Record<string, unknown>)[segment]
+    }
+    if (typeof cursor === 'string') return true
+  }
+  return false
+}
+
+/**
+ * Generated locales key dotted node ids flat (`my_node`). Locales written by
+ * hand before that convention nest them (`my.node`), which vue-i18n resolves by
+ * path traversal, so both are tried.
+ */
+function nodeDefKeyCandidates(nodeName: string): string[] {
+  const normalized = normalizeI18nKey(nodeName)
+  return normalized === nodeName ? [normalized] : [normalized, nodeName]
+}
+
+/**
+ * Reads a resolved locale message. `st` compiles it; `stRaw` does not.
+ */
+type MessageReader = (key: string, fallbackMessage: string) => string
+
+function translateNodeDefText(
+  nodeName: string,
+  path: string,
+  fallback: string,
+  read: MessageReader
+): string {
+  for (const candidate of nodeDefKeyCandidates(nodeName)) {
+    const key = `nodeDefs.${candidate}.${path}`
+    if (te(key)) return read(key, fallback)
+  }
+  return fallback
+}
+
+/**
+ * Resolves node text in priority order.
+ *
+ * `en`: custom-node `/api/i18n` translations, then the live backend value, then
+ * the bundled snapshot. English is the source language, so a backend value is
+ * data rather than a translation and is returned without being compiled.
+ *
+ * Other locales: translations stay authoritative, falling back to the live
+ * backend value rather than the stale English snapshot.
+ */
+function resolveNodeDefPath(
+  nodeName: string,
+  path: string,
+  backend: string | undefined,
+  fallback: string,
+  read: MessageReader
+): string {
+  if (customNodesProvide(nodeName, path)) {
+    return translateNodeDefText(nodeName, path, fallback, read)
+  }
+  if (i18n.global.locale.value === 'en' && backend !== undefined) return backend
+
+  return translateNodeDefText(nodeName, path, fallback, read)
+}
+
+export function resolveNodeDefText(
+  field: NodeDefTextField,
+  nodeName: string,
+  backendValue?: string
+): string {
+  const backend = backendValue ?? backendNodeText.get(nodeName)?.[field]
+  const fallback = backend ?? (field === 'display_name' ? nodeName : '')
+
+  return resolveNodeDefPath(nodeName, field, backend, fallback, st)
+}
+
+/** Slot fields the generated locales carry text for. */
+export type NodeDefSlotTextField = 'name' | 'tooltip'
+
+/**
+ * `name` is escaped by `scripts/nodeDefLocaleSerializer.ts` and has to be
+ * compiled back; `tooltip` is stored verbatim and must never reach the message
+ * compiler, or a literal `{'@'}` would render to the user.
+ */
+function slotMessageReader(field: NodeDefSlotTextField): MessageReader {
+  return field === 'tooltip' ? stRaw : st
+}
+
+function resolveNodeDefSlotText(
+  field: NodeDefSlotTextField,
+  nodeName: string,
+  slotPath: string,
+  backendValue: string | undefined,
+  fallbackValue: string
+): string {
+  return resolveNodeDefPath(
+    nodeName,
+    `${slotPath}.${field}`,
+    backendValue,
+    backendValue ?? fallbackValue,
+    slotMessageReader(field)
+  )
+}
+
+/** Resolves an input slot's label or tooltip, same precedence as node text. */
+export function resolveNodeDefInputText(
+  field: NodeDefSlotTextField,
+  nodeName: string,
+  inputName: string,
+  backendValue?: string,
+  fallbackValue = ''
+): string {
+  return resolveNodeDefSlotText(
+    field,
+    nodeName,
+    `inputs.${normalizeI18nKey(inputName)}`,
+    backendValue,
+    fallbackValue
+  )
+}
+
+/** Resolves an output slot's label or tooltip, same precedence as node text. */
+export function resolveNodeDefOutputText(
+  field: NodeDefSlotTextField,
+  nodeName: string,
+  outputIndex: number,
+  backendValue?: string,
+  fallbackValue = ''
+): string {
+  return resolveNodeDefSlotText(
+    field,
+    nodeName,
+    `outputs.${outputIndex}`,
+    backendValue,
+    fallbackValue
+  )
 }
 
 // Only include English in the initial bundle; other locales lazy-load.

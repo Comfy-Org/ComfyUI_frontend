@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { clone } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
@@ -57,7 +57,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
         if (!srcNodeDef) {
           return null
         }
-        const nodeDef = _.clone(srcNodeDef)
+        const nodeDef = clone(srcNodeDef)
         nodeDef.category = category
         return nodeDef
       })

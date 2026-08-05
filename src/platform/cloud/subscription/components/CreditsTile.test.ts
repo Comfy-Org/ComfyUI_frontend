@@ -20,11 +20,12 @@ type TeamStop = CurrentTeamCreditStop
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
   subscription: null as Subscription | null,
-  isActiveSubscription: false,
+  canAccessSubscriptionFeatures: false,
   isFreeTier: false,
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   canTopUp: true,
+  type: 'workspace' as 'workspace' | 'legacy',
   fetchBalance: vi.fn(),
   fetchStatus: vi.fn(),
   showPricingTable: vi.fn(),
@@ -53,10 +54,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     balance: computed(() => state.balance),
     subscription: computed(() => state.subscription),
-    isActiveSubscription: computed(() => state.isActiveSubscription),
+    canAccessSubscriptionFeatures: computed(
+      () => state.canAccessSubscriptionFeatures
+    ),
     isFreeTier: computed(() => state.isFreeTier),
     currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     isLoading: computed(() => state.isLoading),
+    type: computed(() => state.type),
     fetchBalance: state.fetchBalance,
     fetchStatus: state.fetchStatus
   })
@@ -87,6 +91,13 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -107,6 +118,7 @@ const i18n = createI18n({
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after monthly runs out',
+        reactivateToUseCredits: 'Reactivate your plan to use these credits',
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
         monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
@@ -142,7 +154,7 @@ function renderTile(props: Record<string, unknown> = {}) {
 }
 
 function activeProSubscription() {
-  state.isActiveSubscription = true
+  state.canAccessSubscriptionFeatures = true
   state.subscription = {
     tier: 'PRO',
     duration: 'MONTHLY',
@@ -160,12 +172,15 @@ describe('CreditsTile', () => {
   beforeEach(() => {
     state.balance = null
     state.subscription = null
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
     state.isFreeTier = false
     state.currentTeamCreditStop = null
     state.isLoading = false
     state.canTopUp = true
+    state.type = 'workspace'
+    mockIsCloud.value = true
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {
@@ -195,7 +210,7 @@ describe('CreditsTile', () => {
   })
 
   it('uses the full annual Team grant for the credit pool total', () => {
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.subscription = {
       tier: 'TEAM',
       duration: 'ANNUAL',
@@ -215,7 +230,7 @@ describe('CreditsTile', () => {
   })
 
   it('keeps the monthly Team grant as the monthly credit pool total', () => {
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.subscription = {
       tier: 'TEAM',
       duration: 'MONTHLY',
@@ -235,7 +250,7 @@ describe('CreditsTile', () => {
   })
 
   it('uses the full annual grant for a personal tier credit pool', () => {
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.subscription = {
       tier: 'PRO',
       duration: 'ANNUAL',
@@ -247,6 +262,15 @@ describe('CreditsTile', () => {
     }
     const { container } = renderTile()
     expect(container.textContent).toContain('253,200 left of 253,200')
+  })
+
+  it('formats the renewal date in the local timezone, not UTC', () => {
+    activeProSubscription()
+    expect(renderTile().container.textContent).toContain('Refills Feb 20')
+
+    // The suite is pinned to TZ=UTC, so opt this render into a UTC+13 viewer.
+    vi.stubEnv('TZ', 'Pacific/Auckland')
+    expect(renderTile().container.textContent).toContain('Refills Feb 21')
   })
 
   it('falls back to a dateless refills label when renewal date is missing', () => {
@@ -283,8 +307,20 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
+  it('shows disabled credit details for an inactive plan', () => {
+    activeProSubscription()
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).toContain('0remaining')
+    expect(container.textContent).toContain('Additional credits')
+    expect(container.textContent).toContain(
+      'Reactivate your plan to use these credits'
+    )
+    expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
   it('shows only the balance with no breakdown when there is no active subscription', () => {
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
     state.balance = { amountMicros: 500 }
     const { container } = renderTile()
     expect(container.textContent).toContain('1,055')
@@ -363,12 +399,29 @@ describe('CreditsTile', () => {
     expect(state.showPricingTable).toHaveBeenCalledOnce()
   })
 
-  it('hides the action button when the user lacks the top-up permission', () => {
+  it('keeps offering add-credits on the free tier for non-cloud distributions', () => {
+    mockIsCloud.value = false
+    activeProSubscription()
+    state.isFreeTier = true
+    renderTile()
+    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+  })
+
+  it('hides the action button when a team workspace member lacks the top-up permission', () => {
     activeProSubscription()
     state.canTopUp = false
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+  })
+
+  it('ignores the workspace top-up permission on legacy (personal) billing', () => {
+    activeProSubscription()
+    state.type = 'legacy'
+    state.canTopUp = false
+    renderTile()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 
   it('refreshes balance and status from the facade on mount and on demand', async () => {

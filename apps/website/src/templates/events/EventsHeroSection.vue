@@ -20,7 +20,7 @@ const slides = computed<FeaturedSlide[]>(() =>
       alt: event.media.alt[locale],
       poster: event.media.type === 'video' ? event.media.poster : undefined
     },
-    eyebrow: event.eyebrow[locale],
+    eyebrow: event.eyebrow?.[locale],
     title: event.title[locale],
     showTitle: event.showTitle,
     href: event.href?.[locale],

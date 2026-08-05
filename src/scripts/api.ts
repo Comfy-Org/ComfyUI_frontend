@@ -58,6 +58,7 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type {
+  JobAssetsResult,
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -67,6 +68,7 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
+  fetchJobAssets,
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -145,6 +147,16 @@ interface QueuePromptOptions {
 /** Dictionary of Frontend-generated API calls */
 interface FrontendApiCalls {
   graphChanged: ComfyWorkflowJSON
+  /**
+   * Signals that auto-queue should treat the active workflow as changed.
+   * Local change-tracker edits are filtered through the prompt-relevant
+   * projection and evaluated only while Run (on change) is active. For those
+   * edits, position, size, title, collapse, group, viewport, and slot-label
+   * changes do not trigger this signal.
+   * Server-pushed `graphChanged` messages are forwarded unfiltered.
+   * Third-party presentation-only nodes are treated as prompt-relevant.
+   */
+  autoQueueGraphChanged: never
   promptQueueing: { requestId: number; batchCount: number; number?: number }
   promptQueued: { number: number; batchCount: number; requestId?: number }
   graphCleared: never
@@ -865,12 +877,18 @@ export class ComfyApi extends EventTarget {
             case 'progress':
             case 'progress_state':
             case 'executed':
-            case 'graphChanged':
             case 'promptQueued':
             case 'logs':
             case 'b_preview':
             case 'notification':
               this.dispatchCustomEvent(msg.type, msg.data)
+              break
+            case 'graphChanged':
+              this.dispatchCustomEvent('graphChanged', msg.data)
+              this.dispatchCustomEvent('autoQueueGraphChanged')
+              break
+            case 'autoQueueGraphChanged':
+              this.dispatchCustomEvent('autoQueueGraphChanged')
               break
             case 'feature_flags':
               // Store server feature flags
@@ -1200,6 +1218,17 @@ export class ComfyApi extends EventTarget {
    */
   async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
     return fetchJobDetail(this.fetchApi.bind(this), jobId)
+  }
+
+  /**
+   * Gets a job's output assets, each resolved to a real asset entity with
+   * per-output node context. Returns an empty list when the endpoint is
+   * unavailable (e.g. non-cloud distributions).
+   * @param jobId The job ID
+   * @returns The job's output assets and whether the list is exhaustive
+   */
+  async getJobAssets(jobId: string): Promise<JobAssetsResult> {
+    return fetchJobAssets(this.fetchApi.bind(this), jobId)
   }
 
   /**

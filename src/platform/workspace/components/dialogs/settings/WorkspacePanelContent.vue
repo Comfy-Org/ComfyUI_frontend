@@ -81,19 +81,22 @@ const { defaultTab = 'plan' } = defineProps<{
 }>()
 
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceName, members } = storeToRefs(workspaceStore)
+const { workspaceName, isInPersonalWorkspace, members } =
+  storeToRefs(workspaceStore)
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 
 const { workspaceRole } = useWorkspaceUI()
-const { hasTeamPlan, isPlanLoading } = useTeamPlan()
+const { maxSeats, hasMemberSeats, isPlanLoading } = useTeamPlan()
 const activeTab = ref(defaultTab)
 
 const showMembersTabCount = computed(
-  () => hasTeamPlan.value && members.value.length > 1
+  () => hasMemberSeats.value && members.value.length > 1
 )
 
 whenever(
-  () => hasTeamPlan.value && !isPlanLoading.value,
+  () =>
+    (!isInPersonalWorkspace.value || maxSeats.value !== 1) &&
+    !isPlanLoading.value,
   () => Promise.allSettled([fetchMembers(), fetchPendingInvites()]),
   { immediate: true }
 )

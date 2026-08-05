@@ -1,6 +1,8 @@
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
 
+import { escapeI18nMessage } from '@/utils/formatUtil'
+
 import { serializeNodeDefLocales } from './nodeDefLocaleSerializer'
 
 function render(message: string): string {
@@ -126,5 +128,21 @@ describe('serializeNodeDefLocales', () => {
     })
     expect(Object.keys(dataTypes)).toEqual(['A_TYPE', 'Z_TYPE'])
     expect(Object.keys(nodeDefinitions)).toEqual(['A_Node', 'Z_Node'])
+  })
+})
+
+describe('escapeI18nMessage', () => {
+  it.for([
+    ['plain name'],
+    ['@ $ {value} | 50%{done}'],
+    ['\\@home'],
+    ['cost \\$5'],
+    ['a\\{b}'],
+    ['back\\\\slash'],
+    ['D:\\output\\img.png'],
+    ['\\'],
+    ['Regex Replace (\\$1)']
+  ])('round-trips %j through the vue-i18n compiler', ([raw]) => {
+    expect(render(escapeI18nMessage(raw))).toBe(raw)
   })
 })

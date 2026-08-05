@@ -173,7 +173,7 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { isActiveSubscription } = useBillingContext()
+const { canAccessSubscriptionFeatures } = useBillingContext()
 
 const isSubscriptionEnabled = (): boolean =>
   Boolean(isCloud && window.__CONFIG__?.subscription_required)
@@ -195,7 +195,7 @@ const telemetry = useTelemetry()
 const showCustomPricingTable = computed(() => isSubscriptionEnabled())
 
 watch(
-  () => isActiveSubscription.value,
+  () => canAccessSubscriptionFeatures.value,
   (isActive) => {
     if (isActive && showCustomPricingTable.value) {
       emit('close', true)

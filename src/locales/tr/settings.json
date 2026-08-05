@@ -426,10 +426,6 @@
   "Comfy_Validation_Workflows": {
     "name": "İş akışlarını doğrula"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Otomatik ölçeklendirme düzeni (Vue düğümleri)",
-    "tooltip": "Vue işlemeye geçerken düğüm konumlarını örtüşmeyi önlemek için otomatik olarak ölçeklendir"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "Modern Düğüm Tasarımı (Vue Düğümleri)",
     "tooltip": "Modern: Gelişmiş etkileşim, yerel tarayıcı özellikleri ve güncellenmiş görsel tasarıma sahip DOM tabanlı işleme. Klasik: Geleneksel tuval işleme."
@@ -458,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "İş akışlarını silerken onay göster"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "Widget değerlerini ada göre geri yükle"
   },
   "Comfy_Workflow_Persist": {
     "name": "İş akışı durumunu koru ve sayfayı (yeniden) yüklediğinde geri yükle"

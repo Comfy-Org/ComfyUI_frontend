@@ -59,6 +59,7 @@ jobs:
           name: size-data
           run_id: ${{ steps.find-size.outputs.run-id }}
           path: temp/size
+          if_no_artifact_found: warn
 
       - name: Download size baseline
         if: steps.pr-meta.outputs.skip != 'true' && steps.find-size.outputs.status == 'ready'

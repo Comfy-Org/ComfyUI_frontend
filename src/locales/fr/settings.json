@@ -426,10 +426,6 @@
   "Comfy_Validation_Workflows": {
     "name": "Valider les flux de travail"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Mise à l'échelle automatique de la mise en page (nœuds Vue)",
-    "tooltip": "Redimensionne automatiquement les positions des nœuds lors du passage au rendu Vue pour éviter les chevauchements"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "Design moderne des nœuds (nœuds Vue)",
     "tooltip": "Moderne : rendu basé sur DOM avec interactivité améliorée, fonctionnalités natives du navigateur et design visuel actualisé. Classique : rendu traditionnel sur toile."
@@ -458,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Afficher une confirmation lors de la suppression des flux de travail"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "Restaurer les valeurs du widget par nom"
   },
   "Comfy_Workflow_Persist": {
     "name": "Persiste l'état du flux de travail et restaure lors du (re)chargement de la page"

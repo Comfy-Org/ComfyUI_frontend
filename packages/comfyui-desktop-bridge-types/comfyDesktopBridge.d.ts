@@ -97,6 +97,12 @@ export interface ComfyDesktop2Bridge {
   Telemetry?: ComfyDesktop2TelemetryBridge
 }
 
+/**
+ * The `-?` mapper intentionally requires every top-level bridge member.
+ * Adding an optional top-level member to `ComfyDesktop2Bridge` is therefore a
+ * breaking change for implementations of this type. Optional members of nested
+ * bridge types remain optional because the mapper is not recursive.
+ */
 export type ComfyDesktop2BridgeImplementation = {
   [K in keyof ComfyDesktop2Bridge]-?: NonNullable<ComfyDesktop2Bridge[K]>
 }

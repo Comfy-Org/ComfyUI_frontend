@@ -2,7 +2,7 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
-import { api } from '@/scripts/api'
+import { api, ComfyApi } from '@/scripts/api'
 
 interface MockWebSocket {
   readyState: number
@@ -391,6 +391,41 @@ describe('API Feature Flags', () => {
         text: 'VAE decode'
       })
     })
+  })
+
+  it('preserves server-pushed graph change signals', async () => {
+    const socketApi = new ComfyApi()
+    const graphChanged = vi.fn()
+    const autoQueueGraphChanged = vi.fn()
+    socketApi.addEventListener('graphChanged', graphChanged)
+    socketApi.addEventListener('autoQueueGraphChanged', autoQueueGraphChanged)
+    const initPromise = socketApi.init()
+    wsEventHandlers['open'](new Event('open'))
+    wsEventHandlers['message']({
+      data: JSON.stringify({
+        type: 'status',
+        data: {
+          status: { exec_info: { queue_remaining: 0 } },
+          sid: 'test-sid'
+        }
+      })
+    })
+    await initPromise
+
+    const workflow = { nodes: [], links: [] }
+    wsEventHandlers['message']({
+      data: JSON.stringify({ type: 'graphChanged', data: workflow })
+    })
+
+    expect(graphChanged).toHaveBeenCalledOnce()
+    expect(graphChanged.mock.calls[0][0].detail).toEqual(workflow)
+    expect(autoQueueGraphChanged).toHaveBeenCalledOnce()
+
+    wsEventHandlers['message']({
+      data: JSON.stringify({ type: 'autoQueueGraphChanged', data: null })
+    })
+
+    expect(autoQueueGraphChanged).toHaveBeenCalledTimes(2)
   })
 
   describe('Dev override via localStorage', () => {

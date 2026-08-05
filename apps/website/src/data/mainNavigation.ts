@@ -48,13 +48,13 @@ export function getMainNavigation(locale: Locale): NavItem[] {
       label: t('nav.products', locale),
       badge: 'new',
       featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/mcp-card.webp',
+        imageSrc: 'https://media.comfy.org/website/nav/minimax-card.webp',
         imageAlt: t('nav.featuredProductsAlt', locale),
         title: t('nav.featuredProductsTitle', locale),
         cta: {
-          label: t('cta.getStarted', locale),
+          label: t('nav.featuredProductsCta', locale),
           ariaLabel: t('nav.featuredProductsCtaAria', locale),
-          href: routes.mcp
+          href: routes.minimax
         }
       },
       columns: [

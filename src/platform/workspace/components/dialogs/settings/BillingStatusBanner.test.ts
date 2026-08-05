@@ -18,6 +18,7 @@ interface Subscription {
 
 const state = vi.hoisted(() => ({
   billingControlEnabled: true,
+  v1PaymentRecovery: true,
   isActiveSubscription: true,
   isTeamPlan: true,
   billingStatus: 'paid' as string | null,
@@ -43,6 +44,9 @@ vi.mock('@/composables/useFeatureFlags', () => ({
     flags: {
       get billingControlEnabled() {
         return state.billingControlEnabled
+      },
+      get v1PaymentRecovery() {
+        return state.v1PaymentRecovery
       }
     }
   })
@@ -55,7 +59,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
     subscription: computed(() => state.subscription),
     renewalDate: computed(() => state.renewalDate),
-    manageSubscription: state.manageSubscription
+    manageSubscription: state.manageSubscription,
+    fetchStatus: vi.fn(),
+    fetchBalance: vi.fn()
   })
 }))
 
@@ -91,16 +97,15 @@ const i18n = createI18n({
       workspacePanel: {
         billingStatus: {
           warning: {
-            title: 'Payment declined',
-            body: "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
+            title: 'Payment failed',
             bodyNoDate:
-              "Your last payment didn't go through. Update payment to avoid a pause."
+              'Your payment failed to process. Update payment to avoid a pause.'
           },
           paused: {
             title: 'Subscription paused',
             body: "This workspace's subscription is paused. Update payment to resume.",
             memberBody:
-              "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+              "Ask your workspace owner to restore the workspace's subscription."
           },
           outOfCredits: {
             title: 'Out of credits',
@@ -159,6 +164,7 @@ function paymentFailedState() {
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
     state.billingControlEnabled = true
+    state.v1PaymentRecovery = true
     state.isActiveSubscription = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
@@ -251,19 +257,21 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Your workspace admins need to update the payment method'
+      "Ask your workspace owner to restore the workspace's subscription"
     )
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('shows the payment-declined banner with Update payment for owners', () => {
+  it('shows immediate payment-failed copy with Update payment for owners', () => {
     paymentFailedState()
     state.renewalDate = '2026-08-01T00:00:00Z'
     renderBanner()
 
-    expect(screen.getByRole('status')).toHaveTextContent('Payment declined')
-    expect(screen.getByRole('status')).toHaveTextContent(/will pause on \S+/)
-    expect(screen.getByRole('status')).not.toHaveTextContent('{date}')
+    expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Update payment to avoid a pause'
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
     expect(
       screen.getByRole('button', { name: 'Update payment' })
     ).toBeInTheDocument()
@@ -281,16 +289,18 @@ describe('BillingStatusBanner', () => {
     expect(state.manageSubscription).not.toHaveBeenCalled()
   })
 
-  it('falls back to the no-date payment-declined copy when there is no renewal date', () => {
+  it('hides payment recovery states while preserving existing notices when the new flag is off', () => {
+    state.v1PaymentRecovery = false
     paymentFailedState()
-    state.renewalDate = null
-    renderBanner()
+    const { unmount } = renderBanner()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    unmount()
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Update payment to avoid a pause'
-    )
-    expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
-    expect(screen.getByRole('status')).not.toHaveTextContent('{date}')
+    state.isActiveSubscription = true
+    state.billingStatus = 'paid'
+    exhausted()
+    renderBanner()
+    expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
   })
 
   it('lets a promoted owner reactivate an ending plan', async () => {

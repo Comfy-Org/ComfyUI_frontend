@@ -8,12 +8,16 @@
         <div class="flex min-w-0 flex-1 items-baseline gap-2">
           <span class="text-base font-semibold text-base-foreground">
             <template v-if="activeView === 'active'">
-              <template v-if="isOnTeamPlan">
+              <template v-if="hasMemberSeats">
                 {{
-                  $t('workspacePanel.members.membersCount', {
-                    count: members.length,
-                    maxSeats: maxSeats
-                  })
+                  maxSeats === 0
+                    ? $t('workspacePanel.tabs.membersCount', {
+                        count: members.length
+                      })
+                    : $t('workspacePanel.members.membersCount', {
+                        count: members.length,
+                        maxSeats: maxSeats
+                      })
                 }}
               </template>
               <template v-else>
@@ -149,12 +153,13 @@
         <div class="min-h-0 flex-1 overflow-y-auto">
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <template v-if="!hasTeamPlan">
+            <template v-if="isInPersonalWorkspace && maxSeats === 1">
               <MemberListItem
                 :member="personalWorkspaceMember"
                 :is-current-user="true"
                 :photo-url="userPhotoUrl ?? undefined"
                 :grid-cols="uiConfig.membersGridCols"
+                :is-single-seat-plan="maxSeats === 1"
               />
             </template>
 
@@ -175,7 +180,6 @@
                 "
                 :show-credits-column="uiConfig.showCreditsColumn"
                 :can-manage-members="permissions.canManageMembers"
-                :is-single-seat-plan="!isOnTeamPlan"
                 :striped="index % 2 === 1"
                 :menu-items="memberMenus.get(member.id)"
               />
@@ -196,13 +200,15 @@
     <!-- Upsell Banner -->
     <MemberUpsellBanner
       v-if="
-        !isPlanLoading && !isOnTeamPlan && permissions.canManageSubscription
+        !isPlanLoading &&
+        ((isInPersonalWorkspace && maxSeats === 1) || isCancelled) &&
+        permissions.canManageSubscription
       "
       :reactivate="hasLapsedTeamPlan"
       @show-plans="showTeamPlans()"
     />
     <!-- Need More Members Footer -->
-    <div v-if="isOnTeamPlan" class="flex items-center pt-2">
+    <div v-if="hasMemberSeats" class="flex items-center pt-2">
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>
@@ -221,7 +227,6 @@
 <script setup lang="ts">
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useExternalLink } from '@/composables/useExternalLink'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
@@ -229,13 +234,17 @@ import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/setting
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
 
+const TEAM_PLAN_REQUEST_URL =
+  'https://comfy-org.portal.usepylon.com/forms/team-plan-requests'
+
 const {
   searchQuery,
   activeView,
   maxSeats,
-  hasTeamPlan,
-  isOnTeamPlan,
+  isInPersonalWorkspace,
   hasLapsedTeamPlan,
+  hasMemberSeats,
+  isCancelled,
   isPlanLoading,
   hasMultipleMembers,
   showSearch,
@@ -260,9 +269,7 @@ const {
   handleRevokeInvite
 } = useMembersPanel()
 
-const { staticUrls } = useExternalLink()
-
 function handleContactUs() {
-  window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
+  window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
 }
 </script>

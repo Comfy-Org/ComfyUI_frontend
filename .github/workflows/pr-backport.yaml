@@ -351,9 +351,11 @@ jobs:
             PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,author)
             PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
             PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
+            PR_AUTHOR_IS_BOT=$(echo "$PR_DATA" | jq -r '.author.is_bot')
           else
             PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
             PR_AUTHOR=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
+            PR_AUTHOR_IS_BOT=$(jq -r '.pull_request.user.type == "Bot"' "$GITHUB_EVENT_PATH")
           fi
 
           for backport in ${{ steps.backport.outputs.success }}; do
@@ -370,6 +372,10 @@ jobs:
               PR_NUM=$(echo "${PR_URL}" | grep -o '[0-9]*$')
 
               if [ -n "${PR_NUM}" ]; then
+                if [ "${PR_AUTHOR_IS_BOT}" != "true" ]; then
+                  gh pr edit "${PR_NUM}" --add-assignee "${PR_AUTHOR}" \
+                    || echo "::warning::Failed to assign @${PR_AUTHOR} to PR #${PR_NUM}"
+                fi
                 gh pr merge "${PR_NUM}" --auto --squash --repo "${{ github.repository }}" \
                   || echo "::warning::Failed to enable auto-merge for PR #${PR_NUM}"
                 gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}"

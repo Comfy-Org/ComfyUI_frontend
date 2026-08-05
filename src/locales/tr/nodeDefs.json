@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 için birleşik video+ses latent. Süre, modelin 17k+5 kare ızgarasına 24 fps'de yuvarlanır.",
+    "display_name": "Empty MiniMax H3 AV Latent",
+    "inputs": {
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "24 fps'de kare sayısı, modelin 17k+5 ızgarasına yukarı yuvarlanır (124 = ~5sn; eğitilmiş aralık ~124-362, daha uzun test edilmemiştir)"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "BoşMochiGizliVideo",
     "inputs": {
@@ -5704,6 +5725,15 @@
       "model_resolution": {
         "name": "çözünürlük"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "istem",
         "tooltip": "İstenen videonun metin açıklaması."
@@ -6497,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "P-Image, Ideogram'un hızlı metinden-görüntüye modeli ile görseller üretir. Güçlü tipografi ve foto-gerçekçilik; tam metin, renkler ve yerleşim için Ideogram 4.0 yapılandırılmış JSON başlıklarını destekler.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Görsel üretimi için en-boy oranı."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Metin istemi. Ayrıca Ideogram 4.0 yapılandırılmış JSON başlığı da kabul eder (tam renkler #RRGGBB hex olarak, tam metin dizeleri, bounding-box yerleşimi) — bunu olduğu gibi kullanmak için prompt_upsampling'i KAPALI olarak ayarlayın."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Kısa istemleri üretimden önce ayrıntılı yapılandırılmış başlığa genişletir (yeniden yazılan istem final_prompt olarak döner). Kendi JSON başlığınızı veya tam metni sağlarken KAPALI olarak ayarlayın."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Hız/fiyat/kalite seviyesi. MEDIUM günlük varsayılandır; karmaşık istemler, ince detay ve zor metinler için HIGH; ölçekli taslaklar için VERY_LOW/LOW. Zor metinler MEDIUM altında kötü işlenir."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Çıktı boyutu sınıfı (kesin piksel sayısı en-boy oranını takip eder, ör. 16:9 oranı 1K'da 1280x720 ve 2K'da 2560x1440 verir). Net tipografi için HIGH + 2K tercih edin."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Tekrarlanabilir üretim için tohum. prompt_upsampling KAPALI iken aynı tohum ve ayarlar aynı görseli döndürür; AÇIK/OTOMATİK iken istem yeniden yazımı her çalıştırmada değişir — bir sonucu yeniden üretmek için final_prompt çıktısını prompt_upsampling KAPALI ve aynı tohum ile tekrar kullanın."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "Görselin gerçekten üretildiği istem (prompt_upsampling çalıştıysa yeniden yazılmış yapılandırılmış başlık, aksi halde kendi isteminiz). Bunu prompt_upsampling KAPALI ve aynı tohum ile tekrar kullanarak bu görseli yeniden üretebilirsiniz."
       }
     }
   },
@@ -8643,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "Bir video latent ve bir ses latentini birleşik bir AV latentine birleştirir (herhangi bir AV modeli, örn. LTXV veya MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11328,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Görüntüden Videoya",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "ilk_kare"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "last_frame": {
+        "name": "son_kare"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "24 fps'de kare sayısı, modelin 17k+5 ızgarasına yukarı yuvarlanır (124 = ~5sn; eğitilmiş aralık ~124-362, daha uzun test edilmemiştir)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> referans koşullandırması MiniMax H3 için. Prompt verirken aynı etiketleri kullanın.",
+    "display_name": "MiniMax H3 Referanstan Videoya",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "24 fps'de kare sayısı (124 = ~5sn, eğitilmiş aralık ~124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "ref_sesler"
+      },
+      "ref_image_size": {
+        "name": "ref_görüntü_boyutu",
+        "tooltip": "Referans görüntü boyutlandırması. 'match', her referansı (sadece küçültülerek, oranı koruyarak) oluşturulan piksel alanına ölçekler; 'max', referans hattının 2048px kısa kenarını en iyi kimlik benzerliği için kullanır. Referans tokenları her örnekleme adımında kalır, bu yüzden 'max' birkaç kat daha yavaş olabilir."
+      },
+      "ref_images": {
+        "name": "ref_görüntüler"
+      },
+      "ref_video_audios": {
+        "name": "ref_video_sesleri"
+      },
+      "ref_videos": {
+        "name": "ref_videolar"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "Video/ses akış kaymalarını ayarlayın.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "ses_kaydır"
+      },
+      "shift_video": {
+        "name": "video_kaydır"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "MiniMax H3 modeli ile ilk kare görseli ve isteğe bağlı son kare görseli kullanarak video üretin. Videonun en-boy oranı verilen görsellere göre ayarlanır.",
+    "display_name": "MiniMax H3 İlk-Son-Kare'den Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Video için ilk kare görseli."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Video için isteğe bağlı son kare görseli."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video üretimi için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Rastgele tohum. Aynı istek ve aynı tohum ile benzer, fakat tamamen aynı olmayan sonuçlar elde edilir."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Videoya AIGC filigranı eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "MiniMax H3 modeliyle referans görseller, videolar ve sesler kullanarak video oluşturun. Prompt içindeki referanslara sıralarına göre atıfta bulunun: 'Görsel 1', 'Görsel 2', 'Video 1', 'Ses 1' şeklinde devam eder.",
+    "display_name": "MiniMax H3 Referans ile Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Rastgele tohum. Aynı istek aynı tohum ile benzer, fakat tamamen aynı olmayan sonuçlar verir."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Videoya AIGC filigranı eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "MiniMax H3 modeliyle metin promptundan video oluşturun.",
+    "display_name": "MiniMax H3 Metinden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Rastgele tohum. Aynı istek aynı tohum ile benzer, fakat tamamen aynı olmayan sonuçlar verir."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Videoya AIGC filigranı eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

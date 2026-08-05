@@ -3,14 +3,25 @@ import { datadogRum } from '@datadog/browser-rum'
 import type {
   BillingTelemetryEvent,
   ExecutionOutcomeMetadata,
-  TelemetryProvider
+  TelemetryProvider,
+  UnifiedAuthRetryMetadata
 } from '../../types'
 import {
   getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload
+  getBillingTelemetryEventPayload,
+  TelemetryEvents
 } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    datadogRum.addAction(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_RETRY_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+      metadata
+    )
+  }
+
   trackBillingEvent(event: BillingTelemetryEvent): void {
     datadogRum.addAction(
       getBillingTelemetryEventName(event),

@@ -36,6 +36,7 @@ jobs:
                 | select(
                     . != "package.json"
                     and . != "LICENSE"
+                    and . != "README.md"
                     and (startswith("src/css/") | not)
                     and (startswith("src/icons/") | not)
                   )

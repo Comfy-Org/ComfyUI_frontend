@@ -4,6 +4,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
@@ -32,12 +33,9 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await expect(selectedImageButton).toBeVisible()
       await expect(imageLoadError).toBeHidden()
 
-      await selectedImageButton.click()
-
-      const menu = comfyPage.page.getByTestId('form-dropdown-menu')
-      await expect(menu).toBeVisible()
-      await menu.getByText('example.png', { exact: true }).click()
-      await expect(menu).toBeHidden()
+      await WidgetSelectDropdownFixture.fromTrigger(
+        selectedImageButton
+      ).selectOption('example.png')
 
       await expect(selectedImageButton).toBeFocused()
       await expect(selectedImageButton).toBeVisible()

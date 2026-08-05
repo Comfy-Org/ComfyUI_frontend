@@ -72,6 +72,9 @@ const translations = {
     en: 'Copy',
     'zh-CN': '复制'
   },
+  'ui.breadcrumb': { en: 'Breadcrumb', 'zh-CN': '面包屑导航' },
+  'ui.readMore': { en: 'Read more', 'zh-CN': '展开' },
+  'ui.readLess': { en: 'Read less', 'zh-CN': '收起' },
   'ui.copied': {
     en: 'Copied',
     'zh-CN': '已复制'
@@ -1575,7 +1578,6 @@ const translations = {
     'zh-CN': '按创作领域分类的 ComfyUI 实战教程与工作流。'
   },
   'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
-  'learning.detail.close': { en: 'Close', 'zh-CN': '关闭' },
   'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
   'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
   'learning.categories.all.blurb': {
@@ -1626,10 +1628,10 @@ const translations = {
     'zh-CN':
       '实战 ComfyUI 广告创意教程——情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
   },
-  'learning.tutorials.titlePrefix': {
-    en: 'Learn how to:',
-    'zh-CN': '学习如何：'
-  },
+  // LearningWatchPage
+  'learning.watch.nowWatching': { en: 'Now watching', 'zh-CN': '正在观看' },
+  'learning.watch.watchMore': { en: 'Watch more', 'zh-CN': '观看更多' },
+  'learning.watch.recommended': { en: 'Recommended', 'zh-CN': '推荐' },
 
   // LearningCallToActionSection
   'learning.cta.heading': {
@@ -1639,6 +1641,10 @@ const translations = {
   'learning.cta.contactSales': {
     en: 'Contact Sales',
     'zh-CN': '联系销售'
+  },
+  'learning.cta.runComfy': {
+    en: 'Run Comfy for free',
+    'zh-CN': '免费运行 Comfy'
   },
 
   // GalleryHeroSection
@@ -2471,16 +2477,20 @@ const translations = {
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW: COMFY MCP',
-    'zh-CN': '全新发布：Comfy MCP'
+    en: 'NEW RELEASE: MINIMAX H3',
+    'zh-CN': '全新发布：MiniMax H3'
   },
   'nav.featuredProductsAlt': {
-    en: 'Comfy MCP feature image',
-    'zh-CN': 'Comfy MCP 精选图片'
+    en: 'MiniMax H3 feature image',
+    'zh-CN': 'MiniMax H3 精选图片'
+  },
+  'nav.featuredProductsCta': {
+    en: 'TRY WORKFLOW',
+    'zh-CN': '试用工作流'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Get started with Comfy MCP',
-    'zh-CN': '开始使用 Comfy MCP'
+    en: 'Try the MiniMax H3 workflow',
+    'zh-CN': '试用 MiniMax H3 工作流'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -2516,6 +2526,7 @@ const translations = {
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
   'footer.company': { en: 'Company', 'zh-CN': '公司' },
   'footer.contact': { en: 'Contact', 'zh-CN': '联系我们' },
+  'footer.minimaxH3': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
   'footer.about': { en: 'About', 'zh-CN': '关于' },
   'footer.termsOfService': { en: 'Terms of Service', 'zh-CN': '服务条款' },
   'footer.privacyPolicy': { en: 'Privacy Policy', 'zh-CN': '隐私政策' },
@@ -4738,7 +4749,23 @@ const translations = {
     en: 'Upcoming events',
     'zh-CN': '即将举行的活动'
   },
-  'events.upcoming.learnMore': { en: 'Learn more', 'zh-CN': '了解更多' },
+  'events.upcoming.livestream': { en: 'Livestream', 'zh-CN': '直播' },
+  'events.upcoming.addToCalendar': {
+    en: 'Add to calendar',
+    'zh-CN': '添加到日历'
+  },
+  'events.upcoming.calendarGoogle': {
+    en: 'Google Calendar',
+    'zh-CN': 'Google 日历'
+  },
+  'events.upcoming.calendarApple': {
+    en: 'Apple Calendar',
+    'zh-CN': 'Apple 日历'
+  },
+  'events.upcoming.calendarOutlook': {
+    en: 'Outlook',
+    'zh-CN': 'Outlook'
+  },
   'events.past.title': {
     en: 'See our past events',
     'zh-CN': '回顾过往活动'
@@ -4746,7 +4773,7 @@ const translations = {
   'events.past.filterAll': { en: 'ALL', 'zh-CN': '全部' },
   'events.past.watchNow': { en: 'WATCH NOW', 'zh-CN': '立即观看' },
   'events.past.loadMore': { en: 'LOAD MORE', 'zh-CN': '加载更多' },
-  'events.past.close': { en: 'Close', 'zh-CN': '关闭' },
+  'events.videoDialog.close': { en: 'Close', 'zh-CN': '关闭' },
   'events.category.livestream': { en: 'Livestream', 'zh-CN': '直播' },
   'events.category.hackathon': { en: 'Hackathon', 'zh-CN': '黑客松' },
   'events.category.community': { en: 'Community', 'zh-CN': '社区' },
@@ -4904,7 +4931,169 @@ const translations = {
   'brand.questions.contact': {
     en: 'Contact Us',
     'zh-CN': '联系我们'
-  }
+  },
+
+  // Shared by every model-launch gallery card (see templates/model-launch).
+  'modelLaunch.tagFree': { en: 'Free', 'zh-CN': '免费' },
+  'modelLaunch.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
+  // Flux 3 model page (/flux-3) — announcement only until the model ships
+  'flux3.meta.title': {
+    en: 'Flux 3 on Comfy — Coming Soon',
+    'zh-CN': 'Comfy 上的 Flux 3 — 即将推出'
+  },
+  'flux3.meta.description': {
+    en: 'Flux 3 is coming to Comfy. Run it on Comfy Cloud the day it lands, or start building workflows for free now with every other model Comfy supports.',
+    'zh-CN':
+      'Flux 3 即将登陆 Comfy。上线当天即可在 Comfy Cloud 上运行；现在就可以用 Comfy 支持的其他模型免费开始搭建工作流。'
+  },
+  'flux3.breadcrumb.model': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
+  'flux3.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'flux3.hero.eyebrow': { en: 'New', 'zh-CN': '全新' },
+  'flux3.hero.title': {
+    en: 'Flux 3 coming soon',
+    'zh-CN': 'Flux 3 即将推出'
+  },
+  'flux3.hero.primaryCta': {
+    en: 'RUN COMFY FOR FREE',
+    'zh-CN': '免费使用 Comfy'
+  },
+  'flux3.hero.tagPartnerNodes': {
+    en: 'Partner node',
+    'zh-CN': '合作伙伴节点'
+  },
+  'flux3.hero.tagImageToVideo': {
+    en: 'Image to video',
+    'zh-CN': '图像生成视频'
+  },
+  'flux3.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'flux3.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中搭建工作流。用 API 批量制作，或部署到自有环境。'
+  },
+  'flux3.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'flux3.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'flux3.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'flux3.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'flux3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'minimax.meta.title': {
+    en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
+    'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
+  },
+  'minimax.meta.description': {
+    en: 'Run MiniMax H3 on Comfy: Open Weights or Partner Nodes, multi-modal in/out, native stereo audio on every clip, up to 2K and 5-15s per generation. Free to start.',
+    'zh-CN':
+      '在 Comfy 上运行 MiniMax H3：以开源权重形式提供，也可通过合作伙伴节点使用，多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。免费开始使用。'
+  },
+  'minimax.breadcrumb.model': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
+  'minimax.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  // The hero h1 renders titleModel bright and titleRest muted (Figma two-tone
+  // heading); together they read "MiniMax H3 is here".
+  'minimax.hero.titleModel': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'minimax.hero.titleRest': {
+    en: ' is here',
+    'zh-CN': ' 已上线'
+  },
+  'minimax.hero.description': {
+    en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. H3 is available as Open Weights and through Partner Nodes.',
+    'zh-CN':
+      '完整的多模态输入/输出，每个片段都带原生立体声。最高 2K，每次生成 5 到 15 秒。H3 会真正以输入音频为条件进行生成，而其他模型往往覆盖或丢弃它。H3 以开源权重形式提供，也可通过合作伙伴节点使用。'
+  },
+  'minimax.hero.primaryCta': {
+    en: 'RUN MINIMAX H3',
+    'zh-CN': '运行 MiniMax H3'
+  },
+  'minimax.hero.secondaryCta': { en: 'TRY WORKFLOWS', 'zh-CN': '试用工作流' },
+  'minimax.hero.tagOpenWeights': { en: 'Open Weights', 'zh-CN': '开源权重' },
+  'minimax.hero.tagPartnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'minimax.hero.footnote': {
+    en: 'Free to start · No watermark · Commercial use included',
+    'zh-CN': '免费开始 · 无水印 · 包含商业使用授权'
+  },
+  'minimax.models.heading': {
+    en: 'Made with MiniMax H3',
+    'zh-CN': '用 MiniMax H3 制作'
+  },
+  'minimax.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+  'minimax.cta.heading': {
+    en: 'Up to 2K, with sound, in one generation.',
+    'zh-CN': '最高 2K，自带声音，一次生成。'
+  },
+  'minimax.cta.primaryCta': {
+    en: 'RUN MINIMAX H3',
+    'zh-CN': '运行 MiniMax H3'
+  },
+  'minimax.cta.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
+  },
+  'minimax.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'minimax.runOptions.subtitle': {
+    en: 'Run MiniMax in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中运行 MiniMax。用 API 批量制作，或部署到自有环境。'
+  },
+  // shared across all four run-option cards; the per-product `products.*.cta`
+  // labels overflow on mobile
+  'minimax.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'minimax.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'minimax.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'minimax.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'minimax.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'minimax.pricing.banner.title': {
+    en: "Start free. Upgrade when you're ready.",
+    'zh-CN': '免费开始，准备好了再升级。'
+  },
+  'minimax.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
