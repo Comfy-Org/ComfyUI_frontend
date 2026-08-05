@@ -197,7 +197,7 @@ jobs:
           set -euo pipefail
           case "$ROW" in
             8)
-              # Console/pageerror ledger (s10): an uncaught pack-JS error during
+              # Console/pageerror ledger (S8): an uncaught pack-JS error during
               # save/reload, the class the betterCombos.js `typeof null` bug hit.
               # onConfigure is where that class actually fires. Expected: the
               # console ledger reds naming the text and the script URL.
@@ -206,7 +206,7 @@ jobs:
               grep -q "DETECTION PROOF (row 8)" "$f" || { echo "::error::row 8 break did not apply"; exit 1; }
               ;;
             9)
-              # Execution runtime (s7): WAS `return_constant_number` raises on
+              # Execution runtime (S9): WAS `return_constant_number` raises on
               # entry. Expected: auto-run tier red `Constant Number:
               # EXECUTION_ERROR ... not in cannotRunAlone; a regression`.
               f=ComfyUI/custom_nodes/was-node-suite-comfyui/WAS_Node_Suite.py
@@ -214,7 +214,7 @@ jobs:
               grep -q "DETECTION PROOF (row 9)" "$f" || { echo "::error::row 9 break did not apply"; exit 1; }
               ;;
             10)
-              # Registration sentinels (s5/s10): Impact renames the `ImpactInt`
+              # Registration sentinels (S10): Impact renames the `ImpactInt`
               # node-class key, so the node no longer registers under its
               # expected class_type. Expected: the tests referencing ImpactInt
               # skip, and the "Forbid skipped tests" gate fails on skipped != 0.
