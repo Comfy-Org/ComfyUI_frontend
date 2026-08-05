@@ -121,9 +121,11 @@ function createWorkspaceState(
 
 function renderComponent(
   type: 'personal' | 'team' = 'personal',
-  role: 'owner' | 'member' = 'member'
+  role: 'owner' | 'member' = 'member',
+  accountActionsOnly = false
 ) {
   return render(CurrentUserPopoverWorkspace, {
+    props: { accountActionsOnly },
     global: {
       plugins: [
         createTestingPinia({
@@ -179,6 +181,20 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('workspace-switcher-trigger'))
     expect(
       screen.queryByTestId('workspace-switcher-panel')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps account actions available without workspace context', () => {
+    renderComponent('personal', 'member', true)
+
+    expect(screen.getByTestId('user-settings-menu-item')).toBeInTheDocument()
+    expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('workspace-switcher-trigger')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('credits-info-button')).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('workspace-settings-menu-item')
     ).not.toBeInTheDocument()
   })
 

@@ -270,7 +270,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Call once on app boot.
    */
   async function initialize(): Promise<void> {
-    if (initState.value !== 'uninitialized') return
+    if (initState.value !== 'uninitialized' && initState.value !== 'error')
+      return
 
     const generation = identityGeneration
     initState.value = 'loading'
