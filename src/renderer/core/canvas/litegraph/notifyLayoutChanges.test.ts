@@ -24,6 +24,18 @@ function setup() {
 }
 
 describe('notifyLayoutChanges', () => {
+  it('does not repeat onResize for a canvas resize', async () => {
+    const { node, setDirty, stop } = setup()
+    const onResize = vi.fn()
+    node.onResize = onResize
+
+    node.setSize([300, 200])
+    await vi.waitFor(() => expect(setDirty).toHaveBeenCalled())
+
+    expect(onResize).toHaveBeenCalledTimes(1)
+    stop()
+  })
+
   it('fires onResize for a resize the store originates', async () => {
     const { graph, node, stop } = setup()
     const onResize = vi.fn()
