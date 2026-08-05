@@ -56,16 +56,10 @@ if [[ ! -x "$node_home/bin/pnpm" ]] ||
   npm install --global --prefix "$node_home" "pnpm@$pnpm_version"
 fi
 
-profile_marker="# ComfyUI Frontend orb toolchain"
-if ! grep -Fqx "$profile_marker" "$HOME/.bash_profile" 2>/dev/null; then
-  cat >> "$HOME/.bash_profile" <<EOF
-
-$profile_marker
-if [[ "\${PWD:-}" == "$repo_root" || "\${PWD:-}" == "$repo_root/"* ]]; then
-  export PATH="$node_home/bin:\$PATH"
-fi
-EOF
-fi
+mkdir -p "$HOME/.local/bin"
+for executable in node npm npx pnpm pnpx; do
+  ln -sfn "$node_home/bin/$executable" "$HOME/.local/bin/$executable"
+done
 
 echo "Installing workspace dependencies"
 pnpm install --frozen-lockfile
