@@ -70,6 +70,20 @@ export interface AuthErrorMetadata {
   auth_action: AuthFlowAction
 }
 
+export type UnifiedAuthRetryFailureReason =
+  | 'missing_bearer'
+  | 'non_replayable_body'
+  | 'remint_failed'
+  | 'retry_rejected'
+  | 'retry_request_failed'
+
+export interface UnifiedAuthRetryMetadata {
+  transport: 'axios' | 'fetch'
+  outcome: 'succeeded' | 'failed'
+  final_status?: number
+  failure_reason?: UnifiedAuthRetryFailureReason
+}
+
 /**
  * Survey field ids mapped to answers. Fields are backend-overridable, so all
  * are optional.
@@ -94,16 +108,35 @@ export interface SurveyResponses {
   usage?: string
 }
 
-export type OnboardingTourStage =
+/** Stages inside the coachmark sequence, which is what `step_count` counts. */
+export type OnboardingTourStepStage =
+  | 'not_started'
   | 'started'
   | 'step_shown'
   | 'completed'
   | 'skipped'
 
+/** The nudge follows the tour, so it has no step to report. */
+export type OnboardingTourNudgeStage =
+  | 'nudge_shown'
+  | 'explore_templates_clicked'
+
+export type OnboardingTourStage =
+  | OnboardingTourStepStage
+  | OnboardingTourNudgeStage
+
 export type OnboardingTourSkipReason =
   | 'user'
   | 'target_timeout'
   | 'trigger_lost'
+  | 'postponed'
+
+export type OnboardingTourNotStartedReason =
+  | 'already_seen'
+  | 'no_roles'
+  | 'run_only'
+  | 'no_steps'
+  | 'resolver_failed'
 
 /**
  * `step_number` is 1-based and matches the "Step N of M" indicator the user
@@ -111,13 +144,23 @@ export type OnboardingTourSkipReason =
  * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
  * present only on the `skipped` stage.
  */
-export interface OnboardingTourMetadata {
+export interface OnboardingTourStepMetadata {
   tour: string
   step_count: number
   step_number?: number
   coach_id?: string
   skip_reason?: OnboardingTourSkipReason
+  not_started_reason?: OnboardingTourNotStartedReason
 }
+
+/** The nudge is post-tour, so it reports no step and no count. */
+export interface OnboardingTourNudgeMetadata {
+  tour: string
+}
+
+export type OnboardingTourMetadata =
+  | OnboardingTourStepMetadata
+  | OnboardingTourNudgeMetadata
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -344,7 +387,7 @@ export type WorkflowOpenSource = NonNullable<
  * Template library metadata
  */
 export interface TemplateLibraryMetadata {
-  source: 'sidebar' | 'menu' | 'command' | 'appbuilder'
+  source: 'sidebar' | 'menu' | 'command' | 'appbuilder' | 'first_run_nudge'
 }
 
 /**
@@ -486,6 +529,34 @@ export interface WidgetFavoriteToggledMetadata {
 }
 
 /**
+ * Fired once per node when its `widgets_values_named` restore path
+ * disagrees with what the legacy positional `widgets_values` restore
+ * would have produced. Diagnostic only — never reflects an actual
+ * mis-restored widget value, since the legacy side is a shadow
+ * computation that's never applied when the flag is on.
+ */
+export interface NamedValuesShadowDiffMismatchMetadata {
+  node_type: string
+  pack_id?: string
+  mismatch_widget_count: number
+  checked_widget_count: number
+  had_named_field: boolean
+  has_on_serialize_hook: boolean
+  has_on_configure_hook: boolean
+}
+
+/**
+ * Fired once per workflow load (sampled), aggregating the shadow-diff
+ * results across every node checked during that load.
+ */
+export interface NamedValuesShadowDiffSummaryMetadata {
+  total_nodes_checked: number
+  nodes_with_mismatch: number
+  distinct_node_types: string[]
+  distinct_pack_ids: string[]
+}
+
+/**
  * Help center opened metadata
  */
 export interface HelpCenterOpenedMetadata {
@@ -559,7 +630,11 @@ export interface SubscriptionMetadata {
 }
 
 export interface AddCreditsClickMetadata {
-  source: 'credits_panel' | 'avatar_menu' | 'settings_billing_panel'
+  source:
+    | 'credits_panel'
+    | 'avatar_menu'
+    | 'settings_billing_panel'
+    | 'deep_link'
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -786,6 +861,7 @@ export interface TelemetryProvider {
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
   trackAuthFailed?(metadata: AuthErrorMetadata): void
+  trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
@@ -822,8 +898,12 @@ export interface TelemetryProvider {
 
   // Onboarding coachmark tour events
   trackOnboardingTour?(
-    stage: OnboardingTourStage,
-    metadata: OnboardingTourMetadata
+    stage: OnboardingTourStepStage,
+    metadata: OnboardingTourStepMetadata
+  ): void
+  trackOnboardingTour?(
+    stage: OnboardingTourNudgeStage,
+    metadata: OnboardingTourNudgeMetadata
   ): void
 
   // Email verification events
@@ -889,6 +969,14 @@ export interface TelemetryProvider {
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
+  // Named values shadow-diff diagnostics
+  trackNamedValuesShadowDiffMismatch?(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void
+  trackNamedValuesShadowDiffSummary?(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
 }
@@ -913,6 +1001,8 @@ export const TelemetryEvents = {
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_AUTH_FAILED: 'app:user_auth_failed',
   USER_LOGGED_IN: 'app:user_logged_in',
+  UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',
+  UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -955,10 +1045,14 @@ export const TelemetryEvents = {
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
 
   // Onboarding Coachmarks
+  ONBOARDING_TOUR_NOT_STARTED: 'app:onboarding_tour_not_started',
   ONBOARDING_TOUR_STARTED: 'app:onboarding_tour_started',
   ONBOARDING_TOUR_STEP_SHOWN: 'app:onboarding_tour_step_shown',
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
   ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
+  ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
+  ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
+    'app:onboarding_tour_explore_templates_clicked',
 
   // Email Verification
   USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
@@ -1019,6 +1113,10 @@ export const TelemetryEvents = {
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
+  // Named Values Shadow Diff (Comfy.Workflow.NamedValuesRestore diagnostics)
+  NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
+  NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
+
   // Page View
   PAGE_VIEW: 'app:page_view'
 } as const
@@ -1030,10 +1128,14 @@ export const OnboardingTourEvents: Record<
   OnboardingTourStage,
   TelemetryEventName
 > = {
+  not_started: TelemetryEvents.ONBOARDING_TOUR_NOT_STARTED,
   started: TelemetryEvents.ONBOARDING_TOUR_STARTED,
   step_shown: TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
-  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED
+  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED,
+  nudge_shown: TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN,
+  explore_templates_clicked:
+    TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED
 }
 
 export const CANCELLATION_STAGE_EVENTS = {
@@ -1070,6 +1172,7 @@ export type TelemetryEventProperties =
   | AuthMetadata
   | OnboardingTourMetadata
   | AuthErrorMetadata
+  | UnifiedAuthRetryMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
@@ -1091,6 +1194,8 @@ export type TelemetryEventProperties =
   | SettingChangedMetadata
   | UiButtonClickMetadata
   | WidgetFavoriteToggledMetadata
+  | NamedValuesShadowDiffMismatchMetadata
+  | NamedValuesShadowDiffSummaryMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata

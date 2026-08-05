@@ -27,7 +27,8 @@ export enum ServerFeatureFlag {
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
-  BILLING_CONTROL_ENABLED = 'billing_control_enabled'
+  BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  V1_PAYMENT_RECOVERY = 'v1_payment_recovery'
 }
 
 export function useFeatureFlags() {
@@ -35,7 +36,8 @@ export function useFeatureFlags() {
     flags: {
       teamWorkspacesEnabled: true,
       consolidatedBillingEnabled: true,
-      billingControlEnabled: true
+      billingControlEnabled: true,
+      v1PaymentRecovery: true
     }
   }
 }
