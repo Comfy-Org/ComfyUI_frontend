@@ -128,6 +128,12 @@ describe('MediaAssetCard', () => {
     const user = userEvent.setup()
     const { emitted } = renderCard({ loading: false, selected: true })
 
+    expect(
+      screen.queryByRole('button', { name: 'mediaAsset.actions.download' })
+    ).not.toBeInTheDocument()
+
+    await user.hover(await screen.findByRole('img', { name: 'a.png' }))
+
     await user.click(
       screen.getByRole('button', { name: 'mediaAsset.actions.download' })
     )

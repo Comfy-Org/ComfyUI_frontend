@@ -20,6 +20,10 @@
     @click.stop
     @contextmenu.prevent.stop="handleContextMenu"
     @dragstart="dragStart"
+    @keydown="handleKeyboardInteraction"
+    @pointercancel="handlePointerEnd"
+    @pointerdown="handlePointerDown"
+    @pointerup="handlePointerEnd"
   >
     <!-- Top Area: Media Preview -->
     <div
@@ -160,7 +164,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover, useFocusWithin } from '@vueuse/core'
-import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
+import { computed, defineAsyncComponent, provide, ref, toRef, watch } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -247,6 +251,11 @@ const imageDimensions = ref<{ width: number; height: number } | undefined>()
 
 const isHovered = useElementHover(cardContainerRef)
 const { focused: isFocusedWithin } = useFocusWithin(cardContainerRef)
+const isPointerFocusedWithin = ref(false)
+
+watch(isFocusedWithin, (isFocused) => {
+  if (!isFocused) isPointerFocusedWithin.value = false
+})
 
 const actions = useMediaAssetActions()
 
@@ -343,9 +352,21 @@ const metaInfo = computed(() => {
 const showActionsOverlay = computed(() => {
   if (loading || !asset || isDeleting.value) return false
   return (
-    isHovered.value || isFocusedWithin.value || selected || isVideoPlaying.value
+    isHovered.value || (isFocusedWithin.value && !isPointerFocusedWithin.value)
   )
 })
+
+function handleKeyboardInteraction() {
+  isPointerFocusedWithin.value = false
+}
+
+function handlePointerDown() {
+  isPointerFocusedWithin.value = true
+}
+
+function handlePointerEnd() {
+  if (!isFocusedWithin.value) isPointerFocusedWithin.value = false
+}
 
 function handlePreviewClick(event: MouseEvent) {
   if (fileKind.value === 'video' && !event.shiftKey) return
