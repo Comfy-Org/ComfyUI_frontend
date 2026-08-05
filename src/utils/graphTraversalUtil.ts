@@ -309,6 +309,31 @@ export function findSubgraphPathById(
 }
 
 /**
+ * Gets the root parent node associated with a hierarchical execution ID.
+ * Both Group Nodes and Subgraph Nodes use hierarchical IDs (e.g. "rootId:childId:...").
+ * The root parent is always located in the rootGraph.
+ *
+ * @param rootGraph - The root graph to search from
+ * @param executionId - The execution ID (e.g., "123:456")
+ * @returns The root parent node if found, null otherwise
+ */
+export function getRootParentNode(
+  rootGraph: LGraph,
+  executionId: string
+): LGraphNode | null {
+  const parts = parseExecutionId(executionId)
+  if (!parts || parts.length < 2) return null
+
+  const parentId = parts[0]
+  if (!rootGraph) return null
+
+  const localParentId = parseNodeId(parentId)
+  if (!localParentId) return null
+
+  return rootGraph.getNodeById(localParentId) || null
+}
+
+/**
  * Get a node by its execution ID from anywhere in the graph hierarchy.
  * Execution IDs use hierarchical format like "123:456:789" for nested nodes.
  *
@@ -444,8 +469,9 @@ export function isCandidateScopeActive(
  * candidate is surfaceable when it is confirmed missing and its
  * enclosing subgraph is still active. Null `nodeId` (workflow-level
  * models) bypasses the ancestor check since it has no scope to
- * validate. Unified helper so the initial pipeline post-filter and the
- * three async-resolution call sites cannot drift.
+ * validate. Shared by the missing-model pipeline post-filter and its
+ * async-resolution call site; missing media resolves scope through the
+ * promoted-widget-aware `isMissingMediaCandidateActive` instead.
  */
 export function isMissingCandidateActive(
   rootGraph: LGraph | null | undefined,

@@ -7,13 +7,23 @@ import InviteMembersForm from './InviteMembersForm.vue'
 
 import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { mockCreateInvite, mockToastAdd, mockTrackInviteSent } = vi.hoisted(
-  () => ({
-    mockCreateInvite: vi.fn(),
-    mockToastAdd: vi.fn(),
-    mockTrackInviteSent: vi.fn()
-  })
-)
+const {
+  mockCreateInvite,
+  mockFetchStatus,
+  mockToastAdd,
+  mockTrackInviteSent,
+  mockTrackInviteFailed
+} = vi.hoisted(() => ({
+  mockCreateInvite: vi.fn(),
+  mockFetchStatus: vi.fn(),
+  mockToastAdd: vi.fn(),
+  mockTrackInviteSent: vi.fn(),
+  mockTrackInviteFailed: vi.fn()
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({ fetchStatus: mockFetchStatus })
+}))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
@@ -29,7 +39,8 @@ vi.mock('primevue/usetoast', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackWorkspaceInviteSent: mockTrackInviteSent
+    trackWorkspaceInviteSent: mockTrackInviteSent,
+    trackWorkspaceInviteFailed: mockTrackInviteFailed
   })
 }))
 
@@ -75,19 +86,22 @@ function submitButton() {
 describe('InviteMembersForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFetchStatus.mockResolvedValue(undefined)
     mockCreateInvite.mockImplementation(async (email: string) =>
       pendingInviteFor(email)
     )
   })
 
-  it('turns comma- and enter-delimited input into chips', async () => {
+  it('turns comma-, whitespace-, and enter-delimited input into chips', async () => {
     const { user } = renderForm()
 
-    await user.type(emailInput(), 'a@b.com,')
-    await user.type(emailInput(), 'c@d.com{Enter}')
+    await user.type(emailInput(), 'a@b.com ')
+    await user.type(emailInput(), 'c@d.com,')
+    await user.type(emailInput(), 'e@f.com{Enter}')
 
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    expect(screen.getByText('e@f.com')).toBeInTheDocument()
   })
 
   it('disables submit with no chips and flags invalid emails', async () => {
@@ -107,7 +121,7 @@ describe('InviteMembersForm', () => {
   it('creates an invite per email, tracks telemetry, and emits submitted', async () => {
     const { user, emitted } = renderForm()
 
-    await user.type(emailInput(), 'a@b.com,c@d.com{Enter}')
+    await user.type(emailInput(), 'A@B.com C@D.com{Enter}')
     await user.click(submitButton())
 
     await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
@@ -117,17 +131,38 @@ describe('InviteMembersForm', () => {
       source: 'post_upgrade_success',
       count: 2
     })
+    expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(emitted().submitted).toEqual([[['a@b.com', 'c@d.com']]])
   })
 
-  it('keeps failed emails as chips, toasts, and emits the invited subset on partial failure', async () => {
+  it('completes submission when the billing refresh fails', async () => {
+    const refreshError = new Error('refresh failed')
+    mockFetchStatus.mockRejectedValueOnce(refreshError)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'a@b.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() => expect(emitted().submitted).toEqual([[['a@b.com']]]))
+    expect(submitButton()).toBeEnabled()
+    expect(mockFetchStatus).toHaveBeenCalledOnce()
+    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+    consoleError.mockRestore()
+  })
+
+  it('keeps failed emails for retry and emits all invited emails after recovery', async () => {
+    let shouldFail = true
     mockCreateInvite.mockImplementation(async (email: string) => {
-      if (email === 'fail@x.com') throw new Error('nope')
+      if (email === 'fail@x.com' && shouldFail) {
+        shouldFail = false
+        throw new Error('nope')
+      }
       return pendingInviteFor(email)
     })
     const { user, emitted } = renderForm()
 
-    await user.type(emailInput(), 'ok@x.com,fail@x.com{Enter}')
+    await user.type(emailInput(), 'ok@x.com fail@x.com{Enter}')
     await user.click(submitButton())
 
     await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
@@ -136,8 +171,18 @@ describe('InviteMembersForm', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(emitted().submitted).toEqual([[['ok@x.com']]])
+    expect(emitted().submitted).toBeUndefined()
     expect(mockTrackInviteSent).toHaveBeenCalledWith({
+      source: 'post_upgrade_success',
+      count: 1
+    })
+
+    await user.click(submitButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(3))
+    expect(emitted().submitted).toEqual([[['ok@x.com', 'fail@x.com']]])
+    expect(mockTrackInviteSent).toHaveBeenCalledTimes(2)
+    expect(mockTrackInviteSent).toHaveBeenLastCalledWith({
       source: 'post_upgrade_success',
       count: 1
     })
@@ -158,6 +203,7 @@ describe('InviteMembersForm', () => {
     )
     expect(emitted().submitted).toBeUndefined()
     expect(mockTrackInviteSent).not.toHaveBeenCalled()
+    expect(mockFetchStatus).not.toHaveBeenCalled()
   })
 
   it('caps the number of chips at maxSeats', async () => {
@@ -171,6 +217,20 @@ describe('InviteMembersForm', () => {
     expect(
       screen.getByText('workspacePanel.inviteMemberDialog.seatLimitReached')
     ).toBeInTheDocument()
+  })
+
+  it('caps unlimited workspaces to one invite batch', async () => {
+    const { user } = renderForm({ maxSeats: Number.POSITIVE_INFINITY })
+    const emails = Array.from(
+      { length: 31 },
+      (_, index) => `member${index + 1}@example.com`
+    )
+
+    await user.click(emailInput())
+    await user.paste(emails.join(','))
+
+    expect(screen.getByText('member30@example.com')).toBeInTheDocument()
+    expect(screen.queryByText('member31@example.com')).not.toBeInTheDocument()
   })
 
   it('emits cancel when a cancel label is provided', async () => {

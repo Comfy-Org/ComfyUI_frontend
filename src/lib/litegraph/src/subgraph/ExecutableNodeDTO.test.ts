@@ -8,6 +8,7 @@ import {
   LGraphEventMode,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import {
@@ -57,7 +58,7 @@ describe('ExecutableNodeDTO Creation', () => {
     const node = new LGraphNode('Test Node')
     node.addInput('input1', 'number')
     node.addInput('input2', 'string')
-    node.inputs[0].link = 123 // Simulate connected input
+    node.inputs[0].link = toLinkId(123) // Simulate connected input
     graph.add(node)
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
@@ -506,7 +507,7 @@ describe('ExecutableNodeDTO Properties', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
     node.addInput('testInput', 'number')
-    node.inputs[0].link = 999 // Simulate connection
+    node.inputs[0].link = toLinkId(999) // Simulate connection
     graph.add(node)
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)

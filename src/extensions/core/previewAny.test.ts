@@ -1,6 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyExtension } from '@/types/comfy'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
+const { addTextPreviewWidgets, updateTextPreviewWidgets } = vi.hoisted(() => ({
+  addTextPreviewWidgets: vi.fn(),
+  updateTextPreviewWidgets: vi.fn()
+}))
+
+vi.mock('@/extensions/core/textPreviewWidgets', () => ({
+  addTextPreviewWidgets,
+  updateTextPreviewWidgets
+}))
 
 const capturedExtensions: ComfyExtension[] = []
 
@@ -12,103 +23,51 @@ vi.mock('@/services/extensionService', () => ({
   })
 }))
 
-vi.mock('@/scripts/app', () => ({ app: {} }))
+type BeforeRegister = NonNullable<ComfyExtension['beforeRegisterNodeDef']>
 
-interface MockWidget {
-  name: string
-  options: Record<string, unknown>
-  element: { readOnly: boolean }
-  callback?: (value: unknown) => void
-  value: unknown
-  hidden: boolean
-  label: string
-  serialize?: boolean
-}
+async function setupNode() {
+  const ext = capturedExtensions.find((e) => e.name === 'Comfy.PreviewAny')
+  expect(ext).toBeDefined()
 
-const createdWidgets: MockWidget[] = []
+  const nodeType = { prototype: {} } as unknown as Parameters<BeforeRegister>[0]
+  const nodeData = { name: 'PreviewAny' } as Parameters<BeforeRegister>[1]
+  await ext!.beforeRegisterNodeDef!(
+    nodeType,
+    nodeData,
+    {} as Parameters<BeforeRegister>[2]
+  )
 
-vi.mock('@/scripts/widgets', () => {
-  const create =
-    (kind: string) =>
-    (
-      node: { widgets?: MockWidget[] },
-      name: string,
-      _info: unknown,
-      _app: unknown
-    ) => {
-      const widget: MockWidget = {
-        name,
-        options: {},
-        element: { readOnly: false },
-        value: kind === 'BOOLEAN' ? false : '',
-        hidden: false,
-        label: ''
-      }
-      node.widgets = node.widgets ?? []
-      node.widgets.push(widget)
-      createdWidgets.push(widget)
-      return { widget }
-    }
-  return {
-    ComfyWidgets: {
-      MARKDOWN: create('MARKDOWN'),
-      STRING: create('STRING'),
-      BOOLEAN: create('BOOLEAN')
-    }
+  const node = {} as LGraphNode
+  const proto = nodeType.prototype as {
+    onNodeCreated?: () => void
+    onExecuted?: (message: { text?: string }) => void
   }
-})
+  return { node, proto }
+}
 
 describe('PreviewAny extension', () => {
   beforeEach(async () => {
     capturedExtensions.length = 0
-    createdWidgets.length = 0
+    addTextPreviewWidgets.mockClear()
+    updateTextPreviewWidgets.mockClear()
     vi.resetModules()
     await import('./previewAny')
   })
 
-  async function setupNode() {
-    const ext = capturedExtensions.find((e) => e.name === 'Comfy.PreviewAny')
-    expect(ext).toBeDefined()
+  it('adds the shared text preview widgets on node creation', async () => {
+    const { node, proto } = await setupNode()
 
-    const nodeType = { prototype: {} } as unknown as Parameters<
-      NonNullable<ComfyExtension['beforeRegisterNodeDef']>
-    >[0]
-    const nodeData = { name: 'PreviewAny' } as Parameters<
-      NonNullable<ComfyExtension['beforeRegisterNodeDef']>
-    >[1]
-
-    await ext!.beforeRegisterNodeDef!(
-      nodeType,
-      nodeData,
-      {} as Parameters<NonNullable<ComfyExtension['beforeRegisterNodeDef']>>[2]
-    )
-
-    const node: { widgets?: MockWidget[] } = {}
-    const proto = nodeType.prototype as { onNodeCreated?: () => void }
     proto.onNodeCreated!.call(node)
-    return node
-  }
 
-  it('excludes preview widgets from the API prompt to prevent re-execution', async () => {
-    await setupNode()
+    expect(addTextPreviewWidgets).toHaveBeenCalledWith(node)
+  })
 
-    const previewMarkdown = createdWidgets.find(
-      (w) => w.name === 'preview_markdown'
-    )
-    const previewText = createdWidgets.find((w) => w.name === 'preview_text')
-    const previewMode = createdWidgets.find((w) => w.name === 'previewMode')
+  it('updates the preview with executed text', async () => {
+    const { node, proto } = await setupNode()
+    const message = { text: 'hello' }
 
-    expect(previewMarkdown).toBeDefined()
-    expect(previewText).toBeDefined()
-    expect(previewMode).toBeDefined()
+    proto.onExecuted!.call(node, message)
 
-    // widget.options.serialize === false is what executionUtil.graphToPrompt
-    // checks to exclude a widget from the API prompt sent to the backend.
-    // Without this, post-execution widget value updates (the rendered preview
-    // text) get serialized as inputs, change the cache signature, and cause
-    // the node to re-execute on the next prompt.
-    expect(previewMarkdown!.options.serialize).toBe(false)
-    expect(previewText!.options.serialize).toBe(false)
-    expect(previewMode!.options.serialize).toBe(false)
+    expect(updateTextPreviewWidgets).toHaveBeenCalledWith(node, message)
   })
 })

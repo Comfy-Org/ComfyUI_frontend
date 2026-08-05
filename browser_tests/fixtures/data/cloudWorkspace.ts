@@ -1,5 +1,6 @@
+import type { BillingStatusResponse as IngestBillingStatusResponse } from '@comfyorg/ingest-types'
+
 import type {
-  BillingStatusResponse,
   Member,
   Plan,
   WorkspaceWithRole
@@ -9,7 +10,8 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 // `/api/features` is the remote-config source: production builds resolve the
 // workspaces flag from it (the `ff:` localStorage override is dev-only).
 export const WORKSPACE_FEATURE_FLAG: RemoteConfig = {
-  team_workspaces_enabled: true
+  team_workspaces_enabled: true,
+  consolidated_billing_enabled: true
 }
 
 export const TEAM_WORKSPACE: WorkspaceWithRole = {
@@ -67,21 +69,38 @@ export const DEFAULT_TEAM_MEMBERS: Member[] = [
   MEMBER_JOHN
 ]
 
-export const TEAM_BILLING_STATUS: BillingStatusResponse = {
+const TEAM_PLAN_SLUG = 'team-pro-monthly'
+
+export const TEAM_BILLING_STATUS = {
   is_active: true,
+  max_seats: 30,
+  occupied_seats: DEFAULT_TEAM_MEMBERS.length,
   subscription_status: 'active',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
-  plan_slug: 'pro-monthly',
+  plan_slug: TEAM_PLAN_SLUG,
   billing_status: 'paid',
   has_funds: true,
-  renewal_date: '2099-02-20T00:00:00Z'
-}
+  renewal_date: '2099-02-20T00:00:00Z',
+  team_credit_stop: null
+} satisfies IngestBillingStatusResponse
 
-// `max_seats > 1` on the current plan is what flips `isOnTeamPlan`, which gates
-// the whole role-management UI.
+export const ENDED_STANDARD_BILLING_STATUS = {
+  billing_rail: 'stripe',
+  billing_status: 'inactive',
+  has_funds: true,
+  is_active: false,
+  max_seats: 30,
+  occupied_seats: DEFAULT_TEAM_MEMBERS.length,
+  plan_slug: 'standard-monthly',
+  subscription_duration: 'MONTHLY',
+  subscription_status: 'ended',
+  subscription_tier: 'STANDARD',
+  team_credit_stop: null
+} satisfies IngestBillingStatusResponse & { billing_rail: 'stripe' }
+
 export const TEAM_PRO_PLAN: Plan = {
-  slug: 'pro-monthly',
+  slug: TEAM_PLAN_SLUG,
   tier: 'PRO',
   duration: 'MONTHLY',
   price_cents: 10000,

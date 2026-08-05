@@ -1,5 +1,6 @@
 import type { ComputedRef, Ref } from 'vue'
 
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   BillingStatus,
@@ -23,6 +24,9 @@ export interface SubscriptionInfo {
   tier: SubscriptionTier | null
   duration: SubscriptionDuration | null
   planSlug: string | null
+  scheduledPlanSlug?: string | null
+  /** ISO 8601; format at the display site. */
+  changeAt?: string | null
   /** ISO 8601; format at the display site. */
   renewalDate: string | null
   /** ISO 8601; format at the display site. */
@@ -75,9 +79,10 @@ export interface BillingActions {
    */
   requireActiveSubscription: () => Promise<void>
   /**
-   * Shows the subscription dialog.
+   * Shows the subscription dialog. Pass a reason so the paywall open and any
+   * downstream checkout stay attributed to the triggering product moment.
    */
-  showSubscriptionDialog: () => void
+  showSubscriptionDialog: (options?: SubscriptionDialogOptions) => void
 }
 
 export interface BillingState {
@@ -90,9 +95,13 @@ export interface BillingState {
   teamCreditStops: ComputedRef<TeamCreditStops | null>
   /** The team's currently-subscribed credit stop; null for personal/legacy. */
   currentTeamCreditStop: ComputedRef<CurrentTeamCreditStop | null>
+  /** Effective member limit for the current workspace; zero is unlimited. */
+  maxSeats: ComputedRef<number | null>
+  /** Seats occupied in the current workspace. */
+  occupiedSeats: ComputedRef<number | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
-  isActiveSubscription: ComputedRef<boolean>
+  canAccessSubscriptionFeatures: ComputedRef<boolean>
   /** Reflects the active workspace's tier, not the user's personal tier. */
   isFreeTier: ComputedRef<boolean>
   /** Coarse funding state (`billing_status`); legacy reports null. */
@@ -105,10 +114,21 @@ export interface BillingState {
 
 export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
+  reconcileSubscriptionSuccess: () => Promise<void>
   /**
    * True when the active team workspace is still on a pre-credit-slider
    * (legacy) per-member tier plan, which keeps the old team pricing table.
    */
   isLegacyTeamPlan: ComputedRef<boolean>
+  /**
+   * True when the subscription is a team plan of either generation. Unlike
+   * `isLegacyTeamPlan` this does not require an active subscription: the spend
+   * gate folds billing_status into is_active, so a paused or payment-failed team
+   * plan reports is_active=false and must still read as a team plan.
+   */
+  isTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
+  canRunWorkflows: ComputedRef<boolean>
+  /** @deprecated Use canAccessSubscriptionFeatures instead */
+  isActiveSubscription: ComputedRef<boolean>
 }

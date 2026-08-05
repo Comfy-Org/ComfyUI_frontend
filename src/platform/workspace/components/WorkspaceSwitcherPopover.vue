@@ -1,6 +1,9 @@
 <template>
-  <div class="flex w-80 flex-col overflow-hidden rounded-lg">
-    <div class="flex flex-col overflow-y-auto">
+  <div class="flex max-h-96 w-80 flex-col overflow-hidden rounded-lg">
+    <div
+      class="flex scrollbar-custom min-h-0 flex-1 flex-col"
+      data-testid="workspace-switcher-list"
+    >
       <!-- Loading state -->
       <div v-if="isFetchingWorkspaces" class="flex flex-col gap-2 p-2">
         <div
@@ -40,10 +43,10 @@
                 <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
                   <div class="flex max-w-full min-w-0 items-center gap-1.5">
                     <span
-                      :title="getDisplayName(workspace)"
+                      :title="workspace.name"
                       class="min-w-0 truncate text-sm text-base-foreground"
                     >
-                      {{ getDisplayName(workspace) }}
+                      {{ workspace.name }}
                     </span>
                     <span
                       v-if="resolveTierLabel(workspace)"
@@ -65,41 +68,38 @@
           </div>
         </template>
       </template>
+    </div>
 
-      <!-- Create workspace button -->
-      <div class="p-2">
+    <!-- Create workspace button -->
+    <div class="shrink-0 border-t border-border-default p-2">
+      <div
+        :class="
+          cn(
+            'flex h-12 w-full items-center gap-2 rounded-sm p-2',
+            canCreateWorkspace
+              ? 'cursor-pointer hover:bg-secondary-background-hover'
+              : 'cursor-default'
+          )
+        "
+        @click="canCreateWorkspace && handleCreateWorkspace()"
+      >
         <div
           :class="
             cn(
-              'flex h-12 w-full items-center gap-2 rounded-sm p-2',
-              canCreateWorkspace
-                ? 'cursor-pointer hover:bg-secondary-background-hover'
-                : 'cursor-default'
+              'flex size-8 items-center justify-center rounded-full bg-secondary-background',
+              !canCreateWorkspace && 'opacity-50'
             )
           "
-          @click="canCreateWorkspace && handleCreateWorkspace()"
         >
-          <div
-            :class="
-              cn(
-                'flex size-8 items-center justify-center rounded-full bg-secondary-background',
-                !canCreateWorkspace && 'opacity-50'
-              )
-            "
-          >
-            <i class="pi pi-plus text-sm text-muted-foreground" />
-          </div>
-          <div class="flex min-w-0 flex-1 flex-col">
-            <span
-              v-if="canCreateWorkspace"
-              class="text-sm text-muted-foreground"
-            >
-              {{ $t('workspaceSwitcher.createWorkspace') }}
-            </span>
-            <span v-else class="text-sm text-muted-foreground">
-              {{ $t('workspaceSwitcher.maxWorkspacesReached') }}
-            </span>
-          </div>
+          <i class="pi pi-plus text-sm text-muted-foreground" />
+        </div>
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span v-if="canCreateWorkspace" class="text-sm text-muted-foreground">
+            {{ $t('workspaceSwitcher.createWorkspace') }}
+          </span>
+          <span v-else class="text-sm text-muted-foreground">
+            {{ $t('workspaceSwitcher.maxWorkspacesReached') }}
+          </span>
         </div>
       </div>
     </div>
@@ -168,12 +168,6 @@ const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
 
 function isCurrentWorkspace(workspace: AvailableWorkspace): boolean {
   return workspace.id === workspaceId.value
-}
-
-function getDisplayName(workspace: AvailableWorkspace): string {
-  return workspace.type === 'personal'
-    ? t('workspaceSwitcher.personal')
-    : workspace.name
 }
 
 function getRoleLabel(role: AvailableWorkspace['role']): string {

@@ -39,6 +39,9 @@ const WidgetGalleria = defineAsyncComponent(
 const WidgetMarkdown = defineAsyncComponent(
   () => import('../components/WidgetMarkdown.vue')
 )
+const WidgetTextPreview = defineAsyncComponent(
+  () => import('../components/WidgetTextPreview.vue')
+)
 const WidgetLegacy = defineAsyncComponent(
   () => import('../components/WidgetLegacy.vue')
 )
@@ -71,6 +74,9 @@ const WidgetRange = defineAsyncComponent(
 )
 const WidgetBoundingBoxes = defineAsyncComponent(
   () => import('@/components/boundingBoxes/WidgetBoundingBoxes.vue')
+)
+const WidgetVideoEdit = defineAsyncComponent(
+  () => import('@/components/videoEdit/WidgetVideoEdit.vue')
 )
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
@@ -160,6 +166,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: false
     }
   ],
+  [
+    'textPreview',
+    {
+      component: WidgetTextPreview,
+      aliases: ['TEXT_PREVIEW'],
+      essential: false
+    }
+  ],
   ['legacy', { component: WidgetLegacy, aliases: [], essential: true }],
   [
     'audiorecord',
@@ -235,6 +249,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'videoedit',
+    {
+      component: WidgetVideoEdit,
+      aliases: ['VIDEO_EDIT'],
+      essential: false
+    }
+  ],
+  [
     'colors',
     {
       component: WidgetColors,
@@ -275,13 +297,15 @@ export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
 const EXPANDING_TYPES = [
   'textarea',
   'markdown',
+  'textPreview',
   'load3D',
   'load3DAdvanced',
   'curve',
   'painter',
   'imagecompare',
   'range',
-  'boundingboxes'
+  'boundingboxes',
+  'videoedit'
 ] as const
 
 export function shouldExpand(type: string): boolean {

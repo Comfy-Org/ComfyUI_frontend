@@ -1,6 +1,7 @@
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { RerouteId } from '@/types/rerouteId'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
@@ -24,7 +25,7 @@ import type { Serialisable, SerialisableReroute } from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
 
-export type RerouteId = number
+export type { RerouteId } from '@/types/rerouteId'
 
 /** The input or output slot that an incomplete reroute link is connected to. */
 export interface FloatingRerouteSlot {
@@ -52,6 +53,8 @@ export class Reroute
     const gap = Reroute.slotRadius * 0.33
     return Reroute.radius + gap + Reroute.slotRadius
   }
+
+  public readonly id: RerouteId
 
   /** The network this reroute belongs to.  Contains all valid links and reroutes. */
   private readonly network: WeakRef<LinkNetwork>
@@ -201,13 +204,14 @@ export class Reroute
    * @param linkIds Link IDs ({@link LLink.id}) of all links that use this reroute
    */
   constructor(
-    public readonly id: RerouteId,
+    id: RerouteId,
     network: LinkNetwork,
     pos?: Point,
     parentId?: RerouteId,
     linkIds?: Iterable<LinkId>,
     floatingLinkIds?: Iterable<LinkId>
   ) {
+    this.id = id
     this.network = new WeakRef(network)
     this.parentId = parentId
     if (pos) this.pos = pos

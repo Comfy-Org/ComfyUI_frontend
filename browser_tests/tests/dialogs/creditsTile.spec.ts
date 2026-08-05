@@ -1,12 +1,21 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingOpStatusResponse,
+  BillingStatusResponse,
+  CreateTopupResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import {
+  mockWorkspaceTokenMint,
+  workspace
+} from '@e2e/fixtures/utils/workspaceMocks'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS
@@ -53,20 +62,26 @@ const DEFAULT_BALANCE = { amount: 6000, monthly: 5000, prepaid: 1000 }
 
 const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
   has_funds: true
 }
 
-async function mockCloudBoot(page: Page) {
+async function mockCloudBoot(page: Page, billingControlEnabled = true) {
   // Frontend-origin boot endpoints (proxied to the backend in production).
   // `/api/features` is the remote-config source: production builds resolve
-  // `teamWorkspacesEnabled` from it (the `ff:` localStorage override is
-  // dev-only), and the flag gates the Workspace settings panel.
+  // workspace availability and the billing UX rollout from it (the `ff:`
+  // localStorage override is dev-only).
   await page.route('**/api/features', (r) =>
     r.fulfill(
-      jsonRoute({ team_workspaces_enabled: true } satisfies RemoteConfig)
+      jsonRoute({
+        team_workspaces_enabled: true,
+        consolidated_billing_enabled: true,
+        billing_control_enabled: billingControlEnabled
+      } satisfies RemoteConfig)
     )
   )
   await page.route('**/api/system_stats', (r) =>
@@ -97,6 +112,7 @@ async function mockCloudBoot(page: Page) {
   await page.route('**/api/auth/session', (r) =>
     r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
   )
+  await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
   // Single personal workspace.
@@ -158,8 +174,7 @@ async function mockBalance(
   )
 }
 
-/** Boots the mocked cloud app and opens Settings ▸ Workspace ▸ Plan & Credits. */
-async function openPlanAndCredits(page: Page) {
+async function openSettings(page: Page) {
   const auth = new CloudAuthHelper(page)
   await auth.mockAuth()
 
@@ -180,12 +195,52 @@ async function openPlanAndCredits(page: Page) {
     .click()
   const dialog = page.getByTestId('settings-dialog')
   await expect(dialog).toBeVisible()
-  await dialog.locator('nav').getByRole('button', { name: 'Workspace' }).click()
+
+  return dialog
+}
+
+/** Boots the mocked cloud app and opens Settings ▸ Workspace ▸ Plan & Credits. */
+async function openPlanAndCredits(page: Page) {
+  const dialog = await openSettings(page)
+  await dialog
+    .locator('nav')
+    .getByRole('button', { name: 'Plan & Credits' })
+    .click()
 
   return dialog.getByRole('main')
 }
 
 test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
+  test('keeps the legacy Workspace UX when billing controls are disabled', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page, false)
+    const dialog = await openSettings(page)
+    const nav = dialog.locator('nav')
+
+    await expect(
+      nav.getByRole('button', { name: 'Workspace', exact: true })
+    ).toBeVisible()
+    await expect(
+      nav.getByRole('button', { name: 'Plan & Credits', exact: true })
+    ).toHaveCount(0)
+    await expect(
+      nav.getByRole('button', { name: 'Members', exact: true })
+    ).toHaveCount(0)
+
+    await nav.getByRole('button', { name: 'Workspace', exact: true }).click()
+    const content = dialog.getByRole('main')
+    await expect(
+      content.getByRole('tab', { name: 'Plan & Credits' })
+    ).toBeVisible()
+    await expect(content.getByRole('tab', { name: 'Members' })).toBeVisible()
+    await expect(content.getByRole('button', { name: 'Activity' })).toHaveCount(
+      0
+    )
+  })
+
   test('renders the unified tile with breakdown and add-credits', async ({
     page
   }) => {
@@ -194,6 +249,12 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await mockCloudBoot(page)
 
     const content = await openPlanAndCredits(page)
+    await expect(
+      page
+        .getByRole('dialog')
+        .locator('nav')
+        .getByRole('button', { name: 'Members', exact: true })
+    ).toBeVisible()
 
     // Total + remaining suffix (Pro monthly allowance = 21,100; remaining
     // 10,550 -> used 10,550).
@@ -260,5 +321,102 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toBeVisible()
+  })
+})
+
+test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
+  test.describe.configure({ timeout: 60_000 })
+
+  let operationPollRequests: Request[]
+  let topupDialog: TopUpCreditsDialog
+
+  test.beforeEach(async ({ page }) => {
+    operationPollRequests = []
+    await page.addInitScript(() => {
+      window.open = (url, target, features) => {
+        document.documentElement.dataset.openedUrl = String(url)
+        document.documentElement.dataset.openedTarget = target ?? ''
+        document.documentElement.dataset.openedFeatures = features ?? ''
+        return window
+      }
+    })
+    await mockCloudBoot(page)
+    await page.route('**/api/settings/**', (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      return route.fulfill(jsonRoute({}))
+    })
+    await page.route('**/api/prompt', (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      return route.fulfill(jsonRoute({ exec_info: { queue_remaining: 0 } }))
+    })
+    await page.route('**/api/queue', (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      return route.fulfill(jsonRoute({ queue_running: [], queue_pending: [] }))
+    })
+    await page.route('**/api/billing/topup', (route) =>
+      route.fulfill(
+        jsonRoute({
+          billing_op_id: 'topup-3ds-operation',
+          topup_id: 'topup-3ds-operation',
+          status: 'pending',
+          amount_cents: 5000
+        } satisfies CreateTopupResponse)
+      )
+    )
+    await page.route('**/api/billing/ops/topup-3ds-operation', (route) => {
+      operationPollRequests.push(route.request())
+      return route.fulfill(
+        jsonRoute({
+          id: 'topup-3ds-operation',
+          status: 'pending',
+          started_at: '2026-07-31T00:00:00Z',
+          action_url: 'https://verify.example/topup-3ds'
+        } satisfies BillingOpStatusResponse)
+      )
+    })
+
+    const content = await openPlanAndCredits(page)
+    topupDialog = new TopUpCreditsDialog(page)
+    await content.getByRole('button', { name: 'Add credits' }).click()
+    await topupDialog.waitForVisible()
+  })
+
+  test('opens verification when the top-up operation requires authentication', async ({
+    page
+  }) => {
+    await topupDialog.root.getByRole('button', { name: 'Add credits' }).click()
+
+    await expect(
+      topupDialog.root.getByRole('heading', { name: 'Confirm' })
+    ).toBeVisible()
+    await expect(
+      topupDialog.root.getByRole('button', { name: 'Back' })
+    ).toBeEnabled()
+    expect(operationPollRequests).toHaveLength(0)
+
+    await topupDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
+
+    await expect(
+      topupDialog.root.getByRole('button', { name: 'Back' })
+    ).toBeDisabled()
+    await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
+    const verificationButton = topupDialog.root.getByRole('button', {
+      name: 'Complete verification'
+    })
+    await expect(verificationButton).toBeVisible()
+
+    await verificationButton.click()
+
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe('https://verify.example/topup-3ds')
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-opened-target',
+      '_blank'
+    )
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-opened-features',
+      'noopener,noreferrer'
+    )
   })
 })

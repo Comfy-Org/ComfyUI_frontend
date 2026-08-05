@@ -79,7 +79,6 @@ function createMockNodeElement(
   element.setAttribute('data-node-id', 'test-node')
   element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
   element.getBoundingClientRect = () => {
-    // When --node-height is '0px', return the content-driven minimum height
     const nodeHeight = element.style.getPropertyValue('--node-height')
     const h = nodeHeight === '0px' ? minContentHeight : height
     return {

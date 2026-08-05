@@ -23,14 +23,17 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
-import { isCloud } from '@/platform/distribution/types'
+import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
+import type { Distribution } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -56,6 +59,7 @@ type CreateCustomerResponse =
  */
 type CreateCustomerPayload = {
   turnstile_token?: string
+  signup_source?: Distribution
 }
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -87,6 +91,14 @@ export const useAuthStore = defineStore('auth', () => {
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
   const customerCreated = ref(false)
+  /**
+   * Memoizes the in-flight or successful customer provisioning attempt for
+   * the current account (see recoverMissingCustomer). Declared here so the
+   * auth-state listener below can reset it before its initializer would
+   * otherwise run.
+   */
+  let customerRecovery: Promise<void> | null = null
+  let customerRecoveryUid: string | undefined
   const isFetchingBalance = ref(false)
 
   // Balance state
@@ -138,11 +150,29 @@ export const useAuthStore = defineStore('auth', () => {
   void setPersistence(auth, browserLocalPersistence)
 
   onAuthStateChanged(auth, (user) => {
+    const previousUserId = currentUser.value?.uid ?? null
+    const identityChanged =
+      previousUserId !== null && previousUserId !== (user?.uid ?? null)
+
+    if (user === null || identityChanged) {
+      useWorkspaceAuthStore().clearWorkspaceContext()
+    }
+    if (identityChanged) {
+      useTeamWorkspaceStore().resetForIdentityChange()
+    }
+
+    // A direct account switch (A -> B, or sign-out) must re-handshake the
+    // realtime socket so a tab stops receiving the previous account's live
+    // events. The initial connect is owned by api.init(), so only react once an
+    // identity has been recorded (`identityChanged` is false on first sign-in).
+    if (isCloud && identityChanged) {
+      void api.resetSocket()
+    }
+
     currentUser.value = user
     isInitialized.value = true
     if (user === null) {
       lastTokenUserId.value = null
-      useWorkspaceAuthStore().clearWorkspaceContext()
     } else if (isCloud) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
       // no-op when unified_cloud_auth is off).
@@ -152,6 +182,13 @@ export const useAuthStore = defineStore('auth', () => {
     // Reset balance when auth state changes
     balance.value = null
     lastBalanceUpdateTime.value = null
+
+    // Customer provisioning state is per-account: without this reset, a
+    // second account in the same browser session would be short-circuited by
+    // the previous account's memoized recovery and stay stuck on 409s.
+    customerCreated.value = false
+    customerRecovery = null
+    customerRecoveryUid = undefined
   })
 
   // Listen for token refresh events
@@ -182,10 +219,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getIdToken = async (): Promise<string | undefined> => {
-    if (!currentUser.value) return
+    const user = currentUser.value
+    if (!user) return
     try {
-      return await currentUser.value.getIdToken()
+      const token = await user.getIdToken()
+      return currentUser.value?.uid === user.uid ? token : undefined
     } catch (error: unknown) {
+      if (currentUser.value?.uid !== user.uid) return
       if (
         error instanceof FirebaseError &&
         error.code === AuthErrorCodes.NETWORK_REQUEST_FAILED
@@ -221,12 +261,21 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
-      const token = useWorkspaceAuthStore().unifiedToken
+      const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
     if (flags.teamWorkspacesEnabled) {
-      const wsHeader = useWorkspaceAuthStore().getWorkspaceAuthHeader()
+      const workspaceAuth = useWorkspaceAuthStore()
+      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+
+      // Recover the workspace token rather than downgrade to the personal
+      // identity, which is what makes cloud requests oscillate.
+      if (activeWorkspaceId) {
+        return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
+      }
+
+      const wsHeader = workspaceAuth.getWorkspaceAuthHeader()
       if (wsHeader) return wsHeader
     }
 
@@ -257,11 +306,22 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthToken = async (): Promise<string | undefined> => {
     if (flags.unifiedCloudAuthEnabled) {
-      return useWorkspaceAuthStore().unifiedToken ?? undefined
+      return useWorkspaceAuthStore().getUnifiedToken()
     }
 
     if (flags.teamWorkspacesEnabled) {
-      const wsToken = useWorkspaceAuthStore().getWorkspaceToken()
+      const workspaceAuth = useWorkspaceAuthStore()
+      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+
+      // Mirror getAuthHeader for WebSocket/queue auth.
+      if (activeWorkspaceId) {
+        return (
+          (await workspaceAuth.ensureWorkspaceToken(activeWorkspaceId)) ??
+          undefined
+        )
+      }
+
+      const wsToken = workspaceAuth.getWorkspaceToken()
       if (wsToken) return wsToken
     }
 
@@ -286,21 +346,21 @@ export const useAuthStore = defineStore('auth', () => {
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
+    const requestOwnerUid = currentUser.value?.uid ?? null
     try {
       const authHeader = await getAuthHeader()
       if (!authHeader) {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
 
-      const response = await fetchWithUnifiedRemint(
+      const response = await fetchWithCustomerRecovery(
         buildApiUrl('/customers/balance'),
         {
           headers: {
             ...authHeader,
             'Content-Type': 'application/json'
           }
-        },
-        isCloud && flags.unifiedCloudAuthEnabled
+        }
       )
 
       if (!response.ok) {
@@ -317,6 +377,11 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const balanceData = await response.json()
+      // A direct A->B account switch nulls balance in onAuthStateChanged; a
+      // late-resolving request from the previous identity must not repaint it.
+      if ((currentUser.value?.uid ?? null) !== requestOwnerUid) {
+        return null
+      }
       // Update the last balance update time
       lastBalanceUpdateTime.value = new Date()
       balance.value = balanceData
@@ -329,9 +394,15 @@ export const useAuthStore = defineStore('auth', () => {
   const createCustomer = async (
     payload?: CreateCustomerPayload
   ): Promise<CreateCustomerResponse> => {
+    const sessionUserId = currentUser.value?.uid
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+
+    const body: CreateCustomerPayload = {
+      ...payload,
+      signup_source: DISTRIBUTION
     }
 
     const createCustomerRes = await fetchWithUnifiedRemint(
@@ -342,8 +413,7 @@ export const useAuthStore = defineStore('auth', () => {
           ...authHeader,
           'Content-Type': 'application/json'
         },
-        ...(payload &&
-          Object.keys(payload).length > 0 && { body: JSON.stringify(payload) })
+        body: JSON.stringify(body)
       },
       isCloud && flags.unifiedCloudAuthEnabled
     )
@@ -366,7 +436,124 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
+    if (currentUser.value?.uid === sessionUserId) {
+      customerCreated.value = true
+    }
     return createCustomerResJson
+  }
+
+  /**
+   * Memoizes the customer provisioning attempt so concurrent or repeated 409
+   * responses from /customers/* endpoints trigger at most one successful
+   * POST /customers per account. A failed attempt is cleared so a later
+   * request can retry, e.g. after a transient network failure.
+   */
+  const recoverMissingCustomer = (): Promise<void> => {
+    const sessionUserId = currentUser.value?.uid
+    if (customerRecovery === null || customerRecoveryUid !== sessionUserId) {
+      const thisRecovery: Promise<void> = createCustomer()
+        .then(() => undefined)
+        .catch((error: unknown) => {
+          if (customerRecovery === thisRecovery) {
+            customerRecovery = null
+            customerRecoveryUid = undefined
+          }
+          throw error
+        })
+      customerRecovery = thisRecovery
+      customerRecoveryUid = sessionUserId
+    }
+    return customerRecovery
+  }
+
+  /**
+   * Fetch wrapper for /customers/* endpoints that self-heals accounts whose
+   * customer record was never provisioned.
+   *
+   * Customer creation runs after the Firebase session is established during
+   * sign-in/sign-up, so an interruption (navigation, closed window, network
+   * failure) can leave a permanently signed-in user without a customer
+   * record. Sessions restored from persisted credentials never re-run the
+   * sign-in flow, so every /customers/* request fails with 409 and nothing
+   * ever retries the creation.
+   *
+   * On a 409 response this provisions the customer record (deduplicated
+   * across concurrent callers) and retries the original request a single
+   * time. If recovery fails, the original 409 response is returned so
+   * callers surface their normal error handling.
+   */
+  /**
+   * The auth middleware rejects requests for accounts without a customer
+   * record using this exact message. Business-level 409s from /customers/*
+   * endpoints (e.g. conflicting subscription state) must NOT trigger
+   * provisioning or a blind retry of a payment request.
+   */
+  const MISSING_CUSTOMER_MESSAGE = 'Failed to find customer'
+
+  const isMissingCustomerResponse = async (
+    response: Response
+  ): Promise<boolean> => {
+    if (response.status !== 409) return false
+    try {
+      const body: unknown = await response.clone().json()
+      return (
+        typeof body === 'object' &&
+        body !== null &&
+        'message' in body &&
+        (body as { message: unknown }).message === MISSING_CUSTOMER_MESSAGE
+      )
+    } catch {
+      return false
+    }
+  }
+
+  const isCustomerEndpoint = (input: string): boolean => {
+    try {
+      const { pathname } = new URL(input, window.location.href)
+      return pathname === '/customers' || pathname.startsWith('/customers/')
+    } catch {
+      return false
+    }
+  }
+
+  const fetchWithCustomerRecovery = async (
+    input: string,
+    init?: RequestInit
+  ): Promise<Response> => {
+    const remintFetch = (): Promise<Response> =>
+      fetchWithUnifiedRemint(
+        input,
+        init ?? {},
+        isCloud && flags.unifiedCloudAuthEnabled
+      )
+
+    const response = await remintFetch()
+    if (
+      !isCustomerEndpoint(input) ||
+      !(await isMissingCustomerResponse(response))
+    ) {
+      return response
+    }
+
+    try {
+      await recoverMissingCustomer()
+    } catch (error) {
+      console.warn(
+        'Customer provisioning during 409 recovery failed; returning original response',
+        error
+      )
+      return response
+    }
+
+    try {
+      return await remintFetch()
+    } catch (error) {
+      console.warn(
+        'Retry after customer provisioning failed; returning original 409 response',
+        error
+      )
+      return response
+    }
   }
 
   const executeAuthAction = async <T>(
@@ -530,13 +717,14 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    // Ensure customer was created during login/registration
+    // Ensure customer was created during login/registration. Routed through
+    // recoverMissingCustomer so a concurrent 409-triggered recovery and this
+    // pre-flight share one POST /customers instead of racing.
     if (!customerCreated.value) {
-      await createCustomer()
-      customerCreated.value = true
+      await recoverMissingCustomer()
     }
 
-    const response = await fetchWithUnifiedRemint(
+    const response = await fetchWithCustomerRecovery(
       buildApiUrl('/customers/credit'),
       {
         method: 'POST',
@@ -545,8 +733,7 @@ export const useAuthStore = defineStore('auth', () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBodyContent)
-      },
-      isCloud && flags.unifiedCloudAuthEnabled
+      }
     )
 
     if (!response.ok) {
@@ -574,7 +761,7 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const response = await fetchWithUnifiedRemint(
+    const response = await fetchWithCustomerRecovery(
       buildApiUrl('/customers/billing'),
       {
         method: 'POST',
@@ -585,8 +772,7 @@ export const useAuthStore = defineStore('auth', () => {
         ...(targetTier && {
           body: JSON.stringify({ target_tier: targetTier })
         })
-      },
-      isCloud && flags.unifiedCloudAuthEnabled
+      }
     )
 
     if (!response.ok) {
@@ -621,6 +807,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     createCustomer,
+    fetchWithCustomerRecovery,
     getIdToken,
     loginWithGoogle,
     loginWithGithub,
