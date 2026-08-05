@@ -1,7 +1,6 @@
 import type { GalleryDoc } from './galleryCms.schema'
 import type { GalleryItem } from '../data/gallery'
 
-import { visibleGalleryItems } from '../data/gallery'
 import { GalleryListResponseSchema } from './galleryCms.schema'
 
 interface LoadGalleryItemsOptions {
@@ -9,39 +8,53 @@ interface LoadGalleryItemsOptions {
   fetchImpl?: typeof fetch
 }
 
-const PUBLISHED_QUERY = 'depth=1&limit=100&where[_status][equals]=published'
+const GALLERY_QUERY = [
+  'depth=1',
+  'limit=100',
+  'sort=-publishedAt',
+  'select[title]=true',
+  'select[slug]=true',
+  'select[href]=true',
+  'select[media]=true',
+  'select[creator]=true',
+  'select[team]=true',
+  'select[tool]=true',
+  'populate[media][url]=true',
+  'populate[media][mimeType]=true',
+  'populate[creators][name]=true',
+  'populate[teams][name]=true',
+  'populate[tools][name]=true'
+].join('&')
 
 export async function loadGalleryItemsForBuild(
   options: LoadGalleryItemsOptions = {}
 ): Promise<GalleryItem[]> {
-  const cmsUrl = options.cmsUrl ?? process.env.WEBSITE_CMS_URL
-  if (!cmsUrl) return visibleGalleryItems
+  const cmsUrl =
+    options.cmsUrl ??
+    import.meta.env.WEBSITE_CMS_URL ??
+    process.env.WEBSITE_CMS_URL
+  if (!cmsUrl) {
+    throw new Error(
+      '[gallery] WEBSITE_CMS_URL is not set; the gallery builds from the CMS'
+    )
+  }
 
   const base = cmsUrl.replace(/\/$/, '')
   const fetchImpl = options.fetchImpl ?? fetch
 
-  try {
-    const response = await fetchImpl(`${base}/api/gallery?${PUBLISHED_QUERY}`)
-    if (!response.ok) {
-      return warnAndFallback(`CMS responded ${response.status}`)
-    }
-
-    const parsed = GalleryListResponseSchema.safeParse(await response.json())
-    if (!parsed.success) {
-      return warnAndFallback('CMS response failed schema validation')
-    }
-
-    return parsed.data.docs.map((doc) => toGalleryItem(doc, base))
-  } catch (error) {
-    return warnAndFallback(`could not reach CMS: ${String(error)}`)
+  const response = await fetchImpl(`${base}/api/gallery?${GALLERY_QUERY}`)
+  if (!response.ok) {
+    throw new Error(`[gallery] CMS responded ${response.status}`)
   }
-}
 
-function warnAndFallback(reason: string): GalleryItem[] {
-  console.warn(
-    `[gallery] WEBSITE_CMS_URL is set but ${reason}; using static gallery data.`
-  )
-  return visibleGalleryItems
+  const parsed = GalleryListResponseSchema.safeParse(await response.json())
+  if (!parsed.success) {
+    throw new Error(
+      `[gallery] CMS response failed schema validation: ${parsed.error.message}`
+    )
+  }
+
+  return parsed.data.docs.map((doc) => toGalleryItem(doc, base))
 }
 
 function toGalleryItem(doc: GalleryDoc, base: string): GalleryItem {

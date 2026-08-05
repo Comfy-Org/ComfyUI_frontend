@@ -1,57 +1,47 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { visibleGalleryItems } from '../data/gallery'
 import { loadGalleryItemsForBuild } from './galleryCms'
 
 const CMS_URL = 'https://cms.test'
 
 describe('loadGalleryItemsForBuild', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  it('returns the static fallback when no CMS url is configured', async () => {
+  it('throws when no CMS url is configured', async () => {
     const fetchImpl = vi.fn()
 
-    const items = await loadGalleryItemsForBuild({
-      cmsUrl: undefined,
-      fetchImpl: fetchImpl as unknown as typeof fetch
-    })
-
-    expect(items).toEqual(visibleGalleryItems)
+    await expect(
+      loadGalleryItemsForBuild({
+        cmsUrl: undefined,
+        fetchImpl: fetchImpl as unknown as typeof fetch
+      })
+    ).rejects.toThrow('WEBSITE_CMS_URL is not set')
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
-  it('returns the static fallback when the CMS is unreachable', async () => {
+  it('throws when the CMS is unreachable', async () => {
     const fetchImpl = vi.fn(async () => {
       throw new Error('ECONNREFUSED')
     })
 
-    const items = await loadGalleryItemsForBuild({
-      cmsUrl: CMS_URL,
-      fetchImpl: fetchImpl as unknown as typeof fetch
-    })
-
-    expect(items).toEqual(visibleGalleryItems)
-    expect(fetchImpl).toHaveBeenCalledOnce()
+    await expect(
+      loadGalleryItemsForBuild({
+        cmsUrl: CMS_URL,
+        fetchImpl: fetchImpl as unknown as typeof fetch
+      })
+    ).rejects.toThrow('ECONNREFUSED')
   })
 
-  it('returns the static fallback on a non-OK response', async () => {
+  it('throws on a non-OK response', async () => {
     const fetchImpl = vi.fn(async () => new Response('nope', { status: 500 }))
 
-    const items = await loadGalleryItemsForBuild({
-      cmsUrl: CMS_URL,
-      fetchImpl: fetchImpl as unknown as typeof fetch
-    })
-
-    expect(items).toEqual(visibleGalleryItems)
+    await expect(
+      loadGalleryItemsForBuild({
+        cmsUrl: CMS_URL,
+        fetchImpl: fetchImpl as unknown as typeof fetch
+      })
+    ).rejects.toThrow('CMS responded 500')
   })
 
-  it('requests only published docs and flattens them into GalleryItem', async () => {
+  it('requests trimmed newest-first docs and flattens them into GalleryItem', async () => {
     const body = {
       docs: [
         {
@@ -92,7 +82,7 @@ describe('loadGalleryItemsForBuild', () => {
     })
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      'https://cms.test/api/gallery?depth=1&limit=100&where[_status][equals]=published'
+      'https://cms.test/api/gallery?depth=1&limit=100&sort=-publishedAt&select[title]=true&select[slug]=true&select[href]=true&select[media]=true&select[creator]=true&select[team]=true&select[tool]=true&populate[media][url]=true&populate[media][mimeType]=true&populate[creators][name]=true&populate[teams][name]=true&populate[tools][name]=true'
     )
     expect(items).toEqual([
       {
@@ -115,7 +105,7 @@ describe('loadGalleryItemsForBuild', () => {
     ])
   })
 
-  it('returns the static fallback when the response fails schema validation', async () => {
+  it('throws when the response fails schema validation', async () => {
     const fetchImpl = vi.fn(
       async () =>
         new Response(
@@ -127,11 +117,11 @@ describe('loadGalleryItemsForBuild', () => {
         )
     )
 
-    const items = await loadGalleryItemsForBuild({
-      cmsUrl: CMS_URL,
-      fetchImpl: fetchImpl as unknown as typeof fetch
-    })
-
-    expect(items).toEqual(visibleGalleryItems)
+    await expect(
+      loadGalleryItemsForBuild({
+        cmsUrl: CMS_URL,
+        fetchImpl: fetchImpl as unknown as typeof fetch
+      })
+    ).rejects.toThrow('failed schema validation')
   })
 })
