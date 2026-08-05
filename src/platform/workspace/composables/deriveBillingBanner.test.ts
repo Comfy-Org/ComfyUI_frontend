@@ -61,6 +61,23 @@ describe('deriveBillingBanner', () => {
     expect(derive({ ...paused, v1PaymentRecovery: false })).toBe('paused')
   })
 
+  it('shows recovery banners when only the recovery flag is on', () => {
+    expect(
+      derive({
+        ...paymentFailed,
+        billingControlEnabled: false,
+        v1PaymentRecovery: true
+      })
+    ).toBe('paymentFailed')
+    expect(
+      derive({
+        ...paused,
+        billingControlEnabled: false,
+        v1PaymentRecovery: true
+      })
+    ).toBe('paused')
+  })
+
   it('hides recovery banners when both billing flags are off', () => {
     expect(
       derive({

@@ -3,6 +3,7 @@ import { effectScope } from 'vue'
 
 import type {
   BillingStatusResponse,
+  CreateTopupResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
@@ -469,6 +470,34 @@ describe('useWorkspaceBilling', () => {
 
       expect(billing.subscription.value).toBeNull()
       expect(billing.error.value).toBeNull()
+    })
+
+    it('keeps loading while another billing operation remains pending', async () => {
+      const status = createDeferred<BillingStatusResponse>()
+      const topup = createDeferred<CreateTopupResponse>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValue(status.promise)
+      mockWorkspaceApi.createTopup.mockReturnValue(topup.promise)
+      const controller = new AbortController()
+      const billing = setupBilling()
+
+      const topupRequest = billing.topup(500)
+      const statusRequest = billing.fetchStatus(controller.signal)
+      controller.abort()
+
+      expect(billing.isLoading.value).toBe(true)
+
+      status.resolve(activeStatus)
+      await statusRequest
+      expect(billing.isLoading.value).toBe(true)
+
+      topup.resolve({
+        billing_op_id: 'op-topup',
+        topup_id: 'topup-1',
+        status: 'pending',
+        amount_cents: 500
+      })
+      await topupRequest
+      expect(billing.isLoading.value).toBe(false)
     })
 
     it('surfaces a team credit stop from the status response', async () => {

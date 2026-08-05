@@ -352,6 +352,22 @@ describe('BillingStatusBanner', () => {
     expect(signal.aborted).toBe(true)
   })
 
+  it('aborts a recovery banner portal request on unmount', async () => {
+    state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
+    pausedState()
+    const { unmount } = renderBanner()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    const signal = state.manageSubscription.mock.calls[0][0]
+    expect(signal).toBeInstanceOf(AbortSignal)
+
+    unmount()
+
+    expect(signal.aborted).toBe(true)
+  })
+
   it('lets a promoted owner reactivate an ending plan', async () => {
     state.subscription = {
       hasFunds: true,

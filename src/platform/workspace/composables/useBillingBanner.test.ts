@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope, nextTick } from 'vue'
 
 const mocks = vi.hoisted(() => ({
   billing: null as {
@@ -65,6 +65,15 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
 
 import { useBillingBanner } from './useBillingBanner'
 
+let scope: ReturnType<typeof effectScope> | undefined
+
+function setupBanner() {
+  scope = effectScope()
+  const banner = scope.run(() => useBillingBanner())
+  if (!banner) throw new Error('Failed to create billing banner composable')
+  return banner
+}
+
 describe('useBillingBanner', () => {
   beforeEach(() => {
     const b = mocks.billing!
@@ -78,9 +87,14 @@ describe('useBillingBanner', () => {
     b.fetchBalance.mockClear()
   })
 
+  afterEach(() => {
+    scope?.stop()
+    scope = undefined
+  })
+
   it('suppresses the banner entirely when billing control is rolled back', async () => {
     const b = mocks.billing!
-    const { kind } = useBillingBanner()
+    const { kind } = setupBanner()
 
     b.subscription.value = { hasFunds: false }
     await nextTick()
@@ -93,7 +107,7 @@ describe('useBillingBanner', () => {
 
   it('re-shows the out-of-credits banner after a top-up and a later exhaustion', async () => {
     const b = mocks.billing!
-    const { kind, dismiss } = useBillingBanner()
+    const { kind, dismiss } = setupBanner()
 
     b.subscription.value = { hasFunds: false }
     await nextTick()
@@ -112,7 +126,7 @@ describe('useBillingBanner', () => {
 
   it('refreshes status and balance on focus while payment recovery is visible', async () => {
     const b = mocks.billing!
-    useBillingBanner()
+    setupBanner()
     b.billingStatus.value = 'payment_failed'
 
     window.dispatchEvent(new Event('focus'))
@@ -124,7 +138,7 @@ describe('useBillingBanner', () => {
 
   it('does not refresh payment recovery on focus when the flag is off', async () => {
     const b = mocks.billing!
-    useBillingBanner()
+    setupBanner()
     b.billingStatus.value = 'payment_failed'
     mocks.v1PaymentRecovery!.value = false
 
@@ -139,7 +153,7 @@ describe('useBillingBanner', () => {
     const b = mocks.billing!
     b.fetchStatus.mockReturnValueOnce(new Promise(() => {}))
     b.fetchBalance.mockReturnValueOnce(new Promise(() => {}))
-    useBillingBanner()
+    setupBanner()
     b.billingStatus.value = 'payment_failed'
 
     window.dispatchEvent(new Event('focus'))
@@ -150,6 +164,23 @@ describe('useBillingBanner', () => {
 
     mocks.v1PaymentRecovery!.value = false
     await nextTick()
+
+    expect(statusSignal.aborted).toBe(true)
+    expect(balanceSignal.aborted).toBe(true)
+  })
+
+  it('cancels an in-flight payment refresh when its scope is disposed', () => {
+    const b = mocks.billing!
+    b.fetchStatus.mockReturnValueOnce(new Promise(() => {}))
+    b.fetchBalance.mockReturnValueOnce(new Promise(() => {}))
+    setupBanner()
+    b.billingStatus.value = 'payment_failed'
+
+    window.dispatchEvent(new Event('focus'))
+    const statusSignal = b.fetchStatus.mock.calls[0][0]
+    const balanceSignal = b.fetchBalance.mock.calls[0][0]
+
+    scope?.stop()
 
     expect(statusSignal.aborted).toBe(true)
     expect(balanceSignal.aborted).toBe(true)

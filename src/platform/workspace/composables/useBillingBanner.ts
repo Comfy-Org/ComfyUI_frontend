@@ -1,5 +1,5 @@
 import { createSharedComposable, useEventListener } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -108,6 +108,11 @@ function useBillingBannerInternal() {
       paymentRefreshController = null
     }
   )
+
+  onScopeDispose(() => {
+    paymentRefreshController?.abort()
+    paymentRefreshController = null
+  })
 
   useEventListener(window, 'focus', () => {
     if (!flags.v1PaymentRecovery || kind.value !== 'paymentFailed') return
