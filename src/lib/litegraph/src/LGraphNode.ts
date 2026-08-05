@@ -2248,6 +2248,7 @@ export class LGraphNode
   move(deltaX: number, deltaY: number): void {
     if (this.pinned) return
 
+    this.refreshGeometry()
     this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
   }
 
@@ -3543,6 +3544,7 @@ export class LGraphNode
   snapToGrid(snapTo: number): boolean {
     if (this.pinned || !snapTo) return false
 
+    this.refreshGeometry()
     const snapped: Point = [this._pos[0], this._pos[1]]
     snapPoint(snapped, snapTo)
     if (snapped[0] === this._pos[0] && snapped[1] === this._pos[1]) return false

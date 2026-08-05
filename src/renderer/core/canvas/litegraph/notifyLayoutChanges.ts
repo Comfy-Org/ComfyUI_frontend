@@ -5,12 +5,9 @@ export function notifyLayoutChanges(canvas: LGraphCanvas): () => void {
   return layoutStore.onChange((change) => {
     if (change.nodeIds.length === 0) return
 
-    const { type } = change.operation
-    if (type === 'resizeNode' || type === 'batchUpdateBounds') {
-      for (const nodeId of change.nodeIds) {
-        const node = canvas.graph?.getNodeById(nodeId)
-        node?.onResize?.(node.size)
-      }
+    for (const nodeId of change.sizeChangedNodeIds) {
+      const node = canvas.graph?.getNodeById(nodeId)
+      node?.onResize?.(node.size)
     }
 
     canvas.setDirty(true, true)

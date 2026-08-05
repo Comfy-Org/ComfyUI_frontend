@@ -878,6 +878,42 @@ describe('layout geometry projection', () => {
     layoutStore.resetForTests()
   })
 
+  test('moves from the latest stored position', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
+      {
+        nodeId: node.id,
+        bounds: { x: 30, y: 40, width: 200, height: 80 }
+      }
+    ])
+
+    node.move(5, 10)
+
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 35, y: 50 })
+  })
+
+  test('snaps the latest stored position', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
+      {
+        nodeId: node.id,
+        bounds: { x: 103, y: 97, width: 200, height: 80 }
+      }
+    ])
+
+    node.snapToGrid(20)
+
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 100, y: 100 })
+  })
+
   test('refreshes stable views before indexed mutations', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

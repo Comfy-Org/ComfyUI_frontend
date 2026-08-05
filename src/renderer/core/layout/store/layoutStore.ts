@@ -751,6 +751,7 @@ class LayoutStore {
     const change: LayoutChange = {
       type: 'update',
       nodeIds: [],
+      sizeChangedNodeIds: [],
       timestamp: operation.timestamp,
       source: operation.source,
       operation
@@ -1009,11 +1010,15 @@ class LayoutStore {
     )
     if (!ynode) return
 
-    const position = yNodeToLayout(ynode).position
+    const rect = ynode.get('rect')
+    if (!isNodeRect(rect)) return
+    if (rect[2] !== operation.size.width || rect[3] !== operation.size.height) {
+      change.sizeChangedNodeIds.push(nodeId)
+    }
 
     ynode.set('rect', [
-      position.x,
-      position.y,
+      rect[0],
+      rect[1],
       operation.size.width,
       operation.size.height
     ])
@@ -1091,6 +1096,13 @@ class LayoutStore {
       )
       if (!ynode || !bounds) continue
 
+      const rect = ynode.get('rect')
+      if (
+        isNodeRect(rect) &&
+        (rect[2] !== bounds.width || rect[3] !== bounds.height)
+      ) {
+        change.sizeChangedNodeIds.push(nodeId)
+      }
       ynode.set('rect', [bounds.x, bounds.y, bounds.width, bounds.height])
 
       change.nodeIds.push(nodeId)

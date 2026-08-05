@@ -280,6 +280,7 @@ export type LayoutOperation =
 export interface LayoutChange {
   type: 'create' | 'update' | 'delete'
   nodeIds: NodeId[]
+  sizeChangedNodeIds: NodeId[]
   timestamp: number
   source: LayoutSource
   operation: LayoutOperation
