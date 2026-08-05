@@ -367,7 +367,7 @@ function getCreditsStepAmount(currentCredits: number): number {
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
-  showCeilingWarning.value = false
+  showCeilingWarning.value = value >= MAX_AMOUNT
 }
 
 function handlePresetClick(amount: number) {
