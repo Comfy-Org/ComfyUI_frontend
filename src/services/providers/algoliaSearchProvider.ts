@@ -22,6 +22,7 @@ import type {
   SearchPacksResult,
   SortableField
 } from '@/types/searchServiceTypes'
+import { tokenizeCompoundWords } from '@/utils/compoundWordUtil'
 import { paramsToCacheKey } from '@/utils/formatUtil'
 import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
@@ -111,6 +112,9 @@ const toRegistryPack = memoize(
   (algoliaNode: AlgoliaNodePack) => algoliaNode.id
 )
 
+const getHitKey = (algoliaNode: AlgoliaNodePack): string | undefined =>
+  algoliaNode.objectID ?? algoliaNode.id
+
 export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
 
@@ -124,16 +128,29 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     const { pageSize, pageNumber } = params
     const rest = omit(params, ['pageSize', 'pageNumber'])
 
-    const requests: SearchQuery[] = [
-      {
-        query,
-        indexName: 'nodes_index',
-        attributesToRetrieve: RETRIEVE_ATTRIBUTES,
-        ...rest,
-        hitsPerPage: pageSize,
-        page: pageNumber
-      }
-    ]
+    const packQuery = (queryText: string): SearchQuery => ({
+      query: queryText,
+      indexName: 'nodes_index',
+      attributesToRetrieve: RETRIEVE_ATTRIBUTES,
+      ...rest,
+      hitsPerPage: pageSize,
+      page: pageNumber
+    })
+
+    const requests: SearchQuery[] = [packQuery(query)]
+
+    // Algolia doesn't segment camelCase/PascalCase compound names (e.g.
+    // `EulerDiscreteScheduler`), so a query fired as one unsegmented word can
+    // fall outside typo-tolerance and return zero hits. Fire a second query
+    // with the compound query split into words as a fallback, but only when
+    // that actually changes the query -- most queries are already
+    // space-separated words and this would just be a wasted duplicate call.
+    const tokenizedQuery = tokenizeCompoundWords(query)
+    const shouldQueryTokenizedFallback =
+      tokenizedQuery.length > 0 && tokenizedQuery !== query
+    if (shouldQueryTokenizedFallback) {
+      requests.push(packQuery(tokenizedQuery))
+    }
 
     const shouldQuerySuggestions =
       query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
@@ -153,13 +170,28 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       strategy: 'none'
     })
 
-    const [nodePacks, querySuggestions = { hits: [] }] = results as [
-      SearchResponse<AlgoliaNodePack>,
-      SearchResponse<NodesIndexSuggestion>
-    ]
+    const nodePacks = results[0] as SearchResponse<AlgoliaNodePack>
+    const tokenizedFallback = shouldQueryTokenizedFallback
+      ? (results[1] as SearchResponse<AlgoliaNodePack>)
+      : undefined
+    const suggestionsIndex = shouldQueryTokenizedFallback ? 2 : 1
+    const querySuggestions = shouldQuerySuggestions
+      ? (results[suggestionsIndex] as SearchResponse<NodesIndexSuggestion>)
+      : { hits: [] }
+
+    // The primary query's ranking is authoritative, so the fallback only
+    // fills in hits the primary query missed -- it never reorders or
+    // displaces a primary hit -- and is capped so a rescued search still
+    // returns at most a page's worth of packs.
+    const primaryHitKeys = new Set(nodePacks.hits.map(getHitKey))
+    const fallbackHits = (tokenizedFallback?.hits ?? [])
+      .filter((hit) => !primaryHitKeys.has(getHitKey(hit)))
+      .slice(0, Math.max(pageSize - nodePacks.hits.length, 0))
 
     // Convert Algolia hits to RegistryNodePack format
-    const registryPacks = nodePacks.hits.map(toRegistryPack)
+    const registryPacks = [...nodePacks.hits, ...fallbackHits].map(
+      toRegistryPack
+    )
 
     // Extract query suggestions from search results
     const suggestions = querySuggestions.hits.map((suggestion) => ({
