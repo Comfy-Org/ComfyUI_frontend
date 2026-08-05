@@ -54,6 +54,13 @@ branch) that has no assignee. It also requests their review, since backport merg
 gated on an approval. Existing assignees and review requests are never
 overwritten.
 
+When the sheriff wrote the PR themselves, the review is requested from the
+**next person in the rotation** instead — GitHub rejects a self-review request,
+so previously those PRs were assigned to their own author with nobody asked to
+review, and then waited on an approval that had never been requested. The order
+comes from the Datadog layer's member list, so it needs no separate config. If
+nobody in the rotation can stand in, the run says so rather than staying quiet.
+
 It runs on PR events and hourly — the hourly sweep is what catches strays that
 were opened while nobody was looking.
 

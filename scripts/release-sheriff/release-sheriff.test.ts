@@ -9,6 +9,8 @@ import {
   parseGithubLogins,
   parseOnCallEmails,
   planActions,
+  nextInRotation,
+  parseRotation,
   resolveSheriff
 } from './release-sheriff'
 
@@ -87,6 +89,57 @@ describe('parseGithubLogins', () => {
     expect(parseGithubLogins({ data: { attributes: { tags: 'no' } } })).toEqual(
       {}
     )
+  })
+})
+
+describe('nextInRotation', () => {
+  const rotation = ['a', 'b', 'c']
+
+  it('wraps around and ignores case', () => {
+    expect(nextInRotation(rotation, 'B')).toBe('c')
+    expect(nextInRotation(rotation, 'c')).toBe('a')
+  })
+
+  it('has no answer when the sheriff is alone or absent', () => {
+    expect(nextInRotation(['solo'], 'solo')).toBeNull()
+    expect(nextInRotation(rotation, 'stranger')).toBeNull()
+    expect(nextInRotation([], 'a')).toBeNull()
+  })
+})
+
+describe('parseRotation', () => {
+  const payload = {
+    included: [
+      {
+        type: 'layers',
+        id: 'l1',
+        relationships: { members: { data: [{ id: 'm2' }, { id: 'm1' }] } }
+      },
+      {
+        type: 'members',
+        id: 'm1',
+        relationships: { user: { data: { id: 'u1' } } }
+      },
+      {
+        type: 'members',
+        id: 'm2',
+        relationships: { user: { data: { id: 'u2' } } }
+      },
+      { type: 'users', id: 'u1', attributes: { email: 'ann@comfy.org' } },
+      { type: 'users', id: 'u2', attributes: { email: 'bo@comfy.org' } }
+    ]
+  }
+
+  it('preserves member order, which is what makes "next" meaningful', () => {
+    expect(parseRotation(payload, { ann: 'ann-gh', bo: 'bo-gh' })).toEqual([
+      'bo-gh',
+      'ann-gh'
+    ])
+  })
+
+  it('drops members with no github tag rather than inventing one', () => {
+    expect(parseRotation(payload, { ann: 'ann-gh' })).toEqual(['ann-gh'])
+    expect(parseRotation(null, { ann: 'ann-gh' })).toEqual([])
   })
 })
 
@@ -200,10 +253,12 @@ describe('fetchOnCallEmails', () => {
 
     expect(result).toEqual({
       githubLoginByUser: { sheriff: 'sheriff-dev' },
+      rotation: [],
       warning: null
     })
     expect(String(fetchSpy.mock.calls[0][0])).toBe(
-      'https://api.datadoghq.com/api/v2/on-call/schedules/sched-1'
+      'https://api.datadoghq.com/api/v2/on-call/schedules/sched-1' +
+        '?include=layers.members.user'
     )
   })
 
@@ -287,7 +342,9 @@ describe('planActions', () => {
         [pr({ number: 7, labels: [{ name: 'backport' }] })],
         'sheriff'
       )
-    ).toEqual([{ number: 7, assign: true, requestReview: true }])
+    ).toEqual([
+      { number: 7, assign: true, requestReview: true, reviewer: 'sheriff' }
+    ])
   })
 
   it('never overwrites an existing assignee or review request', () => {
@@ -305,12 +362,12 @@ describe('planActions', () => {
     ]
 
     expect(planActions(prs, 'sheriff')).toEqual([
-      { number: 1, assign: false, requestReview: true },
-      { number: 2, assign: true, requestReview: false }
+      { number: 1, assign: false, requestReview: true, reviewer: 'sheriff' },
+      { number: 2, assign: true, requestReview: false, reviewer: 'sheriff' }
     ])
   })
 
-  it('does not request review on approved PRs or the sheriff’s own PRs', () => {
+  it('does not request review on approved PRs, nor from the sheriff on their own', () => {
     const prs = [
       pr({
         number: 1,
@@ -325,8 +382,20 @@ describe('planActions', () => {
     ]
 
     expect(planActions(prs, 'sheriff')).toEqual([
-      { number: 1, assign: true, requestReview: false },
-      { number: 2, assign: true, requestReview: false }
+      { number: 1, assign: true, requestReview: false, reviewer: 'sheriff' },
+      { number: 2, assign: true, requestReview: false, reviewer: null }
+    ])
+  })
+
+  it('asks the next person in the rotation to review the sheriff’s own PR', () => {
+    const own = pr({
+      number: 3,
+      labels: [{ name: 'backport' }],
+      author: { login: 'Sheriff' }
+    })
+
+    expect(planActions([own], 'sheriff', ['a', 'sheriff', 'b'])).toEqual([
+      { number: 3, assign: true, requestReview: true, reviewer: 'b' }
     ])
   })
 
@@ -347,7 +416,7 @@ describe('planActions', () => {
     ]
 
     expect(planActions(prs, 'sheriff')).toEqual([
-      { number: 2, assign: true, requestReview: true }
+      { number: 2, assign: true, requestReview: true, reviewer: 'sheriff' }
     ])
   })
 
