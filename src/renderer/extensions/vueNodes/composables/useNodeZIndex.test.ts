@@ -30,7 +30,7 @@ describe('useNodeZIndex', () => {
       const mockBringNodeToFront = vi.fn()
 
       mockedUseLayoutMutations.mockReturnValue(
-        fromPartial<ReturnType<typeof useLayoutMutations>>({
+        fromPartial({
           setSource: mockSetSource,
           bringNodeToFront: mockBringNodeToFront
         })
@@ -49,7 +49,7 @@ describe('useNodeZIndex', () => {
       const mockBringNodeToFront = vi.fn()
 
       mockedUseLayoutMutations.mockReturnValue(
-        fromPartial<ReturnType<typeof useLayoutMutations>>({
+        fromPartial({
           setSource: mockSetSource,
           bringNodeToFront: mockBringNodeToFront
         })
@@ -68,7 +68,7 @@ describe('useNodeZIndex', () => {
       const mockBringNodeToFront = vi.fn()
 
       mockedUseLayoutMutations.mockReturnValue(
-        fromPartial<ReturnType<typeof useLayoutMutations>>({
+        fromPartial({
           setSource: mockSetSource,
           bringNodeToFront: mockBringNodeToFront
         })
@@ -89,7 +89,7 @@ describe('useNodeZIndex', () => {
       const mockBringNodeToFront = vi.fn()
 
       mockedUseLayoutMutations.mockReturnValue(
-        fromPartial<ReturnType<typeof useLayoutMutations>>({
+        fromPartial({
           setSource: mockSetSource,
           bringNodeToFront: mockBringNodeToFront
         })
