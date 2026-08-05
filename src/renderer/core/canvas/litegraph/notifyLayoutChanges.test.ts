@@ -6,6 +6,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { createUuidv4 } from '@/utils/uuid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
@@ -41,7 +42,9 @@ describe('notifyLayoutChanges', () => {
     const onResize = vi.fn()
     node.onResize = onResize
 
-    useLayoutMutations().resizeNode(graph.rootGraph.id, node.id, {
+    const mutations = useLayoutMutations()
+    mutations.setSource(LayoutSource.Vue)
+    mutations.resizeNode(graph.rootGraph.id, node.id, {
       width: 300,
       height: 200
     })
