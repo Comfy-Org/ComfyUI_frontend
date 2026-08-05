@@ -11,21 +11,21 @@ internals most tightly.
 Prototype assignments across those 1,265 packs, litegraph methods only
 (bundled-library noise like `_next`, `dispose`, `toString` filtered out):
 
-| Patched method | Sites | Packs | Destination |
-|---|---|---|---|
-| `onNodeCreated` | 3,161 | **943** | `b.onCreated(cb)` |
-| `onExecuted` | 964 | **497** | `b.onExecuted(cb)` |
-| `onConfigure` | 1,272 | **429** | `b.onConfigured(cb)` |
-| `onConnectionsChange` | 454 | 223 | `b.onConnectionsChanged(cb)` |
-| `onDrawForeground` | 446 | 199 | `references/draw-callbacks.md` |
-| `onRemoved` | 353 | 158 | `b.onRemoved(cb)` |
-| `constructor` | 473 | 49 | `b.onCreated(cb)` |
-| `getDefaultShape` | 335 | 3 | no replacement — escalate |
+| Patched method        | Sites | Packs   | Destination                    |
+| --------------------- | ----- | ------- | ------------------------------ |
+| `onNodeCreated`       | 3,161 | **943** | `b.onCreated(cb)`              |
+| `onExecuted`          | 964   | **497** | `b.onExecuted(cb)`             |
+| `onConfigure`         | 1,272 | **429** | `b.onConfigured(cb)`           |
+| `onConnectionsChange` | 454   | 223     | `b.onConnectionsChanged(cb)`   |
+| `onDrawForeground`    | 446   | 199     | `references/draw-callbacks.md` |
+| `onRemoved`           | 353   | 158     | `b.onRemoved(cb)`              |
+| `constructor`         | 473   | 49      | `b.onCreated(cb)`              |
+| `getDefaultShape`     | 335   | 3       | no replacement — escalate      |
 
 ## The selector is already written — it's the guard clause
 
 Every one of these hooks runs for **every registered node type**, so essentially
-all of them open with a filter and return. That filter *is* the selector:
+all of them open with a filter and return. That filter _is_ the selector:
 
 ```js
 // before — ComfyUI-KJNodes jsnodes.js:37
@@ -120,8 +120,8 @@ async beforeRegisterNodeDef(nodeType, nodeData, app) {
       }
       for (const l of text) {
         const w = ComfyWidgets.STRING(this, 'text_' + this.widgets?.length, ...).widget
-        w.inputEl.readOnly = true
-        w.inputEl.style.opacity = 0.6
+        widget element.readOnly = true
+        widget element.style.opacity = 0.6
       }
     }
     ...
@@ -131,12 +131,12 @@ async beforeRegisterNodeDef(nodeType, nodeData, app) {
 
 Four separate conversions:
 
-| Old | New |
-|---|---|
-| `nodeData.name === 'ShowText\|pysssss'` guard | the `defs.extend` selector |
-| `+!!this.inputs?.[0].widget` converted-widget sniffing | `input.isWidgetInput` |
-| `this.widgets.length = n` truncation | remove by name (below) |
-| `w.inputEl` | `w.element` (renamed in PR #8594) |
+| Old                                                    | New                               |
+| ------------------------------------------------------ | --------------------------------- |
+| `nodeData.name === 'ShowText\|pysssss'` guard          | the `defs.extend` selector        |
+| `+!!this.inputs?.[0].widget` converted-widget sniffing | `input.isWidgetInput`             |
+| `this.widgets.length = n` truncation                   | remove by name (below)            |
+| `widget element`                                       | `w.element` (renamed in PR #8594) |
 
 Truncation has no single-call replacement, deliberately — assigning `length`
 skips each widget's teardown, which is why the pack has to call `onRemove()` by
@@ -149,8 +149,8 @@ for (const name of node.widgets.names().slice(keep)) {
 }
 ```
 
-Note `isConvertedWidget` exists only to skip a widget the *old frontend* hid via
-the converted-widget protocol. With `widget.hidden` as a real property, that
+Note `isConvertedWidget` exists only to skip a widget the _old frontend_ hid via
+the converted-widget protocol. With `setHidden()` as a real property, that
 whole line of reasoning goes away — check `input.isWidgetInput` if you actually
 care whether an input is a widget's socket form.
 
