@@ -42,6 +42,8 @@
           <TemplatesFilterMenu
             :facets="filterMenuFacets"
             @toggle="toggleFilterValue"
+            @clear-facet="clearFilterFacet"
+            @clear-all="clearAllFilters"
           />
         </DropdownMenu>
 
@@ -962,6 +964,13 @@ const toggleFilterValue = (facetKey: string, value: string) => {
   target.value = target.value.includes(value)
     ? target.value.filter((v) => v !== value)
     : [...target.value, value]
+}
+
+const clearFilterFacet = (facetKey: string) => {
+  if (facetKey === 'category') selectedNavItem.value = 'all'
+  else if (facetKey === 'model') selectedModels.value = []
+  else if (facetKey === 'task') selectedUseCases.value = []
+  else selectedRunsOn.value = []
 }
 
 interface AppliedFilter {
