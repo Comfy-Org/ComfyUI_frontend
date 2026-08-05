@@ -6,6 +6,7 @@ import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/seedance-2.5'
+const ZH_PATH = '/zh-CN/seedance-2.5'
 const HERO_TITLE = t('seedance.hero.title', 'en')
 const HERO_EYEBROW = t('seedance.hero.eyebrow', 'en')
 const HERO_CTA = t('seedance.hero.primaryCta', 'en')
@@ -50,7 +51,7 @@ test.describe('Seedance 2.5 announcement page @smoke', () => {
 
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: 'Breadcrumb' })
+      .getByRole('navigation', { name: t('ui.breadcrumb', 'en') })
       .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
@@ -71,13 +72,70 @@ test.describe('Seedance 2.5 announcement page @smoke', () => {
     await expect(reviews).toBeVisible()
   })
 
-  // The announcement page omits everything the model cannot back yet. If a
-  // future edit reintroduces one of these, it should be deliberate.
-  test('omits the sections that need a shipped model', async ({ page }) => {
-    await expect(page.locator('[id^="faq-trigger-"]')).toHaveCount(0)
-    await expect(
-      page.getByRole('heading', { level: 2, name: t('pricing.title', 'en') })
-    ).toHaveCount(0)
+  // The announcement omits gallery, pricing, FAQ and closing CTA, so these two
+  // are the only sections it should show. Asserting the whole set means
+  // reintroducing any of them has to be deliberate.
+  test('shows only the sections the announcement configures', async ({
+    page
+  }) => {
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText([
+      RUN_OPTIONS_HEADING,
+      REVIEWS_HEADING
+    ])
     await expect(page.locator('video')).toHaveCount(0)
+  })
+})
+
+test.describe('Seedance 2.5 announcement page — zh-CN', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(ZH_PATH)
+  })
+
+  test('renders the localized hero and run options', async ({ page }) => {
+    const hero = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
+    })
+    await expect(
+      hero.getByText(t('seedance.hero.eyebrow', 'zh-CN'))
+    ).toBeVisible()
+    await expect(hero.getByRole('link')).toContainText(/[一-鿿]/)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 2,
+        name: t('seedance.runOptions.heading', 'zh-CN')
+      })
+    ).toBeVisible()
+  })
+
+  test('breadcrumb keeps visitors inside the locale', async ({ page }) => {
+    const modelsCrumb = page
+      .getByRole('navigation', { name: t('ui.breadcrumb', 'zh-CN') })
+      .getByRole('link', { name: t('models.breadcrumb.models', 'zh-CN') })
+    await expect(modelsCrumb).toHaveAttribute('href', getRoutes('zh-CN').models)
+  })
+})
+
+test.describe('Seedance 2.5 announcement page — mobile @mobile', () => {
+  test('hero CTA stays visible and linked at narrow viewports', async ({
+    page
+  }) => {
+    await page.goto(PATH)
+
+    const cta = page
+      .locator('section')
+      .filter({
+        has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
+      })
+      .getByRole('link', { name: HERO_CTA })
+
+    await expect(cta).toBeVisible()
+    await expect(cta).toHaveAttribute('href', externalLinks.cloud)
+
+    const box = await cta.boundingBox()
+    expect(box, 'hero CTA bounding box').not.toBeNull()
+    expect(box!.x + box!.width).toBeLessThanOrEqual(
+      page.viewportSize()!.width + 1
+    )
   })
 })

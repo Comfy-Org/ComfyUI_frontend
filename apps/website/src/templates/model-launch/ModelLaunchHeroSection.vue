@@ -40,7 +40,10 @@ const OVERLAY_CELL = 'col-start-1 row-start-1'
         "
       />
 
-      <div v-if="hero.videoSrc" class="relative">
+      <div
+        v-if="hero.videoSrc"
+        :class="cn('relative', isOverlay && OVERLAY_CELL)"
+      >
         <VideoPlayer :locale :src="hero.videoSrc" autoplay loop />
         <div
           v-if="hero.logoSrc"
