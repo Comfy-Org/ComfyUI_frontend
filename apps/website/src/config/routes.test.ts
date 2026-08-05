@@ -31,3 +31,13 @@ describe('getRoutes minimax', () => {
     expect(getRoutes('zh-CN').minimax).toBe('/zh-CN/minimax')
   })
 })
+
+describe('getRoutes flux3', () => {
+  it('serves the flux 3 page at its canonical path for en', () => {
+    expect(getRoutes('en').flux3).toBe('/flux-3')
+  })
+
+  it('serves a localized flux 3 path for zh-CN', () => {
+    expect(getRoutes('zh-CN').flux3).toBe('/zh-CN/flux-3')
+  })
+})

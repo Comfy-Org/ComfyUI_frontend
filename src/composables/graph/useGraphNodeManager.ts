@@ -7,7 +7,6 @@ import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type {
   INodeInputSlot,
@@ -440,9 +439,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
       slotMetadata.set(key, value)
     }
 
-    const widgets = node.isSubgraphNode()
-      ? promotedInputWidgets(node)
-      : (node.widgets ?? [])
+    const widgets = node.widgets ?? []
     return widgets.map(safeWidgetMapper(node, slotMetadata))
   })
 

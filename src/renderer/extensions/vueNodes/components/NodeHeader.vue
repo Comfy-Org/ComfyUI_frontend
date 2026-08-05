@@ -131,8 +131,7 @@ const resolveTitle = (info: VueNodeData | undefined) => {
   const untitledLabel = st('g.untitled', 'Untitled')
   return resolveNodeDisplayName(info ?? null, {
     emptyLabel: untitledLabel,
-    untitledLabel,
-    st
+    untitledLabel
   })
 }
 

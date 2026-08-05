@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "فراموشی رمز عبور",
   "cloudHero": {
     "nextSlide": "اسلاید بعدی",
-    "previousSlide": "اسلاید قبلی",
-    "slidePagerLabel": "رفتن به اسلاید {index}",
-    "slides": {
-      "cloud": {
-        "description": "مناسب برای اکثر کاربران که می‌خواهند از هر مکانی با مدل‌های دارای مجوز تجاری کار کنند.",
-        "title": "ابر"
-      },
-      "models": {
-        "description": "مدل‌های منتخب با مجوز تجاری آماده اجرا بدون نیاز به تنظیمات اولیه.",
-        "title": "مدل‌ها"
-      },
-      "team": {
-        "description": "تیم خود را امروز اضافه کنید. به اشتراک‌گذاری workflowها و دارایی‌ها در سراسر سازمان شما.",
-        "title": "تیم"
-      },
-      "workflows": {
-        "description": "از ایده تا خروجی در چند دقیقه. تولید چندین واریاسیون به صورت همزمان.",
-        "title": "Workflowها"
-      }
-    }
+    "previousSlide": "اسلاید قبلی"
   },
   "cloudNotification": {
     "continueLocally": "ادامه به صورت محلی",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "کلود در حال حاضر در نسخه بتای خصوصی است",
   "cloudSorryContactSupport_title": "متاسفیم، با پشتیبانی تماس بگیرید",
   "cloudStart_desc": "بدون نیاز به تنظیمات. روی هر دستگاهی کار می‌کند.",
-  "cloudStart_download": "دانلود ComfyUI",
   "cloudStart_explain": "چندین خروجی را همزمان تولید کنید. workflowها را به راحتی به اشتراک بگذارید.",
   "cloudStart_learnAboutButton": "درباره Cloud بیشتر بدانید",
   "cloudStart_title": "در چند ثانیه شروع به خلق کنید",
-  "cloudStart_wantToRun": "مایلید ComfyUI را به صورت محلی اجرا کنید؟",
   "cloudSurvey_steps_experience": "تا چه حد با ComfyUI آشنایی دارید؟",
   "cloudSurvey_steps_focus": "در حال ساخت چه چیزی هستید؟",
   "cloudSurvey_steps_intent": "مایل هستید با ComfyUI چه چیزی ایجاد کنید؟",
@@ -812,6 +791,9 @@
       "buy": "خرید",
       "buyCredits": "ادامه به پرداخت",
       "buyNow": "هم‌اکنون خرید کنید",
+      "chargedImmediatelyNote": "کارت ذخیره‌شده شما بلافاصله شارژ می‌شود.",
+      "confirmSubtitle": "اعتبارها به محض تکمیل پرداخت به این ورک‌اسپیس افزوده می‌شوند.",
+      "confirmTitle": "تأیید",
       "contactUs": "با ما تماس بگیرید",
       "creditsDescription": "اعتبارها برای اجرای workflow یا nodeهای شریک استفاده می‌شوند.",
       "creditsPerDollar": "اعتبار به ازای هر دلار",
@@ -826,6 +808,7 @@
       "minRequired": "حداقل {credits} اعتبار",
       "minimumPurchase": "حداقل {amount} ({credits} اعتبار)",
       "needMore": "بیشتر نیاز دارید؟",
+      "payAmount": "پرداخت {amount}",
       "purchaseError": "خرید ناموفق بود",
       "purchaseErrorDetail": "خرید اعتبار ناموفق بود: {error}",
       "purchaseSuccess": "اعتبار با موفقیت افزوده شد!",
@@ -836,6 +819,8 @@
       "topUp": "افزایش اعتبار",
       "unknownError": "خطای ناشناخته رخ داد",
       "usdAmount": "{amount} دلار",
+      "verifyBody": "بانک شما برای تکمیل این پرداخت به تأییدیه اضافی نیاز دارد.",
+      "verifyTitle": "تأیید پرداخت شما",
       "videosEstimate": "~{count} ویدیو*",
       "viewPricing": "مشاهده جزئیات قیمت‌گذاری",
       "youGet": "اعتبار",
@@ -1875,6 +1860,26 @@
     "workflow": "workflow",
     "you": "شما"
   },
+  "gettingStarted": {
+    "loadFailed": "قالب‌ها بارگذاری نشدند.",
+    "retry": "دوباره تلاش کنید",
+    "retryTemplate": "تلاش مجدد برای {title}",
+    "startBlank": "شروع با بوم خالی",
+    "subtitle": "یک ورک‌فلو آماده انتخاب کنید یا با یک بوم خالی شروع کنید.",
+    "tabs": {
+      "templates": "قالب‌ها",
+      "tutorials": "آموزش‌ها"
+    },
+    "tabsLabel": "گزینه‌های شروع",
+    "templateFailed": "امکان باز کردن این قالب وجود ندارد.",
+    "title": "بیایید چیزی بسازیم",
+    "tutorials": {
+      "imageToImage": "تبدیل تصویر به تصویر",
+      "inpaint": "بازسازی تصویر (Inpainting)",
+      "interfaceOverview": "مرور رابط کاربری",
+      "textToImage": "تبدیل متن به تصویر"
+    }
+  },
   "graphCanvasMenu": {
     "canvasMode": "حالت بوم",
     "canvasToolbar": "نوار ابزار بوم",
@@ -2905,6 +2910,7 @@
     "mage": "mage",
     "mask": "ماسک",
     "merging": "ادغام",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "مدل",
     "model specific": "مدل خاص",
@@ -3891,6 +3897,7 @@
     "beta": "بتا",
     "billedMonthly": "صورتحساب ماهانه",
     "billedYearly": "{total} صورتحساب سالانه",
+    "billingAndInvoices": "صورتحساب و فاکتورها",
     "billingComingSoon": {
       "message": "صورت‌حساب تیمی به‌زودی ارائه می‌شود. به‌زودی می‌توانید برای فضای کاری خود با قیمت هر نفر اشتراک تهیه کنید. برای به‌روزرسانی‌ها همراه ما باشید.",
       "title": "به‌زودی"
@@ -3972,6 +3979,9 @@
       "memberTitle": "اشتراک این فضای کاری غیرفعال است",
       "runLabel": "اجرا"
     },
+    "inactiveTeamDescription": "برای افزودن اعضای جدید و اجرای workflowها، طرح تیمی خود را مجدداً فعال کنید.",
+    "inactiveTeamPlanIncludes": "یک طرح فعال شامل همه امکانات {plan} و همچنین:",
+    "inactiveTeamTitle": "اشتراک تیمی غیرفعال",
     "inviteUpTo": "دعوت تا سقف",
     "invoiceHistory": "تاریخچه فاکتورها",
     "learnMore": "اطلاعات بیشتر",
@@ -4091,6 +4101,7 @@
     "pricingBlurbQuestions": "سؤالات",
     "pricingBlurbSeeDetails": "جزئیات را ببینید",
     "reactivatePlan": "فعال‌سازی مجدد پلن",
+    "reactivateToUseCredits": "برای استفاده از این اعتبارها، طرح خود را مجدداً فعال کنید.",
     "refillsDate": "شارژ مجدد در {date}",
     "refillsNextCycle": "شارژ مجدد در چرخه بعدی",
     "refreshCredits": "به‌روزرسانی اعتبارها",

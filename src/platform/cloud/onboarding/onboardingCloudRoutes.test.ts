@@ -17,6 +17,34 @@ vi.mock('@/platform/auth/session/useSessionCookie', () => ({
   useSessionCookie: () => ({ createSessionOrThrow })
 }))
 
+const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
+const consentRoute = oauthLayout?.children?.find(
+  (c) => c.name === 'cloud-oauth-consent'
+)
+const layoutLoader = oauthLayout?.component
+const consentLoader = consentRoute?.component
+
+/**
+ * Resolved here rather than inside the test.
+ *
+ * These are the real loaders, so calling them compiles `OAuthLayoutView.vue`,
+ * `OAuthConsentView.vue` and everything they import — seconds of work even on
+ * an idle machine. Awaited inside a test body that time is billed against the
+ * 5 s test timeout, which is what made this test fail under a loaded worker
+ * pool while passing in isolation (#14666). At module scope it is collection
+ * cost, which nothing times out, and the test itself becomes synchronous.
+ *
+ * The loaders are still the ones the router will call: a route pointing at a
+ * module that does not exist still fails here, at import time.
+ */
+const resolvedComponents = await Promise.all(
+  [layoutLoader, consentLoader].map(async (loader) =>
+    typeof loader === 'function'
+      ? await (loader as () => Promise<unknown>)()
+      : undefined
+  )
+)
+
 describe('cloudOnboardingRoutes', () => {
   it('consent route is not a child of the /cloud layout', () => {
     const cloudLayout = cloudOnboardingRoutes.find((r) => r.path === '/cloud')
@@ -25,34 +53,30 @@ describe('cloudOnboardingRoutes', () => {
   })
 
   it('consent route lives under a standalone /oauth layout', () => {
-    const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
-    const consentRoute = oauthLayout?.children?.find(
-      (c) => c.name === 'cloud-oauth-consent'
-    )
     expect(consentRoute).toBeDefined()
     expect(consentRoute?.path).toBe('consent')
   })
 
-  it('consent route carries no requiresAuth meta', () => {
-    const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
-    const consentRoute = oauthLayout?.children?.find(
-      (c) => c.name === 'cloud-oauth-consent'
+  it('forgot-password keeps the footer its terms and help links live in', () => {
+    const cloudLayout = cloudOnboardingRoutes.find((r) => r.path === '/cloud')
+    const forgotPassword = cloudLayout?.children?.find(
+      (c) => c.name === 'cloud-forgot-password'
     )
+
+    expect(forgotPassword).toBeDefined()
+    expect(forgotPassword?.meta?.hideFooter).toBeFalsy()
+    expect(forgotPassword?.meta?.showTermsNotice).toBeFalsy()
+  })
+
+  it('consent route carries no requiresAuth meta', () => {
     expect(consentRoute?.meta?.requiresAuth).toBeFalsy()
   })
 
-  it('lazily resolves the /oauth layout and consent view components', async () => {
-    const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
-    const consentRoute = oauthLayout?.children?.find(
-      (c) => c.name === 'cloud-oauth-consent'
-    )
-    const layoutLoader = oauthLayout?.component
-    const consentLoader = consentRoute?.component
+  it('lazily resolves the /oauth layout and consent view components', () => {
     expect(typeof layoutLoader).toBe('function')
     expect(typeof consentLoader).toBe('function')
 
-    const layoutModule = await (layoutLoader as () => Promise<unknown>)()
-    const consentModule = await (consentLoader as () => Promise<unknown>)()
+    const [layoutModule, consentModule] = resolvedComponents
     expect(layoutModule).toHaveProperty('default')
     expect(consentModule).toHaveProperty('default')
   })

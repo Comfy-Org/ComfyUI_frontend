@@ -95,9 +95,13 @@ export interface BillingState {
   teamCreditStops: ComputedRef<TeamCreditStops | null>
   /** The team's currently-subscribed credit stop; null for personal/legacy. */
   currentTeamCreditStop: ComputedRef<CurrentTeamCreditStop | null>
+  /** Effective member limit for the current workspace; zero is unlimited. */
+  maxSeats: ComputedRef<number | null>
+  /** Seats occupied in the current workspace. */
+  occupiedSeats: ComputedRef<number | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
-  isActiveSubscription: ComputedRef<boolean>
+  canAccessSubscriptionFeatures: ComputedRef<boolean>
   /** Reflects the active workspace's tier, not the user's personal tier. */
   isFreeTier: ComputedRef<boolean>
   /** Coarse funding state (`billing_status`); legacy reports null. */
@@ -125,4 +129,6 @@ export interface BillingContext extends BillingState, BillingActions {
   isTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
   canRunWorkflows: ComputedRef<boolean>
+  /** @deprecated Use canAccessSubscriptionFeatures instead */
+  isActiveSubscription: ComputedRef<boolean>
 }
