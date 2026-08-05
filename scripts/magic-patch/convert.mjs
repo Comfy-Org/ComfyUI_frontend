@@ -58,6 +58,7 @@ import { convert } from '../../src/workbench/extensions/magicPatch/conversion/co
 import { RULES, RULE_CATALOG_VERSION } from '../../src/workbench/extensions/magicPatch/conversion/rules'
 import { diffToEdits } from '../../src/workbench/extensions/magicPatch/conversion/edits'
 import { runConformance } from '../../src/workbench/extensions/magicPatch/verify/conformance'
+import { verifyPack } from './harness/verifyPack.mjs'
 
 const REPO = new URL('../..', import.meta.url).pathname
 const SKILL_DIR = join(REPO, '.claude/skills/converting-custom-nodes')
@@ -298,6 +299,8 @@ Workflow:
 2. Per file: decide whether it is convertible. Check whether each object is a
    live node or serialized workflow data before touching anything.
 3. write_conversion, then run_checks, and fix whatever fails.
+3b. verify_pack once the pack's drafts are in place — it actually runs the code,
+   and it is the only check that can catch a break spanning files.
 4. mark_complete, or give_up with the category that fits.
 5. Resolve every file listed above before finishing.
 
@@ -478,6 +481,50 @@ function createSession(work) {
       ),
 
       tool(
+        'verify_pack',
+        'Run the whole pack twice — as shipped and with your current drafts — and report what changed. This is the only check that executes the code.',
+        {},
+        async () => {
+          const drafts = Object.fromEntries(state.drafts)
+          if (!Object.keys(drafts).length) {
+            return say('No drafts yet — call write_conversion first.')
+          }
+          // Every readable JS file, not just the ones being converted: a
+          // signature change is only visible when its callers load too.
+          const entries = work.readable
+            .map((p) => relative(work.root, p))
+            .filter((p) => !p.includes('node_modules'))
+          try {
+            const result = await verifyPack({
+              pack: work.pack,
+              packRoot: work.root,
+              entries,
+              drafts
+            })
+            return say(
+              JSON.stringify(
+                {
+                  regressed: result.regressed,
+                  typesDriven: result.types,
+                  loaded: { before: result.before.loaded, after: result.after.loaded },
+                  problems: result.problems,
+                  newErrors: result.newErrors,
+                  wireChanged: result.wireChanged,
+                  hint: result.regressed
+                    ? 'The converted pack behaves differently. Fix it, or give_up with the reason.'
+                    : 'Nothing observable got worse.'
+                },
+                null,
+                2
+              )
+            )
+          } catch (error) {
+            return say(`verify_pack could not run: ${error?.message ?? error}`)
+          }
+        }
+      ),
+
+      tool(
         'mark_complete',
         'Mark one file complete. Requires passing checks for its current draft.',
         {
@@ -622,6 +669,7 @@ async function convertPack(work) {
     'findings_for',
     'write_conversion',
     'run_checks',
+    'verify_pack',
     'mark_complete',
     'give_up'
   ].map((n) => `mcp__magicpatch__${n}`)
