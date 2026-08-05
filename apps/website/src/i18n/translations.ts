@@ -114,6 +114,10 @@ const translations = {
     en: 'Run your first workflow',
     'zh-CN': '运行你的第一个工作流'
   },
+  'hero.getStartedFree': {
+    en: 'Get started for free',
+    'zh-CN': '免费开始使用'
+  },
 
   // ProductShowcaseSection
   'showcase.subtitle1': {

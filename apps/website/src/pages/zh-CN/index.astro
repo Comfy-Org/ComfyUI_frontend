@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../components/home/ProductCardsSection.vue'
-import HeroSection from '../../components/home/HeroSection.vue'
+import HeroGraphSection from '../../components/hero/HeroGraphSection.vue'
 import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
 import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
 import UseCaseSection from '../../components/home/UseCaseSection.vue'
@@ -30,7 +30,7 @@ const { siteUrl } = pageContext(
   extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
   keywords={['comfyui app', 'comfyui web app', 'comfyui application', 'ComfyUI 应用', 'ComfyUI 网页版', 'ComfyUI 桌面应用', 'ComfyUI 下载', '可视化 AI', '节点式 AI', '生成式 AI 工作流']}
 >
-  <HeroSection locale="zh-CN" client:load />
+  <HeroGraphSection locale="zh-CN" client:load />
   <SocialProofBarSection />
   <ProductShowcaseSection locale="zh-CN" client:load />
   <UseCaseSection locale="zh-CN" client:load />
