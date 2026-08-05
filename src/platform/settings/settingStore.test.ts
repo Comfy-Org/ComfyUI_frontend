@@ -68,6 +68,61 @@ describe('useSettingStore', () => {
       expect(api.getSettings).toHaveBeenCalled()
     })
 
+    describe('Canvas Navigation override migration', () => {
+      const NAV = 'Comfy.Canvas.NavigationMode'
+      const LEFT = 'Comfy.Canvas.LeftMouseClickBehavior'
+      const WHEEL = 'Comfy.Canvas.MouseWheelScroll'
+
+      const loadWith = async (persisted: Record<string, unknown>) => {
+        vi.mocked(api.getSettings).mockResolvedValue(persisted as Settings)
+        await store.load()
+      }
+
+      it('supplies both overrides for a stored preset', async () => {
+        await loadWith({ [NAV]: 'standard' })
+
+        expect(api.storeSettings).toHaveBeenCalledWith({
+          [LEFT]: 'select',
+          [WHEEL]: 'panning'
+        })
+        expect(store.settingValues).toMatchObject({
+          [NAV]: 'standard',
+          [LEFT]: 'select',
+          [WHEEL]: 'panning'
+        })
+      })
+
+      it('supplies only the override that is missing', async () => {
+        await loadWith({ [NAV]: 'standard', [WHEEL]: 'zoom' })
+
+        expect(api.storeSettings).toHaveBeenCalledWith({ [LEFT]: 'select' })
+        expect(store.settingValues[WHEEL]).toBe('zoom')
+      })
+
+      it('leaves a stored custom mode alone', async () => {
+        await loadWith({ [NAV]: 'custom' })
+
+        expect(api.storeSettings).not.toHaveBeenCalled()
+        expect(store.settingValues[LEFT]).toBeUndefined()
+      })
+
+      it('leaves a profile with both overrides alone', async () => {
+        await loadWith({
+          [NAV]: 'legacy',
+          [LEFT]: 'select',
+          [WHEEL]: 'panning'
+        })
+
+        expect(api.storeSettings).not.toHaveBeenCalled()
+      })
+
+      it('writes nothing for a profile with no stored mode', async () => {
+        await loadWith({})
+
+        expect(api.storeSettings).not.toHaveBeenCalled()
+      })
+    })
+
     it('should set error if settings are loaded after registration', async () => {
       const setting: SettingParams = {
         id: 'test.setting',
@@ -418,6 +473,29 @@ describe('useSettingStore', () => {
         'test.setting',
         'differentvalue'
       )
+    })
+
+    it('awaits an onChange handler before persisting the value', async () => {
+      const order: string[] = []
+      vi.mocked(api.storeSetting).mockImplementation(async () => {
+        order.push('storeSetting')
+        return new Response()
+      })
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'text',
+        defaultValue: 'default',
+        onChange: async (_value, old) => {
+          if (!old) return
+          await Promise.resolve()
+          order.push('onChange')
+        }
+      })
+
+      await store.set('test.setting', 'newvalue')
+
+      expect(order).toEqual(['onChange', 'storeSetting'])
     })
 
     it('exposes the new value to onChange handlers', async () => {

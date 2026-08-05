@@ -5,25 +5,14 @@ import {
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
+import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import type { Settings } from '@/schemas/apiSchema'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
-
-const CANVAS_NAVIGATION_PRESETS: Record<string, Partial<Settings>> = {
-  standard: {
-    'Comfy.Canvas.LeftMouseClickBehavior': 'select',
-    'Comfy.Canvas.MouseWheelScroll': 'panning'
-  },
-  legacy: {
-    'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
-    'Comfy.Canvas.MouseWheelScroll': 'zoom'
-  }
-}
 
 /**
  * Core settings are essential configuration parameters required for ComfyUI's basic functionality.
@@ -200,26 +189,11 @@ export const CORE_SETTINGS: SettingParams[] = [
       '1.25.0': 'legacy'
     },
     onChange: async (val: unknown, old?: unknown) => {
+      if (!old) return
       const preset = CANVAS_NAVIGATION_PRESETS[val as string]
       if (!preset) return
-      const settingStore = useSettingStore()
 
-      if (old) {
-        await settingStore.setMany(preset)
-        return
-      }
-
-      // Registration replay. A preset stored before the overrides shipped in
-      // 1.27.4 is the only record of the choice, so it has to supply the ones
-      // still missing instead of being overruled by their defaults.
-      if (!settingStore.exists('Comfy.Canvas.NavigationMode')) return
-
-      const unset = Object.fromEntries(
-        Object.entries(preset).filter(
-          ([id]) => !settingStore.exists(id as keyof Settings)
-        )
-      )
-      if (Object.keys(unset).length) await settingStore.setMany(unset)
+      await useSettingStore().setMany(preset)
     }
   },
   {

@@ -5,6 +5,7 @@ import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { ref } from 'vue'
 
+import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import type { SettingParams } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SettingChangedMetadata } from '@/platform/telemetry/types'
@@ -37,19 +38,22 @@ function tryMigrateDeprecatedValue(
   return setting?.migrateDeprecatedValue?.(value) ?? value
 }
 
-function onChange(
+async function onChange(
   setting: SettingParams | undefined,
   newValue: unknown,
   oldValue: unknown
 ) {
-  if (setting?.onChange) {
-    setting.onChange(newValue, oldValue)
-  }
+  // Started before dispatchChange so extensions keep observing the change at
+  // the same point, but awaited afterwards: a handler that cascades into other
+  // settings must finish writing them before the caller writes this one, or
+  // the two requests race in the backend's read-modify-write.
+  const handled = setting?.onChange?.(newValue, oldValue)
   // Backward compatibility with old settings dialog.
   // Some extensions still listens event emitted by the old settings dialog.
   if (setting) {
     app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
   }
+  await handled
 }
 
 function settingChangedEvent<K extends keyof Settings>(
@@ -95,6 +99,7 @@ export const useSettingStore = defineStore('setting', () => {
         delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
       })
       await migrateZoomThresholdToFontSize()
+      await migrateCanvasNavigationOverrides()
     },
     undefined,
     { immediate: false }
@@ -129,10 +134,10 @@ export const useSettingStore = defineStore('setting', () => {
    * this setting — including handlers of other settings this one cascades
    * into — observe the new value rather than the one it replaced.
    */
-  function applySettingLocally<K extends keyof Settings>(
+  async function applySettingLocally<K extends keyof Settings>(
     key: K,
     value: Settings[K]
-  ): AppliedSetting<Settings[K]> | undefined {
+  ): Promise<AppliedSetting<Settings[K]> | undefined> {
     const clonedValue = cloneDeep(value)
     const newValue = tryMigrateDeprecatedValue(
       settingsById.value[key],
@@ -143,7 +148,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     const typedNewValue = newValue as Settings[K]
     settingValues.value[key] = typedNewValue
-    onChange(settingsById.value[key], newValue, oldValue)
+    await onChange(settingsById.value[key], newValue, oldValue)
     return {
       previousValue: oldValue,
       newValue: typedNewValue
@@ -156,7 +161,7 @@ export const useSettingStore = defineStore('setting', () => {
    * @param value - The value to set.
    */
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
-    const applied = applySettingLocally(key, value)
+    const applied = await applySettingLocally(key, value)
     if (applied === undefined) return
     await api.storeSetting(key, applied.newValue)
 
@@ -173,7 +178,7 @@ export const useSettingStore = defineStore('setting', () => {
     const telemetryEvents: SettingChangedMetadata[] = []
 
     for (const key of Object.keys(settings) as (keyof Settings)[]) {
-      const applied = applySettingLocally(
+      const applied = await applySettingLocally(
         key,
         settings[key] as Settings[typeof key]
       )
@@ -302,7 +307,38 @@ export const useSettingStore = defineStore('setting', () => {
         settingValues.value[setting.id]
       )
     }
-    onChange(setting, get(setting.id), undefined)
+    void onChange(setting, get(setting.id), undefined)
+  }
+
+  /**
+   * A Navigation Mode preset stored before the Left Mouse Click Behavior and
+   * Mouse Wheel Scroll settings shipped in 1.27.4 is the only record of that
+   * choice. Materialise the overrides it implies before anything can read
+   * their defaults, which describe a different preset and would otherwise
+   * demote the stored mode to 'custom'.
+   *
+   * Runs from `load()` rather than the settings' own `onChange` so it is
+   * awaited, and so it does not depend on the order `CORE_SETTINGS` happens
+   * to register these three settings in.
+   */
+  async function migrateCanvasNavigationOverrides() {
+    const storedMode = settingValues.value['Comfy.Canvas.NavigationMode']
+    const preset =
+      typeof storedMode === 'string'
+        ? CANVAS_NAVIGATION_PRESETS[storedMode]
+        : undefined
+    if (!preset) return
+
+    const unset: Partial<Settings> = {}
+    for (const id of Object.keys(preset) as (keyof Settings)[]) {
+      if (settingValues.value[id] === undefined) {
+        Object.assign(unset, { [id]: preset[id] })
+      }
+    }
+    if (!Object.keys(unset).length) return
+
+    Object.assign(settingValues.value, unset)
+    await api.storeSettings(unset)
   }
 
   /**
