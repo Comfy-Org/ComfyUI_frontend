@@ -173,27 +173,6 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   console.log(
     `connectivity sweep: ${plan.pairs.length} pairs in ${sweepMs}ms (${(sweepMs / plan.pairs.length).toFixed(1)}ms/pair)`
   )
-  // Routed through the pack console ledger scoped to the packs actually in
-  // the corpus (the escape hatch this assert always documented): a KJNodes
-  // SplineEditor creation crash fired on 2026-07-18 when core's new partner
-  // nodes reshuffled the pair plan, and the ledger row carries its mechanism
-  // and upstream-report status. Every non-ledgered error still fails. The
-  // wiring sweep queues no prompts, so a prompt-execution error here is a
-  // prior tier's async stray, not this test's (isForeignExecutionNoise;
-  // ARCHITECTURE section 9 principle).
-  const sweepErrors = consoleErrors.errors.filter(
-    (error) => !isForeignExecutionNoise(error)
-  )
-  const unledgered = unallowlistedErrorsForPacks(
-    [...installedPacks],
-    sweepErrors
-  )
-  if (sweepErrors.length > unledgered.length)
-    console.log(
-      `connectivity sweep: ${sweepErrors.length - unledgered.length} console error(s) matched an installed pack's allowlist`
-    )
-  expect(unledgered, 'console errors during breadth sweep').toEqual([])
-
   const widgetOnly = results.filter(
     (result) =>
       result.outcome ===
@@ -224,8 +203,32 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   )
   const passed = results.filter((result) => result.outcome === 'PASS').length
   console.log(`connectivity sweep: ${passed}/${results.length} pairs PASS`)
+  // Ahead of the console gate below so the tier's own outcome signal is the
+  // failure message, not console noise a pack emitted alongside it.
   expect(failures, JSON.stringify(failures, null, 1)).toEqual([])
   expect(passed).toBeGreaterThan(0)
+
+  // Routed through the pack console ledger scoped to the packs actually in
+  // the corpus (the escape hatch this assert always documented): a KJNodes
+  // SplineEditor creation crash fired on 2026-07-18 when core's new partner
+  // nodes reshuffled the pair plan, and the ledger row carries its mechanism
+  // and upstream-report status. Every non-ledgered error still fails. The
+  // wiring sweep queues no prompts, so a prompt-execution error here is a
+  // prior tier's async stray, not this test's (isForeignExecutionNoise;
+  // ARCHITECTURE section 9 principle).
+  const sweepErrors = consoleErrors.errors.filter(
+    (error) => !isForeignExecutionNoise(error)
+  )
+  const unledgered = unallowlistedErrorsForPacks(
+    [...installedPacks],
+    sweepErrors
+  )
+  if (sweepErrors.length > unledgered.length)
+    console.log(
+      `connectivity sweep: ${sweepErrors.length - unledgered.length} console error(s) matched an installed pack's allowlist`
+    )
+  expect(unledgered, 'console errors during breadth sweep').toEqual([])
+
   // Two-way guard, same discipline as cannotRunAlone, for the two allowlists
   // in the loop below: every key must still be OBSERVED failing in its
   // recorded way. An entry whose pair now passes (or is no longer even
@@ -319,6 +322,16 @@ function evaluatePairs(
 ): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
   return page.evaluate(async (pairsInPage) => {
     const graph = window.app!.graph
+    // graph.clear() detaches nodes without disconnecting them, so a swept
+    // node keeps output.links pointing at ids the graph no longer holds, and
+    // pack JS resolving its own async work later reads graph.links[staleId]
+    // and throws (VideoHelperSuite's VHS_SelectLatest, from its /vhs/getpath
+    // fetch callback). Removing each node disconnects it first, so the late
+    // callback sees an empty link list and returns.
+    const resetGraph = () => {
+      for (const node of [...graph.nodes]) graph.remove(node)
+      graph.clear()
+    }
     const report: Array<{
       key: string
       outcome: string
@@ -327,7 +340,7 @@ function evaluatePairs(
     for (const pair of pairsInPage) {
       const key = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
       try {
-        graph.clear()
+        resetGraph()
         const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
         const consumer = window.LiteGraph!.createNode(pair.consumer.nodeType)
         if (!producer || !consumer) {
@@ -401,7 +414,7 @@ function evaluatePairs(
         })
       }
     }
-    graph.clear()
+    resetGraph()
     return report
   }, pairs)
 }
