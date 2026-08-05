@@ -15,6 +15,9 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -33,14 +36,10 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
   operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
 >
 
-export type CloudSubscriptionStatusResponse = NonNullable<
-  operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
->
-
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 
 function useSubscriptionInternal() {
-  const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+  const subscriptionStatus = ref<BillingStatusResponse | null>(null)
   const telemetry = useTelemetry()
   const isInitialized = ref(false)
 
@@ -53,13 +52,14 @@ function useSubscriptionInternal() {
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
+  const workspaceStore = useTeamWorkspaceStore()
   const { getAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
 
   const isCancelled = computed(() => {
-    return !!subscriptionStatus.value?.end_date
+    return !!subscriptionStatus.value?.cancel_at
   })
 
   const formattedRenewalDate = computed(() => {
@@ -75,9 +75,9 @@ function useSubscriptionInternal() {
   })
 
   const formattedEndDate = computed(() => {
-    if (!subscriptionStatus.value?.end_date) return ''
+    if (!subscriptionStatus.value?.cancel_at) return ''
 
-    const endDate = new Date(subscriptionStatus.value.end_date)
+    const endDate = new Date(subscriptionStatus.value.cancel_at)
 
     return endDate.toLocaleDateString('en-US', {
       month: 'short',
@@ -166,7 +166,7 @@ function useSubscriptionInternal() {
   }
 
   const syncPendingSubscriptionSuccess = (
-    statusData: CloudSubscriptionStatusResponse
+    statusData: BillingStatusResponse
   ) => {
     const metadata = consumePendingSubscriptionCheckoutSuccess(statusData)
 
@@ -311,10 +311,10 @@ function useSubscriptionInternal() {
   }
 
   // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
-  let inFlightStatusFetch: Promise<CloudSubscriptionStatusResponse | null> | null =
-    null
+  let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
+  let latestStatusRequestId = 0
 
-  async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
+  async function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
     if (inFlightStatusFetch) return inFlightStatusFetch
     inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
       inFlightStatusFetch = null
@@ -322,27 +322,34 @@ function useSubscriptionInternal() {
     return inFlightStatusFetch
   }
 
-  async function performFetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    const headers = await buildAuthHeaders()
+  async function performFetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+    if (!isCloud) return null
 
-    const response = await fetchWithCustomerRecovery(
-      buildApiUrl('/customers/cloud-subscription-status'),
-      {
-        headers
-      }
-    )
-
-    if (!response.ok) {
-      const errorData = await response.json()
+    const requestId = ++latestStatusRequestId
+    const workspaceId = workspaceStore.activeWorkspaceId
+    let statusData: BillingStatusResponse
+    try {
+      statusData = await workspaceApi.getBillingStatus()
+    } catch (error) {
       throw new AuthStoreError(
         t('toastMessages.failedToFetchSubscription', {
-          error: errorData.message
+          error: error instanceof Error ? error.message : String(error)
         })
       )
     }
-
-    const statusData = await response.json()
+    if (
+      requestId !== latestStatusRequestId ||
+      workspaceId !== workspaceStore.activeWorkspaceId
+    ) {
+      return null
+    }
     subscriptionStatus.value = statusData
+    if (workspaceId && statusData.billing_rail) {
+      workspaceStore.setWorkspaceBillingRail(
+        workspaceId,
+        statusData.billing_rail
+      )
+    }
     syncPendingSubscriptionSuccess(statusData)
 
     return statusData

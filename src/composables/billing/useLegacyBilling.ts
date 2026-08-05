@@ -63,7 +63,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
       duration: subscriptionDuration.value,
       planSlug: null, // Legacy doesn't use plan slugs
       renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
-      endDate: legacySubscriptionStatus.value?.end_date ?? null,
+      endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
       isCancelled: isCancelled.value,
       hasFunds: (authStore.balance?.amount_micros ?? 0) > 0
     }
@@ -85,9 +85,13 @@ export function useLegacyBilling(): BillingState & BillingActions {
     }
   })
 
-  // Legacy has no coarse billing_status concept (workspace-only).
-  const billingStatus = computed<BillingStatus | null>(() => null)
+  const billingStatus = computed<BillingStatus | null>(
+    () => legacySubscriptionStatus.value?.billing_status ?? null
+  )
   const subscriptionStatus = computed<BillingSubscriptionStatus | null>(() => {
+    if (legacySubscriptionStatus.value?.subscription_status) {
+      return legacySubscriptionStatus.value.subscription_status
+    }
     if (isCancelled.value) return 'canceled'
     if (legacyCanAccessSubscriptionFeatures.value) return 'active'
     return null
@@ -101,7 +105,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const plans = computed(() => [])
   const currentPlanSlug = computed(() => null)
   const teamCreditStops = computed(() => null)
-  const currentTeamCreditStop = computed(() => null)
+  const currentTeamCreditStop = computed(
+    () => legacySubscriptionStatus.value?.team_credit_stop ?? null
+  )
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
