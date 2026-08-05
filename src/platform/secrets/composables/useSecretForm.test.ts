@@ -43,6 +43,37 @@ function createMockSecret(
   }
 }
 
+const geminiProviders: SecretProviderInfo[] = [
+  {
+    id: 'gemini',
+    credential_options: [
+      {
+        credential_type: 'api_key',
+        input_type: 'text',
+        label: 'API key (Google AI Studio)'
+      },
+      {
+        credential_type: 'gcp_service_account',
+        input_type: 'json_file',
+        label: 'Service account (Vertex AI)'
+      }
+    ]
+  }
+]
+
+const vertexProviders: SecretProviderInfo[] = [
+  {
+    id: 'gemini',
+    credential_options: [
+      {
+        credential_type: 'gcp_service_account',
+        input_type: 'json_file',
+        label: 'Service account (Vertex AI)'
+      }
+    ]
+  }
+]
+
 describe('useSecretForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -483,12 +514,12 @@ describe('useSecretForm', () => {
       expect(selectedInputType.value).toBe('text')
     })
 
-    it('reports json_file input type for a json_file provider', () => {
+    it('reports the input type of the selected credential option', () => {
       const visible = ref(true)
       const { form, selectedInputType } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
-        availableProviders: () => [{ id: 'gemini', input_type: 'json_file' }],
+        availableProviders: () => vertexProviders,
         visible,
         onSaved: vi.fn()
       })
@@ -499,7 +530,7 @@ describe('useSecretForm', () => {
   })
 
   describe('stored credential type in edit mode', () => {
-    it('uses json_file input for a stored gcp_service_account secret even when provider metadata omits input_type', async () => {
+    it('uses json_file input for a stored gcp_service_account secret', async () => {
       const visible = ref(false)
       const secret = createMockSecret({
         provider: 'gemini',
@@ -510,7 +541,7 @@ describe('useSecretForm', () => {
         mode: 'edit',
         secret: () => secret,
         existingProviders: () => ['gemini'],
-        availableProviders: () => [{ id: 'gemini' }],
+        availableProviders: () => geminiProviders,
         visible,
         onSaved: vi.fn()
       })
@@ -534,7 +565,7 @@ describe('useSecretForm', () => {
         mode: 'edit',
         secret: () => secret,
         existingProviders: () => ['gemini'],
-        availableProviders: () => [],
+        availableProviders: () => geminiProviders,
         visible,
         onSaved: vi.fn()
       })
@@ -570,7 +601,7 @@ describe('useSecretForm', () => {
         mode: 'edit',
         secret: () => secret,
         existingProviders: () => ['gemini'],
-        availableProviders: () => [],
+        availableProviders: () => geminiProviders,
         visible,
         onSaved: vi.fn()
       })
@@ -589,7 +620,7 @@ describe('useSecretForm', () => {
       })
     })
 
-    it('uses text input for a stored api_key secret even when the provider is a json_file provider', async () => {
+    it('uses text input for a stored api_key secret', async () => {
       const visible = ref(false)
       const secret = createMockSecret({
         id: 'secret-key',
@@ -602,7 +633,7 @@ describe('useSecretForm', () => {
         mode: 'edit',
         secret: () => secret,
         existingProviders: () => ['gemini'],
-        availableProviders: () => [{ id: 'gemini', input_type: 'json_file' }],
+        availableProviders: () => geminiProviders,
         visible,
         onSaved: vi.fn()
       })
@@ -621,7 +652,7 @@ describe('useSecretForm', () => {
       })
     })
 
-    it('falls back to provider input_type for a secret without a stored credential type', async () => {
+    it('falls back to the first provider credential option for a secret without a stored credential type', async () => {
       const visible = ref(false)
       const secret = createMockSecret({ provider: 'gemini' })
 
@@ -629,7 +660,7 @@ describe('useSecretForm', () => {
         mode: 'edit',
         secret: () => secret,
         existingProviders: () => ['gemini'],
-        availableProviders: () => [{ id: 'gemini', input_type: 'json_file' }],
+        availableProviders: () => vertexProviders,
         visible,
         onSaved: vi.fn()
       })
@@ -642,10 +673,6 @@ describe('useSecretForm', () => {
   })
 
   describe('json_file credential input', () => {
-    const vertexProviders: SecretProviderInfo[] = [
-      { id: 'gemini', input_type: 'json_file' }
-    ]
-
     it('loads file contents into the secret value', async () => {
       const visible = ref(true)
       const { form, fileName, loadSecretFromFile } = useSecretForm({
@@ -676,6 +703,7 @@ describe('useSecretForm', () => {
 
       form.name = 'Vertex SA'
       form.provider = 'gemini'
+      await nextTick()
       form.secretValue = 'not json'
 
       await handleSubmit()
@@ -696,6 +724,7 @@ describe('useSecretForm', () => {
 
       form.name = 'Vertex SA'
       form.provider = 'gemini'
+      await nextTick()
       form.secretValue = '["not", "an", "object"]'
 
       await handleSubmit()
@@ -813,6 +842,7 @@ describe('useSecretForm', () => {
 
       form.name = 'Vertex SA'
       form.provider = 'gemini'
+      await nextTick()
       form.secretValue = '{"type":"service_account"}'
 
       await handleSubmit()
@@ -820,8 +850,63 @@ describe('useSecretForm', () => {
       expect(mockCreate).toHaveBeenCalledWith({
         name: 'Vertex SA',
         secret_value: '{"type":"service_account"}',
-        provider: 'gemini'
+        provider: 'gemini',
+        credential_type: 'gcp_service_account'
       })
+    })
+  })
+
+  describe('credential options', () => {
+    it('preselects and submits the first advertised credential type', async () => {
+      const visible = ref(true)
+      mockCreate.mockResolvedValue({})
+
+      const { form, credentialType, selectedInputType, handleSubmit } =
+        useSecretForm({
+          mode: 'create',
+          existingProviders: () => [],
+          availableProviders: () => geminiProviders,
+          visible,
+          onSaved: vi.fn()
+        })
+
+      form.provider = 'gemini'
+      await nextTick()
+
+      expect(credentialType.value).toBe('api_key')
+      expect(selectedInputType.value).toBe('text')
+
+      form.name = 'Gemini key'
+      form.secretValue = 'AIza-test-key'
+      await handleSubmit()
+
+      expect(mockCreate).toHaveBeenCalledWith({
+        name: 'Gemini key',
+        secret_value: 'AIza-test-key',
+        provider: 'gemini',
+        credential_type: 'api_key'
+      })
+    })
+
+    it('clears the value and changes input type when the credential type changes', async () => {
+      const visible = ref(true)
+      const { form, credentialType, selectedInputType } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => geminiProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+      form.secretValue = 'AIza-test-key'
+
+      credentialType.value = 'gcp_service_account'
+      await nextTick()
+
+      expect(form.secretValue).toBe('')
+      expect(selectedInputType.value).toBe('json_file')
     })
   })
 

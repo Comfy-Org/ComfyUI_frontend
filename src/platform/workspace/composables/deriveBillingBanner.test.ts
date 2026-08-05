@@ -5,6 +5,7 @@ import { deriveBillingBanner } from './useBillingBanner'
 
 const funded: BillingBannerInputs = {
   billingControlEnabled: true,
+  v1PaymentRecovery: true,
   isTeamPlan: true,
   isLoaded: true,
   isActiveSubscription: true,
@@ -43,8 +44,25 @@ describe('deriveBillingBanner', () => {
     expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
   })
 
-  it('shows no banner when billing control is rolled back, even out of credits', () => {
+  it('hides existing notices when billing control is rolled back', () => {
     expect(derive({ billingControlEnabled: false, hasFunds: false })).toBeNull()
+  })
+
+  it('keeps payment recovery independent from billing control', () => {
+    expect(derive({ ...paymentFailed, billingControlEnabled: false })).toBe(
+      'paymentFailed'
+    )
+  })
+
+  it('hides payment recovery states when their flag is off', () => {
+    expect(derive({ ...paymentFailed, v1PaymentRecovery: false })).toBeNull()
+    expect(derive({ ...paused, v1PaymentRecovery: false })).toBeNull()
+  })
+
+  it('does not move existing notices onto the payment recovery flag', () => {
+    expect(derive({ hasFunds: false, v1PaymentRecovery: false })).toBe(
+      'outOfCredits'
+    )
   })
 
   it('shows no banner until the subscription snapshot has loaded', () => {

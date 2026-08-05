@@ -16,6 +16,8 @@ vi.mock('../composables/useSecretForm', () => ({
     providerOptions: [],
     providerHelp: '',
     selectedInputType: ref('text'),
+    credentialOptions: ref([]),
+    credentialType: ref<string | null>(null),
     fileName: ref(''),
     loadSecretFromFile: vi.fn(),
     handleSubmit: vi.fn()
