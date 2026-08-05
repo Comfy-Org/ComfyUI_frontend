@@ -8,6 +8,7 @@ import {
   PopoverTrigger
 } from 'reka-ui'
 
+import { useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -32,6 +33,20 @@ const {
 
 const open = ref(false)
 const contentStyle = useModalLiftedZIndex(open)
+
+/**
+ * Escape has to be handled here rather than left to Reka's DismissableLayer:
+ * the global keybinding handler preventDefaults it first, so the layer skips
+ * its own dismiss and the popover would never close from the keyboard.
+ *
+ * Listening on the document (not the content) means it works wherever focus
+ * sits. Nested layers that own Escape — the select/combobox portals via
+ * `stopEscapeToDocument`, or a facet list with `@keydown.escape.stop` — stop
+ * the event before it gets here, so the innermost thing still closes first.
+ */
+useEventListener(document, 'keydown', (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && open.value) open.value = false
+})
 </script>
 
 <template>

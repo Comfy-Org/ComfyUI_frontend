@@ -41,17 +41,11 @@
               </span>
             </Button>
           </template>
-          <template #default="{ close }">
-            <!-- Escape is dismissed explicitly: the global keybinding handler
-                 preventDefaults it before Reka's DismissableLayer sees it, so
-                 the popover would otherwise stay open (same workaround as
-                 CoachmarkLanding). The facet search stops the event first so
-                 its list closes before the whole sheet does. -->
+          <template #default>
             <div
               id="templates-panel-filters"
               class="flex scrollbar-custom max-h-[70vh] w-96 flex-col gap-4 overflow-y-auto p-3"
               data-testid="template-filter-bar"
-              @keydown.escape="close()"
             >
               <!-- Flat, sectioned filter sheet (no nested dropdowns): label +
                    inline chips, with a small search for the long facets. -->
@@ -154,7 +148,6 @@
             <div
               class="flex min-w-48 flex-col"
               data-testid="template-sort-menu"
-              @keydown.escape="close()"
             >
               <Button
                 v-for="option in sortOptions"
