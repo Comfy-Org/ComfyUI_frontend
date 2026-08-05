@@ -223,14 +223,23 @@ const tabs = computed<RightSidePanelTabList>(() => {
   return list
 })
 
-// Use global state for activeTab and ensure it's valid
+function isActiveTabAvailable() {
+  return (
+    tabs.value.some((tab) => tab.value === activeTab.value) ||
+    (activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
+  )
+}
+
+// Use global state for activeTab and ensure it's valid. Deferred scans
+// (e.g. pasted-node missing-model detection) can restore the active tab
+// within the same tick, so re-check before falling back.
 watchEffect(() => {
-  if (
-    !tabs.value.some((tab) => tab.value === activeTab.value) &&
-    !(activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
-  ) {
-    rightSidePanelStore.openPanel(tabs.value[0].value)
-  }
+  if (isActiveTabAvailable()) return
+  queueMicrotask(() => {
+    if (!isActiveTabAvailable()) {
+      rightSidePanelStore.openPanel(tabs.value[0].value)
+    }
+  })
 })
 
 function resolveTitle() {
