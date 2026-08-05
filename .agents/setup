@@ -3,6 +3,11 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
+
+if [[ "${AMP_ORB:-}" == 1 ]]; then
+  gh auth setup-git
+fi
+
 node_major="$(tr -d '[:space:]' < "$repo_root/.nvmrc")"
 node_home="$HOME/.local/share/comfyui-frontend-node-v$node_major"
 
