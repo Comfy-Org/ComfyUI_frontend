@@ -48,26 +48,28 @@ export const buttonMaskBadgeVariants = cva({
       left: ''
     }
   },
+  // Hover slide effects are gated to md+: mobile has no hover input, so the
+  // icon stays put there.
   compoundVariants: [
     {
       size: 'default',
       iconPosition: 'right',
-      class: 'right-1 group-hover/button-mask:right-[calc(100%-36px)]'
+      class: 'right-1 md:group-hover/button-mask:right-[calc(100%-36px)]'
     },
     {
       size: 'lg',
       iconPosition: 'right',
-      class: 'right-1 group-hover/button-mask:right-[calc(100%-52px)]'
+      class: 'right-1 md:group-hover/button-mask:right-[calc(100%-52px)]'
     },
     {
       size: 'default',
       iconPosition: 'left',
-      class: 'left-1 group-hover/button-mask:left-[calc(100%-36px)]'
+      class: 'left-1 md:group-hover/button-mask:left-[calc(100%-36px)]'
     },
     {
       size: 'lg',
       iconPosition: 'left',
-      class: 'left-1 group-hover/button-mask:left-[calc(100%-52px)]'
+      class: 'left-1 md:group-hover/button-mask:left-[calc(100%-52px)]'
     }
   ],
   defaultVariants: {
@@ -87,7 +89,7 @@ export const BUTTON_MASK_LABEL_CLASS = [
   'data-[icon-position=left]:[mask-position:0_0] data-[icon-position=left]:[-webkit-mask-position:0_0]',
   'data-[hidden=true]:[mask-size:0%_100%] data-[hidden=true]:[-webkit-mask-size:0%_100%]',
   'data-[hidden=false]:[mask-size:100%_100%] data-[hidden=false]:[-webkit-mask-size:100%_100%]',
-  'group-hover/button-mask:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-hover/button-mask:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]',
+  'md:group-hover/button-mask:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] md:group-hover/button-mask:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]',
   'group-focus-visible/button-mask:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-focus-visible/button-mask:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]'
 ].join(' ')
 

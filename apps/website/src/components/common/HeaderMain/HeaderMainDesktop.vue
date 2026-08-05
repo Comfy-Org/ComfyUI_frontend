@@ -45,7 +45,9 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           >
             <span class="inline-flex items-center gap-1">
               <span>{{ navItem.label }}</span>
-              <NewBadge v-if="navItem.badge" :locale="locale" size="xxs" />
+              <span v-if="navItem.badge" class="hidden xl:inline-flex">
+                <NewBadge :locale="locale" size="xxs" />
+              </span>
             </span>
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">

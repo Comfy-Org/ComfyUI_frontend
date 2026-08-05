@@ -2,11 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
-  clearAllV2Storage,
+  clearAllWorkflowStorage,
+  clearWorkflowRestoreState,
   deleteOrphanPayloads,
   deletePayload,
   deletePayloads,
   getPayloadKeys,
+  markStorageUnavailable,
   readActivePath,
   readIndex,
   readOpenPaths,
@@ -281,33 +283,47 @@ describe('storageIO', () => {
     })
   })
 
-  describe('clearAllV2Storage', () => {
-    it('clears all V2 keys from localStorage', () => {
+  describe('clearAllWorkflowStorage', () => {
+    it('clears all restorable workflow keys from localStorage', () => {
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:def', '{}')
+      localStorage.setItem('Comfy.Workflow.LastActivePath:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.LastOpenPaths:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.Drafts:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder:ws-1', '[]')
+      localStorage.setItem('Comfy.Workflow.Drafts', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder', '[]')
+      localStorage.setItem('Comfy.OpenWorkflowsPaths', '[]')
+      localStorage.setItem('Comfy.ActiveWorkflowIndex', '0')
+      localStorage.setItem('Comfy.PreviousWorkflow', 'workflows/old.json')
+      localStorage.setItem('workflow', '{}')
       localStorage.setItem('unrelated', 'keep')
 
-      clearAllV2Storage()
+      clearAllWorkflowStorage()
 
       expect(
-        localStorage.getItem('Comfy.Workflow.DraftIndex.v2:ws-1')
-      ).toBeNull()
-      expect(
-        localStorage.getItem('Comfy.Workflow.Draft.v2:ws-1:abc')
-      ).toBeNull()
-      expect(
-        localStorage.getItem('Comfy.Workflow.Draft.v2:ws-2:def')
-      ).toBeNull()
+        [...Array(localStorage.length)].map((_, index) =>
+          localStorage.key(index)
+        )
+      ).toEqual(['unrelated'])
       expect(localStorage.getItem('unrelated')).toBe('keep')
     })
 
-    it('clears all V2 keys from sessionStorage', () => {
+    it('clears all restorable workflow keys from sessionStorage', () => {
       sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
       sessionStorage.setItem('Comfy.Workflow.OpenPaths:client-2', '{}')
+      sessionStorage.setItem('Comfy.PreviousWorkflow', 'workflows/old.json')
+      sessionStorage.setItem(
+        'Comfy.PreviousWorkflow:client-1',
+        'workflows/old.json'
+      )
+      sessionStorage.setItem('Comfy.OpenWorkflowsPaths:client-1', '[]')
+      sessionStorage.setItem('Comfy.ActiveWorkflowIndex:client-1', '0')
+      sessionStorage.setItem('workflow:client-1', '{}')
       sessionStorage.setItem('unrelated', 'keep')
 
-      clearAllV2Storage()
+      clearAllWorkflowStorage()
 
       expect(
         sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
@@ -315,7 +331,140 @@ describe('storageIO', () => {
       expect(
         sessionStorage.getItem('Comfy.Workflow.OpenPaths:client-2')
       ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.PreviousWorkflow:client-1')
+      ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.OpenWorkflowsPaths:client-1')
+      ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.ActiveWorkflowIndex:client-1')
+      ).toBeNull()
+      expect(sessionStorage.getItem('workflow:client-1')).toBeNull()
       expect(sessionStorage.getItem('unrelated')).toBe('keep')
+    })
+
+    it('blocks workflow writes after cleanup starts', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      isolatedStorageIO.clearAllWorkflowStorage({ blockWrites: true })
+
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+      expect(
+        isolatedStorageIO.writeIndex('ws-1', {
+          v: 2,
+          updatedAt: 1,
+          order: [],
+          entries: {}
+        })
+      ).toBe(false)
+      expect(
+        isolatedStorageIO.writePayload('ws-1', 'draft-1', {
+          data: '{}',
+          updatedAt: 1
+        })
+      ).toBe(false)
+      isolatedStorageIO.writeActivePath('client-1', {
+        workspaceId: 'ws-1',
+        path: 'workflows/a.json'
+      })
+      isolatedStorageIO.writeOpenPaths('client-1', {
+        workspaceId: 'ws-1',
+        paths: ['workflows/a.json'],
+        activeIndex: 0
+      })
+
+      expect(localStorage).toHaveLength(0)
+      expect(sessionStorage).toHaveLength(0)
+    })
+
+    it('clears persisted workflows after storage writes are disabled', () => {
+      localStorage.setItem('Comfy.Workflow.LastActivePath:personal', '{}')
+      sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
+      markStorageUnavailable()
+
+      clearAllWorkflowStorage()
+
+      expect(
+        localStorage.getItem('Comfy.Workflow.LastActivePath:personal')
+      ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
+      ).toBeNull()
+    })
+  })
+
+  describe('clearWorkflowRestoreState', () => {
+    it('blocks writes and clears restore state when a persistence flush fails', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      localStorage.setItem('workflow', '{}')
+      const successfulFlush = vi.fn()
+      const flushError = new DOMException(
+        'Storage unavailable',
+        'SecurityError'
+      )
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      const unregisterFailedFlush =
+        isolatedStorageIO.registerWorkflowPersistenceFlush(() => {
+          throw flushError
+        })
+      const unregisterSuccessfulFlush =
+        isolatedStorageIO.registerWorkflowPersistenceFlush(successfulFlush)
+
+      expect(() =>
+        isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+      ).not.toThrow()
+
+      expect(successfulFlush).toHaveBeenCalledOnce()
+      expect(localStorage.getItem('workflow')).toBeNull()
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Failed to flush pending workflow persistence',
+        flushError
+      )
+      unregisterFailedFlush()
+      unregisterSuccessfulFlush()
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('clears cross-workspace restore state without deleting scoped drafts', () => {
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.LastOpenPaths:ws-1', '{}')
+      localStorage.setItem('Comfy.Workflow.Drafts:ws-1', '{}')
+      localStorage.setItem('Comfy.OpenWorkflowsPaths', '["a.json"]')
+      localStorage.setItem('Comfy.ActiveWorkflowIndex', '0')
+      localStorage.setItem('workflow', '{}')
+      sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
+      sessionStorage.setItem('Comfy.Workflow.OpenPaths:client-1', '{}')
+      sessionStorage.setItem('workflow:client-1', '{}')
+      sessionStorage.setItem('unrelated', 'keep')
+
+      clearWorkflowRestoreState()
+
+      expect(localStorage.getItem('Comfy.OpenWorkflowsPaths')).toBeNull()
+      expect(localStorage.getItem('Comfy.ActiveWorkflowIndex')).toBeNull()
+      expect(localStorage.getItem('workflow')).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
+      ).toBeNull()
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.OpenPaths:client-1')
+      ).toBeNull()
+      expect(sessionStorage.getItem('workflow:client-1')).toBeNull()
+      expect(sessionStorage).toHaveLength(1)
+      expect(sessionStorage.getItem('unrelated')).toBe('keep')
+      expect(localStorage.getItem('Comfy.Workflow.DraftIndex.v2:ws-1')).toBe(
+        '{}'
+      )
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:ws-1:abc')).toBe(
+        '{}'
+      )
+      expect(localStorage.getItem('Comfy.Workflow.LastOpenPaths:ws-1')).toBe(
+        '{}'
+      )
+      expect(localStorage.getItem('Comfy.Workflow.Drafts:ws-1')).toBe('{}')
     })
   })
 })

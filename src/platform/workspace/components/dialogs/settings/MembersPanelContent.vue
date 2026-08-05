@@ -8,7 +8,7 @@
         <div class="flex min-w-0 flex-1 items-baseline gap-2">
           <span class="text-base font-semibold text-base-foreground">
             <template v-if="activeView === 'active'">
-              <template v-if="isOnTeamPlan && !isPersonalWorkspace">
+              <template v-if="isOnTeamPlan">
                 {{
                   $t('workspacePanel.members.membersCount', {
                     count: members.length,
@@ -125,12 +125,21 @@
             <Button
               variant="muted-textonly"
               size="sm"
-              class="justify-end"
+              :class="
+                uiConfig.showCreditsColumn ? 'justify-start' : 'justify-end'
+              "
               @click="toggleSort('role')"
             >
               {{ $t('workspacePanel.members.columns.role') }}
               <i class="icon-[lucide--chevrons-up-down] size-4" />
             </Button>
+            <div
+              v-if="uiConfig.showCreditsColumn"
+              class="flex items-center gap-1 text-sm text-muted-foreground"
+            >
+              <i class="icon-[lucide--coins] size-4" />
+              {{ $t('workspacePanel.members.columns.creditsUsed') }}
+            </div>
             <!-- Empty cell for action column header (OWNER only) -->
             <div v-if="permissions.canManageMembers" />
           </template>
@@ -140,8 +149,7 @@
         <div class="min-h-0 flex-1 overflow-y-auto">
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <!-- Personal Workspace: show only current user -->
-            <template v-if="isPersonalWorkspace">
+            <template v-if="!hasTeamPlan">
               <MemberListItem
                 :member="personalWorkspaceMember"
                 :is-current-user="true"
@@ -150,7 +158,6 @@
               />
             </template>
 
-            <!-- Team Workspace: sorted list -->
             <template v-else>
               <MemberListItem
                 v-for="(member, index) in filteredMembers"
@@ -166,9 +173,9 @@
                 :show-role-column="
                   uiConfig.showRoleColumn && hasMultipleMembers
                 "
+                :show-credits-column="uiConfig.showCreditsColumn"
                 :can-manage-members="permissions.canManageMembers"
                 :is-single-seat-plan="!isOnTeamPlan"
-                :is-original-owner="isOriginalOwner(member)"
                 :striped="index % 2 === 1"
                 :menu-items="memberMenus.get(member.id)"
               />
@@ -188,15 +195,14 @@
     </div>
     <!-- Upsell Banner -->
     <MemberUpsellBanner
-      v-if="!isOnTeamPlan"
+      v-if="
+        !isPlanLoading && !isOnTeamPlan && permissions.canManageSubscription
+      "
       :reactivate="hasLapsedTeamPlan"
       @show-plans="showTeamPlans()"
     />
     <!-- Need More Members Footer -->
-    <div
-      v-if="isOnTeamPlan && !isPersonalWorkspace"
-      class="flex items-center pt-2"
-    >
+    <div v-if="isOnTeamPlan" class="flex items-center pt-2">
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>
@@ -215,7 +221,6 @@
 <script setup lang="ts">
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useExternalLink } from '@/composables/useExternalLink'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
@@ -223,12 +228,17 @@ import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/setting
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
 
+const TEAM_PLAN_REQUEST_URL =
+  'https://comfy-org.portal.usepylon.com/forms/team-plan-requests'
+
 const {
   searchQuery,
   activeView,
   maxSeats,
+  hasTeamPlan,
   isOnTeamPlan,
   hasLapsedTeamPlan,
+  isPlanLoading,
   hasMultipleMembers,
   showSearch,
   showViewTabs,
@@ -240,23 +250,19 @@ const {
   filteredMembers,
   filteredPendingInvites,
   memberMenus,
-  isPersonalWorkspace,
   members,
   pendingInvites,
   permissions,
   uiConfig,
   userPhotoUrl,
   isCurrentUser,
-  isOriginalOwner,
   toggleSort,
   showTeamPlans,
   handleResendInvite,
   handleRevokeInvite
 } = useMembersPanel()
 
-const { staticUrls } = useExternalLink()
-
 function handleContactUs() {
-  window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
+  window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
 }
 </script>

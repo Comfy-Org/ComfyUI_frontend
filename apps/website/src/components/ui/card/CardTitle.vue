@@ -11,10 +11,7 @@ const { class: className } = defineProps<{
   <div
     data-slot="card-title"
     :class="
-      cn(
-        'text-xl leading-none font-medium text-primary-comfy-canvas md:text-2xl',
-        className
-      )
+      cn('text-xl font-medium text-primary-comfy-canvas md:text-2xl', className)
     "
   >
     <slot />
