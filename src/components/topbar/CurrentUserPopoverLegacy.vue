@@ -114,9 +114,16 @@
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
+      <i
+        :class="
+          cn(
+            'size-4 text-muted-foreground',
+            isCloud ? 'icon-[lucide--credit-card]' : 'icon-[lucide--coins]'
+          )
+        "
+      />
       <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.managePlan')
+        planAndCreditsLabel
       }}</span>
     </div>
 
@@ -147,6 +154,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
@@ -188,7 +196,7 @@ const {
 } = useBillingContext()
 const { formatTierName } = useWorkspaceTierLabel()
 const subscriptionDialog = useSubscriptionDialog()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 
 const subscriptionTierName = computed(() =>
   formatTierName(tier.value, subscription.value?.duration === 'ANNUAL')
@@ -206,6 +214,10 @@ const formattedBalance = computed(() => {
     }
   })
 })
+
+const planAndCreditsLabel = computed(() =>
+  isCloud ? t('subscription.managePlan') : t('credits.credits')
+)
 
 const handleOpenUserSettings = () => {
   settingsDialog.show('user')

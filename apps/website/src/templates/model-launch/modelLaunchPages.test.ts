@@ -12,7 +12,7 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'flux3', page: flux3Page }
 ]
 
-describe.each(pages)('$name launch page config', ({ page }) => {
+describe.for(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {
     const ids = page.gallery?.cards.map((card) => card.id) ?? []
     expect(new Set(ids).size).toBe(ids.length)
@@ -82,13 +82,13 @@ describe.each(pages)('$name launch page config', ({ page }) => {
     ].filter((href): href is string => href !== undefined)
 
     for (const href of hrefs) {
-      expect(href, href).toMatch(/^https:\/\//)
+      expect(href).toMatch(/^https:\/\//)
     }
   })
 
   it('serves gallery media that the card can actually render', () => {
     for (const card of page.gallery?.cards ?? []) {
-      expect(card.mediaSrc, card.id).toMatch(
+      expect(card.mediaSrc).toMatch(
         /^https:\/\/media\.comfy\.org\/.+\.(webm|webp|png|jpg)$/
       )
     }
