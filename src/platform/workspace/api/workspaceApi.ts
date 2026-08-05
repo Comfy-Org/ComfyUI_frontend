@@ -147,7 +147,7 @@ export interface TeamCreditStops {
   stops: TeamCreditStop[]
 }
 
-interface BillingPlansResponse {
+export interface BillingPlansResponse {
   current_plan_slug?: string
   plans: Plan[]
   team_credit_stops?: TeamCreditStops
@@ -343,7 +343,7 @@ export interface BillingEvent {
   createdAt: string
 }
 
-interface BillingEventsResponse {
+export interface BillingEventsResponse {
   total: number
   events: BillingEvent[]
   page: number
