@@ -241,7 +241,9 @@
       >
         {{
           authenticationError ||
-          $t('billingOperation.authenticationManagerRequired')
+          (canRetryAuthentication
+            ? $t('billingOperation.authenticationFailedDetail')
+            : $t('billingOperation.authenticationManagerRequired'))
         }}
       </div>
 

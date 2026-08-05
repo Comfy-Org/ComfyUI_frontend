@@ -259,6 +259,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function scheduleNextPoll(opId: string) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
+    // One chain per operation: an explicit retry polls immediately while a
+    // scheduled poll may still be armed, and two chains would double the
+    // request rate and race each other's state writes.
+    pausePolling(opId)
     const nextInterval = operation.authenticationRequiredSeen
       ? ACTION_REQUIRED_INTERVAL_MS
       : Math.min(
@@ -312,8 +316,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
 
     if (state === 'failed_retryable') {
-      pausePolling(opId)
-      return true
+      // Polling continues because a pending operation can still leave this
+      // state — the customer may retry, and a refusal reported mid-flight can
+      // resolve into an authentication step. The op's own timeout ends it.
+      return false
     }
     if (
       state !== 'requires_action' ||
