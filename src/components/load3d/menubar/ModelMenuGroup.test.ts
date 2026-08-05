@@ -53,6 +53,38 @@ describe('ModelMenuGroup', () => {
     expect(config.materialMode).toBe('wireframe')
   })
 
+  it('only shows one popover at a time', async () => {
+    const { user } = renderGroup()
+
+    await user.click(screen.getByRole('button', { name: 'Up Direction' }))
+    expect(screen.getByRole('button', { name: '+Y' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Material' }))
+    expect(screen.queryByRole('button', { name: '+Y' })).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Wireframe' })
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Up Direction' }))
+    expect(
+      screen.queryByRole('button', { name: 'Wireframe' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+Y' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Up Direction' }))
+    expect(screen.queryByRole('button', { name: '+Y' })).not.toBeInTheDocument()
+  })
+
+  it('closes the open popover on Escape', async () => {
+    const { user } = renderGroup()
+
+    await user.click(screen.getByRole('button', { name: 'Up Direction' }))
+    expect(screen.getByRole('button', { name: '+Y' })).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('button', { name: '+Y' })).not.toBeInTheDocument()
+  })
+
   it('toggles the skeleton only when supported', async () => {
     const config = makeConfig({ showSkeleton: false })
     const { user, rerender } = renderGroup({ config, hasSkeleton: false })

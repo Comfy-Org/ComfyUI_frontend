@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "响度。0 = 正常，100 = 2.0x，-50 = 0.5x。"
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual：支持20种语言（英语、中文、日语、韩语、墨西哥西班牙语、西班牙西班牙语、印尼语、德语、巴西葡萄牙语、法语、泰语、越南语、马来语、菲律宾语、意大利语、俄语、荷兰语、波兰语、土耳其语、瑞典语），并可通过“[5.5s:8.0s] ...”时间戳进行逐句时序控制。seed-audio-1.0：仅支持英语和中文，不支持时序控制。"
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "音高变化（半音，-12 到 12）。"
@@ -4094,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 的联合视频+音频潜空间。时长会对齐到模型的 17k+5 帧网格（24 帧/秒）。",
+    "display_name": "空 MiniMax H3 AV 潜空间",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "以 24 帧/秒计算的帧数，上调到模型的 17k+5 网格（124 ≈ 5秒；训练范围约为 124-362，超过此范围未测试）"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "空Latent视频（Mochi）",
     "inputs": {
@@ -5700,6 +5725,15 @@
       "model_resolution": {
         "name": "分辨率"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "提示词",
         "tooltip": "描述期望视频的文本。"
@@ -6493,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "使用 P-Image（Ideogram 的快速文本生成图像模型）生成图像。具备强大的字体排版和照片级真实感；支持 Ideogram 4.0 结构化 JSON 标注，实现精确文本、颜色和布局。",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "生成图像的宽高比。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "文本提示。也可接受 Ideogram 4.0 结构化 JSON 标注（精确颜色为 #RRGGBB 十六进制，精确文本字符串，边界框布局）——如需原样使用，请将 prompt_upsampling 设为 OFF。"
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "在生成前将简短提示扩展为详细结构化标注（重写后的提示作为 final_prompt 返回）。如提供自定义 JSON 标注或精确文本，请设为 OFF。"
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "速度/价格/质量档位。MEDIUM 为日常默认；HIGH 适用于复杂提示、精细细节和难度较高的文本；VERY_LOW/LOW 适合大规模草稿。MEDIUM 以下难以渲染复杂文本。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "输出尺寸等级（具体像素遵循宽高比，例如 16:9 在 1K 时为 1280x720，2K 时为 2560x1440）。建议 HIGH + 2K 以获得清晰的字体排版。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于可复现生成的种子。当 prompt_upsampling 设为 OFF 时，相同种子和设置会生成相同图像；ON/AUTO 时，提示重写每次运行都不同——如需复现结果，请用 final_prompt 输出、prompt_upsampling 设为 OFF 及相同种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "实际用于生成图像的提示（如启用 prompt_upsampling，则为重写后的结构化标注，否则为原始提示）。如需复现该图像，请用 prompt_upsampling 设为 OFF 及相同种子回传。"
       }
     }
   },
@@ -8639,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "将视频潜空间和音频潜空间合并为联合 AV 潜空间（适用于任意 AV 模型，如 LTXV 或 MiniMax H3）。",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11324,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 图像转视频",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "首帧"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "last_frame": {
+        "name": "末帧"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "以 24 帧/秒计算的帧数，上调到模型的 17k+5 网格（124 ≈ 5秒；训练范围约为 124-362，超过此范围未测试）"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<图片 i> / <视频 k> / <音频 j> 参考条件输入，适用于 MiniMax H3。提示时请使用相同标签。",
+    "display_name": "MiniMax H3 参考转视频",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "以 24 帧/秒计算的帧数（124 ≈ 5秒，训练范围约为 124-362）"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "ref_audios": {
+        "name": "参考音频"
+      },
+      "ref_image_size": {
+        "name": "参考图像尺寸",
+        "tooltip": "参考图像尺寸。'match' 会将每个参考（仅缩小，保持比例）缩放到生成图像的像素面积；'max' 使用参考流程的 2048px 短边以获得最佳身份一致性。参考 token 会贯穿每一步采样，因此 'max' 速度会慢数倍。"
+      },
+      "ref_images": {
+        "name": "参考图像"
+      },
+      "ref_video_audios": {
+        "name": "参考视频音频"
+      },
+      "ref_videos": {
+        "name": "参考视频"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "设置视频/音频流的偏移。",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "音频偏移"
+      },
+      "shift_video": {
+        "name": "视频偏移"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "使用 MiniMax H3 模型，根据首帧图像和可选的末帧图像生成视频。视频的宽高比与所提供的图像一致。",
+    "display_name": "MiniMax H3 首帧-末帧生成视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "视频的首帧图像。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "视频的可选末帧图像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "随机种子。相同请求和种子会生成相似但不保证完全相同的结果。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为视频添加 AIGC 水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "使用 MiniMax H3 模型，根据参考图像、视频和音频生成视频。在提示词中按顺序引用参考内容：'图像 1'、'图像 2'、'视频 1'、'音频 1'，依此类推。",
+    "display_name": "MiniMax H3 参考生成视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "随机种子。相同请求和相同种子会生成相似但不保证完全相同的结果。"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否为视频添加 AIGC 水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "使用 MiniMax H3 模型，根据文本提示词生成视频。",
+    "display_name": "MiniMax H3 文本生成视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "随机种子。相同请求和相同种子会生成相似但不保证完全相同的结果。"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否为视频添加 AIGC 水印。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19989,6 +20297,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "为 Mage-Flow-Edit 编码编辑指令，可包含一张或多张参考图像。参考 latent 会被调整为输出分辨率（宽/高，或为0时使用第一张图像的尺寸）。采样时请使用 latent 输出，以确保尺寸始终一致。",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "输出高度。0 = 使用第一张参考图像的尺寸。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "要编辑的参考图像。所有参考图像在编码前会被调整为输出分辨率。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "输出宽度。0 = 使用第一张参考图像的尺寸。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }

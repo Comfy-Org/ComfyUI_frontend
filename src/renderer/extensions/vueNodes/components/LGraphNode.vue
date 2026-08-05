@@ -717,7 +717,7 @@ const lgraphNode = computed(() => {
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 
-useGLSLPreview(lgraphNode)
+const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
@@ -776,11 +776,20 @@ const hasVideoInput = computed(() => {
   )
 })
 
+const hasVideoEditWidget = computed(
+  () => nodeData.widgets?.some((widget) => widget.type === 'videoedit') ?? false
+)
+
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
-  if (!node || !newOutputs?.images?.length || node.hideOutputImages)
+  if (
+    !node ||
+    !newOutputs?.images?.length ||
+    node.hideOutputImages ||
+    hideExecutedOutput.value
+  )
     return undefined
 
   if (node instanceof SubgraphNode) return undefined
@@ -794,6 +803,8 @@ const nodeMedia = computed(() => {
     (!node.previewMediaType && hasVideoInput.value)
       ? 'video'
       : 'image'
+
+  if (type === 'video' && hasVideoEditWidget.value) return undefined
 
   return { type, urls } as const
 })

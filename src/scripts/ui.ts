@@ -407,8 +407,14 @@ export class ComfyUI {
       onchange: async () => {
         const file = fileInput.files?.[0]
         if (file) {
-          await app.handleFile(file, 'file_button')
-          fileInput.value = ''
+          try {
+            await app.handleFile(file, 'file_button')
+          } catch (error) {
+            console.error('Failed to load file:', error)
+            app.showErrorOnFileLoad(file)
+          } finally {
+            fileInput.value = ''
+          }
         }
       }
     })
@@ -437,11 +443,13 @@ export class ComfyUI {
     )
     autoQueueModeEl.style.display = 'none'
 
-    api.addEventListener('graphChanged', () => {
+    api.addEventListener('autoQueueGraphChanged', () => {
       if (this.autoQueueMode === 'change' && this.autoQueueEnabled === true) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false
-          app.queuePrompt(0, this.batchCount)
+          app.queuePrompt(0, this.batchCount, {
+            intent: { trigger_source: 'auto_queue' }
+          })
         } else {
           this.graphHasChanged = true
         }
@@ -487,11 +495,14 @@ export class ComfyUI {
           id: 'queue-button',
           textContent: 'Queue Prompt',
           onclick: () => {
-            useRunButtonTelemetry().trackRunButton({
+            const workflowQueueIntent = {
               trigger_source: 'legacy_ui'
-            })
+            } as const
+            useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
             useTelemetry()?.trackWorkflowExecution()
-            app.queuePrompt(0, this.batchCount)
+            app.queuePrompt(0, this.batchCount, {
+              intent: workflowQueueIntent
+            })
           }
         }),
         $el('div', {}, [
@@ -595,11 +606,14 @@ export class ComfyUI {
             id: 'queue-front-button',
             textContent: 'Queue Front',
             onclick: () => {
-              useRunButtonTelemetry().trackRunButton({
+              const workflowQueueIntent = {
                 trigger_source: 'legacy_ui'
-              })
+              } as const
+              useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
               useTelemetry()?.trackWorkflowExecution()
-              app.queuePrompt(-1, this.batchCount)
+              app.queuePrompt(-1, this.batchCount, {
+                intent: workflowQueueIntent
+              })
             }
           }),
           $el('button', {
@@ -711,7 +725,9 @@ export class ComfyUI {
         (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
         !app.lastExecutionError
       ) {
-        app.queuePrompt(0, this.batchCount)
+        app.queuePrompt(0, this.batchCount, {
+          intent: { trigger_source: 'auto_queue' }
+        })
         status.exec_info.queue_remaining += this.batchCount
         this.graphHasChanged = false
       }

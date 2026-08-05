@@ -6,6 +6,7 @@ import {
   cachedBillingControlEnabled,
   cachedConsolidatedBillingEnabled,
   cachedTeamWorkspacesEnabled,
+  cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
@@ -36,8 +37,12 @@ export enum ServerFeatureFlag {
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
-  SIGNUP_TURNSTILE = 'signup_turnstile'
+  CHURNKEY_APP_ID = 'churnkey_app_id',
+  SIGNUP_TURNSTILE = 'signup_turnstile',
+  SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
 }
 
 /**
@@ -220,6 +225,13 @@ export function useFeatureFlags() {
         cachedBillingControlEnabled
       )
     },
+    get v1PaymentRecovery() {
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.V1_PAYMENT_RECOVERY,
+        remoteConfig.value.v1_payment_recovery,
+        cachedV1PaymentRecovery
+      )
+    },
     get freeTierJobAllowanceEnabled() {
       const config = remoteConfig.value as typeof remoteConfig.value & {
         free_tier_job_allowance_enabled?: boolean
@@ -230,11 +242,33 @@ export function useFeatureFlags() {
         false
       )
     },
+    get churnkeyAppId() {
+      if (!isCloud) return ''
+      return resolveFlag(
+        ServerFeatureFlag.CHURNKEY_APP_ID,
+        remoteConfig.value.churnkey_app_id,
+        ''
+      ).trim()
+    },
     get signupTurnstileMode() {
       return resolveFlag(
         ServerFeatureFlag.SIGNUP_TURNSTILE,
         remoteConfig.value.signup_turnstile,
         'off'
+      )
+    },
+    get supportsModelTypeTags() {
+      return resolveFlag(
+        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+        remoteConfig.value.supports_model_type_tags,
+        false
+      )
+    },
+    get onboardingTourEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.ONBOARDING_TOUR_ENABLED,
+        remoteConfig.value.onboarding_tour_enabled,
+        false
       )
     }
   })

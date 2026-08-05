@@ -56,81 +56,83 @@
         @keydown="onContentKeydown"
         @focus-outside="preventFocusDismiss"
       >
-        <!-- shadcn Command-style search: a full-bleed row with a bottom
+        <FocusScope class="contents" @mount-auto-focus.prevent>
+          <!-- shadcn Command-style search: a full-bleed row with a bottom
              hairline instead of a boxed input, so the panel reads as one
              aligned column. -->
-        <div
-          v-if="showSearchBox"
-          class="-mx-2 -mt-2 mb-1 flex items-center gap-2 border-b border-border-subtle px-3"
-        >
-          <i
-            class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
-          />
-          <ComboboxInput
-            v-model="searchQuery"
-            :placeholder="searchPlaceholder ?? t('g.search')"
-            class="h-10 w-full border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-          />
-        </div>
+          <div
+            v-if="showSearchBox"
+            class="-mx-2 -mt-2 mb-1 flex items-center gap-2 border-b border-border-subtle px-3"
+          >
+            <i
+              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+            />
+            <ComboboxInput
+              v-model="searchQuery"
+              :placeholder="searchPlaceholder ?? t('g.search')"
+              class="h-10 w-full border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </div>
 
-        <div
-          v-if="hasActions"
-          :class="
-            cn(
-              '-mx-2 flex shrink-0 items-center justify-between px-4',
-              actionsPlacement === 'header'
-                ? 'mt-2 border-b border-border-default pb-4'
-                : 'order-last mt-2 border-t border-border-default pt-3 pb-1'
-            )
-          "
-        >
-          <span
-            v-if="showSelectedCount"
-            class="px-1 text-sm text-muted-foreground"
+          <div
+            v-if="hasActions"
+            :class="
+              cn(
+                '-mx-2 flex shrink-0 items-center justify-between px-4',
+                actionsPlacement === 'header'
+                  ? 'mt-2 border-b border-border-default pb-4'
+                  : 'order-last mt-2 border-t border-border-default pt-3 pb-1'
+              )
+            "
           >
-            {{ $t('g.itemsSelected', { count: selectedCount }) }}
-          </span>
-          <Button
-            v-if="showClearButton"
-            variant="textonly"
-            size="md"
-            @click.stop="selectedItems = []"
-          >
-            {{ $t('g.clearAll') }}
-          </Button>
-        </div>
-
-        <ComboboxViewport
-          :class="
-            cn(
-              'flex flex-col gap-0 p-0 text-sm',
-              'scrollbar-custom overflow-y-auto',
-              'min-w-(--reka-combobox-trigger-width)'
-            )
-          "
-          :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
-        >
-          <ComboboxItem
-            v-for="opt in filteredOptions"
-            :key="opt.value"
-            :value="opt"
-            :class="cn('group', selectItemVariants({ layout: 'multi' }))"
-          >
-            <div
-              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+            <span
+              v-if="showSelectedCount"
+              class="px-1 text-sm text-muted-foreground"
             >
-              <ComboboxItemIndicator>
-                <i
-                  class="icon-[lucide--check] text-xs font-bold text-base-foreground"
-                />
-              </ComboboxItemIndicator>
-            </div>
-            <span>{{ opt.name }}</span>
-          </ComboboxItem>
-          <ComboboxEmpty :class="selectEmptyMessageClass">
-            {{ $t('g.noResultsFound') }}
-          </ComboboxEmpty>
-        </ComboboxViewport>
+              {{ $t('g.itemsSelected', { count: selectedCount }) }}
+            </span>
+            <Button
+              v-if="showClearButton"
+              variant="textonly"
+              size="md"
+              @click.stop="selectedItems = []"
+            >
+              {{ $t('g.clearAll') }}
+            </Button>
+          </div>
+
+          <ComboboxViewport
+            :class="
+              cn(
+                'flex flex-col gap-0 p-0 text-sm',
+                'scrollbar-custom overflow-y-auto',
+                'min-w-(--reka-combobox-trigger-width)'
+              )
+            "
+            :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
+          >
+            <ComboboxItem
+              v-for="opt in filteredOptions"
+              :key="opt.value"
+              :value="opt"
+              :class="cn('group', selectItemVariants({ layout: 'multi' }))"
+            >
+              <div
+                class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+              >
+                <ComboboxItemIndicator>
+                  <i
+                    class="icon-[lucide--check] text-xs font-bold text-base-foreground"
+                  />
+                </ComboboxItemIndicator>
+              </div>
+              <span>{{ opt.name }}</span>
+            </ComboboxItem>
+            <ComboboxEmpty :class="selectEmptyMessageClass">
+              {{ $t('g.noResultsFound') }}
+            </ComboboxEmpty>
+          </ComboboxViewport>
+        </FocusScope>
       </ComboboxContent>
     </ComboboxPortal>
   </ComboboxRoot>
@@ -150,7 +152,8 @@ import {
   ComboboxPortal,
   ComboboxRoot,
   ComboboxTrigger,
-  ComboboxViewport
+  ComboboxViewport,
+  FocusScope
 } from 'reka-ui'
 import { computed, ref } from 'vue'
 import type { StyleValue } from 'vue'

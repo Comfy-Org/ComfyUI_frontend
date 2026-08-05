@@ -12,7 +12,7 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
-  isActiveSubscription: true,
+  canAccessSubscriptionFeatures: true,
   isFreeTier: false,
   isCancelled: false,
   canTopUp: false,
@@ -34,7 +34,9 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: computed(() => state.isActiveSubscription),
+    canAccessSubscriptionFeatures: computed(
+      () => state.canAccessSubscriptionFeatures
+    ),
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
       isCancelled: state.isCancelled
@@ -121,9 +123,11 @@ function createWorkspaceState(
 
 function renderComponent(
   type: 'personal' | 'team' = 'personal',
-  role: 'owner' | 'member' = 'member'
+  role: 'owner' | 'member' = 'member',
+  accountActionsOnly = false
 ) {
   return render(CurrentUserPopoverWorkspace, {
+    props: { accountActionsOnly },
     global: {
       plugins: [
         createTestingPinia({
@@ -156,7 +160,7 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
     state.isCancelled = false
     state.canTopUp = false
@@ -179,6 +183,20 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('workspace-switcher-trigger'))
     expect(
       screen.queryByTestId('workspace-switcher-panel')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps account actions available without workspace context', () => {
+    renderComponent('personal', 'member', true)
+
+    expect(screen.getByTestId('user-settings-menu-item')).toBeInTheDocument()
+    expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('workspace-switcher-trigger')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('credits-info-button')).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('workspace-settings-menu-item')
     ).not.toBeInTheDocument()
   })
 
@@ -234,6 +252,69 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.queryByTestId('manage-plan-menu-item')
     ).not.toBeInTheDocument()
   })
+
+  it.for([
+    {
+      name: 'allows a lifecycle manager to resubscribe a cancelled plan',
+      canAccessSubscriptionFeatures: true,
+      isCancelled: true,
+      canManageSubscription: false,
+      canManageSubscriptionLifecycle: true,
+      action: 'Resubscribe',
+      visible: true
+    },
+    {
+      name: 'does not let a subscription manager resubscribe a cancelled plan',
+      canAccessSubscriptionFeatures: true,
+      isCancelled: true,
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: false,
+      action: 'Resubscribe',
+      visible: false
+    },
+    {
+      name: 'allows a subscription manager to subscribe an inaccessible plan',
+      canAccessSubscriptionFeatures: false,
+      isCancelled: false,
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: false,
+      action: 'Subscribe',
+      visible: true
+    },
+    {
+      name: 'does not let a lifecycle manager subscribe an inaccessible plan',
+      canAccessSubscriptionFeatures: false,
+      isCancelled: false,
+      canManageSubscription: false,
+      canManageSubscriptionLifecycle: true,
+      action: 'Subscribe',
+      visible: false
+    }
+  ])(
+    '$name',
+    ({
+      canAccessSubscriptionFeatures,
+      isCancelled,
+      canManageSubscription,
+      canManageSubscriptionLifecycle,
+      action,
+      visible
+    }) => {
+      state.canAccessSubscriptionFeatures = canAccessSubscriptionFeatures
+      state.isCancelled = isCancelled
+      state.canManageSubscription = canManageSubscription
+      state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
+
+      renderComponent('team', 'owner')
+
+      const subscribeAction = screen.queryByRole('button', { name: action })
+      if (visible) {
+        expect(subscribeAction).toBeInTheDocument()
+      } else {
+        expect(subscribeAction).not.toBeInTheDocument()
+      }
+    }
+  )
 
   it('keeps billing controls and resubscribe available to a promoted owner', async () => {
     const user = userEvent.setup()

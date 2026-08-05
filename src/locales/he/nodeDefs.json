@@ -1203,6 +1203,10 @@
         "name": "loudness_rate",
         "tooltip": "עוצמת קול. 0 = רגיל, 100 = פי 2.0, ‎-50 = פי 0.5."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20 שפות (אנגלית, סינית, יפנית, קוריאנית, ספרדית מקסיקנית וקסטיליאנית, אינדונזית, גרמנית, פורטוגזית ברזילאית, צרפתית, תאית, וייטנאמית, מלאית, פיליפינית, איטלקית, רוסית, הולנדית, פולנית, טורקית, שוודית) בנוסף לשליטה בתזמון לכל משפט באמצעות חותמות זמן \"[5.5s:8.0s] ...\". seed-audio-1.0: אנגלית וסינית בלבד, ללא שליטה בתזמון."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "הסטת גובה צליל בסמי-טונים (‎-12 עד 12)."
@@ -4094,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "לטנט משותף וידאו+אודיו עבור MiniMax H3. משך הזמן מותאם לרשת של 17k+5 פריימים ב-24 פריימים לשנייה של המודל.",
+    "display_name": "Empty MiniMax H3 AV Latent",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "מספר פריימים ב-24 פריימים לשנייה, מותאם כלפי מעלה לרשת 17k+5 של המודל (124 = כ~5 שניות; טווח האימון הוא כ~124-362, ארוך יותר לא נבדק)"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -5700,6 +5725,15 @@
       "model_resolution": {
         "name": "רזולוציה"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "פרומפט",
         "tooltip": "תיאור טקסטואלי של הווידאו הרצוי."
@@ -6493,6 +6527,48 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "IdeogramPImage": {
+    "description": "יוצר תמונות באמצעות P-Image, מודל טקסט-לתמונה מהיר של Ideogram. טיפוגרפיה חזקה ופוטוריאליזם; תומך ב־Ideogram 4.0 structured JSON captions לטקסט, צבעים ופריסה מדויקים.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "יחס הגובה-רוחב ליצירת התמונה."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "פרומפט טקסטואלי. ניתן גם להזין Ideogram 4.0 structured JSON caption (צבעים מדויקים כ־#RRGGBB hexes, מחרוזות טקסט מדויקות, פריסת bounding-box) — יש להגדיר prompt_upsampling ל־OFF כדי להשתמש בו כפי שהוא."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "מרחיב פרומפטים קצרים לכיתוב מובנה ומפורט לפני יצירה (הפרומפט המשוכתב מוחזר כ־final_prompt). יש להגדיר OFF כאשר מספקים JSON caption משלכם או טקסט מדויק."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "רמת מהירות/מחיר/איכות. MEDIUM היא ברירת המחדל היומיומית; HIGH לפרומפטים מורכבים, פירוט עדין וטקסטים קשים; VERY_LOW/LOW לטיוטות בהיקף רחב. טקסטים קשים מתקבלים באיכות ירודה מתחת ל־MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "מחלקת גודל הפלט (פיקסלים מדויקים בהתאם ליחס הגובה-רוחב, לדוג' 16:9 נותן 1280x720 ב־1K ו־2560x1440 ב־2K). מומלץ HIGH + 2K לטיפוגרפיה חדה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "זרע (seed) ליצירה ניתנת לשחזור. כאשר prompt_upsampling ב־OFF, אותו seed והגדרות מחזירים את אותה תמונה; ב־ON/AUTO השכתוב משתנה בכל הרצה — לשחזור תוצאה השתמשו ב־final_prompt עם prompt_upsampling ב־OFF ואותו seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "הפרומפט שממנו התמונה נוצרה בפועל (הכיתוב המובנה המשוכתב כאשר prompt_upsampling הופעל, אחרת הפרומפט שלכם). ניתן להזינו שוב עם prompt_upsampling ב־OFF ואותו seed כדי לשחזר את התמונה."
       }
     }
   },
@@ -8639,6 +8715,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "מיזוג לטנט וידאו ולטנט אודיו ללטנט AV משותף (כל מודל AV, לדוג' LTXV או MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11324,6 +11401,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Image to Video",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "height": {
+        "name": "height"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "מספר פריימים ב-24 פריימים לשנייה, מותאם כלפי מעלה לרשת 17k+5 של המודל (124 = כ~5 שניות; טווח האימון הוא כ~124-362, ארוך יותר לא נבדק)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> התניה רפרנס עבור MiniMax H3. יש להשתמש באותם תגיות בעת יצירת הפרומפט.",
+    "display_name": "MiniMax H3 Reference to Video",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "מספר פריימים ב-24 פריימים לשנייה, (124 = כ~5 שניות, טווח האימון הוא כ~124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "ref_audios"
+      },
+      "ref_image_size": {
+        "name": "ref_image_size",
+        "tooltip": "קביעת גודל תמונת רפרנס. 'match' מקטין כל רפרנס (רק הקטנה, תוך שמירה על יחס) לשטח הפיקסלים של ההפקה; 'max' משתמש בקצה הקצר של 2048px בצינור הרפרנס לקבלת נאמנות זהות מיטבית. טוקני הרפרנס נשארים לאורך כל שלב הדגימה, לכן 'max' עלול להיות איטי פי כמה."
+      },
+      "ref_images": {
+        "name": "ref_images"
+      },
+      "ref_video_audios": {
+        "name": "ref_video_audios"
+      },
+      "ref_videos": {
+        "name": "ref_videos"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "הגדר את הסטיות בזרימת הווידאו/אודיו.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "shift_audio"
+      },
+      "shift_video": {
+        "name": "shift_video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "יוצר וידאו מתמונה של פריים ראשון ואופציונלית גם פריים אחרון באמצעות מודל MiniMax H3. יחס הגובה-רוחב של הווידאו תואם לתמונות שסופקו.",
+    "display_name": "MiniMax H3 יצירת וידאו מפריים ראשון ואחרון",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "תמונת הפריים הראשון לווידאו."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "תמונת פריים אחרון אופציונלית לווידאו."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל לשימוש ביצירת הווידאו."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "זרע אקראי. אותה בקשה עם אותו seed תניב תוצאות דומות, אך לא בהכרח זהות."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "האם להוסיף סימן מים AIGC לווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "יצירת וידאו בהתבסס על תמונות רפרנס, סרטונים ואודיו באמצעות מודל MiniMax H3. התייחסו לרפרנסים בהנחיה לפי הסדר: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
+    "display_name": "MiniMax H3 רפרנס לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש ביצירת הווידאו."
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_ratio": {
+        "name": "יחס"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "זרע אקראי. בקשה זהה עם אותו seed תניב תוצאות דומות, אך לא בהכרח זהות."
+      },
+      "watermark": {
+        "name": "סימן מים",
+        "tooltip": "האם להוסיף סימן מים של AIGC לווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "יצירת וידאו מהנחיה טקסטואלית באמצעות מודל MiniMax H3.",
+    "display_name": "MiniMax H3 טקסט לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש ביצירת הווידאו."
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_ratio": {
+        "name": "יחס"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "זרע אקראי. בקשה זהה עם אותו seed תניב תוצאות דומות, אך לא בהכרח זהות."
+      },
+      "watermark": {
+        "name": "סימן מים",
+        "tooltip": "האם להוסיף סימן מים של AIGC לווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19989,6 +20297,53 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "קידוד הוראת עריכה עם תמונת ייחוס אחת או יותר עבור Mage-Flow-Edit. ה-latents של הייחוס מותאמים לגודל הפלט (רוחב/גובה, או גודל התמונה הראשונה כאשר 0). השתמשו בפלט ה-latent לדגימה כדי שהגדלים תמיד יתאימו.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "גובה הפלט. 0 = השתמשו בגודל התמונה הראשונה כייחוס."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "תמונת ייחוס/תמונות לעריכה. כל הייחוסים מותאמים לגודל הפלט לפני הקידוד."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "רוחב הפלט. 0 = השתמשו בגודל התמונה הראשונה כייחוס."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
