@@ -199,6 +199,16 @@ describe('useSettingUI', () => {
     expect(defaultCategory.value).toBe(settingCategories.value[0])
   })
 
+  it('hides the empty Workspace navigation group for logged-out Cloud users', () => {
+    env.state.isCloud = true
+    env.state.isLoggedIn = false
+    env.state.teamWorkspacesEnabled = true
+
+    const { navGroups } = useSettingUI()
+
+    expect(navGroups.value.map(({ title }) => title)).not.toContain('Workspace')
+  })
+
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
     expect(defaultCategory.value.key).toBe('about')
