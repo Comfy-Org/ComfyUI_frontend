@@ -1,9 +1,15 @@
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { isCloud } from '@/platform/distribution/types'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 import type { BillingCycle } from './subscriptionTierRank'
+
+interface PerformTeamSubscriptionCheckoutOptions {
+  paymentIntentSource?: PaymentIntentSource
+}
 
 /**
  * Direct team-plan checkout for the marketing `/cloud/subscribe?tier=team` deep
@@ -22,7 +28,8 @@ import type { BillingCycle } from './subscriptionTierRank'
  */
 export async function performTeamSubscriptionCheckout(
   teamCreditStopId: string,
-  billingCycle: BillingCycle
+  billingCycle: BillingCycle,
+  options: PerformTeamSubscriptionCheckoutOptions = {}
 ): Promise<void> {
   if (!isCloud) return
 
@@ -31,6 +38,14 @@ export async function performTeamSubscriptionCheckout(
     returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
     cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
     teamCreditStopId
+  })
+
+  trackWorkspaceCheckoutStarted({
+    tier: 'team',
+    cycle: billingCycle,
+    checkoutType: 'new',
+    billingOpId: response.billing_op_id,
+    paymentIntentSource: options.paymentIntentSource
   })
 
   if (response.status === 'needs_payment_method') {

@@ -39,7 +39,7 @@ interface LayoutMutations {
   createReroute(
     rerouteId: RerouteId,
     position: Point,
-    parentId?: LinkId,
+    parentId?: RerouteId,
     linkIds?: LinkId[]
   ): void
   deleteReroute(rerouteId: RerouteId): void
@@ -267,7 +267,7 @@ export function useLayoutMutations(): LayoutMutations {
   const createReroute = (
     rerouteId: RerouteId,
     position: Point,
-    parentId?: LinkId,
+    parentId?: RerouteId,
     linkIds: LinkId[] = []
   ): void => {
     logger.debug('Creating reroute:', {

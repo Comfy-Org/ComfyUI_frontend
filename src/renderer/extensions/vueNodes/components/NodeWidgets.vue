@@ -7,7 +7,7 @@
     data-testid="node-widgets"
     :class="
       cn(
-        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3',
+        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -26,7 +26,7 @@
       <div
         v-if="widget.visible"
         data-testid="node-widget"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
+        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch pr-3"
       >
         <!-- Widget Input Slot Dot -->
         <div

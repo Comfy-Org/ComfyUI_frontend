@@ -348,6 +348,14 @@ export default defineConfig([
       'no-console': 'off'
     }
   },
+  {
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
+    }
+  },
 
   // Turn off ESLint rules that are already handled by oxlint
   ...oxlint.buildFromOxlintConfigFile(
@@ -418,6 +426,14 @@ export default defineConfig([
     files: ['apps/website/**/*.vue'],
     rules: {
       '@intlify/vue-i18n/no-raw-text': 'off'
+    }
+  },
+  // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
+  // TypeScript resolver cannot see but are valid at build time.
+  {
+    files: ['apps/website/**/*.{ts,mts,vue}'],
+    rules: {
+      'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
     }
   },
   // i18n import enforcement

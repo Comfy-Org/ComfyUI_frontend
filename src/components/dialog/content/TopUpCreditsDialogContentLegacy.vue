@@ -158,8 +158,8 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
@@ -178,7 +178,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { flags } = useFeatureFlags()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
 
 const { isSubscriptionEnabled } = useSubscription()
 // Constants
@@ -255,14 +255,14 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    await authActions.purchaseCredits(payAmount.value)
+    await authActions.purchaseCreditsDirect(payAmount.value)
 
     // Close top-up dialog (keep tracking) and open credits panel to show updated balance
     handleClose(false)
 
-    // In workspace mode (personal workspace), show workspace settings panel
-    // Otherwise, show legacy subscription/credits panel
-    const settingsPanel = flags.teamWorkspacesEnabled
+    // On the consolidated (workspace) billing flow, show the workspace settings
+    // panel; otherwise show the legacy subscription/credits panel.
+    const settingsPanel = shouldUseWorkspaceBilling.value
       ? 'workspace'
       : isSubscriptionEnabled()
         ? 'subscription'
@@ -273,6 +273,12 @@ async function handleBuy() {
 
     const errorMessage =
       error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'unknown'
+    })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.purchaseError'),

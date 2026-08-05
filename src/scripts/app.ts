@@ -11,7 +11,8 @@ import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/com
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { st, t } from '@/i18n'
+import { resolveNodeDefText, setBackendNodeText, st, t } from '@/i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
@@ -24,14 +25,23 @@ import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
-import type { WorkflowOpenSource } from '@/platform/telemetry/types'
+import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
+import type {
+  ExecutionContext,
+  WorkflowExecutionContext,
+  WorkflowExecutionIntent,
+  WorkflowOpenSource,
+  WorkflowQueueIntent
+} from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
@@ -95,6 +105,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
@@ -105,20 +116,16 @@ import {
 } from '@/platform/missingModel/missingModelPipeline'
 import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import {
-  scanAllMediaCandidates,
-  verifyMediaCandidates
-} from '@/platform/missingMedia/missingMediaScan'
 
+import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
   collectAllNodes,
   forEachNode,
   getNodeByExecutionId,
   isAncestorPathActive,
-  isMissingCandidateActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
 import {
@@ -155,6 +162,8 @@ import {
   isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -165,6 +174,11 @@ import {
 } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
+
+function isMeshModelFile(file: File): boolean {
+  const name = file.name.toLowerCase()
+  return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
+}
 
 export function sanitizeNodeName(string: string) {
   let entityMap = {
@@ -220,6 +234,15 @@ type Clipspace = {
   combinedIndex: number
 }
 
+/**
+ * Optional inputs to {@link ComfyApp.queuePrompt}. `intent` is telemetry
+ * attribution only and never affects what gets executed.
+ */
+export interface QueuePromptOptions {
+  queueNodeIds?: NodeExecutionId[]
+  intent?: WorkflowQueueIntent
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -229,6 +252,7 @@ export class ComfyApp {
     batchCount: number
     requestId: number
     queueNodeIds?: NodeExecutionId[]
+    workflowQueueIntent?: WorkflowQueueIntent
   }[] = []
   private nextQueueRequestId = 1
   /**
@@ -659,6 +683,12 @@ export class ComfyApp {
             imageFiles.length + audioFiles.length + videoFiles.length
           const hasMultipleMedia = totalMedia > 1
 
+          const createdNodes: LGraphNode[] = []
+          const handleFileOptions = {
+            deferWarnings: true,
+            onNodeCreated: (node: LGraphNode) => createdNodes.push(node)
+          }
+
           if (hasMultipleMedia) {
             if (imageFiles.length > 0) {
               await this.handleFileList(imageFiles)
@@ -670,17 +700,15 @@ export class ComfyApp {
               await this.handleVideoFileList(videoFiles)
             }
             for (const file of files.filter((f) => !isMediaFile(f))) {
-              await this.handleFile(file, 'file_drop', {
-                deferWarnings: true
-              })
+              await this.handleFile(file, 'file_drop', handleFileOptions)
             }
           } else {
             for (const file of files) {
-              await this.handleFile(file, 'file_drop', {
-                deferWarnings: true
-              })
+              await this.handleFile(file, 'file_drop', handleFileOptions)
             }
           }
+
+          this.positionNodes(createdNodes)
         } finally {
           workspace.spinner = false
         }
@@ -1066,26 +1094,46 @@ export class ComfyApp {
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
-      // Use object info display_name as fallback before using name
-      const objectInfoDisplayName = def.display_name || def.name
-
       return {
         ...def,
-        display_name: st(
-          `nodeDefs.${def.name}.display_name`,
-          objectInfoDisplayName
+        display_name: resolveNodeDefText(
+          'display_name',
+          def.name,
+          def.display_name || undefined
         ),
-        description: def.description
-          ? st(`nodeDefs.${def.name}.description`, def.description)
-          : '',
-        category: def.category
+        description: resolveNodeDefText(
+          'description',
+          def.name,
+          def.description || undefined
+        ),
+        category: (typeof def.category === 'string' ? def.category : '')
           .split('/')
-          .map((category: string) => st(`nodeCategories.${category}`, category))
+          .map((category: string) =>
+            st(`nodeCategories.${normalizeI18nKey(category)}`, category)
+          )
           .join('/')
       }
     }
 
-    return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
+    const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
+      typeof value === 'object' &&
+      value !== null &&
+      typeof (value as { name?: unknown }).name === 'string'
+
+    const response: unknown = await api.getNodeDefs()
+    const entries =
+      typeof response === 'object' &&
+      response !== null &&
+      !Array.isArray(response)
+        ? Object.entries(response)
+        : []
+    const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
+      entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
+        isNodeDef(entry[1])
+      )
+    )
+    setBackendNodeText(Object.values(defs))
+    return _.mapValues(defs, (def) => translateNodeDef(def))
   }
 
   /**
@@ -1508,7 +1556,10 @@ export class ComfyApp {
           silent: silentAssetErrors
         })
 
-        await this.runMissingMediaPipeline(silentAssetErrors)
+        await runMissingMediaPipeline({
+          rootGraph: this.rootGraph,
+          silent: silentAssetErrors
+        })
       }
 
       if (!deferWarnings) {
@@ -1527,81 +1578,15 @@ export class ComfyApp {
   }
 
   async refreshMissingModels(
-    options: { silent?: boolean } = {}
+    options: { silent?: boolean; reloadDefs?: boolean } = {}
   ): Promise<MissingModelPipelineResult> {
     return refreshMissingModelPipeline({
       graph: this.rootGraph,
-      reloadNodeDefs: () => this.reloadNodeDefs(),
+      reloadNodeDefs:
+        options.reloadDefs === false ? undefined : () => this.reloadNodeDefs(),
       missingModelStore: useMissingModelStore(),
       silent: options.silent ?? true
     })
-  }
-
-  private cacheMediaCandidates(
-    wf: ComfyWorkflow | null,
-    confirmed: MissingMediaCandidate[]
-  ) {
-    if (!wf) return
-    updatePendingWarnings(wf, {
-      missingMediaCandidates: confirmed
-    })
-  }
-
-  private async runMissingMediaPipeline(
-    silent: boolean = false
-  ): Promise<void> {
-    const missingMediaStore = useMissingMediaStore()
-    const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    const allCandidates = scanAllMediaCandidates(this.rootGraph, isCloud)
-    // Drop candidates whose enclosing subgraph is muted/bypassed.
-    const candidates = allCandidates.filter((c) =>
-      isAncestorPathActive(this.rootGraph, String(c.nodeId))
-    )
-
-    if (!candidates.length) {
-      this.cacheMediaCandidates(activeWf, [])
-      return
-    }
-
-    const pending = candidates.some((c) => c.isMissing === undefined)
-    if (pending) {
-      const controller = missingMediaStore.createVerificationAbortController()
-      void verifyMediaCandidates(candidates, {
-        isCloud,
-        signal: controller.signal
-      })
-        .then(() => {
-          if (controller.signal.aborted) return
-          // Re-check ancestor after async verification (see model pipeline).
-          const confirmed = candidates.filter((c) =>
-            isMissingCandidateActive(this.rootGraph, c)
-          )
-          if (confirmed.length) {
-            useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-          }
-          this.cacheMediaCandidates(activeWf, confirmed)
-        })
-        .catch((err) => {
-          console.warn(
-            '[Missing Media Pipeline] Asset verification failed:',
-            err
-          )
-          useToastStore().add({
-            severity: 'warn',
-            summary: st(
-              'toastMessages.missingMediaVerificationFailed',
-              'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
-            ),
-            life: 5000
-          })
-        })
-    } else {
-      const confirmed = candidates.filter((c) => c.isMissing === true)
-      if (confirmed.length) {
-        useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-      }
-      this.cacheMediaCandidates(activeWf, confirmed)
-    }
   }
 
   async graphToPrompt(graph = this.rootGraph) {
@@ -1612,11 +1597,31 @@ export class ComfyApp {
 
   async queuePrompt(
     number: number,
+    batchCount?: number,
+    options?: QueuePromptOptions
+  ): Promise<boolean>
+  async queuePrompt(
+    number: number,
+    batchCount: number,
+    queueNodeIds: NodeExecutionId[]
+  ): Promise<boolean>
+  async queuePrompt(
+    number: number,
     batchCount: number = 1,
-    queueNodeIds?: NodeExecutionId[]
+    optionsOrQueueNodeIds: QueuePromptOptions | NodeExecutionId[] = {}
   ): Promise<boolean> {
+    const options = Array.isArray(optionsOrQueueNodeIds)
+      ? { queueNodeIds: optionsOrQueueNodeIds }
+      : optionsOrQueueNodeIds
+    const { queueNodeIds, intent } = options
     const requestId = this.nextQueueRequestId++
-    this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
+    this.queueItems.push({
+      number,
+      batchCount,
+      queueNodeIds,
+      requestId,
+      workflowQueueIntent: intent
+    })
     api.dispatchCustomEvent('promptQueueing', {
       requestId,
       batchCount
@@ -1630,7 +1635,9 @@ export class ComfyApp {
     this.processingQueue = true
     const executionStore = useExecutionStore()
     const executionErrorStore = useExecutionErrorStore()
+    const telemetry = useTelemetry()
     executionErrorStore.clearAllErrors()
+    let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const comfyOrgAuthToken = await useAuthStore().getAuthToken()
@@ -1638,15 +1645,37 @@ export class ComfyApp {
 
     try {
       while (this.queueItems.length) {
-        const { number, batchCount, queueNodeIds, requestId } =
-          this.queueItems.pop()!
+        const {
+          number,
+          batchCount,
+          queueNodeIds,
+          requestId,
+          workflowQueueIntent
+        } = this.queueItems.pop()!
         let queuedCount = 0
+        const workflowExecutionIntent: WorkflowExecutionIntent = {
+          trigger_source: normalizeExecutionTriggerSource(
+            workflowQueueIntent?.trigger_source
+          )
+        }
         const previewMethod = useSettingStore().get(
           'Comfy.Execution.PreviewMethod'
         )
 
         const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
+          let executionContext: ExecutionContext | undefined
+          if (telemetry) {
+            try {
+              executionContext = getExecutionContext()
+            } catch (error) {
+              console.error(
+                '[Telemetry] Workflow context collection failed',
+                error
+              )
+            }
+          }
+
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
@@ -1662,8 +1691,28 @@ export class ComfyApp {
           // user switches tabs while the request is in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
-          const p = await this.graphToPrompt(this.rootGraph)
+          const startTime = performance.now()
+          const p = await this.graphToPrompt(this.rootGraph).catch(
+            (error: unknown) => {
+              telemetry?.trackExecutionOutcome({
+                startTime,
+                endTime: performance.now(),
+                success: false,
+                failureReason: 'prompt_build_failed',
+                ...workflowExecutionIntent
+              })
+              throw error
+            }
+          )
           const queuedNodes = collectAllNodes(this.rootGraph)
+          let workflowContext: WorkflowExecutionContext | undefined
+          if (executionContext) {
+            workflowContext = toWorkflowExecutionContext(executionContext, {
+              executableNodeCount: Object.keys(p.output).length,
+              executionScope: isPartialExecution ? 'partial' : 'full',
+              viewMode: getWorkflowMode(queuedWorkflow)
+            })
+          }
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
@@ -1671,21 +1720,32 @@ export class ComfyApp {
               partialExecutionTargets: queueNodeIds,
               previewMethod
             })
+            const responseReceivedAt = performance.now()
             delete api.authToken
             delete api.apiKey
-            const nodeErrors = res.node_errors
-            const hasNodeErrors =
-              nodeErrors && Object.keys(nodeErrors).length > 0
-            executionErrorStore.lastNodeErrors = hasNodeErrors
-              ? nodeErrors
-              : null
+            if (!res.prompt_id) {
+              telemetry?.trackExecutionOutcome({
+                startTime,
+                endTime: responseReceivedAt,
+                success: false,
+                failureReason: 'submission_rejected',
+                ...workflowExecutionIntent,
+                ...(workflowContext && { workflowContext })
+              })
+            }
+            executionErrorStore.recordNodeErrors(res.node_errors ?? null)
+            queueResultOverride = null
             try {
               if (res.prompt_id) {
                 executionStore.storeJob({
                   id: res.prompt_id,
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
-                  workflow: queuedWorkflow
+                  startTime,
+                  submissionAcceptedAt: responseReceivedAt,
+                  workflow: queuedWorkflow,
+                  workflowContext,
+                  workflowExecutionIntent
                 })
               }
             } catch (error) {
@@ -1694,13 +1754,27 @@ export class ComfyApp {
                 error
               })
             }
-            if (hasNodeErrors) {
+            if (executionErrorStore.hasNodeError) {
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
                 executionErrorStore.showErrorOverlay()
               }
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
+            telemetry?.trackExecutionOutcome({
+              startTime,
+              endTime: performance.now(),
+              success: false,
+              failureReason:
+                error instanceof PromptExecutionError
+                  ? 'submission_rejected'
+                  : 'submission_failed',
+              ...workflowExecutionIntent,
+              ...(workflowContext && { workflowContext })
+            })
+            const hasPromptNodeErrors =
+              error instanceof PromptExecutionError &&
+              Object.keys(error.response.node_errors ?? {}).length > 0
             const preconditionResponseError =
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object'
@@ -1728,7 +1802,8 @@ export class ComfyApp {
               rescanAndSurfaceMissingNodes(this.rootGraph)
             } else if (
               error instanceof PromptExecutionError &&
-              error.status === 403
+              error.status === 403 &&
+              !hasPromptNodeErrors
             ) {
               // User is authenticated but not authorized (e.g. not whitelisted).
               // Show a clear message instead of a generic error or sign-in prompt.
@@ -1766,30 +1841,18 @@ export class ComfyApp {
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
-              executionErrorStore.lastNodeErrors =
-                error.response.node_errors ?? null
+              // Keep the legacy result before empty node errors are normalized.
+              const nodeErrors = error.response.node_errors
+              queueResultOverride = !nodeErrors
+              executionErrorStore.recordNodeErrors(nodeErrors ?? null)
 
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
-              const nodeErrors = error.response.node_errors
-              const hasNodeErrors =
-                nodeErrors && Object.keys(nodeErrors).length > 0
-
-              if (!hasNodeErrors) {
-                const respError = error.response.error
-                if (respError && typeof respError === 'object') {
-                  executionErrorStore.lastPromptError = {
-                    type: respError.type,
-                    message: respError.message,
-                    details: respError.details ?? ''
-                  }
-                } else if (typeof respError === 'string') {
-                  executionErrorStore.lastPromptError = {
-                    type: 'error',
-                    message: respError,
-                    details: ''
-                  }
+              if (!executionErrorStore.hasNodeError) {
+                const promptError = normalizePromptError(error.response.error)
+                if (promptError) {
+                  executionErrorStore.recordPromptError(promptError)
                 }
               }
 
@@ -1813,6 +1876,7 @@ export class ComfyApp {
               isPartialExecution
             })
           }
+          useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
@@ -1828,7 +1892,7 @@ export class ComfyApp {
     } finally {
       this.processingQueue = false
     }
-    return !executionErrorStore.lastNodeErrors
+    return queueResultOverride ?? !executionErrorStore.lastNodeErrors
   }
 
   showErrorOnFileLoad(file: File) {
@@ -1844,7 +1908,10 @@ export class ComfyApp {
   async handleFile(
     file: File,
     openSource?: WorkflowOpenSource,
-    options?: { deferWarnings?: boolean }
+    options?: {
+      deferWarnings?: boolean
+      onNodeCreated?: (node: LGraphNode) => void
+    }
   ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
@@ -1866,6 +1933,13 @@ export class ComfyApp {
         transfer.items.add(file)
         const node = await createNode(this.canvas, nodeType)
         await pasteFn(this.canvas, transfer.items, node)
+        if (node) options?.onNodeCreated?.(node)
+        return
+      }
+
+      if (isMeshModelFile(file)) {
+        const node = await this.handleMeshFile(file)
+        if (node) options?.onNodeCreated?.(node)
         return
       }
 
@@ -1908,11 +1982,9 @@ export class ComfyApp {
           console.error(
             'Invalid workflow structure, trying parameters fallback'
           )
-          this.showErrorOnFileLoad(file)
         }
       } catch (err) {
         console.error('Failed to parse workflow:', err)
-        this.showErrorOnFileLoad(file)
         // Fall through to check parameters as fallback
       }
     }
@@ -1935,9 +2007,19 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      useWorkflowService().beforeLoadNewGraph()
-      importA1111(this.rootGraph, parameters)
-      useWorkflowService().afterLoadNewGraph(
+      const outcome = await importA1111(this.rootGraph, parameters, () => {
+        useWorkflowService().beforeLoadNewGraph()
+        this.canvas.setGraph(this.rootGraph)
+      })
+      if (outcome === 'core-nodes-unavailable') {
+        useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+        return
+      }
+      if (outcome === 'not-a1111') {
+        this.showErrorOnFileLoad(file)
+        return
+      }
+      await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
@@ -1945,6 +2027,29 @@ export class ComfyApp {
     }
 
     this.showErrorOnFileLoad(file)
+  }
+
+  /**
+   * Uploads a mesh model file and creates a Load3DAdvanced node displaying it
+   * @param {File} file
+   */
+  private async handleMeshFile(file: File): Promise<LGraphNode | null> {
+    const uploadedPath = await Load3dUtils.uploadFile(file, '3d')
+    if (!uploadedPath) return null
+
+    const node = await createNode(this.canvas, 'Load3DAdvanced')
+    if (!node) return null
+
+    const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+    if (!modelWidget) return node
+
+    const values = (modelWidget.options as { values?: string[] } | undefined)
+      ?.values
+    if (values && !values.includes(uploadedPath)) {
+      values.push(uploadedPath)
+    }
+    modelWidget.value = uploadedPath
+    return node
   }
 
   /**

@@ -224,7 +224,10 @@ export class ResultItemImpl {
     return getMediaTypeFromFilename(this.filename) === '3D'
   }
   get isText(): boolean {
-    return this.mediaType === 'text'
+    return (
+      this.mediaType === 'text' ||
+      getMediaTypeFromFilename(this.filename) === 'text'
+    )
   }
 
   get supportsPreview(): boolean {
@@ -653,28 +656,6 @@ export const useQueuePendingTaskCountStore = defineStore(
     }
   }
 )
-
-export type AutoQueueMode =
-  | 'disabled'
-  | 'change'
-  | 'instant-idle'
-  | 'instant-running'
-
-export const isInstantMode = (
-  mode: AutoQueueMode
-): mode is 'instant-idle' | 'instant-running' =>
-  mode === 'instant-idle' || mode === 'instant-running'
-
-export const isInstantRunningMode = (
-  mode: AutoQueueMode
-): mode is 'instant-running' => mode === 'instant-running'
-
-export const useQueueSettingsStore = defineStore('queueSettingsStore', {
-  state: () => ({
-    mode: 'disabled' as AutoQueueMode,
-    batchCount: 1
-  })
-})
 
 export const useQueueUIStore = defineStore('queueUIStore', () => {
   const settingStore = useSettingStore()

@@ -6,6 +6,14 @@ import {
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
+import {
+  cachedBillingControlEnabled,
+  cachedConsolidatedBillingEnabled,
+  cachedTeamWorkspacesEnabled,
+  cachedV1PaymentRecovery,
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 
 // Mock the API module
@@ -176,6 +184,57 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('partnerNodeGovernanceEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('uses the workspace eligibility flag', () => {
+      remoteConfig.value = { partner_node_governance_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.partnerNodeGovernanceEnabled).toBe(true)
+    })
+
+    it('defaults to false when the remote flag is unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.partnerNodeGovernanceEnabled).toBe(false)
+    })
+  })
+
+  describe('onboardingTourEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('defaults to false when nothing enables it', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(
+        flags.onboardingTourEnabled,
+        'This flag gates a full-screen first-run takeover; defaulting it on would ship the takeover to every user the moment config is unreachable'
+      ).toBe(false)
+    })
+
+    it('turns on from remote config', () => {
+      remoteConfig.value = { onboarding_tour_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.onboardingTourEnabled).toBe(true)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()
@@ -219,6 +278,121 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.teamWorkspacesEnabled).toBe(true)
     })
+
+    it('billingControlEnabled override bypasses isCloud and isAuthenticatedConfigLoaded guards', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      localStorage.setItem('ff:billing_control_enabled', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.billingControlEnabled).toBe(true)
+    })
+
+    it('v1PaymentRecovery uses the normal local development override', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      localStorage.setItem('ff:v1_payment_recovery', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.v1PaymentRecovery).toBe(true)
+    })
+
+    it('consolidatedBillingEnabled override bypasses isCloud and isAuthenticatedConfigLoaded guards', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      localStorage.setItem('ff:consolidated_billing_enabled', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.consolidatedBillingEnabled).toBe(true)
+    })
+
+    it('billingControlEnabled is false off-cloud even without an override', () => {
+      vi.mocked(distributionTypes).isCloud = false
+
+      const { flags } = useFeatureFlags()
+      expect(flags.billingControlEnabled).toBe(false)
+      expect(flags.consolidatedBillingEnabled).toBe(false)
+    })
+  })
+
+  describe('auth-gated flags on cloud', () => {
+    beforeEach(() => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+      cachedTeamWorkspacesEnabled.value = undefined
+      cachedConsolidatedBillingEnabled.value = undefined
+      cachedBillingControlEnabled.value = undefined
+      cachedV1PaymentRecovery.value = undefined
+      localStorage.clear()
+    })
+
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+      cachedTeamWorkspacesEnabled.value = undefined
+      cachedConsolidatedBillingEnabled.value = undefined
+      cachedBillingControlEnabled.value = undefined
+      cachedV1PaymentRecovery.value = undefined
+      localStorage.clear()
+    })
+
+    it('returns the cached session value during the auth window', () => {
+      cachedTeamWorkspacesEnabled.value = false
+      cachedConsolidatedBillingEnabled.value = true
+      cachedBillingControlEnabled.value = true
+      cachedV1PaymentRecovery.value = true
+
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(false)
+      expect(flags.consolidatedBillingEnabled).toBe(true)
+      expect(flags.billingControlEnabled).toBe(true)
+      expect(flags.v1PaymentRecovery).toBe(true)
+    })
+
+    it('defaults to false during the auth window when nothing is cached', () => {
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(false)
+      expect(flags.consolidatedBillingEnabled).toBe(false)
+      expect(flags.billingControlEnabled).toBe(false)
+      expect(flags.v1PaymentRecovery).toBe(false)
+    })
+
+    it('prefers authenticated remoteConfig over the server feature fallback', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = {
+        team_workspaces_enabled: true,
+        consolidated_billing_enabled: true,
+        billing_control_enabled: false,
+        v1_payment_recovery: true
+      }
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(true)
+      expect(flags.consolidatedBillingEnabled).toBe(true)
+      expect(flags.billingControlEnabled).toBe(false)
+      expect(flags.v1PaymentRecovery).toBe(true)
+    })
+
+    it('falls back to api.getServerFeature when authenticated config omits the flag', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = {}
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.TEAM_WORKSPACES_ENABLED) return true
+          if (path === ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED)
+            return true
+          if (path === ServerFeatureFlag.BILLING_CONTROL_ENABLED) return true
+          if (path === ServerFeatureFlag.V1_PAYMENT_RECOVERY) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(true)
+      expect(flags.consolidatedBillingEnabled).toBe(true)
+      expect(flags.billingControlEnabled).toBe(true)
+      expect(flags.v1PaymentRecovery).toBe(true)
+    })
   })
 
   describe('signupTurnstileMode', () => {
@@ -251,6 +425,80 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.signupTurnstileMode).toBe('shadow')
+    })
+  })
+
+  describe('supportsModelTypeTags', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('uses the remote config value', () => {
+      remoteConfig.value = { supports_model_type_tags: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(true)
+    })
+
+    it('falls back to the server feature flag when remote config omits it', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+        false
+      )
+    })
+
+    it('defaults to false when neither source has the flag', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.supportsModelTypeTags).toBe(false)
+    })
+  })
+
+  describe('churnkeyAppId', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfig.value = {}
+      localStorage.clear()
+    })
+
+    it('is disabled outside the cloud distribution', () => {
+      remoteConfig.value = { churnkey_app_id: 'app_test' }
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('')
+    })
+
+    it('reads and trims the cloud remote-config value', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfig.value = { churnkey_app_id: ' app_test ' }
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_test')
+    })
+
+    it('falls back to the trimmed server feature value', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === ServerFeatureFlag.CHURNKEY_APP_ID
+            ? ' app_server '
+            : defaultValue
+      )
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_server')
     })
   })
 

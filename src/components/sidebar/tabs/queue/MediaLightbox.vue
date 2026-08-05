@@ -49,6 +49,7 @@
           />
           <ResultVideo v-else-if="activeItem.isVideo" :result="activeItem" />
           <ResultAudio v-else-if="activeItem.isAudio" :result="activeItem" />
+          <ResultText v-else-if="activeItem.isText" :result="activeItem" />
         </template>
       </div>
 
@@ -75,6 +76,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 import ResultAudio from './ResultAudio.vue'
+import ResultText from './ResultText.vue'
 import ResultVideo from './ResultVideo.vue'
 
 const emit = defineEmits<{

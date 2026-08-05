@@ -16,6 +16,8 @@ import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
+import type { LinkId } from '@/types/linkId'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 /**
@@ -42,7 +44,7 @@ export function createMockPositionable(
   overrides: Partial<Positionable> = {}
 ): Positionable {
   const partial: Partial<Positionable> = {
-    id: 1,
+    id: toLinkId(1),
     pos: [0, 0],
     ...overrides
   }
@@ -56,7 +58,7 @@ export function createMockLGraphGroup(
   overrides: Partial<LGraphGroup> = {}
 ): LGraphGroup {
   const partial: Partial<LGraphGroup> = {
-    id: 1,
+    id: toLinkId(1),
     pos: [0, 0],
     boundingRect: new Rectangle(0, 0, 100, 100),
     ...overrides
@@ -339,7 +341,7 @@ export function createMockCanvas2DContext(
 
 export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
   const partial: Partial<LLink> = {
-    id: 1,
+    id: toLinkId(1),
     type: '*',
     origin_id: toNodeId(1),
     origin_slot: 0,
@@ -352,7 +354,7 @@ export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
 }
 
 export function createMockLinks(links: LLink[]): LGraph['links'] {
-  const map = new Map<number, LLink>()
+  const map = new Map<LinkId, LLink>()
   const record: Record<number, LLink> = {}
   for (const link of links) {
     map.set(link.id, link)

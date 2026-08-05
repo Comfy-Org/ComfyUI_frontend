@@ -2,7 +2,7 @@
   <Button
     :size
     :disabled="disabled"
-    :variant="buttonVariant === 'gradient' ? 'gradient' : 'primary'"
+    :variant="buttonVariant === 'subscribe' ? 'subscribe' : 'primary'"
     :class="cn('font-bold', fluid && 'w-full')"
     @click="handleSubscribe"
   >
@@ -28,7 +28,7 @@ const {
 } = defineProps<{
   label?: string
   size?: 'sm' | 'lg'
-  buttonVariant?: 'default' | 'gradient'
+  buttonVariant?: 'default' | 'subscribe'
   fluid?: boolean
   disabled?: boolean
 }>()
@@ -37,12 +37,12 @@ const emit = defineEmits<{
   subscribed: []
 }>()
 
-const { isActiveSubscription, showSubscriptionDialog, tier } =
+const { canAccessSubscriptionFeatures, showSubscriptionDialog, tier } =
   useBillingContext()
 const isAwaitingStripeSubscription = ref(false)
 
 watch(
-  [isAwaitingStripeSubscription, isActiveSubscription],
+  [isAwaitingStripeSubscription, canAccessSubscriptionFeatures],
   ([awaiting, isActive]) => {
     if (isCloud && awaiting && isActive) {
       emit('subscribed')
@@ -56,7 +56,7 @@ const handleSubscribe = () => {
     current_tier: tier.value?.toLowerCase()
   })
   isAwaitingStripeSubscription.value = true
-  showSubscriptionDialog()
+  showSubscriptionDialog({ reason: 'subscribe_now_button' })
 }
 
 onBeforeUnmount(() => {

@@ -40,3 +40,6 @@ jobs:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
         run: pnpm --filter @comfyorg/website build
+
+      - name: Validate JSON-LD structured data
+        run: pnpm --filter @comfyorg/website validate:jsonld
