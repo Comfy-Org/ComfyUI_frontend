@@ -122,8 +122,8 @@ const translations = {
     'zh-CN': '新模型发布'
   },
   'modelRelease.title': {
-    en: 'MINIMAX H3',
-    'zh-CN': 'MINIMAX H3'
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
   },
   'modelRelease.body': {
     en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it.',

@@ -70,7 +70,7 @@ const {
           {{ eyebrow }}
         </p>
         <h2
-          class="text-3xl leading-[135%] font-medium text-primary-comfy-canvas"
+          class="text-3xl leading-[135%] font-medium text-primary-comfy-canvas uppercase"
         >
           {{ title }}
         </h2>
