@@ -78,7 +78,7 @@ the variable to its origin before touching anything named `link`, `links`,
 | `input.link` (read)                      | `input.source()` / `input.isConnected`    |                                                                         |
 | `node.type = x`                          | delete it, or `graph.replaceNode()`       | usually a defensive no-op — just remove the line                        |
 | `slot.type = x`, `slot.name = x`         | `slot.modify({ type, name })`             | atomic, one undo step; keeps existing links                             |
-| `widget.type = 'converted-widget'`       | `widget.hidden = true`                    | ⚠️ old hack also suppressed serialization — see `references/widgets.md` |
+| `widget.type = 'converted-widget'`       | `widget.setHidden(true)`                  | ⚠️ old hack also suppressed serialization — see `references/widgets.md` |
 | `widgets.splice` to reorder              | `widgets.reorder(names)`                  | throws on a partial list instead of dropping widgets                    |
 | `widgets.splice(i,1)` + `splice(i,0,w)`  | `widget.setOptions(...)`                  | same index in/out = cache invalidation, **not** a reorder               |
 | `widgets.push(w)`                        | `widgets.add(def)`                        |                                                                         |

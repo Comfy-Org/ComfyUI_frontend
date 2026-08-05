@@ -77,6 +77,10 @@ const config: KnipConfig = {
     'src/composables/billing/useNextInvoice.ts',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
+    // The extension API contract, taken verbatim from PR #11251 so the two
+    // efforts converge on one shape. It is the reference our handles conform
+    // to, not a module anything imports yet.
+    'src/types/extensionV2.ts',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**'
   ],

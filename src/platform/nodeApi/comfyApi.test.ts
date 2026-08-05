@@ -262,8 +262,8 @@ describe('comfy API root', () => {
       const wb = comfy.graph.node(String(b.id))!.widgets.get('seed')!
 
       expect(wa).not.toBe(wb)
-      expect(wa.value).toBe(1)
-      expect(wb.value).toBe(2)
+      expect(wa.getValue()).toBe(1)
+      expect(wb.getValue()).toBe(2)
     })
   })
 

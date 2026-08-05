@@ -88,7 +88,7 @@ describe('defs.extend', () => {
       ['non-matching category prefix', { category: /^load/ }, false]
     ] as const
 
-    it.each(selectorCases)('%s', (_name, selector, shouldMatch) => {
+    it.for(selectorCases)('%s', ([, selector, shouldMatch]) => {
       const registry = createDefRegistry()
       const apply = vi.fn()
       registry
@@ -161,9 +161,9 @@ describe('defs.extend', () => {
           )
       )
       const widget = comfy.graph.node(String(node.id))!.widgets.get('readout')
-      expect(widget?.type).toBe('textarea')
-      expect(widget?.value).toBe('hello')
-      expect(widget?.disabled).toBe(true)
+      expect(widget?.widgetType).toBe('textarea')
+      expect(widget?.getValue()).toBe('hello')
+      expect(widget?.isDisabled()).toBe(true)
       expect(node.widgets?.map((w) => w.name)).toContain('readout')
     })
 

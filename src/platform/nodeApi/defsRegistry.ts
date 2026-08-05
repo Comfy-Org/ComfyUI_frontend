@@ -349,7 +349,7 @@ export function createDefRegistry(): {
           }
           for (const { name, handleFor } of hidden) {
             const widget = handleFor(id).widgets.get(name)
-            if (widget) widget.hidden = true
+            if (widget) widget.setHidden(true)
           }
           for (const { run, handleFor } of created) run(handleFor(id))
         })
