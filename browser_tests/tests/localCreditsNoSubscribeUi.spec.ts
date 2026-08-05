@@ -42,7 +42,7 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     await topUpDialog.close()
 
     // 2. Settings > Credits, reached the same way the reported bug did: the
-    //    popover's "Manage Plan" entry, not a generic keyboard shortcut. This
+    //    popover's plan & credits entry, not a generic keyboard shortcut. This
     //    must also hide the subscribe CTA and keep its own "Add credits"
     //    button working, not just render a dead replacement for it.
     await page.getByTestId(TestIds.user.currentUserButton).click()
