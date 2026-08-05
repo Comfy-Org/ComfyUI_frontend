@@ -78,6 +78,21 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
   // Prevent older status and balance responses from overwriting newer state.
   const latestBillingReadIds = { status: 0, balance: 0 }
+  let latestPortalRequestId = 0
+
+  function clearLoadingOnAbort(
+    signal: AbortSignal | undefined,
+    isCurrentRequest: () => boolean
+  ): () => void {
+    if (!signal) return () => {}
+
+    const handleAbort = () => {
+      if (isCurrentRequest()) isLoading.value = false
+    }
+    signal.addEventListener('abort', handleAbort, { once: true })
+    if (signal.aborted) handleAbort()
+    return () => signal.removeEventListener('abort', handleAbort)
+  }
 
   const isActiveSubscription = computed(
     () => statusData.value?.is_active ?? false
@@ -155,14 +170,20 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function fetchStatus(): Promise<void> {
+  async function fetchStatus(signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
     isLoading.value = true
     error.value = null
+    const stopWatchingAbort = clearLoadingOnAbort(
+      signal,
+      () => requestId === latestBillingReadIds.status
+    )
     try {
-      const status = await workspaceApi.getBillingStatus()
+      const status = await workspaceApi.getBillingStatus(signal)
       if (
+        signal?.aborted ||
         requestId !== latestBillingReadIds.status ||
         workspaceId !== workspaceStore.activeWorkspace?.id
       ) {
@@ -185,32 +206,41 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         )
       }
     } catch (err) {
+      if (signal?.aborted) return
       if (requestId === latestBillingReadIds.status) {
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch billing status'
       }
       throw err
     } finally {
+      stopWatchingAbort()
       if (requestId === latestBillingReadIds.status) isLoading.value = false
     }
   }
 
-  async function fetchBalance(): Promise<void> {
+  async function fetchBalance(signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return
     const requestId = ++latestBillingReadIds.balance
     isLoading.value = true
     error.value = null
+    const stopWatchingAbort = clearLoadingOnAbort(
+      signal,
+      () => requestId === latestBillingReadIds.balance
+    )
     try {
-      const balance = await workspaceApi.getBillingBalance()
-      if (requestId === latestBillingReadIds.balance) {
+      const balance = await workspaceApi.getBillingBalance(signal)
+      if (!signal?.aborted && requestId === latestBillingReadIds.balance) {
         balanceData.value = balance
       }
     } catch (err) {
+      if (signal?.aborted) return
       if (requestId === latestBillingReadIds.balance) {
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch balance'
       }
       throw err
     } finally {
+      stopWatchingAbort()
       if (requestId === latestBillingReadIds.balance) isLoading.value = false
     }
   }
@@ -295,21 +325,37 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function manageSubscription(): Promise<void> {
+  async function manageSubscription(signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return
+    const requestId = signal ? ++latestPortalRequestId : null
+    const workspaceId = signal ? workspaceStore.activeWorkspace?.id : null
+    const isCurrentRequest = () =>
+      requestId === null || requestId === latestPortalRequestId
+    const isCurrentWorkspace = () =>
+      workspaceId === null || workspaceId === workspaceStore.activeWorkspace?.id
     isLoading.value = true
     error.value = null
+    const stopWatchingAbort = clearLoadingOnAbort(signal, isCurrentRequest)
     try {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
-      if (response.url) {
+      if (
+        !signal?.aborted &&
+        isCurrentRequest() &&
+        isCurrentWorkspace() &&
+        response.url
+      ) {
         window.open(response.url, '_blank')
       }
     } catch (err) {
+      if (signal?.aborted || !isCurrentRequest() || !isCurrentWorkspace())
+        return
       error.value =
         err instanceof Error ? err.message : 'Failed to open billing portal'
       throw err
     } finally {
-      isLoading.value = false
+      stopWatchingAbort()
+      if (isCurrentRequest()) isLoading.value = false
     }
   }
 

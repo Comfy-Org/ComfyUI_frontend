@@ -64,11 +64,12 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed } from 'vue'
+import { computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -78,9 +79,20 @@ type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
 const { t, d } = useI18n()
 const { renewalDate, subscription, manageSubscription } = useBillingContext()
+const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
+let recoveryPortalController: AbortController | null = null
+
+watch(
+  () => flags.v1PaymentRecovery,
+  (enabled) => {
+    if (!enabled) recoveryPortalController?.abort()
+  }
+)
+
+onUnmounted(() => recoveryPortalController?.abort())
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
@@ -111,26 +123,34 @@ interface BannerView {
 const banner = computed<BannerView | null>(() => {
   const bs = 'workspacePanel.billingStatus'
   switch (kind.value) {
-    case 'paused':
+    case 'paused': {
+      const pausedKey = flags.v1PaymentRecovery
+        ? `${bs}.recoveryPaused`
+        : `${bs}.paused`
       return {
         muted: false,
-        title: t(`${bs}.paused.title`),
+        title: t(`${pausedKey}.title`),
         body: canManage.value
-          ? t(`${bs}.paused.body`)
-          : t(`${bs}.paused.memberBody`),
+          ? t(`${pausedKey}.body`)
+          : t(`${pausedKey}.memberBody`),
         action: canManage.value ? 'updatePayment' : null,
         dismissible: false
       }
-    case 'paymentFailed':
+    }
+    case 'paymentFailed': {
+      const warningKey = flags.v1PaymentRecovery
+        ? `${bs}.recoveryWarning`
+        : `${bs}.warning`
       return {
         muted: false,
-        title: t(`${bs}.warning.title`),
+        title: t(`${warningKey}.title`),
         body: cycleResetDate.value
-          ? t(`${bs}.warning.body`, { date: cycleResetDate.value })
-          : t(`${bs}.warning.bodyNoDate`),
+          ? t(`${warningKey}.body`, { date: cycleResetDate.value })
+          : t(`${warningKey}.bodyNoDate`),
         action: 'updatePayment',
         dismissible: false
       }
+    }
     case 'outOfCredits':
       return {
         muted: false,
@@ -160,6 +180,18 @@ function handleAddCredits() {
   void dialogService.showTopUpCreditsDialog()
 }
 function handleUpdatePayment() {
-  void manageSubscription()
+  if (!flags.v1PaymentRecovery) {
+    void manageSubscription()
+    return
+  }
+
+  recoveryPortalController?.abort()
+  const controller = new AbortController()
+  recoveryPortalController = controller
+  void manageSubscription(controller.signal).finally(() => {
+    if (recoveryPortalController === controller) {
+      recoveryPortalController = null
+    }
+  })
 }
 </script>

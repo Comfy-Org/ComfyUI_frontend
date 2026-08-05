@@ -108,8 +108,14 @@ const emit = defineEmits<{
 
 watch(
   () => paymentRecoveryLock,
-  (lock) => {
-    if (lock) queueMode.value = 'disabled'
+  (lock, _, onCleanup) => {
+    if (!lock) return
+
+    const previousMode = queueMode.value
+    queueMode.value = 'disabled'
+    onCleanup(() => {
+      if (queueMode.value === 'disabled') queueMode.value = previousMode
+    })
   },
   { immediate: true }
 )

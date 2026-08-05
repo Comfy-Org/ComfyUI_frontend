@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
@@ -9,6 +9,8 @@ import type {
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
+
+const mockV1PaymentRecovery = ref(true)
 
 interface Subscription {
   hasFunds: boolean
@@ -18,7 +20,6 @@ interface Subscription {
 
 const state = vi.hoisted(() => ({
   billingControlEnabled: true,
-  v1PaymentRecovery: true,
   isActiveSubscription: true,
   isTeamPlan: true,
   billingStatus: 'paid' as string | null,
@@ -33,7 +34,7 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: true,
   canTopUp: true,
   showTopUpCreditsDialog: vi.fn(),
-  manageSubscription: vi.fn(),
+  manageSubscription: vi.fn().mockResolvedValue(undefined),
   handleResubscribe: vi.fn()
 }))
 
@@ -46,7 +47,7 @@ vi.mock('@/composables/useFeatureFlags', () => ({
         return state.billingControlEnabled
       },
       get v1PaymentRecovery() {
-        return state.v1PaymentRecovery
+        return mockV1PaymentRecovery.value
       }
     }
   })
@@ -97,12 +98,24 @@ const i18n = createI18n({
       workspacePanel: {
         billingStatus: {
           warning: {
+            title: 'Payment declined',
+            body: "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
+            bodyNoDate:
+              "Your last payment didn't go through. Update payment to avoid a pause."
+          },
+          paused: {
+            title: 'Subscription paused',
+            body: "This workspace's subscription is paused. Update payment to resume.",
+            memberBody:
+              "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+          },
+          recoveryWarning: {
             title: 'Payment failed',
             body: 'Your payment failed to process. Your subscription will pause on {date} unless payment is updated.',
             bodyNoDate:
               'Your payment failed to process. Update payment to avoid a pause.'
           },
-          paused: {
+          recoveryPaused: {
             title: 'Subscription paused',
             body: "This workspace's subscription is paused. Update payment to resume.",
             memberBody:
@@ -165,7 +178,7 @@ function paymentFailedState() {
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
     state.billingControlEnabled = true
-    state.v1PaymentRecovery = true
+    mockV1PaymentRecovery.value = true
     state.isActiveSubscription = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
@@ -288,18 +301,23 @@ describe('BillingStatusBanner', () => {
     expect(state.manageSubscription).not.toHaveBeenCalled()
   })
 
-  it('hides payment recovery states while preserving existing notices when the new flag is off', () => {
-    state.v1PaymentRecovery = false
+  it('restores the previous recovery banners and copy when the new flag is off', async () => {
+    mockV1PaymentRecovery.value = false
     paymentFailedState()
     const { unmount } = renderBanner()
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Payment declined')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    expect(state.manageSubscription).toHaveBeenCalledOnce()
     unmount()
 
-    state.isActiveSubscription = true
-    state.billingStatus = 'paid'
-    exhausted()
+    pausedState()
+    state.canManageSubscription = false
     renderBanner()
-    expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your workspace admins need to update the payment method'
+    )
   })
 
   it('falls back to the no-date payment-declined copy when there is no renewal date', () => {
@@ -312,6 +330,23 @@ describe('BillingStatusBanner', () => {
     )
     expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
     expect(screen.getByRole('status')).not.toHaveTextContent('{date}')
+  })
+
+  it('aborts a recovery banner portal request when its flag is rolled back', async () => {
+    state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
+    pausedState()
+    renderBanner()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    const signal = state.manageSubscription.mock.calls[0][0]
+    expect(signal).toBeInstanceOf(AbortSignal)
+
+    mockV1PaymentRecovery.value = false
+    await nextTick()
+
+    expect(signal.aborted).toBe(true)
   })
 
   it('lets a promoted owner reactivate an ending plan', async () => {
