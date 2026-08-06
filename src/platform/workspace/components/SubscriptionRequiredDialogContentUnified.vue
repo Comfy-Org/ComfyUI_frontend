@@ -116,6 +116,7 @@
 
       <SubscriptionAddPaymentPreviewWorkspace
         v-else-if="previewVariant === 'team-new'"
+        :preview-data="previewData"
         :team-plan="selectedTeamStop!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
