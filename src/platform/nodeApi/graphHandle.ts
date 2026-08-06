@@ -5,7 +5,7 @@
  * This is the only module that knows how the pieces fit together; everything
  * below it is independently testable.
  */
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { toNodeId } from '@/types/nodeId'
@@ -132,7 +132,15 @@ export function createGraphApi(
 
     add(type, init) {
       const graph = requireGraph(`add node '${type}'`)
-      const node = new LGraphNode(init?.title ?? type, type)
+      // Through the registry, not `new LGraphNode`: inputs, outputs, widgets
+      // and the prototype all come from the registered class, so constructing
+      // directly yields a shell that reads as a node with no slots.
+      const node = LiteGraph.createNode(type, init?.title)
+      if (!node) {
+        throw new ComfyApiError(
+          `Cannot add '${type}': no such node type is registered.`
+        )
+      }
       graph.add(node)
       if (init?.position) node.pos = [init.position.x, init.position.y]
       return handleFor(String(node.id))
