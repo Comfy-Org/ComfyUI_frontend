@@ -337,8 +337,13 @@ function converterPrompt(work) {
   return `You convert files from the ComfyUI custom-node pack "${work.pack}" off
 the deprecated APIs and onto the published node API.
 
-You will be told which files are yours. Convert exactly those and no others —
-another agent owns the rest, and two agents writing the same file will fight.
+Your briefing names which files are yours. Convert exactly those and no others
+— another agent owns the rest, and two agents writing the same file will fight.
+
+The briefing carries what the lead already worked out: what the pack does, how
+its files relate, the conversion pattern it established, and the traps in your
+files. Trust it and start from it. Read what you need to confirm, but do not
+re-derive the pack from scratch.
 
 ${references(work)}
 
@@ -403,14 +408,38 @@ Full source of every file in scope:
 ${inlineSources(work)}
 
 Workflow:
-0. You have converter subagents. Delegate rather than converting serially:
-   group the files by what they share — a helper and its callers together, a
-   caller and its callee together — and hand each group to one converter with
-   the Task tool. Independent groups can go at once; run several converters in
-   parallel and keep going until every file is resolved. Files that share a
-   contract must go to the SAME converter, or one will change a signature the
-   other is still calling. Convert trivial files yourself rather than paying
-   for a delegation.
+0. UNDERSTAND THE PACK FIRST, THEN DELEGATE.
+
+   You have every source above and converter subagents to hand out work to.
+   Do not start converting file by file, and do not hand out files cold — a
+   converter that has to rediscover what the pack is will spend its first turns
+   doing what you have already done.
+
+   First, read the whole pack and work out:
+     - what it is for, and which node types it registers
+     - which files are shared helpers, and who calls them
+     - the recurring construct: most packs do one or two things repeatedly, and
+       the conversion is the same shape every time
+     - which files are coupled, and which are independent
+
+   Then group the files. Files sharing a contract — a helper and its callers, a
+   caller and its callee — go to the SAME converter, or one will change a
+   signature the other is still calling. Independent groups go to different
+   converters and run at once.
+
+   Then brief each converter in its Task prompt. Give it the head start you
+   now have:
+     - what the pack does and what its node types are
+     - its files, and why they were grouped together
+     - the pack's shared helpers and their contracts, including any it must not
+       change without changing callers it does not own
+     - the conversion pattern you established — if you converted a file
+       yourself, show it as the worked example to follow
+     - the specific traps in its files
+
+   Convert one representative file yourself first. It settles the pattern,
+   and it makes every briefing concrete instead of theoretical. Then delegate
+   the rest, several converters at a time, until every file is resolved.
 1. The sources and findings above are complete — do not call list_files,
    findings_for, or read_file for anything already shown. read_file is for
    siblings you need and files marked too large. Files in a pack import each
