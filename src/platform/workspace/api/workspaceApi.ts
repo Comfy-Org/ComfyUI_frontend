@@ -1,4 +1,6 @@
 import type {
+  BillingEventsResponse,
+  GetBillingEventsData,
   BillingStatusResponse as GeneratedBillingStatusResponse,
   ChurnkeyAuthResponse
 } from '@comfyorg/ingest-types'
@@ -336,25 +338,7 @@ export interface BillingOpStatusResponse {
   action_url?: string
 }
 
-interface BillingEvent {
-  event_type: string
-  event_id: string
-  params?: Record<string, unknown>
-  createdAt: string
-}
-
-interface BillingEventsResponse {
-  total: number
-  events: BillingEvent[]
-  page: number
-  limit: number
-  totalPages: number
-}
-
-interface GetBillingEventsParams {
-  page?: number
-  limit?: number
-}
+type GetBillingEventsParams = NonNullable<GetBillingEventsData['query']>
 
 export class WorkspaceApiError extends Error {
   constructor(

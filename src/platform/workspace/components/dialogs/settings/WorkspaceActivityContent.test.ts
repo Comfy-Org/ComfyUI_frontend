@@ -22,12 +22,6 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    resolvedUserInfo: { value: { id: 'user-ada' } }
-  })
-}))
-
 vi.mock('@/config/comfyApi', () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
 }))
@@ -86,7 +80,7 @@ describe('WorkspaceActivityContent', () => {
     expect(screen.queryByRole('link', { name: /full activity/i })).toBeNull()
   })
 
-  it('shows members only their own usage plus workspace credit inflows', async () => {
+  it('renders the events provided by the backend for members', async () => {
     mockWorkspaceRole.value = 'member'
     renderContent([
       {
@@ -106,14 +100,12 @@ describe('WorkspaceActivityContent', () => {
         eventType: 'Other workflow',
         detail: '1 run',
         credits: 200
-      },
-      creditedRow
+      }
     ])
 
     expect(screen.getByText('Own workflow')).toBeTruthy()
-    expect(screen.queryByText('Other workflow')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Page 2' }))
-    expect(screen.getByText('Auto-reload')).toBeTruthy()
+    expect(screen.getByText('Other workflow')).toBeTruthy()
   })
 
   it('marks a credit inflow with a leading plus', () => {
