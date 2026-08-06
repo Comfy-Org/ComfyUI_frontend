@@ -1,3 +1,5 @@
+import type { SmokeAuthSeedActions } from '@e2e/fixtures/helpers/smokeAuth'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -9,6 +11,8 @@ import {
   missingSmokeEnvVars,
   shouldRewriteAuthHeader,
   smokeAuthUserRecord,
+  seedSmokeAuth,
+  storeSmokeSettings,
   workspaceSessionFromResponse
 } from '@e2e/fixtures/helpers/smokeAuth'
 
@@ -215,6 +219,135 @@ test.describe('shouldRewriteAuthHeader', () => {
   test('excludes whole paths, never prefixes of a longer one', () => {
     expect(rewrites('http://localhost:4173/api/featuresfoo')).toBe(true)
     expect(rewrites('http://localhost:4173/api/features/detail')).toBe(true)
+  })
+})
+
+test.describe('storeSmokeSettings', () => {
+  test('writes startup settings with the workspace JWT before app boot', async () => {
+    let requestUrl = ''
+    let requestInit: RequestInit | undefined
+    const response = new Response('{"Comfy.TutorialCompleted":true}', {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    })
+    const request: typeof fetch = async (input, init) => {
+      requestUrl = String(input)
+      requestInit = init
+      return response
+    }
+
+    await storeSmokeSettings(
+      'http://localhost:4173',
+      'workspace.jwt.signature',
+      { 'Comfy.TutorialCompleted': true },
+      request
+    )
+
+    expect(requestUrl).toBe('http://localhost:4173/api/settings')
+    expect(requestInit?.method).toBe('POST')
+    expect(new Headers(requestInit?.headers).get('Authorization')).toBe(
+      'Bearer workspace.jwt.signature'
+    )
+    expect(requestInit?.body).toBe(
+      JSON.stringify({ 'Comfy.TutorialCompleted': true })
+    )
+    expect(response.bodyUsed).toBe(true)
+  })
+
+  test('fails loudly without exposing the workspace JWT', async () => {
+    const response = new Response('{"error":"forbidden"}', { status: 403 })
+    const request: typeof fetch = async () => response
+    let thrown = ''
+
+    await storeSmokeSettings(
+      'http://localhost:4173',
+      'workspace.jwt.signature',
+      {},
+      request
+    ).catch((error: unknown) => {
+      thrown = String(error)
+    })
+
+    expect(thrown).toContain('HTTP 403 POST /api/settings')
+    expect(thrown).not.toContain('workspace.jwt.signature')
+    expect(response.bodyUsed).toBe(true)
+  })
+})
+
+test('seeds startup settings before installing the browser session and routes', async ({
+  page
+}) => {
+  await page.route('http://guard.test/', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+  )
+  await page.goto('http://guard.test/')
+
+  const events: string[] = []
+  const user = smokeAuthUserRecord(
+    signInResponse(),
+    'smoke-test@comfy.org',
+    SMOKE_KEY,
+    NOW
+  )
+  const session = workspaceSessionFromResponse(tokenResponse(), user.uid)
+  const startupSettings = {
+    'Comfy.TutorialCompleted': true,
+    'Comfy.RightSidePanel.ShowErrorsTab': true
+  }
+  let stored:
+    | { appUrl: string; token: string; settings: Record<string, unknown> }
+    | undefined
+  const actions: SmokeAuthSeedActions = {
+    signIn: async () => {
+      events.push('signIn')
+      return user
+    },
+    seedFirebase: async () => {
+      events.push('firebase')
+    },
+    ensureSession: async () => {
+      const storedUser = await page.evaluate(
+        (key) => localStorage.getItem(key),
+        `firebase:authUser:${user.apiKey}:${user.appName}`
+      )
+      expect(JSON.parse(storedUser!).uid).toBe(user.uid)
+      events.push('workspaceToken')
+      return session
+    },
+    storeSettings: async (appUrl, token, settings) => {
+      events.push('settings')
+      stored = { appUrl, token, settings }
+    },
+    seedWorkspace: async () => {
+      events.push('browserSession')
+    },
+    attachHeader: async () => {
+      events.push('authRoute')
+    },
+    bypassSurvey: async () => {
+      events.push('surveyRoute')
+    },
+    blockTelemetry: async () => {
+      events.push('telemetryRoute')
+    }
+  }
+
+  await seedSmokeAuth(page, 'http://localhost:4173', startupSettings, actions)
+
+  expect(events).toEqual([
+    'signIn',
+    'firebase',
+    'workspaceToken',
+    'settings',
+    'browserSession',
+    'authRoute',
+    'surveyRoute',
+    'telemetryRoute'
+  ])
+  expect(stored).toEqual({
+    appUrl: 'http://localhost:4173',
+    token: session.token,
+    settings: startupSettings
   })
 })
 

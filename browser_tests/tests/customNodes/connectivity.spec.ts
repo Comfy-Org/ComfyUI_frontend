@@ -7,7 +7,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   customNodeSuiteSettings,
-  dismissTemplatesDialog,
   drainBackendToIdle,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
@@ -58,7 +57,6 @@ test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
   trackSubmittedPrompts(comfyPage.page)
-  await dismissTemplatesDialog(comfyPage)
 })
 
 // This spec queues no prompt of its own, so the drain returns without a

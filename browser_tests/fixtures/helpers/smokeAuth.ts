@@ -277,6 +277,29 @@ async function attachWorkspaceAuthHeader(
   )
 }
 
+export async function storeSmokeSettings(
+  appUrl: string,
+  token: string,
+  settings: Record<string, unknown>,
+  request: typeof fetch = fetch
+): Promise<void> {
+  const response = await request(`${appUrl}/api/settings`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(settings),
+    signal: AbortSignal.timeout(30_000)
+  })
+  await response.text()
+  if (!response.ok)
+    throw new Error(
+      `cloud startup settings seed failed (HTTP ${response.status} POST /api/settings) - ` +
+        `testcloud refused the smoke user's workspace JWT before app boot`
+    )
+}
+
 async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
   const missing = missingSmokeEnvVars(process.env)
   if (missing.length > 0)
@@ -318,13 +341,44 @@ async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
 
 let smokeUser: Promise<FirebaseAuthUserRecord> | undefined
 
-export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
+async function cachedSmokeUser(): Promise<FirebaseAuthUserRecord> {
   smokeUser ??= signInSmokeUser().catch((error: unknown) => {
     smokeUser = undefined
     throw error
   })
-  const user = await smokeUser
-  await seedFirebaseAuthUser(page, appUrl, user)
+  return smokeUser
+}
+
+export interface SmokeAuthSeedActions {
+  signIn: () => Promise<FirebaseAuthUserRecord>
+  seedFirebase: typeof seedFirebaseAuthUser
+  ensureSession: typeof ensureWorkspaceSession
+  storeSettings: typeof storeSmokeSettings
+  seedWorkspace: typeof seedWorkspaceSession
+  attachHeader: typeof attachWorkspaceAuthHeader
+  bypassSurvey: typeof bypassOnboardingSurvey
+  blockTelemetry: typeof blockThirdPartyTelemetry
+}
+
+const defaultSmokeAuthSeedActions: SmokeAuthSeedActions = {
+  signIn: cachedSmokeUser,
+  seedFirebase: seedFirebaseAuthUser,
+  ensureSession: ensureWorkspaceSession,
+  storeSettings: storeSmokeSettings,
+  seedWorkspace: seedWorkspaceSession,
+  attachHeader: attachWorkspaceAuthHeader,
+  bypassSurvey: bypassOnboardingSurvey,
+  blockTelemetry: blockThirdPartyTelemetry
+}
+
+export async function seedSmokeAuth(
+  page: Page,
+  appUrl: string,
+  startupSettings: Record<string, unknown>,
+  actions: SmokeAuthSeedActions = defaultSmokeAuthSeedActions
+): Promise<void> {
+  const user = await actions.signIn()
+  await actions.seedFirebase(page, appUrl, user)
   // The app pins persistence to browserLocalPersistence (authStore setPersistence),
   // so the IndexedDB seed alone races that switch and boots signed out
   // intermittently (gate run 30717671737). Seed localStorage under the same key.
@@ -332,13 +386,14 @@ export async function seedSmokeAuth(page: Page, appUrl: string): Promise<void> {
     const key = `firebase:authUser:${record.apiKey}:${record.appName}`
     localStorage.setItem(key, JSON.stringify(record))
   }, user)
-  const session = await ensureWorkspaceSession(appUrl, user)
-  await seedWorkspaceSession(page, session)
+  const session = await actions.ensureSession(appUrl, user)
+  await actions.storeSettings(appUrl, session.token, startupSettings)
+  await actions.seedWorkspace(page, session)
   // Registered before the routes below: Playwright matches handlers in reverse
   // registration order, so this one is the fallback the others defer to.
-  await attachWorkspaceAuthHeader(page, appUrl, session.token)
-  await bypassOnboardingSurvey(page)
-  await blockThirdPartyTelemetry(page)
+  await actions.attachHeader(page, appUrl, session.token)
+  await actions.bypassSurvey(page)
+  await actions.blockTelemetry(page)
 }
 
 // Third-party analytics egress, not cloud backend data. The CI preview origin

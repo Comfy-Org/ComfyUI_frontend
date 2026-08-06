@@ -19,6 +19,14 @@ import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
+import {
+  assertCloudCustomNodeBootGuard,
+  finalizeCloudCustomNodeBootGuard,
+  installCustomNodeBlankStartup,
+  installCloudCustomNodeBootGuard,
+  readCloudCustomNodeBootGuard,
+  runWithCollectedCleanup
+} from '@e2e/fixtures/utils/customNodeSuite'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -686,12 +694,11 @@ export const comfyPageFixture = base.extend<{
     const { parallelIndex } = testInfo
     const username = `playwright-test-${parallelIndex}`
     // Cloud has no local multi-user registry: /api/users and the devtools
-    // settings endpoint sit behind the cloud session, which only the app
-    // holds - a node-side request context carries no bearer and gets a 401
-    // (proven on run 30309274120: all 359 failures were this one call).
-    // The smoke account IS the user; startup settings are applied in-app
-    // after boot instead.
+    // settings endpoint sit behind the cloud session. The smoke account IS
+    // the user, and its workspace JWT seeds startup settings before app boot.
     const isCloudEnv = customNodesEnv() === 'cloud'
+    const isCustomNodes = testInfo.project.name === 'custom-nodes'
+    const isCloudCustomNodes = isCloudEnv && isCustomNodes
     if (isCloudEnv) traceCloudPage(page)
 
     const userId = isCloudEnv ? username : await comfyPage.setupUser(username)
@@ -734,7 +741,6 @@ export const comfyPageFixture = base.extend<{
         console.error(e)
       }
     }
-
     if (testInfo.tags.includes('@cloud')) {
       const context = page.context()
       await context.route('**/api/auth/session', (route) =>
@@ -752,9 +758,12 @@ export const comfyPageFixture = base.extend<{
             `--project=custom-nodes and without --trace`
         )
       const authStartedAt = Date.now()
-      await seedSmokeAuth(page, comfyPage.url)
+      await seedSmokeAuth(page, comfyPage.url, startupSettings)
       console.warn(`[cloud] smoke sign-in took ${Date.now() - authStartedAt}ms`)
+      if (isCloudCustomNodes) await installCloudCustomNodeBootGuard(page)
     }
+
+    if (isCustomNodes) await installCustomNodeBlankStartup(page)
 
     if (Object.keys(initialFeatureFlags).length > 0) {
       await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
@@ -765,21 +774,13 @@ export const comfyPageFixture = base.extend<{
     if (isCloudEnv)
       console.warn(`[cloud] app boot took ${Date.now() - setupStartedAt}ms`)
 
-    if (isCloudEnv) {
-      // The devtools settings endpoint is unreachable node-side on cloud
-      // (401, see above), so apply the same startup settings through the
-      // booted app's own authenticated session. Boot-time-read settings
-      // land one boot late on a freshly reset smoke account only.
-      for (const [key, value] of Object.entries(startupSettings))
-        await comfyPage.settings.setSetting(key, value)
-      await comfyPage.nextFrame()
-
-      // Suites that explicitly require the tutorial to be complete cannot
-      // rely on the first boot: its new-user decision already read the old
-      // value and may open the template modal later. Reload after persisting
-      // the setting so that decision is made from the updated value.
-      if (initialSettings['Comfy.TutorialCompleted'] === true)
-        await comfyPage.workflow.reloadAndWaitForApp()
+    if (isCloudCustomNodes) {
+      assertCloudCustomNodeBootGuard(await readCloudCustomNodeBootGuard(page))
+    }
+    if (isCustomNodes) {
+      await comfyExpect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(0)
     }
 
     if (isVueNodes) {
@@ -790,9 +791,15 @@ export const comfyPageFixture = base.extend<{
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
     if (needsPerf) await comfyPage.perf.init()
 
-    await use(comfyPage)
-
-    if (needsPerf) await comfyPage.perf.dispose()
+    await runWithCollectedCleanup(
+      () => use(comfyPage),
+      [
+        ...(isCloudCustomNodes
+          ? [() => finalizeCloudCustomNodeBootGuard(page)]
+          : []),
+        ...(needsPerf ? [() => comfyPage.perf.dispose()] : [])
+      ]
+    )
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)

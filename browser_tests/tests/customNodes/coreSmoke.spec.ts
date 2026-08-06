@@ -9,7 +9,6 @@ import {
 import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
   customNodeSuiteSettings,
-  dismissTemplatesDialog,
   drainBackendToIdle,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
@@ -28,7 +27,6 @@ test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
   trackSubmittedPrompts(comfyPage.page)
-  await dismissTemplatesDialog(comfyPage)
 })
 
 // This spec queues no prompt of its own, so the drain returns without a
@@ -39,6 +37,20 @@ test.afterEach(async ({ comfyPage }) => {
 })
 
 test.describe('smoke: core workflow @custom-nodes', () => {
+  test('starts without onboarding and with a blank graph', async ({
+    comfyPage
+  }) => {
+    await expect(
+      comfyPage.templatesDialog.root.filter({
+        has: comfyPage.page.getByTestId('template-filter-bar')
+      })
+    ).toBeHidden()
+    await expect(
+      comfyPage.page.getByTestId('getting-started-blank')
+    ).toBeHidden()
+    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+  })
+
   test('loads without console errors in both renderers', async ({
     comfyPage
   }) => {

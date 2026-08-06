@@ -18,7 +18,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   customNodeSuiteSettings,
-  dismissTemplatesDialog,
   drainBackendToIdle,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
@@ -90,7 +89,6 @@ test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
   trackSubmittedPrompts(comfyPage.page)
-  await dismissTemplatesDialog(comfyPage)
 })
 
 // Leave the shared backend idle so the next test starts clean (drainBackendToIdle).

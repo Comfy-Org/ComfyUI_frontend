@@ -1,42 +1,237 @@
 import type { Page, Response } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
-import { TestIds } from '@e2e/fixtures/selectors'
+import type {
+  ActivePathPointer,
+  DraftIndexV2,
+  DraftPayloadV2,
+  OpenPathsPointer
+} from '@/platform/workflow/persistence/base/draftTypes'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-// Core boots with a blank graph instead of the bundled default template, whose
-// model references error on the model-less harness backend. Cloud completes the
-// tutorial and reloads after persisting the setting so its modal cannot cover
-// pointer targets.
+const CLOUD_CUSTOM_NODE_BOOT_COUNT = '__cloudCustomNodeBootCount'
+const CLOUD_CUSTOM_NODE_ONBOARDING = '__cloudCustomNodeOnboarding'
+const CLOUD_CUSTOM_NODE_OBSERVER = '__cloudCustomNodeObserver'
+const ONBOARDING_SELECTOR =
+  '[data-testid="template-filter-bar"], [data-testid="getting-started-blank"]'
+const CUSTOM_NODE_BLANK_WORKFLOW_PATH =
+  'workflows/Custom Nodes E2E Blank Workflow.json'
+// Importing blankGraph evaluates import.meta.env in Playwright's Node process.
+const CUSTOM_NODE_BLANK_GRAPH: ComfyWorkflowJSON = {
+  last_node_id: 0,
+  last_link_id: 0,
+  nodes: [],
+  links: [],
+  groups: [],
+  config: {},
+  extra: {},
+  version: 0.4
+}
+
+export async function installCustomNodeBlankStartup(page: Page): Promise<void> {
+  const workspaceId = 'personal'
+  const path = CUSTOM_NODE_BLANK_WORKFLOW_PATH
+  const draftKey = StorageKeys.draftKey(path)
+  const updatedAt = Date.now()
+  const index: DraftIndexV2 = {
+    v: 2,
+    updatedAt,
+    order: [draftKey],
+    entries: {
+      [draftKey]: {
+        path,
+        name: 'Custom Nodes E2E Blank Workflow.json',
+        isTemporary: true,
+        updatedAt
+      }
+    }
+  }
+  const payload: DraftPayloadV2 = {
+    data: JSON.stringify(CUSTOM_NODE_BLANK_GRAPH),
+    updatedAt
+  }
+  const active: ActivePathPointer = { workspaceId, path }
+  const open: OpenPathsPointer = {
+    workspaceId,
+    paths: [path],
+    activeIndex: 0
+  }
+  const entries = [
+    [StorageKeys.draftIndex(workspaceId), JSON.stringify(index)],
+    [StorageKeys.draftPayload(path, workspaceId), JSON.stringify(payload)],
+    [StorageKeys.lastActivePath(workspaceId), JSON.stringify(active)],
+    [StorageKeys.lastOpenPaths(workspaceId), JSON.stringify(open)]
+  ]
+  await page.addInitScript((entries) => {
+    for (const [key, value] of entries) localStorage.setItem(key, value)
+  }, entries)
+}
+
+export async function installCloudCustomNodeBootGuard(
+  page: Page
+): Promise<void> {
+  await page.addInitScript(
+    ({ bootCountKey, onboardingKey, observerKey, onboardingSelector }) => {
+      if (window !== window.top || location.pathname !== '/') return
+      const count = Number(sessionStorage.getItem(bootCountKey) ?? '0')
+      sessionStorage.setItem(bootCountKey, String(count + 1))
+
+      const record = (node: Node | null) => {
+        if (!(node instanceof Element)) return
+        const surface = node.matches(onboardingSelector)
+          ? node
+          : node.querySelector(onboardingSelector)
+        const testId = surface?.getAttribute('data-testid')
+        if (testId !== null && testId !== undefined)
+          sessionStorage.setItem(onboardingKey, testId)
+      }
+      record(document.documentElement)
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (
+            mutation.type === 'attributes' &&
+            (mutation.oldValue === 'template-filter-bar' ||
+              mutation.oldValue === 'getting-started-blank')
+          )
+            sessionStorage.setItem(onboardingKey, mutation.oldValue)
+          record(mutation.target)
+          for (const node of mutation.addedNodes) record(node)
+        }
+      })
+      observer.observe(document, {
+        attributes: true,
+        attributeFilter: ['data-testid'],
+        attributeOldValue: true,
+        childList: true,
+        subtree: true
+      })
+      Reflect.set(window, observerKey, observer)
+    },
+    {
+      bootCountKey: CLOUD_CUSTOM_NODE_BOOT_COUNT,
+      onboardingKey: CLOUD_CUSTOM_NODE_ONBOARDING,
+      observerKey: CLOUD_CUSTOM_NODE_OBSERVER,
+      onboardingSelector: ONBOARDING_SELECTOR
+    }
+  )
+}
+
+export function readCloudCustomNodeBootGuard(
+  page: Page
+): Promise<{ bootCount: number; onboarding: string | null }> {
+  return page.evaluate(
+    ({ bootCountKey, onboardingKey }) => ({
+      bootCount: Number(sessionStorage.getItem(bootCountKey) ?? '0'),
+      onboarding: sessionStorage.getItem(onboardingKey)
+    }),
+    {
+      bootCountKey: CLOUD_CUSTOM_NODE_BOOT_COUNT,
+      onboardingKey: CLOUD_CUSTOM_NODE_ONBOARDING
+    }
+  )
+}
+
+export function assertCloudCustomNodeBootGuard({
+  bootCount,
+  onboarding
+}: {
+  bootCount: number
+  onboarding: string | null
+}): void {
+  if (bootCount !== 1)
+    throw new Error(
+      `cloud custom-node setup booted the app ${bootCount} times; expected exactly one pre-seeded boot`
+    )
+  if (onboarding !== null)
+    throw new Error(
+      `cloud custom-node setup opened ${onboarding} despite pre-seeded startup settings`
+    )
+}
+
+export function stopCloudCustomNodeBootGuard(page: Page): Promise<void> {
+  return page.evaluate((observerKey) => {
+    const observer = Reflect.get(window, observerKey)
+    if (observer instanceof MutationObserver) observer.disconnect()
+    Reflect.deleteProperty(window, observerKey)
+  }, CLOUD_CUSTOM_NODE_OBSERVER)
+}
+
+export interface CloudCustomNodeBootGuardActions {
+  read: typeof readCloudCustomNodeBootGuard
+  assert: typeof assertCloudCustomNodeBootGuard
+  stop: typeof stopCloudCustomNodeBootGuard
+}
+
+const cloudCustomNodeBootGuardActions: CloudCustomNodeBootGuardActions = {
+  read: readCloudCustomNodeBootGuard,
+  assert: assertCloudCustomNodeBootGuard,
+  stop: stopCloudCustomNodeBootGuard
+}
+
+export async function finalizeCloudCustomNodeBootGuard(
+  page: Page,
+  actions: CloudCustomNodeBootGuardActions = cloudCustomNodeBootGuardActions
+): Promise<void> {
+  if (page.isClosed())
+    throw new Error('cloud custom-node boot guard unavailable: page closed')
+
+  const errors: unknown[] = []
+  try {
+    actions.assert(await actions.read(page))
+  } catch (error) {
+    errors.push(error)
+  }
+  try {
+    await actions.stop(page)
+  } catch (error) {
+    errors.push(error)
+  }
+  throwCollectedErrors(errors)
+}
+
+function throwCollectedErrors(errors: readonly unknown[]): void {
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1)
+    throw new AggregateError(errors, 'test and fixture teardown failed')
+}
+
+export async function runWithCollectedCleanup(
+  run: () => Promise<void>,
+  cleanups: readonly (() => Promise<void>)[]
+): Promise<void> {
+  const errors: unknown[] = []
+  try {
+    await run()
+  } catch (error) {
+    errors.push(error)
+  }
+  for (const cleanup of cleanups) {
+    try {
+      await cleanup()
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+  throwCollectedErrors(errors)
+}
+
+// Both environments restore a pre-seeded blank draft instead of the bundled
+// default graph, whose model references error on the model-less Core backend.
+// The restored startup outcome also prevents onboarding without a reload.
 // The shared fixture disables the errors tab to hide missing-model
 // indicators in unrelated suites; this suite exists to SEE errors, so every
 // error surface stays live.
-export function customNodeSuiteSettingsFor(env: 'core' | 'cloud') {
+export function customNodeSuiteSettingsFor(_env: 'core' | 'cloud') {
   return {
-    'Comfy.TutorialCompleted': env === 'cloud',
+    'Comfy.TutorialCompleted': true,
+    'Comfy.Workflow.Persist': true,
     'Comfy.RightSidePanel.ShowErrorsTab': true
   }
 }
 
 export const customNodeSuiteSettings =
   customNodeSuiteSettingsFor(customNodesEnv())
-
-// On Cloud, explicitly requesting TutorialCompleted also makes the shared
-// fixture reload after persisting startup settings. Keep this defensive
-// dismissal for backends that ignore or rename the setting: if no dialog
-// appears within a short window, the blank graph is already ready.
-export async function dismissTemplatesDialog(
-  comfyPage: ComfyPage
-): Promise<void> {
-  const templates = comfyPage.page.getByTestId(TestIds.templates.content)
-  try {
-    await templates.waitFor({ state: 'visible', timeout: 5000 })
-  } catch {
-    return
-  }
-  await comfyPage.page.keyboard.press('Escape')
-  await templates.waitFor({ state: 'hidden' })
-}
 
 /**
  * Watches this page's `/prompt` POSTs, handing each response's `prompt_id`
