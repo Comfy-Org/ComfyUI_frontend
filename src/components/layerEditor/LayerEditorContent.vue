@@ -2,12 +2,12 @@
   <div class="flex min-h-0 flex-1 flex-col">
     <Teleport defer to="#layer-editor-header-actions">
       <Button
-        variant="primary"
+        v-if="mode === 'compositor'"
+        variant="secondary"
         size="md"
-        :disabled="mode !== 'compositor' || saving"
-        @click="onSave"
+        @click="onRestore"
       >
-        {{ t('g.save') }}
+        {{ t('g.restore') }}
       </Button>
     </Teleport>
     <div class="flex min-h-0 flex-1">
@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import LayerEditorCanvas from '@/components/layerEditor/LayerEditorCanvas.vue'
@@ -36,17 +36,24 @@ import {
   resolveInitialLayerState
 } from '@/composables/compositor/compositorLayerState'
 import { imageRefViewQuery } from '@/composables/compositor/compositorPaths'
+import {
+  saveCompositorLayerState,
+  saveCompositorPreview
+} from '@/composables/compositor/compositorSave'
 import { getCompositorWidgetValue } from '@/composables/compositor/compositorWidgets'
+import { useCompositorAutoSave } from '@/composables/compositor/useCompositorAutoSave'
 import {
   getCompositorBBoxes,
   getCompositorInputsFingerprint,
   getCompositorLayers
 } from '@/composables/compositor/useCompositorLayers'
-import { useCompositorSaver } from '@/composables/compositor/useCompositorSaver'
 import { useLayerEditorSession } from '@/composables/layerEditor/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const { node, mode = 'images' } = defineProps<{
@@ -56,8 +63,10 @@ const { node, mode = 'images' } = defineProps<{
 
 const { t } = useI18n()
 const session = useLayerEditorSession()
-const { saveComposite } = useCompositorSaver()
-const saving = ref(false)
+
+let layersLoaded = false
+let autoSave: { stop(): void } | null = null
+let changeTracker: ChangeTracker | undefined
 
 function layerName(url: string, index: number): string {
   try {
@@ -71,14 +80,9 @@ function layerName(url: string, index: number): string {
   return t('layerEditor.layerN', { n: index + 1 })
 }
 
-async function onSave(): Promise<void> {
-  if (mode !== 'compositor' || saving.value) return
-  saving.value = true
-  try {
-    await saveComposite(session, node)
-  } finally {
-    saving.value = false
-  }
+function onRestore(): void {
+  if (session.editor.floating()) session.editor.cancelFloating()
+  while (session.editor.history.canUndo()) session.undo()
 }
 
 async function loadCompositorLayers(): Promise<void> {
@@ -105,9 +109,30 @@ async function loadCompositorLayers(): Promise<void> {
   }
 }
 
+function finalizeCompositorSession(): void {
+  autoSave?.stop()
+  if (layersLoaded) {
+    if (session.editor.floating()) session.editor.anchorFloating()
+    if (!saveCompositorLayerState(session, node)) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('compositor.saveFailed')
+      })
+    }
+    void saveCompositorPreview(session, node)
+  }
+  changeTracker?.afterChange()
+}
+
 onMounted(() => {
   if (mode === 'compositor') {
-    void loadCompositorLayers()
+    changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
+    changeTracker?.beforeChange()
+    void loadCompositorLayers().then(() => {
+      layersLoaded = true
+      autoSave = useCompositorAutoSave(session, node)
+    })
     return
   }
   const urls = useNodeOutputStore().getNodeImageUrls(node) ?? []
@@ -116,6 +141,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (mode === 'compositor') finalizeCompositorSession()
   session.dispose()
 })
 </script>

@@ -8,6 +8,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
@@ -527,6 +528,9 @@ export class ChangeTracker {
         // If the mask editor is opened, we don't want to trigger on key events
         const comfyApp = app.constructor as typeof ComfyApp
         if (comfyApp.maskeditor_is_opended?.()) return
+
+        // The layer editor has its own session-local undo history
+        if (useDialogStore().isDialogOpen('global-layer-editor')) return
 
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {
