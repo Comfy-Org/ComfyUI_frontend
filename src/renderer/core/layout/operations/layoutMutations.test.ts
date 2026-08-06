@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type * as Y from 'yjs'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { toGroupId } from '@/types/groupId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
@@ -64,8 +65,7 @@ describe('moveNode', () => {
   it('preserves a registered node when ownership does not match', () => {
     const { createNode } = useLayoutMutations()
     createNode(GRAPH, NEW_NODE, { position: { x: 10, y: 20 } })
-    layoutStore
-      .getYDocForTests()
+    getLayoutStoreYDoc()
       .getMap<Y.Map<unknown>>('nodes')
       .get(`${GRAPH}:${NEW_NODE}`)
       ?.set('registrationId', 'owner')
@@ -163,8 +163,7 @@ describe('deleteNode', () => {
   it('requires exact ownership evidence for registered nodes', () => {
     const { createNode, deleteNode } = useLayoutMutations()
     createNode(GRAPH, NEW_NODE, {})
-    layoutStore
-      .getYDocForTests()
+    getLayoutStoreYDoc()
       .getMap<Y.Map<unknown>>('nodes')
       .get(`${GRAPH}:${NEW_NODE}`)
       ?.set('registrationId', '')

@@ -1103,10 +1103,6 @@ class LayoutStore {
     this.clearViewGeometry()
   }
 
-  getYDocForTests(): Y.Doc {
-    return this.ydoc
-  }
-
   /**
    * Clears view geometry and subscriptions; entity geometry has separate
    * lifecycle cleanup.
@@ -1637,6 +1633,21 @@ class LayoutStore {
     })
   }
 
+  getRegistrationId(
+    entity: 'node',
+    rootGraphId: UUID,
+    id: NodeId
+  ): string | undefined
+  getRegistrationId(
+    entity: 'group',
+    rootGraphId: UUID,
+    id: GroupId
+  ): string | undefined
+  getRegistrationId(
+    entity: 'reroute',
+    rootGraphId: UUID,
+    id: RerouteId
+  ): string | undefined
   getRegistrationId(
     entity: 'node' | 'group' | 'reroute',
     rootGraphId: UUID,

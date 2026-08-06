@@ -24,6 +24,7 @@ import {
   LayoutOperationError,
   layoutStore
 } from '@/renderer/core/layout/store/layoutStore'
+import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { toRerouteId } from '@/types/rerouteId'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
@@ -795,9 +796,7 @@ describe('Reroute position lives only in layoutStore', () => {
   it('remove preserves a foreign layout that replaced the attached reroute', () => {
     const graph = new LGraph()
     const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
-    const reroutes = layoutStore
-      .getYDocForTests()
-      .getMap<Y.Map<unknown>>('reroutes')
+    const reroutes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('reroutes')
     const key = `${graph.rootGraph.id}:${reroute.id}`
     const foreignReroute = new Y.Map<unknown>()
     foreignReroute.set('id', reroute.id)
@@ -813,9 +812,7 @@ describe('Reroute position lives only in layoutStore', () => {
   it('stale attached reroute writes preserve a foreign replacement', () => {
     const graph = new LGraph()
     const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
-    const reroutes = layoutStore
-      .getYDocForTests()
-      .getMap<Y.Map<unknown>>('reroutes')
+    const reroutes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('reroutes')
     const key = `${graph.rootGraph.id}:${reroute.id}`
     const foreign = new Y.Map<unknown>()
     foreign.set('id', reroute.id)
@@ -832,9 +829,7 @@ describe('Reroute position lives only in layoutStore', () => {
   it('clear preserves a foreign layout that replaced the attached reroute', () => {
     const graph = new LGraph()
     const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
-    const reroutes = layoutStore
-      .getYDocForTests()
-      .getMap<Y.Map<unknown>>('reroutes')
+    const reroutes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('reroutes')
     const key = `${graph.rootGraph.id}:${reroute.id}`
     const foreignReroute = new Y.Map<unknown>()
     foreignReroute.set('id', reroute.id)
@@ -850,9 +845,7 @@ describe('Reroute position lives only in layoutStore', () => {
   it('unregister without ownership evidence preserves the reroute layout', () => {
     const graph = new LGraph()
     const reroute = new Reroute(toRerouteId(31), graph, [10, 20])
-    const reroutes = layoutStore
-      .getYDocForTests()
-      .getMap<Y.Map<unknown>>('reroutes')
+    const reroutes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('reroutes')
     const key = `${graph.rootGraph.id}:${reroute.id}`
     const foreignReroute = new Y.Map<unknown>()
     foreignReroute.set('id', reroute.id)
@@ -913,7 +906,7 @@ describe('Reroute position lives only in layoutStore', () => {
   it('retains reroute ownership when unregister throws before deletion', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 20], link)!
-    const ydoc = layoutStore.getYDocForTests()
+    const ydoc = getLayoutStoreYDoc()
     const transact = vi.spyOn(ydoc, 'transact').mockImplementationOnce(() => {
       throw new Error('reroute delete failed')
     })
@@ -942,7 +935,7 @@ describe('Reroute position lives only in layoutStore', () => {
   it('restores reroute registration when unregister throws after deletion', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 20], link)!
-    const ydoc = layoutStore.getYDocForTests()
+    const ydoc = getLayoutStoreYDoc()
     const registrationId = layoutStore.getRegistrationId(
       'reroute',
       graph.rootGraph.id,
@@ -1021,7 +1014,7 @@ describe('Reroute position lives only in layoutStore', () => {
   it('keeps reroute ownership when reentrant unregister is rejected', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 20], link)!
-    const ydoc = layoutStore.getYDocForTests()
+    const ydoc = getLayoutStoreYDoc()
     function attemptRemove(): void {
       ydoc.off('beforeTransaction', attemptRemove)
       graph.removeReroute(reroute.id)
@@ -1045,7 +1038,7 @@ describe('Reroute position lives only in layoutStore', () => {
     const reroute = new Reroute(toRerouteId(32), subgraph, [10, 20])
     subgraph._addReroute(reroute)
     const rootId = root.id
-    const ydoc = layoutStore.getYDocForTests()
+    const ydoc = getLayoutStoreYDoc()
     const transact = vi.spyOn(ydoc, 'transact').mockImplementationOnce(() => {
       throw new Error('clear layout failed')
     })
@@ -1153,8 +1146,7 @@ describe('Reroute position lives only in layoutStore', () => {
     const reroute = graph.createReroute([10, 10], link)!
     const pos = reroute.pos
 
-    layoutStore
-      .getYDocForTests()
+    getLayoutStoreYDoc()
       .getMap<Y.Map<unknown>>('reroutes')
       .get(`${graph.rootGraph.id}:${reroute.id}`)
       ?.set('position', { x: 300, y: 400 })
@@ -1220,7 +1212,7 @@ describe('Reroute position lives only in layoutStore', () => {
   it('rejects a layout inserted during reroute registration without deleting it', () => {
     const graph = new LGraph()
     const originalLastRerouteId = graph.state.lastRerouteId
-    const ydoc = layoutStore.getYDocForTests()
+    const ydoc = getLayoutStoreYDoc()
     function insertForeignLayout(): void {
       ydoc.off('beforeTransaction', insertForeignLayout)
       const foreignReroute = new Y.Map<unknown>()
@@ -1285,7 +1277,7 @@ describe('Reroute position lives only in layoutStore', () => {
   it('preserves a foreign layout replacing an applied registration before failure', () => {
     const graph = new LGraph()
     const originalLastRerouteId = graph.state.lastRerouteId
-    const ydoc = layoutStore.getYDocForTests()
+    const ydoc = getLayoutStoreYDoc()
     const reroutes = ydoc.getMap<Y.Map<unknown>>('reroutes')
     let registeredKey: string | undefined
     const originalTransact = ydoc.transact.bind(ydoc)

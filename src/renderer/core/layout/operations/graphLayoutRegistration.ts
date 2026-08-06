@@ -48,16 +48,29 @@ function registrationKey(
 }
 
 function reconcilePendingRegistration(
-  key: string,
-  entity: 'group' | 'reroute',
-  graphId: UUID,
-  id: LGraphGroup['id'] | Reroute['id'],
-  deleteRegistration: (registrationId: string) => LayoutOperationResult
+  ...[key, entity, graphId, id, deleteRegistration]:
+    | [
+        key: string,
+        entity: 'group',
+        graphId: UUID,
+        id: LGraphGroup['id'],
+        deleteRegistration: (registrationId: string) => LayoutOperationResult
+      ]
+    | [
+        key: string,
+        entity: 'reroute',
+        graphId: UUID,
+        id: Reroute['id'],
+        deleteRegistration: (registrationId: string) => LayoutOperationResult
+      ]
 ): boolean {
   const registrationId = pendingRegistrations.get(key)
   if (registrationId === undefined) return true
 
-  const storedId = layoutStore.getRegistrationId(entity, graphId, id)
+  const storedId =
+    entity === 'group'
+      ? layoutStore.getRegistrationId(entity, graphId, id)
+      : layoutStore.getRegistrationId(entity, graphId, id)
   if (storedId === registrationId) {
     const result = deleteRegistration(registrationId)
     if (result === 'rejected') return false

@@ -24,9 +24,9 @@ test.describe(
       await comfyPage.page.addScriptTag({
         type: 'module',
         content: `
-          import { layoutStore } from '/src/renderer/core/layout/store/layoutStore.ts'
+          import { getLayoutStoreYDoc } from '/src/renderer/core/layout/store/layoutStoreTestUtils.ts'
 
-          const doc = layoutStore.getYDocForTests()
+          const doc = getLayoutStoreYDoc()
           const node = doc.getMap('nodes').get('${graphId}:${nodeId}')
           doc.transact(() => {
             node.delete('position')

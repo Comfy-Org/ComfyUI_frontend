@@ -7,6 +7,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { createUuidv4 } from '@/utils/uuid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -126,9 +127,9 @@ describe('notifyLayoutChanges', () => {
     expect(setDirty).not.toHaveBeenCalled()
   })
 
-  it('invalidates rendering for a remote geometry update', () => {
+  it('invalidates rendering for a raw Yjs geometry change', () => {
     const { graph, node, setDirty, stop } = setup()
-    const doc = layoutStore.getYDocForTests()
+    const doc = getLayoutStoreYDoc()
     setDirty.mockClear()
     doc
       .getMap<Y.Map<unknown>>('nodes')
