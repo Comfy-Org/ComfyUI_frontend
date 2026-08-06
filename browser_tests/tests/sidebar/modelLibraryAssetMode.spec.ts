@@ -367,10 +367,6 @@ test.describe('Model library sidebar - asset mode with a legacy bare tag', () =>
     await comfyPage.modelLibrary.clearMocks()
   })
 
-  // Regression for the AC3 bug flagged in #13574's review: on a
-  // model_type-capable backend, a bare (non-namespaced) tag resolved to no
-  // category and buildModelBuckets dropped the asset with a console.warn
-  // instead of falling back to legacy bare-tag grouping.
   test('Falls back to legacy bare-tag grouping instead of dropping the asset', async ({
     comfyPage
   }) => {
@@ -416,11 +412,6 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
     await comfyPage.modelLibrary.clearMocks()
   })
 
-  // Regression for the high-severity finding on #14217: an asset carrying
-  // both an authoritative `model_type:checkpoints` tag and a leftover bare
-  // `checkpoints` twin (a partial re-tagging artifact) must land in
-  // `checkpoints` exactly once, and its unrelated leftover `loras` bare tag
-  // must not cross-list it into that folder too.
   test('Groups a model_type-covered asset once and ignores its bare-tag twins', async ({
     comfyPage
   }) => {
