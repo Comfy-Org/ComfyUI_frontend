@@ -62,7 +62,8 @@ import {
 } from '@/renderer/core/layout/utils/mappers'
 import type {
   GroupLayoutMap,
-  NodeLayoutMap
+  NodeLayoutMap,
+  StoredRect
 } from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
@@ -71,7 +72,7 @@ type YEventChange = {
   oldValue: unknown
 }
 
-function isNodeRect(value: unknown): value is [number, number, number, number] {
+function isNodeRect(value: unknown): value is StoredRect {
   return (
     Array.isArray(value) &&
     value.length === 4 &&

@@ -10,7 +10,7 @@ import type { NodeId } from '@/types/nodeId'
  * are views of it rather than fields of their own, so they cannot disagree, and
  * a whole-tuple replace is the write a CRDT register wants.
  */
-type StoredRect = [x: number, y: number, width: number, height: number]
+export type StoredRect = [x: number, y: number, width: number, height: number]
 
 type StoredNode = {
   id: NodeId
