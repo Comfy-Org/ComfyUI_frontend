@@ -109,19 +109,22 @@ describe('missing node mutations', () => {
     {
       name: 'moveNode',
       mutate: () =>
-        useLayoutMutations(LayoutSource.Canvas).moveNode(
-          GRAPH,
-          MISSING_NODE,
-          { x: 1, y: 2 }
-        )
+        useLayoutMutations(LayoutSource.Canvas).moveNode(GRAPH, MISSING_NODE, {
+          x: 1,
+          y: 2
+        })
     },
     {
       name: 'resizeNode',
       mutate: () =>
-        useLayoutMutations(LayoutSource.Canvas).resizeNode(GRAPH, MISSING_NODE, {
-          width: 3,
-          height: 4
-        })
+        useLayoutMutations(LayoutSource.Canvas).resizeNode(
+          GRAPH,
+          MISSING_NODE,
+          {
+            width: 3,
+            height: 4
+          }
+        )
     },
     {
       name: 'setNodeZIndex',

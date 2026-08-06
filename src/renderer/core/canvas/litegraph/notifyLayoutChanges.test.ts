@@ -63,12 +63,16 @@ describe('notifyLayoutChanges', () => {
           height: 200
         })
       } else {
-        layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-          {
-            nodeId: node.id,
-            bounds: { x: 0, y: 0, width: 300, height: 200 }
-          }
-        ], { source: LayoutSource.Vue })
+        layoutStore.batchUpdateNodeBounds(
+          graph.rootGraph.id,
+          [
+            {
+              nodeId: node.id,
+              bounds: { x: 0, y: 0, width: 300, height: 200 }
+            }
+          ],
+          { source: LayoutSource.Vue }
+        )
       }
       await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
     }
@@ -86,17 +90,21 @@ describe('notifyLayoutChanges', () => {
     ).value
     if (!layout) throw new Error('Expected registered node layout')
 
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: {
-          x: 50,
-          y: 60,
-          width: layout.size.width,
-          height: layout.size.height
+    layoutStore.batchUpdateNodeBounds(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: {
+            x: 50,
+            y: 60,
+            width: layout.size.width,
+            height: layout.size.height
+          }
         }
-      }
-    ], { source: LayoutSource.Vue })
+      ],
+      { source: LayoutSource.Vue }
+    )
     await vi.waitFor(() => expect(setDirtyCalled()).toBe(true))
 
     expect(onResize).not.toHaveBeenCalled()

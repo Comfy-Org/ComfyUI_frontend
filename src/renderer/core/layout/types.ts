@@ -111,7 +111,7 @@ interface OperationMeta {
   /** Timestamp for ordering operations */
   timestamp: number
   /** Actor who performed the operation (for CRDT) */
-  actor?: string  /** Source system that initiated the operation */
+  actor?: string /** Source system that initiated the operation */
   source: LayoutSource
   graphId: UUID
   /** Operation type discriminator */
