@@ -57,7 +57,8 @@ vi.mock('@/composables/video/useVideoFilmstrip', () => {
       height: createRef(1080),
       fps: createRef(10),
       fileSize: createRef(1024),
-      loading: createRef(false)
+      loading: createRef(false),
+      error: createRef(null)
     })
   }
 })
@@ -76,6 +77,7 @@ const PanelStub = defineComponent({
     width: { type: Number, required: true },
     height: { type: Number, required: true },
     loading: { type: Boolean, required: false },
+    error: { type: String, required: false },
     startFrame: { type: Number, required: true },
     endFrame: { type: Number, required: true },
     cropBounds: { type: Object as PropType<Bounds>, required: true },
@@ -184,6 +186,7 @@ describe('WidgetVideoEdit', () => {
     expect(recorded.props?.videoUrl).toBe('/api/view?filename=clip.mp4')
     expect(recorded.props?.duration).toBe(10)
     expect(recorded.props?.totalFrames).toBe(100)
+    expect(recorded.props?.error).toBeNull()
   })
 
   it('writes trim seconds into the model when the panel moves a frame handle', async () => {

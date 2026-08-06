@@ -55,12 +55,13 @@ export function useTrimPlayback(options: UseTrimPlaybackOptions) {
 
   async function seekPreviewToFrame(frame: number) {
     const video = videoRef.value
-    if (!video) return
+    if (!video || !Number.isFinite(frame)) return
 
     const clamped = clamp(frame, 0, frameMax.value)
     playheadFrame.value = clamped
 
     const targetTime = clampSeekTime(video, frameToTime(clamped))
+    if (!Number.isFinite(targetTime)) return
     if (Math.abs(video.currentTime - targetTime) <= 0.0001) return
 
     const seekId = ++activeSeekId

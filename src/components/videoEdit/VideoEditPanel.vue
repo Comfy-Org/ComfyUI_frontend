@@ -49,6 +49,17 @@
             {{ t('videoEdit.loadingVideo') }}
           </p>
         </div>
+        <div
+          v-else-if="error"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-node-component-surface"
+          data-testid="video-preview-error"
+          role="alert"
+        >
+          <i class="icon-[lucide--video-off] size-6 text-muted-foreground" />
+          <p class="m-0 text-sm text-muted-foreground">
+            {{ t('videoEdit.loadFailed') }}
+          </p>
+        </div>
       </div>
     </div>
 
@@ -73,6 +84,7 @@
         :trim-enabled="trimEnabled"
         :total-frames="effectiveTotalFrames"
         :thumbnails="thumbnails"
+        :loading="loading"
         @scrub="handleScrub"
       />
 
@@ -212,6 +224,7 @@ import { useCropRatioLock } from '@/composables/video/useCropRatioLock'
 import { useTrimPlayback } from '@/composables/video/useTrimPlayback'
 import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
+import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type { VideoEditFeature } from '@/lib/litegraph/src/types/widgets'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
@@ -240,7 +253,8 @@ const {
   fileSize,
   width,
   height,
-  loading = false
+  loading = false,
+  error = null
 } = defineProps<{
   features: VideoEditFeature[]
   videoUrl?: string
@@ -252,6 +266,7 @@ const {
   width: number
   height: number
   loading?: boolean
+  error?: FilmstripError | null
 }>()
 
 const startFrame = defineModel<number>('startFrame', { default: 0 })
