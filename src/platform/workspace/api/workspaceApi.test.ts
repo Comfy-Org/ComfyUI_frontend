@@ -440,6 +440,65 @@ describe('workspaceApi', () => {
   })
 
   describe('subscription', () => {
+    it('listSavedPaymentMethods() returns masked methods from GET', async () => {
+      const data = [
+        {
+          type: 'card',
+          id: 'pm_saved',
+          brand: 'visa',
+          last4: '4242',
+          is_default: true
+        }
+      ]
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.listSavedPaymentMethods()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/payment-methods',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('previewSubscribe() sends the promotion code only when applied', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: { allowed: true } })
+
+      await workspaceApi.previewSubscribe('pro-monthly', {
+        promotionCode: 'SAVE20'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/preview-subscribe',
+        expect.objectContaining({ promotion_code: 'SAVE20' }),
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('subscribe() echoes the quote and selected saved method', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { billing_op_id: 'op-quote', status: 'subscribed' }
+      })
+
+      await workspaceApi.subscribe('pro-monthly', {
+        promotionCode: 'SAVE20',
+        quoteId: 'quote_123',
+        quoteVersion: 2,
+        savedPaymentMethodId: 'pm_saved'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/subscribe',
+        expect.objectContaining({
+          promotion_code: 'SAVE20',
+          quote_id: 'quote_123',
+          quote_version: 2,
+          saved_payment_method_id: 'pm_saved'
+        }),
+        { headers: AUTH_HEADER }
+      )
+    })
+
     it('previewSubscribe() sends POST with plan_slug', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })
@@ -459,6 +518,7 @@ describe('workspaceApi', () => {
       mockAxiosInstance.post.mockResolvedValue({ data })
 
       const result = await workspaceApi.subscribe('pro-monthly', {
+        confirmationToken: 'ctoken_1',
         returnUrl: 'https://return.url',
         cancelUrl: 'https://cancel.url'
       })
@@ -467,6 +527,7 @@ describe('workspaceApi', () => {
         '/api/billing/subscribe',
         {
           plan_slug: 'pro-monthly',
+          confirmation_token: 'ctoken_1',
           return_url: 'https://return.url',
           cancel_url: 'https://cancel.url',
           team_credit_stop_id: undefined,
@@ -490,6 +551,7 @@ describe('workspaceApi', () => {
         '/api/billing/subscribe',
         {
           plan_slug: 'team_per_credit_annual',
+          confirmation_token: undefined,
           return_url: undefined,
           cancel_url: undefined,
           team_credit_stop_id: 'team_700',

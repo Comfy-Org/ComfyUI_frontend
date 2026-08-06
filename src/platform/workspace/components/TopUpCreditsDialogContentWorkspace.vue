@@ -434,7 +434,9 @@ async function handleBuy() {
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
       void billingOperationStore
-        .startOperation(response.billing_op_id, 'topup')
+        .startOperation(response.billing_op_id, 'topup', {
+          autoHandleRequiresAction: true
+        })
         .then(() => {
           paymentSubmitted.value = false
         })
