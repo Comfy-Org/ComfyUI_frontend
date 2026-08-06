@@ -49,6 +49,7 @@ import { createHash } from 'node:crypto'
 import {
   appendFileSync,
   existsSync,
+  cpSync,
   rmSync,
   mkdirSync,
   readFileSync,
@@ -100,7 +101,7 @@ const EXPORT_SIGNATURE = /export\s+(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)/g
  */
 function strandedCallers(work, state, fullPath, name) {
   const original = readFileSync(fullPath, 'utf8')
-  const draft = state.drafts.get(name)
+  const draft = readWorkingCopy(work, name)
 
   const signatures = (source) =>
     new Map(
@@ -120,7 +121,7 @@ function strandedCallers(work, state, fullPath, name) {
   for (const path of work.readable) {
     if (path === fullPath) continue
     const caller = relative(work.root, path)
-    if (state.drafts.has(caller)) continue
+    if (editedFiles(work).includes(caller)) continue
     let source
     try {
       source = readFileSync(path, 'utf8')
@@ -350,7 +351,9 @@ ${references(work)}
 For each file you own:
 1. read_file it, and read_file any sibling whose contract it touches. You may
    read anything in the pack; you may only write your own files.
-2. write_conversion, then run_checks, and fix whatever fails.
+2. Edit your files IN PLACE with the Edit tool — you are inside a writable copy
+   of the pack. Change only what must change; never rewrite a file wholesale.
+   Then record_test, run_checks, and fix whatever fails.
 3. mark_complete, or give_up with the category that fits. Batch punts into one
    give_up call.
 4. suggest_skill_note for anything you had to work out that the skill does not
@@ -452,7 +455,11 @@ Workflow:
    other and share helpers — read the siblings a conversion's contract touches.
 2. Per file: decide whether it is convertible. Check whether each object is a
    live node or serialized workflow data before touching anything.
-3. write_conversion, then run_checks, and fix whatever fails.
+3. Edit the file IN PLACE with the Edit tool. You are running inside a writable
+   copy of the pack — change the lines that need changing and nothing else. Do
+   not rewrite a file wholesale; a surgical edit is both the small diff we want
+   and far faster than regenerating hundreds of unchanged lines. Then
+   record_test, run_checks, and fix whatever fails.
 3b. verify_pack once the pack's drafts are in place — it actually runs the code,
    and it is the only check that can catch a break spanning files.
 4. mark_complete, or give_up with the category that fits. Batch punts: once you
@@ -517,9 +524,48 @@ An accurate punt beats an attempted conversion. Name the specific construct in
 // Per-pack session
 // ---------------------------------------------------------------------------
 
+/**
+ * A writable copy of the pack, at `<db>/v1/<pack>/`.
+ *
+ * Agents edit this in place with Edit rather than retyping whole files through
+ * a tool. The corpus stays pristine, so the diff is always v1 against it — and
+ * for kjnodes the difference is 16 changed lines versus 2,818 lines the model
+ * would otherwise have to regenerate to change them.
+ */
+/** The file as the agent has left it in the working copy. */
+function readWorkingCopy(work, name) {
+  try {
+    return readFileSync(join(work.workdir, name), 'utf8')
+  } catch {
+    return undefined
+  }
+}
+
+/** Pack-relative names the agent has actually changed. */
+function editedFiles(work) {
+  return work.readable
+    .map((path) => relative(work.root, path))
+    .filter((name) => {
+      const edited = readWorkingCopy(work, name)
+      if (edited === undefined) return false
+      try {
+        return edited !== readFileSync(join(work.root, name), 'utf8')
+      } catch {
+        return false
+      }
+    })
+}
+
+function materialiseWorkingCopy(db, work) {
+  const root = join(db, 'v1', work.pack)
+  rmSync(root, { recursive: true, force: true })
+  mkdirSync(dirname(root), { recursive: true })
+  cpSync(work.root, root, { recursive: true })
+  return root
+}
+
 function createSession(work, tracePath, db) {
   const state = {
-    drafts: new Map(),
     tests: new Map(),
     verified: new Map(),
     reports: new Map(),
@@ -625,25 +671,25 @@ function createSession(work, tracePath, db) {
       ),
 
       tool(
-        'write_conversion',
-        'Submit a converted file and its test.',
+        'record_test',
+        'Record the test for a file you have edited in the working copy.',
         {
           path: z.string(),
-          converted: z.string().describe('The full converted source.'),
           test: z
             .string()
             .describe(
               'A test with an equivalence section that must pass against BOTH sources, and a fix section expected to fail against the original.'
             )
         },
-        async ({ path, converted, test }) => {
+        async ({ path, test }) => {
           const full = resolve(path)
           if (!full) return say(`No file ${path} in this pack.`)
           const name = relative(work.root, full)
-          state.drafts.set(name, converted)
           state.tests.set(name, test)
           state.verified.delete(name)
-          return say(`Draft stored for ${name}. Call run_checks next.`)
+          return say(
+            `Test recorded for ${name}. Edit the file in the working copy, then run_checks.`
+          )
         }
       ),
 
@@ -654,10 +700,13 @@ function createSession(work, tracePath, db) {
         async ({ path }) => {
           const full = resolve(path)
           const name = full && relative(work.root, full)
-          if (!name || !state.drafts.has(name)) {
-            return say(`No draft for ${path} — call write_conversion first.`)
+          if (!name || readWorkingCopy(work, name) === undefined) {
+            return say(`No file ${path} in the working copy.`)
           }
-          const draft = state.drafts.get(name)
+          const draft = readWorkingCopy(work, name)
+          if (draft === undefined) {
+            return say(`Cannot read ${name} in the working copy.`)
+          }
           const report = runConformance({
             pack: work.pack,
             file: name,
@@ -716,7 +765,9 @@ function createSession(work, tracePath, db) {
         'Run the whole pack twice — as shipped and with your current drafts — and report what changed. This is the only check that executes the code.',
         {},
         async () => {
-          const drafts = Object.fromEntries(state.drafts)
+          const drafts = Object.fromEntries(
+            editedFiles(work).map((name) => [name, readWorkingCopy(work, name)])
+          )
           if (!Object.keys(drafts).length) {
             return say('No drafts yet — call write_conversion first.')
           }
@@ -765,10 +816,15 @@ function createSession(work, tracePath, db) {
         async ({ path, summary }) => {
           const full = resolve(path)
           const name = full && relative(work.root, full)
-          if (!name || !state.drafts.has(name)) {
+          if (!name || readWorkingCopy(work, name) === undefined) {
             return say(`Nothing to complete for ${path}.`)
           }
-          if (state.verified.get(name) !== state.drafts.get(name)) {
+          if (readWorkingCopy(work, name) === readFileSync(full, 'utf8')) {
+            return say(
+              `${name} is unchanged in the working copy — edit it first, or give_up if it needs nothing.`
+            )
+          }
+          if (state.verified.get(name) !== readWorkingCopy(work, name)) {
             return say(
               `Refused: run_checks has not passed for the current draft of ${name}. Run it, fix any failures, then try again.`
             )
@@ -790,7 +846,7 @@ function createSession(work, tracePath, db) {
             path: full,
             status: 'converted',
             detail: summary,
-            converted: state.drafts.get(name),
+            converted: readWorkingCopy(work, name),
             test: state.tests.get(name),
             verified: state.reports.get(name)
           }
@@ -1008,16 +1064,16 @@ async function convertPackWithRetry(work, tracePath, attempt = 1) {
 }
 
 async function convertPack(work, tracePath) {
-  const { state, server } = createSession(
-    work,
-    tracePath,
-    tracePath ? dirname(tracePath) : undefined
-  )
+  const db = tracePath ? dirname(tracePath) : undefined
+  // The agent edits here; the corpus stays pristine so the diff has something
+  // to be a diff against.
+  work.workdir = db ? materialiseWorkingCopy(db, work) : work.root
+  const { state, server } = createSession(work, tracePath, db)
   const toolNames = [
     'list_files',
     'read_file',
     'findings_for',
-    'write_conversion',
+    'record_test',
     'run_checks',
     'verify_pack',
     'suggest_skill_note',
@@ -1031,10 +1087,11 @@ async function convertPack(work, tracePath) {
       model: process.env.MAGIC_PATCH_MODEL || DEFAULT_MODEL,
       systemPrompt: systemPrompt(),
       mcpServers: { magicpatch: server },
-      // Our tools plus delegation. Task is the lead's alone — converters get
-      // toolNames only, so fan-out stays one level and the lead keeps a single
-      // view of what is still unresolved.
-      allowedTools: [...toolNames, 'Task'],
+      // Edit and Read operate on the working copy; cwd keeps them there. A
+      // surgical edit is what makes a small diff cheap — retyping a 500-line
+      // file to change three of them is most of why this was slow.
+      allowedTools: [...toolNames, 'Task', 'Read', 'Edit', 'Glob', 'Grep'],
+      cwd: work.workdir,
       permissionMode: 'bypassPermissions',
       // Crystools exhausted 72 turns mid-conversion on a single file it had
       // previously converted correctly, so the budget was the limit rather
@@ -1057,7 +1114,7 @@ async function convertPack(work, tracePath) {
         converter: {
           description:
             'Converts a set of this pack\'s files off the deprecated APIs. Give it files that belong together — ones sharing a helper, or a caller and its callee — so one agent owns both sides of a contract.',
-          tools: toolNames,
+          tools: [...toolNames, 'Read', 'Edit', 'Glob', 'Grep'],
           model: process.env.MAGIC_PATCH_MODEL || DEFAULT_MODEL,
           prompt: converterPrompt(work)
         }
