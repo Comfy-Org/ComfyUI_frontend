@@ -29,7 +29,7 @@ export const buttonVariants = cva({
       'brand-ghost':
         'bg-transparency-white-t8 text-primary-warm-white hover:bg-transparency-white-t20 focus-visible:ring-2 focus-visible:ring-brand-yellow',
       'brand-solid':
-        'bg-brand-yellow text-primary-comfy-ink hover:bg-brand-yellow/90 focus-visible:ring-2 focus-visible:ring-primary-warm-white',
+        'focus-visible:ring-primary-warm-white bg-brand-yellow text-primary-comfy-ink hover:bg-brand-yellow/90 focus-visible:ring-2',
       'brand-ghost-accent':
         'bg-transparency-white-t8 text-primary-warm-white hover:bg-brand-yellow hover:text-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-brand-yellow'
     },
@@ -41,7 +41,7 @@ export const buttonVariants = cva({
       icon: 'size-8',
       'icon-lg': 'size-10',
       brand:
-        'h-12 rounded-2xl px-5 font-formula text-sm font-semibold tracking-[0.7px] uppercase lg:h-13 xl:h-14 2xl:h-16',
+        'font-formula h-12 rounded-2xl px-5 text-sm font-semibold tracking-[0.7px] uppercase lg:h-13 xl:h-14 2xl:h-16',
       'brand-icon': 'size-10 rounded-2xl xl:size-12',
       unset: ''
     }
