@@ -58,7 +58,7 @@ vi.mock('@/composables/video/useVideoFilmstrip', () => {
       fps: createRef(10),
       fileSize: createRef(1024),
       loading: createRef(false),
-      error: createRef(null)
+      error: createRef('load-failed')
     })
   }
 })
@@ -186,7 +186,7 @@ describe('WidgetVideoEdit', () => {
     expect(recorded.props?.videoUrl).toBe('/api/view?filename=clip.mp4')
     expect(recorded.props?.duration).toBe(10)
     expect(recorded.props?.totalFrames).toBe(100)
-    expect(recorded.props?.error).toBeNull()
+    expect(recorded.props?.error).toBe('load-failed')
   })
 
   it('writes trim seconds into the model when the panel moves a frame handle', async () => {

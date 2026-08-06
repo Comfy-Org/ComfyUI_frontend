@@ -159,10 +159,13 @@ describe('useVideoEditModel', () => {
       })
     })
 
-    it('falls back to the full frame for non-finite crop values', () => {
-      const { cropBounds } = createModel({
-        crop: { x: 0, y: 0, width: Number.NaN, height: Number.NaN }
-      })
+    it.for([
+      { x: 0, y: 0, width: Number.NaN, height: Number.NaN },
+      { x: 0, y: 0, width: Number.POSITIVE_INFINITY, height: 100 },
+      { x: Number.NaN, y: 0, width: 100, height: 100 },
+      { x: 0, y: Number.NEGATIVE_INFINITY, width: 100, height: 100 }
+    ])('falls back to the full frame for the non-finite crop %j', (crop) => {
+      const { cropBounds } = createModel({ crop })
 
       expect(cropBounds.value).toEqual({
         x: 0,

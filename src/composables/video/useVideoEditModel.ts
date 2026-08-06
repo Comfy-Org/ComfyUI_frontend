@@ -98,7 +98,12 @@ export function useVideoEditModel(
   const cropBounds = computed<Bounds>({
     get: () => {
       const crop = modelValue.value.crop
-      if (!crop || !(crop.width > 0) || !(crop.height > 0)) {
+      if (
+        !crop ||
+        ![crop.x, crop.y, crop.width, crop.height].every(Number.isFinite) ||
+        crop.width <= 0 ||
+        crop.height <= 0
+      ) {
         return { x: 0, y: 0, width: width.value, height: height.value }
       }
       return { ...crop }

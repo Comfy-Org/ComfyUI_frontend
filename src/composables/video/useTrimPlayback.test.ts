@@ -124,25 +124,33 @@ describe('useTrimPlayback', () => {
 
   it('ignores seeks to a non-finite frame', async () => {
     const { video, isPlaying, playheadFrame } = createPlayback()
+    video.currentTime = 4
+    await flushSeek()
     playheadFrame.value = Number.NaN
 
     isPlaying.value = true
     await flushSeek()
 
-    expect(video.currentTime).toBe(0)
+    expect(video.currentTime).toBe(4)
     expect(video.play).toHaveBeenCalled()
   })
 
-  it('skips seeking when the frame maps to a non-finite time', async () => {
-    const { video, isPlaying } = createPlayback({
-      frameToTime: () => Number.NaN
-    })
+  it.for([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'skips seeking when the frame maps to the non-finite time %s',
+    async (mappedTime) => {
+      const { video, isPlaying } = createPlayback({
+        frameToTime: () => mappedTime
+      })
+      video.currentTime = 4
+      await flushSeek()
 
-    isPlaying.value = true
-    await flushSeek()
+      isPlaying.value = true
+      await flushSeek()
 
-    expect(video.currentTime).toBe(0)
-  })
+      expect(video.currentTime).toBe(4)
+      expect(video.paused).toBe(false)
+    }
+  )
 
   it('stops playing when the video refuses to play', async () => {
     const { video, isPlaying } = createPlayback()
