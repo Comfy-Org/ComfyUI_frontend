@@ -211,7 +211,7 @@ export const useDialogStore = defineStore('dialog', () => {
         dismissableMask: true,
         renderer: 'reka' as DialogRenderer,
         ...options.dialogComponentProps,
-        maximized: false,
+        maximized: options.dialogComponentProps?.maximized ?? false,
         onMaximize: () => {
           dialog.dialogComponentProps.maximized = true
         },
