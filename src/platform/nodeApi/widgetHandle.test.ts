@@ -300,6 +300,27 @@ describe('widget listeners', () => {
     ])
   })
 
+  it('fires activate for a button, whose value never changes', () => {
+    // The failure this closes: `widgets.add({type:'button'})` produced a widget
+    // no pack could attach an action to, so every converted button was inert.
+    const clicks: unknown[] = []
+    widgets.add({ type: 'button', name: 'go', value: null })
+    widgets.get('go')!.on('activate', (v) => clicks.push(v))
+
+    const button = node.widgets!.find((w) => w.name === 'go')!
+    button.callback?.(null as never)
+    button.callback?.(null as never)
+
+    expect(clicks).toEqual([null, null])
+  })
+
+  it('keeps a null widget value rather than coercing it to empty string', () => {
+    // `addWidget('button', name, null, cb)` put null in widgets_values; coercing
+    // it changes the saved workflow.
+    widgets.add({ type: 'button', name: 'go', value: null })
+    expect(node.widgets!.find((w) => w.name === 'go')!.value).toBeNull()
+  })
+
   it('still calls a callback the pack already had', () => {
     const original = vi.fn()
     node.widgets![0].callback = original
