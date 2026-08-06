@@ -1038,7 +1038,10 @@ describe('useWorkspaceBilling', () => {
 
   describe('resubscribe', () => {
     it('refreshes status and balance after a successful resubscribe', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resubscribe',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 
@@ -1055,7 +1058,10 @@ describe('useWorkspaceBilling', () => {
     })
 
     it('keeps the mutation successful when reconciliation fails', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resubscribe',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockRejectedValue(
         new Error('status unavailable')
       )
@@ -1069,6 +1075,52 @@ describe('useWorkspaceBilling', () => {
       expect(mockWorkspaceApi.resubscribe).toHaveBeenCalledOnce()
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledOnce()
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledOnce()
+    })
+
+    it('polls the billing operation when the resubscribe is still pending', async () => {
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-pending',
+        status: 'pending'
+      })
+      mockStartOperation.mockResolvedValue({
+        opId: 'op-pending',
+        type: 'subscription' as const,
+        status: 'succeeded' as const,
+        errorMessage: null,
+        startedAt: 0
+      })
+
+      const billing = setupBilling()
+      await billing.resubscribe()
+
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-pending',
+        'subscription'
+      )
+      expect(billing.error.value).toBeNull()
+      expect(billing.isLoading.value).toBe(false)
+    })
+
+    it('throws the op error message when a pending resubscribe fails', async () => {
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-pending-fail',
+        status: 'pending'
+      })
+      mockStartOperation.mockResolvedValue({
+        opId: 'op-pending-fail',
+        type: 'subscription' as const,
+        status: 'failed' as const,
+        errorMessage: 'reactivation rejected',
+        startedAt: 0
+      })
+
+      const billing = setupBilling()
+
+      await expect(billing.resubscribe()).rejects.toThrow(
+        'reactivation rejected'
+      )
+      expect(billing.error.value).toBe('reactivation rejected')
+      expect(billing.isLoading.value).toBe(false)
     })
 
     it('sets error, rethrows, and skips the refresh when the API call fails', async () => {
@@ -1221,7 +1273,10 @@ describe('useWorkspaceBilling', () => {
 
   describe('resubscribe', () => {
     it('refreshes status and balance after a successful resubscribe', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resubscribe',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 
