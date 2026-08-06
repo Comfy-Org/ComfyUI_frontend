@@ -288,7 +288,7 @@ describe('parseLayerState', () => {
     expect(partial?.background).toEqual({
       color: '#ffffff',
       opacity: 1,
-      visible: true
+      visible: false
     })
 
     expect(parseLayerState('{"layers": []}')?.background).toBeUndefined()
@@ -521,7 +521,7 @@ describe('applyLayerState', () => {
 
     expect(ops.setBackgroundColor).toHaveBeenCalledWith('#ffffff')
     expect(ops.setBackgroundOpacity).toHaveBeenCalledWith(1)
-    expect(ops.setBackgroundVisible).toHaveBeenCalledWith(true)
+    expect(ops.setBackgroundVisible).toHaveBeenCalledWith(false)
   })
 
   it('replays flips per axis before applying the transform', () => {

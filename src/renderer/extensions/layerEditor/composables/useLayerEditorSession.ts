@@ -423,6 +423,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
         name: 'Background',
         fill: { type: 'solid', color: DEFAULT_BACKGROUND_COLOR },
         opacity: 1,
+        visible: false,
         locks: { content: true, position: true, visibility: false }
       }),
       0

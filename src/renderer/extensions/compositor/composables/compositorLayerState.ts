@@ -27,7 +27,7 @@ interface CompositorBackgroundEntry {
 const DEFAULT_BACKGROUND_ENTRY: CompositorBackgroundEntry = {
   color: '#ffffff',
   opacity: 1,
-  visible: true
+  visible: false
 }
 
 export interface CompositorLayerState {

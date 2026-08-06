@@ -959,7 +959,7 @@ describe('useLayerEditorSession', () => {
       expect(bg!.kind).toBe('fill')
       expect(bg!.fill).toEqual({ type: 'solid', color: '#ffffff' })
       expect(bg!.opacity).toBe(1)
-      expect(bg!.visible).toBe(true)
+      expect(bg!.visible).toBe(false)
       expect(bg!.locks).toEqual({
         content: true,
         position: true,
@@ -1004,11 +1004,11 @@ describe('useLayerEditorSession', () => {
       session.undo()
       expect(bg().opacity).toBe(1)
 
-      session.setBackgroundVisible(false)
-      expect(bg().visible).toBe(false)
-      session.setBackgroundVisible(false)
-      session.undo()
+      session.setBackgroundVisible(true)
       expect(bg().visible).toBe(true)
+      session.setBackgroundVisible(true)
+      session.undo()
+      expect(bg().visible).toBe(false)
       expect(session.canUndo.value).toBe(false)
     })
 
@@ -1070,7 +1070,7 @@ describe('useLayerEditorSession', () => {
       const bg = session.backgroundLayer.value!
       expect(bg.fill).toEqual({ type: 'solid', color: '#ffffff' })
       expect(bg.opacity).toBe(1)
-      expect(bg.visible).toBe(true)
+      expect(bg.visible).toBe(false)
     })
   })
 
