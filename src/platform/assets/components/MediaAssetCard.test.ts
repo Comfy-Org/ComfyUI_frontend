@@ -128,10 +128,6 @@ describe('MediaAssetCard', () => {
     const user = userEvent.setup()
     const { emitted } = renderCard({ loading: false, selected: true })
 
-    expect(
-      screen.queryByRole('button', { name: 'mediaAsset.actions.download' })
-    ).not.toBeInTheDocument()
-
     await user.hover(await screen.findByRole('img', { name: 'a.png' }))
 
     await user.click(
@@ -255,17 +251,9 @@ describe('MediaAssetCard', () => {
     await user.click(video)
     expect(pauseSpy).toHaveBeenCalledTimes(1)
     await fireEvent.pause(video)
-    await user.unhover(hoverTarget)
-
-    expect(
-      screen.queryByRole('button', { name: 'mediaAsset.actions.download' })
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'mediaAsset.actions.moreOptions' })
-    ).not.toBeInTheDocument()
   })
 
-  it('hides card actions when the pointer leaves a playing compact video', async () => {
+  it('preserves action focus when the pointer leaves a playing compact video', async () => {
     const user = userEvent.setup()
     const { container } = renderCard({
       loading: false,
@@ -278,34 +266,25 @@ describe('MediaAssetCard', () => {
       expect(element).toBeInTheDocument()
       return element!
     })
-    const playSpy = vi
-      .spyOn(video, 'play')
-      .mockImplementation(() => Promise.resolve())
-
-    Object.defineProperty(video, 'paused', {
-      value: true,
-      configurable: true
-    })
 
     // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
     const hoverTarget = video.parentElement!
+    const selectionControl = screen.getByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    await user.tab()
+    expect(selectionControl).toHaveFocus()
+    await user.tab()
+    const downloadButton = screen.getByRole('button', {
+      name: 'mediaAsset.actions.download'
+    })
+    expect(downloadButton).toHaveFocus()
+
     await user.hover(hoverTarget)
-    await user.click(video)
     await fireEvent.play(video)
-
-    expect(playSpy).toHaveBeenCalledTimes(1)
-    expect(
-      screen.getByRole('button', { name: 'mediaAsset.actions.download' })
-    ).toBeInTheDocument()
-
     await user.unhover(hoverTarget)
 
-    expect(
-      screen.queryByRole('button', { name: 'mediaAsset.actions.download' })
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'mediaAsset.actions.moreOptions' })
-    ).not.toBeInTheDocument()
+    expect(downloadButton).toHaveFocus()
   })
 
   it('selects the asset from the info area or selection control', async () => {
@@ -336,7 +315,7 @@ describe('MediaAssetCard', () => {
     )
   })
 
-  it('does not keep card actions visible after pointer focus leaves the card', async () => {
+  it('preserves card action tab order after a pointer interaction', async () => {
     const user = userEvent.setup()
     renderCard({ loading: false })
 
@@ -347,21 +326,17 @@ describe('MediaAssetCard', () => {
     await user.unhover(selectionControl)
 
     expect(selectionControl).toHaveFocus()
+
+    await user.tab()
+
     expect(
-      screen.queryByRole('button', { name: 'mediaAsset.actions.download' })
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'mediaAsset.actions.moreOptions' })
-    ).not.toBeInTheDocument()
+      screen.getByRole('button', { name: 'mediaAsset.actions.download' })
+    ).toHaveFocus()
   })
 
   it('keeps card actions visible while keyboard focus is within the card', async () => {
     const user = userEvent.setup()
     renderCard({ loading: false })
-
-    expect(
-      screen.queryByRole('button', { name: 'mediaAsset.actions.download' })
-    ).not.toBeInTheDocument()
 
     const selectionControl = screen.getByRole('button', {
       name: 'assetBrowser.ariaLabel.assetCard'

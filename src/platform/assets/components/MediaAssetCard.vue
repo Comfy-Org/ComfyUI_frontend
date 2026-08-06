@@ -4,7 +4,6 @@
     reaching the panel's empty-space deselection handler.
   -->
   <div
-    ref="cardContainerRef"
     :class="
       cn(
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
@@ -20,10 +19,6 @@
     @click.stop
     @contextmenu.prevent.stop="handleContextMenu"
     @dragstart="dragStart"
-    @keydown="handleKeyboardInteraction"
-    @pointercancel="handlePointerEnd"
-    @pointerdown="handlePointerDown"
-    @pointerup="handlePointerEnd"
   >
     <!-- Top Area: Media Preview -->
     <div
@@ -89,8 +84,16 @@
 
       <!-- Action buttons overlay (top-right) -->
       <div
-        v-if="showActionsOverlay"
-        class="absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2"
+        v-if="asset && !loading && !isDeleting"
+        :class="
+          cn(
+            'absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2',
+            'pointer-events-none opacity-0 transition-opacity',
+            'group-hover:pointer-events-auto group-hover:opacity-100',
+            'group-has-focus-visible:pointer-events-auto group-has-focus-visible:opacity-100',
+            'touch:pointer-events-auto touch:opacity-100'
+          )
+        "
       >
         <IconGroup background-class="bg-white">
           <Button
@@ -163,8 +166,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useElementHover, useFocusWithin } from '@vueuse/core'
-import { computed, defineAsyncComponent, provide, ref, toRef, watch } from 'vue'
+import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -241,21 +243,11 @@ const emit = defineEmits<{
   'context-menu': [event: MouseEvent, asset: AssetItem]
 }>()
 
-const cardContainerRef = ref<HTMLElement>()
-
 const isVideoPlaying = ref(false)
 const showVideoControls = ref(false)
 
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
-
-const isHovered = useElementHover(cardContainerRef)
-const { focused: isFocusedWithin } = useFocusWithin(cardContainerRef)
-const isPointerFocusedWithin = ref(false)
-
-watch(isFocusedWithin, (isFocused) => {
-  if (!isFocused) isPointerFocusedWithin.value = false
-})
 
 const actions = useMediaAssetActions()
 
@@ -348,25 +340,6 @@ const metaInfo = computed(() => {
 
   return parts.join(' ')
 })
-
-const showActionsOverlay = computed(() => {
-  if (loading || !asset || isDeleting.value) return false
-  return (
-    isHovered.value || (isFocusedWithin.value && !isPointerFocusedWithin.value)
-  )
-})
-
-function handleKeyboardInteraction() {
-  isPointerFocusedWithin.value = false
-}
-
-function handlePointerDown() {
-  isPointerFocusedWithin.value = true
-}
-
-function handlePointerEnd() {
-  if (!isFocusedWithin.value) isPointerFocusedWithin.value = false
-}
 
 function handlePreviewClick(event: MouseEvent) {
   const hasSelectionModifier = event.shiftKey || event.metaKey || event.ctrlKey
