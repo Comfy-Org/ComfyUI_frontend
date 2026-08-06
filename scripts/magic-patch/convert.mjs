@@ -437,7 +437,7 @@ An accurate punt beats an attempted conversion. Name the specific construct in
 // Per-pack session
 // ---------------------------------------------------------------------------
 
-function createSession(work, tracePath) {
+function createSession(work, tracePath, db) {
   const state = {
     drafts: new Map(),
     tests: new Map(),
@@ -705,7 +705,7 @@ function createSession(work, tracePath) {
                 `A pack that only half-converts is broken at runtime.`
             )
           }
-          state.outcomes.set(name, {
+          const outcome = {
             file: name,
             path: full,
             status: 'converted',
@@ -713,7 +713,24 @@ function createSession(work, tracePath) {
             converted: state.drafts.get(name),
             test: state.tests.get(name),
             verified: state.reports.get(name)
-          })
+          }
+          state.outcomes.set(name, outcome)
+          // Persisted now, not at pack end. A 25-file session that dies at
+          // file 24 used to lose every draft — 31 minutes of work went that
+          // way once. The end-of-pack write repeats this idempotently.
+          if (db) {
+            try {
+              writeDbEntry(
+                db,
+                work,
+                packCommit(work.root),
+                outcome,
+                readFileSync(full, 'utf8')
+              )
+            } catch (error) {
+              console.error(`  persist failed for ${name}: ${error?.message}`)
+            }
+          }
           return say(`${name} recorded as converted. ${remaining()}`)
         }
       ),
@@ -910,7 +927,11 @@ async function convertPackWithRetry(work, tracePath, attempt = 1) {
 }
 
 async function convertPack(work, tracePath) {
-  const { state, server } = createSession(work, tracePath)
+  const { state, server } = createSession(
+    work,
+    tracePath,
+    tracePath ? dirname(tracePath) : undefined
+  )
   const toolNames = [
     'list_files',
     'read_file',
