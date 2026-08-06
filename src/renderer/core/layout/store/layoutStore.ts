@@ -244,7 +244,9 @@ class LayoutStore {
             this.pendingGeometryGraphIds.add(parseLayoutKey(key).graphId)
           })
         } else if (typeof event.path[0] === 'string') {
-          this.pendingGeometryGraphIds.add(parseLayoutKey(event.path[0]).graphId)
+          this.pendingGeometryGraphIds.add(
+            parseLayoutKey(event.path[0]).graphId
+          )
         }
       }
     })
@@ -840,6 +842,7 @@ class LayoutStore {
                 : {
                     type: 'update',
                     nodeIds: [],
+                    sizeChangedNodeIds: [],
                     timestamp: snapshot.timestamp,
                     source: snapshot.source,
                     operation: snapshot
@@ -1008,7 +1011,9 @@ class LayoutStore {
     return () => this.changeListeners.delete(callback)
   }
 
-  onGeometryChange(callback: (graphIds: ReadonlySet<UUID>) => void): () => void {
+  onGeometryChange(
+    callback: (graphIds: ReadonlySet<UUID>) => void
+  ): () => void {
     this.geometryChangeListeners.add(callback)
     return () => this.geometryChangeListeners.delete(callback)
   }
