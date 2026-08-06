@@ -55,10 +55,13 @@ export function drawPlacedInto(
   originY: number
 ): void {
   ctx.save()
-  ctx.translate(t.x + t.w / 2 - originX, t.y + t.h / 2 - originY)
-  ctx.rotate(t.rotation)
-  ctx.drawImage(bitmap, -t.w / 2, -t.h / 2, t.w, t.h)
-  ctx.restore()
+  try {
+    ctx.translate(t.x + t.w / 2 - originX, t.y + t.h / 2 - originY)
+    ctx.rotate(t.rotation)
+    ctx.drawImage(bitmap, -t.w / 2, -t.h / 2, t.w, t.h)
+  } finally {
+    ctx.restore()
+  }
 }
 
 export function bakePlaced(

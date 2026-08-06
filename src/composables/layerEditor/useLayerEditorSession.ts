@@ -29,6 +29,8 @@ import type {
   Vec2
 } from '@/core/layerEditor/engine/node'
 import { placedBounds } from '@/core/layerEditor/engine/render/bake'
+import type { OutsideCanvasPreviewLayer } from '@/core/layerEditor/engine/render/outsideCanvasPreview'
+import { drawOutsideCanvasPreview } from '@/core/layerEditor/engine/render/outsideCanvasPreview'
 import type { CanvasItem } from '@/core/layerEditor/engine/tool'
 import {
   canTransformNode,
@@ -312,6 +314,23 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     }
   }
 
+  function selectedOutsideCanvasPreviewLayers(): OutsideCanvasPreviewLayer[] {
+    const selectedIds = new Set(editor.selectedNodeIds())
+    const previewLayers: OutsideCanvasPreviewLayer[] = []
+    for (const node of editor.document().root.children) {
+      if (!selectedIds.has(node.id) || node.kind !== 'raster' || !node.visible)
+        continue
+      const bitmap = content.get(node.contentId)?.canvas
+      if (bitmap)
+        previewLayers.push({
+          bitmap,
+          opacity: node.opacity,
+          transform: node.transform
+        })
+    }
+    return previewLayers
+  }
+
   function drawOverlayCanvas(): void {
     if (!overlayCanvas || !viewportEl || !containerEl) return
     const dpr = window.devicePixelRatio || 1
@@ -332,6 +351,12 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
       z * dpr,
       containerEl.offsetLeft * dpr,
       containerEl.offsetTop * dpr
+    )
+    const { width, height } = editor.document()
+    drawOutsideCanvasPreview(
+      ctx,
+      { w: width, h: height },
+      selectedOutsideCanvasPreviewLayers()
     )
     ctx.lineWidth = 1 / z
     ctx.strokeStyle = '#3b82f6'
