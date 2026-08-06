@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const GENERATED_PACKAGE = '@comfyorg/ingest-types'
+const PLUGIN_SOURCE = 'tools/oxlint-plugins/comfyIngestTypes.ts'
 
 /**
  * The generated barrel currently re-exports ~1000 names. A near-empty parse
@@ -9,6 +10,9 @@ const GENERATED_PACKAGE = '@comfyorg/ingest-types'
  * protecting anything, so fail loudly rather than pass everything.
  */
 const MIN_EXPECTED_EXPORTS = 100
+
+const exportTypeBlock = /export\s+type\s*\{([^}]*)\}/g
+const exportSpecifier = /^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/
 
 interface Identifier {
   readonly type: 'Identifier'
@@ -39,27 +43,43 @@ interface RuleContext {
 }
 
 /**
- * Read the exported names out of the generated barrel's source text. The barrel
- * re-exports types only, so importing it yields nothing at runtime to inspect.
+ * Collect the names a barrel makes importable, taking the alias side of
+ * `Foo as Bar` since that is the name a local declaration would shadow. Throws
+ * on an unrecognized specifier so a generator format change surfaces as a
+ * failure rather than as silently missing coverage.
+ */
+export function collectExportedNames(source: string): Set<string> {
+  const names = new Set<string>()
+  for (const [, block] of source.matchAll(exportTypeBlock)) {
+    for (const rawSpecifier of block.split(',')) {
+      const specifier = rawSpecifier.trim()
+      if (specifier === '') continue
+      const parsed = exportSpecifier.exec(specifier)
+      if (!parsed) {
+        throw new Error(
+          `Unrecognized export specifier '${specifier}' in ${GENERATED_PACKAGE}. Update ${PLUGIN_SOURCE} to handle the generated barrel's current format.`
+        )
+      }
+      names.add(parsed[2] ?? parsed[1])
+    }
+  }
+  return names
+}
+
+/**
+ * The barrel re-exports types only, so importing it yields nothing at runtime to
+ * inspect; its source text is the only available description of the contract.
  */
 function parseGeneratedTypeNames(): ReadonlySet<string> {
   const barrelPath = fileURLToPath(import.meta.resolve(GENERATED_PACKAGE))
-  const source = readFileSync(barrelPath, 'utf8')
-  const exportBlock = source.slice(
-    source.indexOf('{') + 1,
-    source.lastIndexOf('}')
-  )
-  const names = exportBlock
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter((entry) => /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(entry))
+  const names = collectExportedNames(readFileSync(barrelPath, 'utf8'))
 
-  if (names.length < MIN_EXPECTED_EXPORTS) {
+  if (names.size < MIN_EXPECTED_EXPORTS) {
     throw new Error(
-      `Parsed only ${names.length} export names from ${barrelPath}, expected at least ${MIN_EXPECTED_EXPORTS}. The generated barrel format likely changed; update tools/oxlint-plugins/comfyIngestTypes.ts.`
+      `Parsed only ${names.size} export names from ${barrelPath}, expected at least ${MIN_EXPECTED_EXPORTS}. The generated barrel format likely changed; update ${PLUGIN_SOURCE}.`
     )
   }
-  return new Set(names)
+  return names
 }
 
 let cachedNames: ReadonlySet<string> | undefined
