@@ -268,6 +268,38 @@ describe('widget listeners', () => {
     expect(seen).toEqual([7])
   })
 
+  it('notifies for a real user edit, where the value is assigned first', () => {
+    // Litegraph's own order: `BaseWidget.setValue` writes `this.value` and
+    // only then calls `this.callback`. Reading the widget back inside the
+    // callback therefore yields the new value as the old one, and every
+    // notification was being swallowed as a no-op change. The test above
+    // passes without this because it never assigns the value.
+    const seen: unknown[] = []
+    widgets.get('seed')!.on('change', (v, o) => seen.push([v, o]))
+
+    const widget = node.widgets![0]
+    widget.value = 7
+    widget.callback?.(7)
+
+    expect(seen).toEqual([[7, 1]])
+  })
+
+  it('reports the previous value across consecutive edits', () => {
+    const seen: unknown[] = []
+    widgets.get('seed')!.on('change', (v, o) => seen.push([v, o]))
+
+    const widget = node.widgets![0]
+    for (const value of [2, 3]) {
+      widget.value = value
+      widget.callback?.(value)
+    }
+
+    expect(seen).toEqual([
+      [2, 1],
+      [3, 2]
+    ])
+  })
+
   it('still calls a callback the pack already had', () => {
     const original = vi.fn()
     node.widgets![0].callback = original
