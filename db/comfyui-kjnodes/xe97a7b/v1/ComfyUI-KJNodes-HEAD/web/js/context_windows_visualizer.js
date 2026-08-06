@@ -811,14 +811,9 @@ comfy.defs.extend('ContextWindowsVisualizerKJ', (b) => {
         const WATCHED = ['frame_units', 'temporal_downscale', 'num_frames', 'context_length', 'context_overlap',
             'context_schedule', 'context_stride', 'closed_loop', 'fuse_method', 'causal_window_fix'];
         for (const name of WATCHED) {
-            const w = node.widgets?.find((w) => w.name === name);
-            if (!w) continue;
-            const orig = w.callback;
-            w.callback = function (...args) {
-                const r = orig ? orig.apply(this, args) : undefined;
-                recompute();
-                return r;
-            };
+            // Additive: no other pack can drop this listener by forgetting to
+            // chain, which the captured-callback form relied on.
+            node.widgets.get(name)?.on('change', recompute);
         }
 
         const ro = new ResizeObserver(() => scheduleRender());
