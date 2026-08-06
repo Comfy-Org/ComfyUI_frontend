@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref, useId } from 'vue'
+import { useElementVisibility } from '@vueuse/core'
+import {
+  computed,
+  onScopeDispose,
+  ref,
+  useId,
+  useTemplateRef,
+  watch
+} from 'vue'
+
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -50,6 +60,44 @@ const ambientSrc = `${MEDIA_BASE}/left5.webm`
 const activeIndex = ref(0)
 const active = computed(() => industries[activeIndex.value])
 
+/** The list demos itself: starting from VFX & Animation it advances to the
+ * next industry every few seconds while the section is on screen. Rolling
+ * over an item hands control to the visitor — the cycle holds there for as
+ * long as they interact, then resumes from that industry once they go idle.
+ * Disabled under prefers-reduced-motion. */
+const DWELL_MS = 3000
+/** Coming off a hover the cycle picks back up on a shorter fuse than the
+ * regular cadence, so the demo doesn't feel stalled after interaction. */
+const RESUME_MS = 1500
+
+const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
+const onScreen = useElementVisibility(sectionRef)
+const hovering = ref(false)
+
+let dwellTimer: ReturnType<typeof setTimeout> | undefined
+
+function schedule(delay: number) {
+  clearTimeout(dwellTimer)
+  dwellTimer = undefined
+  if (!onScreen.value || prefersReducedMotion()) return
+  dwellTimer = setTimeout(() => {
+    if (!hovering.value)
+      activeIndex.value = (activeIndex.value + 1) % industries.length
+    schedule(DWELL_MS)
+  }, delay)
+}
+
+watch(onScreen, () => schedule(DWELL_MS), { immediate: true })
+onScopeDispose(() => clearTimeout(dwellTimer))
+
+/** A rollover/click/focus selects the industry and restarts the dwell clock,
+ * so the cycle always waits a full beat before moving on from the visitor's
+ * choice. */
+function select(index: number) {
+  activeIndex.value = index
+  schedule(DWELL_MS)
+}
+
 const uid = useId()
 const primaryClipId = `industries-primary-${uid}`
 const secondaryClipId = `industries-secondary-${uid}`
@@ -57,7 +105,10 @@ const ambientClipId = `industries-ambient-${uid}`
 </script>
 
 <template>
-  <section class="relative overflow-x-clip bg-primary-comfy-ink">
+  <section
+    ref="sectionRef"
+    class="relative overflow-x-clip bg-primary-comfy-ink"
+  >
     <!-- Node silhouettes exported from the Figma industries mock, normalized
     to each shape's bounding box for objectBoundingBox clipping. -->
     <svg class="absolute size-0" width="0" height="0" aria-hidden="true">
@@ -99,6 +150,8 @@ const ambientClipId = `industries-ambient-${uid}`
         <nav
           class="flex flex-col items-start gap-7"
           :aria-label="t('industries.navLabel', locale)"
+          @pointerenter="hovering = true"
+          @pointerleave="((hovering = false), schedule(RESUME_MS))"
         >
           <button
             v-for="(industry, index) in industries"
@@ -113,9 +166,9 @@ const ambientClipId = `industries-ambient-${uid}`
               )
             "
             :aria-current="index === activeIndex ? 'true' : undefined"
-            @click="activeIndex = index"
-            @mouseenter="activeIndex = index"
-            @focus="activeIndex = index"
+            @click="select(index)"
+            @mouseenter="select(index)"
+            @focus="select(index)"
           >
             <span
               v-if="index === activeIndex"
