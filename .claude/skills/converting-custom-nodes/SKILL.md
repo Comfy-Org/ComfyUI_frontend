@@ -47,11 +47,11 @@ Do not pattern-match on the API name. The census surfaces are misleading:
 
 - A `widgets.splice(i, 1)` immediately followed by `splice(i, 0, w)` is **not a
   reorder** — it is a cache-invalidation hack. Replace it with
-  `widget.setOptions()`, which invalidates properly.
+  `widget.setOption(key, value)`, which invalidates properly.
 - `onDrawForeground` is often **not drawing**. 47% of draw-callback bodies never
   touch a drawing primitive; they enforce size, poll for changes, or sync DOM
-  visibility. Those become `setSizeConstraints`, `onChange`, and the widget
-  mount lifecycle respectively.
+  visibility. Those become `setSizeConstraints`, `widget.on('change')`, and the
+  widget mount lifecycle respectively.
 
 ### 2. Check whether the object is live or serialized
 
@@ -69,33 +69,35 @@ the variable to its origin before touching anything named `link`, `links`,
 
 ### 3. Apply the mapping
 
-| Old                                      | New                                       | Notes                                                                   |
-| ---------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
-| `output.links.push(id)`                  | `output.connectTo(nodeId, inputRef)`      | creating a connection                                                   |
-| moving links between own outputs         | `output.moveLinksTo(ref)`                 | **preserves link ids** — required for the wire gate                     |
-| `output.links` (read)                    | `output.links()`                          | frozen snapshot, safe to iterate while disconnecting                    |
-| `input.link = null`                      | `input.disconnect()`                      | check step 2 first                                                      |
-| `input.link` (read)                      | `input.source()` / `input.isConnected`    |                                                                         |
-| `node.type = x`                          | delete it, or `graph.replaceNode()`       | usually a defensive no-op — just remove the line                        |
-| `slot.type = x`, `slot.name = x`         | `slot.modify({ type, name })`             | atomic, one undo step; keeps existing links                             |
-| `widget.type = 'converted-widget'`       | `widget.setHidden(true)`                  | ⚠️ old hack also suppressed serialization — see `references/widgets.md` |
-| `widgets.splice` to reorder              | `widgets.reorder(names)`                  | throws on a partial list instead of dropping widgets                    |
-| `widgets.splice(i,1)` + `splice(i,0,w)`  | `widget.setOptions(...)`                  | same index in/out = cache invalidation, **not** a reorder               |
-| `widgets.push(w)`                        | `widgets.add(def)`                        |                                                                         |
-| `widgets = [...]` / `widgets.length = n` | `widgets.remove(name)`                    | assignment drops renderer tracking; length skips teardown               |
-| `getCustomWidgets` POJO                  | `comfy.widgets.register({ type, mount })` |                                                                         |
-| `{...input}` / `{...node}`               | `.snapshot()`                             | accessors moved to the prototype, so spread yields nothing              |
-| `nodeType.prototype.onNodeCreated = ...` | `defs.extend(sel, b => b.onCreated(...))` | selector = the hook's existing guard clause                             |
-| `nodeType.prototype.onExecuted = ...`    | `b.onExecuted(node, result)`              | see `references/node-definitions.md`                                    |
-| `nodeType.prototype.onConfigure = ...`   | `b.onConfigured(node, data)`              |                                                                         |
-| `nodeType.prototype.onRemoved = ...`     | `b.onRemoved(node)`                       |                                                                         |
-| `widget.inputEl`                         | `widget.element`                          | renamed in PR #8594                                                     |
-| `this.widgets.length = n`                | remove by name                            | assigning length skips widget teardown                                  |
-| `+!!this.inputs[0].widget`               | `input.isWidgetInput`                     | converted-widget sniffing                                               |
-| `onDrawForeground` (drawing)             | `node.decorations.set(key, dec)`          | renders in canvas _and_ Nodes 2.0                                       |
-| `onDrawForeground` (sizing)              | `node.setSizeConstraints({ autoHeight })` | see `references/draw-callbacks.md`                                      |
-| `onDrawForeground` (polling)             | `node.onChange` / `graph.onChange`        | pick the narrowest event                                                |
-| `extends LGraphNode`                     | `defs.define({ type, ... })`              | virtual nodes use `resolve(ctx)`                                        |
+| Old                                      | New                                       | Notes                                                                     |
+| ---------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------- |
+| `output.links.push(id)`                  | `output.connectTo(nodeId, inputRef)`      | creating a connection                                                     |
+| moving links between own outputs         | `output.moveLinksTo(ref)`                 | **preserves link ids** — required for the wire gate                       |
+| `output.links` (read)                    | `output.links()`                          | frozen snapshot, safe to iterate while disconnecting                      |
+| `input.link = null`                      | `input.disconnect()`                      | check step 2 first                                                        |
+| `input.link` (read)                      | `input.source()` / `input.isConnected`    |                                                                           |
+| `node.type = x`                          | delete the line                           | usually a defensive no-op; true type replacement is a **gap** — punt it   |
+| `slot.type = x`, `slot.name = x`         | `slot.modify({ type, name })`             | atomic, one undo step; keeps existing links                               |
+| `widget.type = 'converted-widget'`       | `widget.setHidden(true)`                  | ⚠️ old hack also suppressed serialization — see `references/widgets.md`   |
+| `widgets.splice` to reorder              | `widgets.reorder(names)`                  | throws on a partial list instead of dropping widgets                      |
+| `widgets.splice(i,1)` + `splice(i,0,w)`  | `widget.setOption(key, value)`            | same index in/out = cache invalidation, **not** a reorder                 |
+| `widgets.push(w)`                        | `widgets.add(def)`                        |                                                                           |
+| `widgets = [...]` / `widgets.length = n` | `widgets.remove(name)`                    | assignment drops renderer tracking; length skips teardown                 |
+| `getCustomWidgets` POJO                  | `widgets.mount({ mount })`                |                                                                           |
+| `{...input}` / `{...node}`               | `.snapshot()`                             | accessors moved to the prototype, so spread yields nothing                |
+| `nodeType.prototype.onNodeCreated = ...` | `defs.extend(sel, b => b.onCreated(...))` | selector = the hook's existing guard clause                               |
+| `nodeType.prototype.onExecuted = ...`    | `b.onExecuted(node, result)`              | see `references/node-definitions.md`                                      |
+| `nodeType.prototype.onConfigure = ...`   | `b.onConfigured(node, data)`              |                                                                           |
+| `nodeType.prototype.onRemoved = ...`     | `b.onRemoved(node)`                       |                                                                           |
+| `widget.inputEl`                         | `widgets.mount({ render })`               | the element arrives as `render`'s argument; there is no `inputEl` to read |
+| `this.widgets.length = n`                | remove by name                            | assigning length skips widget teardown                                    |
+| `+!!this.inputs[0].widget`               | `input.isWidgetInput`                     | converted-widget sniffing                                                 |
+| `onDrawForeground` (drawing)             | `widgets.canvas({ draw })`                | renders in canvas _and_ Nodes 2.0                                         |
+| `onDrawForeground` (sizing)              | `node.setSizeConstraints({ autoHeight })` | see `references/draw-callbacks.md`                                        |
+| `onDrawForeground` (polling)             | `widget.on('change')`                     | pick the narrowest event                                                  |
+| `extends LGraphNode`                     | `defs.define({ type, ... })`              | virtual nodes use `resolve(ctx)`                                          |
+| `onConnectInput` returning `false`       | `b.onBeforeConnect((node, e) => false)`   | any listener refusing is enough                                           |
+| `getExtraMenuOptions` (node menu)        | `b.addMenuItem({ label, run })`           | entries accumulate; canvas/slot menus are still a **gap**                 |
 
 Prefer `comfy.supports('...')` over version comparisons — see `docs/node_api_WIP.md` §2.
 
@@ -291,6 +293,20 @@ the pack is saving its own state into the node. **Use `b.onSerialize((node) =>
 ({ myKey: … }))`**; it comes back through `b.onConfigured`. Core fields —
 `type`, `widgets_values`, `inputs`, `pos` and the rest — are ignored if you
 return them, because changing those changes what the workflow means.
+
+**If you are converting `onConnectInput` / `onConnectOutput`** — check what the
+pack does with the return value. If it returns `false` to refuse a wire, **use
+`b.onBeforeConnect((node, e) => …)`** and return `false` to refuse; `e` carries
+`side`, `index`, `peerNodeId` and `peerType`. Any listener refusing is enough —
+one pack cannot be overruled by another's silence. If it does not return
+`false`, it is only observing, so **use `b.onConnectionsChanged`** instead: a
+veto that never vetoes is a listener wearing the wrong hat.
+
+**If you are converting `getExtraMenuOptions` or a `ContextMenu` the pack builds
+itself** — check whether it is a menu _on a node_. If so, **use
+`b.addMenuItem({ label, run(node) })`**; entries from every pack accumulate
+rather than overwrite. A `ContextMenu` constructed to build a canvas-wide or
+slot menu is not this, and is still a gap — punt it and name it.
 
 **If you are converting `this._somethingPrivate = x` on a node** — handles hold
 no arbitrary properties. **Keep a `Map` keyed by `node.id`** and clear the entry

@@ -61,6 +61,9 @@ observable regression. That is an early reading of question 1, not a result.
    author could merge, not an opaque blob.
 5. **Feed the API.** Every refusal names a missing capability; that list is the
    API's work queue.
+6. **Be visibly ours.** A patched node is marked in the UI and its patch is
+   inspectable. We wrote the change, so the user must be able to see that
+   before they blame the pack's author.
 
 ## Non-goals
 
@@ -108,6 +111,30 @@ Three sinks from one generator:
 - **B — shipped manifest.** Hash-keyed patches applied at load time for packs
   that will not be updated.
 - **C — replacement mapping.** Future: substitute a core node entirely.
+
+### What may ship
+
+A conversion that was _written_ and one that was _run_ are different artifacts,
+and the difference is invisible in the diff. Every entry therefore carries a
+validation tier, and `compile_db` refuses anything below `harness`:
+
+| Tier      | Means                                                                | Ships |
+| --------- | -------------------------------------------------------------------- | ----- |
+| `none`    | Written; static checks only. Never executed.                         | No    |
+| `harness` | Loaded before and after; types, construction and wire compared.      | Yes   |
+| `manual`  | A human drove it in a real ComfyUI (`magic_patch_test_plan_WIP.md`). | Yes   |
+
+An entry carrying no tier is treated as `none`. Absent evidence is not weak
+evidence — an unstamped entry has never been run, and the field's absence must
+not excuse it from the check that would have condemned it. `verify_db` stamps
+the tier as a side effect of running, so the tier cannot drift from the evidence:
+there is no way to claim `harness` except by passing the harness.
+
+`--allow-unvalidated` exists for local iteration and warns loudly. CI does not
+pass it.
+
+_This gate found its first defect immediately:_ all three patches in the DB were
+`none`, and the previous `compile_db` shipped every one of them without comment.
 
 ## Validation
 
@@ -268,7 +295,21 @@ an empty manifest restores original behaviour with no code change.
 **Monitoring** is unspecified. At minimum: how many patches applied, how many
 skipped on hash mismatch, and any error attributable to a patched file. **Open.**
 
-**Ownership** of a shipped patch is unresolved — if a patched pack misbehaves,
-the user experiences a frontend bug and the author gets the report. Sink A
-avoids this by giving the author the change; sink B does not. **Open, and the
-most significant unresolved question in the project.**
+**Ownership: Comfy owns the patch.** _(Decided 2026-08-06.)_ We wrote it, so a
+defect in a patched pack is ours, not the author's. Two things follow, and both
+are requirements rather than nice-to-haves:
+
+- **A patched node is visibly marked in the UI** — a badge, symbol or border
+  distinguishing it from an unpatched one. A user hitting a problem must be able
+  to see that we changed this node before they file it against the author, and
+  an author receiving a report must be able to ask "was it patched?". The mark
+  carries the validation tier, because a badge that cannot tell `harness` from
+  `manual` would claim more than the patch earned — and under the rule above,
+  nothing weaker than `harness` reaches a user to be marked at all.
+- **Patch provenance is inspectable** — which patch, generated when, against
+  which source hash. A bug report about a patched node is only actionable if the
+  exact conversion can be recovered.
+
+This also sharpens the preference for sink A: a merged upstream PR transfers
+both the code and the ownership, and the marking can drop away because the
+author's own release now contains it.

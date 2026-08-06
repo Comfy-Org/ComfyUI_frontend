@@ -8,7 +8,7 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { createComfyApi } from './comfyApi'
 import type { Comfy } from './comfyApi'
 import { createDefRegistry, deliverPreview } from './defsRegistry'
-import type { DefSelector } from './defsRegistry'
+import type { DefSelector, NodeDefBuilder } from './defsRegistry'
 
 const RAW_DEF = {
   name: 'KSampler',
@@ -444,5 +444,69 @@ describe('setSizeConstraints', () => {
       maxWidth: 800,
       autoHeight: true
     })
+  })
+})
+
+describe('connection veto and menu items', () => {
+  let graph: LGraph
+  let comfy: Comfy
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    graph = new LGraph()
+    comfy = createComfyApi(() => graph)
+  })
+
+  // onConnectInput's signature demands a real peer; the veto only reads the
+  // node and slot index, so the peer just has to exist.
+  const peerNode = new (nodeClass('Peer'))()
+  const outputSlot = peerNode.addOutput('out', 'IMAGE')
+
+  const build = (apply: (b: NodeDefBuilder) => void) => {
+    const registry = createDefRegistry()
+    registry.forMajor((id) => comfy.graph.node(id)!).extend('KSampler', apply)
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    graph.add(node)
+    return node
+  }
+
+  it('refuses a connection when a listener returns false', () => {
+    const node = build((b) => b.onBeforeConnect(() => false))
+    expect(node.onConnectInput?.(0, 'IMAGE', outputSlot, peerNode, 0)).toBe(
+      false
+    )
+  })
+
+  it('permits when no listener objects', () => {
+    const node = build((b) => b.onBeforeConnect(() => undefined))
+    expect(node.onConnectInput?.(0, 'IMAGE', outputSlot, peerNode, 0)).toBe(
+      true
+    )
+  })
+
+  it('lets any listener refuse, not just the last', () => {
+    // A veto is only useful if one pack cannot be overruled by another's
+    // silence.
+    const node = build((b) => {
+      b.onBeforeConnect(() => false)
+      b.onBeforeConnect(() => true)
+    })
+    expect(node.onConnectInput?.(0, 'IMAGE', outputSlot, peerNode, 0)).toBe(
+      false
+    )
+  })
+
+  it('adds a context menu entry that reaches the node', () => {
+    const seen: string[] = []
+    const node = build((b) =>
+      b.addMenuItem({ label: 'Do it', run: (n) => seen.push(n.id) })
+    )
+    const options: { content: string; callback: () => void }[] = []
+    node.getExtraMenuOptions?.(undefined as never, options as never)
+    expect(options.map((o) => o.content)).toContain('Do it')
+    options.find((o) => o.content === 'Do it')!.callback()
+    expect(seen).toEqual([String(node.id)])
   })
 })

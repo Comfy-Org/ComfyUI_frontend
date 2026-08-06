@@ -32,37 +32,89 @@ const CONSTRUCTS = [
   ['onConfigure', /\bonConfigure\b/, 'b.onConfigured'],
   ['onRemoved', /\bonRemoved\b/, 'b.onRemoved'],
   ['onSerialize', /\bonSerialize\b/, 'b.onSerialize'],
-  ['registerCustomNodes', /\bregisterCustomNodes\b|\bextends\s+LGraphNode\b/, 'defs.define'],
-  ['isVirtualNode/applyToGraph', /\bisVirtualNode\b|\bapplyToGraph\b/, 'execution + resolve'],
+  [
+    'registerCustomNodes',
+    /\bregisterCustomNodes\b|\bextends\s+LGraphNode\b/,
+    'defs.define'
+  ],
+  [
+    'isVirtualNode/applyToGraph',
+    /\bisVirtualNode\b|\bapplyToGraph\b/,
+    'execution + resolve'
+  ],
 
   // ── Widgets ────────────────────────────────────────────────────────
   ['ComfyWidgets factory', /\bComfyWidgets\s*[.[]/, 'widgets.add'],
-  ['widgets array mutation', /\bwidgets\s*\.\s*(?:splice|push)|\bwidgets\.length\s*=/, 'widgets.add/remove'],
+  [
+    'widgets array mutation',
+    /\bwidgets\s*\.\s*(?:splice|push)|\bwidgets\.length\s*=/,
+    'widgets.add/remove'
+  ],
   ['converted-widget', /["'`]converted-widget/, 'widget.setHidden'],
   ['widget.serializeValue', /\bserializeValue\b/, 'widgets.add({serialize})'],
   ['addDOMWidget', /\baddDOMWidget\s*\(/, 'widgets.mount'],
   ['widget.callback chaining', /\bwidget\.callback\s*=/, "widget.on('change')"],
 
   // ── Drawing and size ───────────────────────────────────────────────
-  ['onDrawForeground (node)', /\bprototype\.onDrawForeground\b|\bnode\.onDrawForeground\b/, 'widgets.canvas'],
-  ['computeSize/onResize', /\bcomputeSize\b|\bonResize\b/, 'setSizeConstraints'],
+  [
+    'onDrawForeground (node)',
+    /\bprototype\.onDrawForeground\b|\bnode\.onDrawForeground\b/,
+    'widgets.canvas'
+  ],
+  [
+    'computeSize/onResize',
+    /\bcomputeSize\b|\bonResize\b/,
+    'setSizeConstraints'
+  ],
 
   // ── Connections ────────────────────────────────────────────────────
   ['onConnectionsChange', /\bonConnectionsChange\b/, 'b.onConnectionsChanged'],
-  ['onConnectInput/Output (veto)', /\bonConnectInput\b|\bonConnectOutput\b/, null],
-  ['dynamic slots', /\baddInput\s*\(|\bremoveInput\s*\(|\baddOutput\s*\(|\bremoveOutput\s*\(/, null],
-  ['link internals', /\borigin_id\b|\btarget_id\b|\binputs\[[^\]]*\]\.link\b/, 'slots + LinkInfo'],
+  [
+    'onConnectInput/Output (veto)',
+    /\bonConnectInput\b|\bonConnectOutput\b/,
+    'b.onBeforeConnect'
+  ],
+  [
+    'dynamic slots',
+    /\baddInput\s*\(|\bremoveInput\s*\(|\baddOutput\s*\(|\bremoveOutput\s*\(/,
+    'inputs.add/remove'
+  ],
+  [
+    'link internals',
+    /\borigin_id\b|\btarget_id\b|\binputs\[[^\]]*\]\.link\b/,
+    'slots + LinkInfo'
+  ],
 
   // ── Canvas-level, not node-level ───────────────────────────────────
-  ['LGraphCanvas internals', /\bLGraphCanvas\.prototype\b|\bcanvas\.draw\s*=|\bonDrawBackground\b/, null],
-  ['canvas selection', /\bselected_nodes\b|\bselectedItems\b/, null],
-  ['ContextMenu / slot menu', /\bContextMenu\b|\bgetExtraMenuOptions\b|\bshowConnectionMenu\b/, null],
-  ['pointer gestures on canvas', /\bonMouseDown\b|\bonMouseMove\b|\bonMouseUp\b/, null],
+  [
+    'LGraphCanvas internals',
+    /\bLGraphCanvas\.prototype\b|\bcanvas\.draw\s*=|\bonDrawBackground\b/,
+    null
+  ],
+  [
+    'canvas selection',
+    /\bselected_nodes\b|\bselectedItems\b/,
+    'graph.selection'
+  ],
+  [
+    'ContextMenu / slot menu',
+    /\bContextMenu\b|\bgetExtraMenuOptions\b|\bshowConnectionMenu\b/,
+    'b.addMenuItem'
+  ],
+  [
+    'pointer gestures on canvas',
+    /\bonMouseDown\b|\bonMouseMove\b|\bonMouseUp\b/,
+    null
+  ],
 
   // ── App and wire format ────────────────────────────────────────────
   ['graphToPrompt', /\bgraphToPrompt\b/, null],
   ['queuePrompt', /\bqueuePrompt\b/, null],
-  ['api.addEventListener', /\bapi\.addEventListener\s*\(/, 'b.onPreview (previews only)'],
+  [
+    'api.addEventListener',
+    /\bapi\.addEventListener\s*\(/,
+    'b.onPreview (previews only)'
+  ],
   ['api.fetchApi', /\bapi\.fetchApi\s*\(/, null],
   ['app.extensionManager', /\bextensionManager\b/, null],
   ['settings get/set', /\bsetting\s*\.\s*(?:get|set)\b|\baddSetting\b/, null],

@@ -120,6 +120,33 @@ export interface NodeDefBuilder {
    * workflow means.
    */
   onSerialize(callback: (node: NodeHandle) => Record<string, unknown>): void
+  /**
+   * Vetoes or permits an incoming connection *before* it is wired.
+   *
+   * Distinct from `onConnectionsChanged`, which fires after the fact — packs
+   * use the pre-hook to refuse an incompatible link or relabel a slot while
+   * the type is still known. Returning `false` refuses.
+   */
+  onBeforeConnect(
+    callback: (node: NodeHandle, event: BeforeConnectEvent) => boolean | void
+  ): void
+  /** Adds an entry to this node type's context menu. */
+  addMenuItem(item: NodeMenuItem): void
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface BeforeConnectEvent {
+  readonly side: 'input' | 'output'
+  readonly index: number
+  /** The node at the other end, when one is known. */
+  readonly peerNodeId: string | undefined
+  readonly peerType: string | undefined
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface NodeMenuItem {
+  readonly label: string
+  run(node: NodeHandle): void
 }
 
 /**
@@ -481,6 +508,14 @@ export function createDefRegistry(): {
       const connections: Bound<[ConnectionChangeEvent]>[] = []
       const removed: Bound<[]>[] = []
       const previewed: Bound<[PreviewFrame]>[] = []
+      const beforeConnect: {
+        run: (node: NodeHandle, event: BeforeConnectEvent) => boolean | void
+        handleFor: (nodeId: string) => NodeHandle
+      }[] = []
+      const menuItems: {
+        item: NodeMenuItem
+        handleFor: (nodeId: string) => NodeHandle
+      }[] = []
       const serialized: {
         run: (node: NodeHandle) => Record<string, unknown>
         handleFor: (nodeId: string) => NodeHandle
@@ -516,7 +551,9 @@ export function createDefRegistry(): {
           onConnectionsChanged: (run) => connections.push({ run, handleFor }),
           onRemoved: (run) => removed.push({ run, handleFor }),
           onPreview: (run) => previewed.push({ run, handleFor }),
-          onSerialize: (run) => serialized.push({ run, handleFor })
+          onSerialize: (run) => serialized.push({ run, handleFor }),
+          onBeforeConnect: (run) => beforeConnect.push({ run, handleFor }),
+          addMenuItem: (item) => menuItems.push({ item, handleFor })
         }
 
         try {
@@ -621,6 +658,56 @@ export function createDefRegistry(): {
                 if (RESERVED_SERIAL_KEYS.has(key)) continue
                 o[key] = value
               }
+            }
+          }
+      }
+
+      if (beforeConnect.length) {
+        const previous = nodeType.prototype.onConnectInput
+        ;(nodeType.prototype as Record<string, unknown>).onConnectInput =
+          function (
+            this: LGraphNode,
+            index: number,
+            type: unknown,
+            output: unknown,
+            sourceNode: unknown
+          ) {
+            const allowed = (
+              previous as ((...a: unknown[]) => unknown) | undefined
+            )?.call(this, index, type, output, sourceNode)
+            if (allowed === false) return false
+            const peer = sourceNode as
+              | { id?: unknown; type?: string }
+              | undefined
+            const event: BeforeConnectEvent = Object.freeze({
+              side: 'input',
+              index,
+              peerNodeId: peer?.id === undefined ? undefined : String(peer.id),
+              peerType: peer?.type
+            })
+            const id = String(this.id)
+            // Any listener refusing refuses the connection: a veto is only
+            // useful if one pack cannot be overruled by another's silence.
+            for (const { run, handleFor } of beforeConnect) {
+              if (run(handleFor(id), event) === false) return false
+            }
+            return true
+          }
+      }
+
+      if (menuItems.length) {
+        const previous = nodeType.prototype.getExtraMenuOptions
+        ;(nodeType.prototype as Record<string, unknown>).getExtraMenuOptions =
+          function (this: LGraphNode, canvas: unknown, options: unknown[]) {
+            ;(
+              previous as ((c: unknown, o: unknown[]) => void) | undefined
+            )?.call(this, canvas, options)
+            const id = String(this.id)
+            for (const { item, handleFor } of menuItems) {
+              options.push({
+                content: item.label,
+                callback: () => item.run(handleFor(id))
+              })
             }
           }
       }

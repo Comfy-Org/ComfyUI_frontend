@@ -120,8 +120,8 @@ async beforeRegisterNodeDef(nodeType, nodeData, app) {
       }
       for (const l of text) {
         const w = ComfyWidgets.STRING(this, 'text_' + this.widgets?.length, ...).widget
-        widget element.readOnly = true
-        widget element.style.opacity = 0.6
+        w.inputEl.readOnly = true
+        w.inputEl.style.opacity = 0.6
       }
     }
     ...
@@ -131,12 +131,12 @@ async beforeRegisterNodeDef(nodeType, nodeData, app) {
 
 Four separate conversions:
 
-| Old                                                    | New                               |
-| ------------------------------------------------------ | --------------------------------- |
-| `nodeData.name === 'ShowText\|pysssss'` guard          | the `defs.extend` selector        |
-| `+!!this.inputs?.[0].widget` converted-widget sniffing | `input.isWidgetInput`             |
-| `this.widgets.length = n` truncation                   | remove by name (below)            |
-| `widget element`                                       | `w.element` (renamed in PR #8594) |
+| Old                                                    | New                         |
+| ------------------------------------------------------ | --------------------------- |
+| `nodeData.name === 'ShowText\|pysssss'` guard          | the `defs.extend` selector  |
+| `+!!this.inputs?.[0].widget` converted-widget sniffing | `input.isWidgetInput`       |
+| `this.widgets.length = n` truncation                   | remove by name (below)      |
+| `w.inputEl` DOM access                                 | `widgets.mount({ render })` |
 
 Truncation has no single-call replacement, deliberately — assigning `length`
 skips each widget's teardown, which is why the pack has to call `onRemove()` by

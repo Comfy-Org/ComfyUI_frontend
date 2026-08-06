@@ -81,7 +81,9 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['defs.define', '1.0'],
   ['node.resolve', '1.0'],
   ['slots.dynamic', '1.0'],
-  ['graph.selection', '1.0']
+  ['graph.selection', '1.0'],
+  ['node.connectVeto', '1.0'],
+  ['node.menu', '1.0']
 ])
 
 /**

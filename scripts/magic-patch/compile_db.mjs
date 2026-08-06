@@ -17,7 +17,13 @@
  * exact bytes it was verified against, so a pack that updated silently gets no
  * patch rather than a mis-applied one.
  */
-import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync
+} from 'node:fs'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -59,11 +65,28 @@ function entries(dir, depth = 0) {
  * building an artifact first — the folder is the source of truth, the artifact
  * is a packaging step.
  */
-export function compileDb(root) {
+/**
+ * Tiers that may ship.
+ *
+ * "Patched" and "patched and known to work" are different artifacts, and an
+ * entry that carries no verdict is the former. Absent evidence is not weak
+ * evidence — an unstamped entry has never been executed, so it is treated as
+ * `none` and refused. Shipping it would mean shipping a conversion no one has
+ * ever run, under a badge that says we validated it.
+ */
+const SHIPPABLE = new Set(['harness', 'manual'])
+
+export function compileDb(root, { allowUnvalidated = false } = {}) {
   const patches = {}
   const problems = []
-  const stats = { files: 0, packs: new Set(), byAuthor: {}, skipped: 0 }
-  collect(root, patches, problems, stats)
+  const stats = {
+    files: 0,
+    packs: new Set(),
+    byAuthor: {},
+    skipped: 0,
+    unvalidated: 0
+  }
+  collect(root, patches, problems, stats, allowUnvalidated)
   return {
     artifact: {
       formatVersion: FORMAT_VERSION,
@@ -79,7 +102,7 @@ export function compileDb(root) {
   }
 }
 
-function collect(root, patches, problems, stats) {
+function collect(root, patches, problems, stats, allowUnvalidated) {
   for (const path of entries(root)) {
     stats.files++
     let entry
@@ -117,6 +140,19 @@ function collect(root, patches, problems, stats) {
       continue
     }
 
+    const validation = entry.validation ?? 'none'
+    if (!SHIPPABLE.has(validation)) {
+      stats.unvalidated++
+      if (!allowUnvalidated) {
+        stats.skipped++
+        problems.push(
+          `${path}: validation=${validation} — never executed, not shippable ` +
+            `(run verify_db, or pass --allow-unvalidated to ship anyway)`
+        )
+        continue
+      }
+    }
+
     const existing = patches[entry.sourceSha256]
     if (existing && existing.diff !== entry.diff) {
       // Identical bytes in two packs (a vendored helper, a fork) must convert the
@@ -136,6 +172,9 @@ function collect(root, patches, problems, stats) {
       author: entry.author ?? 'unknown',
       rules: entry.rules ?? [],
       verified: entry.verified ?? {},
+      // Carried through so the client can say which kind of patch it applied.
+      // A badge that cannot distinguish the two tiers is worse than none.
+      validation,
       // Inlined into the artifact: the client has one file, not a directory.
       diff: readFileSync(join(dirname(path), entry.diff), 'utf8')
     }
@@ -143,7 +182,6 @@ function collect(root, patches, problems, stats) {
     stats.byAuthor[entry.author ?? 'unknown'] =
       (stats.byAuthor[entry.author ?? 'unknown'] ?? 0) + 1
   }
-
 }
 
 // ---- CLI ----------------------------------------------------------------
@@ -151,34 +189,44 @@ function collect(root, patches, problems, stats) {
 // would parse the test runner's argv and exit the process.
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-const argv = process.argv.slice(2)
-const root = argv[0]
-const outIndex = argv.indexOf('--out')
-const out = outIndex === -1 ? null : argv[outIndex + 1]
-if (!root || !out) {
-  console.error('usage: compile_db.mjs <db-dir> --out <artifact.json>')
-  process.exit(2)
-}
+  const argv = process.argv.slice(2)
+  const root = argv[0]
+  const outIndex = argv.indexOf('--out')
+  const out = outIndex === -1 ? null : argv[outIndex + 1]
+  const allowUnvalidated = argv.includes('--allow-unvalidated')
+  if (!root || !out) {
+    console.error('usage: compile_db.mjs <db-dir> --out <artifact.json>')
+    process.exit(2)
+  }
 
-const { artifact, problems, stats } = compileDb(root)
+  const { artifact, problems, stats } = compileDb(root, { allowUnvalidated })
+  if (stats.unvalidated) {
+    console.error(
+      allowUnvalidated
+        ? `WARNING: shipping ${stats.unvalidated} unvalidated patch(es) — ` +
+            `--allow-unvalidated was passed`
+        : `Held back ${stats.unvalidated} unvalidated patch(es).`
+    )
+  }
 
-mkdirSync(dirname(out), { recursive: true })
-writeFileSync(out, JSON.stringify(artifact, null, 2) + '\n')
+  mkdirSync(dirname(out), { recursive: true })
+  writeFileSync(out, JSON.stringify(artifact, null, 2) + '\n')
 
-const size = Buffer.byteLength(JSON.stringify(artifact))
-console.error(
-  `${Object.keys(artifact.patches).length} patch(es) from ${stats.packs.size} pack(s), ` +
-    `${(size / 1024).toFixed(1)} KiB`
-)
-for (const [author, count] of Object.entries(stats.byAuthor).sort()) {
-  console.error(`  ${String(count).padStart(4)}  ${author}`)
-}
-if (stats.skipped) console.error(`  ${stats.skipped} skipped`)
+  const size = Buffer.byteLength(JSON.stringify(artifact))
+  console.error(
+    `${Object.keys(artifact.patches).length} patch(es) from ${stats.packs.size} pack(s), ` +
+      `${(size / 1024).toFixed(1)} KiB`
+  )
+  for (const [author, count] of Object.entries(stats.byAuthor).sort()) {
+    console.error(`  ${String(count).padStart(4)}  ${author}`)
+  }
+  if (stats.skipped) console.error(`  ${stats.skipped} skipped`)
 
-if (problems.length) {
-  console.error(`\n${problems.length} problem(s):`)
-  for (const problem of problems.slice(0, 40)) console.error(`  ${problem}`)
-  if (problems.length > 40) console.error(`  ...and ${problems.length - 40} more`)
-  process.exit(1)
-}
+  if (problems.length) {
+    console.error(`\n${problems.length} problem(s):`)
+    for (const problem of problems.slice(0, 40)) console.error(`  ${problem}`)
+    if (problems.length > 40)
+      console.error(`  ...and ${problems.length - 40} more`)
+    process.exit(1)
+  }
 }
