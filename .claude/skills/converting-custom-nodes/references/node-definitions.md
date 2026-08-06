@@ -219,6 +219,43 @@ in `resolve`; `resolve` cannot write anything, by design.
 If the node's `applyToGraph` does something none of the three resolution shapes
 can express, that is an `api-gap` punt — name what it rewrites.
 
+## Node handles are accessors, not properties
+
+Every read and write on a `NodeHandle` is a method — the contract in
+`src/types/extensionV2.ts`, so a read can be a store query and a write can
+become a command. Property syntax silently does nothing or throws.
+
+| Old (on the raw node)    | Published API                               |
+| ------------------------ | ------------------------------------------- |
+| `node.title = t`         | `node.setTitle(t)` / `getTitle()`           |
+| `node.color = c`         | `node.setColor(c)` / `getColor()`           |
+| `node.bgcolor = c`       | `node.setBgColor(c)` / `getBgColor()`       |
+| `node.mode = 4`          | `node.setMode('bypass')` / `getMode()`      |
+| `node.flags.collapsed`   | `node.isCollapsed()` / `setCollapsed(b)`    |
+| `node.flags.pinned`      | `node.isPinned()` / `setPinned(b)`          |
+| `node.shape = s`         | `node.setShape(s)` / `getShape()`           |
+| `node.properties[k] = v` | `node.setProperty(k, v)` / `getProperty(k)` |
+| `node.size` / `node.pos` | `node.getSize()` / `getPosition()`          |
+
+**Both setters take one tuple**, not two numbers — the legacy `setSize(w, h)`
+and `setPos(x, y)` arities are gone:
+
+```js
+// before
+node.setSize([200, 58]) // litegraph took an array here
+node.color = '#1b4669'
+node.bgcolor = '#29699c'
+
+// after
+node.setSize([200, 58]) // unchanged — still one tuple
+node.setColor('#1b4669')
+node.setBgColor('#29699c')
+```
+
+Widget handles follow the same rule: `getValue()`/`setValue()`,
+`isHidden()`/`setHidden()`, `getOptions()`/`setOption()`, and `widgetType`
+rather than `type`. See `widgets.md`.
+
 ## Per-instance state
 
 Handles hold no arbitrary properties, so `node._myState = x` has no target. Keep

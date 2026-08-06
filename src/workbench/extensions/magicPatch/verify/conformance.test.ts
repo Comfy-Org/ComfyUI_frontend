@@ -299,3 +299,43 @@ describe('general conversion conformance', () => {
     })
   })
 })
+
+describe('handle state must go through accessors', () => {
+  it('fails a property write on a handle', () => {
+    // kjnodes appearance.js was converted this way: node.color = '#1b4669'
+    // compiles, does nothing, and took every type in the pack down with it.
+    const report = runConformance(
+      context({
+        original: 'node.color = c',
+        converted: "node.color = '#1b4669'",
+        edits: []
+      })
+    )
+    const check = find(report, 'handles-use-accessors')
+    expect(check.status).toBe('failed')
+    expect(check.detail).toMatch(/node\.color/)
+  })
+
+  it('passes the accessor form', () => {
+    const report = runConformance(
+      context({
+        original: 'node.color = c',
+        converted: "node.setColor('#1b4669')",
+        edits: []
+      })
+    )
+    expect(find(report, 'handles-use-accessors').status).toBe('passed')
+  })
+
+  it('leaves a pack’s own objects alone', () => {
+    const report = runConformance(
+      context({
+        original: 'x = 1',
+        converted:
+          'const state = stateFor(id); state.value = 2; state.hidden = true',
+        edits: []
+      })
+    )
+    expect(find(report, 'handles-use-accessors').status).toBe('passed')
+  })
+})
