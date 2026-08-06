@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as Y from 'yjs'
+import type * as Y from 'yjs'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
@@ -128,16 +128,12 @@ describe('notifyLayoutChanges', () => {
 
   it('invalidates rendering for a remote geometry update', () => {
     const { graph, node, setDirty, stop } = setup()
-    const remote = new Y.Doc()
-    Y.applyUpdate(remote, layoutStore.getStateAsUpdate())
-    const stateVector = Y.encodeStateVector(layoutStore.getYDoc())
-    remote
+    const doc = layoutStore.getYDocForTests()
+    setDirty.mockClear()
+    doc
       .getMap<Y.Map<unknown>>('nodes')
       .get(`${graph.rootGraph.id}:${node.id}`)
       ?.set('position', { x: 80, y: 90 })
-    setDirty.mockClear()
-
-    layoutStore.applyUpdate(Y.encodeStateAsUpdate(remote, stateVector))
 
     expect(setDirty).toHaveBeenCalledWith(true, true)
     stop()

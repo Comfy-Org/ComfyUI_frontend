@@ -5,7 +5,6 @@
  * Operations are synchronous and applied directly to the store.
  */
 import log from 'loglevel'
-import type * as Y from 'yjs'
 
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -27,12 +26,7 @@ function getNodeRegistrationId(
   rootGraphId: UUID,
   nodeId: NodeId
 ): string | undefined {
-  const registrationId = layoutStore
-    .getYDoc()
-    .getMap<Y.Map<unknown>>('nodes')
-    .get(`${rootGraphId}:${nodeId}`)
-    ?.get('registrationId')
-  return typeof registrationId === 'string' ? registrationId : undefined
+  return layoutStore.getRegistrationId('node', rootGraphId, nodeId)
 }
 
 interface LayoutMutations {

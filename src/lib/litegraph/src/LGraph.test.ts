@@ -1674,11 +1674,11 @@ describe('node layout registration', () => {
     const node = new LGraphNode('test')
     node.pos = [120, 340]
     graph.add(node)
-    const ynodes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes')
+    const ynodes = layoutStore.getYDocForTests().getMap<Y.Map<unknown>>('nodes')
     const registrationId = ynodes
       .get(`${graph.rootGraph.id}:${node.id}`)
       ?.get('registrationId')
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     const originalTransact = ydoc.transact.bind(ydoc)
     const transact = vi
       .spyOn(ydoc, 'transact')
@@ -1719,7 +1719,7 @@ describe('node layout registration', () => {
     const node = new LGraphNode('test')
     node.pos = [120, 340]
     graph.add(node)
-    const ynodes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes')
+    const ynodes = layoutStore.getYDocForTests().getMap<Y.Map<unknown>>('nodes')
     const registrationId = ynodes
       .get(`${graph.rootGraph.id}:${node.id}`)
       ?.get('registrationId')
@@ -1825,7 +1825,7 @@ describe('graph teardown drops layout entries', () => {
   function layoutEntryCount(graph: LGraph) {
     const rootGraphId = graph.rootGraph.id
     const nodeKeys = [
-      ...layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes').keys()
+      ...layoutStore.getYDocForTests().getMap<Y.Map<unknown>>('nodes').keys()
     ].filter((key) => key.startsWith(`${rootGraphId}:`))
     return (
       nodeKeys.length +
@@ -1938,7 +1938,7 @@ describe('graph teardown drops layout entries', () => {
 
   it('restores owned layouts when clear fails after a prefix deletion', () => {
     const { graph } = createGraphWithEveryLayoutEntryType()
-    const nodes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes')
+    const nodes = layoutStore.getYDocForTests().getMap<Y.Map<unknown>>('nodes')
     const registrations = new Map(
       [...nodes].map(([id, layout]) => [id, layout.get('registrationId')])
     )
@@ -1982,7 +1982,9 @@ describe('graph teardown drops layout entries', () => {
       if (mapName === 'reroutes') {
         graph._addReroute(new Reroute(REROUTE, graph, [10, 10]))
       }
-      const layouts = layoutStore.getYDoc().getMap<Y.Map<unknown>>(mapName)
+      const layouts = layoutStore
+        .getYDocForTests()
+        .getMap<Y.Map<unknown>>(mapName)
       const originalDelete = layouts.delete.bind(layouts)
       const failure = new Error(`${mapName} delete failed`)
       const deleteLayout = vi
@@ -2070,7 +2072,7 @@ describe('graph teardown drops layout entries', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')
     graph.add(node)
-    const nodes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes')
+    const nodes = layoutStore.getYDocForTests().getMap<Y.Map<unknown>>('nodes')
     const key = `${graph.rootGraph.id}:${node.id}`
     const foreign = new Y.Map<unknown>()
     foreign.set('registrationId', 'foreign')

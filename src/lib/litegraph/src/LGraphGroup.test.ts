@@ -143,7 +143,9 @@ describe('group layout in layoutStore', () => {
   test('remove preserves a foreign layout that replaced the attached group', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(803))
-    const groups = layoutStore.getYDoc().getMap<Y.Map<unknown>>('groups')
+    const groups = layoutStore
+      .getYDocForTests()
+      .getMap<Y.Map<unknown>>('groups')
     const key = `${graph.rootGraph.id}:${group.id}`
     const foreignGroup = new Y.Map<unknown>()
     foreignGroup.set('id', group.id)
@@ -159,7 +161,9 @@ describe('group layout in layoutStore', () => {
   test('clear preserves a foreign layout that replaced the attached group', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(804))
-    const groups = layoutStore.getYDoc().getMap<Y.Map<unknown>>('groups')
+    const groups = layoutStore
+      .getYDocForTests()
+      .getMap<Y.Map<unknown>>('groups')
     const key = `${graph.rootGraph.id}:${group.id}`
     const foreignGroup = new Y.Map<unknown>()
     foreignGroup.set('id', group.id)
@@ -175,7 +179,9 @@ describe('group layout in layoutStore', () => {
   test('unregister without ownership evidence preserves the layout', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('unowned', 805)
-    const groups = layoutStore.getYDoc().getMap<Y.Map<unknown>>('groups')
+    const groups = layoutStore
+      .getYDocForTests()
+      .getMap<Y.Map<unknown>>('groups')
     const key = `${graph.rootGraph.id}:${group.id}`
     const foreignGroup = new Y.Map<unknown>()
     foreignGroup.set('id', group.id)
@@ -229,7 +235,7 @@ describe('group layout in layoutStore', () => {
   test('retains group ownership when unregister throws before deletion', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(806))
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     const transact = vi.spyOn(ydoc, 'transact').mockImplementationOnce(() => {
       throw new Error('group delete failed')
     })
@@ -252,7 +258,7 @@ describe('group layout in layoutStore', () => {
   test('restores group registration when unregister throws after deletion', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(810))
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     const groups = ydoc.getMap<Y.Map<unknown>>('groups')
     const key = `${graph.rootGraph.id}:${group.id}`
     const registrationId = groups.get(key)?.get('registrationId')
@@ -321,7 +327,7 @@ describe('group layout in layoutStore', () => {
   test('keeps group ownership when reentrant unregister is rejected', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(807))
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     function attemptRemove(): void {
       ydoc.off('beforeTransaction', attemptRemove)
       graph.remove(group)
@@ -344,7 +350,7 @@ describe('group layout in layoutStore', () => {
     const node = new LGraphNode('node')
     graph.add(node)
     const group = addedGroup(graph, toGroupId(808))
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     function attemptClear(): void {
       ydoc.off('beforeTransaction', attemptClear)
       graph.clear()
@@ -364,7 +370,7 @@ describe('group layout in layoutStore', () => {
     const node = new LGraphNode('node')
     graph.add(node)
     const group = addedGroup(graph, toGroupId(809))
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     function attemptRemove(): void {
       ydoc.off('beforeTransaction', attemptRemove)
       graph.remove(node)
@@ -382,7 +388,7 @@ describe('group layout in layoutStore', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')
     graph.add(node)
-    const nodes = layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes')
+    const nodes = layoutStore.getYDocForTests().getMap<Y.Map<unknown>>('nodes')
     const key = `${graph.rootGraph.id}:${node.id}`
     const foreignNode = new Y.Map<unknown>()
     foreignNode.set('id', node.id)
@@ -412,9 +418,9 @@ describe('group layout in layoutStore', () => {
 
     expect(graph.nodes).toEqual([node])
     expect(
-      [...layoutStore.getYDoc().getMap<Y.Map<unknown>>('nodes').keys()].filter(
-        (key) => key.startsWith(`${graph.rootGraph.id}:`)
-      )
+      [
+        ...layoutStore.getYDocForTests().getMap<Y.Map<unknown>>('nodes').keys()
+      ].filter((key) => key.startsWith(`${graph.rootGraph.id}:`))
     ).toHaveLength(1)
   })
 
@@ -423,7 +429,7 @@ describe('group layout in layoutStore', () => {
     const group = addedGroup(graph, toGroupId(811))
     const node = new LGraphNode('node')
     const originalId = node.id
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     function attemptAdd(): void {
       ydoc.off('beforeTransaction', attemptAdd)
       graph.add(node)
@@ -542,7 +548,7 @@ describe('group layout in layoutStore', () => {
     expect(registerGroupLayout(graph, group, 'retry')).toBe('applied')
     expect(
       layoutStore
-        .getYDoc()
+        .getYDocForTests()
         .getMap<Y.Map<unknown>>('groups')
         .get(`${graph.id}:${group.id}`)
         ?.get('registrationId')
@@ -571,7 +577,7 @@ describe('group layout in layoutStore', () => {
     expect(registerGroupLayout(graph, group, 'retry')).toBe('applied')
     expect(
       layoutStore
-        .getYDoc()
+        .getYDocForTests()
         .getMap<Y.Map<unknown>>('groups')
         .get(`${graph.id}:${group.id}`)
         ?.get('registrationId')
@@ -584,7 +590,7 @@ describe('group layout in layoutStore', () => {
     graph.add(node)
     const group = addedGroup(graph, toGroupId(810))
     const data = graph.asSerialisable()
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     function attemptConfigure(): void {
       ydoc.off('beforeTransaction', attemptConfigure)
       graph.configure(data)
@@ -962,7 +968,7 @@ describe('group layout in layoutStore', () => {
     const size = group.size
 
     layoutStore
-      .getYDoc()
+      .getYDocForTests()
       .getMap<Y.Map<unknown>>('groups')
       .get(`${graph.rootGraph.id}:${group.id}`)
       ?.set('rect', [11, 12, 410, 310])
@@ -994,7 +1000,7 @@ describe('group layout in layoutStore', () => {
     const originalLastGroupId = graph.state.lastGroupId
     const rootGraphId = graph.rootGraph.id
     const foreignRect = [20, 30, 40, 50]
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     function insertForeignLayout(): void {
       ydoc.off('beforeTransaction', insertForeignLayout)
       const foreignGroup = new Y.Map<unknown>()
@@ -1025,7 +1031,7 @@ describe('group layout in layoutStore', () => {
     const group = new LGraphGroup('group')
     const originalLastGroupId = graph.state.lastGroupId
     const rootGraphId = graph.rootGraph.id
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     const groups = ydoc.getMap<Y.Map<unknown>>('groups')
     let registeredKey: string | undefined
     const originalTransact = ydoc.transact.bind(ydoc)
@@ -1072,7 +1078,9 @@ describe('group layout in layoutStore', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group')
     graph.add(group)
-    const groups = layoutStore.getYDoc().getMap<Y.Map<unknown>>('groups')
+    const groups = layoutStore
+      .getYDocForTests()
+      .getMap<Y.Map<unknown>>('groups')
     const key = `${graph.rootGraph.id}:${group.id}`
     const foreign = new Y.Map<unknown>()
     foreign.set('id', group.id)

@@ -5,8 +5,6 @@
  * every attach/detach path — including bulk teardown — goes through these
  * helpers rather than re-deriving the store writes by hand.
  */
-import type * as Y from 'yjs'
-
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -51,14 +49,15 @@ function registrationKey(
 
 function reconcilePendingRegistration(
   key: string,
-  map: 'groups' | 'reroutes',
-  storedKey: string,
+  entity: 'group' | 'reroute',
+  graphId: UUID,
+  id: LGraphGroup['id'] | Reroute['id'],
   deleteRegistration: (registrationId: string) => LayoutOperationResult
 ): boolean {
   const registrationId = pendingRegistrations.get(key)
   if (registrationId === undefined) return true
 
-  const storedId = storedRegistrationId(map, storedKey)
+  const storedId = layoutStore.getRegistrationId(entity, graphId, id)
   if (storedId === registrationId) {
     const result = deleteRegistration(registrationId)
     if (result === 'rejected') return false
@@ -76,8 +75,9 @@ function reconcilePendingGraph(graphId: UUID): LayoutOperationResult {
       if (
         !reconcilePendingRegistration(
           key,
-          'groups',
-          `${graphId}:${groupId}`,
+          'group',
+          graphId,
+          groupId,
           (registrationId) =>
             layoutStore.applyOperation({
               ...canvasOperationMeta(),
@@ -95,8 +95,9 @@ function reconcilePendingGraph(graphId: UUID): LayoutOperationResult {
       if (
         !reconcilePendingRegistration(
           key,
-          'reroutes',
-          `${graphId}:${rerouteId}`,
+          'reroute',
+          graphId,
+          rerouteId,
           (registrationId) =>
             layoutStore.applyOperation({
               ...canvasOperationMeta(),
@@ -160,14 +161,6 @@ function canvasOperationMeta() {
   }
 }
 
-function storedRegistrationId(map: string, key: string): unknown {
-  return layoutStore
-    .getYDoc()
-    .getMap<Y.Map<unknown>>(map)
-    .get(key)
-    ?.get('registrationId')
-}
-
 export function captureNodeLayoutRegistration(
   node: LGraphNode
 ): NodeLayoutRegistration | undefined {
@@ -177,7 +170,7 @@ export function captureNodeLayoutRegistration(
   const layout = layoutStore.getNodeLayoutRef(graphId, nodeId).value
   if (
     !layout ||
-    storedRegistrationId('nodes', `${graphId}:${nodeId}`) !==
+    layoutStore.getRegistrationId('node', graphId, nodeId) !==
       registration.registrationId
   )
     return
@@ -194,7 +187,7 @@ export function captureGroupLayoutRegistration(
   const layout = layoutStore.getGroupLayout(graphId, group.id)
   if (
     !layout ||
-    storedRegistrationId('groups', `${graphId}:${group.id}`) !== registrationId
+    layoutStore.getRegistrationId('group', graphId, group.id) !== registrationId
   )
     return
   return { entity: 'group', graphId, group, layout, registrationId }
@@ -210,7 +203,7 @@ export function captureRerouteLayoutRegistration(
   const layout = layoutStore.getRerouteLayout(graphId, reroute.id)
   if (
     !layout ||
-    storedRegistrationId('reroutes', `${graphId}:${reroute.id}`) !==
+    layoutStore.getRegistrationId('reroute', graphId, reroute.id) !==
       registrationId
   )
     return
@@ -370,12 +363,8 @@ export function adoptNodeLayout(
   node: LGraphNode
 ): LayoutOperationResult {
   const graphId = graph.rootGraph.id
-  const ynode = layoutStore
-    .getYDoc()
-    .getMap<Y.Map<unknown>>('nodes')
-    .get(`${graphId}:${node.id}`)
-  const registrationId = ynode?.get('registrationId')
-  if (typeof registrationId !== 'string') return 'no-op'
+  const registrationId = layoutStore.getRegistrationId('node', graphId, node.id)
+  if (registrationId === undefined) return 'no-op'
 
   nodeRegistrations.set(node, { graphId, nodeId: node.id, registrationId })
   node._layoutRegistered = true
@@ -443,7 +432,7 @@ export function unregisterNodeLayout(
   if (
     result !== 'rejected' &&
     ownsRetained &&
-    storedRegistrationId('nodes', `${graphId}:${nodeId}`) !==
+    layoutStore.getRegistrationId('node', graphId, nodeId) !==
       resolvedRegistrationId
   ) {
     nodeRegistrations.delete(node)
@@ -462,8 +451,9 @@ export function registerGroupLayout(
   if (
     !reconcilePendingRegistration(
       key,
-      'groups',
-      `${graphId}:${group.id}`,
+      'group',
+      graphId,
+      group.id,
       (pendingId) =>
         layoutStore.applyOperation({
           ...canvasOperationMeta(),
@@ -513,9 +503,10 @@ export function unregisterGroupLayout(
   })
   if (result !== 'rejected') {
     const key = registrationKey('group', graph.rootGraph.id, group.id)
-    const storedId = storedRegistrationId(
-      'groups',
-      `${graph.rootGraph.id}:${group.id}`
+    const storedId = layoutStore.getRegistrationId(
+      'group',
+      graph.rootGraph.id,
+      group.id
     )
     if (
       pendingRegistrations.get(key) === resolvedRegistrationId &&
@@ -571,9 +562,10 @@ export function unregisterRerouteLayout(
   })
   if (result !== 'rejected') {
     const key = registrationKey('reroute', graph.rootGraph.id, reroute.id)
-    const storedId = storedRegistrationId(
-      'reroutes',
-      `${graph.rootGraph.id}:${reroute.id}`
+    const storedId = layoutStore.getRegistrationId(
+      'reroute',
+      graph.rootGraph.id,
+      reroute.id
     )
     if (
       pendingRegistrations.get(key) === resolvedRegistrationId &&
@@ -600,8 +592,9 @@ export function registerRerouteLayout(
   if (
     !reconcilePendingRegistration(
       key,
-      'reroutes',
-      `${graphId}:${reroute.id}`,
+      'reroute',
+      graphId,
+      reroute.id,
       (pendingId) =>
         layoutStore.applyOperation({
           ...canvasOperationMeta(),
@@ -683,11 +676,11 @@ export function unregisterAllGraphLayout(
       if (registration === undefined) return []
       const { graphId, nodeId } = registration
       const layout = layoutStore.getNodeLayoutRef(graphId, nodeId).value
-      const storedRegistrationId = layoutStore
-        .getYDoc()
-        .getMap<Y.Map<unknown>>('nodes')
-        .get(`${graphId}:${nodeId}`)
-        ?.get('registrationId')
+      const storedRegistrationId = layoutStore.getRegistrationId(
+        'node',
+        graphId,
+        nodeId
+      )
       if (layout && storedRegistrationId === registration.registrationId) {
         restorationOperations.push({
           actor,
@@ -719,11 +712,11 @@ export function unregisterAllGraphLayout(
       if (registrationId === undefined) return []
       const graphId = owner.rootGraph.id
       const layout = layoutStore.getGroupLayout(graphId, group.id)
-      const storedRegistrationId = layoutStore
-        .getYDoc()
-        .getMap<Y.Map<unknown>>('groups')
-        .get(`${graphId}:${group.id}`)
-        ?.get('registrationId')
+      const storedRegistrationId = layoutStore.getRegistrationId(
+        'group',
+        graphId,
+        group.id
+      )
       if (layout && storedRegistrationId === registrationId) {
         restorationOperations.push({
           actor,
@@ -755,11 +748,11 @@ export function unregisterAllGraphLayout(
       if (registrationId === undefined) return []
       const graphId = owner.rootGraph.id
       const layout = layoutStore.getRerouteLayout(graphId, reroute.id)
-      const storedRegistrationId = layoutStore
-        .getYDoc()
-        .getMap<Y.Map<unknown>>('reroutes')
-        .get(`${graphId}:${reroute.id}`)
-        ?.get('registrationId')
+      const storedRegistrationId = layoutStore.getRegistrationId(
+        'reroute',
+        graphId,
+        reroute.id
+      )
       if (layout && storedRegistrationId === registrationId) {
         restorationOperations.push({
           actor,

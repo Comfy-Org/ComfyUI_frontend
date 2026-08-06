@@ -1103,6 +1103,10 @@ class LayoutStore {
     this.clearViewGeometry()
   }
 
+  getYDocForTests(): Y.Doc {
+    return this.ydoc
+  }
+
   /**
    * Clears view geometry and subscriptions; entity geometry has separate
    * lifecycle cleanup.
@@ -1633,17 +1637,20 @@ class LayoutStore {
     })
   }
 
-  /** Sync seam: remote peers exchange document updates through these three. */
-  getYDoc(): Y.Doc {
-    return this.ydoc
-  }
-
-  applyUpdate(update: Uint8Array): void {
-    Y.applyUpdate(this.ydoc, update)
-  }
-
-  getStateAsUpdate(): Uint8Array {
-    return Y.encodeStateAsUpdate(this.ydoc)
+  getRegistrationId(
+    entity: 'node' | 'group' | 'reroute',
+    rootGraphId: UUID,
+    id: NodeId | GroupId | RerouteId
+  ): string | undefined {
+    const key = makeScopedLayoutKey(rootGraphId, id)
+    const registrationId = {
+      node: this.ynodes,
+      group: this.ygroups,
+      reroute: this.yreroutes
+    }[entity]
+      .get(key)
+      ?.get('registrationId')
+    return typeof registrationId === 'string' ? registrationId : undefined
   }
 
   /**

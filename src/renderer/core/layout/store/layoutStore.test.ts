@@ -72,7 +72,7 @@ describe('layoutStore CRDT operations', () => {
 
   function createRemoteDoc(): Y.Doc {
     const remote = new Y.Doc()
-    Y.applyUpdate(remote, layoutStore.getStateAsUpdate())
+    Y.applyUpdate(remote, Y.encodeStateAsUpdate(layoutStore.getYDocForTests()))
     return remote
   }
 
@@ -82,9 +82,12 @@ describe('layoutStore CRDT operations', () => {
   }
 
   function applyRemoteChanges(remote: Y.Doc, change: () => void): void {
-    const stateVector = Y.encodeStateVector(layoutStore.getYDoc())
+    const stateVector = Y.encodeStateVector(layoutStore.getYDocForTests())
     change()
-    layoutStore.applyUpdate(Y.encodeStateAsUpdate(remote, stateVector))
+    Y.applyUpdate(
+      layoutStore.getYDocForTests(),
+      Y.encodeStateAsUpdate(remote, stateVector)
+    )
   }
 
   describe('explicit operation outcomes', () => {
@@ -320,10 +323,12 @@ describe('layoutStore CRDT operations', () => {
       'preserves a foreign $map replacement at commit time',
       ({ create, key, map, operation }) => {
         create()
-        const collection = layoutStore.getYDoc().getMap<Y.Map<unknown>>(map)
+        const collection = layoutStore
+          .getYDocForTests()
+          .getMap<Y.Map<unknown>>(map)
         const foreign = new Y.Map<unknown>()
         foreign.set('registrationId', 'foreign')
-        const ydoc = layoutStore.getYDoc()
+        const ydoc = layoutStore.getYDocForTests()
         const originalTransact = ydoc.transact.bind(ydoc)
         vi.spyOn(ydoc, 'transact').mockImplementationOnce(
           (transaction, origin) => {
@@ -926,7 +931,7 @@ describe('layoutStore CRDT operations', () => {
       function handleTransaction(transaction: Y.Transaction): void {
         transactions.push(transaction)
       }
-      layoutStore.getYDoc().on('afterTransaction', handleTransaction)
+      layoutStore.getYDocForTests().on('afterTransaction', handleTransaction)
 
       expect(
         layoutStore.applyOperation({
@@ -970,7 +975,7 @@ describe('layoutStore CRDT operations', () => {
         expect(layoutStore.applyOperation(operation)).toBe('no-op')
       })
       expect(transactions).toHaveLength(1)
-      layoutStore.getYDoc().off('afterTransaction', handleTransaction)
+      layoutStore.getYDocForTests().off('afterTransaction', handleTransaction)
       layoutStore.setActor(previousActor)
     })
 
@@ -979,7 +984,7 @@ describe('layoutStore CRDT operations', () => {
       async (interference) => {
         createNode()
         await Promise.resolve()
-        const ydoc = layoutStore.getYDoc()
+        const ydoc = layoutStore.getYDocForTests()
         const ynodes = ydoc.getMap<Y.Map<unknown>>('nodes')
         const original = ynodes.get(`${graphId}:${nodeId}`)
         const originalPositionChanges: Y.YMapEvent<unknown>[] = []
@@ -1044,7 +1049,7 @@ describe('layoutStore CRDT operations', () => {
       const secondId = toNodeId('second-batch-target')
       createNode(createTestNode(secondId))
       await Promise.resolve()
-      const ydoc = layoutStore.getYDoc()
+      const ydoc = layoutStore.getYDocForTests()
       const ynodes = ydoc.getMap<Y.Map<unknown>>('nodes')
       const original = ynodes.get(`${graphId}:${nodeId}`)
       const originalPositionChanges: Y.YMapEvent<unknown>[] = []
@@ -1093,7 +1098,7 @@ describe('layoutStore CRDT operations', () => {
 
     it('rejects a reentrant command and preserves the outer actor', () => {
       createNode()
-      const ydoc = layoutStore.getYDoc()
+      const ydoc = layoutStore.getYDocForTests()
       const transactions: Y.Transaction[] = []
       const nodeListener = vi.fn()
       const stopNode = layoutStore.onNodeChange(graphId, nodeId, nodeListener)
@@ -1148,7 +1153,7 @@ describe('layoutStore CRDT operations', () => {
 
     it('reports when a transaction throws before the mutation applies', () => {
       createNode()
-      const ydoc = layoutStore.getYDoc()
+      const ydoc = layoutStore.getYDocForTests()
       const error = new Error('before transaction failed')
       const transact = vi.spyOn(ydoc, 'transact')
       transact.mockImplementation(() => {
@@ -1175,7 +1180,7 @@ describe('layoutStore CRDT operations', () => {
 
     it('reports applied and clears the guard when transact throws afterward', () => {
       createNode()
-      const ydoc = layoutStore.getYDoc()
+      const ydoc = layoutStore.getYDocForTests()
       const error = new Error('transaction hook failed')
       const originalTransact = ydoc.transact.bind(ydoc)
       const transact = vi.spyOn(ydoc, 'transact')
@@ -1216,7 +1221,7 @@ describe('layoutStore CRDT operations', () => {
 
     it('reports applied when a batch mutation throws after its first write', () => {
       createNode()
-      const ydoc = layoutStore.getYDoc()
+      const ydoc = layoutStore.getYDocForTests()
       const ynode = ydoc
         .getMap<Y.Map<unknown>>('nodes')
         .get(`${graphId}:${nodeId}`)!
@@ -1321,7 +1326,7 @@ describe('layoutStore CRDT operations', () => {
   })
 
   it('notifies geometry once for one local transaction across entity maps', () => {
-    const ydoc = layoutStore.getYDoc()
+    const ydoc = layoutStore.getYDocForTests()
     const onGeometryChange = vi.fn()
     const stop = layoutStore.onGeometryChange(onGeometryChange)
     const geometryVersion = layoutStore.geometryVersion

@@ -5,7 +5,7 @@ import {
 import { toNodeId } from '@/types/nodeId'
 
 test.describe(
-  'Legacy remote geometry',
+  'Legacy stored geometry',
   { tag: ['@vue-nodes', '@canvas', '@node'] },
   () => {
     test('retains geometry from a rect-only Yjs update', async ({
@@ -26,7 +26,7 @@ test.describe(
         content: `
           import { layoutStore } from '/src/renderer/core/layout/store/layoutStore.ts'
 
-          const doc = layoutStore.getYDoc()
+          const doc = layoutStore.getYDocForTests()
           const node = doc.getMap('nodes').get('${graphId}:${nodeId}')
           doc.transact(() => {
             node.delete('position')

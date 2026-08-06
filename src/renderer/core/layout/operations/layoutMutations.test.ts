@@ -65,7 +65,7 @@ describe('moveNode', () => {
     const { createNode } = useLayoutMutations()
     createNode(GRAPH, NEW_NODE, { position: { x: 10, y: 20 } })
     layoutStore
-      .getYDoc()
+      .getYDocForTests()
       .getMap<Y.Map<unknown>>('nodes')
       .get(`${GRAPH}:${NEW_NODE}`)
       ?.set('registrationId', 'owner')
@@ -164,7 +164,7 @@ describe('deleteNode', () => {
     const { createNode, deleteNode } = useLayoutMutations()
     createNode(GRAPH, NEW_NODE, {})
     layoutStore
-      .getYDoc()
+      .getYDocForTests()
       .getMap<Y.Map<unknown>>('nodes')
       .get(`${GRAPH}:${NEW_NODE}`)
       ?.set('registrationId', '')
