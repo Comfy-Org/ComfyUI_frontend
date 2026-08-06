@@ -60,8 +60,10 @@ export function useTrimPlayback(options: UseTrimPlaybackOptions) {
     const clamped = clamp(frame, 0, frameMax.value)
     playheadFrame.value = clamped
 
-    const targetTime = clampSeekTime(video, frameToTime(clamped))
-    if (!Number.isFinite(targetTime)) return
+    const mappedTime = frameToTime(clamped)
+    if (!Number.isFinite(mappedTime)) return
+
+    const targetTime = clampSeekTime(video, mappedTime)
     if (Math.abs(video.currentTime - targetTime) <= 0.0001) return
 
     const seekId = ++activeSeekId
