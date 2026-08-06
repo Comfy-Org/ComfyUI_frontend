@@ -56,6 +56,15 @@ export interface NodeSnapshot {
  * accessor methods rather than properties, so a read can be a store query and
  * a write can dispatch a command.
  */
+export interface SizeConstraints {
+  minWidth?: number
+  minHeight?: number
+  maxWidth?: number
+  maxHeight?: number
+  /** Grow to fit content rather than holding a fixed height. */
+  autoHeight?: boolean
+}
+
 export interface NodeHandle extends HandleCommon {
   readonly id: string
   readonly type: string
@@ -92,6 +101,16 @@ export interface NodeHandle extends HandleCommon {
   setPosition(pos: Point): void
   getSize(): Size
   setSize(size: Size): void
+  /**
+   * Declares how the node may be sized, instead of re-asserting it per frame.
+   *
+   * 39 packs recompute size inside a draw or resize callback, which is both a
+   * per-frame cost and a fight with the layout. `autoHeight` is usually the
+   * real intent: the pack mounted something of unknown height and wants the
+   * node to fit it.
+   */
+  setSizeConstraints(constraints: SizeConstraints): void
+  getSizeConstraints(): Readonly<SizeConstraints>
 
   readonly inputs: SlotCollection<InputSlotHandle>
   readonly outputs: SlotCollection<OutputSlotHandle>
@@ -155,6 +174,36 @@ function snapshotOf(node: LGraphNode): Readonly<NodeSnapshot> {
     position: freezePoint(node.pos[0], node.pos[1]),
     size: freezeSize(node.size[0], node.size[1])
   })
+}
+
+/**
+ * Declared constraints, by node id.
+ *
+ * Held here rather than on the node: the entity classes are closed, and a
+ * constraint is this layer's concern, not litegraph's.
+ */
+const constraintsByNode = new Map<string, SizeConstraints>()
+
+/** Clamps the node to its constraints now, and on every later resize. */
+function applyConstraints(node: LGraphNode, c: SizeConstraints) {
+  const clamp = () => {
+    const [width, height] = node.size
+    const next: [number, number] = [
+      Math.min(c.maxWidth ?? Infinity, Math.max(c.minWidth ?? 0, width)),
+      Math.min(c.maxHeight ?? Infinity, Math.max(c.minHeight ?? 0, height))
+    ]
+    if (next[0] !== width || next[1] !== height) node.size = next
+  }
+
+  // Chained rather than assigned: another pack may already be listening, and
+  // this layer must not be the one that breaks composition.
+  const previous = node.onResize
+  node.onResize = function (this: LGraphNode, size) {
+    previous?.call(this, size)
+    clamp()
+  }
+  if (c.autoHeight) node.size = [node.size[0], node.computeSize()[1]]
+  clamp()
 }
 
 /** Mutating a copy avoids relying on in-place mutation of the flags object. */
@@ -235,6 +284,13 @@ export function createNodeHandles(
           n.pos = [x, y]
         },
         getSize: (n) => freezeSize(n.size[0], n.size[1]),
+        getSizeConstraints: (n) =>
+          Object.freeze({ ...(constraintsByNode.get(String(n.id)) ?? {}) }),
+        setSizeConstraints: (n, ...args) => {
+          const next = { ...(args[0] as SizeConstraints) }
+          constraintsByNode.set(String(n.id), next)
+          applyConstraints(n, next)
+        },
         setSize: (n, ...args) => {
           const { width, height } = args[0] as Size
           n.size = [width, height]
