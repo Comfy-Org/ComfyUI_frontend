@@ -363,3 +363,86 @@ describe('preview frames', () => {
     expect(seen).toEqual([[String(node.id), 'blob:x']])
   })
 })
+
+describe('onSerialize', () => {
+  let graph: LGraph
+  let comfy: Comfy
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    graph = new LGraph()
+    comfy = createComfyApi(() => graph)
+  })
+
+  const withSerializer = (fn: (node: unknown) => Record<string, unknown>) => {
+    const registry = createDefRegistry()
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) => b.onSerialize(fn))
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    graph.add(node)
+    return node
+  }
+
+  it('merges the pack’s own keys into the saved node', () => {
+    const node = withSerializer(() => ({ splinePoints: [1, 2, 3] }))
+    expect(node.serialize()).toMatchObject({ splinePoints: [1, 2, 3] })
+  })
+
+  it('refuses to let a pack rewrite what the node is', () => {
+    // A pack overwriting type or widgets_values changes what the workflow
+    // means, which is the one thing this migration promises not to do.
+    const node = withSerializer(() => ({
+      type: 'SomethingElse',
+      widgets_values: ['hijacked'],
+      mine: 'ok'
+    }))
+    const serialized = node.serialize() as unknown as Record<string, unknown>
+    expect(serialized.type).not.toBe('SomethingElse')
+    expect(serialized.widgets_values).not.toEqual(['hijacked'])
+    expect(serialized.mine).toBe('ok')
+  })
+})
+
+describe('setSizeConstraints', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('clamps the node to its declared minimum', () => {
+    const graph = new LGraph()
+    const comfy = createComfyApi(() => graph)
+    const node = new LGraphNode('t')
+    graph.add(node)
+    const handle = comfy.graph.node(String(node.id))!
+
+    handle.setSizeConstraints({ minWidth: 400, minHeight: 200 })
+    expect(node.size[0]).toBeGreaterThanOrEqual(400)
+    expect(node.size[1]).toBeGreaterThanOrEqual(200)
+  })
+
+  it('keeps clamping after a later resize', () => {
+    const graph = new LGraph()
+    const comfy = createComfyApi(() => graph)
+    const node = new LGraphNode('t')
+    graph.add(node)
+    comfy.graph.node(String(node.id))!.setSizeConstraints({ minWidth: 300 })
+
+    node.size = [50, 50]
+    node.onResize?.(node.size)
+    expect(node.size[0]).toBe(300)
+  })
+
+  it('reports back what was declared', () => {
+    const graph = new LGraph()
+    const comfy = createComfyApi(() => graph)
+    const node = new LGraphNode('t')
+    graph.add(node)
+    const handle = comfy.graph.node(String(node.id))!
+    handle.setSizeConstraints({ maxWidth: 800, autoHeight: true })
+    expect(handle.getSizeConstraints()).toEqual({
+      maxWidth: 800,
+      autoHeight: true
+    })
+  })
+})
