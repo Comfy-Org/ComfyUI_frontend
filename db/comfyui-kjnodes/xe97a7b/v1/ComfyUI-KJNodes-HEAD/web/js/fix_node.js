@@ -1,90 +1,96 @@
-const { app } = window.comfyAPI.app;
+import { comfy } from '/comfy/api/v1.js';
 
-function snapshotOld(oldNode) {
-    const data = oldNode.serialize();
-    const widgetValuesByName = {};
-    for (const w of oldNode.widgets || []) widgetValuesByName[w.name] = w.value;
+// Recreates a node as another type, carrying across everything the new type
+// still understands. `window.kjNodes` is the pack's own cross-file namespace,
+// not a ComfyUI surface, so it stays.
 
-    const inputSnapshot = (oldNode.inputs || []).map(i => ({
-        name: i.name,
-        widgetName: i.widget?.name ?? null,
-        linkId: i.link ?? null,
-    }));
-    const outputLinksByName = {};
-    for (const o of oldNode.outputs || []) {
-        if (o.links?.length) outputLinksByName[o.name] = [...o.links];
-    }
-    return { data, widgetValuesByName, inputSnapshot, outputLinksByName };
+function widgetValuesByName(node) {
+    const values = {};
+    for (const w of node.widgets) values[w.name] = w.getValue();
+    return values;
 }
 
-function applyCosmetics(newNode, old) {
-    if (old.pos) newNode.pos = [...old.pos];
-    if (old.size) {
-        const min = newNode.computeSize?.() || [0, 0];
-        newNode.size = [Math.max(old.size[0], min[0]), Math.max(old.size[1], min[1])];
+// Captured before the old node goes away: sources by input name, targets by
+// output name. Names rather than indices, because the whole point is that the
+// new type has a different slot layout.
+function connectionsByName(node) {
+    const incoming = {};
+    for (const input of node.inputs) {
+        const source = input.source();
+        if (source) incoming[input.name] = source;
     }
-    if (old.title) newNode.title = old.title;
-    if (old.color) newNode.color = old.color;
-    if (old.bgcolor) newNode.bgcolor = old.bgcolor;
-    if (old.flags) newNode.flags = { ...(newNode.flags || {}), ...old.flags };
-    if (typeof old.mode === "number") newNode.mode = old.mode;
-    if (old.properties) newNode.properties = { ...(newNode.properties || {}), ...old.properties };
+    const outgoing = {};
+    for (const output of node.outputs) {
+        const targets = output.targets();
+        if (targets.length) outgoing[output.name] = targets;
+    }
+    return { incoming, outgoing };
 }
 
-function fixNode(oldNode, comfyClass, { resetValues = false } = {}) {
-    const graph = app.canvas.graph;
-    const snap = snapshotOld(oldNode);
+function applyCosmetics(next, previous) {
+    next.setPosition(previous.getPosition());
+    next.setTitle(previous.getTitle());
+    next.setColor(previous.getColor());
+    next.setBgColor(previous.getBgColor());
+    next.setMode(previous.getMode());
+    next.setCollapsed(previous.isCollapsed());
+    next.setPinned(previous.isPinned());
+    for (const [key, value] of Object.entries(previous.getProperties())) {
+        next.setProperty(key, value);
+    }
 
-    const newNode = LiteGraph.createNode(comfyClass);
-    if (!newNode) {
-        console.error(`[KJNodes.FixNode] Unknown node type: ${comfyClass}`);
+    // Only grow: the new type's own minimum wins, since its widget set differs.
+    const was = previous.getSize();
+    const now = next.getSize();
+    next.setSize({
+        width: Math.max(was.width, now.width),
+        height: Math.max(was.height, now.height),
+    });
+}
+
+function fixNode(node, comfyClass, { resetValues = false } = {}) {
+    const graph = comfy.graph;
+    const values = widgetValuesByName(node);
+    const { incoming, outgoing } = connectionsByName(node);
+
+    let next;
+    try {
+        next = graph.add(comfyClass, { title: node.getTitle() });
+    } catch (error) {
+        console.error(`[KJNodes.FixNode] Unknown node type: ${comfyClass}`, error);
         return null;
     }
 
     try {
-        graph.add(newNode, false);
-        applyCosmetics(newNode, snap.data);
+        applyCosmetics(next, node);
 
-        // Restore widget values by name (live widgets, not widgets_values array).
         if (!resetValues) {
-            for (const w of newNode.widgets || []) {
-                if (Object.prototype.hasOwnProperty.call(snap.widgetValuesByName, w.name)) {
-                    try { w.value = snap.widgetValuesByName[w.name]; } catch {}
-                }
+            for (const w of next.widgets) {
+                if (w.name in values) w.setValue(values[w.name]);
             }
         }
 
-        // Reconnect inputs by name.
-        for (const inp of snap.inputSnapshot) {
-            if (inp.linkId == null) continue;
-            const link = app.graph.links[inp.linkId];
-            if (!link) continue;
-            const src = app.graph.getNodeById(link.origin_id);
-            const newSlot = newNode.findInputSlot?.(inp.name);
-            if (!src || newSlot == null || newSlot < 0) continue;
-            try { src.connect(link.origin_slot, newNode, newSlot); } catch {}
+        for (const input of next.inputs) {
+            const source = incoming[input.name];
+            if (!source) continue;
+            const from = graph.node(source.nodeId);
+            from?.outputs.at(source.outputIndex)?.connectTo(next.id, input.name);
         }
 
-        // Reconnect outputs by name.
-        (newNode.outputs || []).forEach((out, i) => {
-            const linkIds = snap.outputLinksByName[out.name];
-            if (!linkIds) return;
-            for (const id of linkIds) {
-                const link = app.graph.links[id];
-                if (!link) continue;
-                const tgt = app.graph.getNodeById(link.target_id);
-                if (!tgt) continue;
-                try { newNode.connect(i, tgt, link.target_slot); } catch {}
+        for (const output of next.outputs) {
+            for (const target of outgoing[output.name] ?? []) {
+                const to = graph.node(target.nodeId);
+                if (!to) continue;
+                const input = to.inputs.at(target.inputIndex);
+                if (input) output.connectTo(target.nodeId, input.name);
             }
-        });
+        }
 
-        graph.remove(oldNode);
-        app.graph.afterChange();
-        requestAnimationFrame(() => app.canvas.setDirty(true, true));
-        return newNode;
-    } catch (err) {
-        console.error("[KJNodes.FixNode] Aborting, rolling back:", err);
-        try { graph.remove(newNode); } catch {}
+        graph.remove(node.id);
+        return next;
+    } catch (error) {
+        console.error("[KJNodes.FixNode] Aborting, rolling back:", error);
+        graph.remove(next.id);
         return null;
     }
 }

@@ -109,5 +109,11 @@
     ]
   },
   "diff": "appearance.js.diff",
-  "test": "equivalence: Creating an INTConstant node gives it size 200x58, colour #1b4669 and background #29699c; a FloatConstant gets the same size plus the green palette entry; a ConditioningMultiCombine gets the brown palette entry and its size is left untouched. A node of any other type is left entirely alone. Passes on both the original (registerExtension nodeCreated + property assignment) and the converted source (defs.extend selector + b.onCreated + setSize/setColor/setBgColor).\n\nfix: The appearance callback must not run for node types this pack does not style. On the ORIGINAL this fails: `nodeCreated` is a global extension hook, so it is invoked for every node of every type in the graph and only the switch statement discards them — instrumenting the callback while creating a KSampler shows it entered. On the CONVERTED source the selector [\"INTConstant\",\"FloatConstant\",\"ConditioningMultiCombine\"] is declarative and indexed by the registry, so b.onCreated is never invoked for a KSampler at all."
+  "test": "equivalence: Creating an INTConstant node gives it size 200x58, colour #1b4669 and background #29699c; a FloatConstant gets the same size plus the green palette entry; a ConditioningMultiCombine gets the brown palette entry and its size is left untouched. A node of any other type is left entirely alone. Passes on both the original (registerExtension nodeCreated + property assignment) and the converted source (defs.extend selector + b.onCreated + setSize/setColor/setBgColor).\n\nfix: The appearance callback must not run for node types this pack does not style. On the ORIGINAL this fails: `nodeCreated` is a global extension hook, so it is invoked for every node of every type in the graph and only the switch statement discards them — instrumenting the callback while creating a KSampler shows it entered. On the CONVERTED source the selector [\"INTConstant\",\"FloatConstant\",\"ConditioningMultiCombine\"] is declarative and indexed by the registry, so b.onCreated is never invoked for a KSampler at all.",
+  "validation": "harness",
+  "validatedAgainst": {
+    "types": 40,
+    "problems": [],
+    "wireChanged": []
+  }
 }
