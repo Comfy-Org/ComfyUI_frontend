@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -46,7 +45,7 @@ const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 const testState = vi.hoisted(() => ({
   linearMode: false,
   nodeLayouts: new Map<NodeId, NodeLayout>(),
-  batchUpdateNodeBounds: vi.fn(),
+  reportContentHeight: vi.fn(),
   syncNodeSlotLayoutsFromDOM: vi.fn(),
   scheduleSlotLayoutSync: vi.fn()
 }))
@@ -71,7 +70,7 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    batchUpdateNodeBounds: testState.batchUpdateNodeBounds,
+    reportContentHeight: testState.reportContentHeight,
     getNodeLayoutRef: (
       _rootGraphId: UUID,
       rawNodeId: NodeId
@@ -165,7 +164,7 @@ describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     testState.linearMode = false
     testState.nodeLayouts.clear()
-    testState.batchUpdateNodeBounds.mockReset()
+    testState.reportContentHeight.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
     testState.scheduleSlotLayoutSync.mockReset()
     resizeObserverState.observe.mockReset()
@@ -194,16 +193,16 @@ describe('useVueNodeResizeTracking', () => {
     // When layout store already has correct position, getBoundingClientRect
     // is not needed — position is read from the store instead.
     expect(rectSpy).not.toHaveBeenCalled()
-    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.reportContentHeight).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
 
-    testState.batchUpdateNodeBounds.mockReset()
+    testState.reportContentHeight.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
     expect(rectSpy).not.toHaveBeenCalled()
-    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.reportContentHeight).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 
@@ -231,7 +230,7 @@ describe('useVueNodeResizeTracking', () => {
 
     // Position from DOM should NOT override layout store position
     expect(rectSpy).not.toHaveBeenCalled()
-    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.reportContentHeight).not.toHaveBeenCalled()
   })
 
   it('updates node bounds + slot layouts when size changes', () => {
@@ -255,20 +254,10 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith(
+    expect(testState.reportContentHeight).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
-      [
-        {
-          nodeId,
-          bounds: {
-            x: 100,
-            y: 200 + titleHeight,
-            width: 240,
-            height: 180
-          }
-        }
-      ],
-      { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+      nodeId,
+      180 - titleHeight
     )
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
@@ -292,20 +281,10 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith(
+    expect(testState.reportContentHeight).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
-      [
-        {
-          nodeId,
-          bounds: {
-            x: 100,
-            y: 200 + titleHeight,
-            width: collapsedWidth,
-            height: collapsedHeight
-          }
-        }
-      ],
-      { source: LayoutSource.Vue, boundsIncludeTitleHeight: true }
+      nodeId,
+      Math.max(0, collapsedHeight - titleHeight)
     )
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
@@ -325,7 +304,7 @@ describe('useVueNodeResizeTracking', () => {
     })
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalled()
+    expect(testState.reportContentHeight).toHaveBeenCalled()
   })
 
   it('widgets-grid resize schedules a slot resync without writing node bounds', () => {
@@ -344,7 +323,7 @@ describe('useVueNodeResizeTracking', () => {
     resizeObserverState.callback?.([entry], createObserverMock())
 
     expect(testState.scheduleSlotLayoutSync).toHaveBeenCalledWith(parentNodeId)
-    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.reportContentHeight).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 })
