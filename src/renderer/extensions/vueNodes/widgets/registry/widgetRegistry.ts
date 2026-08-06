@@ -70,7 +70,8 @@ const WidgetPainter = defineAsyncComponent(
   () => import('@/components/painter/WidgetPainter.vue')
 )
 const WidgetCompositor = defineAsyncComponent(
-  () => import('@/components/compositor/WidgetCompositor.vue')
+  () =>
+    import('@/renderer/extensions/compositor/components/WidgetCompositor.vue')
 )
 const WidgetRange = defineAsyncComponent(
   () => import('@/components/range/WidgetRange.vue')

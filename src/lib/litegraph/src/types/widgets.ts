@@ -1,5 +1,5 @@
 import type { Bounds } from '@/renderer/core/layout/types'
-import type { CompositorWidgetValue } from '@/components/compositor/types'
+import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'

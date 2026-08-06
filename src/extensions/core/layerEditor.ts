@@ -1,4 +1,4 @@
-import { useLayerEditor } from '@/composables/layerEditor/useLayerEditor'
+import { useLayerEditor } from '@/renderer/extensions/layerEditor/composables/useLayerEditor'
 import { app } from '@/scripts/app'
 
 app.registerExtension({

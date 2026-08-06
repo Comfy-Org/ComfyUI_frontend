@@ -1,10 +1,10 @@
-import type { CompositorBBox } from '@/composables/compositor/compositorLayerState'
-import { resetCompositorStateWidgets } from '@/composables/compositor/compositorWidgets'
+import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
+import { resetCompositorStateWidgets } from '@/renderer/extensions/compositor/composables/compositorWidgets'
 import {
   clearCompositorLayers,
   clearCompositorPreviewOverride,
   setCompositorLayers
-} from '@/composables/compositor/useCompositorLayers'
+} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
 import { useExtensionService } from '@/services/extensionService'
