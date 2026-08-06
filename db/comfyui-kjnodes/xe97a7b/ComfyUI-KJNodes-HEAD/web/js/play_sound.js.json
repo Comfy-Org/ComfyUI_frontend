@@ -1,0 +1,193 @@
+{
+  "pack": "comfyui-kjnodes",
+  "commit": "xe97a7b",
+  "file": "ComfyUI-KJNodes-HEAD/web/js/play_sound.js",
+  "sourceSha256": "8ad5ae7d996db3bd4e3a5dbee5d3cce30757a513af0a15d852a0b5a98db4922c",
+  "apiMajor": 1,
+  "ruleCatalogVersion": 2,
+  "author": "agent:claude-code",
+  "rules": [],
+  "summary": "Replaced `app.registerExtension` + `nodeType.prototype.onExecuted` patching with `comfy.defs.extend('PlaySoundKJ', b => b.onExecuted(...))`; `output.audio`/`output.audio_hash` now read from `result.raw`, and the mode/volume/duration widgets through `node.widgets.get(name)?.getValue()`. The six `this._kj*` instance fields are renames onto one `states` Map keyed by `node.id` (`_kjLastAudioHash`→`state.lastAudioHash`, `_kjStatusListener`→`state.statusListener`, `_kjPlayingAudio`→`state.playingAudio`, `_kjPlayTimer`→`state.playTimer`, `_kjQueueDebounce`→`state.queueDebounce`, `_kjPendingAudio`→`state.pendingAudio`); nothing dropped. The inline \"clean up previous state\" block became `stopPlayback(state)` so `b.onRemoved` can reuse it — which also fixes the original leak where deleting a node left its \"status\" listener subscribed and its audio playing. The `api` import and the queue-status subscription are untouched.",
+  "verified": {
+    "pack": "comfyui-kjnodes",
+    "file": "ComfyUI-KJNodes-HEAD/web/js/play_sound.js",
+    "results": [
+      {
+        "id": "edits-apply-cleanly",
+        "status": "skipped",
+        "detail": "No edits recorded."
+      },
+      {
+        "id": "converted-source-parses",
+        "status": "skipped",
+        "detail": "ES module; syntax is validated by the runtime load check."
+      },
+      {
+        "id": "no-new-capabilities",
+        "status": "passed",
+        "detail": "No net-new capabilities."
+      },
+      {
+        "id": "retires-the-old-surface",
+        "status": "passed",
+        "detail": "No prototype patching remains."
+      },
+      {
+        "id": "handles-use-accessors",
+        "status": "passed",
+        "detail": "Handle state written through accessors."
+      },
+      {
+        "id": "no-unknown-api-members",
+        "status": "passed",
+        "detail": "No net-new members outside the API."
+      },
+      {
+        "id": "no-dropped-behaviour",
+        "status": "passed",
+        "detail": "Gone from the file: _kjLastAudioHash, _kjPendingAudio, _kjPlayTimer, _kjPlayingAudio, _kjQueueDebounce, _kjStatusListener. Each should be a rename onto the published API or genuinely obsolete; say which in the summary. Anything else is lost functionality, which makes the conversion wrong."
+      },
+      {
+        "id": "no-silently-dropped-writes",
+        "status": "passed",
+        "detail": "No writes behind an optional chain."
+      },
+      {
+        "id": "diff-is-mostly-substance",
+        "status": "passed",
+        "detail": "37/94 added line(s) differ only in indentation."
+      },
+      {
+        "id": "no-net-new-lines",
+        "status": "passed",
+        "detail": "Net 15 line(s)."
+      },
+      {
+        "id": "loads",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      },
+      {
+        "id": "registers-no-fewer-types",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      },
+      {
+        "id": "retires-deprecations",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      }
+    ],
+    "passed": true,
+    "failures": [],
+    "skipped": [
+      {
+        "id": "edits-apply-cleanly",
+        "status": "skipped",
+        "detail": "No edits recorded."
+      },
+      {
+        "id": "converted-source-parses",
+        "status": "skipped",
+        "detail": "ES module; syntax is validated by the runtime load check."
+      },
+      {
+        "id": "loads",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      },
+      {
+        "id": "registers-no-fewer-types",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      },
+      {
+        "id": "retires-deprecations",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      }
+    ]
+  },
+  "diff": "play_sound.js.diff",
+  "test": "PlaySoundKJ — audio playback on execution.\n\n## Equivalence (must pass against BOTH the shipped file and the draft)\n\nSetup: one PlaySoundKJ node with widgets mode/volume/duration. Stub `Audio`\n(record constructor url, `volume`, `play()`, `pause()`) and stub `api.apiURL`\nto return its argument. Deliver backend output by whichever route the source\nuses — `nodeType.prototype.onExecuted(output)` for the shipped file,\n`b.onExecuted(node, result)` with `result.raw === output` for the draft.\n\n1. Empty / missing audio is a no-op.\n   output `{}` and `{ audio: [] }` → no `Audio` is constructed.\n\n2. mode \"always\" plays immediately at the widget volume.\n   mode=\"always\", volume=0.3, duration=0,\n   output `{ audio: [{ filename: \"a.flac\", subfolder: \"sub\", type: \"temp\" }] }`\n   → exactly one `Audio` constructed, url is\n   `/view?filename=a.flac&subfolder=sub&type=temp`, `volume === 0.3`,\n   `play()` called once, and no timer is scheduled.\n\n3. Missing filename/subfolder/type default to \"\", \"\" and \"temp\".\n   output `{ audio: [{}] }` → url `/view?filename=&subfolder=&type=temp`.\n\n4. Missing widgets fall back to mode \"always\", volume 0.5, duration 0.\n   Node with no widgets at all → one `Audio`, `volume === 0.5`, `play()` called.\n\n5. volume is clamped to [0,1]: volume=5 → `volume === 1`; volume=-2 → `volume === 0`.\n\n6. duration > 0 pauses the audio after duration seconds.\n   duration=2 → advance fake timers 1999ms: `pause()` not called; advance past\n   2000ms: `pause()` called exactly once.\n\n7. mode \"on_change\" suppresses a repeat with the same hash.\n   Execute twice with `{ audio: [...], audio_hash: [\"h1\"] }` → one `Audio` total.\n   Execute a third time with `audio_hash: [\"h2\"]` → a second `Audio`.\n   A null/absent `audio_hash` never suppresses: two executions with no\n   `audio_hash` produce two `Audio` objects.\n\n8. mode \"on_empty_queue\" defers until the queue drains, with a 1s debounce.\n   Execute → no `Audio` yet, and a \"status\" listener is registered on `api`.\n   Emit status `{ detail: { exec_info: { queue_remaining: 2 } } }` → still none.\n   Emit `queue_remaining: 0`, advance 999ms → still none.\n   Advance past 1000ms → one `Audio`, `play()` called, and the \"status\"\n   listener has been removed from `api`.\n\n9. A 0 that is followed by a non-zero inside the debounce window is cancelled.\n   Emit `queue_remaining: 0`, advance 500ms, emit `queue_remaining: 1`,\n   advance 5000ms → no `Audio` constructed and the listener is still registered.\n\n10. Re-executing while a sound is playing stops the old one first.\n    mode=\"always\", duration=10, execute, then execute again → first audio's\n    `pause()` called once, two `Audio` objects constructed, and only the second\n    is still pending its stop timer (advance past 10s → second `pause()`).\n\n11. Two PlaySoundKJ nodes keep independent state.\n    Node A and node B both mode=\"on_change\" with hash \"h1\": A executes (plays),\n    B executes (plays — B has never seen \"h1\"). A executes again with \"h1\" → no\n    third `Audio`. Two `Audio` objects total.\n\n## Fix (expected to FAIL against the shipped file, pass against the draft)\n\nDeleting the node while an \"on_empty_queue\" playback is pending must release\nthe subscription and not play.\n\n  mode=\"on_empty_queue\", execute → a \"status\" listener is registered.\n  Now remove the node (`graph.remove(node)` for the shipped file;\n  `b.onRemoved` fires for the draft).\n  Expected: the \"status\" listener has been removed from `api`, and emitting\n  `queue_remaining: 0` followed by advancing 5000ms constructs no `Audio`.\n\n  The shipped file keeps its state on the node instance and never unsubscribes\n  on removal, so the listener stays registered for the lifetime of the page and\n  still fires playback for a node that no longer exists.\n\nAlso: deleting the node while a sound is playing must stop it.\n  mode=\"always\", duration=10, execute, remove the node → `pause()` called.\n  The shipped file leaves the audio playing and the stop timer armed.",
+  "validation": "none",
+  "validatedAgainst": {
+    "types": 40,
+    "problems": [
+      "pack stopped loading: harness: ComfyApiError: Cannot mount 'preview': DOM widgets are unavailable in this host. This needs a browser environment with the widget layer loaded.\n    at Object.mount (/Users/ben/popbot/workspaces/comfyui-frontend/comfyui-frontend-2/src/platform/nodeApi/widgetHandle.ts:459:15)\n    at Object.canvas (/Users/ben/popbot/workspaces/comfyui-frontend/comfyui-frontend-2/src/platform/nodeApi/widgetHandle.ts:511:27)\n    at file:///private/var/folders/5v/4sjlf6ts47v0ww2vbczg80y40000gn/T/magic-patch-verify-o2NjRt/after/web/js/fast_preview.js:12:33\n    at <anonymous> (/Users/ben/popbot/workspaces/comfyui-frontend/comfyui-frontend-2/src/platform/nodeApi/defsRegistry.ts:609:53)\n    at Generated.nodeType.<computed> (/Users/ben/popbot/workspaces/comfyui-frontend/comfyui-frontend-2/src/platform/nodeApi/defsRegistry.ts:595:11)\n    at LGraph.add (/Users/ben/popbot/workspaces/comfyui-frontend/comfyui-frontend-2/src/lib/litegraph/src/LGraph.ts:1157:10)\n    at runPack (/Users/ben/popbot/workspaces/comfyui-frontend/comfyui-frontend-2/scripts/magic-patch/harness/runPack.mjs:120:20)\n    at async <anonymous> (/Users/ben/popbot/workspaces/comfyui-frontend/comfyui-frontend-2/scripts/magic-patch/harness/runImage.mjs:45:39)",
+      "type lost: ConditioningMultiCombine",
+      "type lost: CrossFadeImagesMulti",
+      "type lost: DecodeAndSaveVideo",
+      "type lost: FastPreview",
+      "type lost: FloatConstant",
+      "type lost: FluxBlockLoraSelect",
+      "type lost: GetImageSizeAndCount",
+      "type lost: GetLatentSizeAndCount",
+      "type lost: GetMaskSizeAndCount",
+      "type lost: HunyuanVideoBlockLoraSelect",
+      "type lost: INTConstant",
+      "type lost: ImageAddMulti",
+      "type lost: ImageBatchMulti",
+      "type lost: ImageConcatMulti",
+      "type lost: JoinStringMulti",
+      "type lost: LTX2BlockLoraSelect",
+      "type lost: LoraExtractKJ",
+      "type lost: MaskBatchMulti",
+      "type lost: ModelSaveKJ",
+      "type lost: PlaySoundKJ",
+      "type lost: PointsEditor",
+      "type lost: PreviewAnimation",
+      "type lost: SaveImageKJ",
+      "type lost: SaveImageWithAlpha",
+      "type lost: SaveStringKJ",
+      "type lost: SoundReactive",
+      "type lost: SplineEditor",
+      "type lost: TransitionImagesMulti",
+      "type lost: VRAM_Debug",
+      "type lost: Wan21BlockLoraSelect",
+      "type lost: basis",
+      "type lost: bezier",
+      "type lost: cardinal",
+      "type lost: linear",
+      "type lost: monotone",
+      "type lost: slot name",
+      "type lost: slot name (UPPERCASE)",
+      "type lost: slot name (lowercase)",
+      "type lost: step-after",
+      "type lost: step-before",
+      "no longer constructs: ConditioningMultiCombine",
+      "no longer constructs: CrossFadeImagesMulti",
+      "no longer constructs: FastPreview",
+      "no longer constructs: FloatConstant",
+      "no longer constructs: FluxBlockLoraSelect",
+      "no longer constructs: GetImageSizeAndCount",
+      "no longer constructs: GetLatentSizeAndCount",
+      "no longer constructs: GetMaskSizeAndCount",
+      "no longer constructs: HunyuanVideoBlockLoraSelect",
+      "no longer constructs: INTConstant",
+      "no longer constructs: ImageAddMulti",
+      "no longer constructs: ImageBatchMulti",
+      "no longer constructs: ImageConcatMulti",
+      "no longer constructs: JoinStringMulti",
+      "no longer constructs: LTX2BlockLoraSelect",
+      "no longer constructs: MaskBatchMulti",
+      "no longer constructs: PlaySoundKJ",
+      "no longer constructs: PreviewAnimation",
+      "no longer constructs: SoundReactive",
+      "no longer constructs: TransitionImagesMulti",
+      "no longer constructs: VRAM_Debug",
+      "no longer constructs: Wan21BlockLoraSelect",
+      "no longer constructs: basis",
+      "no longer constructs: bezier",
+      "no longer constructs: cardinal",
+      "no longer constructs: linear",
+      "no longer constructs: monotone",
+      "no longer constructs: slot name",
+      "no longer constructs: slot name (UPPERCASE)",
+      "no longer constructs: slot name (lowercase)",
+      "no longer constructs: step-after",
+      "no longer constructs: step-before"
+    ],
+    "wireChanged": []
+  }
+}

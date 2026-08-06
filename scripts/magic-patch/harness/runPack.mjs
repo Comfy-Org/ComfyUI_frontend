@@ -18,6 +18,7 @@ import { pathToFileURL } from 'node:url'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { registry } from './stubs/registry.mjs'
+import { installGlobals } from './stubs/globals.mjs'
 
 /** Writes a pack image to disk so relative imports between files resolve. */
 export function materialise(root, files) {
@@ -43,6 +44,7 @@ export async function runPack({
   apiMajor = 1
 }) {
   registry.reset()
+  installGlobals()
 
   const loadErrors = []
   for (const entry of entries) {
