@@ -312,11 +312,11 @@ function handleSearchResultKeydown(event: KeyboardEvent) {
 }
 
 const menuItemClass =
-  'relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors select-none data-highlighted:bg-secondary-background-hover'
+  'relative my-0.5 flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm outline-none transition-colors select-none data-highlighted:bg-secondary-background-hover'
 const groupLabelClass = 'px-2 py-1.5 text-xs font-medium text-muted-foreground'
 const separatorClass = '-mx-1 my-1 h-px bg-border-subtle'
 const searchClass =
-  'h-8 w-full min-w-0 rounded-md border border-solid border-border-subtle bg-transparent pr-2 pl-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-border-default'
+  'h-9 w-full min-w-0 rounded-md border border-solid border-border-subtle bg-transparent pr-2 pl-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-border-default'
 const submenuClass =
   'z-1700 w-56 overflow-hidden rounded-md border border-border-subtle bg-base-background p-1 shadow-md'
 </script>

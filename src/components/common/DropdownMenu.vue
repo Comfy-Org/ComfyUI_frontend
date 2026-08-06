@@ -22,7 +22,8 @@ defineOptions({
 const {
   itemClass: itemProp,
   contentClass: contentProp,
-  modal = true
+  modal = true,
+  showArrow = true
 } = defineProps<{
   entries?: MenuItem[]
   icon?: string
@@ -32,6 +33,8 @@ const {
   contentClass?: string
   buttonSize?: ButtonVariants['size']
   buttonClass?: string
+  /** The pointer reads as decoration on menus anchored to a small icon. */
+  showArrow?: boolean
 }>()
 
 const itemClass = computed(() =>
@@ -81,7 +84,10 @@ const contentStyle = useModalLiftedZIndex(open)
             :item
           />
         </slot>
-        <DropdownMenuArrow class="fill-base-background stroke-border-subtle" />
+        <DropdownMenuArrow
+          v-if="showArrow"
+          class="fill-base-background stroke-border-subtle"
+        />
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>

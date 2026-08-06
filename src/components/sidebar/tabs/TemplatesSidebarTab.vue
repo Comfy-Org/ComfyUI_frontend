@@ -22,7 +22,7 @@
         <!-- Filter menu: same primitives and behaviours as the Media Assets
              filter (#14166) — nested submenus, menu stays open while picking,
              a dot on the trigger when anything is applied. -->
-        <DropdownMenu :modal="false">
+        <DropdownMenu :modal="false" :show-arrow="false">
           <template #button>
             <Button
               variant="secondary"
@@ -31,7 +31,7 @@
               data-testid="templates-filters-toggle"
               class="relative size-9 shrink-0"
             >
-              <i class="icon-[lucide--list-filter] size-4" />
+              <i class="icon-[lucide--list-filter]" />
               <span
                 v-if="activeFilterCount > 0"
                 aria-hidden="true"
@@ -56,7 +56,7 @@
               :aria-label="$t('templateWorkflows.sorting')"
               class="size-9 shrink-0"
             >
-              <i class="icon-[lucide--arrow-up-down] size-4" />
+              <i class="icon-[lucide--arrow-up-down]" />
             </Button>
           </template>
           <template #default="{ close }">
@@ -107,7 +107,7 @@
           class="ml-auto shrink-0"
           data-testid="template-generation-type-menu"
         >
-          <DropdownMenu :modal="false">
+          <DropdownMenu :modal="false" :show-arrow="false">
             <template #button>
               <button
                 type="button"
