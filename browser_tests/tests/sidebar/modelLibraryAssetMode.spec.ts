@@ -5,6 +5,8 @@ import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   MODEL_TYPE_CHECKPOINT_GGUF,
+  MODEL_TYPE_CHECKPOINT_LEGACY_TAG,
+  MODEL_TYPE_CHECKPOINT_MID_RETAG,
   MODEL_TYPE_CHECKPOINT_NESTED,
   MODEL_TYPE_CHECKPOINT_ORPHAN,
   MODEL_TYPE_CHECKPOINT_PRE_CUTOVER,
@@ -347,6 +349,114 @@ test.describe('Model library sidebar - asset mode before the loader_path cutover
     // Degrades to empty, not broken: the panel stays interactive.
     await expect(tab.refreshButton).toBeEnabled()
     await expect(tab.searchInput).toBeEditable()
+  })
+})
+
+test.describe('Model library sidebar - asset mode with a legacy bare tag', () => {
+  test.beforeEach(async ({ comfyPage, assetApi }) => {
+    assetApi.configure(
+      withModels([MODEL_TYPE_CHECKPOINT_ROOT, MODEL_TYPE_CHECKPOINT_LEGACY_TAG])
+    )
+    await assetApi.mock()
+    await comfyPage.modelLibrary.mockModelFolders([
+      {
+        name: 'checkpoints',
+        folders: ['/models/checkpoints'],
+        extensions: ['.safetensors']
+      }
+    ])
+    await comfyPage.setup()
+    await comfyPage.featureFlags.setServerFlagsPersistent({
+      supports_model_type_tags: true
+    })
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.modelLibrary.clearMocks()
+  })
+
+  // Regression for the AC3 bug flagged in #13574's review: on a
+  // model_type-capable backend, a bare (non-namespaced) tag resolved to no
+  // category and buildModelBuckets dropped the asset with a console.warn
+  // instead of falling back to legacy bare-tag grouping.
+  test('Falls back to legacy bare-tag grouping instead of dropping the asset', async ({
+    comfyPage
+  }) => {
+    await comfyPage.menu.modelLibraryTab.open()
+    const tab = comfyPage.menu.modelLibraryTab
+
+    await tab.getFolderRowByLabel('checkpoints').click()
+    await expect(tab.getLeafByLabel('v1-5-pruned-emaonly')).toBeVisible()
+    await expect(tab.getLeafByLabel('legacy_tagged_checkpoint')).toBeVisible()
+  })
+})
+
+test.describe('Model library sidebar - asset mode with a mid-retag twin tag', () => {
+  test.beforeEach(async ({ comfyPage, assetApi }) => {
+    assetApi.configure(
+      withModels([
+        MODEL_TYPE_CHECKPOINT_ROOT,
+        MODEL_TYPE_CHECKPOINT_MID_RETAG,
+        MODEL_TYPE_LORA
+      ])
+    )
+    await assetApi.mock()
+    await comfyPage.modelLibrary.mockModelFolders([
+      {
+        name: 'checkpoints',
+        folders: ['/models/checkpoints'],
+        extensions: ['.safetensors']
+      },
+      {
+        name: 'loras',
+        folders: ['/models/loras'],
+        extensions: ['.safetensors']
+      }
+    ])
+    await comfyPage.setup()
+    await comfyPage.featureFlags.setServerFlagsPersistent({
+      supports_model_type_tags: true
+    })
+    await comfyPage.menu.modelLibraryTab.open()
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.modelLibrary.clearMocks()
+  })
+
+  // Regression for the high-severity finding on #14217: an asset carrying
+  // both an authoritative `model_type:checkpoints` tag and a leftover bare
+  // `checkpoints` twin (a partial re-tagging artifact) must land in
+  // `checkpoints` exactly once, and its unrelated leftover `loras` bare tag
+  // must not cross-list it into that folder too.
+  test('Groups a model_type-covered asset once and ignores its bare-tag twins', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.modelLibraryTab
+
+    await tab.getFolderRowByLabel('checkpoints').click()
+    await expect(
+      tab.modelTree
+        .locator('.p-tree-node-leaf')
+        .filter({ hasText: 'mid_retag_checkpoint' })
+    ).toHaveCount(1)
+
+    // loras carries a real model_type:loras asset so the folder itself
+    // renders (asset mode hides folders that load with zero models) —
+    // otherwise an absent 'loras' row would be ambiguous between "correctly
+    // empty" and "never loaded".
+    await tab.getFolderRowByLabel('loras').click()
+    await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
+
+    // Scoped to the loras subtree, not tab.modelTree: checkpoints is still
+    // expanded from the assertion above, and its (correct) copy of the leaf
+    // would otherwise satisfy a tree-wide query on its own.
+    await expect(
+      tab
+        .getFolderByLabel('loras')
+        .locator('.p-tree-node-leaf')
+        .filter({ hasText: 'mid_retag_checkpoint' })
+    ).toHaveCount(0)
   })
 })
 
