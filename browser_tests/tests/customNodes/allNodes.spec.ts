@@ -23,7 +23,8 @@ import {
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   allowlistRulesFor,
-  isForeignExecutionNoise
+  isForeignExecutionNoise,
+  staleRequiredRoundtripErrorRules
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import type {
@@ -47,6 +48,7 @@ import {
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
+import { describeRunOutcome } from '@e2e/fixtures/customNode/runResult'
 import {
   assertPackLedgerKeys,
   packLedgerFor
@@ -1000,6 +1002,7 @@ for (const entry of loadManifest()) {
       })
 
       await runTier('save/reload', async () => {
+        const roundtripConsoleErrors: string[] = []
         const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
         for (const ledgered of stalenessCheckedKeys(entry, allowedWidgets))
           expect(
@@ -1391,6 +1394,7 @@ for (const entry of loadManifest()) {
             }
           }
           consoleErrors.stop()
+          roundtripConsoleErrors.push(...consoleErrors.errors)
           const allowlist = allowlistRulesFor(entry.pack)
           expect(
             consoleErrors.errors.filter(
@@ -1423,6 +1427,14 @@ for (const entry of loadManifest()) {
             `stale ROUNDTRIP_VALUE_ALLOWED_INDICES entries with VueNodes=${vueNodesEnabled}: ${staleValueIndices.join(', ')}`
           ).toEqual([])
         }
+        const staleConsoleRules = staleRequiredRoundtripErrorRules(
+          entry.pack,
+          roundtripConsoleErrors
+        )
+        expect(
+          staleConsoleRules,
+          `stale required save/reload console-error rules: ${staleConsoleRules.join(', ')}`
+        ).toEqual([])
         await expectNoVisibleErrors(comfyPage.page, 'after save/reload sweep')
       })
 
@@ -1671,5 +1683,5 @@ async function runBatch(
   }
   if (result.outcome === 'VALIDATION_FAIL' && result.clientError)
     return `VALIDATION_FAIL (client threw: ${result.clientError.slice(0, 200)})`
-  return `${result.outcome}${result.error?.nodeType ? ` (${result.error.nodeType}: ${result.error.exceptionType ?? ''})` : ''}`
+  return describeRunOutcome(result)
 }

@@ -1,5 +1,5 @@
 // Exact serialized indices changed by the artifact-proven pack mechanisms.
-// Unlisted indices and the opposite renderer remain strict.
+// Unlisted indices and renderers without matching evidence remain strict.
 export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
   string,
   Record<string, string>
@@ -21,6 +21,17 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   string,
   Record<string, string>
 > = {
+  'ComfyUI_Fill-Nodes': {
+    FL_ColorPicker: '3,4,5,6',
+    FL_ReplaceColor: '5,6,7,8,9,10,11,12'
+  },
+  'ComfyUI-LTXVideo': {
+    LTXVSparseTrackEditor: '0,1'
+  },
+  'WhatDreamsCost-ComfyUI': {
+    LTXDirector: '3,4,5,7',
+    LoadAudioUI: '5'
+  },
   'comfyui-itools': {
     iToolsRegexNode: '0'
   },
@@ -52,7 +63,16 @@ export const OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
 export const OUTPUT_TOPOLOGY_EXPECTATIONS_VUE: Record<
   string,
   Record<string, TopologyExpectation>
-> = {}
+> = {
+  'ComfyUI_Fill-Nodes': {
+    FL_VideoBatchSplitter: {
+      before: 20,
+      after: 4,
+      reason:
+        'pack JS exposes output_count outputs on the instance; the default is 4 of 20 declared outputs'
+    }
+  }
+}
 
 export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
   string,
@@ -71,7 +91,22 @@ export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
 export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE: Record<
   string,
   Record<string, TopologyExpectation>
-> = {}
+> = {
+  'WhatDreamsCost-ComfyUI': {
+    LTXKeyframer: {
+      before: 102,
+      after: 2,
+      reason:
+        'pack JS rebuilds the keyframe widgets from the configured image count'
+    },
+    LTXSequencer: {
+      before: 154,
+      after: 4,
+      reason:
+        'pack JS rebuilds the sequencer widgets from the configured track count'
+    }
+  }
+}
 
 export function matchesTopologyExpectation(
   expectation: TopologyExpectation | undefined,

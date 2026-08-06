@@ -167,6 +167,11 @@ for (const autogrowCase of AUTOGROW_CASES) {
           ).toBeGreaterThan(-1)
 
           if (connectPath === 'drag') {
+            // Cloud can finish opening the first-run template dialog after
+            // beforeEach dismissed it. A modal over the canvas consumes the
+            // pointer sequence while the equivalent programmatic connection
+            // still works, producing a false slot-targeting failure.
+            await dismissTemplatesDialog(comfyPage)
             if (vueNodesEnabled) {
               const outDot = comfyPage.vueNodes.getOutputSlotConnectionDot(
                 String(producer.id),

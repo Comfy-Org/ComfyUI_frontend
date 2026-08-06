@@ -36,7 +36,7 @@ test.describe('rendererLedgerFor', () => {
     })
   })
 
-  test('keeps every artifact-proven exception on only its observed renderer', () => {
+  test('routes each artifact-proven mechanism to every observed renderer', () => {
     const nodes = <T>(ledger: Record<string, Record<string, T>>) =>
       Object.values(ledger)
         .flatMap((entries) => Object.keys(entries))
@@ -50,6 +50,11 @@ test.describe('rendererLedgerFor', () => {
       'LoadAudioUI'
     ])
     expect(nodes(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE)).toEqual([
+      'FL_ColorPicker',
+      'FL_ReplaceColor',
+      'LTXDirector',
+      'LTXVSparseTrackEditor',
+      'LoadAudioUI',
       'RadianceSamplerPro',
       'iToolsRegexNode'
     ])
@@ -60,11 +65,16 @@ test.describe('rendererLedgerFor', () => {
     expect(nodes(ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH)).toEqual([
       'LTXKeyframer'
     ])
-    expect(ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE).toEqual({})
+    expect(nodes(ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE)).toEqual([
+      'LTXKeyframer',
+      'LTXSequencer'
+    ])
     expect(nodes(OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH)).toEqual([
       'FL_VideoBatchSplitter'
     ])
-    expect(OUTPUT_TOPOLOGY_EXPECTATIONS_VUE).toEqual({})
+    expect(nodes(OUTPUT_TOPOLOGY_EXPECTATIONS_VUE)).toEqual([
+      'FL_VideoBatchSplitter'
+    ])
   })
 })
 
@@ -77,14 +87,11 @@ test.describe('matchesTopologyExpectation', () => {
     expect(matchesTopologyExpectation(expectation, 20, 4)).toBe(true)
     expect(matchesTopologyExpectation(expectation, 20, 3)).toBe(false)
     expect(matchesTopologyExpectation(expectation, 19, 4)).toBe(false)
-    expect(
-      matchesTopologyExpectation(
-        OUTPUT_TOPOLOGY_EXPECTATIONS_VUE['ComfyUI_Fill-Nodes']
-          ?.FL_VideoBatchSplitter,
-        20,
-        4
-      )
-    ).toBe(false)
+    const vueExpectation =
+      OUTPUT_TOPOLOGY_EXPECTATIONS_VUE['ComfyUI_Fill-Nodes']
+        .FL_VideoBatchSplitter
+    expect(matchesTopologyExpectation(vueExpectation, 20, 4)).toBe(true)
+    expect(matchesTopologyExpectation(vueExpectation, 20, 3)).toBe(false)
   })
 
   test('accepts only the exact artifact-proven widget transition', () => {
@@ -95,12 +102,24 @@ test.describe('matchesTopologyExpectation', () => {
     expect(matchesTopologyExpectation(expectation, 102, 2)).toBe(true)
     expect(matchesTopologyExpectation(expectation, 102, 0)).toBe(false)
     expect(matchesTopologyExpectation(expectation, 101, 2)).toBe(false)
+    const vueExpectations =
+      ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE['WhatDreamsCost-ComfyUI']
+    expect(
+      matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 2)
+    ).toBe(true)
+    expect(
+      matchesTopologyExpectation(vueExpectations.LTXSequencer, 154, 4)
+    ).toBe(true)
+    expect(
+      matchesTopologyExpectation(vueExpectations.LTXSequencer, 154, 3)
+    ).toBe(false)
     expect(
       matchesTopologyExpectation(
-        ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE['WhatDreamsCost-ComfyUI']
-          ?.LTXKeyframer,
-        102,
-        2
+        ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH[
+          'WhatDreamsCost-ComfyUI'
+        ].LTXSequencer,
+        154,
+        4
       )
     ).toBe(false)
   })

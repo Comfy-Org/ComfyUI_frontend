@@ -16,6 +16,7 @@ import {
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { connectivityExpectationsFor } from '@e2e/fixtures/customNode/connectivityExpectations'
+import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import { customNodesEnv, loadManifest } from '@e2e/fixtures/customNode/manifest'
 import type {
   ConnectivityOutcome,
@@ -201,7 +202,19 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     console.log(
       `connectivity sweep: ${sweepErrors.length - unledgered.length} console error(s) matched an installed pack's allowlist`
     )
-  expect(unledgered, 'console errors during breadth sweep').toEqual([])
+  if (unledgered.length > 0)
+    await test.info().attach('connectivity-console-errors.json', {
+      body: JSON.stringify(unledgered, null, 2),
+      contentType: 'application/json'
+    })
+  expect(
+    unledgered.length === 0,
+    failureSummary(
+      'console errors during breadth sweep',
+      unledgered,
+      'connectivity-console-errors.json'
+    )
+  ).toBe(true)
 
   // Two-way guard, same discipline as cannotRunAlone, for these allowlists
   // in the loop below: every key must still be OBSERVED failing in its
@@ -323,6 +336,12 @@ function evaluatePairs(
         }
         graph.add(producer)
         graph.add(consumer)
+        // Pack nodeCreated hooks commonly defer widget/editor initialization
+        // with setTimeout(0). Let that required mount work finish before this
+        // sweep serializes the pair. Without the yield, a 1,000-pair browser
+        // task snapshots half-initialized nodes and accumulates their deferred
+        // WebGL/editor work until after the batch has already removed them.
+        await new Promise((resolve) => setTimeout(resolve, 0))
         const outIndex = producer.outputs.findIndex(
           (slot) => slot.name === pair.producer.slotName
         )

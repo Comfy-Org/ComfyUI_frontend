@@ -70,6 +70,10 @@ const OBJECT_INFO_SANITY_FLOOR = 50
 const CURATED_SINK_TYPES = ['PreviewAny', 'DisplayAny', 'ShowText|pysssss']
 
 const KNOWN_BROKEN_EXTENSIONS: Record<string, Record<string, string>> = {
+  'ComfyUI-DepthAnythingV3': {
+    'DepthAnythingV3.ToMesh.Download':
+      'testcloud serves da3_tomesh_download.js truncated inside addDOMWidget, so the module throws Unexpected end of input'
+  },
   'WhatDreamsCost-ComfyUI': {
     'Comfy.LTXDirectorGuide':
       'the pinned extension file has a trailing orphan `}, });` syntax error and cannot evaluate'
@@ -400,6 +404,7 @@ test('harness self-check: captures a real execution error @custom-nodes', async 
 
   expect(result.outcome).toBe('EXECUTION_ERROR')
   expect(result.error?.exceptionType).toBeTruthy()
+  expect(result.error?.exceptionMessage).toBe('Error node was called!')
   // Proves the event tap captures node ids from the live `executing` stream
   // (its detail is a bare string): the failing node starts before it raises.
   expect(result.executedNodes.length).toBeGreaterThan(0)
@@ -424,12 +429,13 @@ test('collector self-check: captures uncaught page exceptions @custom-nodes', as
     }, 0)
   })
   await expect
-    .poll(() =>
-      collected.errors.some((error) =>
-        error.includes('cn-collector-self-check')
-      )
+    .poll(
+      () =>
+        collected.errors.find((error) =>
+          error.includes('cn-collector-self-check')
+        ) ?? ''
     )
-    .toBe(true)
+    .toMatch(/Error: cn-collector-self-check\n\s+at /)
   collected.stop()
 })
 

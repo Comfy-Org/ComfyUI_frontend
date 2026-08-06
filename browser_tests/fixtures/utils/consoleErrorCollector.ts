@@ -14,7 +14,7 @@ export function collectConsoleErrors(page: Page): {
   // console.error; Chromium surfaces both through pageerror. Without this
   // listener a pack script crashing outside a console call passes silently.
   const pageErrorListener = (error: Error) => {
-    errors.push(`Uncaught page error: ${error.message}`)
+    errors.push(`Uncaught page error: ${error.stack ?? error.message}`)
   }
   page.on('console', listener)
   page.on('pageerror', pageErrorListener)

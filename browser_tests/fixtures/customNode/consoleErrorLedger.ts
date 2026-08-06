@@ -3,14 +3,15 @@ import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
 interface AllowlistRule {
   pattern: RegExp
   reason: string
+  requiredRoundtripId?: string
 }
 
 // Pack-attributed console noise with no visible error surface. Shared by
 // the all-nodes tiers and the curated run tier so one ledger covers every
 // surface a pack's script can emit on. Filter-guarded: a pattern suppresses
-// matching errors for its pack only; stale entries are caught by review,
-// not observation (several patterns are environment-conditional, so
-// observed-firing guards would false-fail - see docs/custom-node-regression-suite.md section 10 (evidence model)).
+// matching errors for its pack only. Most entries are environment-conditional
+// and remain review-stale; deterministic roundtrip rules opt into observation
+// with requiredRoundtripId.
 const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
   'ComfyUI-Impact-Pack': [
     {
@@ -73,6 +74,25 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
   ]
 }
 
+const CLOUD_PACK_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
+  'comfyui-videohelpersuite': [
+    {
+      pattern:
+        /Failed to load resource.*404.*\/api\/vhs\/getpath\?path=output%2F(?:[\s\]]|$)/,
+      reason:
+        'VHS SelectLatest requests the Cloud output directory through an unavailable getpath endpoint',
+      requiredRoundtripId: 'cloud-vhs-getpath-output-directory'
+    },
+    {
+      pattern:
+        /options\.filter is not a function[\s\S]*\/extensions\/comfyui-videohelpersuite\/js\/VHS\.core\.js/,
+      reason:
+        'VHS 1.7.9 treats the Cloud getpath error body as an array without checking the response',
+      requiredRoundtripId: 'cloud-vhs-getpath-non-array-response'
+    }
+  ]
+}
+
 // Noise owned by the target deployment rather than by any pack, so it applies
 // to every pack's collector on that environment.
 const ENV_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
@@ -124,6 +144,11 @@ export function allowlistRulesFor(pack: string): AllowlistRule[] {
     ...Object.entries(CONSOLE_ERROR_ALLOWLIST)
       .filter(([ledgered]) => ledgered.toLowerCase() === folded)
       .flatMap(([, rules]) => rules),
+    ...(customNodesEnv() === 'cloud'
+      ? Object.entries(CLOUD_PACK_ERROR_ALLOWLIST)
+          .filter(([ledgered]) => ledgered.toLowerCase() === folded)
+          .flatMap(([, rules]) => rules)
+      : []),
     ...(ENV_ERROR_ALLOWLIST[customNodesEnv()] ?? [])
   ]
 }
@@ -136,6 +161,19 @@ function withoutMatches(rules: AllowlistRule[], errors: string[]): string[] {
 
 export function unallowlistedErrors(pack: string, errors: string[]): string[] {
   return withoutMatches(allowlistRulesFor(pack), errors)
+}
+
+export function staleRequiredRoundtripErrorRules(
+  pack: string,
+  errors: string[]
+): string[] {
+  return allowlistRulesFor(pack)
+    .filter(
+      (rule) =>
+        rule.requiredRoundtripId !== undefined &&
+        !errors.some((error) => rule.pattern.test(error))
+    )
+    .map((rule) => rule.requiredRoundtripId!)
 }
 
 // For the cross-pack wiring sweep, where an error's owning pack cannot be

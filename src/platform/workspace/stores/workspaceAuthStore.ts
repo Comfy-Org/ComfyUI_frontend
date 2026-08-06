@@ -93,8 +93,7 @@ function permanentAuthErrorMessageKey(code: string | undefined): string {
   }
 }
 
-// Flag-ON has no Firebase fallback, so surface permanent failures instead of
-// stranding every cloud request on a silently cleared token.
+// Workspace auth has no Firebase fallback, so surface permanent failures.
 function surfacePermanentAuthError(err: WorkspaceAuthError): void {
   console.error('Unified workspace auth revoked or invalid:', err)
   useToastStore().add({
@@ -282,10 +281,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function initializeFromSession(): boolean {
-    if (!flags.teamWorkspacesEnabled) {
-      return false
-    }
-
     try {
       const workspaceJson = sessionStorage.getItem(
         WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
@@ -369,9 +364,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       },
       body: JSON.stringify(workspaceId ? { workspace_id: workspaceId } : {})
     })
-    console.warn(
-      `[cloud-auth-probe] requestToken: POST /auth/token -> ${response.status} (ownerUid=${!!ownerUid} firebaseToken=${!!firebaseToken})`
-    )
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
@@ -435,10 +427,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   async function performSwitchWorkspace(workspaceId: string): Promise<void> {
-    if (!flags.teamWorkspacesEnabled) {
-      return
-    }
-
     const capturedRequestId = refreshRequestId
     const capturedOwnerUid = currentUserUid()
 
@@ -569,10 +557,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   async function ensureWorkspaceToken(
     preferredWorkspaceId?: string
   ): Promise<string | null> {
-    if (!flags.teamWorkspacesEnabled) {
-      return null
-    }
-
     const ownerUid = currentUserUid()
     if (!ownerUid) return null
     const targetWorkspaceId = preferredWorkspaceId ?? currentWorkspace.value?.id
@@ -874,9 +858,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   const mintAtLogin = async (): Promise<boolean> => {
-    console.warn(
-      `[cloud-auth-probe] mintAtLogin: unifiedFlag=${flags.unifiedCloudAuthEnabled} existingToken=${!!getUnifiedToken()}`
-    )
     if (!flags.unifiedCloudAuthEnabled) {
       return false
     }

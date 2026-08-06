@@ -19,6 +19,7 @@ interface RawEvent {
   nodes?: (string | number)[]
   prompt_id?: string
   output?: unknown
+  exception_message?: string
   exception_type?: string
   node_id?: string
   node_type?: string
@@ -65,6 +66,7 @@ function toPromptEvent(raw: RawEvent): PromptEvent {
     return { type: 'execution_cached', nodes: (raw.nodes ?? []).map(String) }
   if (raw.type === 'execution_error' || raw.type === 'execution_interrupted') {
     const error: ExecutionError = {
+      exceptionMessage: raw.exception_message,
       exceptionType: raw.exception_type,
       nodeId: raw.node_id,
       nodeType: raw.node_type,

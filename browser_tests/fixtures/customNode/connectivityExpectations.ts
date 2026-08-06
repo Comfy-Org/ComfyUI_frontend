@@ -61,7 +61,8 @@ const CLOUD_EXPECTATIONS: ConnectivityExpectations = {
     '◎ RadianceCinemaStudio.prompt -> Vewd.selected_media'
   ],
   zeroPairDragExpectedNodeCounts: {
-    'comfyui-impact-subpack': 1
+    'comfyui-impact-subpack': 1,
+    'comfyui-string-converter': 2
   }
 }
 

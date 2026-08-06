@@ -4,6 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   isForeignExecutionNoise,
+  staleRequiredRoundtripErrorRules,
   unallowlistedErrors,
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
@@ -133,6 +134,72 @@ test.describe('consoleErrorLedger', () => {
     expect(
       unallowlistedErrorsForPacks(['ComfyUI-Impact-Pack'], kjErrors)
     ).toEqual(kjErrors)
+  })
+
+  test('VHS getpath failures require Cloud, the owning pack, and the exact endpoint or source stack', () => {
+    const getpath404 =
+      'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:4173/api/vhs/getpath?path=output%2F]'
+    const vhsTypeError =
+      'Uncaught page error: TypeError: options.filter is not a function\n    at fetch_files (http://localhost:4173/extensions/comfyui-videohelpersuite/js/VHS.core.js:2131:39)'
+    const unrelatedTypeError =
+      'Uncaught page error: TypeError: options.filter is not a function\n    at other (http://localhost:4173/extensions/other-pack/main.js:1:1)'
+    const pathSuffix = getpath404.replace('output%2F]', 'output%2Fmissing.mp4]')
+    const extraQuery = getpath404.replace('output%2F]', 'output%2F&other=1]')
+    const caseMutation = getpath404.replace(
+      '/api/vhs/getpath?path=output%2F',
+      '/API/VHS/GETPATH?PATH=OUTPUT%2f'
+    )
+
+    expect(
+      unallowlistedErrors('ComfyUI-VideoHelperSuite', [
+        getpath404,
+        vhsTypeError,
+        unrelatedTypeError
+      ])
+    ).toEqual([getpath404, vhsTypeError, unrelatedTypeError])
+
+    const previous = process.env.CUSTOM_NODES_ENV
+    process.env.CUSTOM_NODES_ENV = 'cloud'
+    try {
+      expect(
+        unallowlistedErrors('ComfyUI-VideoHelperSuite', [
+          getpath404,
+          vhsTypeError,
+          unrelatedTypeError,
+          pathSuffix,
+          extraQuery,
+          caseMutation
+        ])
+      ).toEqual([unrelatedTypeError, pathSuffix, extraQuery, caseMutation])
+      expect(
+        unallowlistedErrors('another-pack', [getpath404, vhsTypeError])
+      ).toEqual([getpath404, vhsTypeError])
+      expect(
+        staleRequiredRoundtripErrorRules('ComfyUI-VideoHelperSuite', [])
+      ).toEqual([
+        'cloud-vhs-getpath-output-directory',
+        'cloud-vhs-getpath-non-array-response'
+      ])
+      expect(
+        staleRequiredRoundtripErrorRules('ComfyUI-VideoHelperSuite', [
+          getpath404
+        ])
+      ).toEqual(['cloud-vhs-getpath-non-array-response'])
+      expect(
+        staleRequiredRoundtripErrorRules('ComfyUI-VideoHelperSuite', [
+          vhsTypeError
+        ])
+      ).toEqual(['cloud-vhs-getpath-output-directory'])
+      expect(
+        staleRequiredRoundtripErrorRules('ComfyUI-VideoHelperSuite', [
+          getpath404,
+          vhsTypeError
+        ])
+      ).toEqual([])
+    } finally {
+      if (previous === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = previous
+    }
   })
 })
 

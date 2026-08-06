@@ -1,5 +1,5 @@
 {
-  "ComfyUI-DepthAnythingV3": ["DepthAnythingV3.ToMesh.Download"],
+  "ComfyUI-DepthAnythingV3": [],
   "ComfyUI-KJNodes": ["KJNodes.GetNode"],
   "ComfyUI-LTXVideo": ["LTXVideo.SparseTrackEditor"],
   "ComfyUI-Upscaler-Tensorrt": ["UpscalerTensorrt.CustomResize"],

@@ -5,11 +5,12 @@ import {
 import { connectivityExpectationsFor } from '@e2e/fixtures/customNode/connectivityExpectations'
 
 test.describe('connectivityExpectationsFor', () => {
-  test('limits zero-pair S5 relief to the artifact-proven Impact Subpack', () => {
+  test('limits zero-pair S5 relief to artifact-proven pack node counts', () => {
     expect(
       connectivityExpectationsFor('cloud').zeroPairDragExpectedNodeCounts
     ).toEqual({
-      'comfyui-impact-subpack': 1
+      'comfyui-impact-subpack': 1,
+      'comfyui-string-converter': 2
     })
     expect(
       connectivityExpectationsFor('cloud').zeroPairDragExpectedNodeCounts

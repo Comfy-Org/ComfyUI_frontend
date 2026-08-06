@@ -2,7 +2,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { classifyRun } from '@e2e/fixtures/customNode/runResult'
+import {
+  classifyRun,
+  describeRunOutcome
+} from '@e2e/fixtures/customNode/runResult'
 
 test.describe('classifyRun', () => {
   test('PASS when every expected node appears in the executing stream', () => {
@@ -64,13 +67,32 @@ test.describe('classifyRun', () => {
         { type: 'executing', node: '1' },
         {
           type: 'execution_error',
-          error: { exceptionType: 'ValueError', nodeId: '1' }
+          error: {
+            exceptionMessage: 'inputs have different channel counts',
+            exceptionType: 'ValueError',
+            nodeId: '1',
+            nodeType: 'AudioConcatenate'
+          }
         }
       ],
       expectedNodeIds: ['1']
     })
     expect(result.outcome).toBe('EXECUTION_ERROR')
     expect(result.error?.exceptionType).toBe('ValueError')
+    expect(describeRunOutcome(result)).toBe(
+      'EXECUTION_ERROR (AudioConcatenate: ValueError - inputs have different channel counts)'
+    )
+  })
+
+  test('describes an execution error even when Cloud omits node identity', () => {
+    expect(
+      describeRunOutcome({
+        outcome: 'EXECUTION_ERROR',
+        executedNodes: [],
+        outputsByNode: {},
+        error: { exceptionMessage: 'allocation failed' }
+      })
+    ).toBe('EXECUTION_ERROR (allocation failed)')
   })
 
   test('EXECUTION_ERROR when the run is interrupted', () => {

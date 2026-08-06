@@ -9,6 +9,7 @@ type CustomNodeOutcome =
   | 'PASS'
 
 export interface ExecutionError {
+  exceptionMessage?: string
   exceptionType?: string
   nodeId?: string
   nodeType?: string
@@ -35,6 +36,17 @@ export interface RunResult {
   // crash on a graph shape it does not expect); carries the exception text
   // so the failing node self-identifies in the report.
   clientError?: string
+}
+
+export function describeRunOutcome(result: RunResult): string {
+  if (!result.error) return result.outcome
+  const identity = [result.error.nodeType, result.error.exceptionType]
+    .filter(Boolean)
+    .join(': ')
+  const detail = [identity, result.error.exceptionMessage]
+    .filter(Boolean)
+    .join(' - ')
+  return `${result.outcome} (${detail || 'error event carried no details'})`
 }
 
 // A node's output is present for this prompt via one of two disjoint signals:

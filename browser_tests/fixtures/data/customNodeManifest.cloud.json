@@ -63,7 +63,7 @@
       "workflow": "",
       "expectedNodes": ["DA3_CreateCameraParams", "DA3_EnableTiledProcessing"],
       "expectedNodeCount": 9,
-      "expectedExtensions": ["DepthAnythingV3.ToMesh.Download"],
+      "expectedExtensions": [],
       "disabledNodes": {
         "DA3_DownloadModel": ["NetworkAccess"],
         "DA3_FilterGaussians": ["WritesToDisk"],

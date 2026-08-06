@@ -176,9 +176,6 @@ export const useAuthStore = defineStore('auth', () => {
     } else if (isCloud) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
       // no-op when unified_cloud_auth is off).
-      console.warn(
-        `[cloud-auth-probe] onAuthStateChanged: uid=${user.uid} unifiedFlag=${flags.unifiedCloudAuthEnabled} -> mintAtLogin`
-      )
       void useWorkspaceAuthStore().mintAtLogin()
     }
 
@@ -253,7 +250,7 @@ export const useAuthStore = defineStore('auth', () => {
    * When unified_cloud_auth is enabled, returns the single Cloud JWT for every
    * cloud request (no Firebase/API-key fallback) so one token is used end to end.
    * Otherwise checks for authentication in the following order:
-   * 1. Workspace token (if team_workspaces_enabled and user has active workspace context)
+   * 1. Workspace token on Cloud when the user has active workspace context
    * 2. Firebase authentication token (if user is logged in)
    * 3. API key (if stored in the browser's credential manager)
    *
@@ -263,40 +260,25 @@ export const useAuthStore = defineStore('auth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
-    console.warn(
-      `[cloud-auth-probe] getAuthHeader: unifiedFlag=${flags.unifiedCloudAuthEnabled} teamWsFlag=${flags.teamWorkspacesEnabled} currentUser=${!!currentUser.value}`
-    )
     if (flags.unifiedCloudAuthEnabled) {
       const token = useWorkspaceAuthStore().getUnifiedToken()
-      console.warn(
-        `[cloud-auth-probe] getAuthHeader unified: tokenPresent=${!!token}`
-      )
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
-    if (flags.teamWorkspacesEnabled) {
+    if (isCloud) {
       const workspaceAuth = useWorkspaceAuthStore()
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 
       // Recover the workspace token rather than downgrade to the personal
       // identity, which is what makes cloud requests oscillate.
       if (activeWorkspaceId) {
-        console.warn(
-          `[cloud-auth-probe] getAuthHeader workspace: activeWorkspaceId=${!!activeWorkspaceId} -> ensureWorkspaceAuthHeader`
-        )
         return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
       }
 
       const wsHeader = workspaceAuth.getWorkspaceAuthHeader()
-      console.warn(
-        `[cloud-auth-probe] getAuthHeader workspace: activeWorkspaceId=false wsHeaderPresent=${!!wsHeader}`
-      )
       if (wsHeader) return wsHeader
     }
 
-    console.warn(
-      `[cloud-auth-probe] getAuthHeader firebase-fallback: currentUser=${!!currentUser.value}`
-    )
     const token = await getIdToken()
     if (token) {
       return {
@@ -327,7 +309,7 @@ export const useAuthStore = defineStore('auth', () => {
       return useWorkspaceAuthStore().getUnifiedToken()
     }
 
-    if (flags.teamWorkspacesEnabled) {
+    if (isCloud) {
       const workspaceAuth = useWorkspaceAuthStore()
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 
