@@ -36,7 +36,7 @@ const { playing = false, size = 'md' } = defineProps<{
       v-else
       :class="
         cn(
-          'text-primary-comfy-ink ml-0.5',
+          'ml-0.5 text-primary-comfy-ink',
           size === 'sm' ? 'size-3 lg:size-4' : 'size-4'
         )
       "
