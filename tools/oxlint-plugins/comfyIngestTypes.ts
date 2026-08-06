@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import type TypeScript from 'typescript'
 import { fileURLToPath } from 'node:url'
 
 const GENERATED_PACKAGE = '@comfyorg/ingest-types'
@@ -11,9 +13,15 @@ const PLUGIN_SOURCE = 'tools/oxlint-plugins/comfyIngestTypes.ts'
  */
 const MIN_EXPECTED_EXPORTS = 100
 
-const exportDeclarationStart = /^[ \t]*export\b/gm
-const supportedExportBlock = /[ \t]*export\s+type\s*\{([^}]*)\}/y
-const exportSpecifier = /^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/
+const requireFrom = createRequire(import.meta.url)
+
+/**
+ * Loaded through `require` on first use rather than imported at module scope,
+ * so lint runs that never touch a scoped file do not pay for the compiler.
+ */
+function loadTypeScript(): typeof TypeScript {
+  return requireFrom('typescript')
+}
 
 interface Identifier {
   readonly type: 'Identifier'
@@ -43,14 +51,23 @@ interface RuleContext {
   report(descriptor: { node: unknown; message: string }): void
 }
 
-function declarationAt(source: string, index: number): string {
-  const lineEnd = source.indexOf('\n', index)
-  return source.slice(index, lineEnd === -1 ? undefined : lineEnd).trim()
+function unsupportedDeclaration(text: string): Error {
+  const summary = text.split('\n', 1)[0].trim().slice(0, 80)
+  return new Error(
+    `Unsupported export declaration '${summary}' in ${GENERATED_PACKAGE}. Update ${PLUGIN_SOURCE} to handle the generated barrel's current format.`
+  )
 }
 
-function unsupported(construct: string, detail: string): Error {
-  return new Error(
-    `Unsupported ${construct} '${detail}' in ${GENERATED_PACKAGE}. Update ${PLUGIN_SOURCE} to handle the generated barrel's current format.`
+function exportsAName(
+  ts: typeof TypeScript,
+  statement: TypeScript.Statement
+): boolean {
+  if (ts.isExportAssignment(statement)) return true
+  return (
+    ts.canHaveModifiers(statement) &&
+    (ts.getModifiers(statement) ?? []).some(
+      (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+    )
   )
 }
 
@@ -58,30 +75,38 @@ function unsupported(construct: string, detail: string): Error {
  * Collect the names a barrel makes importable, taking the alias side of
  * `Foo as Bar` since that is the name a local declaration would shadow.
  *
- * Every export declaration must be understood. A form this cannot read — a
- * wildcard re-export, say — would otherwise hide names behind it while the
- * remaining blocks still satisfy the sufficiency guard, leaving the rule
- * quietly under-enforcing, so anything unrecognized throws instead.
+ * Every export must be understood. A form this cannot read — a wildcard
+ * re-export, say — would otherwise hide names behind it while the remaining
+ * exports still satisfy the sufficiency guard, leaving the rule quietly
+ * under-enforcing, so anything unrecognized throws instead. This is why the
+ * barrel is parsed rather than pattern-matched: scanning text cannot reliably
+ * separate a real declaration from the word `export` in a comment or string,
+ * nor find one that shares a line with another.
  */
 export function collectExportedNames(source: string): Set<string> {
+  const ts = loadTypeScript()
+  const barrel = ts.createSourceFile(
+    'barrel.ts',
+    source,
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TS
+  )
   const names = new Set<string>()
-  for (const declaration of source.matchAll(exportDeclarationStart)) {
-    supportedExportBlock.lastIndex = declaration.index
-    const block = supportedExportBlock.exec(source)
-    if (!block) {
-      throw unsupported(
-        'export declaration',
-        declarationAt(source, declaration.index)
-      )
-    }
-    for (const rawSpecifier of block[1].split(',')) {
-      const specifier = rawSpecifier.trim()
-      if (specifier === '') continue
-      const parsed = exportSpecifier.exec(specifier)
-      if (!parsed) {
-        throw unsupported('export specifier', specifier)
+
+  for (const statement of barrel.statements) {
+    if (!ts.isExportDeclaration(statement)) {
+      if (exportsAName(ts, statement)) {
+        throw unsupportedDeclaration(statement.getText(barrel))
       }
-      names.add(parsed[2] ?? parsed[1])
+      continue
+    }
+    const clause = statement.exportClause
+    if (!statement.isTypeOnly || !clause || !ts.isNamedExports(clause)) {
+      throw unsupportedDeclaration(statement.getText(barrel))
+    }
+    for (const element of clause.elements) {
+      names.add(element.name.text)
     }
   }
   return names

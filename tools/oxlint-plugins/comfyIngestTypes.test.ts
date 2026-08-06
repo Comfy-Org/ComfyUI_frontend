@@ -123,19 +123,19 @@ describe('collectExportedNames', () => {
     expect([...names].sort()).toEqual(['Alpha', 'Beta'])
   })
 
-  it('throws on a specifier it cannot interpret', () => {
-    expect(() =>
-      collectExportedNames(`export type { Alpha, 'weird-name' } from './a.gen'`)
-    ).toThrow(/Unsupported export specifier/)
-  })
-
   it('rejects a wildcard re-export rather than skipping it', () => {
     expect(() => collectExportedNames(`export * from './a.gen'`)).toThrow(
       /Unsupported export declaration/
     )
   })
 
-  it('rejects an unreadable declaration even when other blocks are complete', () => {
+  it('rejects a namespace re-export', () => {
+    expect(() =>
+      collectExportedNames(`export * as everything from './a.gen'`)
+    ).toThrow(/Unsupported export declaration/)
+  })
+
+  it('rejects an unreadable declaration even when other exports are complete', () => {
     const readable = Array.from({ length: 150 }, (_, i) => `Name${i}`).join(
       ', '
     )
@@ -147,9 +147,32 @@ describe('collectExportedNames', () => {
     ).toThrow(/Unsupported export declaration/)
   })
 
+  it('rejects an unreadable declaration sharing a line with a readable one', () => {
+    expect(() =>
+      collectExportedNames(
+        `export type { Existing } from './a.gen'; export * from './hidden.gen'`
+      )
+    ).toThrow(/Unsupported export declaration/)
+  })
+
   it('rejects a value export, which would not be a type contract', () => {
     expect(() =>
       collectExportedNames(`export { alpha } from './a.gen'`)
     ).toThrow(/Unsupported export declaration/)
+  })
+
+  it('rejects a locally exported declaration', () => {
+    expect(() =>
+      collectExportedNames(`export interface Alpha { id: string }`)
+    ).toThrow(/Unsupported export declaration/)
+  })
+
+  it('ignores the word export inside comments and strings', () => {
+    const names = collectExportedNames(
+      `// export * from './fake.gen'\n` +
+        `export type { Alpha } from './a.gen'\n` +
+        `const note = "export * from './also-fake.gen'"\n`
+    )
+    expect([...names]).toEqual(['Alpha'])
   })
 })
