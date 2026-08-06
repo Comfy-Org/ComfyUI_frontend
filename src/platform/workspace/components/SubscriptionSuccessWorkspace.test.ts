@@ -34,14 +34,6 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
-const { mockFlags } = vi.hoisted(() => ({
-  mockFlags: { teamWorkspacesEnabled: true }
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
-}))
-
 vi.mock('./InviteMembersForm.vue', () => ({
   default: {
     name: 'InviteMembersForm',
@@ -118,7 +110,6 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
 describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockFlags.teamWorkspacesEnabled = true
     mockMembers.length = 0
     mockPendingInvites.length = 0
     mockMaxSeats.value = 73
@@ -196,12 +187,6 @@ describe('SubscriptionSuccessWorkspace', () => {
     mockMaxSeats.value = 5
     renderCard()
     expect(screen.getByText('seats:4', { exact: false })).toBeTruthy()
-  })
-
-  it('hides the invite block when team workspaces are disabled', () => {
-    mockFlags.teamWorkspacesEnabled = false
-    renderTeamCard()
-    expect(screen.queryByTestId('invite-form')).toBeNull()
   })
 
   it('subtracts existing members and pending invites from invitable seats', () => {

@@ -62,6 +62,7 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
 
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -80,6 +81,9 @@ jobs:
 
       - name: Collect backport targets
         id: targets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           TARGETS=()
           declare -A SEEN=()
@@ -230,6 +234,8 @@ jobs:
         id: backport
         env:
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           FAILED=""
           SUCCESS=""
