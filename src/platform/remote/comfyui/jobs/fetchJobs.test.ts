@@ -138,6 +138,51 @@ describe('fetchJobs', () => {
       expect(ok).toHaveBeenCalledTimes(1)
       expect(result).toHaveLength(1)
     })
+
+    it('ends the episode when a probe hits a non-auth 5xx, resuming polling', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          text: () => Promise.resolve('')
+        })
+        .mockResolvedValue({
+          ok: false,
+          status: 500,
+          text: () => Promise.resolve('boom')
+        })
+
+      // First poll opens the auth episode; the next two are suppressed until a
+      // probe is allowed through on the fourth, which now hits a 500.
+      for (let i = 0; i < 4; i++) await fetchHistory(mockFetch)
+      const afterProbe = mockFetch.mock.calls.length
+
+      // The non-auth 500 ended the episode: polling is no longer suppressed.
+      await fetchHistory(mockFetch)
+      await fetchHistory(mockFetch)
+      expect(mockFetch.mock.calls.length).toBe(afterProbe + 2)
+    })
+
+    it('ends the episode when a probe hits a network error, resuming polling', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 403,
+          text: () => Promise.resolve('')
+        })
+        .mockRejectedValue(new TypeError('Failed to fetch'))
+
+      for (let i = 0; i < 4; i++) await fetchHistory(mockFetch)
+      const afterProbe = mockFetch.mock.calls.length
+
+      await fetchHistory(mockFetch)
+      await fetchHistory(mockFetch)
+      expect(mockFetch.mock.calls.length).toBe(afterProbe + 2)
+    })
   })
 
   describe('non-auth failures', () => {

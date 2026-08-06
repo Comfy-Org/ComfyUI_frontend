@@ -32,6 +32,13 @@ export interface JobsAuthBackoff {
   recordAuthFailure: () => boolean
   /** Clears all backoff state after a successful response. */
   recordSuccess: () => void
+  /**
+   * Clears all backoff state after any non-auth outcome — a non-401/403 HTTP
+   * error or a thrown request. The episode only holds while auth keeps failing,
+   * so a probe that reaches the server (even to a 5xx) or fails the network
+   * ends it; those failures then log every poll as they did before the backoff.
+   */
+  recordNonAuthFailure: () => void
 }
 
 export function createJobsAuthBackoff(): JobsAuthBackoff {
@@ -40,6 +47,11 @@ export function createJobsAuthBackoff(): JobsAuthBackoff {
 
   const suppressionWindow = () =>
     1 << Math.min(failureStreak, MAX_BACKOFF_EXPONENT)
+
+  const reset = () => {
+    failureStreak = 0
+    callsSinceProbe = 0
+  }
 
   return {
     shouldSkip() {
@@ -56,9 +68,7 @@ export function createJobsAuthBackoff(): JobsAuthBackoff {
       failureStreak++
       return startsEpisode
     },
-    recordSuccess() {
-      failureStreak = 0
-      callsSinceProbe = 0
-    }
+    recordSuccess: reset,
+    recordNonAuthFailure: reset
   }
 }
