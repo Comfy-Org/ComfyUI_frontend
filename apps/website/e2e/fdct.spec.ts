@@ -10,6 +10,21 @@ const builderReasonKeys = [
   'fdct.builders.reason4'
 ] as const
 
+const howItWorksStepTitleKeys = [
+  'fdct.howItWorks.step1.title',
+  'fdct.howItWorks.step2.title',
+  'fdct.howItWorks.step3.title',
+  'fdct.howItWorks.step4.title'
+] as const
+
+const whatYouGetItemKeys = [
+  'fdct.whatYouGet.item1',
+  'fdct.whatYouGet.item2',
+  'fdct.whatYouGet.item3',
+  'fdct.whatYouGet.item4',
+  'fdct.whatYouGet.item5'
+] as const
+
 test.describe('FDCT page @smoke', () => {
   test('responds 200 and has the localized title', async ({ page }) => {
     const response = await page.goto('/fdct')
@@ -50,6 +65,29 @@ test.describe('FDCT page @smoke', () => {
     }
     await expect(page.getByTestId('social-proof-desktop')).toBeVisible()
   })
+
+  test('how it works steps and what-you-get checklist render', async ({
+    page
+  }) => {
+    await page.goto('/fdct')
+    await expect(
+      page.getByRole('heading', { name: t('fdct.howItWorks.title', 'en') })
+    ).toBeVisible()
+    for (const key of howItWorksStepTitleKeys) {
+      await expect(
+        page.getByRole('heading', { name: t(key, 'en'), exact: true })
+      ).toBeVisible()
+    }
+    await expect(
+      page.getByText(t('fdct.howItWorks.footnote', 'en'))
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: t('fdct.whatYouGet.title', 'en') })
+    ).toBeVisible()
+    for (const key of whatYouGetItemKeys) {
+      await expect(page.getByText(t(key, 'en'))).toBeVisible()
+    }
+  })
 })
 
 test.describe('FDCT page (zh-CN) @smoke', () => {
@@ -89,6 +127,29 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     ).toBeVisible()
     for (const key of builderReasonKeys) {
       await expect(page.getByText(t(key, 'zh-CN')).first()).toBeVisible()
+    }
+  })
+
+  test('how it works steps and what-you-get checklist render localized', async ({
+    page
+  }) => {
+    await page.goto('/zh-CN/fdct')
+    await expect(
+      page.getByRole('heading', { name: t('fdct.howItWorks.title', 'zh-CN') })
+    ).toBeVisible()
+    for (const key of howItWorksStepTitleKeys) {
+      await expect(
+        page.getByRole('heading', { name: t(key, 'zh-CN'), exact: true })
+      ).toBeVisible()
+    }
+    await expect(
+      page.getByText(t('fdct.howItWorks.footnote', 'zh-CN'))
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: t('fdct.whatYouGet.title', 'zh-CN') })
+    ).toBeVisible()
+    for (const key of whatYouGetItemKeys) {
+      await expect(page.getByText(t(key, 'zh-CN'))).toBeVisible()
     }
   })
 })

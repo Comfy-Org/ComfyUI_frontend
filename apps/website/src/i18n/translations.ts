@@ -5301,6 +5301,52 @@ const translations = {
     en: 'leaves you something you own. You keep the workflow and your team is trained to change it.',
     'zh-CN':
       '留下真正属于你的成果。工作流归你所有，你的团队经过培训后可自行修改。'
+  },
+  'fdct.howItWorks.title': { en: 'How it works', 'zh-CN': '如何运作' },
+  'fdct.howItWorks.step1.title': { en: 'Validate', 'zh-CN': '验证' },
+  'fdct.howItWorks.step1.description': {
+    en: 'We prove the outcome is achievable on your own material.',
+    'zh-CN': '我们用你自己的素材证明目标成果切实可行。'
+  },
+  'fdct.howItWorks.step2.title': { en: 'Build', 'zh-CN': '构建' },
+  'fdct.howItWorks.step2.description': {
+    en: 'We build the workflow inside your environment, on your models and infrastructure.',
+    'zh-CN': '我们在你的环境中构建工作流，基于你的模型和基础设施。'
+  },
+  'fdct.howItWorks.step3.title': { en: 'Enable', 'zh-CN': '赋能' },
+  'fdct.howItWorks.step3.description': {
+    en: 'We train your team to run, modify, and extend it themselves.',
+    'zh-CN': '我们培训你的团队独立运行、修改和扩展它。'
+  },
+  'fdct.howItWorks.step4.title': { en: 'Own', 'zh-CN': '拥有' },
+  'fdct.howItWorks.step4.description': {
+    en: 'It runs on your infrastructure, and your team can change it without us.',
+    'zh-CN': '它运行在你的基础设施上，你的团队无需我们也能修改它。'
+  },
+  'fdct.howItWorks.footnote': {
+    en: "The direct line stays open. We're here when your team needs us.",
+    'zh-CN': '直达通道始终敞开。你的团队需要时，我们随时都在。'
+  },
+  'fdct.whatYouGet.title': { en: 'What you will get', 'zh-CN': '你将获得什么' },
+  'fdct.whatYouGet.item1': {
+    en: 'Use-case validation and a proof-of-concept build',
+    'zh-CN': '用例验证与概念验证构建'
+  },
+  'fdct.whatYouGet.item2': {
+    en: 'A production-grade workflow, built and installed',
+    'zh-CN': '生产级工作流，构建并完成部署'
+  },
+  'fdct.whatYouGet.item3': {
+    en: 'Enablement until your team is self-sufficient',
+    'zh-CN': '持续赋能，直到你的团队能够独立运作'
+  },
+  'fdct.whatYouGet.item4': {
+    en: 'White-glove access under your enterprise agreement',
+    'zh-CN': '企业协议下的白手套贴心服务'
+  },
+  'fdct.whatYouGet.item5': {
+    en: 'Reusable creative assets your team keeps',
+    'zh-CN': '可复用的创意资产，归你的团队所有'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
