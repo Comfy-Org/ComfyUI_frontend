@@ -46,7 +46,7 @@ const industries: Industry[] = [
     label: t('industries.advertising', locale),
     primarySrc: `${MEDIA_BASE}/left2.webm`,
     secondarySrc: `${MEDIA_BASE}/right2.webm`,
-    ambientSrc: fallbackAmbientSrc
+    ambientSrc: '/industries/ambient-advertising.webm'
   },
   {
     label: t('industries.gaming', locale),
@@ -58,7 +58,7 @@ const industries: Industry[] = [
     label: t('industries.ecommerce', locale),
     primarySrc: `${MEDIA_BASE}/left4.webm`,
     secondarySrc: `${MEDIA_BASE}/right4.webm`,
-    ambientSrc: '/industries/ambient-ecommerce-fashion.webm',
+    ambientSrc: fallbackAmbientSrc,
     secondaryObjectPosition: 'top'
   }
 ]
