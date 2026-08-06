@@ -36,7 +36,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
-import type { components, operations } from '@/types/comfyRegistryTypes'
+import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 type CreditPurchaseResponse =
@@ -45,6 +45,9 @@ type CreditPurchasePayload =
   operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
+type CreateCustomerPayload = NonNullable<
+  operations['createCustomer']['requestBody']
+>['content']['application/json']
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
 type AccessBillingPortalResponse =
@@ -376,10 +379,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const createCustomer = async (
-    payload?: Omit<
-      components['schemas']['CreateCustomerRequest'],
-      'signup_source'
-    >
+    payload?: Omit<CreateCustomerPayload, 'signup_source'>
   ): Promise<CreateCustomerResponse> => {
     const sessionUserId = currentUser.value?.uid
     const authHeader = await getAuthHeader()
@@ -387,7 +387,7 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const body: components['schemas']['CreateCustomerRequest'] = {
+    const body: CreateCustomerPayload = {
       ...payload,
       signup_source: DISTRIBUTION
     }
@@ -547,10 +547,7 @@ export const useAuthStore = defineStore('auth', () => {
     action: (auth: Auth) => Promise<T>,
     options: {
       createCustomer?: boolean
-      customerPayload?: Omit<
-        components['schemas']['CreateCustomerRequest'],
-        'signup_source'
-      >
+      customerPayload?: Omit<CreateCustomerPayload, 'signup_source'>
     } = {}
   ): Promise<T> => {
     loading.value = true
