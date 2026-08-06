@@ -59,9 +59,8 @@ type ExactQuotePreviewResponse = PreviewSubscribeResponse &
 // consolidated_billing_enabled routes personal workspaces to the unified
 // pricing table asserted here; without it they fall back to the legacy table.
 const BOOT_FEATURES = {
-  team_workspaces_enabled: true,
-  consolidated_billing_enabled: true,
-  billing_control_enabled: true
+  billing_control_enabled: true,
+  consolidated_billing_enabled: true
 } satisfies RemoteConfig
 // Disable the experimental Asset API: with it on (cloud default) the unmocked
 // asset endpoints 403 and workflow restore throws uncaught, aborting the

@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
@@ -13,7 +12,6 @@ import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUr
  * `runUrlActionLoaders()` from `onMounted` once the app is ready.
  */
 export function useUrlActionLoaders() {
-  const { flags } = useFeatureFlags()
   const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
   const createWorkspaceUrlLoader = isCloud
     ? useCreateWorkspaceUrlLoader()
@@ -24,13 +22,12 @@ export function useUrlActionLoaders() {
 
   async function runUrlActionLoaders() {
     // Accept workspace invite from URL if present (e.g., ?invite=TOKEN).
-    // WorkspaceAuthGate ensures flag state is resolved before the app mounts.
-    if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
+    if (inviteUrlLoader) {
       await inviteUrlLoader.loadInviteFromUrl()
     }
 
     // Open create workspace dialog from URL if present (e.g., ?create_workspace=1).
-    if (createWorkspaceUrlLoader && flags.teamWorkspacesEnabled) {
+    if (createWorkspaceUrlLoader) {
       try {
         await createWorkspaceUrlLoader.loadCreateWorkspaceFromUrl()
       } catch (error) {
@@ -42,7 +39,6 @@ export function useUrlActionLoaders() {
     }
 
     // Open the pricing table from URL if present (e.g., ?pricing=1 / ?pricing=team).
-    // Not gated on the team-workspaces flag: it also drives personal/legacy users.
     if (pricingTableUrlLoader) {
       try {
         await pricingTableUrlLoader.loadPricingTableFromUrl()
