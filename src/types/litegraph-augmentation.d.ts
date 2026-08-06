@@ -54,6 +54,13 @@ declare module '@/lib/litegraph/src/types/widgets' {
     beforeQueued?(options?: WidgetCallbackOptions): unknown
     afterQueued?(options?: WidgetCallbackOptions): unknown
     serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
+    /**
+     * Whether {@link serializeValue} results should replace the persisted
+     * workflow value.
+     *
+     * @default true
+     */
+    syncToWorkflow?: boolean
 
     /**
      * Refreshes the widget's value or options from its remote source.

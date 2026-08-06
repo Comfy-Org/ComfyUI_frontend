@@ -21,7 +21,8 @@ type BeforeRegisterNodeDef = NonNullable<
 interface FilenamePrefixWidget {
   name: string
   value: unknown
-  serializeValue?: () => string
+  serializeValue?: () => unknown
+  syncToWorkflow?: boolean
 }
 
 async function loadExtension(): Promise<ComfyExtension> {
@@ -33,7 +34,7 @@ async function loadExtension(): Promise<ComfyExtension> {
 
 async function createNodeWithFilenamePrefix(
   nodeName: string,
-  prefix: string
+  prefix: unknown
 ): Promise<FilenamePrefixWidget> {
   const ext = await loadExtension()
 
@@ -99,6 +100,61 @@ describe('Comfy.SaveImageExtraOutput', () => {
       )
 
       expect(widget.serializeValue!()).toBe('ComfyUI_12345')
+      expect(widget.syncToWorkflow).toBe(false)
     }
   )
+
+  it('leaves non-string filename_prefix values unchanged', async () => {
+    const widget = await createNodeWithFilenamePrefix('SaveImage', 123)
+
+    expect(widget.serializeValue!()).toBe(123)
+    expect(widget.syncToWorkflow).toBe(false)
+  })
+
+  it('allows save nodes without a filename_prefix widget', async () => {
+    const ext = await loadExtension()
+    const nodeType = {
+      prototype: {}
+    } as unknown as Parameters<BeforeRegisterNodeDef>[0]
+
+    await ext.beforeRegisterNodeDef!(
+      nodeType,
+      { name: 'SaveImage' } as ComfyNodeDef,
+      {} as Parameters<BeforeRegisterNodeDef>[2]
+    )
+
+    const proto = nodeType.prototype as { onNodeCreated?: () => void }
+    expect(() => proto.onNodeCreated!.call({ widgets: [] })).not.toThrow()
+  })
+
+  it('adds a search-and-replace alias to non-save nodes', async () => {
+    const ext = await loadExtension()
+    const onNodeCreated = vi.fn()
+    const nodeType = {
+      prototype: { onNodeCreated }
+    } as unknown as Parameters<BeforeRegisterNodeDef>[0]
+    const nodeData = { name: 'KSampler' } as ComfyNodeDef
+
+    await ext.beforeRegisterNodeDef!(
+      nodeType,
+      nodeData,
+      {} as Parameters<BeforeRegisterNodeDef>[2]
+    )
+
+    const addProperty = vi.fn()
+    const node = {
+      properties: {},
+      addProperty,
+      constructor: { type: 'KSampler' }
+    }
+    const proto = nodeType.prototype as { onNodeCreated?: () => void }
+    proto.onNodeCreated!.call(node)
+
+    expect(onNodeCreated).toHaveBeenCalledOnce()
+    expect(addProperty).toHaveBeenCalledWith(
+      'Node name for S&R',
+      'KSampler',
+      'string'
+    )
+  })
 })
