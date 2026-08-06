@@ -4,14 +4,13 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { toRerouteId } from '@/types/rerouteId'
 
-const GRAPH_ID = 'dec788c2-9829-4a5d-a1ee-d6f0a678b42a'
-const REROUTE_ID = toRerouteId(1)
-
 test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
   test(
     'moves geometry received before graph materialization',
     { tag: '@canvas' },
     async ({ comfyPage }) => {
+      const GRAPH_ID = 'dec788c2-9829-4a5d-a1ee-d6f0a678b42a'
+      const REROUTE_ID = toRerouteId(1)
       const remotePosition = { x: 500, y: 300 }
       await comfyPage.page.addScriptTag({
         type: 'module',
@@ -67,6 +66,7 @@ test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
   )
 
   test('survives subgraph navigation', async ({ comfyPage }) => {
+    const REROUTE_ID = toRerouteId(1)
     await comfyPage.workflow.loadWorkflow(
       'reroute/single-native-reroute-default-workflow'
     )

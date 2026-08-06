@@ -4,8 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { toNodeId } from '@/types/nodeId'
 
-const REMOTE_RECT = [640, 360, 320, 180] as const
-
 test.describe(
   'Legacy remote geometry',
   { tag: ['@vue-nodes', '@canvas', '@node'] },
@@ -13,6 +11,7 @@ test.describe(
     test('retains geometry from a rect-only Yjs update', async ({
       comfyPage
     }) => {
+      const REMOTE_RECT = [640, 360, 320, 180] as const
       await comfyPage.workflow.loadWorkflow('default')
 
       const nodeId = toNodeId(
