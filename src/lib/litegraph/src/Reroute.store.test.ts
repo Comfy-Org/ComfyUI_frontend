@@ -340,7 +340,7 @@ describe('Reroute position lives only in layoutStore', () => {
       position: { x: 500, y: 300 },
       registrationId: 'remote-peer',
       rerouteId,
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       timestamp: Date.now(),
       type: 'createReroute'
     })
@@ -378,7 +378,7 @@ describe('Reroute position lives only in layoutStore', () => {
         position: { x: 50, y: 60 },
         registrationId: `remote-${rerouteId}`,
         rerouteId,
-        source: LayoutSource.External,
+        source: LayoutSource.Canvas,
         timestamp: Date.now(),
         type: 'createReroute'
       })
@@ -587,7 +587,7 @@ describe('Reroute position lives only in layoutStore', () => {
     const graph = new LGraph()
     const originalId = graph.id
     const originalLayout = { x: 70, y: 80 }
-    useLayoutMutations().createReroute(
+    useLayoutMutations(LayoutSource.Canvas).createReroute(
       originalId,
       toRerouteId(17),
       originalLayout
@@ -951,7 +951,7 @@ describe('Reroute position lives only in layoutStore', () => {
         reroute.id
       ),
       rerouteId: reroute.id,
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       timestamp: Date.now(),
       type: 'moveReroute'
     })
@@ -980,7 +980,7 @@ describe('Reroute position lives only in layoutStore', () => {
         reroute.id
       ),
       rerouteId: reroute.id,
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       timestamp: Date.now(),
       type: 'moveReroute'
     })

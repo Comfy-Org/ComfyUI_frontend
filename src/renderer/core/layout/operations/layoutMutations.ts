@@ -64,29 +64,13 @@ interface LayoutMutations {
   ): LayoutOperationResult
   moveNode(rootGraphId: UUID, nodeId: NodeId, position: Point): void
   resizeNode(rootGraphId: UUID, nodeId: NodeId, size: Size): void
-  setActor(actor: string): void
   setNodeZIndex(rootGraphId: UUID, nodeId: NodeId, zIndex: number): void
-  setSource(source: LayoutSource): void
 }
 
 /**
  * Composable for accessing layout mutations with clean destructuring API
  */
-export function useLayoutMutations(): LayoutMutations {
-  /**
-   * Set the current mutation source
-   */
-  const setSource = (source: LayoutSource): void => {
-    layoutStore.setSource(source)
-  }
-
-  /**
-   * Set the current actor (for CRDT)
-   */
-  const setActor = (actor: string): void => {
-    layoutStore.setActor(actor)
-  }
-
+export function useLayoutMutations(source: LayoutSource): LayoutMutations {
   /**
    * Move a node to a new position
    */
@@ -106,8 +90,7 @@ export function useLayoutMutations(): LayoutMutations {
       position,
       registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -135,7 +118,9 @@ export function useLayoutMutations(): LayoutMutations {
     })
 
     if (nodeBoundsUpdates.length === 0) return
-    layoutStore.batchUpdateNodeBounds(rootGraphId, nodeBoundsUpdates)
+    layoutStore.batchUpdateNodeBounds(rootGraphId, nodeBoundsUpdates, {
+      source
+    })
   }
 
   /**
@@ -153,8 +138,7 @@ export function useLayoutMutations(): LayoutMutations {
       registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       size,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -177,8 +161,7 @@ export function useLayoutMutations(): LayoutMutations {
       registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       zIndex,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -211,8 +194,7 @@ export function useLayoutMutations(): LayoutMutations {
       nodeId,
       layout: fullLayout,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -241,8 +223,7 @@ export function useLayoutMutations(): LayoutMutations {
       position,
       registrationId,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -260,8 +241,7 @@ export function useLayoutMutations(): LayoutMutations {
       layout: { id: groupId, ...layout },
       registrationId,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -279,8 +259,7 @@ export function useLayoutMutations(): LayoutMutations {
       groupId,
       registrationId,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
@@ -302,14 +281,11 @@ export function useLayoutMutations(): LayoutMutations {
       rerouteId,
       registrationId,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
   return {
-    setSource,
-    setActor,
     moveNode,
     batchMoveNodes,
     resizeNode,

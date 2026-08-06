@@ -446,16 +446,10 @@ function initSizeStyles() {
 }
 
 /**
- * Handle external size changes (e.g., from extensions calling node.setSize()).
- * Updates CSS variables when layoutStore changes from Canvas/External source.
+ * Updates CSS variables when the layout store changes from the canvas side.
  */
 function handleLayoutChange(change: LayoutChange) {
-  // Only handle Canvas or External source (extensions calling setSize)
-  if (
-    change.source !== LayoutSource.Canvas &&
-    change.source !== LayoutSource.External
-  )
-    return
+  if (change.source !== LayoutSource.Canvas) return
   if (layoutStore.isResizingVueNodes.value) return
   if (isCollapsed.value) return
 
@@ -489,7 +483,7 @@ onUnmounted(() => {
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
-const mutations = useLayoutMutations()
+const mutations = useLayoutMutations(LayoutSource.Vue)
 
 const { startResize } = useNodeResize((result, element) => {
   if (isCollapsed.value) return
@@ -504,7 +498,6 @@ const { startResize } = useNodeResize((result, element) => {
   // Update position for non-SE corner resizing
   const { rootGraphId } = canvasStore
   if (result.position && rootGraphId) {
-    mutations.setSource(LayoutSource.Vue)
     mutations.moveNode(rootGraphId, nodeData.id, result.position)
   }
 })

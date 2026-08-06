@@ -7,6 +7,7 @@ import type { UUID } from '@/utils/uuid'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 
 import {
@@ -80,7 +81,11 @@ function createCanvas(graph: LGraph): LGraphCanvas {
 }
 
 function setZIndex(rootGraphId: UUID, nodeId: NodeId, zIndex: number) {
-  useLayoutMutations().setNodeZIndex(rootGraphId, nodeId, zIndex)
+  useLayoutMutations(LayoutSource.Canvas).setNodeZIndex(
+    rootGraphId,
+    nodeId,
+    zIndex
+  )
 }
 
 function getNodeLayout(rootGraphId: UUID, nodeId: NodeId): NodeLayout {

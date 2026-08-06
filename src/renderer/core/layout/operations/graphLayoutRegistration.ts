@@ -159,17 +159,11 @@ type GraphLayoutRegistration =
   | RerouteLayoutRegistration
 
 /** Layout mutations attributed to the canvas, for direct delete calls. */
-export function canvasLayoutMutations() {
-  const mutations = useLayoutMutations()
-  mutations.setSource(LayoutSource.Canvas)
-  return mutations
-}
+export const canvasLayoutMutations = useLayoutMutations(LayoutSource.Canvas)
 
 function canvasOperationMeta() {
-  layoutStore.setSource(LayoutSource.Canvas)
   return {
-    actor: layoutStore.getCurrentActor(),
-    source: layoutStore.getCurrentSource(),
+    source: LayoutSource.Canvas,
     timestamp: Date.now()
   }
 }
@@ -670,7 +664,7 @@ export function registerGroupLayout(
   )
     return 'rejected'
   pendingRegistrations.set(key, registrationId)
-  const result = canvasLayoutMutations().createGroup(
+  const result = canvasLayoutMutations.createGroup(
     graphId,
     group.id,
     {
@@ -818,7 +812,7 @@ export function registerRerouteLayout(
   )
     return 'rejected'
   pendingRegistrations.set(key, registrationId)
-  const result = canvasLayoutMutations().createReroute(
+  const result = canvasLayoutMutations.createReroute(
     graphId,
     reroute.id,
     position,
@@ -879,10 +873,8 @@ export function unregisterAllGraphLayout(
   }
   collectOwners(graph)
 
-  layoutStore.setSource(LayoutSource.Canvas)
   const timestamp = Date.now()
-  const actor = layoutStore.getCurrentActor()
-  const source = layoutStore.getCurrentSource()
+  const source = LayoutSource.Canvas
   const restorationOperations: LayoutOperation[] = []
   const operations: LayoutOperation[] = owners.flatMap((owner) => [
     ...owner._nodes.flatMap((node): LayoutOperation[] => {
@@ -897,7 +889,6 @@ export function unregisterAllGraphLayout(
       )
       if (layout && storedRegistrationId === registration.registrationId) {
         restorationOperations.push({
-          actor,
           entity: 'node',
           graphId,
           layout,
@@ -910,7 +901,6 @@ export function unregisterAllGraphLayout(
       }
       return [
         {
-          actor,
           entity: 'node',
           graphId,
           nodeId,
@@ -933,7 +923,6 @@ export function unregisterAllGraphLayout(
       )
       if (layout && storedRegistrationId === registrationId) {
         restorationOperations.push({
-          actor,
           entity: 'group',
           graphId,
           groupId: group.id,
@@ -946,7 +935,6 @@ export function unregisterAllGraphLayout(
       }
       return [
         {
-          actor,
           entity: 'group',
           graphId,
           groupId: group.id,
@@ -970,7 +958,6 @@ export function unregisterAllGraphLayout(
       if (layout && storedRegistrationId === registrationId) {
         void reroute.pos[0]
         restorationOperations.push({
-          actor,
           entity: 'reroute',
           graphId,
           position: layout.position,
@@ -983,7 +970,6 @@ export function unregisterAllGraphLayout(
       }
       return [
         {
-          actor,
           entity: 'reroute',
           graphId,
           registrationId,

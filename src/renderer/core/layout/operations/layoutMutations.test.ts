@@ -5,6 +5,7 @@ import type * as Y from 'yjs'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { toGroupId } from '@/types/groupId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
@@ -25,7 +26,7 @@ function seedNode(
   [width, height]: [number, number],
   zIndex: number
 ) {
-  useLayoutMutations().createNode(GRAPH, nodeId, {
+  useLayoutMutations(LayoutSource.Canvas).createNode(GRAPH, nodeId, {
     position: { x, y },
     size: { width, height },
     zIndex,
@@ -42,7 +43,7 @@ beforeEach(() => {
 
 describe('moveNode', () => {
   it('updates node position', () => {
-    const { moveNode } = useLayoutMutations()
+    const { moveNode } = useLayoutMutations(LayoutSource.Canvas)
     moveNode(GRAPH, NODE_1, { x: 100, y: 200 })
     expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value?.position).toEqual(
       {
@@ -53,7 +54,7 @@ describe('moveNode', () => {
   })
 
   it('forwards current registration ownership', () => {
-    const { createNode, moveNode } = useLayoutMutations()
+    const { createNode, moveNode } = useLayoutMutations(LayoutSource.Canvas)
     createNode(GRAPH, NEW_NODE, { position: { x: 10, y: 20 } })
     getLayoutStoreYDoc()
       .getMap<Y.Map<unknown>>('nodes')
@@ -73,7 +74,7 @@ describe('moveNode', () => {
 
 describe('resizeNode', () => {
   it('updates node size', () => {
-    const { resizeNode } = useLayoutMutations()
+    const { resizeNode } = useLayoutMutations(LayoutSource.Canvas)
     resizeNode(GRAPH, NODE_1, { width: 400, height: 200 })
     expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value?.size).toEqual({
       width: 400,
@@ -84,7 +85,7 @@ describe('resizeNode', () => {
 
 describe('setNodeZIndex', () => {
   it('updates node z-index', () => {
-    const { setNodeZIndex } = useLayoutMutations()
+    const { setNodeZIndex } = useLayoutMutations(LayoutSource.Canvas)
     setNodeZIndex(GRAPH, NODE_1, 42)
     expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value?.zIndex).toBe(42)
   })
@@ -92,7 +93,7 @@ describe('setNodeZIndex', () => {
 
 describe('createNode', () => {
   it('makes node accessible via getNodeLayoutRef', () => {
-    const { createNode } = useLayoutMutations()
+    const { createNode } = useLayoutMutations(LayoutSource.Canvas)
     createNode(GRAPH, NEW_NODE, {
       position: { x: 50, y: 60 },
       size: { width: 300, height: 150 }
@@ -108,19 +109,31 @@ describe('missing node mutations', () => {
     {
       name: 'moveNode',
       mutate: () =>
-        useLayoutMutations().moveNode(GRAPH, MISSING_NODE, { x: 1, y: 2 })
+        useLayoutMutations(LayoutSource.Canvas).moveNode(GRAPH, MISSING_NODE, {
+          x: 1,
+          y: 2
+        })
     },
     {
       name: 'resizeNode',
       mutate: () =>
-        useLayoutMutations().resizeNode(GRAPH, MISSING_NODE, {
-          width: 3,
-          height: 4
-        })
+        useLayoutMutations(LayoutSource.Canvas).resizeNode(
+          GRAPH,
+          MISSING_NODE,
+          {
+            width: 3,
+            height: 4
+          }
+        )
     },
     {
       name: 'setNodeZIndex',
-      mutate: () => useLayoutMutations().setNodeZIndex(GRAPH, MISSING_NODE, 5)
+      mutate: () =>
+        useLayoutMutations(LayoutSource.Canvas).setNodeZIndex(
+          GRAPH,
+          MISSING_NODE,
+          5
+        )
     }
   ])('$name is a no-op', ({ mutate }) => {
     const before = [NODE_1, NODE_2].map(
@@ -140,7 +153,7 @@ describe('missing node mutations', () => {
 
 describe('batchMoveNodes', () => {
   it('updates found nodes, preserves size, and skips missing nodes', () => {
-    const { batchMoveNodes } = useLayoutMutations()
+    const { batchMoveNodes } = useLayoutMutations(LayoutSource.Canvas)
     batchMoveNodes(GRAPH, [
       { nodeId: NODE_1, position: { x: 50, y: 60 } },
       { nodeId: NODE_2, position: { x: 70, y: 80 } },
@@ -164,6 +177,19 @@ describe('batchMoveNodes', () => {
     })
     expect(layoutStore.getNodeLayoutRef(GRAPH, MISSING_NODE).value).toBeNull()
   })
+
+  it('reports the source it was built with, not the batch transport', async () => {
+    const sources: LayoutSource[] = []
+    const stop = layoutStore.onChange(({ source }) => sources.push(source))
+    onTestFinished(stop)
+
+    useLayoutMutations(LayoutSource.Canvas).batchMoveNodes(GRAPH, [
+      { nodeId: NODE_1, position: { x: 50, y: 60 } }
+    ])
+    await vi.waitFor(() => expect(sources).not.toHaveLength(0))
+
+    expect(sources).toEqual([LayoutSource.Canvas])
+  })
 })
 
 describe('bringNodeToFront', () => {
@@ -172,7 +198,9 @@ describe('bringNodeToFront', () => {
     { name: 'tied nodes', first: 5, second: 5 },
     { name: 'already leading', first: 20, second: 5 }
   ])('keeps the target frontmost with $name', ({ first, second }) => {
-    const { setNodeZIndex, bringNodeToFront } = useLayoutMutations()
+    const { setNodeZIndex, bringNodeToFront } = useLayoutMutations(
+      LayoutSource.Canvas
+    )
     setNodeZIndex(GRAPH, NODE_1, first)
     setNodeZIndex(GRAPH, NODE_2, second)
     bringNodeToFront(GRAPH, NODE_1)
@@ -187,7 +215,7 @@ describe('deleting an entity that is already gone', () => {
     'is a no-op for a $entity',
     ({ entity }) => {
       const rootGraphId = createUuidv4()
-      const mutations = useLayoutMutations()
+      const mutations = useLayoutMutations(LayoutSource.Canvas)
       if (entity === 'group') {
         const groupId = toGroupId(1)
         mutations.createGroup(rootGraphId, groupId, {
