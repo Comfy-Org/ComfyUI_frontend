@@ -90,18 +90,22 @@
           class="flex shrink-0 items-center gap-2"
           data-testid="template-type-tabs"
         >
-          <Button
+          <button
             v-for="tab in typeTabs"
             :key="tab.value"
-            size="md"
-            :variant="selectedType === tab.value ? 'inverted' : 'secondary'"
+            type="button"
             :aria-pressed="selectedType === tab.value"
-            class="h-7 shrink-0 rounded-md px-2.5 text-xs"
+            :class="
+              cn(
+                'flex shrink-0 items-center gap-1.5',
+                filterChipClass(selectedType === tab.value)
+              )
+            "
             @click="selectedType = tab.value"
           >
             <i v-if="tab.icon" :class="cn(tab.icon, 'size-3')" />
             <span>{{ tab.label }}</span>
-          </Button>
+          </button>
         </div>
 
         <template v-if="generationTypeOptions.length">
@@ -139,16 +143,20 @@
           >
             <DropdownMenu :modal="false">
               <template #button>
-                <Button
-                  variant="secondary"
-                  size="md"
-                  class="h-7 shrink-0 rounded-md px-2.5 text-xs"
+                <button
+                  type="button"
+                  :class="
+                    cn(
+                      'flex shrink-0 items-center gap-1.5',
+                      filterChipClass(!!selectedGenerationType)
+                    )
+                  "
                 >
                   <span class="max-w-28 truncate">
                     {{ selectedGenerationType?.name ?? generationTypeLabel }}
                   </span>
-                  <i class="icon-[lucide--chevron-down] size-3.5" />
-                </Button>
+                  <i class="icon-[lucide--chevron-down] size-3" />
+                </button>
               </template>
               <DropdownMenuRadioGroup :model-value="selectedCategory">
                 <DropdownMenuRadioItem
@@ -170,35 +178,52 @@
         </template>
       </div>
 
-      <!-- Applied filters as removable chips + Clear all, same shape as the
-           Media Assets filter bar (#14166). -->
+      <!-- Applied filters stay on one line with Clear always reachable. At
+           rest the row shows the first couple and a count; hovering the
+           section expands the rest, so a long filter set never pushes the
+           grid down but is still one gesture away. -->
       <div
         v-if="appliedFilters.length"
-        class="flex flex-wrap items-center gap-1.5"
+        class="group/applied flex items-center gap-2"
         data-testid="template-applied-filters"
       >
-        <span
-          v-for="pill in appliedFilters"
-          :key="`${pill.facetKey}:${pill.value}`"
-          class="inline-flex items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap"
-        >
-          <span class="max-w-32 truncate">{{ pill.label }}</span>
-          <Button
-            variant="textonly"
-            size="icon"
-            class="size-4 rounded-sm p-0"
-            :aria-label="`${$t('g.remove')}: ${pill.label}`"
-            @click="toggleFilterValue(pill.facetKey, pill.value)"
+        <TemplatesFilterChipRow class="min-w-0 flex-1">
+          <span
+            v-for="(pill, index) in appliedFilters"
+            :key="`${pill.facetKey}:${pill.value}`"
+            :class="
+              cn(
+                'shrink-0 items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap',
+                index < APPLIED_CHIPS_AT_REST
+                  ? 'inline-flex'
+                  : 'hidden group-hover/applied:inline-flex'
+              )
+            "
           >
-            <i class="icon-[lucide--x] size-3" />
-          </Button>
-        </span>
+            <span class="max-w-32 truncate">{{ pill.label }}</span>
+            <Button
+              variant="textonly"
+              size="icon"
+              class="size-4 rounded-sm p-0"
+              :aria-label="`${$t('g.remove')}: ${pill.label}`"
+              @click="toggleFilterValue(pill.facetKey, pill.value)"
+            >
+              <i class="icon-[lucide--x] size-3" />
+            </Button>
+          </span>
+          <span
+            v-if="restingHiddenCount > 0"
+            class="shrink-0 self-center px-1 text-xs text-muted-foreground group-hover/applied:hidden"
+          >
+            +{{ restingHiddenCount }}
+          </span>
+        </TemplatesFilterChipRow>
         <Button
           variant="textonly"
-          class="h-6 px-1.5 text-xs text-muted-foreground"
+          class="h-6 shrink-0 px-1.5 text-xs text-muted-foreground"
           @click="clearAllFilters"
         >
-          {{ $t('templateWorkflows.clearAllFilters') }}
+          {{ $t('g.clearAll') }}
         </Button>
       </div>
     </div>
@@ -962,12 +987,19 @@ const toggleFilterValue = (facetKey: string, value: string) => {
     : [...target.value, value]
 }
 
+const restingHiddenCount = computed(() =>
+  Math.max(0, appliedFilters.value.length - APPLIED_CHIPS_AT_REST)
+)
+
 const clearFilterFacet = (facetKey: string) => {
   if (facetKey === 'category') selectedNavItem.value = 'all'
   else if (facetKey === 'model') selectedModels.value = []
   else if (facetKey === 'task') selectedUseCases.value = []
   else selectedRunsOn.value = []
 }
+
+/** How many applied chips stay visible when the row isn't hovered. */
+const APPLIED_CHIPS_AT_REST = 2
 
 interface AppliedFilter {
   facetKey: FilterFacetKey

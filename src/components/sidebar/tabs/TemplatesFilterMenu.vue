@@ -15,7 +15,6 @@
         @keydown="handleSearchKeydown"
       />
     </div>
-    <DropdownMenuSeparator :class="separatorClass" />
 
     <!-- Typing searches values across every facet at once: with a hundred-odd
          models, finding one by name beats recalling which facet holds it. -->
