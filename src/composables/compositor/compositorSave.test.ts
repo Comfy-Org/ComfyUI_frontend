@@ -43,7 +43,8 @@ function makeSession() {
     },
     canvasSize: { value: { w: 64, h: 48 } },
     layers: { value: [rasterNode('a', 'Background')] },
-    layerFlips: () => ({ h: true, v: false })
+    layerFlips: () => ({ h: true, v: false }),
+    inputLayerIds: () => ['a']
   }
 }
 

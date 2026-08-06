@@ -1351,7 +1351,8 @@
     "open": "Open Compositor",
     "empty": "Run the workflow to generate a composite",
     "runWorkflowFirst": "Run the workflow once to load input images",
-    "saveFailed": "Failed to save composite"
+    "saveFailed": "Failed to save composite",
+    "downloadPsd": "Download PSD"
   },
   "maskEditor": {
     "title": "Mask Editor",

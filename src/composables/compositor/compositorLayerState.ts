@@ -34,6 +34,7 @@ export interface CompositorLayerState {
   canvas?: { w: number; h: number }
   inputs?: string[]
   background?: CompositorBackgroundEntry
+  order?: number[]
   layers: Array<CompositorLayerEntry | null>
 }
 
@@ -48,11 +49,13 @@ export interface CompositorBBox {
 interface CompositorLayerStateInit {
   canvas?: { w: number; h: number }
   background?: CompositorBackgroundEntry
+  order?: number[]
   layers: Array<Partial<CompositorLayerEntry> | null>
 }
 
 interface CompositorLayerOps {
   setCanvasSize(w: number, h: number): void
+  setLayerOrder(ids: string[]): void
   setBackgroundColor(hex: string): void
   setBackgroundOpacity(value: number): void
   setBackgroundVisible(visible: boolean): void
@@ -136,29 +139,41 @@ export function extractLayerState(
   canvas: { w: number; h: number },
   layers: readonly SceneNode[],
   layerFlips: (id: string) => { h: boolean; v: boolean },
-  inputs?: string[]
+  inputs?: string[],
+  inputOrder?: readonly string[]
 ): CompositorLayerState {
   const background = layers.find(
     (node): node is FillData => node.kind === 'fill'
   )
+  const imageNodes = layers.filter((node) => node.kind !== 'fill')
+  const orderIds = inputOrder ?? imageNodes.map((node) => node.id)
+  const inputIndex = new Map(orderIds.map((id, index) => [id, index]))
+  const entries: Array<CompositorLayerEntry | null> = orderIds.map(() => null)
+  const order: number[] = []
+  for (const node of imageNodes) {
+    const index = inputIndex.get(node.id)
+    if (index === undefined) continue
+    const flips = layerFlips(node.id)
+    entries[index] = {
+      name: node.name,
+      visible: node.visible,
+      opacity: node.opacity,
+      blend: node.mode.blend,
+      transform: { ...node.transform },
+      flipH: flips.h,
+      flipV: flips.v
+    }
+    order.push(index)
+  }
+  const identityOrder =
+    order.length === entries.length &&
+    order.every((value, index) => value === index)
   return {
     canvas: { w: canvas.w, h: canvas.h },
     ...(inputs ? { inputs } : {}),
     ...(background ? { background: backgroundEntry(background) } : {}),
-    layers: layers
-      .filter((node) => node.kind !== 'fill')
-      .map((node) => {
-        const flips = layerFlips(node.id)
-        return {
-          name: node.name,
-          visible: node.visible,
-          opacity: node.opacity,
-          blend: node.mode.blend,
-          transform: { ...node.transform },
-          flipH: flips.h,
-          flipV: flips.v
-        }
-      })
+    ...(identityOrder ? {} : { order }),
+    layers: entries
   }
 }
 
@@ -186,6 +201,17 @@ function parseBackground(
   }
 }
 
+function parseOrder(value: unknown): number[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined
+  const items: unknown[] = value
+  return items.every(
+    (item): item is number =>
+      typeof item === 'number' && Number.isInteger(item) && item >= 0
+  )
+    ? items
+    : undefined
+}
+
 function parseInputs(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined
   const items: unknown[] = value
@@ -207,15 +233,20 @@ export function parseLayerState(value: unknown): CompositorLayerState | null {
   if (typeof raw !== 'object' || raw === null) return null
   if (Object.keys(raw).length === 0) return null
 
-  const { canvas, layers, inputs, background } = raw as Record<string, unknown>
+  const { canvas, layers, inputs, background, order } = raw as Record<
+    string,
+    unknown
+  >
   const canvasSize = parseCanvasSize(canvas)
   const parsedInputs = parseInputs(inputs)
   const parsedBackground = parseBackground(background)
+  const parsedOrder = parseOrder(order)
 
   return {
     ...(canvasSize ? { canvas: canvasSize } : {}),
     ...(parsedInputs ? { inputs: parsedInputs } : {}),
     ...(parsedBackground ? { background: parsedBackground } : {}),
+    ...(parsedOrder ? { order: parsedOrder } : {}),
     layers: Array.isArray(layers) ? layers.map(parseEntry) : []
   }
 }
@@ -292,5 +323,12 @@ export function applyLayerState(
       ops.setLayerDimensions(id, entry.transform.w, entry.transform.h)
       ops.setLayerRotationDeg(id, (entry.transform.rotation * 180) / Math.PI)
     }
+  }
+
+  if (state.order) {
+    const ids = state.order
+      .map((index) => layers[index]?.id)
+      .filter((id): id is string => id !== undefined)
+    if (ids.length > 0) ops.setLayerOrder(ids)
   }
 }

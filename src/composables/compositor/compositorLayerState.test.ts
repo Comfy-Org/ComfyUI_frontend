@@ -69,6 +69,7 @@ const noFlips = () => ({ h: false, v: false })
 function makeOps() {
   return {
     setCanvasSize: vi.fn(),
+    setLayerOrder: vi.fn(),
     setBackgroundColor: vi.fn(),
     setBackgroundOpacity: vi.fn(),
     setBackgroundVisible: vi.fn(),
@@ -156,6 +157,29 @@ describe('extractLayerState', () => {
     expect('background' in state).toBe(false)
   })
 
+  it('writes layers input-indexed with a stacking order when reordered', () => {
+    const state = extractLayerState(
+      { w: 8, h: 8 },
+      [fillNode('bg'), rasterNode('b', 'B'), rasterNode('a', 'A')],
+      noFlips,
+      undefined,
+      ['a', 'b']
+    )
+    expect(state.layers.map((entry) => entry?.name)).toEqual(['A', 'B'])
+    expect(state.order).toEqual([1, 0])
+  })
+
+  it('omits order when stacking matches the input order', () => {
+    const state = extractLayerState(
+      { w: 8, h: 8 },
+      [rasterNode('a', 'A'), rasterNode('b', 'B')],
+      noFlips,
+      undefined,
+      ['a', 'b']
+    )
+    expect('order' in state).toBe(false)
+  })
+
   it('embeds the inputs fingerprint when provided and omits it otherwise', () => {
     const withInputs = extractLayerState(
       { w: 8, h: 8 },
@@ -214,6 +238,21 @@ describe('parseLayerState', () => {
     expect(
       parseLayerState(JSON.stringify({ inputs: ['hash-a', 2], layers: [] }))
         ?.inputs
+    ).toBeUndefined()
+  })
+
+  it('keeps a valid order and drops invalid ones', () => {
+    expect(
+      parseLayerState(JSON.stringify({ order: [1, 0], layers: [] }))?.order
+    ).toEqual([1, 0])
+    expect(
+      parseLayerState(JSON.stringify({ order: [1.5, 0], layers: [] }))?.order
+    ).toBeUndefined()
+    expect(
+      parseLayerState(JSON.stringify({ order: [-1, 0], layers: [] }))?.order
+    ).toBeUndefined()
+    expect(
+      parseLayerState(JSON.stringify({ order: 'first', layers: [] }))?.order
     ).toBeUndefined()
   })
 
@@ -525,6 +564,25 @@ describe('applyLayerState', () => {
 
     expect(ops.renameLayer).toHaveBeenCalledTimes(1)
     expect(ops.renameLayer).toHaveBeenCalledWith('a', 'One')
+  })
+
+  it('reorders layers by mapping order indices to ids, skipping unknown indices', () => {
+    const ops = makeOps()
+    applyLayerState(
+      { layers: [null, null], order: [1, 5, 0] },
+      [
+        { id: 'a', visible: true },
+        { id: 'b', visible: true }
+      ],
+      ops
+    )
+    expect(ops.setLayerOrder).toHaveBeenCalledWith(['b', 'a'])
+  })
+
+  it('does not reorder when the state has no order', () => {
+    const ops = makeOps()
+    applyLayerState({ layers: [null] }, [{ id: 'a', visible: true }], ops)
+    expect(ops.setLayerOrder).not.toHaveBeenCalled()
   })
 
   it('applies only the fields present on partial bbox-derived entries', () => {

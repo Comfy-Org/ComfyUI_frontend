@@ -147,6 +147,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   const panning = ref(false)
 
   const flipParity = reactive(new Map<string, { h: boolean; v: boolean }>())
+  const inputOrderIds: string[] = []
 
   const compositor = (opts.createCompositor ?? createWebGLCompositor)()
   let onContextRestored: (() => void) | null = null
@@ -178,14 +179,15 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   })
   const backgroundLayer = computed<FillData | null>(() => {
     const first = layers.value[0]
-    return first?.kind === 'fill' ? first : null
+    return first?.kind === 'fill' ? { ...first } : null
   })
   const imageLayers = computed<SceneNode[]>(() =>
     layers.value.filter((n) => n.kind !== 'fill')
   )
   const activeNode = computed<SceneNode | null>(() => {
     void version.value
-    return activeNodeId.value ? engineNode(activeNodeId.value) : null
+    const node = activeNodeId.value ? engineNode(activeNodeId.value) : null
+    return node ? { ...node } : null
   })
   const selectedNodeIds = computed<string[]>(() => {
     void version.value
@@ -206,6 +208,11 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
 
   function engineNode(id: string): SceneNode | null {
     return findNode(editor.document().root, id)?.node ?? null
+  }
+
+  function backgroundNode(): FillData | null {
+    const first = editor.document().root.children[0]
+    return first?.kind === 'fill' ? first : null
   }
 
   function onChange(): void {
@@ -420,8 +427,10 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
 
   async function loadImages(urls: string[], names: string[]): Promise<void> {
     flipParity.clear()
+    inputOrderIds.length = 0
     ensureBackgroundLayer()
-    let first = true
+    let docWidth = 0
+    let docHeight = 0
     for (const [i, url] of urls.entries()) {
       let canvas: HTMLCanvasElement
       try {
@@ -431,30 +440,31 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
         continue
       }
       if (disposed) return
-      if (first) {
-        first = false
-        const doc = editor.document()
-        doc.width = canvas.width
-        doc.height = canvas.height
-        if (glOk.value) compositor.resize(canvas.width, canvas.height)
-      }
+      docWidth = Math.max(docWidth, canvas.width)
+      docHeight = Math.max(docHeight, canvas.height)
       const contentId = content.register(canvas, { uploadedUrl: url })
-      editor.addNode(
-        rasterKind.create({
-          name: names[i],
-          contentId,
-          url,
-          naturalWidth: canvas.width,
-          naturalHeight: canvas.height,
-          transform: {
-            x: 0,
-            y: 0,
-            w: canvas.width,
-            h: canvas.height,
-            rotation: 0
-          }
-        })
-      )
+      const layer = rasterKind.create({
+        name: names[i],
+        contentId,
+        url,
+        naturalWidth: canvas.width,
+        naturalHeight: canvas.height,
+        transform: {
+          x: 0,
+          y: 0,
+          w: canvas.width,
+          h: canvas.height,
+          rotation: 0
+        }
+      })
+      editor.addNode(layer)
+      inputOrderIds.push(layer.id)
+    }
+    if (docWidth > 0 && docHeight > 0) {
+      const doc = editor.document()
+      doc.width = docWidth
+      doc.height = docHeight
+      if (glOk.value) compositor.resize(docWidth, docHeight)
     }
     editor.history.clear()
     fitView()
@@ -547,6 +557,17 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     )
   }
 
+  function inputLayerIds(): string[] {
+    return [...inputOrderIds]
+  }
+
+  function setLayerOrder(ids: string[]): void {
+    const offset = backgroundLayer.value ? 1 : 0
+    ids.forEach((id, index) => {
+      editor.moveNodeTo(id, undefined, offset + index)
+    })
+  }
+
   function moveLayer(id: string, dir: 1 | -1): void {
     const bg = backgroundLayer.value
     if (bg) {
@@ -573,7 +594,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   }
 
   function setBackgroundColor(hex: string): void {
-    const bg = backgroundLayer.value
+    const bg = backgroundNode()
     if (!bg || !HEX_COLOR_RE.test(hex)) return
     const color = hex.toLowerCase()
     if (bg.fill.type === 'solid' && bg.fill.color === color) return
@@ -588,7 +609,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   }
 
   function setBackgroundOpacity(v: number): void {
-    const bg = backgroundLayer.value
+    const bg = backgroundNode()
     if (!bg) return
     editProp(
       'Background Opacity',
@@ -601,7 +622,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   }
 
   function setBackgroundVisible(visible: boolean): void {
-    const bg = backgroundLayer.value
+    const bg = backgroundNode()
     if (!bg) return
     editProp(
       'Background Visibility',
@@ -1028,6 +1049,8 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     toggleVisible,
     renameLayer,
     moveLayer,
+    setLayerOrder,
+    inputLayerIds,
     setActiveNode,
     setSelectedNodes,
     selectBackground,

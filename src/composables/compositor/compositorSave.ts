@@ -11,6 +11,7 @@ export interface CompositorLayerStateSession {
   canvasSize: { value: { w: number; h: number } }
   layers: { value: SceneNode[] }
   layerFlips(id: string): { h: boolean; v: boolean }
+  inputLayerIds(): string[]
 }
 
 export interface CompositorPreviewSession {
@@ -31,7 +32,8 @@ export function saveCompositorLayerState(
       session.canvasSize.value,
       session.layers.value,
       session.layerFlips,
-      getCompositorInputsFingerprint(node.id)
+      getCompositorInputsFingerprint(node.id),
+      session.inputLayerIds()
     )
     setCompositorWidgetValue(node, layerState)
     return true

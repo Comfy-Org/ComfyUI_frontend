@@ -162,7 +162,8 @@ function fakeCanvas(w: number, h: number): HTMLCanvasElement {
 
 const IMAGE_SIZES: Record<string, [number, number]> = {
   'a.png': [64, 48],
-  'b.png': [32, 32]
+  'b.png': [32, 32],
+  'c.png': [40, 80]
 }
 
 function makeSession(initResult = true) {
@@ -245,7 +246,7 @@ function rasterLayer(
 
 describe('useLayerEditorSession', () => {
   describe('loadImages', () => {
-    it('sizes the document to the first image and stacks layers bottom-to-top', async () => {
+    it('sizes the document to the max input dimensions and stacks layers bottom-to-top', async () => {
       const { session } = await loadedSession()
       const doc = session.editor.document()
       expect(doc.width).toBe(64)
@@ -255,6 +256,14 @@ describe('useLayerEditorSession', () => {
       const bottom = children[1] as RasterData
       expect(bottom.naturalWidth).toBe(64)
       expect(session.content.get(bottom.contentId)?.uploadedUrl).toBe('a.png')
+    })
+
+    it('takes the max width and height across all inputs', async () => {
+      const { session } = makeSession()
+      await session.loadImages(['a.png', 'c.png'], ['A', 'C'])
+      const doc = session.editor.document()
+      expect(doc.width).toBe(64)
+      expect(doc.height).toBe(80)
     })
 
     it('clears history so loads are not undoable', async () => {
@@ -350,6 +359,19 @@ describe('useLayerEditorSession', () => {
       session.moveLayer(session.imageLayers.value[0].id, 1)
       expect(session.imageLayers.value.map((n) => n.name)).toEqual(['B', 'A'])
       expect(session.layers.value[0].kind).toBe('fill')
+    })
+
+    it('exposes a fresh activeNode snapshot after each edit so bindings update', async () => {
+      const { session } = await loadedSession()
+      const id = session.imageLayers.value[0].id
+      session.setActiveNode(id)
+      const before = session.activeNode.value
+      expect(before?.mode.blend).toBe('normal')
+
+      session.setBlendMode(id, 'multiply')
+      const after = session.activeNode.value
+      expect(after).not.toBe(before)
+      expect(after?.mode.blend).toBe('multiply')
     })
   })
 
@@ -867,6 +889,29 @@ describe('useLayerEditorSession', () => {
       expect(top.transform).toMatchObject({ x: 4, y: 8, w: 20, h: 10 })
       expect(session.canUndo.value).toBe(false)
     })
+
+    it('round-trips layer stacking order through extract and apply', async () => {
+      const { session } = await loadedSession()
+      const [a, b] = session.imageLayers.value
+      session.moveLayer(a.id, 1)
+      expect(session.imageLayers.value.map((n) => n.name)).toEqual(['B', 'A'])
+
+      const state = extractLayerState(
+        session.canvasSize.value,
+        session.layers.value,
+        session.layerFlips,
+        undefined,
+        session.inputLayerIds()
+      )
+      expect(session.inputLayerIds()).toEqual([a.id, b.id])
+      expect(state.layers.map((entry) => entry?.name)).toEqual(['A', 'B'])
+      expect(state.order).toEqual([1, 0])
+
+      const { session: fresh } = await loadedSession()
+      applyLayerState(state, fresh.imageLayers.value, fresh)
+      expect(fresh.imageLayers.value.map((n) => n.name)).toEqual(['B', 'A'])
+      expect(fresh.layers.value[0].kind).toBe('fill')
+    })
   })
 
   describe('selection context', () => {
@@ -907,7 +952,7 @@ describe('useLayerEditorSession', () => {
       const { session } = await loadedSession()
       const bg = session.backgroundLayer.value
       expect(bg).not.toBeNull()
-      expect(session.layers.value[0]).toBe(bg)
+      expect(session.layers.value[0].id).toBe(bg!.id)
       expect(bg!.kind).toBe('fill')
       expect(bg!.fill).toEqual({ type: 'solid', color: '#ffffff' })
       expect(bg!.opacity).toBe(1)
@@ -931,36 +976,36 @@ describe('useLayerEditorSession', () => {
 
     it('changes color undoably and ignores invalid or identical colors', async () => {
       const { session } = await loadedSession()
-      const bg = session.backgroundLayer.value!
+      const bg = () => session.backgroundLayer.value!
 
       session.setBackgroundColor('#00DF1E')
-      expect(bg.fill).toEqual({ type: 'solid', color: '#00df1e' })
+      expect(bg().fill).toEqual({ type: 'solid', color: '#00df1e' })
       expect(session.canUndo.value).toBe(true)
 
       session.setBackgroundColor('#00df1e')
       session.setBackgroundColor('not-a-color')
-      expect(bg.fill).toEqual({ type: 'solid', color: '#00df1e' })
+      expect(bg().fill).toEqual({ type: 'solid', color: '#00df1e' })
 
       session.undo()
-      expect(bg.fill).toEqual({ type: 'solid', color: '#ffffff' })
+      expect(bg().fill).toEqual({ type: 'solid', color: '#ffffff' })
       session.redo()
-      expect(bg.fill).toEqual({ type: 'solid', color: '#00df1e' })
+      expect(bg().fill).toEqual({ type: 'solid', color: '#00df1e' })
     })
 
     it('changes opacity and visibility undoably', async () => {
       const { session } = await loadedSession()
-      const bg = session.backgroundLayer.value!
+      const bg = () => session.backgroundLayer.value!
 
       session.setBackgroundOpacity(0.3)
-      expect(bg.opacity).toBe(0.3)
+      expect(bg().opacity).toBe(0.3)
       session.undo()
-      expect(bg.opacity).toBe(1)
+      expect(bg().opacity).toBe(1)
 
       session.setBackgroundVisible(false)
-      expect(bg.visible).toBe(false)
+      expect(bg().visible).toBe(false)
       session.setBackgroundVisible(false)
       session.undo()
-      expect(bg.visible).toBe(true)
+      expect(bg().visible).toBe(true)
       expect(session.canUndo.value).toBe(false)
     })
 
@@ -971,7 +1016,7 @@ describe('useLayerEditorSession', () => {
 
       session.moveLayer(bg.id, 1)
       session.moveLayer(bg.id, -1)
-      expect(session.layers.value[0]).toBe(bg)
+      expect(session.layers.value[0].id).toBe(bg.id)
 
       session.moveLayer(bottomImage.id, -1)
       expect(session.layers.value[1]).toBe(bottomImage)

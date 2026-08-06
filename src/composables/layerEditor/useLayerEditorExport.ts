@@ -15,46 +15,56 @@ function exportTimestamp(d: Date): string {
   return `${date}-${time}`
 }
 
+export function psdExportFilename(d: Date): string {
+  return `comfyui-layers-${exportTimestamp(d)}.psd`
+}
+
+function readbackCanvas(session: LayerEditorSession): HTMLCanvasElement {
+  const img = session.compositor.readback()
+  const canvas = document.createElement('canvas')
+  canvas.width = img.width
+  canvas.height = img.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('2d context unavailable')
+  ctx.putImageData(img, 0, 0)
+  return canvas
+}
+
+export async function buildSessionPsdBlob(
+  session: LayerEditorSession
+): Promise<Blob> {
+  const { editor, content } = session
+  if (editor.floating()) editor.anchorFloating()
+  const guides = editor.guides()
+  const psd = await buildPsdFromEditor(
+    {
+      document: () => editor.document(),
+      render: () => editor.render(),
+      readbackCanvas: () => readbackCanvas(session)
+    },
+    content,
+    {
+      guides: {
+        horizontal: guides.filter((g) => g.axis === 'y').map((g) => g.pos),
+        vertical: guides.filter((g) => g.axis === 'x').map((g) => g.pos)
+      }
+    }
+  )
+  const { writePsd } = await import('ag-psd')
+  return new Blob([writePsd(psd)], { type: PSD_MIME })
+}
+
 export function useLayerEditorExport(session: LayerEditorSession) {
   const { t } = useI18n()
   const toastStore = useToastStore()
   const exporting = ref(false)
 
-  function readbackCanvas(): HTMLCanvasElement {
-    const img = session.compositor.readback()
-    const canvas = document.createElement('canvas')
-    canvas.width = img.width
-    canvas.height = img.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('2d context unavailable')
-    ctx.putImageData(img, 0, 0)
-    return canvas
-  }
-
   async function exportPsd(): Promise<void> {
     if (!session.glOk.value || exporting.value) return
     exporting.value = true
     try {
-      const { editor, content } = session
-      if (editor.floating()) editor.anchorFloating()
-      const guides = editor.guides()
-      const psd = await buildPsdFromEditor(
-        {
-          document: () => editor.document(),
-          render: () => editor.render(),
-          readbackCanvas
-        },
-        content,
-        {
-          guides: {
-            horizontal: guides.filter((g) => g.axis === 'y').map((g) => g.pos),
-            vertical: guides.filter((g) => g.axis === 'x').map((g) => g.pos)
-          }
-        }
-      )
-      const { writePsd } = await import('ag-psd')
-      const blob = new Blob([writePsd(psd)], { type: PSD_MIME })
-      downloadBlob(`comfyui-layers-${exportTimestamp(new Date())}.psd`, blob)
+      const blob = await buildSessionPsdBlob(session)
+      downloadBlob(psdExportFilename(new Date()), blob)
     } catch (err) {
       console.warn('[LayerEditor] PSD export failed', err)
       toastStore.add({

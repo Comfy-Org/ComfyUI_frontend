@@ -21,6 +21,7 @@ function makeSession() {
     canvasSize: { value: { w: 8, h: 8 } },
     layers: { value: [] },
     layerFlips: () => ({ h: false, v: false }),
+    inputLayerIds: () => [],
     emitHistoryChange(mask: number = Dirty.DRAWABLE) {
       for (const listener of listeners) listener(mask)
     }

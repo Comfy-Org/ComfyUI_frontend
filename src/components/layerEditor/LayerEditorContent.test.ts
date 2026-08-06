@@ -13,6 +13,7 @@ const {
   afterChange,
   autoSaveStop,
   beforeChange,
+  loadCompositorSession,
   saveLayerState,
   savePreview,
   session
@@ -20,6 +21,7 @@ const {
   afterChange: vi.fn(),
   autoSaveStop: vi.fn(),
   beforeChange: vi.fn(),
+  loadCompositorSession: vi.fn().mockResolvedValue(undefined),
   saveLayerState: vi.fn(() => true),
   savePreview: vi.fn().mockResolvedValue(undefined),
   session: {
@@ -69,24 +71,8 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: vi.fn() })
 }))
-vi.mock('@/composables/compositor/useCompositorLayers', () => ({
-  getCompositorBBoxes: () => [],
-  getCompositorInputsFingerprint: () => [],
-  getCompositorLayers: () => []
-}))
-vi.mock('@/composables/compositor/compositorLayerState', () => ({
-  applyLayerState: vi.fn(),
-  parseLayerState: () => null,
-  resolveInitialLayerState: () => null
-}))
-vi.mock('@/composables/compositor/compositorWidgets', () => ({
-  getCompositorWidgetValue: () => ''
-}))
-vi.mock('@/scripts/api', () => ({
-  api: { apiURL: (url: string) => url }
-}))
-vi.mock('@/scripts/app', () => ({
-  app: { getRandParam: () => '' }
+vi.mock('@/composables/compositor/compositorSession', () => ({
+  loadCompositorSession
 }))
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({ getNodeImageUrls: () => [] })
@@ -135,6 +121,7 @@ describe('LayerEditorContent', () => {
     vi.clearAllMocks()
     session.canUndo.value = false
     session.loadImages.mockResolvedValue(undefined)
+    loadCompositorSession.mockResolvedValue(undefined)
     session.editor.floating.mockImplementation(() => null)
     session.editor.history.canUndo.mockImplementation(() => false)
     session.editor.history.canRedo.mockImplementation(() => false)
@@ -212,7 +199,7 @@ describe('LayerEditorContent', () => {
 
   it('does not start auto-save when closed while layers are loading', async () => {
     let resolveLoad!: () => void
-    session.loadImages.mockImplementationOnce(
+    loadCompositorSession.mockImplementationOnce(
       () => new Promise<void>((resolve) => (resolveLoad = resolve))
     )
     const { unmount } = renderEditor('compositor')
