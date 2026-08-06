@@ -209,13 +209,18 @@ interface ApiMessage<T extends keyof ApiCalls> {
 
 export class UnauthorizedError extends Error {}
 
+export function httpFailureDetail(status: number | string, body = ''): string {
+  return `${status}${body ? ` — ${body}` : ''}`
+}
+
+/** Rejection carrying endpoint + status; status 0 means a transport failure. */
 export class ApiHttpError extends Error {
   constructor(
     readonly endpoint: string,
     readonly status: number,
     body = ''
   ) {
-    super(`Request to ${endpoint} failed: ${status}${body ? ` — ${body}` : ''}`)
+    super(`Request to ${endpoint} failed: ${httpFailureDetail(status, body)}`)
     this.name = 'ApiHttpError'
   }
 }
@@ -1014,7 +1019,12 @@ export class ComfyApi extends EventTarget {
    * Gets a list of embedding names
    */
   async getEmbeddings(): Promise<EmbeddingsResponse> {
-    const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
+    let resp: Response
+    try {
+      resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
+    } catch (err) {
+      throw new ApiHttpError('/embeddings', 0, String(err))
+    }
     if (!resp.ok) {
       throw new ApiHttpError(
         '/embeddings',
@@ -1323,7 +1333,7 @@ export class ComfyApi extends EventTarget {
     if (!res.ok) {
       const body = await res.text().catch(() => '')
       throw new Error(
-        `Failed to cancel job ${jobId}: ${res.status}${body ? ` — ${body}` : ''}`
+        `Failed to cancel job ${jobId}: ${httpFailureDetail(res.status, body)}`
       )
     }
   }
@@ -1347,7 +1357,7 @@ export class ComfyApi extends EventTarget {
     if (!res.ok) {
       const body = await res.text().catch(() => '')
       throw new Error(
-        `Failed to cancel jobs: ${res.status}${body ? ` — ${body}` : ''}`
+        `Failed to cancel jobs: ${httpFailureDetail(res.status, body)}`
       )
     }
   }

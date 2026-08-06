@@ -1622,6 +1622,20 @@ describe('ComfyApp', () => {
       expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
     })
 
+    it('lets non-connectivity import failures propagate without the connectivity toast', async () => {
+      const graph = new LGraph()
+      const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
+      mockImportA1111.mockRejectedValue(new RangeError('boom'))
+
+      await expect(
+        app.handleFile(createTestFile('a1111.png', 'image/png'))
+      ).rejects.toThrow('boom')
+
+      expect(mockToastStore.addAlert).not.toHaveBeenCalled()
+    })
+
     it('awaits persistence and orders its clear callback before setGraph', async () => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'

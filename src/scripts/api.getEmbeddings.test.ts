@@ -51,6 +51,35 @@ describe('api.getEmbeddings', () => {
     )
   })
 
+  it('keeps the status even when reading the failure body itself rejects', async () => {
+    fetchApiSpy.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: () => Promise.reject(new SyntaxError('Unexpected token <')),
+      text: () => Promise.reject(new Error('body stream lost'))
+    } as unknown as Response)
+
+    await expect(api.getEmbeddings()).rejects.toSatisfy(
+      (e) =>
+        e instanceof Error &&
+        e.name === 'ApiHttpError' &&
+        e.message.includes('/embeddings') &&
+        e.message.includes('500')
+    )
+  })
+
+  it('rejects identifiably when the fetch itself fails (backend down)', async () => {
+    fetchApiSpy.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+    await expect(api.getEmbeddings()).rejects.toSatisfy(
+      (e) =>
+        e instanceof Error &&
+        e.name === 'ApiHttpError' &&
+        e.message.includes('/embeddings') &&
+        e.message.includes('Failed to fetch')
+    )
+  })
+
   it('rejects identifiably on a non-ok response with an HTML body', async () => {
     fetchApiSpy.mockResolvedValueOnce(
       htmlResponse(502, '<html>bad gateway</html>')
