@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { computed, nextTick, ref } from 'vue'
@@ -257,12 +259,12 @@ describe('useWidgetSelectItems', () => {
 
     it('leaves output preview_url empty for mesh kind even when asset has one', async () => {
       mockMediaAssets.media.value = [
-        {
+        fromPartial({
           id: 'asset-mesh-1',
           name: 'scene.glb',
           preview_url: '/api/view?filename=scene.glb&type=output',
           tags: ['output']
-        }
+        })
       ]
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -295,16 +297,13 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('cloud asset mode', () => {
-    const createTestAsset = (
-      id: string,
-      name: string,
-      preview_url: string
-    ): AssetItem => ({
-      id,
-      name,
-      preview_url,
-      tags: []
-    })
+    const createTestAsset = (id: string, name: string, preview_url: string) =>
+      fromPartial<AssetItem>({
+        id,
+        name,
+        preview_url,
+        tags: []
+      })
 
     it('excludes missing items from cloud dropdown', () => {
       mockAssetsData.items = [
@@ -436,8 +435,8 @@ describe('useWidgetSelectItems', () => {
       name: string,
       nodeId: string,
       outputCount: number
-    ) {
-      return {
+    ): AssetItem {
+      return fromPartial({
         id: jobId,
         name,
         preview_url: `/api/view?filename=${name}&type=output`,
@@ -457,7 +456,7 @@ describe('useWidgetSelectItems', () => {
             }
           ]
         }
-      }
+      })
     }
 
     it('shows all outputs after resolving multi-output jobs', async () => {
@@ -586,7 +585,7 @@ describe('useWidgetSelectItems', () => {
 
     it('resolves outputs when allOutputs already contains all items', async () => {
       mockMediaAssets.media.value = [
-        {
+        fromPartial({
           id: 'job-complete',
           name: 'preview.png',
           preview_url: '/api/view?filename=preview.png&type=output',
@@ -613,7 +612,7 @@ describe('useWidgetSelectItems', () => {
               }
             ]
           }
-        }
+        })
       ]
 
       mockResolveOutputAssetItems.mockResolvedValue([
@@ -688,7 +687,7 @@ describe('useWidgetSelectItems', () => {
       // watcher must NOT replace it with synthesized AssetItems lacking the
       // hash, or select+load reverts to the FE-227 broken state.
       mockMediaAssets.media.value = [
-        {
+        fromPartial({
           id: 'asset-flat-1',
           name: 'z-image-turbo_00093_.png',
           hash: '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
@@ -708,7 +707,7 @@ describe('useWidgetSelectItems', () => {
               }
             ]
           }
-        }
+        })
       ]
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -730,13 +729,13 @@ describe('useWidgetSelectItems', () => {
 
     it('uses hash (not human filename) as the dropdown value when present, so cloud /view can resolve by hash', async () => {
       mockMediaAssets.media.value = [
-        {
+        fromPartial({
           id: 'asset-out-1',
           name: 'z-image-turbo_00093_.png',
           hash: '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
           preview_url: '/api/view?filename=039b...0b13.png',
           tags: ['output']
-        }
+        })
       ]
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -761,11 +760,11 @@ describe('useWidgetSelectItems', () => {
 
     it('falls back to asset.name when hash is absent (local/history path)', async () => {
       mockMediaAssets.media.value = [
-        {
+        fromPartial({
           id: 'local-1',
           name: 'ComfyUI_00001_.png',
           tags: ['output']
-        }
+        })
       ]
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -819,18 +818,18 @@ describe('useWidgetSelectItems', () => {
       ])
 
       resolveSecond([
-        {
+        fromPartial({
           id: 'job-SECOND-2--out2a.png',
           name: 'out2a.png',
           preview_url: '',
           tags: ['output']
-        },
-        {
+        }),
+        fromPartial({
           id: 'job-SECOND-2--out2b.png',
           name: 'out2b.png',
           preview_url: '',
           tags: ['output']
-        }
+        })
       ])
 
       await nextTick()
@@ -842,24 +841,24 @@ describe('useWidgetSelectItems', () => {
       ])
 
       resolveFirst([
-        {
+        fromPartial({
           id: 'job-FIRST-1--out1a.png',
           name: 'out1a.png',
           preview_url: '',
           tags: ['output']
-        },
-        {
+        }),
+        fromPartial({
           id: 'job-FIRST-1--out1b.png',
           name: 'out1b.png',
           preview_url: '',
           tags: ['output']
-        },
-        {
+        }),
+        fromPartial({
           id: 'job-FIRST-1--out1c.png',
           name: 'out1c.png',
           preview_url: '',
           tags: ['output']
-        }
+        })
       ])
 
       await vi.waitFor(() => {
@@ -879,7 +878,7 @@ describe('useWidgetSelectItems', () => {
   describe('output asset subfolder', () => {
     it('prefixes the subfolder onto the annotated path so the load URL targets the right folder', async () => {
       mockMediaAssets.media.value = [
-        {
+        fromPartial({
           id: 'asset-mesh-1',
           name: 'ComfyUI_00105_.glb',
           preview_url: '',
@@ -889,7 +888,7 @@ describe('useWidgetSelectItems', () => {
             nodeId: '7',
             subfolder: '3d'
           }
-        }
+        })
       ]
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -908,7 +907,7 @@ describe('useWidgetSelectItems', () => {
 
     it('omits the subfolder prefix when the asset has none', async () => {
       mockMediaAssets.media.value = [
-        {
+        fromPartial({
           id: 'asset-mesh-2',
           name: 'plain.glb',
           preview_url: '',
@@ -918,7 +917,7 @@ describe('useWidgetSelectItems', () => {
             nodeId: '8',
             subfolder: ''
           }
-        }
+        })
       ]
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -937,7 +936,7 @@ describe('useWidgetSelectItems', () => {
 
     it('does not prefix the subfolder for non-mesh kinds even when present', async () => {
       mockMediaAssets.media.value = [
-        {
+        fromPartial({
           id: 'asset-image-1',
           name: 'photo.png',
           preview_url: '',
@@ -947,7 +946,7 @@ describe('useWidgetSelectItems', () => {
             nodeId: '9',
             subfolder: 'sub'
           }
-        }
+        })
       ]
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -968,7 +967,7 @@ describe('useWidgetSelectItems', () => {
   describe('FE-228: output dropdown label uses human-readable filename', () => {
     it('renders metadata.filename in label when asset.name is a hash', async () => {
       mockMediaAssets.media.value = [
-        {
+        fromPartial({
           id: 'asset-hash-1',
           name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
           hash: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5',
@@ -977,7 +976,7 @@ describe('useWidgetSelectItems', () => {
           metadata: {
             filename: 'sunset_photo.png'
           }
-        }
+        })
       ]
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -995,7 +994,7 @@ describe('useWidgetSelectItems', () => {
 
     it('renders asset.display_name in label when queue-mapped asset lacks metadata.filename', async () => {
       mockMediaAssets.media.value = [
-        {
+        fromPartial({
           id: 'job-1',
           name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
           display_name: 'ComfyUI-90_right_00001_.png',
@@ -1006,7 +1005,7 @@ describe('useWidgetSelectItems', () => {
             nodeId: '5',
             subfolder: ''
           }
-        }
+        })
       ]
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -1089,20 +1088,20 @@ describe('useWidgetSelectItems', () => {
     it('drops output items whose annotated path is in the missing-media store', async () => {
       mockMediaAssets = createMockMediaAssets()
       mockMediaAssets.media.value = [
-        {
+        fromPartial<AssetItem>({
           id: 'a1',
           name: 'gone.png',
           size: 0,
           tags: [],
           created_at: '2025-01-01T00:00:00Z'
-        } as AssetItem,
-        {
+        }),
+        fromPartial<AssetItem>({
           id: 'a2',
           name: 'kept.png',
           size: 0,
           tags: [],
           created_at: '2025-01-01T00:00:00Z'
-        } as AssetItem
+        })
       ]
 
       const { useMissingMediaStore } =
@@ -1135,13 +1134,13 @@ describe('useWidgetSelectItems', () => {
     it('does not cross-match basenames across input and output sources', async () => {
       mockMediaAssets = createMockMediaAssets()
       mockMediaAssets.media.value = [
-        {
+        fromPartial<AssetItem>({
           id: 'a1',
           name: 'photo_abc.jpg',
           size: 0,
           tags: [],
           created_at: '2025-01-01T00:00:00Z'
-        } as AssetItem
+        })
       ]
 
       const { useMissingMediaStore } =

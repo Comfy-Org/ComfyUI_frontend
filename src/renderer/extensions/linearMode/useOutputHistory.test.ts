@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -121,7 +123,7 @@ function makeAsset(
   jobId: string,
   opts?: { allOutputs?: ResultItemImpl[]; outputCount?: number }
 ): AssetItem {
-  return {
+  return fromPartial({
     id,
     name: `${id}.png`,
     tags: [],
@@ -135,7 +137,7 @@ function makeAsset(
         ? { outputCount: opts.outputCount }
         : {})
     }
-  }
+  })
 }
 
 function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {

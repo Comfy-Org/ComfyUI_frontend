@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
@@ -149,7 +151,11 @@ describe('LinearPreview', () => {
   })
 
   it('shows the selected asset actions and latent image when a selection is made', async () => {
-    const asset: AssetItem = { id: 'a1', name: 'out.png', tags: [] }
+    const asset = fromPartial<AssetItem>({
+      id: 'a1',
+      name: 'out.png',
+      tags: []
+    })
     const selection: OutputSelection = {
       asset,
       canShowPreview: true,

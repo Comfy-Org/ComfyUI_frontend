@@ -36,7 +36,9 @@ function checkpointAsset(name: string): AssetItem {
     name,
     hash: 'checkpoint-hash',
     mime_type: 'application/octet-stream',
-    tags: []
+    tags: [],
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
   }
 }
 

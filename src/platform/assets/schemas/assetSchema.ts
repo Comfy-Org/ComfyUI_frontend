@@ -15,12 +15,15 @@ const zAsset = z.object({
   loader_path: z.string().nullish(),
   preview_url: z.string().optional(),
   thumbnail_url: z.string().optional(),
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
   is_immutable: z.boolean().optional(),
   last_access_time: z.string().optional(),
   metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
-  user_metadata: z.record(z.unknown()).optional() // API allows arbitrary key-value pairs
+  user_metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
+  file_path: z.string().nullish(),
+  job_id: z.string().nullish(),
+  short_url: z.string().nullish()
 })
 
 const zAssetResponse = zListAssetsResponse
