@@ -830,5 +830,22 @@ export const workspaceApi = {
     } catch (err) {
       handleAxiosError(err)
     }
+  },
+
+  /**
+   * Void a pending billing operation before its charge settles.
+   * POST /api/billing/ops/:id/cancel
+   */
+  async cancelBillingOp(opId: string): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.post(
+        api.apiURL(`/billing/ops/${opId}/cancel`),
+        undefined,
+        { headers, timeout: 30_000 }
+      )
+    } catch (err) {
+      handleAxiosError(err)
+    }
   }
 }

@@ -28,7 +28,8 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
-    getBillingOpStatus: vi.fn()
+    getBillingOpStatus: vi.fn(),
+    cancelBillingOp: vi.fn()
   }
 }))
 
@@ -1058,6 +1059,53 @@ describe('billingOperationStore', () => {
       void store.startOperation('op-1', 'subscription')
 
       expect(store.isAddingCredits).toBe(false)
+    })
+  })
+
+  describe('cancelOperation', () => {
+    function startPendingOperation(store: {
+      startOperation: (id: string, type: 'subscription') => Promise<unknown>
+    }) {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+      void store.startOperation('op-1', 'subscription')
+    }
+
+    it('removes the operation outright so every watching surface clears', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockResolvedValue(undefined)
+      const store = useBillingOperationStore()
+      startPendingOperation(store)
+
+      const result = await store.cancelOperation('op-1')
+
+      expect(result).toBe('canceled')
+      expect(store.getOperation('op-1')).toBeUndefined()
+      expect(store.subscriptionActionOperation).toBeUndefined()
+    })
+
+    it('reports unavailable and keeps the operation when the backend refuses', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockRejectedValue(
+        new Error('already processing')
+      )
+      const store = useBillingOperationStore()
+      startPendingOperation(store)
+
+      const result = await store.cancelOperation('op-1')
+
+      expect(result).toBe('unavailable')
+      expect(store.getOperation('op-1')?.status).toBe('pending')
+    })
+
+    it('reports unavailable for an unknown or already-settled operation', async () => {
+      const store = useBillingOperationStore()
+
+      const result = await store.cancelOperation('op-missing')
+
+      expect(result).toBe('unavailable')
+      expect(workspaceApi.cancelBillingOp).not.toHaveBeenCalled()
     })
   })
 })

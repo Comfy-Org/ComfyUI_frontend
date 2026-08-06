@@ -161,6 +161,7 @@
             variant="link"
             size="lg"
             class="ml-auto px-0"
+            :disabled="Boolean(actionUrl)"
             @click="$emit('changePaymentMethod')"
           >
             {{ $t('subscription.preview.changePaymentMethod') }}
@@ -171,6 +172,7 @@
           v-model="selectedMethod"
           :options="savedMethodOptions"
           size="lg"
+          :disabled="Boolean(actionUrl)"
         >
           <template #icon>
             <i
@@ -202,16 +204,28 @@
         )
       "
     >
-      <!-- Pending 3DS verification is the only actionable step, so it takes
-           the top of the column; the pay button below it is demoted and
-           disabled while it shows. -->
+      <div
+        v-if="showCanceledNotice"
+        class="mx-auto mb-2 rounded-lg bg-secondary-background px-4 py-2 text-xs text-muted-foreground"
+      >
+        {{ $t('subscription.preview.paymentCanceledNotice') }}
+      </div>
+
+      <!-- Pending 3DS verification replaces the pay action outright; once
+           the bank tab opens the spinner moves inside the button, which
+           stays clickable to reopen a lost tab. -->
       <Button
         v-if="actionUrl"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
+        :aria-label="$t('subscription.preview.completeVerification')"
         @click="openVerification"
       >
+        <i
+          v-if="verificationOpened"
+          class="icon-[lucide--loader-circle] size-4 animate-spin"
+        />
         {{ $t('subscription.preview.completeVerification') }}
       </Button>
 
@@ -225,7 +239,7 @@
       />
 
       <Button
-        v-if="savedMethods?.length"
+        v-if="savedMethods?.length && !actionUrl"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -236,7 +250,7 @@
       </Button>
 
       <Button
-        v-if="!usePaymentElement && !savedMethods?.length"
+        v-if="!usePaymentElement && !savedMethods?.length && !actionUrl"
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
@@ -244,6 +258,23 @@
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
+      </Button>
+
+      <p
+        v-if="actionUrl && cancelUnavailable"
+        class="m-0 py-2 text-center text-xs text-muted-foreground"
+      >
+        {{ $t('subscription.preview.cancelUnavailable') }}
+      </p>
+      <Button
+        v-else-if="actionUrl"
+        variant="muted-textonly"
+        size="lg"
+        class="w-full"
+        :loading="isCanceling"
+        @click="$emit('cancelPayment')"
+      >
+        {{ $t('subscription.preview.cancelPayment') }}
       </Button>
 
       <!-- Terms Agreement (below the pay action, like Stripe checkout) -->
@@ -296,6 +327,9 @@ interface Props {
    *  Alipay is a linked account with neither. The backend does not supply
    *  this yet. */
   savedMethods?: SavedPaymentMethod[] | null
+  cancelUnavailable?: boolean
+  isCanceling?: boolean
+  showCanceledNotice?: boolean
 }
 
 const {
@@ -306,7 +340,10 @@ const {
   teamPlan = null,
   actionUrl = null,
   usePaymentElement = false,
-  savedMethods = null
+  savedMethods = null,
+  cancelUnavailable = false,
+  isCanceling = false,
+  showCanceledNotice = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -314,6 +351,7 @@ const emit = defineEmits<{
   confirmPayment: [confirmationToken: string, promotionCode?: string]
   back: []
   changePaymentMethod: []
+  cancelPayment: []
 }>()
 
 const { t, n } = useI18n()
@@ -349,9 +387,12 @@ watch(selectedMethod, (value) => {
 
 const promotionCode = ref('')
 
+const verificationOpened = ref(false)
+
 function openVerification() {
   if (!actionUrl) return
-  window.open(actionUrl, '_blank', 'noopener,noreferrer')
+  const opened = window.open(actionUrl, '_blank', 'noopener,noreferrer')
+  if (opened) verificationOpened.value = true
 }
 
 function confirmPayment(confirmationToken: string, promotionCode?: string) {
