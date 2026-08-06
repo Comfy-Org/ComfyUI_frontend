@@ -58,4 +58,14 @@ describe('LGraphCanvas.renderInfo', () => {
       })
     }
   })
+
+  it('renders additional info text in its configured color', () => {
+    lgCanvas.info_text = 'Comfy Cloud'
+    lgCanvas.info_text_color = '#f0ff41'
+
+    lgCanvas.renderInfo(ctx, 10, 500)
+
+    expect(ctx.fillStyle).toBe('#f0ff41')
+    expect(ctx.fillText).toHaveBeenLastCalledWith('Comfy Cloud', 5, 78)
+  })
 })

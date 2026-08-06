@@ -1,4 +1,5 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import './clipspace'
 import './contextMenuFilter'
@@ -36,8 +37,11 @@ import './widgetInputs'
 // Cloud-only extensions - tree-shaken in OSS builds
 if (isCloud) {
   await import('./cloudRemoteConfig')
-  await import('./cloudBadges')
   await import('./cloudSessionCookie')
+}
+
+if (isCloud || remoteConfig.value.comfy_api_base_url) {
+  await import('./cloudBadges')
 }
 
 // Feedback button for cloud and nightly builds

@@ -578,6 +578,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   show_info: boolean
   /** Additional text appended to the canvas info overlay (rendered by {@link renderInfo}). */
   info_text: string | undefined
+  info_text_color: string | undefined
   allow_dragcanvas: boolean
   allow_dragnodes: boolean
   allow_interaction: boolean
@@ -5499,6 +5500,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.fillText('No graph selected', 5, lineHeight * line++)
     }
     if (this.info_text) {
+      ctx.fillStyle = this.info_text_color ?? '#888'
       ctx.fillText(this.info_text, 5, lineHeight * line)
     }
     ctx.restore()

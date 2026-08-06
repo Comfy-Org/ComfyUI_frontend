@@ -22,11 +22,15 @@ const badges = computed<TopbarBadge[]>(() => {
 })
 
 const canvasStore = useCanvasStore()
+const cloudLogoColor = getComputedStyle(document.documentElement)
+  .getPropertyValue('--color-brand-yellow')
+  .trim()
 watch(
   () => canvasStore.canvas,
   (canvas) => {
     if (canvas) {
       canvas.info_text = t('g.comfyCloud')
+      canvas.info_text_color = cloudLogoColor
     }
   },
   { immediate: true }
