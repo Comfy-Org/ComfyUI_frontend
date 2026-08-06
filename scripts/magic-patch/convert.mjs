@@ -351,9 +351,12 @@ ${references(work)}
 For each file you own:
 1. read_file it, and read_file any sibling whose contract it touches. You may
    read anything in the pack; you may only write your own files.
-2. Edit your files IN PLACE with the Edit tool — you are inside a writable copy
-   of the pack. Change only what must change; never rewrite a file wholesale.
-   Then record_test, run_checks, and fix whatever fails.
+2. Edit \`v1/<same path>\` with the Edit tool — your cwd is a copy of the pack,
+   and \`v1/\` inside it mirrors the original layout with a copy of every file
+   already in place. Edit \`v1/web/js/foo.js\`, not \`web/js/foo.js\`; the
+   original stays beside it to compare against. Change only what must change;
+   never rewrite a file wholesale. Then record_test, run_checks, and fix
+   whatever fails.
 3. mark_complete, or give_up with the category that fits. Batch punts into one
    give_up call.
 4. suggest_skill_note for anything you had to work out that the skill does not
@@ -455,10 +458,11 @@ Workflow:
    other and share helpers — read the siblings a conversion's contract touches.
 2. Per file: decide whether it is convertible. Check whether each object is a
    live node or serialized workflow data before touching anything.
-3. Edit the file IN PLACE with the Edit tool. You are running inside a writable
-   copy of the pack — change the lines that need changing and nothing else. Do
-   not rewrite a file wholesale; a surgical edit is both the small diff we want
-   and far faster than regenerating hundreds of unchanged lines. Then
+3. Edit \`v1/<same path>\` with the Edit tool. Your cwd is a copy of the pack;
+   \`v1/\` sits inside it mirroring the original layout and already contains a
+   copy of every file. So \`web/js/foo.js\` is edited at \`v1/web/js/foo.js\`,
+   with the original beside it to compare against. Change the lines that need
+   changing and nothing else — never rewrite a file wholesale. Then
    record_test, run_checks, and fix whatever fails.
 3b. verify_pack once the pack's drafts are in place — it actually runs the code,
    and it is the only check that can catch a break spanning files.
@@ -532,10 +536,10 @@ An accurate punt beats an attempted conversion. Name the specific construct in
  * for kjnodes the difference is 16 changed lines versus 2,818 lines the model
  * would otherwise have to regenerate to change them.
  */
-/** The file as the agent has left it in the working copy. */
+/** The file as the agent has left it in the v1 tree. */
 function readWorkingCopy(work, name) {
   try {
-    return readFileSync(join(work.workdir, name), 'utf8')
+    return readFileSync(v1Path(work, name), 'utf8')
   } catch {
     return undefined
   }
@@ -556,13 +560,44 @@ function editedFiles(work) {
     })
 }
 
-function materialiseWorkingCopy(db, work) {
-  const root = join(db, 'v1', work.pack)
+/**
+ * The database entry for a pack at a commit, which is also where agents work.
+ *
+ *   db/<pack>/<commit7>/          the pack as shipped
+ *   db/<pack>/<commit7>/v1/       the upgraded code, same layout
+ *
+ * `v1/` sits beside the originals because that is the shape the author
+ * receives: a folder of upgraded code alongside the code they already have,
+ * which the frontend loads in preference when it supports API v1. Nothing is
+ * deleted or overwritten, so one checkout works on both frontends.
+ *
+ * Agents edit here directly, so the artifact is the work rather than a copy of
+ * it — no separate scratch area to lose, and a reviewer opens the same
+ * directory the agent used.
+ *
+ * Agents edit `v1/...` with Edit, with the original beside it to refer to.
+ * Retyping whole files through a tool was the alternative: 2,818 lines
+ * regenerated across four kjnodes files to produce 16 changed ones.
+ */
+function materialiseWorkingCopy(db, work, commit) {
+  const root = join(db, work.pack, commit)
   rmSync(root, { recursive: true, force: true })
   mkdirSync(dirname(root), { recursive: true })
   cpSync(work.root, root, { recursive: true })
+
+  // Seed v1 with a copy of every JS file, so an agent edits rather than
+  // authors, and an unconverted sibling still resolves for the ones that are.
+  for (const path of work.readable) {
+    const name = relative(work.root, path)
+    const target = join(root, 'v1', name)
+    mkdirSync(dirname(target), { recursive: true })
+    cpSync(path, target)
+  }
   return root
 }
+
+/** Where a pack-relative file lives in the v1 tree. */
+const v1Path = (work, name) => join(work.workdir, 'v1', name)
 
 function createSession(work, tracePath, db) {
   const state = {
@@ -1067,7 +1102,9 @@ async function convertPack(work, tracePath) {
   const db = tracePath ? dirname(tracePath) : undefined
   // The agent edits here; the corpus stays pristine so the diff has something
   // to be a diff against.
-  work.workdir = db ? materialiseWorkingCopy(db, work) : work.root
+  work.workdir = db
+    ? materialiseWorkingCopy(db, work, packCommit(work.root))
+    : work.root
   const { state, server } = createSession(work, tracePath, db)
   const toolNames = [
     'list_files',
