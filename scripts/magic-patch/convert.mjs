@@ -40,7 +40,11 @@
  *   than reimplemented, so CI, the browser and this driver cannot disagree.
  * - Work is resumable: packs already in the ledger are skipped.
  */
-import { createSdkMcpServer, query, tool } from '@anthropic-ai/claude-agent-sdk'
+import {
+  createSdkMcpServer,
+  query,
+  tool as rawTool
+} from '@anthropic-ai/claude-agent-sdk'
 import { createHash } from 'node:crypto'
 import {
   appendFileSync,
@@ -389,6 +393,31 @@ function createSession(work) {
     return left.length ? `Remaining: ${left.join(', ')}` : 'All files resolved.'
   }
   const say = (text) => ({ content: [{ type: 'text', text }] })
+
+  /**
+   * Times every tool call.
+   *
+   * Conversions take minutes and it was guesswork which part — reading the
+   * pack, re-running checks, waiting on the two verify_pack subprocesses. The
+   * trace makes it measurable, and anything that turns out to dominate can be
+   * computed once up front instead of on demand.
+   */
+  const trace = (name, ms, extra = {}) => {
+    if (!tracePath) return
+    appendFileSync(
+      tracePath,
+      JSON.stringify({ pack: work.pack, tool: name, ms, ...extra }) + '\n'
+    )
+  }
+  const tool = (name, description, schema, handler) =>
+    rawTool(name, description, schema, async (...args) => {
+      const started = Date.now()
+      try {
+        return await handler(...args)
+      } finally {
+        trace(name, Date.now() - started)
+      }
+    })
 
   const server = createSdkMcpServer({
     name: 'magicpatch',
@@ -764,8 +793,8 @@ const TRANSIENT =
   /connection closed|network|ECONNRESET|ETIMEDOUT|socket hang up|maximum number of turns|rate.?limit|overloaded|503|529/i
 
 /** Runs a pack, retrying once when the failure was not the pack's fault. */
-async function convertPackWithRetry(work, attempt = 1) {
-  const result = await convertPack(work)
+async function convertPackWithRetry(work, tracePath, attempt = 1) {
+  const result = await convertPack(work, tracePath)
   if (
     result.status === 'failed' &&
     attempt < 3 &&
@@ -774,7 +803,7 @@ async function convertPackWithRetry(work, attempt = 1) {
     console.error(
       `  ${work.pack}: transient failure (${result.detail?.slice(0, 60)}), retrying (${attempt + 1}/3)`
     )
-    return convertPackWithRetry(work, attempt + 1)
+    return convertPackWithRetry(work, tracePath, attempt + 1)
   }
   // Marked so a reader can tell "we could not run this" from "we looked and
   // decided not to convert it".
@@ -784,7 +813,7 @@ async function convertPackWithRetry(work, attempt = 1) {
   return result
 }
 
-async function convertPack(work) {
+async function convertPack(work, tracePath) {
   const { state, server } = createSession(work)
   const toolNames = [
     'list_files',
@@ -911,7 +940,7 @@ async function main() {
   // Sequential on purpose: each pack is a long agent run, and Claude Code's
   // credentials are shared with whatever else the developer is doing.
   for (const work of packs) {
-    const result = await convertPackWithRetry(work)
+    const result = await convertPackWithRetry(work, join(db, 'trace.jsonl'))
     if (result.status === 'failed') failed++
 
     for (const file of result.files) {
