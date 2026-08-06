@@ -121,8 +121,8 @@ validation tier, and `compile_db` refuses anything below `harness`:
 | Tier      | Means                                                                | Ships |
 | --------- | -------------------------------------------------------------------- | ----- |
 | `none`    | Written; static checks only. Never executed.                         | No    |
-| `harness` | Loaded before and after; types, construction and wire compared.      | Yes   |
-| `manual`  | A human drove it in a real ComfyUI (`magic_patch_test_plan_WIP.md`). | Yes   |
+| `harness`   | Loaded before and after; types, construction and wire compared.     | No    |
+| `validated` | A **named human** drove it in a real ComfyUI and says it works.     | Yes   |
 
 An entry carrying no tier is treated as `none`. Absent evidence is not weak
 evidence — an unstamped entry has never been run, and the field's absence must

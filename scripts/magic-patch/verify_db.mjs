@@ -43,20 +43,28 @@ function entryFiles(dir, depth = 0) {
 }
 
 /**
- * Validation tiers, weakest first.
+ * How far a conversion has got, weakest first.
  *
- * A conversion that only passed static checks and one that was executed and
- * compared are not the same artifact, and shipping them under one label would
- * mean shipping the first as though it were the second. The tier is recorded on
- * the entry so `compile_db` can refuse to ship anything below `harness`.
+ * **Validated means a ComfyUI human says it works.** Nothing else does, and in
+ * particular this harness does not: it drives node lifecycle only — it clicks
+ * nothing, renders nothing, and never calls a converted file's exported
+ * helpers, which is how a broken `hideWidgetForGood` passed it earlier.
+ *
+ * So the harness can only ever *refuse*, never approve. It is a filter placed
+ * in front of a person, not an authority in its own right, and no run of it can
+ * promote an entry to `validated` — only `sign_off.mjs`, driven by a named
+ * human, does that.
  */
 export const VALIDATION = {
-  /** Written and statically checked. Never executed. Do not ship. */
+  /** Written and statically checked. Never executed. */
   none: 'none',
-  /** Loaded before and after; types, construction and wire compared. */
+  /**
+   * Loaded before and after; types, construction and wire compared. Necessary
+   * before a human spends time on it, and nowhere near sufficient to ship.
+   */
   harness: 'harness',
-  /** A human drove it in a real ComfyUI. Recorded by hand. */
-  manual: 'manual'
+  /** A named human drove it in a real ComfyUI and said it works. */
+  validated: 'validated'
 }
 
 /** Groups DB entries by pack, since verification is a whole-pack operation. */
@@ -94,7 +102,11 @@ function recordValidation(entryPaths, result) {
     } catch {
       continue
     }
+    // Never stamps `validated`: a machine cannot promote itself to the tier
+    // that means a person vouched for it. A previously signed-off entry that
+    // now regresses loses that standing, because the code under it changed.
     entry.validation = result.regressed ? VALIDATION.none : VALIDATION.harness
+    if (result.regressed) delete entry.validatedBy
     entry.validatedAgainst = {
       types: result.types?.length ?? 0,
       problems: result.problems ?? [],

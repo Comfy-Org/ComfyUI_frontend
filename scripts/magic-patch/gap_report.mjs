@@ -23,13 +23,28 @@ import { pathToFileURL } from 'node:url'
  */
 const CAPABILITIES = [
   ['addDOMWidget', /\baddDOMWidget\b|DOM[- ]mount|DOM widget/i],
-  ['defs.define', /\bregisterCustomNodes\b|\bdefs\.define\b|\bisVirtualNode\b/i],
-  ['node.setSizeConstraints', /\bcomputeSize\b|\bonResize\b|\bsetSizeConstraints\b/i],
-  ['dynamic slots', /\baddInput\b|\bremoveInput\b|\baddOutput\b|\bremoveOutput\b/i],
+  [
+    'defs.define',
+    /\bregisterCustomNodes\b|\bdefs\.define\b|\bisVirtualNode\b/i
+  ],
+  [
+    'node.setSizeConstraints',
+    /\bcomputeSize\b|\bonResize\b|\bsetSizeConstraints\b/i
+  ],
+  [
+    'dynamic slots',
+    /\baddInput\b|\bremoveInput\b|\baddOutput\b|\bremoveOutput\b/i
+  ],
   ['button widget', /addWidget\(\s*["'`]button|\bbutton widget/i],
   ['canvas drawing', /\bonDrawForeground\b|\bonDrawBackground\b/i],
-  ['pointer events', /\bonMouseDown\b|\bonMouseMove\b|\bonMouseLeave\b|\bpointer event/i],
-  ['app.extensionManager', /\bextensionManager\b|\bsidebar\b|\bregisterSidebarTab\b/i],
+  [
+    'pointer events',
+    /\bonMouseDown\b|\bonMouseMove\b|\bonMouseLeave\b|\bpointer event/i
+  ],
+  [
+    'app.extensionManager',
+    /\bextensionManager\b|\bsidebar\b|\bregisterSidebarTab\b/i
+  ],
   ['settings', /\bsetting\??\.get\b|\baddSetting\b|Comfy\.Locale/i],
   ['graphToPrompt', /\bgraphToPrompt\b|\bqueuePrompt\b|prompt intercept/i],
   ['serialization', /\bserializeValue\b|\bwidgets_values\b|\bonSerialize\b/i],

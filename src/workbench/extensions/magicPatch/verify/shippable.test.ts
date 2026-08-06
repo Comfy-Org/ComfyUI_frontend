@@ -71,24 +71,35 @@ describe('what may ship', () => {
     const { artifact, problems } = compile()
 
     expect(Object.keys(artifact.patches)).toEqual([])
-    expect(problems[0]).toContain('never executed')
+    expect(problems[0]).toContain('no human has confirmed')
   })
 
-  it('ships a patch the harness ran', () => {
-    entry('verified.js', { validation: 'harness' })
+  it('refuses a patch that only passed the harness', () => {
+    // The harness drives node lifecycle and no more — it clicks nothing and
+    // renders nothing. A pack can pass it and still be visibly broken, so it
+    // can only refuse, never approve.
+    entry('harness-only.js', { validation: 'harness' })
+    const { artifact, problems } = compile()
+
+    expect(Object.keys(artifact.patches)).toEqual([])
+    expect(problems[0]).toContain('no human has confirmed')
+  })
+
+  it('ships a patch a human confirmed works', () => {
+    entry('signed.js', { validation: 'validated' })
     const { artifact, stats } = compile()
 
-    expect(Object.keys(artifact.patches)).toEqual(['sha-verified.js'])
+    expect(Object.keys(artifact.patches)).toEqual(['sha-signed.js'])
     expect(stats.unvalidated).toBe(0)
   })
 
   it('records the tier in the artifact', () => {
     // The client marks patched nodes in the UI, and a badge that cannot tell
-    // the two tiers apart would claim validation the patch never had.
-    entry('by-hand.js', { validation: 'manual' })
+    // the tiers apart would claim validation the patch never had.
+    entry('signed.js', { validation: 'validated' })
     const { artifact } = compile()
 
-    expect(artifact.patches['sha-by-hand.js'].validation).toBe('manual')
+    expect(artifact.patches['sha-signed.js'].validation).toBe('validated')
   })
 
   it('ships unvalidated patches only when explicitly told to, and counts them', () => {
@@ -101,7 +112,7 @@ describe('what may ship', () => {
 
   it('still refuses a wire-format change even when validated', () => {
     entry('wire.js', {
-      validation: 'harness',
+      validation: 'validated',
       verified: { wireIdentical: false }
     })
     const { artifact, problems } = compile()

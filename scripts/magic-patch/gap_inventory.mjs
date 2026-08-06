@@ -98,7 +98,11 @@ const CONSTRUCTS = [
   ],
   // Polling a draw callback for structural change. Nothing receives it: there
   // is no graph-level change event, only per-widget and per-connection ones.
-  ['graph structure polling', /\b_groups\b|\bgraph\.(?:_nodes|_version)\b/, null],
+  [
+    'graph structure polling',
+    /\b_groups\b|\bgraph\.(?:_nodes|_version)\b/,
+    null
+  ],
   [
     'ContextMenu / slot menu',
     /\bContextMenu\b|\bgetExtraMenuOptions\b|\bshowConnectionMenu\b/,

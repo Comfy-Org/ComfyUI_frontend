@@ -14,13 +14,15 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 /**
- * How thoroughly a patch was checked before shipping, weakest first.
+ * How far a patch got before it reached this machine, weakest first.
  *
- * `none` exists to be refused rather than displayed: `compile_db` holds back
- * unvalidated patches, so a node carrying this tier means something bypassed
- * that gate and the badge should say so plainly.
+ * **Validated means a ComfyUI human said it works.** `harness` does not: the
+ * automated check drives node lifecycle only, so a patch can pass it and still
+ * be visibly broken. `compile_db` ships nothing below `validated`, so a node
+ * carrying a weaker tier arrived by a route that skipped the gate — a local user
+ * patch, most likely — and the badge says so rather than hiding it.
  */
-type PatchValidation = 'none' | 'harness' | 'manual'
+type PatchValidation = 'none' | 'harness' | 'validated'
 
 /**
  * Who generated the patch, which decides who owns a defect in it.

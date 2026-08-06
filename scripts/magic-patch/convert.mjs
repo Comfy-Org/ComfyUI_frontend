@@ -64,7 +64,10 @@ import { z } from 'zod'
 import { convert } from '../../src/workbench/extensions/magicPatch/conversion/convert'
 import { detectLegacyUsage } from '../../src/workbench/extensions/magicPatch/conversion/legacySurface'
 import { buildApiDts } from './gen_api_dts.mjs'
-import { RULES, RULE_CATALOG_VERSION } from '../../src/workbench/extensions/magicPatch/conversion/rules'
+import {
+  RULES,
+  RULE_CATALOG_VERSION
+} from '../../src/workbench/extensions/magicPatch/conversion/rules'
 import { toUnifiedDiff } from '../../src/workbench/extensions/magicPatch/conversion/edits'
 import { runConformance } from '../../src/workbench/extensions/magicPatch/verify/conformance'
 import { verifyPack } from './harness/verifyPack.mjs'
@@ -397,7 +400,9 @@ function buildPrompt(work) {
 
   const guidance = [
     ...new Set(
-      work.files.flatMap((f) => f.findings.map((x) => x.guidance)).filter(Boolean)
+      work.files
+        .flatMap((f) => f.findings.map((x) => x.guidance))
+        .filter(Boolean)
     )
   ].join('\n\n')
 
@@ -838,7 +843,10 @@ function createSession(work, tracePath, db) {
                 {
                   regressed: result.regressed,
                   typesDriven: result.types,
-                  loaded: { before: result.before.loaded, after: result.after.loaded },
+                  loaded: {
+                    before: result.before.loaded,
+                    after: result.after.loaded
+                  },
                   problems: result.problems,
                   newErrors: result.newErrors,
                   wireChanged: result.wireChanged,
@@ -972,10 +980,14 @@ function createSession(work, tracePath, db) {
 function packCommit(root) {
   try {
     const { execFileSync } = require('node:child_process')
-    const sha = execFileSync('git', ['-C', root, 'rev-parse', '--short=7', 'HEAD'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore']
-    }).trim()
+    const sha = execFileSync(
+      'git',
+      ['-C', root, 'rev-parse', '--short=7', 'HEAD'],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore']
+      }
+    ).trim()
     if (sha) return sha
   } catch {
     // Corpus is a tarball extract rather than a clone. The directory still
@@ -1165,7 +1177,7 @@ async function convertPack(work, tracePath) {
       agents: {
         converter: {
           description:
-            'Converts a set of this pack\'s files off the deprecated APIs. Give it files that belong together — ones sharing a helper, or a caller and its callee — so one agent owns both sides of a contract.',
+            "Converts a set of this pack's files off the deprecated APIs. Give it files that belong together — ones sharing a helper, or a caller and its callee — so one agent owns both sides of a contract.",
           tools: [...toolNames, 'Read', 'Edit', 'Glob', 'Grep'],
           model: process.env.MAGIC_PATCH_MODEL || DEFAULT_MODEL,
           prompt: converterPrompt(work)
@@ -1278,13 +1290,17 @@ async function main() {
     let output = ''
     probe.stdout?.on('data', (chunk) => (output += chunk))
     probe.stderr?.on('data', (chunk) => (output += chunk))
-    probe.on('error', () => resolve({ ok: false, output: 'claude not runnable' }))
+    probe.on('error', () =>
+      resolve({ ok: false, output: 'claude not runnable' })
+    )
     probe.on('close', (code) =>
       resolve({ ok: code === 0 && !FATAL.test(output), output: output.trim() })
     )
   })
   if (!authed.ok) {
-    console.error(`Cannot start: Claude Code is not usable.\n  ${authed.output}`)
+    console.error(
+      `Cannot start: Claude Code is not usable.\n  ${authed.output}`
+    )
     console.error('Re-authenticate (claude /login) and rerun.')
     return 2
   }
@@ -1304,13 +1320,21 @@ async function main() {
       if (file.status === 'converted' && file.converted) {
         const source = work.files.find((f) => f.name === file.file)?.path
         if (source) {
-          writeDbEntry(db, work, packCommit(work.root), file, readFileSync(source, 'utf8'))
+          writeDbEntry(
+            db,
+            work,
+            packCommit(work.root),
+            file,
+            readFileSync(source, 'utf8')
+          )
         }
       }
     }
 
     appendFileSync(ledgerPath, JSON.stringify(result) + '\n')
-    const converted = result.files.filter((f) => f.status === 'converted').length
+    const converted = result.files.filter(
+      (f) => f.status === 'converted'
+    ).length
     console.log(
       `[${result.status}] ${work.pack}: ${converted}/${work.files.length} converted ${result.detail}`
     )
@@ -1368,7 +1392,9 @@ async function main() {
   )
   if (fatal) {
     console.error(`\nSTOPPED: ${fatal.message}`)
-    console.error('Nothing after this point was attempted. Re-authenticate and rerun.')
+    console.error(
+      'Nothing after this point was attempted. Re-authenticate and rerun.'
+    )
     return 2
   }
 
@@ -1379,8 +1405,12 @@ async function main() {
         .map(([k, v]) => `${k}: ${v}`)
         .join('  ')
   )
-  for (const [reason, count] of Object.entries(reasons).sort((a, b) => b[1] - a[1])) {
-    console.log(`  ${String(count).padStart(4)}  ${reason.padEnd(13)} ${PUNT_REASONS[reason]}`)
+  for (const [reason, count] of Object.entries(reasons).sort(
+    (a, b) => b[1] - a[1]
+  )) {
+    console.log(
+      `  ${String(count).padStart(4)}  ${reason.padEnd(13)} ${PUNT_REASONS[reason]}`
+    )
   }
   // Abandonment is an expected outcome, not an error.
   return failed ? 1 : 0
