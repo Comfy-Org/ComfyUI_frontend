@@ -13,7 +13,10 @@ import { createDefRegistry } from './defsRegistry'
 import type { DefRegistry } from './defsRegistry'
 import { ComfyUnsupportedError } from './errors'
 import { apiConstants, isInteracting } from './constants'
-import { createNodeMoveObserver } from './interaction'
+import {
+  createNodeDragEndObserver,
+  createNodeMoveObserver
+} from './interaction'
 import type { NodeMoveEvent } from './interaction'
 import type { Unsubscribe } from './widgetHandle'
 import type { ApiConstants } from './constants'
@@ -94,7 +97,8 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['settings', '1.0'],
   ['constants', '1.0'],
   ['interaction.state', '1.0'],
-  ['interaction.nodeMoved', '1.0']
+  ['interaction.nodeMoved', '1.0'],
+  ['interaction.nodeDragEnd', '1.0']
 ])
 
 /**
@@ -171,6 +175,14 @@ export interface Comfy {
    * A pack that moves nodes itself will see its own writes, so guard re-entry.
    */
   onNodeMoved(listener: (event: NodeMoveEvent) => void): Unsubscribe
+  /**
+   * A drag finished; every node it moved.
+   *
+   * Where an editing gesture commits — swap the pair, insert into the link
+   * under the cursor. **Nodes 2.0 only**: the legacy canvas renderer publishes
+   * no drag lifecycle, so this never fires under it.
+   */
+  onNodeDragEnd(listener: (nodes: readonly NodeHandle[]) => void): Unsubscribe
 }
 
 /** Per-major instances, memoised per graph provider. */
@@ -212,6 +224,7 @@ function buildMajor(
     },
     isInteracting,
     onNodeMoved: createNodeMoveObserver((id) => graph.node(id)),
+    onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
     defs: defs.forMajor((nodeId) => graph.node(nodeId)!)
   })
 }

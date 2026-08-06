@@ -337,8 +337,12 @@ build an editing gesture** (drag one node onto another, shake to disconnect,
 drop onto a link) — **use `comfy.onNodeMoved`**, which reports node movement
 under both renderers from one subscription. Two cautions: it does not say
 whether a _person_ moved the node, so guard your own writes against re-entry;
-and there is no drag start/end, so a gesture that must commit on release cannot
-be built on this alone — punt that and name it.
+and for a gesture that commits on release, pair it with
+`comfy.onNodeDragEnd(nodes => …)`, which reports every node the drag moved.
+
+`onNodeDragEnd` is **Nodes 2.0 only** — the legacy canvas renderer publishes no
+drag lifecycle, so it never fires there. Say so in your summary rather than
+pretending the conversion is renderer-neutral.
 
 **If you are converting `canvas.setDirty(...)` / `setDirtyCanvas(...)`** —
 **delete it.** There is no published repaint request, deliberately. Handle
