@@ -152,34 +152,23 @@
         </div>
       </div>
 
-      <!-- Applied filters: one line at rest, and hovering the row unfolds the
-           rest downward as an overlay rather than reflowing — the row keeps
-           its height in the layout so the grid never moves. -->
+      <!-- Applied filters: every chip is always rendered and always laid out
+           the same way. At rest the row is clipped to one line; hovering only
+           lifts the clip, so nothing re-flows and nothing moves under the
+           pointer. The row keeps its height, so the grid never shifts. -->
       <div
         v-if="appliedFilters.length"
         class="group/applied relative flex h-7 items-center"
         data-testid="template-applied-filters"
-        @pointerenter="isAppliedHovered = true"
-        @pointerleave="isAppliedHovered = false"
       >
-        <!-- Padding is always present and always compensated, so unfolding
-             changes only the backdrop — never the position of a chip under
-             the pointer. pr leaves room for Clear all, which sits above. -->
         <div
           ref="appliedRowRef"
-          class="absolute inset-x-0 top-0 -m-1 flex flex-wrap items-center gap-1.5 rounded-lg p-1 pr-20 group-hover/applied:z-20 group-hover/applied:bg-base-background group-hover/applied:pb-3 group-hover/applied:shadow-lg"
+          class="absolute inset-x-0 top-0 -m-1 flex max-h-7 flex-wrap items-center gap-1.5 overflow-hidden rounded-lg p-1 pr-20 group-hover/applied:z-20 group-hover/applied:max-h-none group-hover/applied:overflow-visible group-hover/applied:bg-base-background group-hover/applied:pb-3 group-hover/applied:shadow-lg"
         >
           <span
-            v-for="(pill, index) in appliedFilters"
+            v-for="pill in appliedFilters"
             :key="`${pill.facetKey}:${pill.value}`"
-            :class="
-              cn(
-                'shrink-0 items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap',
-                index < restingVisibleCount
-                  ? 'inline-flex'
-                  : 'hidden group-hover/applied:inline-flex'
-              )
-            "
+            class="inline-flex shrink-0 items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap"
           >
             <span class="max-w-32 truncate">{{ pill.label }}</span>
             <Button
@@ -192,14 +181,16 @@
               <i class="icon-[lucide--x] size-3" />
             </Button>
           </span>
-          <span
-            v-if="restingHiddenCount > 0"
-            data-overflow-badge
-            class="shrink-0 px-1 text-xs text-muted-foreground group-hover/applied:hidden"
-          >
-            +{{ restingHiddenCount }}
-          </span>
         </div>
+
+        <!-- Out of flow, so counting the clipped chips can't change the
+             layout it is counting. -->
+        <span
+          v-if="clippedChipCount > 0"
+          class="pointer-events-none absolute top-1.5 right-16 z-20 text-xs text-muted-foreground group-hover/applied:hidden"
+        >
+          +{{ clippedChipCount }}
+        </span>
 
         <Button
           variant="textonly"
@@ -998,10 +989,6 @@ const clearFilterFacet = (facetKey: string) => {
 }
 
 /** How many applied chips stay visible when the row isn't hovered. */
-/** Room kept for the "+N" pill, and the gap between chips. */
-const OVERFLOW_BADGE_WIDTH = 36
-const CHIP_GAP = 6
-
 interface AppliedFilter {
   facetKey: FilterFacetKey
   value: string
@@ -1023,43 +1010,27 @@ const appliedFilters = computed<AppliedFilter[]>(() =>
 )
 
 /**
- * How many chips fit on the row before it reaches Clear all. Measured rather
- * than fixed: "Image" and "Character Reference" are wildly different widths,
- * so a constant either wastes the row or overflows it.
+ * Chips past the first line. Derived from where each chip actually wrapped,
+ * which is identical whether the row is clipped or unfolded — so measuring
+ * can't feed back into what is measured, the loop that made hovering flicker.
  */
-// Starts unbounded so the first paint shows every chip; reading
-// appliedFilters here instead would evaluate the facet chain during setup,
-// before the option lists below it exist.
-const restingVisibleCount = ref(Number.POSITIVE_INFINITY)
-
-const restingHiddenCount = computed(() =>
-  Math.max(0, appliedFilters.value.length - restingVisibleCount.value)
-)
-
+const clippedChipCount = ref(0)
 const appliedRowRef = ref<HTMLElement | null>(null)
-const isAppliedHovered = ref(false)
 
-function measureVisibleChips() {
-  // While unfolded every chip is visible, so measuring would count the
-  // expanded row and change what's hidden underneath the pointer — the
-  // oscillation that read as a glitch.
-  if (isAppliedHovered.value) return
+function measureClippedChips() {
   const row = appliedRowRef.value
   if (!row) return
-  const available = row.clientWidth - OVERFLOW_BADGE_WIDTH
-  let used = 0
-  let fits = 0
-  for (const child of Array.from(row.children)) {
-    if (!(child instanceof HTMLElement) || child.dataset.overflowBadge) continue
-    used += child.offsetWidth + CHIP_GAP
-    if (used > available) break
-    fits += 1
-  }
-  restingVisibleCount.value = Math.max(1, fits)
+  const chips = Array.from(row.children).filter(
+    (child): child is HTMLElement => child instanceof HTMLElement
+  )
+  const firstLineTop = chips[0]?.offsetTop
+  clippedChipCount.value = chips.filter(
+    (chip) => chip.offsetTop > (firstLineTop ?? 0)
+  ).length
 }
 
-useResizeObserver(appliedRowRef, measureVisibleChips)
-watch(appliedFilters, () => void nextTick(measureVisibleChips))
+useResizeObserver(appliedRowRef, measureClippedChips)
+watch(appliedFilters, () => void nextTick(measureClippedChips))
 
 // UI state
 const loadingTemplate = ref<string | null>(null)
