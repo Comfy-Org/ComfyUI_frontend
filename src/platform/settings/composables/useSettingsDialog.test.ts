@@ -7,21 +7,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
-const teamWorkspacesFlag = vi.hoisted(() => ({ value: false }))
 const isCloudRef = vi.hoisted(() => ({ value: false }))
 
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ showDialog, closeDialog: vi.fn() })
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get teamWorkspacesEnabled() {
-        return teamWorkspacesFlag.value
-      }
-    }
-  })
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -38,7 +27,7 @@ vi.mock('@/platform/telemetry', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: { value: true },
+    canAccessSubscriptionFeatures: { value: true },
     isFreeTier: { value: false },
     type: { value: 'legacy' }
   })
@@ -49,7 +38,6 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 describe('useSettingsDialog', () => {
   beforeEach(() => {
     showDialog.mockReset()
-    teamWorkspacesFlag.value = false
     isCloudRef.value = false
   })
 
@@ -78,9 +66,8 @@ describe('useSettingsDialog', () => {
     expect(args.dialogComponentProps.overlayClass).toBeUndefined()
   })
 
-  it("show() sets overlayClass 'p-8' when isCloud && teamWorkspacesEnabled", () => {
+  it("show() sets overlayClass 'p-8' on Cloud", () => {
     isCloudRef.value = true
-    teamWorkspacesFlag.value = true
 
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]

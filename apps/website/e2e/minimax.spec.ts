@@ -1,24 +1,30 @@
 import { expect } from '@playwright/test'
 
 import { externalLinks, getRoutes } from '../src/config/routes'
-import { minimaxFaqs, minimaxLinks, minimaxReviews } from '../src/data/minimax'
+import { creatorReviews } from '../src/data/creatorReviews'
+import { minimaxLinks, minimaxPage } from '../src/data/minimax'
 import { t } from '../src/i18n/translations'
+import { faqAnswerPlainText } from '../src/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/minimax'
-const HERO_TITLE = t('minimax.hero.title', 'en')
+const HERO_TITLE =
+  t('minimax.hero.titleModel', 'en') + t('minimax.hero.titleRest', 'en')
 const MODELS_HEADING = t('minimax.models.heading', 'en')
 const MODELS_ROUTE = getRoutes('en').models
 const CTA_HEADING = t('minimax.cta.heading', 'en')
 const CTA_PRIMARY = t('minimax.cta.primaryCta', 'en')
 const CLOUD_URL = externalLinks.cloud
 const CLOUD_RUN_URL = minimaxLinks.cloudRun
-const FAQ_COUNT = minimaxFaqs.length
-const FIRST_FAQ = minimaxFaqs[0]
+const FAQS = minimaxPage.faq?.items ?? []
+const FAQ_COUNT = FAQS.length
+const FIRST_FAQ = FAQS[0]
+const PRICING_HEADING = t('pricing.title', 'en')
 const REVIEWS_HEADING = t('minimax.reviews.heading', 'en')
 const HIGHLIGHT_CTA = t('minimax.reviews.highlightCta', 'en')
 const MCP_ROUTE = getRoutes('en').mcp
-const FIRST_REVIEW = minimaxReviews[0]
+const FIRST_REVIEW = creatorReviews[0]
 
 test.describe('MiniMax H3 page — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -67,7 +73,9 @@ test.describe('MiniMax H3 page — link targets', () => {
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
-  test('closing CTA links to cloud signup in a new tab', async ({ page }) => {
+  test('closing CTA links to the cloud workflow in a new tab', async ({
+    page
+  }) => {
     const ctaSection = page.locator('section').filter({
       has: page.getByRole('heading', { level: 2, name: CTA_HEADING })
     })
@@ -105,38 +113,73 @@ test.describe('MiniMax H3 page — pricing section', () => {
     await expect(tryFree).toHaveAttribute('href', CLOUD_URL)
   })
 
-  test('shows per-plan descriptions and cumulative feature groups', async ({
+  test('renders the shared pricing plans, team card and enterprise band', async ({
     page
   }) => {
-    const planCard = (label: string) =>
-      page
-        .locator('[class*="rounded-4.5xl"]')
-        .filter({ has: page.getByText(label, { exact: true }) })
+    const pricingSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: PRICING_HEADING })
+    })
+    await pricingSection.scrollIntoViewIfNeeded()
 
-    const standardCard = planCard(t('pricing.plan.standard.label', 'en'))
-    const creatorCard = planCard(t('pricing.plan.creator.label', 'en'))
-    const proCard = planCard(t('pricing.plan.pro.label', 'en'))
-
-    await standardCard.scrollIntoViewIfNeeded()
+    const standardCard = pricingSection
+      .locator('[class*="rounded-4.5xl"]')
+      .filter({
+        has: page.getByText(t('pricing.plan.standard.label', 'en'), {
+          exact: true
+        })
+      })
     await expect(
-      standardCard.getByText(
-        t('minimax.pricing.plan.standard.description', 'en')
-      )
-    ).toBeVisible()
-
-    await expect(
-      creatorCard.getByText(t('minimax.pricing.plan.creator.description', 'en'))
-    ).toBeVisible()
-    await expect(
-      creatorCard.getByText(t('minimax.pricing.everythingInStandard', 'en'))
+      standardCard.getByText(t('pricing.plan.standard.estimate', 'en'))
     ).toBeVisible()
 
     await expect(
-      proCard.getByText(t('minimax.pricing.plan.pro.description', 'en'))
+      pricingSection.getByText(t('pricing.plan.team.label', 'en'), {
+        exact: true
+      })
     ).toBeVisible()
     await expect(
-      proCard.getByText(t('minimax.pricing.everythingInCreator', 'en'))
+      pricingSection.getByText(t('pricing.enterprise.label', 'en'), {
+        exact: true
+      })
     ).toBeVisible()
+  })
+
+  test('opens on monthly billing, as the launch design specifies', async ({
+    page
+  }) => {
+    const subscribe = page.getByRole('link', {
+      name: t('pricing.plan.standard.cta', 'en')
+    })
+    await subscribe.scrollIntoViewIfNeeded()
+    await expect(subscribe).toHaveAttribute('href', /cycle=monthly/)
+  })
+})
+
+test.describe('MiniMax H3 page — FAQ interlinks', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('links the answers to the docs tutorial and the launch post', async ({
+    page
+  }) => {
+    // Answers live in a collapsed accordion, so each one has to be opened.
+    const openAnswer = async (question: string) => {
+      const trigger = page.getByRole('button', { name: question })
+      await waitForIsland(page, trigger)
+      await trigger.click()
+      await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    }
+
+    await openAnswer(FAQS[0].question.en)
+    await expect(
+      page.getByRole('link', { name: 'the day-0 launch post' })
+    ).toHaveAttribute('href', minimaxLinks.blog)
+
+    await openAnswer(FAQS[FAQS.length - 1].question.en)
+    await expect(
+      page.getByRole('link', { name: 'the MiniMax H3 workflow tutorial' })
+    ).toHaveAttribute('href', minimaxLinks.docs)
   })
 })
 
@@ -198,16 +241,14 @@ test.describe('MiniMax H3 page — interactions', () => {
     const firstQuestion = page.getByRole('button', {
       name: FIRST_FAQ.question.en
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
+    await waitForIsland(page, firstQuestion)
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
-    // The trigger renders aria-expanded="false" server-side, so a click can
-    // land before the island hydrates. Re-click until it actually toggles.
-    await expect(async () => {
-      await firstQuestion.click()
-      await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
-    }).toPass()
-    await expect(page.getByText(FIRST_FAQ.answer.en)).toBeVisible()
+    await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
+    await expect(
+      page.getByText(faqAnswerPlainText(FIRST_FAQ.answer.en))
+    ).toBeVisible()
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
@@ -221,7 +262,7 @@ test.describe('MiniMax H3 page — interactions', () => {
       .locator('div.overflow-x-auto')
       .filter({ has: page.getByRole('article') })
     const nextButton = reviewsSection.getByRole('button', { name: 'Next' })
-    await nextButton.scrollIntoViewIfNeeded()
+    await waitForIsland(page, nextButton)
 
     const startScroll = await track.evaluate((el) => el.scrollLeft)
     await nextButton.click()
