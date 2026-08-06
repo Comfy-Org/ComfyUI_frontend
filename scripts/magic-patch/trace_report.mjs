@@ -54,7 +54,9 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   }
   const total = [...byTool.values()].reduce((sum, e) => sum + e.ms, 0)
 
-  console.error(`${rows.length} tool call(s), ${(total / 1000).toFixed(1)}s in tools\n`)
+  console.error(
+    `${rows.length} tool call(s), ${(total / 1000).toFixed(1)}s in tools\n`
+  )
   console.error('tool                    calls      total     mean    share')
   for (const [tool, e] of [...byTool].sort((a, b) => b[1].ms - a[1].ms)) {
     console.error(

@@ -119,13 +119,16 @@ export function computeBadges(sources: BadgeSources): BadgeData[] {
  * Origin leads because it is what a user needs first: it decides whether the
  * defect is ours, and whether filing it against the pack's author would be
  * misdirected. A user patch is unsupported however well it verifies, so it is
- * never qualified further. A Comfy patch that was never executed should not have
- * shipped at all — `compile_db` refuses one — so if it appears the badge says so
- * rather than presenting it as an equal.
+ * never qualified further. A Comfy patch nobody has confirmed should not have
+ * shipped at all — `compile_db` refuses anything below `validated`, and passing
+ * the harness is not that — so if one appears the badge says so rather than
+ * presenting it as an equal.
  */
 function patchBadgeText(patch: PatchRecord): string {
   if (patch.origin === 'user') return '[USER-PATCHED]'
-  return patch.validation === 'none' ? '[COMFY-PATCHED?]' : '[COMFY-PATCHED]'
+  return patch.validation === 'validated'
+    ? '[COMFY-PATCHED]'
+    : '[COMFY-PATCHED?]'
 }
 
 function computeCreditsText(pricing: PricingBadgeSources): string {
