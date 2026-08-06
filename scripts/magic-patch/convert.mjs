@@ -380,7 +380,10 @@ Workflow:
 3. write_conversion, then run_checks, and fix whatever fails.
 3b. verify_pack once the pack's drafts are in place — it actually runs the code,
    and it is the only check that can catch a break spanning files.
-4. mark_complete, or give_up with the category that fits.
+4. mark_complete, or give_up with the category that fits. Batch punts: once you
+   have surveyed the pack, give_up every clearly-blocked file in ONE call
+   rather than one per turn. Batch independent tool calls generally — several
+   read_file calls in one turn cost one round trip, not several.
 5. suggest_skill_note for anything you had to work out that is not already in
    the skill — a mapping that was not written down, a distinction that would
    have misled you, a trap you nearly fell into. This applies whether you
@@ -717,27 +720,40 @@ function createSession(work, tracePath) {
 
       tool(
         'give_up',
-        'Abandon one file, recording which kind of blocker it hit. Preferred over guessing — an accurate category is worth more than a forced conversion.',
+        'Abandon one or more files, recording which kind of blocker each hit. Batch every file you have already decided on into one call — a gap-heavy pack punted one file per turn spends a quarter of its session on this. An accurate category is worth more than a forced conversion.',
         {
-          path: z.string(),
-          category: z.enum(Object.keys(PUNT_REASONS)),
-          detail: z
-            .string()
-            .describe(
-              'What specifically blocked it — name the construct, the missing API, or the ambiguity. This becomes the work item.'
+          punts: z
+            .array(
+              z.object({
+                path: z.string(),
+                category: z.enum(Object.keys(PUNT_REASONS)),
+                detail: z
+                  .string()
+                  .describe(
+                    'What specifically blocked it — name the construct, the missing API, or the ambiguity. This becomes the work item.'
+                  )
+              })
             )
+            .min(1)
         },
-        async ({ path, category, detail }) => {
-          const full = resolve(path)
-          const name = full && relative(work.root, full)
-          if (!name) return say(`No file ${path} in this pack.`)
-          state.outcomes.set(name, {
-            file: name,
-            status: 'abandoned',
-            reason: category,
-            detail
-          })
-          return say(`${name} abandoned (${category}). ${remaining()}`)
+        async ({ punts }) => {
+          const lines = []
+          for (const { path, category, detail } of punts) {
+            const full = resolve(path)
+            const name = full && relative(work.root, full)
+            if (!name) {
+              lines.push(`No file ${path} in this pack.`)
+              continue
+            }
+            state.outcomes.set(name, {
+              file: name,
+              status: 'abandoned',
+              reason: category,
+              detail
+            })
+            lines.push(`${name} abandoned (${category}).`)
+          }
+          return say(`${lines.join(' ')} ${remaining()}`)
         }
       )
     ]
