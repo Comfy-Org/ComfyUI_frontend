@@ -327,11 +327,16 @@ passes its own checks. \`mark_complete\` refuses when callers are left stranded.
 
 Do not add a compatibility shim.
 
-Keep the diff minimal. Change only the lines that must change: preserve the
-file's existing quote style, indentation, spacing, semicolons and line breaks
-everywhere else, and do not reorder or reflow untouched code. The stored patch
-is a line diff against the original, and a reformatted file buries the two lines
-that matter in hundreds that do not.
+Keep the diff small — it is the message. These patches are read by the pack's
+author, often as a pull request. A patch touching ten lines says "we moved you
+off two deprecated calls"; one that rewrites the file says "we rewrote your
+code", and it gets rejected on sight even when correct.
+
+So: change the registration and leave everything else exactly where it is. Do
+not hoist, reorder or rename anything the conversion does not require — keep
+helpers nested where they were nested, keep their names and parameters, keep
+the file's quote style and spacing. Do not fix adjacent code. Removing a
+wrapper dedents its body and that is unavoidable; adding to that churn is not.
 
 Punt rather than force a conversion when any of these hold:
 
