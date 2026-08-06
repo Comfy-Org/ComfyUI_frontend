@@ -1,10 +1,10 @@
 import { comfy } from '/comfy/api/v1.js';
 
-comfy.defs.extend('FastPreview', (b) => {
-  // Per-node preview state. Handles hold no arbitrary properties, and the
-  // entry is dropped in onRemoved.
-  const previews = new Map();
+// Per-node preview state. Handles hold no arbitrary properties, and a Map entry
+// is dropped explicitly in onRemoved rather than collected with the node.
+const previews = new Map();
 
+comfy.defs.extend('FastPreview', (b) => {
   b.onCreated((node) => {
     node.setSize({ width: 550, height: 550 });
 
@@ -14,16 +14,16 @@ comfy.defs.extend('FastPreview', (b) => {
       draw(ctx, [w, h]) {
         const img = state.img;
         if (!img) return;
-        const scale = Math.min(w / img.width, h / img.height);
-        const dw = img.width * scale, dh = img.height * scale;
+        const s = Math.min(w / img.width, h / img.height);
+        const dw = img.width * s, dh = img.height * s;
         ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
       },
     });
     previews.set(node.id, state);
   });
 
-  // onPreview answers "is this frame mine?" for us — the `executing` global,
-  // the displayNodeId test and the supports_preview_metadata probe all go away.
+  // Already correlated to this node, so the module-level `execId`, the two
+  // raw socket listeners and the supports_preview_metadata probe all go away.
   b.onPreview((node, frame) => {
     const state = previews.get(node.id);
     if (!state) return;

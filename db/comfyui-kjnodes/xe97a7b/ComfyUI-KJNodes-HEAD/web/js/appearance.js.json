@@ -1,0 +1,113 @@
+{
+  "pack": "comfyui-kjnodes",
+  "commit": "xe97a7b",
+  "file": "ComfyUI-KJNodes-HEAD/web/js/appearance.js",
+  "sourceSha256": "8abb861e850a207dffc6dd4d8772aaa608a374948e54f4228c7e5443a3a8bc03",
+  "apiMajor": 1,
+  "ruleCatalogVersion": 2,
+  "author": "agent:claude-code",
+  "rules": [],
+  "summary": "Replaced the global `registerExtension({ nodeCreated })` hook — which fired for every node of every type — with `comfy.defs.extend([...three types], b => b.onCreated(...))`, so the switch's cases become the declarative selector. `node.color = x` / `node.bgcolor = x` became `setColor()` / `setBgColor()` (renames onto the published accessors), and `setSize([200,58])` became `setSize({width,height})`. The switch body and the `LGraphCanvas.node_colors` palette reads are left exactly as they were.",
+  "verified": {
+    "pack": "comfyui-kjnodes",
+    "file": "ComfyUI-KJNodes-HEAD/web/js/appearance.js",
+    "results": [
+      {
+        "id": "edits-apply-cleanly",
+        "status": "skipped",
+        "detail": "No edits recorded."
+      },
+      {
+        "id": "converted-source-parses",
+        "status": "skipped",
+        "detail": "ES module; syntax is validated by the runtime load check."
+      },
+      {
+        "id": "no-new-capabilities",
+        "status": "passed",
+        "detail": "No net-new capabilities."
+      },
+      {
+        "id": "retires-the-old-surface",
+        "status": "passed",
+        "detail": "No prototype patching remains."
+      },
+      {
+        "id": "handles-use-accessors",
+        "status": "passed",
+        "detail": "Handle state written through accessors."
+      },
+      {
+        "id": "no-unknown-api-members",
+        "status": "passed",
+        "detail": "No net-new members outside the API."
+      },
+      {
+        "id": "no-dropped-behaviour",
+        "status": "passed",
+        "detail": "Gone from the file: bgcolor, color. Each should be a rename onto the published API or genuinely obsolete; say which in the summary. Anything else is lost functionality, which makes the conversion wrong."
+      },
+      {
+        "id": "no-silently-dropped-writes",
+        "status": "passed",
+        "detail": "No writes behind an optional chain."
+      },
+      {
+        "id": "diff-is-mostly-substance",
+        "status": "passed",
+        "detail": "1/12 added line(s) differ only in indentation."
+      },
+      {
+        "id": "no-net-new-lines",
+        "status": "passed",
+        "detail": "Net -1 line(s)."
+      },
+      {
+        "id": "loads",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      },
+      {
+        "id": "registers-no-fewer-types",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      },
+      {
+        "id": "retires-deprecations",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      }
+    ],
+    "passed": true,
+    "failures": [],
+    "skipped": [
+      {
+        "id": "edits-apply-cleanly",
+        "status": "skipped",
+        "detail": "No edits recorded."
+      },
+      {
+        "id": "converted-source-parses",
+        "status": "skipped",
+        "detail": "ES module; syntax is validated by the runtime load check."
+      },
+      {
+        "id": "loads",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      },
+      {
+        "id": "registers-no-fewer-types",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      },
+      {
+        "id": "retires-deprecations",
+        "status": "skipped",
+        "detail": "Artifact was not executed."
+      }
+    ]
+  },
+  "diff": "appearance.js.diff",
+  "test": "equivalence: Creating an INTConstant node gives it size 200x58, colour #1b4669 and background #29699c; a FloatConstant gets the same size plus the green palette entry; a ConditioningMultiCombine gets the brown palette entry and its size is left untouched. A node of any other type is left entirely alone. Passes on both the original (registerExtension nodeCreated + property assignment) and the converted source (defs.extend selector + b.onCreated + setSize/setColor/setBgColor).\n\nfix: The appearance callback must not run for node types this pack does not style. On the ORIGINAL this fails: `nodeCreated` is a global extension hook, so it is invoked for every node of every type in the graph and only the switch statement discards them — instrumenting the callback while creating a KSampler shows it entered. On the CONVERTED source the selector [\"INTConstant\",\"FloatConstant\",\"ConditioningMultiCombine\"] is declarative and indexed by the registry, so b.onCreated is never invoked for a KSampler at all."
+}
