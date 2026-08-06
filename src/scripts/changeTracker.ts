@@ -2,6 +2,7 @@ import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
+import { LAYER_EDITOR_DIALOG_KEY } from '@/composables/layerEditor/layerEditorDialog'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -530,7 +531,7 @@ export class ChangeTracker {
         if (comfyApp.maskeditor_is_opended?.()) return
 
         // The layer editor has its own session-local undo history
-        if (useDialogStore().isDialogOpen('global-layer-editor')) return
+        if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {
