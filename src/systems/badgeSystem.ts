@@ -13,6 +13,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { usePatchedNodesStore } from '@/stores/patchedNodesStore'
+import type { PatchRecord } from '@/stores/patchedNodesStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import type { BadgeData, CoreBadgePart } from '@/types/badgeData'
@@ -44,6 +46,12 @@ type PricingBadgeSources =
 export interface BadgeSources {
   nodeId: NodeId
   nodeDef: NodeDefBadgeSources | null
+  /**
+   * Set when Comfy rewrote this node type's source. Carries no badge mode:
+   * disclosure the user can switch off is not disclosure, and we own the
+   * change either way.
+   */
+  patch: PatchRecord | undefined
   badgeModes: {
     id: NodeBadgeMode
     lifecycle: NodeBadgeMode
@@ -65,7 +73,7 @@ function badgeTextVisible(
 
 /** Projects a node's core and credits badge rows from their sources. */
 export function computeBadges(sources: BadgeSources): BadgeData[] {
-  const { nodeId, nodeDef, badgeModes, colors, pricing } = sources
+  const { nodeId, nodeDef, patch, badgeModes, colors, pricing } = sources
   const coreParts: [CoreBadgePart, NodeBadgeMode, string][] = [
     ['lifecycle', badgeModes.lifecycle, nodeDef?.lifecycleText ?? ''],
     ['id', badgeModes.id, `#${nodeId}`],
@@ -83,6 +91,16 @@ export function computeBadges(sources: BadgeSources): BadgeData[] {
       bgColor: colors.bgColor
     }))
 
+  if (patch) {
+    rows.push({
+      kind: 'core',
+      part: 'patched',
+      text: patchBadgeText(patch),
+      fgColor: colors.fgColor,
+      bgColor: colors.bgColor
+    })
+  }
+
   const creditsText = computeCreditsText(pricing)
   if (creditsText) {
     rows.push({
@@ -93,6 +111,21 @@ export function computeBadges(sources: BadgeSources): BadgeData[] {
     })
   }
   return rows
+}
+
+/**
+ * Says who to hold responsible, then how well the patch was checked.
+ *
+ * Origin leads because it is what a user needs first: it decides whether the
+ * defect is ours, and whether filing it against the pack's author would be
+ * misdirected. A user patch is unsupported however well it verifies, so it is
+ * never qualified further. A Comfy patch that was never executed should not have
+ * shipped at all — `compile_db` refuses one — so if it appears the badge says so
+ * rather than presenting it as an equal.
+ */
+function patchBadgeText(patch: PatchRecord): string {
+  if (patch.origin === 'user') return '[USER-PATCHED]'
+  return patch.validation === 'none' ? '[COMFY-PATCHED?]' : '[COMFY-PATCHED]'
 }
 
 function computeCreditsText(pricing: PricingBadgeSources): string {
@@ -215,6 +248,7 @@ function gatherSources(node: LGraphNode): BadgeSources {
           sourceText: def.nodeSource?.badgeText ?? ''
         }
       : null,
+    patch: usePatchedNodesStore().patchOf(node.type),
     badgeModes: {
       id: settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode,
       lifecycle: settingStore.get(
@@ -252,6 +286,7 @@ export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
     useColorPaletteStore()
     useWidgetValueStore()
     useLinkStore()
+    usePatchedNodesStore()
     rows = computed(() => {
       return computeBadges(gatherSources(node))
     })

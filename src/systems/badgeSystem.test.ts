@@ -10,6 +10,13 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import { computeBadges, nodeBadges } from './badgeSystem'
 import type { BadgeSources } from './badgeSystem'
 
+const PATCH = {
+  origin: 'comfy',
+  validation: 'harness',
+  pack: 'kjnodes',
+  sourceSha256: 'abc123'
+} as const
+
 function sources(overrides: Partial<BadgeSources> = {}): BadgeSources {
   return {
     nodeId: toNodeId(5),
@@ -18,6 +25,7 @@ function sources(overrides: Partial<BadgeSources> = {}): BadgeSources {
       lifecycleText: '[BETA]',
       sourceText: 'my-pack'
     },
+    patch: undefined,
     badgeModes: {
       id: NodeBadgeMode.ShowAll,
       lifecycle: NodeBadgeMode.ShowAll,
@@ -216,5 +224,77 @@ describe('nodeBadges', () => {
     expect(nodeBadges(a).map((r) => r.text)).toEqual(['#1'])
     expect(nodeBadges(b).map((r) => r.text)).toEqual(['#2'])
     expect(nodeBadges(a)).toBe(nodeBadges(a))
+  })
+})
+
+describe('marking a node Comfy patched', () => {
+  it('marks a patched node', () => {
+    const rows = computeBadges(sources({ patch: PATCH }))
+
+    expect(rows).toContainEqual(
+      expect.objectContaining({ part: 'patched', text: '[COMFY-PATCHED]' })
+    )
+  })
+
+  it('leaves an unpatched node unmarked', () => {
+    const parts = computeBadges(sources()).map((r) =>
+      r.kind === 'core' ? r.part : r.kind
+    )
+
+    expect(parts).not.toContain('patched')
+  })
+
+  it('distinguishes a patch that was never validated', () => {
+    // compile_db refuses to ship one, so this can only mean a patch arrived by
+    // a route that skipped the gate. Showing it as an equal would launder that.
+    const rows = computeBadges(
+      sources({ patch: { ...PATCH, validation: 'none' } })
+    )
+
+    expect(rows).toContainEqual(
+      expect.objectContaining({ part: 'patched', text: '[COMFY-PATCHED?]' })
+    )
+  })
+
+  it('names the user as the source of a locally generated patch', () => {
+    // Nobody supports a user patch — not Comfy, not the pack's author. A badge
+    // that said only "patched" would send the report to one of them.
+    const rows = computeBadges(
+      sources({ patch: { ...PATCH, origin: 'user', validation: 'none' } })
+    )
+
+    expect(rows).toContainEqual(
+      expect.objectContaining({ part: 'patched', text: '[USER-PATCHED]' })
+    )
+  })
+
+  it('does not qualify a user patch by how well it verified', () => {
+    // Verification does not create a support path that never existed.
+    const rows = computeBadges(
+      sources({ patch: { ...PATCH, origin: 'user', validation: 'manual' } })
+    )
+
+    expect(rows).toContainEqual(
+      expect.objectContaining({ part: 'patched', text: '[USER-PATCHED]' })
+    )
+  })
+
+  it('marks a patched node even when badges are switched off', () => {
+    // Disclosure the user can disable is not disclosure. We wrote the change,
+    // so the mark is not the user's to hide.
+    const rows = computeBadges(
+      sources({
+        patch: PATCH,
+        badgeModes: {
+          id: NodeBadgeMode.None,
+          lifecycle: NodeBadgeMode.None,
+          source: NodeBadgeMode.None
+        }
+      })
+    )
+
+    expect(rows).toContainEqual(
+      expect.objectContaining({ part: 'patched', text: '[COMFY-PATCHED]' })
+    )
   })
 })

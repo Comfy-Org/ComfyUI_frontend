@@ -1,5 +1,5 @@
 /** Legacy canvas joins the core parts into a single badge in this order. */
-export const CORE_JOIN_ORDER = ['id', 'lifecycle', 'source'] as const
+export const CORE_JOIN_ORDER = ['id', 'lifecycle', 'patched', 'source'] as const
 
 export type CoreBadgePart = (typeof CORE_JOIN_ORDER)[number]
 
