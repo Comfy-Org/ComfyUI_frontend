@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "¿Olvidaste tu contraseña?",
   "cloudHero": {
     "nextSlide": "Siguiente diapositiva",
-    "previousSlide": "Diapositiva anterior",
-    "slidePagerLabel": "Ir a la diapositiva {index}",
-    "slides": {
-      "cloud": {
-        "description": "Ideal para la mayoría de los usuarios que desean trabajar desde cualquier lugar con modelos verificados para uso comercial.",
-        "title": "Nube"
-      },
-      "models": {
-        "description": "Modelos seleccionados y con licencia comercial listos para usar sin configuración previa.",
-        "title": "Modelos"
-      },
-      "team": {
-        "description": "Incorpora a tu equipo hoy. Comparte flujos de trabajo y recursos en toda tu organización.",
-        "title": "Equipo"
-      },
-      "workflows": {
-        "description": "De la idea al resultado en minutos. Genera múltiples variaciones en paralelo.",
-        "title": "Flujos de trabajo"
-      }
-    }
+    "previousSlide": "Diapositiva anterior"
   },
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "Cloud está actualmente en beta privada",
   "cloudSorryContactSupport_title": "Lo sentimos, contacta al soporte",
   "cloudStart_desc": "Cero configuración requerida. Funciona en cualquier dispositivo.",
-  "cloudStart_download": "Descargar ComfyUI",
   "cloudStart_explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo con facilidad.",
   "cloudStart_learnAboutButton": "Conoce más sobre Cloud",
   "cloudStart_title": "comienza a crear en segundos",
-  "cloudStart_wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
   "cloudSurvey_steps_experience": "¿Qué tanto conoces ComfyUI?",
   "cloudSurvey_steps_focus": "¿Qué estás construyendo?",
   "cloudSurvey_steps_intent": "¿Qué quieres crear con ComfyUI?",
@@ -812,6 +791,9 @@
       "buy": "Comprar",
       "buyCredits": "Continuar al pago",
       "buyNow": "Comprar ahora",
+      "chargedImmediatelyNote": "Tu tarjeta guardada se cargará de inmediato.",
+      "confirmSubtitle": "Los créditos se añadirán a este espacio de trabajo tan pronto como se complete el pago.",
+      "confirmTitle": "Confirmar",
       "contactUs": "Contáctanos",
       "creditsDescription": "Los créditos se utilizan para ejecutar flujos de trabajo o nodos de socios.",
       "creditsPerDollar": "créditos por dólar",
@@ -826,6 +808,7 @@
       "minRequired": "Mínimo {credits} créditos",
       "minimumPurchase": "Mínimo ${amount} ({credits} créditos)",
       "needMore": "¿Necesitas más?",
+      "payAmount": "Pagar {amount}",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
       "purchaseSuccess": "¡Créditos añadidos correctamente!",
@@ -836,6 +819,8 @@
       "topUp": "Recargar",
       "unknownError": "Ocurrió un error desconocido",
       "usdAmount": "${amount}",
+      "verifyBody": "Tu banco requiere verificación adicional para completar este pago.",
+      "verifyTitle": "Verifica tu pago",
       "videosEstimate": "~{count} videos",
       "viewPricing": "Ver detalles de precios",
       "youGet": "Créditos",
@@ -1874,6 +1859,26 @@
     "warning": "Advertencia",
     "workflow": "Flujo de trabajo",
     "you": "Tú"
+  },
+  "gettingStarted": {
+    "loadFailed": "No pudimos cargar las plantillas.",
+    "retry": "Intentar de nuevo",
+    "retryTemplate": "Reintentar {title}",
+    "startBlank": "Comenzar con un lienzo en blanco",
+    "subtitle": "Elige un flujo de trabajo listo para usar o comienza con un lienzo en blanco.",
+    "tabs": {
+      "templates": "Plantillas",
+      "tutorials": "Tutoriales"
+    },
+    "tabsLabel": "Opciones para empezar",
+    "templateFailed": "No pudimos abrir esta plantilla.",
+    "title": "Vamos a crear algo",
+    "tutorials": {
+      "imageToImage": "Imagen a imagen",
+      "inpaint": "Relleno inteligente",
+      "interfaceOverview": "Resumen de la interfaz",
+      "textToImage": "Texto a imagen"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "Modo lienzo",

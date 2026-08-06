@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "نسيت كلمة المرور",
   "cloudHero": {
     "nextSlide": "الشريحة التالية",
-    "previousSlide": "الشريحة السابقة",
-    "slidePagerLabel": "انتقل إلى الشريحة {index}",
-    "slides": {
-      "cloud": {
-        "description": "الأفضل لمعظم المستخدمين الذين يرغبون في العمل من أي مكان مع نماذج تم التحقق من تراخيصها التجارية.",
-        "title": "السحابة"
-      },
-      "models": {
-        "description": "نماذج مختارة ومرخصة تجاريًا جاهزة للتشغيل دون أي إعداد.",
-        "title": "النماذج"
-      },
-      "team": {
-        "description": "قم بإضافة فريقك اليوم. شارك سير العمل والموارد عبر مؤسستك.",
-        "title": "الفريق"
-      },
-      "workflows": {
-        "description": "من الفكرة إلى الناتج في دقائق. أنشئ عدة تنويعات جنبًا إلى جنب.",
-        "title": "سير العمل"
-      }
-    }
+    "previousSlide": "الشريحة السابقة"
   },
   "cloudNotification": {
     "continueLocally": "المتابعة محليًا",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "السحابة حاليًا في نسخة تجريبية خاصة",
   "cloudSorryContactSupport_title": "عذرًا، اتصل بالدعم",
   "cloudStart_desc": "لا حاجة لإعداد مسبق. يعمل على أي جهاز.",
-  "cloudStart_download": "تنزيل ComfyUI",
   "cloudStart_explain": "أنتج عدة مخرجات في وقت واحد. شارك سير العمل بسهولة.",
   "cloudStart_learnAboutButton": "تعرف على السحابة",
   "cloudStart_title": "ابدأ الإبداع في ثوانٍ",
-  "cloudStart_wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
   "cloudSurvey_steps_experience": "ما مدى معرفتك بـ ComfyUI؟",
   "cloudSurvey_steps_focus": "ماذا تبني؟",
   "cloudSurvey_steps_intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
@@ -812,6 +791,9 @@
       "buy": "شراء",
       "buyCredits": "المتابعة للدفع",
       "buyNow": "اشترِ الآن",
+      "chargedImmediatelyNote": "سيتم خصم المبلغ من بطاقتك المحفوظة فوراً.",
+      "confirmSubtitle": "سيتم إضافة الرصيد إلى مساحة العمل هذه بمجرد إتمام الدفع.",
+      "confirmTitle": "تأكيد",
       "contactUs": "اتصل بنا",
       "creditsDescription": "يتم استخدام الرصيد لتشغيل سير العمل أو عقد الشركاء.",
       "creditsPerDollar": "أرصدة لكل دولار",
@@ -826,6 +808,7 @@
       "minRequired": "الحد الأدنى {credits} أرصدة",
       "minimumPurchase": "الحد الأدنى ${amount} ({credits} أرصدة)",
       "needMore": "تحتاج المزيد؟",
+      "payAmount": "ادفع {amount}",
       "purchaseError": "فشل الشراء",
       "purchaseErrorDetail": "فشل شراء الرصيد: {error}",
       "purchaseSuccess": "تمت إضافة الرصيد بنجاح!",
@@ -836,6 +819,8 @@
       "topUp": "شحن الرصيد",
       "unknownError": "حدث خطأ غير معروف",
       "usdAmount": "${amount} دولار أمريكي",
+      "verifyBody": "يتطلب بنكك تحققًا إضافيًا لإكمال عملية الدفع.",
+      "verifyTitle": "تحقق من الدفع",
       "videosEstimate": "~{count} فيديو",
       "viewPricing": "عرض تفاصيل التسعير",
       "youGet": "أرصدة",
@@ -1874,6 +1859,26 @@
     "warning": "تحذير",
     "workflow": "سير العمل",
     "you": "أنت"
+  },
+  "gettingStarted": {
+    "loadFailed": "تعذر تحميل القوالب.",
+    "retry": "حاول مرة أخرى",
+    "retryTemplate": "إعادة المحاولة {title}",
+    "startBlank": "ابدأ بلوحة فارغة",
+    "subtitle": "اختر سير عمل جاهز للانطلاق أو ابدأ من لوحة فارغة.",
+    "tabs": {
+      "templates": "قوالب",
+      "tutorials": "دروس"
+    },
+    "tabsLabel": "خيارات البدء",
+    "templateFailed": "تعذر فتح هذا القالب.",
+    "title": "لنبدأ الإبداع",
+    "tutorials": {
+      "imageToImage": "تحويل صورة إلى صورة",
+      "inpaint": "التلوين الداخلي",
+      "interfaceOverview": "نظرة عامة على الواجهة",
+      "textToImage": "تحويل النص إلى صورة"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "وضع اللوحة",

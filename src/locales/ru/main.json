@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "Забыли пароль",
   "cloudHero": {
     "nextSlide": "Следующий слайд",
-    "previousSlide": "Предыдущий слайд",
-    "slidePagerLabel": "Перейти к слайду {index}",
-    "slides": {
-      "cloud": {
-        "description": "Лучший выбор для большинства пользователей, которые хотят работать из любой точки мира с моделями, проверенными на коммерческую лицензию.",
-        "title": "Облако"
-      },
-      "models": {
-        "description": "Отобранные, коммерчески лицензированные модели, готовые к запуску без дополнительной настройки.",
-        "title": "Модели"
-      },
-      "team": {
-        "description": "Подключите свою команду уже сегодня. Делитесь рабочими процессами и ресурсами внутри вашей организации.",
-        "title": "Команда"
-      },
-      "workflows": {
-        "description": "От идеи до результата за считанные минуты. Генерируйте несколько вариантов одновременно.",
-        "title": "Рабочие процессы"
-      }
-    }
+    "previousSlide": "Предыдущий слайд"
   },
   "cloudNotification": {
     "continueLocally": "Продолжить локально",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "Cloud сейчас в закрытой бета-версии",
   "cloudSorryContactSupport_title": "Извините, обратитесь в службу поддержки",
   "cloudStart_desc": "Не требует настройки. Работает на любом устройстве.",
-  "cloudStart_download": "Скачать ComfyUI",
   "cloudStart_explain": "Генерируйте несколько результатов одновременно. Легко делитесь рабочими процессами.",
   "cloudStart_learnAboutButton": "Узнать о Cloud",
   "cloudStart_title": "начать создавать за секунды",
-  "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
   "cloudSurvey_steps_experience": "Насколько хорошо вы знаете ComfyUI?",
   "cloudSurvey_steps_focus": "Что вы создаёте?",
   "cloudSurvey_steps_intent": "Что вы хотите создавать с помощью ComfyUI?",
@@ -812,6 +791,9 @@
       "buy": "Купить",
       "buyCredits": "Перейти к оплате",
       "buyNow": "Купить сейчас",
+      "chargedImmediatelyNote": "С вашей сохранённой карты будет списана сумма немедленно.",
+      "confirmSubtitle": "Кредиты будут добавлены в это рабочее пространство сразу после завершения оплаты.",
+      "confirmTitle": "Подтвердить",
       "contactUs": "Свяжитесь с нами",
       "creditsDescription": "Кредиты используются для запуска рабочих процессов или партнерских узлов.",
       "creditsPerDollar": "кредитов за доллар",
@@ -826,6 +808,7 @@
       "minRequired": "Минимум {credits} кредитов",
       "minimumPurchase": "Минимум ${amount} ({credits} кредитов)",
       "needMore": "Нужно больше?",
+      "payAmount": "Оплатить {amount}",
       "purchaseError": "Покупка не удалась",
       "purchaseErrorDetail": "Не удалось купить кредиты: {error}",
       "purchaseSuccess": "Кредиты успешно добавлены!",
@@ -836,6 +819,8 @@
       "topUp": "Пополнить",
       "unknownError": "Произошла неизвестная ошибка",
       "usdAmount": "${amount}",
+      "verifyBody": "Ваш банк требует дополнительную проверку для завершения этого платежа.",
+      "verifyTitle": "Подтвердите ваш платеж",
       "videosEstimate": "~{count} видео",
       "viewPricing": "Посмотреть детали цен",
       "youGet": "Кредиты",
@@ -1874,6 +1859,26 @@
     "warning": "Предупреждение",
     "workflow": "Рабочий процесс",
     "you": "Вы"
+  },
+  "gettingStarted": {
+    "loadFailed": "Не удалось загрузить шаблоны.",
+    "retry": "Попробовать снова",
+    "retryTemplate": "Повторить {title}",
+    "startBlank": "Начать с пустого холста",
+    "subtitle": "Выберите готовый рабочий процесс или начните с пустого холста.",
+    "tabs": {
+      "templates": "Шаблоны",
+      "tutorials": "Учебники"
+    },
+    "tabsLabel": "Варианты начала работы",
+    "templateFailed": "Не удалось открыть этот шаблон.",
+    "title": "Давайте создадим что-нибудь",
+    "tutorials": {
+      "imageToImage": "Изображение в изображение",
+      "inpaint": "Инпейтинг",
+      "interfaceOverview": "Обзор интерфейса",
+      "textToImage": "Текст в изображение"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "Режим холста",
