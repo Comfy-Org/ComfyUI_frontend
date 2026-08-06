@@ -806,12 +806,26 @@ function writeDbEntry(db, work, commit, outcome, source) {
  * one dataset this whole exercise produces. A laptop going to sleep mid-run
  * cost two packs before this existed.
  */
+/**
+ * Failures where retrying is pointless and continuing is harmful.
+ *
+ * An expired token fails every remaining pack in milliseconds, so a 537-pack
+ * batch "completes" in seconds having converted nothing — six parallel runs
+ * did exactly that. Stop at the first one and say why.
+ */
+const FATAL = /401|authenticate|invalid.?api.?key|unauthorized|forbidden/i
+
 const TRANSIENT =
   /connection closed|network|ECONNRESET|ETIMEDOUT|socket hang up|maximum number of turns|rate.?limit|overloaded|503|529/i
 
 /** Runs a pack, retrying once when the failure was not the pack's fault. */
+class FatalRunError extends Error {}
+
 async function convertPackWithRetry(work, tracePath, attempt = 1) {
   const result = await convertPack(work, tracePath)
+  if (result.status === 'failed' && FATAL.test(result.detail ?? '')) {
+    throw new FatalRunError(result.detail)
+  }
   if (
     result.status === 'failed' &&
     attempt < 3 &&
@@ -896,7 +910,7 @@ async function main() {
   const corpus = flag('corpus')
   if (!corpus) {
     console.error(
-      'usage: convert.mjs --corpus <dir> [--db <dir>] [--limit N] [--pack NAME]'
+      'usage: convert.mjs --corpus <dir> [--db <dir>] [--limit N] [--pack NAME] [--parallel N]'
     )
     process.exit(2)
   }
@@ -907,6 +921,10 @@ async function main() {
   const limit = limitRaw === undefined ? null : Number(limitRaw)
   const only = flag('pack')
   const dryRun = argv.includes('--dry-run')
+  // Conversions are almost entirely model time, so packs run concurrently by
+  // default. Four keeps a laptop usable and stays clear of rate limits; raise
+  // it on a dedicated machine.
+  const parallel = Math.max(1, Number(flag('parallel', '4')))
 
   const ledgerPath = join(db, 'ledger.jsonl')
   const done = new Set(
@@ -954,10 +972,8 @@ async function main() {
   const reasons = {}
   let failed = 0
 
-  // Sequential on purpose: each pack is a long agent run, and Claude Code's
-  // credentials are shared with whatever else the developer is doing.
-  for (const work of packs) {
-    const result = await convertPackWithRetry(work, join(db, 'trace.jsonl'))
+  /** Everything a finished pack contributes, applied on the main thread. */
+  const record = (work, result) => {
     if (result.status === 'failed') failed++
 
     for (const file of result.files) {
@@ -976,6 +992,41 @@ async function main() {
     console.log(
       `[${result.status}] ${work.pack}: ${converted}/${work.files.length} converted ${result.detail}`
     )
+  }
+
+  // A pack is one agent from first file to last — it needs to see the whole
+  // pack to convert a shared helper consistently — so the parallelism is
+  // across packs, never within one. Bounded because each worker is a Claude
+  // Code session and the credentials are shared with whatever else is running.
+  const queue = [...packs]
+  let fatal = null
+  const worker = async () => {
+    while (queue.length && !fatal) {
+      const work = queue.shift()
+      try {
+        record(work, await convertPackWithRetry(work, join(db, 'trace.jsonl')))
+      } catch (error) {
+        if (error instanceof FatalRunError) {
+          fatal ??= error
+          // Drain, so the remaining packs are not recorded as having been tried.
+          queue.length = 0
+        } else {
+          throw error
+        }
+      }
+    }
+  }
+  console.error(
+    `converting ${packs.length} pack(s), ${parallel} at a time` +
+      ` (${process.env.MAGIC_PATCH_MODEL || DEFAULT_MODEL})`
+  )
+  await Promise.all(
+    Array.from({ length: Math.min(parallel, packs.length) }, worker)
+  )
+  if (fatal) {
+    console.error(`\nSTOPPED: ${fatal.message}`)
+    console.error('Nothing after this point was attempted. Re-authenticate and rerun.')
+    return 2
   }
 
   console.log(
