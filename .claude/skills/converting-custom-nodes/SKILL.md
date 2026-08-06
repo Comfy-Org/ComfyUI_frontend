@@ -198,10 +198,30 @@ Rules that follow from this:
 - **Do not "improve" adjacent code.** A bug next to your change is not your
   change.
 
-Some churn is genuinely unavoidable: removing a `registerExtension` wrapper
-dedents its body, and that is a real structural change. Across the current
-database that is 17–39% of added lines, all legitimate. Do not contort the code
-to avoid it — but do not add to it either. `run_checks` reports the proportion.
+### Indentation: match the original where you can, fix it where you must
+
+The patch gets applied to the author's working tree, so a diff that minimises
+its own size by leaving the body at its old depth ships them badly indented
+code. That is a worse outcome than a larger diff.
+
+The rule, in order:
+
+1. **Prefer the original indentation.** If a line's nesting depth has not
+   actually changed, do not touch its leading whitespace.
+2. **Re-indent when the nesting genuinely changed.** Removing a
+   `registerExtension` wrapper takes two levels off everything inside it, and
+   the result has to be correctly indented. Do it.
+3. **Never re-indent anything whose nesting did not change.** That is the
+   churn worth eliminating, and it is entirely elective.
+
+So the thing to avoid is not re-indentation, it is _gratuitous restructuring_ —
+hoisting a helper to module scope, renaming its parameters, reflowing a function
+the conversion never touched. Those change every line of code that did not need
+to change. Correct indentation is not negotiable; unnecessary movement is.
+
+Across the current database the unavoidable dedent accounts for 17–39% of added
+lines. `run_checks` reports the proportion so you can see whether yours is in
+that range or well past it.
 
 ## Pattern references
 

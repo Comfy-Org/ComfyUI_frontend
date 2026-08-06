@@ -335,8 +335,14 @@ code", and it gets rejected on sight even when correct.
 So: change the registration and leave everything else exactly where it is. Do
 not hoist, reorder or rename anything the conversion does not require — keep
 helpers nested where they were nested, keep their names and parameters, keep
-the file's quote style and spacing. Do not fix adjacent code. Removing a
-wrapper dedents its body and that is unavoidable; adding to that churn is not.
+the file's quote style and spacing. Do not fix adjacent code.
+
+On indentation: the patch is applied to the author's working tree, so shrinking
+the diff by leaving code at its old depth ships them badly indented source, and
+that is worse than a bigger diff. Match the original indentation wherever the
+nesting did not change; re-indent properly where it did — removing a wrapper
+takes two levels off its body and the result has to be correct. What to avoid
+is re-indenting anything whose nesting did not change.
 
 Punt rather than force a conversion when any of these hold:
 
