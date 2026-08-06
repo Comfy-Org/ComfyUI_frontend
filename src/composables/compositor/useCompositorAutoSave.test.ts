@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { Dirty } from '@/core/layerEditor/engine/history'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toNodeId } from '@/types/nodeId'
@@ -10,7 +11,6 @@ function makeSession() {
   const listeners = new Set<(mask: number) => void>()
   return {
     editor: {
-      render: vi.fn(),
       history: {
         onChange(listener: (mask: number) => void) {
           listeners.add(listener)
@@ -18,12 +18,11 @@ function makeSession() {
         }
       }
     },
-    compositor: { toBlob: vi.fn(async () => new Blob()) },
     canvasSize: { value: { w: 8, h: 8 } },
     layers: { value: [] },
     layerFlips: () => ({ h: false, v: false }),
-    emitHistoryChange() {
-      for (const listener of listeners) listener(0)
+    emitHistoryChange(mask: number = Dirty.DRAWABLE) {
+      for (const listener of listeners) listener(mask)
     }
   }
 }
@@ -77,6 +76,17 @@ describe('useCompositorAutoSave', () => {
     vi.advanceTimersByTime(300)
 
     expect(compositorWidget.callback).toHaveBeenCalledTimes(2)
+  })
+
+  it('ignores selection-only history changes', () => {
+    const session = makeSession()
+    const { node, compositorWidget } = makeNode()
+    useCompositorAutoSave(session, node)
+
+    session.emitHistoryChange(Dirty.SELECTION)
+    vi.advanceTimersByTime(300)
+
+    expect(compositorWidget.callback).not.toHaveBeenCalled()
   })
 
   it('stop() cancels pending saves and unsubscribes', () => {

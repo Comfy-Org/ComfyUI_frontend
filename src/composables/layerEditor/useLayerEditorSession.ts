@@ -90,7 +90,7 @@ async function defaultLoadImage(url: string): Promise<HTMLCanvasElement> {
   return canvas
 }
 
-function isTextEditingTarget(target: EventTarget | null): boolean {
+export function isTextEditingTarget(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null
   const tag = el?.tagName
   return tag === 'INPUT' || tag === 'TEXTAREA' || Boolean(el?.isContentEditable)

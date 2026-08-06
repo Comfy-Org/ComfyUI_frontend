@@ -24,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -49,13 +50,15 @@ import {
   getCompositorInputsFingerprint,
   getCompositorLayers
 } from '@/composables/compositor/useCompositorLayers'
-import { useLayerEditorSession } from '@/composables/layerEditor/useLayerEditorSession'
+import {
+  isTextEditingTarget,
+  useLayerEditorSession
+} from '@/composables/layerEditor/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { ChangeTracker } from '@/scripts/changeTracker'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const { node, mode = 'images' } = defineProps<{
@@ -65,10 +68,13 @@ const { node, mode = 'images' } = defineProps<{
 
 const { t } = useI18n()
 const session = useLayerEditorSession()
+const changeTracker =
+  mode === 'compositor'
+    ? useWorkflowStore().activeWorkflow?.changeTracker
+    : undefined
 
-let layersLoaded = false
 let autoSave: { stop(): void } | null = null
-let changeTracker: ChangeTracker | undefined
+let closed = false
 
 function layerName(url: string, index: number): string {
   try {
@@ -82,8 +88,21 @@ function layerName(url: string, index: number): string {
   return t('layerEditor.layerN', { n: index + 1 })
 }
 
+useEventListener(document, 'keydown', (e: KeyboardEvent) => {
+  if (e.defaultPrevented || isTextEditingTarget(e.target)) return
+  if (!(e.ctrlKey || e.metaKey)) return
+  if (e.code === 'KeyZ') {
+    e.preventDefault()
+    if (e.shiftKey) session.redo()
+    else session.undo()
+  } else if (e.code === 'KeyY') {
+    e.preventDefault()
+    session.redo()
+  }
+})
+
 function onRestore(): void {
-  if (session.editor.floating()) session.editor.cancelFloating()
+  session.editor.cancelFloating()
   while (session.editor.history.canUndo()) session.undo()
 }
 
@@ -111,30 +130,43 @@ async function loadCompositorLayers(): Promise<void> {
   }
 }
 
+function sessionHasEdits(): boolean {
+  return (
+    Boolean(session.editor.floating()) ||
+    session.editor.history.canUndo() ||
+    session.editor.history.canRedo()
+  )
+}
+
 function finalizeCompositorSession(): void {
-  autoSave?.stop()
-  if (layersLoaded) {
-    if (session.editor.floating()) session.editor.anchorFloating()
-    if (!saveCompositorLayerState(session, node)) {
-      useToastStore().add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('compositor.saveFailed')
-      })
+  try {
+    autoSave?.stop()
+    if (autoSave && sessionHasEdits()) {
+      session.editor.anchorFloating()
+      if (!saveCompositorLayerState(session, node)) {
+        useToastStore().add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('compositor.saveFailed')
+        })
+      }
+      void saveCompositorPreview(session, node)
+      node.graph?.setDirtyCanvas(true)
     }
-    void saveCompositorPreview(session, node)
+  } finally {
+    changeTracker?.afterChange()
   }
-  changeTracker?.afterChange()
 }
 
 onMounted(() => {
   if (mode === 'compositor') {
-    changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
     changeTracker?.beforeChange()
-    void loadCompositorLayers().then(() => {
-      layersLoaded = true
-      autoSave = useCompositorAutoSave(session, node)
-    })
+    loadCompositorLayers()
+      .then(() => {
+        if (closed) return
+        autoSave = useCompositorAutoSave(session, node)
+      })
+      .catch((err) => console.error('[Compositor] Loading layers failed:', err))
     return
   }
   const urls = useNodeOutputStore().getNodeImageUrls(node) ?? []
@@ -143,6 +175,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  closed = true
   if (mode === 'compositor') finalizeCompositorSession()
   session.dispose()
 })

@@ -29,10 +29,15 @@ const {
       anchorFloating: vi.fn(),
       cancelFloating: vi.fn(),
       floating: vi.fn<() => unknown>(() => null),
-      history: { canUndo: vi.fn(() => false), clear: vi.fn() }
+      history: {
+        canRedo: vi.fn(() => false),
+        canUndo: vi.fn(() => false),
+        clear: vi.fn()
+      }
     },
     imageLayers: { value: [] },
     loadImages: vi.fn().mockResolvedValue(undefined),
+    redo: vi.fn(),
     undo: vi.fn()
   }
 }))
@@ -45,6 +50,8 @@ vi.mock('@/components/ui/dialog/DialogClose.vue', () => ({
 }))
 
 vi.mock('@/composables/layerEditor/useLayerEditorSession', () => ({
+  isTextEditingTarget: (target: EventTarget | null) =>
+    (target as HTMLElement | null)?.tagName === 'INPUT',
   useLayerEditorSession: () => session
 }))
 vi.mock('@/composables/compositor/compositorSave', () => ({
@@ -119,10 +126,18 @@ function findRestoreButton() {
   })
 }
 
+async function waitForAutoSaveStart() {
+  await vi.waitFor(() => expect(useCompositorAutoSave).toHaveBeenCalled())
+}
+
 describe('LayerEditorContent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     session.canUndo.value = false
+    session.loadImages.mockResolvedValue(undefined)
+    session.editor.floating.mockImplementation(() => null)
+    session.editor.history.canUndo.mockImplementation(() => false)
+    session.editor.history.canRedo.mockImplementation(() => false)
   })
 
   it('places Restore and Close in the header without Save/Cancel', async () => {
@@ -152,22 +167,62 @@ describe('LayerEditorContent', () => {
 
     await user.click(await findRestoreButton())
 
+    expect(session.editor.cancelFloating).toHaveBeenCalled()
     expect(session.undo).toHaveBeenCalledTimes(2)
-    expect(session.editor.cancelFloating).not.toHaveBeenCalled()
   })
 
-  it('auto-saves the session and persists on close', async () => {
+  it('handles undo/redo shortcuts wherever focus is in the dialog', async () => {
+    const user = userEvent.setup()
+    renderEditor('compositor')
+    await waitForAutoSaveStart()
+
+    await user.keyboard('{Control>}z{/Control}')
+    expect(session.undo).toHaveBeenCalledTimes(1)
+
+    await user.keyboard('{Control>}{Shift>}z{/Shift}{/Control}')
+    expect(session.redo).toHaveBeenCalledTimes(1)
+  })
+
+  it('persists edits and closes the change transaction on unmount', async () => {
     const { unmount } = renderEditor('compositor')
     expect(beforeChange).toHaveBeenCalledTimes(1)
-    await vi.waitFor(() => expect(useCompositorAutoSave).toHaveBeenCalled())
+    await waitForAutoSaveStart()
+    session.editor.history.canUndo.mockReturnValue(true)
 
     unmount()
 
     expect(autoSaveStop).toHaveBeenCalledTimes(1)
+    expect(session.editor.anchorFloating).toHaveBeenCalledTimes(1)
     expect(saveLayerState).toHaveBeenCalledTimes(1)
     expect(savePreview).toHaveBeenCalledTimes(1)
     expect(afterChange).toHaveBeenCalledTimes(1)
     expect(session.dispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips the final save when the session has no edits', async () => {
+    const { unmount } = renderEditor('compositor')
+    await waitForAutoSaveStart()
+
+    unmount()
+
+    expect(saveLayerState).not.toHaveBeenCalled()
+    expect(savePreview).not.toHaveBeenCalled()
+    expect(afterChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not start auto-save when closed while layers are loading', async () => {
+    let resolveLoad!: () => void
+    session.loadImages.mockImplementationOnce(
+      () => new Promise<void>((resolve) => (resolveLoad = resolve))
+    )
+    const { unmount } = renderEditor('compositor')
+
+    unmount()
+    resolveLoad()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(useCompositorAutoSave).not.toHaveBeenCalled()
+    expect(afterChange).toHaveBeenCalledTimes(1)
   })
 
   it('skips persistence entirely in images mode', () => {

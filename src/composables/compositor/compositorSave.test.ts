@@ -56,8 +56,7 @@ function makeNode() {
   const node = {
     id: toNodeId(7),
     widgets: [compositorWidget],
-    widgets_values: [{}],
-    graph: { setDirtyCanvas: vi.fn() }
+    widgets_values: [{}]
   } as unknown as LGraphNode
   return { node, compositorWidget }
 }
@@ -91,8 +90,6 @@ describe('saveCompositorLayerState', () => {
       flipH: true,
       flipV: false
     })
-
-    expect(node.graph?.setDirtyCanvas).toHaveBeenCalled()
   })
 
   it('embeds the cached inputs fingerprint into the saved state', () => {

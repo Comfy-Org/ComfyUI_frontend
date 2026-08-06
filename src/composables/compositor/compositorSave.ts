@@ -7,20 +7,23 @@ import {
 import type { SceneNode } from '@/core/layerEditor/engine/node'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
-export interface CompositorSaveSession {
+export interface CompositorLayerStateSession {
+  canvasSize: { value: { w: number; h: number } }
+  layers: { value: SceneNode[] }
+  layerFlips(id: string): { h: boolean; v: boolean }
+}
+
+export interface CompositorPreviewSession {
   editor: {
     render(): void
   }
   compositor: {
     toBlob(): Promise<Blob>
   }
-  canvasSize: { value: { w: number; h: number } }
-  layers: { value: SceneNode[] }
-  layerFlips(id: string): { h: boolean; v: boolean }
 }
 
 export function saveCompositorLayerState(
-  session: CompositorSaveSession,
+  session: CompositorLayerStateSession,
   node: LGraphNode
 ): boolean {
   try {
@@ -30,8 +33,7 @@ export function saveCompositorLayerState(
       session.layerFlips,
       getCompositorInputsFingerprint(node.id)
     )
-    setCompositorWidgetValue(node, { ...layerState })
-    node.graph?.setDirtyCanvas(true)
+    setCompositorWidgetValue(node, layerState)
     return true
   } catch (err) {
     console.error('[Compositor] Saving layer state failed:', err)
@@ -40,7 +42,7 @@ export function saveCompositorLayerState(
 }
 
 export async function saveCompositorPreview(
-  session: CompositorSaveSession,
+  session: CompositorPreviewSession,
   node: LGraphNode
 ): Promise<void> {
   try {
