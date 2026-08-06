@@ -60,6 +60,7 @@ import { basename, dirname, join, relative } from 'node:path'
 import { z } from 'zod'
 
 import { convert } from '../../src/workbench/extensions/magicPatch/conversion/convert'
+import { detectLegacyUsage } from '../../src/workbench/extensions/magicPatch/conversion/legacySurface'
 import { RULES, RULE_CATALOG_VERSION } from '../../src/workbench/extensions/magicPatch/conversion/rules'
 import { toUnifiedDiff } from '../../src/workbench/extensions/magicPatch/conversion/edits'
 import { runConformance } from '../../src/workbench/extensions/magicPatch/verify/conformance'
@@ -193,13 +194,21 @@ function detect(corpus) {
       readable.push(path)
 
       const result = convert(source)
-      // Only escalations need an agent — whatever the rules applied is already
-      // done, deterministically and for free.
-      if (!result.escalated.length) continue
+      const legacy = detectLegacyUsage(source)
+
+      // Any file still on the old surface is in scope, not just the ones
+      // matching a rule. The catalog describes five patterns; gating on it
+      // left most of every pack unexamined — 115 of comfy-mtb's 119 files, 66
+      // of rgthree's 74 — and unexamined is not the same as clean.
+      if (!result.escalated.length && !legacy.usesLegacyApi) continue
 
       files.push({
         path,
         name: relative(root, path),
+        surfaces: legacy.surfaces,
+        // An escalation means this file is incompatible with ECS, which is
+        // what makes its pack worth selecting at all.
+        incompatible: result.escalated.length > 0,
         findings: result.escalated.map((m) => ({
           rule: m.rule,
           line: m.line,
@@ -210,7 +219,15 @@ function detect(corpus) {
       })
     }
 
-    if (files.length) packs.push({ pack, root, files, readable })
+    // Two different questions, deliberately.
+    //
+    // *Selection* is per pack and asks whether anything in it is incompatible
+    // with ECS — that is what makes the pack worth the cost of converting.
+    // *Scope* is per file and asks whether it still touches the old API: once
+    // a pack is selected it is converted whole, because a pack half on the new
+    // surface is a pack that still pins the old one in place.
+    const incompatible = files.filter((f) => f.incompatible)
+    if (incompatible.length) packs.push({ pack, root, files, readable })
   }
   return packs
 }
@@ -368,7 +385,7 @@ An accurate punt beats an attempted conversion. Name the specific construct in
 // Per-pack session
 // ---------------------------------------------------------------------------
 
-function createSession(work) {
+function createSession(work, tracePath) {
   const state = {
     drafts: new Map(),
     tests: new Map(),
@@ -814,7 +831,7 @@ async function convertPackWithRetry(work, tracePath, attempt = 1) {
 }
 
 async function convertPack(work, tracePath) {
-  const { state, server } = createSession(work)
+  const { state, server } = createSession(work, tracePath)
   const toolNames = [
     'list_files',
     'read_file',
