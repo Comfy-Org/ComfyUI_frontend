@@ -921,6 +921,19 @@ const clearAllFilters = () => {
 
 type FilterFacetKey = 'category' | 'model' | 'task' | 'runsOn'
 
+// Filter options
+const modelOptions = computed(() =>
+  availableModels.value.map((model) => ({ name: model, value: model }))
+)
+
+const useCaseOptions = computed(() =>
+  availableUseCases.value.map((useCase) => ({ name: useCase, value: useCase }))
+)
+
+const runsOnOptions = computed(() =>
+  availableRunsOn.value.map((runsOn) => ({ name: runsOn, value: runsOn }))
+)
+
 /**
  * One descriptor per facet, consumed by both the drill-down menu and the
  * applied-filter pills so the two can never disagree about what is on.
@@ -1011,7 +1024,10 @@ const appliedFilters = computed<AppliedFilter[]>(() =>
  * than fixed: "Image" and "Character Reference" are wildly different widths,
  * so a constant either wastes the row or overflows it.
  */
-const restingVisibleCount = ref(appliedFilters.value.length)
+// Starts unbounded so the first paint shows every chip; reading
+// appliedFilters here instead would evaluate the facet chain during setup,
+// before the option lists below it exist.
+const restingVisibleCount = ref(Number.POSITIVE_INFINITY)
 
 const restingHiddenCount = computed(() =>
   Math.max(0, appliedFilters.value.length - restingVisibleCount.value)
@@ -1048,19 +1064,6 @@ const cardRefs = ref<HTMLElement[]>([])
 
 // Force re-render key for templates when sorting changes
 const templateListKey = ref(0)
-
-// Filter options
-const modelOptions = computed(() =>
-  availableModels.value.map((model) => ({ name: model, value: model }))
-)
-
-const useCaseOptions = computed(() =>
-  availableUseCases.value.map((useCase) => ({ name: useCase, value: useCase }))
-)
-
-const runsOnOptions = computed(() =>
-  availableRunsOn.value.map((runsOn) => ({ name: runsOn, value: runsOn }))
-)
 
 const sortOptions = computed(() => [
   ...(hasActiveQuery.value
