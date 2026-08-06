@@ -7,7 +7,7 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 
 import { createComfyApi } from './comfyApi'
 import type { Comfy } from './comfyApi'
-import { createDefRegistry } from './defsRegistry'
+import { createDefRegistry, deliverPreview } from './defsRegistry'
 import type { DefSelector } from './defsRegistry'
 
 const RAW_DEF = {
@@ -333,5 +333,33 @@ describe('defs.extend', () => {
     expect(comfy.supports('widgets.create')).toBe(true)
     expect(comfy.supports('serialization.control')).toBe(true)
     expect(() => comfy.require('defs.extend')).not.toThrow()
+  })
+})
+
+describe('preview frames', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('delivers a frame only to the type that registered for it', () => {
+    const graph = new LGraph()
+    const comfy = createComfyApi(() => graph)
+    const registry = createDefRegistry()
+    const seen: unknown[] = []
+
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) =>
+        b.onPreview((node, frame) => seen.push([node.id, frame.url]))
+      )
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    graph.add(node)
+
+    const frame = { blob: new Blob(), url: 'blob:x' }
+    deliverPreview(String(node.id), 'KSampler', frame)
+    // A frame for a type nobody registered must not fan out to everyone.
+    deliverPreview(String(node.id), 'SomethingElse', frame)
+
+    expect(seen).toEqual([[String(node.id), 'blob:x']])
   })
 })
