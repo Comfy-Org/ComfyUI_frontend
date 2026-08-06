@@ -81,15 +81,17 @@ if (this.lastKnownGroupTitles !== titles) {
   rebuildUI(this)
 }
 
-// after
-graph.onChange((ev) => {
-  if (ev.has('group-state')) rebuildUI(node)
-})
+// after — for the cases the API reaches
+node.widgets.get('mode').on('change', () => rebuildUI(node))
 ```
 
-Pick the **narrowest** event. `node.onChange` fires only for that node;
-`graph.onChange` is structural. Reaching for `graph.onChange` and filtering
-one `ChangeKind` is a signal the scoped event is missing — worth reporting.
+Pick the **narrowest** event that exists. `widget.on('change')` covers polling
+for a widget's own value, and `b.onConnectionsChanged` covers polling for
+wiring.
+
+**Polling for graph structure — group titles, node counts, anything outside the
+node — is a gap.** There is no `graph.onChange`; do not emit one. Punt the file
+and name the event you needed.
 
 ## 4. DOM visibility sync — 37 packs
 

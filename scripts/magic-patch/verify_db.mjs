@@ -8,7 +8,7 @@
  * in observable behaviour is reported. It is the difference between "the
  * conversion looked right" and "the pack still works".
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -42,6 +42,23 @@ function entryFiles(dir, depth = 0) {
   })
 }
 
+/**
+ * Validation tiers, weakest first.
+ *
+ * A conversion that only passed static checks and one that was executed and
+ * compared are not the same artifact, and shipping them under one label would
+ * mean shipping the first as though it were the second. The tier is recorded on
+ * the entry so `compile_db` can refuse to ship anything below `harness`.
+ */
+export const VALIDATION = {
+  /** Written and statically checked. Never executed. Do not ship. */
+  none: 'none',
+  /** Loaded before and after; types, construction and wire compared. */
+  harness: 'harness',
+  /** A human drove it in a real ComfyUI. Recorded by hand. */
+  manual: 'manual'
+}
+
 /** Groups DB entries by pack, since verification is a whole-pack operation. */
 function byPack(dbDir, corpus) {
   const packs = new Map()
@@ -61,14 +78,35 @@ function byPack(dbDir, corpus) {
     // `diff` names a sibling file rather than carrying the text inline.
     const diff = readFileSync(join(dirname(file), entry.diff), 'utf8')
     existing.drafts[relative] = applyUnifiedDiff(original, diff)
+    existing.entryPaths = existing.entryPaths ?? []
+    existing.entryPaths.push(file)
     packs.set(packRoot, existing)
   }
   return [...packs.values()]
 }
 
+/** Stamps the outcome onto every entry that took part in the run. */
+function recordValidation(entryPaths, result) {
+  for (const path of entryPaths ?? []) {
+    let entry
+    try {
+      entry = JSON.parse(readFileSync(path, 'utf8'))
+    } catch {
+      continue
+    }
+    entry.validation = result.regressed ? VALIDATION.none : VALIDATION.harness
+    entry.validatedAgainst = {
+      types: result.types?.length ?? 0,
+      problems: result.problems ?? [],
+      wireChanged: result.wireChanged ?? []
+    }
+    writeFileSync(path, JSON.stringify(entry, null, 2) + '\n')
+  }
+}
+
 export async function verifyDb(dbDir, corpus) {
   const results = []
-  for (const { pack, packRoot, drafts } of byPack(dbDir, corpus)) {
+  for (const { pack, packRoot, drafts, entryPaths } of byPack(dbDir, corpus)) {
     // Every readable JS file, so a break that spans files is visible.
     const entries = []
     const walk = (dir, prefix = '') => {
@@ -82,8 +120,8 @@ export async function verifyDb(dbDir, corpus) {
       }
     }
     walk(packRoot)
-    results.push(
-      await verifyPack({ pack, packRoot, entries, drafts }).catch((error) => ({
+    const outcome = await verifyPack({ pack, packRoot, entries, drafts }).catch(
+      (error) => ({
         pack,
         regressed: true,
         problems: [`verification failed: ${error?.message ?? error}`],
@@ -92,8 +130,10 @@ export async function verifyDb(dbDir, corpus) {
         newErrors: [],
         before: {},
         after: {}
-      }))
+      })
     )
+    recordValidation(entryPaths, outcome)
+    results.push(outcome)
   }
   return results
 }
