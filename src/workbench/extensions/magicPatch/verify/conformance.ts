@@ -82,6 +82,13 @@ const BUILTIN_MEMBERS: ReadonlySet<string> = new Set(
   ])
 )
 
+/**
+ * A mutating call reached through `?.`, so a failed lookup silently skips it.
+ * Reads are fine — `?.getValue()` yielding undefined is visible to the caller.
+ */
+const SILENT_WRITE =
+  /\?\.[A-Za-z_]\w*\([^)]*\)?\s*\??\.\s*(?:set|add|move|reorder|connect|modify)[A-Z]\w*\(|\?\.(?:set|add|move|reorder|connect|modify)[A-Z]\w*\(/g
+
 /** Prototype assignment — `X.prototype.onExecuted =` and friends. */
 const PROTOTYPE_PATCH = /\.prototype\.([A-Za-z_]\w*)\s*=/g
 
@@ -225,6 +232,37 @@ const checks: readonly Check[] = [
             'no-unknown-api-members',
             'passed',
             'No net-new members outside the API.'
+          )
+    }
+  },
+  {
+    id: 'no-silently-dropped-writes',
+    description:
+      'A write must not be able to vanish because a handle lookup returned nothing.',
+    run: (ctx) => {
+      // kjnodes' hideWidgetForGood was converted to
+      //   comfy.graph.node(String(node.id))?.widgets.get(name)?.setHidden(true)
+      // which does nothing at all when the node has not joined a graph yet —
+      // exactly when that helper is called. The original mutated the widget
+      // directly and always worked. Optional chaining turns a failed lookup
+      // into silence, and the pack cannot tell.
+      const dropped = [...ctx.converted.matchAll(SILENT_WRITE)].map((m) =>
+        m[0].trim()
+      )
+      return dropped.length
+        ? result(
+            'no-silently-dropped-writes',
+            'failed',
+            `${dropped.length} write(s) behind an optional chain: ` +
+              `${dropped.slice(0, 2).join(' / ')}. ` +
+              `Use the handle you were given rather than looking one up, or ` +
+              `check the lookup and fail loudly — a write that evaporates is a ` +
+              `bug the pack cannot see.`
+          )
+        : result(
+            'no-silently-dropped-writes',
+            'passed',
+            'No writes behind an optional chain.'
           )
     }
   },

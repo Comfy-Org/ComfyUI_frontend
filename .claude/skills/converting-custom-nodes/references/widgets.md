@@ -206,6 +206,30 @@ throw catches the common bug of appending a duplicate every execution.
 is the entire thing the conversion exists to end. If the widget it needs has no
 `add` equivalent, that is an `api-gap` punt, not a partial conversion.
 
+## Never let a write vanish
+
+A handle lookup can fail. Reached through `?.`, a _write_ behind it does
+nothing at all and the pack cannot tell:
+
+```js
+// ✗ silently does nothing when the node has not joined a graph yet — which is
+//   exactly when a helper like this is usually called
+comfy.graph.node(String(node.id))?.widgets.get(name)?.setHidden(true)
+
+// ✓ use the handle you were given
+function hideForGood(node, name) {
+  node.widgets.get(name)?.setHidden(true) // reads may be optional
+}
+```
+
+`comfy.graph.node(id)` resolves through the graph, so it returns nothing for a
+node that has not been added yet. If you find yourself looking a node up by id
+inside a helper, the helper should be taking a `NodeHandle` instead — its
+caller has one.
+
+Optional chaining on a _read_ is fine: `?.getValue()` returning undefined is
+visible. On a write it is a bug that never reports itself.
+
 ## Reordering
 
 ```js

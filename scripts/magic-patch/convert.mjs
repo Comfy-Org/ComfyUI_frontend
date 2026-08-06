@@ -45,6 +45,7 @@ import { createHash } from 'node:crypto'
 import {
   appendFileSync,
   existsSync,
+  rmSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -673,7 +674,32 @@ function packCommit(root) {
   return 'x' + createHash('sha256').update(names).digest('hex').slice(0, 6)
 }
 
+/** Every stored file for this pack/file, whatever commit directory it is under. */
+function previousEntries(db, pack, file) {
+  const packDir = join(db, pack)
+  let commits = []
+  try {
+    commits = readdirSync(packDir)
+  } catch {
+    return []
+  }
+  return commits.flatMap((commit) =>
+    ['.json', '.diff']
+      .map((extension) => join(packDir, commit, `${file}${extension}`))
+      .filter((path) => existsSync(path))
+  )
+}
+
 function writeDbEntry(db, work, commit, outcome, source) {
+  // A re-run supersedes whatever was there before. Without this a corrected
+  // conversion sits alongside the version it replaces — and if the pack's
+  // fingerprint changed, under a different directory entirely — so the database
+  // accumulates entries nobody meant to keep and compile_db reports a conflict
+  // between a patch and its own successor.
+  for (const stale of previousEntries(db, work.pack, outcome.file)) {
+    rmSync(stale, { force: true })
+  }
+
   const target = join(db, work.pack, commit, `${outcome.file}.json`)
   mkdirSync(dirname(target), { recursive: true })
 
