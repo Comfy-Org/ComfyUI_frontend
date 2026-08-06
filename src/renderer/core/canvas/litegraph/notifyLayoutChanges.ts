@@ -13,13 +13,12 @@ export function notifyLayoutChanges(canvas: LGraphCanvas): () => void {
       return
     }
 
-    if (change.source !== LayoutSource.Canvas) {
-      for (const nodeId of change.sizeChangedNodeIds) {
-        const node = graph.getNodeById(nodeId)
-        node?.onResize?.(node.size)
-      }
-    }
-
     canvas.setDirty(true, true)
+    if (change.source === LayoutSource.Canvas) return
+
+    for (const nodeId of change.sizeChangedNodeIds) {
+      const node = graph.getNodeById(nodeId)
+      node?.onResize?.(node.size)
+    }
   })
 }
