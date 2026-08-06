@@ -88,51 +88,6 @@
       }
     ]
   },
-  "edits": [
-    {
-      "line": 2,
-      "op": "insert",
-      "text": "const { comfy } = window;"
-    },
-    {
-      "line": 32,
-      "op": "delete"
-    },
-    {
-      "line": 33,
-      "op": "delete"
-    },
-    {
-      "line": 34,
-      "op": "delete"
-    },
-    {
-      "line": 35,
-      "op": "delete"
-    },
-    {
-      "line": 36,
-      "op": "delete"
-    },
-    {
-      "line": 37,
-      "op": "replace",
-      "text": "export function hideWidgetForGood(node, widget) {"
-    },
-    {
-      "line": 38,
-      "op": "insert",
-      "text": "  comfy.graph.node(String(node.id))?.widgets.get(widget.name)?.setHidden(true)"
-    },
-    {
-      "line": 40,
-      "op": "replace",
-      "text": "      hideWidgetForGood(node, w)"
-    },
-    {
-      "line": 273,
-      "op": "delete"
-    }
-  ],
-  "test": "// magic-patch — comfyui-kjnodes / web/js/utility.js\n// rule: converted-widget-protocol (line 37)\n//\n// Run this file against BOTH the original and the converted source.\n//\n//   equivalence  must pass on both — the conversion changed no behaviour\n//   fix          must FAIL on the original and PASS on the converted source\n//\n// `hideWidgetForGood` hid a widget by overwriting `widget.type` with\n// \"converted-widget\" and stubbing `computeSize` to [0, -4].\n//\n// The serialization coupling the reference warns about is ABSENT here. The\n// easy-use variant of this helper installs a `serializeValue` that returns\n// undefined unless the matching input is linked; this pack's variant saves\n// `origSerializeValue` and never overwrites `serializeValue`. And\n// `LGraphNode.serialize` skips a widget only on `serialize === false` — it\n// never consults `type`. So hiding was presentation-only before, `hidden` is\n// presentation-only after, and `widgets_values` is untouched either way. That\n// is what the equivalence half pins.\nimport { createPinia, setActivePinia } from 'pinia'\nimport { beforeAll, beforeEach, describe, expect, it } from 'vitest'\n\nimport { LGraph } from '@/lib/litegraph/src/LGraph'\nimport { LGraphNode } from '@/lib/litegraph/src/LGraphNode'\nimport type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'\nimport { resetComfyApi, useComfyApi } from '@/platform/nodeApi/comfyApi'\n\n/** The file under test: the original for the red run, the converted for green. */\nconst UNDER_TEST =\n  process.env.KJNODES_UTILITY ?? 'ComfyUI-KJNodes-HEAD/web/js/utility.js'\n\nlet graph: LGraph\nlet node: LGraphNode\nlet hideWidgetForGood: (node: LGraphNode, widget: IBaseWidget) => void\n\nbeforeAll(async () => {\n  setActivePinia(createPinia())\n  resetComfyApi()\n  // The module reads `window.comfyAPI.app` at load and the converted source\n  // destructures `window.comfy` at module scope, so both must exist before the\n  // import — and the API instance must keep resolving whichever graph a test\n  // builds, hence the getter closing over `graph`.\n  window.comfyAPI = { app: { app: {} } }\n  window.comfy = useComfyApi(() => graph)\n  ;({ hideWidgetForGood } = (await import(/* @vite-ignore */ UNDER_TEST)) as {\n    hideWidgetForGood: (node: LGraphNode, widget: IBaseWidget) => void\n  })\n})\n\nbeforeEach(() => {\n  graph = new LGraph()\n  node = new LGraphNode('Sampler')\n  graph.add(node)\n  node.serialize_widgets = true\n  node.addWidget('number', 'seed', 123, () => {})\n  node.addWidget('combo', 'control_after_generate', 'randomize', () => {}, {\n    values: ['fixed', 'randomize']\n  })\n  // seed + its control widget: the linkedWidgets pair the helper recurses over.\n  node.widgets![0].linkedWidgets = [node.widgets![1]]\n})\n\ndescribe('comfyui-kjnodes hideWidgetForGood', () => {\n  describe('equivalence — must pass before and after', () => {\n    it('leaves the widget values untouched', () => {\n      hideWidgetForGood(node, node.widgets![0])\n\n      expect(node.widgets![0].value).toBe(123)\n      expect(node.widgets![1].value).toBe('randomize')\n    })\n\n    it('does not change what the node serializes', () => {\n      const before = JSON.stringify(node.serialize().widgets_values)\n\n      hideWidgetForGood(node, node.widgets![0])\n\n      expect(before).toBe(JSON.stringify([123, 'randomize']))\n      expect(JSON.stringify(node.serialize().widgets_values)).toBe(before)\n    })\n\n    it('keeps widget array membership and order', () => {\n      hideWidgetForGood(node, node.widgets![0])\n\n      expect(node.widgets!.map((w) => w.name)).toEqual([\n        'seed',\n        'control_after_generate'\n      ])\n    })\n  })\n\n  describe('fix — must fail before, pass after', () => {\n    it('makes the widget invisible', () => {\n      hideWidgetForGood(node, node.widgets![0])\n\n      // The old hack renamed the type; nothing in litegraph reads\n      // 'converted-widget', so the widget stayed visible and full-height.\n      expect(node.isWidgetVisible(node.widgets![0])).toBe(false)\n    })\n\n    it('hides linked widgets too', () => {\n      hideWidgetForGood(node, node.widgets![0])\n\n      expect(node.isWidgetVisible(node.widgets![1])).toBe(false)\n    })\n\n    it('leaves widget type identity intact', () => {\n      hideWidgetForGood(node, node.widgets![0])\n\n      expect(node.widgets![0].type).toBe('number')\n      expect(node.widgets![1].type).toBe('combo')\n    })\n  })\n})\n"
+  "test": "// magic-patch — comfyui-kjnodes / web/js/utility.js\n// rule: converted-widget-protocol (line 37)\n//\n// Run this file against BOTH the original and the converted source.\n//\n//   equivalence  must pass on both — the conversion changed no behaviour\n//   fix          must FAIL on the original and PASS on the converted source\n//\n// `hideWidgetForGood` hid a widget by overwriting `widget.type` with\n// \"converted-widget\" and stubbing `computeSize` to [0, -4].\n//\n// The serialization coupling the reference warns about is ABSENT here. The\n// easy-use variant of this helper installs a `serializeValue` that returns\n// undefined unless the matching input is linked; this pack's variant saves\n// `origSerializeValue` and never overwrites `serializeValue`. And\n// `LGraphNode.serialize` skips a widget only on `serialize === false` — it\n// never consults `type`. So hiding was presentation-only before, `hidden` is\n// presentation-only after, and `widgets_values` is untouched either way. That\n// is what the equivalence half pins.\nimport { createPinia, setActivePinia } from 'pinia'\nimport { beforeAll, beforeEach, describe, expect, it } from 'vitest'\n\nimport { LGraph } from '@/lib/litegraph/src/LGraph'\nimport { LGraphNode } from '@/lib/litegraph/src/LGraphNode'\nimport type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'\nimport { resetComfyApi, useComfyApi } from '@/platform/nodeApi/comfyApi'\n\n/** The file under test: the original for the red run, the converted for green. */\nconst UNDER_TEST =\n  process.env.KJNODES_UTILITY ?? 'ComfyUI-KJNodes-HEAD/web/js/utility.js'\n\nlet graph: LGraph\nlet node: LGraphNode\nlet hideWidgetForGood: (node: LGraphNode, widget: IBaseWidget) => void\n\nbeforeAll(async () => {\n  setActivePinia(createPinia())\n  resetComfyApi()\n  // The module reads `window.comfyAPI.app` at load and the converted source\n  // destructures `window.comfy` at module scope, so both must exist before the\n  // import — and the API instance must keep resolving whichever graph a test\n  // builds, hence the getter closing over `graph`.\n  window.comfyAPI = { app: { app: {} } }\n  window.comfy = useComfyApi(() => graph)\n  ;({ hideWidgetForGood } = (await import(/* @vite-ignore */ UNDER_TEST)) as {\n    hideWidgetForGood: (node: LGraphNode, widget: IBaseWidget) => void\n  })\n})\n\nbeforeEach(() => {\n  graph = new LGraph()\n  node = new LGraphNode('Sampler')\n  graph.add(node)\n  node.serialize_widgets = true\n  node.addWidget('number', 'seed', 123, () => {})\n  node.addWidget('combo', 'control_after_generate', 'randomize', () => {}, {\n    values: ['fixed', 'randomize']\n  })\n  // seed + its control widget: the linkedWidgets pair the helper recurses over.\n  node.widgets![0].linkedWidgets = [node.widgets![1]]\n})\n\ndescribe('comfyui-kjnodes hideWidgetForGood', () => {\n  describe('equivalence — must pass before and after', () => {\n    it('leaves the widget values untouched', () => {\n      hideWidgetForGood(node, node.widgets![0])\n\n      expect(node.widgets![0].value).toBe(123)\n      expect(node.widgets![1].value).toBe('randomize')\n    })\n\n    it('does not change what the node serializes', () => {\n      const before = JSON.stringify(node.serialize().widgets_values)\n\n      hideWidgetForGood(node, node.widgets![0])\n\n      expect(before).toBe(JSON.stringify([123, 'randomize']))\n      expect(JSON.stringify(node.serialize().widgets_values)).toBe(before)\n    })\n\n    it('keeps widget array membership and order', () => {\n      hideWidgetForGood(node, node.widgets![0])\n\n      expect(node.widgets!.map((w) => w.name)).toEqual([\n        'seed',\n        'control_after_generate'\n      ])\n    })\n  })\n\n  describe('fix — must fail before, pass after', () => {\n    it('makes the widget invisible', () => {\n      hideWidgetForGood(node, node.widgets![0])\n\n      // The old hack renamed the type; nothing in litegraph reads\n      // 'converted-widget', so the widget stayed visible and full-height.\n      expect(node.isWidgetVisible(node.widgets![0])).toBe(false)\n    })\n\n    it('hides linked widgets too', () => {\n      hideWidgetForGood(node, node.widgets![0])\n\n      expect(node.isWidgetVisible(node.widgets![1])).toBe(false)\n    })\n\n    it('leaves widget type identity intact', () => {\n      hideWidgetForGood(node, node.widgets![0])\n\n      expect(node.widgets![0].type).toBe('number')\n      expect(node.widgets![1].type).toBe('combo')\n    })\n  })\n})\n",
+  "diff": "utility.js.diff"
 }

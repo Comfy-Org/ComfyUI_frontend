@@ -51,12 +51,12 @@ import {
   statSync,
   writeFileSync
 } from 'node:fs'
-import { dirname, join, relative } from 'node:path'
+import { basename, dirname, join, relative } from 'node:path'
 import { z } from 'zod'
 
 import { convert } from '../../src/workbench/extensions/magicPatch/conversion/convert'
 import { RULES, RULE_CATALOG_VERSION } from '../../src/workbench/extensions/magicPatch/conversion/rules'
-import { diffToEdits } from '../../src/workbench/extensions/magicPatch/conversion/edits'
+import { toUnifiedDiff } from '../../src/workbench/extensions/magicPatch/conversion/edits'
 import { runConformance } from '../../src/workbench/extensions/magicPatch/verify/conformance'
 import { verifyPack } from './harness/verifyPack.mjs'
 
@@ -665,6 +665,21 @@ function packCommit(root) {
 function writeDbEntry(db, work, commit, outcome, source) {
   const target = join(db, work.pack, commit, `${outcome.file}.json`)
   mkdirSync(dirname(target), { recursive: true })
+
+  // The diff is its own file rather than a field. Embedded in JSON it is one
+  // escaped line that no tool will render and no reviewer will read; as a
+  // sibling `.diff` it is syntax-highlighted everywhere, shows up properly in
+  // a pull request, and feeds `patch(1)` directly.
+  const diffPath = `${target.replace(/\.json$/, '')}.diff`
+  writeFileSync(
+    diffPath,
+    toUnifiedDiff(
+      readFileSync(outcome.path, 'utf8'),
+      outcome.converted,
+      outcome.file
+    )
+  )
+
   writeFileSync(
     target,
     JSON.stringify(
@@ -685,10 +700,8 @@ function writeDbEntry(db, work, commit, outcome, source) {
         ].sort(),
         summary: outcome.detail,
         verified: outcome.verified ?? {},
-        // Recovered as a minimal diff rather than stored as a whole file, so
-        // the artifact is not a copy of someone else's source and a reviewer
-        // sees the conversion instead of a reformatting.
-        edits: diffToEdits(readFileSync(outcome.path, 'utf8'), outcome.converted),
+        /** Sibling file holding the conversion as a unified diff. */
+        diff: basename(diffPath),
         test: outcome.test ?? null
       },
       null,

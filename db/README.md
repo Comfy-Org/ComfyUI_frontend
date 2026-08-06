@@ -3,15 +3,22 @@
 Generated conversions, one file per converted source file.
 
 ```
-db/<pack>/<commit7>/<path/to/file.js>.json
+db/<pack>/<commit7>/<path/to/file.js>.json   ← metadata
+db/<pack>/<commit7>/<path/to/file.js>.diff   ← the conversion, unified diff
 ```
+
+The diff is its own file rather than a field. Embedded in JSON it is a single
+escaped line that no tool renders and no reviewer reads; as a sibling `.diff`
+it is highlighted everywhere, shows up properly in a pull request, and feeds
+`patch(1)` directly. `compile_db.mjs` inlines it when building the artifact,
+because the client wants one file rather than a directory.
 
 Organised for humans and git: a reviewer asking "what did we do to rgthree at
 d4e5317?" gets a directory they can diff. `compile_db.mjs` inverts the index
 into the artifact the client ships, keyed by source hash — the client has only
 the bytes and no idea which pack they came from.
 
-Each entry stores **line edits, not converted files**, so the database is not a
+Entries store **the change, not the converted file**, so the database is not a
 redistribution of other people's source under whatever licence it carries.
 
 ## Entries are only valid for the exact bytes they were built from

@@ -9,10 +9,10 @@
  * conversion looked right" and "the pack still works".
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { applyEdits } from '../../src/workbench/extensions/magicPatch/conversion/edits'
+import { applyUnifiedDiff } from '../../src/workbench/extensions/magicPatch/conversion/edits'
 import { verifyPack } from './harness/verifyPack.mjs'
 
 function entryFiles(dir, depth = 0) {
@@ -35,7 +35,7 @@ function entryFiles(dir, depth = 0) {
     const path = join(dir, name)
     try {
       if (statSync(path).isDirectory()) return entryFiles(path, depth + 1)
-      return path.endsWith('.json') && !path.endsWith('ledger.jsonl') ? [path] : []
+      return path.endsWith('.json') ? [path] : []
     } catch {
       return []
     }
@@ -47,7 +47,7 @@ function byPack(dbDir, corpus) {
   const packs = new Map()
   for (const file of entryFiles(dbDir)) {
     const entry = JSON.parse(readFileSync(file, 'utf8'))
-    if (!entry.edits || !entry.pack) continue
+    if (!entry.diff || !entry.pack) continue
     // entry.file is `<packDir>/<relative>`; the pack directory is its head.
     const [packDir, ...rest] = entry.file.split('/')
     const relative = rest.join('/')
@@ -58,7 +58,9 @@ function byPack(dbDir, corpus) {
       drafts: {}
     }
     const original = readFileSync(join(packRoot, relative), 'utf8')
-    existing.drafts[relative] = applyEdits(original, entry.edits)
+    // `diff` names a sibling file rather than carrying the text inline.
+    const diff = readFileSync(join(dirname(file), entry.diff), 'utf8')
+    existing.drafts[relative] = applyUnifiedDiff(original, diff)
     packs.set(packRoot, existing)
   }
   return [...packs.values()]
