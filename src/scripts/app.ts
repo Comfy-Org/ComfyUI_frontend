@@ -170,6 +170,7 @@ import {
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { deliverPreview } from '@/platform/nodeApi/defsRegistry'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -864,6 +865,18 @@ export class ComfyApp {
       )) {
         setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
+
+      // Hand the frame to any pack that registered through `b.onPreview`.
+      // Delivered before the url is released, and synchronously, so a listener
+      // must consume it during the call rather than retaining it.
+      const previewNode = this.graph?.getNodeById(toNodeId(displayNodeId))
+      if (previewNode?.type) {
+        deliverPreview(String(previewNode.id), previewNode.type, {
+          blob,
+          url: blobUrl
+        })
+      }
+
       releaseSharedObjectUrl(blobUrl)
     })
 
