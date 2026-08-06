@@ -31,12 +31,15 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > | ✅  | Implemented, tested, in `CAPABILITIES`                  |
 > | ⛔  | Specified only — a pack needing it is an `api-gap` punt |
 >
-> **Implemented (v1.0):** `graph.nodes`, `node.geometry`, `slots.connect`,
-> `slots.identity`, `slots.retype`, `slots.moveLinks`, `widgets.reorder`,
-> `widgets.hidden`, `widgets.create`, `defs.extend`, `serialization.control`.
+> **Implemented (v1.0):** `defs.define`, `defs.extend`, `graph.nodes`,
+> `node.geometry`, `node.onPreview`, `node.onSerialize`, `node.resolve`,
+> `node.sizeConstraints`, `serialization.control`, `slots.connect`,
+> `slots.identity`, `slots.moveLinks`, `slots.retype`, `widgets.canvas`,
+> `widgets.create`, `widgets.hidden`, `widgets.mount`, `widgets.reorder`.
 >
-> **Specified only:** §4a decorations (incl. `setSizeConstraints`), §4b chrome,
-> §4c `onChange`, `defs.define`, `graph.replaceNode`, `batch`.
+> **Specified only:** §4a declarative decorations (badges/anchors — note
+> `setSizeConstraints` and `widgets.canvas` DID ship), §4b chrome, §4c
+> `onChange`, `graph.replaceNode`, `batch`.
 
 ---
 
