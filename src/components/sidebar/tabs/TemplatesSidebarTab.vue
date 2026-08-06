@@ -152,47 +152,51 @@
         </div>
       </div>
 
-      <!-- Applied filters stay on one line with Clear always reachable. At
-           rest the row shows the first couple and a count; hovering the
-           section expands the rest, so a long filter set never pushes the
-           grid down but is still one gesture away. -->
+      <!-- Applied filters: one line at rest, and hovering the row unfolds the
+           rest downward as an overlay rather than reflowing — the grid never
+           moves under the pointer. Clear all stays in flow beside it. -->
       <div
         v-if="appliedFilters.length"
-        class="group/applied flex items-center gap-5"
+        class="group/applied relative flex h-7 items-center gap-5"
         data-testid="template-applied-filters"
       >
-        <TemplatesFilterChipRow ref="appliedRowRef" class="min-w-0 flex-1">
-          <span
-            v-for="(pill, index) in appliedFilters"
-            :key="`${pill.facetKey}:${pill.value}`"
-            :class="
-              cn(
-                'shrink-0 items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap',
-                index < restingVisibleCount
-                  ? 'inline-flex'
-                  : 'hidden group-hover/applied:inline-flex'
-              )
-            "
+        <div class="relative h-7 min-w-0 flex-1">
+          <div
+            ref="appliedRowRef"
+            class="absolute inset-x-0 top-0 flex flex-wrap items-center gap-1.5 overflow-hidden rounded-md group-hover/applied:z-20 group-hover/applied:-m-1 group-hover/applied:overflow-visible group-hover/applied:bg-base-background group-hover/applied:p-1 group-hover/applied:shadow-lg"
           >
-            <span class="max-w-32 truncate">{{ pill.label }}</span>
-            <Button
-              variant="textonly"
-              size="icon"
-              class="size-4 rounded-sm p-0"
-              :aria-label="`${$t('g.remove')}: ${pill.label}`"
-              @click="toggleFilterValue(pill.facetKey, pill.value)"
+            <span
+              v-for="(pill, index) in appliedFilters"
+              :key="`${pill.facetKey}:${pill.value}`"
+              :class="
+                cn(
+                  'shrink-0 items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap',
+                  index < restingVisibleCount
+                    ? 'inline-flex'
+                    : 'hidden group-hover/applied:inline-flex'
+                )
+              "
             >
-              <i class="icon-[lucide--x] size-3" />
-            </Button>
-          </span>
-          <span
-            v-if="restingHiddenCount > 0"
-            data-overflow-badge
-            class="shrink-0 self-center px-1 text-xs text-muted-foreground group-hover/applied:hidden"
-          >
-            +{{ restingHiddenCount }}
-          </span>
-        </TemplatesFilterChipRow>
+              <span class="max-w-32 truncate">{{ pill.label }}</span>
+              <Button
+                variant="textonly"
+                size="icon"
+                class="size-4 rounded-sm p-0"
+                :aria-label="`${$t('g.remove')}: ${pill.label}`"
+                @click="toggleFilterValue(pill.facetKey, pill.value)"
+              >
+                <i class="icon-[lucide--x] size-3" />
+              </Button>
+            </span>
+            <span
+              v-if="restingHiddenCount > 0"
+              data-overflow-badge
+              class="shrink-0 px-1 text-xs text-muted-foreground group-hover/applied:hidden"
+            >
+              +{{ restingHiddenCount }}
+            </span>
+          </div>
+        </div>
         <Button
           variant="textonly"
           class="h-6 shrink-0 px-1.5 text-xs text-muted-foreground"
@@ -593,7 +597,6 @@ import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSli
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
-import TemplatesFilterChipRow from '@/components/sidebar/tabs/TemplatesFilterChipRow.vue'
 import TemplatesFilterMenu from '@/components/sidebar/tabs/TemplatesFilterMenu.vue'
 import type { FilterMenuFacet } from '@/components/sidebar/tabs/TemplatesFilterMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -611,7 +614,6 @@ import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import type { ComponentPublicInstance } from 'vue'
 import type {
   TemplateInfo,
   TemplateTypeFilter
@@ -1030,11 +1032,10 @@ const restingHiddenCount = computed(() =>
   Math.max(0, appliedFilters.value.length - restingVisibleCount.value)
 )
 
-const appliedRowRef = ref<ComponentPublicInstance | null>(null)
+const appliedRowRef = ref<HTMLElement | null>(null)
 
 function measureVisibleChips() {
-  const row = (appliedRowRef.value?.$el as HTMLElement | undefined)
-    ?.firstElementChild
+  const row = appliedRowRef.value
   if (!row) return
   const available = row.clientWidth - OVERFLOW_BADGE_WIDTH
   let used = 0
@@ -1048,10 +1049,7 @@ function measureVisibleChips() {
   restingVisibleCount.value = Math.max(1, fits)
 }
 
-useResizeObserver(
-  () => (appliedRowRef.value?.$el as HTMLElement | undefined) ?? null,
-  measureVisibleChips
-)
+useResizeObserver(appliedRowRef, measureVisibleChips)
 watch(appliedFilters, () => void nextTick(measureVisibleChips))
 
 // UI state
