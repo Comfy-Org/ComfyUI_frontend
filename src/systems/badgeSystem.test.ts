@@ -12,7 +12,7 @@ import type { BadgeSources } from './badgeSystem'
 
 const PATCH = {
   origin: 'comfy',
-  validation: 'harness',
+  validation: 'validated',
   pack: 'kjnodes',
   sourceSha256: 'abc123'
 } as const
@@ -244,11 +244,12 @@ describe('marking a node Comfy patched', () => {
     expect(parts).not.toContain('patched')
   })
 
-  it('distinguishes a patch that was never validated', () => {
-    // compile_db refuses to ship one, so this can only mean a patch arrived by
+  it('distinguishes a patch no human has confirmed', () => {
+    // Passing the harness is not validation — it drives node lifecycle only.
+    // compile_db refuses to ship this, so its presence means a patch arrived by
     // a route that skipped the gate. Showing it as an equal would launder that.
     const rows = computeBadges(
-      sources({ patch: { ...PATCH, validation: 'none' } })
+      sources({ patch: { ...PATCH, validation: 'harness' } })
     )
 
     expect(rows).toContainEqual(
@@ -271,7 +272,7 @@ describe('marking a node Comfy patched', () => {
   it('does not qualify a user patch by how well it verified', () => {
     // Verification does not create a support path that never existed.
     const rows = computeBadges(
-      sources({ patch: { ...PATCH, origin: 'user', validation: 'manual' } })
+      sources({ patch: { ...PATCH, origin: 'user', validation: 'validated' } })
     )
 
     expect(rows).toContainEqual(

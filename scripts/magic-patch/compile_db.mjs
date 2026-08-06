@@ -66,15 +66,18 @@ function entries(dir, depth = 0) {
  * is a packaging step.
  */
 /**
- * Tiers that may ship.
+ * The only tier that may ship.
  *
- * "Patched" and "patched and known to work" are different artifacts, and an
- * entry that carries no verdict is the former. Absent evidence is not weak
- * evidence — an unstamped entry has never been executed, so it is treated as
- * `none` and refused. Shipping it would mean shipping a conversion no one has
- * ever run, under a badge that says we validated it.
+ * **Validated means a ComfyUI human says it works.** Passing `verify_db` is not
+ * that: the harness drives node lifecycle and no more, so a pack can pass it and
+ * still be visibly broken to anyone who opens the workflow. Treating `harness`
+ * as shippable would put our name on conversions nobody has looked at.
+ *
+ * An entry carrying no tier is treated as `none`. Absent evidence is not weak
+ * evidence — an unstamped entry has never been run, and the field's absence must
+ * not excuse it from the check that would have condemned it.
  */
-const SHIPPABLE = new Set(['harness', 'manual'])
+const SHIPPABLE = new Set(['validated'])
 
 export function compileDb(root, { allowUnvalidated = false } = {}) {
   const patches = {}
@@ -146,8 +149,8 @@ function collect(root, patches, problems, stats, allowUnvalidated) {
       if (!allowUnvalidated) {
         stats.skipped++
         problems.push(
-          `${path}: validation=${validation} — never executed, not shippable ` +
-            `(run verify_db, or pass --allow-unvalidated to ship anyway)`
+          `${path}: validation=${validation} — no human has confirmed this ` +
+            `works, not shippable (run verify_db, then sign_off.mjs)`
         )
         continue
       }

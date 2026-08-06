@@ -48,7 +48,11 @@ if (from === -1 || to === -1) {
   console.error(`Could not find the capability block in ${DOC}`)
   process.exit(2)
 }
-const next = doc.slice(0, from) + render(implementedCapabilities()) + '\n>\n' + doc.slice(to)
+const next =
+  doc.slice(0, from) +
+  render(implementedCapabilities()) +
+  '\n>\n' +
+  doc.slice(to)
 
 if (process.argv.includes('--check')) {
   if (next !== doc) {
@@ -58,7 +62,9 @@ if (process.argv.includes('--check')) {
     )
     process.exit(1)
   }
-  console.error(`capability list is current (${implementedCapabilities().length})`)
+  console.error(
+    `capability list is current (${implementedCapabilities().length})`
+  )
 } else {
   writeFileSync(DOC, next)
   console.error(`wrote ${implementedCapabilities().length} capabilities`)

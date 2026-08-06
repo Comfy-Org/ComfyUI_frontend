@@ -10,7 +10,13 @@
  * process would see the first image's state and report success it did not earn.
  */
 import { execFile } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { promisify } from 'node:util'
@@ -75,16 +81,23 @@ export async function verifyPack({ pack, packRoot, entries, drafts }) {
   )
   // Derived from both sources: a conversion may name a type the original only
   // reached through a variable, and the two images must be driven identically.
-  const types = [...new Set([
-    ...candidateTypes(originals),
-    ...candidateTypes(converted)
-  ])].sort()
+  const types = [
+    ...new Set([...candidateTypes(originals), ...candidateTypes(converted)])
+  ].sort()
   const category = candidateCategory([...originals, ...converted])
 
   const spec = (root) => ({ root, entries, types, category })
   const [before, after] = await Promise.all([
-    observe(spec(buildImage(packRoot, join(workspace, 'before'), {})), workspace, 'before'),
-    observe(spec(buildImage(packRoot, join(workspace, 'after'), drafts)), workspace, 'after')
+    observe(
+      spec(buildImage(packRoot, join(workspace, 'before'), {})),
+      workspace,
+      'before'
+    ),
+    observe(
+      spec(buildImage(packRoot, join(workspace, 'after'), drafts)),
+      workspace,
+      'after'
+    )
   ])
 
   const problems = []
@@ -95,7 +108,8 @@ export async function verifyPack({ pack, packRoot, entries, drafts }) {
     if (!after.registered.includes(type)) problems.push(`type lost: ${type}`)
   }
   for (const [type, ok] of Object.entries(before.constructed)) {
-    if (ok && !after.constructed[type]) problems.push(`no longer constructs: ${type}`)
+    if (ok && !after.constructed[type])
+      problems.push(`no longer constructs: ${type}`)
   }
   const wireChanged = Object.keys(before.wire)
     .filter((type) => after.wire[type] !== undefined)
@@ -103,7 +117,9 @@ export async function verifyPack({ pack, packRoot, entries, drafts }) {
 
   // Errors the conversion introduced. Ones the original already had are the
   // pack's own, and reporting them would bury the signal.
-  const newErrors = after.driveErrors.filter((e) => !before.driveErrors.includes(e))
+  const newErrors = after.driveErrors.filter(
+    (e) => !before.driveErrors.includes(e)
+  )
 
   return {
     pack,
@@ -116,6 +132,7 @@ export async function verifyPack({ pack, packRoot, entries, drafts }) {
     newErrors,
     // Deliberately not "the conversion is correct" — it is the strongest
     // statement this harness can support: nothing observable got worse.
-    regressed: problems.length > 0 || wireChanged.length > 0 || newErrors.length > 0
+    regressed:
+      problems.length > 0 || wireChanged.length > 0 || newErrors.length > 0
   }
 }
