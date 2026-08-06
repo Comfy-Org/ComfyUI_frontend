@@ -38,6 +38,7 @@ useIdleAutoplay({ pose, hue, saturation }, flowEl)
            below. -->
       <div
         class="absolute right-0 -bottom-7 z-10 h-22 w-28 rotate-2 text-[0.65rem] shadow-xl"
+        style="--hero-dot: 0.55rem"
       >
         <ColorNode v-model:hue="hue" v-model:saturation="saturation" />
       </div>
