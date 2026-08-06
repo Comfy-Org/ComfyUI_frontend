@@ -43,8 +43,11 @@ export function deriveBillingPolicyState(input: {
       return { kind: `${distribution}AndFounders` }
     case null:
       return { kind: `${distribution}AndUnknown` }
-    default:
-      return input.tier satisfies never
+    default: {
+      const unhandledTier: never = input.tier
+      void unhandledTier
+      return { kind: `${distribution}AndUnknown` }
+    }
   }
 }
 

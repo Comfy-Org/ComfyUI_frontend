@@ -61,5 +61,10 @@ export function getBillingPolicyCapabilities(
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'CloudAndTeam':
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
+    default: {
+      const unhandledState: never = state
+      void unhandledState
+      return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
+    }
   }
 }
