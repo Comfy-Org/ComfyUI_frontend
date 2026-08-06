@@ -1180,6 +1180,7 @@
     "modelsSelected": "{count} Models",
     "useCasesSelected": "{count} Use Cases",
     "runsOnSelected": "{count} Runs On",
+    "typeFilter": "Type",
     "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
     "paidTemplate": {

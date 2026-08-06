@@ -4261,6 +4261,7 @@
       "title": "Plantilla premium"
     },
     "resultsCount": "Mostrando {count} de {total} plantillas",
+    "typeFilter": "Tipo",
     "runsOnFilter": "Ejecuta en",
     "runsOnSelected": "{count} ejecuciones en",
     "searchPlaceholder": "Buscar plantillas...",

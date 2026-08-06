@@ -723,17 +723,14 @@ const generationTypeOptions = computed<SelectOption[]>(() => {
   )
 })
 
-/** The catalog's own name for the group, for the collapsed dropdown's label. */
-const generationTypeLabel = computed(() => {
-  const navItems = workflowTemplatesStore.navGroupedTemplates as (
-    | NavItemData
-    | NavGroupData
-  )[]
-  const group = navItems.find((item) => !('id' in item)) as
-    | NavGroupData
-    | undefined
-  return group?.title ?? t('templateWorkflows.category', 'Category')
-})
+/**
+ * A plain "Type": the trigger sits beside the template-type tabs, and the
+ * catalog's own "Generation Type" was long enough to crowd the row without
+ * saying more.
+ */
+const generationTypeLabel = computed(() =>
+  t('templateWorkflows.typeFilter', 'Type')
+)
 
 const selectedGenerationTypes = computed(() =>
   generationTypeOptions.value.filter((option) =>
