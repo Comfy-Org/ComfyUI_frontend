@@ -1031,6 +1031,65 @@ describe('layoutStore CRDT operations', () => {
         })
       ).toBe('applied')
     })
+
+    it('preserves an applied batch prefix and permits a subsequent operation', () => {
+      createNode()
+      const ynode = getLayoutStoreYDoc()
+        .getMap<Y.Map<unknown>>('nodes')
+        .get(`${graphId}:${nodeId}`)!
+      const error = new Error('later command failed')
+      const originalSet = ynode.set.bind(ynode)
+      const set = vi.spyOn(ynode, 'set')
+      set.mockImplementation((key, value) => {
+        if (key === 'size') throw error
+        return originalSet(key, value)
+      })
+
+      let thrown: unknown
+      try {
+        layoutStore.applyOperations([
+          {
+            ...metadata,
+            entity: 'node',
+            nodeId,
+            position: { x: 300, y: 400 },
+            type: 'moveNode'
+          },
+          {
+            ...metadata,
+            entity: 'node',
+            nodeId,
+            size: { width: 500, height: 600 },
+            type: 'resizeNode'
+          }
+        ])
+      } catch (error) {
+        thrown = error
+      }
+      set.mockRestore()
+
+      expect(thrown).toBeInstanceOf(LayoutOperationError)
+      expect(thrown).toMatchObject({
+        applied: true,
+        cause: error,
+        message: 'later command failed'
+      })
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value).toMatchObject(
+        {
+          position: { x: 300, y: 400 },
+          size: { width: 200, height: 100 }
+        }
+      )
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          size: { width: 700, height: 800 },
+          type: 'resizeNode'
+        })
+      ).toBe('applied')
+    })
   })
 
   it('notifies geometry once for one remote transaction across entity maps', () => {
