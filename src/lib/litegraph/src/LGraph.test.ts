@@ -1765,7 +1765,7 @@ describe('node layout registration', () => {
     ).toBeNull()
   })
 
-  it('restores released subgraph layouts when outer removal fails', () => {
+  it('preserves released subgraph registrations across failed removals', () => {
     const graph = new LGraph()
     const subgraph = graph.createSubgraph(createTestSubgraphData())
     const interior = new LGraphNode('interior')
@@ -1837,7 +1837,7 @@ describe('node layout registration', () => {
 
     subgraphNode.onRemoved = () => {}
     vi.spyOn(layoutStore, 'applyOperations').mockReturnValueOnce('rejected')
-    graph.remove(subgraphNode)
+    expect(() => graph.remove(subgraphNode)).not.toThrow()
 
     expect(graph.nodes).toContain(subgraphNode)
     expect(subgraphNode.graph).toBe(graph)

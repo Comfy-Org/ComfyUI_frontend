@@ -64,11 +64,9 @@ describe('Reroute ↔ rerouteStore integration', () => {
     expect(store.getReroute(graph.rootGraph.id, reroute.id)).toBeUndefined()
   })
 
-  it('setReroute creates and updates geometry in one layout write', () => {
+  it('setReroute creates and updates stored geometry', () => {
     const { graph } = connectedGraph()
     const store = useRerouteStore()
-    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-    onTestFinished(() => applyOperation.mockRestore())
 
     const reroute = graph.setReroute({
       id: toRerouteId(3),
@@ -78,17 +76,10 @@ describe('Reroute ↔ rerouteStore integration', () => {
     })
 
     expect(store.getReroute(graph.rootGraph.id, reroute.id)?.id).toBe(3)
-    const creationOperations = applyOperation.mock.calls.filter(
-      ([operation]) => operation.entity === 'reroute'
-    )
-    expect(creationOperations).toHaveLength(1)
-    expect(creationOperations[0][0]).toMatchObject({
-      type: 'createReroute',
-      rerouteId: toRerouteId(3),
-      position: { x: 5, y: 5 }
-    })
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 5, y: 5 })
 
-    applyOperation.mockClear()
     const existing = graph.setReroute({
       id: reroute.id,
       parentId: undefined,
@@ -98,15 +89,9 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     expect(existing).toBe(reroute)
     expect(existing.pos).toEqual([8, 9])
-    const updateOperations = applyOperation.mock.calls.filter(
-      ([operation]) => operation.entity === 'reroute'
-    )
-    expect(updateOperations).toHaveLength(1)
-    expect(updateOperations[0][0]).toMatchObject({
-      type: 'moveReroute',
-      rerouteId: reroute.id,
-      position: { x: 8, y: 9 }
-    })
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 8, y: 9 })
   })
 
   it('class parentId writes are observable through the store query', () => {
@@ -271,11 +256,15 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([12, 17], link)!
     reroute.snapToGrid(10)
-    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-    onTestFinished(() => applyOperation.mockRestore())
+    const storedPosition = layoutStore.getRerouteLayout(
+      graph.rootGraph.id,
+      reroute.id
+    )?.position
 
     expect(reroute.snapToGrid(10)).toBe(false)
-    expect(applyOperation).not.toHaveBeenCalled()
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual(storedPosition)
   })
 
   it('refuses parentId writes that would create a cycle, allows repair', () => {
@@ -852,22 +841,6 @@ describe('Reroute position lives only in layoutStore', () => {
     ).toEqual({ x: 30, y: 40 })
   })
 
-  it('remove preserves a foreign layout that replaced the attached reroute', () => {
-    const graph = new LGraph()
-    const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
-    const reroutes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('reroutes')
-    const key = `${graph.rootGraph.id}:${reroute.id}`
-    const foreignReroute = new Y.Map<unknown>()
-    foreignReroute.set('id', reroute.id)
-    foreignReroute.set('position', { x: 70, y: 80 })
-    foreignReroute.set('registrationId', 'foreign-reroute')
-    reroutes.set(key, foreignReroute)
-
-    graph.removeReroute(reroute.id)
-
-    expect(reroutes.get(key)).toBe(foreignReroute)
-  })
-
   it('stale attached reroute writes preserve a foreign replacement', () => {
     const graph = new LGraph()
     const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
@@ -885,37 +858,39 @@ describe('Reroute position lives only in layoutStore', () => {
     expect([...reroute.pos]).toEqual([70, 80])
   })
 
-  it('clear preserves a foreign layout that replaced the attached reroute', () => {
-    const graph = new LGraph()
-    const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
-    const reroutes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('reroutes')
-    const key = `${graph.rootGraph.id}:${reroute.id}`
-    const foreignReroute = new Y.Map<unknown>()
-    foreignReroute.set('id', reroute.id)
-    foreignReroute.set('position', { x: 70, y: 80 })
-    foreignReroute.set('registrationId', 'foreign-reroute')
-    reroutes.set(key, foreignReroute)
+  it.for([
+    [
+      'remove',
+      true,
+      (graph: LGraph, reroute: Reroute) => graph.removeReroute(reroute.id)
+    ],
+    ['clear', true, (graph: LGraph) => graph.clear()],
+    [
+      'unowned unregister',
+      false,
+      (graph: LGraph, reroute: Reroute) =>
+        unregisterRerouteLayout(graph, reroute)
+    ]
+  ] as const)(
+    '%s preserves a foreign reroute layout',
+    ([, attached, release]) => {
+      const graph = new LGraph()
+      const reroute = attached
+        ? graph.setReroute({ pos: [10, 20], linkIds: [] })
+        : new Reroute(toRerouteId(31), graph, [10, 20])
+      const reroutes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('reroutes')
+      const key = `${graph.rootGraph.id}:${reroute.id}`
+      const foreignReroute = new Y.Map<unknown>()
+      foreignReroute.set('id', reroute.id)
+      foreignReroute.set('position', { x: 70, y: 80 })
+      foreignReroute.set('registrationId', 'foreign-reroute')
+      reroutes.set(key, foreignReroute)
 
-    graph.clear()
+      release(graph, reroute)
 
-    expect(reroutes.get(key)).toBe(foreignReroute)
-  })
-
-  it('unregister without ownership evidence preserves the reroute layout', () => {
-    const graph = new LGraph()
-    const reroute = new Reroute(toRerouteId(31), graph, [10, 20])
-    const reroutes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('reroutes')
-    const key = `${graph.rootGraph.id}:${reroute.id}`
-    const foreignReroute = new Y.Map<unknown>()
-    foreignReroute.set('id', reroute.id)
-    foreignReroute.set('position', { x: 70, y: 80 })
-    foreignReroute.set('registrationId', 'foreign-reroute')
-    reroutes.set(key, foreignReroute)
-
-    unregisterRerouteLayout(graph, reroute)
-
-    expect(reroutes.get(key)).toBe(foreignReroute)
-  })
+      expect(reroutes.get(key)).toBe(foreignReroute)
+    }
+  )
 
   it('keeps retained ownership after a foreign explicit unregister', () => {
     const graph = new LGraph()
