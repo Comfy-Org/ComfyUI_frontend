@@ -4103,8 +4103,6 @@
     "subscribeNow": "اشترك الآن",
     "subscribeTo": "اشترك في {plan}",
     "subscribeToComfyCloud": "الاشتراك في Comfy Cloud",
-    "subscribeToRun": "اشتراك",
-    "subscribeToRunFull": "الاشتراك للتشغيل",
     "subscriptionRequiredMessage": "الاشتراك مطلوب للأعضاء لتشغيل سير العمل على السحابة",
     "success": {
       "allSet": "تم كل شيء بنجاح",
@@ -4169,7 +4167,6 @@
     "totalCredits": "إجمالي الرصيد",
     "upgradePlan": "ترقية الخطة",
     "upgradeTo": "الترقية إلى {plan}",
-    "upgradeToAddCredits": "قم بالترقية لإضافة أرصدة",
     "usdPerMonth": "دولار أمريكي / شهريًا",
     "usdPerMonthPerMember": "دولار أمريكي / شهر / عضو",
     "usedAfterMonthly": "يتم استخدامه بعد نفاد الرصيد الشهري",

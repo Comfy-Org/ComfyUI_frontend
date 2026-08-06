@@ -27,7 +27,7 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     const topUpDialog = new TopUpCreditsDialog(page)
 
     // 1. Profile popover: a Free-tier local user gets "Add credits", never
-    //    "Upgrade to add credits" — subscribing is a Cloud-only concept.
+    //    the upgrade CTA — subscribing is a Cloud-only concept.
     await page.getByTestId(TestIds.user.currentUserButton).click()
     let popover = page.getByTestId(TestIds.user.currentUserPopover)
     await expect(popover).toBeVisible()
@@ -52,8 +52,10 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     const settingsDialog = comfyPage.settingDialog
     await settingsDialog.waitForVisible()
     const creditsContent = settingsDialog.contentArea
+    // Anchored on the test id, not the copy: a copy rename would silently
+    // defuse this guard while leaving it green.
     await expect(
-      creditsContent.getByText('Upgrade to add credits')
+      creditsContent.getByTestId('upgrade-for-more-credits-button')
     ).toHaveCount(0)
 
     const settingsAddCredits = creditsContent.getByRole('button', {

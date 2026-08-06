@@ -49,8 +49,8 @@ const i18n = createI18n({
   messages: {
     en: {
       subscription: {
-        subscribeToRun: 'Upgrade',
-        subscribeToRunFull: 'Upgrade to Run',
+        upgradeToRun: 'Upgrade',
+        upgradeToRunFull: 'Upgrade to Run',
         inactive: {
           runLabel: 'Run',
           memberRunTooltip: 'Contact your workspace owner to resubscribe'

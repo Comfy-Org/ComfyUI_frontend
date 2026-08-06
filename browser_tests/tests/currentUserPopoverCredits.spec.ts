@@ -9,6 +9,7 @@ import type {
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -54,10 +55,8 @@ const mockSubscriptionStatus: CloudSubscriptionStatusResponse = {
   end_date: FUTURE_DATE
 }
 
-// With team workspaces enabled, the facade routes a personal workspace through
-// `/api/billing/*`. The cancelled-but-active state maps to `is_active: true`
-// with `subscription_status: 'canceled'`; a paid tier keeps "Add credits"
-// visible (free tier would swap it for "Upgrade to add credits").
+// Cancelled-but-active maps to `is_active: true` with
+// `subscription_status: 'canceled'`; a paid tier keeps "Add credits" visible.
 const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
@@ -223,14 +222,22 @@ freeTierTest.describe(
         const page = comfyPage.page
 
         await comfyPage.toast.closeToasts()
-        await page.getByRole('button', { name: 'Current user' }).click()
+        await page.getByTestId(TestIds.user.currentUserButton).click()
 
-        const popover = page.locator('.current-user-popover')
+        const popover = page.getByTestId(TestIds.user.currentUserPopover)
         await expect(popover).toBeVisible()
+        // Both popovers share the container test id and, after this PR, the
+        // upgrade button too — so pin the workspace one before asserting on
+        // it, or a broken flag seed would silently test the legacy popover.
+        await expect(
+          popover.getByTestId('workspace-switcher-trigger')
+        ).toBeVisible()
 
-        // DES-534: one toned-down "Upgrade" action instead of the old gold
-        // "Upgrade to add credits"; plain "Add credits" is paid-tier only.
-        const upgrade = popover.getByTestId('upgrade-to-add-credits-button')
+        // DES-534: one toned-down "Upgrade" action; plain "Add credits" is
+        // paid-tier only.
+        const upgrade = popover.getByTestId(
+          TestIds.user.upgradeToAddCreditsButton
+        )
         await expect(upgrade).toBeVisible()
         await expect(upgrade).toHaveText('Upgrade')
         await expect(popover.getByTestId('add-credits-button')).toBeHidden()

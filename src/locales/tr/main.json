@@ -4103,8 +4103,6 @@
     "subscribeNow": "Hemen Abone Ol",
     "subscribeTo": "{plan} abonesi ol",
     "subscribeToComfyCloud": "Comfy Cloud'a Abone Ol",
-    "subscribeToRun": "Abone Ol",
-    "subscribeToRunFull": "Çalıştırmaya Abone Ol",
     "subscriptionRequiredMessage": "Üyelerin Bulut'ta iş akışlarını çalıştırabilmesi için abonelik gereklidir",
     "success": {
       "allSet": "Her şey hazır",
@@ -4169,7 +4167,6 @@
     "totalCredits": "Toplam kredi",
     "upgradePlan": "Planı Yükselt",
     "upgradeTo": "{plan} planına yükselt",
-    "upgradeToAddCredits": "Kredi eklemek için yükselt",
     "usdPerMonth": "USD / ay",
     "usdPerMonthPerMember": "USD / ay / üye",
     "usedAfterMonthly": "Aylık krediler bittikten sonra kullanıldı",

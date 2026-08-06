@@ -2818,10 +2818,9 @@
       "ownerRunTooltip": "Update payment to restore this subscription",
       "memberRunTooltip": "Ask your workspace owner to restore this subscription"
     },
-    "subscribeToRun": "Upgrade",
-    "subscribeToRunFull": "Upgrade to Run",
+    "upgradeToRun": "Upgrade",
+    "upgradeToRunFull": "Upgrade to Run",
     "subscribeForMore": "Upgrade",
-    "upgradeToAddCredits": "Upgrade to add credits",
     "subscribe": "Subscribe",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",

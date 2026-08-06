@@ -4103,8 +4103,6 @@
     "subscribeNow": "立即訂閱",
     "subscribeTo": "訂閱 {plan}",
     "subscribeToComfyCloud": "訂閱 Comfy Cloud",
-    "subscribeToRun": "訂閱",
-    "subscribeToRunFull": "訂閱運行方案",
     "subscriptionRequiredMessage": "會員需訂閱才能在雲端執行工作流程",
     "success": {
       "allSet": "設定完成",
@@ -4169,7 +4167,6 @@
     "totalCredits": "總點數",
     "upgradePlan": "升級方案",
     "upgradeTo": "升級至 {plan}",
-    "upgradeToAddCredits": "升級以增加點數",
     "usdPerMonth": "美元／月",
     "usdPerMonthPerMember": "美元／月／成員",
     "usedAfterMonthly": "月度點數用完後使用",

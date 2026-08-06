@@ -4103,8 +4103,6 @@
     "subscribeNow": "今すぐ購読",
     "subscribeTo": "{plan}に登録",
     "subscribeToComfyCloud": "Comfy Cloudを購読",
-    "subscribeToRun": "購読する",
-    "subscribeToRunFull": "実行を購読",
     "subscriptionRequiredMessage": "クラウドでワークフローを実行するにはメンバーにサブスクリプションが必要です",
     "success": {
       "allSet": "準備が整いました",
@@ -4169,7 +4167,6 @@
     "totalCredits": "総クレジット",
     "upgradePlan": "プランをアップグレード",
     "upgradeTo": "{plan}にアップグレード",
-    "upgradeToAddCredits": "クレジット追加のためアップグレード",
     "usdPerMonth": "USD / 月",
     "usdPerMonthPerMember": "USD / 月 / メンバー",
     "usedAfterMonthly": "月間クレジットがなくなった後に使用",

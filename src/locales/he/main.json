@@ -4129,8 +4129,6 @@
     "subscribeNow": "הירשם עכשיו",
     "subscribeTo": "הירשם ל-{plan}",
     "subscribeToComfyCloud": "הירשם ל-Comfy Cloud",
-    "subscribeToRun": "הרשמה",
-    "subscribeToRunFull": "הירשם כדי להריץ",
     "subscriptionRequiredMessage": "נדרש מנוי כדי שחברים יוכלו להריץ תהליכי עבודה בענן ולהזמין חברים",
     "success": {
       "allSet": "הכל מוכן",
@@ -4195,7 +4193,6 @@
     "totalCredits": "סך הקרדיטים",
     "upgradePlan": "שדרוג המסלול",
     "upgradeTo": "שדרג ל-{plan}",
-    "upgradeToAddCredits": "שדרג כדי להוסיף קרדיטים",
     "usdPerMonth": "USD / חודש",
     "usdPerMonthPerMember": "USD / חודש / חבר",
     "usedAfterMonthly": "נוצל לאחר סיום החודשי",

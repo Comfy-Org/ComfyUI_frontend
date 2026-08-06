@@ -4129,8 +4129,6 @@
     "subscribeNow": "Assine Agora",
     "subscribeTo": "Assinar {plan}",
     "subscribeToComfyCloud": "Assine o Comfy Cloud",
-    "subscribeToRun": "Assinar",
-    "subscribeToRunFull": "Assine para Executar",
     "subscriptionRequiredMessage": "Uma assinatura é necessária para que os membros executem fluxos de trabalho na Nuvem",
     "success": {
       "allSet": "Tudo pronto",
@@ -4195,7 +4193,6 @@
     "totalCredits": "Total de créditos",
     "upgradePlan": "Atualizar Plano",
     "upgradeTo": "Atualizar para {plan}",
-    "upgradeToAddCredits": "Faça upgrade para adicionar créditos",
     "usdPerMonth": "USD / mês",
     "usdPerMonthPerMember": "USD / mês / membro",
     "usedAfterMonthly": "Usado após o término dos créditos mensais",
