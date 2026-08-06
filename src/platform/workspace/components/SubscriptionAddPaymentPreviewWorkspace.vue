@@ -270,7 +270,7 @@
       </Button>
 
       <UnifiedStripePaymentSelector
-        v-if="captureMode"
+        v-if="captureMode && quoteReady"
         :amount-cents="amountDueCents"
         :currency="previewData?.currency ?? ''"
         :payment-method-configuration-id="
@@ -395,6 +395,14 @@ const { t, n } = useI18n()
 // The wide capture split only applies while a payment method is being
 // collected; with a saved method the confirm is a single narrow column.
 const captureMode = computed(() => usePaymentElement && !savedMethods?.length)
+// Stripe Elements are configured once, in onMounted, from the amount and
+// currency. Mounting before the quote arrives — the team checkout shows its
+// preview step while the quote is still in flight — permanently latches the
+// "payment options are unavailable" error, because nothing re-initializes the
+// element when the props later fill in.
+const quoteReady = computed(
+  () => amountDueCents.value > 0 && Boolean(previewData?.currency)
+)
 const verificationRecoveryActive = computed(
   () =>
     authenticationState === 'requires_action' ||

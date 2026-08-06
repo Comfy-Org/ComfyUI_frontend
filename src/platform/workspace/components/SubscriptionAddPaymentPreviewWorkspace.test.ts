@@ -62,6 +62,40 @@ const globalOptions = {
 }
 
 describe('SubscriptionAddPaymentPreviewWorkspace', () => {
+  // Stripe Elements configure themselves once from the amount and currency, so
+  // mounting the selector before the quote lands leaves it permanently
+  // unusable. The team checkout renders its preview step while the quote is
+  // still in flight, which is how "payment options are unavailable" reached
+  // customers holding a perfectly good quote.
+  it('withholds the payment element until the quote is usable, then renders it', async () => {
+    const { rerender } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        teamPlan: { usd: 700, credits: 147_700, discountedUsd: 665 },
+        usePaymentElement: true
+      },
+      global: {
+        ...globalOptions,
+        stubs: {
+          ...globalOptions.stubs,
+          UnifiedStripePaymentSelector: {
+            name: 'UnifiedStripePaymentSelector',
+            props: ['amountCents', 'currency'],
+            template:
+              '<div data-testid="payment-selector">{{ amountCents }}/{{ currency }}</div>'
+          }
+        }
+      }
+    })
+
+    expect(screen.queryByTestId('payment-selector')).toBeNull()
+
+    await rerender({ previewData: previewFixture('MONTHLY', 66_500) })
+
+    expect(screen.getByTestId('payment-selector')).toHaveTextContent(
+      '66500/usd'
+    )
+  })
+
   it('renders personal tier price and credits from tierKey', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: { tierKey: 'creator' },

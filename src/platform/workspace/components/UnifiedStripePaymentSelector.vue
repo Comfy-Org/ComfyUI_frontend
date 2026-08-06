@@ -96,10 +96,15 @@ let isUnmounted = false
 
 onMounted(async () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  if (!publishableKey || amountCents <= 0) {
+  if (!publishableKey) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
     return
   }
+  // A non-positive amount means the caller mounted this before its quote
+  // resolved. Stay silent rather than latching an error the caller cannot
+  // clear: callers gate on a ready quote, and a wrong error here reads to the
+  // customer as "payment is broken" when the amount is merely still loading.
+  if (amountCents <= 0) return
 
   stripe = await loadStripe(publishableKey)
   if (!stripe || !paymentElementTarget.value || isUnmounted) {
