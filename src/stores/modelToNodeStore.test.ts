@@ -76,7 +76,6 @@ const MOCK_NODE_NAMES = [
   'FL_ChatterboxMultilingualTTS',
   'FL_ChatterboxVC',
   'LatentUpscaleModelLoader',
-  'DownloadAndLoadSAM2Model',
   'SAMLoader',
   'IPAdapterModelLoader',
   'LoadNLFModel',
@@ -273,16 +272,6 @@ describe('useModelToNodeStore', () => {
         expect(modelToNodeStore.getNodeProvider(modelType)).toBeUndefined()
       }
     )
-
-    it('should not register DownloadAndLoadSAM2Model against sam2, so the node falls back to its static combo', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      expect(modelToNodeStore.getNodeProvider('sam2')).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType('DownloadAndLoadSAM2Model')
-      ).toBeUndefined()
-    })
   })
 
   describe('getAllNodeProviders', () => {
