@@ -20,49 +20,52 @@
       :pt:pc-input-text:root:class="fieldClass"
       :class="{ 'p-invalid': $field.invalid }"
       fluid
+      @focus="isPasswordFocused = true"
+      @blur="isPasswordFocused = false"
     />
-    <div class="flex flex-col gap-1">
-      <small v-if="$field.dirty || $field.invalid" class="text-sm">
-        {{ t('validation.password.requirements') }}:
-        <ul class="mt-1 space-y-1">
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.length
-            }"
-          >
-            {{ t('validation.password.minLength') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.uppercase
-            }"
-          >
-            {{ t('validation.password.uppercase') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.lowercase
-            }"
-          >
-            {{ t('validation.password.lowercase') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.number
-            }"
-          >
-            {{ t('validation.password.number') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.special
-            }"
-          >
-            {{ t('validation.password.special') }}
-          </li>
-        </ul>
-      </small>
-    </div>
+    <small
+      v-if="(isPasswordFocused && $field.dirty) || $field.invalid"
+      class="text-sm"
+    >
+      {{ t('validation.password.requirements') }}:
+      <ul class="mt-1 space-y-1">
+        <li
+          :class="{
+            'text-red-500': !passwordChecks.length
+          }"
+        >
+          {{ t('validation.password.minLength') }}
+        </li>
+        <li
+          :class="{
+            'text-red-500': !passwordChecks.uppercase
+          }"
+        >
+          {{ t('validation.password.uppercase') }}
+        </li>
+        <li
+          :class="{
+            'text-red-500': !passwordChecks.lowercase
+          }"
+        >
+          {{ t('validation.password.lowercase') }}
+        </li>
+        <li
+          :class="{
+            'text-red-500': !passwordChecks.number
+          }"
+        >
+          {{ t('validation.password.number') }}
+        </li>
+        <li
+          :class="{
+            'text-red-500': !passwordChecks.special
+          }"
+        >
+          {{ t('validation.password.special') }}
+        </li>
+      </ul>
+    </small>
   </FormField>
 
   <!-- Confirm Password Field -->
@@ -103,6 +106,7 @@ const { fieldClass = 'h-10' } = defineProps<{
 
 const { t } = useI18n()
 const password = ref('')
+const isPasswordFocused = ref(false)
 
 // TODO: Use dynamic form to better organize the password checks.
 // Ref: https://primevue.org/forms/#dynamic
