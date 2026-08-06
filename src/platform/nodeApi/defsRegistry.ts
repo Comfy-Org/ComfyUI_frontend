@@ -15,11 +15,13 @@
  *    packs patching the same method, one forgetting, silently breaks the other.
  *    Registered callbacks are invoked in registration order, always.
  */
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
+import type { Resolver } from './resolution'
 import type { Unsubscribe, WidgetDef } from './widgetHandle'
 
 /**
@@ -136,7 +138,50 @@ export type DefSelector =
    */
   | { readonly category: string | RegExp }
 
+/**
+ * A node type the pack owns, declared rather than subclassed.
+ *
+ * 86 packs (18.2% of installs) do this today with `extends LGraphNode` +
+ * `LiteGraph.registerNodeType`, which is OOP entity modelling — the thing ADR
+ * 0008 rules out. Here the definition is plain data; the class behind it is an
+ * internal detail of this layer, never the pack's.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface NodeDefinition {
+  readonly type: string
+  readonly title?: string
+  readonly category?: string
+  readonly description?: string
+  readonly inputs?: readonly { name: string; type: string }[]
+  readonly outputs?: readonly { name: string; type: string }[]
+  readonly widgets?: readonly WidgetDef[]
+  /**
+   * `'frontend'` nodes never reach the backend: they are resolved away at
+   * prompt time by the resolution system, or simply omitted.
+   */
+  readonly execution?: 'backend' | 'frontend'
+  /**
+   * Answers what each output resolves to, purely, over a read-only view.
+   * See `resolution.ts` — this replaces `applyToGraph`, which mutated the
+   * live graph mid-serialize.
+   */
+  readonly resolve?: Resolver
+
+  onCreated?(node: NodeHandle): void
+  onExecuted?(node: NodeHandle, result: ExecutionResult): void
+  onConfigured?(node: NodeHandle, data: Record<string, unknown>): void
+  onConnectionsChanged?(node: NodeHandle, event: ConnectionChangeEvent): void
+  onRemoved?(node: NodeHandle): void
+  onSerialize?(node: NodeHandle): Record<string, unknown>
+}
+
 export interface DefRegistry {
+  /**
+   * Registers a node type the pack owns. Returns a handle that unregisters
+   * it — which `LiteGraph.registerNodeType` never offered.
+   */
+  define(definition: NodeDefinition): Unsubscribe
   get(type: string): NodeDef | undefined
   all(): readonly NodeDef[]
   has(type: string): boolean
@@ -274,6 +319,19 @@ const RESERVED_SERIAL_KEYS: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * Type name -> resolver, for the resolution system.
+ *
+ * Module level for the same reason as the preview subscribers: the prompt
+ * builder knows node types, not registry instances.
+ */
+const frontendResolvers = new Map<string, Resolver>()
+
+/** The resolvers currently registered, for `resolveFrontendNodes`. */
+export function frontendResolverMap(): ReadonlyMap<string, Resolver> {
+  return frontendResolvers
+}
+
+/**
  * Type name -> its preview listeners.
  *
  * Module level because delivery comes from the app's socket, which knows a node
@@ -312,8 +370,91 @@ export function createDefRegistry(): {
   const registrations = new Set<Registration>()
   const known = new Map<string, NodeDef>()
 
-  return {
-    forMajor: (handleFor) => ({
+  const defineType = (
+    definition: NodeDefinition,
+    handleFor: (nodeId: string) => NodeHandle
+  ): Unsubscribe => {
+    const { type } = definition
+    if (LiteGraph.registered_node_types[type]) {
+      throw new ComfyApiError(
+        `A node type named '${type}' is already registered. ` +
+          `Pick another name, or unregister the existing one first.`
+      )
+    }
+
+    const raw: RawNodeDef = {
+      name: type,
+      display_name: definition.title ?? type,
+      category: definition.category ?? 'custom',
+      description: definition.description ?? '',
+      output: definition.outputs?.map((o) => o.type) ?? [],
+      output_name: definition.outputs?.map((o) => o.name) ?? [],
+      input: {
+        required: Object.fromEntries(
+          (definition.inputs ?? []).map((i) => [i.name, [i.type, {}]])
+        )
+      }
+    }
+
+    // The class is this layer's internal detail — the pack declared data, and
+    // litegraph happens to want a constructor behind a type name.
+    class Defined extends LGraphNode {
+      constructor() {
+        super(definition.title ?? type)
+        for (const input of definition.inputs ?? []) {
+          this.addInput(input.name, input.type)
+        }
+        for (const output of definition.outputs ?? []) {
+          this.addOutput(output.name, output.type)
+        }
+      }
+    }
+    Defined.title = definition.title ?? type
+    ;(Defined as unknown as { comfyClass: string }).comfyClass = type
+    Defined.prototype.comfyClass = type
+    // Compatibility with the current prompt builder while the resolution
+    // system replaces applyToGraph: marked virtual so today's serializer omits
+    // it from the executable output. Note there is no applyToGraph here.
+    if (definition.execution === 'frontend') {
+      Defined.prototype.isVirtualNode = true
+    }
+
+    // Hooks route through the same registration path as extend(), so they
+    // compose with extensions other packs register against this type.
+    const registration: Registration = {
+      selector: type,
+      handleFor,
+      apply: (builder) => {
+        for (const widget of definition.widgets ?? []) builder.addWidget(widget)
+        if (definition.onCreated) builder.onCreated(definition.onCreated)
+        if (definition.onExecuted) builder.onExecuted(definition.onExecuted)
+        if (definition.onConfigured) {
+          builder.onConfigured(definition.onConfigured)
+        }
+        if (definition.onConnectionsChanged) {
+          builder.onConnectionsChanged(definition.onConnectionsChanged)
+        }
+        if (definition.onRemoved) builder.onRemoved(definition.onRemoved)
+        if (definition.onSerialize) builder.onSerialize(definition.onSerialize)
+      }
+    }
+    registrations.add(registration)
+    if (definition.resolve) frontendResolvers.set(type, definition.resolve)
+
+    registry.applyTo(Defined, raw)
+    LiteGraph.registerNodeType(type, Defined)
+
+    return () => {
+      registrations.delete(registration)
+      frontendResolvers.delete(type)
+      LiteGraph.unregisterNodeType(type)
+      known.delete(type)
+    }
+  }
+
+  const registry = {
+    forMajor: (handleFor: (nodeId: string) => NodeHandle): DefRegistry => ({
+      define: (definition: NodeDefinition) => defineType(definition, handleFor),
       get: (type) => known.get(type),
       all: () => Object.freeze([...known.values()]),
       has: (type) => known.has(type),
@@ -326,7 +467,7 @@ export function createDefRegistry(): {
       }
     }),
 
-    applyTo(nodeType, raw) {
+    applyTo(nodeType: { prototype: Partial<LGraphNode> }, raw: unknown) {
       let def = toNodeDef(raw as RawNodeDef)
       known.set(def.type, def)
 
@@ -499,4 +640,6 @@ export function createDefRegistry(): {
       }
     }
   }
+
+  return registry
 }

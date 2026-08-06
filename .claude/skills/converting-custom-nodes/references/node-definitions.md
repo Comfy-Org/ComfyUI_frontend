@@ -154,36 +154,70 @@ the converted-widget protocol. With `setHidden()` as a real property, that
 whole line of reasoning goes away — check `input.isWidgetInput` if you actually
 care whether an input is a widget's socket form.
 
-## Virtual node classes — `registerCustomNodes`
+## Pack-owned node types — `registerCustomNodes` / `extends LGraphNode`
 
-86 packs / 18.2% of installs define their own types, today via
-`extends LGraphNode`. That is a genuine rewrite, not a mechanical edit, and it
-includes rgthree and kjnodes.
+86 packs / 18.2% of installs define their own types by subclassing. The
+replacement is `comfy.defs.define(...)`: the definition is plain data, and no
+class is ever yours.
 
-**Not yet available** — `defs.define` is specified but unimplemented. Packs that
-need it are an `api-gap` punt today. Recorded here so the shape is agreed:
+**First identify the intent.** "Virtual node" is four different things, and the
+conversion differs for each:
+
+| The node exists to…                       | Examples                     | Convert to                                                  |
+| ----------------------------------------- | ---------------------------- | ----------------------------------------------------------- |
+| annotate — never executes                 | Note nodes                   | `execution: 'frontend'`, no `resolve`                       |
+| be a wire — indirection                   | Reroute, `SetNode`/`GetNode` | `resolve` returning `forwardTo`                             |
+| be a value — UI-held literal              | Primitive, constants         | `resolve` returning `literal`                               |
+| be a control panel — change _other_ nodes | rgthree Fast Muter           | **not `resolve` at all** — handle calls in widget callbacks |
 
 ```js
 // before
-class MyNode extends LGraphNode {
-  constructor() { super(); this.addOutput('*', '*') }
-  onConnectionsChange() { ... }
+class GetNode extends LGraphNode {
+  constructor() {
+    super()
+    this.addOutput('value', '*')
+    this.isVirtualNode = true
+  }
+  applyToGraph() {
+    /* rewrites links on the LIVE graph mid-serialize */
+  }
 }
-LiteGraph.registerNodeType('MyNode', MyNode)
+LiteGraph.registerNodeType('GetNode', GetNode)
 
-// after
+// after — declared, and resolution is a pure answer over a read-only view
 comfy.defs.define({
-  type: 'MyNode',
-  outputs: [{ name: '*', type: '*' }],
-  onConnectionsChanged: (node, ev) => { ... }
+  type: 'GetNode',
+  execution: 'frontend',
+  outputs: [{ name: 'value', type: '*' }],
+  widgets: [{ type: 'string', name: 'key', value: '' }],
+  resolve: ({ self, nodesOfType }) => {
+    const setter = nodesOfType('SetNode').find(
+      (n) => n.widgetValue('key') === self.widgetValue('key')
+    )
+    return {
+      value: setter ? { forwardTo: setter.input('value') } : { omit: true }
+    }
+  }
 })
 ```
 
-Frontend-only nodes that rewrite the prompt (kjnodes `SetNode`/`GetNode` as
-named wires, rgthree Fast Muter changing other nodes' modes) declare
-`virtual: true` and implement `resolve(ctx)`. `resolve` runs against a **prompt
-draft, never the live graph** — so a resolve pass that throws halfway cannot
-leave the user's document mutated, which the old `applyToGraph` could.
+`resolve` answers, per output: `{ forwardTo: inputRef }` ("whatever feeds that
+input"), `{ literal: value }`, or `{ omit: true }`. Our pass follows chains
+(Get → Set → Reroute → …) with cycle detection. You never see or touch the
+prompt being built — a resolver that throws poisons one prompt build and the
+graph is untouched, which is exactly what `applyToGraph` could not guarantee.
+A simple reroute is one line: `resolve: ({ self }) => ({ out: { forwardTo:
+self.input('in') } })`.
+
+**Control panels are ordinary nodes.** A Fast Muter is `defs.define` with
+`execution: 'frontend'`, buttons via `widgets`, and callbacks that call
+`comfy.graph.nodesOfType(...)` + `node.setMode('bypass')` — edit-time changes
+the user can undo, not serialization behaviour. Do not put neighbour mutation
+in `resolve`; `resolve` cannot write anything, by design.
+
+**Do not carry over** `isVirtualNode`, `applyToGraph`, or the subclass itself.
+If the node's `applyToGraph` does something none of the three resolution shapes
+can express, that is an `api-gap` punt — name what it rewrites.
 
 ## Per-instance state
 
