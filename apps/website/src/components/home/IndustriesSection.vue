@@ -24,38 +24,44 @@ interface Industry {
   label: string
   primarySrc: string
   secondarySrc: string
+  /** Bottom tile in the cluster. Industries still awaiting a bespoke reel
+   * fall back to the shared community one. */
+  ambientSrc: string
   secondaryObjectPosition?: 'top' | 'bottom' | 'center'
 }
 
 const MEDIA_BASE = 'https://media.comfy.org/website/homepage/use-case'
 
+/** Shared community reel used until each industry has its own ambient clip. */
+const fallbackAmbientSrc = `${MEDIA_BASE}/left5.webm`
+
 const industries: Industry[] = [
   {
     label: t('industries.vfx', locale),
     primarySrc: `${MEDIA_BASE}/left1.webm`,
-    secondarySrc: `${MEDIA_BASE}/right1.webm`
+    secondarySrc: `${MEDIA_BASE}/right1.webm`,
+    ambientSrc: '/industries/ambient-vfx-animation.webm'
   },
   {
     label: t('industries.advertising', locale),
     primarySrc: `${MEDIA_BASE}/left2.webm`,
-    secondarySrc: `${MEDIA_BASE}/right2.webm`
+    secondarySrc: `${MEDIA_BASE}/right2.webm`,
+    ambientSrc: fallbackAmbientSrc
   },
   {
     label: t('industries.gaming', locale),
     primarySrc: `${MEDIA_BASE}/left3.webm`,
-    secondarySrc: `${MEDIA_BASE}/right3.webp`
+    secondarySrc: `${MEDIA_BASE}/right3.webp`,
+    ambientSrc: fallbackAmbientSrc
   },
   {
     label: t('industries.ecommerce', locale),
     primarySrc: `${MEDIA_BASE}/left4.webm`,
     secondarySrc: `${MEDIA_BASE}/right4.webm`,
+    ambientSrc: fallbackAmbientSrc,
     secondaryObjectPosition: 'top'
   }
 ]
-
-/** Third tile in the cluster; a constant community reel rather than an
- * industry-specific one, so the collage always has three live surfaces. */
-const ambientSrc = `${MEDIA_BASE}/left5.webm`
 
 const activeIndex = ref(0)
 const active = computed(() => industries[activeIndex.value])
@@ -170,12 +176,6 @@ const ambientClipId = `industries-ambient-${uid}`
             @mouseenter="select(index)"
             @focus="select(index)"
           >
-            <!-- Positioned out of flow so the label never shifts when the
-            marker appears. -->
-            <span
-              v-if="index === activeIndex"
-              class="bg-primary-comfy-yellow absolute top-1/2 -left-6 size-2.5 -translate-y-1/2 rounded-full"
-            />
             {{ industry.label }}
           </button>
         </nav>
@@ -203,7 +203,7 @@ const ambientClipId = `industries-ambient-${uid}`
         <div
           class="absolute top-[67.649%] left-[13.149%] h-[32.351%] w-[79.832%]"
         >
-          <BlobMedia :src="ambientSrc" :clip-id="ambientClipId" />
+          <BlobMedia :src="active.ambientSrc" :clip-id="ambientClipId" />
         </div>
       </div>
     </div>
