@@ -164,7 +164,7 @@
            pointer. The row keeps its height, so the grid never shifts. -->
       <div
         v-if="appliedFilters.length"
-        class="group/applied relative flex h-7 items-center"
+        class="group/applied relative mb-2 flex h-7 items-center"
         data-testid="template-applied-filters"
       >
         <div
