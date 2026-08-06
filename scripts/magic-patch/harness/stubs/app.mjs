@@ -10,7 +10,17 @@ export const app = {
     draw: () => {},
     getCanvasWindow: () => globalThis
   },
-  ui: { dialog: { show: () => {} }, settings: { addSetting: () => {} } },
+  ui: {
+    dialog: { show: () => {} },
+    settings: {
+      addSetting: () => {},
+      // Packs read their own settings during registration. Returning the
+      // caller's default keeps them on their documented path; returning
+      // undefined sent them down error branches instead.
+      getSettingValue: (_id, fallback) => fallback,
+      setSettingValue: () => {}
+    }
+  },
   extensionManager: { registerSidebarTab: () => {}, toast: { add: () => {} } },
   registerExtension(extension) {
     registry.extensions.push(extension)
