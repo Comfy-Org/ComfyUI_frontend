@@ -70,7 +70,7 @@
 
         <DropdownMenuPortal>
           <DropdownMenuSubContent
-            :side-offset="8"
+            :side-offset="16"
             :align-offset="alignOffsetFor(facet.key)"
             :collision-padding="10"
             :prioritize-position="false"
@@ -93,7 +93,7 @@
               <input
                 v-model="facetQuery[facet.key]"
                 type="text"
-                :placeholder="facet.label"
+                :placeholder="$t('g.search')"
                 :class="searchClass"
                 @keydown.stop
               />
