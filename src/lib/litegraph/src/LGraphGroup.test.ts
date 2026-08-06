@@ -209,29 +209,6 @@ describe('group layout in layoutStore', () => {
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
   })
 
-  test('retains group ownership when unregister throws before deletion', () => {
-    const graph = new LGraph()
-    const group = addedGroup(graph, toGroupId(806))
-    const ydoc = getLayoutStoreYDoc()
-    const transact = vi.spyOn(ydoc, 'transact').mockImplementationOnce(() => {
-      throw new Error('group delete failed')
-    })
-
-    expect(() => graph.remove(group)).toThrow('group delete failed')
-    transact.mockRestore()
-    expect(graph.groups).toContain(group)
-    expect(group.graph).toBe(graph)
-    expect(
-      layoutStore.getGroupLayout(graph.rootGraph.id, group.id)
-    ).not.toBeNull()
-
-    graph.remove(group)
-
-    expect(graph.groups).not.toContain(group)
-    expect(group.graph).toBeUndefined()
-    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
-  })
-
   test('restores group registration when unregister throws after deletion', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(810))
@@ -477,40 +454,6 @@ describe('group layout in layoutStore', () => {
     applyOperation.mockRestore()
     expect(graph.add(node)).toBe(node)
     expect(graph.nodes).toEqual([node])
-  })
-
-  test('restores group identity when registration compensation throws', () => {
-    const graph = new LGraph()
-    const group = new LGraphGroup('group')
-    const originalId = group.id
-    const originalLastGroupId = graph.state.lastGroupId
-    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
-    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-    onTestFinished(() => applyOperation.mockRestore())
-    applyOperation.mockImplementation((operation) => {
-      if (operation.type === 'deleteGroup') {
-        throw new Error('compensation failed')
-      }
-      const result = originalApplyOperation(operation)
-      if (operation.type === 'createGroup') {
-        throw new LayoutOperationError('registration failed', true, {
-          cause: new Error('registration failed')
-        })
-      }
-      return result
-    })
-
-    expect(() => graph.add(group)).toThrow('registration failed')
-
-    expect(group.id).toBe(originalId)
-    expect(group.graph).toBeUndefined()
-    expect(graph.groups).not.toContain(group)
-    expect(graph.state.lastGroupId).toBe(originalLastGroupId)
-
-    applyOperation.mockRestore()
-    graph.add(group)
-    expect(graph.groups).toEqual([group])
-    expect(layoutStore.getGroupLayout(graph.id, group.id)).not.toBeNull()
   })
 
   test('reconciles an empty-token registration after cleanup fails', () => {

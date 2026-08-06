@@ -103,14 +103,6 @@ describe('createNode', () => {
   })
 })
 
-describe('deleteNode', () => {
-  it('removes node from the store', () => {
-    const { deleteNode } = useLayoutMutations()
-    deleteNode(GRAPH, NODE_1)
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value).toBeNull()
-  })
-})
-
 describe('missing node mutations', () => {
   it.for([
     {
@@ -129,10 +121,6 @@ describe('missing node mutations', () => {
     {
       name: 'setNodeZIndex',
       mutate: () => useLayoutMutations().setNodeZIndex(GRAPH, MISSING_NODE, 5)
-    },
-    {
-      name: 'deleteNode',
-      mutate: () => useLayoutMutations().deleteNode(GRAPH, MISSING_NODE)
     }
   ])('$name is a no-op', ({ mutate }) => {
     const before = [NODE_1, NODE_2].map(
@@ -175,12 +163,6 @@ describe('batchMoveNodes', () => {
       height: 100
     })
     expect(layoutStore.getNodeLayoutRef(GRAPH, MISSING_NODE).value).toBeNull()
-  })
-
-  it('does nothing when updates are empty', () => {
-    const before = layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value
-    useLayoutMutations().batchMoveNodes(GRAPH, [])
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value).toEqual(before)
   })
 })
 

@@ -301,8 +301,6 @@ class LayoutStore {
             return this.getNodeLayout(rootGraphId, nodeId)
           },
           set: (newLayout: NodeLayout | null) => {
-            // No caller assigns null through this ref; deletion goes through
-            // layoutMutations.deleteNode, which carries a graphId.
             if (newLayout === null) return
 
             // Update operation - detect what changed

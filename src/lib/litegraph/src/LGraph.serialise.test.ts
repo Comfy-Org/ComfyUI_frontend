@@ -35,7 +35,9 @@ describe('LGraph Serialisation', () => {
 
     const copied = new LGraph(deserialised)
     expect(copied.nodes.length).toBe(1)
+    expect(copied.nodes[0].title).toEqual(nodeTitle)
     expect(copied.groups.length).toBe(1)
+    expect(copied.groups[0].title).toEqual(groupTitle)
     copied.clear()
   })
 

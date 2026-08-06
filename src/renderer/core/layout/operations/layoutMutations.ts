@@ -57,22 +57,14 @@ interface LayoutMutations {
     groupId: GroupId,
     registrationId?: string
   ): LayoutOperationResult
-  deleteNode(rootGraphId: UUID, nodeId: NodeId): LayoutOperationResult
   deleteReroute(
     rootGraphId: UUID,
     rerouteId: RerouteId,
     registrationId?: string
   ): LayoutOperationResult
   moveNode(rootGraphId: UUID, nodeId: NodeId, position: Point): void
-  moveReroute(rootGraphId: UUID, rerouteId: RerouteId, position: Point): void
   resizeNode(rootGraphId: UUID, nodeId: NodeId, size: Size): void
   setActor(actor: string): void
-  setGroupBounds(
-    rootGraphId: UUID,
-    groupId: GroupId,
-    position: Point,
-    size: Size
-  ): void
   setNodeZIndex(rootGraphId: UUID, nodeId: NodeId, zIndex: number): void
   setSource(source: LayoutSource): void
 }
@@ -225,27 +217,6 @@ export function useLayoutMutations(): LayoutMutations {
   }
 
   /**
-   * Delete a node
-   */
-  const deleteNode = (
-    rootGraphId: UUID,
-    nodeId: NodeId
-  ): LayoutOperationResult => {
-    const existing = layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
-    if (!existing) return 'no-op'
-
-    return layoutStore.applyOperation({
-      type: 'deleteNode',
-      entity: 'node',
-      graphId: rootGraphId,
-      nodeId,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
    * Bring a node to the front (highest z-index)
    */
   const bringNodeToFront = (rootGraphId: UUID, nodeId: NodeId): void => {
@@ -294,28 +265,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  const setGroupBounds = (
-    rootGraphId: UUID,
-    groupId: GroupId,
-    position: Point,
-    size: Size
-  ): void => {
-    const existing = layoutStore.getGroupLayout(rootGraphId, groupId)
-    if (!existing) return
-
-    layoutStore.applyOperation({
-      type: 'setGroupBounds',
-      entity: 'group',
-      graphId: rootGraphId,
-      groupId,
-      position,
-      size,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
   const deleteGroup = (
     rootGraphId: UUID,
     groupId: GroupId,
@@ -358,26 +307,6 @@ export function useLayoutMutations(): LayoutMutations {
     })
   }
 
-  /**
-   * Move a reroute
-   */
-  const moveReroute = (
-    rootGraphId: UUID,
-    rerouteId: RerouteId,
-    position: Point
-  ): void => {
-    layoutStore.applyOperation({
-      type: 'moveReroute',
-      entity: 'reroute',
-      graphId: rootGraphId,
-      rerouteId,
-      position,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
   return {
     setSource,
     setActor,
@@ -386,13 +315,10 @@ export function useLayoutMutations(): LayoutMutations {
     resizeNode,
     setNodeZIndex,
     createNode,
-    deleteNode,
     bringNodeToFront,
     createReroute,
     deleteReroute,
-    moveReroute,
     createGroup,
-    setGroupBounds,
     deleteGroup
   }
 }

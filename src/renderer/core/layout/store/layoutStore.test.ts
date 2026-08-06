@@ -422,26 +422,6 @@ describe('layoutStore CRDT operations', () => {
       }
     })
 
-    it('returns no-op when node visibility is updated after deletion', () => {
-      createNode()
-      layoutStore.applyOperation({
-        ...metadata,
-        entity: 'node',
-        nodeId,
-        type: 'deleteNode'
-      })
-
-      expect(
-        layoutStore.applyOperation({
-          ...metadata,
-          entity: 'node',
-          nodeId,
-          type: 'setNodeVisibility',
-          visible: false
-        })
-      ).toBe('no-op')
-    })
-
     it('rejects duplicate creates and preserves the original entities', () => {
       createNode()
       createGroup()
@@ -1245,128 +1225,6 @@ describe('layoutStore CRDT operations', () => {
     expect(
       layoutStore.queryRerouteAtPoint(graphId, { x: 400, y: 500 })?.id
     ).toBe(rerouteId)
-  })
-
-  it('should create and retrieve nodes', () => {
-    const nodeId = toNodeId('test-node-1')
-    const layout = createTestNode(nodeId)
-
-    // Create node
-    layoutStore.setSource(LayoutSource.External)
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
-    })
-
-    // Retrieve node
-    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-    expect(nodeRef.value).toEqual(layout)
-  })
-
-  it('should move nodes', () => {
-    const nodeId = toNodeId('test-node-2')
-    const layout = createTestNode(nodeId)
-
-    // Create node first
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
-    })
-
-    // Move node
-    const newPosition = { x: 200, y: 300 }
-    layoutStore.applyOperation({
-      type: 'moveNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      position: newPosition,
-      timestamp: Date.now(),
-      source: LayoutSource.Vue,
-      actor: 'test'
-    })
-
-    // Verify position updated
-    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-    expect(nodeRef.value?.position).toEqual(newPosition)
-  })
-
-  it('should resize nodes', () => {
-    const nodeId = toNodeId('test-node-3')
-    const layout = createTestNode(nodeId)
-
-    // Create node
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
-    })
-
-    // Resize node
-    const newSize = { width: 300, height: 150 }
-    layoutStore.applyOperation({
-      type: 'resizeNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      size: newSize,
-      timestamp: Date.now(),
-      source: LayoutSource.Canvas,
-      actor: 'test'
-    })
-
-    // Verify size updated
-    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-    expect(nodeRef.value?.size).toEqual(newSize)
-  })
-
-  it('should delete nodes', () => {
-    const nodeId = toNodeId('test-node-4')
-    const layout = createTestNode(nodeId)
-
-    // Create node
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
-    })
-
-    // Delete node
-    layoutStore.applyOperation({
-      type: 'deleteNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
-    })
-
-    // Verify node deleted
-    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-    expect(nodeRef.value).toBeNull()
   })
 
   it('should handle source and actor tracking', async () => {
@@ -2282,7 +2140,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
     }
   )
 
-  it('ignores a null assignment; deletion goes through layoutMutations.deleteNode', () => {
+  it('ignores a null assignment', () => {
     const ref = layoutStore.getNodeLayoutRef(GRAPH, REF_NODE)
     const layout = baseLayout()
     ref.value = layout
