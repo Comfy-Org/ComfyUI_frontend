@@ -41,6 +41,14 @@ export interface GraphHandle {
   add(type: string, init?: NodeInit): NodeHandle
   remove(id: string): boolean
   links(): readonly LinkInfo[]
+  /**
+   * The nodes the user currently has selected.
+   *
+   * 15 packs read `canvas.selected_nodes` or `selectedItems` for this — a
+   * canvas internal, and the canvas is exactly what Nodes 2.0 replaces.
+   * Selection is a property of the document, so it is asked of the graph.
+   */
+  selection(): readonly NodeHandle[]
   /** Diagnostics: live handle-cache slots across all kinds. */
   readonly cacheSize: number
 }
@@ -136,6 +144,23 @@ export function createGraphApi(
       if (!graph || !node) return false
       graph.remove(node)
       return true
+    },
+
+    selection() {
+      const graph = getGraph()
+      if (!graph) return Object.freeze([])
+      // Read from the canvas while selection still lives there; the shape
+      // stays correct when it moves into a store.
+      const canvas = (
+        graph as unknown as {
+          list_of_graphcanvas?: { selected_nodes?: Record<string, unknown> }[]
+        }
+      ).list_of_graphcanvas?.[0]
+      return Object.freeze(
+        Object.keys(canvas?.selected_nodes ?? {})
+          .map((id) => handleFor(id))
+          .filter((n): n is NodeHandle => Boolean(n))
+      )
     },
 
     links() {

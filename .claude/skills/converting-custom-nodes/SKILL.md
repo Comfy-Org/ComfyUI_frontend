@@ -257,6 +257,15 @@ ported.
 in `destroy`: a mounted element owns listeners, timers and observers that node
 removal would otherwise leave running.
 
+**If you are converting `node.addInput` / `removeInput` / `addOutput`** — the
+pack is almost certainly growing slots as the last one fills (the "Multi"
+combiner shape). **Use `node.inputs.add(name, type)` / `node.inputs.remove(ref)`**
+and the matching `node.outputs` calls, driven from `b.onConnectionsChanged`.
+
+**If you are converting `canvas.selected_nodes` / `selectedItems`** — the pack
+wants the user's current selection, and is reaching into the canvas for it.
+**Use `comfy.graph.selection()`**, which returns node handles.
+
 **If you are writing to a node or widget handle** — every read and write is a
 **method**, never a property: `setTitle`, `setColor`, `setBgColor`, `setMode`,
 `setCollapsed`, `setProperty`, `getSize`/`setSize([w, h])` on nodes;
