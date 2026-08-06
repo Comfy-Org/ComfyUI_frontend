@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div ref="rootRef">
     <div class="relative p-1">
       <i
         aria-hidden="true"
@@ -71,7 +71,7 @@
         <DropdownMenuPortal>
           <DropdownMenuSubContent
             :side-offset="8"
-            :align-offset="-9"
+            :align-offset="alignOffsetFor(facet.key)"
             :collision-padding="10"
             :prioritize-position="false"
             :class="submenuClass"
@@ -197,6 +197,35 @@ const emit = defineEmits<{
   clearAll: []
 }>()
 
+const rootRef = ref<HTMLElement>()
+/**
+ * Every submenu opens flush with the top of the menu instead of with the row
+ * that spawned it — aligning to the row made the panels step down the screen
+ * as you moved between facets. Measured once per open, since a row's offset
+ * depends on how many facets there are.
+ */
+const alignOffsets = ref<Record<string, number>>({})
+
+function alignOffsetFor(key: string) {
+  return alignOffsets.value[key] ?? -9
+}
+
+function measureAlignOffsets() {
+  const root = rootRef.value
+  if (!root) return
+  const top = root.getBoundingClientRect().top
+  const offsets: Record<string, number> = {}
+  for (const facet of facets) {
+    const trigger = root.querySelector(
+      `[data-testid="template-filter-facet-${facet.key}"]`
+    )
+    if (trigger) {
+      offsets[facet.key] = -(trigger.getBoundingClientRect().top - top)
+    }
+  }
+  alignOffsets.value = offsets
+}
+
 const searchInput = ref<HTMLInputElement>()
 const searchQuery = ref('')
 const facetQuery = ref<Record<string, string>>({})
@@ -254,7 +283,10 @@ function facetOptions(facet: FilterMenuFacet) {
 }
 
 onMounted(() => {
-  void nextTick(() => searchInput.value?.focus())
+  void nextTick(() => {
+    searchInput.value?.focus()
+    measureAlignOffsets()
+  })
 })
 
 function handleSearchKeydown(event: KeyboardEvent) {

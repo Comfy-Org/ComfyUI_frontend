@@ -108,74 +108,48 @@
           </button>
         </div>
 
-        <template v-if="generationTypeOptions.length">
-          <div class="h-5 w-px shrink-0 bg-border-subtle" />
-
-          <div
-            class="hidden min-w-0 flex-1 @2xl/templates-panel:block"
-            data-testid="template-generation-types"
-          >
-            <TemplatesFilterChipRow>
+        <!-- Generation type is a dropdown pinned to the right of the tabs:
+             as chips it took the whole line, and it is a single choice, so a
+             trigger carrying the current one says more in less room. -->
+        <div
+          v-if="generationTypeOptions.length"
+          class="ml-auto shrink-0"
+          data-testid="template-generation-type-menu"
+        >
+          <DropdownMenu :modal="false">
+            <template #button>
               <button
-                v-for="opt in generationTypeOptions"
-                :key="opt.value"
                 type="button"
-                :aria-pressed="selectedCategory === opt.value"
                 :class="
                   cn(
-                    'shrink-0',
-                    filterChipClass(selectedCategory === opt.value)
+                    'flex shrink-0 items-center gap-1.5',
+                    filterChipClass(!!selectedGenerationType)
                   )
                 "
-                @click="toggleGenerationType(opt.value)"
               >
-                {{ opt.name }}
+                <span class="max-w-28 truncate">
+                  {{ selectedGenerationType?.name ?? generationTypeLabel }}
+                </span>
+                <i class="icon-[lucide--chevron-down] size-3" />
               </button>
-            </TemplatesFilterChipRow>
-          </div>
-
-          <!-- Wrapper, not a class on DropdownMenu: that component sets
-               inheritAttrs false and forwards $attrs to the popup content, so
-               the class would hide the menu instead of its trigger. -->
-          <div
-            class="shrink-0 @2xl/templates-panel:hidden"
-            data-testid="template-generation-type-menu"
-          >
-            <DropdownMenu :modal="false">
-              <template #button>
-                <button
-                  type="button"
-                  :class="
-                    cn(
-                      'flex shrink-0 items-center gap-1.5',
-                      filterChipClass(!!selectedGenerationType)
-                    )
-                  "
-                >
-                  <span class="max-w-28 truncate">
-                    {{ selectedGenerationType?.name ?? generationTypeLabel }}
-                  </span>
-                  <i class="icon-[lucide--chevron-down] size-3" />
-                </button>
-              </template>
-              <DropdownMenuRadioGroup :model-value="selectedCategory">
-                <DropdownMenuRadioItem
-                  v-for="opt in generationTypeOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                  class="flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover"
-                  @click="toggleGenerationType(opt.value)"
-                  @select.prevent
-                >
-                  <span class="flex-1">{{ opt.name }}</span>
-                  <DropdownMenuItemIndicator class="size-4 shrink-0">
-                    <i class="icon-[lucide--check]" />
-                  </DropdownMenuItemIndicator>
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenu>
-          </div>
-        </template>
+            </template>
+            <DropdownMenuRadioGroup :model-value="selectedCategory">
+              <DropdownMenuRadioItem
+                v-for="opt in generationTypeOptions"
+                :key="opt.value"
+                :value="opt.value"
+                class="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors outline-none select-none data-highlighted:bg-secondary-background-hover"
+                @click="toggleGenerationType(opt.value)"
+                @select.prevent
+              >
+                <span class="flex-1">{{ opt.name }}</span>
+                <DropdownMenuItemIndicator class="size-4 shrink-0">
+                  <i class="icon-[lucide--check]" />
+                </DropdownMenuItemIndicator>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenu>
+        </div>
       </div>
 
       <!-- Applied filters stay on one line with Clear always reachable. At
@@ -184,7 +158,7 @@
            grid down but is still one gesture away. -->
       <div
         v-if="appliedFilters.length"
-        class="group/applied flex items-center gap-2"
+        class="group/applied flex items-center gap-5"
         data-testid="template-applied-filters"
       >
         <TemplatesFilterChipRow class="min-w-0 flex-1">
