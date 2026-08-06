@@ -164,52 +164,140 @@ export function diffToEdits(original: string, converted: string): Edit[] {
 }
 
 /**
- * Renders edits as a unified diff, for review and for upstream PRs.
+ * Renders the conversion as a unified diff.
  *
- * The edits are the data; this is a view of them.
+ * The stored form, because a diff is reviewable in any tool a human already
+ * has, applies with `patch(1)`, and reads the same in a PR as in the database.
+ * Computed from the two texts rather than from an edit list: the previous
+ * version rendered from edits, predated the `insert` op, and silently dropped
+ * appended lines while emitting a hunk header that disagreed with its own body.
  */
 export function toUnifiedDiff(
-  source: string,
-  edits: readonly Edit[],
+  original: string,
+  converted: string,
   filename: string,
   context = 3
 ): string {
-  if (!edits.length) return ''
+  const before = original.split('\n')
+  if (original === converted) return ''
 
-  const before = source.split('\n')
-  const touched = new Set(edits.map((e) => e.line))
-  const byLine = new Map(edits.map((e) => [e.line, e]))
+  // One entry per output row: kept lines carry both indices, a delete carries
+  // only the original, an insert only the converted.
+  type Row = { kind: ' ' | '-' | '+'; text: string; a?: number; b?: number }
+  const rows: Row[] = []
+  let i = 0
+  let j = 0
+  for (const edit of diffToEdits(original, converted)) {
+    const at = edit.line - 1
+    while (i < at) {
+      rows.push({ kind: ' ', text: before[i], a: i, b: j })
+      i++
+      j++
+    }
+    if (edit.op === 'delete') {
+      rows.push({ kind: '-', text: before[i], a: i })
+      i++
+    } else if (edit.op === 'replace') {
+      rows.push({ kind: '-', text: before[i], a: i })
+      rows.push({ kind: '+', text: edit.text ?? '', b: j })
+      i++
+      j++
+    } else {
+      rows.push({ kind: '+', text: edit.text ?? '', b: j })
+      j++
+    }
+  }
+  while (i < before.length) {
+    rows.push({ kind: ' ', text: before[i], a: i, b: j })
+    i++
+    j++
+  }
 
-  // Group touched lines into hunks separated by more than 2*context lines.
-  const sorted = [...touched].sort((a, b) => a - b)
-  const hunks: number[][] = []
-  for (const line of sorted) {
-    const last = hunks.at(-1)
-    if (last && line - last.at(-1)! <= context * 2) last.push(line)
-    else hunks.push([line])
+  // Group changed rows into hunks, padded by `context` unchanged rows.
+  const changed = rows
+    .map((row, index) => (row.kind === ' ' ? -1 : index))
+    .filter((index) => index >= 0)
+  if (!changed.length) return ''
+
+  const ranges: [number, number][] = []
+  for (const index of changed) {
+    const last = ranges.at(-1)
+    if (last && index - last[1] <= context * 2) last[1] = index
+    else ranges.push([index, index])
   }
 
   const out = [`--- a/${filename}`, `+++ b/${filename}`]
-  for (const hunk of hunks) {
-    const start = Math.max(1, hunk[0] - context)
-    const end = Math.min(before.length, hunk.at(-1)! + context)
+  for (const [from, to] of ranges) {
+    const start = Math.max(0, from - context)
+    const end = Math.min(rows.length - 1, to + context)
+    const slice = rows.slice(start, end + 1)
 
-    const removed = hunk.length
-    const added = hunk.filter((l) => byLine.get(l)!.op === 'replace').length
-    const oldCount = end - start + 1
-    out.push(
-      `@@ -${start},${oldCount} +${start},${oldCount - removed + added} @@`
-    )
+    const aLines = slice.filter((r) => r.kind !== '+')
+    const bLines = slice.filter((r) => r.kind !== '-')
+    const aStart = (aLines[0]?.a ?? 0) + 1
+    const bStart = (bLines[0]?.b ?? 0) + 1
 
-    for (let line = start; line <= end; line++) {
-      const edit = byLine.get(line)
-      if (!edit) {
-        out.push(` ${before[line - 1]}`)
+    out.push(`@@ -${aStart},${aLines.length} +${bStart},${bLines.length} @@`)
+    for (const row of slice) out.push(`${row.kind}${row.text}`)
+  }
+  return out.join('\n') + '\n'
+}
+
+/**
+ * Applies a unified diff to the exact source it was built from.
+ *
+ * Every context and removed line is checked against the source. Because
+ * artifacts are keyed by content hash the input is byte-identical by
+ * construction, so a mismatch means the entry is being applied to something it
+ * was never verified against — which must fail loudly rather than fuzzily
+ * succeed the way `patch` would.
+ */
+export function applyUnifiedDiff(source: string, diff: string): string {
+  if (!diff.trim()) return source
+  const lines = source.split('\n')
+  const out: string[] = []
+  let cursor = 0
+
+  const hunkHeader = /^@@ -(\d+)(?:,(\d+))? \+\d+(?:,\d+)? @@/
+  const body = diff.split('\n')
+
+  for (let index = 0; index < body.length; index++) {
+    const header = hunkHeader.exec(body[index])
+    if (!header) continue
+
+    const start = Number(header[1]) - 1
+    if (start < cursor) {
+      throw new EditApplicationError(
+        `Hunk at line ${start + 1} overlaps an earlier one; the diff is not ordered.`
+      )
+    }
+    out.push(...lines.slice(cursor, start))
+    cursor = start
+
+    for (index++; index < body.length; index++) {
+      const row = body[index]
+      if (row.startsWith('@@')) {
+        index--
+        break
+      }
+      if (row === '' || row.startsWith('---') || row.startsWith('+++')) continue
+      const kind = row[0]
+      const text = row.slice(1)
+      if (kind === '+') {
+        out.push(text)
       } else {
-        out.push(`-${before[line - 1]}`)
-        if (edit.op === 'replace') out.push(`+${edit.text}`)
+        if (lines[cursor] !== text) {
+          throw new EditApplicationError(
+            `Diff does not match the source at line ${cursor + 1}: ` +
+              `expected ${JSON.stringify(text)}, found ${JSON.stringify(lines[cursor])}. ` +
+              `The source is not the one this conversion was built for.`
+          )
+        }
+        if (kind === ' ') out.push(text)
+        cursor++
       }
     }
   }
+  out.push(...lines.slice(cursor))
   return out.join('\n')
 }

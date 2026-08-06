@@ -1,0 +1,32 @@
+--- a/ComfyUI-KJNodes-HEAD/web/js/utility.js
++++ b/ComfyUI-KJNodes-HEAD/web/js/utility.js
+@@ -1,4 +1,5 @@
+ const { app } = window.comfyAPI.app;
++const { comfy } = window;
+ 
+ // ─── General-purpose helpers shared across KJNodes JS ───
+ 
+@@ -29,15 +30,11 @@
+   }
+ }
+ 
+-export function hideWidgetForGood(node, widget, suffix = '') {
+-  widget.origType = widget.type
+-  widget.origComputeSize = widget.computeSize
+-  widget.origSerializeValue = widget.serializeValue
+-  widget.computeSize = () => [0, -4]
+-  widget.type = "converted-widget" + suffix
++export function hideWidgetForGood(node, widget) {
++  comfy.graph.node(String(node.id))?.widgets.get(widget.name)?.setHidden(true)
+   if (widget.linkedWidgets) {
+     for (const w of widget.linkedWidgets) {
+-      hideWidgetForGood(node, w, ':' + widget.name)
++      hideWidgetForGood(node, w)
+     }
+   }
+ }
+@@ -270,4 +267,3 @@
+   }, { passive: false });
+ }
+ 
+-
