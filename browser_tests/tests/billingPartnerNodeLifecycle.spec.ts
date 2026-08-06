@@ -146,6 +146,9 @@ const test = cloudBillingApiFixture.extend<{
       undefined,
       { mockBilling: false }
     )
+    await page.route('**/api/settings/**', (route) =>
+      route.fulfill(jsonRoute({}))
+    )
     await mockGraphApi(page)
 
     await page.goto(APP_URL)
