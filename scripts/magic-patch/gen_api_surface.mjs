@@ -22,7 +22,10 @@ export function deriveApiMembers(dir = DIR) {
       /export interface \w+[^{]*\{([\s\S]*?)\n\}/g
     )) {
       for (const line of body.split('\n')) {
-        const match = /^\s*(?:readonly\s+)?([A-Za-z_]\w*)\s*[(?:]/.exec(line)
+        // `<` matters: a generic signature like `getProperty<T>(key)` was
+        // silently skipped, so shipped members were missing from the surface
+        // and the conformance check rejected conversions that used them.
+        const match = /^\s*(?:readonly\s+)?([A-Za-z_]\w*)\s*[(?:<]/.exec(line)
         if (match) members.add(match[1])
       }
     }

@@ -11,6 +11,7 @@
  * because nothing executes an agent-authored rewrite.
  */
 export const API_MEMBERS: ReadonlySet<string> = new Set([
+  'Record',
   'add',
   'addMenuItem',
   'addWidget',
@@ -52,10 +53,12 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'getOptions',
   'getPosition',
   'getProperties',
+  'getProperty',
   'getShape',
   'getSize',
   'getSizeConstraints',
   'getTitle',
+  'getValue',
   'graph',
   'has',
   'height',
