@@ -46,14 +46,9 @@ type CreditPurchasePayload =
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
 
-// Request body for POST /customers, from the generated OpenAPI contract so the
-// field set drift-checks against the backend at compile time.
 type CreateCustomerRequest = NonNullable<
   operations['createCustomer']['requestBody']
 >['content']['application/json']
-
-// Fields a caller may supply. signup_source is always set from the client build
-// in createCustomer, so it is not part of the caller-facing input.
 type CreateCustomerInput = Omit<CreateCustomerRequest, 'signup_source'>
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
