@@ -62,7 +62,8 @@ const CLOUD_EXPECTATIONS: ConnectivityExpectations = {
   ],
   zeroPairDragExpectedNodeCounts: {
     'comfyui-impact-subpack': 1,
-    'comfyui-string-converter': 2
+    'comfyui-string-converter': 2,
+    'comfyui-workflow-prettier': 1
   }
 }
 

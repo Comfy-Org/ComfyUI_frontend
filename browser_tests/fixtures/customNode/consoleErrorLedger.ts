@@ -6,6 +6,10 @@ interface AllowlistRule {
   requiredRoundtripId?: string
 }
 
+interface RequiredConnectivityRule extends AllowlistRule {
+  requiredConnectivityId: string
+}
+
 // Pack-attributed console noise with no visible error surface. Shared by
 // the all-nodes tiers and the curated run tier so one ledger covers every
 // surface a pack's script can emit on. Filter-guarded: a pattern suppresses
@@ -133,24 +137,102 @@ const ENV_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
   ]
 }
 
+// The breadth sweep intentionally creates and configures thousands of pack
+// nodes in one page. These exact pack-owned mechanisms are allowed only in
+// that tier, and every row must be observed on each run so a fixed or renamed
+// mechanism immediately makes the ledger stale instead of staying hidden.
+const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, RequiredConnectivityRule[]> =
+  {
+    'ComfyUI-KJNodes': [
+      {
+        pattern:
+          /Error parsing stored points: SyntaxError: Unexpected end of JSON input[\s\S]*\/extensions\/ComfyUI-KJNodes\/js\/editors\/point_editor_canvas\.js/,
+        reason:
+          'PointsEditor parses an empty bbox widget when the sweep configures the node',
+        requiredConnectivityId: 'kj-points-empty-bbox-json'
+      }
+    ]
+  }
+
+const ENV_CONNECTIVITY_ERROR_ALLOWLIST: Record<
+  'core' | 'cloud',
+  Record<string, RequiredConnectivityRule[]>
+> = {
+  core: {
+    'ComfyUI-VideoHelperSuite': [
+      {
+        pattern:
+          /Cannot read properties of undefined \(reading 'target_id'\)[\s\S]*\/extensions\/ComfyUI-VideoHelperSuite\/js\/VHS\.core\.js/,
+        reason:
+          'VHS file refresh reads a removed link while the sweep repeatedly clears the graph',
+        requiredConnectivityId: 'core-vhs-removed-link-target-id'
+      }
+    ]
+  },
+  cloud: {
+    'ComfyUI-KJNodes': [
+      {
+        pattern:
+          /Cannot read properties of undefined \(reading 'x'\)[\s\S]*\/extensions\/ComfyUI-KJNodes\/js\/editors\/interpolation\.js/,
+        reason:
+          'SplineEditor renders before its Cloud widget state contains a first point',
+        requiredConnectivityId: 'cloud-kj-spline-empty-points'
+      }
+    ],
+    'ComfyUI-LTXVideo': [
+      {
+        pattern:
+          /Cannot read properties of null \(reading 'imgH'\)[\s\S]*\/extensions\/ComfyUI-LTXVideo\/js\/sparse_track_editor\.js/,
+        reason:
+          'SparseTrackEditor size callback runs after onRemoved clears its editor',
+        requiredConnectivityId: 'cloud-ltx-size-after-remove'
+      }
+    ],
+    radiance: [
+      {
+        pattern:
+          /\[Radiance\] WebGL context lost .* renderer paused\. Waiting for recovery[\s\S]*\/extensions\/radiance\/radiance_webgl\.js/,
+        reason:
+          'repeated Radiance node creation exhausts a page WebGL context and the pack enters its recovery path',
+        requiredConnectivityId: 'cloud-radiance-webgl-recovery'
+      }
+    ]
+  }
+}
+
+function foldedRulesFor<T extends AllowlistRule>(
+  ledger: Record<string, T[]>,
+  pack: string
+): T[] {
+  const folded = pack.toLowerCase()
+  return Object.entries(ledger)
+    .filter(([ledgered]) => ledgered.toLowerCase() === folded)
+    .flatMap(([, rules]) => rules)
+}
+
 // Cloud installs some packs under a lower-cased dirname
 // (comfyui-impact-pack for ComfyUI-Impact-Pack), so an exact-key lookup
 // ledgers nothing there and the pack's known noise reds the run. Fold the
 // key so one entry covers both targets; fold-equal keys merge rather than
 // shadow each other.
 export function allowlistRulesFor(pack: string): AllowlistRule[] {
-  const folded = pack.toLowerCase()
   return [
-    ...Object.entries(CONSOLE_ERROR_ALLOWLIST)
-      .filter(([ledgered]) => ledgered.toLowerCase() === folded)
-      .flatMap(([, rules]) => rules),
+    ...foldedRulesFor(CONSOLE_ERROR_ALLOWLIST, pack),
     ...(customNodesEnv() === 'cloud'
-      ? Object.entries(CLOUD_PACK_ERROR_ALLOWLIST)
-          .filter(([ledgered]) => ledgered.toLowerCase() === folded)
-          .flatMap(([, rules]) => rules)
+      ? foldedRulesFor(CLOUD_PACK_ERROR_ALLOWLIST, pack)
       : []),
     ...(ENV_ERROR_ALLOWLIST[customNodesEnv()] ?? [])
   ]
+}
+
+function connectivityRulesForPacks(
+  packs: string[]
+): RequiredConnectivityRule[] {
+  const environmentRules = ENV_CONNECTIVITY_ERROR_ALLOWLIST[customNodesEnv()]
+  return packs.flatMap((pack) => [
+    ...foldedRulesFor(CONNECTIVITY_ERROR_ALLOWLIST, pack),
+    ...foldedRulesFor(environmentRules, pack)
+  ])
 }
 
 function withoutMatches(rules: AllowlistRule[], errors: string[]): string[] {
@@ -188,6 +270,25 @@ export function unallowlistedErrorsForPacks(
     (remaining, pack) => unallowlistedErrors(pack, remaining),
     withoutMatches(ENV_ERROR_ALLOWLIST[customNodesEnv()] ?? [], errors)
   )
+}
+
+export function unallowlistedConnectivityErrorsForPacks(
+  packs: string[],
+  errors: string[]
+): string[] {
+  return withoutMatches(
+    connectivityRulesForPacks(packs),
+    unallowlistedErrorsForPacks(packs, errors)
+  )
+}
+
+export function staleRequiredConnectivityErrorRulesForPacks(
+  packs: string[],
+  errors: string[]
+): string[] {
+  return connectivityRulesForPacks(packs)
+    .filter((rule) => !errors.some((error) => rule.pattern.test(error)))
+    .map((rule) => rule.requiredConnectivityId)
 }
 
 // Execution errors surface on the tiers that actually queue prompts (the

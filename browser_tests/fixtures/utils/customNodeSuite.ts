@@ -13,17 +13,14 @@ import { TestIds } from '@e2e/fixtures/selectors'
 // indicators in unrelated suites; this suite exists to SEE errors, so every
 // error surface stays live.
 export const customNodeSuiteSettings = {
-  'Comfy.TutorialCompleted': false,
+  'Comfy.TutorialCompleted': true,
   'Comfy.RightSidePanel.ShowErrorsTab': true
 }
 
-// The tutorial path (Comfy.TutorialCompleted:false) auto-opens the templates
-// browser over the blank graph on some ComfyUI backends, but WHETHER it opens
-// has drifted across backend versions - newer ComfyUI no longer auto-opens it.
-// Dismiss it if it appears; if it never shows within a short window there is
-// nothing to dismiss and the blank graph is already ready. Hard-waiting for
-// 'visible' (no timeout) hung every beforeEach for the full 15s test budget on
-// backends where it stopped auto-opening, failing the whole suite.
+// On Cloud, explicitly requesting TutorialCompleted also makes the shared
+// fixture reload after persisting startup settings. Keep this defensive
+// dismissal for backends that ignore or rename the setting: if no dialog
+// appears within a short window, the blank graph is already ready.
 export async function dismissTemplatesDialog(
   comfyPage: ComfyPage
 ): Promise<void> {

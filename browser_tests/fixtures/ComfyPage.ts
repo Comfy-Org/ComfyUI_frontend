@@ -773,6 +773,13 @@ export const comfyPageFixture = base.extend<{
       for (const [key, value] of Object.entries(startupSettings))
         await comfyPage.settings.setSetting(key, value)
       await comfyPage.nextFrame()
+
+      // Suites that explicitly require the tutorial to be complete cannot
+      // rely on the first boot: its new-user decision already read the old
+      // value and may open the template modal later. Reload after persisting
+      // the setting so that decision is made from the updated value.
+      if (initialSettings['Comfy.TutorialCompleted'] === true)
+        await comfyPage.workflow.reloadAndWaitForApp()
     }
 
     if (isVueNodes) {

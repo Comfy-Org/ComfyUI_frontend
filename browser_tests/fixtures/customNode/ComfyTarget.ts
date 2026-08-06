@@ -11,7 +11,7 @@ import type {
 import { classifyRun } from '@e2e/fixtures/customNode/runResult'
 import { onPromptIdResponse } from '@e2e/fixtures/utils/customNodeSuite'
 
-interface RawEvent {
+export interface RawEvent {
   type: string
   node?: string | null
   // execution_cached carries every cache-served node id (apiSchema
@@ -57,7 +57,7 @@ export function summarizePromptError(body: unknown): string | undefined {
   return parts.length > 0 ? parts.join('; ') : undefined
 }
 
-function toPromptEvent(raw: RawEvent): PromptEvent {
+export function toPromptEvent(raw: RawEvent): PromptEvent {
   if (raw.type === 'executing')
     return { type: 'executing', node: raw.node ?? null }
   if (raw.type === 'executed')
@@ -66,7 +66,7 @@ function toPromptEvent(raw: RawEvent): PromptEvent {
     return { type: 'execution_cached', nodes: (raw.nodes ?? []).map(String) }
   if (raw.type === 'execution_error' || raw.type === 'execution_interrupted') {
     const error: ExecutionError = {
-      exceptionMessage: raw.exception_message,
+      exceptionMessage: raw.exception_message?.trimEnd(),
       exceptionType: raw.exception_type,
       nodeId: raw.node_id,
       nodeType: raw.node_type,

@@ -550,6 +550,7 @@
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "AudioBPMDetector",
+        "AudioConcatenate",
         "AudioReverb",
         "AudioVocalCompressor"
       ]
@@ -1315,7 +1316,8 @@
         "iToolsPromptStyler": ["DisabledOnCloud", "HasCustomEndpoints"],
         "iToolsPromptStylerExtra": ["DisabledOnCloud", "HasCustomEndpoints"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["iToolsLoadImagePlus"]
     },
     {
       "pack": "comfyui-layerdiffuse",
@@ -1374,7 +1376,7 @@
         "SegmentV2": ["DisabledOnCloud"]
       },
       "timeoutMs": 30000,
-      "cannotRunAlone": ["AILab_CropObject", "AILab_SDMatte", "SAM3Segment"]
+      "cannotRunAlone": ["AILab_CropObject", "AILab_SDMatte"]
     },
     {
       "pack": "comfyui-sam3",
@@ -1518,10 +1520,7 @@
       "expectedExtensions": [],
       "disabledNodes": {},
       "timeoutMs": 30000,
-      "cannotRunAlone": [
-        "ExecuteAllControlNetPreprocessors",
-        "Unimatch_OptFlowPreprocessor"
-      ]
+      "cannotRunAlone": ["Unimatch_OptFlowPreprocessor"]
     },
     {
       "pack": "comfyui_essentials",

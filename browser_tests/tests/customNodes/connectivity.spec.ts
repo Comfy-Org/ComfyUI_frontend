@@ -13,7 +13,8 @@ import {
 } from '@e2e/fixtures/utils/customNodeSuite'
 import {
   isForeignExecutionNoise,
-  unallowlistedErrorsForPacks
+  staleRequiredConnectivityErrorRulesForPacks,
+  unallowlistedConnectivityErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { connectivityExpectationsFor } from '@e2e/fixtures/customNode/connectivityExpectations'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
@@ -194,7 +195,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const sweepErrors = consoleErrors.errors.filter(
     (error) => !isForeignExecutionNoise(error)
   )
-  const unledgered = unallowlistedErrorsForPacks(
+  const unledgered = unallowlistedConnectivityErrorsForPacks(
     [...installedPacks],
     sweepErrors
   )
@@ -215,6 +216,13 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
       'connectivity-console-errors.json'
     )
   ).toBe(true)
+  expect(
+    staleRequiredConnectivityErrorRulesForPacks(
+      [...installedPacks],
+      sweepErrors
+    ),
+    'stale required connectivity console mechanisms'
+  ).toEqual([])
 
   // Two-way guard, same discipline as cannotRunAlone, for these allowlists
   // in the loop below: every key must still be OBSERVED failing in its

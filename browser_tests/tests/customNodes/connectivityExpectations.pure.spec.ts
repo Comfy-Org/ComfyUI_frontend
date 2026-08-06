@@ -10,7 +10,8 @@ test.describe('connectivityExpectationsFor', () => {
       connectivityExpectationsFor('cloud').zeroPairDragExpectedNodeCounts
     ).toEqual({
       'comfyui-impact-subpack': 1,
-      'comfyui-string-converter': 2
+      'comfyui-string-converter': 2,
+      'comfyui-workflow-prettier': 1
     })
     expect(
       connectivityExpectationsFor('cloud').zeroPairDragExpectedNodeCounts

@@ -161,6 +161,7 @@ jobs:
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
         run: |
+          set -o pipefail
           # workers=1: the auto-run tier needs exclusive backend-queue access;
           # parallel workers interrupt each other's executions.
           # --project=custom-nodes: the `@custom-nodes`-tagged specs, which the
@@ -169,7 +170,8 @@ jobs:
           # playwright-report/ (the upload step's target) and folds in the
           # retain-on-failure traces, which a bare list,json would discard.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=list,json,html --workers=1
+            --project=custom-nodes --reporter=list,json,html --workers=1 \
+            2>&1 | tee custom-nodes.log
 
       # A skip here means a pack or devtools did not load: on this backend every
       # tier is meant to run, so a skip is a gate failure, not an honest pass.
@@ -207,11 +209,14 @@ jobs:
             exit 1
           fi
 
-      - name: Upload Playwright report
+      - name: Upload Playwright report and raw diagnostics
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: playwright-report-custom-nodes
-          path: playwright-report/
+          path: |
+            playwright-report/
+            custom-nodes-results.json
+            custom-nodes.log
           retention-days: 7
           if-no-files-found: warn

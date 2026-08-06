@@ -2,7 +2,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { summarizePromptError } from '@e2e/fixtures/customNode/ComfyTarget'
+import {
+  summarizePromptError,
+  toPromptEvent
+} from '@e2e/fixtures/customNode/ComfyTarget'
 
 // The curated-run happy path never executes summarizePromptError (it only
 // runs on a VALIDATION_FAIL), so these cases are what keep a T1 rejection
@@ -47,5 +50,25 @@ test.describe('summarizePromptError', () => {
     expect(summarizePromptError({})).toBeUndefined()
     expect(summarizePromptError(null)).toBeUndefined()
     expect(summarizePromptError('not an object')).toBeUndefined()
+  })
+})
+
+test('normalizes trailing backend whitespace without changing the message', () => {
+  expect(
+    toPromptEvent({
+      type: 'execution_error',
+      exception_message: 'Error node was called!\n'
+    })
+  ).toMatchObject({
+    type: 'execution_error',
+    error: { exceptionMessage: 'Error node was called!' }
+  })
+  expect(
+    toPromptEvent({
+      type: 'execution_error',
+      exception_message: ' leading whitespace is content \r\n'
+    })
+  ).toMatchObject({
+    error: { exceptionMessage: ' leading whitespace is content' }
   })
 })

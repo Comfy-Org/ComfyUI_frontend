@@ -4,8 +4,10 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   isForeignExecutionNoise,
+  staleRequiredConnectivityErrorRulesForPacks,
   staleRequiredRoundtripErrorRules,
   unallowlistedErrors,
+  unallowlistedConnectivityErrorsForPacks,
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 
@@ -196,6 +198,70 @@ test.describe('consoleErrorLedger', () => {
           vhsTypeError
         ])
       ).toEqual([])
+    } finally {
+      if (previous === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = previous
+    }
+  })
+
+  test('connectivity mechanisms are pack-scoped, environment-scoped, and required', () => {
+    const points =
+      'Error parsing stored points: SyntaxError: Unexpected end of JSON input\n    at new PointsEditor (http://localhost/extensions/ComfyUI-KJNodes/js/editors/point_editor_canvas.js:77:26)'
+    const vhs =
+      "Uncaught page error: TypeError: Cannot read properties of undefined (reading 'target_id')\n    at get_links (http://localhost/extensions/ComfyUI-VideoHelperSuite/js/VHS.core.js:2096:71)"
+    const spline =
+      "Error creating SplineEditor: TypeError: Cannot read properties of undefined (reading 'x')\n    at Object.buildPathD (http://localhost/extensions/ComfyUI-KJNodes/js/editors/interpolation.js:132:27)"
+    const ltx =
+      "Uncaught page error: TypeError: Cannot read properties of null (reading 'imgH')\n    at widget.computeSize (http://localhost/extensions/ComfyUI-LTXVideo/js/sparse_track_editor.js:224:29)"
+    const radiance =
+      '[Radiance] WebGL context lost - renderer paused. Waiting for recovery... [http://localhost/extensions/radiance/radiance_webgl.js?v=2.3.2]'
+    const previous = process.env.CUSTOM_NODES_ENV
+    try {
+      process.env.CUSTOM_NODES_ENV = 'core'
+      expect(
+        unallowlistedConnectivityErrorsForPacks(
+          ['ComfyUI-KJNodes', 'ComfyUI-VideoHelperSuite'],
+          [points, vhs, spline]
+        )
+      ).toEqual([spline])
+      expect(
+        staleRequiredConnectivityErrorRulesForPacks(
+          ['ComfyUI-KJNodes', 'ComfyUI-VideoHelperSuite'],
+          [points, vhs]
+        )
+      ).toEqual([])
+      expect(
+        staleRequiredConnectivityErrorRulesForPacks(
+          ['ComfyUI-KJNodes', 'ComfyUI-VideoHelperSuite'],
+          []
+        )
+      ).toEqual([
+        'kj-points-empty-bbox-json',
+        'core-vhs-removed-link-target-id'
+      ])
+
+      process.env.CUSTOM_NODES_ENV = 'cloud'
+      const packs = ['ComfyUI-KJNodes', 'ComfyUI-LTXVideo', 'radiance']
+      expect(
+        unallowlistedConnectivityErrorsForPacks(packs, [
+          points,
+          spline,
+          ltx,
+          radiance,
+          vhs
+        ])
+      ).toEqual([vhs])
+      expect(
+        staleRequiredConnectivityErrorRulesForPacks(packs, [
+          points,
+          spline,
+          ltx,
+          radiance
+        ])
+      ).toEqual([])
+      expect(
+        unallowlistedConnectivityErrorsForPacks(['radiance'], [points])
+      ).toEqual([points])
     } finally {
       if (previous === undefined) delete process.env.CUSTOM_NODES_ENV
       else process.env.CUSTOM_NODES_ENV = previous
