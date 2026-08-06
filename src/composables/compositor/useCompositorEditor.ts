@@ -35,8 +35,8 @@ export function useCompositorEditor() {
         headerClass: 'border-b border-border-default p-2',
         bodyClass: 'flex min-h-0 flex-col p-0',
         modal: true,
-        maximizable: true,
-        closable: true
+        maximizable: false,
+        closable: false
       }
     })
   }

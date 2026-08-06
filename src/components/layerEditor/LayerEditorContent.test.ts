@@ -23,6 +23,7 @@ const {
   saveLayerState: vi.fn(() => true),
   savePreview: vi.fn().mockResolvedValue(undefined),
   session: {
+    canUndo: { value: false },
     dispose: vi.fn(),
     editor: {
       anchorFloating: vi.fn(),
@@ -34,6 +35,13 @@ const {
     loadImages: vi.fn().mockResolvedValue(undefined),
     undo: vi.fn()
   }
+}))
+
+vi.mock('@/components/ui/dialog/DialogClose.vue', () => ({
+  default: (
+    _props: unknown,
+    { slots }: { slots: { default?: () => unknown } }
+  ) => slots.default?.()
 }))
 
 vi.mock('@/composables/layerEditor/useLayerEditorSession', () => ({
@@ -82,7 +90,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { restore: 'Restore' },
+      g: { close: 'Close', restore: 'Restore' },
       layerEditor: { title: 'Layer Editor' }
     }
   }
@@ -114,18 +122,28 @@ function findRestoreButton() {
 describe('LayerEditorContent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    session.canUndo.value = false
   })
 
-  it('places a single Restore action in the header', async () => {
+  it('places Restore and Close in the header without Save/Cancel', async () => {
     renderEditor('compositor')
 
     await findRestoreButton()
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull()
   })
 
+  it('disables Restore while there is nothing to undo', async () => {
+    session.canUndo.value = false
+    renderEditor('compositor')
+
+    expect(await findRestoreButton()).toBeDisabled()
+  })
+
   it('restores the opening state by unwinding the session history', async () => {
     const user = userEvent.setup()
+    session.canUndo.value = true
     renderEditor('compositor')
     session.editor.history.canUndo
       .mockReturnValueOnce(true)

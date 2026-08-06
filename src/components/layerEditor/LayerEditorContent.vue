@@ -5,8 +5,10 @@
         v-if="mode === 'compositor'"
         variant="secondary"
         size="md"
+        :disabled="!session.canUndo.value"
         @click="onRestore"
       >
+        <i class="icon-[lucide--rotate-ccw] size-4" />
         {{ t('g.restore') }}
       </Button>
     </Teleport>
