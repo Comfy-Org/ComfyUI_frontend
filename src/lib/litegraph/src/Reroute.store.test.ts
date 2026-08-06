@@ -905,13 +905,9 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(
       registerRerouteLayout(graph, reroute, { x: 30, y: 40 }, 'retry')
     ).toBe('applied')
-    expect(
-      layoutStore
-        .getYDocForTests()
-        .getMap<Y.Map<unknown>>('reroutes')
-        .get(`${graph.id}:${reroute.id}`)
-        ?.get('registrationId')
-    ).toBe('retry')
+    expect(layoutStore.getRegistrationId('reroute', graph.id, reroute.id)).toBe(
+      'retry'
+    )
   })
 
   it('retains reroute ownership when unregister throws before deletion', () => {
@@ -947,9 +943,11 @@ describe('Reroute position lives only in layoutStore', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 20], link)!
     const ydoc = layoutStore.getYDocForTests()
-    const reroutes = ydoc.getMap<Y.Map<unknown>>('reroutes')
-    const key = `${graph.rootGraph.id}:${reroute.id}`
-    const registrationId = reroutes.get(key)?.get('registrationId')
+    const registrationId = layoutStore.getRegistrationId(
+      'reroute',
+      graph.rootGraph.id,
+      reroute.id
+    )
     const originalTransact = ydoc.transact.bind(ydoc)
     const transact = vi
       .spyOn(ydoc, 'transact')
@@ -964,7 +962,9 @@ describe('Reroute position lives only in layoutStore', () => {
     transact.mockRestore()
     expect(graph.reroutes.get(reroute.id)).toBe(reroute)
     expect(reroute._attachedGraph?.deref()).toBe(graph)
-    expect(reroutes.get(key)?.get('registrationId')).toBe(registrationId)
+    expect(
+      layoutStore.getRegistrationId('reroute', graph.rootGraph.id, reroute.id)
+    ).toBe(registrationId)
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
     ).toEqual({
@@ -1279,13 +1279,7 @@ describe('Reroute position lives only in layoutStore', () => {
     applyOperation.mockRestore()
     graph._addReroute(reroute)
     expect(graph.reroutes.get(reroute.id)).toBe(reroute)
-    expect(
-      layoutStore
-        .getYDocForTests()
-        .getMap<Y.Map<unknown>>('reroutes')
-        .get(`${graph.id}:${reroute.id}`)
-        ?.get('position')
-    ).toEqual({ x: 10, y: 20 })
+    expect([...reroute.pos]).toEqual([10, 20])
   })
 
   it('preserves a foreign layout replacing an applied registration before failure', () => {

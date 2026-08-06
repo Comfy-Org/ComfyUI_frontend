@@ -259,9 +259,11 @@ describe('group layout in layoutStore', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(810))
     const ydoc = layoutStore.getYDocForTests()
-    const groups = ydoc.getMap<Y.Map<unknown>>('groups')
-    const key = `${graph.rootGraph.id}:${group.id}`
-    const registrationId = groups.get(key)?.get('registrationId')
+    const registrationId = layoutStore.getRegistrationId(
+      'group',
+      graph.rootGraph.id,
+      group.id
+    )
     const originalTransact = ydoc.transact.bind(ydoc)
     const transact = vi
       .spyOn(ydoc, 'transact')
@@ -274,7 +276,9 @@ describe('group layout in layoutStore', () => {
     transact.mockRestore()
     expect(graph.groups).toContain(group)
     expect(group.graph).toBe(graph)
-    expect(groups.get(key)?.get('registrationId')).toBe(registrationId)
+    expect(
+      layoutStore.getRegistrationId('group', graph.rootGraph.id, group.id)
+    ).toBe(registrationId)
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
       id: group.id,
       position: { x: 100, y: 100 },
@@ -546,13 +550,9 @@ describe('group layout in layoutStore', () => {
 
     applyOperation.mockRestore()
     expect(registerGroupLayout(graph, group, 'retry')).toBe('applied')
-    expect(
-      layoutStore
-        .getYDocForTests()
-        .getMap<Y.Map<unknown>>('groups')
-        .get(`${graph.id}:${group.id}`)
-        ?.get('registrationId')
-    ).toBe('retry')
+    expect(layoutStore.getRegistrationId('group', graph.id, group.id)).toBe(
+      'retry'
+    )
   })
 
   test('keeps a pending orphan after a foreign explicit unregister', () => {
@@ -575,13 +575,9 @@ describe('group layout in layoutStore', () => {
 
     applyOperation.mockRestore()
     expect(registerGroupLayout(graph, group, 'retry')).toBe('applied')
-    expect(
-      layoutStore
-        .getYDocForTests()
-        .getMap<Y.Map<unknown>>('groups')
-        .get(`${graph.id}:${group.id}`)
-        ?.get('registrationId')
-    ).toBe('retry')
+    expect(layoutStore.getRegistrationId('group', graph.id, group.id)).toBe(
+      'retry'
+    )
   })
 
   test('aborts reentrant configure when layout teardown is rejected', () => {

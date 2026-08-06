@@ -1674,10 +1674,11 @@ describe('node layout registration', () => {
     const node = new LGraphNode('test')
     node.pos = [120, 340]
     graph.add(node)
-    const ynodes = layoutStore.getYDocForTests().getMap<Y.Map<unknown>>('nodes')
-    const registrationId = ynodes
-      .get(`${graph.rootGraph.id}:${node.id}`)
-      ?.get('registrationId')
+    const registrationId = layoutStore.getRegistrationId(
+      'node',
+      graph.rootGraph.id,
+      node.id
+    )
     const ydoc = layoutStore.getYDocForTests()
     const originalTransact = ydoc.transact.bind(ydoc)
     const transact = vi
@@ -1692,7 +1693,7 @@ describe('node layout registration', () => {
     expect(graph.nodes).toContain(node)
     expect(node.graph).toBe(graph)
     expect(
-      ynodes.get(`${graph.rootGraph.id}:${node.id}`)?.get('registrationId')
+      layoutStore.getRegistrationId('node', graph.rootGraph.id, node.id)
     ).toBe(registrationId)
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
@@ -1719,10 +1720,11 @@ describe('node layout registration', () => {
     const node = new LGraphNode('test')
     node.pos = [120, 340]
     graph.add(node)
-    const ynodes = layoutStore.getYDocForTests().getMap<Y.Map<unknown>>('nodes')
-    const registrationId = ynodes
-      .get(`${graph.rootGraph.id}:${node.id}`)
-      ?.get('registrationId')
+    const registrationId = layoutStore.getRegistrationId(
+      'node',
+      graph.rootGraph.id,
+      node.id
+    )
     const canvas = fromAny<LGraphCanvas, unknown>({
       checkPanels: vi.fn(),
       selected_nodes: { [node.id]: node },
@@ -1739,7 +1741,7 @@ describe('node layout registration', () => {
     expect(graph.getNodeById(node.id)).toBe(node)
     expect(node.graph).toBe(graph)
     expect(
-      ynodes.get(`${graph.rootGraph.id}:${node.id}`)?.get('registrationId')
+      layoutStore.getRegistrationId('node', graph.rootGraph.id, node.id)
     ).toBe(registrationId)
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
@@ -1937,10 +1939,14 @@ describe('graph teardown drops layout entries', () => {
   })
 
   it('restores owned layouts when clear fails after a prefix deletion', () => {
-    const { graph } = createGraphWithEveryLayoutEntryType()
+    const { graph, root, interior } = createGraphWithEveryLayoutEntryType()
     const nodes = layoutStore.getYDocForTests().getMap<Y.Map<unknown>>('nodes')
-    const registrations = new Map(
-      [...nodes].map(([id, layout]) => [id, layout.get('registrationId')])
+    const registrations = [root, interior].map(
+      (node) =>
+        [
+          node.id,
+          layoutStore.getRegistrationId('node', graph.rootGraph.id, node.id)
+        ] as const
     )
     const originalDelete = nodes.delete.bind(nodes)
     const failure = new Error('prefix delete failed')
@@ -1965,7 +1971,9 @@ describe('graph teardown drops layout entries', () => {
     expect(graph.nodes).not.toHaveLength(0)
     expect(layoutEntryCount(graph)).toBe(4)
     for (const [id, registrationId] of registrations) {
-      expect(nodes.get(id)?.get('registrationId')).toBe(registrationId)
+      expect(
+        layoutStore.getRegistrationId('node', graph.rootGraph.id, id)
+      ).toBe(registrationId)
     }
 
     graph.clear()
