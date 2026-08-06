@@ -106,7 +106,7 @@ function onKeydown(event: KeyboardEvent) {
       <span
         :class="
           cn(
-            'pointer-events-none absolute top-1/2 size-[0.575em] -translate-1/2 rounded-full transition-colors duration-150',
+            'pointer-events-none absolute top-1/2 size-(--hero-dot,0.575em) -translate-1/2 rounded-full transition-colors duration-150',
             'group-hover:bg-primary-comfy-yellow bg-primary-comfy-canvas',
             (dragging || moving) && 'bg-primary-comfy-yellow'
           )
