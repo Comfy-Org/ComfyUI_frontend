@@ -661,6 +661,38 @@ function writeDbEntry(db, work, commit, outcome, source) {
 // Driver
 // ---------------------------------------------------------------------------
 
+/**
+ * Failures that say nothing about the pack.
+ *
+ * A dropped connection or an exhausted turn budget currently lands in the
+ * ledger looking exactly like a considered punt, which quietly corrupts the
+ * one dataset this whole exercise produces. A laptop going to sleep mid-run
+ * cost two packs before this existed.
+ */
+const TRANSIENT =
+  /connection closed|network|ECONNRESET|ETIMEDOUT|socket hang up|maximum number of turns|rate.?limit|overloaded|503|529/i
+
+/** Runs a pack, retrying once when the failure was not the pack's fault. */
+async function convertPackWithRetry(work, attempt = 1) {
+  const result = await convertPack(work)
+  if (
+    result.status === 'failed' &&
+    attempt < 3 &&
+    TRANSIENT.test(result.detail ?? '')
+  ) {
+    console.error(
+      `  ${work.pack}: transient failure (${result.detail?.slice(0, 60)}), retrying (${attempt + 1}/3)`
+    )
+    return convertPackWithRetry(work, attempt + 1)
+  }
+  // Marked so a reader can tell "we could not run this" from "we looked and
+  // decided not to convert it".
+  if (result.status === 'failed' && TRANSIENT.test(result.detail ?? '')) {
+    return { ...result, status: 'infrastructure-failure' }
+  }
+  return result
+}
+
 async function convertPack(work) {
   const { state, server } = createSession(work)
   const toolNames = [
@@ -785,7 +817,7 @@ async function main() {
   // Sequential on purpose: each pack is a long agent run, and Claude Code's
   // credentials are shared with whatever else the developer is doing.
   for (const work of packs) {
-    const result = await convertPack(work)
+    const result = await convertPackWithRetry(work)
     if (result.status === 'failed') failed++
 
     for (const file of result.files) {
