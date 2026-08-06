@@ -83,10 +83,10 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
-    await comfyPage.page
-      .getByRole('button', { name: 'Getting Started' })
-      .click()
-    await comfyPage.templates.loadTemplate('default')
+    await comfyPage.page.getByRole('button', { name: 'Popular' }).click()
+    const firstPopularTemplate = comfyPage.templates.allTemplateCards.first()
+    await expect(firstPopularTemplate).toBeVisible()
+    await firstPopularTemplate.click()
     await expect(comfyPage.templates.content).toBeHidden()
 
     // Ensure we now have some nodes
@@ -95,7 +95,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       .toBeGreaterThan(0)
   })
 
-  test('dialog should be automatically shown to first-time users', async ({
+  test('dialog should open Popular for first-time users', async ({
     comfyPage
   }) => {
     // Set the tutorial as not completed to mark the user as a first-time user
@@ -104,8 +104,16 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     // Load the page
     await comfyPage.setup({ clearStorage: true })
 
-    // Expect the templates dialog to be shown
     await expect(comfyPage.templates.content).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('heading', { name: 'Popular', exact: true })
+    ).toBeVisible()
+    await comfyPage.page.getByRole('button', { name: 'Filters' }).click()
+    await expect(
+      comfyPage.page
+        .getByRole('combobox', { name: 'Sort by' })
+        .filter({ visible: true })
+    ).toHaveText('Popular')
   })
 
   test('dialog should not be shown when first-time user opens a shared workflow link', async ({
