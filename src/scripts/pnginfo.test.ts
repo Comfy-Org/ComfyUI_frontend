@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -253,6 +253,10 @@ describe('importA1111', () => {
   const parametersWithoutNegativePrompt =
     'positive\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
 
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   it.each([
     ['has no steps', 'positive'],
     ['has no options', 'positive\nNegative prompt: negative\nSteps:']
@@ -285,7 +289,6 @@ describe('importA1111', () => {
     ['with a negative prompt', parameters, 'negative'],
     ['without a negative prompt', parametersWithoutNegativePrompt, '']
   ])('imports parameters %s', async (_case, input, expectedNegativePrompt) => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
