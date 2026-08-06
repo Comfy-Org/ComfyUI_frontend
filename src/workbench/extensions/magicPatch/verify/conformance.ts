@@ -229,6 +229,47 @@ const checks: readonly Check[] = [
     }
   },
   {
+    id: 'diff-is-mostly-substance',
+    description:
+      'Most of the diff should be behaviour, not lines that merely moved indentation.',
+    run: (ctx) => {
+      const before = ctx.original.split('\n')
+      const after = ctx.converted.split('\n')
+      const kept = new Set(before.map((l) => l.trim()).filter(Boolean))
+      const removed = new Set(after.map((l) => l.trim()).filter(Boolean))
+
+      // A line present on both sides once trimmed did not change; it only
+      // moved.
+      //
+      // Mostly informational. Removing a registerExtension wrapper dedents its
+      // entire body, and that churn is unavoidable — measured across the
+      // current database it runs 17-39% of added lines, all of it legitimate.
+      // Only a ratio high enough to mean the file was reformatted for its own
+      // sake is treated as a failure.
+      const changedOut = after.filter(
+        (line) => line.trim() && !before.includes(line)
+      )
+      const movedOnly = changedOut.filter((line) => kept.has(line.trim()))
+      if (!changedOut.length) {
+        return result('diff-is-mostly-substance', 'skipped', 'Nothing changed.')
+      }
+      const ratio = movedOnly.length / changedOut.length
+      const detail =
+        `${movedOnly.length}/${changedOut.length} added line(s) differ only in ` +
+        `indentation.`
+      void removed
+      return ratio > 0.9
+        ? result(
+            'diff-is-mostly-substance',
+            'failed',
+            `${detail} At that proportion the file was reflowed rather than ` +
+              `converted. Leave the indentation of lines you are not otherwise ` +
+              `changing alone.`
+          )
+        : result('diff-is-mostly-substance', 'passed', detail)
+    }
+  },
+  {
     id: 'no-net-new-lines',
     description:
       'A conversion should not grow the file substantially; large growth suggests a shim.',

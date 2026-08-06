@@ -140,6 +140,69 @@ fail the whole file:
 
 Both of these caught real conversions that every other check passed.
 
+## Keep the diff small — it is the message
+
+These diffs are read by the pack's author, often as a pull request. A patch that
+touches ten lines says _we moved you off two deprecated calls_. A patch that
+rewrites the file says _we rewrote your code_, and it will be rejected on sight
+even when it is correct. Restructuring you did not need is not neutral.
+
+**Change the registration. Leave everything else where it is.**
+
+```js
+// before
+app.registerExtension({
+  name: 'x.ShowText',
+  async beforeRegisterNodeDef(nodeType, nodeData, app) {
+    if (nodeData.name === 'ShowText') {
+      function populate(text) {
+        /* 30 lines */
+      }
+      nodeType.prototype.onExecuted = function (message) {
+        populate.call(this, message.text)
+      }
+    }
+  }
+})
+```
+
+Two conversions of that, both correct:
+
+```js
+// ✗ restructured — populate hoisted, dedented, renamed, signature changed.
+//   Every line of a 30-line helper shows as changed.
+function populateText(node, lines) {
+  /* 30 lines, reflowed */
+}
+comfy.defs.extend('ShowText', (b) => b.onExecuted(populateText))
+
+// ✓ minimal — the helper stays exactly where and as it was.
+comfy.defs.extend('ShowText', (b) => {
+  function populate(text) {
+    /* 30 lines, byte-identical */
+  }
+  b.onExecuted((node, result) => populate.call(node, result.text))
+})
+```
+
+Both work. The second is the one an author merges.
+
+Rules that follow from this:
+
+- **Do not hoist, reorder or rename anything** the conversion does not require.
+  Keep helper names, parameter names and their order.
+- **Keep helpers nested where they were nested.** Pulling one to module scope
+  changes every line of it.
+- **Do not normalise style.** Quotes, semicolons, spacing and line breaks are
+  the author's, not yours.
+- **Do not "improve" adjacent code.** A bug next to your change is not your
+  change.
+
+Some churn is genuinely unavoidable: removing a `registerExtension` wrapper
+dedents its body, and that is a real structural change. Across the current
+database that is 17–39% of added lines, all legitimate. Do not contort the code
+to avoid it — but do not add to it either. `run_checks` reports the proportion.
+
 ## Pattern references
 
 Deep dives, loaded only when relevant. `SKILL.md` stays short on purpose; detail
