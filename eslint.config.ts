@@ -337,6 +337,39 @@ export default defineConfig([
     }
   },
   {
+    files: ['**/*.test.ts'],
+    // browser_tests is excluded so this warn-level entry does not override the
+    // error-level no-restricted-syntax guards defined above for those paths
+    ignores: ['browser_tests/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'TSAsExpression > TSAsExpression.expression',
+          message:
+            'Double type assertion. Use fromPartial<T>() from @total-typescript/shoehorn instead.'
+        },
+        {
+          selector:
+            "ImportDeclaration[source.value='@total-typescript/shoehorn'] > ImportSpecifier[imported.name='fromAny']",
+          message: 'fromAny erases type checking. Use fromPartial<T>() instead.'
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name='vi'][callee.property.name='mock'] > Literal[value='vue-i18n']",
+          message:
+            'Do not mock vue-i18n. Use a real createI18n instance (see src/components/searchbox/v2/__test__/testUtils.ts).'
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name='vi'][callee.property.name='mock'] > ImportExpression > Literal[value='vue-i18n']",
+          message:
+            'Do not mock vue-i18n. Use a real createI18n instance (see src/components/searchbox/v2/__test__/testUtils.ts).'
+        }
+      ]
+    }
+  },
+  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {
