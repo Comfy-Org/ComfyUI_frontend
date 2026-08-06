@@ -81,6 +81,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'isDeleted',
   'isDisabled',
   'isHidden',
+  'isInteracting',
   'isOutputNode',
   'isPinned',
   'isSerialized',
