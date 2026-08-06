@@ -24,16 +24,12 @@ interface Industry {
   label: string
   primarySrc: string
   secondarySrc: string
-  /** Bottom tile in the cluster. Industries still awaiting a bespoke reel
-   * fall back to the shared community one. */
+  /** Bottom tile in the cluster. */
   ambientSrc: string
   secondaryObjectPosition?: 'top' | 'bottom' | 'center'
 }
 
 const MEDIA_BASE = 'https://media.comfy.org/website/homepage/use-case'
-
-/** Shared community reel used until each industry has its own ambient clip. */
-const fallbackAmbientSrc = `${MEDIA_BASE}/left5.webm`
 
 const industries: Industry[] = [
   {
@@ -52,13 +48,13 @@ const industries: Industry[] = [
     label: t('industries.gaming', locale),
     primarySrc: `${MEDIA_BASE}/left3.webm`,
     secondarySrc: '/industries/secondary-gaming.webm',
-    ambientSrc: fallbackAmbientSrc
+    ambientSrc: '/industries/ambient-gaming.webm'
   },
   {
     label: t('industries.ecommerce', locale),
     primarySrc: `${MEDIA_BASE}/left4.webm`,
     secondarySrc: `${MEDIA_BASE}/right4.webm`,
-    ambientSrc: fallbackAmbientSrc,
+    ambientSrc: '/industries/ambient-ecommerce-fashion.webm',
     secondaryObjectPosition: 'top'
   }
 ]
