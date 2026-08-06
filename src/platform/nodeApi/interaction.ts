@@ -21,9 +21,12 @@
  *   wrote — `LGraphNode._positionUpdated` sets `Canvas` unconditionally — so it
  *   answers "which renderer", not "was this a user". A pack that moves nodes as
  *   part of its own gesture must guard its own re-entry.
- * - **When a drag starts or ends.** There is no renderer-agnostic drag
- *   lifecycle; `isDraggingVueNodes` exists only for Nodes 2.0. A gesture that
- *   must commit on release cannot be built on this alone.
+ * - **Whether a person did it.** See above; guard your own writes.
+ *
+ * `onNodeDragEnd` is **Nodes 2.0 only**. The legacy canvas renderer has no drag
+ * lifecycle to hang it on, so under it the listener never fires and a gesture
+ * that commits on release will not run. Movement itself (`onNodeMoved`) works
+ * under both.
  */
 import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
@@ -45,15 +48,26 @@ export type NodeMoveSource = (
   onMove: (nodeId: string, position: { x: number; y: number }) => void
 ) => Unsubscribe
 
+/** Reports a completed drag with the ids of every node it moved. */
+export type NodeDragEndSource = (
+  onDragEnd: (nodeIds: readonly string[]) => void
+) => Unsubscribe
+
 let source: NodeMoveSource | undefined
+let dragEndSource: NodeDragEndSource | undefined
 
 export function provideNodeMoveSource(provider: NodeMoveSource): void {
   source = provider
 }
 
+export function provideNodeDragEndSource(provider: NodeDragEndSource): void {
+  dragEndSource = provider
+}
+
 /** Test seam. */
 export function resetNodeMoveSource(): void {
   source = undefined
+  dragEndSource = undefined
 }
 
 export function createNodeMoveObserver(
@@ -75,6 +89,36 @@ export function createNodeMoveObserver(
       // queued.
       if (!node || node.isDeleted) return
       listener({ node, position })
+    })
+  }
+}
+
+/**
+ * A drag finished; here is everything it moved.
+ *
+ * The release is where an editing gesture commits — swap the two nodes, insert
+ * into the link under the cursor. Without it a pack can only watch movement and
+ * never act on it.
+ *
+ * **Nodes 2.0 only.** The legacy canvas renderer exposes no drag lifecycle, so
+ * this never fires under it.
+ */
+export function createNodeDragEndObserver(
+  handleFor: (nodeId: string) => NodeHandle | undefined
+) {
+  return function onNodeDragEnd(
+    listener: (nodes: readonly NodeHandle[]) => void
+  ): Unsubscribe {
+    if (!dragEndSource) {
+      throw new ComfyApiError(
+        'Drag completion is unavailable: the host has not provided a source.'
+      )
+    }
+    return dragEndSource((nodeIds) => {
+      const nodes = nodeIds
+        .map(handleFor)
+        .filter((node): node is NodeHandle => !!node && !node.isDeleted)
+      if (nodes.length) listener(nodes)
     })
   }
 }

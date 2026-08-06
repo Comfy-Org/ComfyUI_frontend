@@ -11,12 +11,14 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
+  createNodeDragEndObserver,
   createNodeMoveObserver,
   resetNodeMoveSource
 } from '@/platform/nodeApi/interaction'
 import type { NodeMoveEvent } from '@/platform/nodeApi/interaction'
 
 import { installNodeMoveBridge } from './nodeMoveBridge'
+import { layoutStore } from './store/layoutStore'
 import { useLayoutMutations } from './operations/layoutMutations'
 
 /** The global listener fan-out is queued, not synchronous. */
@@ -75,6 +77,40 @@ describe('node movement reaches the published API', () => {
     await settle()
 
     expect(seen.map((e) => e.position)).toEqual([{ x: 33, y: 44 }])
+  })
+
+  it('reports every node a drag moved, once, on release', async () => {
+    // The release is where an editing gesture commits — swap, insert-on-link.
+    const drags: string[][] = []
+    const onDragEnd = createNodeDragEndObserver(
+      (id) => ({ id, isDeleted: false }) as never
+    )
+    stops.push(onDragEnd((nodes) => drags.push(nodes.map((n) => n.id))))
+
+    layoutStore.isDraggingVueNodes.value = true
+    mutations.moveNode(node.id, { x: 10, y: 10 })
+    mutations.moveNode(node.id, { x: 20, y: 20 })
+    await settle()
+    layoutStore.isDraggingVueNodes.value = false
+    await settle()
+
+    expect(drags).toEqual([[String(node.id)]])
+  })
+
+  it('does not report a move made outside a drag', async () => {
+    const drags: unknown[] = []
+    const onDragEnd = createNodeDragEndObserver(
+      (id) => ({ id, isDeleted: false }) as never
+    )
+    stops.push(onDragEnd((nodes) => drags.push(nodes)))
+
+    mutations.moveNode(node.id, { x: 10, y: 10 })
+    await settle()
+    layoutStore.isDraggingVueNodes.value = true
+    layoutStore.isDraggingVueNodes.value = false
+    await settle()
+
+    expect(drags).toEqual([])
   })
 
   it('ignores layout changes that are not moves', async () => {
