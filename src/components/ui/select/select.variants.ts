@@ -23,8 +23,11 @@ export const selectItemVariants = cva({
   base: 'flex cursor-pointer items-center px-2 outline-none hover:bg-secondary-background-hover',
   variants: {
     layout: {
+      // Keyboard highlight uses the hover tone, NOT the selected tone: the
+      // combobox highlights the first row on open, and painting it with the
+      // selected background reads as a pre-checked option.
       multi:
-        'h-10 shrink-0 gap-2 rounded-lg data-highlighted:bg-secondary-background-selected data-highlighted:hover:bg-secondary-background-selected',
+        'h-9 shrink-0 gap-2 rounded-md data-highlighted:bg-secondary-background-hover',
       single:
         'relative w-full justify-between gap-3 rounded-sm py-3 text-sm select-none focus:bg-secondary-background-hover data-[state=checked]:bg-secondary-background-selected data-[state=checked]:hover:bg-secondary-background-selected'
     }

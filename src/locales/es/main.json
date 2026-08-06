@@ -4241,6 +4241,7 @@
       "Video": "Video",
       "Video API": "API de Video"
     },
+    "filteredBy": "Filtrado por:",
     "clearAllFilters": "Borrar todos los filtros",
     "error": {
       "templateNotFound": "Plantilla \"{templateName}\" no encontrada"
@@ -4260,6 +4261,7 @@
       "title": "Plantilla premium"
     },
     "resultsCount": "Mostrando {count} de {total} plantillas",
+    "typeFilter": "Tipo",
     "runsOnFilter": "Ejecuta en",
     "runsOnSelected": "{count} ejecuciones en",
     "searchPlaceholder": "Buscar plantillas...",
@@ -4276,7 +4278,37 @@
     "sorting": "Ordenar por",
     "title": "Comienza con una Plantilla",
     "useCaseFilter": "Tareas",
-    "useCasesSelected": "{count} casos de uso"
+    "useCasesSelected": "{count} casos de uso",
+    "detail": {
+      "useTemplate": "Usar plantilla",
+      "apiNodes": "Nodos de API",
+      "models": "Modelos",
+      "modelSize": "Tamaño de modelos",
+      "vram": "VRAM recomendada",
+      "useCase": "Caso de uso",
+      "license": "Licencia",
+      "published": "Publicación",
+      "customNodes": "Nodos personalizados",
+      "viewDetails": "Ver detalles",
+      "requirements": "Requisitos"
+    },
+    "readiness": {
+      "ready": "Listo para ejecutar",
+      "requiresDownload": "Requiere descarga",
+      "needsConfiguration": "Requiere configuración",
+      "unverified": "Sin verificar",
+      "reason": {
+        "ready": "Todo lo que necesita este template está disponible: ábrelo y ejecútalo.",
+        "customNodes": "Usa packs de nodos custom que hay que instalar antes.",
+        "apiKey": "Usa nodos de API de partner que necesitan una API key en Ajustes.",
+        "models": "Los archivos de modelo no están verificados en este equipo; puede que te pida descargarlos al abrir."
+      }
+    },
+    "paidTemplate": {
+      "badgeLabel": "API de socios",
+      "title": "Plantilla premium",
+      "credits": "Se ejecuta con créditos"
+    }
   },
   "templates": {
     "logoProviderSeparator": " y "

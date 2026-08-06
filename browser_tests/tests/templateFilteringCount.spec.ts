@@ -229,7 +229,7 @@ test.describe(
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(1)
 
-      await comfyPage.templatesDialog.clearFilters.click()
+      await comfyPage.templatesDialog.clearAllFilters()
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(2)
 

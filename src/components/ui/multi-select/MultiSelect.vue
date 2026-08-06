@@ -57,19 +57,21 @@
         @focus-outside="preventFocusDismiss"
       >
         <FocusScope class="contents" @mount-auto-focus.prevent>
-          <div v-if="showSearchBox" class="px-2 pt-2 pb-0">
-            <div
-              class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
-            >
-              <i
-                class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
-              />
-              <ComboboxInput
-                v-model="searchQuery"
-                :placeholder="searchPlaceholder ?? t('g.search')"
-                class="w-full border-none bg-transparent text-sm outline-none"
-              />
-            </div>
+          <!-- shadcn Command-style search: a full-bleed row with a bottom
+             hairline instead of a boxed input, so the panel reads as one
+             aligned column. -->
+          <div
+            v-if="showSearchBox"
+            class="-mx-2 -mt-2 mb-1 flex items-center gap-2 border-b border-border-subtle px-3"
+          >
+            <i
+              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+            />
+            <ComboboxInput
+              v-model="searchQuery"
+              :placeholder="searchPlaceholder ?? t('g.search')"
+              class="h-10 w-full border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
           </div>
 
           <!-- The actions row is rendered on the side of the viewport it

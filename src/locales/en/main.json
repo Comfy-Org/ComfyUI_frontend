@@ -1165,6 +1165,7 @@
       "Generation Type": "Generation Type"
     },
     "categories": "Categories",
+    "filteredBy": "Filtered by:",
     "clearAllFilters": "Clear all filters",
     "filtersApplied": "{count} filter applied | {count} filters applied",
     "filtersButton": "Filters",
@@ -1179,6 +1180,7 @@
     "modelsSelected": "{count} Models",
     "useCasesSelected": "{count} Use Cases",
     "runsOnSelected": "{count} Runs On",
+    "typeFilter": "Type",
     "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
     "paidTemplate": {
@@ -1198,6 +1200,36 @@
     },
     "error": {
       "templateNotFound": "Template \"{templateName}\" not found"
+    },
+    "detail": {
+      "useTemplate": "Use template",
+      "apiNodes": "API nodes",
+      "models": "Models",
+      "modelSize": "Models size",
+      "vram": "Recommended VRAM",
+      "useCase": "Use case",
+      "license": "License",
+      "published": "Published",
+      "customNodes": "Custom nodes",
+      "viewDetails": "View details",
+      "requirements": "Requirements"
+    },
+    "readiness": {
+      "ready": "Ready to run",
+      "requiresDownload": "Requires download",
+      "needsConfiguration": "Needs configuration",
+      "unverified": "Not verified",
+      "reason": {
+        "ready": "Everything this template needs is available — open it and run.",
+        "customNodes": "Uses custom node packs that need to be installed first.",
+        "apiKey": "Uses partner API nodes that need an API key in Settings.",
+        "models": "Model files are not verified on this device — you may be asked to download them when opening."
+      }
+    },
+    "paidTemplate": {
+      "badgeLabel": "Partner API",
+      "title": "Premium template",
+      "credits": "Runs with credits"
     }
   },
   "templateWidgets": {

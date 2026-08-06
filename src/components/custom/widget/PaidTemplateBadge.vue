@@ -29,7 +29,7 @@ const tooltipCopy = computed(() => {
     <Tag
       :label="$t('templateWorkflows.paidTemplate.badgeLabel')"
       shape="overlay"
-      class="h-7 rounded-lg bg-black/30 px-2 backdrop-blur-[20px] [&>span]:sr-only"
+      class="flex size-7 items-center justify-center rounded-lg bg-black/30 p-0 backdrop-blur-[20px] [&>span]:sr-only"
     >
       <template #icon>
         <i
