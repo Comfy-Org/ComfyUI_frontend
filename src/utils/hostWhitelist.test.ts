@@ -1,8 +1,28 @@
 import { describe, expect, it } from 'vitest'
 
-import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
+import {
+  isHostWhitelisted,
+  isLoopbackHost,
+  normalizeHost
+} from '@/utils/hostWhitelist'
 
 describe('hostWhitelist utils', () => {
+  describe('isLoopbackHost', () => {
+    it.for(['localhost', 'app.localhost', '127.0.0.1', '127.9.8.7', '::1'])(
+      'accepts local host %o',
+      (input) => {
+        expect(isLoopbackHost(input)).toBe(true)
+      }
+    )
+
+    it.for(['192.168.1.10', '0.0.0.0', 'staging.comfy.org', 'example.com'])(
+      'rejects non-loopback host %o',
+      (input) => {
+        expect(isLoopbackHost(input)).toBe(false)
+      }
+    )
+  })
+
   describe('normalizeHost', () => {
     it.for([
       ['LOCALHOST', 'localhost'],

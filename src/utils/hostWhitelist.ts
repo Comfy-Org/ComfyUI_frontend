@@ -39,12 +39,15 @@ export function normalizeHost(input: string): string {
 /** Public check used by the UI. */
 export function isHostWhitelisted(rawHost: string): boolean {
   const host = normalizeHost(rawHost)
-  if (isLocalhostLabel(host)) return true
-  if (isIPv4Loopback(host)) return true
-  if (isIPv6Loopback(host)) return true
+  if (isLoopbackHost(host)) return true
   if (isComfyOrgHost(host)) return true
   const normalizedList = HOST_WHITELIST.map(normalizeHost)
   return normalizedList.includes(host)
+}
+
+export function isLoopbackHost(rawHost: string): boolean {
+  const host = normalizeHost(rawHost)
+  return isLocalhostLabel(host) || isIPv4Loopback(host) || isIPv6Loopback(host)
 }
 
 /* -------------------- Helpers -------------------- */
