@@ -1,3 +1,5 @@
+import type { OAuthConsentChallenge as GeneratedOAuthConsentChallenge } from '@comfyorg/ingest-types'
+
 // All OAuth calls are relative-URL (same-origin) on purpose. useSessionCookie
 // POSTs /api/auth/session through the Vite dev-server proxy (or the production
 // same-host ingress), so the Set-Cookie response lands on the FE origin. A
@@ -14,10 +16,10 @@ export type OAuthWorkspace = {
   role: 'owner' | 'member'
 }
 
-export type OAuthConsentChallenge = {
-  oauth_request_id: string
-  csrf_token: string
-  client_display_name: string
+export type OAuthConsentChallenge = Omit<
+  GeneratedOAuthConsentChallenge,
+  'resource_display_name' | 'redirect_uri' | 'workspaces'
+> & {
   resource_display_name?: string
   /**
    * Exact registered redirect URI the OAuth client will be sent to on
@@ -29,9 +31,9 @@ export type OAuthConsentChallenge = {
    * RFC 7591 application_type — "native" (CLI/desktop, loopback redirect)
    * or "web" (HTTPS-hosted). Absent for legacy seeded clients. Used to render
    * a Native / Web badge so users know what kind of app they're authorizing.
+   * Not in the spec yet.
    */
   client_application_type?: 'native' | 'web'
-  scopes: string[]
   workspaces: OAuthWorkspace[]
 }
 

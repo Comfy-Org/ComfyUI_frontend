@@ -27,6 +27,14 @@ interface QualifiedName {
 interface TypeNode {
   readonly type: string
   readonly typeName?: Identifier | QualifiedName
+  readonly types?: readonly TypeNode[]
+  readonly typeArguments?: { readonly params?: readonly TypeNode[] }
+  readonly objectType?: TypeNode
+}
+
+interface ImportDeclaration {
+  readonly source: { readonly value: string }
+  readonly specifiers?: readonly { readonly local?: Identifier }[]
 }
 
 interface NamedDeclaration {
@@ -157,8 +165,34 @@ function isZodInference(annotation: TypeNode): boolean {
   return typeName.left?.name === 'z' && typeName.right?.name === 'infer'
 }
 
-function isDerivedRatherThanRedeclared(annotation: TypeNode): boolean {
-  return isZodInference(annotation) || annotation.type === 'TSIndexedAccessType'
+function referencesGenerated(
+  node: TypeNode,
+  generatedLocalNames: ReadonlySet<string>
+): boolean {
+  if (node.type !== 'TSTypeReference') return false
+  const typeName = node.typeName
+  if (
+    typeName?.type === 'Identifier' &&
+    generatedLocalNames.has(typeName.name)
+  ) {
+    return true
+  }
+  return (node.typeArguments?.params ?? []).some((param) =>
+    referencesGenerated(param, generatedLocalNames)
+  )
+}
+
+function isDerivedRatherThanRedeclared(
+  annotation: TypeNode,
+  generatedLocalNames: ReadonlySet<string>
+): boolean {
+  if (isZodInference(annotation)) return true
+  if (annotation.type === 'TSIndexedAccessType') return true
+  if (referencesGenerated(annotation, generatedLocalNames)) return true
+  if (annotation.type !== 'TSIntersectionType') return false
+  return (annotation.types ?? []).some((member) =>
+    referencesGenerated(member, generatedLocalNames)
+  )
 }
 
 function duplicateMessage(name: string): string {
@@ -167,6 +201,8 @@ function duplicateMessage(name: string): string {
 
 const noDuplicateIngestType = {
   create(context: RuleContext) {
+    const generatedLocalNames = new Set<string>()
+
     const reportIfDuplicate = (node: NamedDeclaration) => {
       const { name } = node.id
       if (!generatedTypeNames().has(name)) return
@@ -174,12 +210,23 @@ const noDuplicateIngestType = {
     }
 
     return {
+      ImportDeclaration(node: ImportDeclaration) {
+        if (node.source.value !== GENERATED_PACKAGE) return
+        for (const specifier of node.specifiers ?? []) {
+          if (specifier.local) generatedLocalNames.add(specifier.local.name)
+        }
+      },
       TSInterfaceDeclaration(node: NamedDeclaration) {
         reportIfDuplicate(node)
       },
       TSTypeAliasDeclaration(node: TypeAliasDeclaration) {
         const annotation = node.typeAnnotation
-        if (annotation && isDerivedRatherThanRedeclared(annotation)) return
+        if (
+          annotation &&
+          isDerivedRatherThanRedeclared(annotation, generatedLocalNames)
+        ) {
+          return
+        }
         reportIfDuplicate(node)
       }
     }

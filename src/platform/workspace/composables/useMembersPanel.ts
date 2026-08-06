@@ -12,7 +12,7 @@ import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
-  PendingInvite,
+  WorkspacePendingInvite,
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -72,10 +72,10 @@ function toInviteSortField(sortField: SortField): InviteSortField {
 }
 
 export function sortPendingInvites(
-  invites: PendingInvite[],
+  invites: WorkspacePendingInvite[],
   sortField: SortField,
   sortDirection: SortDirection
-): PendingInvite[] {
+): WorkspacePendingInvite[] {
   const field = toInviteSortField(sortField)
   return [...invites].sort((a, b) => {
     const aDate = a[field]
@@ -341,7 +341,7 @@ export function useMembersPanel() {
     }
   }
 
-  async function handleResendInvite(invite: PendingInvite) {
+  async function handleResendInvite(invite: WorkspacePendingInvite) {
     try {
       await resendInvite(invite.id)
       toast.add({
@@ -357,7 +357,7 @@ export function useMembersPanel() {
     }
   }
 
-  function handleRevokeInvite(invite: PendingInvite) {
+  function handleRevokeInvite(invite: WorkspacePendingInvite) {
     void showRevokeInviteDialog(invite.id)
   }
 

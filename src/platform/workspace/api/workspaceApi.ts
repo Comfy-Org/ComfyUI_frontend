@@ -1,12 +1,36 @@
 import type {
+  AcceptInviteResponse,
+  BillingBalanceResponse,
+  BillingEventsResponse,
+  BillingOpStatusResponse,
+  BillingPlansResponse,
   BillingStatusResponse as GeneratedBillingStatusResponse,
-  ChurnkeyAuthResponse
+  CancelSubscriptionRequest,
+  CancelSubscriptionResponse,
+  ChurnkeyAuthResponse,
+  CreateInviteRequest,
+  CreateTopupRequest,
+  CreateTopupResponse,
+  ListInvitesResponse,
+  ListMembersResponse as GeneratedListMembersResponse,
+  ListWorkspacesResponse,
+  Member as GeneratedMember,
+  PaymentPortalRequest,
+  PaymentPortalResponse,
+  PendingInvite,
+  PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
+  PreviewSubscribeResponse,
+  ResubscribeRequest,
+  ResubscribeResponse,
+  SubscribeRequest,
+  SubscribeResponse,
+  TeamCreditStopSummary,
+  WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
-import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -15,76 +39,42 @@ import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
 
+export type {
+  BillingBalanceResponse,
+  BillingOpStatusResponse,
+  BillingStatus,
+  CreateTopupResponse,
+  PendingInvite,
+  Plan,
+  PreviewSubscribeResponse,
+  SubscribeResponse,
+  SubscriptionDuration,
+  SubscriptionTier,
+  TeamCreditStops,
+  WorkspaceWithRole
+} from '@comfyorg/ingest-types'
+
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
 export type BillingRail = NonNullable<
   GeneratedBillingStatusResponse['billing_rail']
 >
 
-interface Workspace {
-  id: WorkspaceId
-  name: string
-  type: WorkspaceType
-  created_at: string
-  joined_at: string
-}
-
-export interface WorkspaceWithRole extends Workspace {
-  role: WorkspaceRole
-  subscription_tier?: SubscriptionTier
-}
-
-export interface Member {
-  id: UserId
-  name: string
-  email: string
-  joined_at: string
-  role: WorkspaceRole
-  // True when this member is the workspace's original owner/creator
-  // (member.id == workspace.created_by_user_id). Used for personal creator
-  // protections and Team-to-personal downgrade eligibility.
-  // Optional: the cloud OpenAPI does not carry this field yet.
+// Credit fields are FE-only (FE-1277); is_original_owner stays optional
+// because callers fall back to earliest-joined when the server omits it.
+export type Member = Omit<GeneratedMember, 'is_original_owner'> & {
   is_original_owner?: boolean
-  // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
-  // neither usage nor limit yet; persistence and real usage land in FE-1278.
   credits_used_this_month?: number
   monthly_credit_limit?: number | null
 }
 
-interface PaginationInfo {
-  offset: number
-  limit: number
-  total: number
-}
-
-interface ListMembersResponse {
+type ListMembersResponse = Omit<GeneratedListMembersResponse, 'members'> & {
   members: Member[]
-  pagination: PaginationInfo
 }
 
 export interface ListMembersParams {
   offset?: number
   limit?: number
-}
-
-export interface PendingInvite {
-  id: WorkspaceInviteId
-  email: string
-  invited_at: string
-  expires_at: string
-}
-
-interface ListInvitesResponse {
-  invites: PendingInvite[]
-}
-
-interface CreateInviteRequest {
-  email: string
-}
-
-interface AcceptInviteResponse {
-  workspace_id: WorkspaceId
-  workspace_name: string
 }
 
 interface CreateWorkspacePayload {
@@ -95,89 +85,11 @@ interface UpdateWorkspacePayload {
   name: string
 }
 
-interface ListWorkspacesResponse {
-  workspaces: WorkspaceWithRole[]
-}
-
-export type { SubscriptionTier }
-export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
-type PlanAvailabilityReason =
-  | 'same_plan'
-  | 'incompatible_transition'
-  | 'requires_team'
-  | 'requires_personal'
-  | 'exceeds_max_seats'
-
-interface PlanAvailability {
-  available: boolean
-  reason?: PlanAvailabilityReason
-}
-
-interface PlanSeatSummary {
-  seat_count: number
-  total_cost_cents: number
-  total_credits_cents: number
-}
-
-export interface Plan {
-  slug: string
-  tier: SubscriptionTier
-  duration: SubscriptionDuration
-  price_cents: number
-  credits_cents: number
-  max_seats: number
-  availability: PlanAvailability
-  seat_summary: PlanSeatSummary
-}
-
-interface TeamCreditStopPrice {
-  list_price_cents: number
-  price_cents: number
-}
-
-interface TeamCreditStop {
-  id: string
-  credits: number
-  monthly: TeamCreditStopPrice
-  yearly: TeamCreditStopPrice
-}
-
-export interface TeamCreditStops {
-  default_stop_index: number
-  stops: TeamCreditStop[]
-}
-
-interface BillingPlansResponse {
-  current_plan_slug?: string
-  plans: Plan[]
-  team_credit_stops?: TeamCreditStops
-}
-
-type SubscriptionTransitionType =
-  | 'new_subscription'
-  | 'upgrade'
-  | 'downgrade'
-  | 'duration_change'
-
-interface PreviewSubscribeRequest {
-  plan_slug: string
-  team_credit_stop_id?: string
-  billing_cycle?: SubscribeBillingCycle
-}
-
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 
-interface SubscribeRequest {
-  plan_slug: string
-  idempotency_key?: string
-  return_url?: string
-  cancel_url?: string
-  /** Required for the per-credit Team plan; selects the slider stop. */
-  team_credit_stop_id?: string
+/** `billing_cycle` is accepted by the endpoint but absent from the spec. */
+type PreviewSubscribeRequest = GeneratedPreviewSubscribeRequest & {
   billing_cycle?: SubscribeBillingCycle
-  /** Required to change plans while the current subscription is cancelled; server rejects the change without it. */
-  confirm_reactivation?: boolean
-  proration_at?: string
 }
 
 export interface SubscribeOptions {
@@ -194,161 +106,28 @@ export interface PreviewSubscribeOptions {
   billingCycle?: SubscribeBillingCycle
 }
 
-type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
-
-export interface SubscribeResponse {
-  billing_op_id: string
-  status: SubscribeStatus
-  effective_at?: string
-  payment_method_url?: string
-}
-
-interface CancelSubscriptionRequest {
-  idempotency_key?: string
-}
-
-interface CancelSubscriptionResponse {
-  billing_op_id: string
-  cancel_at: string
-}
-
-interface ResubscribeRequest {
-  idempotency_key?: string
-}
-
-interface ResubscribeResponse {
-  billing_op_id: string
-  status: 'active'
-  message?: string
-}
-
-interface PaymentPortalRequest {
-  return_url?: string
-}
-
-interface PaymentPortalResponse {
-  url: string
-}
-
-interface PreviewPlanInfo {
-  slug: string
-  // The billing preview contract includes the workspace-level Team tier even
-  // though the registry subscription tier used by the personal plan catalog
-  // does not.
-  tier: SubscriptionTier | 'TEAM'
-  duration: SubscriptionDuration
-  price_cents: number
-  credits_cents: number
-  seat_summary: PlanSeatSummary
-  period_start?: string
-  period_end?: string
-}
-
-export interface PreviewSubscribeResponse {
-  allowed: boolean
-  reason?: string
-  transition_type: SubscriptionTransitionType
-  effective_at: string
-  is_immediate: boolean
-  cost_today_cents: number
-  cost_next_period_cents: number
-  credits_today_cents: number
-  credits_next_period_cents: number
-  current_plan?: PreviewPlanInfo
-  new_plan: PreviewPlanInfo
-  proration_at?: string
-}
-
+/** The spec omits `scheduled`; it is emitted for pending plan changes. */
 export type BillingSubscriptionStatus =
   | 'active'
   | 'scheduled'
   | 'ended'
   | 'canceled'
 
-export type BillingStatus =
-  | 'awaiting_payment_method'
-  | 'pending_payment'
-  | 'paid'
-  | 'payment_failed'
-  // A Stripe-paused subscription stays `active` on the activity axis; the pause
-  // is a payment-lifecycle fact. Not emitted until cloud#5075 ships.
-  | 'paused'
-  | 'inactive'
+export type CurrentTeamCreditStop = TeamCreditStopSummary
 
-export interface CurrentTeamCreditStop {
-  id: string
-  credits_monthly: number
-  stop_usd: number
-}
-
-export interface BillingStatusResponse {
-  is_active: boolean
+// Seat counts, `scheduled` status, the scheduled-change fields and
+// pending_billing_op_type are not in the spec yet.
+export type BillingStatusResponse = Omit<
+  GeneratedBillingStatusResponse,
+  'max_seats' | 'occupied_seats' | 'subscription_status' | 'team_credit_stop'
+> & {
   max_seats?: number | null
   occupied_seats?: number | null
-  billing_rail?: BillingRail
   subscription_status?: BillingSubscriptionStatus
-  subscription_tier?: SubscriptionTier
-  subscription_duration?: SubscriptionDuration
-  plan_slug?: string
+  team_credit_stop?: CurrentTeamCreditStop
   scheduled_plan_slug?: string
   change_at?: string
-  billing_status?: BillingStatus
-  pending_billing_op_id?: string
   pending_billing_op_type?: 'subscription' | 'topup'
-  action_url?: string
-  has_funds: boolean
-  cancel_at?: string
-  renewal_date?: string
-  team_credit_stop?: CurrentTeamCreditStop
-}
-
-export interface BillingBalanceResponse {
-  amount_micros: number
-  prepaid_balance_micros?: number
-  cloud_credit_balance_micros?: number
-  pending_charges_micros?: number
-  effective_balance_micros?: number
-  currency: string
-}
-
-interface CreateTopupRequest {
-  amount_cents: number
-  idempotency_key?: string
-}
-
-type TopupStatus = 'pending' | 'completed' | 'failed'
-
-export interface CreateTopupResponse {
-  billing_op_id: string
-  topup_id: string
-  status: TopupStatus
-  amount_cents: number
-}
-
-type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
-
-export interface BillingOpStatusResponse {
-  id: string
-  status: BillingOpStatus
-  error_message?: string
-  started_at: string
-  completed_at?: string
-  action_url?: string
-}
-
-interface BillingEvent {
-  event_type: string
-  event_id: string
-  params?: Record<string, unknown>
-  createdAt: string
-}
-
-interface BillingEventsResponse {
-  total: number
-  events: BillingEvent[]
-  page: number
-  limit: number
-  totalPages: number
 }
 
 interface GetBillingEventsParams {

@@ -138,7 +138,7 @@
       ],
       "jsPlugins": ["./tools/oxlint-plugins/comfyIngestTypes.ts"],
       "rules": {
-        "comfy/no-duplicate-ingest-type": "warn"
+        "comfy/no-duplicate-ingest-type": "error"
       }
     },
     {

@@ -14,10 +14,15 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
-import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
-const WorkspaceWithRoleSchema = z.object({
+type WorkspaceIdentity = Pick<
+  WorkspaceWithRole,
+  'id' | 'name' | 'type' | 'role'
+>
+
+const WorkspaceIdentitySchema = z.object({
   id: z.string(),
   name: z.string(),
   type: z.enum(['personal', 'team']),
@@ -62,7 +67,7 @@ export class WorkspaceAuthError extends Error {
 interface MintedToken {
   token: string
   expiresAt: number
-  workspace: WorkspaceWithRole
+  workspace: WorkspaceIdentity
   ownerUid: string
 }
 
@@ -107,7 +112,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const { flags } = useFeatureFlags()
 
   // State
-  const currentWorkspace = shallowRef<WorkspaceWithRole | null>(null)
+  const currentWorkspace = shallowRef<WorkspaceIdentity | null>(null)
   const workspaceToken = ref<string | null>(null)
   const workspaceTokenExpiresAt = ref<number | null>(null)
   const workspaceTokenOwnerUid = ref<string | null>(null)
@@ -230,7 +235,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     )
   }
 
-  function persistWorkspaceIdentity(workspace: WorkspaceWithRole): void {
+  function persistWorkspaceIdentity(workspace: WorkspaceIdentity): void {
     try {
       sessionStorage.setItem(
         WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
@@ -242,7 +247,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function persistToSession(
-    workspace: WorkspaceWithRole,
+    workspace: WorkspaceIdentity,
     token: string,
     expiresAt: number,
     ownerUid: string
@@ -308,7 +313,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         return false
       }
 
-      const parseResult = WorkspaceWithRoleSchema.safeParse(
+      const parseResult = WorkspaceIdentitySchema.safeParse(
         JSON.parse(workspaceJson)
       )
 

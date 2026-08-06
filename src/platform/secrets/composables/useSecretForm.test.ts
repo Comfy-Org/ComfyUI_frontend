@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   SecretMetadata,
-  SecretProvider,
+  FirstClassSecretProvider,
   SecretProviderInfo
 } from '../types'
 import { useSecretForm } from './useSecretForm'
@@ -418,7 +418,7 @@ describe('useSecretForm', () => {
 
     it('updates disabled state when existingProviders changes', () => {
       const visible = ref(true)
-      const existingProviders = ref<SecretProvider[]>(['huggingface'])
+      const existingProviders = ref<FirstClassSecretProvider[]>(['huggingface'])
       const { providerOptions } = useSecretForm({
         mode: 'create',
         existingProviders: () => existingProviders.value,

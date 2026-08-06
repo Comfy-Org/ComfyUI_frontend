@@ -270,7 +270,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   SubscriptionTier,
@@ -396,7 +396,7 @@ const hasPaidSubscription = computed(
 )
 
 const currentTierKey = computed<TierKey | null>(() =>
-  subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
+  subscriptionTier.value ? toTierKey(subscriptionTier.value) : null
 )
 
 const currentPlanDescriptor = computed(() => {

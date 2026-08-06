@@ -231,7 +231,7 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   DEFAULT_TIER_KEY,
-  TIER_TO_KEY,
+  toTierKey,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
@@ -275,7 +275,7 @@ const telemetry = useTelemetry()
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
   if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
+  return toTierKey(tier) ?? DEFAULT_TIER_KEY
 })
 
 const creditPoolTotalCredits = computed<number | null>(() => {

@@ -13,6 +13,13 @@ const pluginPath = path.resolve('tools/oxlint-plugins/comfyIngestTypes.ts')
 const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
 
 const fixture = `import type { z } from 'zod'
+import type { Member as GeneratedMember } from '@comfyorg/ingest-types'
+
+type Member = GeneratedMember & { credits_used_this_month?: number }
+
+type Plan = Omit<GeneratedMember, 'id'> & { id: string }
+
+type Workspace = { a: number } & { b: number }
 
 declare const zResubscribeResponse: unknown
 declare type components = { schemas: { ErrorResponse: string } }
@@ -35,6 +42,9 @@ interface LocalOnlyShape {
 }
 
 export type {
+  Member,
+  Plan,
+  Workspace,
   PendingInvite,
   SubscriptionDuration,
   ResubscribeResponse,
@@ -97,6 +107,18 @@ describe('comfy/no-duplicate-ingest-type', () => {
 
   it('ignores names absent from the generated package', () => {
     expect(reportedNames).not.toContain('LocalOnlyShape')
+  })
+
+  it('ignores a type that intersects the generated export with local fields', () => {
+    expect(reportedNames).not.toContain('Member')
+  })
+
+  it('ignores a type derived from the generated export through Omit', () => {
+    expect(reportedNames).not.toContain('Plan')
+  })
+
+  it('flags a local-only intersection that derives from nothing generated', () => {
+    expect(reportedNames).toContain('Workspace')
   })
 })
 

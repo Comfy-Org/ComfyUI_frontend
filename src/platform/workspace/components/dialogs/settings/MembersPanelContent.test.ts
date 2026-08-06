@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import MembersPanelContent from './MembersPanelContent.vue'
 
 import type {
-  PendingInvite,
+  WorkspacePendingInvite,
   WorkspaceMember
 } from '../../../stores/teamWorkspaceStore'
 
@@ -48,7 +48,7 @@ const {
 
   return {
     mockMembers: ref<WorkspaceMember[]>([]),
-    mockPendingInvites: ref<PendingInvite[]>([]),
+    mockPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
     mockHasMultipleMembers: ref(true),
     mockShowSearch: ref(true),
@@ -56,7 +56,7 @@ const {
     mockShowInviteButton: ref(true),
     mockIsInviteDisabled: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
-    mockFilteredPendingInvites: ref<PendingInvite[]>([]),
+    mockFilteredPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockMaxSeats: ref<number | null>(20),
     mockIsInPersonalWorkspace: ref(false),
     mockHasTeamPlan: ref(true),
@@ -214,7 +214,9 @@ function createMember(
   }
 }
 
-function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
+function createInvite(
+  overrides: Partial<WorkspacePendingInvite> = {}
+): WorkspacePendingInvite {
   return {
     id: 'invite-1',
     email: 'invitee@example.com',
