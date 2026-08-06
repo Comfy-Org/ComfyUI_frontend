@@ -604,30 +604,40 @@ describe('useLayerEditorSession', () => {
       expect(session.canvasSize.value).toEqual({ w: 64, h: 8192 })
     })
 
-    it('grows the artboard in place without refitting the view', async () => {
+    it('grows the canvas around its center, keeping layers visually fixed', async () => {
       const { session } = await loadedSession()
       const els = makeElements()
       session.setElements(els)
       const zoom = session.zoomRatio.value
-      const { left, top } = els.container.style
+      const layer = rasterLayer(session, 0)
+      const screenX = (x: number) =>
+        parseFloat(els.container.style.left) + x * zoom
+      const screenY = (y: number) =>
+        parseFloat(els.container.style.top) + y * zoom
+      const beforeX = screenX(layer.transform.x)
+      const beforeY = screenY(layer.transform.y)
 
       session.setCanvasSize(128, 96)
       expect(session.zoomRatio.value).toBe(zoom)
-      expect(els.container.style.left).toBe(left)
-      expect(els.container.style.top).toBe(top)
+      expect(layer.transform).toMatchObject({ x: 32, y: 24 })
       expect(parseFloat(els.container.style.width)).toBeCloseTo(128 * zoom)
       expect(parseFloat(els.container.style.height)).toBeCloseTo(96 * zoom)
+      expect(screenX(layer.transform.x)).toBeCloseTo(beforeX)
+      expect(screenY(layer.transform.y)).toBeCloseTo(beforeY)
     })
 
-    it('keeps the container in sync with the document across undo/redo', async () => {
+    it('keeps the container and layer positions in sync across undo/redo', async () => {
       const { session } = await loadedSession()
       const els = makeElements()
       session.setElements(els)
       const zoom = session.zoomRatio.value
-      session.setCanvasSize(128, 96)
+      const layer = rasterLayer(session, 0)
+      session.setCanvasSize(129, 97)
+      expect(layer.transform).toMatchObject({ x: 32, y: 24 })
 
       session.undo()
       await flushFrames()
+      expect(layer.transform).toMatchObject({ x: 0, y: 0 })
       expect(parseFloat(els.container.style.width)).toBeCloseTo(64 * zoom)
       expect(parseFloat(els.container.style.height)).toBeCloseTo(48 * zoom)
       expect(els.main.width).toBe(64)
@@ -635,8 +645,9 @@ describe('useLayerEditorSession', () => {
 
       session.redo()
       await flushFrames()
-      expect(parseFloat(els.container.style.width)).toBeCloseTo(128 * zoom)
-      expect(els.main.width).toBe(128)
+      expect(layer.transform).toMatchObject({ x: 32, y: 24 })
+      expect(parseFloat(els.container.style.width)).toBeCloseTo(129 * zoom)
+      expect(els.main.width).toBe(129)
     })
   })
 
