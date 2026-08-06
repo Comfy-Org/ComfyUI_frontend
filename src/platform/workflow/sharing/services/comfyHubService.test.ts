@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockFetchApi = vi.hoisted(() => vi.fn())
 const mockGlobalFetch = vi.hoisted(() => vi.fn())
@@ -30,10 +30,6 @@ function mockUploadResponse(ok = true, status = 200): Response {
 describe('useComfyHubService', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockGlobalFetch)
-  })
-
-  afterAll(() => {
-    vi.unstubAllGlobals()
   })
 
   it('requests upload url and returns token payload', async () => {
