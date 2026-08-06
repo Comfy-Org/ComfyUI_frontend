@@ -332,6 +332,37 @@ function inlineSources(work) {
   )
 }
 
+/** What each delegated converter is told. The lead supplies the file list. */
+function converterPrompt(work) {
+  return `You convert files from the ComfyUI custom-node pack "${work.pack}" off
+the deprecated APIs and onto the published node API.
+
+You will be told which files are yours. Convert exactly those and no others —
+another agent owns the rest, and two agents writing the same file will fight.
+
+${references(work)}
+
+For each file you own:
+1. read_file it, and read_file any sibling whose contract it touches. You may
+   read anything in the pack; you may only write your own files.
+2. write_conversion, then run_checks, and fix whatever fails.
+3. mark_complete, or give_up with the category that fits. Batch punts into one
+   give_up call.
+4. suggest_skill_note for anything you had to work out that the skill does not
+   already say.
+
+Do not add a compatibility shim. Keep the diff small: change the registration
+and leave everything else where it is — no hoisting, renaming, reordering or
+restyling the conversion does not require.
+
+Handle state is read and written through methods, never properties:
+setTitle, setColor, setBgColor, setMode, setCollapsed, setProperty,
+setSize([w, h]) on nodes; getValue/setValue, isHidden/setHidden, setOption on
+widgets. Property syntax compiles and silently does nothing.
+
+Report back which files you converted and which you abandoned, with reasons.`
+}
+
 function buildPrompt(work) {
   const perFile = work.files
     .map(
@@ -372,6 +403,14 @@ Full source of every file in scope:
 ${inlineSources(work)}
 
 Workflow:
+0. You have converter subagents. Delegate rather than converting serially:
+   group the files by what they share — a helper and its callers together, a
+   caller and its callee together — and hand each group to one converter with
+   the Task tool. Independent groups can go at once; run several converters in
+   parallel and keep going until every file is resolved. Files that share a
+   contract must go to the SAME converter, or one will change a signature the
+   other is still calling. Convert trivial files yourself rather than paying
+   for a delegation.
 1. The sources and findings above are complete — do not call list_files,
    findings_for, or read_file for anything already shown. read_file is for
    siblings you need and files marked too large. Files in a pack import each
@@ -952,14 +991,37 @@ async function convertPack(work, tracePath) {
       model: process.env.MAGIC_PATCH_MODEL || DEFAULT_MODEL,
       systemPrompt: systemPrompt(),
       mcpServers: { magicpatch: server },
-      // Only our tools: the agent must go through the harness rather than
-      // editing the corpus on disk or shelling out.
-      allowedTools: toolNames,
+      // Our tools plus delegation. Task is the lead's alone — converters get
+      // toolNames only, so fan-out stays one level and the lead keeps a single
+      // view of what is still unresolved.
+      allowedTools: [...toolNames, 'Task'],
       permissionMode: 'bypassPermissions',
       // Crystools exhausted 72 turns mid-conversion on a single file it had
       // previously converted correctly, so the budget was the limit rather
       // than the work. verify_pack also costs turns the old figure predated.
-      maxTurns: 120 + work.files.length * 25
+      maxTurns: 120 + work.files.length * 25,
+      /**
+       * The lead delegates files to converters rather than working the pack
+       * serially.
+       *
+       * Sharding the pack ourselves fixed throughput but picked the split
+       * blindly — two files per agent whether they share a helper or have
+       * nothing to do with each other. The lead has every source in its
+       * prompt, so it can see which files are coupled and split on that,
+       * and scale the fan-out to the work rather than to a flag.
+       *
+       * Converters get the same tools: they own the files they are given, end
+       * to end, including the decision to give up.
+       */
+      agents: {
+        converter: {
+          description:
+            'Converts a set of this pack\'s files off the deprecated APIs. Give it files that belong together — ones sharing a helper, or a caller and its callee — so one agent owns both sides of a contract.',
+          tools: toolNames,
+          model: process.env.MAGIC_PATCH_MODEL || DEFAULT_MODEL,
+          prompt: converterPrompt(work)
+        }
+      }
     }
   })
 
