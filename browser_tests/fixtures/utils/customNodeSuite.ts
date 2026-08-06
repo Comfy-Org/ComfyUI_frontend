@@ -1,21 +1,25 @@
 import type { Page, Response } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-// Boot every session with a blank graph (loadBlankWorkflow) instead of the
-// bundled default template, whose model references error on a model-less
-// harness backend and would trip the zero-visible-errors invariant. The
-// backend must run --multi-user (the repo-wide prerequisite for browser
-// tests): the fixture then writes these settings to the same per-worker
-// user the session reads, on CI and locally alike.
+// Core boots with a blank graph instead of the bundled default template, whose
+// model references error on the model-less harness backend. Cloud completes the
+// tutorial and reloads after persisting the setting so its modal cannot cover
+// pointer targets.
 // The shared fixture disables the errors tab to hide missing-model
 // indicators in unrelated suites; this suite exists to SEE errors, so every
 // error surface stays live.
-export const customNodeSuiteSettings = {
-  'Comfy.TutorialCompleted': true,
-  'Comfy.RightSidePanel.ShowErrorsTab': true
+export function customNodeSuiteSettingsFor(env: 'core' | 'cloud') {
+  return {
+    'Comfy.TutorialCompleted': env === 'cloud',
+    'Comfy.RightSidePanel.ShowErrorsTab': true
+  }
 }
+
+export const customNodeSuiteSettings =
+  customNodeSuiteSettingsFor(customNodesEnv())
 
 // On Cloud, explicitly requesting TutorialCompleted also makes the shared
 // fixture reload after persisting startup settings. Keep this defensive

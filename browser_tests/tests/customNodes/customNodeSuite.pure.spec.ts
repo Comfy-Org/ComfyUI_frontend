@@ -5,6 +5,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import {
+  customNodeSuiteSettingsFor,
   drainBackendToIdle,
   trackSubmittedPrompts,
   waitForQueueQuiet
@@ -68,6 +69,17 @@ function scriptedPage(reads: QueueSnapshot[]) {
 }
 
 const IDLE: QueueSnapshot = { Running: [], Pending: [] }
+
+test('keeps Core on a blank workflow and Cloud on a clean second boot', () => {
+  expect(customNodeSuiteSettingsFor('core')).toMatchObject({
+    'Comfy.TutorialCompleted': false,
+    'Comfy.RightSidePanel.ShowErrorsTab': true
+  })
+  expect(customNodeSuiteSettingsFor('cloud')).toMatchObject({
+    'Comfy.TutorialCompleted': true,
+    'Comfy.RightSidePanel.ShowErrorsTab': true
+  })
+})
 
 test.describe('drainBackendToIdle', () => {
   test('installing twice leaves one response listener', () => {
