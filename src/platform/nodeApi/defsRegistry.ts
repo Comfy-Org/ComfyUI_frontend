@@ -54,7 +54,22 @@ export interface ExecutionResult {
   readonly raw: Readonly<Record<string, unknown>>
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
+/**
+ * A preview frame the backend produced while this node was running.
+ *
+ * Per node rather than per channel, deliberately. Packs currently subscribe to
+ * `b_preview_with_metadata` *and* `b_preview`, track the executing node id in a
+ * module global to correlate the second one, and probe
+ * `serverSupportsFeature('supports_preview_metadata')` to decide which to
+ * trust — all to answer "is this frame mine?". Answering it once here removes
+ * the global, and with it the mis-attribution when two nodes preview at once.
+ */
+export interface PreviewFrame {
+  readonly blob: Blob
+  /** Object URL for the blob, revoked when the next frame arrives. */
+  readonly url: string
+}
+
 export interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   readonly index: number
@@ -91,6 +106,8 @@ export interface NodeDefBuilder {
     callback: (node: NodeHandle, event: ConnectionChangeEvent) => void
   ): void // 223 packs
   onRemoved(callback: (node: NodeHandle) => void): void // 158 packs
+  /** Preview frames for this node, already correlated. */
+  onPreview(callback: (node: NodeHandle, frame: PreviewFrame) => void): void
 }
 
 /**
@@ -225,6 +242,31 @@ function toExecutionResult(message: unknown): ExecutionResult {
   })
 }
 
+/**
+ * Type name -> its preview listeners.
+ *
+ * Module level because delivery comes from the app's socket, which knows a node
+ * id but not which registry instance registered for it.
+ */
+const previewSubscribers = new Map<
+  string,
+  (nodeId: string, frame: PreviewFrame) => void
+>()
+
+/**
+ * Hands a preview frame to whichever node type registered for it.
+ *
+ * Called by the app when the backend emits a preview. The node type is looked
+ * up rather than passed, so the app does not need to know which packs care.
+ */
+export function deliverPreview(
+  nodeId: string,
+  nodeType: string,
+  frame: PreviewFrame
+): void {
+  previewSubscribers.get(nodeType)?.(nodeId, frame)
+}
+
 export function createDefRegistry(): {
   /** The per-major public face. Handles come from that major's graph. */
   forMajor(handleFor: (nodeId: string) => NodeHandle): DefRegistry
@@ -266,6 +308,7 @@ export function createDefRegistry(): {
       const configured: Bound<[Record<string, unknown>]>[] = []
       const connections: Bound<[ConnectionChangeEvent]>[] = []
       const removed: Bound<[]>[] = []
+      const previewed: Bound<[PreviewFrame]>[] = []
       const widgets: {
         def: WidgetDef
         handleFor: Registration['handleFor']
@@ -295,7 +338,8 @@ export function createDefRegistry(): {
           onExecuted: (run) => executed.push({ run, handleFor }),
           onConfigured: (run) => configured.push({ run, handleFor }),
           onConnectionsChanged: (run) => connections.push({ run, handleFor }),
-          onRemoved: (run) => removed.push({ run, handleFor })
+          onRemoved: (run) => removed.push({ run, handleFor }),
+          onPreview: (run) => previewed.push({ run, handleFor })
         }
 
         try {
@@ -384,6 +428,13 @@ export function createDefRegistry(): {
             }
           }
         )
+      }
+
+      if (previewed.length) {
+        previewSubscribers.set(def.type, (nodeId, frame) => {
+          for (const { run, handleFor } of previewed)
+            run(handleFor(nodeId), frame)
+        })
       }
 
       if (removed.length) {
