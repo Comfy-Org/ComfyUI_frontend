@@ -116,6 +116,29 @@ const translations = {
     'zh-CN': '免费开始使用'
   },
 
+  // ModelReleaseSection
+  'modelRelease.eyebrow': {
+    en: 'New Model Release',
+    'zh-CN': '新模型发布'
+  },
+  'modelRelease.title': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'modelRelease.body': {
+    en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it.',
+    'zh-CN':
+      '完整的多模态输入输出，原生立体声剪辑。最高 2K，每次生成 5 至 15 秒。H3 真正以输入音频为条件，而其他模型会覆盖或丢弃它。'
+  },
+  'modelRelease.cta': {
+    en: 'View Model Feature',
+    'zh-CN': '查看模型特性'
+  },
+  'modelRelease.videoLabel': {
+    en: 'MiniMax H3 preview',
+    'zh-CN': 'MiniMax H3 预览'
+  },
+
   // ProductShowcaseSection
   'showcase.subtitle1': {
     en: 'Connect models, processing steps, and outputs on a canvas where every decision is visible and every step is inspectable.',
