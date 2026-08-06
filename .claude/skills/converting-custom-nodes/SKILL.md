@@ -257,6 +257,13 @@ ported.
 in `destroy`: a mounted element owns listeners, timers and observers that node
 removal would otherwise leave running.
 
+**If you are converting `registerCustomNodes` / `extends LGraphNode` /
+`isVirtualNode` / `applyToGraph`** — identify which of four intents the node
+serves (annotation, wire, value, control panel) and use **`comfy.defs.define`**
+with `execution: 'frontend'` and, for wires and values, a pure `resolve`. See
+`references/node-definitions.md` — control panels mutate neighbours through
+handles in widget callbacks, never in `resolve`.
+
 **If you are converting `onResize` / `computeSize` / a per-frame `setSize`** —
 check whether the pack is enforcing a minimum, or growing to fit something it
 mounted. **Use `node.setSizeConstraints({ minWidth, minHeight, maxWidth,

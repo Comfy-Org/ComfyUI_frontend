@@ -1202,12 +1202,10 @@ interface NodeTypeDef {
   widgets?: readonly WidgetDef[]
 
   /** Frontend-only. Never sent to the backend as an executable node. */
-  virtual?: boolean
+  execution?: 'backend' | 'frontend'
 
-  /** Virtual nodes rewrite the prompt rather than executing. Replaces the
-   *  deprecated `applyToGraph`. Runs against a mutable prompt draft, never the
-   *  live graph — so a resolve pass can't corrupt the user's document. */
-  resolve?(ctx: PromptResolveContext): void
+  /** Pure question-answering over a read-only view. See below. */
+  resolve?(view: ResolveView): Record<string, OutputResolution>
 
   onCreated?(node: NodeHandle): void
   onExecuted?(node: NodeHandle, result: ExecutionResult): void
@@ -1216,28 +1214,71 @@ interface NodeTypeDef {
   onRemoved?(node: NodeHandle): void
   onSerialize?(node: NodeHandle): SerializedNodeExtras | void
 }
+```
 
-interface PromptResolveContext {
-  readonly node: NodeHandle // the virtual node being resolved
-  readonly draft: PromptDraft // mutable copy, not the live graph
+### Virtual nodes — settled design (supersedes the draft-context sketch)
 
-  /** kjnodes SetNode/GetNode: named wires that resolve away at prompt time. */
-  bypass(): void // splice this node out, joining its links
-  rerouteLink(from: SlotRef, to: { node: NodeId; input: SlotRef }): void
-  /** rgthree Fast Muter/Bypasser: change other nodes' execution mode. */
-  setNodeMode(node: NodeId, mode: NodeMode): void
-  removeNode(node: NodeId): void
+**Status: ✅ decided 2026-08-05, replacing the earlier `PromptResolveContext`
+proposal, which handed packs a mutable draft and imperative verbs. Implemented
+in `src/platform/nodeApi/resolution.ts`.**
+
+Strip the mechanism away and "virtual node" is four different intents:
+
+| Intent                 | Examples                             | Resolution means                                      |
+| ---------------------- | ------------------------------------ | ----------------------------------------------------- |
+| **Annotate**           | Note nodes                           | omit from prompt                                      |
+| **Be a wire**          | Reroute, kjnodes `SetNode`/`GetNode` | _my output forwards to whatever feeds X_              |
+| **Be a value**         | `PrimitiveNode`, constants           | _my output is this literal_                           |
+| **Be a control panel** | rgthree Fast Muter                   | **not resolution** — edit-time commands on neighbours |
+
+The legacy `isVirtualNode` + `applyToGraph()` collapses all four into an
+imperative callback that mutates the live graph mid-serialize
+(`executionUtil.ts:38` — our own core does this today). Under ECS that is a
+system with side effects: not replayable, corrupts the document if it throws
+halfway, and syncs phantom mutations under CRDT.
+
+The ECS-consistent mapping:
+
+- **"Virtual" is data, not a class.** `execution: 'frontend'` on the
+  definition. The node is an ordinary entity in ordinary stores; it renders
+  with the same widget/mount/canvas API as everything else; Nodes 2.0 needs
+  nothing special.
+- **Resolution is a pure system.** `prompt = resolve(graph)`. The pack never
+  touches a draft — it answers a question about its own outputs against a
+  read-only view:
+
+```ts
+type OutputResolution =
+  | { readonly omit: true }
+  | { readonly forwardTo: InputRef } // "whatever feeds that input"
+  | { readonly literal: WidgetValue }
+
+interface ResolveView {
+  readonly self: ResolvedNodeView
+  nodesOfType(type: string): readonly ResolvedNodeView[]
+}
+
+interface ResolvedNodeView {
+  readonly id: string
+  readonly type: string
+  widgetValue(name: string): WidgetValue | undefined
+  input(ref: string | number): InputRef | undefined
 }
 ```
 
-`resolve` deserves the emphasis. Virtual nodes are the ones that _rewrite the graph
-during serialization_ — kjnodes' `SetNode`/`GetNode` are named wires that vanish at
-prompt time, rgthree's Fast Muter mutes other nodes. Today this happens through
-`applyToGraph`, which is deprecated but has named external consumers
-(`litegraph-augmentation.d.ts:122` calls out ComfyUI-Custom-Scripts `presetText.js`
-and VideoHelperSuite `VHS.core.js`). Operating on a **draft** rather than the live
-graph is the correctness fix: today a resolve pass that throws halfway can leave the
-user's actual document mutated.
+Our pass follows `forwardTo` chains (Get → Set → Reroute → …) to fixpoint
+with cycle detection. A resolver that throws poisons that one prompt build;
+the graph was never touched — the property `applyToGraph` structurally cannot
+have.
+
+- **Control panels are not virtual-node API.** Fast Muter is a frontend-only
+  node whose button callbacks mutate neighbours through handles — which under
+  ECS become commands: serializable, undoable, the only legal mutation path.
+  Its sole "virtual" property is `execution: 'frontend'`.
+- **Core migrates onto the same system.** Reroute and Primitive become the
+  first resolvers; `applyToGraph` is then deletable from core. Known external
+  consumers to migrate with it: ComfyUI-Custom-Scripts `presetText.js`,
+  VideoHelperSuite `VHS.core.js` (named in `litegraph-augmentation.d.ts:122`).
 
 ### Migration difficulty
 

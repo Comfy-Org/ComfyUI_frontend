@@ -77,7 +77,9 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['widgets.canvas', '1.0'],
   ['node.onPreview', '1.0'],
   ['node.sizeConstraints', '1.0'],
-  ['node.onSerialize', '1.0']
+  ['node.onSerialize', '1.0'],
+  ['defs.define', '1.0'],
+  ['node.resolve', '1.0']
 ])
 
 /**
