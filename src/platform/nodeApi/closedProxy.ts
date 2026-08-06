@@ -15,6 +15,16 @@
  */
 import { ComfyDeletedError, ComfyReadonlyError } from './errors'
 
+/**
+ * Method names that write a value.
+ *
+ * Removal and disconnection are deliberately absent: they are idempotent, so on
+ * a dead handle the caller's desired end state already holds and throwing would
+ * break the cleanup paths packs run after removal. Setting a value is not
+ * idempotent, and dropping it silently hides a real bug.
+ */
+const MUTATOR = /^(set|add|move|reorder|connect|modify)/
+
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface PropSpec<TTarget> {
   get(target: TTarget): unknown
@@ -163,9 +173,18 @@ export function createHandleFactory<TTarget>(
           if (!bound.has(key)) {
             bound.set(key, (...args: never[]) => {
               const target = resolve(id)
-              // Methods on a dead handle are inert rather than fatal: packs
-              // routinely call cleanup paths after removal.
-              if (target === undefined) return undefined
+              if (target === undefined) {
+                // Reads on a dead handle stay inert — packs routinely call
+                // cleanup paths after removal. Mutations stay loud, because a
+                // silently dropped write is a bug the pack cannot see. This
+                // distinction was a property-vs-method one until the accessors
+                // landed; keeping it is what stops the conversion from making
+                // every setter quietly no-op.
+                if (MUTATOR.test(key)) {
+                  throw new ComfyDeletedError(spec.kind, id, key)
+                }
+                return undefined
+              }
               return methods[key](target, ...args)
             })
           }

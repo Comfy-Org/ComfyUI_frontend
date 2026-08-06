@@ -321,9 +321,9 @@ describe('defs.extend', () => {
       graph.add(node)
       const handle = comfy.graph.node(String(node.id))!
 
-      handle.serializesWidgets = true
+      handle.setSerializeWidgets(true)
       expect(node.serialize_widgets).toBe(true)
-      handle.serializesWidgets = false
+      handle.setSerializeWidgets(false)
       expect(node.serialize_widgets).toBe(false)
     })
   })

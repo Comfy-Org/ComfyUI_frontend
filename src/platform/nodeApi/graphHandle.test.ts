@@ -30,8 +30,8 @@ describe('graph API (composed)', () => {
       addNode('B', 'Beta')
 
       expect(api.nodes()).toHaveLength(2)
-      expect(api.node(String(a.id))?.title).toBe('A')
-      expect(api.nodesOfType('Beta').map((n) => n.title)).toEqual(['B'])
+      expect(api.node(String(a.id))?.getTitle()).toBe('A')
+      expect(api.nodesOfType('Beta').map((n) => n.getTitle())).toEqual(['B'])
     })
 
     it('returns undefined for a node that is not present', () => {
@@ -41,7 +41,7 @@ describe('graph API (composed)', () => {
     it('adds and removes nodes', () => {
       const handle = api.add('Gamma', { title: 'G', position: { x: 5, y: 6 } })
       expect(handle.type).toBe('Gamma')
-      expect(handle.position).toEqual({ x: 5, y: 6 })
+      expect(handle.getPosition()).toEqual({ x: 5, y: 6 })
 
       expect(api.remove(handle.id)).toBe(true)
       expect(handle.isDeleted).toBe(true)
