@@ -2089,7 +2089,7 @@ const translations = {
     'zh-CN': '。'
   },
   'mcp.setup.requirementFootnote': {
-    en: "A credit top-up alone isn't enough to run generations.",
+    en: " A credit top-up alone isn't enough to run generations.",
     'zh-CN': '仅充值积分不足以运行生成任务。'
   },
   'mcp.setup.manual.title': {

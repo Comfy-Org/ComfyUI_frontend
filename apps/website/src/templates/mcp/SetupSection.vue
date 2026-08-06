@@ -128,16 +128,14 @@ const copiedLabel = t('ui.copied', locale)
         <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
           {{ t('mcp.setup.subtitle', locale) }}
         </p>
-        <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
+        <p class="mt-4 max-w-xl text-xs text-primary-warm-gray">
           {{ t('mcp.setup.requirementPrefix', locale)
           }}<a
             :href="getRoutes(locale).cloudPricing"
             class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
             >{{ t('mcp.setup.requirementLinkLabel', locale) }}</a
-          >{{ t('mcp.setup.requirementSuffix', locale) }}
-        </p>
-        <p class="mt-2 max-w-xl text-xs text-smoke-500 lg:text-sm">
-          {{ t('mcp.setup.requirementFootnote', locale) }}
+          >{{ t('mcp.setup.requirementSuffix', locale)
+          }}{{ t('mcp.setup.requirementFootnote', locale) }}
         </p>
       </template>
     </SectionHeader>
