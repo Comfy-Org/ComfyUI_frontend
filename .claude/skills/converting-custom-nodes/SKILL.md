@@ -223,6 +223,64 @@ Across the current database the unavoidable dedent accounts for 17–39% of adde
 lines. `run_checks` reports the proportion so you can see whether yours is in
 that range or well past it.
 
+## Recognise the intent, not the call
+
+Most old-API code is a workaround for something missing. Port the call and you
+carry the workaround across; recognise what it was _for_ and it usually
+collapses. Check these before converting anything mechanically.
+
+**If you are converting `api.addEventListener('b_preview')` or
+`'b_preview_with_metadata'` or `'executing'`** — check whether the pack is
+correlating frames to one node (a module-level `execId`, a
+`displayNodeId === this.id` test, a `serverSupportsFeature` probe). That whole
+apparatus answers "is this frame mine?". **Use `b.onPreview((node, frame) =>
+…)`**, which answers it for you. Delete the global; it also mis-attributes
+frames when two nodes preview at once.
+
+**If you are converting `onDrawForeground` / `onDrawBackground` / anything
+using `ctx`** — check what it actually draws. Rectangles, images, text and
+lines are all a canvas can give you and all a DOM can. **Use
+`node.widgets.canvas({ name, height, draw(ctx, [w, h]) })`** and keep the
+drawing code as it is. It renders under both the old graph renderer and Nodes
+2.0. Do not reach for the graph's shared context — that is the thing that ties
+a pack to the old renderer.
+
+**If you are converting hand-rolled hit testing** — bounding-box maths against
+`node.pos`/`node.size`, pointer capture on `document`, hit tests against link
+curves. Check whether it exists only because canvas has nothing to attach a
+listener to. **Mount the control with `node.widgets.mount(...)` and use
+ordinary DOM events**; most of the geometry disappears rather than being
+ported.
+
+**If you are converting `node.addDOMWidget(...)`** — **use
+`node.widgets.mount({ name, render(container), destroy() })`**. Put the teardown
+in `destroy`: a mounted element owns listeners, timers and observers that node
+removal would otherwise leave running.
+
+**If you are converting `this._somethingPrivate = x` on a node** — handles hold
+no arbitrary properties. **Keep a `Map` keyed by `node.id`** and clear the entry
+in `b.onRemoved`. This is supported, not a workaround; the old property was
+collected with the node and a Map is not.
+
+**If you are converting `node.imgs = [img]` + `setDirtyCanvas`** — the pack is
+showing an image on the node. **Use `widgets.canvas` and `drawImage` in
+`draw`**, then `redraw()` when the image changes.
+
+**If you are converting a captured-and-chained `widget.callback`** — check
+whether it only wants to know the value changed. **Use `widget.on('change', (v,
+old) => …)`**, which is additive: no other pack can drop your listener by
+forgetting to call through.
+
+**If you are converting `widget.serializeValue = async () => {}`** — the pack is
+keeping a derived value out of what gets saved. **Use `serialize: false`** on
+the widget definition. Note the two are distinct: `options.serialize` gates the
+API prompt, `widget.serialize` gates workflow persistence.
+
+**If you are converting `widget.type = 'converted-widget'`** — the pack is
+hiding a widget, not changing its kind. **Use `widget.setHidden(true)`.** The
+`origType`/`origComputeSize`/`origSerializeValue` bookkeeping around it existed
+only to undo the hack; it has no readers and goes away.
+
 ## Pattern references
 
 Deep dives, loaded only when relevant. `SKILL.md` stays short on purpose; detail
