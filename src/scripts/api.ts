@@ -209,6 +209,17 @@ interface ApiMessage<T extends keyof ApiCalls> {
 
 export class UnauthorizedError extends Error {}
 
+export class ApiHttpError extends Error {
+  constructor(
+    readonly endpoint: string,
+    readonly status: number,
+    body = ''
+  ) {
+    super(`Request to ${endpoint} failed: ${status}${body ? ` — ${body}` : ''}`)
+    this.name = 'ApiHttpError'
+  }
+}
+
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
 
@@ -1004,6 +1015,13 @@ export class ComfyApi extends EventTarget {
    */
   async getEmbeddings(): Promise<EmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
+    if (!resp.ok) {
+      throw new ApiHttpError(
+        '/embeddings',
+        resp.status,
+        await resp.text().catch(() => '')
+      )
+    }
     return await resp.json()
   }
 

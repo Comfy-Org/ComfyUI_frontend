@@ -149,7 +149,7 @@ import {
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import { type ComfyApi, PromptExecutionError, api } from './api'
+import { type ComfyApi, ApiHttpError, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from './promotedWidgetControl'
@@ -2018,10 +2018,21 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      const outcome = await importA1111(this.rootGraph, parameters, () => {
-        useWorkflowService().beforeLoadNewGraph()
-        this.canvas.setGraph(this.rootGraph)
-      })
+      let outcome: Awaited<ReturnType<typeof importA1111>>
+      try {
+        outcome = await importA1111(this.rootGraph, parameters, () => {
+          useWorkflowService().beforeLoadNewGraph()
+          this.canvas.setGraph(this.rootGraph)
+        })
+      } catch (err) {
+        if (err instanceof ApiHttpError) {
+          useToastStore().addAlert(
+            t('toastMessages.a1111EmbeddingsUnavailable')
+          )
+          return
+        }
+        throw err
+      }
       if (outcome === 'core-nodes-unavailable') {
         useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
         return

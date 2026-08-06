@@ -51,6 +51,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import { ApiHttpError } from './api'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
@@ -1597,6 +1598,25 @@ describe('ComfyApp', () => {
       expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
       expect(mockToastStore.addAlert).toHaveBeenCalledWith(
         'Unable to find workflow in parameters.png'
+      )
+      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+    })
+
+    it('reports a backend failure distinctly when the embeddings fetch rejects', async () => {
+      const graph = new LGraph()
+      const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
+      mockImportA1111.mockRejectedValue(
+        new ApiHttpError('/embeddings', 502, 'bad gateway')
+      )
+
+      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'Could not load embeddings from the backend. Check the server connection and try again.'
       )
       expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
       expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
