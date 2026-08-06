@@ -109,6 +109,15 @@ export interface NodeDefBuilder {
   onRemoved(callback: (node: NodeHandle) => void): void // 158 packs
   /** Preview frames for this node, already correlated. */
   onPreview(callback: (node: NodeHandle, frame: PreviewFrame) => void): void
+  /**
+   * Contributes the pack's own state to the saved node.
+   *
+   * The returned object is merged into the serialized node, and comes back
+   * through `onConfigured`. Only keys the pack owns: core fields are not
+   * writable from here, because a pack must not be able to change what the
+   * workflow means.
+   */
+  onSerialize(callback: (node: NodeHandle) => Record<string, unknown>): void
 }
 
 /**
@@ -244,6 +253,27 @@ function toExecutionResult(message: unknown): ExecutionResult {
 }
 
 /**
+ * Serialized fields a pack may not write.
+ *
+ * Everything that decides what the node *is* or what it will run. A pack's own
+ * keys are welcome beside them; overwriting them is not.
+ */
+const RESERVED_SERIAL_KEYS: ReadonlySet<string> = new Set([
+  'id',
+  'type',
+  'pos',
+  'size',
+  'flags',
+  'order',
+  'mode',
+  'inputs',
+  'outputs',
+  'title',
+  'properties',
+  'widgets_values'
+])
+
+/**
  * Type name -> its preview listeners.
  *
  * Module level because delivery comes from the app's socket, which knows a node
@@ -310,6 +340,10 @@ export function createDefRegistry(): {
       const connections: Bound<[ConnectionChangeEvent]>[] = []
       const removed: Bound<[]>[] = []
       const previewed: Bound<[PreviewFrame]>[] = []
+      const serialized: {
+        run: (node: NodeHandle) => Record<string, unknown>
+        handleFor: (nodeId: string) => NodeHandle
+      }[] = []
       const widgets: {
         def: WidgetDef
         handleFor: Registration['handleFor']
@@ -340,7 +374,8 @@ export function createDefRegistry(): {
           onConfigured: (run) => configured.push({ run, handleFor }),
           onConnectionsChanged: (run) => connections.push({ run, handleFor }),
           onRemoved: (run) => removed.push({ run, handleFor }),
-          onPreview: (run) => previewed.push({ run, handleFor })
+          onPreview: (run) => previewed.push({ run, handleFor }),
+          onSerialize: (run) => serialized.push({ run, handleFor })
         }
 
         try {
@@ -429,6 +464,24 @@ export function createDefRegistry(): {
             }
           }
         )
+      }
+
+      if (serialized.length) {
+        const previous = nodeType.prototype.onSerialize
+        ;(nodeType.prototype as Record<string, unknown>).onSerialize =
+          function (this: LGraphNode, o: Record<string, unknown>) {
+            ;(previous as ((o: unknown) => void) | undefined)?.call(this, o)
+            const id = String(this.id)
+            for (const { run, handleFor } of serialized) {
+              for (const [key, value] of Object.entries(run(handleFor(id)))) {
+                // Core fields stay ours. A pack rewriting `type` or
+                // `widgets_values` changes what the workflow means, which is
+                // the one thing this migration promises not to do.
+                if (RESERVED_SERIAL_KEYS.has(key)) continue
+                o[key] = value
+              }
+            }
+          }
       }
 
       if (previewed.length) {

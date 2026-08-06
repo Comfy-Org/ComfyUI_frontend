@@ -257,6 +257,18 @@ ported.
 in `destroy`: a mounted element owns listeners, timers and observers that node
 removal would otherwise leave running.
 
+**If you are converting `onResize` / `computeSize` / a per-frame `setSize`** —
+check whether the pack is enforcing a minimum, or growing to fit something it
+mounted. **Use `node.setSizeConstraints({ minWidth, minHeight, maxWidth,
+maxHeight, autoHeight })`** once, rather than re-asserting size on every frame.
+`autoHeight` is usually the real intent.
+
+**If you are converting `onSerialize` / `chainCallback(node, 'onSerialize')`** —
+the pack is saving its own state into the node. **Use `b.onSerialize((node) =>
+({ myKey: … }))`**; it comes back through `b.onConfigured`. Core fields —
+`type`, `widgets_values`, `inputs`, `pos` and the rest — are ignored if you
+return them, because changing those changes what the workflow means.
+
 **If you are converting `this._somethingPrivate = x` on a node** — handles hold
 no arbitrary properties. **Keep a `Map` keyed by `node.id`** and clear the entry
 in `b.onRemoved`. This is supported, not a workaround; the old property was

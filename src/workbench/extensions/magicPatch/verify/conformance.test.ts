@@ -159,13 +159,15 @@ describe('general conversion conformance', () => {
       const report = runConformance(
         context({
           original: 'node.computeSize()',
-          converted: 'node.setSizeConstraints({ autoHeight: true })',
+          // Was setSizeConstraints until that shipped; the point is a member
+          // the API does not define, not this particular name.
+          converted: 'node.setMagicLayout({ autoHeight: true })',
           edits: []
         })
       )
       const check = find(report, 'no-unknown-api-members')
       expect(check.status).toBe('failed')
-      expect(check.detail).toMatch(/setSizeConstraints/)
+      expect(check.detail).toMatch(/setMagicLayout/)
     })
 
     it('accepts real API members', () => {
