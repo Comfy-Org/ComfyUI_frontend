@@ -11,7 +11,7 @@ test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
     async ({ comfyPage }) => {
       const GRAPH_ID = 'dec788c2-9829-4a5d-a1ee-d6f0a678b42a'
       const REROUTE_ID = toRerouteId(1)
-      const remotePosition = { x: 500, y: 300 }
+      const remotePosition = { x: 1000, y: 500 }
       await comfyPage.page.addScriptTag({
         type: 'module',
         content: `
