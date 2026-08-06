@@ -68,6 +68,10 @@ const MAX_BYTES = 2_000_000
 const MAX_READ_CHARS = 400_000
 
 /** Which skill reference explains each rule — loaded only when one matched. */
+/** Loaded for every pack, whatever the rules matched. */
+const ALWAYS_REFERENCES = ['nodegraph-101.md']
+
+/** Which skill reference explains each rule — loaded only when one matched. */
 const RULE_REFERENCES = {
   'type-write-noop': 'node-definitions.md',
   'output-links-mutation': 'node-definitions.md',
@@ -240,9 +244,13 @@ function references(work) {
     work.files.flatMap((f) => f.findings.map((x) => x.rule))
   )
   const names = [
-    ...new Set(
-      [...matched].map((rule) => RULE_REFERENCES[rule]).filter(Boolean)
-    )
+    ...new Set([
+      // The primer goes first and always: without the definition/class/instance
+      // model, an agent reconstructs it from pack source and often gets it
+      // subtly wrong.
+      ...ALWAYS_REFERENCES,
+      ...[...matched].map((rule) => RULE_REFERENCES[rule]).filter(Boolean)
+    ])
   ]
   const sections = names
     .map((name) => {
