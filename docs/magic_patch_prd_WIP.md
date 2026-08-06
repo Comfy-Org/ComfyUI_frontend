@@ -271,12 +271,84 @@ caught this?"_, so the plan shrinks over time.
 | **Author rejection of PRs**                                     | Medium   | Minimal-diff policy, surgical edits, no restructuring                                              | A pack may still decline                                                     |
 | **Patch applies to wrong bytes**                                | Low      | Content-hash keying; strict diff applier that refuses fuzzy matches                                | —                                                                            |
 
+## Rollout
+
+**The patcher is a tool, not a plan.** It converts pack JS from the ad-hoc API to
+V1. It has no opinion about who runs it, on which packs, or when — those are
+decisions of the rollout, and keeping them out of the tool is what lets the same
+binary serve all three paths below.
+
+The rollout announces two things together: **ECS / Nodes 2.0 is the supported
+graph for the frontend**, and **auto-patch is the primary tool for moving old
+packs onto it**.
+
+### Three paths, by who runs the patcher
+
+| Path                | Who runs it                      | Coverage                      | Who owns defects |
+| ------------------- | -------------------------------- | ----------------------------- | ---------------- |
+| **Maintainer**      | The pack's author, with our help | Any pack whose author engages | The author       |
+| **Comfy backstop**  | Comfy, in CI                     | Top 80% of packs by usage     | **Comfy**        |
+| **User self-serve** | The user, locally                | The long tail                 | Nobody           |
+
+**Maintainer-led is the preferred outcome, and we bend over backwards for it.**
+We engage active maintainers, help them produce a V1 version of their pack,
+discuss and vet the result. A pack the maintainer has moved to V1 **is not
+patched** — their release wins, and the marking drops away because the code is
+theirs again.
+
+**The Comfy backstop exists so users are not the ones discovering breakage.** We
+auto-patch and verify the top 80% by usage. We reserve the right to patch again
+later if the API changes underneath a pack: the commitment is to the end user and
+to ComfyUI "just working", not to a one-time conversion.
+
+**The long tail gets the tool rather than the patches.** We may ship patches for
+individual critical packs at our discretion, but the general answer is that
+auto-patch is available to users as an end-user tool for patching whatever they
+happen to run. **No guarantee it works.** It is offered because an unmaintained
+pack's alternative is not working at all.
+
+**A small set will not be patchable** — packs whose design conflicts with how the
+frontend works now. We keep that list small and aim to provide the functionality
+by another route rather than leaving a hole.
+
+### Who owns a defect
+
+- **Comfy-patched** — the patch set we generate _and verify_. **We own the bugs.**
+  The node is marked `COMFY-PATCHED` in the UI, and the marking says who to
+  contact when it breaks. A user must never file our change against the author.
+- **User-patched** — a patch the user generated locally. **Neither Comfy nor the
+  maintainer is responsible.** If patching fails and no maintainer is porting the
+  pack, rewriting it by hand is the remaining option. Saying so plainly up front
+  is kinder than implying a support path that does not exist.
+
+Marking therefore carries **two independent facts**: who patched it, and how well
+it was checked. Either alone would mislead — a verified user patch is still
+unsupported, and an unverified Comfy patch is still ours.
+
+### Unpatching
+
+**Any patched pack can be unpatched**, restoring the code as its author shipped
+it. We patch because the pack is broken against the current frontend, so
+unpatching will often stop it working — that is the user's call to make, and
+refusing to offer it would make the patch feel like something done _to_ them
+rather than _for_ them.
+
+### What this changes about the design
+
+The user self-serve path means **the patcher runs on user machines**, which
+earlier drafts of this document ruled out. Local generation needs a model the
+user supplies or a hosted endpoint, and it cannot assume CI's corpus or its
+verification harness — so a user-generated patch is `validation: none` by
+construction, and the badge must say so. **Open: which of the three model
+backends serves this path.**
+
 ## Deployment and operations
 
 _Partial by intent — this is the least-developed section, and shipping is
 gated on yield rather than on deployment work._
 
-**Generation** runs in CI, not on user machines. Inputs: the registry corpus and
+**Generation** runs in CI for the Comfy backstop, and locally for user
+self-serve. Inputs: the registry corpus and
 a Claude Code session. Outputs: `db/` entries and a compiled artifact. Auth is
 probed before any work is spawned, after four batches were lost to expired
 tokens.
