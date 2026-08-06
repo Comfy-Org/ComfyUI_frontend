@@ -134,7 +134,14 @@ export async function runPack({
       driveErrors.push(`onExecuted:${type}: ${error?.message}`)
     }
     try {
-      wire[type] = JSON.stringify(node.serialize())
+      // `size` is deliberately excluded. Litegraph sizes a node from canvas
+      // row heights; a mounted widget is measured by the DOM. The two metrics
+      // are not comparable, so every conversion that moves drawing into
+      // `widgets.mount`/`widgets.canvas` would report a wire change on size
+      // alone — burying the differences that do change what a workflow means.
+      // Size is layout, not meaning: it does not affect the prompt.
+      const { size: _size, ...meaningful } = node.serialize()
+      wire[type] = JSON.stringify(meaningful)
     } catch (error) {
       driveErrors.push(`serialize:${type}: ${error?.message}`)
     }
