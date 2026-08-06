@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { t } from '../i18n/translations'
+import { absoluteUrl, pageContext } from '../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+---
+
+<BaseLayout
+  title={t('fdct.meta.title', locale)}
+  description={t('fdct.meta.description', locale)}
+  pageType="WebPage"
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.fdct', locale) },
+  ]}
+>
+  {/* Sections land here in page order: hero, builders wire diagram, logo
+      marquee, how it works, what you get, featured technologists, past
+      projects, FAQ, CTA bands, closing CTA. */}
+</BaseLayout>

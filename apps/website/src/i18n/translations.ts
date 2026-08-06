@@ -2511,6 +2511,10 @@ const translations = {
   'breadcrumb.download': { en: 'Download', 'zh-CN': '下载' },
   'breadcrumb.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'breadcrumb.pricing': { en: 'Pricing', 'zh-CN': '定价' },
+  'breadcrumb.fdct': {
+    en: 'Forward Deployed Creative Technologists',
+    'zh-CN': '前沿驻场创意技术专家'
+  },
   'breadcrumb.supportedNodes': { en: 'Supported Nodes', 'zh-CN': '支持的节点' },
   'breadcrumb.events': { en: 'Events', 'zh-CN': '活动' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
@@ -5249,7 +5253,17 @@ const translations = {
     en: '5 free runs on real GPUs — no credit card required.',
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
-  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' }
+  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  // FDCT page (/fdct) — Forward Deployed Creative Technologists
+  'fdct.meta.title': {
+    en: 'Forward Deployed Creative Technologists | Comfy',
+    'zh-CN': '前沿驻场创意技术专家 | Comfy'
+  },
+  'fdct.meta.description': {
+    en: 'Senior creatives who embed with your team, build your production ComfyUI workflows, and teach your team to run them.',
+    'zh-CN':
+      '资深创意专家驻场加入你的团队，为你构建生产级 ComfyUI 工作流，并教会你的团队独立运行。'
+  }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations

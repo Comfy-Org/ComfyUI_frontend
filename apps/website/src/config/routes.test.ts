@@ -41,3 +41,13 @@ describe('getRoutes flux3', () => {
     expect(getRoutes('zh-CN').flux3).toBe('/zh-CN/flux-3')
   })
 })
+
+describe('getRoutes fdct', () => {
+  it('serves the fdct page at its canonical path for en', () => {
+    expect(getRoutes('en').fdct).toBe('/fdct')
+  })
+
+  it('serves a localized fdct path for zh-CN', () => {
+    expect(getRoutes('zh-CN').fdct).toBe('/zh-CN/fdct')
+  })
+})
