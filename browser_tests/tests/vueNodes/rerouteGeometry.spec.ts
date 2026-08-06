@@ -1,4 +1,7 @@
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
 import { toRerouteId } from '@/types/rerouteId'
 
 test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
@@ -26,8 +29,16 @@ test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
             source: LayoutSource.External,
             actor: 'remote-peer'
           })
+          document.documentElement.dataset.remoteRerouteReady = 'true'
         `
       })
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => document.documentElement.dataset.remoteRerouteReady
+          )
+        )
+        .toBe('true')
 
       await comfyPage.workflow.loadWorkflow(
         'reroute/single-native-reroute-default-workflow'
