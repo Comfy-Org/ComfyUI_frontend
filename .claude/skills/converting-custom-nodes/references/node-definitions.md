@@ -185,6 +185,39 @@ named wires, rgthree Fast Muter changing other nodes' modes) declare
 draft, never the live graph** — so a resolve pass that throws halfway cannot
 leave the user's document mutated, which the old `applyToGraph` could.
 
+## Per-instance state
+
+Handles hold no arbitrary properties, so `node._myState = x` has no target. Keep
+the state yourself, keyed by node id:
+
+```js
+// before — a property stashed on the node instance
+nodeType.prototype.onExecuted = function (output) {
+  if (this._lastHash === hash) return
+  this._lastHash = hash
+}
+
+// after — the pack owns its own state
+const stateByNode = new Map()
+const stateFor = (id) => {
+  let s = stateByNode.get(id)
+  if (!s) stateByNode.set(id, (s = {}))
+  return s
+}
+
+comfy.defs.extend('MyNode', (b) => {
+  b.onExecuted((node, result) => {
+    const state = stateFor(node.id)
+    if (state.lastHash === hash) return
+    state.lastHash = hash
+  })
+  b.onRemoved((node) => stateByNode.delete(node.id))
+})
+```
+
+This is a supported conversion, not a workaround. Clean up in `onRemoved` — the
+old form was collected with the node, and a Map is not.
+
 ## Traps
 
 **The constructor self-assignment.** `this.type = this.type ?? undefined` is a
