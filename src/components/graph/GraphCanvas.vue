@@ -113,7 +113,6 @@
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
-  nextTick,
   onMounted,
   onUnmounted,
   ref,
@@ -255,20 +254,6 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-let cleanupLayoutNotifications: (() => void) | null = null
-
-function stopSync() {
-  cleanupLayoutNotifications?.()
-  cleanupLayoutNotifications = null
-}
-
-function startSync() {
-  const canvas = canvasStore.canvas
-  if (!canvas) return
-  stopSync()
-  cleanupLayoutNotifications = notifyLayoutChanges(canvas)
-}
-
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
 watch(
@@ -279,18 +264,7 @@ watch(
   }
 )
 
-async function enterVueRendering(graph: LGraph | null) {
-  stopSync()
-  layoutStore.clearViewGeometry()
-  await nextTick()
-
-  // Revalidate after nextTick: rendering mode or the current graph may change.
-  if (!shouldRenderVueNodes.value || canvasStore.currentGraph !== graph) return
-  startSync()
-}
-
 function exitToLegacyRendering(graph: LGraph | null) {
-  stopSync()
   layoutStore.clearViewGeometry()
   if (graph) arrangeForLegacyRender(graph)
   canvasStore.canvas?.setDirty(true, true)
@@ -298,15 +272,22 @@ function exitToLegacyRendering(graph: LGraph | null) {
 
 watch(
   [shouldRenderVueNodes, () => canvasStore.currentGraph],
-  async ([enabled, graph], previous) => {
+  ([enabled, graph], previous) => {
     if (enabled) {
-      await enterVueRendering(graph)
+      layoutStore.clearViewGeometry()
     } else if (previous?.[0]) {
       exitToLegacyRendering(graph)
     }
   },
   { immediate: true }
 )
+
+watchEffect((onCleanup) => {
+  if (!shouldRenderVueNodes.value) return
+
+  const canvas = canvasStore.canvas
+  if (canvas) onCleanup(notifyLayoutChanges(canvas))
+})
 
 watch(
   () => canvasStore.isInSubgraph,
@@ -616,7 +597,6 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
-  stopSync()
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddlePointerInput)
