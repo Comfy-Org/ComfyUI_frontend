@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { defineComponent, h } from 'vue'
 
 import { render, screen } from '@testing-library/vue'
 
@@ -39,28 +40,30 @@ describe('SlotConnectionDot', () => {
     expect(dot).not.toHaveClass('rounded-full')
     expect(dot.tagName).toBe('DIV')
   })
-  it('gives each instance unique svg clip path ids', () => {
-    const first = renderDot({ ...defaultSlot, shape: RenderShape.HollowCircle })
-    const second = renderDot({
-      ...defaultSlot,
-      shape: RenderShape.HollowCircle
+  it('gives each instance unique svg clip path ids within one app', () => {
+    const hollow = { ...defaultSlot, shape: RenderShape.HollowCircle }
+    const TwoDots = defineComponent(() => {
+      return () =>
+        h('div', [
+          h(SlotConnectionDot, { slotData: hollow }),
+          h(SlotConnectionDot, { slotData: hollow })
+        ])
     })
+    const { container } = render(TwoDots)
 
-    const ids = [first, second].flatMap(({ container }) =>
-      // eslint-disable-next-line testing-library/no-node-access
-      [...container.querySelectorAll('clipPath')].map((el) => el.id)
-    )
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const clipPaths = [...container.querySelectorAll('clipPath')]
+    const ids = clipPaths.map((el) => el.id)
     expect(ids).toHaveLength(4)
     expect(new Set(ids).size).toBe(ids.length)
 
-    for (const { container } of [first, second]) {
-      // eslint-disable-next-line testing-library/no-node-access
-      const clipped = container.querySelector('[clip-path]')
-      const ref = clipped?.getAttribute('clip-path')
-      const id = ref?.match(/url\(#(.+)\)/)?.[1]
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const clipped = [...container.querySelectorAll('[clip-path]')]
+    expect(clipped).toHaveLength(2)
+    for (const el of clipped) {
+      const id = el.getAttribute('clip-path')?.match(/url\(#(.+)\)/)?.[1]
       expect(id).toBeTruthy()
-      // eslint-disable-next-line testing-library/no-node-access
-      expect(container.querySelector(`clipPath[id="${id}"]`)).toBeTruthy()
+      expect(ids).toContain(id)
     }
   })
 })
