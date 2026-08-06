@@ -53,7 +53,7 @@ describe('a name-keyed widgets_values on load', () => {
     // Kept because a pack may have its own state that is genuinely not widget
     // values. For widget values themselves this is unnecessary: name-keyed
     // access is native, so the pack simply stops overwriting the array.
-    const saved = node.serialize() as Record<string, unknown>
+    const saved = node.serialize() as unknown as Record<string, unknown>
     const packKey = Object.fromEntries(
       (node.widgets ?? []).map((w) => [w.name, w.value])
     )
@@ -61,7 +61,7 @@ describe('a name-keyed widgets_values on load', () => {
 
     let seen: unknown
     node.onConfigure = (info) => {
-      seen = (info as Record<string, unknown>).vhs_widget_values
+      seen = (info as unknown as Record<string, unknown>).vhs_widget_values
     }
     node.configure(withPackKey as never)
 
