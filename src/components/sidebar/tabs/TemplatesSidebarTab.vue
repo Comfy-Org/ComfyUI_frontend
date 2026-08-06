@@ -111,7 +111,7 @@
             <template #button>
               <button
                 type="button"
-                class="flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border-none bg-transparent px-2.5 text-sm text-text-secondary outline-hidden transition-all duration-200 hover:bg-button-hover-surface"
+                class="flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-solid border-border-subtle bg-transparent px-2.5 text-sm text-text-secondary outline-hidden transition-all duration-200 hover:bg-button-hover-surface"
               >
                 <span>{{ generationTypeLabel }}</span>
                 <span
@@ -161,14 +161,14 @@
         class="group/applied flex items-center gap-5"
         data-testid="template-applied-filters"
       >
-        <TemplatesFilterChipRow class="min-w-0 flex-1">
+        <TemplatesFilterChipRow ref="appliedRowRef" class="min-w-0 flex-1">
           <span
             v-for="(pill, index) in appliedFilters"
             :key="`${pill.facetKey}:${pill.value}`"
             :class="
               cn(
                 'shrink-0 items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap',
-                index < APPLIED_CHIPS_AT_REST
+                index < restingVisibleCount
                   ? 'inline-flex'
                   : 'hidden group-hover/applied:inline-flex'
               )
@@ -187,6 +187,7 @@
           </span>
           <span
             v-if="restingHiddenCount > 0"
+            data-overflow-badge
             class="shrink-0 self-center px-1 text-xs text-muted-foreground group-hover/applied:hidden"
           >
             +{{ restingHiddenCount }}
@@ -570,10 +571,11 @@
 </template>
 
 <script setup lang="ts">
-import { useAsyncState } from '@vueuse/core'
+import { useAsyncState, useResizeObserver } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import {
   computed,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   onUnmounted,
@@ -609,6 +611,7 @@ import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import type { ComponentPublicInstance } from 'vue'
 import type {
   TemplateInfo,
   TemplateTypeFilter
@@ -901,9 +904,13 @@ const addedFilterCount = computed(
  * and closing the sheet left the button looking untouched, so the view was
  * filtered with nothing on screen saying so.
  */
-const activeFilterCount = computed(
-  () => addedFilterCount.value + selectedCategories.value.length
-)
+/**
+ * The dot on the filter button counts only the facets that live solely in
+ * that menu. Categories have their own visible controls — the generation-type
+ * trigger and the chips — so counting them here marked the button for a
+ * choice made somewhere else.
+ */
+const activeFilterCount = computed(() => addedFilterCount.value)
 
 const clearAllFilters = () => {
   resetFilters()
@@ -967,10 +974,6 @@ const toggleFilterValue = (facetKey: string, value: string) => {
     : [...target.value, value]
 }
 
-const restingHiddenCount = computed(() =>
-  Math.max(0, appliedFilters.value.length - APPLIED_CHIPS_AT_REST)
-)
-
 const clearFilterFacet = (facetKey: string) => {
   if (facetKey === 'category') selectedCategories.value = []
   else if (facetKey === 'model') selectedModels.value = []
@@ -979,7 +982,9 @@ const clearFilterFacet = (facetKey: string) => {
 }
 
 /** How many applied chips stay visible when the row isn't hovered. */
-const APPLIED_CHIPS_AT_REST = 2
+/** Room kept for the "+N" pill, and the gap between chips. */
+const OVERFLOW_BADGE_WIDTH = 36
+const CHIP_GAP = 6
 
 interface AppliedFilter {
   facetKey: FilterFacetKey
@@ -1000,6 +1005,41 @@ const appliedFilters = computed<AppliedFilter[]>(() =>
       }))
   )
 )
+
+/**
+ * How many chips fit on the row before it reaches Clear all. Measured rather
+ * than fixed: "Image" and "Character Reference" are wildly different widths,
+ * so a constant either wastes the row or overflows it.
+ */
+const restingVisibleCount = ref(appliedFilters.value.length)
+
+const restingHiddenCount = computed(() =>
+  Math.max(0, appliedFilters.value.length - restingVisibleCount.value)
+)
+
+const appliedRowRef = ref<ComponentPublicInstance | null>(null)
+
+function measureVisibleChips() {
+  const row = (appliedRowRef.value?.$el as HTMLElement | undefined)
+    ?.firstElementChild
+  if (!row) return
+  const available = row.clientWidth - OVERFLOW_BADGE_WIDTH
+  let used = 0
+  let fits = 0
+  for (const child of Array.from(row.children)) {
+    if (!(child instanceof HTMLElement) || child.dataset.overflowBadge) continue
+    used += child.offsetWidth + CHIP_GAP
+    if (used > available) break
+    fits += 1
+  }
+  restingVisibleCount.value = Math.max(1, fits)
+}
+
+useResizeObserver(
+  () => (appliedRowRef.value?.$el as HTMLElement | undefined) ?? null,
+  measureVisibleChips
+)
+watch(appliedFilters, () => void nextTick(measureVisibleChips))
 
 // UI state
 const loadingTemplate = ref<string | null>(null)
