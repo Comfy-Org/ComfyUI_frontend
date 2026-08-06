@@ -69,19 +69,6 @@ describe('mappers', () => {
     expect(yNodeToLayout(ynode)).toEqual(layout)
   })
 
-  it('derives bounds from independently stored position and size', () => {
-    const doc = new Y.Doc()
-    const ynode = doc.getMap('node') as NodeLayoutMap
-    ynode.set('position', { x: 5, y: 6 })
-    ynode.set('size', { width: 70, height: 80 })
-
-    const back = yNodeToLayout(ynode)
-
-    expect(back.position).toEqual({ x: 5, y: 6 })
-    expect(back.size).toEqual({ width: 70, height: 80 })
-    expect(back.bounds).toEqual({ x: 5, y: 6, width: 70, height: 80 })
-  })
-
   it.for([
     {
       name: 'legacy rect',

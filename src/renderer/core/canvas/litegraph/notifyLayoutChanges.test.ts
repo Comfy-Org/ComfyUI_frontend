@@ -48,35 +48,32 @@ describe('notifyLayoutChanges', () => {
     expect(onResize).toHaveBeenCalledTimes(1)
   })
 
-  it('fires onResize for a resize the store originates', async () => {
-    using context = setup()
-    const { graph, node } = context
-    const onResize = vi.fn()
-    node.onResize = onResize
+  it.for([{ path: 'direct' }, { path: 'batched' }] as const)(
+    'fires onResize for an external $path resize',
+    async ({ path }) => {
+      using context = setup()
+      const { graph, node } = context
+      const onResize = vi.fn()
+      node.onResize = onResize
 
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Vue)
-    mutations.resizeNode(graph.rootGraph.id, node.id, {
-      width: 300,
-      height: 200
-    })
-    await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
-  })
-
-  it('fires onResize when a bounds batch changes size', async () => {
-    using context = setup()
-    const { graph, node } = context
-    const onResize = vi.fn()
-    node.onResize = onResize
-
-    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
-      {
-        nodeId: node.id,
-        bounds: { x: 0, y: 0, width: 300, height: 200 }
+      if (path === 'direct') {
+        const mutations = useLayoutMutations()
+        mutations.setSource(LayoutSource.Vue)
+        mutations.resizeNode(graph.rootGraph.id, node.id, {
+          width: 300,
+          height: 200
+        })
+      } else {
+        layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
+          {
+            nodeId: node.id,
+            bounds: { x: 0, y: 0, width: 300, height: 200 }
+          }
+        ])
       }
-    ])
-    await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
-  })
+      await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
+    }
+  )
 
   it('leaves onResize alone when a bounds batch only moves', async () => {
     using context = setup()
