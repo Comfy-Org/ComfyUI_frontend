@@ -326,6 +326,13 @@ its legacy shape intact. Port the pack's rename maps, retired-widget handling
 and positional-to-named fallbacks into that hook: those are the conversion, and
 dropping them silently loses user data.
 
+**If you are converting `addWidget('button', name, null, callback)` or any
+widget whose callback is an action rather than a value change** — **use
+`widget.on('activate', fn)`**. A button's value never moves, so `on('change')`
+can never fire for one. Keep the widget itself (`widgets.add({ type: 'button',
+name, value: null })`) — its `widgets_values` entry is positional, and dropping
+it shifts every widget after it.
+
 **If you are converting `app.ui.settings.getSettingValue` / `addSetting`, or a
 `settings: [...]` array in `registerExtension`** — **use `comfy.settings`**:
 `declare({ id, name, type, defaultValue })` once at load, then `get(id)` and
