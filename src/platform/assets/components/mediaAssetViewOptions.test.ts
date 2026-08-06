@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import {
   getMediaAssetGridColumns,
-  MEDIA_ASSET_VIEW_MODE
+  MEDIA_ASSET_GRID_MODE
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 
 describe('getMediaAssetGridColumns', () => {
   it.for([
-    { mode: MEDIA_ASSET_VIEW_MODE.gridSmall, minWidth: 128 },
-    { mode: MEDIA_ASSET_VIEW_MODE.grid, minWidth: 240 }
+    { mode: MEDIA_ASSET_GRID_MODE.gridSmall, minWidth: 128 },
+    { mode: MEDIA_ASSET_GRID_MODE.grid, minWidth: 240 }
   ] satisfies Array<{ mode: MediaAssetGridMode; minWidth: number }>)(
     'uses a $minWidth px minimum width for $mode',
     ({ mode, minWidth }) => {

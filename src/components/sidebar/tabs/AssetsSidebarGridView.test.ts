@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { describe, expect, it } from 'vitest'
 
-import { MEDIA_ASSET_VIEW_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
+import { MEDIA_ASSET_GRID_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
@@ -59,11 +59,11 @@ function renderGridView(gridMode: MediaAssetGridMode) {
 describe('AssetsSidebarGridView', () => {
   it.for([
     {
-      gridMode: MEDIA_ASSET_VIEW_MODE.gridSmall,
+      gridMode: MEDIA_ASSET_GRID_MODE.gridSmall,
       expectedNativeControls: false
     },
     {
-      gridMode: MEDIA_ASSET_VIEW_MODE.grid,
+      gridMode: MEDIA_ASSET_GRID_MODE.grid,
       expectedNativeControls: true
     }
   ])(

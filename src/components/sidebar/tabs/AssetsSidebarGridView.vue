@@ -14,7 +14,7 @@
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
           :show-native-video-controls="
-            gridMode !== MEDIA_ASSET_VIEW_MODE.gridSmall
+            gridMode !== MEDIA_ASSET_GRID_MODE.gridSmall
           "
           @select="emit('select-asset', item.asset)"
           @toggle-selection="emit('toggle-asset-selection', item.asset)"
@@ -34,7 +34,7 @@ import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import {
   getMediaAssetGridColumns,
-  MEDIA_ASSET_VIEW_MODE
+  MEDIA_ASSET_GRID_MODE
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
