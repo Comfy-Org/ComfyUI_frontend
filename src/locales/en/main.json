@@ -2277,6 +2277,7 @@
     "failedToExportModel": "Failed to export model as {format}",
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
+    "a1111CoreNodesUnavailable": "Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.",
     "dropFileError": "Unable to process dropped item: {error}",
     "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Errors tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
@@ -2806,6 +2807,17 @@
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
       "runLabel": "Run"
     },
+    "paymentRecovery": {
+      "title": "Subscription paused",
+      "ownerDescription": "Update your payment method to restore the workspace's subscription and run workflows.",
+      "memberDescription": "Ask your workspace owner to restore the workspace's subscription.",
+      "ownerCta": "Update payment",
+      "memberCta": "Ok, got it",
+      "ownerRunLabel": "Update payment to run",
+      "memberRunLabel": "Run",
+      "ownerRunTooltip": "Update payment to restore this subscription",
+      "memberRunTooltip": "Ask your workspace owner to restore this subscription"
+    },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeForMore": "Upgrade",
@@ -2996,14 +3008,13 @@
     },
     "billingStatus": {
       "warning": {
-        "title": "Payment declined",
-        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
-        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause."
+        "title": "Payment failed",
+        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause."
       },
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+        "memberBody": "Ask your workspace owner to restore the workspace's subscription."
       },
       "outOfCredits": {
         "title": "Out of credits",
@@ -3458,30 +3469,13 @@
   "cloudStart_desc": "Zero setup required. Works on any device.",
   "cloudStart_explain": "Generate multiple outputs at once. Share workflows with ease.",
   "cloudStart_learnAboutButton": "Learn about Cloud",
-  "cloudStart_wantToRun": "Want to run ComfyUI locally instead?",
-  "cloudStart_download": "Download ComfyUI",
   "cloudHero": {
     "previousSlide": "Previous slide",
     "nextSlide": "Next slide",
-    "slidePagerLabel": "Go to slide {index}",
-    "slides": {
-      "cloud": {
-        "title": "Cloud",
-        "description": "Best for most users who want to work from anywhere with models verified for commercial license."
-      },
-      "workflows": {
-        "title": "Workflows",
-        "description": "From idea to output in minutes. Generate multiple variations side by side."
-      },
-      "team": {
-        "title": "Team",
-        "description": "Onboard your team today. Share workflows and assets across your organization."
-      },
-      "models": {
-        "title": "Models",
-        "description": "Curated, commercially licensed models ready to run with zero setup."
-      }
-    }
+    "slideRoleDescription": "slide",
+    "carouselRoleDescription": "carousel",
+    "carouselLabel": "Featured models",
+    "slideStatus": "{title}, slide {current} of {total}"
   },
   "cloudWaitlist_questionsText": "Questions? Contact us",
   "cloudWaitlist_contactLink": "here",
@@ -4619,6 +4613,10 @@
     "switchFailed": "Failed to switch workspace. Please try again."
   },
   "workspaceAuth": {
+    "initializationFailed": "Couldn't load your workspace",
+    "initializationFailedDetail": "Check your connection and try again.",
+    "initializationFailedSignOutDetail": "Sign out and log in again to continue.",
+    "retry": "Try again",
     "errors": {
       "notAuthenticated": "You must be logged in to access workspaces",
       "invalidFirebaseToken": "Authentication failed. Please try logging in again.",
