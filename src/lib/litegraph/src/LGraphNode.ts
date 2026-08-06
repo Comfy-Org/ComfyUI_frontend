@@ -1235,7 +1235,13 @@ export class LGraphNode
     if (state.properties) o.properties = LiteGraph.cloneObject(state.properties)
 
     const { widgets } = this
-    if (widgets?.length && this.serialize_widgets)
+    // Guarded on `some(serialize !== false)` rather than `length`: a node whose
+    // widgets ALL opt out used to emit an empty `widgets_values`, which load
+    // treats as a no-op but which still changes the saved bytes — mounting a
+    // canvas widget was enough to make it appear on a node that previously had
+    // none. `serialiseWidgetValues` skips those widgets internally, so without
+    // this guard it still returns an empty pair and assigns it.
+    if (widgets?.some((w) => w.serialize !== false) && this.serialize_widgets)
       Object.assign(o, serialiseWidgetValues(widgets))
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
