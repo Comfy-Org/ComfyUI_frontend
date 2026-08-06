@@ -9,6 +9,7 @@ type StoredRect = [x: number, y: number, width: number, height: number]
 
 type StoredNode = {
   id: NodeId
+  rect: StoredRect
   position: NodeLayout['position']
   size: NodeLayout['size']
   visible: boolean
@@ -18,8 +19,7 @@ type StoredNode = {
 
 export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
 
-const DEFAULT_NODE_POSITION: NodeLayout['position'] = { x: 0, y: 0 }
-const DEFAULT_NODE_SIZE: NodeLayout['size'] = { width: 100, height: 50 }
+const DEFAULT_NODE_RECT: StoredRect = [0, 0, 100, 50]
 
 export function layoutToYNode(
   layout: NodeLayout,
@@ -40,11 +40,15 @@ export function layoutToYNode(
 export function yNodeGeometry(
   ynode: NodeLayoutMap
 ): Pick<NodeLayout, 'position' | 'size'> {
-  const storedPosition =
-    (ynode.get('position') as NodeLayout['position'] | undefined) ??
-    DEFAULT_NODE_POSITION
-  const storedSize =
-    (ynode.get('size') as NodeLayout['size'] | undefined) ?? DEFAULT_NODE_SIZE
+  const [x, y, width, height] =
+    (ynode.get('rect') as StoredRect | undefined) ?? DEFAULT_NODE_RECT
+  const storedPosition = (ynode.get('position') as
+    | NodeLayout['position']
+    | undefined) ?? { x, y }
+  const storedSize = (ynode.get('size') as NodeLayout['size'] | undefined) ?? {
+    width,
+    height
+  }
   return {
     position: { ...storedPosition },
     size: { ...storedSize }

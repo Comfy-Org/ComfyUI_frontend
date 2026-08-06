@@ -1424,13 +1424,12 @@ describe('layoutStore CRDT operations', () => {
     applyRemoteChanges(remote, () => {
       const node = new Y.Map<unknown>()
       node.set('id', nodeId)
-      node.set('position', { x: 300, y: 400 })
-      node.set('size', { width: 50, height: 60 })
+      node.set('rect', [640, 360, 320, 180])
       node.set('zIndex', 0)
       node.set('visible', true)
       remote.getMap<Y.Map<unknown>>('nodes').set(`${GRAPH}:${nodeId}`, node)
     })
-    expect(readRect(nodeId)).toEqual([300, 400, 50, 60])
+    expect(readRect(nodeId)).toEqual([640, 360, 320, 180])
 
     applyRemoteChanges(remote, () => {
       remote.getMap('nodes').delete(`${GRAPH}:${nodeId}`)
