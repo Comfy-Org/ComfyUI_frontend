@@ -332,6 +332,14 @@ already mid-gesture?_ **Use `comfy.isInteracting()`** and stand down while it is
 true. Do not reach for the individual fields; which gestures exist is the
 editor's business and will change.
 
+**If you are converting a pack that listens on `document` for pointer moves to
+build an editing gesture** (drag one node onto another, shake to disconnect,
+drop onto a link) — **use `comfy.onNodeMoved`**, which reports node movement
+under both renderers from one subscription. Two cautions: it does not say
+whether a _person_ moved the node, so guard your own writes against re-entry;
+and there is no drag start/end, so a gesture that must commit on release cannot
+be built on this alone — punt that and name it.
+
 **If you are converting `canvas.setDirty(...)` / `setDirtyCanvas(...)`** —
 **delete it.** There is no published repaint request, deliberately. Handle
 writes invalidate on their own, and a `widgets.canvas` surface has `redraw()`.

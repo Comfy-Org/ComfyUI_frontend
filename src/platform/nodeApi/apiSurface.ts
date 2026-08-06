@@ -118,6 +118,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'onConnectionsChanged',
   'onCreated',
   'onExecuted',
+  'onNodeMoved',
   'onPreview',
   'onRemoved',
   'onSerialize',

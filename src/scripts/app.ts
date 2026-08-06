@@ -172,6 +172,7 @@ import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { deliverPreview } from '@/platform/nodeApi/defsRegistry'
+import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -904,6 +905,8 @@ export class ComfyApp {
 
       releaseSharedObjectUrl(blobUrl)
     })
+
+    installNodeMoveBridge()
 
     api.addEventListener('feature_flags', () => {
       void useNodeReplacementStore().load()

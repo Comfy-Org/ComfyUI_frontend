@@ -32,12 +32,13 @@ widget instance, not a Pinia store, not a Vue reactive proxy, not a constructor.
 > | ⛔  | Specified only — a pack needing it is an `api-gap` punt |
 >
 > **Implemented (v1.0):** `constants`, `defs.define`, `defs.extend`,
-> `graph.nodes`, `graph.selection`, `interaction.state`, `node.connectVeto`,
-> `node.geometry`, `node.menu`, `node.onPreview`, `node.onSerialize`,
-> `node.resolve`, `node.sizeConstraints`, `serialization.control`,
-> `settings`, `slots.connect`, `slots.dynamic`, `slots.identity`,
-> `slots.moveLinks`, `slots.retype`, `widgets.canvas`, `widgets.create`,
-> `widgets.hidden`, `widgets.mount`, `widgets.reorder`.
+> `graph.nodes`, `graph.selection`, `interaction.nodeMoved`,
+> `interaction.state`, `node.connectVeto`, `node.geometry`, `node.menu`,
+> `node.onPreview`, `node.onSerialize`, `node.resolve`,
+> `node.sizeConstraints`, `serialization.control`, `settings`,
+> `slots.connect`, `slots.dynamic`, `slots.identity`, `slots.moveLinks`,
+> `slots.retype`, `widgets.canvas`, `widgets.create`, `widgets.hidden`,
+> `widgets.mount`, `widgets.reorder`.
 >
 > **Specified only:** §4a declarative decorations (badges/anchors — note
 > `setSizeConstraints` and `widgets.canvas` DID ship), §4b chrome, §4c
