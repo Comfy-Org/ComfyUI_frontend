@@ -1,12 +1,15 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { api } from '@/scripts/api'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
+
+const mockGetServerFeature = vi.spyOn(api, 'getServerFeature')
 
 const folderAsset = vi.hoisted(
   () =>
@@ -23,6 +26,18 @@ const folderAsset = vi.hoisted(
     }) satisfies AssetItem
 )
 
+const videoAsset = vi.hoisted(
+  () =>
+    ({
+      id: 'video-output',
+      name: 'video-output.mp4',
+      mime_type: 'video/mp4',
+      tags: ['output']
+    }) satisfies AssetItem
+)
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+
 vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
   const { ref } = await import('vue')
 
@@ -32,6 +47,23 @@ vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
       loading: ref(false),
       error: ref(null),
       fetchMediaList: vi.fn(async () => [folderAsset]),
+      loadMore: vi.fn(),
+      hasMore: ref(false),
+      isLoadingMore: ref(false)
+    })
+  }
+})
+
+vi.mock('@/platform/assets/composables/media/useFlatOutputAssets', async () => {
+  const { ref } = await import('vue')
+  const media = ref([folderAsset, videoAsset])
+
+  return {
+    useFlatOutputAssets: () => ({
+      media,
+      loading: ref(false),
+      error: ref(null),
+      fetchMediaList: vi.fn().mockResolvedValue(media.value),
       loadMore: vi.fn(),
       hasMore: ref(false),
       isLoadingMore: ref(false)
@@ -98,6 +130,14 @@ const i18n = createI18n({
         backToAssets: 'Back to all assets',
         mediaAssets: { title: 'Media Assets' },
         labels: { generated: 'Generated', imported: 'Imported' }
+      },
+      mediaAsset: {
+        generatedMediaTabs: {
+          all: 'All',
+          images: 'Images',
+          videos: 'Videos',
+          audio: 'Audio'
+        }
       }
     }
   }
@@ -120,9 +160,11 @@ const assetsGridStub = {
   emits: ['output-count-click'],
   template: `
     <button
+      v-if="assets.length"
       aria-label="Enter output folder"
       @click="$emit('output-count-click', assets[0])"
     />
+    <span v-for="asset in assets" :key="asset.id">{{ asset.name }}</span>
   `
 }
 
@@ -154,6 +196,10 @@ function renderTab() {
 }
 
 describe('AssetsSidebarTab folder navigation', () => {
+  beforeEach(() => {
+    mockGetServerFeature.mockReturnValue(true)
+  })
+
   it('places accessible folder actions beside the job ID', async () => {
     renderTab()
     await userEvent.click(
@@ -181,5 +227,26 @@ describe('AssetsSidebarTab folder navigation', () => {
       screen.queryByRole('button', { name: 'Back to all assets' })
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
+  })
+
+  it('filters persisted generated assets by media type', async () => {
+    renderTab()
+
+    expect(screen.getByText('multi-output.png')).toBeVisible()
+    expect(screen.getByText('video-output.mp4')).toBeVisible()
+
+    await userEvent.click(screen.getByText('Videos'))
+
+    expect(screen.queryByText('multi-output.png')).not.toBeInTheDocument()
+    expect(screen.getByText('video-output.mp4')).toBeVisible()
+  })
+
+  it('keeps history-backed generated assets when the asset API is disabled', () => {
+    mockGetServerFeature.mockReturnValue(false)
+
+    renderTab()
+
+    expect(screen.getByText('multi-output.png')).toBeVisible()
+    expect(screen.queryByText('video-output.mp4')).not.toBeInTheDocument()
   })
 })
