@@ -1,5 +1,5 @@
-import { chainCallback, addMiddleClickPan, addWheelPassthrough } from './utility.js';
-const { app } = window.comfyAPI.app;
+import { addMiddleClickPan, addWheelPassthrough } from './utility.js';
+import { comfy } from '/comfy/api/v1.js';
 
 // Shared across all HDR Preview nodes so synced nodes can drive each other.
 const hdrSyncGroup = new Set();
@@ -109,450 +109,312 @@ function loadImageBitmapFromView(filename, type) {
         .catch(() => null);
 }
 
-app.registerExtension({
-    name: "KJNodes.HDRPreview",
+// Per-node state for the builder-level hooks below: a NodeHandle carries no
+// arbitrary properties, so `node._hdrState` becomes an entry cleared on removal.
+const hdrNodes = new Map();
 
-    async beforeRegisterNodeDef(nodeType, nodeData) {
-        if (nodeData?.name !== "HDRPreviewKJ") return;
+comfy.defs.extend("HDRPreviewKJ", (b) => {
+    b.onCreated((node) => {
+        const state = {
+            frames: [],
+            frameCount: 0,
+            width: 512, height: 512,
+            fps: 24,
+            inputSpace: "logc3",
+            linearScale: 1.0,
+            exposure: 0.0,
+            saturation: 1.0,
+            currentFrame: 0,
+            playing: false,
+            playTimer: null,
+            gl: null, program: null, texture: null, vao: null,
+            uniforms: {},
+            uploadedFrame: -1,
+            needsRender: false,
+            execGen: 0,
+        };
 
-        chainCallback(nodeType.prototype, "onNodeCreated", function () {
-            const node = this;
+        const container = document.createElement("div");
+        container.style.cssText =
+            "position:relative;width:100%;background:#111;display:flex;flex-direction:column;align-items:center;overflow:hidden;";
 
-            const state = {
-                frames: [],
-                frameCount: 0,
-                width: 512, height: 512,
-                fps: 24,
-                inputSpace: "logc3",
-                linearScale: 1.0,
-                exposure: 0.0,
-                saturation: 1.0,
-                currentFrame: 0,
-                playing: false,
-                playTimer: null,
-                gl: null, program: null, texture: null, vao: null,
-                uniforms: {},
-                uploadedFrame: -1,
-                needsRender: false,
-                execGen: 0,
-            };
-            node._hdrState = state;
+        const viewport = document.createElement("div");
+        // flex-shrink:0 — legacy container can be shorter than this height; without it the viewport collapses to 0.
+        viewport.style.cssText =
+            "position:relative;width:100%;height:0;background:#000;overflow:hidden;flex-shrink:0;";
 
-            let controlsHeight = 28;  // measured from DOM after mount; this is the fallback
-            node._widgetHeight = controlsHeight;
+        const canvas = document.createElement("canvas");
+        canvas.style.cssText =
+            "display:block;width:100%;height:100%;";
+        viewport.appendChild(canvas);
 
-            const container = document.createElement("div");
-            container.style.cssText =
-                "position:relative;width:100%;background:#111;display:flex;flex-direction:column;align-items:center;overflow:hidden;";
+        const frameRow = document.createElement("div");
+        frameRow.style.cssText =
+            "display:flex;align-items:center;gap:6px;padding:3px 6px;color:#ccc;font-size:11px;background:#1a1a1a;width:100%;box-sizing:border-box;flex:0 0 auto;";
 
-            const viewport = document.createElement("div");
-            // flex-shrink:0 — legacy container can be shorter than this height; without it the viewport collapses to 0.
-            viewport.style.cssText =
-                "position:relative;width:100%;height:0;background:#000;overflow:hidden;flex-shrink:0;";
+        const playBtn = document.createElement("button");
+        playBtn.type = "button";
+        playBtn.textContent = "▶";
+        playBtn.style.cssText =
+            "background:#333;color:#ccc;border:1px solid #555;cursor:pointer;padding:1px 8px;font-size:11px;min-width:24px;";
 
-            const canvas = document.createElement("canvas");
-            canvas.style.cssText =
-                "display:block;width:100%;height:100%;";
-            viewport.appendChild(canvas);
+        const syncBtn = document.createElement("button");
+        syncBtn.type = "button";
+        syncBtn.textContent = "⛓";
+        syncBtn.title = "Sync playback with other HDR Preview nodes that have sync enabled.";
+        syncBtn.style.cssText =
+            "background:#333;color:#888;border:1px solid #555;cursor:pointer;padding:1px 6px;font-size:11px;min-width:22px;";
 
-            const frameRow = document.createElement("div");
-            frameRow.style.cssText =
-                "display:flex;align-items:center;gap:6px;padding:3px 6px;color:#ccc;font-size:11px;background:#1a1a1a;width:100%;box-sizing:border-box;flex:0 0 auto;";
+        const frameSlider = document.createElement("input");
+        frameSlider.type = "range";
+        frameSlider.min = "0";
+        frameSlider.max = "0";
+        frameSlider.value = "0";
+        frameSlider.step = "1";
+        frameSlider.style.cssText = "flex:1;min-width:40px;accent-color:#5af;";
 
-            const playBtn = document.createElement("button");
-            playBtn.type = "button";
-            playBtn.textContent = "▶";
-            playBtn.style.cssText =
-                "background:#333;color:#ccc;border:1px solid #555;cursor:pointer;padding:1px 8px;font-size:11px;min-width:24px;";
+        const frameLabel = document.createElement("span");
+        frameLabel.textContent = "0/0";
+        frameLabel.style.cssText = "min-width:50px;text-align:right;font-variant-numeric:tabular-nums;";
 
-            const syncBtn = document.createElement("button");
-            syncBtn.type = "button";
-            syncBtn.textContent = "⛓";
-            syncBtn.title = "Sync playback with other HDR Preview nodes that have sync enabled.";
-            syncBtn.style.cssText =
-                "background:#333;color:#888;border:1px solid #555;cursor:pointer;padding:1px 6px;font-size:11px;min-width:22px;";
+        frameRow.appendChild(playBtn);
+        frameRow.appendChild(syncBtn);
+        frameRow.appendChild(frameSlider);
+        frameRow.appendChild(frameLabel);
 
-            const frameSlider = document.createElement("input");
-            frameSlider.type = "range";
-            frameSlider.min = "0";
-            frameSlider.max = "0";
-            frameSlider.value = "0";
-            frameSlider.step = "1";
-            frameSlider.style.cssText = "flex:1;min-width:40px;accent-color:#5af;";
+        container.appendChild(viewport);
+        container.appendChild(frameRow);
 
-            const frameLabel = document.createElement("span");
-            frameLabel.textContent = "0/0";
-            frameLabel.style.cssText = "min-width:50px;text-align:right;font-variant-numeric:tabular-nums;";
+        const stopProp = (e) => e.stopPropagation();
+        for (const el of [frameSlider, playBtn, syncBtn]) {
+            el.addEventListener("pointerdown", stopProp);
+            el.addEventListener("mousedown", stopProp);
+        }
 
-            frameRow.appendChild(playBtn);
-            frameRow.appendChild(syncBtn);
-            frameRow.appendChild(frameSlider);
-            frameRow.appendChild(frameLabel);
+        addMiddleClickPan(container);
+        addWheelPassthrough(canvas);
 
-            container.appendChild(viewport);
-            container.appendChild(frameRow);
-
-            const stopProp = (e) => e.stopPropagation();
-            for (const el of [frameSlider, playBtn, syncBtn]) {
-                el.addEventListener("pointerdown", stopProp);
-                el.addEventListener("mousedown", stopProp);
-            }
-
-            addMiddleClickPan(container);
-            addWheelPassthrough(canvas);
-
-            function initGL() {
-                try {
-                    const gl = canvas.getContext("webgl2", { antialias: false, premultipliedAlpha: false, alpha: false });
-                    if (!gl) {
-                        console.error("[HDRPreviewKJ] WebGL2 not available");
-                        return false;
-                    }
-                    const program = createProgram(gl, VERTEX_SHADER, FRAGMENT_SHADER);
-                    gl.useProgram(program);
-
-                    const uniforms = {
-                        u_image: gl.getUniformLocation(program, "u_image"),
-                        u_exposure: gl.getUniformLocation(program, "u_exposure"),
-                        u_saturation: gl.getUniformLocation(program, "u_saturation"),
-                        u_space: gl.getUniformLocation(program, "u_space"),
-                        u_linearScale: gl.getUniformLocation(program, "u_linearScale"),
-                    };
-                    gl.uniform1i(uniforms.u_image, 0);
-
-                    const texture = gl.createTexture();
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, texture);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-                    const vao = gl.createVertexArray();
-                    gl.bindVertexArray(vao);
-
-                    state.gl = gl;
-                    state.program = program;
-                    state.texture = texture;
-                    state.vao = vao;
-                    state.uniforms = uniforms;
-                    return true;
-                } catch (err) {
-                    console.error("[HDRPreviewKJ] WebGL init failed:", err);
+        function initGL() {
+            try {
+                const gl = canvas.getContext("webgl2", { antialias: false, premultipliedAlpha: false, alpha: false });
+                if (!gl) {
+                    console.error("[HDRPreviewKJ] WebGL2 not available");
                     return false;
                 }
-            }
+                const program = createProgram(gl, VERTEX_SHADER, FRAGMENT_SHADER);
+                gl.useProgram(program);
 
-            function requestRender() {
-                if (state.needsRender) return;
-                state.needsRender = true;
-                requestAnimationFrame(() => {
-                    state.needsRender = false;
-                    render();
-                });
-            }
+                const uniforms = {
+                    u_image: gl.getUniformLocation(program, "u_image"),
+                    u_exposure: gl.getUniformLocation(program, "u_exposure"),
+                    u_saturation: gl.getUniformLocation(program, "u_saturation"),
+                    u_space: gl.getUniformLocation(program, "u_space"),
+                    u_linearScale: gl.getUniformLocation(program, "u_linearScale"),
+                };
+                gl.uniform1i(uniforms.u_image, 0);
 
-            function render() {
-                if (!state.gl || !state.frames.length) return;
-                const frame = state.frames[state.currentFrame];
-                if (!frame) return;
-
-                const gl = state.gl;
-                // Backing buffer sized to source resolution for quality; CSS handles display scaling
-                if (canvas.width !== state.width || canvas.height !== state.height) {
-                    canvas.width = state.width;
-                    canvas.height = state.height;
-                }
-                gl.viewport(0, 0, canvas.width, canvas.height);
-                gl.useProgram(state.program);
-                gl.bindVertexArray(state.vao);
+                const texture = gl.createTexture();
                 gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, state.texture);
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-                if (state.uploadedFrame !== state.currentFrame) {
-                    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-                    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB8, gl.RGB, gl.UNSIGNED_BYTE, frame);
-                    state.uploadedFrame = state.currentFrame;
-                }
+                const vao = gl.createVertexArray();
+                gl.bindVertexArray(vao);
 
-                gl.uniform1f(state.uniforms.u_exposure, state.exposure);
-                gl.uniform1f(state.uniforms.u_saturation, state.saturation);
-                const spaceIdx = state.inputSpace === "logc3" ? 0 : state.inputSpace === "srgb" ? 2 : 1;
-                gl.uniform1i(state.uniforms.u_space, spaceIdx);
-                gl.uniform1f(state.uniforms.u_linearScale, state.linearScale);
+                state.gl = gl;
+                state.program = program;
+                state.texture = texture;
+                state.vao = vao;
+                state.uniforms = uniforms;
+                return true;
+            } catch (err) {
+                console.error("[HDRPreviewKJ] WebGL init failed:", err);
+                return false;
+            }
+        }
 
-                gl.clearColor(0, 0, 0, 1);
-                gl.clear(gl.COLOR_BUFFER_BIT);
-                gl.drawArrays(gl.TRIANGLES, 0, 3);
+        function requestRender() {
+            if (state.needsRender) return;
+            state.needsRender = true;
+            requestAnimationFrame(() => {
+                state.needsRender = false;
+                render();
+            });
+        }
+
+        function render() {
+            if (!state.gl || !state.frames.length) return;
+            const frame = state.frames[state.currentFrame];
+            if (!frame) return;
+
+            const gl = state.gl;
+            // Backing buffer sized to source resolution for quality; CSS handles display scaling
+            if (canvas.width !== state.width || canvas.height !== state.height) {
+                canvas.width = state.width;
+                canvas.height = state.height;
+            }
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.useProgram(state.program);
+            gl.bindVertexArray(state.vao);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, state.texture);
+
+            if (state.uploadedFrame !== state.currentFrame) {
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+                gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB8, gl.RGB, gl.UNSIGNED_BYTE, frame);
+                state.uploadedFrame = state.currentFrame;
             }
 
-            function stopPlayback() {
-                if (state.playTimer !== null) {
+            gl.uniform1f(state.uniforms.u_exposure, state.exposure);
+            gl.uniform1f(state.uniforms.u_saturation, state.saturation);
+            const spaceIdx = state.inputSpace === "logc3" ? 0 : state.inputSpace === "srgb" ? 2 : 1;
+            gl.uniform1i(state.uniforms.u_space, spaceIdx);
+            gl.uniform1f(state.uniforms.u_linearScale, state.linearScale);
+
+            gl.clearColor(0, 0, 0, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLES, 0, 3);
+        }
+
+        function stopPlayback() {
+            if (state.playTimer !== null) {
+                clearInterval(state.playTimer);
+                state.playTimer = null;
+            }
+            state.playing = false;
+            playBtn.textContent = "▶";
+        }
+
+        function updateFrameLabel() {
+            const total = Math.max(state.frameCount, 1);
+            frameLabel.textContent = `${state.currentFrame + 1}/${total}`;
+        }
+
+        const exposureWidget = node.widgets.get("exposure");
+        const saturationWidget = node.widgets.get("saturation");
+
+        function hookLiveWidget(widget, stateKey) {
+            if (!widget) return;
+            const initial = widget.getValue();
+            state[stateKey] = isFinite(initial) ? initial : state[stateKey];
+            // Additive listener — no capture-and-chain on widget.callback, so a
+            // second pack hooking the same widget cannot drop this one.
+            widget.on("change", (value) => {
+                state[stateKey] = isFinite(value) ? value : state[stateKey];
+                requestRender();
+            });
+        }
+        hookLiveWidget(exposureWidget, "exposure");
+        hookLiveWidget(saturationWidget, "saturation");
+
+        // Sync handle: other nodes in the group call these to follow along.
+        let syncEnabled = false;
+        const syncHandle = {
+            setFrameFraction(fraction) {
+                if (state.frameCount <= 0) return;
+                const maxIdx = Math.max(state.frameCount - 1, 0);
+                const frame = Math.min(maxIdx, Math.max(0, Math.round(fraction * maxIdx)));
+                if (frame === state.currentFrame) return;
+                state.currentFrame = frame;
+                frameSlider.value = String(frame);
+                updateFrameLabel();
+                requestRender();
+            },
+            showPlaying(play) {
+                state.playing = play;
+                playBtn.textContent = play ? "■" : "▶";
+                if (!play && state.playTimer !== null) {
                     clearInterval(state.playTimer);
                     state.playTimer = null;
                 }
-                state.playing = false;
-                playBtn.textContent = "▶";
+            },
+        };
+
+        function broadcastFraction() {
+            if (!syncEnabled || state.frameCount <= 1) return;
+            const fraction = state.currentFrame / (state.frameCount - 1);
+            for (const other of hdrSyncGroup) {
+                if (other !== syncHandle) other.setFrameFraction(fraction);
             }
+        }
 
-            function updateFrameLabel() {
-                const total = Math.max(state.frameCount, 1);
-                frameLabel.textContent = `${state.currentFrame + 1}/${total}`;
+        function broadcastPlaying(play) {
+            if (!syncEnabled) return;
+            for (const other of hdrSyncGroup) {
+                if (other !== syncHandle) other.showPlaying(play);
             }
+        }
 
-            const exposureWidget = node.widgets?.find(w => w.name === "exposure");
-            const saturationWidget = node.widgets?.find(w => w.name === "saturation");
-
-            function hookLiveWidget(widget, stateKey) {
-                if (!widget) return;
-                state[stateKey] = isFinite(widget.value) ? widget.value : state[stateKey];
-                const original = widget.callback;
-                widget.callback = function (value) {
-                    const num = isFinite(value) ? value : state[stateKey];
-                    state[stateKey] = num;
-                    requestRender();
-                    return original?.apply(this, arguments);
-                };
+        syncBtn.addEventListener("click", () => {
+            syncEnabled = !syncEnabled;
+            syncBtn.style.color = syncEnabled ? "#5fa" : "#888";
+            syncBtn.style.borderColor = syncEnabled ? "#5fa" : "#555";
+            if (syncEnabled) {
+                hdrSyncGroup.add(syncHandle);
+            } else {
+                hdrSyncGroup.delete(syncHandle);
             }
-            hookLiveWidget(exposureWidget, "exposure");
-            hookLiveWidget(saturationWidget, "saturation");
+        });
 
-            // Sync handle: other nodes in the group call these to follow along.
-            let syncEnabled = false;
-            const syncHandle = {
-                setFrameFraction(fraction) {
-                    if (state.frameCount <= 0) return;
-                    const maxIdx = Math.max(state.frameCount - 1, 0);
-                    const frame = Math.min(maxIdx, Math.max(0, Math.round(fraction * maxIdx)));
-                    if (frame === state.currentFrame) return;
-                    state.currentFrame = frame;
-                    frameSlider.value = String(frame);
-                    updateFrameLabel();
-                    requestRender();
-                },
-                showPlaying(play) {
-                    state.playing = play;
-                    playBtn.textContent = play ? "■" : "▶";
-                    if (!play && state.playTimer !== null) {
-                        clearInterval(state.playTimer);
-                        state.playTimer = null;
-                    }
-                },
-            };
+        frameSlider.addEventListener("input", () => {
+            state.currentFrame = parseInt(frameSlider.value, 10) || 0;
+            updateFrameLabel();
+            requestRender();
+            broadcastFraction();
+        });
+        frameSlider.addEventListener("pointerdown", () => {
+            stopPlayback();
+            broadcastPlaying(false);
+        });
+        function persistCurrentFrame() {
+            const saved = node.getProperty("hdrLastPreview");
+            if (!saved) return;
+            // setProperty dispatches a command, so the graph.change() and
+            // changeTracker.checkState() nudges are no longer needed.
+            node.setProperty("hdrLastPreview", { ...saved, current_frame: state.currentFrame });
+        }
+        frameSlider.addEventListener("change", persistCurrentFrame);
 
-            function broadcastFraction() {
-                if (!syncEnabled || state.frameCount <= 1) return;
-                const fraction = state.currentFrame / (state.frameCount - 1);
+        playBtn.addEventListener("click", () => {
+            if (state.playing) {
+                stopPlayback();
+                broadcastPlaying(false);
+                persistCurrentFrame();
+                return;
+            }
+            if (state.frameCount <= 1) return;
+            // Ensure no other synced node has an active timer — we become the sole driver.
+            if (syncEnabled) {
                 for (const other of hdrSyncGroup) {
-                    if (other !== syncHandle) other.setFrameFraction(fraction);
+                    if (other !== syncHandle) other.showPlaying(false);
                 }
             }
-
-            function broadcastPlaying(play) {
-                if (!syncEnabled) return;
-                for (const other of hdrSyncGroup) {
-                    if (other !== syncHandle) other.showPlaying(play);
-                }
-            }
-
-            syncBtn.addEventListener("click", () => {
-                syncEnabled = !syncEnabled;
-                syncBtn.style.color = syncEnabled ? "#5fa" : "#888";
-                syncBtn.style.borderColor = syncEnabled ? "#5fa" : "#555";
-                if (syncEnabled) {
-                    hdrSyncGroup.add(syncHandle);
-                } else {
-                    hdrSyncGroup.delete(syncHandle);
-                }
-            });
-
-            frameSlider.addEventListener("input", () => {
-                state.currentFrame = parseInt(frameSlider.value, 10) || 0;
+            const intervalMs = Math.max(16, 1000 / Math.max(state.fps, 1));
+            state.playing = true;
+            playBtn.textContent = "■";
+            state.playTimer = setInterval(() => {
+                state.currentFrame = (state.currentFrame + 1) % state.frameCount;
+                frameSlider.value = String(state.currentFrame);
                 updateFrameLabel();
                 requestRender();
                 broadcastFraction();
-            });
-            frameSlider.addEventListener("pointerdown", () => {
+            }, intervalMs);
+            broadcastPlaying(true);
+        });
+
+        node.widgets.mount({
+            name: "hdr_preview",
+            serialize: false,
+            render(el) {
+                el.appendChild(container);
+            },
+            destroy() {
                 stopPlayback();
-                broadcastPlaying(false);
-            });
-            function persistCurrentFrame() {
-                if (!node.properties?.hdrLastPreview) return;
-                node.properties.hdrLastPreview.current_frame = state.currentFrame;
-                node.graph?.change?.();
-                try { app.extensionManager?.workflow?.activeWorkflow?.changeTracker?.checkState?.(); } catch {}
-            }
-            frameSlider.addEventListener("change", persistCurrentFrame);
-
-            playBtn.addEventListener("click", () => {
-                if (state.playing) {
-                    stopPlayback();
-                    broadcastPlaying(false);
-                    persistCurrentFrame();
-                    return;
-                }
-                if (state.frameCount <= 1) return;
-                // Ensure no other synced node has an active timer — we become the sole driver.
-                if (syncEnabled) {
-                    for (const other of hdrSyncGroup) {
-                        if (other !== syncHandle) other.showPlaying(false);
-                    }
-                }
-                const intervalMs = Math.max(16, 1000 / Math.max(state.fps, 1));
-                state.playing = true;
-                playBtn.textContent = "■";
-                state.playTimer = setInterval(() => {
-                    state.currentFrame = (state.currentFrame + 1) % state.frameCount;
-                    frameSlider.value = String(state.currentFrame);
-                    updateFrameLabel();
-                    requestRender();
-                    broadcastFraction();
-                }, intervalMs);
-                broadcastPlaying(true);
-            });
-
-            const domWidget = node.addDOMWidget("hdr_preview", "hdr_preview", container, {
-                serialize: false,
-                hideOnZoom: false,
-                margin: 0,
-                getMinHeight: () => node._widgetHeight,
-                getMaxHeight: () => node._widgetHeight,
-                getHeight: () => node._widgetHeight,
-            });
-            node.resizable = true;
-
-            // LiteGraph's computeSize uses a fixed per-widget height that ignores DOM widgets — sum manually.
-            const NATIVE_ROW_H = (LiteGraph?.NODE_WIDGET_HEIGHT ?? 20) + 4;
-            const TITLE_H = LiteGraph?.NODE_TITLE_HEIGHT ?? 30;
-            function computeNodeHeight() {
-                let nativeCount = 0;
-                for (const w of node.widgets || []) {
-                    if (w === domWidget) continue;
-                    if (w.hidden || w.type === "converted-widget") continue;
-                    nativeCount++;
-                }
-                return TITLE_H + nativeCount * NATIVE_ROW_H + node._widgetHeight + 8;
-            }
-
-            // Don't gate on state.frames — a fire during async bitmap load would wipe _widgetHeight and collapse the node.
-            const controlsObserver = new ResizeObserver(() => {
-                const measured = frameRow.offsetHeight;
-                if (measured <= 0 || measured === controlsHeight) return;
-                controlsHeight = measured;
-                const viewportPx = parseInt(viewport.style.height, 10) || 0;
-                node._widgetHeight = viewportPx + controlsHeight;
-                node.setSize([node.size[0], computeNodeHeight()]);
-                node.graph?.setDirtyCanvas(true, true);
-            });
-            controlsObserver.observe(frameRow);
-
-            let resizing = false;
-            function resizeToFit() {
-                if (resizing) return;
-                resizing = true;
-                try {
-                    const srcW = state.width || 512, srcH = state.height || 512;
-                    const availW = Math.max(100, node.size[0] - 30);
-                    const ratio = srcH / srcW;
-                    const displayH = Math.round(availW * ratio);
-                    const totalH = displayH + controlsHeight;
-                    viewport.style.width = availW + "px";
-                    viewport.style.height = displayH + "px";
-                    // min-height keeps children visible when ComfyUI sets the container height from a stale computeSize.
-                    container.style.minHeight = totalH + "px";
-                    node._widgetHeight = totalH;
-                    node.setSize([node.size[0], computeNodeHeight()]);
-                    node.graph?.setDirtyCanvas(true, true);
-                } finally {
-                    resizing = false;
-                }
-            }
-
-            chainCallback(node, "onResize", function () {
-                if (state.frames.length) resizeToFit();
-            });
-
-            async function applyPreviewData(data) {
-                const gen = ++state.execGen;
-
-                stopPlayback();
-
-                for (const f of state.frames) {
-                    try { f.close?.(); } catch {}
-                }
-                state.frames = [];
-                state.uploadedFrame = -1;
-
-                state.frameCount = data.frame_count || 0;
-                state.width = data.width || 512;
-                state.height = data.height || 512;
-                state.fps = data.fps || 24;
-                state.inputSpace = data.input_space || "logc3";
-                state.linearScale = data.linear_scale || 1.0;
-                const restoredFrame = Number.isInteger(data.current_frame) ? data.current_frame : 0;
-                state.currentFrame = Math.min(Math.max(0, restoredFrame), Math.max(0, state.frameCount - 1));
-
-                frameSlider.max = String(Math.max(0, state.frameCount - 1));
-                frameSlider.value = String(state.currentFrame);
-                updateFrameLabel();
-
-                if (!state.gl) initGL();
-
-                resizeToFit();
-
-                const bitmaps = await Promise.all(
-                    (data.frames || []).map(f => loadImageBitmapFromView(f.filename, f.type))
-                );
-
-                if (gen !== state.execGen) {
-                    for (const b of bitmaps) {
-                        try { b?.close?.(); } catch {}
-                    }
-                    return;
-                }
-
-                state.frames = bitmaps.filter(Boolean);
-                // Re-assert size in case the ResizeObserver fired mid-await with empty frames.
-                resizeToFit();
-                requestRender();
-            }
-
-            chainCallback(node, "onExecuted", async function (message) {
-                const data = message?.hdr_preview_data?.[0];
-                if (!data) return;
-
-                node.properties = node.properties || {};
-                node.properties.hdrLastPreview = {
-                    frames: data.frames,
-                    width: data.width,
-                    height: data.height,
-                    fps: data.fps,
-                    input_space: data.input_space,
-                    linear_scale: data.linear_scale,
-                    frame_count: data.frame_count,
-                };
-                // Autosave snapshots before execution, so post-execute property updates need an explicit dirty nudge.
-                node.graph?.change?.();
-                try {
-                    const ct = app.extensionManager?.workflow?.activeWorkflow?.changeTracker;
-                    ct?.checkState?.();
-                } catch {}
-                try { app.workflowManager?.activeWorkflow?.changeTracker?.checkState?.(); } catch {}
-
-                await applyPreviewData(data);
-            });
-
-            chainCallback(node, "onConfigure", function () {
-                if (exposureWidget && isFinite(exposureWidget.value)) state.exposure = exposureWidget.value;
-                if (saturationWidget && isFinite(saturationWidget.value)) state.saturation = saturationWidget.value;
-                const saved = node.properties?.hdrLastPreview;
-                if (saved?.frames?.length) applyPreviewData(saved);
-            });
-
-            chainCallback(node, "onRemoved", function () {
-                stopPlayback();
-                controlsObserver.disconnect();
+                widthObserver.disconnect();
                 hdrSyncGroup.delete(syncHandle);
                 for (const f of state.frames) {
                     try { f.close?.(); } catch {}
@@ -568,7 +430,119 @@ app.registerExtension({
                     } catch {}
                     state.gl = null;
                 }
-            });
+            },
         });
-    },
+        // The node grows to fit the mounted element, so the hand-rolled
+        // computeSize sum (native row height + title + measured controls) and
+        // the per-resize setSize that went with it are no longer needed.
+        node.setSizeConstraints({ autoHeight: true });
+
+        let resizing = false;
+        function resizeToFit() {
+            if (resizing) return;
+            resizing = true;
+            try {
+                const srcW = state.width || 512, srcH = state.height || 512;
+                const availW = Math.max(100, node.getSize().width - 30);
+                const ratio = srcH / srcW;
+                const displayH = Math.round(availW * ratio);
+                viewport.style.width = availW + "px";
+                viewport.style.height = displayH + "px";
+            } finally {
+                resizing = false;
+            }
+        }
+
+        // The mounted element tracks the node's width, so observing it replaces
+        // the onResize chain that no longer has a hook to attach to.
+        const widthObserver = new ResizeObserver(() => {
+            if (state.frames.length) resizeToFit();
+        });
+        widthObserver.observe(container);
+
+        async function applyPreviewData(data) {
+            const gen = ++state.execGen;
+
+            stopPlayback();
+
+            for (const f of state.frames) {
+                try { f.close?.(); } catch {}
+            }
+            state.frames = [];
+            state.uploadedFrame = -1;
+
+            state.frameCount = data.frame_count || 0;
+            state.width = data.width || 512;
+            state.height = data.height || 512;
+            state.fps = data.fps || 24;
+            state.inputSpace = data.input_space || "logc3";
+            state.linearScale = data.linear_scale || 1.0;
+            const restoredFrame = Number.isInteger(data.current_frame) ? data.current_frame : 0;
+            state.currentFrame = Math.min(Math.max(0, restoredFrame), Math.max(0, state.frameCount - 1));
+
+            frameSlider.max = String(Math.max(0, state.frameCount - 1));
+            frameSlider.value = String(state.currentFrame);
+            updateFrameLabel();
+
+            if (!state.gl) initGL();
+
+            resizeToFit();
+
+            const bitmaps = await Promise.all(
+                (data.frames || []).map(f => loadImageBitmapFromView(f.filename, f.type))
+            );
+
+            if (gen !== state.execGen) {
+                for (const b of bitmaps) {
+                    try { b?.close?.(); } catch {}
+                }
+                return;
+            }
+
+            state.frames = bitmaps.filter(Boolean);
+            // Re-assert size in case the ResizeObserver fired mid-await with empty frames.
+            resizeToFit();
+            requestRender();
+        }
+
+        hdrNodes.set(node.id, { state, applyPreviewData, exposureWidget, saturationWidget });
+    });
+
+    b.onExecuted(async (node, result) => {
+        const inst = hdrNodes.get(node.id);
+        if (!inst) return;
+        const data = result?.raw?.hdr_preview_data?.[0];
+        if (!data) return;
+
+        // setProperty dispatches a command, so the explicit dirty nudges that
+        // followed the in-place properties write are no longer needed.
+        node.setProperty("hdrLastPreview", {
+            frames: data.frames,
+            width: data.width,
+            height: data.height,
+            fps: data.fps,
+            input_space: data.input_space,
+            linear_scale: data.linear_scale,
+            frame_count: data.frame_count,
+        });
+
+        await inst.applyPreviewData(data);
+    });
+
+    b.onConfigured((node) => {
+        const inst = hdrNodes.get(node.id);
+        if (!inst) return;
+        const exposure = inst.exposureWidget?.getValue();
+        const saturation = inst.saturationWidget?.getValue();
+        if (isFinite(exposure)) inst.state.exposure = exposure;
+        if (isFinite(saturation)) inst.state.saturation = saturation;
+        const saved = node.getProperty("hdrLastPreview");
+        if (saved?.frames?.length) inst.applyPreviewData(saved);
+    });
+
+    // Teardown lives in the mounted widget's destroy(); this only drops the
+    // per-node entry that stood in for the properties stashed on the node.
+    b.onRemoved((node) => {
+        hdrNodes.delete(node.id);
+    });
 });

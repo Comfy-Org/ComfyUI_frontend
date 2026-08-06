@@ -308,6 +308,20 @@ itself** — check whether it is a menu _on a node_. If so, **use
 rather than overwrite. A `ContextMenu` constructed to build a canvas-wide or
 slot menu is not this, and is still a gap — punt it and name it.
 
+**If you are converting a pack that writes its own shape into
+`widgets_values`** (a dict keyed by widget name, a nested object, anything not
+the positional array) — you cannot write it back: `widgets_values` is reserved,
+because changing it changes what the workflow means. **You do not need to.**
+Core assigns positionally and _then_ calls `onConfigure`, so `b.onConfigured`
+receives the saved node exactly as written — legacy shape intact. Read the old
+shape there, set each widget by name, and let serialization emit the standard
+positional array. The workflow migrates on its first save, with no core change.
+
+Carry the pack's own migration tables across with it — rename maps, retired
+widgets, positional-to-named fallbacks. Those are the conversion; dropping them
+silently loses user data. And say so in your summary: this rewrites the user's
+saved workflow, which is a heavier thing to ship than a code change.
+
 **If you are converting `this._somethingPrivate = x` on a node** — handles hold
 no arbitrary properties. **Keep a `Map` keyed by `node.id`** and clear the entry
 in `b.onRemoved`. This is supported, not a workaround; the old property was

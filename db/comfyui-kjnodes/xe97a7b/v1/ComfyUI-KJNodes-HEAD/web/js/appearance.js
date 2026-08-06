@@ -1,23 +1,22 @@
-const { app } = window.comfyAPI.app;
+import { comfy } from '/comfy/api/v1.js';
 
-app.registerExtension({
-    name: "KJNodes.appearance",
-        nodeCreated(node) {
+comfy.defs.extend(["INTConstant", "FloatConstant", "ConditioningMultiCombine"], (b) => {
+        b.onCreated((node) => {
             switch (node.comfyClass) {
                 case "INTConstant":
-                    node.setSize([200, 58]);
-                    node.color = "#1b4669";
-                    node.bgcolor = "#29699c";
+                    node.setSize({ width: 200, height: 58 });
+                    node.setColor("#1b4669");
+                    node.setBgColor("#29699c");
                     break;
                 case "FloatConstant":
-                    node.setSize([200, 58]);
-                    node.color = LGraphCanvas.node_colors.green.color;
-                    node.bgcolor = LGraphCanvas.node_colors.green.bgcolor;
+                    node.setSize({ width: 200, height: 58 });
+                    node.setColor(LGraphCanvas.node_colors.green.color);
+                    node.setBgColor(LGraphCanvas.node_colors.green.bgcolor);
                     break;
                 case "ConditioningMultiCombine":
-                    node.color = LGraphCanvas.node_colors.brown.color;
-                    node.bgcolor = LGraphCanvas.node_colors.brown.bgcolor;
+                    node.setColor(LGraphCanvas.node_colors.brown.color);
+                    node.setBgColor(LGraphCanvas.node_colors.brown.bgcolor);
                     break;
             }
-        }
+        });
 });
