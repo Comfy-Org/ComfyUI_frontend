@@ -145,11 +145,12 @@ Both of these caught real conversions that every other check passed.
 Deep dives, loaded only when relevant. `SKILL.md` stays short on purpose; detail
 lives here.
 
-| Reference                        | Covers                                                                                                                                                                  |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `references/node-definitions.md` | `beforeRegisterNodeDef` + prototype patching — **1,265 packs, 47.4% of installs, the largest surface**. The selector is already written as the hook's guard clause.     |
-| `references/widgets.md`          | Widget-array mutation and the converted-widget protocol — 286 packs / 21.6%, overlapping cohorts totalling more. Where naive conversions are most often silently wrong. |
-| `references/draw-callbacks.md`   | `onDraw*` — 420 packs, 32.2% of installs. Measured breakdown showing 47% never draw at all, a decision tree, and the canvas→CSS mapping.                                |
+| Reference                        | Covers                                                                                                                                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `references/nodegraph-101.md`    | **Read first if you have not converted a pack before.** What a node graph is, the definition/class/instance distinction, the lifecycle, workflow vs prompt, and why packs patch prototypes at all. |
+| `references/node-definitions.md` | `beforeRegisterNodeDef` + prototype patching — **1,265 packs, 47.4% of installs, the largest surface**. The selector is already written as the hook's guard clause.                                |
+| `references/widgets.md`          | Widget-array mutation and the converted-widget protocol — 286 packs / 21.6%, overlapping cohorts totalling more. Where naive conversions are most often silently wrong.                            |
+| `references/draw-callbacks.md`   | `onDraw*` — 420 packs, 32.2% of installs. Measured breakdown showing 47% never draw at all, a decision tree, and the canvas→CSS mapping.                                                           |
 
 ### Adding a pattern
 
