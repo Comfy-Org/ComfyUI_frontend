@@ -1,0 +1,193 @@
+--- a/ComfyUI-KJNodes-HEAD/web/js/play_sound.js
++++ b/ComfyUI-KJNodes-HEAD/web/js/play_sound.js
+@@ -1,95 +1,110 @@
+-const { app } = window.comfyAPI.app;
++import { comfy } from '/comfy/api/v1.js';
+ const { api } = window.comfyAPI.api;
+ 
+-app.registerExtension({
+-    name: "KJNodes.PlaySound",
+-    async beforeRegisterNodeDef(nodeType, nodeData) {
+-        if (nodeData.name !== "PlaySoundKJ") return;
++comfy.defs.extend("PlaySoundKJ", (b) => {
++    // Per-node playback state: handles carry no arbitrary properties, so the
++    // former this._kj* fields live here, keyed by node.id.
++    const states = new Map();
++    const stateFor = (node) => {
++        if (!states.has(node.id)) states.set(node.id, {});
++        return states.get(node.id);
++    };
++    // Was inline in onExecuted; shared now that removal has to clean up too.
++    const stopPlayback = (state) => {
++        if (state.statusListener) {
++            api.removeEventListener("status", state.statusListener);
++            state.statusListener = null;
++        }
++        clearTimeout(state.queueDebounce);
++        state.pendingAudio = null;
+ 
+-        const onExecuted = nodeType.prototype.onExecuted;
+-        nodeType.prototype.onExecuted = function (output) {
+-            onExecuted?.call(this, output);
++        if (state.playingAudio) {
++            state.playingAudio.pause();
++            state.playingAudio = null;
++        }
++        if (state.playTimer != null) {
++            clearTimeout(state.playTimer);
++            state.playTimer = null;
++        }
++    };
+ 
+-            const audios = output?.audio;
+-            if (!audios?.length) return;
++    // "status" is the queue-status event, not a node preview, so it stays on
++    // the api client.
++    b.onExecuted((node, result) => {
++        const audios = result.raw?.audio;
++        if (!audios?.length) return;
+ 
+-            const modeWidget = this.widgets?.find(w => w.name === "mode");
+-            const volumeWidget = this.widgets?.find(w => w.name === "volume");
+-            const durationWidget = this.widgets?.find(w => w.name === "duration");
+-            const mode = modeWidget?.value ?? "always";
+-            const volume = volumeWidget?.value ?? 0.5;
+-            const duration = durationWidget?.value ?? 0;
++        const state = stateFor(node);
++        const modeWidget = node.widgets.get("mode");
++        const volumeWidget = node.widgets.get("volume");
++        const durationWidget = node.widgets.get("duration");
++        const mode = modeWidget?.getValue() ?? "always";
++        const volume = volumeWidget?.getValue() ?? 0.5;
++        const duration = durationWidget?.getValue() ?? 0;
+ 
+-            // on_change: skip if audio content hasn't changed
+-            if (mode === "on_change") {
+-                const audioHash = output?.audio_hash?.[0];
+-                if (audioHash != null && this._kjLastAudioHash === audioHash) return;
+-                this._kjLastAudioHash = audioHash;
+-            }
++        // on_change: skip if audio content hasn't changed
++        if (mode === "on_change") {
++            const audioHash = result.raw?.audio_hash?.[0];
++            if (audioHash != null && state.lastAudioHash === audioHash) return;
++            state.lastAudioHash = audioHash;
++        }
+ 
+-            // Clean up previous state
+-            if (this._kjStatusListener) {
+-                api.removeEventListener("status", this._kjStatusListener);
+-                this._kjStatusListener = null;
+-            }
+-            clearTimeout(this._kjQueueDebounce);
+-            this._kjPendingAudio = null;
++        // Clean up previous state
++        stopPlayback(state);
+ 
+-            if (this._kjPlayingAudio) {
+-                this._kjPlayingAudio.pause();
+-                this._kjPlayingAudio = null;
+-            }
+-            if (this._kjPlayTimer != null) {
+-                clearTimeout(this._kjPlayTimer);
+-                this._kjPlayTimer = null;
++        const startPlayback = () => {
++            const { filename, subfolder, type } = audios[0];
++            const params = new URLSearchParams({
++                filename: filename ?? "",
++                subfolder: subfolder ?? "",
++                type: type ?? "temp",
++            });
++            const url = api.apiURL(`/view?${params.toString()}`);
++            const audio = new Audio(url);
++            audio.volume = Math.max(0, Math.min(1, volume));
++            audio.play().catch(() => {});
++            state.playingAudio = audio;
++            if (duration > 0) {
++                state.playTimer = setTimeout(() => {
++                    audio.pause();
++                    state.playingAudio = null;
++                    state.playTimer = null;
++                }, duration * 1000);
+             }
++        };
+ 
+-            const startPlayback = () => {
+-                const { filename, subfolder, type } = audios[0];
+-                const params = new URLSearchParams({
+-                    filename: filename ?? "",
+-                    subfolder: subfolder ?? "",
+-                    type: type ?? "temp",
+-                });
+-                const url = api.apiURL(`/view?${params.toString()}`);
+-                const audio = new Audio(url);
+-                audio.volume = Math.max(0, Math.min(1, volume));
+-                audio.play().catch(() => {});
+-                this._kjPlayingAudio = audio;
+-                if (duration > 0) {
+-                    this._kjPlayTimer = setTimeout(() => {
+-                        audio.pause();
+-                        this._kjPlayingAudio = null;
+-                        this._kjPlayTimer = null;
+-                    }, duration * 1000);
++        if (mode === "on_empty_queue") {
++            state.pendingAudio = startPlayback;
++            state.statusListener = ({ detail }) => {
++                const remaining = detail?.exec_info?.queue_remaining ?? 0;
++                if (remaining === 0) {
++                    // Debounce: confirm queue is truly empty
++                    // (status can briefly show 0 between dispatches)
++                    clearTimeout(state.queueDebounce);
++                    state.queueDebounce = setTimeout(() => {
++                        if (state.pendingAudio) {
++                            state.pendingAudio();
++                            state.pendingAudio = null;
++                        }
++                        api.removeEventListener("status", state.statusListener);
++                        state.statusListener = null;
++                    }, 1000);
++                } else {
++                    clearTimeout(state.queueDebounce);
+                 }
+             };
++            api.addEventListener("status", state.statusListener);
++        } else {
++            startPlayback();
++        }
++    });
+ 
+-            if (mode === "on_empty_queue") {
+-                this._kjPendingAudio = startPlayback;
+-                this._kjStatusListener = ({ detail }) => {
+-                    const remaining = detail?.exec_info?.queue_remaining ?? 0;
+-                    if (remaining === 0) {
+-                        // Debounce: confirm queue is truly empty
+-                        // (status can briefly show 0 between dispatches)
+-                        clearTimeout(this._kjQueueDebounce);
+-                        this._kjQueueDebounce = setTimeout(() => {
+-                            if (this._kjPendingAudio) {
+-                                this._kjPendingAudio();
+-                                this._kjPendingAudio = null;
+-                            }
+-                            api.removeEventListener("status", this._kjStatusListener);
+-                            this._kjStatusListener = null;
+-                        }, 1000);
+-                    } else {
+-                        clearTimeout(this._kjQueueDebounce);
+-                    }
+-                };
+-                api.addEventListener("status", this._kjStatusListener);
+-            } else {
+-                startPlayback();
+-            }
+-        };
+-    },
++    // The old code hung its state off the node, so deleting one mid-playback
++    // left the audio running and the "status" listener subscribed forever.
++    b.onRemoved((node) => {
++        const state = states.get(node.id);
++        if (state) stopPlayback(state);
++        states.delete(node.id);
++    });
+ });
+ 
