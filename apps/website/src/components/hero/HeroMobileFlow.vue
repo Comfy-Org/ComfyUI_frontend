@@ -17,7 +17,7 @@ useIdleAutoplay({ pose, hue, saturation }, flowEl)
 <template>
   <div ref="flowEl" class="flex w-full max-w-md flex-col items-stretch gap-3">
     <div class="relative">
-      <div class="aspect-4/3 w-full pt-6 pl-8">
+      <div class="aspect-4/3 w-full pt-6 pr-4 pb-9 pl-8">
         <AngleNode
           v-model:azimuth="pose.azimuth"
           v-model:elevation="pose.elevation"
@@ -33,6 +33,13 @@ useIdleAutoplay({ pose, hue, saturation }, flowEl)
           dot
         />
       </div>
+      <!-- The COLOR node mirrors it in the opposite corner, scaled down so
+           both graph controls share the 3D ANGLE frame on a phone. -->
+      <div
+        class="absolute right-0 bottom-0 h-28 w-56 rotate-2 text-[0.8rem] shadow-xl"
+      >
+        <ColorNode v-model:hue="hue" v-model:saturation="saturation" />
+      </div>
     </div>
     <div class="relative aspect-4/3 w-full">
       <HeroImageCard
@@ -41,9 +48,6 @@ useIdleAutoplay({ pose, hue, saturation }, flowEl)
         alt="Generated image rendered from the selected camera angle"
         label="OUTPUT"
       />
-    </div>
-    <div class="h-36 w-full">
-      <ColorNode v-model:hue="hue" v-model:saturation="saturation" />
     </div>
   </div>
 </template>
