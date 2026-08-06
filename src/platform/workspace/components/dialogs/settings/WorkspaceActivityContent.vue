@@ -203,7 +203,6 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { useWorkspaceActivity } from '@/platform/workspace/composables/useWorkspaceActivity'
@@ -216,8 +215,6 @@ import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
 import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
 import { cn } from '@comfyorg/tailwind-utils'
 
-// `events` is the data seam: the tab shell mounts this with no events (empty
-// state) until FE-1249 wires the per-workspace usage API and passes them in.
 const { search, events = [] } = defineProps<{
   search: string
   events?: ActivityEvent[]
@@ -229,11 +226,7 @@ const tableContainer = ref<HTMLElement | null>(null)
 const { pageSize } = useAutoPageSize(tableContainer, 1)
 
 const { workspaceRole } = useWorkspaceUI()
-const { resolvedUserInfo } = useCurrentUser()
 const canViewTeamUsage = computed(() => workspaceRole.value === 'owner')
-const selfUserId = computed(() =>
-  canViewTeamUsage.value ? null : (resolvedUserInfo.value?.id ?? '')
-)
 
 const fullActivityUrl = `${getComfyPlatformBaseUrl()}/profile/usage`
 
@@ -249,7 +242,7 @@ const {
 } = useWorkspaceActivity(
   () => search,
   pageSize,
-  selfUserId,
+  null,
   () => events
 )
 

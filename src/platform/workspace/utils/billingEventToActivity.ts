@@ -1,4 +1,5 @@
-import type { BillingEvent } from '@/platform/workspace/api/workspaceApi'
+import type { BillingEvent } from '@comfyorg/ingest-types'
+
 import type { ActivityEvent } from '@/platform/workspace/composables/useWorkspaceActivity'
 
 export interface ActivityEventTypeLabels {
@@ -6,7 +7,10 @@ export interface ActivityEventTypeLabels {
   partnerNode: string
 }
 
-const USAGE_EVENT_TYPES = new Set(['gpu_usage', 'api_node_usage'])
+const USAGE_EVENT_TYPES = new Set([
+  'cloud_workflow_executed',
+  'api_usage_completed'
+])
 
 export function isUsageEvent(event: BillingEvent): boolean {
   return USAGE_EVENT_TYPES.has(event.event_type)
@@ -26,7 +30,7 @@ export function billingEventToActivity(
   labels: ActivityEventTypeLabels
 ): ActivityEvent {
   const userId = stringParam(event.params, 'user_id')
-  const isPartnerNode = event.event_type === 'api_node_usage'
+  const isPartnerNode = event.event_type === 'api_usage_completed'
   return {
     id: event.event_id,
     date: new Date(event.createdAt),

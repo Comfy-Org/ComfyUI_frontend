@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingEvent } from '@/platform/workspace/api/workspaceApi'
+import type { BillingEvent } from '@comfyorg/ingest-types'
+
 import {
   billingEventToActivity,
   isUsageEvent
@@ -13,7 +14,7 @@ const labels = {
 
 function event(overrides: Partial<BillingEvent>): BillingEvent {
   return {
-    event_type: 'gpu_usage',
+    event_type: 'cloud_workflow_executed',
     event_id: 'event-default',
     createdAt: '2026-07-14T00:00:00Z',
     ...overrides
@@ -26,8 +27,12 @@ function resolveName(userId: string | undefined): string {
 
 describe('billingEventToActivity', () => {
   it('keeps supported usage event types', () => {
-    expect(isUsageEvent(event({ event_type: 'gpu_usage' }))).toBe(true)
-    expect(isUsageEvent(event({ event_type: 'api_node_usage' }))).toBe(true)
+    expect(isUsageEvent(event({ event_type: 'cloud_workflow_executed' }))).toBe(
+      true
+    )
+    expect(isUsageEvent(event({ event_type: 'api_usage_completed' }))).toBe(
+      true
+    )
     expect(isUsageEvent(event({ event_type: 'invoice_paid' }))).toBe(false)
   })
 
@@ -56,7 +61,7 @@ describe('billingEventToActivity', () => {
   it('maps partner usage with its partner node', () => {
     const row = billingEventToActivity(
       event({
-        event_type: 'api_node_usage',
+        event_type: 'api_usage_completed',
         event_id: 'partner-event-1',
         params: { user_id: 'user-1', partner_node: 'Flux Pro 1.1 Ultra' }
       }),

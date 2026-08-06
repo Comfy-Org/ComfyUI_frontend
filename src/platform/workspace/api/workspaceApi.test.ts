@@ -594,14 +594,15 @@ describe('workspaceApi', () => {
 
       const result = await workspaceApi.getBillingEvents({
         page: 1,
-        limit: 10
+        limit: 100,
+        scope: 'workspace'
       })
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/events',
         {
           headers: AUTH_HEADER,
-          params: { page: 1, limit: 10 }
+          params: { page: 1, limit: 100, scope: 'workspace' }
         }
       )
       expect(result).toEqual(data)
