@@ -92,15 +92,21 @@
         }"
         aria-hidden="true"
       >
-        <img
-          v-for="(thumbnail, index) in thumbnails"
-          :key="index"
-          data-testid="filmstrip-thumbnail"
-          :src="thumbnail"
-          alt=""
-          draggable="false"
-          class="h-full min-w-0 flex-1 object-cover select-none"
-        />
+        <template v-for="(thumbnail, index) in thumbnails" :key="index">
+          <img
+            v-if="thumbnail"
+            data-testid="filmstrip-thumbnail"
+            :src="thumbnail"
+            alt=""
+            draggable="false"
+            class="h-full min-w-0 flex-1 object-cover select-none"
+          />
+          <div
+            v-else
+            data-testid="filmstrip-placeholder"
+            class="h-full min-w-0 flex-1 bg-component-node-widget-background"
+          />
+        </template>
         <div
           v-if="isFilmstripLoading"
           class="flex size-full items-stretch gap-px overflow-hidden"
@@ -218,12 +224,14 @@ const {
   totalFrames,
   thumbnails,
   disabled = false,
-  trimEnabled = true
+  trimEnabled = true,
+  loading = false
 } = defineProps<{
   totalFrames: number
   thumbnails: string[]
   disabled?: boolean
   trimEnabled?: boolean
+  loading?: boolean
 }>()
 
 const startFrame = defineModel<number>('startFrame', { required: true })
@@ -297,7 +305,7 @@ function handleTrackKeydown(event: KeyboardEvent) {
   scrubToFrame(target)
 }
 
-const isFilmstripLoading = computed(() => thumbnails.length === 0)
+const isFilmstripLoading = computed(() => loading && thumbnails.length === 0)
 
 const trimSelectionBarClass = computed(() =>
   isFilmstripLoading.value

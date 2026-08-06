@@ -35,7 +35,8 @@ describe('fetchVideoMetadata', () => {
     )
 
     expect(api.fetchApi).toHaveBeenCalledWith(
-      '/video_metadata?filename=a.mp4&subfolder=clips&type=input'
+      '/video_metadata?filename=a.mp4&subfolder=clips&type=input',
+      { signal: undefined }
     )
     expect(result).toEqual(metadata)
   })

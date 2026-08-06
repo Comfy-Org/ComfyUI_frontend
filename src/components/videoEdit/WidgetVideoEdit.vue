@@ -16,6 +16,7 @@
       :width="width"
       :height="height"
       :loading="loading"
+      :error="error"
     />
   </div>
 </template>
@@ -66,7 +67,8 @@ const {
   height,
   fps,
   fileSize,
-  loading
+  loading,
+  error
 } = useVideoFilmstrip(videoUrl)
 
 const { startFrame, endFrame, cropBounds, trimEnabled, cropEnabled } =

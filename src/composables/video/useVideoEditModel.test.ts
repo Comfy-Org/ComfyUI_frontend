@@ -85,6 +85,25 @@ describe('useVideoEditModel', () => {
       expect(modelValue.value.trim).toEqual({ start_time: 1, duration: 0 })
     })
 
+    it('treats non-finite trim values as a no-op trim', () => {
+      const { startFrame, endFrame } = createModel({
+        trim: { start_time: Number.NaN, duration: Number.NaN }
+      })
+
+      expect(startFrame.value).toBe(0)
+      expect(endFrame.value).toBe(99)
+    })
+
+    it('writes clean values when editing after a corrupted trim', () => {
+      const { modelValue, startFrame } = createModel({
+        trim: { start_time: Number.NaN, duration: Number.NaN }
+      })
+
+      startFrame.value = 10
+
+      expect(modelValue.value.trim).toEqual({ start_time: 1, duration: 0 })
+    })
+
     it('derives frames from an explicit trim window', () => {
       const { startFrame, endFrame } = createModel({
         trim: { start_time: 1, duration: 7 }
@@ -131,6 +150,19 @@ describe('useVideoEditModel', () => {
   describe('crop bounds', () => {
     it('shows the full frame for zero crop values', () => {
       const { cropBounds } = createModel()
+
+      expect(cropBounds.value).toEqual({
+        x: 0,
+        y: 0,
+        width: 1920,
+        height: 1080
+      })
+    })
+
+    it('falls back to the full frame for non-finite crop values', () => {
+      const { cropBounds } = createModel({
+        crop: { x: 0, y: 0, width: Number.NaN, height: Number.NaN }
+      })
 
       expect(cropBounds.value).toEqual({
         x: 0,
