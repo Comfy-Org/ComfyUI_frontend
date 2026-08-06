@@ -49,6 +49,7 @@
     "src/types/**/*.d.ts",
     "playwright.config.ts",
     "playwright.i18n.config.ts",
+    "tools/oxlint-plugins/**/*",
     "vite.config.mts",
     "vitest.config.ts"
     // "vitest.setup.ts",

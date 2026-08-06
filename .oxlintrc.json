@@ -129,6 +129,19 @@
       }
     },
     {
+      "files": [
+        "src/platform/**/api/**/*.ts",
+        "src/platform/**/*Api.ts",
+        "src/platform/cloud/**/*.ts",
+        "src/platform/secrets/**/*.ts",
+        "src/platform/workspace/**/*.ts"
+      ],
+      "jsPlugins": ["./tools/oxlint-plugins/comfyIngestTypes.ts"],
+      "rules": {
+        "comfy/no-duplicate-ingest-type": "warn"
+      }
+    },
+    {
       "files": ["browser_tests/**/*.ts"],
       "jsPlugins": ["eslint-plugin-playwright"],
       "rules": {
