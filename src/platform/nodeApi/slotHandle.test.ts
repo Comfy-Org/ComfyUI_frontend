@@ -294,3 +294,38 @@ describe('slot handles', () => {
     })
   })
 })
+
+describe('dynamic slots', () => {
+  let graph: LGraph
+  let node: LGraphNode
+  let inputs: SlotCollection<InputSlotHandle>
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    graph = new LGraph()
+    node = new LGraphNode('t')
+    node.addInput('image_1', 'IMAGE')
+    graph.add(node)
+    inputs = createInputCollection(
+      () => graph,
+      () => graph.getNodeById(node.id) ?? undefined
+    )
+  })
+
+  it('adds a slot and hands back a handle to it', () => {
+    // The "Multi" combiner pattern: grow inputs as the last one fills.
+    const added = inputs.add('image_2', 'IMAGE')
+    expect(added.name).toBe('image_2')
+    expect(inputs.names()).toEqual(['image_1', 'image_2'])
+  })
+
+  it('removes a slot by name', () => {
+    inputs.add('image_2', 'IMAGE')
+    expect(inputs.remove('image_1')).toBe(true)
+    expect(inputs.names()).toEqual(['image_2'])
+  })
+
+  it('reports false rather than throwing for a slot that is not there', () => {
+    expect(inputs.remove('nope')).toBe(false)
+  })
+})
