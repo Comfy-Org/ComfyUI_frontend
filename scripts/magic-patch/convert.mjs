@@ -63,6 +63,7 @@ import { z } from 'zod'
 
 import { convert } from '../../src/workbench/extensions/magicPatch/conversion/convert'
 import { detectLegacyUsage } from '../../src/workbench/extensions/magicPatch/conversion/legacySurface'
+import { buildApiDts } from './gen_api_dts.mjs'
 import { RULES, RULE_CATALOG_VERSION } from '../../src/workbench/extensions/magicPatch/conversion/rules'
 import { toUnifiedDiff } from '../../src/workbench/extensions/magicPatch/conversion/edits'
 import { runConformance } from '../../src/workbench/extensions/magicPatch/verify/conformance'
@@ -415,6 +416,12 @@ ${guidance}
 
 ${references(work)}
 
+The complete published API, as TypeScript declarations, is written into your
+working copy at \`v1/comfy-api.d.ts\`. It is generated from the implementation,
+so it is authoritative: if a member is not declared there it does not exist —
+do not call it, and punt as api-gap naming what is missing. Read it before
+concluding a capability is unavailable.
+
 Full source of every file in scope:
 
 ${inlineSources(work)}
@@ -593,6 +600,14 @@ function materialiseWorkingCopy(db, work, commit) {
     mkdirSync(dirname(target), { recursive: true })
     cpSync(path, target)
   }
+
+  // The API's own types, beside the code being converted. An agent asking
+  // "does widgets.mount exist" reads the declaration rather than a prose list
+  // of capability names — that list drifted and cost twelve files, punted
+  // against API that was already there. Written after seeding, since that loop
+  // is what creates v1/.
+  mkdirSync(join(root, 'v1'), { recursive: true })
+  writeFileSync(join(root, 'v1', 'comfy-api.d.ts'), buildApiDts())
   return root
 }
 
