@@ -201,6 +201,7 @@ const zError = z.object({
   type: z.string(),
   message: z.string(),
   details: z.string(),
+  class_types: z.array(z.string()).optional(),
   extra_info: z
     .object({
       input_name: z.string().optional()

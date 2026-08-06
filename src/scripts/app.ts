@@ -65,6 +65,7 @@ import type {
   ExecutionErrorWsMessage,
   NodeError,
   NodeExecutionOutput,
+  PromptResponse,
   ResultItem
 } from '@/schemas/apiSchema'
 import {
@@ -178,6 +179,46 @@ import {
 } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
+
+const MAX_PARTNER_NODE_ERRORS = 100
+
+function partnerNodeErrorsFromClassTypes(
+  prompt: ComfyApiWorkflow,
+  error: PromptResponse['error']
+): Record<string, NodeError> | undefined {
+  if (
+    typeof error !== 'object' ||
+    error.type !== 'PARTNER_NODE_DISABLED' ||
+    !Array.isArray(error.class_types)
+  )
+    return
+
+  const deniedClassTypes = new Set(
+    error.class_types.filter(
+      (classType): classType is string => typeof classType === 'string'
+    )
+  )
+  const entries: Array<[string, NodeError]> = []
+  for (const [nodeId, node] of Object.entries(prompt)) {
+    if (!deniedClassTypes.has(node.class_type)) continue
+    entries.push([
+      nodeId,
+      {
+        class_type: node.class_type,
+        dependent_outputs: [],
+        errors: [
+          {
+            type: 'PARTNER_NODE_DISABLED',
+            message: typeof error.message === 'string' ? error.message : '',
+            details: typeof error.details === 'string' ? error.details : ''
+          }
+        ]
+      }
+    ])
+    if (entries.length === MAX_PARTNER_NODE_ERRORS) break
+  }
+  return entries.length ? Object.fromEntries(entries) : undefined
+}
 
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
@@ -1781,9 +1822,20 @@ export class ComfyApp {
               ...workflowExecutionIntent,
               ...(workflowContext && { workflowContext })
             })
-            const hasPromptNodeErrors =
-              error instanceof PromptExecutionError &&
-              Object.keys(error.response.node_errors ?? {}).length > 0
+            const responseNodeErrors =
+              error instanceof PromptExecutionError
+                ? error.response.node_errors
+                : undefined
+            const nodeErrors =
+              responseNodeErrors && Object.keys(responseNodeErrors).length > 0
+                ? responseNodeErrors
+                : error instanceof PromptExecutionError
+                  ? partnerNodeErrorsFromClassTypes(
+                      p.output,
+                      error.response.error
+                    )
+                  : undefined
+            const hasPromptNodeErrors = nodeErrors !== undefined
             const preconditionResponseError =
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object'
@@ -1850,9 +1902,7 @@ export class ComfyApp {
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
-              // Keep the legacy result before empty node errors are normalized.
-              const nodeErrors = error.response.node_errors
-              queueResultOverride = !nodeErrors
+              queueResultOverride = !(error.response.node_errors || nodeErrors)
               executionErrorStore.recordNodeErrors(nodeErrors ?? null)
 
               // Store prompt-level error separately only when no node-specific errors exist,
