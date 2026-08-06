@@ -113,7 +113,6 @@
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
-  nextTick,
   onMounted,
   onUnmounted,
   ref,
@@ -174,8 +173,8 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -255,8 +254,6 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-const { startSync, stopSync } = useLayoutSync()
-
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
 watch(
@@ -267,18 +264,7 @@ watch(
   }
 )
 
-async function enterVueRendering(graph: LGraph | null) {
-  stopSync()
-  layoutStore.clearViewGeometry()
-  await nextTick()
-
-  // Revalidate after nextTick: rendering mode or the current graph may change.
-  if (!shouldRenderVueNodes.value || canvasStore.currentGraph !== graph) return
-  startSync(canvasStore.canvas)
-}
-
 function exitToLegacyRendering(graph: LGraph | null) {
-  stopSync()
   layoutStore.clearViewGeometry()
   if (graph) arrangeForLegacyRender(graph)
   canvasStore.canvas?.setDirty(true, true)
@@ -286,15 +272,22 @@ function exitToLegacyRendering(graph: LGraph | null) {
 
 watch(
   [shouldRenderVueNodes, () => canvasStore.currentGraph],
-  async ([enabled, graph], previous) => {
+  ([enabled, graph], previous) => {
     if (enabled) {
-      await enterVueRendering(graph)
+      layoutStore.clearViewGeometry()
     } else if (previous?.[0]) {
       exitToLegacyRendering(graph)
     }
   },
   { immediate: true }
 )
+
+watchEffect((onCleanup) => {
+  if (!shouldRenderVueNodes.value) return
+
+  const canvas = canvasStore.canvas
+  if (canvas) onCleanup(notifyLayoutChanges(canvas))
+})
 
 watch(
   () => canvasStore.isInSubgraph,
@@ -604,7 +597,6 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
-  stopSync()
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddlePointerInput)

@@ -434,9 +434,9 @@ entity now has exactly one write path, and the workarounds that existed because
 writes bypassed it are gone.
 
 **One write path per entity.** Whole-value assignment through `pos` / `size` is
-the only way geometry is written; the setters commit. Element-wise writes reach
-the backing `Rectangle` and never the store, so all of them were converted —
-in three passes, as the forms became apparent:
+the normal path, and the setters commit to the store. `createGeometryView`
+commits indexed writes too. Most in-repo indexed writes now use whole-value
+assignments. The migration found three forms:
 
 | Form               | Example                              | Where it hid         |
 | ------------------ | ------------------------------------ | -------------------- |
@@ -450,34 +450,66 @@ reached the store, and `LGraph.configure` carried a local workaround
 others had none.
 
 **Groups and reroutes joined the store.** `GroupLayout` is id/position/size
-with no zIndex or spatial index — groups draw beneath nodes in insertion order
-and nothing queries them positionally — and geometry is a single
+with no zIndex or spatial index. Groups draw beneath nodes in insertion order,
+and nothing queries them positionally. Geometry is a single
 `setGroupBounds` operation, because `pos` and `size` are two views onto one
 `Rectangle` and must never be stored apart. Reroutes went further: `posInternal`
 is deleted, `pos` reads the stored point, and a reroute registers its own
 geometry in its constructor, which removed two seeding sites.
 
-**The store -> legacy direction is unchanged and still needed.** `useLayoutSync`
-stays, because `LGraphNode.serialize()` reads `this.pos` / `this.size` and the
-canvas renders from `_posSize`. Removing it means the class getters read from
-the store, but they return `Point` / `Size` views onto one buffer and hundreds
-of element-indexed reads across the renderer depend on that. Yjs cannot hold a
-`Float64Array` by reference, so this needs a store-backed geometry view type,
-not a refactor. The re-entrancy the draft worried about did not materialise: the
-writeback compares before writing, so an equal write-back is a no-op.
+**`LGraphNode` no longer runs a continuous store-to-class sync.** When code
+reads geometry, the node checks the global geometry version and copies the
+stored rectangle into `_posSize` if its cache is stale. Serialization and legacy
+rendering read current values through `this.pos` and `this.size` without walking
+every node after each layout change.
 
-**Not done, and each needs a decision rather than more inference:**
+While Vue-node rendering is active, `notifyLayoutChanges` dirties the canvas for
+node layout changes. For non-canvas `resizeNode` and `batchUpdateBounds`
+operations, it also calls `onResize`; canvas resizes already own that callback
+through `LGraphNode.setSize()`. It does not copy geometry into nodes.
+
+**Whole-value setters re-read after committing.** `_positionUpdated` and
+`_sizeUpdated` write only their own half of `_posSize`, so stamping
+`_geometryVersion` to the post-commit store version would mark the untouched
+half fresh while it was still stale. The next commit of that half would then
+publish the stale value to the store and to CRDT peers. Both invalidate and
+refresh instead, which also picks up any value the store clamped or merged.
+
+**Deferred follow-up: extract geometry projection ownership.** Land this after
+the node geometry facade and its CRDT-safety follow-up (PRs 14133 and 14480) so
+the ownership and compensation rules are stable before moving them. Preserve
+behavior while making one focused projection module responsible for the legacy
+geometry cache:
+
+1. Move `_geometryVersion`, `_layoutRegistered`, and `refreshGeometry()` out of
+   `LGraphNode`. Keep ephemeral projection state private to the module, keyed by
+   node identity; do not add another entity store for compatibility-only state.
+2. Make layout registration and removal call that module instead of coordinating
+   node flags and backing buffers directly. `LGraphNode.pos` and `.size` remain
+   compatibility accessors, but delegate synchronization rather than owning its
+   lifecycle.
+3. Once the lifecycle has one owner, replace the store-wide geometry version
+   check with node-scoped invalidation. A geometry change should make only the
+   affected nodes refresh; unrelated node, group, and reroute operations should
+   not force every rendered node through a Yjs lookup.
+
+Completion requires no projection lifecycle fields or methods on `LGraphNode`,
+no registration code that mutates such fields, unchanged extension-facing
+`pos` / `size` behavior, and coverage for store-originated updates, indexed
+writes, removal/re-addition, and CRDT compensation.
+
+**Open decisions:**
 
 1. The geometry views. The hand-written `size` Proxy is gone, replaced by
    `createGeometryView` over `pos` and `size` on `LGraphNode` plus `pos`,
-   `size` and `bounding` on `LGraphGroup`. Every in-repo element write is gone,
-   so their only remaining job is third-party `node.size[1] = h`. Retiring them
-   means accepting that ecosystem writes stop reflowing, or landing a stable
-   resize API.
+   `size` and `bounding` on `LGraphGroup`. The views still handle the indexed
+   position write in `distributeNodes()` and extension writes such as
+   `node.size[1] = h`. Retiring them requires whole-value assignment in
+   `distributeNodes()` and a stable resize API for extensions.
 2. Subgraph IO nodes have conforming write paths but no store entry. A keyed
    entry needs subgraph scoping (`SUBGRAPH_INPUT_ID` is a constant shared by
    every subgraph) and `Subgraph.id` is reassigned by `clear()`, so the key can
-   go stale — the pattern rejected for the link store. Nothing needs keyed
+   go stale. The link store rejected the same pattern. Nothing needs keyed
    access, since callers reach them as `subgraph.inputNode`.
 3. Two hit-testing systems: litegraph against class geometry, `layoutStore`
    against a spatial index. Node bounds are duplicated between `_boundingRect`
@@ -914,6 +946,7 @@ Phase 3c (ConnectivitySystem)  ──── depends on 2c
 Phase 3->4 gate checklist  ──────── depends on 3a, 3b, 3c
 
 Phase 4a (Position writes)  ────── depends on 2a, 3b
+  Geometry projection ownership ── after PRs 14133, 14480; depends on 4a
 Phase 4b (Connectivity mutations) ─ depends on 3c, 3->4 gate
 Phase 4c (Widget writes)  ─────── ✅ largely shipped; depends on 2b
 Phase 4d (Layout decoupling)  ─── depends on 2a, 3->4 gate

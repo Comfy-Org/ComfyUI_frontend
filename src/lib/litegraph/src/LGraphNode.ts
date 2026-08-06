@@ -8,10 +8,6 @@ import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotC
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import {
-  isPointEqual,
-  isSizeEqual
-} from '@/renderer/core/layout/utils/geometry'
 import { toLinkId } from '@/types/linkId'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -129,6 +125,8 @@ export type NodeProperty = string | number | boolean | object | null
 
 /** Captures only the {@link layoutStore} singleton, so shared across nodes. */
 const layoutMutations = useLayoutMutations()
+
+const storedRectScratch = new Float64Array(4)
 
 interface INodePropertyInfo {
   name?: string
@@ -623,16 +621,31 @@ export class LGraphNode
     return [posX - bX, posY - bY]
   }
 
-  /** {@link pos} and {@link size} values are backed by this {@link Rectangle}. */
   _posSize = new Rectangle()
   _pos: Point = this._posSize.pos
   _size: Size = this._posSize.size
   private readonly posView = createGeometryView(this._pos, {
-    commit: () => this._positionUpdated()
+    commit: () => this._positionUpdated(),
+    synchronize: () => this.refreshGeometry()
   })
   private readonly sizeView = createGeometryView(this._size, {
-    commit: () => this._sizeUpdated()
+    commit: () => this._sizeUpdated(),
+    synchronize: () => this.refreshGeometry()
   })
+
+  _geometryVersion = -1
+
+  _layoutRegistered = false
+
+  private refreshGeometry(): void {
+    if (!this._layoutRegistered || !this.graph) return
+
+    const { geometryVersion } = layoutStore
+    if (geometryVersion === this._geometryVersion) return
+
+    this._geometryVersion = geometryVersion
+    layoutStore.readNodeRect(this.graph.rootGraph.id, this.id, this._posSize)
+  }
 
   public get pos() {
     return this.posView
@@ -652,11 +665,18 @@ export class LGraphNode
 
     const rootGraphId = this.graph.rootGraph.id
     const position = { x: this._pos[0], y: this._pos[1] }
-    const layout = layoutStore.getNodeLayoutRef(rootGraphId, this.id).value
-    if (layout && isPointEqual(layout.position, position)) return
+    if (
+      layoutStore.readNodeRect(rootGraphId, this.id, storedRectScratch) &&
+      storedRectScratch[0] === position.x &&
+      storedRectScratch[1] === position.y
+    ) {
+      return
+    }
 
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.moveNode(rootGraphId, this.id, position)
+    this._geometryVersion = -1
+    this.refreshGeometry()
   }
 
   /**
@@ -683,19 +703,31 @@ export class LGraphNode
     if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
     const rootGraphId = this.graph.rootGraph.id
-    const size = { width: this._size[0], height: this._size[1] }
-    const layout = layoutStore.getNodeLayoutRef(rootGraphId, this.id).value
-    if (layout && isSizeEqual(layout.size, size)) return
+    if (
+      layoutStore.readNodeRect(rootGraphId, this.id, storedRectScratch) &&
+      storedRectScratch[2] === this._size[0] &&
+      storedRectScratch[3] === this._size[1]
+    ) {
+      return
+    }
 
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.resizeNode(rootGraphId, this.id, size)
+    layoutMutations.resizeNode(rootGraphId, this.id, {
+      width: this._size[0],
+      height: this._size[1]
+    })
+    this._geometryVersion = -1
+    this.refreshGeometry()
   }
 
   /**
    * The size of the node used for rendering.
    */
   get renderingSize(): Size {
-    return this.flags.collapsed ? [this._collapsed_width ?? 0, 0] : this._size
+    if (this.flags.collapsed) return [this._collapsed_width ?? 0, 0]
+
+    this.refreshGeometry()
+    return this._size
   }
 
   get shape(): RenderShape | undefined {
@@ -2218,6 +2250,7 @@ export class LGraphNode
   move(deltaX: number, deltaY: number): void {
     if (this.pinned) return
 
+    this.refreshGeometry()
     this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
   }
 
@@ -2239,9 +2272,6 @@ export class LGraphNode
 
     out[0] = this.pos[0]
     out[1] = this.pos[1] + -titleHeight
-    // In Vue mode, `this.size` is kept in sync with the DOM-measured
-    // collapsed dimensions via ResizeObserver → layoutStore → useLayoutSync,
-    // so the expanded branch produces correct bounds for collapsed nodes too.
     if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
@@ -3516,6 +3546,7 @@ export class LGraphNode
   snapToGrid(snapTo: number): boolean {
     if (this.pinned || !snapTo) return false
 
+    this.refreshGeometry()
     const snapped: Point = [this._pos[0], this._pos[1]]
     snapPoint(snapped, snapTo)
     if (snapped[0] === this._pos[0] && snapped[1] === this._pos[1]) return false

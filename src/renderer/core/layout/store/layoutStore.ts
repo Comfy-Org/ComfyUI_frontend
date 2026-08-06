@@ -62,13 +62,22 @@ import {
 } from '@/renderer/core/layout/utils/mappers'
 import type {
   GroupLayoutMap,
-  NodeLayoutMap
+  NodeLayoutMap,
+  StoredRect
 } from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 type YEventChange = {
   action: 'add' | 'update' | 'delete'
   oldValue: unknown
+}
+
+function isNodeRect(value: unknown): value is StoredRect {
+  return (
+    Array.isArray(value) &&
+    value.length === 4 &&
+    value.every((coordinate) => typeof coordinate === 'number')
+  )
 }
 
 const logger = log.getLogger('LayoutStore')
@@ -341,6 +350,23 @@ class LayoutStore {
   getGroupLayout(rootGraphId: UUID, groupId: GroupId): GroupLayout | null {
     const ygroup = this.ygroups.get(makeScopedLayoutKey(rootGraphId, groupId))
     return ygroup ? yGroupToLayout(ygroup, groupId) : null
+  }
+
+  get geometryVersion(): number {
+    return this.version.value
+  }
+
+  readNodeRect(rootGraphId: UUID, nodeId: NodeId, out: Float64Array): boolean {
+    const rect = this.ynodes
+      .get(makeScopedLayoutKey(rootGraphId, nodeId))
+      ?.get('rect')
+    if (!isNodeRect(rect)) return false
+
+    out[0] = rect[0]
+    out[1] = rect[1]
+    out[2] = rect[2]
+    out[3] = rect[3]
+    return true
   }
 
   /**
@@ -726,6 +752,7 @@ class LayoutStore {
     const change: LayoutChange = {
       type: 'update',
       nodeIds: [],
+      sizeChangedNodeIds: [],
       timestamp: operation.timestamp,
       source: operation.source,
       operation
@@ -984,11 +1011,15 @@ class LayoutStore {
     )
     if (!ynode) return
 
-    const position = yNodeToLayout(ynode).position
+    const rect = ynode.get('rect')
+    if (!isNodeRect(rect)) return
+    if (rect[2] !== operation.size.width || rect[3] !== operation.size.height) {
+      change.sizeChangedNodeIds.push(nodeId)
+    }
 
     ynode.set('rect', [
-      position.x,
-      position.y,
+      rect[0],
+      rect[1],
       operation.size.width,
       operation.size.height
     ])
@@ -1066,6 +1097,13 @@ class LayoutStore {
       )
       if (!ynode || !bounds) continue
 
+      const rect = ynode.get('rect')
+      if (
+        isNodeRect(rect) &&
+        (rect[2] !== bounds.width || rect[3] !== bounds.height)
+      ) {
+        change.sizeChangedNodeIds.push(nodeId)
+      }
       ynode.set('rect', [bounds.x, bounds.y, bounds.width, bounds.height])
 
       change.nodeIds.push(nodeId)

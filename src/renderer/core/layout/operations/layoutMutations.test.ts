@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toGroupId } from '@/types/groupId'
+import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 
-import { canvasLayoutMutations } from './graphLayoutRegistration'
 import { useLayoutMutations } from './layoutMutations'
 
 const GRAPH = createUuidv4()
@@ -17,21 +17,24 @@ const NODE_2 = toNodeId('2')
 const MISSING_NODE = toNodeId('999')
 const NEW_NODE = toNodeId('99')
 
+function seedNode(
+  nodeId: NodeId,
+  [x, y]: [number, number],
+  [width, height]: [number, number],
+  zIndex: number
+) {
+  useLayoutMutations().createNode(GRAPH, nodeId, {
+    position: { x, y },
+    size: { width, height },
+    zIndex,
+    visible: true
+  })
+}
+
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  const mutations = canvasLayoutMutations()
-  mutations.createNode(GRAPH, NODE_1, {
-    position: { x: 10, y: 20 },
-    size: { width: 200, height: 100 },
-    zIndex: 0,
-    visible: true
-  })
-  mutations.createNode(GRAPH, NODE_2, {
-    position: { x: 300, y: 400 },
-    size: { width: 150, height: 80 },
-    zIndex: 1,
-    visible: true
-  })
+  seedNode(NODE_1, [10, 20], [200, 100], 0)
+  seedNode(NODE_2, [300, 400], [150, 80], 1)
 })
 
 describe('moveNode', () => {
