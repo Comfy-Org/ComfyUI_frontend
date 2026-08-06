@@ -385,7 +385,7 @@ export function adoptNodeLayout(
   return 'applied'
 }
 
-export function adoptRerouteLayout(
+export function materializeRerouteLayout(
   graph: Pick<LGraph, 'rootGraph'>,
   reroute: Reroute
 ): LayoutOperationResult {
@@ -394,10 +394,35 @@ export function adoptRerouteLayout(
     graph.rootGraph.id,
     reroute.id
   )
-  if (registrationId === undefined) return 'no-op'
+  if (registrationId !== undefined) {
+    rerouteRegistrationIds.set(reroute, registrationId)
+    return 'applied'
+  }
 
-  rerouteRegistrationIds.set(reroute, registrationId)
-  return 'applied'
+  const newRegistrationId = createUuidv4()
+  try {
+    return registerRerouteLayout(
+      graph,
+      reroute,
+      { x: reroute.pos[0], y: reroute.pos[1] },
+      newRegistrationId
+    )
+  } catch (error) {
+    try {
+      unregisterRerouteLayout(graph, reroute, newRegistrationId)
+    } catch (compensationError) {
+      if (error instanceof Error) {
+        Object.defineProperty(error, 'cause', {
+          configurable: true,
+          value: new AggregateError(
+            [error.cause, compensationError],
+            'Layout registration and compensation failed'
+          )
+        })
+      }
+    }
+    throw error
+  }
 }
 
 export function moveNodeLayout(node: LGraphNode, position: Point): void {

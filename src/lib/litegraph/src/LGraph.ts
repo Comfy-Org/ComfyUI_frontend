@@ -11,11 +11,11 @@ import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import type { GraphLayoutRegistration } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import {
   adoptNodeLayout,
-  adoptRerouteLayout,
   captureAllGraphLayoutRegistrations,
   captureGroupLayoutRegistration,
   captureNodeLayoutRegistration,
   captureRerouteLayoutRegistration,
+  materializeRerouteLayout,
   registerGroupLayout,
   registerNodeLayout,
   registerRerouteLayout,
@@ -2901,7 +2901,7 @@ export class LGraph
       if (Array.isArray(reroutes)) {
         for (const rerouteData of reroutes) {
           const reroute = this.setReroute(rerouteData)
-          adoptRerouteLayout(this, reroute)
+          materializeRerouteLayout(this, reroute)
         }
       }
 

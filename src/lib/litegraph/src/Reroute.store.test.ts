@@ -369,6 +369,25 @@ describe('Reroute position lives only in layoutStore', () => {
     ).toBe('remote-peer')
   })
 
+  it('re-registers a retained reroute during keep_old configure', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([100, 100], link)!
+    const data = graph.asSerialisable()
+
+    graph.configure(data, true)
+
+    expect(graph.reroutes.get(reroute.id)).toBe(reroute)
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 100, y: 100 })
+
+    reroute.pos = [200, 300]
+
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
+    ).toEqual({ x: 200, y: 300 })
+  })
+
   it('keeps constructor geometry transient until registration', () => {
     const graph = new LGraph()
     const reroute = new Reroute(toRerouteId(12), graph, [37, 41])
