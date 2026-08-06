@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ViewerModelControls from '@/components/load3d/controls/viewer/ViewerModelControls.vue'
@@ -119,10 +119,6 @@ function getOptions(select: HTMLElement) {
 }
 
 describe('ViewerModelControls', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('rendering', () => {
     it('renders both up direction and material mode selects by default', () => {
       renderControls()

@@ -65,7 +65,6 @@ describe(useWorkflowShareService, () => {
   }
 
   beforeEach(() => {
-    vi.resetAllMocks()
     mockApp.rootGraph = {}
     window.history.replaceState({}, '', '/')
   })

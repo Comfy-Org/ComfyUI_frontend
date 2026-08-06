@@ -37,7 +37,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
 describe('widgetRegistry', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia())
-    vi.clearAllMocks()
   })
   describe('getComponent', () => {
     // Test number type mappings

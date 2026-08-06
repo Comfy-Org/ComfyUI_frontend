@@ -1,6 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingNodeType } from '@/types/comfy'
@@ -61,10 +61,6 @@ function mockGraphReady(rootGraph: typeof app.rootGraph) {
 describe('executionErrorStore — node error operations', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('clearSimpleNodeErrors', () => {

@@ -85,7 +85,6 @@ describe('useComfyRegistryStore', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mockRegistryService = {
       isLoading: ref(false),
       error: ref(null),

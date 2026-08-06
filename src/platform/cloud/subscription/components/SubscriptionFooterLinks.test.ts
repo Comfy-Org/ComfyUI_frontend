@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -68,10 +68,6 @@ function renderComponent(showInvoiceHistory?: boolean) {
 }
 
 describe('SubscriptionFooterLinks', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('keeps Invoice history visible by default for legacy billing', async () => {
     const user = userEvent.setup()
     renderComponent()

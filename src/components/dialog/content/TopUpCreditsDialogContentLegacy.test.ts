@@ -123,7 +123,6 @@ async function clickBuyCredits() {
 
 describe('TopUpCreditsDialogContentLegacy', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsSubscriptionEnabled.mockReturnValue(true)
     mockShouldUseWorkspaceBilling.value = false
   })

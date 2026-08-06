@@ -205,7 +205,6 @@ describe('assetsStore - Refactored (Option A)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAssetsStore()
-    vi.clearAllMocks()
   })
 
   describe('Initial Load', () => {
@@ -779,7 +778,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     mockIsCloud.value = true
-    vi.clearAllMocks()
   })
 
   afterEach(() => {
@@ -1928,7 +1926,6 @@ describe('assetsStore - Model Assets Cache (non-cloud)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     mockIsCloud.value = false
-    vi.clearAllMocks()
   })
 
   it('caches model assets fetched by tag on non-cloud builds', async () => {
@@ -1960,7 +1957,6 @@ describe('assetsStore - Model Assets Cache (non-cloud)', () => {
 describe('assetsStore - Deletion State and Input Mapping', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   describe('setAssetDeleting / isAssetDeleting', () => {
@@ -2058,7 +2054,6 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
   })
 
   it('fetches the first page via getAssetsPageByTag with the output tag and page size', async () => {

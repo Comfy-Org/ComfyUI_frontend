@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -36,10 +36,6 @@ describe('LGraphNode size reflow', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.initializeFromLiteGraph([])
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('commits once when a widget-growth idiom mutates size[1] directly', () => {

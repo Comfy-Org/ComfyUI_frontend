@@ -78,7 +78,6 @@ describe('useComfyManagerStore', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mockManagerService = {
       isLoading: ref(false),
       error: ref(null),

@@ -14,7 +14,6 @@ vi.mock('axios', () => ({
 describe('templateRankingStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   describe('computeFreshness', () => {

@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -32,8 +32,6 @@ vi.mock('./metadata/flac', () => ({
 vi.mock('./metadata/avif', () => ({
   getFromAvifFile: vi.fn()
 }))
-
-afterEach(() => vi.restoreAllMocks())
 
 const fixturesDir = path.resolve(__dirname, 'metadata/__fixtures__')
 

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '../LGraphNode'
 import type { NamedValuesShadowDiffResult } from './namedValuesShadowDiff'
@@ -100,10 +100,6 @@ describe('named values shadow diff load aggregation', () => {
     trackNamedValuesShadowDiffMismatch.mockClear()
     trackNamedValuesShadowDiffSummary.mockClear()
     getCnrIdFromNode.mockReset().mockReturnValue(undefined)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('emits a sampled summary aggregating every node checked in the load', () => {

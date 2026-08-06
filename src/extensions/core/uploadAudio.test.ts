@@ -152,7 +152,6 @@ async function loadAudioUploadWidget() {
 
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     capturedDragDrop = undefined
     capturedFileSelect = undefined
     capturedPaste = undefined

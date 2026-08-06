@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   getPartnerNodePolicy,
@@ -20,10 +20,6 @@ function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
 }
 
 describe('partnerNodePolicyApi', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('normalizes the provider catalog', async () => {
     mockFetchApi.mockResolvedValue(
       jsonResponse({

@@ -10,7 +10,6 @@ vi.stubGlobal('fetch', fetchMock)
 
 describe('initHostTelemetry', () => {
   afterEach(() => {
-    vi.clearAllMocks()
     remoteConfig.value = {}
     setTelemetryRegistry(null)
     localStorage.clear()

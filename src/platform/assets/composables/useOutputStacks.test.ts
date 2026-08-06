@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -49,10 +49,6 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 describe('useOutputStacks', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
   it('expands stacks and exposes children as selectable assets', async () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
     const childA = createAsset({

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration, {
@@ -80,10 +80,6 @@ const hdriDefaults = {
 } as const
 
 describe('Load3DConfiguration.loadModelConfig', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('returns full defaults including gizmo when no properties are provided', () => {
     const result = createConfig().loadModelConfig()
 
@@ -222,10 +218,6 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
       '/view?filename=model.glb'
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('configureForSaveMesh forwards silentOnNotFound: true to loadModel', async () => {
@@ -369,10 +361,6 @@ describe('Load3DConfiguration.loadSceneConfig', () => {
     settingsGetMock.mockReset()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('returns the persisted Scene Config when present, ignoring settings', () => {
     const stored: SceneConfig = {
       showGrid: false,
@@ -410,10 +398,6 @@ describe('Load3DConfiguration.loadCameraConfig', () => {
     settingsGetMock.mockReset()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('returns the persisted Camera Config when present', () => {
     const stored: CameraConfig = {
       cameraType: 'orthographic',
@@ -441,10 +425,6 @@ describe('Load3DConfiguration.loadCameraConfig', () => {
 describe('Load3DConfiguration.loadLightConfig', () => {
   beforeEach(() => {
     settingsGetMock.mockReset()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('falls back to settings with default hdri when nothing is persisted', () => {
@@ -535,10 +515,6 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
     load3d = makeLoad3dMock()
     vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
     vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('uses settings defaults when no Scene/Camera/Light Config is persisted', async () => {
@@ -632,10 +608,6 @@ describe('Load3DConfiguration "none" model handling', () => {
     load3d = makeLoad3dMock()
     vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
     vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('does not load or clear a model when the initial widget value is "none"', async () => {

@@ -31,12 +31,10 @@ const i18n = createI18n({
 
 describe('SearchInput', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.useFakeTimers()
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     vi.useRealTimers()
   })
 

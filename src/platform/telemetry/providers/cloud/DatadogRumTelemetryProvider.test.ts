@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
@@ -17,11 +17,6 @@ vi.mock('@datadog/browser-rum', () => ({
 const workflowExecutionIntent = {
   trigger_source: 'keybinding'
 } as const
-
-afterEach(() => {
-  vi.restoreAllMocks()
-  vi.clearAllMocks()
-})
 
 describe('DatadogRumTelemetryProvider', () => {
   it('records terminal unified auth retry outcomes without request data', () => {

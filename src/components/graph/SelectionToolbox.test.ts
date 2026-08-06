@@ -156,7 +156,6 @@ describe('SelectionToolbox', () => {
     // Mock the canvas to avoid "getCanvas: canvas is null" errors
     canvasStore.canvas = createMockCanvas()
 
-    vi.resetAllMocks()
     mockSettingValues()
   })
 

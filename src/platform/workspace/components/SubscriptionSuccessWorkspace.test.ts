@@ -109,7 +109,6 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockMembers.length = 0
     mockPendingInvites.length = 0
     mockMaxSeats.value = 73

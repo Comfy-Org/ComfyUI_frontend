@@ -38,10 +38,10 @@ const {
   mockIsPersonal: { value: true },
   mockBillingRail: { value: undefined as BillingRail | undefined },
   mockPlans: { value: [] as Plan[] },
-  mockFetchPlans: vi.fn().mockResolvedValue(undefined),
-  mockLegacyFetchStatus: vi.fn().mockResolvedValue(undefined),
-  mockLegacyFetchBalance: vi.fn().mockResolvedValue(undefined),
-  mockLegacySubscribe: vi.fn().mockResolvedValue(undefined),
+  mockFetchPlans: vi.fn(async () => undefined),
+  mockLegacyFetchStatus: vi.fn(async () => undefined),
+  mockLegacyFetchBalance: vi.fn(async () => undefined),
+  mockLegacySubscribe: vi.fn(async () => undefined),
   mockPurchaseCredits: vi.fn(),
   mockUpdateActiveWorkspace: vi.fn(),
   mockSetWorkspaceBillingRail: vi.fn(),
@@ -113,7 +113,7 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
     },
     isCancelled: { value: false },
     fetchStatus: mockLegacyFetchStatus,
-    manageSubscription: vi.fn().mockResolvedValue(undefined),
+    manageSubscription: vi.fn(async () => undefined),
     subscribe: mockLegacySubscribe,
     showSubscriptionDialog: vi.fn()
   })
@@ -151,7 +151,7 @@ vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
     isLoading: { value: false },
     error: { value: null },
     fetchPlans: mockFetchPlans,
-    getPlanBySlug: vi.fn().mockReturnValue(null)
+    getPlanBySlug: vi.fn(() => null)
   })
 }))
 
@@ -160,19 +160,18 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
     getBillingStatus: vi.fn(() =>
       Promise.resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
     ),
-    getBillingBalance: vi.fn().mockResolvedValue({
+    getBillingBalance: vi.fn(async () => ({
       amount_micros: 10000000,
       currency: 'usd'
-    }),
-    subscribe: vi.fn().mockResolvedValue({ status: 'subscribed' }),
-    previewSubscribe: vi.fn().mockResolvedValue({ allowed: true })
+    })),
+    subscribe: vi.fn(async () => ({ status: 'subscribed' })),
+    previewSubscribe: vi.fn(async () => ({ allowed: true }))
   }
 }))
 
 describe('useBillingContext', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockConsolidatedBillingEnabled.value = true
     mockIsPersonal.value = true
     mockBillingRail.value = undefined

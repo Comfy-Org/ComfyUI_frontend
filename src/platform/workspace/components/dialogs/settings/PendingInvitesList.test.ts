@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -45,10 +45,6 @@ function renderComponent(invites: PendingInvite[]) {
 }
 
 describe('PendingInvitesList', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('shows the empty state without action buttons when there are no invites', () => {
     renderComponent([])
 

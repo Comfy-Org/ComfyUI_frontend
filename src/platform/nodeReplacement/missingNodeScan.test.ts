@@ -84,7 +84,6 @@ function getMissingNodesError(
 describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     // Reset registered_node_types
     const reg = LiteGraph.registered_node_types as Record<string, unknown>
     for (const key of Object.keys(reg)) {

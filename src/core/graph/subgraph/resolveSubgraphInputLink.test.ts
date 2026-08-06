@@ -64,7 +64,6 @@ function addLinkedInteriorInput(
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
-  vi.clearAllMocks()
 })
 
 describe('resolveSubgraphInputLink', () => {

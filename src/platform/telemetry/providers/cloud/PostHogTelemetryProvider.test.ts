@@ -100,7 +100,6 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     hoisted.refs.remoteConfig.value = null
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.

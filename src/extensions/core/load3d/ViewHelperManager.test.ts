@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { EventManagerInterface } from './interfaces'
 import { ViewHelperManager } from './ViewHelperManager'
@@ -58,7 +58,6 @@ describe('ViewHelperManager', () => {
   let manager: ViewHelperManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     viewHelperInstances.length = 0
     events = makeMockEventManager()
     camera = new THREE.PerspectiveCamera()
@@ -69,10 +68,6 @@ describe('ViewHelperManager', () => {
       () => controls,
       events
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('createViewHelper', () => {

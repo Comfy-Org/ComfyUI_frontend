@@ -123,7 +123,6 @@ describe('useSettingUI', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia())
-    vi.clearAllMocks()
 
     Object.assign(env.state, {
       isCloud: false,

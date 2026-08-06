@@ -31,7 +31,6 @@ vi.mock('../../../composables/useDownloadUrl', async () => {
 
 describe('MobileDownloadEmailForm', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     hoisted.isEnabled = true
     hoisted.isMobileUa = true
   })

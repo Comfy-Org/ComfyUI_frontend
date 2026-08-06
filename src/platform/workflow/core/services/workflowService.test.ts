@@ -164,7 +164,6 @@ function enableWarningSettings() {
 describe('useWorkflowService', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     draftStoreMocks.saveDraft.mockReturnValue(true)
   })
 

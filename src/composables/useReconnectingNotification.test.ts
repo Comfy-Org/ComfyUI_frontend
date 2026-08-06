@@ -59,7 +59,6 @@ describe('useReconnectingNotification', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.useFakeTimers()
-    vi.clearAllMocks()
     settingMocks.disableToast = false
   })
 

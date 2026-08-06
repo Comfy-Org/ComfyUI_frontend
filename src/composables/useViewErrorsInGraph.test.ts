@@ -59,7 +59,6 @@ function createSelectedCanvas() {
 
 describe('useViewErrorsInGraph', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createPinia())
     apiMock.getSettings.mockResolvedValue({})
     apiMock.storeSetting.mockResolvedValue(undefined)

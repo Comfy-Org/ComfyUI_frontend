@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 const mockValidateComfyUISource = vi.fn()
@@ -76,10 +76,6 @@ function renderPicker(sourcePath = '', migrationItemIds: string[] = []) {
 }
 
 describe('MigrationPicker', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
   describe('isValidSource', () => {
     it('hides migration options when source path is empty', () => {
       renderPicker('')

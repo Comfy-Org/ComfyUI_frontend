@@ -29,7 +29,6 @@ function mockUploadResponse(ok = true, status = 200): Response {
 
 describe('useComfyHubService', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     vi.stubGlobal('fetch', mockGlobalFetch)
   })
 

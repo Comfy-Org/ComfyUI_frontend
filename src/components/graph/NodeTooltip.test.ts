@@ -152,7 +152,6 @@ async function renderAndHoverCanvas() {
 describe('NodeTooltip', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.resetAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     vi.spyOn(useSettingStore(), 'get').mockImplementation(
@@ -182,7 +181,6 @@ describe('NodeTooltip', () => {
     mergeOutputTooltipMessage(null)
     cleanup()
     vi.useRealTimers()
-    vi.restoreAllMocks()
   })
 
   it('shows input slot JSON tooltips without i18n placeholder errors', async () => {

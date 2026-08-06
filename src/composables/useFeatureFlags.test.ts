@@ -29,10 +29,6 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 describe('useFeatureFlags', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('flags object', () => {
     it('should provide reactive readonly flags', () => {
       const { flags } = useFeatureFlags()

@@ -3,7 +3,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -83,10 +83,6 @@ describe('ImagePreview', () => {
     await user.click(thumbnails[0])
     await nextTick()
   }
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
 
   it('does not render when no imageUrls provided', () => {
     const { container } = renderImagePreview({ imageUrls: [] })

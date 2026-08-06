@@ -72,7 +72,6 @@ describe('bootstrapStore', () => {
     mockNeedsLogin.value = false
     mockDistributionTypes.isCloud = false
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   it('initializes with all flags false', () => {

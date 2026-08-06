@@ -31,7 +31,6 @@ function renderItem(
 describe('NodeSearchListItem', () => {
   beforeEach(() => {
     setupTestPinia()
-    vi.restoreAllMocks()
   })
 
   it('does not render HTML from node names', () => {

@@ -15,7 +15,6 @@ vi.mock('posthog-js', () => ({
 
 describe('initPostHog', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.resetModules()
   })
 
@@ -56,7 +55,6 @@ describe('initPostHog', () => {
 
 describe('captureDownloadClick', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.resetModules()
   })
 
@@ -81,7 +79,6 @@ describe('captureDownloadClick', () => {
 
 describe('captureMcpClientTabClick', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.resetModules()
   })
 

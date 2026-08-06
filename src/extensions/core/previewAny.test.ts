@@ -13,6 +13,10 @@ vi.mock('@/extensions/core/textPreviewWidgets', () => ({
   updateTextPreviewWidgets
 }))
 
+vi.mock('@/scripts/app', () => ({
+  app: { rootGraph: {} }
+}))
+
 const capturedExtensions: ComfyExtension[] = []
 
 vi.mock('@/services/extensionService', () => ({
@@ -48,8 +52,6 @@ async function setupNode() {
 describe('PreviewAny extension', () => {
   beforeEach(async () => {
     capturedExtensions.length = 0
-    addTextPreviewWidgets.mockClear()
-    updateTextPreviewWidgets.mockClear()
     vi.resetModules()
     await import('./previewAny')
   })

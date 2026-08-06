@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
@@ -36,7 +36,6 @@ describe('usePacksSelection', () => {
   })
 
   beforeEach(() => {
-    vi.clearAllMocks()
     const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
 
@@ -45,10 +44,6 @@ describe('usePacksSelection', () => {
     // Mock the isPackInstalled method
     mockIsPackInstalled = vi.fn()
     managerStore.isPackInstalled = mockIsPackInstalled
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('installedPacks', () => {

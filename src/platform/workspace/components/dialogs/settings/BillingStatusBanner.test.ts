@@ -174,7 +174,6 @@ describe('BillingStatusBanner', () => {
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canTopUp = true
-    vi.clearAllMocks()
   })
 
   it('renders nothing for a healthy funded team', () => {

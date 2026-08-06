@@ -209,9 +209,9 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 }))
 
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn().mockReturnValue({
+  useExecutionStore: vi.fn(() => ({
     nodeProgressStates: {}
-  })
+  }))
 }))
 
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
@@ -236,8 +236,6 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockPause.mockClear()
     mockResume.mockClear()
 

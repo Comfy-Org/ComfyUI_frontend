@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
@@ -234,7 +234,6 @@ describe('useConflictDetection', () => {
   >
 
   beforeEach(() => {
-    vi.clearAllMocks()
     pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
 
@@ -263,10 +262,6 @@ describe('useConflictDetection', () => {
     mockInstalledPacksWithVersions.value = []
     // Reset conflicted packages
     mockConflictedPackages = []
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('system environment collection', () => {

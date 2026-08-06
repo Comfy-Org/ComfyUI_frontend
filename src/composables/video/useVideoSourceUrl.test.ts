@@ -76,7 +76,6 @@ function mountSource(node: LGraphNode) {
 
 describe('useVideoSourceUrl', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     for (const key of Object.keys(mocks.nodeOutputs)) {
       delete mocks.nodeOutputs[key]
     }

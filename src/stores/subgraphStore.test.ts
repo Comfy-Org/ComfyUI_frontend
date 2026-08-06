@@ -97,7 +97,6 @@ describe('useSubgraphStore', () => {
     mockDistributionTypes.isDesktop = false
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSubgraphStore()
-    vi.clearAllMocks()
   })
 
   it('should allow publishing of a subgraph', async () => {

@@ -33,7 +33,6 @@ describe('performTeamSubscriptionCheckout', () => {
   let assignedHref: string | undefined
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = true
     assignedHref = undefined
     Object.defineProperty(globalThis, 'location', {

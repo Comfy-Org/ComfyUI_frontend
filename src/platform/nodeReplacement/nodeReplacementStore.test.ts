@@ -53,7 +53,6 @@ describe('useNodeReplacementStore', () => {
   let store: ReturnType<typeof useNodeReplacementStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     store = createStore()
   })
 

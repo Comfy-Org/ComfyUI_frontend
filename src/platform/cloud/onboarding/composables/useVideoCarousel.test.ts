@@ -49,8 +49,6 @@ beforeEach(() => {
 afterEach(() => {
   scope?.stop()
   vi.useRealTimers()
-  vi.unstubAllGlobals()
-  vi.restoreAllMocks()
 })
 
 describe('useVideoCarousel', () => {

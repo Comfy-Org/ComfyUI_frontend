@@ -32,7 +32,6 @@ describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockSettingStore.settingValues = {}
     mockSettingStore.get.mockReset()
     mockSettingStore.set.mockReset()

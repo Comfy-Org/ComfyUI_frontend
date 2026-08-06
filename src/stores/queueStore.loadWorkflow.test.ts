@@ -74,7 +74,6 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
 
     mockFetchApi = vi.fn()
     mockApp = fromPartial<ComfyApp>({

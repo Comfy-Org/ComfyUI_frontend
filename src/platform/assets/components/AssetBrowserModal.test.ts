@@ -231,7 +231,6 @@ describe('AssetBrowserModal', () => {
   }
 
   beforeEach(() => {
-    vi.resetAllMocks()
     mockAssetsByKey.clear()
     mockLoadingByKey.clear()
     mockSupportsModelTypeTags.value = false

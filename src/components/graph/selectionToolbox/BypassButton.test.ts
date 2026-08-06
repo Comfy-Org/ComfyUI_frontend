@@ -44,8 +44,6 @@ describe('BypassButton', () => {
     setActivePinia(createPinia())
     canvasStore = useCanvasStore()
     commandStore = useCommandStore()
-
-    vi.clearAllMocks()
   })
 
   function renderComponent() {

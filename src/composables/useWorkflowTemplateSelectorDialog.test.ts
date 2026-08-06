@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const mockDialogService = vi.hoisted(() => ({
   showLayoutDialog: vi.fn()
@@ -42,10 +42,6 @@ vi.mock(
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 describe('useWorkflowTemplateSelectorDialog', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('show', () => {
     it('defaults to "all" category for non-new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)

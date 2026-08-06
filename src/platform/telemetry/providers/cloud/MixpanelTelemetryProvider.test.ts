@@ -20,7 +20,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 const topupMocks = vi.hoisted(() => ({
   startTopupTracking: vi.fn(),
   clearTopupTracking: vi.fn(),
-  checkForCompletedTopup: vi.fn().mockReturnValue(true)
+  checkForCompletedTopup: vi.fn(() => true)
 }))
 vi.mock('@/platform/telemetry/topupTracker', () => topupMocks)
 
@@ -64,7 +64,6 @@ beforeEach(() => {
 
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     delete (window as unknown as ConfigWindow).__CONFIG__
   })
 
@@ -88,7 +87,6 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
 
 describe('MixpanelTelemetryProvider — with configured token', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -281,7 +279,6 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
 describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -537,7 +534,6 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
 
 describe('MixpanelTelemetryProvider — topup delegation', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     delete (window as unknown as ConfigWindow).__CONFIG__
   })
 

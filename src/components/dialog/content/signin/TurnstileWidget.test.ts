@@ -97,7 +97,6 @@ const renderWidgetWithExpose = () => {
 
 describe('TurnstileWidget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockGetSiteKey.mockReturnValue('site-key')
     mockLightTheme.value = true
     delete window.turnstile

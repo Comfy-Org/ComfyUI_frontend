@@ -169,7 +169,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canTopUp = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    vi.clearAllMocks()
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {

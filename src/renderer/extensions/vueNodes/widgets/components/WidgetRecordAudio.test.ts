@@ -83,10 +83,6 @@ const waveform = {
   dispose: vi.fn()
 } satisfies ReturnType<typeof useAudioWaveform>
 
-useAudioRecorderMock.mockImplementation(() => recorder)
-useAudioPlaybackMock.mockImplementation(() => playback)
-useAudioWaveformMock.mockImplementation(() => waveform)
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -132,6 +128,9 @@ function getRecorderOptions(): RecorderOptions {
 
 describe('WidgetRecordAudio', () => {
   beforeEach(() => {
+    useAudioRecorderMock.mockImplementation(() => recorder)
+    useAudioPlaybackMock.mockImplementation(() => playback)
+    useAudioWaveformMock.mockImplementation(() => waveform)
     recorder.isRecording.value = false
     recorder.recordedURL.value = null
     recorder.mediaRecorder.value = null

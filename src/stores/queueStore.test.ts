@@ -290,7 +290,6 @@ describe('useQueueStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useQueueStore()
-    vi.clearAllMocks()
   })
 
   const mockGetQueue = vi.mocked(api.getQueue)

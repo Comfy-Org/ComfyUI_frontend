@@ -120,7 +120,6 @@ describe('cloned node z-index in Vue renderer', () => {
   let previousVueNodesMode: boolean
 
   beforeEach(() => {
-    vi.clearAllMocks()
     previousVueNodesMode = LiteGraph.vueNodesMode
     LiteGraph.vueNodesMode = true
     LiteGraph.registerNodeType(TEST_NODE_TYPE, TestNode)

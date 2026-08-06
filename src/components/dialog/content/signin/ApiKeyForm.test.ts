@@ -58,7 +58,6 @@ const i18n = createI18n({
 
 describe('ApiKeyForm', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStoreApiKey.mockReset()
     mockLoadingRef.value = false
   })

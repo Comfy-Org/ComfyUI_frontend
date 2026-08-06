@@ -92,7 +92,6 @@ describe('CloudRunButtonWrapper', () => {
     mockBillingStatus.value = 'paid'
     state.v1PaymentRecovery = true
     state.canManageSubscription = true
-    vi.clearAllMocks()
   })
 
   it('renders the runnable queue button when the subscription is active', () => {

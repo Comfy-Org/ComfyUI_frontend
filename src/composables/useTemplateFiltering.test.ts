@@ -65,14 +65,12 @@ vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
 describe('useTemplateFiltering', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
     mockSystemStatsStore.systemStats.system.os = 'linux'
   })
 
   afterEach(() => {
     vi.useRealTimers()
-    vi.unstubAllGlobals()
   })
 
   it('filters by search text, models, tags, and license with debounce handling', async () => {

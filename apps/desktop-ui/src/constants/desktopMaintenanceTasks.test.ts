@@ -26,7 +26,6 @@ function findTask(id: string) {
 
 describe('desktopMaintenanceTasks', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     vi.spyOn(window, 'open').mockReturnValue(null)
     mockElectron.reinstall.mockResolvedValue(undefined)
     mockElectron.uv.clearCache.mockResolvedValue(undefined)
@@ -48,24 +47,24 @@ describe('desktopMaintenanceTasks', () => {
   })
 
   describe('URL-opening tasks', () => {
-    it('git execute opens the git download page', () => {
-      findTask('git').execute()
+    it('git execute opens the git download page', async () => {
+      await findTask('git').execute()
       expect(window.open).toHaveBeenCalledWith(
         'https://git-scm.com/downloads/',
         '_blank'
       )
     })
 
-    it('uv execute opens the uv installation page', () => {
-      findTask('uv').execute()
+    it('uv execute opens the uv installation page', async () => {
+      await findTask('uv').execute()
       expect(window.open).toHaveBeenCalledWith(
         'https://docs.astral.sh/uv/getting-started/installation/',
         '_blank'
       )
     })
 
-    it('vcRedist execute opens the VC++ redistributable download', () => {
-      findTask('vcRedist').execute()
+    it('vcRedist execute opens the VC++ redistributable download', async () => {
+      await findTask('vcRedist').execute()
       expect(window.open).toHaveBeenCalledWith(
         'https://aka.ms/vs/17/release/vc_redist.x64.exe',
         '_blank'

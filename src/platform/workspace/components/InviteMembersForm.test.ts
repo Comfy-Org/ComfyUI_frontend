@@ -85,7 +85,6 @@ function submitButton() {
 
 describe('InviteMembersForm', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockFetchStatus.mockResolvedValue(undefined)
     mockCreateInvite.mockImplementation(async (email: string) =>
       pendingInviteFor(email)

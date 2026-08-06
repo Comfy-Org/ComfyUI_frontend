@@ -58,7 +58,6 @@ describe('keybindingService - Canvas Keybindings', () => {
   let canvasChild: HTMLCanvasElement
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     const commandStore = useCommandStore()

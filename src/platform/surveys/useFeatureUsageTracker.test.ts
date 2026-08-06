@@ -7,7 +7,6 @@ const STORAGE_KEY = 'Comfy.FeatureUsage'
 describe('useFeatureUsageTracker', () => {
   beforeEach(() => {
     localStorage.clear()
-    vi.clearAllMocks()
   })
 
   afterEach(() => {

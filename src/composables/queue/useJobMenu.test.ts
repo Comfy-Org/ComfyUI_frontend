@@ -177,7 +177,6 @@ const findActionEntry = (entries: MenuEntry[], key: string) =>
 
 describe('useJobMenu', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     currentItem = ref<JobListItem | null>(null)
     settingStoreMock.get.mockReturnValue(false)
     dialogServiceMock.prompt.mockResolvedValue(undefined)

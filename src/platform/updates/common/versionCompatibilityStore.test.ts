@@ -63,7 +63,6 @@ describe('useVersionCompatibilityStore', () => {
   })
 
   afterEach(() => {
-    vi.clearAllMocks()
     vi.useRealTimers()
   })
 

@@ -37,7 +37,6 @@ function mockDefs(...defs: ComfyNodeDefV1[]) {
 
 describe('ComfyApp.getNodeDefs', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mergeCustomNodesI18n({})
   })
 

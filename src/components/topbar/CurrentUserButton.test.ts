@@ -115,7 +115,6 @@ vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
 
 describe('CurrentUserButton', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockTeamWorkspaceStore.workspaceName.value = ''
     mockTeamWorkspaceStore.initState.value = 'idle'
     mockTeamWorkspaceStore.isInPersonalWorkspace.value = false

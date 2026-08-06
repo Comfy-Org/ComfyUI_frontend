@@ -126,7 +126,6 @@ describe('useVideoFilmstrip', () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined
-    vi.restoreAllMocks()
   })
 
   it('estimates total frames from duration and default fps', async () => {

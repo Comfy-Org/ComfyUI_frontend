@@ -242,7 +242,6 @@ function findButtonByText(text: string) {
 
 describe('SubscriptionPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     // Reset mock state
     mockCanAccessSubscriptionFeatures.value = false
     mockIsCancelled.value = false

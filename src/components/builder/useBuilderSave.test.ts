@@ -83,7 +83,6 @@ const SUCCESS_DIALOG_KEY = 'builder-save-success'
 
 describe('useBuilderSave', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockActiveWorkflow.value = null
   })
 

@@ -100,7 +100,6 @@ describe('useLoad3d', () => {
   let mockToastStore: ReturnType<typeof useToastStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     nodeToLoad3dMap.clear()
     vi.mocked(getActivePinia).mockReturnValue(null as unknown as Pinia)
     settingGetMock.mockImplementation((key: string) =>
@@ -229,10 +228,6 @@ describe('useLoad3d', () => {
       typeof useToastStore
     >
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('initialization', () => {

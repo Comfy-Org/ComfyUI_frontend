@@ -218,7 +218,6 @@ function omitOptionalSubgraphCollections(state: ComfyWorkflowJSON) {
 
 describe('ChangeTracker', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.mocked(api.dispatchCustomEvent).mockReset()
     vi.useFakeTimers()
     setActivePinia(createTestingPinia({ stubActions: false }))

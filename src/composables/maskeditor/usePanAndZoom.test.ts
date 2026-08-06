@@ -109,7 +109,6 @@ async function initComposable() {
 
 describe('usePanAndZoom', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     mockStore.canvasContainer = null

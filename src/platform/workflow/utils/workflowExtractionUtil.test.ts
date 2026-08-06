@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
@@ -48,11 +48,6 @@ describe('extractWorkflowFromAsset', () => {
   beforeEach(() => {
     vi.mocked(getOutputAssetMetadata).mockReturnValue(null)
     vi.mocked(getAssetUrl).mockReturnValue('http://test/asset.png')
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-    vi.resetAllMocks()
   })
 
   it('routes output assets through the jobs API', async () => {

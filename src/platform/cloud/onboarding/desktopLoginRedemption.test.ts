@@ -130,7 +130,6 @@ async function setup(
 describe('installDesktopLoginRedemption', () => {
   beforeEach(() => {
     vi.resetModules()
-    vi.clearAllMocks()
     vi.useFakeTimers()
     sessionStorage.clear()
     vi.stubGlobal('fetch', mockFetch)
@@ -150,8 +149,6 @@ describe('installDesktopLoginRedemption', () => {
 
   afterEach(() => {
     vi.useRealTimers()
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
   })
 
   it('does nothing on navigation when no code is stashed', async () => {

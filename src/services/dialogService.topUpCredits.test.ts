@@ -74,7 +74,6 @@ import { useDialogService } from '@/services/dialogService'
 
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = false
     state.tier = 'STANDARD'

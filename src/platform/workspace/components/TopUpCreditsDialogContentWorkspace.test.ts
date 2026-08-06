@@ -204,7 +204,6 @@ async function clickAddCredits() {
 
 describe('TopUpCreditsDialogContentWorkspace', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setCanTopUp(true)
     mockShouldUseWorkspaceBilling.value = true
     setIsAddingCredits(false)

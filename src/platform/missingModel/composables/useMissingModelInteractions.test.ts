@@ -122,7 +122,6 @@ describe('useMissingModelInteractions', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.resetAllMocks()
     mockDownloadList.mockImplementation(
       (): Array<{ taskId: string; status: string }> => []
     )
