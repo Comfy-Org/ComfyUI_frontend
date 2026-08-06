@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed, useId, useTemplateRef } from 'vue'
 
 import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
@@ -14,12 +14,16 @@ const props = defineProps<{
   multi?: boolean
 }>()
 
+const uid = useId()
+const squareClipId = `square-${uid}`
+const hollowClipId = `hollow-${uid}`
+
 const clipPath = computed(() => {
   switch (props.slotData?.shape) {
     case 6:
-      return 'url(#square)'
+      return `url(#${squareClipId})`
     case 7:
-      return 'url(#hollow)'
+      return `url(#${hollowClipId})`
     default:
       return undefined
   }
@@ -83,10 +87,10 @@ const slotClass = computed(() =>
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <clipPath id="square">
+        <clipPath :id="squareClipId">
           <rect x="20" y="20" width="60" height="60" />
         </clipPath>
-        <clipPath id="hollow">
+        <clipPath :id="hollowClipId">
           <path
             d="M-50 50
            A100 100 0 0 1 150 50
