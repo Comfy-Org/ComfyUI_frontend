@@ -63,12 +63,52 @@ jobs:
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # DETECTION PROOF (demo branch only): a green suite fits in 30, but a leg
+    # walks its broken surface's failure paths (single re-runs, drains), so it
+    # needs headroom. A timeout kill would read as a fake red, so keep it wide.
+    timeout-minutes: 90
     permissions:
       contents: read
+    # DETECTION PROOF (demo branch only): one leg per row of the Detection-proof section (docs/custom-node-regression-suite.md),
+    # each with exactly ONE break live. Stacking breaks in a single tree makes
+    # a red unattributable - two of them silently cannibalised each other, and
+    # the fix was distorting the breaks to coexist rather than isolating them.
+    # Leg N = story SN (1:1), all fifteen stories live.
+    strategy:
+      fail-fast: false
+      matrix:
+        row: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      # src-mode rows patch application code, so the break must land BEFORE the
+      # frontend build. Pack-mode rows (8-10) are a no-op here; they break their
+      # cloned pack after install, further down.
+      - name: DETECTION PROOF - apply src break (row ${{ matrix.row }})
+        shell: bash
+        env:
+          ROW: ${{ matrix.row }}
+        run: |
+          set -euo pipefail
+          case "$ROW" in
+            8|9|10)
+              echo "row $ROW is pack-mode; no src patch"
+              exit 0
+              ;;
+          esac
+          d=browser_tests/tests/customNodes/detection-proof
+          p=$(printf '%s/row-%02d-'"*.patch" "$d" "$ROW")
+          # shellcheck disable=SC2086
+          p=$(ls $p 2>/dev/null | head -1 || true)
+          [ -n "$p" ] || { echo "::error::no patch file for row $ROW"; exit 1; }
+          # A patch that no longer applies must fail the leg loudly. Applying
+          # nothing and running a clean tree would report a green "proof" that
+          # proves nothing - the worst possible outcome for this job.
+          git apply --check "$p" || { echo "::error::row $ROW patch does not apply to this tree"; exit 1; }
+          git apply "$p"
+          grep -rq "DETECTION PROOF (row $ROW" src/ || { echo "::error::row $ROW break did not land in src/"; exit 1; }
+          echo "applied $p"
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -142,6 +182,51 @@ jobs:
             echo "::endgroup::"
           done
 
+      # Pack-mode rows (8-10): the pack-shipped bugs the suite is meant to catch
+      # live inside third-party pack repos, which CI clones fresh at their pins -
+      # a normal frontend commit cannot reach that code. This step, on the
+      # never-merge nathaniel/detection-proof branch ONLY, pokes this leg's one
+      # break into its cloned pack right after install. The break asserts it
+      # landed (grep) so a silent no-op cannot fake a pass. Do NOT port this step
+      # to any real suite branch.
+      - name: DETECTION PROOF - apply pack break (row ${{ matrix.row }})
+        shell: bash
+        env:
+          ROW: ${{ matrix.row }}
+        run: |
+          set -euo pipefail
+          case "$ROW" in
+            8)
+              # Console/pageerror ledger (S8): an uncaught pack-JS error during
+              # save/reload, the class the betterCombos.js `typeof null` bug hit.
+              # onConfigure is where that class actually fires. Expected: the
+              # console ledger reds naming the text and the script URL.
+              f=ComfyUI/custom_nodes/ComfyUI-Custom-Scripts/web/js/showText.js
+              perl -pi -e "s/(onConfigure\?\.apply\(this, arguments\);)/\$1 console.error('DETECTION PROOF (row 8): pack showText.js onConfigure failure');/" "$f"
+              grep -q "DETECTION PROOF (row 8)" "$f" || { echo "::error::row 8 break did not apply"; exit 1; }
+              ;;
+            9)
+              # Execution runtime (S9): WAS `return_constant_number` raises on
+              # entry. Expected: auto-run tier red `Constant Number:
+              # EXECUTION_ERROR ... not in cannotRunAlone; a regression`.
+              f=ComfyUI/custom_nodes/was-node-suite-comfyui/WAS_Node_Suite.py
+              perl -pi -e 's/(def return_constant_number\(self, number_type, number, number_as_text=None\):)/$1\n        raise ValueError("DETECTION PROOF (row 9): pack node runtime failure")/' "$f"
+              grep -q "DETECTION PROOF (row 9)" "$f" || { echo "::error::row 9 break did not apply"; exit 1; }
+              ;;
+            10)
+              # Registration sentinels (S10): Impact renames the `ImpactInt`
+              # node-class key, so the node no longer registers under its
+              # expected class_type. Expected: the tests referencing ImpactInt
+              # skip, and the "Forbid skipped tests" gate fails on skipped != 0.
+              f=ComfyUI/custom_nodes/ComfyUI-Impact-Pack/__init__.py
+              perl -pi -e 's/"ImpactInt": ImpactInt,/"ImpactIntDETECTIONPROOF": ImpactInt,/' "$f"
+              grep -q "ImpactIntDETECTIONPROOF" "$f" || { echo "::error::row 10 break did not apply"; exit 1; }
+              ;;
+            *)
+              echo "row $ROW is src-mode; its patch was applied before the build"
+              ;;
+          esac
+
       # The VHS run-tier workflow reads input/plain_video.mp4.
       - name: Stage run-tier assets
         shell: bash
@@ -156,8 +241,12 @@ jobs:
           python main.py --cpu --multi-user --cache-none --front-end-root ../dist &
           wait-for-it --service 127.0.0.1:8188 -t 600
 
+      # continue-on-error: on this branch a red suite is the EXPECTED outcome -
+      # the assert step below is the leg's real verdict. Leg green = the break
+      # was caught with its own red. Leg red = the proof failed.
       - name: Run custom-node suite
         id: suite
+        continue-on-error: true
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
         run: |
@@ -171,10 +260,13 @@ jobs:
           pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1
 
-      # A skip here means a pack or devtools did not load: on this backend every
-      # tier is meant to run, so a skip is a gate failure, not an honest pass.
+      # A skip here means a pack or devtools did not load. On this branch the
+      # step is informational (continue-on-error): row 10's expected red IS a
+      # skip, and the assert step below owns the per-row verdict.
       - name: Forbid skipped tests
+        id: skipgate
         if: always()
+        continue-on-error: true
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
@@ -207,11 +299,72 @@ jobs:
             exit 1
           fi
 
+      # The leg's verdict. Each row's break must produce ITS OWN red - the
+      # class-stable message its Detection-proof row promises (docs/custom-node-regression-suite.md) - in the
+      # results json. Patterns are class-stable (the assert text), never
+      # offender-stable (a node name), because in isolation the first
+      # offender can differ from the stacked capture.
+      - name: DETECTION PROOF - assert the break was caught (row ${{ matrix.row }})
+        if: always()
+        shell: bash
+        env:
+          ROW: ${{ matrix.row }}
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
+        run: |
+          set -euo pipefail
+          [ -f custom-nodes-results.json ] || { echo "::error::no results json - the suite never ran; that is a broken leg, not a caught break"; exit 1; }
+          # Failure MESSAGES only, extracted once for every row's match:
+          # playwright results embed source snippets, and a raw grep of the
+          # file can hit a pattern in spec SOURCE (leg 14 went green that way
+          # on run 30318248639 while its real compare never fired).
+          jq -r '[.. | objects | select(has("message")) | .message | strings] | .[]' custom-nodes-results.json > /tmp/failure-messages.txt
+          skipped=$(jq '.stats.skipped' custom-nodes-results.json)
+          if [ "$ROW" = "10" ]; then
+            # Row 10's red is the skip gate, not a test failure: the renamed
+            # node-class key makes its tests skip. skipped != 0 alone is
+            # flake-satisfiable (an install failure also skips), so ALSO
+            # require the renamed key itself in the results - the rename
+            # deterministically surfaces it (a never-before-seen node type
+            # fails the geometry-baseline check by name, run 30305166953).
+            [ "$skipped" != "0" ] || { echo "::error::row 10: no tests skipped - the registration break was NOT caught"; exit 1; }
+            grep -q 'ImpactIntDETECTIONPROOF' /tmp/failure-messages.txt || { echo "::error::row 10: tests skipped but the renamed key never surfaced in a failure message - the skips are not attributable to this break"; exit 1; }
+            echo "row 10 caught: $skipped test(s) skipped on the renamed node key"
+            exit 0
+          fi
+          [ "$SUITE_OUTCOME" = "failure" ] || { echo "::error::row $ROW: suite outcome '$SUITE_OUTCOME' - the break did NOT red the suite"; exit 1; }
+          case "$ROW" in
+            1) pat='instance is missing declared input' ;;
+            2) pat=': Vue mounts ' ;;
+            3) pat='on (pristine|set-values) reload' ;;
+            4) pat='CONNECT_REJECTED' ;;
+            5) pat=' -> .* with VueNodes=' ;;
+            6) pat='VALIDATION_FAIL' ;;
+            7) pat='Error calling extension' ;;
+            8) pat='DETECTION PROOF \(row 8\)' ;;
+            # Row 9 names its exact target: the injected raise MESSAGE does
+            # not propagate into the results json (only the exception class
+            # does, run 30305166953), and a bare EXECUTION_ERROR would match
+            # any node raising for any reason. The node and exception are
+            # ours by construction, so this stays stable.
+            9) pat='Constant Number: EXECUTION_ERROR \(Constant Number: ValueError\)' ;;
+            11) pat='not registered - pack JS did not load' ;;
+            12) pat='input count grows by one on connect' ;;
+            # S13: pack JS reaction to unplug vanishes - only the deltas see it.
+            13) pat='interaction delta drifted' ;;
+            # S14: layout drifts with no error - only geometry baselines see it.
+            14) pat='widgets\[[0-9]+\]\.y: expected' ;;
+            # S15: execution succeeds, values differ - only the hash sees it.
+            15) pat='output hash changed' ;;
+            *) echo "::error::no expected pattern for row $ROW"; exit 1 ;;
+          esac
+          grep -Eq -- "$pat" /tmp/failure-messages.txt || { echo "::error::row $ROW: suite redded but no FAILURE MESSAGE matches /$pat/ - the red is not attributable to this break"; exit 1; }
+          echo "row $ROW caught: a failure message matched /$pat/"
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-report-custom-nodes
+          name: playwright-report-custom-nodes-row${{ matrix.row }}
           path: playwright-report/
           retention-days: 7
           if-no-files-found: warn

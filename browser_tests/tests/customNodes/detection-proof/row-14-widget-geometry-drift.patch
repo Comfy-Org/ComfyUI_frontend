@@ -1,0 +1,19 @@
+diff --git a/src/lib/litegraph/src/LGraphNode.ts b/src/lib/litegraph/src/LGraphNode.ts
+index a928d93992..e2ad04a019 100644
+--- a/src/lib/litegraph/src/LGraphNode.ts
++++ b/src/lib/litegraph/src/LGraphNode.ts
+@@ -4263,8 +4263,12 @@ export class LGraphNode
+     // Position widgets
+     let y = startY
+     for (const w of visibleWidgets) {
+-      w.y = y
+-      y += w.computedHeight ?? 0
++      // DETECTION PROOF (row 14, story S14): the "shrinking node" class -
++      // layout drifts with no error anywhere. Each widget row lands 2px
++      // lower than the last; only the geometry baselines can see it.
++      // Expected: geometry red 'widgets[N].y: expected ..., got ...'.
++      w.y = y + 2
++      y += (w.computedHeight ?? 0) + 2
+     }
+ 
+     if (!this.graph) throw new NullGraphError()
