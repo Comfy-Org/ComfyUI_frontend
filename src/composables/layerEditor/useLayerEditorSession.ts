@@ -23,7 +23,6 @@ import type { BlendFn } from '@/core/layerEditor/engine/mode'
 import { LAYER_MODES, defaultMode } from '@/core/layerEditor/engine/mode'
 import type {
   FillData,
-  GroupData,
   Rect,
   SceneNode,
   Transform,
@@ -593,6 +592,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   }
 
   function shiftLayers(nodes: SceneNode[], dx: number, dy: number): void {
+    if (dx === 0 && dy === 0) return
     for (const n of nodes) {
       if (n.kind === 'fill') continue
       n.transform = {
@@ -600,7 +600,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
         x: n.transform.x + dx,
         y: n.transform.y + dy
       }
-      if (n.kind === 'group') shiftLayers((n as GroupData).children, dx, dy)
+      if (n.kind === 'group') shiftLayers(n.children, dx, dy)
     }
   }
 
