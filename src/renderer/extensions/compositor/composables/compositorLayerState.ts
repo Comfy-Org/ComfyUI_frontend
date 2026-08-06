@@ -201,15 +201,21 @@ function parseBackground(
   }
 }
 
-function parseOrder(value: unknown): number[] | undefined {
-  if (!Array.isArray(value) || value.length === 0) return undefined
+function parseOrder(value: unknown, layerCount: number): number[] | undefined {
+  if (!Array.isArray(value) || value.length !== layerCount || layerCount === 0)
+    return undefined
   const items: unknown[] = value
-  return items.every(
-    (item): item is number =>
-      typeof item === 'number' && Number.isInteger(item) && item >= 0
+  if (
+    !items.every(
+      (item): item is number =>
+        typeof item === 'number' &&
+        Number.isInteger(item) &&
+        item >= 0 &&
+        item < layerCount
+    )
   )
-    ? items
-    : undefined
+    return undefined
+  return new Set(items).size === layerCount ? items : undefined
 }
 
 function parseInputs(value: unknown): string[] | undefined {
@@ -240,14 +246,15 @@ export function parseLayerState(value: unknown): CompositorLayerState | null {
   const canvasSize = parseCanvasSize(canvas)
   const parsedInputs = parseInputs(inputs)
   const parsedBackground = parseBackground(background)
-  const parsedOrder = parseOrder(order)
+  const parsedLayers = Array.isArray(layers) ? layers.map(parseEntry) : []
+  const parsedOrder = parseOrder(order, parsedLayers.length)
 
   return {
     ...(canvasSize ? { canvas: canvasSize } : {}),
     ...(parsedInputs ? { inputs: parsedInputs } : {}),
     ...(parsedBackground ? { background: parsedBackground } : {}),
     ...(parsedOrder ? { order: parsedOrder } : {}),
-    layers: Array.isArray(layers) ? layers.map(parseEntry) : []
+    layers: parsedLayers
   }
 }
 

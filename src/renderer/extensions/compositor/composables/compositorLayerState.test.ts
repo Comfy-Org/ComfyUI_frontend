@@ -241,18 +241,28 @@ describe('parseLayerState', () => {
     ).toBeUndefined()
   })
 
-  it('keeps a valid order and drops invalid ones', () => {
+  it('keeps only an order that is a permutation of the layer indices', () => {
+    const layers = [null, null]
     expect(
-      parseLayerState(JSON.stringify({ order: [1, 0], layers: [] }))?.order
+      parseLayerState(JSON.stringify({ order: [1, 0], layers }))?.order
     ).toEqual([1, 0])
     expect(
-      parseLayerState(JSON.stringify({ order: [1.5, 0], layers: [] }))?.order
+      parseLayerState(JSON.stringify({ order: [1.5, 0], layers }))?.order
     ).toBeUndefined()
     expect(
-      parseLayerState(JSON.stringify({ order: [-1, 0], layers: [] }))?.order
+      parseLayerState(JSON.stringify({ order: [-1, 0], layers }))?.order
     ).toBeUndefined()
     expect(
-      parseLayerState(JSON.stringify({ order: 'first', layers: [] }))?.order
+      parseLayerState(JSON.stringify({ order: [0, 0], layers }))?.order
+    ).toBeUndefined()
+    expect(
+      parseLayerState(JSON.stringify({ order: [0, 2], layers }))?.order
+    ).toBeUndefined()
+    expect(
+      parseLayerState(JSON.stringify({ order: [0], layers }))?.order
+    ).toBeUndefined()
+    expect(
+      parseLayerState(JSON.stringify({ order: 'first', layers }))?.order
     ).toBeUndefined()
   })
 
