@@ -271,6 +271,20 @@ describe('importA1111', () => {
     expect(beforeGraphClear).not.toHaveBeenCalled()
   })
 
+  it('propagates an embeddings fetch failure before any lifecycle effect', async () => {
+    const graph = new LGraph()
+    const clear = vi.spyOn(graph, 'clear')
+    const beforeGraphClear = vi.fn()
+    const failure = new Error('embeddings down')
+    vi.mocked(api.getEmbeddings).mockRejectedValue(failure)
+
+    await expect(importA1111(graph, parameters, beforeGraphClear)).rejects.toBe(
+      failure
+    )
+    expect(beforeGraphClear).not.toHaveBeenCalled()
+    expect(clear).not.toHaveBeenCalled()
+  })
+
   it('returns core-nodes-unavailable without clearing the graph', async () => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
