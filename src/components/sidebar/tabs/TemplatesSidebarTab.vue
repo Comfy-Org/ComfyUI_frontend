@@ -153,53 +153,57 @@
       </div>
 
       <!-- Applied filters: one line at rest, and hovering the row unfolds the
-           rest downward as an overlay rather than reflowing — the grid never
-           moves under the pointer. Clear all stays in flow beside it. -->
+           rest downward as an overlay rather than reflowing — the row keeps
+           its height in the layout so the grid never moves. -->
       <div
         v-if="appliedFilters.length"
-        class="group/applied relative flex h-7 items-center gap-5"
+        class="group/applied relative flex h-7 items-center"
         data-testid="template-applied-filters"
+        @pointerenter="isAppliedHovered = true"
+        @pointerleave="isAppliedHovered = false"
       >
-        <div class="relative h-7 min-w-0 flex-1">
-          <div
-            ref="appliedRowRef"
-            class="absolute inset-x-0 top-0 flex flex-wrap items-center gap-1.5 overflow-hidden rounded-md group-hover/applied:z-20 group-hover/applied:-m-1 group-hover/applied:overflow-visible group-hover/applied:bg-base-background group-hover/applied:p-1 group-hover/applied:shadow-lg"
+        <!-- Padding is always present and always compensated, so unfolding
+             changes only the backdrop — never the position of a chip under
+             the pointer. pr leaves room for Clear all, which sits above. -->
+        <div
+          ref="appliedRowRef"
+          class="absolute inset-x-0 top-0 -m-1 flex flex-wrap items-center gap-1.5 rounded-lg p-1 pr-20 group-hover/applied:z-20 group-hover/applied:bg-base-background group-hover/applied:pb-3 group-hover/applied:shadow-lg"
+        >
+          <span
+            v-for="(pill, index) in appliedFilters"
+            :key="`${pill.facetKey}:${pill.value}`"
+            :class="
+              cn(
+                'shrink-0 items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap',
+                index < restingVisibleCount
+                  ? 'inline-flex'
+                  : 'hidden group-hover/applied:inline-flex'
+              )
+            "
           >
-            <span
-              v-for="(pill, index) in appliedFilters"
-              :key="`${pill.facetKey}:${pill.value}`"
-              :class="
-                cn(
-                  'shrink-0 items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap',
-                  index < restingVisibleCount
-                    ? 'inline-flex'
-                    : 'hidden group-hover/applied:inline-flex'
-                )
-              "
+            <span class="max-w-32 truncate">{{ pill.label }}</span>
+            <Button
+              variant="textonly"
+              size="icon"
+              class="size-4 rounded-sm p-0"
+              :aria-label="`${$t('g.remove')}: ${pill.label}`"
+              @click="toggleFilterValue(pill.facetKey, pill.value)"
             >
-              <span class="max-w-32 truncate">{{ pill.label }}</span>
-              <Button
-                variant="textonly"
-                size="icon"
-                class="size-4 rounded-sm p-0"
-                :aria-label="`${$t('g.remove')}: ${pill.label}`"
-                @click="toggleFilterValue(pill.facetKey, pill.value)"
-              >
-                <i class="icon-[lucide--x] size-3" />
-              </Button>
-            </span>
-            <span
-              v-if="restingHiddenCount > 0"
-              data-overflow-badge
-              class="shrink-0 px-1 text-xs text-muted-foreground group-hover/applied:hidden"
-            >
-              +{{ restingHiddenCount }}
-            </span>
-          </div>
+              <i class="icon-[lucide--x] size-3" />
+            </Button>
+          </span>
+          <span
+            v-if="restingHiddenCount > 0"
+            data-overflow-badge
+            class="shrink-0 px-1 text-xs text-muted-foreground group-hover/applied:hidden"
+          >
+            +{{ restingHiddenCount }}
+          </span>
         </div>
+
         <Button
           variant="textonly"
-          class="h-6 shrink-0 px-1.5 text-xs text-muted-foreground"
+          class="relative z-30 ml-auto h-6 shrink-0 px-1.5 text-xs text-muted-foreground"
           @click="clearAllFilters"
         >
           {{ $t('g.clearAll') }}
@@ -1033,8 +1037,13 @@ const restingHiddenCount = computed(() =>
 )
 
 const appliedRowRef = ref<HTMLElement | null>(null)
+const isAppliedHovered = ref(false)
 
 function measureVisibleChips() {
+  // While unfolded every chip is visible, so measuring would count the
+  // expanded row and change what's hidden underneath the pointer — the
+  // oscillation that read as a glitch.
+  if (isAppliedHovered.value) return
   const row = appliedRowRef.value
   if (!row) return
   const available = row.clientWidth - OVERFLOW_BADGE_WIDTH
