@@ -326,6 +326,22 @@ its legacy shape intact. Port the pack's rename maps, retired-widget handling
 and positional-to-named fallbacks into that hook: those are the conversion, and
 dropping them silently loses user data.
 
+**If you are converting `app.ui.settings.getSettingValue` / `addSetting`, or a
+`settings: [...]` array in `registerExtension`** — **use `comfy.settings`**:
+`declare({ id, name, type, defaultValue })` once at load, then `get(id)` and
+`await set(id, value)`. Ids must be namespaced (`MyPack.thing`) — one flat space
+is shared with core and every other pack, and the id is where the value lives
+permanently. Re-declaring does not reset a stored value, so declaring on every
+load is correct.
+
+**If you are converting a read of `LiteGraph.NODE_SLOT_HEIGHT`,
+`NODE_TITLE_HEIGHT`, `ROUND_RADIUS` or `vueNodesMode`** — **use
+`comfy.constants`** (`slotHeight`, `titleHeight`, `cornerRadius`,
+`domRenderer`). It returns a frozen snapshot by value; do not hold the object.
+Reach for `domRenderer` only when you genuinely must pick a strategy —
+`widgets.mount` and `widgets.canvas` already work under both renderers, so
+needing it usually means the conversion took a wrong turn.
+
 **If you are converting `this._somethingPrivate = x` on a node** — handles hold
 no arbitrary properties. **Keep a `Map` keyed by `node.id`** and clear the entry
 in `b.onRemoved`. This is supported, not a workaround; the old property was

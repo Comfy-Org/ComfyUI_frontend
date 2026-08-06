@@ -12,8 +12,12 @@ import { handleToken, isSameEntity } from './closedProxy'
 import { createDefRegistry } from './defsRegistry'
 import type { DefRegistry } from './defsRegistry'
 import { ComfyUnsupportedError } from './errors'
+import { apiConstants } from './constants'
+import type { ApiConstants } from './constants'
 import { createGraphApi } from './graphHandle'
 import type { GraphHandle } from './graphHandle'
+import { createSettingsApi } from './settingsHandle'
+import type { SettingsHandle } from './settingsHandle'
 import type { NodeHandle } from './nodeHandle'
 
 /**
@@ -83,7 +87,9 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['slots.dynamic', '1.0'],
   ['graph.selection', '1.0'],
   ['node.connectVeto', '1.0'],
-  ['node.menu', '1.0']
+  ['node.menu', '1.0'],
+  ['settings', '1.0'],
+  ['constants', '1.0']
 ])
 
 /**
@@ -139,6 +145,14 @@ export interface Comfy {
   readonly graph: GraphHandle
   /** Node definitions, and the replacement for `beforeRegisterNodeDef`. */
   readonly defs: DefRegistry
+  /** Declaring, reading and writing pack settings. */
+  readonly settings: SettingsHandle
+  /**
+   * Renderer values a pack needs to lay itself out, replacing reads of
+   * `LiteGraph.*`. Values, not the object: the constants are the renderer's to
+   * change, and a pack holding a reference to it holds the renderer open.
+   */
+  readonly constants: ApiConstants
 }
 
 /** Per-major instances, memoised per graph provider. */
@@ -149,6 +163,7 @@ function buildMajor(
   defs: ReturnType<typeof createDefRegistry>
 ): Comfy {
   const graph = createGraphApi(getGraph, `v${major}`)
+  const settings = createSettingsApi()
 
   return Object.freeze({
     version: major === LATEST_MAJOR ? NODE_API_VERSION : `${major}.0`,
@@ -173,6 +188,10 @@ function buildMajor(
       return token?.kind === 'node' ? graph.node(token.id) : undefined
     },
     graph,
+    settings,
+    get constants() {
+      return apiConstants()
+    },
     defs: defs.forMajor((nodeId) => graph.node(nodeId)!)
   })
 }

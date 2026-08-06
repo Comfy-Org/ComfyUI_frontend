@@ -118,11 +118,11 @@ A conversion that was _written_ and one that was _run_ are different artifacts,
 and the difference is invisible in the diff. Every entry therefore carries a
 validation tier, and `compile_db` refuses anything below `harness`:
 
-| Tier      | Means                                                                | Ships |
-| --------- | -------------------------------------------------------------------- | ----- |
-| `none`    | Written; static checks only. Never executed.                         | No    |
-| `harness`   | Loaded before and after; types, construction and wire compared.     | No    |
-| `validated` | A **named human** drove it in a real ComfyUI and says it works.     | Yes   |
+| Tier        | Means                                                           | Ships |
+| ----------- | --------------------------------------------------------------- | ----- |
+| `none`      | Written; static checks only. Never executed.                    | No    |
+| `harness`   | Loaded before and after; types, construction and wire compared. | No    |
+| `validated` | A **named human** drove it in a real ComfyUI and says it works. | Yes   |
 
 An entry carrying no tier is treated as `none`. Absent evidence is not weak
 evidence — an unstamped entry has never been run, and the field's absence must
