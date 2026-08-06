@@ -111,3 +111,7 @@ matrix-proof/
 
 # Agent telemetry working files
 /telemetry/
+
+# Magic Patch working copies: large, regenerable, and reviewed in place
+# rather than in history.
+db/
