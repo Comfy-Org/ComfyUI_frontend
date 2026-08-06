@@ -10,13 +10,13 @@ error, no visible failure. That silence is why this cohort needs care.
 
 Measured over all **2,787 draw-callback bodies** in the corpus:
 
-| What the body actually does | Bodies | % | Packs |
-|---|---|---|---|
-| Draws something | 1,468 | 52.7% | 289 |
-| Prototype-patch plumbing | 901 | 32.3% | 198 |
-| Layout / size enforcement — *no drawing* | 178 | 6.4% | 39 |
-| State sync / polling — *no drawing* | 169 | 6.1% | 46 |
-| DOM element sync — *no drawing* | 71 | 2.5% | 37 |
+| What the body actually does              | Bodies | %     | Packs |
+| ---------------------------------------- | ------ | ----- | ----- |
+| Draws something                          | 1,468  | 52.7% | 289   |
+| Prototype-patch plumbing                 | 901    | 32.3% | 198   |
+| Layout / size enforcement — _no drawing_ | 178    | 6.4%  | 39    |
+| State sync / polling — _no drawing_      | 169    | 6.1%  | 46    |
+| DOM element sync — _no drawing_          | 71     | 2.5%  | 37    |
 
 **47.3% never touch a drawing primitive. 127 packs hook a draw callback and
 never draw at all.** They are using it as the only recurring callback available.
@@ -28,12 +28,12 @@ Does the body call ctx.fillText/fillRect/drawImage/arc/... ?
 ├─ no
 │  ├─ only calls the original (`orig?.apply(this, arguments)`) → DELETE (plumbing)
 │  ├─ assigns this.size / ensureMinimumSize / computeSize   → setSizeConstraints
-│  ├─ compares state and rebuilds on difference             → onChange
-│  └─ toggles .hidden / .style / wrapperEl                  → widget mount lifecycle
+│  ├─ compares state and rebuilds on difference             → widget.on('change') / onConnectionsChanged
+│  └─ toggles .hidden / .style / wrapperEl                  → widget.setHidden() / mount's own element
 └─ yes
-   ├─ informational (text, badge, bar, border, tint, icon)  → node.decorations
-   ├─ interactive (hit-testing, dragging, mouse handling)   → widgets.register()
-   └─ arbitrary composition                                 → chrome.mount() escape hatch
+   ├─ informational (text, badge, bar, border, tint, icon)  → widgets.canvas()
+   ├─ interactive (hit-testing, dragging, mouse handling)   → widgets.mount() + own DOM/canvas
+   └─ arbitrary composition                                 → widgets.mount()
 ```
 
 ## 1. Prototype plumbing — 32.3%, just delete it
@@ -75,7 +75,7 @@ DOM-rendered node that is just layout, and needs no pack code at all.
 ```js
 // before — string-joins every group title on every repaint, and mouse
 // movement marks the canvas dirty, so this ran constantly
-const titles = (app.graph._groups?.map(g => g.title) || []).join()
+const titles = (app.graph._groups?.map((g) => g.title) || []).join()
 if (this.lastKnownGroupTitles !== titles) {
   this.lastKnownGroupTitles = titles
   rebuildUI(this)
@@ -106,18 +106,22 @@ element's visibility to node state, the element should be a widget.
 Every canvas primitive in use has an exact DOM equivalent, so this is a
 translation rather than a redesign:
 
-| Canvas (packs using) | DOM/CSS |
-|---|---|
-| `fillText` 326, `measureText` 206 | a text node — measurement becomes free |
+| Canvas (packs using)                                | DOM/CSS                                 |
+| --------------------------------------------------- | --------------------------------------- |
+| `fillText` 326, `measureText` 206                   | a text node — measurement becomes free  |
 | `fillRect` 234 / `roundRect` 193 / `strokeRect` 159 | `background`, `border-radius`, `border` |
-| `drawImage` 203 | `<img>` |
-| `arc` 181 / `ellipse` 58 | `border-radius: 50%` |
-| `translate` 170 / `rotate` 136 | `transform` |
-| `globalAlpha` 150 | `opacity` |
-| `clip` 138 | `overflow: hidden` |
-| `setLineDash` 115 | `border-style: dashed` |
-| `shadowBlur` 95 | `box-shadow` |
-| `createLinearGradient` 79 | `linear-gradient()` |
+| `drawImage` 203                                     | `<img>`                                 |
+| `arc` 181 / `ellipse` 58                            | `border-radius: 50%`                    |
+| `translate` 170 / `rotate` 136                      | `transform`                             |
+| `globalAlpha` 150                                   | `opacity`                               |
+| `clip` 138                                          | `overflow: hidden`                      |
+| `setLineDash` 115                                   | `border-style: dashed`                  |
+| `shadowBlur` 95                                     | `box-shadow`                            |
+| `createLinearGradient` 79                           | `linear-gradient()`                     |
+
+The shipped destination is **`node.widgets.canvas()`** — a per-node drawing
+surface that works under both renderers, because the canvas is a DOM element
+the legacy renderer positions over the graph and Nodes 2.0 renders natively:
 
 ```js
 // before — ComfyUI-Custom-Scripts mathExpression.js, ran every repaint
@@ -131,25 +135,32 @@ nodeType.prototype.onDrawForeground = function (ctx) {
   }
 }
 
-// after — set when the value changes
-node.decorations.set('output-value', {
-  kind: 'badge',
-  anchor: 'overlay-top-right',
-  text: String(value)
+// after — same drawing code, but event-driven
+b.onCreated((node) => {
+  const surface = node.widgets.canvas({
+    name: 'result',
+    height: 22,
+    draw(ctx) {
+      ctx.font = 'bold 12px sans-serif'
+      ctx.fillText(stateFor(node.id).value ?? '', 4, 15)
+    }
+  })
+  stateFor(node.id).surface = surface
+})
+b.onExecuted((node, result) => {
+  stateFor(node.id).value = String(result.text[0] ?? '')
+  stateFor(node.id).surface?.redraw()
 })
 ```
 
-Decorations are **keyed**, so repeated calls update rather than accumulate —
-which is the common bug when porting from a per-repaint callback.
+`draw` runs on mount, on resize, and on `redraw()` — never per frame. Keep the
+pack's `ctx` code as close to verbatim as you can; the conversion is _when_ it
+runs, not _what_ it draws. The collapsed check disappears (a hidden widget is
+not drawn), and pixel positions are relative to the surface, not the node.
 
-Use `anchor`, never pixel coordinates: canvas-space pixels do not survive DOM
-layout, and anchors are what let one declaration render in *both* modes. For
-per-slot markers (rgthree status text, impact-pack's red X over an incompatible
-slot) use `{ slot: ref, side: 'input' | 'output' }`.
-
-**Declarative, not a DOM mount** — a declaration renders to canvas *and* DOM. A
-mount only works in Nodes 2.0, so the pack would have to keep its canvas code
-forever and the hooks could never be deleted.
+A declarative `node.decorations` API (badges/anchors, renders without pack
+code) is specified but **not implemented** — do not emit it; `widgets.canvas`
+is the destination today.
 
 ## 6. Interactive controls — becomes a widget
 
@@ -165,19 +176,21 @@ this.node.onDrawForeground = function (ctx) {
 ```
 
 This is not decoration. It was painted by hand because no custom-widget API
-existed. It becomes `comfy.widgets.register({ type, mount })` — a real rewrite,
-roughly an eighth of the cohort, and the part most likely to need the pack
-author.
+existed. It becomes **`node.widgets.mount({ name, render, destroy })`** — the
+pack appends its own `<canvas>` (or any DOM) to the container and keeps its
+drawing code, but pointer events now land on a real element, so hand-rolled
+hit-testing against bounding boxes mostly disappears. kjnodes' `editor_base.js`
+already works exactly this way and needs only the mount call swapped.
 
 ## The trap: frame to event
 
 A draw callback recomputes from current state on every repaint, so **nothing
-ever needs to announce a change**. After conversion, decorations must be set
-*when the value changes*.
+ever needs to announce a change**. After conversion, the drawing must be
+refreshed _when the value changes_.
 
-A naive port that calls `decorations.set()` from inside the old callback body
-will appear to work — and quietly run on every repaint forever. No error, no
-crash, just a slow node. Worth a lint rule and a dedicated probe.
+A naive port that calls `redraw()` from inside a per-frame path will appear to
+work — and quietly run on every repaint forever. Redraw from the event that
+changes the data: `onExecuted`, `widget.on('change')`, `onConnectionsChanged`.
 
 ## What you can stop doing
 
@@ -185,7 +198,8 @@ crash, just a slow node. Worth a lint rule and a dedicated probe.
   when zoomed out. Handled centrally now.
 - **Collapsed checks.** `if (this.flags.collapsed) return` — layout's problem.
 - **Defensive try/catch around drawing.** Several packs wrap draw calls to avoid
-  breaking node rendering; decorations cannot throw into the render path.
+  breaking node rendering; a `canvas()` surface draws into its own element, so
+  a throw cannot take node rendering down with it.
 
 ## Source data
 
