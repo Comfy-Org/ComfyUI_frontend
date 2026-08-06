@@ -107,7 +107,13 @@
           class="ml-auto shrink-0"
           data-testid="template-generation-type-menu"
         >
-          <DropdownMenu :modal="false" :show-arrow="false">
+          <!-- Narrower than the shared default: five short words don't need
+               the min width a menu of full sentences does. -->
+          <DropdownMenu
+            :modal="false"
+            :show-arrow="false"
+            content-class="min-w-40"
+          >
             <template #button>
               <button
                 type="button"
