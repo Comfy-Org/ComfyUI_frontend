@@ -365,7 +365,13 @@ setTitle, setColor, setBgColor, setMode, setCollapsed, setProperty,
 setSize([w, h]) on nodes; getValue/setValue, isHidden/setHidden, setOption on
 widgets. Property syntax compiles and silently does nothing.
 
-Report back which files you converted and which you abandoned, with reasons.`
+A file counts as done ONLY when you have called mark_complete or give_up for
+it. Nothing else records anything — not finishing, not saying so in your reply.
+A draft you wrote and checked but did not mark_complete is thrown away, and the
+lead will see the file as untouched.
+
+So before you finish: every file in your briefing has had mark_complete or
+give_up called on it. Then reply with one line per file saying which it was.`
 }
 
 function buildPrompt(work) {
@@ -458,7 +464,12 @@ Workflow:
    have misled you, a trap you nearly fell into. This applies whether you
    converted or gave up; a punt often teaches the most. Do not restate what the
    skill already says.
-5. Resolve every file listed above before finishing.
+5. Resolve every file listed above before finishing. A converter reporting
+   success is not resolution — only mark_complete or give_up records anything,
+   and a converter that wrote a draft without calling one has produced nothing.
+   Every tool response tells you what is still outstanding: if a converter
+   comes back and files it owned are still listed, re-delegate them or resolve
+   them yourself. Do not finish while anything remains.
 
 If a helper is duplicated across files, convert it consistently — the same
 construct should get the same treatment everywhere in the pack.
