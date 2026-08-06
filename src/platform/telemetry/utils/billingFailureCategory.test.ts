@@ -21,10 +21,19 @@ describe('categorizeBillingApiError', () => {
     ).toBe('api_rejected')
   })
 
-  it('categorizes an AuthStoreError as an api rejection', () => {
-    expect(categorizeBillingApiError(new AuthStoreError('rejected'))).toBe(
+  it('categorizes an AuthStoreError with no status as a network failure', () => {
+    expect(categorizeBillingApiError(new AuthStoreError('offline'))).toBe(
+      'network'
+    )
+  })
+
+  it('categorizes an AuthStoreError with an HTTP status as an api rejection', () => {
+    expect(categorizeBillingApiError(new AuthStoreError('rejected', 400))).toBe(
       'api_rejected'
     )
+    expect(
+      categorizeBillingApiError(new AuthStoreError('server error', 500))
+    ).toBe('api_rejected')
   })
 
   it('categorizes a bare TypeError (fetch connectivity failure) as network', () => {

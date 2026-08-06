@@ -33,7 +33,8 @@ const {
   mockTelemetry: {
     trackSubscription: vi.fn(),
     trackMonthlySubscriptionSucceeded: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn()
+    trackMonthlySubscriptionCancelled: vi.fn(),
+    trackBillingEvent: vi.fn()
   },
   mockUserId: { value: 'user-123' },
   mockLocalStorage: (() => {
@@ -178,6 +179,7 @@ describe('useSubscription', () => {
     mockTelemetry.trackSubscription.mockReset()
     mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
+    mockTelemetry.trackBillingEvent.mockReset()
     mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
     mockUserId.value = 'user-123'
@@ -454,6 +456,32 @@ describe('useSubscription', () => {
       await expect(subscribeDirect()).rejects.toThrow()
       expect(mockReportError).not.toHaveBeenCalled()
     })
+
+    it('tags the pending attempt as a resubscribe when called with operation/source', async () => {
+      const checkoutUrl = 'https://checkout.stripe.com/direct'
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ checkout_url: checkoutUrl })
+      } as Response)
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => window as unknown as Window)
+
+      const { subscribeDirect } = useSubscriptionWithScope()
+
+      await subscribeDirect({
+        operation: 'resubscribe',
+        source: 'settings_billing_panel'
+      })
+
+      const stored = JSON.parse(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) ?? '{}'
+      )
+      expect(stored.operation).toBe('resubscribe')
+      expect(stored.resubscribe_source).toBe('settings_billing_panel')
+
+      windowOpenSpy.mockRestore()
+    })
   })
 
   describe('pending checkout recovery', () => {
@@ -545,6 +573,78 @@ describe('useSubscription', () => {
           })
         )
       })
+    })
+
+    it('emits the canonical resubscribe terminal when a resubscribe-tagged attempt becomes active', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-789',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          operation: 'resubscribe',
+          resubscribe_source: 'pricing_dialog'
+        })
+      )
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_789',
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY',
+          renewal_date: '2025-11-16'
+        })
+      } as Response)
+
+      mockIsLoggedIn.value = true
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+          operation: 'resubscribe',
+          stage: 'succeeded',
+          outcome: 'success',
+          source: 'pricing_dialog'
+        })
+      })
+    })
+
+    it('does not emit a resubscribe terminal for a plain (non-resubscribe) pending attempt', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-999',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_999',
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY',
+          renewal_date: '2025-11-16'
+        })
+      } as Response)
+
+      mockIsLoggedIn.value = true
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          mockTelemetry.trackMonthlySubscriptionSucceeded
+        ).toHaveBeenCalled()
+      })
+      expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {

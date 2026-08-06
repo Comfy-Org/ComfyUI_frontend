@@ -46,6 +46,18 @@ describe('useLegacyBilling', () => {
       expect(mockSubscribe).not.toHaveBeenCalled()
     })
 
+    it('tags the attempt as a resubscribe and forwards the click-time source', async () => {
+      mockSubscribeDirect.mockResolvedValue(undefined)
+      const billing = useLegacyBilling()
+
+      await billing.resubscribe({ source: 'settings_billing_panel' })
+
+      expect(mockSubscribeDirect).toHaveBeenCalledWith({
+        operation: 'resubscribe',
+        source: 'settings_billing_panel'
+      })
+    })
+
     it('propagates a checkout failure instead of swallowing it', async () => {
       mockSubscribeDirect.mockRejectedValue(new Error('checkout rejected'))
       const billing = useLegacyBilling()

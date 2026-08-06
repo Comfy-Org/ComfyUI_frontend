@@ -698,6 +698,15 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   value?: number
   currency?: string
   ecommerce?: EcommerceMetadata
+  /**
+   * Set when the underlying checkout attempt was initiated from the resubscribe
+   * flow, so the pending-checkout recovery in `useSubscription.ts` can emit the
+   * canonical `billing.resubscribe.succeeded` terminal instead of leaving the
+   * legacy rail's `started`/`pending` resubscribe event unclosed forever.
+   */
+  operation?: 'resubscribe'
+  /** The click-time source, carried through so the terminal event can report it. */
+  resubscribe_source?: ResubscribeClickMetadata['source']
 }
 
 export interface WorkspaceInviteMetadata extends Record<string, unknown> {

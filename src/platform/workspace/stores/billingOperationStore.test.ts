@@ -443,6 +443,36 @@ describe('billingOperationStore', () => {
       expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
     })
 
+    it('does not fire the generic subscription-success event for a downgrade-to-personal success', async () => {
+      // A downgrade is churn, not a conversion — trackMonthlySubscriptionSucceeded
+      // drives a GA4 "subscription succeeded" conversion goal, so it must not
+      // fire here even though downgrades share the 'subscription' op type.
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-downgrade',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-downgrade', 'subscription', {
+        tier: 'creator',
+        cycle: 'monthly',
+        checkoutType: 'change',
+        downgradeToPersonal: {
+          memberRemovalCount: 1,
+          memberRemovalFailures: 0,
+          targetTier: 'creator'
+        }
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ operation: 'downgrade_to_personal' })
+      )
+    })
+
     it('emits downgrade success only after the billing operation succeeds', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-downgrade',
@@ -828,6 +858,65 @@ describe('billingOperationStore', () => {
         summary: 'billingOperation.topupFailed',
         detail: undefined
       })
+    })
+
+    it('categorizes a downgrade-to-personal poll failure as an api rejection, not a provider decline', async () => {
+      // Downgrade-to-personal never touches a card, so a poll failure here
+      // can't be a card decline regardless of the shared 'subscription' type.
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-downgrade',
+        status: 'failed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-downgrade', 'subscription', {
+        downgradeToPersonal: {
+          memberRemovalCount: 1,
+          memberRemovalFailures: 0,
+          targetTier: 'creator'
+        }
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'operation',
+          operation_type: 'subscription',
+          failure_category: 'api_rejected'
+        })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'downgrade_to_personal',
+          failure_category: 'api_rejected'
+        })
+      )
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ failure_category: 'provider_decline' })
+      )
+    })
+
+    it('categorizes a subscription poll failure naming a connectivity issue as network, not a provider decline', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'network connection lost',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation_type: 'subscription',
+          failure_category: 'network'
+        })
+      )
     })
 
     it('preserves backend details on top-up failure', async () => {

@@ -849,6 +849,13 @@ export function useSubscriptionCheckout(
         context.attemptStartedAt !== undefined
       ) {
         const durationMs = Date.now() - context.attemptStartedAt
+        // PostHog implements both trackBillingEvent and
+        // trackMonthlySubscriptionSucceeded (PostHogTelemetryProvider.ts:405,
+        // :444), so also calling the legacy event here would double-count this
+        // success for it. billingOperationStore.ts's own success handler
+        // already restores trackMonthlySubscriptionSucceeded for the
+        // providers that need it (Mixpanel, GTM); this call site doesn't need
+        // a second one.
         telemetry?.trackBillingEvent({
           operation: 'subscription_checkout',
           stage: 'succeeded',
@@ -871,16 +878,6 @@ export function useSubscriptionCheckout(
           payment_intent_source: paymentIntentSource,
           billing_op_id: response.billing_op_id,
           duration_ms: durationMs
-        })
-      }
-      if (shouldTrackSubscriptionSuccess) {
-        // Also fires the legacy event for providers (Mixpanel, GTM) that don't implement trackBillingEvent.
-        telemetry?.trackMonthlySubscriptionSucceeded({
-          tier: context.tier,
-          cycle: context.cycle,
-          checkout_type: context.checkoutType,
-          payment_intent_source: paymentIntentSource,
-          billing_op_id: response.billing_op_id
         })
       }
       checkoutStep.value = 'success'
@@ -1049,29 +1046,36 @@ export function useSubscriptionCheckout(
   async function handleResubscribe() {
     if (!permissions.value.canManageSubscriptionLifecycle) return
 
+    const source = 'pricing_dialog' as const
+
     telemetry?.trackResubscribeClicked({
-      source: 'pricing_dialog',
+      source,
       payment_intent_source: paymentIntentSource
     })
+    // Emitted before the awaited call so a failure always has a preceding
+    // `started` — emitting it only after the call meant a failure produced a
+    // `failed` with no matching `started`, pushing failed/started over 100%.
     telemetry?.trackBillingEvent({
       operation: 'resubscribe',
       stage: 'started',
       outcome: 'pending',
-      source: 'pricing_dialog',
+      source,
       payment_intent_source: paymentIntentSource
     })
     isResubscribing.value = true
     try {
-      await resubscribe()
-      // Workspace's resubscribe() is terminal, so it reports succeeded here. Legacy
-      // only opens Stripe; the started/pending event fired above already covers it,
-      // and useSubscription.ts's pending-checkout recovery owns the eventual terminal.
+      await resubscribe({ source })
+      // Workspace's resubscribe() call is itself the terminal reactivation, so it
+      // gets an immediate `succeeded` here. Legacy only opens a Stripe checkout
+      // tab, which isn't terminal — its `succeeded` is emitted later, from
+      // useSubscription.ts's pending-checkout recovery, once a status poll
+      // confirms the payment actually went through.
       if (shouldUseWorkspaceBilling.value) {
         telemetry?.trackBillingEvent({
           operation: 'resubscribe',
           stage: 'succeeded',
           outcome: 'success',
-          source: 'pricing_dialog',
+          source,
           payment_intent_source: paymentIntentSource
         })
       }
@@ -1088,7 +1092,7 @@ export function useSubscriptionCheckout(
         operation: 'resubscribe',
         stage: 'failed',
         outcome: 'failure',
-        source: 'pricing_dialog',
+        source,
         payment_intent_source: paymentIntentSource,
         failure_category: categorizeBillingApiError(error)
       })

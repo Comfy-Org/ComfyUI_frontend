@@ -136,7 +136,8 @@ async function initiateSubscriptionCheckout(
     throw new AuthStoreError(
       t('toastMessages.failedToInitiateSubscription', {
         error: errorMessage
-      })
+      }),
+      response.status
     )
   }
 

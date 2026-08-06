@@ -444,7 +444,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function resubscribe(): Promise<void> {
+  async function resubscribe(_options?: {
+    source?: 'pricing_dialog' | 'settings_billing_panel'
+  }): Promise<void> {
+    // Workspace's resubscribe() call is itself the terminal reactivation, so
+    // the click-time source isn't needed here the way the legacy adapter
+    // needs it for its pending-checkout-recovery terminal event.
     isLoading.value = true
     error.value = null
     try {

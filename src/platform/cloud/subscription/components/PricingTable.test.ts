@@ -122,7 +122,13 @@ vi.mock('@/stores/authStore', () => ({
         fetch(input, init),
       userId: computed(() => mockUserId.value)
     }),
-  AuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {
+    readonly status: number | undefined
+    constructor(message: string, status?: number) {
+      super(message)
+      this.status = status
+    }
+  }
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -452,7 +458,10 @@ describe('PricingTable', () => {
       mockCanAccessSubscriptionFeatures.value = false
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
-        json: async () => ({ message: 'declined for person@example.com' })
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => ({ message: 'declined for person@example.com' }),
+        text: async () => ''
       } as Response)
 
       renderComponent()

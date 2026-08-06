@@ -4,8 +4,9 @@ import { AuthStoreError } from '@/stores/authStore'
 import type { BillingFailure } from '../types'
 
 /**
- * A `WorkspaceApiError` with no `status` never reached the backend (`network`);
- * a `TypeError` naming fetch/network/load is what `fetch` throws for connectivity failures.
+ * A `WorkspaceApiError`/`AuthStoreError` with no `status` never reached the
+ * backend (`network`); a `TypeError` naming fetch/network/load is what `fetch`
+ * throws for connectivity failures.
  */
 export function categorizeBillingApiError(
   err: unknown
@@ -14,7 +15,7 @@ export function categorizeBillingApiError(
     return err.status === undefined ? 'network' : 'api_rejected'
   }
   if (err instanceof AuthStoreError) {
-    return 'api_rejected'
+    return err.status === undefined ? 'network' : 'api_rejected'
   }
   if (
     err instanceof TypeError &&

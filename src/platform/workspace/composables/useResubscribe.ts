@@ -29,27 +29,32 @@ export function useResubscribe() {
       return
     }
 
-    useTelemetry()?.trackResubscribeClicked({
-      source: 'settings_billing_panel'
-    })
+    const source = 'settings_billing_panel' as const
+
+    useTelemetry()?.trackResubscribeClicked({ source })
+    // Emitted before the awaited call so a failure always has a preceding
+    // `started` — emitting it only after the call meant a failure produced a
+    // `failed` with no matching `started`, pushing failed/started over 100%.
     useTelemetry()?.trackBillingEvent({
       operation: 'resubscribe',
       stage: 'started',
       outcome: 'pending',
-      source: 'settings_billing_panel'
+      source
     })
     isResubscribing.value = true
     try {
-      await resubscribe()
-      // Workspace's resubscribe() is terminal, so it reports succeeded here. Legacy
-      // only opens Stripe; the started/pending event fired above already covers it,
-      // and useSubscription.ts's pending-checkout recovery owns the eventual terminal.
+      await resubscribe({ source })
+      // Workspace's resubscribe() call is itself the terminal reactivation, so it
+      // gets an immediate `succeeded` here. Legacy only opens a Stripe checkout
+      // tab, which isn't terminal — its `succeeded` is emitted later, from
+      // useSubscription.ts's pending-checkout recovery, once a status poll
+      // confirms the payment actually went through.
       if (shouldUseWorkspaceBilling.value) {
         useTelemetry()?.trackBillingEvent({
           operation: 'resubscribe',
           stage: 'succeeded',
           outcome: 'success',
-          source: 'settings_billing_panel'
+          source
         })
       }
       toast.add({
@@ -66,7 +71,7 @@ export function useResubscribe() {
         operation: 'resubscribe',
         stage: 'failed',
         outcome: 'failure',
-        source: 'settings_billing_panel',
+        source,
         failure_category: categorizeBillingApiError(error)
       })
       toast.add({

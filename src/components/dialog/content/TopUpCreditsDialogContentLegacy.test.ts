@@ -184,8 +184,11 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     expect(mockShowSettings).not.toHaveBeenCalled()
   })
 
-  it('categorizes an auth-store rejection via the shared classifier', async () => {
-    const authStoreError = new AuthStoreError('backend rejected the purchase')
+  it('categorizes an auth-store rejection with an HTTP status via the shared classifier', async () => {
+    const authStoreError = new AuthStoreError(
+      'backend rejected the purchase',
+      400
+    )
     mockPurchaseCreditsDirect.mockRejectedValue(authStoreError)
 
     renderDialog()
@@ -196,6 +199,21 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       stage: 'failed',
       outcome: 'failure',
       failure_category: 'api_rejected'
+    })
+  })
+
+  it('categorizes an auth-store rejection with no HTTP status as a network failure', async () => {
+    const authStoreError = new AuthStoreError('offline')
+    mockPurchaseCreditsDirect.mockRejectedValue(authStoreError)
+
+    renderDialog()
+    await clickBuyCredits()
+
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: 'network'
     })
   })
 

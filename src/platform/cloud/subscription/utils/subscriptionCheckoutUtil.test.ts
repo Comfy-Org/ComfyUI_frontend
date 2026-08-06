@@ -77,7 +77,13 @@ vi.mock('@/stores/authStore', () => ({
       userId: computed(() => mockUserId.value)
     })
   ),
-  AuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {
+    readonly status: number | undefined
+    constructor(message: string, status?: number) {
+      super(message)
+      this.status = status
+    }
+  }
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -311,6 +317,8 @@ describe('performSubscriptionCheckout', () => {
   it('reports checkout-initiation failure via trackBillingEvent, so the marketing deep link inherits it too', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
+      status: 400,
+      statusText: 'Bad Request',
       json: async () => ({ message: 'declined for person@example.com' }),
       text: async () => ''
     } as Response)

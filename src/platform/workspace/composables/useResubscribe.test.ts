@@ -48,9 +48,11 @@ vi.mock('@/platform/telemetry', () => ({
 
 vi.mock('@/stores/authStore', () => ({
   AuthStoreError: class AuthStoreError extends Error {
-    constructor(message: string) {
+    readonly status: number | undefined
+    constructor(message: string, status?: number) {
       super(message)
       this.name = 'AuthStoreError'
+      this.status = status
     }
   }
 }))
@@ -149,7 +151,10 @@ describe('useResubscribe', () => {
 
   it('fires resubscribe failure telemetry on the legacy rail too, categorizing the error', async () => {
     state.shouldUseWorkspaceBilling = false
-    const authStoreError = new AuthStoreError('checkout initiation rejected')
+    const authStoreError = new AuthStoreError(
+      'checkout initiation rejected',
+      500
+    )
     state.resubscribe.mockRejectedValueOnce(authStoreError)
     const { handleResubscribe } = useResubscribe()
 
@@ -165,5 +170,39 @@ describe('useResubscribe', () => {
       source: 'settings_billing_panel',
       failure_category: 'api_rejected'
     })
+  })
+
+  it('categorizes an AuthStoreError with no status as a network failure, not an api rejection', async () => {
+    state.shouldUseWorkspaceBilling = false
+    const authStoreError = new AuthStoreError('offline')
+    state.resubscribe.mockRejectedValueOnce(authStoreError)
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'failed',
+      outcome: 'failure',
+      source: 'settings_billing_panel',
+      failure_category: 'network'
+    })
+  })
+
+  it('emits started before the awaited resubscribe call resolves', async () => {
+    const callOrder: string[] = []
+    state.resubscribe.mockImplementation(async () => {
+      callOrder.push('resubscribe')
+    })
+    state.trackBillingEvent.mockImplementation((event: { stage: string }) => {
+      callOrder.push(`trackBillingEvent:${event.stage}`)
+    })
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(callOrder.indexOf('trackBillingEvent:started')).toBeLessThan(
+      callOrder.indexOf('resubscribe')
+    )
   })
 })

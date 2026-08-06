@@ -177,10 +177,18 @@ export function useLegacyBilling(): BillingState & BillingActions {
     await legacyManageSubscription()
   }
 
-  async function resubscribe(): Promise<void> {
+  async function resubscribe(options?: {
+    source?: 'pricing_dialog' | 'settings_billing_panel'
+  }): Promise<void> {
     // Legacy has no resubscribe endpoint; resubscribing is a fresh checkout.
     // Unwrapped so failures propagate to resubscribe telemetry instead of being swallowed.
-    await legacySubscribeDirect()
+    // Tag the attempt as a resubscribe so the pending-checkout recovery in
+    // useSubscription.ts can later emit the canonical resubscribe terminal
+    // instead of leaving it indistinguishable from a plain subscribe.
+    await legacySubscribeDirect({
+      operation: 'resubscribe',
+      source: options?.source
+    })
   }
 
   async function topup(amountCents: number): Promise<void> {

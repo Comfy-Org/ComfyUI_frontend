@@ -14,7 +14,10 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import type {
+  CheckoutAttributionMetadata,
+  ResubscribeClickMetadata
+} from '@/platform/telemetry/types'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -183,6 +186,26 @@ function useSubscriptionInternal() {
       ...(authStore.userId ? { user_id: authStore.userId } : {}),
       ...metadata
     })
+
+    // The recovery flow is shared with plain (non-resubscribe) legacy subscribes,
+    // which all funnel through the same subscribeDirect(). Only emit the canonical
+    // resubscribe terminal when the attempt that just resolved was itself tagged
+    // as a resubscribe at click time — otherwise a plain new subscribe would be
+    // mislabeled as a resubscribe success. Without this, the legacy rail's
+    // `billing.resubscribe.started` (emitted at checkout-tab-open) never gets a
+    // matching terminal, so resubscribe conversion permanently reads ~0%.
+    if (metadata.operation === 'resubscribe') {
+      telemetry?.trackBillingEvent({
+        operation: 'resubscribe',
+        stage: 'succeeded',
+        outcome: 'success',
+        source: metadata.resubscribe_source ?? 'settings_billing_panel',
+        ...(metadata.payment_intent_source
+          ? { payment_intent_source: metadata.payment_intent_source }
+          : {})
+      })
+    }
+
     stopPendingCheckoutRecovery()
   }
 
@@ -203,8 +226,17 @@ function useSubscriptionInternal() {
     reportError
   )
 
+  interface SubscribeDirectOptions {
+    /** Set when this call originates from the resubscribe flow, not a plain subscribe. */
+    operation?: 'resubscribe'
+    /** Click-time source for a resubscribe attempt; carried through to the terminal event. */
+    source?: ResubscribeClickMetadata['source']
+  }
+
   /** Unwrapped `subscribe`, for callers that need rejections to propagate (e.g. telemetry). */
-  const subscribeDirect = async (): Promise<void> => {
+  const subscribeDirect = async (
+    options?: SubscribeDirectOptions
+  ): Promise<void> => {
     const response = await initiateSubscriptionCheckout()
 
     if (!response.checkout_url) {
@@ -231,7 +263,9 @@ function useSubscriptionInternal() {
         ? { previous_cycle: 'yearly' as const }
         : subscriptionDuration.value === 'MONTHLY'
           ? { previous_cycle: 'monthly' as const }
-          : {})
+          : {}),
+      ...(options?.operation ? { operation: options.operation } : {}),
+      ...(options?.source ? { resubscribe_source: options.source } : {})
     })
   }
 
@@ -340,7 +374,8 @@ function useSubscriptionInternal() {
       throw new AuthStoreError(
         t('toastMessages.failedToFetchSubscription', {
           error: errorData.message
-        })
+        }),
+        response.status
       )
     }
 
@@ -432,7 +467,8 @@ function useSubscriptionInternal() {
         throw new AuthStoreError(
           t('toastMessages.failedToInitiateSubscription', {
             error: errorData.message
-          })
+          }),
+          response.status
         )
       }
 

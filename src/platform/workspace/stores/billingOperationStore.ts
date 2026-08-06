@@ -363,14 +363,19 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         billing_op_id: opId,
         duration_ms: durationMs
       })
-      // Also fires the legacy event for providers (Mixpanel, GTM) that don't implement trackBillingEvent.
-      telemetry?.trackMonthlySubscriptionSucceeded({
-        tier: operation.tier,
-        cycle: operation.cycle,
-        checkout_type: operation.checkoutType,
-        payment_intent_source: operation.paymentIntentSource,
-        billing_op_id: opId
-      })
+      // Also fires the legacy event for providers (Mixpanel, GTM) that don't
+      // implement trackBillingEvent. Gated to actual new/upgraded
+      // subscriptions — a downgrade-to-personal is churn, not a conversion,
+      // and this event drives a GA4 "subscription succeeded" conversion goal.
+      if (!operation.downgradeToPersonal) {
+        telemetry?.trackMonthlySubscriptionSucceeded({
+          tier: operation.tier,
+          cycle: operation.cycle,
+          checkout_type: operation.checkoutType,
+          payment_intent_source: operation.paymentIntentSource,
+          billing_op_id: opId
+        })
+      }
       if (operation.downgradeToPersonal) {
         telemetry?.trackBillingEvent({
           operation: 'downgrade_to_personal',
@@ -440,9 +445,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (!operation) return
 
     const superseded = errorMessage === CHECKOUT_SUPERSEDED_REASON
-    const failureCategory = superseded
-      ? 'stale_operation'
-      : categorizePollFailure(operation.type)
     const defaultMessage = failureMessage(operation.type)
     const detail =
       operation.type === 'subscription'
@@ -454,6 +456,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     const telemetry = useTelemetry()
     const now = Date.now()
+    const failureCategory = superseded
+      ? 'stale_operation'
+      : categorizePollFailure(
+          operation.type,
+          errorMessage,
+          Boolean(operation.downgradeToPersonal)
+        )
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
@@ -598,11 +607,27 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     resolveTerminal(opId)
   }
 
-  /** No caught error here — subscription/topup failures imply a provider decline, cancel implies an api rejection. */
+  /**
+   * No caught JS error here — only the backend's free-form `error_message`, if
+   * any. `cancel` and zero-payment operations (e.g. downgrade-to-personal,
+   * which removes members / changes tier but never touches a card) can't be a
+   * provider decline, so they're always an api rejection. For payment-bearing
+   * `subscription`/`topup` polls, a message naming a connectivity/system
+   * failure isn't a decline either; only fall back to `provider_decline` when
+   * the backend gave no more specific signal.
+   */
   function categorizePollFailure(
-    type: OperationType
+    type: OperationType,
+    errorMessage: string | null,
+    isZeroPaymentOperation: boolean
   ): BillingFailure['failure_category'] {
-    return type === 'cancel' ? 'api_rejected' : 'provider_decline'
+    if (type === 'cancel' || isZeroPaymentOperation) return 'api_rejected'
+
+    if (errorMessage && /network|connection|unreachable/i.test(errorMessage)) {
+      return 'network'
+    }
+
+    return 'provider_decline'
   }
 
   function failureMessage(type: OperationType) {

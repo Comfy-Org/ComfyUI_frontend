@@ -309,9 +309,11 @@ vi.mock('@/platform/telemetry', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) }),
   AuthStoreError: class AuthStoreError extends Error {
-    constructor(message: string) {
+    readonly status: number | undefined
+    constructor(message: string, status?: number) {
       super(message)
       this.name = 'AuthStoreError'
+      this.status = status
     }
   }
 }))
@@ -2193,13 +2195,10 @@ describe('useSubscriptionCheckout', () => {
         billing_op_id: 'op-1',
         duration_ms: expect.any(Number)
       })
-      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledWith({
-        tier: 'standard',
-        cycle: 'yearly',
-        checkout_type: 'new',
-        payment_intent_source: undefined,
-        billing_op_id: 'op-1'
-      })
+      // PostHog implements both trackBillingEvent and
+      // trackMonthlySubscriptionSucceeded, so also firing the legacy event
+      // here would double-count this success for it.
+      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
       // Refreshed once, pre-submit, to keep the reactivation guard honest —
       // but balance reconciliation after a successful response is still not
       // this composable's job.
@@ -2467,6 +2466,10 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(checkout.checkoutStep.value).toBe('success')
+      // PostHog implements both trackBillingEvent and
+      // trackMonthlySubscriptionSucceeded, so also firing the legacy event
+      // here would double-count this success for it.
+      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
     })
 
     it('shows error toast on failure', async () => {
@@ -3095,6 +3098,26 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockResubscribe).not.toHaveBeenCalled()
       expect(mockTrackResubscribeClicked).not.toHaveBeenCalled()
+    })
+
+    it('emits started before the awaited resubscribe call resolves', async () => {
+      const callOrder: string[] = []
+      mockResubscribe.mockImplementationOnce(async () => {
+        callOrder.push('resubscribe')
+        return { billing_op_id: 'op-4', status: 'active' }
+      })
+      mockTrackBillingEvent.mockImplementationOnce(
+        (event: { stage: string }) => {
+          callOrder.push(`trackBillingEvent:${event.stage}`)
+        }
+      )
+      const checkout = await setup('subscribe_to_run')
+
+      await checkout.handleResubscribe()
+
+      expect(callOrder.indexOf('trackBillingEvent:started')).toBeLessThan(
+        callOrder.indexOf('resubscribe')
+      )
     })
   })
 })
