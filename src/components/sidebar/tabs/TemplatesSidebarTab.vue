@@ -85,7 +85,7 @@
       <!-- Type and generation type share one line: they are two halves of the
            same question. The generation-type half collapses into a dropdown
            when the panel is too narrow for both. -->
-      <div class="flex items-center gap-2">
+      <div class="mt-1 flex items-center gap-2">
         <TabList
           v-model="selectedType"
           class="w-auto shrink-0"
