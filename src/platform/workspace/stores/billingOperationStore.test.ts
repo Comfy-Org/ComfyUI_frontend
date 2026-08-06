@@ -614,7 +614,7 @@ describe('billingOperationStore', () => {
   })
 
   describe('payment authentication recovery', () => {
-    it('auto-runs requires_action once and stops polling after challenge failure', async () => {
+    it('auto-runs requires_action once and keeps polling after challenge failure, without relaunching Stripe', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-3ds',
         status: 'pending',
@@ -650,7 +650,48 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(60_000)
       expect(mockHandleNextAction).toHaveBeenCalledOnce()
-      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
+      expect(
+        vi.mocked(workspaceApi.getBillingOpStatus).mock.calls.length
+      ).toBeGreaterThan(1)
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        authenticationState: 'failed_retryable',
+        errorMessage: 'Challenge was closed'
+      })
+    })
+
+    it('resolves a challenge-failure presentation when the payment turns out to have succeeded', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-3ds',
+          status: 'pending',
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'pi_secret_current',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-3ds',
+          status: 'succeeded',
+          authentication_state: 'succeeded',
+          started_at: new Date().toISOString()
+        })
+      mockHandleNextAction.mockResolvedValue({
+        error: { message: 'Challenge was closed' }
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-3ds')?.authenticationState).toBe(
+        'failed_retryable'
+      )
+
+      await vi.advanceTimersByTimeAsync(31_000)
+      expect((await terminal).status).toBe('succeeded')
+      expect(mockHandleNextAction).toHaveBeenCalledOnce()
     })
 
     it('retries explicitly and resumes polling after verification succeeds', async () => {
@@ -703,7 +744,7 @@ describe('billingOperationStore', () => {
       )
     })
 
-    it('remains retryable without scheduling an automatic loop after retry failure', async () => {
+    it('remains retryable after retry failure and never relaunches Stripe automatically', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-3ds',
         status: 'pending',
@@ -729,7 +770,11 @@ describe('billingOperationStore', () => {
       })
       await vi.advanceTimersByTimeAsync(60_000)
       expect(mockHandleNextAction).toHaveBeenCalledOnce()
-      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        authenticationState: 'failed_retryable',
+        canRetryAuthentication: true,
+        errorMessage: 'Verification failed again'
+      })
     })
 
     it('exposes a recovered failed_retryable operation before any automatic action', async () => {

@@ -306,11 +306,22 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     if (clientSecret) paymentIntentClientSecrets.set(opId, clientSecret)
     const secret = clientSecret ?? paymentIntentClientSecrets.get(opId)
+    // requires_action after a failed browser attempt is the same challenge the
+    // customer just abandoned — the intent has not moved. Keeping the retry
+    // presentation stops the failure alert and button label flapping between
+    // polls; a state that actually advanced (processing, succeeded, failed)
+    // still flows through and resolves the UI.
+    const displayState =
+      state === 'requires_action' &&
+      operation.authenticationState === 'failed_retryable'
+        ? 'failed_retryable'
+        : state
     updateOperation(opId, {
-      authenticationState: state,
+      authenticationState: displayState,
       canRetryAuthentication:
         Boolean(secret) &&
-        (state === 'requires_action' || state === 'failed_retryable'),
+        (displayState === 'requires_action' ||
+          displayState === 'failed_retryable'),
       authenticationRequiredSeen:
         operation.authenticationRequiredSeen || state === 'requires_action'
     })
@@ -405,7 +416,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       canRetryAuthentication: paymentIntentClientSecrets.has(opId),
       errorMessage
     })
-    pausePolling(opId)
+    // A browser-step error is not a verdict on the payment: the challenge may
+    // have completed server-side despite the client error (observed: the
+    // intent succeeded seconds after handleNextAction reported failure, and a
+    // paused UI stayed on "failed" for a live subscription). Keep polling so
+    // the server's state resolves the presentation; the retry button remains
+    // the manual path while it is genuinely parked.
+    scheduleNextPoll(opId)
   }
 
   function updateOperation(opId: string, patch: Partial<BillingOperation>) {
