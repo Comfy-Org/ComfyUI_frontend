@@ -308,19 +308,23 @@ itself** — check whether it is a menu _on a node_. If so, **use
 rather than overwrite. A `ContextMenu` constructed to build a canvas-wide or
 slot menu is not this, and is still a gap — punt it and name it.
 
-**If you are converting a pack that writes its own shape into
-`widgets_values`** (a dict keyed by widget name, a nested object, anything not
-the positional array) — you cannot write it back: `widgets_values` is reserved,
-because changing it changes what the workflow means. **You do not need to.**
-Core assigns positionally and _then_ calls `onConfigure`, so `b.onConfigured`
-receives the saved node exactly as written — legacy shape intact. Read the old
-shape there, set each widget by name, and let serialization emit the standard
-positional array. The workflow migrates on its first save, with no core change.
+**If you are converting a pack that writes its own name-keyed shape into
+`widgets_values`** (a dict keyed by widget name, rather than the positional
+array) — the pack is reaching for something the new model already gives it.
+**Widget values are keyed by name at runtime**: `widgetValueStore` is keyed by
+`graphId:nodeId:name` (`src/types/widgetId.ts`), with no index in the identity.
+The positional array is only the legacy _serialized_ form, which is why
+`widgets_values` is reserved.
 
-Carry the pack's own migration tables across with it — rename maps, retired
-widgets, positional-to-named fallbacks. Those are the conversion; dropping them
-silently loses user data. And say so in your summary: this rewrites the user's
-saved workflow, which is a heavier thing to ship than a code change.
+So **delete the override, do not translate it.** Address widgets by name — that
+is native — and let core serialize the positional array as it already does. The
+pack's serialize hook largely disappears rather than being ported.
+
+What you must keep is the _reading_ of old workflows. Core assigns positionally
+and _then_ calls `onConfigure`, so `b.onConfigured` receives the saved node with
+its legacy shape intact. Port the pack's rename maps, retired-widget handling
+and positional-to-named fallbacks into that hook: those are the conversion, and
+dropping them silently loses user data.
 
 **If you are converting `this._somethingPrivate = x` on a node** — handles hold
 no arbitrary properties. **Keep a `Map` keyed by `node.id`** and clear the entry
