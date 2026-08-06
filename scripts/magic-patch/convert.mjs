@@ -69,7 +69,7 @@ import { verifyPack } from './harness/verifyPack.mjs'
 const REPO = new URL('../..', import.meta.url).pathname
 const SKILL_DIR = join(REPO, '.claude/skills/converting-custom-nodes')
 const API_MAJOR = 1
-const MODEL = 'claude-opus-5'
+const DEFAULT_MODEL = 'claude-opus-5'
 const MAX_BYTES = 2_000_000
 const MAX_READ_CHARS = 400_000
 
@@ -847,7 +847,7 @@ async function convertPack(work, tracePath) {
   const q = query({
     prompt: buildPrompt(work),
     options: {
-      model: MODEL,
+      model: process.env.MAGIC_PATCH_MODEL || DEFAULT_MODEL,
       systemPrompt: systemPrompt(),
       mcpServers: { magicpatch: server },
       // Only our tools: the agent must go through the harness rather than
