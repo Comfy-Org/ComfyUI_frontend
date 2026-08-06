@@ -998,7 +998,7 @@ async function main() {
   const corpus = flag('corpus')
   if (!corpus) {
     console.error(
-      'usage: convert.mjs --corpus <dir> [--db <dir>] [--limit N] [--pack NAME] [--parallel N]'
+      'usage: convert.mjs --corpus <dir> [--db <dir>] [--limit N] [--pack NAME] [--parallel N] [--files-per-agent N]'
     )
     process.exit(2)
   }
@@ -1013,6 +1013,9 @@ async function main() {
   // default. Four keeps a laptop usable and stays clear of rate limits; raise
   // it on a dedicated machine.
   const parallel = Math.max(1, Number(flag('parallel', '4')))
+  // 0 means a whole pack per agent. Small values buy iteration speed at the
+  // cost of any single agent seeing the whole pack.
+  const filesPerAgent = Math.max(0, Number(flag('files-per-agent', '0')))
 
   const ledgerPath = join(db, 'ledger.jsonl')
   const done = new Set(
@@ -1102,11 +1105,30 @@ async function main() {
     )
   }
 
-  // A pack is one agent from first file to last — it needs to see the whole
-  // pack to convert a shared helper consistently — so the parallelism is
-  // across packs, never within one. Bounded because each worker is a Claude
-  // Code session and the credentials are shared with whatever else is running.
-  const queue = [...packs]
+  /**
+   * Splits a pack across agents when `--files-per-agent` is set.
+   *
+   * A whole pack per agent is the safer shape — one agent sees every caller of
+   * a shared helper — but a 25-file pack is one 20-minute serial run, and at
+   * that rate the corpus is weeks. Sharding trades some of that safety for
+   * throughput.
+   *
+   * What holds the safety line: every shard still gets the full pack as
+   * readable context, so an agent can read the callers it is about to break;
+   * `mark_complete` still refuses a signature change that strands one; and
+   * `verify_db` runs over the merged result at the end, where a cross-shard
+   * break is visible even though no single agent could see it.
+   */
+  const shard = (work) => {
+    if (!filesPerAgent || work.files.length <= filesPerAgent) return [work]
+    const shards = []
+    for (let i = 0; i < work.files.length; i += filesPerAgent) {
+      shards.push({ ...work, files: work.files.slice(i, i + filesPerAgent) })
+    }
+    return shards
+  }
+
+  const queue = packs.flatMap(shard)
   let fatal = null
   const worker = async () => {
     while (queue.length && !fatal) {
@@ -1125,7 +1147,9 @@ async function main() {
     }
   }
   console.error(
-    `converting ${packs.length} pack(s), ${parallel} at a time` +
+    `converting ${packs.length} pack(s) as ${queue.length} unit(s), ` +
+      `${parallel} at a time` +
+      (filesPerAgent ? `, ${filesPerAgent} file(s) per agent` : '') +
       ` (${process.env.MAGIC_PATCH_MODEL || DEFAULT_MODEL})`
   )
   await Promise.all(
