@@ -1,7 +1,4 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { toRerouteId } from '@/types/rerouteId'
 
 test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
@@ -29,16 +26,8 @@ test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
             source: LayoutSource.External,
             actor: 'remote-peer'
           })
-          document.documentElement.dataset.remoteRerouteReady = 'true'
         `
       })
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            () => document.documentElement.dataset.remoteRerouteReady
-          )
-        )
-        .toBe('true')
 
       await comfyPage.workflow.loadWorkflow(
         'reroute/single-native-reroute-default-workflow'
@@ -48,19 +37,23 @@ test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
         [REROUTE_ID]: remotePosition
       })
 
-      const [x, y] = await comfyPage.page.evaluate(
-        (position) =>
-          window.app!.canvasPosToClientPos([position.x, position.y]),
-        remotePosition
-      )
-      await comfyPage.page.mouse.move(x, y)
+      const targetPosition = { x: 1100, y: 500 }
+      const [[startX, startY], [targetX, targetY]] =
+        await comfyPage.page.evaluate(
+          ({ start, target }) =>
+            [start, target].map((position) =>
+              window.app!.canvasPosToClientPos([position.x, position.y])
+            ),
+          { start: remotePosition, target: targetPosition }
+        )
+      await comfyPage.page.mouse.move(startX, startY)
       await comfyPage.page.mouse.down()
-      await comfyPage.page.mouse.move(x + 100, y, { steps: 10 })
+      await comfyPage.page.mouse.move(targetX, targetY, { steps: 10 })
       await comfyPage.page.mouse.up()
       await comfyPage.nextFrame()
 
       await comfyPage.canvasOps.expectRootReroutePositions({
-        [REROUTE_ID]: { x: remotePosition.x + 100, y: remotePosition.y }
+        [REROUTE_ID]: targetPosition
       })
     }
   )

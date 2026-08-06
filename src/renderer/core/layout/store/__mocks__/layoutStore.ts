@@ -24,6 +24,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   getVersion: vi.fn(() => ({ value: 0 })),
   hasSlotLayouts: false,
   onChange: vi.fn(() => () => {}),
+  onGeometryChange: vi.fn(() => () => {}),
   onNodeChange: vi.fn(() => () => {}),
   pendingSlotSync: false,
   queryLinkAtPoint: vi.fn(() => null),

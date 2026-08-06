@@ -33,16 +33,8 @@ test.describe(
             node.delete('size')
             node.set('rect', ${JSON.stringify(REMOTE_RECT)})
           })
-          document.documentElement.dataset.storedLayoutApplied = 'true'
         `
       })
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            () => document.documentElement.dataset.storedLayoutApplied
-          )
-        )
-        .toBe('true')
 
       await expect
         .poll(() =>
