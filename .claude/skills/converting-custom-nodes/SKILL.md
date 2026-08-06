@@ -326,6 +326,18 @@ its legacy shape intact. Port the pack's rename maps, retired-widget handling
 and positional-to-named fallbacks into that hook: those are the conversion, and
 dropping them silently loses user data.
 
+**If you are converting reads of `canvas.connecting_links`, `resizing_node` or
+`node_widget`** — the pack is asking one question, not three: _is the editor
+already mid-gesture?_ **Use `comfy.isInteracting()`** and stand down while it is
+true. Do not reach for the individual fields; which gestures exist is the
+editor's business and will change.
+
+**If you are converting `canvas.setDirty(...)` / `setDirtyCanvas(...)`** —
+**delete it.** There is no published repaint request, deliberately. Handle
+writes invalidate on their own, and a `widgets.canvas` surface has `redraw()`.
+If something genuinely fails to repaint after a handle write, that is a bug in
+the API — report it rather than working around it.
+
 **If you are converting `addWidget('button', name, null, callback)` or any
 widget whose callback is an action rather than a value change** — **use
 `widget.on('activate', fn)`**. A button's value never moves, so `on('change')`

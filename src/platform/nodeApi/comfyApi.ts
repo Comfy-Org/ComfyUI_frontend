@@ -12,7 +12,7 @@ import { handleToken, isSameEntity } from './closedProxy'
 import { createDefRegistry } from './defsRegistry'
 import type { DefRegistry } from './defsRegistry'
 import { ComfyUnsupportedError } from './errors'
-import { apiConstants } from './constants'
+import { apiConstants, isInteracting } from './constants'
 import type { ApiConstants } from './constants'
 import { createGraphApi } from './graphHandle'
 import type { GraphHandle } from './graphHandle'
@@ -89,7 +89,8 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['node.connectVeto', '1.0'],
   ['node.menu', '1.0'],
   ['settings', '1.0'],
-  ['constants', '1.0']
+  ['constants', '1.0'],
+  ['interaction.state', '1.0']
 ])
 
 /**
@@ -153,6 +154,12 @@ export interface Comfy {
    * change, and a pack holding a reference to it holds the renderer open.
    */
   readonly constants: ApiConstants
+  /**
+   * The editor is already mid-gesture — dragging a link, resizing a node,
+   * dragging a widget. A pack running its own pointer gesture must stand down
+   * while this is true.
+   */
+  isInteracting(): boolean
 }
 
 /** Per-major instances, memoised per graph provider. */
@@ -192,6 +199,7 @@ function buildMajor(
     get constants() {
       return apiConstants()
     },
+    isInteracting,
     defs: defs.forMajor((nodeId) => graph.node(nodeId)!)
   })
 }
