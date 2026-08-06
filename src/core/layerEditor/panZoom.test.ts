@@ -79,6 +79,34 @@ describe('createPanZoom', () => {
     })
   })
 
+  describe('setArtboardSize', () => {
+    it('resizes the container while keeping zoom and pan fixed', () => {
+      const els = makeEls(800, 600)
+      const pz = createPanZoom(() => els)
+      pz.fit(1024, 1024)
+      const zoom = pz.zoom()
+      const before = styleNumbers(els.container)
+      pz.setArtboardSize(2048, 1024)
+      expect(pz.zoom()).toBe(zoom)
+      const st = styleNumbers(els.container)
+      expect(st.left).toBeCloseTo(before.left)
+      expect(st.top).toBeCloseTo(before.top)
+      expect(st.width).toBeCloseTo(2048 * zoom)
+      expect(st.height).toBeCloseTo(1024 * zoom)
+    })
+
+    it('remembers the size while elements are unavailable', () => {
+      let els: PanZoomEls | null = null
+      const pz = createPanZoom(() => els)
+      expect(() => pz.setArtboardSize(500, 400)).not.toThrow()
+      els = makeEls()
+      pz.invalidate()
+      const st = styleNumbers(els.container)
+      expect(st.width).toBeCloseTo(500)
+      expect(st.height).toBeCloseTo(400)
+    })
+  })
+
   it('accumulates pan offsets into left/top and notifies listeners', () => {
     const els = makeEls()
     const pz = createPanZoom(() => els)

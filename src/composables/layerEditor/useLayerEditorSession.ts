@@ -616,6 +616,19 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     pointerMode.value = mode
   }
 
+  function shiftLayers(nodes: SceneNode[], dx: number, dy: number): void {
+    if (dx === 0 && dy === 0) return
+    for (const n of nodes) {
+      if (n.kind === 'fill') continue
+      n.transform = {
+        ...n.transform,
+        x: n.transform.x + dx,
+        y: n.transform.y + dy
+      }
+      if (n.kind === 'group') shiftLayers(n.children, dx, dy)
+    }
+  }
+
   function setCanvasSize(w: number, h: number): void {
     const doc = editor.document()
     const width = clamp(Math.round(w), CANVAS_SIZE_MIN, CANVAS_SIZE_MAX)
@@ -623,9 +636,14 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     const before = { w: doc.width, h: doc.height }
     if (before.w === width && before.h === height) return
     const apply = (v: { w: number; h: number }): void => {
+      const dx = Math.trunc((v.w - doc.width) / 2)
+      const dy = Math.trunc((v.h - doc.height) / 2)
       doc.width = v.w
       doc.height = v.h
       if (glOk.value) compositor.resize(v.w, v.h)
+      shiftLayers(doc.root.children, dx, dy)
+      panZoom.setArtboardSize(v.w, v.h)
+      panZoom.panBy(-dx * panZoom.zoom(), -dy * panZoom.zoom())
     }
     apply({ w: width, h: height })
     editor.history.push(
@@ -639,7 +657,6 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
       )
     )
     editor.invalidate()
-    fitView()
   }
 
   function pushLayerTransform(
