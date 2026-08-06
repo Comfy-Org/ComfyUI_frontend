@@ -191,6 +191,22 @@ describe('collectExportedNames', () => {
     ).toThrow(/Unparsable source/)
   })
 
+  it('rejects a UMD namespace export alongside valid exports', () => {
+    expect(() =>
+      collectExportedNames(
+        `export type { Alpha } from './a.gen'\nexport as namespace Hidden\n`
+      )
+    ).toThrow(/Unsupported export declaration/)
+  })
+
+  it('yields no names for empty source, leaving the sufficiency guard to reject it', () => {
+    expect(collectExportedNames('').size).toBe(0)
+  })
+
+  it('yields no names for an empty named export', () => {
+    expect(collectExportedNames(`export type {} from './a.gen'`).size).toBe(0)
+  })
+
   it('ignores the word export inside comments and strings', () => {
     const names = collectExportedNames(
       `// export * from './fake.gen'\n` +

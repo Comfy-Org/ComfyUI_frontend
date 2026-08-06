@@ -74,6 +74,7 @@ function declaresItsOwnExport(
   statement: TypeScript.Statement
 ): boolean {
   if (ts.isExportAssignment(statement)) return true
+  if (ts.isNamespaceExportDeclaration(statement)) return true
   return (
     ts.canHaveModifiers(statement) &&
     (ts.getModifiers(statement) ?? []).some(
