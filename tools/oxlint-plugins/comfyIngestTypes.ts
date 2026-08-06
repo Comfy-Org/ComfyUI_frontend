@@ -11,7 +11,8 @@ const PLUGIN_SOURCE = 'tools/oxlint-plugins/comfyIngestTypes.ts'
  */
 const MIN_EXPECTED_EXPORTS = 100
 
-const exportTypeBlock = /export\s+type\s*\{([^}]*)\}/g
+const exportDeclarationStart = /^[ \t]*export\b/gm
+const supportedExportBlock = /[ \t]*export\s+type\s*\{([^}]*)\}/y
 const exportSpecifier = /^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/
 
 interface Identifier {
@@ -42,23 +43,43 @@ interface RuleContext {
   report(descriptor: { node: unknown; message: string }): void
 }
 
+function declarationAt(source: string, index: number): string {
+  const lineEnd = source.indexOf('\n', index)
+  return source.slice(index, lineEnd === -1 ? undefined : lineEnd).trim()
+}
+
+function unsupported(construct: string, detail: string): Error {
+  return new Error(
+    `Unsupported ${construct} '${detail}' in ${GENERATED_PACKAGE}. Update ${PLUGIN_SOURCE} to handle the generated barrel's current format.`
+  )
+}
+
 /**
  * Collect the names a barrel makes importable, taking the alias side of
- * `Foo as Bar` since that is the name a local declaration would shadow. Throws
- * on an unrecognized specifier so a generator format change surfaces as a
- * failure rather than as silently missing coverage.
+ * `Foo as Bar` since that is the name a local declaration would shadow.
+ *
+ * Every export declaration must be understood. A form this cannot read — a
+ * wildcard re-export, say — would otherwise hide names behind it while the
+ * remaining blocks still satisfy the sufficiency guard, leaving the rule
+ * quietly under-enforcing, so anything unrecognized throws instead.
  */
 export function collectExportedNames(source: string): Set<string> {
   const names = new Set<string>()
-  for (const [, block] of source.matchAll(exportTypeBlock)) {
-    for (const rawSpecifier of block.split(',')) {
+  for (const declaration of source.matchAll(exportDeclarationStart)) {
+    supportedExportBlock.lastIndex = declaration.index
+    const block = supportedExportBlock.exec(source)
+    if (!block) {
+      throw unsupported(
+        'export declaration',
+        declarationAt(source, declaration.index)
+      )
+    }
+    for (const rawSpecifier of block[1].split(',')) {
       const specifier = rawSpecifier.trim()
       if (specifier === '') continue
       const parsed = exportSpecifier.exec(specifier)
       if (!parsed) {
-        throw new Error(
-          `Unrecognized export specifier '${specifier}' in ${GENERATED_PACKAGE}. Update ${PLUGIN_SOURCE} to handle the generated barrel's current format.`
-        )
+        throw unsupported('export specifier', specifier)
       }
       names.add(parsed[2] ?? parsed[1])
     }

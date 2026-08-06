@@ -126,10 +126,30 @@ describe('collectExportedNames', () => {
   it('throws on a specifier it cannot interpret', () => {
     expect(() =>
       collectExportedNames(`export type { Alpha, 'weird-name' } from './a.gen'`)
-    ).toThrow(/Unrecognized export specifier/)
+    ).toThrow(/Unsupported export specifier/)
   })
 
-  it('yields nothing when the barrel uses a form it does not understand', () => {
-    expect(collectExportedNames(`export * from './a.gen'`).size).toBe(0)
+  it('rejects a wildcard re-export rather than skipping it', () => {
+    expect(() => collectExportedNames(`export * from './a.gen'`)).toThrow(
+      /Unsupported export declaration/
+    )
+  })
+
+  it('rejects an unreadable declaration even when other blocks are complete', () => {
+    const readable = Array.from({ length: 150 }, (_, i) => `Name${i}`).join(
+      ', '
+    )
+    expect(() =>
+      collectExportedNames(
+        `export type { ${readable} } from './types.gen'\n` +
+          `export * from './extra.gen'\n`
+      )
+    ).toThrow(/Unsupported export declaration/)
+  })
+
+  it('rejects a value export, which would not be a type contract', () => {
+    expect(() =>
+      collectExportedNames(`export { alpha } from './a.gen'`)
+    ).toThrow(/Unsupported export declaration/)
   })
 })
