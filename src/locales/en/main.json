@@ -3768,11 +3768,23 @@
   "mediaAsset": {
     "deleteAssetTitle": "Delete this asset?",
     "deleteAssetDescription": "This asset will be permanently removed.",
+    "deleteGeneratedSourceFileTitle": "Delete this source file?",
+    "deleteGeneratedSourceFileDescription": "This file will be permanently deleted from disk and removed from Generated. This action cannot be undone.",
+    "deleteSelectedGeneratedSourceFilesTitle": "Delete selected source files?",
+    "deleteSelectedGeneratedSourceFilesDescription": "{count} files will be permanently deleted from disk and removed from Generated. This action cannot be undone.",
     "deleteSelectedTitle": "Delete selected assets?",
     "deleteSelectedDescription": "{count} asset(s) will be permanently removed.",
+    "removeGeneratedAssetTitle": "Remove this asset from Generated?",
+    "removeGeneratedAssetDescription": "This asset will be removed from Generated. The file on disk will be kept.",
+    "removeSelectedGeneratedAssetsTitle": "Remove selected assets from Generated?",
+    "removeSelectedGeneratedAssetsDescription": "{count} asset(s) will be removed from Generated. The files on disk will be kept.",
+    "generatedAssetRemovedSuccessfully": "Removed from Generated; file kept on disk",
+    "selectedGeneratedAssetsRemovedSuccessfully": "{count} asset(s) removed from Generated; files kept on disk",
     "assetDeletedSuccessfully": "Asset deleted successfully",
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
     "failedToDeleteAsset": "Failed to delete asset",
+    "fileLocationOpened": "Opened the file location",
+    "failedToOpenFileLocation": "Failed to open the file location. Use ComfyUI from this computer and try again.",
     "actions": {
       "inspect": "Inspect asset",
       "more": "More options",
@@ -3781,10 +3793,12 @@
       "seeMoreOutputs": "See more outputs",
       "insertAsNodeInWorkflow": "Insert as node in workflow",
       "download": "Download",
+      "openFileLocation": "Open file location",
       "openWorkflow": "Open as workflow in new tab",
       "exportWorkflow": "Export workflow",
       "copyJobId": "Copy job ID",
-      "delete": "Delete"
+      "delete": "Delete",
+      "deleteSourceFile": "Delete source file"
     },
     "jobIdToast": {
       "jobIdCopied": "Job ID copied to clipboard",

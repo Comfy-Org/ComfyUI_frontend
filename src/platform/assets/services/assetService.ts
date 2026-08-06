@@ -223,6 +223,20 @@ function normalizeAssetTags(tags: string[]): string[] {
   return tags.map((tag) => tag.trim()).filter(Boolean)
 }
 
+function normalizeLoaderPath(loaderPath: string): string {
+  const normalized = loaderPath.replaceAll('\\', '/').replace(/^\.\/+/, '')
+  const parts = normalized.split('/')
+  if (
+    !normalized ||
+    normalized.startsWith('/') ||
+    /^[a-z]:\//i.test(normalized) ||
+    parts.includes('..')
+  ) {
+    throw new Error(`Invalid local input asset path: ${loaderPath}`)
+  }
+  return normalized
+}
+
 /**
  * Resolves the model folder a tag represents, or undefined when the tag is not
  * a folder category. `supports_model_type_tags` backends carry the category as
@@ -850,14 +864,18 @@ function createAssetService() {
 
   /**
    * Deletes an asset by ID
-   * Only available in cloud environment
    *
    * @param id - The asset ID (UUID)
+   * @param options.deleteContent - Also remove the managed local source file
    * @returns Promise<void>
    * @throws Error if deletion fails
    */
-  async function deleteAsset(id: AssetId): Promise<void> {
-    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
+  async function deleteAsset(
+    id: AssetId,
+    { deleteContent = false }: { deleteContent?: boolean } = {}
+  ): Promise<void> {
+    const suffix = deleteContent ? '?delete_content=true' : ''
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}${suffix}`, {
       method: 'DELETE'
     })
 
@@ -868,6 +886,36 @@ function createAssetService() {
     }
 
     invalidateInputAssetsIncludingPublic()
+  }
+
+  async function openAssetLocation(id: AssetId): Promise<void> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}/open-location`, {
+      method: 'POST'
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Unable to open asset location ${id}: Server returned ${res.status}`
+      )
+    }
+  }
+
+  async function deleteLocalInputAsset(loaderPath: string): Promise<void> {
+    const normalizedPath = normalizeLoaderPath(loaderPath)
+    const inputAssets = await getAllAssetsByTag(INPUT_TAG, false)
+    const matches = inputAssets.filter(
+      (asset) =>
+        asset.loader_path &&
+        normalizeLoaderPath(asset.loader_path) === normalizedPath
+    )
+
+    if (matches.length !== 1) {
+      throw new Error(
+        `Unable to resolve local input asset ${loaderPath}: found ${matches.length} matching records`
+      )
+    }
+
+    await deleteAsset(matches[0].id, { deleteContent: true })
   }
 
   /**
@@ -1214,6 +1262,8 @@ function createAssetService() {
     getInputAssetsIncludingPublic,
     invalidateInputAssetsIncludingPublic,
     deleteAsset,
+    openAssetLocation,
+    deleteLocalInputAsset,
     updateAsset,
     addAssetTags,
     removeAssetTags,

@@ -420,6 +420,54 @@ describe(assetService.deleteAsset, () => {
       expect.objectContaining({ method: 'DELETE' })
     )
   })
+
+  it('requests deletion of the managed source file', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.deleteAsset('asset-1', { deleteContent: true })
+
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/asset-1?delete_content=true',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+})
+
+describe(assetService.deleteLocalInputAsset, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('resolves a local input path to its asset id', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildAssetListResponse([
+          validAsset({
+            id: 'real-asset-uuid',
+            name: 'image.png',
+            loader_path: 'folder\\image.png',
+            tags: ['input']
+          })
+        ])
+      )
+      .mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.deleteLocalInputAsset('folder/image.png')
+
+    expect(fetchApiMock).toHaveBeenLastCalledWith(
+      '/assets/real-asset-uuid?delete_content=true',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('rejects ambiguous or missing input paths', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([]))
+
+    await expect(
+      assetService.deleteLocalInputAsset('missing.png')
+    ).rejects.toThrow(/found 0 matching records/)
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe(assetService.getAssetModels, () => {
@@ -1397,5 +1445,32 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
 
     expect(cached).toEqual(staleAssets)
     expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe(assetService.openAssetLocation, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('posts the asset id to the open-location endpoint', async () => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.openAssetLocation('generated-asset-id')
+
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/assets/generated-asset-id/open-location',
+      { method: 'POST' }
+    )
+  })
+
+  it('rejects non-success responses', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 403 })
+    )
+
+    await expect(
+      assetService.openAssetLocation('generated-asset-id')
+    ).rejects.toThrow('Server returned 403')
   })
 })
