@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -26,11 +26,20 @@ vi.mock(
   })
 )
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: vi.fn(() => ({
-    isFreeTier: { value: true }
-  }))
+const mockBilling = vi.hoisted(() => ({
+  isFreeTier: true,
+  canRunWorkflows: true
 }))
+
+vi.mock('@/composables/billing/useBillingContext', async () => {
+  const { computed } = await import('vue')
+  return {
+    useBillingContext: vi.fn(() => ({
+      isFreeTier: computed(() => mockBilling.isFreeTier),
+      canRunWorkflows: computed(() => mockBilling.canRunWorkflows)
+    }))
+  }
+})
 
 vi.mock('pinia')
 
@@ -62,14 +71,35 @@ function renderComponent() {
 }
 
 describe('TopbarSubscribeButton', () => {
-  it('renders on cloud when isFreeTier is true', () => {
+  beforeEach(() => {
     mockIsCloud.value = true
+    mockBilling.isFreeTier = true
+    mockBilling.canRunWorkflows = true
+  })
+
+  it('renders for a free-tier user who can still run', () => {
     renderComponent()
     expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
   })
 
   it('hides on non-cloud distribution', () => {
     mockIsCloud.value = false
+    renderComponent()
+    expect(
+      screen.queryByTestId('topbar-subscribe-button')
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides for a paid tier', () => {
+    mockBilling.isFreeTier = false
+    renderComponent()
+    expect(
+      screen.queryByTestId('topbar-subscribe-button')
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides when the user cannot run (e.g. free-tier quota exhausted)', () => {
+    mockBilling.canRunWorkflows = false
     renderComponent()
     expect(
       screen.queryByTestId('topbar-subscribe-button')

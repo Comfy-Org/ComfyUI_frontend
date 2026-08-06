@@ -9,6 +9,7 @@ import type {
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -54,10 +55,8 @@ const mockSubscriptionStatus: CloudSubscriptionStatusResponse = {
   end_date: FUTURE_DATE
 }
 
-// With team workspaces enabled, the facade routes a personal workspace through
-// `/api/billing/*`. The cancelled-but-active state maps to `is_active: true`
-// with `subscription_status: 'canceled'`; a paid tier keeps "Add credits"
-// visible (free tier would swap it for "Upgrade to add credits").
+// Cancelled-but-active maps to `is_active: true` with
+// `subscription_status: 'canceled'`; a paid tier keeps "Add credits" visible.
 const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
@@ -78,85 +77,112 @@ const mockBalance: CustomerBalanceResponse = {
   currency: 'usd'
 }
 
-const test = comfyPageFixture.extend({
-  page: async ({ page }, use) => {
-    await page.route('**/api/features', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockRemoteConfig)
+// Free tier: the popover swaps "Add credits" for the single contextual
+// "Upgrade" action (DES-534). A personal workspace stays on the LEGACY
+// billing backend (consolidated billing is off by default), so the tier
+// must come from the legacy status response.
+const mockFreeTierSubscriptionStatus: CloudSubscriptionStatusResponse = {
+  is_active: true,
+  subscription_id: 'sub_e2e_free',
+  subscription_tier: 'FREE',
+  renewal_date: FUTURE_DATE
+}
+
+function extendWithWorkspaceMocks(
+  legacyStatus: CloudSubscriptionStatusResponse
+) {
+  return comfyPageFixture.extend({
+    page: async ({ page }, use) => {
+      // teamWorkspacesEnabled is auth-gated and stays false until the
+      // authenticated remote config loads; seed the cached flag (what a
+      // returning user has) so the workspace popover — not the legacy one —
+      // is what these tests exercise.
+      await page.addInitScript(() => {
+        localStorage.setItem('team_workspaces_enabled', 'true')
       })
-    )
 
-    await page.route('**/api/workspaces', async (route) => {
-      if (route.request().method() !== 'GET') {
-        await route.fallback()
-        return
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockListWorkspacesResponse)
+      await page.route('**/api/features', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockRemoteConfig)
+        })
+      )
+
+      await page.route('**/api/workspaces', async (route) => {
+        if (route.request().method() !== 'GET') {
+          await route.fallback()
+          return
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockListWorkspacesResponse)
+        })
       })
-    })
 
-    await page.route('**/api/auth/token', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockTokenResponse)
-      })
-    )
+      await page.route('**/api/auth/token', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockTokenResponse)
+        })
+      )
 
-    await page.route('**/api/auth/session', (route) =>
-      route.fulfill({ status: 204 })
-    )
+      await page.route('**/api/auth/session', (route) =>
+        route.fulfill({ status: 204 })
+      )
 
-    await page.route('**/customers/cloud-subscription-status', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockSubscriptionStatus)
-      })
-    )
+      await page.route('**/customers/cloud-subscription-status', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(legacyStatus)
+        })
+      )
 
-    await page.route('**/customers/balance', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBalance)
-      })
-    )
+      await page.route('**/customers/balance', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockBalance)
+        })
+      )
 
-    // Flag-on (team workspaces enabled) routes a personal workspace through the
-    // workspace billing endpoints, so the popover sources its data from here.
-    await page.route('**/api/billing/status', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBillingStatus)
-      })
-    )
+      // A personal workspace stays on legacy billing (consolidated billing
+      // defaults off), so the popover's tier/status come from /customers/*
+      // above; these workspace endpoints are mocked so bootstrap never 404s.
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockBillingStatus)
+        })
+      )
 
-    await page.route('**/api/billing/balance', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBalance)
-      })
-    )
+      await page.route('**/api/billing/balance', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockBalance)
+        })
+      )
 
-    await page.route('**/api/billing/plans', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ plans: [] })
-      })
-    )
+      await page.route('**/api/billing/plans', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ plans: [] })
+        })
+      )
 
-    await use(page)
-  }
-})
+      await use(page)
+    }
+  })
+}
+
+const test = extendWithWorkspaceMocks(mockSubscriptionStatus)
+const freeTierTest = extendWithWorkspaceMocks(mockFreeTierSubscriptionStatus)
 
 test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
   test('keeps both action buttons inside the popover when cancelled but active', async ({
@@ -185,3 +211,37 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
   })
 })
+
+freeTierTest.describe(
+  'Current user popover credits row — free tier',
+  { tag: '@cloud' },
+  () => {
+    freeTierTest(
+      'workspace popover shows the single contextual Upgrade action',
+      async ({ comfyPage }) => {
+        const page = comfyPage.page
+
+        await comfyPage.toast.closeToasts()
+        await page.getByTestId(TestIds.user.currentUserButton).click()
+
+        const popover = page.getByTestId(TestIds.user.currentUserPopover)
+        await expect(popover).toBeVisible()
+        // Both popovers share the container test id and, after this PR, the
+        // upgrade button too — so pin the workspace one before asserting on
+        // it, or a broken flag seed would silently test the legacy popover.
+        await expect(
+          popover.getByTestId('workspace-switcher-trigger')
+        ).toBeVisible()
+
+        // DES-534: one toned-down "Upgrade" action; plain "Add credits" is
+        // paid-tier only.
+        const upgrade = popover.getByTestId(
+          TestIds.user.upgradeToAddCreditsButton
+        )
+        await expect(upgrade).toBeVisible()
+        await expect(upgrade).toHaveText('Upgrade')
+        await expect(popover.getByTestId('add-credits-button')).toBeHidden()
+      }
+    )
+  }
+)

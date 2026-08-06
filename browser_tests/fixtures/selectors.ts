@@ -257,7 +257,8 @@ export const TestIds = {
   user: {
     currentUserButton: 'current-user-button',
     currentUserIndicator: 'current-user-indicator',
-    currentUserPopover: 'current-user-popover'
+    currentUserPopover: 'current-user-popover',
+    upgradeToAddCreditsButton: 'upgrade-to-add-credits-button'
   },
   queue: {
     jobHistorySidebar: 'job-history-sidebar',

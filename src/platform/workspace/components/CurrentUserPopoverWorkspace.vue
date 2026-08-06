@@ -81,17 +81,17 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
-      <!-- Upgrade to add credits (free tier) -->
       <Button
         v-if="
           canAccessSubscriptionFeatures && permissions.canTopUp && isFreeTier
         "
-        variant="subscribe"
+        variant="secondary"
         size="sm"
+        class="text-base-foreground"
         data-testid="upgrade-to-add-credits-button"
         @click="handleUpgradeToAddCredits"
       >
-        {{ $t('subscription.upgradeToAddCredits') }}
+        {{ $t('subscription.subscribeForMore') }}
       </Button>
       <Button
         v-else-if="canAccessSubscriptionFeatures && permissions.canTopUp"

@@ -189,12 +189,19 @@
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
         v-if="billingPolicyCapabilities.showsSubscribeUpsellUI"
-        variant="subscribe"
+        :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
-        class="w-full font-normal"
+        :class="
+          cn(
+            'w-full font-normal',
+            !isOutOfCredits &&
+              'bg-interface-menu-component-surface-selected text-text-primary'
+          )
+        "
+        data-testid="upgrade-for-more-credits-button"
         @click="handleUpgradeToAddCredits"
       >
-        {{ $t('subscription.upgradeToAddCredits') }}
+        {{ $t('subscription.subscribeForMore') }}
       </Button>
       <Button
         v-else

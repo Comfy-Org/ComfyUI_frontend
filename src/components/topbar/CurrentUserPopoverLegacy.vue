@@ -52,12 +52,13 @@
       </Button>
       <Button
         v-if="isCloud && isFreeTier"
-        variant="subscribe"
+        variant="secondary"
         size="sm"
+        class="text-base-foreground"
         data-testid="upgrade-to-add-credits-button"
         @click="handleUpgradeToAddCredits"
       >
-        {{ $t('subscription.upgradeToAddCredits') }}
+        {{ $t('subscription.subscribeForMore') }}
       </Button>
       <Button
         v-else
@@ -105,12 +106,6 @@
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.plansAndPricing')
       }}</span>
-      <span
-        v-if="canUpgrade"
-        class="rounded-full bg-base-foreground px-1.5 py-0.5 text-xs font-bold text-base-background"
-      >
-        {{ $t('subscription.upgrade') }}
-      </span>
     </div>
 
     <div
@@ -218,16 +213,6 @@ const formattedBalance = computed(() => {
       maximumFractionDigits: 2
     }
   })
-})
-
-const canUpgrade = computed(() => {
-  const currentTier = tier.value
-  return (
-    currentTier === 'FREE' ||
-    currentTier === 'FOUNDERS_EDITION' ||
-    currentTier === 'STANDARD' ||
-    currentTier === 'CREATOR'
-  )
 })
 
 const planAndCreditsLabel = computed(() =>

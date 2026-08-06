@@ -57,6 +57,9 @@ unsubscribedTest.describe(
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).toBeVisible()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
+        ).toBeHidden()
       }
     )
 
@@ -180,10 +183,15 @@ freeTierTest.describe(
   { tag: '@cloud' },
   () => {
     freeTierTest(
-      'Topbar subscribe button visible for free tier',
-      async ({ comfyPage }) => {
+      'Topbar Upgrade visible while a free-tier user can still run',
+      async ({ comfyPage, subscriptionHelper }) => {
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
+        ).toBeVisible()
+
+        const popover = await subscriptionHelper.openUserPopover()
+        await expect(
+          popover.getByTestId(TestIds.user.upgradeToAddCreditsButton)
         ).toBeVisible()
       }
     )

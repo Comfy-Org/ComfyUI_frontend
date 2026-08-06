@@ -49,8 +49,8 @@ const i18n = createI18n({
   messages: {
     en: {
       subscription: {
-        subscribeToRun: 'Subscribe',
-        subscribeToRunFull: 'Subscribe to Run',
+        upgradeToRun: 'Upgrade',
+        upgradeToRunFull: 'Upgrade to Run',
         inactive: {
           runLabel: 'Run',
           memberRunTooltip: 'Contact your workspace owner to resubscribe'
@@ -78,11 +78,11 @@ describe('SubscribeToRun', () => {
     mockIsMdOrLarger.value = true
   })
 
-  it('shows the subscribe label for owners who can manage the subscription', () => {
+  it('shows the upgrade label for owners who can manage the subscription', () => {
     renderButton()
 
     expect(screen.getByTestId('subscribe-to-run-button')).toHaveTextContent(
-      'Subscribe to Run'
+      'Upgrade to Run'
     )
   })
 
@@ -91,8 +91,9 @@ describe('SubscribeToRun', () => {
     renderButton()
 
     const button = screen.getByTestId('subscribe-to-run-button')
-    expect(button).toHaveTextContent('Run')
-    expect(button).not.toHaveTextContent('Subscribe')
+    // Exact match: a substring check on 'Run' would also pass for the owner
+    // label 'Upgrade to Run'.
+    expect(button).toHaveTextContent(/^Run$/)
   })
 
   it('opens the subscription dialog for owners on click', async () => {
