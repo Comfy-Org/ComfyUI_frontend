@@ -11,7 +11,7 @@
         role="group"
       />
       <DialogClose>
-        <Button variant="muted-textonly" size="md">
+        <Button variant="outline" size="md">
           {{ t('g.close') }}
           <i class="icon-[lucide--x] size-4" />
         </Button>
