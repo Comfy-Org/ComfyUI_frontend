@@ -123,6 +123,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'require',
   'resolve',
   'sameEntity',
+  'selection',
   'selector',
   'self',
   'serialize',

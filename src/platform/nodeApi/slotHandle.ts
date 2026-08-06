@@ -115,6 +115,16 @@ export interface SlotCollection<THandle> {
   all(): readonly THandle[]
   ids(): readonly SlotId[]
   names(): readonly string[]
+  /**
+   * Adds a slot. 18 packs grow their inputs as the last one fills — the
+   * "Multi" combiner pattern — which needed `node.addInput` until now.
+   */
+  add(name: string, type: string): THandle
+  /**
+   * Removes a slot by reference. Any link into it is dropped, as it would be
+   * on the legacy path.
+   */
+  remove(ref: SlotRef): boolean
   [Symbol.iterator](): Iterator<THandle>
 }
 
@@ -396,7 +406,11 @@ function createOutputHandle(
 
 function createCollection<THandle>(
   getSlots: () => readonly (INodeInputSlot | INodeOutputSlot)[],
-  makeHandle: (slotId: SlotId) => THandle
+  makeHandle: (slotId: SlotId) => THandle,
+  mutate: {
+    add: (name: string, type: string) => void
+    remove: (index: number) => void
+  }
 ): SlotCollection<THandle> {
   const handleAt = (index: number) => {
     const slot = getSlots()[index]
@@ -409,6 +423,22 @@ function createCollection<THandle>(
     },
     get: (ref) => handleAt(resolveSlotRef(getSlots(), ref)),
     byId: (id) => handleAt(resolveSlotRef(getSlots(), id)),
+    add(name, type) {
+      mutate.add(name, type)
+      const handle = handleAt(getSlots().length - 1)
+      if (!handle) {
+        throw new ComfyApiError(
+          `Adding slot '${name}' produced nothing — the node may no longer exist.`
+        )
+      }
+      return handle
+    },
+    remove(ref) {
+      const index = resolveSlotRef(getSlots(), ref)
+      if (index < 0 || index >= getSlots().length) return false
+      mutate.remove(index)
+      return true
+    },
     byName(name) {
       const slots = getSlots()
       const matches = slots.filter((s) => s.name === name)
@@ -438,7 +468,11 @@ export function createInputCollection(
 ): SlotCollection<InputSlotHandle> {
   return createCollection(
     () => getNode()?.inputs ?? [],
-    (slotId) => createInputHandle(getGraph, getNode, slotId)
+    (slotId) => createInputHandle(getGraph, getNode, slotId),
+    {
+      add: (name, type) => getNode()?.addInput(name, type),
+      remove: (index) => getNode()?.removeInput(index)
+    }
   )
 }
 
@@ -448,6 +482,10 @@ export function createOutputCollection(
 ): SlotCollection<OutputSlotHandle> {
   return createCollection(
     () => getNode()?.outputs ?? [],
-    (slotId) => createOutputHandle(getGraph, getNode, slotId)
+    (slotId) => createOutputHandle(getGraph, getNode, slotId),
+    {
+      add: (name, type) => getNode()?.addOutput(name, type),
+      remove: (index) => getNode()?.removeOutput(index)
+    }
   )
 }
