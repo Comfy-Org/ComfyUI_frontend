@@ -1208,7 +1208,12 @@ export class LGraphNode
     if (this.properties) o.properties = LiteGraph.cloneObject(this.properties)
 
     const { widgets } = this
-    if (widgets?.length && this.serialize_widgets) {
+    // Only when something will actually be written. A node whose widgets all
+    // opt out of serialization used to emit an empty `widgets_values`, which
+    // load treats as a no-op but which still changes the saved bytes — and
+    // mounting a canvas widget was enough to make it appear on a node that
+    // previously had no widgets at all.
+    if (widgets?.some((w) => w.serialize !== false) && this.serialize_widgets) {
       o.widgets_values = []
       o.widgets_values_named = {}
       for (const [i, widget] of widgets.entries()) {

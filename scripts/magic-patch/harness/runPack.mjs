@@ -44,7 +44,7 @@ export async function runPack({
   apiMajor = 1
 }) {
   registry.reset()
-  installGlobals()
+  await installGlobals()
 
   const loadErrors = []
   for (const entry of entries) {
@@ -117,7 +117,17 @@ export async function runPack({
     // and only when unset so a pack's own choice still wins.
     node.serialize_widgets ??= true
 
-    registry.graph.add(node)
+    // Isolated: `add` runs the pack's onCreated, and an exception there was
+    // propagating out of the whole run — one node's mistake reported as the
+    // entire pack failing to register, with nothing naming the node. Attribute
+    // it and keep driving the other types.
+    try {
+      registry.graph.add(node)
+    } catch (error) {
+      driveErrors.push(`add:${type}: ${error?.message ?? error}`)
+      constructed[type] = false
+      continue
+    }
     try {
       node.onExecuted?.(SYNTHETIC_MESSAGE)
     } catch (error) {

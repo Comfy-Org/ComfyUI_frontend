@@ -29,15 +29,16 @@ export function chainCallback(object, property, callback) {
   }
 }
 
-export function hideWidgetForGood(node, widget, suffix = '') {
-  widget.origType = widget.type
-  widget.origComputeSize = widget.computeSize
-  widget.origSerializeValue = widget.serializeValue
-  widget.computeSize = () => [0, -4]
-  widget.type = "converted-widget" + suffix
+// `node` is a NodeHandle. Hiding is a real property now, so the origType /
+// origComputeSize / origSerializeValue bookkeeping — nothing ever read it
+// back — and the [0, -4] size hack go away with it.
+export function hideWidgetForGood(node, widget) {
+  const handle = node.widgets.get(widget.name)
+  if (!handle) return console.warn(`hideWidgetForGood: no widget "${widget.name}"`)
+  handle.setHidden(true)
   if (widget.linkedWidgets) {
     for (const w of widget.linkedWidgets) {
-      hideWidgetForGood(node, w, ':' + widget.name)
+      hideWidgetForGood(node, w)
     }
   }
 }

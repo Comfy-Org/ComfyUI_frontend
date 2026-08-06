@@ -23,7 +23,39 @@ import * as ui from './ui.mjs'
 import * as utils from './utils.mjs'
 import * as widgets from './widgets.mjs'
 
-export function installGlobals() {
+/**
+ * A DOM, so mounted and canvas widgets can run.
+ *
+ * `widgets.canvas` and `widgets.mount` are where the API sends every draw
+ * callback, so without this the harness cannot verify the single largest class
+ * of conversion — it threw at `addDOMWidget` and took the node with it.
+ */
+async function installDom() {
+  if (globalThis.document) return
+  const { Window } = await import('happy-dom')
+  const win = new Window({ url: 'http://localhost' })
+  for (const key of [
+    'document',
+    'HTMLElement',
+    'HTMLCanvasElement',
+    'Element',
+    'Node',
+    'CustomEvent',
+    'ResizeObserver',
+    'getComputedStyle'
+  ]) {
+    if (!globalThis[key] && win[key]) globalThis[key] = win[key]
+  }
+  globalThis.window = Object.assign(globalThis.window ?? globalThis, {
+    document: win.document,
+    getComputedStyle: win.getComputedStyle?.bind(win)
+  })
+  globalThis.document = win.document
+}
+
+export async function installGlobals() {
+  await installDom()
+  await import('@/scripts/domWidget')
   const comfyAPI = {
     app: { app, ComfyApp: app.constructor ?? function ComfyApp() {} },
     api: { api },
