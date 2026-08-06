@@ -603,6 +603,41 @@ describe('useLayerEditorSession', () => {
       session.setCanvasSize(1, 99999)
       expect(session.canvasSize.value).toEqual({ w: 64, h: 8192 })
     })
+
+    it('grows the artboard in place without refitting the view', async () => {
+      const { session } = await loadedSession()
+      const els = makeElements()
+      session.setElements(els)
+      const zoom = session.zoomRatio.value
+      const { left, top } = els.container.style
+
+      session.setCanvasSize(128, 96)
+      expect(session.zoomRatio.value).toBe(zoom)
+      expect(els.container.style.left).toBe(left)
+      expect(els.container.style.top).toBe(top)
+      expect(parseFloat(els.container.style.width)).toBeCloseTo(128 * zoom)
+      expect(parseFloat(els.container.style.height)).toBeCloseTo(96 * zoom)
+    })
+
+    it('keeps the container in sync with the document across undo/redo', async () => {
+      const { session } = await loadedSession()
+      const els = makeElements()
+      session.setElements(els)
+      const zoom = session.zoomRatio.value
+      session.setCanvasSize(128, 96)
+
+      session.undo()
+      await flushFrames()
+      expect(parseFloat(els.container.style.width)).toBeCloseTo(64 * zoom)
+      expect(parseFloat(els.container.style.height)).toBeCloseTo(48 * zoom)
+      expect(els.main.width).toBe(64)
+      expect(els.main.height).toBe(48)
+
+      session.redo()
+      await flushFrames()
+      expect(parseFloat(els.container.style.width)).toBeCloseTo(128 * zoom)
+      expect(els.main.width).toBe(128)
+    })
   })
 
   describe('layer transform edits', () => {

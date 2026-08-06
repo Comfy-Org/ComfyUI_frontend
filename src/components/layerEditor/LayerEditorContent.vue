@@ -112,6 +112,7 @@ async function loadCompositorLayers(): Promise<void> {
   if (initialState) {
     applyLayerState(initialState, session.imageLayers.value, session)
     session.editor.history.clear()
+    session.fitView()
   }
 }
 

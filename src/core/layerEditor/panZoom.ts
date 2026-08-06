@@ -8,6 +8,7 @@ export interface PanZoom {
   setZoom: (ratio: number) => void
   invalidate: () => void
   fit: (artW: number, artH: number) => void
+  setArtboardSize: (artW: number, artH: number) => void
   panBy: (dx: number, dy: number) => void
   handleWheel: (e: WheelEvent) => void
   screenToArtboard: (
@@ -49,6 +50,13 @@ export function createPanZoom(getEls: () => PanZoomEls | null): PanZoom {
     zoomRatio = Math.max(0.01, zoom)
     panX = (availW - artW * zoomRatio) / 2
     panY = (availH - artH * zoomRatio) / 2
+    invalidate()
+  }
+
+  function setArtboardSize(w: number, h: number): void {
+    if (w === artW && h === artH) return
+    artW = w
+    artH = h
     invalidate()
   }
 
@@ -106,6 +114,7 @@ export function createPanZoom(getEls: () => PanZoomEls | null): PanZoom {
     setZoom,
     invalidate,
     fit,
+    setArtboardSize,
     panBy,
     handleWheel,
     screenToArtboard,

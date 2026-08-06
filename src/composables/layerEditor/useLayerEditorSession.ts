@@ -601,6 +601,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
       doc.width = v.w
       doc.height = v.h
       if (glOk.value) compositor.resize(v.w, v.h)
+      panZoom.setArtboardSize(v.w, v.h)
     }
     apply({ w: width, h: height })
     editor.history.push(
@@ -614,7 +615,6 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
       )
     )
     editor.invalidate()
-    fitView()
   }
 
   function pushLayerTransform(
