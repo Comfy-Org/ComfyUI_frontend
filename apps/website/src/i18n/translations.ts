@@ -5263,7 +5263,18 @@ const translations = {
     en: 'Senior creatives who embed with your team, build your production ComfyUI workflows, and teach your team to run them.',
     'zh-CN':
       '资深创意专家驻场加入你的团队，为你构建生产级 ComfyUI 工作流，并教会你的团队独立运行。'
-  }
+  },
+  'fdct.hero.title': {
+    en: 'Comfy Forward Deployed Creative Technologists',
+    'zh-CN': 'Comfy 前沿驻场创意技术专家'
+  },
+  'fdct.hero.subtitle': {
+    en: 'Senior creatives who embed with your team, build your production ComfyUI workflows, and teach your team to run them.',
+    'zh-CN':
+      '资深创意专家驻场加入你的团队，为你构建生产级 ComfyUI 工作流，并教会你的团队独立运行。'
+  },
+  'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
+  'fdct.hero.applyCta': { en: 'Apply as an FDCT', 'zh-CN': '申请成为 FDCT' }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations

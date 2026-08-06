@@ -58,9 +58,6 @@ const config: KnipConfig = {
     // Pending integration: consumed by the useWorkspaceInvoices seam once
     // #13591 (Plan & Credits tabs) lands — FE-1245
     'src/composables/billing/useNextInvoice.ts',
-    // Pending integration: FDCT page data module, consumed once the /fdct
-    // section slices (hero, CTA bands) land on the page skeleton
-    'apps/website/src/data/fdct.ts',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
