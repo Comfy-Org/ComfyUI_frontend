@@ -83,6 +83,40 @@ const BUILTIN_MEMBERS: ReadonlySet<string> = new Set(
 )
 
 /**
+ * Symbols whose disappearance is the point of the conversion.
+ *
+ * Everything else vanishing from a file is a regression until someone says
+ * otherwise: these are the surfaces being retired, plus the bookkeeping that
+ * only ever existed to undo them.
+ */
+const RETIRED: ReadonlySet<string> = new Set([
+  // the converted-widget protocol and its restore bookkeeping
+  'origType',
+  'origComputeSize',
+  'origSerializeValue',
+  'computeSize',
+  // legacy registration and prototype patching
+  'registerExtension',
+  'beforeRegisterNodeDef',
+  'registerNodeType',
+  'registerCustomNodes',
+  'apply',
+  'call',
+  'prototype',
+  // widget internals with published replacements
+  'serializeValue',
+  'inputEl',
+  'onRemove',
+  'length',
+  'push',
+  'splice',
+  'filter',
+  'find',
+  'findIndex',
+  'indexOf'
+])
+
+/**
  * A mutating call reached through `?.`, so a failed lookup silently skips it.
  * Reads are fine — `?.getValue()` yielding undefined is visible to the caller.
  */
@@ -232,6 +266,52 @@ const checks: readonly Check[] = [
             'no-unknown-api-members',
             'passed',
             'No net-new members outside the API.'
+          )
+    }
+  },
+  {
+    id: 'no-dropped-behaviour',
+    description:
+      'Lists what left the file, so lost functionality has to be accounted for rather than overlooked.',
+    run: (ctx) => {
+      // Symbols the original wrote or called that the conversion no longer
+      // mentions. kjnodes dropped origType, origComputeSize and
+      // origSerializeValue this way, and the loss was invisible to every other
+      // check — the file still parsed, still loaded, still registered.
+      const symbols = (source: string) =>
+        new Set([
+          ...[...source.matchAll(/\.([A-Za-z_]\w*)\s*=(?!=)/g)].map(
+            (m) => m[1]
+          ),
+          ...[...source.matchAll(/\.([A-Za-z_]\w*)\s*\(/g)].map((m) => m[1]),
+          ...[...source.matchAll(/\bfunction\s+([A-Za-z_]\w*)/g)].map(
+            (m) => m[1]
+          )
+        ])
+
+      const before = symbols(ctx.original)
+      const after = symbols(ctx.converted)
+      const missing = [...before].filter(
+        (name) => !after.has(name) && !RETIRED.has(name)
+      )
+      // Reported, not gated. Most disappearances are renames onto the new API
+      // — readOnly and opacity become disabled, value becomes setValue — and
+      // failing on those would block correct work. The list is here so the
+      // agent accounts for each one in its summary, and so a reviewer can see
+      // what left the file.
+      return missing.length
+        ? result(
+            'no-dropped-behaviour',
+            'passed',
+            `Gone from the file: ${missing.sort().join(', ')}. ` +
+              `Each should be a rename onto the published API or genuinely ` +
+              `obsolete; say which in the summary. Anything else is lost ` +
+              `functionality, which makes the conversion wrong.`
+          )
+        : result(
+            'no-dropped-behaviour',
+            'passed',
+            'Nothing the original did went missing.'
           )
     }
   },
