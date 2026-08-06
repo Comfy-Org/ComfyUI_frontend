@@ -70,6 +70,7 @@ export interface PreviewFrame {
   readonly url: string
 }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   readonly index: number

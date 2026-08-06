@@ -23,6 +23,25 @@ with a count.
 
 ---
 
+## Adding to the API
+
+Any capability added to `src/platform/nodeApi/` is finished only when the skill
+can teach it. Three things, in the same change:
+
+1. **A capability entry** in `CAPABILITIES` (`comfyApi.ts`), so `supports()`
+   answers honestly and `apiSurface.ts` regenerates.
+2. **An intent rule** in `SKILL.md` — _"if you are converting X, check whether
+   it is for Y, and use Z"_. Not a mapping table entry. Agents convert what they
+   recognise, and they recognise intent, not call names. `onPreview` is the
+   example: an agent asked for `api.addEventListener`, which is a faithful port
+   of the shape that causes the problem.
+3. **A reference example** in `references/` if the shape is not obvious from one
+   line.
+
+An API the skill cannot teach converts nothing. It shows up as an `api-gap`
+punt naming a capability that already exists, which is worse than a real gap
+because it looks like a missing feature.
+
 ## 0. The shape
 
 **One generator, two sinks.** The patch engine is identical either way; only where
