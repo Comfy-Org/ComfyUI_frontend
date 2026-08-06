@@ -357,6 +357,20 @@ can never fire for one. Keep the widget itself (`widgets.add({ type: 'button',
 name, value: null })`) — its `widgets_values` entry is positional, and dropping
 it shifts every widget after it.
 
+**If you are converting `registerExtension({ commands, keybindings })` or
+`app.extensionManager.toast`** — **use `comfy.commands`**:
+`register({ id, label, run, keybinding })` declares the command and binds its
+key together, and `notify({ severity, summary, detail })` raises a toast. Ids
+must be namespaced. The key is registered as a _default_, so a user's own
+binding survives the pack re-registering on every load.
+
+**If you are converting `api.apiURL(...)` or `api.addEventListener(...)`** —
+**use `comfy.backend`**: `url('/view?…')` builds a route that honours how the
+host is served, and `on(event, detail => …)` subscribes to any backend message,
+including one your own Python side emits. For the built-in preview channel
+prefer `b.onPreview`, which answers "is this frame for my node?" — `backend.on`
+hands you the raw payload and leaves correlation to you.
+
 **If you are converting `app.ui.settings.getSettingValue` / `addSetting`, or a
 `settings: [...]` array in `registerExtension`** — **use `comfy.settings`**:
 `declare({ id, name, type, defaultValue })` once at load, then `get(id)` and
