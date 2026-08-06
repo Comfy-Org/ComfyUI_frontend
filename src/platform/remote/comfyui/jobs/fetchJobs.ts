@@ -127,6 +127,7 @@ async function fetchJobsRaw(
           )
         }
       } else {
+        authBackoff.recordNonAuthFailure()
         console.error(
           `[Jobs API] Failed to fetch jobs (${res.status}): ${await readErrorDetail(res)}`
         )
@@ -143,6 +144,7 @@ async function fetchJobsRaw(
       hasMore: data.pagination.has_more
     }
   } catch (error) {
+    authBackoff.recordNonAuthFailure()
     console.error('[Jobs API] Error fetching jobs:', error)
     return EMPTY_RESULT(offset, maxItems)
   }
