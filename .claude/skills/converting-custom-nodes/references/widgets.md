@@ -39,7 +39,7 @@ Removed and reinserted **at the same index** — the array is unchanged. This is
 cache invalidation, not reordering. It converts to:
 
 ```js
-node.widgets.get(name).setOptions(newOpts)
+node.widgets.get(name).setOption('values', newValues)
 ```
 
 The hack disappears: invalidation is the API's problem now. A converter that
@@ -155,9 +155,14 @@ and the `def` is plain data — no `node`, no `app`, no return-value unwrapping:
 
 ```js
 // before
-const w = ComfyWidgets.STRING(this, 'text', ['STRING', { multiline: true }], app).widget
-widget element.readOnly = true
-widget element.style.opacity = 0.6
+const w = ComfyWidgets.STRING(
+  this,
+  'text',
+  ['STRING', { multiline: true }],
+  app
+).widget
+w.inputEl.readOnly = true
+w.inputEl.style.opacity = 0.6
 
 // after
 const widget = node.widgets.add({
@@ -260,24 +265,30 @@ freeze its result — pinning a dynamic combo to a one-time snapshot, silently.
 
 ## `getCustomWidgets` — 91 packs
 
-Returning plain objects the store never sees. Replaced by explicit registration:
+Returning plain objects the store never sees. The widget is mounted on the node
+that needs it instead of registered as a global type:
 
 ```js
-comfy.widgets.register({
-  type: 'MY.SLIDER',
-  defaultValue: 0,
-  mount(el, ctx) {
-    /* build DOM, call ctx.setValue on change */
-    return () => {
-      /* cleanup */
-    }
+node.widgets.mount({
+  name: 'slider',
+  height: 40,
+  render(container) {
+    /* build DOM; call widget.setValue on change */
+  },
+  destroy() {
+    /* release listeners, timers, observers */
   }
 })
 ```
 
-`mount` rather than a Vue component, deliberately: packs bundle their own Vue
-since ADR 0005, and a component from a foreign Vue instance cannot be mounted.
-A mount function is framework-agnostic and sidesteps the dual-instance problem.
+`render` receives the container and gets a plain DOM element, deliberately:
+packs bundle their own Vue since ADR 0005, and a component from a foreign Vue
+instance cannot be mounted. A render function is framework-agnostic and
+sidesteps the dual-instance problem.
+
+There is no global widget-type registry. If a pack genuinely needs one type
+reused across many node types, mount it from a shared helper — that is the
+supported shape, not a workaround.
 
 ## Traps summary
 

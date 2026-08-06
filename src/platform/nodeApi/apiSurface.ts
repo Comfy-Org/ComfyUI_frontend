@@ -12,6 +12,7 @@
  */
 export const API_MEMBERS: ReadonlySet<string> = new Set([
   'add',
+  'addMenuItem',
   'addWidget',
   'adopt',
   'all',
@@ -102,6 +103,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'nodes',
   'nodesOfType',
   'on',
+  'onBeforeConnect',
   'onConfigured',
   'onConnectionsChanged',
   'onCreated',
@@ -111,6 +113,8 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'onSerialize',
   'options',
   'outputs',
+  'peerNodeId',
+  'peerType',
   'pinned',
   'position',
   'props',
@@ -122,6 +126,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'reorder',
   'require',
   'resolve',
+  'run',
   'sameEntity',
   'selection',
   'selector',
