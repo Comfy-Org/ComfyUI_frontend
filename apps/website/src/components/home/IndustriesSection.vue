@@ -159,7 +159,7 @@ const ambientClipId = `industries-ambient-${uid}`
             type="button"
             :class="
               cn(
-                'flex cursor-pointer items-baseline gap-4 text-left text-3xl font-light transition-colors outline-none md:text-4xl',
+                'relative flex cursor-pointer items-baseline text-left text-3xl font-light transition-colors outline-none md:text-4xl',
                 index === activeIndex
                   ? 'text-primary-comfy-yellow'
                   : 'text-primary-comfy-canvas/60 hover:text-primary-comfy-canvas focus-visible:text-primary-comfy-canvas'
@@ -170,9 +170,11 @@ const ambientClipId = `industries-ambient-${uid}`
             @mouseenter="select(index)"
             @focus="select(index)"
           >
+            <!-- Positioned out of flow so the label never shifts when the
+            marker appears. -->
             <span
               v-if="index === activeIndex"
-              class="bg-primary-comfy-yellow size-2.5 shrink-0 self-center rounded-full"
+              class="bg-primary-comfy-yellow absolute top-1/2 -left-6 size-2.5 -translate-y-1/2 rounded-full"
             />
             {{ industry.label }}
           </button>
