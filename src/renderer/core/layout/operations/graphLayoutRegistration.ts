@@ -385,6 +385,21 @@ export function adoptNodeLayout(
   return 'applied'
 }
 
+export function adoptRerouteLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  reroute: Reroute
+): LayoutOperationResult {
+  const registrationId = layoutStore.getRegistrationId(
+    'reroute',
+    graph.rootGraph.id,
+    reroute.id
+  )
+  if (registrationId === undefined) return 'no-op'
+
+  rerouteRegistrationIds.set(reroute, registrationId)
+  return 'applied'
+}
+
 export function moveNodeLayout(node: LGraphNode, position: Point): void {
   const registration = nodeRegistrations.get(node)
   if (!registration) return

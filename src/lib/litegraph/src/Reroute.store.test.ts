@@ -24,6 +24,7 @@ import {
   LayoutOperationError,
   layoutStore
 } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { toRerouteId } from '@/types/rerouteId'
@@ -330,6 +331,42 @@ describe('Reroute position lives only in layoutStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
+  })
+
+  it('adopts stored ownership when materialized from serialized data', () => {
+    const { graph, link } = connectedGraph()
+    const rerouteId = toRerouteId(37)
+    layoutStore.applyOperation({
+      actor: 'remote-peer',
+      entity: 'reroute',
+      graphId: graph.rootGraph.id,
+      position: { x: 500, y: 300 },
+      registrationId: 'remote-peer',
+      rerouteId,
+      source: LayoutSource.External,
+      timestamp: Date.now(),
+      type: 'createReroute'
+    })
+    const data = graph.asSerialisable()
+    data.version = 1
+    data.reroutes = [{ id: rerouteId, pos: [100, 100], linkIds: [] }]
+    const serializedLink = data.links?.find(({ id }) => id === link.id)
+    if (!serializedLink) throw new Error('Expected serialized link')
+    serializedLink.parentId = rerouteId
+
+    graph.configure(data)
+
+    const reroute = graph.reroutes.get(rerouteId)!
+    expect([...reroute.pos]).toEqual([500, 300])
+
+    reroute.pos = [600, 300]
+
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, rerouteId)?.position
+    ).toEqual({ x: 600, y: 300 })
+    expect(
+      layoutStore.getRegistrationId('reroute', graph.rootGraph.id, rerouteId)
+    ).toBe('remote-peer')
   })
 
   it('keeps constructor geometry transient until registration', () => {
