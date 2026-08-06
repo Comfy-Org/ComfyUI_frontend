@@ -4,7 +4,6 @@ import type { Document } from './engine/document'
 import { registerBuiltinKinds } from './engine/kinds'
 import { defaultMode } from './engine/mode'
 import type { GroupData, SceneNode } from './engine/node'
-import { rectPath } from './engine/vector'
 import {
   buildPsd,
   leafPlacedBounds,
@@ -172,86 +171,7 @@ describe('buildPsd basics', () => {
   })
 })
 
-describe('buildPsd adjustment layers', () => {
-  it('writes real adjustment data', async () => {
-    const adj = base('adjustment', {
-      name: 'Levels',
-      op: 'levels',
-      params: { inBlack: 0.1, inWhite: 1, gamma: 1, outBlack: 0, outWhite: 1 }
-    })
-    const layer = (await buildPsd(doc([adj]), deps())).children![0]
-    expect(layer.canvas).toBeUndefined()
-    expect(layer.adjustment).toMatchObject({
-      type: 'levels',
-      rgb: { shadowInput: 26 }
-    })
-  })
-
-  it('keeps placeholder for unknown adjustment op', async () => {
-    const adj = base('adjustment', { name: 'X', op: 'bogus', params: {} })
-    const layer = (await buildPsd(doc([adj]), deps())).children![0]
-    expect(layer.adjustment).toBeUndefined()
-    expect(layer.name).toBe('X')
-  })
-})
-
 describe('buildPsd rich layers', () => {
-  it('writes editable text data', async () => {
-    const text = base('text', {
-      text: 'Hello',
-      fontRef: { kind: 'builtin', id: 'inter' },
-      fontSize: 20,
-      color: '#ff0000',
-      letterSpacing: 2,
-      lineHeight: 1.5,
-      align: 'center',
-      transform: { x: 5, y: 7, w: 100, h: 30, rotation: 0 }
-    })
-    const layer = (
-      await buildPsd(doc([text]), deps({ fontName: () => 'Inter Display' }))
-    ).children![0]
-    expect(layer.text).toBeTruthy()
-    expect(layer.text!.text).toBe('Hello')
-    expect(layer.text!.style).toMatchObject({
-      font: { name: 'Inter Display' },
-      fontSize: 20,
-      fillColor: { r: 255, g: 0, b: 0 },
-      leading: 30,
-      tracking: 100
-    })
-    expect(layer.text!.paragraphStyle).toEqual({ justification: 'center' })
-    expect(layer.text!.transform).toEqual([1, 0, -0, 1, 5, 27])
-    expect(layer.canvas).toBeTruthy()
-  })
-
-  it('writes vector masks with fill and stroke', async () => {
-    const vector = base('vector', {
-      path: rectPath(4, 4, 20, 10),
-      fill: { color: '#00ff00', rule: 'evenodd', opacity: 1 },
-      stroke: {
-        color: '#0000ff',
-        width: 3,
-        cap: 'round',
-        join: 'bevel',
-        opacity: 0.8
-      }
-    })
-    const layer = (await buildPsd(doc([vector]), deps())).children![0]
-    expect(layer.vectorMask!.paths[0].fillRule).toBe('even-odd')
-    expect(layer.vectorMask!.paths[0].knots).toHaveLength(4)
-    expect(layer.vectorFill).toEqual({
-      type: 'color',
-      color: { r: 0, g: 255, b: 0 }
-    })
-    expect(layer.vectorStroke).toMatchObject({
-      strokeEnabled: true,
-      lineWidth: { units: 'Pixels', value: 3 },
-      lineCapType: 'round',
-      lineJoinType: 'bevel',
-      content: { type: 'color', color: { r: 0, g: 0, b: 255 } }
-    })
-  })
-
   it('writes parametric fill layers', async () => {
     const fill = base('fill', { fill: { type: 'solid', color: '#123456' } })
     const layer = (await buildPsd(doc([fill]), deps())).children![0]
@@ -291,23 +211,6 @@ describe('buildPsd rich layers', () => {
     expect(layer.placedLayer!.transform).toEqual([
       10, 10, 30, 10, 30, 20, 10, 20
     ])
-  })
-
-  it('maps rotated stroke-only vectors through the point mapper', async () => {
-    const vector = base('vector', {
-      path: rectPath(0, 0, 10, 10),
-      stroke: { color: '#ff0000', width: 2, cap: 'butt', join: 'miter' },
-      transform: { x: 0, y: 0, w: 10, h: 10, rotation: Math.PI / 2 }
-    })
-    const layer = (await buildPsd(doc([vector]), deps())).children![0]
-    expect(layer.vectorFill).toEqual({
-      type: 'color',
-      color: { r: 255, g: 0, b: 0 }
-    })
-    expect(layer.vectorStroke).toMatchObject({ opacity: 1 })
-    const points = layer.vectorMask!.paths[0].knots[0].points
-    expect(points[0]).toBeCloseTo(10, 5)
-    expect(points[1]).toBeCloseTo(0, 5)
   })
 
   it('skips smart object when png encoding fails', async () => {

@@ -41,26 +41,6 @@ export class AddNodeCommand implements Command {
   }
 }
 
-export class RemoveNodeCommand implements Command {
-  readonly dirtyMask = Dirty.STRUCTURE
-  constructor(
-    readonly label: string,
-    private readonly parent: GroupData,
-    private readonly node: SceneNode,
-    private readonly index: number
-  ) {}
-  apply(dir: Direction): void {
-    if (dir === 'undo') insert(this.parent, this.node, this.index)
-    else remove(this.parent, this.node)
-  }
-  sizeBytes(): number {
-    return 128
-  }
-  contentRefs(): string[] {
-    return nodeContentRefs(this.node)
-  }
-}
-
 export class ReorderCommand implements Command {
   readonly dirtyMask = Dirty.STRUCTURE
   constructor(

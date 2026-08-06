@@ -3,11 +3,6 @@ import type { Compositor, NodeTexture } from './compositor'
 import type { ContentStore } from './content'
 import type { Command } from './history'
 
-export interface HydrateDeps {
-  content: ContentStore
-  loadUrl(url: string): Promise<HTMLCanvasElement>
-}
-
 export interface RenderNodeCtx {
   compositor: Compositor
   content: ContentStore
@@ -24,29 +19,16 @@ export interface RenderNodeCtx {
   devicePixelRatio: number
 }
 
-export interface ThumbnailDeps {
-  content: ContentStore
-  size: number
-}
-
 export interface NodeKind<T extends NodeBase = NodeBase> {
   kind: string
 
   create(init?: Partial<T>): T
 
-  normalize(raw: unknown): T
-
-  serialize(node: T): unknown
-
   contentIds(node: T): string[]
-
-  hydrate(node: T, deps: HydrateDeps): Promise<void>
 
   renderNode(node: T, ctx: RenderNodeCtx): NodeTexture | null
 
   bbox(node: T): Rect
-
-  thumbnail(node: T, deps: ThumbnailDeps): HTMLCanvasElement | null
 
   hitTest?(node: T, pt: Vec2): boolean
 
@@ -71,8 +53,4 @@ export function getNodeKind(kind: string): NodeKind {
 
 export function hasNodeKind(kind: string): boolean {
   return registry.has(kind)
-}
-
-export function nodeKinds(): string[] {
-  return [...registry.keys()]
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { defaultMode } from '../mode'
 import type { GroupData, RasterData, SceneNode } from '../node'
 import { rasterKind } from '../kinds/raster'
-import { AddNodeCommand, RemoveNodeCommand, ReorderCommand } from './structure'
+import { AddNodeCommand, ReorderCommand } from './structure'
 
 function group(children: SceneNode[]): GroupData {
   return {
@@ -31,19 +31,6 @@ describe('AddNodeCommand', () => {
     expect(parent.children).toHaveLength(0)
     cmd.apply('redo')
     expect(parent.children[0]).toBe(node)
-  })
-})
-
-describe('RemoveNodeCommand', () => {
-  it('undo re-inserts at the original index', () => {
-    const a = named('A')
-    const b = named('B')
-    const parent = group([a])
-    const cmd = new RemoveNodeCommand('Delete B', parent, b, 1)
-    cmd.apply('undo')
-    expect(parent.children.map((c) => c.name)).toEqual(['A', 'B'])
-    cmd.apply('redo')
-    expect(parent.children.map((c) => c.name)).toEqual(['A'])
   })
 })
 

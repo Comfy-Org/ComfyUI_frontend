@@ -266,7 +266,7 @@ export function createWebGLCompositor(): Compositor {
     return m.get(name)!
   }
 
-  function makeTarget(w: number, h: number): Target {
+  function makeTarget(w: number, h: number): Target | null {
     const g = gl!
     const tex = g.createTexture()!
     g.bindTexture(g.TEXTURE_2D, tex)
@@ -294,7 +294,14 @@ export function createWebGLCompositor(): Compositor {
       tex,
       0
     )
+    const complete =
+      g.checkFramebufferStatus(g.FRAMEBUFFER) === g.FRAMEBUFFER_COMPLETE
     g.bindFramebuffer(g.FRAMEBUFFER, null)
+    if (!complete) {
+      g.deleteFramebuffer(fbo)
+      g.deleteTexture(tex)
+      return null
+    }
     return { fbo, tex, width: w, height: h }
   }
 
@@ -517,6 +524,7 @@ export function createWebGLCompositor(): Compositor {
       contextLost = false
       c.addEventListener('webglcontextlost', (e: Event) => {
         e.preventDefault()
+        if (canvas !== c) return
         contextLost = true
         if (disposed) return
         console.warn('[pentrado] WebGL context lost — recreating')
@@ -535,7 +543,7 @@ export function createWebGLCompositor(): Compositor {
       adjustProg = link(gl, vs, compile(gl, gl.FRAGMENT_SHADER, ADJUST_FRAG))
       ping = makeTarget(width, height)
       pong = makeTarget(width, height)
-      return true
+      return !!ping && !!pong
     } catch {
       dropContextState()
       return false
@@ -562,7 +570,11 @@ export function createWebGLCompositor(): Compositor {
 
   return {
     init(opts: CompositorInit): boolean {
-      if (gl) dropContextState()
+      if (gl) {
+        if (!gl.isContextLost())
+          gl.getExtension('WEBGL_lose_context')?.loseContext()
+        dropContextState()
+      }
       width = opts.width
       height = opts.height
       onRestored = opts.onContextRestored
@@ -718,14 +730,19 @@ export function createWebGLCompositor(): Compositor {
         result = makeTarget(width, height)
         resultValid = false
       }
-      blit(read, result)
+      if (result) {
+        blit(read, result)
+        resultValid = true
+      }
       if (clip) g.disable(g.SCISSOR_TEST)
-      resultValid = true
     },
 
     allocTarget(w: number, h: number): FBOHandle {
       const id = nextHandle++
-      if (gl) targets.set(id, makeTarget(w, h))
+      if (gl) {
+        const target = makeTarget(w, h)
+        if (target) targets.set(id, target)
+      }
       return { id, width: w, height: h }
     },
 
@@ -737,13 +754,8 @@ export function createWebGLCompositor(): Compositor {
       }
     },
 
-    targetTexture(handle: FBOHandle): WebGLTexture {
-      const t = targets.get(handle.id)
-      if (!t) {
-        if (!gl) return {} as WebGLTexture
-        throw new Error(`Unknown target: ${handle.id}`)
-      }
-      return t.tex
+    targetTexture(handle: FBOHandle): WebGLTexture | null {
+      return targets.get(handle.id)?.tex ?? null
     },
 
     upload(

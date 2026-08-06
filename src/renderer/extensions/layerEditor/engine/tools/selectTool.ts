@@ -23,7 +23,7 @@ type Session =
   | { mode: 'idle' }
   | { mode: 'move'; start: Vec2; targets: MoveTarget[] }
 
-export function nodeBounds(node: SceneNode): Transform {
+function nodeBounds(node: SceneNode): Transform {
   if (node.kind !== 'group') return node.transform
   const b = getNodeKind('group').bbox(node)
   return { x: b.x, y: b.y, w: b.w, h: b.h, rotation: 0 }

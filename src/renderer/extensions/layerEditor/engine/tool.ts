@@ -1,7 +1,6 @@
 import type { History } from './history'
 import type { Document } from './document'
 import type { Rect, Vec2 } from './node'
-import type { PaintCore } from './paint'
 import type { Compositor } from './compositor'
 import type { ContentStore } from './content'
 import type { GrayMask, SelectionOp } from './editor/selectionMath'
@@ -53,12 +52,6 @@ export interface Overlay {
   hitHandle(pt: Vec2, screenTolerance: number): string | null
 }
 
-export interface GizmoHost {
-  beginChange(label: string): void
-  endChange(ok: boolean): void
-  activate(): void
-}
-
 export interface ToolContext {
   document(): Document
   history: History
@@ -69,13 +62,6 @@ export interface ToolContext {
   setActiveNode(id: string | null): void
   selectedNodeIds(): string[]
   setSelectedNodes(ids: string[]): void
-  createPaintCore(id: string): PaintCore
-
-  setPaintPreview(
-    key: string,
-    canvas: HTMLCanvasElement | null,
-    rects?: Rect[] | Rect | null
-  ): void
   selection: {
     combineShape(label: string, mask: GrayMask, op: SelectionOp): void
     currentMask(): GrayMask | null
@@ -86,8 +72,6 @@ export interface ToolContext {
   zoom(): number
   snapGrid(): number
   requestRender(): void
-
-  options<T = unknown>(): T
 }
 
 export interface Tool {

@@ -84,11 +84,6 @@ export function maskBounds(mask: GrayMask): Rect | null {
   return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 }
 }
 
-export function isMaskEmpty(mask: GrayMask): boolean {
-  for (let p = 0; p < mask.data.length; p++) if (mask.data[p] > 0) return false
-  return true
-}
-
 function vanHerk(
   line: Float32Array,
   out: Float32Array,

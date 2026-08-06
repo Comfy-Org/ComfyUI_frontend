@@ -4,7 +4,6 @@ import { groupKind } from './group'
 import { rasterKind } from './raster'
 
 export { rasterKind } from './raster'
-export { groupKind } from './group'
 export { fillKind } from './fill'
 
 let registered = false

@@ -10,14 +10,14 @@ export interface NodeTexture {
   dirtyRects?: Rect[]
 }
 
-export interface LayerInput {
+interface LayerInput {
   texture: NodeTexture
   mode: EffectiveMode
   opacity: number
   mask?: NodeTexture
 }
 
-export interface AdjustmentInput {
+interface AdjustmentInput {
   adjust: { op: number; params: number[]; lut?: Uint8Array }
   opacity: number
   mask?: NodeTexture
@@ -45,7 +45,7 @@ export interface Compositor {
   allocTarget(width: number, height: number): FBOHandle
   freeTarget(handle: FBOHandle): void
 
-  targetTexture(handle: FBOHandle): WebGLTexture
+  targetTexture(handle: FBOHandle): WebGLTexture | null
 
   upload(
     source: HTMLCanvasElement | ImageBitmap | OffscreenCanvas

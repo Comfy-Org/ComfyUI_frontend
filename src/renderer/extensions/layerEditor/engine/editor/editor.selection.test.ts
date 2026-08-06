@@ -2,7 +2,6 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import type { Compositor, CompositeInput, FBOHandle } from '../compositor'
 import { registerBuiltinKinds } from '../kinds'
-import { rasterKind } from '../kinds/raster'
 import { defaultControl, registerTool } from '../tool'
 import type { ToolContext } from '../tool'
 import { registerBuiltinTools } from '../tools'
@@ -242,13 +241,9 @@ afterEach(() => {
 
 function makeEditor(): Editor {
   const editor = createEditor({ compositor: new FakeCompositor() })
-  editor.loadJSON(
-    JSON.stringify({
-      width: 40,
-      height: 40,
-      root: { kind: 'group', children: [] }
-    })
-  )
+  const doc = editor.document()
+  doc.width = 40
+  doc.height = 40
   return editor
 }
 
@@ -304,126 +299,16 @@ describe('createEditor — selection channel ops', () => {
     expect(editor.selectionBounds()).toBeNull()
   })
 
-  it('modifySelection grows/shrinks/borders/feathers the mask (undoable)', () => {
-    const editor = makeEditor()
-    expect(editor.modifySelection('grow', 2)).toBe(false)
-    editor.setRectSelection({ x: 16, y: 16, w: 8, h: 8 })
-    expect(editor.modifySelection('grow', 2)).toBe(true)
-    expect(editor.selectionBounds()).toEqual({ x: 14, y: 14, w: 12, h: 12 })
-    editor.undo()
-    expect(editor.modifySelection('shrink', 2)).toBe(true)
-    expect(editor.selectionBounds()).toEqual({ x: 18, y: 18, w: 4, h: 4 })
-    editor.undo()
-    expect(editor.modifySelection('border', 2)).toBe(true)
-    expect(editor.selectionBounds()).toEqual({ x: 14, y: 14, w: 12, h: 12 })
-    editor.undo()
-    expect(editor.modifySelection('feather', 3)).toBe(true)
-    const b = editor.selectionBounds()
-    expect(b!.w).toBeGreaterThan(8)
-    editor.undo()
-    expect(editor.modifySelection('shrink', 10)).toBe(true)
-    expect(editor.selectionBounds()).toBeNull()
-  })
-
-  it('invertSelection flips the mask and is an involution', () => {
-    const editor = makeEditor()
-    expect(editor.invertSelection()).toBe(false)
-    editor.setRectSelection({ x: 10, y: 10, w: 10, h: 10 })
-    expect(editor.invertSelection()).toBe(true)
-    expect(editor.selectionBounds()).toEqual({ x: 0, y: 0, w: 40, h: 40 })
-    expect(editor.invertSelection()).toBe(true)
-    expect(editor.selectionBounds()).toEqual({ x: 10, y: 10, w: 10, h: 10 })
-    editor.undo()
-    expect(editor.selectionBounds()).toEqual({ x: 0, y: 0, w: 40, h: 40 })
-  })
-
-  it('maskToSelection turns a layer mask into the selection', () => {
-    const editor = makeEditor()
-    const mask = document.createElement('canvas')
-    mask.width = 40
-    mask.height = 40
-    const g = mask.getContext('2d')!
-    g.fillStyle = '#ffffff'
-    g.fillRect(10, 10, 20, 20)
-    const r = rasterKind.create({
-      contentId: editor.content.register(document.createElement('canvas')),
-      naturalWidth: 40,
-      naturalHeight: 40,
-      transform: { x: 0, y: 0, w: 40, h: 40, rotation: 0 },
-      mask: {
-        id: 'm',
-        role: 'mask',
-        contentId: editor.content.register(mask),
-        enabled: true
-      }
-    })
-    editor.addNode(r)
-    expect(editor.maskToSelection(r.id)).toBe(true)
-    expect(editor.selectionBounds()).toEqual({ x: 10, y: 10, w: 20, h: 20 })
-    editor.undo()
-    expect(editor.selectionBounds()).toBeNull()
-  })
-
-  it('maskToSelection refuses nodes without a mask or with an empty mask', () => {
-    const editor = makeEditor()
-    const plain = rasterKind.create({ name: 'plain' })
-    editor.addNode(plain)
-    expect(editor.maskToSelection(plain.id)).toBe(false)
-
-    const empty = document.createElement('canvas')
-    empty.width = 40
-    empty.height = 40
-    const masked = rasterKind.create({
-      contentId: editor.content.register(document.createElement('canvas')),
-      naturalWidth: 40,
-      naturalHeight: 40,
-      transform: { x: 0, y: 0, w: 40, h: 40, rotation: 0 },
-      mask: {
-        id: 'm',
-        role: 'mask',
-        contentId: editor.content.register(empty),
-        enabled: true
-      }
-    })
-    editor.addNode(masked)
-    expect(editor.maskToSelection(masked.id)).toBe(false)
-    expect(editor.selectionBounds()).toBeNull()
-  })
-
-  it('setRectSelection refuses a rect fully outside the document', () => {
-    const editor = makeEditor()
-    expect(editor.setRectSelection({ x: 50, y: 50, w: 10, h: 10 })).toBe(false)
-    expect(editor.selectionBounds()).toBeNull()
-  })
-
   it('a committed selection draws marching-ants outlines in the overlay', () => {
     const editor = makeEditor()
-    editor.setRectSelection({ x: 5, y: 5, w: 8, h: 8 })
+    const ctx = probeToolContext(editor)
+    ctx.selection.combineShape(
+      'Marquee',
+      rectMask(40, 40, { x: 5, y: 5, w: 8, h: 8 }),
+      'replace'
+    )
     const polys = editor.overlay.items.filter((i) => i.type === 'polyline')
     expect(polys).toHaveLength(1)
     expect(polys[0]).toMatchObject({ closed: true, ants: true })
-  })
-})
-
-describe('createEditor — pixel-dependent layer ops', () => {
-  it('cropToContent shrinks a layer to its opaque pixels through the facade', () => {
-    const editor = makeEditor()
-    const c = document.createElement('canvas')
-    c.width = 40
-    c.height = 40
-    const g = c.getContext('2d')!
-    g.fillStyle = '#ffffff'
-    g.fillRect(10, 10, 12, 12)
-    const r = rasterKind.create({
-      contentId: editor.content.register(c),
-      naturalWidth: 40,
-      naturalHeight: 40,
-      transform: { x: 0, y: 0, w: 40, h: 40, rotation: 0 }
-    })
-    editor.addNode(r)
-    expect(editor.cropToContent(r.id)).toBe(true)
-    expect(r.transform).toEqual({ x: 10, y: 10, w: 12, h: 12, rotation: 0 })
-    editor.undo()
-    expect(r.transform).toEqual({ x: 0, y: 0, w: 40, h: 40, rotation: 0 })
   })
 })

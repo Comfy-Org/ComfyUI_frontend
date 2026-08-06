@@ -79,19 +79,12 @@ describe('layerOpacityAt', () => {
     expect(layerOpacityAt(node, { x: 20, y: 100 }, content)).toBe(0)
     expect(layerOpacityAt(node, { x: 200, y: 100 }, content)).toBe(1)
   })
-  it('returns 0 outside the transform, for invisible layers, and for adjustments', () => {
+  it('returns 0 outside the transform and for invisible layers', () => {
     const node = mkRaster('a', 0, 0, 100, 100)
     const content = fakeContent({ a: fakeCanvas(10, 10, () => 1) })
     expect(layerOpacityAt(node, { x: 500, y: 50 }, content)).toBe(0)
     expect(
       layerOpacityAt({ ...node, visible: false }, { x: 50, y: 50 }, content)
-    ).toBe(0)
-    expect(
-      layerOpacityAt(
-        { ...node, kind: 'adjustment' } as unknown as SceneNode,
-        { x: 50, y: 50 },
-        content
-      )
     ).toBe(0)
   })
   it('maps through rotation', () => {

@@ -162,33 +162,6 @@ describe('renderDocument', () => {
     expect(c.allocated).toHaveLength(0)
   })
 
-  it('emits an adjustment input with op code and packed params', () => {
-    const c = new FakeCompositor()
-    const adj = {
-      kind: 'adjustment',
-      id: 'a1',
-      name: 'adj',
-      visible: true,
-      opacity: 0.8,
-      mode: defaultMode('normal'),
-      transform: { x: 0, y: 0, w: 0, h: 0, rotation: 0 },
-      locks: { content: false, position: false, visibility: false },
-      op: 'hue-saturation',
-      params: { hue: 90, saturation: 0.5, lightness: 0 }
-    } as unknown as SceneNode
-    renderDocument(doc([leaf(1), adj]), deps(c))
-    const inputs = c.composites[0].inputs
-    expect(inputs).toHaveLength(2)
-    const a = inputs[1] as {
-      adjust: { op: number; params: number[] }
-      opacity: number
-    }
-    expect('adjust' in inputs[1]).toBe(true)
-    expect(a.adjust.op).toBe(1)
-    expect(a.adjust.params).toEqual([0.25, 0.5, 0, 0])
-    expect(a.opacity).toBe(0.8)
-  })
-
   it('forwards the damage region to the main composite only', () => {
     const c = new FakeCompositor()
     const g = group([leaf(1)], { id: 'grp' })

@@ -38,10 +38,8 @@ import { placedBounds } from '@/renderer/extensions/layerEditor/engine/render/ba
 import type { OutsideCanvasPreviewLayer } from '@/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview'
 import { drawOutsideCanvasPreview } from '@/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview'
 import type { CanvasItem } from '@/renderer/extensions/layerEditor/engine/tool'
-import {
-  canTransformNode,
-  registerBuiltinTools
-} from '@/renderer/extensions/layerEditor/engine/tools'
+import { registerBuiltinTools } from '@/renderer/extensions/layerEditor/engine/tools'
+import { canTransformNode } from '@/renderer/extensions/layerEditor/engine/tools/transformTool'
 import {
   hitHandle,
   insideBox,

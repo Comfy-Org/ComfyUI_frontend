@@ -11,7 +11,7 @@ export type HandleId =
   | 'w'
   | 'rotate'
 
-export const ROTATE_OFFSET = 24
+const ROTATE_OFFSET = 24
 
 const SIGN: Record<HandleId, Vec2> = {
   nw: { x: -1, y: -1 },

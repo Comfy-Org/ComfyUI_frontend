@@ -34,7 +34,7 @@ export type CompositeMode =
   | 'clip-to-layer'
   | 'intersection'
 
-export type SpaceOrAuto = ColorSpace | 'auto'
+type SpaceOrAuto = ColorSpace | 'auto'
 
 export interface LayerMode {
   blend: BlendFn

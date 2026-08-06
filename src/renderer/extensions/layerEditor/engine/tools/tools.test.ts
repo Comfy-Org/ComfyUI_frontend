@@ -8,8 +8,6 @@ import { registerBuiltinKinds } from '../kinds'
 import { groupKind } from '../kinds/group'
 import { rasterKind } from '../kinds/raster'
 import type { GroupData, RasterData } from '../node'
-import type { PaintCore } from '../paint'
-import { getPaintCore, registerPaintCore } from '../paint'
 import { defaultMode } from '../mode'
 import type { Overlay, Tool, ToolContext } from '../tool'
 import { getTool, registerTool, toolIds } from '../tool'
@@ -38,14 +36,9 @@ const ev = { pressure: 0.5, shiftKey: false } as unknown as PointerEvent
 interface Harness {
   ctx: ToolContext
   history: History
-  previews: Map<string, HTMLCanvasElement>
 }
 
-function harness(
-  doc: Document,
-  content: DefaultContentStore,
-  createPaintCore: () => PaintCore
-): Harness {
+function harness(doc: Document, content: DefaultContentStore): Harness {
   const history = new History()
   const overlay: Overlay = {
     clear: vi.fn(),
@@ -55,7 +48,6 @@ function harness(
     hitHandle: () => null
   }
   const state = { selected: [] as string[] }
-  const previews = new Map<string, HTMLCanvasElement>()
   const ctx: ToolContext = {
     document: () => doc,
     history,
@@ -67,11 +59,6 @@ function harness(
     setActiveNode: (id) => (state.selected = id ? [id] : []),
     selectedNodeIds: () => [...state.selected],
     setSelectedNodes: (ids) => (state.selected = [...ids]),
-    createPaintCore: () => createPaintCore(),
-    setPaintPreview: (key, canvas) => {
-      if (canvas) previews.set(key, canvas)
-      else previews.delete(key)
-    },
     selection: {
       combineShape: vi.fn(),
       currentMask: () => null,
@@ -81,10 +68,9 @@ function harness(
     floatSelection: () => false,
     zoom: () => 1,
     snapGrid: () => 0,
-    requestRender: vi.fn(),
-    options: <T>() => ({}) as T
+    requestRender: vi.fn()
   }
-  return { ctx, history, previews }
+  return { ctx, history }
 }
 
 describe('SelectTool — pure select + move, no handles', () => {
@@ -100,7 +86,7 @@ describe('SelectTool — pure select + move, no handles', () => {
       root: root([raster]),
       channels: []
     }
-    const h = harness(doc, content, () => ({}) as PaintCore)
+    const h = harness(doc, content)
     h.ctx.setActiveNode(raster.id)
     return { h, raster, tool: makeSelectToolDef().create(h.ctx) }
   }
@@ -147,7 +133,7 @@ describe('SelectTool — pure select + move, no handles', () => {
       root: root([group as unknown as RasterData]),
       channels: []
     }
-    const h = harness(doc, content, () => ({}) as PaintCore)
+    const h = harness(doc, content)
     h.ctx.setActiveNode(group.id)
     const tool = makeSelectToolDef().create(h.ctx)
 
@@ -179,7 +165,7 @@ describe('SelectTool — picking and modified clicks', () => {
       root: root([a, b]),
       channels: []
     }
-    const h = harness(doc, content, () => ({}) as PaintCore)
+    const h = harness(doc, content)
     return { h, a, b, tool: makeSelectToolDef().create(h.ctx) }
   }
 
@@ -246,19 +232,12 @@ describe('SelectTool — picking and modified clicks', () => {
   })
 })
 
-describe('tool and paint registries', () => {
+describe('tool registry', () => {
   it('registered tools are listed and retrievable; unknown ids throw', () => {
     registerTool({ id: 'probe-registry', create: () => ({}) as Tool })
     expect(toolIds()).toContain('probe-registry')
     expect(getTool('probe-registry').id).toBe('probe-registry')
     expect(() => getTool('nope')).toThrow('Unknown tool')
-  })
-
-  it('paint cores register and resolve by id; unknown ids throw', () => {
-    const core = {} as PaintCore
-    registerPaintCore({ id: 'probe-paint', create: () => core })
-    expect(getPaintCore('probe-paint').create()).toBe(core)
-    expect(() => getPaintCore('nope')).toThrow('Unknown paint core')
   })
 })
 
@@ -275,7 +254,7 @@ describe('TransformTool — explicit session with apply/cancel', () => {
       root: root([raster]),
       channels: []
     }
-    const h = harness(doc, content, () => ({}) as PaintCore)
+    const h = harness(doc, content)
     h.ctx.setActiveNode(raster.id)
     const tool = makeTransformToolDef().create(h.ctx)
     tool.onActivate?.()
@@ -340,7 +319,7 @@ describe('TransformTool — explicit session with apply/cancel', () => {
       root: root([group as unknown as RasterData]),
       channels: []
     }
-    const h = harness(doc, content, () => ({}) as PaintCore)
+    const h = harness(doc, content)
     h.ctx.setActiveNode(group.id)
     const tool = makeTransformToolDef().create(h.ctx)
     tool.onActivate?.()
@@ -368,7 +347,7 @@ describe('TransformTool — unified gizmo over a multi-layer selection', () => {
       root: root([a, b]),
       channels: []
     }
-    const h = harness(doc, content, () => ({}) as PaintCore)
+    const h = harness(doc, content)
     h.ctx.setSelectedNodes([a.id, b.id])
     const tool = makeTransformToolDef().create(h.ctx)
     tool.onActivate?.()
@@ -469,7 +448,7 @@ describe('TransformTool — guide snapping', () => {
       channels: [],
       guides
     }
-    const h = harness(doc, content, () => ({}) as PaintCore)
+    const h = harness(doc, content)
     h.ctx.setActiveNode(raster.id)
     const tool = makeTransformToolDef().create(h.ctx)
     tool.onActivate?.()

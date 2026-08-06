@@ -4,27 +4,17 @@ import type { Compositor } from './engine/compositor'
 import type { ContentEntry, ContentStore } from './engine/content'
 import type { Document } from './engine/document'
 import type {
-  AdjustmentData,
   FillData,
   GroupData,
   RasterData,
   Rect,
   SceneNode,
-  TextData,
-  Transform,
-  VectorData
+  Transform
 } from './engine/node'
 import { getNodeKind } from './engine/nodeKind'
 import type { RenderNodeCtx } from './engine/nodeKind'
 import { placeBitmap } from './engine/render/place'
-import {
-  PSD_BLEND_MODES,
-  adjustmentToPsd,
-  alignToPsd,
-  fillToVectorContent,
-  hexToPsdColor,
-  pathToBezierPaths
-} from './psdMapping'
+import { PSD_BLEND_MODES, fillToVectorContent } from './psdMapping'
 
 export interface PsdGuides {
   horizontal: number[]
@@ -42,7 +32,6 @@ export interface PsdExportDeps {
   maskCanvas: (node: SceneNode) => PlacedLeaf | null
   composite: () => HTMLCanvasElement
   contentCanvas?: (id: string) => HTMLCanvasElement | null
-  fontName?: (node: TextData) => string | undefined
   canvasPng?: (canvas: HTMLCanvasElement) => Promise<Uint8Array>
   guides?: PsdGuides
 }
@@ -89,72 +78,6 @@ function maskData(
     bottom: placed.top + placed.canvas.height,
     defaultColor: 0,
     disabled: !node.mask.enabled
-  }
-}
-
-function rotatedPointMapper(t: Transform) {
-  if (!t.rotation) return undefined
-  const cx = t.x + t.w / 2
-  const cy = t.y + t.h / 2
-  const cos = Math.cos(t.rotation)
-  const sin = Math.sin(t.rotation)
-  return (pt: { x: number; y: number }) => {
-    const dx = pt.x - cx
-    const dy = pt.y - cy
-    return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos }
-  }
-}
-
-function applyTextData(
-  layer: Layer,
-  node: TextData,
-  deps: PsdExportDeps
-): void {
-  const t = node.transform
-  const cos = Math.cos(t.rotation)
-  const sin = Math.sin(t.rotation)
-  layer.text = {
-    text: node.text,
-    transform: [cos, sin, -sin, cos, t.x, t.y + node.fontSize],
-    shapeType: 'point',
-    style: {
-      font: { name: deps.fontName?.(node) ?? 'Inter' },
-      fontSize: node.fontSize,
-      fillColor: hexToPsdColor(node.color),
-      autoLeading: false,
-      leading: node.lineHeight * node.fontSize,
-      tracking:
-        node.fontSize > 0
-          ? Math.round((node.letterSpacing / node.fontSize) * 1000)
-          : 0
-    },
-    paragraphStyle: { justification: alignToPsd(node.align) }
-  }
-}
-
-function applyVectorData(layer: Layer, node: VectorData): void {
-  const map = rotatedPointMapper(node.transform)
-  const fillRule = node.fill?.rule === 'evenodd' ? 'even-odd' : 'non-zero'
-  layer.vectorMask = { paths: pathToBezierPaths(node.path, fillRule, map) }
-  if (node.fill) {
-    layer.vectorFill = { type: 'color', color: hexToPsdColor(node.fill.color) }
-  }
-  if (node.stroke) {
-    layer.vectorStroke = {
-      strokeEnabled: true,
-      fillEnabled: !!node.fill,
-      lineWidth: { units: 'Pixels', value: node.stroke.width },
-      lineCapType: node.stroke.cap,
-      lineJoinType: node.stroke.join,
-      opacity: node.stroke.opacity ?? 1,
-      content: { type: 'color', color: hexToPsdColor(node.stroke.color) }
-    }
-    if (!layer.vectorFill && node.fill === undefined) {
-      layer.vectorFill = {
-        type: 'color',
-        color: hexToPsdColor(node.stroke.color)
-      }
-    }
   }
 }
 
@@ -214,11 +137,6 @@ async function buildLayer(
     }
     return layer
   }
-  if (node.kind === 'adjustment') {
-    const adj = adjustmentToPsd(node as AdjustmentData)
-    if (adj) layer.adjustment = adj
-    return layer
-  }
   const placed = deps.rasterizeLeaf(node)
   if (placed) {
     layer.canvas = placed.canvas
@@ -227,9 +145,7 @@ async function buildLayer(
     layer.right = placed.left + placed.canvas.width
     layer.bottom = placed.top + placed.canvas.height
   }
-  if (node.kind === 'text') applyTextData(layer, node as TextData, deps)
-  else if (node.kind === 'vector') applyVectorData(layer, node as VectorData)
-  else if (node.kind === 'fill')
+  if (node.kind === 'fill')
     layer.vectorFill = fillToVectorContent((node as FillData).fill)
   else if (node.kind === 'raster')
     await applyPlacedLayer(layer, node as RasterData, deps, linkedFiles)
@@ -335,7 +251,6 @@ export async function buildPsdFromEditor(
   host: PsdRenderHost,
   content: PsdContentSource,
   opts?: {
-    fontName?: (node: TextData) => string | undefined
     guides?: PsdGuides
   }
 ): Promise<Psd> {
@@ -346,7 +261,6 @@ export async function buildPsdFromEditor(
     maskCanvas: (n) => maskToPlacedCanvas(n, doc, content),
     composite: () => host.readbackCanvas(),
     contentCanvas: (id) => content.get(id)?.canvas ?? null,
-    fontName: opts?.fontName,
     canvasPng: canvasPngBytes,
     guides: opts?.guides
   })

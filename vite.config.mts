@@ -84,9 +84,7 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
 // WebGL2 / pixel-processing passes that need a real rendering context;
 // exercised via browser tests rather than happy-dom unit tests
 const LAYER_EDITOR_GPU_COVERAGE_EXCLUDE = [
-  'src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts',
-  'src/renderer/extensions/layerEditor/engine/render/fxGpu.ts',
-  'src/renderer/extensions/layerEditor/engine/render/layerFx.ts'
+  'src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts'
 ]
 
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [

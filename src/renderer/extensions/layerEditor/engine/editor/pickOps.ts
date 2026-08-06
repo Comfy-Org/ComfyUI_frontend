@@ -15,7 +15,7 @@ const sampleCache = new WeakMap<
   CanvasRenderingContext2D | null
 >()
 
-export function defaultAlphaSampler(
+function defaultAlphaSampler(
   canvas: HTMLCanvasElement,
   x: number,
   y: number
@@ -82,8 +82,6 @@ export function layerOpacityAt(
     }
     case 'raster':
       return rasterAlphaAt(node as RasterData, pt, content, sample)
-    case 'adjustment':
-      return 0
     default:
       return boxAlphaAt(node, pt)
   }

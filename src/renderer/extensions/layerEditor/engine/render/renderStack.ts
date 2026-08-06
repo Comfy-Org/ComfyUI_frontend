@@ -1,20 +1,10 @@
-import type { AdjustmentOp } from '../adjust'
-import { ADJUST_CODE, curvesLutData, packParams } from '../adjust'
 import type { Compositor, CompositeInput, NodeTexture } from '../compositor'
 import type { ContentStore } from '../content'
 import type { Document } from '../document'
 import { resolveMode } from '../mode'
-import type {
-  AdjustmentData,
-  GroupData,
-  Rect,
-  SceneNode,
-  Transform
-} from '../node'
+import type { GroupData, Rect, SceneNode, Transform } from '../node'
 import type { RenderNodeCtx } from '../nodeKind'
 import { getNodeKind } from '../nodeKind'
-import type { LayerFxData } from './layerFx'
-import { fxStamp, getFxProcessed } from './layerFx'
 import type { Bitmap } from './place'
 import { placeBitmap } from './place'
 
@@ -46,12 +36,7 @@ function transformStamp(t: Transform): string {
   return `${t.x},${t.y},${t.w},${t.h},${t.rotation}`
 }
 
-function makePlaced(
-  deps: RenderDeps,
-  region: Rect,
-  used: Set<string>,
-  fxRef: { current: LayerFxData[] | null }
-) {
+function makePlaced(deps: RenderDeps, region: Rect, used: Set<string>) {
   return (
     cacheKey: string,
     contentStamp: string,
@@ -59,25 +44,7 @@ function makePlaced(
     transform: Transform,
     linear = false
   ): NodeTexture | null => {
-    let fxTag = ''
-    const fx = fxRef.current
-    if (fx && fx.length && cacheKey.startsWith('content:')) {
-      const processed = getFxProcessed(cacheKey, contentStamp, bitmap, fx)
-      if (processed) {
-        const sx = transform.w / Math.max(1, bitmap.width)
-        const sy = transform.h / Math.max(1, bitmap.height)
-        bitmap = processed.canvas
-        transform = {
-          x: transform.x - processed.pad * sx,
-          y: transform.y - processed.pad * sy,
-          w: transform.w + 2 * processed.pad * sx,
-          h: transform.h + 2 * processed.pad * sy,
-          rotation: transform.rotation
-        }
-        fxTag = `|${fxStamp(fx)}`
-      }
-    }
-    const stamp = `${contentStamp}|${transformStamp(transform)}|${region.w}x${region.h}${fxTag}`
+    const stamp = `${contentStamp}|${transformStamp(transform)}|${region.w}x${region.h}`
     const cache = deps.placedCache
     if (!cache) {
       const canvas = placeBitmap(bitmap, transform, region.w, region.h)
@@ -250,8 +217,7 @@ function buildInputs(
   const region: Rect = { x: 0, y: 0, w: doc.width, h: doc.height }
   const inputs: CompositeInput[] = []
   const cleanups: Array<() => void> = []
-  const fxRef: { current: LayerFxData[] | null } = { current: null }
-  const placed = makePlaced(deps, region, used, fxRef)
+  const placed = makePlaced(deps, region, used)
   const ctx: RenderNodeCtx = {
     compositor: deps.compositor,
     content: deps.content,
@@ -263,24 +229,6 @@ function buildInputs(
 
   for (const node of group.children) {
     if (!node.visible || node.opacity <= 0) continue
-
-    if (node.kind === 'adjustment') {
-      const adj = node as AdjustmentData
-      const docSpace = {
-        ...node,
-        transform: { x: 0, y: 0, w: region.w, h: region.h, rotation: 0 }
-      } as SceneNode
-      inputs.push({
-        adjust: {
-          op: ADJUST_CODE[adj.op as AdjustmentOp] ?? 0,
-          params: packParams(adj.op as AdjustmentOp, adj.params),
-          lut: adj.op === 'curves' ? curvesLutData(adj.curves) : undefined
-        },
-        opacity: node.opacity,
-        mask: renderMaskTexture(docSpace, region, deps, placed, used)
-      })
-      continue
-    }
 
     if (node.kind === 'group') {
       const g = node as GroupData
@@ -294,22 +242,19 @@ function buildInputs(
       deps.compositor.composite(sub.inputs, handle)
       sub.cleanup()
       cleanups.push(() => deps.compositor.freeTarget(handle))
-      inputs.push({
-        texture: {
-          source: deps.compositor.targetTexture(handle),
-          rect: region,
-          linear: true
-        },
-        opacity: node.opacity,
-        mode: resolveMode(node.mode),
-        mask: renderMaskTexture(node, region, deps, placed, used)
-      })
+      const groupTexture = deps.compositor.targetTexture(handle)
+      if (groupTexture) {
+        inputs.push({
+          texture: { source: groupTexture, rect: region, linear: true },
+          opacity: node.opacity,
+          mode: resolveMode(node.mode),
+          mask: renderMaskTexture(node, region, deps, placed, used)
+        })
+      }
       continue
     }
 
-    fxRef.current = node.fx?.length ? node.fx : null
     const texture = renderLeafTexture(node, ctx, deps, used)
-    fxRef.current = null
     if (!texture) continue
     inputs.push({
       texture,

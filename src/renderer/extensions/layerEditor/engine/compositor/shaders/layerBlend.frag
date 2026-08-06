@@ -42,8 +42,12 @@ float blendChannel(int mode, float i, float l) {
   if (mode == 3)  return i < 0.5 ? 2.0*i*l : 1.0 - 2.0*(1.0-l)*(1.0-i);
   if (mode == 4)  return min(i, l);
   if (mode == 5)  return max(i, l);
-  if (mode == 6)  return safeDiv(i, 1.0 - l);
-  if (mode == 7)  return 1.0 - safeDiv(1.0 - i, l);
+  if (mode == 6)  return i <= 0.0 ? 0.0
+                       : 1.0 - l <= EPS ? 1.0
+                       : min(i / (1.0 - l), 1.0);
+  if (mode == 7)  return i >= 1.0 ? 1.0
+                       : l <= EPS ? 0.0
+                       : 1.0 - min((1.0 - i) / l, 1.0);
   if (mode == 8)  return l > 0.5 ? min(1.0 - (1.0-i)*(1.0-(l-0.5)*2.0), 1.0)
                                  : min(i*(l*2.0), 1.0);
   if (mode == 9) {
@@ -55,13 +59,18 @@ float blendChannel(int mode, float i, float l) {
   if (mode == 11) return 0.5 - 2.0*(i-0.5)*(l-0.5);
   if (mode == 12) return i + l;
   if (mode == 13) return i + l - 1.0;
-  if (mode == 14) return l <= 0.5 ? max(1.0 - safeDiv(1.0-i, 2.0*l), 0.0)
-                                  : min(safeDiv(i, 2.0*(1.0-l)), 1.0);
+  if (mode == 14) return l <= 0.5
+                       ? (i >= 1.0 ? 1.0
+                          : 2.0 * l <= EPS ? 0.0
+                          : max(1.0 - (1.0 - i) / (2.0 * l), 0.0))
+                       : (i <= 0.0 ? 0.0
+                          : 2.0 * (1.0 - l) <= EPS ? 1.0
+                          : min(i / (2.0 * (1.0 - l)), 1.0));
   if (mode == 15) return l > 0.5 ? max(i, 2.0*(l-0.5)) : min(i, 2.0*l);
   if (mode == 20) return i + 2.0*l - 1.0;
   if (mode == 21) return i + l < 1.0 ? 0.0 : 1.0;
-  if (mode == 22) return i - l;
-  if (mode == 23) return safeDiv(i, l);
+  if (mode == 22) return max(i - l, 0.0);
+  if (mode == 23) return clamp(i / max(l, EPS), 0.0, 1.0);
   if (mode == 24) return i - l + 0.5;
   if (mode == 25) return i + l - 0.5;
   return l;

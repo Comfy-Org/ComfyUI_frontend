@@ -22,10 +22,7 @@ export function snapshotSelection(doc: Document): SelectionSnapshot {
   }
 }
 
-export function applySelectionSnapshot(
-  doc: Document,
-  s: SelectionSnapshot
-): void {
+function applySelectionSnapshot(doc: Document, s: SelectionSnapshot): void {
   doc.channels = doc.channels.filter((ch) => ch.role !== 'selection')
   if (s.channel) doc.channels.push({ ...s.channel })
   doc.selectionId = s.channel ? s.selectionId : undefined
