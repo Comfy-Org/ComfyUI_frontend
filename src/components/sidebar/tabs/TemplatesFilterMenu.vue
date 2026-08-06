@@ -70,7 +70,7 @@
 
         <DropdownMenuPortal>
           <DropdownMenuSubContent
-            :side-offset="16"
+            :side-offset="14"
             :align-offset="alignOffsetFor(facet.key)"
             :collision-padding="10"
             :prioritize-position="false"
