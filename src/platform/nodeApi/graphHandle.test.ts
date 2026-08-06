@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { ComfyApiError } from './errors'
 import { createGraphApi } from './graphHandle'
@@ -34,18 +34,55 @@ describe('graph API (composed)', () => {
       expect(api.nodesOfType('Beta').map((n) => n.getTitle())).toEqual(['B'])
     })
 
+    it('builds the registered node type, not a bare node', () => {
+      // `new LGraphNode(title, type)` produces a node with no inputs, outputs
+      // or widgets, because those come from the registered class. A pack that
+      // adds a node and then reads its slots — recreating a node as another
+      // type, say — gets an empty shell and silently wires nothing.
+      class Registered extends LGraphNode {
+        constructor(title?: string) {
+          super(title ?? 'Registered', 'Registered')
+          this.addInput('image', 'IMAGE')
+          this.addOutput('latent', 'LATENT')
+          this.addWidget('number', 'seed', 7, () => {})
+        }
+      }
+      LiteGraph.registerNodeType('Registered', Registered)
+
+      try {
+        const handle = api.add('Registered')
+        expect(handle.inputs.all().map((i) => i.name)).toEqual(['image'])
+        expect(handle.outputs.all().map((o) => o.name)).toEqual(['latent'])
+        expect(handle.widgets.get('seed')?.getValue()).toBe(7)
+      } finally {
+        LiteGraph.unregisterNodeType('Registered')
+      }
+    })
+
+    it('refuses a type that is not registered', () => {
+      expect(() => api.add('NoSuchType')).toThrow(ComfyApiError)
+    })
+
     it('returns undefined for a node that is not present', () => {
       expect(api.node('999')).toBeUndefined()
     })
 
     it('adds and removes nodes', () => {
-      const handle = api.add('Gamma', { title: 'G', position: { x: 5, y: 6 } })
-      expect(handle.type).toBe('Gamma')
-      expect(handle.getPosition()).toEqual({ x: 5, y: 6 })
+      LiteGraph.registerNodeType('Gamma', class extends LGraphNode {})
+      try {
+        const handle = api.add('Gamma', {
+          title: 'G',
+          position: { x: 5, y: 6 }
+        })
+        expect(handle.type).toBe('Gamma')
+        expect(handle.getPosition()).toEqual({ x: 5, y: 6 })
 
-      expect(api.remove(handle.id)).toBe(true)
-      expect(handle.isDeleted).toBe(true)
-      expect(api.remove(handle.id)).toBe(false)
+        expect(api.remove(handle.id)).toBe(true)
+        expect(handle.isDeleted).toBe(true)
+        expect(api.remove(handle.id)).toBe(false)
+      } finally {
+        LiteGraph.unregisterNodeType('Gamma')
+      }
     })
 
     it('gives a clear error when there is no active graph', () => {
