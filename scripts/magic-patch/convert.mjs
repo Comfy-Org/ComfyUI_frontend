@@ -302,6 +302,11 @@ Workflow:
 3b. verify_pack once the pack's drafts are in place — it actually runs the code,
    and it is the only check that can catch a break spanning files.
 4. mark_complete, or give_up with the category that fits.
+5. suggest_skill_note for anything you had to work out that is not already in
+   the skill — a mapping that was not written down, a distinction that would
+   have misled you, a trap you nearly fell into. This applies whether you
+   converted or gave up; a punt often teaches the most. Do not restate what the
+   skill already says.
 5. Resolve every file listed above before finishing.
 
 If a helper is duplicated across files, convert it consistently — the same
@@ -345,7 +350,11 @@ function createSession(work) {
     tests: new Map(),
     verified: new Map(),
     reports: new Map(),
-    outcomes: new Map()
+    outcomes: new Map(),
+    // Proposed skill additions. Collected rather than applied: a tip is only
+    // worth carrying if it holds beyond the pack that produced it, and that
+    // is a judgement made across runs, not inside one.
+    skillNotes: []
   }
 
   const byName = new Map(work.readable.map((p) => [relative(work.root, p), p]))
@@ -476,6 +485,30 @@ function createSession(work) {
               null,
               2
             )
+          )
+        }
+      ),
+
+      tool(
+        'suggest_skill_note',
+        'Propose an addition to the conversion skill: a mapping, trap, or distinction you had to work out yourself and that the next conversion would benefit from.',
+        {
+          reference: z
+            .string()
+            .describe(
+              'Which reference it belongs in: widgets.md, node-definitions.md, draw-callbacks.md, or SKILL.md.'
+            ),
+          claim: z.string().describe('The tip, stated as one usable sentence.'),
+          evidence: z
+            .string()
+            .describe(
+              'The concrete code that taught you this — pack, file and construct.'
+            )
+        },
+        async ({ reference, claim, evidence }) => {
+          state.skillNotes.push({ reference, claim, evidence })
+          return say(
+            `Noted for ${reference}. It is reviewed before being folded into the skill, so state it as something checkable rather than a guess.`
           )
         }
       ),
@@ -702,6 +735,7 @@ async function convertPack(work) {
     'write_conversion',
     'run_checks',
     'verify_pack',
+    'suggest_skill_note',
     'mark_complete',
     'give_up'
   ].map((n) => `mcp__magicpatch__${n}`)
@@ -732,7 +766,8 @@ async function convertPack(work) {
       pack: work.pack,
       status: 'failed',
       detail: String(error?.message ?? error).slice(0, 300),
-      files: [...state.outcomes.values()]
+      files: [...state.outcomes.values()],
+      skillNotes: state.skillNotes
     }
   }
 
@@ -743,7 +778,8 @@ async function convertPack(work) {
     pack: work.pack,
     status: unresolved.length ? 'failed' : 'done',
     detail: unresolved.length ? `unresolved: ${unresolved.join(', ')}` : '',
-    files: [...state.outcomes.values()]
+    files: [...state.outcomes.values()],
+    skillNotes: state.skillNotes
   }
 }
 
