@@ -12,6 +12,10 @@ import { handleToken, isSameEntity } from './closedProxy'
 import { createDefRegistry } from './defsRegistry'
 import type { DefRegistry } from './defsRegistry'
 import { ComfyUnsupportedError } from './errors'
+import { createBackendApi } from './backendHandle'
+import type { BackendHandle } from './backendHandle'
+import { createCommandsApi } from './commandsHandle'
+import type { CommandsHandle } from './commandsHandle'
 import { apiConstants, isInteracting } from './constants'
 import {
   createNodeDragEndObserver,
@@ -95,6 +99,8 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['node.connectVeto', '1.0'],
   ['node.menu', '1.0'],
   ['settings', '1.0'],
+  ['commands', '1.0'],
+  ['backend', '1.0'],
   ['constants', '1.0'],
   ['interaction.state', '1.0'],
   ['interaction.nodeMoved', '1.0'],
@@ -156,6 +162,10 @@ export interface Comfy {
   readonly defs: DefRegistry
   /** Declaring, reading and writing pack settings. */
   readonly settings: SettingsHandle
+  /** Commands, their keybindings, and notifications. */
+  readonly commands: CommandsHandle
+  /** Backend URLs and messages, including a pack's own events. */
+  readonly backend: BackendHandle
   /**
    * Renderer values a pack needs to lay itself out, replacing reads of
    * `LiteGraph.*`. Values, not the object: the constants are the renderer's to
@@ -194,6 +204,8 @@ function buildMajor(
 ): Comfy {
   const graph = createGraphApi(getGraph, `v${major}`)
   const settings = createSettingsApi()
+  const commands = createCommandsApi()
+  const backend = createBackendApi()
 
   return Object.freeze({
     version: major === LATEST_MAJOR ? NODE_API_VERSION : `${major}.0`,
@@ -219,6 +231,8 @@ function buildMajor(
     },
     graph,
     settings,
+    commands,
+    backend,
     get constants() {
       return apiConstants()
     },
