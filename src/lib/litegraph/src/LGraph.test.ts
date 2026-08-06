@@ -1767,6 +1767,12 @@ describe('node layout registration', () => {
 
   it('preserves released subgraph registrations across failed removals', () => {
     const graph = new LGraph()
+    const source = new LGraphNode('source')
+    source.addOutput('out', '*')
+    const target = new LGraphNode('target')
+    target.addInput('in', '*')
+    graph.add(source)
+    graph.add(target)
     const subgraph = graph.createSubgraph(createTestSubgraphData())
     const interior = new LGraphNode('interior')
     interior.pos = [10, 20]
@@ -1787,7 +1793,15 @@ describe('node layout registration', () => {
     const nestedNode = createTestSubgraphNode(nested, { parentGraph: subgraph })
     subgraph.add(nestedNode)
     const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraphNode.addInput('in', '*')
+    subgraphNode.addOutput('out', '*')
     graph.add(subgraphNode)
+    source.connect(0, subgraphNode, 0)
+    subgraphNode.connect(0, target, 0)
+    const onConnectionChange = vi.fn()
+    graph.onConnectionChange = onConnectionChange
+    const onNodeRemoved = vi.fn()
+    graph.onNodeRemoved = onNodeRemoved
     subgraphNode.onRemoved = () => {
       throw new Error('outer removal failed')
     }
@@ -1835,14 +1849,22 @@ describe('node layout registration', () => {
       layoutStore.getNodeLayoutRef(graph.id, nestedInterior.id).value?.position
     ).toEqual({ x: 70, y: 80 })
 
+    const inputLink = source.connect(0, subgraphNode, 0)!
+    const outputLink = subgraphNode.connect(0, target, 0)!
+    onConnectionChange.mockClear()
+    onNodeRemoved.mockClear()
     subgraphNode.onRemoved = () => {}
     vi.spyOn(layoutStore, 'applyOperations').mockReturnValueOnce('rejected')
     expect(() => graph.remove(subgraphNode)).not.toThrow()
 
     expect(graph.nodes).toContain(subgraphNode)
+    expect(graph.links.get(inputLink.id)).toBe(inputLink)
+    expect(graph.links.get(outputLink.id)).toBe(outputLink)
+    expect(onConnectionChange).not.toHaveBeenCalled()
+    expect(onNodeRemoved).not.toHaveBeenCalled()
     expect(subgraphNode.graph).toBe(graph)
     expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
-    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(1)
+    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(3)
     expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeDefined()
     expect(
       useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)

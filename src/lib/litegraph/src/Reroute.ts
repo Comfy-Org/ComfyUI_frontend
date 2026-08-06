@@ -1,4 +1,7 @@
-import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import {
+  hasRerouteLayoutRegistration,
+  moveRerouteLayout
+} from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
@@ -161,6 +164,9 @@ export class Reroute
   }
 
   private get storedPosition(): Readonly<LayoutPoint> {
+    if (!hasRerouteLayoutRegistration(this)) {
+      return { x: this.position[0], y: this.position[1] }
+    }
     return (
       layoutStore.getRerouteLayout(this.rootGraphId, this.id)?.position ?? {
         x: this.position[0],
@@ -871,11 +877,9 @@ export function registerRerouteChain(
  */
 export function unregisterRerouteChain(reroute: Reroute): void {
   if (!reroute._graphId) return
-  const position: Point = [reroute.pos[0], reroute.pos[1]]
   useRerouteStore().deleteReroute(reroute._graphId, reroute._chain)
   reroute._graphId = undefined
   reroute._attachedGraph = undefined
-  reroute.pos = position
 }
 
 /**

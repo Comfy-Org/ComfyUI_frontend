@@ -165,6 +165,14 @@ describe('Reroute ↔ rerouteStore integration', () => {
       const [link] = [...sg._links.values()]
       expect(link.parentId).toBe(reroute.id)
     }
+
+    graph.configure(data)
+
+    expect(
+      [...graph.subgraphs.values()].map(
+        (subgraph) => [...subgraph.reroutes.keys()][0]
+      )
+    ).toEqual([toRerouteId(1), toRerouteId(2)])
   })
 
   it('linkIds follows the chain without manual set maintenance', () => {
@@ -358,6 +366,58 @@ describe('Reroute position lives only in layoutStore', () => {
     ).toBe('remote-peer')
   })
 
+  it('limits configure adoption to the exact serialized reroute input', () => {
+    const graph = new LGraph()
+    const serializedRerouteId = toRerouteId(38)
+    const unrelatedRerouteId = toRerouteId(39)
+    for (const rerouteId of [serializedRerouteId, unrelatedRerouteId]) {
+      layoutStore.applyOperation({
+        actor: 'remote-peer',
+        entity: 'reroute',
+        graphId: graph.id,
+        position: { x: 50, y: 60 },
+        registrationId: `remote-${rerouteId}`,
+        rerouteId,
+        source: LayoutSource.External,
+        timestamp: Date.now(),
+        type: 'createReroute'
+      })
+    }
+    const data = graph.asSerialisable()
+    const serializedReroute = {
+      id: serializedRerouteId,
+      pos: [10, 20] as [number, number],
+      floating: { slotType: 'input' as const },
+      linkIds: []
+    }
+    data.reroutes = [serializedReroute]
+    const originalSetReroute = graph.setReroute.bind(graph)
+    let unrelatedError: unknown
+    let adoptedReroute: Reroute | undefined
+    vi.spyOn(graph, 'setReroute').mockImplementation((rerouteData) => {
+      if (rerouteData === serializedReroute) {
+        try {
+          originalSetReroute({
+            id: unrelatedRerouteId,
+            pos: [30, 40],
+            linkIds: []
+          })
+        } catch (error) {
+          unrelatedError = error
+        }
+      }
+      const reroute = originalSetReroute(rerouteData)
+      if (rerouteData === serializedReroute) adoptedReroute = reroute
+      return reroute
+    })
+
+    graph.configure(data)
+
+    expect(unrelatedError).toEqual(expect.objectContaining({ name: 'Error' }))
+    expect(graph.reroutes.has(unrelatedRerouteId)).toBe(false)
+    expect(adoptedReroute).toBeDefined()
+  })
+
   it('re-registers a retained reroute during keep_old configure', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([100, 100], link)!
@@ -375,6 +435,37 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
     ).toEqual({ x: 200, y: 300 })
+  })
+
+  it('leaves an existing reroute unchanged when adoption is rejected', () => {
+    const graph = new LGraph()
+    const parent = graph.setReroute({ pos: [5, 6], linkIds: [] })
+    const reroute = graph.setReroute({
+      pos: [10, 20],
+      floating: { slotType: 'input' },
+      linkIds: []
+    })
+    const data = graph.asSerialisable()
+    data.reroutes = data.reroutes?.filter(({ id }) => id === reroute.id)
+    const serialized = data.reroutes?.find(({ id }) => id === reroute.id)
+    if (!serialized) throw new Error('Expected serialized reroute')
+    serialized.parentId = parent.id
+    serialized.pos = [30, 40]
+    serialized.floating = { slotType: 'output' }
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockReturnValueOnce('rejected')
+    onTestFinished(() => applyOperation.mockRestore())
+
+    expect(() => graph.configure(data, true)).toThrow(/registration rejected/)
+
+    expect(graph.reroutes.get(reroute.id)).toBe(reroute)
+    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBe(
+      reroute._chain
+    )
+    expect(reroute.parentId).toBeUndefined()
+    expect([...reroute.pos]).toEqual([10, 20])
+    expect(reroute.floating).toEqual({ slotType: 'input' })
   })
 
   it('keeps constructor geometry transient until registration', () => {
@@ -469,6 +560,24 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(reroute._graphId).toBeUndefined()
     applyOperation.mockRestore()
   })
+
+  it.for(['rejected', 'no-op'] as const)(
+    'rejects ordinary attachment when layout registration is %s',
+    (result) => {
+      const graph = new LGraph()
+      const reroute = new Reroute(toRerouteId(16), graph, [10, 20])
+      const applyOperation = vi
+        .spyOn(layoutStore, 'applyOperation')
+        .mockReturnValueOnce(result)
+      onTestFinished(() => applyOperation.mockRestore())
+
+      expect(() => graph._addReroute(reroute)).toThrow(/registration/)
+      expect(graph.reroutes.has(reroute.id)).toBe(false)
+      expect(
+        useRerouteStore().getReroute(graph.rootGraph.id, reroute.id)
+      ).toBeUndefined()
+    }
+  )
 
   it('preflights all serialized reroutes before configuring a graph', () => {
     const id = createUuidv4()
@@ -740,27 +849,38 @@ describe('Reroute position lives only in layoutStore', () => {
         data.definitions = { subgraphs: [first, second] }
       }
     }
-  ])(
-    'rejects incoming reroute collisions $name before mutation',
-    ({ configureData }) => {
-      const graph = new LGraph()
-      const existing = new Reroute(toRerouteId(24), graph, [70, 80])
-      graph._addReroute(existing)
-      const originalId = graph.id
-      const data = graph.asSerialisable()
-      configureData(data)
+  ])('handles incoming reroute collisions $name', ({ name, configureData }) => {
+    const graph = new LGraph()
+    const existing = new Reroute(toRerouteId(24), graph, [70, 80])
+    graph._addReroute(existing)
+    const originalId = graph.id
+    const data = graph.asSerialisable()
+    configureData(data)
+    const originalData = structuredClone(data)
 
+    if (name === 'within the root graph') {
       expect(() => graph.configure(data)).toThrow(/Reroute 23.*more than once/)
-      expect(graph.id).toBe(originalId)
-      expect(graph.reroutes.get(existing.id)).toBe(existing)
-      expect(useRerouteStore().getReroute(originalId, existing.id)).toBe(
-        existing._chain
-      )
-      expect(
-        layoutStore.getRerouteLayout(originalId, existing.id)?.position
-      ).toEqual({ x: 70, y: 80 })
+    } else {
+      expect(() => graph.configure(data)).not.toThrow()
+      const rerouteIds = [
+        ...graph.reroutes.keys(),
+        ...[...graph.subgraphs.values()].flatMap((subgraph) => [
+          ...subgraph.reroutes.keys()
+        ])
+      ]
+      expect(new Set(rerouteIds).size).toBe(rerouteIds.length)
+      expect(data).toEqual(originalData)
+      return
     }
-  )
+    expect(graph.id).toBe(originalId)
+    expect(graph.reroutes.get(existing.id)).toBe(existing)
+    expect(useRerouteStore().getReroute(originalId, existing.id)).toBe(
+      existing._chain
+    )
+    expect(
+      layoutStore.getRerouteLayout(originalId, existing.id)?.position
+    ).toEqual({ x: 70, y: 80 })
+  })
 
   it('preflights keep_old data without an ID against its live root bucket', () => {
     const graph = new LGraph()
@@ -812,30 +932,62 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(layoutStore.getRerouteLayout(replacementId, reroute.id)).toBeNull()
   })
 
-  it('clear detaches retained reroutes until valid reattachment', () => {
+  it('root clear preserves a nested reroute projected position', () => {
     const graph = new LGraph()
-    const reroute = new Reroute(toRerouteId(30), graph, [10, 20])
-    graph._addReroute(reroute)
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const reroute = new Reroute(toRerouteId(30), subgraph, [10, 20])
+    subgraph._addReroute(reroute)
     const clearedGraphId = graph.id
 
+    layoutStore.applyOperation({
+      actor: 'remote',
+      entity: 'reroute',
+      graphId: graph.id,
+      position: { x: 25, y: 35 },
+      registrationId: layoutStore.getRegistrationId(
+        'reroute',
+        graph.id,
+        reroute.id
+      ),
+      rerouteId: reroute.id,
+      source: LayoutSource.External,
+      timestamp: Date.now(),
+      type: 'moveReroute'
+    })
     graph.clear()
-    reroute.pos = [30, 40]
 
+    expect([...reroute.pos]).toEqual([25, 35])
     expect(reroute._graphId).toBeUndefined()
     expect(reroute._attachedGraph).toBeUndefined()
     expect(
       useRerouteStore().getReroute(clearedGraphId, reroute.id)
     ).toBeUndefined()
-    expect([...reroute.pos]).toEqual([30, 40])
     expect(layoutStore.getRerouteLayout(graph.id, reroute.id)).toBeNull()
+  })
 
-    graph._addReroute(reroute)
-    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBe(
-      reroute._chain
-    )
-    expect(
-      layoutStore.getRerouteLayout(graph.id, reroute.id)?.position
-    ).toEqual({ x: 30, y: 40 })
+  it('preserves the projected position when removing a reroute', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([10, 20], link)!
+    layoutStore.applyOperation({
+      actor: 'remote',
+      entity: 'reroute',
+      graphId: graph.id,
+      position: { x: 30, y: 40 },
+      registrationId: layoutStore.getRegistrationId(
+        'reroute',
+        graph.id,
+        reroute.id
+      ),
+      rerouteId: reroute.id,
+      source: LayoutSource.External,
+      timestamp: Date.now(),
+      type: 'moveReroute'
+    })
+
+    graph.removeReroute(reroute.id)
+
+    expect([...reroute.pos]).toEqual([30, 40])
   })
 
   it('stale attached reroute writes preserve a foreign replacement', () => {
@@ -886,6 +1038,7 @@ describe('Reroute position lives only in layoutStore', () => {
       release(graph, reroute)
 
       expect(reroutes.get(key)).toBe(foreignReroute)
+      if (attached) expect([...reroute.pos]).toEqual([10, 20])
     }
   )
 

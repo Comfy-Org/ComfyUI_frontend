@@ -1671,46 +1671,42 @@ class LayoutStore {
     const originalSource = this.currentSource
     const shouldNormalizeHeights = originalSource === LayoutSource.DOM
     this.currentSource = LayoutSource.Vue
+    try {
+      const nodeIds: NodeId[] = []
+      const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
+      const registrationIds: NonNullable<
+        BatchUpdateBoundsOperation['registrationIds']
+      > = {}
 
-    const nodeIds: NodeId[] = []
-    const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
-    const registrationIds: NonNullable<
-      BatchUpdateBoundsOperation['registrationIds']
-    > = {}
+      for (const { nodeId, bounds } of updates) {
+        const ynode = this.ynodes.get(makeScopedLayoutKey(rootGraphId, nodeId))
+        if (!ynode) continue
 
-    for (const { nodeId, bounds } of updates) {
-      const ynode = this.ynodes.get(makeScopedLayoutKey(rootGraphId, nodeId))
-      if (!ynode) continue
+        boundsRecord[nodeId] = shouldNormalizeHeights
+          ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
+          : bounds
+        const resolvedRegistrationId = ynode.get('registrationId')
+        if (typeof resolvedRegistrationId === 'string')
+          registrationIds[nodeId] = resolvedRegistrationId
+        nodeIds.push(nodeId)
+      }
 
-      boundsRecord[nodeId] = shouldNormalizeHeights
-        ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
-        : bounds
-      const resolvedRegistrationId = ynode.get('registrationId')
-      if (typeof resolvedRegistrationId === 'string')
-        registrationIds[nodeId] = resolvedRegistrationId
-      nodeIds.push(nodeId)
-    }
+      if (!nodeIds.length) return
 
-    if (!nodeIds.length) {
+      this.applyOperation({
+        type: 'batchUpdateBounds',
+        entity: 'node',
+        graphId: rootGraphId,
+        nodeIds,
+        registrationIds,
+        bounds: boundsRecord,
+        timestamp: Date.now(),
+        source: this.currentSource,
+        actor: this.currentActor
+      })
+    } finally {
       this.currentSource = originalSource
-      return
     }
-
-    const operation: BatchUpdateBoundsOperation = {
-      type: 'batchUpdateBounds',
-      entity: 'node',
-      graphId: rootGraphId,
-      nodeIds,
-      registrationIds,
-      bounds: boundsRecord,
-      timestamp: Date.now(),
-      source: this.currentSource,
-      actor: this.currentActor
-    }
-
-    this.applyOperation(operation)
-
-    this.currentSource = originalSource
   }
 }
 

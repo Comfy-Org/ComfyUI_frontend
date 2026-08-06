@@ -755,19 +755,26 @@ export function unregisterRerouteLayout(
     registrationId !== undefined ? registrationId : retainedRegistrationId
   if (resolvedRegistrationId === undefined) return 'no-op'
 
+  const graphId = graph.rootGraph.id
+  const storedRegistrationId = layoutStore.getRegistrationId(
+    'reroute',
+    graphId,
+    reroute.id
+  )
+  if (storedRegistrationId === resolvedRegistrationId) void reroute.pos[0]
   const result = layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'reroute',
-    graphId: graph.rootGraph.id,
+    graphId,
     registrationId: resolvedRegistrationId,
     rerouteId: reroute.id,
     type: 'deleteReroute'
   })
   if (result !== 'rejected') {
-    const key = registrationKey('reroute', graph.rootGraph.id, reroute.id)
+    const key = registrationKey('reroute', graphId, reroute.id)
     const storedId = layoutStore.getRegistrationId(
       'reroute',
-      graph.rootGraph.id,
+      graphId,
       reroute.id
     )
     if (
@@ -840,6 +847,10 @@ export function moveRerouteLayout(
     rerouteId: reroute.id,
     type: 'moveReroute'
   })
+}
+
+export function hasRerouteLayoutRegistration(reroute: Reroute): boolean {
+  return rerouteRegistrationIds.has(reroute)
 }
 
 /**
@@ -957,6 +968,7 @@ export function unregisterAllGraphLayout(
         reroute.id
       )
       if (layout && storedRegistrationId === registrationId) {
+        void reroute.pos[0]
         restorationOperations.push({
           actor,
           entity: 'reroute',

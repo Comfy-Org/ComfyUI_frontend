@@ -206,6 +206,7 @@ export interface GraphAddOptions {
 }
 
 const nodesAdoptingLayout = new WeakSet<LGraphNode>()
+const rerouteDataAdoptingLayout = new WeakSet<object>()
 
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
@@ -503,12 +504,11 @@ export class LGraph
   }
 
   private clearWithResult(): LayoutOperationResult {
-    this.stop()
-    this.status = LGraph.STATUS_STOPPED
-
     const graphId = this.id
     const layoutResult = unregisterAllGraphLayout(this)
     if (layoutResult === 'rejected') return 'rejected'
+    this.stop()
+    this.status = LGraph.STATUS_STOPPED
     if (this.isRootGraph && graphId !== zeroUuid) {
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
@@ -1194,8 +1194,7 @@ export class LGraph
       restoreNodeIdentity()
       throw error
     }
-    // A no-op means the entry already exists; re-registering is not an error.
-    if (registrationResult === 'rejected') {
+    if (registrationResult !== 'applied') {
       restoreNodeIdentity()
       return
     }
@@ -1293,6 +1292,16 @@ export class LGraph
     // sure? - almost sure is wrong
     try {
       if (layoutDetach.result === 'rejected') return
+      const releasedSubgraphs = node.isSubgraphNode()
+        ? findReleasableSubgraphs(this.rootGraph, node)
+        : []
+      for (const subgraph of releasedSubgraphs) {
+        layoutDetach.includeGraph(subgraph)
+        if (unregisterAllGraphLayout(subgraph) === 'rejected') {
+          layoutDetach.restore(undefined)
+          return
+        }
+      }
       this.beforeChange()
 
       this.events.dispatch('node:before-removed', { node })
@@ -1320,14 +1329,8 @@ export class LGraph
         }
       }
 
-      const initiallyReleasedSubgraphs = node.isSubgraphNode()
-        ? findReleasableSubgraphs(this.rootGraph, node)
-        : []
       if (node.isSubgraphNode()) {
-        for (const subgraph of initiallyReleasedSubgraphs) {
-          layoutDetach.includeGraph(subgraph)
-        }
-        for (const subgraph of initiallyReleasedSubgraphs) {
+        for (const subgraph of releasedSubgraphs) {
           visitGraphNodes(subgraph, fireNodeRemovalLifecycle)
         }
       }
@@ -1348,18 +1351,6 @@ export class LGraph
         }
       }
 
-      const releasedSubgraphs = node.isSubgraphNode()
-        ? findReleasableSubgraphs(this.rootGraph, node).filter((subgraph) =>
-            initiallyReleasedSubgraphs.includes(subgraph)
-          )
-        : []
-      for (const subgraph of releasedSubgraphs) {
-        if (unregisterAllGraphLayout(subgraph) === 'rejected') {
-          node.graph = this
-          layoutDetach.restore(undefined)
-          return
-        }
-      }
       for (const subgraph of releasedSubgraphs) {
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
@@ -1715,7 +1706,7 @@ export class LGraph
    * populating {@link reroutes}; routing every add through here keeps the
    * store from silently desyncing.
    */
-  _addReroute(reroute: Reroute): void {
+  _addReroute(reroute: Reroute, adoptExisting = false): void {
     if (reroute.network.deref() !== this) {
       throw new Error(
         `Reroute ${reroute.id} may only attach to its constructor graph`
@@ -1731,7 +1722,15 @@ export class LGraph
     if (existing && existing !== reroute) {
       throw new Error(`Reroute ${reroute.id} is already owned by this graph`)
     }
-    if (existing) return
+    if (existing) {
+      if (adoptExisting) {
+        const result = materializeRerouteLayout(this, reroute)
+        if (result !== 'applied') {
+          throw new Error(`Reroute layout registration ${result}`)
+        }
+      }
+      return
+    }
 
     const position = { x: reroute.pos[0], y: reroute.pos[1] }
     registerRerouteChain(this, reroute)
@@ -1742,10 +1741,12 @@ export class LGraph
       unregisterRerouteChain(reroute)
       throw error
     }
-    // A no-op means the entry already exists; re-registering is not an error.
-    if (registrationResult === 'rejected') {
+    if (registrationResult === 'no-op' && adoptExisting) {
+      registrationResult = materializeRerouteLayout(this, reroute)
+    }
+    if (registrationResult !== 'applied') {
       unregisterRerouteChain(reroute)
-      return
+      throw new Error(`Reroute layout registration ${registrationResult}`)
     }
     this.reroutesInternal.set(reroute.id, reroute)
     reroute._attachedGraph = new WeakRef(this)
@@ -1769,32 +1770,24 @@ export class LGraph
    * Creates the object if it does not exist.
    * @param serialisedReroute See {@link SerialisableReroute}
    */
-  setReroute({
-    id,
-    parentId,
-    pos,
-    floating
-  }: OptionalProps<SerialisableReroute, 'id'>): Reroute {
-    const originalLastRerouteId = this.state.lastRerouteId
+  setReroute(
+    serialisedReroute: OptionalProps<SerialisableReroute, 'id'>
+  ): Reroute {
+    const { id, parentId, pos, floating } = serialisedReroute
     const rerouteId =
       id === undefined
         ? toRerouteId(Number(this.state.lastRerouteId) + 1)
         : toRerouteId(id)
-    if (rerouteId > this.state.lastRerouteId) {
-      this.state.lastRerouteId = rerouteId
-    }
 
     const existingReroute = this.reroutes.get(rerouteId)
     const reroute = existingReroute ?? new Reroute(rerouteId, this, pos)
+    this._addReroute(reroute, rerouteDataAdoptingLayout.has(serialisedReroute))
+    if (pos && existingReroute) reroute.pos = pos
     reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
-    if (pos && existingReroute) reroute.pos = pos
     reroute.floating = floating
-    try {
-      this._addReroute(reroute)
-    } catch (error) {
-      this.state.lastRerouteId = originalLastRerouteId
-      throw error
+    if (rerouteId > this.state.lastRerouteId) {
+      this.state.lastRerouteId = rerouteId
     }
     return reroute
   }
@@ -2727,6 +2720,48 @@ export class LGraph
       const targetGraphId = this.isRootGraph
         ? (serializedRootId ?? (keepsOldState ? this.id : undefined))
         : this.rootGraph.id
+      const serializedGraphs = [
+        data.version === 0.4 ? data.extra?.reroutes : data.reroutes,
+        ...(data.definitions?.subgraphs ?? []).map(
+          (subgraph) => subgraph.reroutes
+        )
+      ]
+      for (const reroutes of serializedGraphs) {
+        const graphRerouteIds = new Set<RerouteId>()
+        for (const { id } of reroutes ?? []) {
+          const rerouteId = toRerouteId(id)
+          if (graphRerouteIds.has(rerouteId)) {
+            throw new Error(
+              `Reroute ${rerouteId} appears more than once in the configuration`
+            )
+          }
+          graphRerouteIds.add(rerouteId)
+        }
+      }
+
+      const temporaryState = { ...this.state }
+      let subgraphs = data.definitions?.subgraphs
+      if (subgraphs) {
+        const clonedSubgraphs = structuredClone(subgraphs)
+        const reservedRerouteIds = keepsOldState
+          ? collectReservedRerouteIds(this)
+          : new Set<RerouteId>()
+        for (const { id } of (data.version === 0.4
+          ? data.extra?.reroutes
+          : data.reroutes) ?? []) {
+          reservedRerouteIds.add(id)
+        }
+        deduplicateSubgraphRerouteIds(
+          clonedSubgraphs,
+          reservedRerouteIds,
+          temporaryState
+        )
+        data = {
+          ...data,
+          definitions: { ...data.definitions, subgraphs: clonedSubgraphs }
+        }
+        subgraphs = clonedSubgraphs
+      }
       const graphs = [
         {
           graph: this,
@@ -2737,19 +2772,6 @@ export class LGraph
           reroutes: subgraph.reroutes
         }))
       ]
-      const incomingRerouteIds = new Set<RerouteId>()
-      for (const { reroutes } of graphs) {
-        for (const { id } of reroutes ?? []) {
-          const rerouteId = toRerouteId(id)
-          if (incomingRerouteIds.has(rerouteId)) {
-            throw new Error(
-              `Reroute ${rerouteId} appears more than once in the configuration`
-            )
-          }
-          incomingRerouteIds.add(rerouteId)
-        }
-      }
-
       if (targetGraphId && targetGraphId !== zeroUuid) {
         const store = useRerouteStore()
         const replaceableOwners = keepsOldState
@@ -2787,6 +2809,7 @@ export class LGraph
         ? this.clearWithResult()
         : unregisterAllGraphLayout(this)
       if (layoutResult === 'rejected') return
+      this.state.lastRerouteId = temporaryState.lastRerouteId
 
       this._configureBase(data)
 
@@ -2850,8 +2873,12 @@ export class LGraph
       // Reroutes
       if (Array.isArray(reroutes)) {
         for (const rerouteData of reroutes) {
-          const reroute = this.setReroute(rerouteData)
-          materializeRerouteLayout(this, reroute)
+          rerouteDataAdoptingLayout.add(rerouteData)
+          try {
+            this.setReroute(rerouteData)
+          } finally {
+            rerouteDataAdoptingLayout.delete(rerouteData)
+          }
         }
       }
 
@@ -2868,7 +2895,6 @@ export class LGraph
       // Subgraph definitions — deduplicate node IDs before configuring.
       // deduplicateSubgraphNodeIds clones internally to avoid mutating
       // the caller's data (e.g. reactive Pinia state).
-      const subgraphs = data.definitions?.subgraphs
       let effectiveNodesData = nodesData
       if (subgraphs) {
         const reservedNodeIds = new Set<number>()
@@ -2899,11 +2925,6 @@ export class LGraph
           deduplicateSubgraphGroupIds(
             deduplicated.subgraphs,
             collectReservedGroupIds(this, data.groups),
-            this.state
-          )
-          deduplicateSubgraphRerouteIds(
-            deduplicated.subgraphs,
-            collectReservedRerouteIds(this),
             this.state
           )
         }

@@ -1597,6 +1597,34 @@ describe('layoutStore CRDT operations', () => {
     expect(nodeRef.value?.position).toEqual(layout.position)
   })
 
+  it('restores the source when a batch update throws', () => {
+    const nodeId = toNodeId('throwing-batch-node')
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      graphId: GRAPH,
+      nodeId,
+      layout: createTestNode(nodeId),
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    layoutStore.setSource(LayoutSource.DOM)
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockImplementationOnce(() => {
+        throw new Error('batch failed')
+      })
+
+    expect(() =>
+      layoutStore.batchUpdateNodeBounds(GRAPH, [
+        { nodeId, bounds: { x: 1, y: 2, width: 3, height: 4 } }
+      ])
+    ).toThrow('batch failed')
+    applyOperation.mockRestore()
+    expect(layoutStore.getCurrentSource()).toBe(LayoutSource.DOM)
+  })
+
   it('normalizes very small DOM-sourced heights safely', () => {
     const nodeId = toNodeId('small-dom-node')
     const layout = createTestNode(nodeId)

@@ -1,5 +1,6 @@
 import { toGroupId } from '@/types/groupId'
 import type { GroupId } from '@/types/groupId'
+import { toNodeId } from '@/types/nodeId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, onTestFinished, vi } from 'vitest'
@@ -304,10 +305,20 @@ describe('group layout in layoutStore', () => {
   })
 
   test('keeps node layout registration when reentrant clear is rejected', () => {
+    vi.useFakeTimers()
     const graph = new LGraph()
-    const node = new LGraphNode('node')
+    class StoppableNode extends LGraphNode {
+      onStop = vi.fn()
+    }
+    const node = new StoppableNode('node')
     graph.add(node)
     const group = addedGroup(graph, toGroupId(808))
+    graph.start(10)
+    const executionTimer = graph.execution_timer_id
+    onTestFinished(() => {
+      graph.stop()
+      vi.useRealTimers()
+    })
     const ydoc = getLayoutStoreYDoc()
     function attemptClear(): void {
       ydoc.off('beforeTransaction', attemptClear)
@@ -319,6 +330,9 @@ describe('group layout in layoutStore', () => {
 
     expect(graph.nodes).toContain(node)
     expect(graph.groups).toContain(group)
+    expect(graph.status).toBe(LGraph.STATUS_RUNNING)
+    expect(graph.execution_timer_id).toBe(executionTimer)
+    expect(node.onStop).not.toHaveBeenCalled()
     expect(group.graph).toBe(graph)
     node.pos = [20, 30]
     expect(
@@ -406,6 +420,17 @@ describe('group layout in layoutStore', () => {
     expect(node.graph).toBeNull()
     expect(graph.nodes).not.toContain(node)
     expect(layoutStore.getNodeLayoutRef(graph.id, node.id).value).toBeNull()
+  })
+
+  test('rejects ordinary node attachment to an existing layout', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    node.id = toNodeId(812)
+    useLayoutMutations().createNode(graph.id, node.id, {})
+
+    expect(graph.add(node)).toBeUndefined()
+    expect(node.graph).toBeNull()
+    expect(graph.nodes).not.toContain(node)
   })
 
   test('restores node identity when registration compensation throws', () => {
