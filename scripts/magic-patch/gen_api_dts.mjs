@@ -15,11 +15,16 @@ const DIR = new URL('../../src/platform/nodeApi/', import.meta.url).pathname
 /** Exported interfaces and type aliases, with their doc comments. */
 function declarations(source) {
   const out = []
-  // Match an optional leading block comment, then the exported declaration up
-  // to the closing brace at column 0 (or end of a one-line type alias).
-  const pattern =
-    /(\/\*\*[\s\S]*?\*\/\n)?export (interface|type) (\w+)[\s\S]*?(?:\n\}|\n(?=\n)|$)/g
-  for (const match of source.matchAll(pattern)) {
+  // Interfaces run to the closing brace at column 0. They must NOT stop at a
+  // blank line: members are grouped with blank lines between them, and treating
+  // one as the end silently truncated the declaration — NodeHandle lost
+  // getProperty/setProperty and everything after, so agents refused files as
+  // "no destination" against API that exists.
+  const patterns = [
+    /(\/\*\*[\s\S]*?\*\/\n)?export (interface) (\w+)[\s\S]*?\n\}/g,
+    /(\/\*\*[\s\S]*?\*\/\n)?export (type) (\w+)[\s\S]*?(?:\n(?=\n)|$)/g
+  ]
+  for (const match of patterns.flatMap((p) => [...source.matchAll(p)])) {
     const [text, , kind, name] = match
     // Internal plumbing the pack never names.
     if (/^(Raw|Registration|Bound)/.test(name)) continue
