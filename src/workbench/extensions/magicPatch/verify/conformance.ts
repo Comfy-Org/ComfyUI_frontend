@@ -127,6 +127,13 @@ const RETIRED: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * `node.color = …` and friends — state written as a property on something
+ * bound to a handle. The receiver list keeps a pack's own objects out of it.
+ */
+const PROPERTY_WRITE =
+  /\b(node|widget|slot|handle|b|builder)\.(title|color|bgColor|bgcolor|mode|shape|collapsed|pinned|size|pos|position|value|hidden|disabled|label|properties|serialize)\s*=(?!=)/g
+
+/**
  * A mutating call reached through `?.`, so a failed lookup silently skips it.
  * Reads are fine — `?.getValue()` yielding undefined is visible to the caller.
  */
@@ -246,6 +253,34 @@ const checks: readonly Check[] = [
           `(${patched.length} of ${before} site(s) remain). ` +
           `Convert the registration itself, or punt as api-gap.`
       )
+    }
+  },
+  {
+    id: 'handles-use-accessors',
+    description:
+      'Handle state is read and written through methods; property syntax silently does nothing.',
+    run: (ctx) => {
+      // The gap no-unknown-api-members cannot see: it is scoped to the diff, so
+      // `node.color = c` survives because the original used `color` too. But a
+      // handle has no such property — the write vanishes, or the whole pack
+      // fails to register. kjnodes' appearance.js was converted this way and
+      // took every type in the pack down with it.
+      const offenders = [...ctx.converted.matchAll(PROPERTY_WRITE)].map(
+        (m) => `${m[1]}.${m[2]}`
+      )
+      return offenders.length
+        ? result(
+            'handles-use-accessors',
+            'failed',
+            `Property writes on a handle: ${[...new Set(offenders)].join(', ')}. ` +
+              `Use the accessor — setColor, setTitle, setMode, setProperty and ` +
+              `the rest. Property syntax compiles and does nothing.`
+          )
+        : result(
+            'handles-use-accessors',
+            'passed',
+            'Handle state written through accessors.'
+          )
     }
   },
   {

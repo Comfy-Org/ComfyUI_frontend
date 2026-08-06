@@ -257,6 +257,13 @@ ported.
 in `destroy`: a mounted element owns listeners, timers and observers that node
 removal would otherwise leave running.
 
+**If you are writing to a node or widget handle** — every read and write is a
+**method**, never a property: `setTitle`, `setColor`, `setBgColor`, `setMode`,
+`setCollapsed`, `setProperty`, `getSize`/`setSize([w, h])` on nodes;
+`getValue`/`setValue`, `isHidden`/`setHidden`, `setOption` on widgets. Property
+syntax compiles and silently does nothing. See the table in
+`references/node-definitions.md`.
+
 **If you are converting `registerCustomNodes` / `extends LGraphNode` /
 `isVirtualNode` / `applyToGraph`** — identify which of four intents the node
 serves (annotation, wire, value, or acting on other nodes) and use **`comfy.defs.define`**
