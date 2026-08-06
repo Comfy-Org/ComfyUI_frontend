@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
-const { label, min, max, step, track, valueText } = defineProps<{
+const { label, min, max, step, track, valueText, moving } = defineProps<{
   label: string
   min: number
   max: number
   step: number
   track: string
   valueText: string
+  /** Shared in-motion signal from the parent. When several sliders are
+   * driven together (the idle demo eases hue and saturation as one gesture)
+   * the parent computes a single settle window so every overlay fades at the
+   * same instant instead of each slider timing out on its own. */
+  moving?: boolean
 }>()
 
 const model = defineModel<number>({ required: true })
@@ -19,20 +24,8 @@ const trackEl = ref<HTMLElement>()
 const fraction = computed(() => (model.value - min) / (max - min))
 
 /** The track dims while the value is in motion — a drag in progress, or the
- * idle demo driving it. Motion is detected from the value itself so both
- * sources look identical. The demo snaps its eased values once they are
- * within a rounding step of target, which caps the gap between updates at
- * ~160ms — the settle window just needs to sit above that. */
+ * idle demo driving it (reported by the parent via `moving`). */
 const dragging = ref(false)
-const moving = ref(false)
-
-let settleTimer: ReturnType<typeof setTimeout> | undefined
-watch(model, () => {
-  moving.value = true
-  clearTimeout(settleTimer)
-  settleTimer = setTimeout(() => (moving.value = false), 250)
-})
-onScopeDispose(() => clearTimeout(settleTimer))
 
 function quantize(value: number): number {
   const clamped = Math.min(max, Math.max(min, value))
@@ -94,7 +87,7 @@ function onKeydown(event: KeyboardEvent) {
       :aria-valuemax="max"
       :aria-valuenow="model"
       :aria-valuetext="valueText"
-      class="group relative h-[0.55em] w-full cursor-pointer touch-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+      class="group relative h-[0.55em] w-full cursor-pointer touch-none rounded-full outline-none before:absolute before:inset-x-[-0.5em] before:inset-y-[-0.95em] before:content-[''] focus-visible:ring-2 focus-visible:ring-white/50"
       :style="{ background: track }"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
