@@ -844,6 +844,38 @@ describe('billingOperationStore', () => {
       expect((await terminal).status).toBe('succeeded')
     })
 
+    it('notices a payment completed outside the tab while parked on verification', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-topup',
+          status: 'pending',
+          authentication_state: 'requires_action',
+          action_url: 'https://invoice.stripe.com/i/auth',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-topup',
+          status: 'succeeded',
+          authentication_state: 'succeeded',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-topup', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-topup')).toMatchObject({
+        status: 'pending',
+        authenticationState: 'requires_action'
+      })
+      expect(mockHandleNextAction).not.toHaveBeenCalled()
+
+      // The customer authenticates on the hosted page; the server settles the
+      // operation and this tab must pick it up on its own next poll.
+      await vi.advanceTimersByTimeAsync(31_000)
+      expect((await terminal).status).toBe('succeeded')
+    })
+
     it('keeps processing pending without relaunching Stripe', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-processing',

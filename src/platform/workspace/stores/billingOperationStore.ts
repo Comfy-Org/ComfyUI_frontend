@@ -326,19 +326,22 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         operation.authenticationRequiredSeen || state === 'requires_action'
     })
 
-    if (state === 'failed_retryable') {
-      // Polling continues because a pending operation can still leave this
-      // state — the customer may retry, and a refusal reported mid-flight can
-      // resolve into an authentication step. The op's own timeout ends it.
-      return false
-    }
+    // Neither authentication state is terminal for a pending operation: the
+    // customer may complete the challenge on a hosted page or another device,
+    // and the server learns before this tab does. Polling therefore continues
+    // at the slower authentication cadence until the operation settles or times
+    // out — pausing here left a completed payment showing "complete
+    // verification" forever.
+    if (state === 'failed_retryable') return false
     if (
       state !== 'requires_action' ||
       !operation.autoHandleRequiresAction ||
       autoHandledPaymentActions.has(opId)
     ) {
-      return state === 'requires_action'
+      return false
     }
+    // Only the in-page challenge we drive ourselves suspends polling, for as
+    // long as it is on screen.
     autoHandledPaymentActions.add(opId)
     return !(await runPaymentIntentAction(opId))
   }
