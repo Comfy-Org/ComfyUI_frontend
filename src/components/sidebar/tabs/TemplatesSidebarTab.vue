@@ -86,27 +86,18 @@
            same question. The generation-type half collapses into a dropdown
            when the panel is too narrow for both. -->
       <div class="flex items-center gap-2">
-        <div
-          class="flex shrink-0 items-center gap-2"
+        <TabList
+          v-model="selectedType"
+          class="w-auto shrink-0"
           data-testid="template-type-tabs"
         >
-          <button
-            v-for="tab in typeTabs"
-            :key="tab.value"
-            type="button"
-            :aria-pressed="selectedType === tab.value"
-            :class="
-              cn(
-                'flex shrink-0 items-center gap-1.5',
-                filterChipClass(selectedType === tab.value)
-              )
-            "
-            @click="selectedType = tab.value"
-          >
-            <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
-            <span>{{ tab.label }}</span>
-          </button>
-        </div>
+          <Tab v-for="tab in typeTabs" :key="tab.value" :value="tab.value">
+            <span class="flex items-center gap-1.5">
+              <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
+              {{ tab.label }}
+            </span>
+          </Tab>
+        </TabList>
 
         <!-- Generation type is a dropdown pinned to the right of the tabs:
              as chips it took the whole line, and it is a single choice, so a
@@ -120,34 +111,43 @@
             <template #button>
               <button
                 type="button"
-                :class="
-                  cn(
-                    'flex shrink-0 items-center gap-1.5',
-                    filterChipClass(!!selectedGenerationType)
-                  )
-                "
+                class="flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border-none bg-transparent px-2.5 text-sm text-text-secondary outline-hidden transition-all duration-200 hover:bg-button-hover-surface"
               >
-                <span class="max-w-28 truncate">
-                  {{ selectedGenerationType?.name ?? generationTypeLabel }}
+                <span>{{ generationTypeLabel }}</span>
+                <span
+                  v-if="selectedGenerationTypes.length"
+                  class="text-text-primary"
+                >
+                  {{ selectedGenerationTypes.length }}
                 </span>
                 <i class="icon-[lucide--chevron-down] size-3.5" />
               </button>
             </template>
-            <DropdownMenuRadioGroup :model-value="selectedCategory">
-              <DropdownMenuRadioItem
-                v-for="opt in generationTypeOptions"
-                :key="opt.value"
-                :value="opt.value"
-                class="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors outline-none select-none data-highlighted:bg-secondary-background-hover"
-                @click="toggleGenerationType(opt.value)"
-                @select.prevent
+            <DropdownMenuCheckboxItem
+              v-for="opt in generationTypeOptions"
+              :key="opt.value"
+              :model-value="selectedCategories.includes(opt.value)"
+              class="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors outline-none select-none data-highlighted:bg-secondary-background-hover"
+              @click="toggleFilterValue('category', opt.value)"
+              @select.prevent
+            >
+              <span
+                :class="
+                  cn(
+                    'flex size-4 shrink-0 items-center justify-center rounded-sm transition-colors duration-200',
+                    selectedCategories.includes(opt.value)
+                      ? 'bg-primary-background'
+                      : 'bg-secondary-background'
+                  )
+                "
               >
-                <span class="flex-1">{{ opt.name }}</span>
-                <DropdownMenuItemIndicator class="size-4 shrink-0">
-                  <i class="icon-[lucide--check]" />
-                </DropdownMenuItemIndicator>
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
+                <i
+                  v-if="selectedCategories.includes(opt.value)"
+                  class="icon-[lucide--check] text-xs font-bold text-base-foreground"
+                />
+              </span>
+              <span class="flex-1">{{ opt.name }}</span>
+            </DropdownMenuCheckboxItem>
           </DropdownMenu>
         </div>
       </div>
@@ -596,11 +596,9 @@ import TemplatesFilterMenu from '@/components/sidebar/tabs/TemplatesFilterMenu.v
 import type { FilterMenuFacet } from '@/components/sidebar/tabs/TemplatesFilterMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
-import {
-  DropdownMenuItemIndicator,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem
-} from 'reka-ui'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
+import { DropdownMenuCheckboxItem } from 'reka-ui'
 import Popover from '@/components/ui/Popover.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import type { SelectOption } from '@/components/ui/select/types'
@@ -696,7 +694,9 @@ const categoryOptions = computed<SelectOption[]>(() => {
   )[]
   return navItems.flatMap((item) =>
     'id' in item
-      ? [{ name: item.label, value: item.id }]
+      ? item.id === 'all'
+        ? []
+        : [{ name: item.label, value: item.id }]
       : (item.items ?? []).map((sub) => ({ name: sub.label, value: sub.id }))
   )
 })
@@ -732,40 +732,44 @@ const generationTypeLabel = computed(() => {
   return group?.title ?? t('templateWorkflows.category', 'Category')
 })
 
-const selectedGenerationType = computed(() =>
-  generationTypeOptions.value.find(
-    (option) => option.value === selectedCategory.value
+const selectedGenerationTypes = computed(() =>
+  generationTypeOptions.value.filter((option) =>
+    selectedCategories.value.includes(option.value)
   )
 )
-
-/** Clicking the active one clears it, so the row doubles as its own reset. */
-const toggleGenerationType = (value: string) => {
-  selectedCategory.value = selectedCategory.value === value ? 'all' : value
-}
 
 // Get enhanced templates for better filtering
 const allTemplates = computed(() => workflowTemplatesStore.enhancedTemplates)
 
 // Navigation (category deep-links from entry points still work via the store)
-const selectedNavItem = ref<string | null>(
-  templatesPanelStore.consumeRequestedCategory() ??
-    (newUserService.isNewUser() ? GETTING_STARTED_CATEGORY_ID : 'all')
+/**
+ * Categories are multi-select: picking Image and Video should widen the grid
+ * rather than replace one with the other. An empty list means "everything",
+ * so there is no sentinel value to keep in sync with the option list.
+ */
+const selectedCategories = ref<string[]>(
+  (() => {
+    const requested =
+      templatesPanelStore.consumeRequestedCategory() ??
+      (newUserService.isNewUser() ? GETTING_STARTED_CATEGORY_ID : null)
+    return requested && requested !== 'all' ? [requested] : []
+  })()
 )
-
-// SingleSelect needs a non-null string model; bridge it to selectedNavItem.
-const selectedCategory = computed({
-  get: () => selectedNavItem.value ?? 'all',
-  set: (value: string) => {
-    selectedNavItem.value = value
-  }
-})
 
 // Filter templates based on selected navigation item
 const navigationFilteredTemplates = computed(() => {
-  if (!selectedNavItem.value) {
+  if (!selectedCategories.value.length) {
     return allTemplates.value
   }
-  return workflowTemplatesStore.filterTemplatesByCategory(selectedNavItem.value)
+  // Union, not intersection: several categories read as "any of these".
+  const seen = new Set<string>()
+  return selectedCategories.value
+    .flatMap((id) => workflowTemplatesStore.filterTemplatesByCategory(id))
+    .filter((template) => {
+      if (seen.has(template.name)) return false
+      seen.add(template.name)
+      return true
+    })
 })
 
 const selectedType = ref<TemplateTypeFilter>('all')
@@ -834,7 +838,7 @@ watch(searchQuery, (value) => {
  * @param source The origin of the change ('nav' or 'sort').
  */
 const coordinateNavAndSort = (source: 'nav' | 'sort') => {
-  const isPopularNav = selectedNavItem.value === 'popular'
+  const isPopularNav = selectedCategories.value.includes('popular')
   const isPopularSort = sortSelection.value === 'popular'
 
   if (source === 'nav') {
@@ -847,12 +851,14 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
     // When sort is changed away from 'Popular' while in the 'Popular' category,
     // reset the category to 'All Templates' to avoid a confusing state.
     if (isPopularNav && !isPopularSort) {
-      selectedNavItem.value = 'all'
+      selectedCategories.value = selectedCategories.value.filter(
+        (id) => id !== 'popular'
+      )
     }
   }
 }
 
-watch(selectedNavItem, () => coordinateNavAndSort('nav'))
+watch(selectedCategories, () => coordinateNavAndSort('nav'))
 watch(sortSelection, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component
@@ -896,12 +902,12 @@ const addedFilterCount = computed(
  * filtered with nothing on screen saying so.
  */
 const activeFilterCount = computed(
-  () => addedFilterCount.value + (selectedCategory.value === 'all' ? 0 : 1)
+  () => addedFilterCount.value + selectedCategories.value.length
 )
 
 const clearAllFilters = () => {
   resetFilters()
-  selectedNavItem.value = 'all'
+  selectedCategories.value = []
 }
 
 // ---- Linear-style filter menu ----
@@ -917,9 +923,8 @@ const filterMenuFacets = computed<FilterMenuFacet[]>(() => [
     key: 'category',
     label: t('templateWorkflows.category', 'Category'),
     options: categoryOptions.value,
-    selectedValues: [selectedCategory.value],
-    mode: 'single',
-    emptyValue: 'all'
+    selectedValues: selectedCategories.value,
+    mode: 'multiple'
   },
   {
     key: 'model',
@@ -946,8 +951,9 @@ const filterMenuFacets = computed<FilterMenuFacet[]>(() => [
 
 const toggleFilterValue = (facetKey: string, value: string) => {
   if (facetKey === 'category') {
-    // Re-picking the active category clears it rather than doing nothing.
-    selectedNavItem.value = selectedCategory.value === value ? 'all' : value
+    selectedCategories.value = selectedCategories.value.includes(value)
+      ? selectedCategories.value.filter((id) => id !== value)
+      : [...selectedCategories.value, value]
     return
   }
   const target =
@@ -966,7 +972,7 @@ const restingHiddenCount = computed(() =>
 )
 
 const clearFilterFacet = (facetKey: string) => {
-  if (facetKey === 'category') selectedNavItem.value = 'all'
+  if (facetKey === 'category') selectedCategories.value = []
   else if (facetKey === 'model') selectedModels.value = []
   else if (facetKey === 'task') selectedUseCases.value = []
   else selectedRunsOn.value = []
@@ -994,14 +1000,6 @@ const appliedFilters = computed<AppliedFilter[]>(() =>
       }))
   )
 )
-
-const filterChipClass = (active: boolean) =>
-  cn(
-    'h-8 cursor-pointer rounded-md border border-solid px-3 text-sm font-medium transition-colors outline-none',
-    active
-      ? 'border-transparent bg-base-foreground text-base-background'
-      : 'border-border-subtle bg-transparent text-base-foreground hover:bg-secondary-background-hover'
-  )
 
 // UI state
 const loadingTemplate = ref<string | null>(null)
@@ -1096,7 +1094,7 @@ useIntersectionObserver(loadTrigger, () => {
 watch(
   [
     filteredTemplates,
-    selectedNavItem,
+    selectedCategories,
     selectedType,
     sortSelection,
     selectedModels,
@@ -1198,10 +1196,10 @@ const metaFieldsFor = (template: TemplateInfo): DetailMetaField[] => {
  * scroll, or when navigating into the detail.
  */
 
-// Near-instant (Pablo, 08-05): the flyout is the whole point of hovering, and
-// 350ms read as lag. Not zero — a few frames still absorb the pointer sweeping
-// across the grid on its way somewhere else.
-const HOVER_PREVIEW_DELAY_MS = 100
+// No delay once a card is already being previewed: moving along the grid then
+// tracks the pointer immediately. The wait only guards the first card, so a
+// pointer crossing the panel on its way elsewhere doesn't summon the flyout.
+const HOVER_PREVIEW_DELAY_MS = 60
 const HOVER_PREVIEW_WIDTH = 340
 const HOVER_PREVIEW_MAX_HEIGHT = 380
 const hoverPreview = ref<{
@@ -1237,6 +1235,8 @@ const onCardEnter = (template: TemplateInfo, event: MouseEvent) => {
   hoveredTemplate.value = template.name
   const card = event.currentTarget as HTMLElement
   if (hoverTimer !== null) window.clearTimeout(hoverTimer)
+  // Already showing one? Swap instantly — the user is scanning, not arriving.
+  const delay = hoverPreview.value ? 0 : HOVER_PREVIEW_DELAY_MS
   hoverTimer = window.setTimeout(() => {
     const top = Math.max(
       16,
@@ -1246,7 +1246,7 @@ const onCardEnter = (template: TemplateInfo, event: MouseEvent) => {
       )
     )
     hoverPreview.value = { template, top, left: hoverPreviewLeftFor() }
-  }, HOVER_PREVIEW_DELAY_MS)
+  }, delay)
 }
 
 const onCardLeave = () => {
@@ -1316,8 +1316,8 @@ const stopInitialCategoryGuard = watch(
   () => [isLoading.value, navigationFilteredTemplates.value.length] as const,
   ([loading, count]) => {
     if (loading) return
-    if (count === 0 && selectedNavItem.value !== 'all') {
-      selectedNavItem.value = 'all'
+    if (count === 0 && selectedCategories.value.length) {
+      selectedCategories.value = []
     }
     stopInitialCategoryGuard()
   }
