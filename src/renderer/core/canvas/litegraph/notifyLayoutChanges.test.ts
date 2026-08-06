@@ -21,12 +21,13 @@ function setup() {
   const setDirty = vi.fn()
   const canvas = { graph, setDirty } as unknown as LGraphCanvas
   const stop = notifyLayoutChanges(canvas)
-  return { graph, node, setDirty, stop }
+  return { graph, node, setDirty, stop, [Symbol.dispose]: stop }
 }
 
 describe('notifyLayoutChanges', () => {
   it('does not repeat onResize for a canvas resize', async () => {
-    const { node, setDirty, stop } = setup()
+    using context = setup()
+    const { node, setDirty } = context
     const onResize = vi.fn()
     node.onResize = onResize
 
@@ -34,11 +35,11 @@ describe('notifyLayoutChanges', () => {
     await vi.waitFor(() => expect(setDirty).toHaveBeenCalled())
 
     expect(onResize).toHaveBeenCalledTimes(1)
-    stop()
   })
 
   it('fires onResize for a resize the store originates', async () => {
-    const { graph, node, stop } = setup()
+    using context = setup()
+    const { graph, node } = context
     const onResize = vi.fn()
     node.onResize = onResize
 
@@ -49,11 +50,11 @@ describe('notifyLayoutChanges', () => {
       height: 200
     })
     await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
-    stop()
   })
 
   it('fires onResize when a bounds batch changes size', async () => {
-    const { graph, node, stop } = setup()
+    using context = setup()
+    const { graph, node } = context
     const onResize = vi.fn()
     node.onResize = onResize
 
@@ -64,11 +65,11 @@ describe('notifyLayoutChanges', () => {
       }
     ])
     await vi.waitFor(() => expect(onResize).toHaveBeenCalled())
-    stop()
   })
 
   it('leaves onResize alone when a bounds batch only moves', async () => {
-    const { graph, node, setDirty, stop } = setup()
+    using context = setup()
+    const { graph, node, setDirty } = context
     const setDirtyCalled = () => setDirty.mock.calls.length > 0
     const onResize = vi.fn()
     node.onResize = onResize
@@ -92,7 +93,6 @@ describe('notifyLayoutChanges', () => {
     await vi.waitFor(() => expect(setDirtyCalled()).toBe(true))
 
     expect(onResize).not.toHaveBeenCalled()
-    stop()
   })
 
   it('ignores changes from another root graph', async () => {
@@ -100,7 +100,8 @@ describe('notifyLayoutChanges', () => {
     otherGraph.id = createUuidv4()
     const otherNode = new LGraphNode('other')
     otherGraph.add(otherNode)
-    const { node, setDirty, stop } = setup()
+    using context = setup()
+    const { node, setDirty } = context
     const onResize = vi.fn()
     node.onResize = onResize
 
@@ -113,12 +114,12 @@ describe('notifyLayoutChanges', () => {
     expect(otherNode.id).toBe(node.id)
     expect(onResize).not.toHaveBeenCalled()
     expect(setDirty).not.toHaveBeenCalled()
-    stop()
   })
 
   it('stops notifying once stopped', async () => {
-    const { graph, node, setDirty, stop } = setup()
-    stop()
+    using context = setup()
+    const { graph, node, setDirty } = context
+    context.stop()
     setDirty.mockClear()
 
     useLayoutMutations().moveNode(graph.rootGraph.id, node.id, { x: 10, y: 10 })
