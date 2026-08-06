@@ -141,6 +141,9 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     expect(graph.reroutes.size).toBe(0)
     expect(store.getReroute(graph.rootGraph.id, reroute.id)).toBeUndefined()
+    expect(
+      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)
+    ).toBeNull()
   })
 
   it('clear() removes the graph’s chains from the store', () => {

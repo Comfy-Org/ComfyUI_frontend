@@ -1743,6 +1743,7 @@ export class LGraph
   _removeReroute(id: RerouteId): void {
     const reroute = this.reroutesInternal.get(id)
     if (!reroute) return
+    if (unregisterRerouteLayout(this, reroute) === 'rejected') return
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
   }
@@ -1877,7 +1878,8 @@ export class LGraph
         }
       }
 
-      this._removeReroute(id)
+      this.reroutesInternal.delete(id)
+      unregisterRerouteChain(reroute)
     } catch (error) {
       if (reroutes.get(id) === reroute) layoutDetach.restore(error)
       throw error
@@ -2969,7 +2971,8 @@ export class LGraph
           reroute.totalLinks === 0 &&
           unregisterRerouteLayout(this, reroute) !== 'rejected'
         ) {
-          this._removeReroute(reroute.id)
+          this.reroutesInternal.delete(reroute.id)
+          unregisterRerouteChain(reroute)
         }
       }
 
