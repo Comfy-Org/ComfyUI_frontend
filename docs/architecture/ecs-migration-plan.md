@@ -468,13 +468,12 @@ node layout changes. For non-canvas `resizeNode` and `batchUpdateBounds`
 operations, it also calls `onResize`; canvas resizes already own that callback
 through `LGraphNode.setSize()`. It does not copy geometry into nodes.
 
-**Stack verification for whole-value setters.** PR 14133 carries two
-`test.fails` cases for complementary geometry: a store resize followed by a
-whole-value `node.pos` assignment must preserve the stored size, and a store
-move followed by a whole-value `node.size` assignment must preserve the stored
-position. They document known failures in the facade alone. After rebasing PR
-14480, both should report unexpected passes; remove the `.fails` markers to make
-them permanent regressions before merging that child PR.
+**Whole-value setters re-read after committing.** `_positionUpdated` and
+`_sizeUpdated` write only their own half of `_posSize`, so stamping
+`_geometryVersion` to the post-commit store version would mark the untouched
+half fresh while it was still stale. The next commit of that half would then
+publish the stale value to the store and to CRDT peers. Both invalidate and
+refresh instead, which also picks up any value the store clamped or merged.
 
 **Deferred follow-up: extract geometry projection ownership.** Land this after
 the node geometry facade and its CRDT-safety follow-up (PRs 14133 and 14480) so

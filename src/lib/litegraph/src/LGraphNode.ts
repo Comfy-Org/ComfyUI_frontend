@@ -675,7 +675,8 @@ export class LGraphNode
 
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.moveNode(rootGraphId, this.id, position)
-    this._geometryVersion = layoutStore.geometryVersion
+    this._geometryVersion = -1
+    this.refreshGeometry()
   }
 
   /**
@@ -715,7 +716,8 @@ export class LGraphNode
       width: this._size[0],
       height: this._size[1]
     })
-    this._geometryVersion = layoutStore.geometryVersion
+    this._geometryVersion = -1
+    this.refreshGeometry()
   }
 
   /**

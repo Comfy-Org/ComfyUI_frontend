@@ -966,7 +966,7 @@ describe('layout geometry projection', () => {
     })
   })
 
-  test.fails('preserves stored size when assigning position', () => {
+  test('preserves stored size when assigning position', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.pos = [10, 20]
@@ -984,7 +984,7 @@ describe('layout geometry projection', () => {
     expect([...node.size]).toEqual([200, 80])
   })
 
-  test.fails('preserves stored position when assigning size', () => {
+  test('preserves stored position when assigning size', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.pos = [10, 20]
@@ -1000,6 +1000,30 @@ describe('layout geometry projection', () => {
     node.size = [300, 90]
 
     expect([...node.pos]).toEqual([30, 40])
+  })
+
+  test('does not write a stale width back to the store', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [10, 20]
+    node.size = [100, 50]
+    graph.add(node)
+    layoutStore.batchUpdateNodeBounds(graph.rootGraph.id, [
+      {
+        nodeId: node.id,
+        bounds: { x: 30, y: 40, width: 200, height: 80 }
+      }
+    ])
+
+    node.pos = [50, 60]
+    node.setSize([node.size[0], 120])
+
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toMatchObject({
+      position: { x: 50, y: 60 },
+      size: { width: 200, height: 120 }
+    })
   })
 })
 
