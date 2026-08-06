@@ -33,23 +33,23 @@ describe('NodeHandle', () => {
     it('exposes identity and title', () => {
       expect(handle().id).toBe(String(node.id))
       expect(handle().type).toBe('TestNode')
-      expect(handle().title).toBe('Test Title')
+      expect(handle().getTitle()).toBe('Test Title')
     })
 
     it('maps internal mode enum to public strings', () => {
-      expect(handle().mode).toBe('always')
+      expect(handle().getMode()).toBe('always')
       node.mode = LGraphEventMode.BYPASS
-      expect(handle().mode).toBe('bypass')
+      expect(handle().getMode()).toBe('bypass')
     })
 
     it('reports flags as booleans, not undefined', () => {
-      expect(handle().collapsed).toBe(false)
-      expect(handle().pinned).toBe(false)
+      expect(handle().isCollapsed()).toBe(false)
+      expect(handle().isPinned()).toBe(false)
     })
 
     it('returns frozen geometry so reads cannot be written through', () => {
       node.pos = [10, 20]
-      const pos = handle().position
+      const pos = handle().getPosition()
       expect(pos).toEqual({ x: 10, y: 20 })
       expect(Object.isFrozen(pos)).toBe(true)
     })
@@ -57,37 +57,37 @@ describe('NodeHandle', () => {
 
   describe('writes', () => {
     it('writes title through to the node', () => {
-      handle().title = 'Renamed'
-      expect(node.title).toBe('Renamed')
+      handle().setTitle('Renamed')
+      expect(node.getTitle()).toBe('Renamed')
     })
 
     it('maps public mode strings back to the internal enum', () => {
-      handle().mode = 'never'
+      handle().setMode('never')
       expect(node.mode).toBe(LGraphEventMode.NEVER)
     })
 
     it('rejects an invalid mode loudly instead of silently ignoring', () => {
       expect(() => {
-        handle().mode = 'nonsense' as never
+        handle().setMode('nonsense' as never)
       }).toThrow(/Invalid node mode/)
       expect(node.mode).toBe(LGraphEventMode.ALWAYS)
     })
 
     it('sets flags without clobbering sibling flags', () => {
       node.flags = { ...node.flags, pinned: true }
-      handle().collapsed = true
+      handle().setCollapsed(true)
       expect(node.flags.collapsed).toBe(true)
       expect(node.flags.pinned).toBe(true)
     })
 
     it('round-trips shape through public names', () => {
-      handle().shape = 'card'
-      expect(handle().shape).toBe('card')
+      handle().setShape('card')
+      expect(handle().getShape()).toBe('card')
     })
 
     it('rejects an invalid shape', () => {
       expect(() => {
-        handle().shape = 'hexagon' as never
+        handle().setShape('hexagon' as never)
       }).toThrow(/Invalid node shape/)
     })
 
@@ -102,8 +102,8 @@ describe('NodeHandle', () => {
     })
 
     it('moves and resizes via methods', () => {
-      handle().setPosition(100, 200)
-      handle().setSize(300, 400)
+      handle().setPosition({ x: 100, y: 200 })
+      handle().setSize({ width: 300, height: 400 })
       expect([node.pos[0], node.pos[1]]).toEqual([100, 200])
       expect([node.size[0], node.size[1]]).toEqual([300, 400])
     })
@@ -170,20 +170,28 @@ describe('NodeHandle', () => {
       graph.remove(node)
 
       expect(held.id).toBe(id)
-      expect(held.title).toBeUndefined()
-      expect(held.position).toBeUndefined()
+      expect(held.getTitle()).toBeUndefined()
+      expect(held.getPosition()).toBeUndefined()
       expect(() => held.snapshot()).not.toThrow()
       expect(held.snapshot()).toBeUndefined()
-      expect(() => {
-        held.title = 'zombie'
-      }).toThrow(ComfyDeletedError)
+      expect(() => held.setTitle('zombie')).toThrow(ComfyDeletedError)
     })
 
-    it('makes cleanup calls on a dead handle harmless', () => {
+    it('makes idempotent cleanup on a dead handle harmless', () => {
       const held = handle()
       graph.remove(node)
+      // Removing an already-removed node is the caller's desired end state, so
+      // packs can run teardown unconditionally.
       expect(() => held.remove()).not.toThrow()
-      expect(() => held.setPosition(1, 2)).not.toThrow()
+    })
+
+    it('still refuses a write on a dead handle', () => {
+      const held = handle()
+      graph.remove(node)
+      // A dropped write is a bug the pack cannot see. Setting is not
+      // idempotent, so unlike removal it has to be loud.
+      expect(() => held.setPosition({ x: 1, y: 2 })).toThrow(ComfyDeletedError)
+      expect(() => held.setTitle('zombie')).toThrow(ComfyDeletedError)
     })
 
     it('liveHandleFor gates on current existence', () => {

@@ -169,7 +169,7 @@ describe('comfy API root', () => {
       expect(adopted).toBeDefined()
       expect(adopted).toBe(two.graph.node(String(node.id)))
       expect(adopted).not.toBe(foreign)
-      expect(adopted!.title).toBe('A')
+      expect(adopted!.getTitle()).toBe('A')
     })
 
     it('returns undefined when adopting a non-handle or a dead entity', () => {

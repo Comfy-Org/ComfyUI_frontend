@@ -51,16 +51,33 @@ export interface NodeSnapshot {
   readonly size: Size
 }
 
+/**
+ * Shapes follow `src/types/extensionV2.ts`, the agreed extension contract:
+ * accessor methods rather than properties, so a read can be a store query and
+ * a write can dispatch a command.
+ */
 export interface NodeHandle extends HandleCommon {
   readonly id: string
   readonly type: string
-  title: string
-  mode: NodeMode
-  collapsed: boolean
-  pinned: boolean
-  color: string | undefined
-  bgColor: string | undefined
-  shape: NodeShape
+  readonly comfyClass: string
+
+  getTitle(): string
+  setTitle(title: string): void
+  getMode(): NodeMode
+  setMode(mode: NodeMode): void
+  isCollapsed(): boolean
+  setCollapsed(collapsed: boolean): void
+  isPinned(): boolean
+  setPinned(pinned: boolean): void
+  getColor(): string | undefined
+  setColor(color: string | undefined): void
+  getBgColor(): string | undefined
+  setBgColor(color: string | undefined): void
+  getShape(): NodeShape
+  setShape(shape: NodeShape): void
+  getProperty<T = unknown>(key: string): T | undefined
+  getProperties(): Readonly<Record<string, unknown>>
+  setProperty(key: string, value: unknown): void
   /**
    * Whether this node emits `widgets_values` when the workflow is serialized.
    *
@@ -68,14 +85,17 @@ export interface NodeHandle extends HandleCommon {
    * wire format — a conversion that could not set it would change what the
    * saved workflow contains.
    */
-  serializesWidgets: boolean
-  readonly position: Point
-  readonly size: Size
+  isSerializingWidgets(): boolean
+  setSerializeWidgets(serialize: boolean): void
+
+  getPosition(): Point
+  setPosition(pos: Point): void
+  getSize(): Size
+  setSize(size: Size): void
+
   readonly inputs: SlotCollection<InputSlotHandle>
   readonly outputs: SlotCollection<OutputSlotHandle>
   readonly widgets: WidgetCollection
-  setPosition(x: number, y: number): void
-  setSize(width: number, height: number): void
   snapshot(): Readonly<NodeSnapshot> | undefined
   remove(): void
 }
@@ -158,64 +178,65 @@ export function createNodeHandles(
           readonlyHint:
             'Node type is identity. Use graph.replaceNode() to change it.'
         },
-        title: { get: (n) => n.title, set: (n, v) => (n.title = String(v)) },
-        mode: {
-          get: (n) => MODE_TO_PUBLIC[n.mode] ?? 'always',
-          set: (n, v) => {
-            const mode = MODE_TO_INTERNAL[v as NodeMode]
-            if (mode === undefined) {
-              throw new TypeError(
-                `Invalid node mode '${String(v)}'. Expected one of: ${Object.keys(MODE_TO_INTERNAL).join(', ')}.`
-              )
-            }
-            n.mode = mode
-          }
-        },
-        collapsed: {
-          get: (n) => n.flags.collapsed ?? false,
-          set: (n, v) => setFlag(n, 'collapsed', Boolean(v))
-        },
-        serializesWidgets: {
-          get: (n) => n.serialize_widgets ?? false,
-          set: (n, v) => (n.serialize_widgets = Boolean(v))
-        },
-        pinned: {
-          get: (n) => n.flags.pinned ?? false,
-          set: (n, v) => setFlag(n, 'pinned', Boolean(v))
-        },
-        color: {
-          get: (n) => n.color,
-          set: (n, v) => (n.color = v === undefined ? undefined : String(v))
-        },
-        bgColor: {
-          get: (n) => n.bgcolor,
-          set: (n, v) => (n.bgcolor = v === undefined ? undefined : String(v))
-        },
-        shape: {
-          get: (n) =>
-            n.shape === undefined ? 'default' : SHAPE_TO_PUBLIC[n.shape],
-          set: (n, v) => {
-            if (!(String(v) in SHAPE_TO_INTERNAL)) {
-              throw new TypeError(
-                `Invalid node shape '${String(v)}'. Expected one of: ${Object.keys(SHAPE_TO_INTERNAL).join(', ')}.`
-              )
-            }
-            n.shape = SHAPE_TO_INTERNAL[v as NodeShape] as RenderShape
-          }
-        },
-        position: { get: (n) => freezePoint(n.pos[0], n.pos[1]) },
-        size: { get: (n) => freezeSize(n.size[0], n.size[1]) },
         inputs: { get: (n) => collections.inputs(String(n.id)) },
         outputs: { get: (n) => collections.outputs(String(n.id)) },
         widgets: { get: (n) => collections.widgets(String(n.id)) }
       },
       methods: {
+        comfyClass: (n) => (n as { comfyClass?: string }).comfyClass ?? n.type,
+        getTitle: (n) => n.title,
+        setTitle: (n, ...args) => {
+          n.title = String(args[0])
+        },
+        getMode: (n) => MODE_TO_PUBLIC[n.mode] ?? 'always',
+        setMode: (n, ...args) => {
+          const mode = MODE_TO_INTERNAL[args[0] as NodeMode]
+          if (mode === undefined) {
+            throw new TypeError(
+              `Invalid node mode '${String(args[0])}'. Expected one of: ${Object.keys(MODE_TO_INTERNAL).join(', ')}.`
+            )
+          }
+          n.mode = mode
+        },
+        isCollapsed: (n) => n.flags.collapsed ?? false,
+        setCollapsed: (n, ...args) => setFlag(n, 'collapsed', Boolean(args[0])),
+        isPinned: (n) => n.flags.pinned ?? false,
+        setPinned: (n, ...args) => setFlag(n, 'pinned', Boolean(args[0])),
+        getColor: (n) => n.color,
+        setColor: (n, ...args) => {
+          n.color = args[0] === undefined ? undefined : String(args[0])
+        },
+        getBgColor: (n) => n.bgcolor,
+        setBgColor: (n, ...args) => {
+          n.bgcolor = args[0] === undefined ? undefined : String(args[0])
+        },
+        getShape: (n) =>
+          n.shape === undefined ? 'default' : SHAPE_TO_PUBLIC[n.shape],
+        setShape: (n, ...args) => {
+          if (!(String(args[0]) in SHAPE_TO_INTERNAL)) {
+            throw new TypeError(
+              `Invalid node shape '${String(args[0])}'. Expected one of: ${Object.keys(SHAPE_TO_INTERNAL).join(', ')}.`
+            )
+          }
+          n.shape = SHAPE_TO_INTERNAL[args[0] as NodeShape] as RenderShape
+        },
+        isSerializingWidgets: (n) => n.serialize_widgets ?? false,
+        setSerializeWidgets: (n, ...args) => {
+          n.serialize_widgets = Boolean(args[0])
+        },
+        getProperty: (n, ...args) => n.properties?.[String(args[0])],
+        getProperties: (n) => Object.freeze({ ...n.properties }),
+        setProperty: (n, ...args) => {
+          n.properties = { ...n.properties, [String(args[0])]: args[1] }
+        },
+        getPosition: (n) => freezePoint(n.pos[0], n.pos[1]),
         setPosition: (n, ...args) => {
-          const [x, y] = args as unknown as [number, number]
+          const { x, y } = args[0] as Point
           n.pos = [x, y]
         },
+        getSize: (n) => freezeSize(n.size[0], n.size[1]),
         setSize: (n, ...args) => {
-          const [width, height] = args as unknown as [number, number]
+          const { width, height } = args[0] as Size
           n.size = [width, height]
         },
         snapshot: (n) => snapshotOf(n),
