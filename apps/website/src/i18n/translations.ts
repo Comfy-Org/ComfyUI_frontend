@@ -2588,6 +2588,7 @@ const translations = {
   'footer.company': { en: 'Company', 'zh-CN': '公司' },
   'footer.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   'footer.minimaxH3': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
+  'footer.seedance': { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
   'footer.about': { en: 'About', 'zh-CN': '关于' },
   'footer.termsOfService': { en: 'Terms of Service', 'zh-CN': '服务条款' },
   'footer.privacyPolicy': { en: 'Privacy Policy', 'zh-CN': '隐私政策' },
@@ -5096,6 +5097,59 @@ const translations = {
       '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
   'flux3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  // Seedance 2.5 model page (/seedance-2.5) — announcement until the model ships
+  'seedance.meta.title': {
+    en: 'Seedance 2.5 on Comfy — Coming Soon',
+    'zh-CN': 'Comfy 上的 Seedance 2.5 — 即将推出'
+  },
+  'seedance.meta.description': {
+    en: 'Seedance 2.5 is coming to Comfy. Run it on Comfy Cloud the day it lands, or start building workflows for free now with every other model Comfy supports.',
+    'zh-CN':
+      'Seedance 2.5 即将登陆 Comfy。上线当天即可在 Comfy Cloud 上运行；现在就可以用 Comfy 支持的其他模型免费开始搭建工作流。'
+  },
+  'seedance.breadcrumb.model': {
+    en: 'Seedance 2.5',
+    'zh-CN': 'Seedance 2.5'
+  },
+  'seedance.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'seedance.hero.eyebrow': { en: 'Coming soon', 'zh-CN': '即将推出' },
+  'seedance.hero.title': {
+    en: 'Seedance 2.5',
+    'zh-CN': 'Seedance 2.5'
+  },
+  'seedance.hero.primaryCta': {
+    en: 'RUN COMFY FOR FREE',
+    'zh-CN': '免费使用 Comfy'
+  },
+  'seedance.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'seedance.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中搭建工作流。用 API 批量制作，或部署到自有环境。'
+  },
+  'seedance.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'seedance.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'seedance.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'seedance.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'seedance.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
