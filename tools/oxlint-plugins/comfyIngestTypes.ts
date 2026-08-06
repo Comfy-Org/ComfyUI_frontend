@@ -5,20 +5,10 @@ import { fileURLToPath } from 'node:url'
 
 const GENERATED_PACKAGE = '@comfyorg/ingest-types'
 const PLUGIN_SOURCE = 'tools/oxlint-plugins/comfyIngestTypes.ts'
-
-/**
- * The generated barrel currently re-exports ~1000 names. A near-empty parse
- * means the generator's output shape changed and this rule has silently stopped
- * protecting anything, so fail loudly rather than pass everything.
- */
 const MIN_EXPECTED_EXPORTS = 100
 
 const requireFrom = createRequire(import.meta.url)
 
-/**
- * Loaded through `require` on first use rather than imported at module scope,
- * so lint runs that never touch a scoped file do not pay for the compiler.
- */
 function loadTypeScript(): typeof TypeScript {
   return requireFrom('typescript')
 }
@@ -51,14 +41,35 @@ interface RuleContext {
   report(descriptor: { node: unknown; message: string }): void
 }
 
-function unsupportedDeclaration(text: string): Error {
-  const summary = text.split('\n', 1)[0].trim().slice(0, 80)
+interface ParsedSourceFile {
+  readonly parseDiagnostics?: readonly TypeScript.Diagnostic[]
+}
+
+function barrelProblem(problem: string): Error {
   return new Error(
-    `Unsupported export declaration '${summary}' in ${GENERATED_PACKAGE}. Update ${PLUGIN_SOURCE} to handle the generated barrel's current format.`
+    `${problem} in ${GENERATED_PACKAGE}. Update ${PLUGIN_SOURCE} to handle the generated barrel's current format.`
   )
 }
 
-function exportsAName(
+function unsupportedDeclaration(text: string): Error {
+  return barrelProblem(`Unsupported export declaration '${firstLineOf(text)}'`)
+}
+
+function firstLineOf(text: string): string {
+  return text.split('\n', 1)[0].trim().slice(0, 80)
+}
+
+function syntaxErrorsIn(
+  ts: typeof TypeScript,
+  barrel: TypeScript.SourceFile
+): string[] {
+  const parsed = barrel as TypeScript.SourceFile & ParsedSourceFile
+  return (parsed.parseDiagnostics ?? []).map((diagnostic) =>
+    ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')
+  )
+}
+
+function declaresItsOwnExport(
   ts: typeof TypeScript,
   statement: TypeScript.Statement
 ): boolean {
@@ -71,18 +82,21 @@ function exportsAName(
   )
 }
 
-/**
- * Collect the names a barrel makes importable, taking the alias side of
- * `Foo as Bar` since that is the name a local declaration would shadow.
- *
- * Every export must be understood. A form this cannot read — a wildcard
- * re-export, say — would otherwise hide names behind it while the remaining
- * exports still satisfy the sufficiency guard, leaving the rule quietly
- * under-enforcing, so anything unrecognized throws instead. This is why the
- * barrel is parsed rather than pattern-matched: scanning text cannot reliably
- * separate a real declaration from the word `export` in a comment or string,
- * nor find one that shares a line with another.
- */
+function isTypeOnlyReExport(
+  ts: typeof TypeScript,
+  statement: TypeScript.ExportDeclaration
+): statement is TypeScript.ExportDeclaration & {
+  exportClause: TypeScript.NamedExports
+} {
+  const clause = statement.exportClause
+  return (
+    statement.isTypeOnly &&
+    statement.moduleSpecifier !== undefined &&
+    clause !== undefined &&
+    ts.isNamedExports(clause)
+  )
+}
+
 export function collectExportedNames(source: string): Set<string> {
   const ts = loadTypeScript()
   const barrel = ts.createSourceFile(
@@ -92,30 +106,30 @@ export function collectExportedNames(source: string): Set<string> {
     false,
     ts.ScriptKind.TS
   )
-  const names = new Set<string>()
 
+  const syntaxErrors = syntaxErrorsIn(ts, barrel)
+  if (syntaxErrors.length > 0) {
+    throw barrelProblem(`Unparsable source (${syntaxErrors[0]})`)
+  }
+
+  const names = new Set<string>()
   for (const statement of barrel.statements) {
     if (!ts.isExportDeclaration(statement)) {
-      if (exportsAName(ts, statement)) {
+      if (declaresItsOwnExport(ts, statement)) {
         throw unsupportedDeclaration(statement.getText(barrel))
       }
       continue
     }
-    const clause = statement.exportClause
-    if (!statement.isTypeOnly || !clause || !ts.isNamedExports(clause)) {
+    if (!isTypeOnlyReExport(ts, statement)) {
       throw unsupportedDeclaration(statement.getText(barrel))
     }
-    for (const element of clause.elements) {
+    for (const element of statement.exportClause.elements) {
       names.add(element.name.text)
     }
   }
   return names
 }
 
-/**
- * The barrel re-exports types only, so importing it yields nothing at runtime to
- * inspect; its source text is the only available description of the contract.
- */
 function parseGeneratedTypeNames(): ReadonlySet<string> {
   const barrelPath = fileURLToPath(import.meta.resolve(GENERATED_PACKAGE))
   const names = collectExportedNames(readFileSync(barrelPath, 'utf8'))
@@ -135,11 +149,6 @@ function generatedTypeNames(): ReadonlySet<string> {
   return cachedNames
 }
 
-/**
- * `type Foo = z.infer<typeof zFoo>` — the Zod schema is the deliberate runtime
- * source of truth for locally validated payloads, so the name overlap is not a
- * hand-rolled copy of the generated type.
- */
 function isZodInference(annotation: TypeNode): boolean {
   if (annotation.type !== 'TSTypeReference') return false
   const typeName = annotation.typeName
@@ -147,15 +156,8 @@ function isZodInference(annotation: TypeNode): boolean {
   return typeName.left?.name === 'z' && typeName.right?.name === 'infer'
 }
 
-/**
- * `type Foo = PreviewSubscribeResponse['new_plan']` and
- * `type Foo = components['schemas']['Foo']` derive from a generated type rather
- * than duplicating one. This is the pattern docs/guidance/typescript.md endorses
- * and also covers types sourced from `@comfyorg/registry-types`, whose export
- * names overlap with the ingest API's.
- */
-function isDerivedFromExistingType(annotation: TypeNode): boolean {
-  return annotation.type === 'TSIndexedAccessType'
+function isDerivedRatherThanRedeclared(annotation: TypeNode): boolean {
+  return isZodInference(annotation) || annotation.type === 'TSIndexedAccessType'
 }
 
 function duplicateMessage(name: string): string {
@@ -176,12 +178,7 @@ const noDuplicateIngestType = {
       },
       TSTypeAliasDeclaration(node: TypeAliasDeclaration) {
         const annotation = node.typeAnnotation
-        if (
-          annotation &&
-          (isZodInference(annotation) || isDerivedFromExistingType(annotation))
-        ) {
-          return
-        }
+        if (annotation && isDerivedRatherThanRedeclared(annotation)) return
         reportIfDuplicate(node)
       }
     }

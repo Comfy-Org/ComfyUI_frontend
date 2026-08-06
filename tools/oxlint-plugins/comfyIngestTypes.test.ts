@@ -167,6 +167,30 @@ describe('collectExportedNames', () => {
     ).toThrow(/Unsupported export declaration/)
   })
 
+  it('rejects a local export with no module specifier', () => {
+    expect(() => collectExportedNames(`export type { Local }`)).toThrow(
+      /Unsupported export declaration/
+    )
+  })
+
+  it('rejects source that does not parse cleanly', () => {
+    expect(() =>
+      collectExportedNames(
+        `export type { Alpha } from './a.gen'\n` +
+          `export type { Broken from './broken.gen'\n`
+      )
+    ).toThrow(/Unparsable source/)
+  })
+
+  it('rejects source with trailing garbage after a valid export', () => {
+    expect(() =>
+      collectExportedNames(
+        `export type { Alpha } from './a.gen'\n` +
+          `export type { Gamma } from './c.gen' ???\n`
+      )
+    ).toThrow(/Unparsable source/)
+  })
+
   it('ignores the word export inside comments and strings', () => {
     const names = collectExportedNames(
       `// export * from './fake.gen'\n` +
