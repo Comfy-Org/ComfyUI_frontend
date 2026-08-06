@@ -173,7 +173,6 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
 
 function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
-    team_workspaces_enabled: true,
     posthog_project_token: 'phc_e2e_agent_panel',
     posthog_config: {
       advanced_disable_flags: true,

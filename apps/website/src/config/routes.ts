@@ -24,6 +24,8 @@ const baseRoutes = {
   models: '/p/supported-models',
   mcp: '/mcp',
   minimax: '/minimax',
+  flux3: '/flux-3',
+  seedance: '/seedance-2.5',
   brand: '/brand'
 } as const
 

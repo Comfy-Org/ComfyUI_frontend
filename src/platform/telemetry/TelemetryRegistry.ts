@@ -27,7 +27,11 @@ import type {
   NodeSearchMetadata,
   NodeSearchResultMetadata,
   OnboardingTourMetadata,
+  OnboardingTourNudgeMetadata,
+  OnboardingTourNudgeStage,
   OnboardingTourStage,
+  OnboardingTourStepMetadata,
+  OnboardingTourStepStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -199,10 +203,23 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   }
 
   trackOnboardingTour(
+    stage: OnboardingTourStepStage,
+    metadata: OnboardingTourStepMetadata
+  ): void
+  trackOnboardingTour(
+    stage: OnboardingTourNudgeStage,
+    metadata: OnboardingTourNudgeMetadata
+  ): void
+  trackOnboardingTour(
     stage: OnboardingTourStage,
     metadata: OnboardingTourMetadata
   ): void {
-    this.dispatch((provider) => provider.trackOnboardingTour?.(stage, metadata))
+    this.dispatch((provider) => {
+      const track = provider.trackOnboardingTour as
+        | ((s: OnboardingTourStage, m: OnboardingTourMetadata) => void)
+        | undefined
+      track?.call(provider, stage, metadata)
+    })
   }
 
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {

@@ -22,7 +22,7 @@ const MEDIA_SRC_REGEX =
 const NON_REBASEABLE_HREF = /^(?:[/#?]|[a-z][a-z0-9+.-]*:)/i
 
 // Create a marked Renderer that prefixes relative URLs with base
-export function createMarkdownRenderer(baseUrl?: string): Renderer {
+function createMarkdownRenderer(baseUrl?: string): Renderer {
   const normalizedBase = baseUrl ? baseUrl.replace(/\/+$/, '') : ''
   const renderer = new Renderer()
   renderer.image = ({ href, title, text }) => {
