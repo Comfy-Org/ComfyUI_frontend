@@ -103,7 +103,7 @@
             "
             @click="selectedType = tab.value"
           >
-            <i v-if="tab.icon" :class="cn(tab.icon, 'size-3')" />
+            <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
             <span>{{ tab.label }}</span>
           </button>
         </div>
@@ -130,7 +130,7 @@
                 <span class="max-w-28 truncate">
                   {{ selectedGenerationType?.name ?? generationTypeLabel }}
                 </span>
-                <i class="icon-[lucide--chevron-down] size-3" />
+                <i class="icon-[lucide--chevron-down] size-3.5" />
               </button>
             </template>
             <DropdownMenuRadioGroup :model-value="selectedCategory">
@@ -997,7 +997,7 @@ const appliedFilters = computed<AppliedFilter[]>(() =>
 
 const filterChipClass = (active: boolean) =>
   cn(
-    'h-7 cursor-pointer rounded-md border border-solid px-2.5 text-xs font-medium transition-colors outline-none',
+    'h-8 cursor-pointer rounded-md border border-solid px-3 text-sm font-medium transition-colors outline-none',
     active
       ? 'border-transparent bg-base-foreground text-base-background'
       : 'border-border-subtle bg-transparent text-base-foreground hover:bg-secondary-background-hover'
