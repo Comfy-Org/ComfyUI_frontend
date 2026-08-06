@@ -1,21 +1,21 @@
 <template>
   <div>
-    <div class="flex h-8 items-center gap-2 px-2">
+    <div class="relative p-1">
       <i
         aria-hidden="true"
-        class="icon-[lucide--search] size-4 shrink-0 text-muted-foreground"
+        class="pointer-events-none absolute top-1/2 left-3.5 icon-[lucide--search] size-3.5 -translate-y-1/2 text-muted-foreground"
       />
       <input
         ref="searchInput"
         v-model="searchQuery"
         type="text"
         :aria-label="$t('templateWorkflows.filtersButton')"
-        :placeholder="`${$t('templateWorkflows.filtersButton')}...`"
-        class="min-w-0 flex-1 border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        :placeholder="$t('g.search')"
+        :class="searchClass"
         @keydown="handleSearchKeydown"
       />
     </div>
-    <DropdownMenuSeparator class="my-1 h-px bg-border-subtle" />
+    <DropdownMenuSeparator :class="separatorClass" />
 
     <!-- Typing searches values across every facet at once: with a hundred-odd
          models, finding one by name beats recalling which facet holds it. -->
@@ -57,7 +57,6 @@
           :class="menuItemClass"
           :data-testid="`template-filter-facet-${facet.key}`"
         >
-          <i :class="cn(facet.icon, 'size-4 shrink-0 text-muted-foreground')" />
           <span class="flex-1 truncate text-left">{{ facet.label }}</span>
           <span
             v-if="facetSummary(facet)"
@@ -86,17 +85,17 @@
 
             <div
               v-if="facet.options.length > SEARCHABLE_FROM"
-              class="mb-1 flex h-8 items-center gap-2 border-b border-border-subtle px-2"
+              class="relative p-1"
             >
               <i
                 aria-hidden="true"
-                class="icon-[lucide--search] size-3.5 shrink-0 text-muted-foreground"
+                class="pointer-events-none absolute top-1/2 left-3.5 icon-[lucide--search] size-3.5 -translate-y-1/2 text-muted-foreground"
               />
               <input
                 v-model="facetQuery[facet.key]"
                 type="text"
                 :placeholder="facet.label"
-                class="min-w-0 flex-1 border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                :class="searchClass"
                 @keydown.stop
               />
             </div>
@@ -122,15 +121,12 @@
             </div>
 
             <template v-if="selectedCount(facet) > 0">
-              <DropdownMenuSeparator class="my-1 h-px bg-border-subtle" />
+              <DropdownMenuSeparator :class="separatorClass" />
               <DropdownMenuItem
                 :class="menuItemClass"
                 @click="emit('clearFacet', facet.key)"
                 @select.prevent
               >
-                <i
-                  class="icon-[lucide--x] size-4 shrink-0 text-muted-foreground"
-                />
                 <span class="flex-1">{{ $t('g.clearAll') }}</span>
               </DropdownMenuItem>
             </template>
@@ -139,16 +135,13 @@
       </DropdownMenuSub>
 
       <template v-if="totalSelected > 0">
-        <DropdownMenuSeparator class="my-1 h-px bg-border-subtle" />
+        <DropdownMenuSeparator :class="separatorClass" />
         <DropdownMenuItem
           :class="menuItemClass"
           data-testid="template-filter-clear-all"
           @click="emit('clearAll')"
           @select.prevent
         >
-          <i
-            class="icon-[lucide--rotate-ccw] size-4 shrink-0 text-muted-foreground"
-          />
           <span class="flex-1">{{
             $t('templateWorkflows.clearAllFilters')
           }}</span>
@@ -171,7 +164,6 @@ import {
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import type { SelectOption } from '@/components/ui/select/types'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import ValueMark from './TemplatesFilterValueMark.vue'
 
@@ -185,7 +177,6 @@ import ValueMark from './TemplatesFilterValueMark.vue'
 export interface FilterMenuFacet {
   key: string
   label: string
-  icon: string
   options: SelectOption[]
   selectedValues: string[]
   /** Multi-select is the default; single-select facets show a tick. */
@@ -290,9 +281,11 @@ function handleSearchResultKeydown(event: KeyboardEvent) {
 }
 
 const menuItemClass =
-  'flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover'
-const groupLabelClass =
-  'px-2 pt-1 pb-1.5 text-xs font-semibold text-muted-foreground uppercase'
+  'relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors select-none data-highlighted:bg-secondary-background-hover'
+const groupLabelClass = 'px-2 py-1.5 text-xs font-medium text-muted-foreground'
+const separatorClass = '-mx-1 my-1 h-px bg-border-subtle'
+const searchClass =
+  'h-8 w-full min-w-0 rounded-md border border-solid border-border-subtle bg-transparent pr-2 pl-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-border-default'
 const submenuClass =
-  'z-1700 w-56 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm'
+  'z-1700 w-56 overflow-hidden rounded-md border border-border-subtle bg-base-background p-1 shadow-md'
 </script>

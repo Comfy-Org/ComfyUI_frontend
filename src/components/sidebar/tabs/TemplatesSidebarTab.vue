@@ -917,7 +917,6 @@ const filterMenuFacets = computed<FilterMenuFacet[]>(() => [
   {
     key: 'category',
     label: t('templateWorkflows.category', 'Category'),
-    icon: 'icon-[lucide--layout-grid]',
     options: categoryOptions.value,
     selectedValues: [selectedCategory.value],
     mode: 'single',
@@ -926,7 +925,6 @@ const filterMenuFacets = computed<FilterMenuFacet[]>(() => [
   {
     key: 'model',
     label: t('templateWorkflows.modelFilter', 'Model'),
-    icon: 'icon-[lucide--box]',
     options: modelOptions.value,
     selectedValues: activeModels.value,
     mode: 'multiple'
@@ -934,7 +932,6 @@ const filterMenuFacets = computed<FilterMenuFacet[]>(() => [
   {
     key: 'task',
     label: t('templateWorkflows.useCaseFilter', 'Task'),
-    icon: 'icon-[lucide--wand-sparkles]',
     options: useCaseOptions.value,
     selectedValues: activeUseCases.value,
     mode: 'multiple'
@@ -942,7 +939,6 @@ const filterMenuFacets = computed<FilterMenuFacet[]>(() => [
   {
     key: 'runsOn',
     label: t('templateWorkflows.runsOnFilter', 'Runs on'),
-    icon: 'icon-[lucide--cpu]',
     options: runsOnOptions.value,
     selectedValues: selectedRunsOn.value,
     mode: 'multiple'
