@@ -1229,7 +1229,7 @@ Strip the mechanism away and "virtual node" is four different intents:
 | **Annotate**           | Note nodes                           | omit from prompt                                      |
 | **Be a wire**          | Reroute, kjnodes `SetNode`/`GetNode` | _my output forwards to whatever feeds X_              |
 | **Be a value**         | `PrimitiveNode`, constants           | _my output is this literal_                           |
-| **Be a control panel** | rgthree Fast Muter                   | **not resolution** — edit-time commands on neighbours |
+| **Act on other nodes** | rgthree Fast Muter                   | **not resolution** — edit-time commands on neighbours |
 
 The legacy `isVirtualNode` + `applyToGraph()` collapses all four into an
 imperative callback that mutates the live graph mid-serialize
@@ -1271,7 +1271,7 @@ with cycle detection. A resolver that throws poisons that one prompt build;
 the graph was never touched — the property `applyToGraph` structurally cannot
 have.
 
-- **Control panels are not virtual-node API.** Fast Muter is a frontend-only
+- **Nodes that act on other nodes are not virtual-node API.** Fast Muter is a frontend-only
   node whose button callbacks mutate neighbours through handles — which under
   ECS become commands: serializable, undoable, the only legal mutation path.
   Its sole "virtual" property is `execution: 'frontend'`.
