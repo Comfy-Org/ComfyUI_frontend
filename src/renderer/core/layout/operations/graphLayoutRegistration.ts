@@ -153,7 +153,7 @@ interface RerouteLayoutRegistration {
   reroute: Reroute
 }
 
-export type GraphLayoutRegistration =
+type GraphLayoutRegistration =
   | NodeLayoutRegistration
   | GroupLayoutRegistration
   | RerouteLayoutRegistration
@@ -174,7 +174,7 @@ function canvasOperationMeta() {
   }
 }
 
-export function captureNodeLayoutRegistration(
+function captureNodeLayoutRegistration(
   node: LGraphNode
 ): NodeLayoutRegistration | undefined {
   const registration = nodeRegistrations.get(node)
@@ -190,7 +190,7 @@ export function captureNodeLayoutRegistration(
   return { entity: 'node', layout, node, ...registration }
 }
 
-export function captureGroupLayoutRegistration(
+function captureGroupLayoutRegistration(
   graph: Pick<LGraph, 'rootGraph'>,
   group: LGraphGroup
 ): GroupLayoutRegistration | undefined {
@@ -206,7 +206,7 @@ export function captureGroupLayoutRegistration(
   return { entity: 'group', graphId, group, layout, registrationId }
 }
 
-export function captureRerouteLayoutRegistration(
+function captureRerouteLayoutRegistration(
   graph: Pick<LGraph, 'rootGraph'>,
   reroute: Reroute
 ): RerouteLayoutRegistration | undefined {
@@ -223,7 +223,7 @@ export function captureRerouteLayoutRegistration(
   return { entity: 'reroute', graphId, layout, registrationId, reroute }
 }
 
-export function captureAllGraphLayoutRegistrations(
+function captureAllGraphLayoutRegistrations(
   graph: GraphLayoutOwner
 ): GraphLayoutRegistration[] {
   const registrations: GraphLayoutRegistration[] = []
@@ -249,7 +249,7 @@ export function captureAllGraphLayoutRegistrations(
   return registrations
 }
 
-export function restoreGraphLayoutRegistration(
+function restoreGraphLayoutRegistration(
   registration: GraphLayoutRegistration
 ): void {
   let compensationError: unknown
@@ -336,7 +336,7 @@ function retainCompensationError(
   })
 }
 
-export function restoreGraphLayoutRegistrations(
+function restoreGraphLayoutRegistrations(
   registrations: readonly GraphLayoutRegistration[],
   primaryError: unknown
 ): void {
@@ -521,7 +521,7 @@ export function registerNodeLayout(
   return result
 }
 
-export function adoptNodeLayout(
+function adoptNodeLayout(
   graph: Pick<LGraph, 'rootGraph'>,
   node: LGraphNode
 ): LayoutOperationResult {
