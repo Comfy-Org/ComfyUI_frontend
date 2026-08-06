@@ -30,6 +30,7 @@ import type {
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -1769,7 +1770,22 @@ describe('node layout registration', () => {
     const subgraph = graph.createSubgraph(createTestSubgraphData())
     const interior = new LGraphNode('interior')
     interior.pos = [10, 20]
+    interior.addOutput('out', '*')
+    const peer = new LGraphNode('peer')
+    peer.addInput('in', '*')
     subgraph.add(interior)
+    subgraph.add(peer)
+    const link = interior.connect(0, peer, 0)!
+    const group = new LGraphGroup('interior group')
+    group.pos = [5, 6]
+    subgraph.add(group)
+    const reroute = subgraph.createReroute([15, 16], link)!
+    const nested = graph.createSubgraph(createTestSubgraphData())
+    const nestedInterior = new LGraphNode('nested interior')
+    nestedInterior.pos = [50, 60]
+    nested.add(nestedInterior)
+    const nestedNode = createTestSubgraphNode(nested, { parentGraph: subgraph })
+    subgraph.add(nestedNode)
     const subgraphNode = createTestSubgraphNode(subgraph)
     graph.add(subgraphNode)
     subgraphNode.onRemoved = () => {
@@ -1779,6 +1795,16 @@ describe('node layout registration', () => {
     expect(() => graph.remove(subgraphNode)).toThrow('outer removal failed')
     expect(graph.nodes).toContain(subgraphNode)
     expect(subgraphNode.graph).toBe(graph)
+    expect(subgraph.nodes).toContain(nestedNode)
+    expect(nestedNode.subgraph).toBe(nested)
+    expect(subgraph._links.get(link.id)).toBe(link)
+    expect(subgraph.reroutes.get(reroute.id)).toBe(reroute)
+    expect(link.parentId).toBe(reroute.id)
+    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(1)
+    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeDefined()
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)
+    ).not.toHaveLength(0)
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, interior.id).value
         ?.position
@@ -1788,6 +1814,9 @@ describe('node layout registration', () => {
     })
 
     interior.pos = [30, 40]
+    group.pos = [25, 26]
+    reroute.pos = [35, 36]
+    nestedInterior.pos = [70, 80]
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, interior.id).value
         ?.position
@@ -1795,6 +1824,46 @@ describe('node layout registration', () => {
       x: 30,
       y: 40
     })
+    expect(layoutStore.getGroupLayout(graph.id, group.id)?.position).toEqual({
+      x: 25,
+      y: 26
+    })
+    expect(
+      layoutStore.getRerouteLayout(graph.id, reroute.id)?.position
+    ).toEqual({ x: 35, y: 36 })
+    expect(
+      layoutStore.getNodeLayoutRef(graph.id, nestedInterior.id).value?.position
+    ).toEqual({ x: 70, y: 80 })
+
+    subgraphNode.onRemoved = () => {}
+    vi.spyOn(layoutStore, 'applyOperations').mockReturnValueOnce('rejected')
+    graph.remove(subgraphNode)
+
+    expect(graph.nodes).toContain(subgraphNode)
+    expect(subgraphNode.graph).toBe(graph)
+    expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
+    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(1)
+    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeDefined()
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)
+    ).not.toHaveLength(0)
+
+    graph.remove(subgraphNode)
+
+    expect(graph.nodes).not.toContain(subgraphNode)
+    expect(graph.subgraphs.has(subgraph.id)).toBe(false)
+    expect(graph.subgraphs.has(nested.id)).toBe(false)
+    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(0)
+    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeUndefined()
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)
+    ).toHaveLength(0)
+    expect(layoutStore.getNodeLayoutRef(graph.id, interior.id).value).toBeNull()
+    expect(layoutStore.getGroupLayout(graph.id, group.id)).toBeNull()
+    expect(layoutStore.getRerouteLayout(graph.id, reroute.id)).toBeNull()
+    expect(
+      layoutStore.getNodeLayoutRef(graph.id, nestedInterior.id).value
+    ).toBeNull()
   })
 
   it('stacks later nodes above earlier ones', () => {
@@ -2094,7 +2163,7 @@ describe('graph teardown drops layout entries', () => {
     deleteNode.mockRestore()
 
     expect(nodes.get(key)).toBe(foreign)
-    expect(node._layoutRegistered).toBe(true)
+    expect(graph.nodes).toContain(node)
     graph.clear()
     expect(nodes.get(key)).toBe(foreign)
   })

@@ -1320,31 +1320,22 @@ export class LGraph
         }
       }
 
+      const initiallyReleasedSubgraphs = node.isSubgraphNode()
+        ? findReleasableSubgraphs(this.rootGraph, node)
+        : []
       if (node.isSubgraphNode()) {
-        const releasedSubgraphs = findReleasableSubgraphs(this.rootGraph, node)
-        for (const subgraph of releasedSubgraphs) {
+        for (const subgraph of initiallyReleasedSubgraphs) {
           layoutDetach.includeGraph(subgraph)
         }
-        for (const subgraph of releasedSubgraphs) {
+        for (const subgraph of initiallyReleasedSubgraphs) {
           visitGraphNodes(subgraph, fireNodeRemovalLifecycle)
-        }
-        for (const subgraph of releasedSubgraphs) {
-          unregisterAllLinkTopologies(subgraph)
-          unregisterAllRerouteChains(subgraph)
-          unregisterAllNodeStates(subgraph)
-          unregisterAllGraphLayout(subgraph)
-          this.rootGraph.subgraphs.delete(subgraph.id)
         }
       }
 
       // callback
       node.onRemoved?.()
 
-      unregisterNodeState(node)
-
       node.graph = null
-
-      this.incrementVersion()
 
       // remove from canvas render
       const { list_of_graphcanvas } = this
@@ -1356,6 +1347,31 @@ export class LGraph
           canvas.deselect(node)
         }
       }
+
+      const releasedSubgraphs = node.isSubgraphNode()
+        ? findReleasableSubgraphs(this.rootGraph, node).filter((subgraph) =>
+            initiallyReleasedSubgraphs.includes(subgraph)
+          )
+        : []
+      for (const subgraph of releasedSubgraphs) {
+        if (unregisterAllGraphLayout(subgraph) === 'rejected') {
+          node.graph = this
+          layoutDetach.restore(undefined)
+          return
+        }
+      }
+      for (const subgraph of releasedSubgraphs) {
+        unregisterAllLinkTopologies(subgraph)
+        unregisterAllRerouteChains(subgraph)
+        unregisterAllNodeStates(subgraph)
+        if (this.rootGraph.subgraphs.get(subgraph.id) === subgraph) {
+          this.rootGraph.subgraphs.delete(subgraph.id)
+        }
+      }
+
+      unregisterNodeState(node)
+
+      this.incrementVersion()
 
       // remove from containers
       const pos = this._nodes.indexOf(node)
