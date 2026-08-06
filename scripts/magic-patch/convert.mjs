@@ -56,6 +56,7 @@ import {
   statSync,
   writeFileSync
 } from 'node:fs'
+import { spawn } from 'node:child_process'
 import { basename, dirname, join, relative } from 'node:path'
 import { z } from 'zod'
 
@@ -895,7 +896,8 @@ function writeDbEntry(db, work, commit, outcome, source) {
  * batch "completes" in seconds having converted nothing — six parallel runs
  * did exactly that. Stop at the first one and say why.
  */
-const FATAL = /401|authenticate|invalid.?api.?key|unauthorized|forbidden/i
+const FATAL =
+  /401|authenticate|not logged in|\/login|invalid.?api.?key|unauthorized|forbidden/i
 
 const TRANSIENT =
   /connection closed|network|ECONNRESET|ETIMEDOUT|socket hang up|maximum number of turns|rate.?limit|overloaded|503|529/i
@@ -1051,6 +1053,26 @@ async function main() {
       console.log(`  prompt: ${buildPrompt(work).length} chars`)
     }
     return 0
+  }
+
+  // Auth before work. Three batches have now been lost to a token that expired
+  // between launching and running — each one failing every pack in milliseconds
+  // and reporting a completed run that converted nothing. One cheap call up
+  // front turns that into a clear message before anything is spawned.
+  const authed = await new Promise((resolve) => {
+    const probe = spawn('claude', ['-p', 'reply OK'], { stdio: 'pipe' })
+    let output = ''
+    probe.stdout?.on('data', (chunk) => (output += chunk))
+    probe.stderr?.on('data', (chunk) => (output += chunk))
+    probe.on('error', () => resolve({ ok: false, output: 'claude not runnable' }))
+    probe.on('close', (code) =>
+      resolve({ ok: code === 0 && !FATAL.test(output), output: output.trim() })
+    )
+  })
+  if (!authed.ok) {
+    console.error(`Cannot start: Claude Code is not usable.\n  ${authed.output}`)
+    console.error('Re-authenticate (claude /login) and rerun.')
+    return 2
   }
 
   mkdirSync(db, { recursive: true })
