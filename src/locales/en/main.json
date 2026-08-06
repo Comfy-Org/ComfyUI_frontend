@@ -141,6 +141,7 @@
     "disconnectedFromBackend": "Disconnected from backend. Check if the server is running.",
     "delete": "Delete",
     "rename": "Rename",
+    "restore": "Restore",
     "save": "Save",
     "saveAnyway": "Save Anyway",
     "saving": "Saving",

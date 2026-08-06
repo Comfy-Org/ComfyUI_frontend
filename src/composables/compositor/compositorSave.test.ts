@@ -8,26 +8,14 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { CompositorLayerState } from './compositorLayerState'
 import {
+  saveCompositorLayerState,
+  saveCompositorPreview
+} from './compositorSave'
+import {
   clearCompositorLayers,
   getCompositorPreviewOverride,
   setCompositorLayers
 } from './useCompositorLayers'
-import { useCompositorSaver } from './useCompositorSaver'
-
-const { toastAdd, closeDialog } = vi.hoisted(() => ({
-  toastAdd: vi.fn(),
-  closeDialog: vi.fn()
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ closeDialog })
-}))
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: toastAdd })
-}))
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
 
 function rasterNode(id: string, name: string): RasterData {
   return {
@@ -48,9 +36,7 @@ function rasterNode(id: string, name: string): RasterData {
 function makeSession() {
   return {
     editor: {
-      render: vi.fn(),
-      floating: vi.fn<() => unknown>(() => null),
-      anchorFloating: vi.fn()
+      render: vi.fn()
     },
     compositor: {
       toBlob: vi.fn(async () => new Blob(['x'], { type: 'image/png' }))
@@ -70,8 +56,7 @@ function makeNode() {
   const node = {
     id: toNodeId(7),
     widgets: [compositorWidget],
-    widgets_values: [{}],
-    graph: { setDirtyCanvas: vi.fn() }
+    widgets_values: [{}]
   } as unknown as LGraphNode
   return { node, compositorWidget }
 }
@@ -80,21 +65,17 @@ function widgetValue(widget: IBaseWidget): CompositorLayerState {
   return widget.value as CompositorLayerState
 }
 
-describe('useCompositorSaver', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    clearCompositorLayers(toNodeId(7))
-  })
+beforeEach(() => {
+  vi.clearAllMocks()
+  clearCompositorLayers(toNodeId(7))
+})
 
-  it('writes the layer state recipe to the compositor widget', async () => {
+describe('saveCompositorLayerState', () => {
+  it('writes the layer state recipe to the compositor widget', () => {
     const session = makeSession()
     const { node, compositorWidget } = makeNode()
 
-    const result = await useCompositorSaver().saveComposite(session, node)
-
-    expect(result).toBe(true)
-    expect(session.editor.render).toHaveBeenCalled()
-    expect(session.compositor.toBlob).toHaveBeenCalled()
+    expect(saveCompositorLayerState(session, node)).toBe(true)
 
     const savedState = widgetValue(compositorWidget)
     expect(compositorWidget.callback).toHaveBeenCalledWith(savedState)
@@ -109,14 +90,9 @@ describe('useCompositorSaver', () => {
       flipH: true,
       flipV: false
     })
-
-    expect(node.graph?.setDirtyCanvas).toHaveBeenCalled()
-    expect(closeDialog).toHaveBeenCalledWith({ key: 'global-layer-editor' })
-    expect(toastAdd).not.toHaveBeenCalled()
-    expect(getCompositorPreviewOverride(node.id)).toMatch(/^blob:/)
   })
 
-  it('embeds the cached inputs fingerprint into the saved state', async () => {
+  it('embeds the cached inputs fingerprint into the saved state', () => {
     setCompositorLayers(
       toNodeId(7),
       [{ filename: 'a.png', subfolder: '', type: 'temp' }],
@@ -124,45 +100,53 @@ describe('useCompositorSaver', () => {
     )
     const { node, compositorWidget } = makeNode()
 
-    await useCompositorSaver().saveComposite(makeSession(), node)
+    saveCompositorLayerState(makeSession(), node)
 
     expect(widgetValue(compositorWidget).inputs).toEqual(['hash-a', 'hash-b'])
   })
 
-  it('omits inputs from the saved state when no fingerprint is cached', async () => {
+  it('omits inputs from the saved state when no fingerprint is cached', () => {
     const { node, compositorWidget } = makeNode()
 
-    await useCompositorSaver().saveComposite(makeSession(), node)
+    saveCompositorLayerState(makeSession(), node)
 
     expect('inputs' in widgetValue(compositorWidget)).toBe(false)
   })
 
-  it('anchors a floating selection before rendering', async () => {
+  it('keeps widgets untouched when extraction fails', () => {
     const session = makeSession()
-    session.editor.floating.mockReturnValue({})
-    const { node } = makeNode()
-
-    await useCompositorSaver().saveComposite(session, node)
-
-    expect(session.editor.anchorFloating).toHaveBeenCalled()
-  })
-
-  it('keeps widgets untouched and the dialog open when rendering fails', async () => {
-    const session = makeSession()
-    session.compositor.toBlob.mockRejectedValueOnce(new Error('boom'))
+    session.layerFlips = () => {
+      throw new Error('boom')
+    }
     const { node, compositorWidget } = makeNode()
 
-    const result = await useCompositorSaver().saveComposite(session, node)
+    expect(saveCompositorLayerState(session, node)).toBe(false)
 
-    expect(result).toBe(false)
-    expect(toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'compositor.saveFailed'
-      })
-    )
-    expect(closeDialog).not.toHaveBeenCalled()
+    expect(compositorWidget.callback).not.toHaveBeenCalled()
     expect(compositorWidget.value).toEqual({})
     expect(node.widgets_values).toEqual([{}])
+  })
+})
+
+describe('saveCompositorPreview', () => {
+  it('renders the composite and publishes a preview blob URL', async () => {
+    const session = makeSession()
+    const { node } = makeNode()
+
+    await saveCompositorPreview(session, node)
+
+    expect(session.editor.render).toHaveBeenCalled()
+    expect(session.compositor.toBlob).toHaveBeenCalled()
+    expect(getCompositorPreviewOverride(node.id)).toMatch(/^blob:/)
+  })
+
+  it('leaves the preview untouched when rendering fails', async () => {
+    const session = makeSession()
+    session.compositor.toBlob.mockRejectedValueOnce(new Error('boom'))
+    const { node } = makeNode()
+
+    await saveCompositorPreview(session, node)
+
+    expect(getCompositorPreviewOverride(node.id)).toBeUndefined()
   })
 })
