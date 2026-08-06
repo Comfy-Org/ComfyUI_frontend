@@ -83,6 +83,16 @@ const BUILTIN_MEMBERS: ReadonlySet<string> = new Set(
 )
 
 /**
+ * A member read off a handle, rather than off any object at all.
+ *
+ * The receiver list is the names conversions actually bind handles to; a
+ * pack's own locals are not our business, and treating them as ours rejects
+ * correct code.
+ */
+const HANDLE_MEMBER =
+  /\b(comfy|node|widget|slot|graph|builder|b|handle|input|output|widgets|inputs|outputs|defs)\??\.([A-Za-z_]\w*)/g
+
+/**
  * Symbols whose disappearance is the point of the conversion.
  *
  * Everything else vanishing from a file is a regression until someone says
@@ -243,12 +253,15 @@ const checks: readonly Check[] = [
     description:
       'Every member the conversion introduces exists in the published API.',
     run: (ctx) => {
-      // Scoped to the diff, like the capability check: a name the original
-      // already used is the pack's own, not ours. A net-new name that the API
-      // does not define is almost always invented, and nothing else catches it
-      // because an agent-authored rewrite is never executed.
+      // Only members read off something that looks like a handle.
+      //
+      // Matching every `.name` in the file flagged the pack's own objects: a
+      // conversion that kept per-node state in a plain object kept in a Map --
+      // the correct shape, since handles hold no arbitrary properties -- was
+      // rejected because `state.playingAudio` is not an API member. That is a
+      // false positive on a valid conversion, and it cost a real file.
       const used = (source: string) =>
-        new Set([...source.matchAll(/\.([A-Za-z_]\w*)/g)].map((m) => m[1]))
+        new Set([...source.matchAll(HANDLE_MEMBER)].map((m) => m[2]))
       const before = used(ctx.original)
       const unknown = [...used(ctx.converted)].filter(
         (name) =>

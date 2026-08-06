@@ -3,6 +3,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+// Installs LGraphNode.prototype.addDOMWidget as a side effect.
+import '@/scripts/domWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { parseWidgetId } from '@/types/widgetId'
 
@@ -304,5 +306,98 @@ describe('widget listeners', () => {
     widgets.get('seed')!.on('removed', removed)
     widgets.remove('seed')
     expect(removed).toHaveBeenCalledOnce()
+  })
+})
+
+describe('mounted and canvas widgets', () => {
+  let node: LGraphNode
+  let widgets: WidgetCollection
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    node = new LGraphNode('t')
+    graph.add(node)
+    const handles = createWidgetHandles(() => graph)
+    widgets = createWidgetCollection(
+      () => graph.getNodeById(node.id) ?? undefined,
+      handles,
+      String(node.id)
+    )
+  })
+
+  it('hands the pack a container it can fill', () => {
+    let filled: HTMLElement | undefined
+    widgets.mount({
+      name: 'panel',
+      render: (container) => {
+        filled = container
+        container.append(document.createElement('span'))
+      }
+    })
+    expect(filled?.querySelector('span')).toBeTruthy()
+    expect(widgets.names()).toContain('panel')
+  })
+
+  it('keeps a mounted widget out of the saved workflow by default', () => {
+    // A pack drawing something must not change what the workflow contains.
+    widgets.mount({ name: 'panel', render: () => {} })
+    expect(node.widgets?.[0].serialize).toBe(false)
+  })
+
+  it('runs destroy when the widget is removed', () => {
+    const destroy = vi.fn()
+    widgets.mount({ name: 'panel', render: () => {}, destroy })
+    widgets.remove('panel')
+    expect(destroy).toHaveBeenCalledOnce()
+  })
+
+  it('refuses to mount over an existing widget name', () => {
+    widgets.mount({ name: 'panel', render: () => {} })
+    expect(() => widgets.mount({ name: 'panel', render: () => {} })).toThrow(
+      ComfyApiError
+    )
+  })
+
+  describe('canvas', () => {
+    beforeEach(() => {
+      // happy-dom has no 2D context; the drawing itself is the pack's, so a
+      // recording stub is enough to prove the wiring.
+      HTMLCanvasElement.prototype.getContext = vi.fn(
+        () =>
+          ({
+            setTransform: vi.fn(),
+            clearRect: vi.fn(),
+            fillRect: vi.fn()
+          }) as unknown as CanvasRenderingContext2D
+      ) as unknown as HTMLCanvasElement['getContext']
+    })
+
+    it('draws on mount and hands back the 2d context', () => {
+      const draw = vi.fn()
+      widgets.canvas({ name: 'plot', height: 40, draw })
+      expect(draw).toHaveBeenCalledOnce()
+      const [context, size] = draw.mock.calls[0]
+      expect(typeof context.fillRect).toBe('function')
+      expect(size[1]).toBe(40)
+    })
+
+    it('redraws on demand', () => {
+      const draw = vi.fn()
+      const plot = widgets.canvas({ name: 'plot', height: 40, draw })
+      plot.redraw()
+      plot.redraw()
+      expect(draw).toHaveBeenCalledTimes(3)
+    })
+
+    it('mounts a real canvas element, so it renders under both renderers', () => {
+      // The legacy renderer positions DOM widgets over the graph canvas and
+      // Nodes 2.0 renders them directly; drawing into the shared graph context
+      // instead is what would tie the pack to the old renderer.
+      widgets.canvas({ name: 'plot', draw: () => {} })
+      const mounted = node.widgets![0] as unknown as { element?: HTMLElement }
+      const element = mounted.element
+      expect(element?.querySelector('canvas')).toBeTruthy()
+    })
   })
 })

@@ -72,7 +72,9 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['slots.moveLinks', '1.0'],
   ['defs.extend', '1.0'],
   ['widgets.create', '1.0'],
-  ['serialization.control', '1.0']
+  ['serialization.control', '1.0'],
+  ['widgets.mount', '1.0'],
+  ['widgets.canvas', '1.0']
 ])
 
 /**
