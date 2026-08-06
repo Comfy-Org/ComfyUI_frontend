@@ -1,5 +1,5 @@
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -25,7 +25,7 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
-type CheckoutStep = 'pricing' | 'preview' | 'success' | 'declined'
+type CheckoutStep = 'pricing' | 'preview' | 'verifying' | 'success' | 'declined'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 export type SubscriptionCheckoutSelection =
@@ -107,8 +107,17 @@ export function useSubscriptionCheckout(
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
 
-  const checkoutStep = ref<CheckoutStep>('pricing')
+  // Re-entry: a pending 3DS charge owns the dialog. Opening with one lands
+  // on the verifying step — the plan steps stay unreachable until the
+  // operation resolves, is canceled, or its 24h link expires.
+  const checkoutStep = ref<CheckoutStep>(
+    billingOperationStore.subscriptionActionOperation ? 'verifying' : 'pricing'
+  )
   const checkoutDeclineReason = ref<string | null>(null)
+  const isCancelingPayment = ref(false)
+  const cancelUnavailable = ref(false)
+  const canceledNoticeVisible = ref(false)
+  let canceledNoticeTimer: ReturnType<typeof setTimeout> | undefined
   const isLoadingPreview = ref(false)
   const loadingTier = ref<CheckoutTierKey | null>(null)
   const isSubscribing = ref(false)
@@ -615,6 +624,71 @@ export function useSubscriptionCheckout(
     checkoutStep.value = 'preview'
   }
 
+  function showCanceledNotice() {
+    canceledNoticeVisible.value = true
+    if (canceledNoticeTimer) clearTimeout(canceledNoticeTimer)
+    canceledNoticeTimer = setTimeout(() => {
+      canceledNoticeVisible.value = false
+    }, 5000)
+  }
+
+  onScopeDispose(() => {
+    if (canceledNoticeTimer) clearTimeout(canceledNoticeTimer)
+  })
+
+  // Canceled is not failed: nothing persists, so from the in-flow pending
+  // states the dialog stays on confirm with intent intact plus an inline
+  // notice, while a re-entry cancel returns to plan selection (there is no
+  // preserved intent to land on). 'unavailable' is the cancel-raced-the-bank
+  // case — the cancel slot becomes a notice and polling finishes the story.
+  async function handleCancelPendingPayment() {
+    const operation = activeCheckoutOperation.value
+    if (!operation || isCancelingPayment.value) return
+    isCancelingPayment.value = true
+    const result = await billingOperationStore.cancelOperation(operation.opId)
+    isCancelingPayment.value = false
+    if (result === 'unavailable') {
+      cancelUnavailable.value = true
+      return
+    }
+    activeCheckoutOperationId.value = null
+    cancelUnavailable.value = false
+    if (checkoutStep.value === 'verifying') {
+      checkoutStep.value = 'pricing'
+      return
+    }
+    showCanceledNotice()
+  }
+
+  // The verifying step is only entered on re-entry, where no subscribe call
+  // is awaiting the operation — resolve it from here instead. Success with
+  // no plan selection has nothing to show on the success step, so the dialog
+  // closes and the store's success toast plus the refreshed plan UI carry
+  // the outcome.
+  watch(
+    () => [checkoutStep.value, activeCheckoutOperation.value?.status] as const,
+    ([step, status]) => {
+      if (step !== 'verifying') return
+      if (status === 'succeeded') {
+        if (selectedTierKey.value || isTeamCheckout.value) {
+          checkoutStep.value = 'success'
+        } else {
+          emit('close', true)
+        }
+        return
+      }
+      if (status === 'failed') {
+        checkoutDeclineReason.value =
+          activeCheckoutOperation.value?.errorMessage ?? null
+        checkoutStep.value = 'declined'
+        return
+      }
+      if (status === undefined) {
+        checkoutStep.value = 'pricing'
+      }
+    }
+  )
+
   async function handleTeamSubscription(
     confirmReactivation = false,
     confirmationToken?: string,
@@ -767,6 +841,10 @@ export function useSubscriptionCheckout(
     isPolling,
     isTeamCheckout,
     previewVariant,
+    isCancelingPayment,
+    cancelUnavailable,
+    canceledNoticeVisible,
+    handleCancelPendingPayment,
     handleSubscribeClick,
     handleSubscribeTeamClick,
     handleBackToPricing,

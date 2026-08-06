@@ -9,7 +9,7 @@
           variant="muted-textonly"
           class="shrink-0 rounded-full"
           :aria-label="$t('g.back')"
-          :disabled="isLoading"
+          :disabled="isLoading || Boolean(actionUrl)"
           @click="$emit('back')"
         >
           <i class="pi pi-arrow-left text-base" />
@@ -199,18 +199,31 @@
 
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8 pb-4">
+      <div
+        v-if="showCanceledNotice"
+        class="mx-auto mb-2 rounded-lg bg-secondary-background px-4 py-2 text-xs text-muted-foreground"
+      >
+        {{ $t('subscription.preview.paymentCanceledNotice') }}
+      </div>
+
       <Button
         v-if="actionUrl"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
+        :aria-label="$t('subscription.preview.completeVerification')"
         @click="openVerification"
       >
+        <i
+          v-if="verificationOpened"
+          class="icon-[lucide--loader-circle] size-4 animate-spin"
+        />
         {{ $t('subscription.preview.completeVerification') }}
       </Button>
 
       <Button
-        :variant="actionUrl ? 'tertiary' : 'inverted'"
+        v-if="!actionUrl"
+        variant="inverted"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
@@ -218,6 +231,23 @@
         @click="$emit('confirm', confirmReactivation)"
       >
         {{ confirmCta }}
+      </Button>
+
+      <p
+        v-if="actionUrl && cancelUnavailable"
+        class="m-0 py-2 text-center text-xs text-muted-foreground"
+      >
+        {{ $t('subscription.preview.cancelUnavailable') }}
+      </p>
+      <Button
+        v-else-if="actionUrl"
+        variant="muted-textonly"
+        size="lg"
+        class="w-full"
+        :loading="isCanceling"
+        @click="$emit('cancelPayment')"
+      >
+        {{ $t('subscription.preview.cancelPayment') }}
       </Button>
 
       <SubscriptionTermsNote class="mt-2" />
@@ -247,7 +277,10 @@ const {
   previewData,
   isLoading = false,
   teamPlan = null,
-  actionUrl = null
+  actionUrl = null,
+  cancelUnavailable = false,
+  isCanceling = false,
+  showCanceledNotice = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -255,6 +288,9 @@ const {
    *  the selected slider stop; all proration money stays driven by previewData. */
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
+  cancelUnavailable?: boolean
+  isCanceling?: boolean
+  showCanceledNotice?: boolean
 }>()
 
 defineEmits<{
@@ -262,6 +298,7 @@ defineEmits<{
    *  ticked above the charge threshold, since confirmDisabled gates the button). */
   confirm: [confirmReactivation: boolean]
   back: []
+  cancelPayment: []
 }>()
 
 const { t, n } = useI18n()
@@ -269,9 +306,12 @@ const { t, n } = useI18n()
 const promotionCode = ref('')
 const { subscription } = useBillingContext()
 
+const verificationOpened = ref(false)
+
 function openVerification() {
   if (!actionUrl) return
-  window.open(actionUrl, '_blank', 'noopener,noreferrer')
+  const opened = window.open(actionUrl, '_blank', 'noopener,noreferrer')
+  if (opened) verificationOpened.value = true
 }
 
 function formatTierName(tier: string): string {
