@@ -287,6 +287,50 @@ function references(work) {
     : ''
 }
 
+/**
+ * Everything the driver already knows, put where the agent starts.
+ *
+ * Tracing showed 55 of a conversion's first 61 tool calls were reconnaissance:
+ * every file read, findings re-fetched per file — each one a full model round
+ * trip returning data detection had already computed. Inlining source and
+ * findings removes the survey; the cap keeps a pathological pack from turning
+ * the prompt into the corpus.
+ */
+const MAX_INLINE_FILE = 24_000
+const MAX_INLINE_TOTAL = 240_000
+
+function inlineSources(work) {
+  let budget = MAX_INLINE_TOTAL
+  const sections = []
+  for (const file of work.files) {
+    let source
+    try {
+      source = readFileSync(file.path, 'utf8')
+    } catch {
+      continue
+    }
+    if (source.length > MAX_INLINE_FILE || source.length > budget) {
+      sections.push(
+        `--- ${file.name} (${source.length} bytes — too large to inline; read_file it) ---`
+      )
+      continue
+    }
+    budget -= source.length
+    sections.push(`--- ${file.name} ---\n\`\`\`js\n${source}\n\`\`\``)
+  }
+  const siblings = work.readable
+    .map((path) => relative(work.root, path))
+    .filter((name) => !work.files.some((f) => f.name === name))
+  return (
+    sections.join('\n\n') +
+    (siblings.length
+      ? `\n\nOther JS files in the pack (read_file on demand):\n${siblings
+          .map((name) => `  ${name}`)
+          .join('\n')}`
+      : '')
+  )
+}
+
 function buildPrompt(work) {
   const perFile = work.files
     .map(
@@ -322,10 +366,15 @@ ${guidance}
 
 ${references(work)}
 
+Full source of every file in scope:
+
+${inlineSources(work)}
+
 Workflow:
-1. list_files, then read_file on the files you will convert AND their siblings.
-   Files in a pack import each other and share helpers — a conversion that only
-   looks at one side of that contract is how this goes wrong.
+1. The sources and findings above are complete — do not call list_files,
+   findings_for, or read_file for anything already shown. read_file is for
+   siblings you need and files marked too large. Files in a pack import each
+   other and share helpers — read the siblings a conversion's contract touches.
 2. Per file: decide whether it is convertible. Check whether each object is a
    live node or serialized workflow data before touching anything.
 3. write_conversion, then run_checks, and fix whatever fails.
