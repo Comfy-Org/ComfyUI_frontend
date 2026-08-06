@@ -8,21 +8,15 @@ import {
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
-import type { GraphLayoutRegistration } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import {
-  adoptNodeLayout,
-  captureAllGraphLayoutRegistrations,
-  captureGroupLayoutRegistration,
-  captureNodeLayoutRegistration,
-  captureRerouteLayoutRegistration,
+  attachGroupLayout,
+  attachNodeLayout,
+  attachRerouteLayout,
+  detachGroupLayout,
+  detachNodeLayout,
+  detachRerouteLayout,
   materializeRerouteLayout,
-  registerGroupLayout,
-  registerNodeLayout,
-  registerRerouteLayout,
-  restoreGraphLayoutRegistration,
   unregisterAllGraphLayout,
-  unregisterGroupLayout,
-  unregisterNodeLayout,
   unregisterRerouteLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -147,20 +141,6 @@ export type {
   LGraphTriggerAction,
   LGraphTriggerParam
 } from './types/graphTriggers'
-
-function retainCompensationError(
-  error: unknown,
-  compensationError: unknown
-): void {
-  if (!(error instanceof Error)) return
-  Object.defineProperty(error, 'cause', {
-    configurable: true,
-    value: new AggregateError(
-      [error.cause, compensationError],
-      'Layout teardown and compensation failed'
-    )
-  })
-}
 
 const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
@@ -1145,19 +1125,12 @@ export class LGraph
         node.id = toGroupId(++state.lastGroupId)
       }
       if (node.id > state.lastGroupId) state.lastGroupId = node.id
-      const registrationId = createUuidv4()
       let registrationResult: LayoutOperationResult
       try {
-        registrationResult = registerGroupLayout(this, node, registrationId)
+        registrationResult = attachGroupLayout(this, node)
       } catch (error) {
-        try {
-          unregisterGroupLayout(this, node, registrationId)
-        } catch (compensationError) {
-          retainCompensationError(error, compensationError)
-        } finally {
-          node.id = originalId
-          state.lastGroupId = originalLastGroupId
-        }
+        node.id = originalId
+        state.lastGroupId = originalLastGroupId
         throw error
       }
       if (registrationResult !== 'applied') {
@@ -1210,22 +1183,16 @@ export class LGraph
       node.flags.ghost = true
     }
 
-    const registrationId = createUuidv4()
     let registrationResult: LayoutOperationResult
     try {
-      registrationResult = registerNodeLayout(this, node, registrationId)
+      registrationResult = attachNodeLayout(
+        this,
+        node,
+        nodesAdoptingLayout.has(node)
+      )
     } catch (error) {
-      try {
-        unregisterNodeLayout(this, node, registrationId)
-      } catch (compensationError) {
-        retainCompensationError(error, compensationError)
-      } finally {
-        restoreNodeIdentity()
-      }
+      restoreNodeIdentity()
       throw error
-    }
-    if (registrationResult === 'no-op' && nodesAdoptingLayout.has(node)) {
-      registrationResult = adoptNodeLayout(this, node)
     }
     // A no-op means the entry already exists; re-registering is not an error.
     if (registrationResult === 'rejected') {
@@ -1295,18 +1262,12 @@ export class LGraph
       const index = this._groups.indexOf(node)
       if (index === -1) return
 
-      const layoutRegistration = captureGroupLayoutRegistration(this, node)
+      const layoutDetach = detachGroupLayout(this, node)
       try {
-        if (unregisterGroupLayout(this, node) === 'rejected') return
+        if (layoutDetach.result === 'rejected') return
         this.canvasAction((c) => c.deselect(node))
       } catch (error) {
-        if (layoutRegistration && node.graph === this) {
-          try {
-            restoreGraphLayoutRegistration(layoutRegistration)
-          } catch (compensationError) {
-            retainCompensationError(error, compensationError)
-          }
-        }
+        if (node.graph === this) layoutDetach.restore(error)
         throw error
       }
       this._groups.splice(index, 1)
@@ -1327,12 +1288,11 @@ export class LGraph
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }
-    const layoutRegistration = captureNodeLayoutRegistration(node)
+    const layoutDetach = detachNodeLayout(this, node)
 
     // sure? - almost sure is wrong
-    let releasedLayoutRegistrations: GraphLayoutRegistration[] = []
     try {
-      if (unregisterNodeLayout(this, node) === 'rejected') return
+      if (layoutDetach.result === 'rejected') return
       this.beforeChange()
 
       this.events.dispatch('node:before-removed', { node })
@@ -1362,9 +1322,9 @@ export class LGraph
 
       if (node.isSubgraphNode()) {
         const releasedSubgraphs = findReleasableSubgraphs(this.rootGraph, node)
-        releasedLayoutRegistrations = releasedSubgraphs.flatMap((subgraph) =>
-          captureAllGraphLayoutRegistrations(subgraph)
-        )
+        for (const subgraph of releasedSubgraphs) {
+          layoutDetach.includeGraph(subgraph)
+        }
         for (const subgraph of releasedSubgraphs) {
           visitGraphNodes(subgraph, fireNodeRemovalLifecycle)
         }
@@ -1407,16 +1367,7 @@ export class LGraph
         this._nodes.includes(node) || this._nodes_by_id[node.id] === node
       if (graphOwnsNode) {
         node.graph = this
-        const registrations = layoutRegistration
-          ? [layoutRegistration, ...releasedLayoutRegistrations]
-          : releasedLayoutRegistrations
-        for (const registration of registrations) {
-          try {
-            restoreGraphLayoutRegistration(registration)
-          } catch (compensationError) {
-            retainCompensationError(error, compensationError)
-          }
-        }
+        layoutDetach.restore(error)
       }
       throw error
     }
@@ -1768,23 +1719,11 @@ export class LGraph
 
     const position = { x: reroute.pos[0], y: reroute.pos[1] }
     registerRerouteChain(this, reroute)
-    const registrationId = createUuidv4()
     let registrationResult: LayoutOperationResult
     try {
-      registrationResult = registerRerouteLayout(
-        this,
-        reroute,
-        position,
-        registrationId
-      )
+      registrationResult = attachRerouteLayout(this, reroute, position)
     } catch (error) {
-      try {
-        unregisterRerouteLayout(this, reroute, registrationId)
-      } catch (compensationError) {
-        retainCompensationError(error, compensationError)
-      } finally {
-        unregisterRerouteChain(reroute)
-      }
+      unregisterRerouteChain(reroute)
       throw error
     }
     // A no-op means the entry already exists; re-registering is not an error.
@@ -1804,7 +1743,6 @@ export class LGraph
   _removeReroute(id: RerouteId): void {
     const reroute = this.reroutesInternal.get(id)
     if (!reroute) return
-    if (unregisterRerouteLayout(this, reroute) === 'rejected') return
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
   }
@@ -1898,9 +1836,9 @@ export class LGraph
     const reroute = reroutes.get(id)
     if (!reroute) return
 
-    const layoutRegistration = captureRerouteLayoutRegistration(this, reroute)
+    const layoutDetach = detachRerouteLayout(this, reroute)
     try {
-      if (unregisterRerouteLayout(this, reroute) === 'rejected') return
+      if (layoutDetach.result === 'rejected') return
       this.canvasAction((c) => c.deselect(reroute))
 
       // Extract reroute from the reroute chain
@@ -1941,13 +1879,7 @@ export class LGraph
 
       this._removeReroute(id)
     } catch (error) {
-      if (layoutRegistration && reroutes.get(id) === reroute) {
-        try {
-          restoreGraphLayoutRegistration(layoutRegistration)
-        } catch (compensationError) {
-          retainCompensationError(error, compensationError)
-        }
-      }
+      if (reroutes.get(id) === reroute) layoutDetach.restore(error)
       throw error
     }
 
@@ -3033,7 +2965,10 @@ export class LGraph
 
       // Drop reroutes that no live link or floating link passes through
       for (const reroute of this.reroutes.values()) {
-        if (reroute.totalLinks === 0) {
+        if (
+          reroute.totalLinks === 0 &&
+          unregisterRerouteLayout(this, reroute) !== 'rejected'
+        ) {
           this._removeReroute(reroute.id)
         }
       }

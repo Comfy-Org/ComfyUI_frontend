@@ -322,6 +322,156 @@ export function restoreGraphLayoutRegistration(
   if (compensationError) throw compensationError
 }
 
+function retainCompensationError(
+  error: unknown,
+  compensationError: unknown
+): void {
+  if (!(error instanceof Error)) return
+  Object.defineProperty(error, 'cause', {
+    configurable: true,
+    value: new AggregateError(
+      [error.cause, compensationError],
+      'Layout teardown and compensation failed'
+    )
+  })
+}
+
+export function restoreGraphLayoutRegistrations(
+  registrations: readonly GraphLayoutRegistration[],
+  primaryError: unknown
+): void {
+  for (const registration of registrations) {
+    try {
+      restoreGraphLayoutRegistration(registration)
+    } catch (compensationError) {
+      retainCompensationError(primaryError, compensationError)
+    }
+  }
+}
+
+export interface GraphLayoutDetach {
+  readonly result: LayoutOperationResult
+  includeGraph(graph: GraphLayoutOwner): void
+  restore(primaryError: unknown): void
+}
+
+function createGraphLayoutDetach(
+  registration: GraphLayoutRegistration | undefined,
+  unregister: () => LayoutOperationResult
+): GraphLayoutDetach {
+  const registrations = registration ? [registration] : []
+  let result: LayoutOperationResult
+  try {
+    result = unregister()
+  } catch (error) {
+    restoreGraphLayoutRegistrations(registrations, error)
+    throw error
+  }
+  return {
+    result,
+    includeGraph(graph) {
+      registrations.push(...captureAllGraphLayoutRegistrations(graph))
+    },
+    restore(primaryError) {
+      restoreGraphLayoutRegistrations(registrations, primaryError)
+    }
+  }
+}
+
+export function detachNodeLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  node: LGraphNode
+): GraphLayoutDetach {
+  return createGraphLayoutDetach(captureNodeLayoutRegistration(node), () =>
+    unregisterNodeLayout(graph, node)
+  )
+}
+
+export function detachGroupLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  group: LGraphGroup
+): GraphLayoutDetach {
+  return createGraphLayoutDetach(
+    captureGroupLayoutRegistration(graph, group),
+    () => unregisterGroupLayout(graph, group)
+  )
+}
+
+export function detachRerouteLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  reroute: Reroute
+): GraphLayoutDetach {
+  return createGraphLayoutDetach(
+    captureRerouteLayoutRegistration(graph, reroute),
+    () => unregisterRerouteLayout(graph, reroute)
+  )
+}
+
+function compensateRegistration(error: unknown, unregister: () => void): never {
+  try {
+    unregister()
+  } catch (compensationError) {
+    if (error instanceof Error) {
+      Object.defineProperty(error, 'cause', {
+        configurable: true,
+        value: new AggregateError(
+          [error.cause, compensationError],
+          'Layout registration and compensation failed'
+        )
+      })
+    }
+  }
+  throw error
+}
+
+export function attachNodeLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  node: LGraphNode,
+  adoptExisting: boolean
+): LayoutOperationResult {
+  const registrationId = createUuidv4()
+  let result: LayoutOperationResult
+  try {
+    result = registerNodeLayout(graph, node, registrationId)
+  } catch (error) {
+    compensateRegistration(error, () => {
+      unregisterNodeLayout(graph, node, registrationId)
+    })
+  }
+  return result === 'no-op' && adoptExisting
+    ? adoptNodeLayout(graph, node)
+    : result
+}
+
+export function attachGroupLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  group: LGraphGroup
+): LayoutOperationResult {
+  const registrationId = createUuidv4()
+  try {
+    return registerGroupLayout(graph, group, registrationId)
+  } catch (error) {
+    compensateRegistration(error, () => {
+      unregisterGroupLayout(graph, group, registrationId)
+    })
+  }
+}
+
+export function attachRerouteLayout(
+  graph: Pick<LGraph, 'rootGraph'>,
+  reroute: Reroute,
+  position: Point
+): LayoutOperationResult {
+  const registrationId = createUuidv4()
+  try {
+    return registerRerouteLayout(graph, reroute, position, registrationId)
+  } catch (error) {
+    compensateRegistration(error, () => {
+      unregisterRerouteLayout(graph, reroute, registrationId)
+    })
+  }
+}
+
 /** A newly attached node stacks above those already registered. */
 export function registerNodeLayout(
   graph: Pick<LGraph, 'rootGraph'>,
