@@ -5274,7 +5274,34 @@ const translations = {
       '资深创意专家驻场加入你的团队，为你构建生产级 ComfyUI 工作流，并教会你的团队独立运行。'
   },
   'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
-  'fdct.hero.applyCta': { en: 'Apply as an FDCT', 'zh-CN': '申请成为 FDCT' }
+  'fdct.hero.applyCta': { en: 'Apply as an FDCT', 'zh-CN': '申请成为 FDCT' },
+  'fdct.builders.title': {
+    en: 'Builders, not advisors',
+    'zh-CN': '实干者，而非顾问'
+  },
+  'fdct.builders.lead': {
+    en: 'From “is this possible?” to a workflow your team owns. An FDCT is the person who builds it.',
+    'zh-CN':
+      '从“这可能吗？”到你的团队自己拥有的工作流。FDCT 就是把它构建出来的人。'
+  },
+  'fdct.builders.nodeLabel': { en: 'An FDCT', 'zh-CN': '一位 FDCT' },
+  'fdct.builders.reason1': {
+    en: 'validates the use case. We build the workflow and install it in your environment.',
+    'zh-CN': '验证用例。我们构建工作流，并将其部署到你的环境中。'
+  },
+  'fdct.builders.reason2': {
+    en: 'teaches your team to run it. Training and enablement are a part of the process.',
+    'zh-CN': '教你的团队运行它。培训与赋能是流程的一部分。'
+  },
+  'fdct.builders.reason3': {
+    en: 'comes from real production. Feature film, commercial, and experiential, on work that shipped.',
+    'zh-CN': '来自真实制作。电影长片、商业广告与体验项目，都是实际交付的作品。'
+  },
+  'fdct.builders.reason4': {
+    en: 'leaves you something you own. You keep the workflow and your team is trained to change it.',
+    'zh-CN':
+      '留下真正属于你的成果。工作流归你所有，你的团队经过培训后可自行修改。'
+  }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations

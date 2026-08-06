@@ -1,6 +1,8 @@
 ---
+import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { t } from '../../i18n/translations'
+import BuildersSection from '../../templates/fdct/BuildersSection.vue'
 import HeroSection from '../../templates/fdct/HeroSection.vue'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 
@@ -24,7 +26,8 @@ const { locale } = pageContext(
   ]}
 >
   <HeroSection client:load locale="zh-CN" />
-  {/* Later sections land here in page order: builders wire diagram, logo
-      marquee, how it works, what you get, featured technologists, past
-      projects, FAQ, CTA bands, closing CTA. */}
+  <BuildersSection client:load locale="zh-CN" />
+  <SocialProofBarSection />
+  {/* Later sections land here in page order: how it works, what you get,
+      featured technologists, past projects, FAQ, CTA bands, closing CTA. */}
 </BaseLayout>
