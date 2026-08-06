@@ -4,6 +4,7 @@ import { convert } from './convert'
 import {
   EditApplicationError,
   applyEdits,
+  applyUnifiedDiff,
   deriveEdits,
   diffToEdits,
   toUnifiedDiff
@@ -95,45 +96,50 @@ describe('conversions as edits', () => {
     })
   })
 
-  describe('unified diff rendering', () => {
-    it('renders a reviewable hunk', () => {
-      const diff = toUnifiedDiff(
-        RGTHREE,
-        convert(RGTHREE).edits,
-        'base_node.js'
-      )
-      expect(diff).toContain('--- a/base_node.js')
-      expect(diff).toContain('+++ b/base_node.js')
-      expect(diff).toContain('-    this.type = (_a = this.type)')
-      // Surrounding context is present, unchanged.
-      expect(diff).toContain('     var _a;')
-    })
-
-    it('shows both sides of a replacement', () => {
-      const diff = toUnifiedDiff(
-        'a\nb\nc',
-        [{ line: 2, op: 'replace', text: 'B!' }],
-        'f.js'
-      )
-      expect(diff).toContain('-b')
-      expect(diff).toContain('+B!')
-    })
+  describe('unified diff', () => {
+    const roundTrip = (before: string, after: string) => {
+      const diff = toUnifiedDiff(before, after, 'x.js')
+      expect(applyUnifiedDiff(before, diff)).toBe(after)
+      return diff
+    }
 
     it('is empty when nothing changed', () => {
-      expect(toUnifiedDiff('a\nb', [], 'f.js')).toBe('')
+      expect(toUnifiedDiff('a\nb', 'a\nb', 'x.js')).toBe('')
+    })
+
+    it('round-trips a replacement', () => {
+      expect(roundTrip('one\ntwo\nthree', 'one\nTWO\nthree')).toContain('-two')
+    })
+
+    it('round-trips an append past the end', () => {
+      // The previous renderer dropped this silently and emitted a hunk header
+      // that disagreed with its own body.
+      expect(roundTrip('one\ntwo', 'one\ntwo\nthree')).toContain('+three')
+    })
+
+    it('round-trips a deletion', () => {
+      expect(roundTrip('one\ntwo\nthree', 'one\nthree')).toContain('-two')
     })
 
     it('splits distant changes into separate hunks', () => {
-      const source = Array.from({ length: 40 }, (_, i) => `line${i}`).join('\n')
-      const diff = toUnifiedDiff(
-        source,
-        [
-          { line: 2, op: 'delete' },
-          { line: 35, op: 'delete' }
-        ],
-        'f.js'
+      const before = Array.from({ length: 40 }, (_, i) => `line ${i}`).join(
+        '\n'
       )
-      expect(diff.match(/^@@/gm)).toHaveLength(2)
+      const after = before.replace('line 2', 'FIRST').replace('line 35', 'LAST')
+      expect(roundTrip(before, after).match(/^@@/gm)).toHaveLength(2)
+    })
+
+    it('counts lines correctly in the hunk header', () => {
+      const diff = toUnifiedDiff('one\ntwo', 'one\ntwo\nthree', 'x.js')
+      const [, aCount, bCount] = /@@ -\d+,(\d+) \+\d+,(\d+) @@/.exec(diff)!
+      expect(Number(bCount)).toBe(Number(aCount) + 1)
+    })
+
+    it('refuses to apply to a source it was not built from', () => {
+      const diff = toUnifiedDiff('one\ntwo\nthree', 'one\nTWO\nthree', 'x.js')
+      expect(() => applyUnifiedDiff('one\nDIFFERENT\nthree', diff)).toThrow(
+        EditApplicationError
+      )
     })
   })
 })

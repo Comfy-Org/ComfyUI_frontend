@@ -45,7 +45,7 @@ function entries(dir, depth = 0) {
     const path = join(dir, name)
     try {
       if (statSync(path).isDirectory()) return entries(path, depth + 1)
-      return path.endsWith('.json') && !path.endsWith('meta.json') ? [path] : []
+      return path.endsWith('.json') ? [path] : []
     } catch {
       return []
     }
@@ -90,7 +90,7 @@ function collect(root, patches, problems, stats) {
       continue
     }
 
-    for (const field of ['pack', 'file', 'sourceSha256', 'apiMajor', 'edits']) {
+    for (const field of ['pack', 'file', 'sourceSha256', 'apiMajor', 'diff']) {
       if (entry[field] === undefined) {
         problems.push(`${path}: missing ${field}`)
       }
@@ -118,7 +118,7 @@ function collect(root, patches, problems, stats) {
     }
 
     const existing = patches[entry.sourceSha256]
-    if (existing && JSON.stringify(existing.edits) !== JSON.stringify(entry.edits)) {
+    if (existing && existing.diff !== entry.diff) {
       // Identical bytes in two packs (a vendored helper, a fork) must convert the
       // same way. Disagreement means one of them is wrong.
       problems.push(
@@ -136,7 +136,8 @@ function collect(root, patches, problems, stats) {
       author: entry.author ?? 'unknown',
       rules: entry.rules ?? [],
       verified: entry.verified ?? {},
-      edits: entry.edits
+      // Inlined into the artifact: the client has one file, not a directory.
+      diff: readFileSync(join(dirname(path), entry.diff), 'utf8')
     }
     stats.packs.add(entry.pack)
     stats.byAuthor[entry.author ?? 'unknown'] =
