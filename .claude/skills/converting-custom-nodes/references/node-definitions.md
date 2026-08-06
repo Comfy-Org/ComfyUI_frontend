@@ -163,12 +163,12 @@ class is ever yours.
 **First identify the intent.** "Virtual node" is four different things, and the
 conversion differs for each:
 
-| The node exists to…                       | Examples                     | Convert to                                                  |
-| ----------------------------------------- | ---------------------------- | ----------------------------------------------------------- |
-| annotate — never executes                 | Note nodes                   | `execution: 'frontend'`, no `resolve`                       |
-| be a wire — indirection                   | Reroute, `SetNode`/`GetNode` | `resolve` returning `forwardTo`                             |
-| be a value — UI-held literal              | Primitive, constants         | `resolve` returning `literal`                               |
-| be a control panel — change _other_ nodes | rgthree Fast Muter           | **not `resolve` at all** — handle calls in widget callbacks |
+| The node exists to…                     | Examples                     | Convert to                                                  |
+| --------------------------------------- | ---------------------------- | ----------------------------------------------------------- |
+| annotate — never executes               | Note nodes                   | `execution: 'frontend'`, no `resolve`                       |
+| be a wire — indirection                 | Reroute, `SetNode`/`GetNode` | `resolve` returning `forwardTo`                             |
+| be a value — UI-held literal            | Primitive, constants         | `resolve` returning `literal`                               |
+| act on _other_ nodes — a remote control | rgthree Fast Muter           | **not `resolve` at all** — handle calls in widget callbacks |
 
 ```js
 // before
@@ -209,7 +209,7 @@ graph is untouched, which is exactly what `applyToGraph` could not guarantee.
 A simple reroute is one line: `resolve: ({ self }) => ({ out: { forwardTo:
 self.input('in') } })`.
 
-**Control panels are ordinary nodes.** A Fast Muter is `defs.define` with
+**Nodes that act on other nodes are ordinary nodes.** A Fast Muter is a remote control: a row of toggles, one per wired-in node. A Fast Muter is `defs.define` with
 `execution: 'frontend'`, buttons via `widgets`, and callbacks that call
 `comfy.graph.nodesOfType(...)` + `node.setMode('bypass')` — edit-time changes
 the user can undo, not serialization behaviour. Do not put neighbour mutation

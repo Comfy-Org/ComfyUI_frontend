@@ -259,9 +259,9 @@ removal would otherwise leave running.
 
 **If you are converting `registerCustomNodes` / `extends LGraphNode` /
 `isVirtualNode` / `applyToGraph`** — identify which of four intents the node
-serves (annotation, wire, value, control panel) and use **`comfy.defs.define`**
+serves (annotation, wire, value, or acting on other nodes) and use **`comfy.defs.define`**
 with `execution: 'frontend'` and, for wires and values, a pure `resolve`. See
-`references/node-definitions.md` — control panels mutate neighbours through
+`references/node-definitions.md` — nodes that act on others mutate neighbours through
 handles in widget callbacks, never in `resolve`.
 
 **If you are converting `onResize` / `computeSize` / a per-frame `setSize`** —
