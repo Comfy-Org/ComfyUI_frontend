@@ -6,12 +6,10 @@
     "DA3_ToPointCloud"
   ],
   "ComfyUI-DynamiCrafterWrapper": [
-    "DownloadAndLoadDynamiCrafterCNModel",
     "DownloadAndLoadDynamiCrafterModel",
     "DynamiCrafterCNLoader",
     "DynamiCrafterModelLoader"
   ],
-  "ComfyUI-GIMM-VFI": ["DownloadAndLoadGIMMVFIModel"],
   "ComfyUI-Image-Filters": [
     "AlphaMatte",
     "BatchAverageUnJittered",
@@ -43,7 +41,7 @@
     "WeightScheduleExtend",
     "WidgetToString"
   ],
-  "ComfyUI-KwaiKolorsWrapper": ["DownloadAndLoadKolorsModel", "LoadChatGLM3"],
+  "ComfyUI-KwaiKolorsWrapper": ["LoadChatGLM3"],
   "ComfyUI-LTXVideo": [
     "LTXAttentioOverride",
     "LTXAttentionBank",
@@ -69,11 +67,6 @@
     "FB_Qwen3TTSVoiceClone",
     "FB_Qwen3TTSVoiceClonePrompt",
     "FB_Qwen3TTSVoiceDesign"
-  ],
-  "ComfyUI-QwenVL": [
-    "AILab_QwenVL",
-    "AILab_QwenVL_Advanced",
-    "AILab_QwenVL_PromptEnhancer"
   ],
   "ComfyUI-Upscaler-Tensorrt": ["LoadUpscalerTensorrtModel"],
   "ComfyUI-WanAnimatePreprocess": ["OnnxDetectionModelLoader"],
@@ -130,18 +123,9 @@
   "ComfyUI_Fill-ChatterBox": ["FL_ChatterboxDialogTTS"],
   "ComfyUI_Fill-Nodes": [
     "FL_ImageNotes",
-    "FL_KsamplerSettings",
     "FL_PasteOnCanvas",
-    "FL_SchedulerStrings",
-    "FL_SeparateMaskComponents",
-    "FL_Switch",
     "FL_Switch_Big",
-    "FL_TextOverlayNode",
-    "FL_TextToPDF",
-    "FL_UnloadAllModels",
     "FL_VideoBatchSplitter",
-    "FL_VideoCadence",
-    "FL_VideoCropMask",
     "FL_WanVideoBlender",
     "FL_WanVideoBlender3Way",
     "FL_WanVideoContinuationBlender"
@@ -160,7 +144,6 @@
     "LayerUtility: ImageAutoCrop",
     "LayerUtility: ImageAutoCrop V2",
     "LayerUtility: LaMa",
-    "LayerUtility: LoadSmolLM2Model",
     "LayerUtility: QWenImage2Prompt"
   ],
   "ComfyUI_SchemaNodes": [
@@ -170,7 +153,6 @@
   ],
   "Comfyui-SecNodes": ["SeCModelLoader"],
   "RES4LYF": [
-    "ClownGuides_Sync_Advanced",
     "ClownInpaint",
     "ClownInpaintSimple",
     "ClownModelLoader",
@@ -250,11 +232,9 @@
     "CogVideoXModelLoader",
     "CogVideoXVAELoader",
     "DownloadAndLoadCogVideoControlNet",
-    "DownloadAndLoadCogVideoGGUFModel",
     "DownloadAndLoadToraModel"
   ],
   "comfyui-enricos-nodes": ["CompositorTools3", "CompositorTransformsOutV3"],
-  "comfyui-florence2": ["DownloadAndLoadFlorence2Model"],
   "comfyui-frame-interpolation": [
     "CAIN VFI",
     "FLAVR VFI",
@@ -271,8 +251,7 @@
     "SAMLoader"
   ],
   "comfyui-inpaint-nodes": ["INPAINT_ColorMatch", "INPAINT_LoadFooocusInpaint"],
-  "comfyui-itools": ["iToolsLoadImagePlus"],
-  "comfyui-rmbg": ["AILab_CropObject", "AILab_SDMatte", "RMBG", "SAM3Segment"],
+  "comfyui-rmbg": ["AILab_CropObject", "AILab_SDMatte", "SAM3Segment"],
   "comfyui-sharp": ["LoadSharpModel"],
   "comfyui-string-converter": ["StringToFloat", "StringToInt"],
   "comfyui-supir": ["SUPIR_Upscale", "SUPIR_model_loader"],
@@ -282,12 +261,6 @@
     "JWIntegerDiv",
     "JWMaskSequenceFromMask",
     "JWStringGetLine"
-  ],
-  "comfyui-videohelpersuite": [
-    "VHS_LoadAudioUpload",
-    "VHS_LoadVideo",
-    "VHS_LoadVideoFFmpeg",
-    "VHS_SelectLatest"
   ],
   "comfyui_controlnet_aux": [
     "ExecuteAllControlNetPreprocessors",

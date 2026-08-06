@@ -7,7 +7,6 @@
   "ComfyUI_Fill-Nodes": ["Fill-Nodes.TetrisGame"],
   "ControlAltAI-Nodes": ["ControlAltAI.IntegerSettingsAdvanced"],
   "RES4LYF": ["Comfy.RES4LYF.DisplayInfo"],
-  "WhatDreamsCost-ComfyUI": ["Comfy.LTXDirectorGuide"],
   "basic_data_handling": ["Basic data handling: dynamic input"],
   "comfyui-PlyPreview": ["plypreview.gaussianpreview"],
   "comfyui-enricos-nodes": ["ComfyUI.Enrico.ColorPicker"],

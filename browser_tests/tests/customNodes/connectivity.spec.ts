@@ -15,7 +15,8 @@ import {
   isForeignExecutionNoise,
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
-import { loadManifest } from '@e2e/fixtures/customNode/manifest'
+import { connectivityExpectationsFor } from '@e2e/fixtures/customNode/connectivityExpectations'
+import { customNodesEnv, loadManifest } from '@e2e/fixtures/customNode/manifest'
 import type {
   ConnectivityOutcome,
   PlannedPair,
@@ -43,41 +44,13 @@ const SWEEP_CHUNK = 1_000
 // that floor and the sweep logs its actual rate so it can be tightened.
 const SWEEP_SETUP_MS = 120_000
 const SWEEP_MS_PER_PAIR = 40
-// A node may legitimately veto a wiring via onConnectInput; committed
-// entries here must name the veto. Green means actual rejections are a
-// subset of this list.
-const CONNECT_REJECTED_ALLOWLIST: string[] = [
-  // pysssss MathExpression only accepts INT/FLOAT-producing links into its
-  // expression variables; its JS vetoes text-list producers.
-  'AddTextPrefix.texts -> MathExpression|pysssss.expression'
-]
-// Pairs whose creation/wiring THROWS inside the pack's own JS. Registration-
-// guarded, firing-optional: the throw is a timing race (it fires when the
-// KJNodes editor_base creation crash lands before this node's instantiation,
-// and passes on runners where it doesn't - observed failing 2026-07-18,
-// passing 2026-07-20 at the IDENTICAL core SHA), so per ARCHITECTURE
-// section 10 an observed-FIRING demand would false-fail on fast runners.
-// Section 10's guard floor still applies: each key must at least name a
-// pair the sweep still PLANS (asserted below), so an entry whose node the
-// pack renames or removes reds as stale instead of rotting forever.
-const SLOT_CONTRACT_MISMATCH_ALLOWLIST: string[] = [
-  // TimerNodeKJ's widget JS throws `null.replace` when instantiated in the
-  // sweep after the editor_base crash contaminates shared state
-  // (single-creation mount stays clean). Part of the 2026-07-18 core-drift
-  // incident. Upstream-report candidate.
-  'TimerNodeKJ.timer -> TimerNodeKJ.timer',
-  'TimerNodeKJ.time -> AddLabel.text_x'
-]
-// A pack's own serialize/configure hooks may drop links it manages itself
-// (reproducible manually: wire, save, reload - link gone). Pack behavior on
-// record, not frontend regressions.
-const ROUNDTRIP_LOST_ALLOWLIST: string[] = [
-  // VHS_SelectLatest rebuilds its dynamic slots on configure, detaching
-  // links on both its inputs and outputs.
-  'AddTextPrefix.texts -> VHS_SelectLatest.filename_prefix',
-  'AddTextPrefix.texts -> VHS_SelectLatest.filename_postfix',
-  'VHS_SelectLatest.Filename -> AddLabel.font_color'
-]
+const {
+  connectRejected,
+  conditionalSlotContractMismatch,
+  deterministicSlotContractMismatch,
+  roundtripLost,
+  zeroPairDragExpectedNodeCounts
+} = connectivityExpectationsFor(customNodesEnv())
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -189,16 +162,17 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
         ('WIDGET_ONLY_ON_INSTANCE' satisfies ConnectivityOutcome) &&
       !(
         result.outcome === ('CONNECT_REJECTED' satisfies ConnectivityOutcome) &&
-        CONNECT_REJECTED_ALLOWLIST.includes(result.key)
+        connectRejected.includes(result.key)
       ) &&
       !(
         result.outcome === ('ROUNDTRIP_LOST' satisfies ConnectivityOutcome) &&
-        ROUNDTRIP_LOST_ALLOWLIST.includes(result.key)
+        roundtripLost.includes(result.key)
       ) &&
       !(
         result.outcome ===
           ('SLOT_CONTRACT_MISMATCH' satisfies ConnectivityOutcome) &&
-        SLOT_CONTRACT_MISMATCH_ALLOWLIST.includes(result.key)
+        (conditionalSlotContractMismatch.includes(result.key) ||
+          deterministicSlotContractMismatch.includes(result.key))
       )
   )
   const passed = results.filter((result) => result.outcome === 'PASS').length
@@ -229,7 +203,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
     )
   expect(unledgered, 'console errors during breadth sweep').toEqual([])
 
-  // Two-way guard, same discipline as cannotRunAlone, for the two allowlists
+  // Two-way guard, same discipline as cannotRunAlone, for these allowlists
   // in the loop below: every key must still be OBSERVED failing in its
   // recorded way. An entry whose pair now passes (or is no longer even
   // planned) is stale and would silently hide the fixed bug behind it. On a
@@ -241,12 +215,13 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const allPacksInstalled =
     installedEntries.length === connectivityEntries.length
   const staleEntries: string[] = []
-  // SLOT_CONTRACT_MISMATCH_ALLOWLIST is deliberately not in this loop: its
+  // conditionalSlotContractMismatch is deliberately not in this loop: its
   // failures are timing-conditional (see its comment), so demanding they
   // FIRE every run false-fails on fast runners.
   for (const [allowlist, expected] of [
-    [CONNECT_REJECTED_ALLOWLIST, 'CONNECT_REJECTED'],
-    [ROUNDTRIP_LOST_ALLOWLIST, 'ROUNDTRIP_LOST']
+    [connectRejected, 'CONNECT_REJECTED'],
+    [roundtripLost, 'ROUNDTRIP_LOST'],
+    [deterministicSlotContractMismatch, 'SLOT_CONTRACT_MISMATCH']
   ] as const)
     for (const key of allowlist) {
       const observed = outcomeByKey.get(key)
@@ -265,7 +240,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // floor): the key's pair must still be PLANNED by the sweep - any outcome
   // is fine, absence means the pack renamed or removed the node and the
   // entry is stale. Deterministic given pinned defs, so no false-fail.
-  for (const key of SLOT_CONTRACT_MISMATCH_ALLOWLIST) {
+  for (const key of conditionalSlotContractMismatch) {
     if (!outcomeByKey.has(key)) {
       if (!allPacksInstalled) {
         console.log(
@@ -486,6 +461,7 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     }
   ]
   const nodeTypes = new Set(nodes.map((node) => node.type))
+  const observedZeroPairPacks = new Set<string>()
   for (const entry of connectivityEntries) {
     if (!isEntryInstalled(nodeTypes, entry)) {
       console.log(
@@ -496,14 +472,19 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     // Restrict the partner pool to the pack itself so the drag proves an
     // in-pack wiring; widget-backed primitive inputs render real slot dots
     // in Vue (verified empirically), so no slot type is excluded at plan time.
-    const packPlan = planPairs(
-      nodes.filter((node) => node.pack === entry.pack),
-      entry.expectedNodes
-    )
-    expect(
-      packPlan.pairs.length,
-      `${entry.pack} has no in-pack draggable pair - drag coverage lost`
-    ).toBeGreaterThan(0)
+    const packNodes = nodes.filter((node) => node.pack === entry.pack)
+    const packPlan = planPairs(packNodes, entry.expectedNodes)
+    if (packPlan.pairs.length === 0) {
+      expect(
+        zeroPairDragExpectedNodeCounts[entry.pack],
+        `${entry.pack} registers ${packNodes.length} nodes but contributes no in-pack draggable pair - drag coverage lost`
+      ).toBe(packNodes.length)
+      observedZeroPairPacks.add(entry.pack)
+      console.log(
+        `connectivity drag: ${entry.pack} is the verified ${packNodes.length}-node pack with no self-pair; S4 cross-pack coverage applies, S5 in-pack drag is not applicable`
+      )
+      continue
+    }
     // The plan comes from object_info, but a pack's own JS can rebuild a
     // declared input as widget-only on the instance (rgthree's Seed does).
     // Drag the first pair whose slots actually materialize; a pack whose
@@ -516,6 +497,18 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
       continue
     }
     dragEdges.push(inPack)
+  }
+  for (const pack of Object.keys(zeroPairDragExpectedNodeCounts)) {
+    const entry = connectivityEntries.find((entry) => entry.pack === pack)
+    expect(
+      entry,
+      `${pack} has a zero-pair expectation but is not a connectivity manifest entry`
+    ).toBeDefined()
+    if (!entry || !isEntryInstalled(nodeTypes, entry)) continue
+    expect(
+      observedZeroPairPacks.has(entry.pack),
+      `${pack} now contributes an in-pack draggable pair - remove the stale zero-pair expectation`
+    ).toBe(true)
   }
 
   const vueIncompatiblePacks = new Set(

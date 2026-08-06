@@ -95,7 +95,6 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "DownloadAndLoadDynamiCrafterCNModel",
         "DownloadAndLoadDynamiCrafterModel",
         "DynamiCrafterCNLoader",
         "DynamiCrafterModelLoader"
@@ -143,8 +142,7 @@
       "expectedNodeCount": 2,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000,
-      "cannotRunAlone": ["DownloadAndLoadGIMMVFIModel"]
+      "timeoutMs": 30000
     },
     {
       "pack": "ComfyUI-Image-Filters",
@@ -228,7 +226,7 @@
       "expectedExtensions": [],
       "disabledNodes": {},
       "timeoutMs": 30000,
-      "cannotRunAlone": ["DownloadAndLoadKolorsModel", "LoadChatGLM3"]
+      "cannotRunAlone": ["LoadChatGLM3"]
     },
     {
       "pack": "ComfyUI-LTXVideo",
@@ -385,12 +383,7 @@
         "AILab_QwenVL_GGUF": ["DisabledOnCloud"],
         "AILab_QwenVL_GGUF_Advanced": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000,
-      "cannotRunAlone": [
-        "AILab_QwenVL",
-        "AILab_QwenVL_Advanced",
-        "AILab_QwenVL_PromptEnhancer"
-      ]
+      "timeoutMs": 30000
     },
     {
       "pack": "ComfyUI-SCAIL-Pose",
@@ -791,18 +784,9 @@
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "FL_ImageNotes",
-        "FL_KsamplerSettings",
         "FL_PasteOnCanvas",
-        "FL_SchedulerStrings",
-        "FL_SeparateMaskComponents",
-        "FL_Switch",
         "FL_Switch_Big",
-        "FL_TextOverlayNode",
-        "FL_TextToPDF",
-        "FL_UnloadAllModels",
         "FL_VideoBatchSplitter",
-        "FL_VideoCadence",
-        "FL_VideoCropMask",
         "FL_WanVideoBlender",
         "FL_WanVideoBlender3Way",
         "FL_WanVideoContinuationBlender"
@@ -865,7 +849,6 @@
         "LayerUtility: ImageAutoCrop",
         "LayerUtility: ImageAutoCrop V2",
         "LayerUtility: LaMa",
-        "LayerUtility: LoadSmolLM2Model",
         "LayerUtility: QWenImage2Prompt"
       ]
     },
@@ -954,7 +937,6 @@
       },
       "timeoutMs": 30000,
       "cannotRunAlone": [
-        "ClownGuides_Sync_Advanced",
         "ClownInpaint",
         "ClownInpaintSimple",
         "ClownModelLoader",
@@ -1016,7 +998,7 @@
       "workflow": "",
       "expectedNodes": ["LTXDirector", "LTXDirectorGuide"],
       "expectedNodeCount": 6,
-      "expectedExtensions": ["Comfy.LTXDirectorGuide"],
+      "expectedExtensions": [],
       "disabledNodes": {
         "LoadVideoUI": ["HasCustomEndpoints", "ReadsArbitraryFile"],
         "MultiImageLoader": ["ReadsArbitraryFile"]
@@ -1188,7 +1170,6 @@
         "CogVideoXModelLoader",
         "CogVideoXVAELoader",
         "DownloadAndLoadCogVideoControlNet",
-        "DownloadAndLoadCogVideoGGUFModel",
         "DownloadAndLoadToraModel"
       ]
     },
@@ -1218,8 +1199,7 @@
       "disabledNodes": {
         "Florence2ModelLoader": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000,
-      "cannotRunAlone": ["DownloadAndLoadFlorence2Model"]
+      "timeoutMs": 30000
     },
     {
       "pack": "comfyui-frame-interpolation",
@@ -1335,8 +1315,7 @@
         "iToolsPromptStyler": ["DisabledOnCloud", "HasCustomEndpoints"],
         "iToolsPromptStylerExtra": ["DisabledOnCloud", "HasCustomEndpoints"]
       },
-      "timeoutMs": 30000,
-      "cannotRunAlone": ["iToolsLoadImagePlus"]
+      "timeoutMs": 30000
     },
     {
       "pack": "comfyui-layerdiffuse",
@@ -1395,12 +1374,7 @@
         "SegmentV2": ["DisabledOnCloud"]
       },
       "timeoutMs": 30000,
-      "cannotRunAlone": [
-        "AILab_CropObject",
-        "AILab_SDMatte",
-        "RMBG",
-        "SAM3Segment"
-      ]
+      "cannotRunAlone": ["AILab_CropObject", "AILab_SDMatte", "SAM3Segment"]
     },
     {
       "pack": "comfyui-sam3",
@@ -1521,13 +1495,7 @@
         "VHS_LoadVideoPath": ["ReadsArbitraryFile"],
         "VHS_SelectFilename": ["ReadsArbitraryFile"]
       },
-      "timeoutMs": 90000,
-      "cannotRunAlone": [
-        "VHS_LoadAudioUpload",
-        "VHS_LoadVideo",
-        "VHS_LoadVideoFFmpeg",
-        "VHS_SelectLatest"
-      ]
+      "timeoutMs": 90000
     },
     {
       "pack": "comfyui-workflow-prettier",

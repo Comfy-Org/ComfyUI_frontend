@@ -89,6 +89,21 @@ const ENV_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
         'cloud advertises input files /api/view will not serve the smoke account'
     },
     {
+      // VHS creates an audio preview from its empty/default selection. The
+      // endpoint rejects the zero-length preview request on Cloud.
+      pattern:
+        /Failed to load resource.*400.*\/api\/vhs\/viewaudio\?(?!(?:[^&\s\]]*&)*filename=[^&\s\]]+(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*start_time=0(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*duration=0(?:&|[\s\]]|$))/,
+      reason: 'VHS empty/default audio preview is rejected by Cloud'
+    },
+    {
+      // VHS creates video previews from the default input-dir combo value,
+      // which Cloud advertises but does not serve to the smoke account.
+      pattern:
+        /Failed to load resource.*404.*\/api\/vhs\/viewvideo\?(?=(?:[^&\s\]]*&)*filename=[^&\s\]]+(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*type=input(?:&|[\s\]]|$))/,
+      reason:
+        'VHS previews a Cloud-advertised default video the smoke account cannot retrieve'
+    },
+    {
       // Cloudflare fronts the cloud origin and injects its bot-challenge
       // script tag; the vite preview origin the suite loads does not serve
       // /cdn-cgi, so the tag 404s. Environment, not the app.

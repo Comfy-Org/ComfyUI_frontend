@@ -1,0 +1,115 @@
+// Exact serialized indices changed by the artifact-proven pack mechanisms.
+// Unlisted indices and the opposite renderer remain strict.
+export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
+  string,
+  Record<string, string>
+> = {
+  'ComfyUI_Fill-Nodes': {
+    FL_ColorPicker: '3,4,5,6',
+    FL_ReplaceColor: '5,6,7,8,9,10,11,12'
+  },
+  'ComfyUI-LTXVideo': {
+    LTXVSparseTrackEditor: '0,1'
+  },
+  'WhatDreamsCost-ComfyUI': {
+    LTXDirector: '3,4,5,7',
+    LoadAudioUI: '5'
+  }
+}
+
+export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
+  string,
+  Record<string, string>
+> = {
+  'comfyui-itools': {
+    iToolsRegexNode: '0'
+  },
+  radiance: {
+    RadianceSamplerPro: '1,4,5,8,10,11,12,40'
+  }
+}
+
+export interface TopologyExpectation {
+  before: number
+  after: number
+  reason: string
+}
+
+export const OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
+  string,
+  Record<string, TopologyExpectation>
+> = {
+  'ComfyUI_Fill-Nodes': {
+    FL_VideoBatchSplitter: {
+      before: 20,
+      after: 4,
+      reason:
+        'pack JS exposes output_count outputs on the instance; the default is 4 of 20 declared outputs'
+    }
+  }
+}
+
+export const OUTPUT_TOPOLOGY_EXPECTATIONS_VUE: Record<
+  string,
+  Record<string, TopologyExpectation>
+> = {}
+
+export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
+  string,
+  Record<string, TopologyExpectation>
+> = {
+  'WhatDreamsCost-ComfyUI': {
+    LTXKeyframer: {
+      before: 102,
+      after: 2,
+      reason:
+        'pack JS rebuilds the keyframe widgets from the configured image count'
+    }
+  }
+}
+
+export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE: Record<
+  string,
+  Record<string, TopologyExpectation>
+> = {}
+
+export function matchesTopologyExpectation(
+  expectation: TopologyExpectation | undefined,
+  before: number,
+  after: number
+): boolean {
+  return expectation?.before === before && expectation.after === after
+}
+
+export function rendererLedgerFor<T>(
+  vueNodesEnabled: boolean,
+  litegraph: T,
+  vue: T
+): T {
+  return vueNodesEnabled ? vue : litegraph
+}
+
+export function partitionValueDriftNodes(
+  mechanisms: Record<string, unknown>,
+  indexedLedgers: Array<Record<string, unknown>>
+): { exact: string[]; legacy: string[] } {
+  const exact = [
+    ...new Set(indexedLedgers.flatMap((ledger) => Object.keys(ledger)))
+  ]
+  const exactSet = new Set(exact)
+  return {
+    exact,
+    legacy: Object.keys(mechanisms).filter((node) => !exactSet.has(node))
+  }
+}
+
+export function staleValueDriftIndices(
+  allowed: Record<string, number[]>,
+  observed: Record<string, number[]>
+): string[] {
+  return Object.entries(allowed).flatMap(([node, indices]) =>
+    indices
+      .filter((index) => !observed[node]?.includes(index))
+      .map((index) => `${node}[${index}]`)
+  )
+}

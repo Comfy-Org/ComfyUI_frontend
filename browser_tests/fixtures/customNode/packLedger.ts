@@ -1,19 +1,19 @@
-type NodeLedger = Record<string, string>
+type NodeLedger<T> = Record<string, T>
 
-function matchingEntries(
-  ledger: Record<string, NodeLedger>,
+function matchingEntries<T>(
+  ledger: Record<string, NodeLedger<T>>,
   pack: string
-): Array<[string, NodeLedger]> {
+): Array<[string, NodeLedger<T>]> {
   const folded = pack.toLowerCase()
   return Object.entries(ledger).filter(
     ([ledgered]) => ledgered.toLowerCase() === folded
   )
 }
 
-export function packLedgerFor(
-  ledger: Record<string, NodeLedger>,
+export function packLedgerFor<T>(
+  ledger: Record<string, NodeLedger<T>>,
   pack: string
-): NodeLedger {
+): NodeLedger<T> {
   const matches = matchingEntries(ledger, pack)
   if (matches.length > 1)
     throw new Error(
@@ -22,9 +22,9 @@ export function packLedgerFor(
   return matches[0]?.[1] ?? {}
 }
 
-export function assertPackLedgerKeys(
+export function assertPackLedgerKeys<T>(
   name: string,
-  ledger: Record<string, NodeLedger>,
+  ledger: Record<string, NodeLedger<T>>,
   manifestPacks: string[]
 ): void {
   const foldedManifest = new Set(

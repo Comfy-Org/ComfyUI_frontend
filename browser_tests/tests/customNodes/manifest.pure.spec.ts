@@ -112,7 +112,7 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('expectedExtensions is required; empty only as an explicit no-frontend-JS declaration', () => {
+  test('expectedExtensions is required; empty explicitly expects no healthy registration', () => {
     // Omission must fail (a new pack row cannot silently opt out of the
     // extension-loaded assert); an explicit [] is the deliberate opt-out.
     const { expectedExtensions: _omitted, ...withoutField } = validEntry()

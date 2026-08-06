@@ -76,6 +76,40 @@ test.describe('consoleErrorLedger', () => {
       expect(
         unallowlistedErrors('any-pack', [viewError.replace('404', '500')])
       ).toHaveLength(1)
+
+      const vhsAudio =
+        'Failed to load resource: the server responded with a status of 400 (Bad Request) [http://localhost:4173/api/vhs/viewaudio?start_time=0&duration=0&timestamp=1785975998595&deadline=realtime]'
+      const vhsVideo =
+        'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:4173/api/vhs/viewvideo?filename=bedroom.mp4&type=input]'
+      expect(
+        unallowlistedErrors('any-pack', [
+          vhsAudio,
+          vhsVideo,
+          vhsVideo.replace(
+            'filename=bedroom.mp4&type=input',
+            'type=input&filename=bedroom.mp4'
+          )
+        ])
+      ).toEqual([])
+      expect(
+        unallowlistedErrors('any-pack', [
+          vhsAudio.replace('400', '500'),
+          vhsVideo.replace('404', '500'),
+          vhsVideo.replace('&type=input', ''),
+          vhsVideo.replace('type=input', 'type=output'),
+          vhsVideo.replace(
+            'filename=bedroom.mp4&type=input',
+            'notfilename=bedroom.mp4&prototype=input'
+          ),
+          vhsVideo.replace('type=input', 'type=input-archive'),
+          vhsVideo.replace('filename=bedroom.mp4', 'filename='),
+          vhsAudio.replace('duration=0', 'duration=0.5'),
+          vhsAudio.replace(
+            'start_time=0&duration=0',
+            'filename=song.wav&duration=0&start_time=0'
+          )
+        ])
+      ).toHaveLength(9)
     } finally {
       if (previous === undefined) delete process.env.CUSTOM_NODES_ENV
       else process.env.CUSTOM_NODES_ENV = previous

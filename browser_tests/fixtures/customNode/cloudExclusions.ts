@@ -41,10 +41,19 @@ export function stalenessCheckedKeys(
   ledger: Record<string, unknown>
 ): string[] {
   const disabled = 'disabledNodes' in entry ? entry.disabledNodes : {}
-  return Object.keys(ledger).filter(
-    (key) =>
-      !(key in disabled) && !(`${entry.pack}.${key}` in PIN_SKEWED_LEDGER_NODES)
-  )
+  return Object.keys(ledger).filter((key) => {
+    const qualifiedKey = `${entry.pack}.${key}`
+    const pinSkewed =
+      'disabledNodes' in entry &&
+      Object.keys(PIN_SKEWED_LEDGER_NODES).some(
+        (node) => qualifiedKey === node || qualifiedKey.startsWith(`${node}.`)
+      )
+    return (
+      !(key in disabled) &&
+      !Object.keys(disabled).some((node) => key.startsWith(`${node}.`)) &&
+      !pinSkewed
+    )
+  })
 }
 
 const AUTO_RUN_HARNESS_NODES = [

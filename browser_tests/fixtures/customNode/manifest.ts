@@ -43,7 +43,8 @@ export interface CoreManifestEntry extends SharedNodeExpectations {
   // register while the pack's frontend JS silently fails to load (wrong
   // web dir, a loadExtensions regression), and every JS-dependent
   // assertion in this suite would then quietly test vanilla nodes.
-  // Empty array = the pinned pack ships no boot-registered extension.
+  // Empty array = no healthy boot registration is expected. Source-proven
+  // broken registrations are tracked by the explicit broken-extension ledger.
   expectedExtensions: string[]
   // Exact number of nodes the pack registers at its pin, calibrated from the
   // gating CI's object_info. The all-nodes tiers derive their corpus from the
@@ -153,9 +154,9 @@ function calibrationIssues(
   >
 ): string[] {
   const missing: string[] = []
-  // Explicitly required (an empty array is a deliberate "no frontend JS"
-  // declaration) so a new pack row cannot silently opt out of the
-  // extension-loaded assert by omission.
+  // Explicitly required (an empty array deliberately expects no healthy boot
+  // registration; known-broken registrations use their separate ledger) so a
+  // new pack row cannot silently opt out of the extension-loaded assert.
   if (
     !Array.isArray(entry.expectedExtensions) ||
     !entry.expectedExtensions.every(isNonEmptyString) ||

@@ -12,9 +12,9 @@ import type {
   CoreManifestEntry
 } from '@e2e/fixtures/customNode/manifest'
 
-function coreEntry(): CoreManifestEntry {
+function coreEntry(pack = 'Example-Pack'): CoreManifestEntry {
   return {
-    pack: 'Example-Pack',
+    pack,
     repo: 'https://github.com/example/Example-Pack',
     pin: 'a1'.repeat(20),
     tiers: ['load'],
@@ -94,13 +94,33 @@ test.describe('stalenessCheckedKeys', () => {
     ).toEqual(['NodeB'])
   })
 
+  test('skips widget-ledger keys owned by a disabled node', () => {
+    expect(
+      stalenessCheckedKeys(cloudEntry({ NodeA: ['DisabledOnCloud'] }), {
+        'NodeA.widget': 'pack-owned value',
+        'NodeAExtra.widget': 'different node'
+      })
+    ).toEqual(['NodeAExtra.widget'])
+  })
+
   test('skips a ledgered node the env pin predates, and only for its own pack', () => {
-    const skewed = { ContextWindowsVisualizerKJ: 'custom canvas overlay' }
+    const skewed = {
+      ContextWindowsVisualizerKJ: 'custom canvas overlay',
+      'ContextWindowsVisualizerKJ.widget': 'widget value',
+      'ContextWindowsVisualizerKJExtra.widget': 'different node'
+    }
     expect(
       stalenessCheckedKeys(cloudEntry({}, 'ComfyUI-KJNodes'), skewed)
-    ).toEqual([])
+    ).toEqual(['ContextWindowsVisualizerKJExtra.widget'])
     expect(stalenessCheckedKeys(cloudEntry(), skewed)).toEqual([
-      'ContextWindowsVisualizerKJ'
+      'ContextWindowsVisualizerKJ',
+      'ContextWindowsVisualizerKJ.widget',
+      'ContextWindowsVisualizerKJExtra.widget'
+    ])
+    expect(stalenessCheckedKeys(coreEntry('ComfyUI-KJNodes'), skewed)).toEqual([
+      'ContextWindowsVisualizerKJ',
+      'ContextWindowsVisualizerKJ.widget',
+      'ContextWindowsVisualizerKJExtra.widget'
     ])
   })
 

@@ -64,6 +64,8 @@ test.describe('typePairing', () => {
     expect(isTypeCompatible('LATENT', 'IMAGE')).toBe(false)
     expect(isTypeCompatible('STRING,INT', 'INT')).toBe(true)
     expect(isTypeCompatible('STRING,INT', 'FLOAT')).toBe(false)
+    expect(isTypeCompatible('BBOX,', 'BBOX')).toBe(true)
+    expect(isTypeCompatible('BBOX,', 'IMAGE')).toBe(true)
     expect(isTypeCompatible('*', 'ANYTHING')).toBe(true)
     expect(isTypeCompatible('', 'ANYTHING')).toBe(true)
   })
@@ -109,6 +111,61 @@ test.describe('typePairing', () => {
       'WeirdNode.strange',
       'WeirdNode.output[0]'
     ])
+  })
+
+  test('a short output_name list uses the production output_<index> fallback', () => {
+    const shortNodes = normalizeNodeDefs({
+      ShortNames: {
+        input: { required: {} },
+        output: ['IMAGE', 'MASK', ['alpha', 'beta']],
+        output_name: ['image'],
+        python_module: 'custom_nodes.short-names'
+      },
+      MaskSink: {
+        input: { required: { mask: ['MASK', {}] } },
+        output: [],
+        python_module: 'nodes'
+      }
+    })
+    const short = shortNodes.find((node) => node.type === 'ShortNames')!
+    expect(short.outputs).toEqual([
+      { name: 'image', type: 'IMAGE' },
+      { name: 'output_1', type: 'MASK' },
+      {
+        name: 'output_2',
+        type: 'COMBO',
+        comboOptions: ['alpha', 'beta']
+      }
+    ])
+    expect(short.unknownSlots).toBeUndefined()
+    expect(
+      planPairs(shortNodes, ['ShortNames', 'MaskSink']).pairs.map(
+        (pair) =>
+          `${pair.producer.nodeType}.${pair.producer.slotName}->${pair.consumer.nodeType}.${pair.consumer.slotName}`
+      )
+    ).toContain('ShortNames.output_1->MaskSink.mask')
+
+    const [unnamed] = normalizeNodeDefs({
+      Unnamed: {
+        input: { required: {} },
+        output: ['IMAGE', 'MASK'],
+        python_module: 'custom_nodes.unnamed'
+      }
+    })
+    expect(unnamed.outputs).toEqual([
+      { name: 'output_0', type: 'IMAGE' },
+      { name: 'output_1', type: 'MASK' }
+    ])
+
+    const [emptyName] = normalizeNodeDefs({
+      EmptyName: {
+        input: { required: {} },
+        output: ['IMAGE'],
+        output_name: [''],
+        python_module: 'custom_nodes.empty-name'
+      }
+    })
+    expect(emptyName.outputs).toEqual([{ name: 'output_0', type: 'IMAGE' }])
   })
 
   test('planPairs pairs exact and union types, deterministically', () => {
