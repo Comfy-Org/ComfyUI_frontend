@@ -25,6 +25,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import type {
   LayoutChange,
+  LayoutOperation,
   MoveNodeOperation,
   NodeLayout,
   Point,

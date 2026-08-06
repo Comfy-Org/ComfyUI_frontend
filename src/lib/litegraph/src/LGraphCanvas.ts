@@ -5010,7 +5010,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const i = graph._nodes.indexOf(node)
     if (i == -1) return
 
-    canvasLayoutMutations().bringNodeToFront(graph.rootGraph.id, node.id)
+    canvasLayoutMutations.bringNodeToFront(graph.rootGraph.id, node.id)
 
     graph._nodes.splice(i, 1)
     graph._nodes.push(node)

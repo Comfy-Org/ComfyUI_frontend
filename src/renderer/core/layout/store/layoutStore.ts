@@ -18,7 +18,6 @@ import type { UUID } from '@/utils/uuid'
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import type {
   BatchUpdateBoundsOperation,
-  BatchUpdateBoundsOptions,
   CreateNodeOperation,
   CreateRerouteOperation,
   DeleteNodeOperation,
@@ -27,7 +26,7 @@ import type {
   LayoutChange,
   LayoutOperation,
   LayoutOperationResult,
-  LayoutStore,
+  LayoutSource,
   LinkId,
   LinkLayout,
   LinkSegmentLayout,
@@ -119,11 +118,12 @@ interface TypedYMap<T> {
   get<K extends keyof T>(key: K, defaultValue: T[K]): T[K]
 }
 
-// TODO: Delete the `LayoutStore` interface and rename this to `LayoutStore`.
-// The interface has no consumers other than this `implements` clause — it
-// duplicates every signature to express visibility that `private` already
-// expresses on the class.
-class LayoutStoreImpl implements LayoutStore {
+interface BatchUpdateBoundsOptions {
+  boundsIncludeTitleHeight?: boolean
+  source: LayoutSource
+}
+
+class LayoutStoreImpl {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
     position: { x: 0, y: 0 }
