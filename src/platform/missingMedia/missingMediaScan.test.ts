@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -155,13 +155,13 @@ function makeGraph(nodes: LGraphNode[]): LGraph {
 }
 
 function makeAsset(name: string, assetHash: string | null = null): AssetItem {
-  return {
+  return fromPartial({
     id: name,
     name,
     hash: assetHash,
     mime_type: null,
     tags: ['input']
-  }
+  })
 }
 
 function makeAssetResolver(

@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import * as fc from 'fast-check'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -32,13 +34,12 @@ function arbAssetList(
   maxLength = 20
 ): fc.Arbitrary<AssetItem[]> {
   return fc.uniqueArray(arbAssetId, { minLength, maxLength }).map((ids) =>
-    ids.map(
-      (id) =>
-        ({
-          id,
-          name: `${id}.png`,
-          tags: ['output']
-        }) satisfies AssetItem
+    ids.map((id) =>
+      fromPartial<AssetItem>({
+        id,
+        name: `${id}.png`,
+        tags: ['output']
+      })
     )
   )
 }

@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
@@ -16,7 +18,7 @@ vi.mock('@/i18n', () => ({
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  return fromPartial<AssetItem>({
     id: 'asset-123',
     name: 'test-model.safetensors',
     size: 1024,
@@ -26,7 +28,7 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
       filename: 'models/checkpoints/test-model.safetensors'
     },
     ...overrides
-  }
+  })
 }
 
 function setupDialogMocks() {
@@ -56,14 +58,14 @@ describe('useAssetBrowserDialog', () => {
       const dialogCall = mockShowDialog.mock.calls[0][0]
       const onSelectHandler = dialogCall.props.onSelect
 
-      const mockAsset = {
+      const mockAsset = fromPartial<AssetItem>({
         id: 'test-asset-id',
         name: 'test.safetensors',
         size: 1024,
         created_at: '2025-10-01T00:00:00Z',
         tags: ['models', 'checkpoints'],
         user_metadata: { filename: 'selected-asset-path' }
-      }
+      })
       onSelectHandler(mockAsset)
 
       expect(onAssetSelected).toHaveBeenCalledWith(mockAsset)

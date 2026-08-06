@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -47,13 +47,13 @@ vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async () => {
 })
 
 function makeAsset(name: string, assetHash: string | null = null): AssetItem {
-  return {
+  return fromPartial({
     id: name,
     name,
     hash: assetHash,
     mime_type: null,
     tags: ['input']
-  }
+  })
 }
 
 function makeHistoryJob(

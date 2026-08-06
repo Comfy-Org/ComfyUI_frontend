@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -86,12 +88,12 @@ const contextMenuStub = defineComponent({
   `
 })
 
-const asset: AssetItem = {
+const asset: AssetItem = fromPartial({
   id: 'asset-1',
   name: 'image.png',
   tags: [],
   user_metadata: {}
-}
+})
 
 const buttonStub = {
   template: '<div class="button-stub"><slot /></div>'
