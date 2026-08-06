@@ -149,7 +149,7 @@ export function assertCloudCustomNodeBootGuard({
     )
 }
 
-export function stopCloudCustomNodeBootGuard(page: Page): Promise<void> {
+function stopCloudCustomNodeBootGuard(page: Page): Promise<void> {
   return page.evaluate((observerKey) => {
     const observer = Reflect.get(window, observerKey)
     if (observer instanceof MutationObserver) observer.disconnect()
