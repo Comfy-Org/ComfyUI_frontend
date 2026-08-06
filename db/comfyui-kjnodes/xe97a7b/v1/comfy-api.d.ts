@@ -92,6 +92,26 @@ export interface Comfy {
    */
   forMajor(major: number): Comfy
 
+  /**
+   * True when two handles refer to the same entity, whatever major or API
+   * instance produced them.
+   *
+   * `===` is only reliable for handles from the *same* instance and major. Use
+   * this whenever a handle may have come from another pack.
+   */
+  sameEntity(a: unknown, b: unknown): boolean
+
+  /**
+   * Re-resolves a handle from any major or instance into one of this instance's
+   * own. Returns `undefined` if it is not a handle, or its entity is gone.
+   */
+  adopt(handle: unknown): NodeHandle | undefined
+
+  readonly graph: GraphHandle
+  /** Node definitions, and the replacement for `beforeRegisterNodeDef`. */
+  readonly defs: DefRegistry
+}
+
 // ─── defsRegistry.ts ─────────────────────────────────────────────
 
 /**
@@ -180,7 +200,13 @@ export interface NodeDefBuilder {
   /** Current state of the definition, after any earlier extensions ran. */
   readonly def: NodeDef
 
-/**
+  setTitle(title: string): void
+  setCategory(category: string): void
+  addWidget(def: WidgetDef): void
+  hideWidget(name: string): void
+
+  // Behaviour hooks, ordered by measured usage across the 1,265 packs.
+  /**
    * Fires once the node exists *and is addressable* — after it joins a graph.
    *
    * Deliberately not litegraph's `onNodeCreated`, which runs inside
@@ -285,6 +311,14 @@ export interface NodeDefinition {
    */
   readonly resolve?: Resolver
 
+  onCreated?(node: NodeHandle): void
+  onExecuted?(node: NodeHandle, result: ExecutionResult): void
+  onConfigured?(node: NodeHandle, data: Record<string, unknown>): void
+  onConnectionsChanged?(node: NodeHandle, event: ConnectionChangeEvent): void
+  onRemoved?(node: NodeHandle): void
+  onSerialize?(node: NodeHandle): Record<string, unknown>
+}
+
 export interface DefRegistry {
   /**
    * Registers a node type the pack owns. Returns a handle that unregisters
@@ -299,6 +333,173 @@ export interface DefRegistry {
     apply: (builder: NodeDefBuilder) => void
   ): Unsubscribe
 }
+
+/**
+ * `defs.extend` — the published replacement for `beforeRegisterNodeDef`.
+ *
+ * This is the largest surface in the ecosystem: 1,265 packs (47.4% of installs)
+ * register that hook, and 1,191 of them use it to patch the generated class's
+ * prototype. Two things change here, and both matter:
+ *
+ * 1. **The selector is declarative.** Today every hook runs for every node type
+ *    and nearly all of them immediately `return` after a name check — with
+ *    thousands of types that is millions of wasted callbacks at boot. A
+ *    predicate we own can be matched against a def instead.
+ * 2. **Callbacks compose.** Prototype patching has no composition, so packs
+ *    capture-and-chain (`orig?.apply(this, arguments)`) and whether that works
+ *    depends on load order and on every pack remembering to call through. Two
+ *    packs patching the same method, one forgetting, silently breaks the other.
+ *    Registered callbacks are invoked in registration order, always.
+ */
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+
+import { ComfyApiError } from './errors'
+import type { NodeHandle } from './nodeHandle'
+import type { Resolver } from './resolution'
+import type { Unsubscribe, WidgetDef } from './widgetHandle'
+
+/**
+ * The read view of a node definition. Frozen and inert, like every read here.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface NodeDef {
+  readonly type: string
+  readonly title: string
+  readonly category: string
+  readonly description: string
+  readonly inputs: readonly Readonly<{ name: string; type: string }>[]
+  readonly outputs: readonly Readonly<{ name: string; type: string }>[]
+  readonly isOutputNode: boolean
+  /** Which pack supplied it, when the backend reports one. */
+  readonly source: string | undefined
+}
+
+/**
+ * Node output as it arrives from the backend.
+ *
+ * `raw` carries everything else verbatim — ADR 0007's passthrough schema
+ * guarantees custom output keys survive, so a pack reading a bespoke key keeps
+ * working.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface ExecutionResult {
+  readonly images: readonly Readonly<Record<string, unknown>>[]
+  readonly text: readonly string[]
+  readonly raw: Readonly<Record<string, unknown>>
+}
+
+/**
+ * A preview frame the backend produced while this node was running.
+ *
+ * Per node rather than per channel, deliberately. Packs currently subscribe to
+ * `b_preview_with_metadata` *and* `b_preview`, track the executing node id in a
+ * module global to correlate the second one, and probe
+ * `serverSupportsFeature('supports_preview_metadata')` to decide which to
+ * trust — all to answer "is this frame mine?". Answering it once here removes
+ * the global, and with it the mis-attribution when two nodes preview at once.
+ */
+export interface PreviewFrame {
+  readonly blob: Blob
+  /** Object URL for the blob, revoked when the next frame arrives. */
+  readonly url: string
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface ConnectionChangeEvent {
+  readonly side: 'input' | 'output'
+  readonly index: number
+  readonly connected: boolean
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface NodeDefBuilder {
+  /** Current state of the definition, after any earlier extensions ran. */
+  readonly def: NodeDef
+
+  setTitle(title: string): void
+  setCategory(category: string): void
+  addWidget(def: WidgetDef): void
+  hideWidget(name: string): void
+
+  // Behaviour hooks, ordered by measured usage across the 1,265 packs.
+  /**
+   * Fires once the node exists *and is addressable* — after it joins a graph.
+   *
+   * Deliberately not litegraph's `onNodeCreated`, which runs inside
+   * `createNode()` before the node has an id, a graph, or store registration.
+   * A handle is id-backed, so at that moment there is nothing to hand back, and
+   * widget writes would land on an unregistered node and be lost on insert.
+   */
+  onCreated(callback: (node: NodeHandle) => void): void // 943 packs
+  onExecuted(
+    callback: (node: NodeHandle, result: ExecutionResult) => void
+  ): void // 497 packs
+  onConfigured(
+    callback: (node: NodeHandle, data: Record<string, unknown>) => void
+  ): void // 429 packs
+  onConnectionsChanged(
+    callback: (node: NodeHandle, event: ConnectionChangeEvent) => void
+  ): void // 223 packs
+  onRemoved(callback: (node: NodeHandle) => void): void // 158 packs
+  /** Preview frames for this node, already correlated. */
+  onPreview(callback: (node: NodeHandle, frame: PreviewFrame) => void): void
+  /**
+   * Contributes the pack's own state to the saved node.
+   *
+   * The returned object is merged into the serialized node, and comes back
+   * through `onConfigured`. Only keys the pack owns: core fields are not
+   * writable from here, because a pack must not be able to change what the
+   * workflow means.
+   */
+  onSerialize(callback: (node: NodeHandle) => Record<string, unknown>): void
+  /**
+   * Vetoes or permits an incoming connection *before* it is wired.
+   *
+   * Distinct from `onConnectionsChanged`, which fires after the fact — packs
+   * use the pre-hook to refuse an incompatible link or relabel a slot while
+   * the type is still known. Returning `false` refuses.
+   */
+  onBeforeConnect(
+    callback: (node: NodeHandle, event: BeforeConnectEvent) => boolean | void
+  ): void
+  /** Adds an entry to this node type's context menu. */
+  addMenuItem(item: NodeMenuItem): void
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface BeforeConnectEvent {
+  readonly side: 'input' | 'output'
+  readonly index: number
+  /** The node at the other end, when one is known. */
+  readonly peerNodeId: string | undefined
+  readonly peerType: string | undefined
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface NodeMenuItem {
+  readonly label: string
+  run(node: NodeHandle): void
+}
+
+/**
+ * Which definitions an extension applies to.
+ *
+ * Indexed rather than run-and-return: this predicate is almost always the guard
+ * clause the pack already had at the top of its hook.
+ */
+export type DefSelector =
+  | string
+  | readonly string[]
+  | RegExp
+  /**
+   * A `RegExp` category covers the prefix filter 53 packs open their hook with
+   * (`nodeData.category.startsWith('KJNodes')` → `{ category: /^KJNodes/ }`).
+   */
+  | { readonly category: string | RegExp }
 
 // ─── graphHandle.ts ──────────────────────────────────────────────
 
@@ -393,7 +594,6 @@ export interface Point {
   readonly x: number
   readonly y: number
 }
-
 export interface Size {
   readonly width: number
   readonly height: number
@@ -432,7 +632,24 @@ export interface NodeHandle extends HandleCommon {
   readonly type: string
   readonly comfyClass: string
 
-/**
+  getTitle(): string
+  setTitle(title: string): void
+  getMode(): NodeMode
+  setMode(mode: NodeMode): void
+  isCollapsed(): boolean
+  setCollapsed(collapsed: boolean): void
+  isPinned(): boolean
+  setPinned(pinned: boolean): void
+  getColor(): string | undefined
+  setColor(color: string | undefined): void
+  getBgColor(): string | undefined
+  setBgColor(color: string | undefined): void
+  getShape(): NodeShape
+  setShape(shape: NodeShape): void
+  getProperty<T = unknown>(key: string): T | undefined
+  getProperties(): Readonly<Record<string, unknown>>
+  setProperty(key: string, value: unknown): void
+  /**
    * Whether this node emits `widgets_values` when the workflow is serialized.
    *
    * Writable because packs vary it per node type, and the value is part of the
@@ -471,7 +688,93 @@ export interface NodeCollections {
   widgets(nodeId: string): WidgetCollection
 }
 
+/**
+ * `NodeHandle` — the public view of a graph node.
+ *
+ * Bound to `LGraphNode` here, but nothing about that is observable from the
+ * handle: it resolves by id on every access and exposes only the declared
+ * surface. Internals can be refactored without breaking the contract, which is
+ * the entire reason this layer exists.
+ */
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import {
+  LGraphEventMode,
+  RenderShape
+} from '@/lib/litegraph/src/types/globalEnums'
+import { toNodeId } from '@/types/nodeId'
+
+import { createHandleFactory } from './closedProxy'
+import type { HandleCommon } from './closedProxy'
+import type {
+  InputSlotHandle,
+  OutputSlotHandle,
+  SlotCollection
+} from './slotHandle'
+import type { WidgetCollection } from './widgetHandle'
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type NodeMode = 'always' | 'never' | 'bypass' | 'on-event' | 'on-trigger'
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type NodeShape = 'default' | 'box' | 'round' | 'circle' | 'card'
+
 // ─── resolution.ts ───────────────────────────────────────────────
+
+/**
+ * Frontend-node resolution — the system that turns "virtual" nodes into
+ * ordinary links and values at prompt time.
+ *
+ * This replaces `isVirtualNode` + `applyToGraph()`, which runs pack callbacks
+ * that mutate the live graph in the middle of serialization
+ * (`executionUtil.ts:38` — core does it too). Under ECS that is a system with
+ * side effects: not replayable, corrupts the document if it throws halfway,
+ * and syncs phantom mutations under CRDT.
+ *
+ * Here resolution is a pure derivation. A pack's resolver answers a question
+ * about its own outputs against a read-only view; this pass follows the
+ * answers (Get → Set → Reroute → …) to a fixpoint. Nothing is written
+ * anywhere: a resolver that throws poisons one prompt build and the graph is
+ * untouched, which is the property `applyToGraph` structurally cannot have.
+ */
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import { toNodeId } from '@/types/nodeId'
+
+import type { WidgetValue } from './widgetHandle'
+
+/**
+ * "Whatever feeds this input." The only way one resolution names another.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface InputRef {
+  readonly nodeId: string
+  readonly input: number
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type OutputResolution =
+  | { readonly omit: true }
+  | { readonly forwardTo: InputRef }
+  | { readonly literal: WidgetValue }
+
+/**
+ * What a resolver may see. Reads only — there is nothing here that writes.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface ResolvedNodeView {
+  readonly id: string
+  readonly type: string
+  widgetValue(name: string): WidgetValue | undefined
+  input(ref: string | number): InputRef | undefined
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface ResolveView {
+  readonly self: ResolvedNodeView
+  nodesOfType(type: string): readonly ResolvedNodeView[]
+}
 
 /**
  * Frontend-node resolution — the system that turns "virtual" nodes into
@@ -675,6 +978,18 @@ export interface SlotCollection<THandle> {
 
 // ─── slotRef.ts ──────────────────────────────────────────────────
 
+export interface ResolveOptions {
+  /**
+   * Whether the backend supplies slot names yet. While false, a canonical
+   * integer string resolves positionally, so `'0'` addresses slot 0 and call
+   * sites need no rewrite once names arrive.
+   *
+   * Retire this together with the release that ships names — until then a pack
+   * passing `'2'` meaning a name would silently bind slot 2.
+   */
+  readonly namedSlotsAvailable: boolean
+}
+
 /**
  * Slot identity and reference resolution.
  *
@@ -701,18 +1016,6 @@ export type SlotId = string & { readonly __brand: 'SlotId' }
  *     output.connectTo(node, { index: 0 })  // by position — explicit
  */
 export type SlotRef = SlotId | string | { readonly index: number }
-
-export interface ResolveOptions {
-  /**
-   * Whether the backend supplies slot names yet. While false, a canonical
-   * integer string resolves positionally, so `'0'` addresses slot 0 and call
-   * sites need no rewrite once names arrive.
-   *
-   * Retire this together with the release that ships names — until then a pack
-   * passing `'2'` meaning a name would silently bind slot 2.
-   */
-  readonly namedSlotsAvailable: boolean
-}
 
 // ─── widgetHandle.ts ─────────────────────────────────────────────
 
@@ -752,7 +1055,11 @@ export interface WidgetHandle extends HandleCommon {
   readonly name: string
   readonly widgetType: string
 
-/** Replaces the `type = 'converted-widget'` hack. Value is retained. */
+  getValue<T = WidgetValue>(): T
+  setValue(value: WidgetValue): void
+
+  isHidden(): boolean
+  /** Replaces the `type = 'converted-widget'` hack. Value is retained. */
   setHidden(hidden: boolean): void
   getOptions(): Readonly<IWidgetOptions> | undefined
   setOption(key: string, value: unknown): void
@@ -773,8 +1080,6 @@ export interface WidgetHandle extends HandleCommon {
   ): Unsubscribe
   on(event: 'removed', listener: () => void): Unsubscribe
 }
-
-export type Unsubscribe = () => void
 
 /** `nodeId` and widget name, joined by a character neither may contain. */
 const SEP = ' '
@@ -1046,3 +1351,7 @@ export interface WidgetCollection {
   remove(name: string): boolean
   [Symbol.iterator](): Iterator<WidgetHandle>
 }
+
+export type WidgetValue = string | number | boolean | object | undefined
+
+export type Unsubscribe = () => void
