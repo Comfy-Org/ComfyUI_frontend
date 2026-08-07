@@ -267,6 +267,35 @@ eventual "panning got slow on my VM" report can be traced back here.
 
 ---
 
+## 6a. Sanctioned hold-outs: workflow save/load 🟡
+
+Some packs exist _to_ hook workflow save and load. `comfyui-workflow-encrypt`
+encrypts the workflow itself; without a hook into serialization there is nothing
+left of it. `comfyui-get-meta` and VHS's `videoinfo.js` want the other half —
+opening a workflow parsed out of a file.
+
+Neither `app.graphToPrompt()` nor `loadGraphData`/`handleFile` has a published
+destination (gaps 26 and 30).
+
+**Provisional:** allow these packs to keep hooking save/load on the old surface
+rather than refusing them. The alternative is refusing a pack whose entire
+purpose is that hook, which teaches us nothing.
+
+Sites are marked in the converted source as:
+
+```js
+// SANCTIONED-HOLDOUT(workflow-save-load): <what this does, why it has no destination>
+```
+
+so they are greppable and can be retired the moment a document/workflow surface
+exists. A file carrying one **will fail `retires-the-legacy-global` by design** —
+that failure is the record, not a defeat, and should not be worked around.
+
+**Open question.** Is a document/workflow surface in scope at all, or is
+encrypt-the-workflow simply out of bounds for the node API? The answer decides
+whether these hold-outs are temporary or permanent. If temporary, the marker
+above is the migration list.
+
 ## 7. Two traps worth a second pair of eyes
 
 **Localized slot names — a silent, locale-dependent prompt change.**
@@ -285,6 +314,31 @@ free — but `shallowCloneCommonProps` includes it, so dropping the write remove
 field, so it can be neither set nor safely dropped.
 
 ---
+
+## 7a. Conversion keeps finding packs that were already broken
+
+Worth knowing before reading any conversion result: some of what the migration
+"loses" was never working.
+
+**A copied-and-broken stylesheet idiom.** Three packs (~1.0M downloads) contain
+`$el('style', { textContent: style })` where `style` is never declared anywhere
+in the file — `comfyui-art-venture` (842K), `comfyui-workflow-encrypt` (169K)
+and `comfyui-thumbnails` (8K). It throws a `ReferenceError` every load. In
+workflow-encrypt it sits at module scope, so the whole file dies with it. Same
+shape in all three: a template that propagated.
+
+**Widgets already shadowed by core.** LayerStyle's DZ colour widget was
+unreachable before we touched it — see §3. Removing it during conversion was not
+a regression.
+
+**Dead guards and inert code.** LanPaint's de-duplication guard compared a
+widget's _name_ against a string that was actually its _value_, so it never
+fired. kjnodes' `hideWidgetForGood` recursion passed two arguments in swapped
+positions, so linked widgets were always re-enabled. Both were carried forward
+faithfully or removed with the behaviour they never had.
+
+The practical consequence: an upstream PR should state plainly which defects
+pre-date the conversion, or the conversion gets blamed for them.
 
 ## 8. Bugs found in the node API itself
 
