@@ -264,7 +264,7 @@ describe('useNodeDefStore', () => {
       expect(store.visibleNodeDefs).toHaveLength(2)
     })
 
-    it('should reactively hide nodes disabled by provider policy', () => {
+    it('keeps policy-disabled nodes visible in search results', () => {
       setPartnerProviderEnabled(false)
       store.updateNodeDefs([
         createMockNodeDef({ name: 'enabled' }),
@@ -276,7 +276,8 @@ describe('useNodeDefStore', () => {
       ])
 
       expect(store.visibleNodeDefs.map((node) => node.name)).toEqual([
-        'enabled'
+        'enabled',
+        'disabled'
       ])
 
       setPartnerProviderEnabled(true)

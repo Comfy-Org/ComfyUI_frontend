@@ -1,6 +1,11 @@
 <template>
   <div
-    class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden"
+    :class="
+      cn(
+        'option-container flex w-full cursor-pointer items-center justify-between overflow-hidden',
+        isDisabled && 'opacity-60'
+      )
+    "
   >
     <div class="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
       <!-- Row 1: Name (left) + badges (right) -->
@@ -22,6 +27,13 @@
           class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
           v-html="highlightQuery(nodeDef.name, currentQuery)"
         />
+        <span
+          v-if="isDisabled"
+          data-testid="node-disabled-badge"
+          class="shrink-0 rounded-sm bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-400"
+        >
+          {{ $t('workspacePanel.partnerNodes.disabledBadge') }}
+        </span>
 
         <template v-if="showDescription">
           <div class="flex-1" />
@@ -125,6 +137,7 @@ import TextTicker from '@/components/common/TextTicker.vue'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
 import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
+import { useNodeDisabledState } from '@/platform/nodeDisabled/nodeDisabledState'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -150,6 +163,9 @@ const {
 
 const badgePillClass =
   'flex h-[18px] max-w-28 shrink-0 items-center justify-center gap-1 rounded-full bg-secondary-background-hover/80 px-2'
+
+const { isNodeDisabled } = useNodeDisabledState()
+const isDisabled = computed(() => isNodeDisabled(nodeDef))
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>

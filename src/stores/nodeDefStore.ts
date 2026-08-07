@@ -383,10 +383,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   })
 
   const visibleNodeDefs = computed(() => {
-    return nodeDefs.value.filter(
-      (nodeDef) =>
-        nodeDefFilters.value.every((filter) => filter.predicate(nodeDef)) &&
-        !isNodeDisabled(nodeDef)
+    return nodeDefs.value.filter((nodeDef) =>
+      nodeDefFilters.value.every((filter) => filter.predicate(nodeDef))
     )
   })
   const nodeSearchService = computed(
@@ -567,6 +565,7 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   }
 
   const nodeDefStore = useNodeDefStore()
+  const { isNodeDisabled } = useNodeDisabledState()
   const topNodeDefs = computed<ComfyNodeDefImpl[]>(() => {
     const visibleNodeNames = new Set(
       nodeDefStore.visibleNodeDefs.map((nodeDef) => nodeDef.name)
@@ -575,7 +574,9 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
       .map((nodeName: string) => nodeDefStore.nodeDefsByName[nodeName])
       .filter(
         (nodeDef): nodeDef is ComfyNodeDefImpl =>
-          nodeDef !== undefined && visibleNodeNames.has(nodeDef.name)
+          nodeDef !== undefined &&
+          visibleNodeNames.has(nodeDef.name) &&
+          !isNodeDisabled(nodeDef)
       )
       .slice(0, topNodeDefLimit.value)
   })
