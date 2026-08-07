@@ -608,7 +608,7 @@ export interface AddCreditsClickMetadata {
 export type ByomSurface = 'asset_browser' | 'model_dropdown' | 'missing_model'
 
 /** Import sources the upload wizard can resolve a URL to. */
-export type ByomSource = 'civitai' | 'huggingface'
+type ByomSource = 'civitai' | 'huggingface'
 
 /** How the model type was decided, for measuring metadata auto-detection. */
 export type ByomModelTypeOrigin = 'required' | 'autodetected' | 'manual'
@@ -929,10 +929,7 @@ export interface TelemetryProvider {
   trackEmailVerification?(stage: 'opened' | 'requested' | 'completed'): void
 
   // Bring-your-own-model upload funnel
-  trackByomFunnel?(
-    stage: ByomFunnelStage,
-    metadata: ByomFunnelMetadata
-  ): void
+  trackByomFunnel?(stage: ByomFunnelStage, metadata: ByomFunnelMetadata): void
 
   // Template workflow events
   trackTemplate?(metadata: TemplateMetadata): void
