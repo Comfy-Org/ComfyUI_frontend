@@ -24,7 +24,7 @@ export const useReleaseStore = defineStore('release', () => {
   const settingStore = useSettingStore()
 
   const currentVersion = computed(
-    () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
+    () => systemStatsStore.systemStats?.system?.comfyui_version ?? ''
   )
 
   // Release data from settings
