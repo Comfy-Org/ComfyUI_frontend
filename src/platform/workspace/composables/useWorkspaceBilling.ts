@@ -1,4 +1,5 @@
-import { computed, ref, shallowRef } from 'vue'
+import { captureException } from '@sentry/vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -27,6 +28,43 @@ import type {
   BillingState,
   SubscriptionInfo
 } from '../../../composables/billing/types'
+
+/**
+ * Which client path resumes a recovered operation. Exhaustive on purpose: the
+ * two-way check this replaces sent anything that was not `topup` down the
+ * subscription path, which covers the customer's real plan with a "setting up
+ * your subscription" spinner until the operation settles.
+ */
+function resumeModeFor(
+  type: BillingStatusResponse['pending_billing_op_type']
+): 'subscription' | 'topup' {
+  switch (type) {
+    case 'topup':
+      return 'topup'
+    case 'subscription':
+      return 'subscription'
+    // A server predating the field only ever had subscriptions to hand back.
+    case undefined:
+      return 'subscription'
+    default: {
+      const unexpected: never = type
+      // JSON.stringify, not String: the latter throws on a value with no
+      // callable toString/valueOf, and throwing out of the branch that exists
+      // to absorb a bad value would abort recovery entirely. The value came
+      // from a parsed response, so it cannot be circular.
+      captureException(
+        new Error(
+          `Unknown pending billing op type: ${JSON.stringify(unexpected)}`
+        ),
+        { tags: { error_type: 'billing_unknown_resume_mode' } }
+      )
+      // Reachable only against a newer server. Dropping recovery strands a
+      // customer who cannot reach the payment page; a wrong panel clears on
+      // reload, so recovery wins.
+      return 'subscription'
+    }
+  }
+}
 
 /**
  * Whether a rejection means the subscription already holds the state the caller
@@ -78,6 +116,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
+  const seatCapacity = shallowRef<{
+    maxSeats: number
+    occupiedSeats: number
+  } | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
   // Prevent older status and balance responses from overwriting newer state.
   const latestBillingReadIds = { status: 0, balance: 0 }
@@ -136,6 +178,17 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
   )
+  const maxSeats = computed(() => seatCapacity.value?.maxSeats ?? null)
+  const occupiedSeats = computed(
+    () => seatCapacity.value?.occupiedSeats ?? null
+  )
+
+  watch(
+    () => workspaceStore.activeWorkspace?.id,
+    () => {
+      seatCapacity.value = null
+    }
+  )
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -172,6 +225,22 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         return
       }
 
+      if (
+        typeof status.max_seats === 'number' &&
+        Number.isInteger(status.max_seats) &&
+        status.max_seats >= 0 &&
+        typeof status.occupied_seats === 'number' &&
+        Number.isInteger(status.occupied_seats) &&
+        status.occupied_seats >= 0
+      ) {
+        seatCapacity.value = {
+          maxSeats: status.max_seats,
+          occupiedSeats: status.occupied_seats
+        }
+      } else {
+        seatCapacity.value = null
+      }
+
       statusData.value = status
       if (workspaceId && status.billing_rail) {
         workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
@@ -182,7 +251,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       ) {
         void billingOperationStore.startOperation(
           status.pending_billing_op_id,
-          'subscription',
+          resumeModeFor(status.pending_billing_op_type),
           undefined,
           status.action_url
         )
@@ -379,8 +448,23 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      await workspaceApi.resubscribe()
+      const response = await workspaceApi.resubscribe()
       await Promise.allSettled([fetchStatus(), fetchBalance()])
+      // A pending resubscribe (e.g. SCA/3DS re-authentication) isn't done
+      // yet: wait for the tracked billing op to actually resolve instead of
+      // reporting success the instant the request was accepted. fetchStatus
+      // above may have already started tracking this op via
+      // pending_billing_op_id; startOperation dedupes by opId either way.
+      if (response.status === 'pending') {
+        const operation = await billingOperationStore.startOperation(
+          response.billing_op_id,
+          'subscription'
+        )
+        if (operation.status !== 'succeeded') {
+          throw new Error(operation.errorMessage ?? 'Failed to resubscribe')
+        }
+        await Promise.allSettled([fetchStatus(), fetchBalance()])
+      }
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
         // Mirrors the success path, which refreshes balance too. allSettled,
@@ -449,6 +533,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    maxSeats,
+    occupiedSeats,
     isLoading,
     error,
     canAccessSubscriptionFeatures,

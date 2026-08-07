@@ -1,4 +1,8 @@
-import type { BillingStatusResponse as IngestBillingStatusResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingBalanceResponse,
+  BillingPlansResponse,
+  BillingStatusResponse as IngestBillingStatusResponse
+} from '@comfyorg/ingest-types'
 
 import type {
   Member,
@@ -7,12 +11,31 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-// `/api/features` is the remote-config source: production builds resolve the
-// workspaces flag from it (the `ff:` localStorage override is dev-only).
-export const WORKSPACE_FEATURE_FLAG: RemoteConfig = {
-  team_workspaces_enabled: true,
+export const CLOUD_REMOTE_CONFIG: RemoteConfig = {
   consolidated_billing_enabled: true
 }
+
+export const LEGACY_PERSONAL_BILLING_STATUS = {
+  billing_rail: 'legacy_stripe',
+  billing_status: 'inactive',
+  has_funds: true,
+  is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
+  subscription_status: 'ended',
+  subscription_tier: 'FREE',
+  team_credit_stop: null
+} satisfies IngestBillingStatusResponse
+
+export const EMPTY_BILLING_BALANCE = {
+  amount_micros: 0,
+  currency: 'usd',
+  effective_balance_micros: 0
+} satisfies BillingBalanceResponse
+
+export const EMPTY_BILLING_PLANS = {
+  plans: []
+} satisfies BillingPlansResponse
 
 export const TEAM_WORKSPACE: WorkspaceWithRole = {
   id: 'ws-team',
@@ -22,6 +45,11 @@ export const TEAM_WORKSPACE: WorkspaceWithRole = {
   joined_at: '2025-01-02T00:00:00Z',
   role: 'owner',
   subscription_tier: 'PRO'
+}
+
+export const TEAM_MEMBER_WORKSPACE: WorkspaceWithRole = {
+  ...TEAM_WORKSPACE,
+  role: 'member'
 }
 
 export const CREATOR: Member = {
@@ -98,6 +126,14 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   max_seats: 1,
   occupied_seats: 1
 } satisfies IngestBillingStatusResponse & { billing_rail: 'stripe' }
+
+export const INACTIVE_TEAM_BILLING_STATUS = {
+  ...TEAM_BILLING_STATUS,
+  billing_status: 'inactive',
+  is_active: false,
+  subscription_status: 'canceled',
+  subscription_tier: 'TEAM'
+} satisfies IngestBillingStatusResponse
 
 export const TEAM_PRO_PLAN: Plan = {
   slug: TEAM_PLAN_SLUG,

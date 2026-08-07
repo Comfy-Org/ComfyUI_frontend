@@ -8,7 +8,6 @@ export const TEAM_WORKSPACE_NAME = 'Team Workspace'
 export const OFF_SCREEN_WORKSPACE_NAME = 'Off-screen Team Workspace'
 
 export const WORKSPACE_SWITCHER_REMOTE_CONFIG: RemoteConfig = {
-  team_workspaces_enabled: true,
   unified_cloud_auth: true
 }
 
