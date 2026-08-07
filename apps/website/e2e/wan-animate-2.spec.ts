@@ -102,8 +102,14 @@ test.describe('Wan Animate 2 announcement page — zh-CN', () => {
   })
 
   test('renders the localized hero and run options', async ({ page }) => {
+    // Resolve the heading in zh-CN rather than reusing HERO_TITLE. The two are
+    // the same string today because the model name is not translated, but
+    // scoping by locale here is what the test actually means.
     const hero = page.locator('section').filter({
-      has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
+      has: page.getByRole('heading', {
+        level: 1,
+        name: t('wanAnimate2.hero.title', 'zh-CN')
+      })
     })
     await expect(
       hero.getByText(t('wanAnimate2.hero.eyebrow', 'zh-CN'))
