@@ -1,4 +1,4 @@
-# Description: Deploys test results from forked PRs (forks can't access deployment secrets)
+# Description: Deploys test results for PRs without direct access to deployment secrets
 name: 'CI: Tests E2E (Deploy for Forks)'
 
 on:
@@ -18,7 +18,8 @@ jobs:
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.head_repository != null &&
       github.event.workflow_run.repository != null &&
-      github.event.workflow_run.head_repository.full_name != github.event.workflow_run.repository.full_name
+      (github.event.workflow_run.head_repository.full_name != github.event.workflow_run.repository.full_name ||
+       github.event.workflow_run.actor.login == 'dependabot[bot]')
     permissions:
       pull-requests: write
       actions: read
@@ -30,6 +31,7 @@ jobs:
           echo "Head repo: ${{ github.event.workflow_run.head_repository.full_name || 'null' }}"
           echo "Base repo: ${{ github.event.workflow_run.repository.full_name || 'null' }}"
           echo "Is forked: ${{ github.event.workflow_run.head_repository.full_name != github.event.workflow_run.repository.full_name }}"
+          echo "Is Dependabot: ${{ github.event.workflow_run.actor.login == 'dependabot[bot]' }}"
 
       - name: Checkout repository
         uses: actions/checkout@v7
