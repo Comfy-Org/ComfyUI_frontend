@@ -65,7 +65,7 @@ const OVERLAY_CELL = 'col-start-1 row-start-1'
       <div
         v-if="isOverlay"
         aria-hidden="true"
-        :class="cn(OVERLAY_CELL, 'bg-black/50')"
+        :class="cn(OVERLAY_CELL, 'bg-primary-comfy-ink/50')"
       />
 
       <div
