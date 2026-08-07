@@ -255,6 +255,8 @@
       "backToGithubLogin": "改用 Github 註冊",
       "backToLogin": "返回登入",
       "backToSocialLogin": "改用 Google 或 Github 註冊",
+      "cloudNewUser": "Comfy 新手？",
+      "cloudSignUp": "在這裡註冊",
       "confirmPasswordLabel": "確認密碼",
       "confirmPasswordPlaceholder": "請再次輸入相同密碼",
       "didntReceiveEmail": "沒有收到電子郵件？請聯絡我們：",
@@ -263,6 +265,7 @@
       "failed": "登入失敗",
       "forgotPassword": "忘記密碼？",
       "forgotPasswordError": "密碼重設郵件發送失敗",
+      "freeRunsSuffix": "可獲得 {count} 次免費運行。",
       "freeTierBadge": "符合免費方案資格",
       "freeTierDescription": "使用 Google 註冊，每月可獲得 {credits} 免費點數。無需信用卡。",
       "freeTierDescriptionGeneric": "使用 Google 註冊，每月可獲得免費點數。無需信用卡。",
@@ -445,27 +448,12 @@
   "cloudForgotPassword_sendResetLink": "寄送重設連結",
   "cloudForgotPassword_title": "忘記密碼",
   "cloudHero": {
+    "carouselLabel": "精選模型",
+    "carouselRoleDescription": "輪播",
     "nextSlide": "下一張幻燈片",
     "previousSlide": "上一張幻燈片",
-    "slidePagerLabel": "前往第 {index} 張幻燈片",
-    "slides": {
-      "cloud": {
-        "description": "最適合希望隨時隨地工作，並使用經商業授權驗證模型的大多數用戶。",
-        "title": "雲端"
-      },
-      "models": {
-        "description": "精選、具商業授權的模型，零設定即可運行。",
-        "title": "模型"
-      },
-      "team": {
-        "description": "立即邀請您的團隊加入。於組織內共享工作流程與資產。",
-        "title": "團隊"
-      },
-      "workflows": {
-        "description": "從想法到成果只需幾分鐘。可同時產生多種變化。",
-        "title": "工作流程"
-      }
-    }
+    "slideRoleDescription": "投影片",
+    "slideStatus": "{title}，第 {current} 張，共 {total} 張"
   },
   "cloudNotification": {
     "continueLocally": "在本地繼續",
@@ -577,11 +565,9 @@
   "cloudPrivateBeta_title": "雲端服務目前處於私人測試階段",
   "cloudSorryContactSupport_title": "抱歉，請聯絡支援團隊",
   "cloudStart_desc": "無需設定。可在任何裝置上使用。",
-  "cloudStart_download": "下載 ComfyUI",
   "cloudStart_explain": "一次生成多個輸出。輕鬆分享工作流程。",
   "cloudStart_learnAboutButton": "了解雲端服務",
   "cloudStart_title": "數秒內開始創作",
-  "cloudStart_wantToRun": "想要在本機運行 ComfyUI？",
   "cloudSurvey_steps_experience": "您對 ComfyUI 的熟悉程度？",
   "cloudSurvey_steps_focus": "您正在製作什麼？",
   "cloudSurvey_steps_intent": "您想用 ComfyUI 創作什麼？",
@@ -812,6 +798,9 @@
       "buy": "購買",
       "buyCredits": "繼續付款",
       "buyNow": "立即購買",
+      "chargedImmediatelyNote": "您的已儲存信用卡將立即扣款。",
+      "confirmSubtitle": "付款完成後，點數將立即加到此工作區。",
+      "confirmTitle": "確認",
       "contactUs": "聯絡我們",
       "creditsDescription": "點數用於執行工作流程或合作夥伴節點。",
       "creditsPerDollar": "每美元點數",
@@ -826,6 +815,7 @@
       "minRequired": "最低需購買 {credits} 點",
       "minimumPurchase": "最低購買 ${amount}（${credits} 點）",
       "needMore": "需要更多？",
+      "payAmount": "支付 {amount}",
       "purchaseError": "購買失敗",
       "purchaseErrorDetail": "購買點數失敗：{error}",
       "purchaseSuccess": "點數儲值成功！",
@@ -836,6 +826,8 @@
       "topUp": "儲值",
       "unknownError": "發生未知錯誤",
       "usdAmount": "${amount}",
+      "verifyBody": "您的銀行需要進行額外驗證以完成此筆付款。",
+      "verifyTitle": "驗證您的付款",
       "videosEstimate": "約 {count} 部影片",
       "viewPricing": "查看價格詳情",
       "youGet": "點數",
@@ -862,7 +854,6 @@
     "BOOLEAN": "布林值",
     "BOUNDING_BOX": "邊界框",
     "BOUNDING_BOXES": "BOUNDING_BOXES",
-    "CAMERA_CONTROL": "攝影機控制",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP 視覺",
     "CLIP_VISION_OUTPUT": "CLIP 視覺輸出",
@@ -1874,6 +1865,26 @@
     "warning": "警告",
     "workflow": "工作流程",
     "you": "你"
+  },
+  "gettingStarted": {
+    "loadFailed": "我們無法載入範本。",
+    "retry": "再試一次",
+    "retryTemplate": "重試 {title}",
+    "startBlank": "從空白畫布開始",
+    "subtitle": "選擇一個現成的工作流程開始，或從空白畫布開始。",
+    "tabs": {
+      "templates": "範本",
+      "tutorials": "教學"
+    },
+    "tabsLabel": "入門選項",
+    "templateFailed": "我們無法開啟此範本。",
+    "title": "開始創作吧",
+    "tutorials": {
+      "imageToImage": "圖像轉圖像",
+      "inpaint": "局部修補",
+      "interfaceOverview": "介面總覽",
+      "textToImage": "文字轉圖像"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "畫布模式",
@@ -3087,6 +3098,74 @@
     },
     "back": "上一步",
     "done": "完成",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "暫時不要",
+        "explore": "探索範本",
+        "noTour": {
+          "body": "瀏覽範本並選擇一個來製作。",
+          "title": "還有數百個等您體驗"
+        },
+        "ran": {
+          "body": "您已經完成第一個。探索更多可以製作的內容吧。",
+          "title": "這只是數百個中的一個"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "圖片設定場景，這裡描述接下來會發生什麼。",
+          "title": "描述它應該如何動作"
+        },
+        "image-edit": {
+          "body": "您的圖片保持不變。描述您想要不同的地方。",
+          "title": "說明要更改什麼"
+        },
+        "other": {
+          "body": "這是您的提示。更改它就能改變結果。",
+          "title": "告訴它要製作什麼"
+        },
+        "t2i": {
+          "body": "您的圖片會根據這個描述生成。盡情嘗試各種想法吧。",
+          "title": "描述您想要的內容"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "這裡沒有產生任何內容。關閉導覽並再試一次。",
+          "title": "這次運行未完成"
+        },
+        "generating": {
+          "body": "結果準備好後會立即顯示在這裡。",
+          "title": "請稍候"
+        },
+        "image": {
+          "body": "您的新圖片已經產生，可立即下載或分享。",
+          "title": "完成了"
+        },
+        "video": {
+          "body": "您的新影片已經產生，可立即下載或分享。",
+          "title": "完成了"
+        }
+      },
+      "run": {
+        "body": "按下執行開始產生您的結果。",
+        "title": "執行您的工作流程"
+      },
+      "upload": {
+        "i2v": {
+          "body": "這張圖片是您的第一幀。隨時可以換成自己的圖片。",
+          "title": "從圖片開始"
+        },
+        "image-edit": {
+          "body": "這是您要編輯的圖片。隨時可以換成自己的圖片。",
+          "title": "從圖片開始"
+        },
+        "other": {
+          "body": "這張圖片會輸入到工作流程。隨時可以換成自己的圖片。",
+          "title": "從圖片開始"
+        }
+      }
+    },
     "loadError": "導覽顯示時發生錯誤",
     "next": "下一步",
     "skip": "跳過",
@@ -3990,6 +4069,17 @@
     "partnerNodesCredits": "合作節點點數",
     "partnerNodesDescription": "用於執行商業/專有模型",
     "partnerNodesPricingTable": "合作夥伴節點價格表",
+    "paymentRecovery": {
+      "memberCta": "好的，知道了",
+      "memberDescription": "請聯絡您的工作區擁有者以恢復工作區的訂閱。",
+      "memberRunLabel": "執行",
+      "memberRunTooltip": "請聯絡您的工作區擁有者以恢復此訂閱",
+      "ownerCta": "更新付款方式",
+      "ownerDescription": "請更新您的付款方式以恢復工作區的訂閱並執行工作流程。",
+      "ownerRunLabel": "更新付款後執行",
+      "ownerRunTooltip": "更新付款方式以恢復此訂閱",
+      "title": "訂閱已暫停"
+    },
     "perMonth": "美元 / 月",
     "personalHeader": "個人方案僅供個人使用。{action}",
     "personalHeaderAction": "如需新增團隊成員，請訂閱團隊方案。",
@@ -4277,6 +4367,7 @@
     "logoProviderSeparator": " ＆ "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "無法載入工作流程，因為此 ComfyUI 安裝缺少核心節點。請確認後端是否正確啟動。",
     "cannotCreateSubgraph": "無法建立子圖",
     "couldNotDetermineFileType": "無法判斷檔案類型",
     "dropFileError": "無法處理拖放項目：{error}",
@@ -4326,6 +4417,7 @@
     "invalidTemplateData": "載入節點範本失敗：資料無效",
     "legacyMaskEditorDeprecated": "舊版遮罩編輯器即將淘汰並很快移除。",
     "migrateToLitegraphReroute": "重導節點將於未來版本移除。點擊以遷移至 litegraph 原生重導。",
+    "missingMediaVerificationFailed": "驗證遺失媒體失敗。部分輸入可能不會顯示在錯誤標籤頁中。",
     "missingModelVerificationFailed": "驗證缺少的模型失敗。部分模型可能不會顯示在錯誤標籤頁中。",
     "modelLoadedSuccessfully": "3D 模型載入成功",
     "no3dScene": "沒有 3D 場景可套用材質",
@@ -4509,7 +4601,11 @@
       "notAuthenticated": "您必須登入才能存取工作區",
       "tokenExchangeFailed": "與工作區驗證失敗：{error}",
       "workspaceNotFound": "找不到工作區"
-    }
+    },
+    "initializationFailed": "無法載入您的工作區",
+    "initializationFailedDetail": "請檢查您的連線並再試一次。",
+    "initializationFailedSignOutDetail": "請登出並重新登入以繼續。",
+    "retry": "再試一次"
   },
   "workspacePanel": {
     "activity": {
@@ -4549,7 +4645,6 @@
       },
       "updatePayment": "更新付款方式",
       "warning": {
-        "body": "您的上次付款未成功。若未更新付款方式，訂閱將於 {date} 暫停。",
         "bodyNoDate": "您的上次付款未成功。請更新付款方式以避免暫停。",
         "title": "付款失敗"
       }

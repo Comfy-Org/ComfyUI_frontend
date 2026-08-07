@@ -27,10 +27,9 @@ import {
  * The credits tile only lives inside the authenticated cloud app, which the
  * shared `comfyPage` fixture can't boot (it expects the OSS devtools backend).
  * Instead this drives a raw page: mock Firebase auth + every boot endpoint so
- * the cloud app initializes against fully stubbed data. With team workspaces
- * enabled the facade routes a personal workspace through the workspace
- * `/api/billing/*` endpoints (mocked with an active Pro subscription); the
- * legacy `/customers/*` shapes are mocked too for the flag-off path. The tile
+ * the cloud app initializes against fully stubbed data. The facade routes a
+ * personal workspace through the workspace `/api/billing/*` endpoints (mocked
+ * with an active Pro subscription). The tile
  * should then render its total / progress bar / monthly+additional breakdown /
  * add-credits.
  */
@@ -62,6 +61,8 @@ const DEFAULT_BALANCE = { amount: 6000, monthly: 5000, prepaid: 1000 }
 
 const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
@@ -70,13 +71,10 @@ const mockBillingStatus: BillingStatusResponse = {
 
 async function mockCloudBoot(page: Page, billingControlEnabled = true) {
   // Frontend-origin boot endpoints (proxied to the backend in production).
-  // `/api/features` is the remote-config source: production builds resolve
-  // workspace availability and the billing UX rollout from it (the `ff:`
-  // localStorage override is dev-only).
+  // `/api/features` is the remote-config source for the billing UX rollout.
   await page.route('**/api/features', (r) =>
     r.fulfill(
       jsonRoute({
-        team_workspaces_enabled: true,
         consolidated_billing_enabled: true,
         billing_control_enabled: billingControlEnabled
       } satisfies RemoteConfig)

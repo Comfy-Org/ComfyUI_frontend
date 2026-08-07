@@ -255,6 +255,8 @@
       "backToGithubLogin": "대신 Github로 가입하기",
       "backToLogin": "로그인으로 돌아가기",
       "backToSocialLogin": "Google 또는 Github로 가입하기",
+      "cloudNewUser": "Comfy를 처음 사용하시나요?",
+      "cloudSignUp": "여기에서 가입하세요",
       "confirmPasswordLabel": "비밀번호 확인",
       "confirmPasswordPlaceholder": "동일한 비밀번호를 다시 입력하세요",
       "didntReceiveEmail": "이메일을 받지 못하셨나요? 다음으로 문의하세요:",
@@ -263,6 +265,7 @@
       "failed": "로그인 실패",
       "forgotPassword": "비밀번호를 잊으셨나요?",
       "forgotPasswordError": "비밀번호 재설정 이메일 전송에 실패했습니다",
+      "freeRunsSuffix": "{count}회 무료 실행을 받으세요. | {count}회 무료 실행을 받으세요.",
       "freeTierBadge": "무료 등급 가능",
       "freeTierDescription": "Google로 가입하면 매월 {credits} 무료 크레딧을 받을 수 있습니다. 카드 필요 없음.",
       "freeTierDescriptionGeneric": "Google로 가입하면 매월 무료 크레딧을 받을 수 있습니다. 카드 필요 없음.",
@@ -445,27 +448,12 @@
   "cloudForgotPassword_sendResetLink": "재설정 링크 보내기",
   "cloudForgotPassword_title": "비밀번호 찾기",
   "cloudHero": {
+    "carouselLabel": "추천 모델",
+    "carouselRoleDescription": "캐러셀",
     "nextSlide": "다음 슬라이드",
     "previousSlide": "이전 슬라이드",
-    "slidePagerLabel": "{index}번 슬라이드로 이동",
-    "slides": {
-      "cloud": {
-        "description": "상업적 라이선스가 검증된 모델을 어디서나 사용하고 싶은 대부분의 사용자에게 최적입니다.",
-        "title": "클라우드"
-      },
-      "models": {
-        "description": "엄선된 상업적 라이선스 모델을 별도의 설정 없이 바로 실행할 수 있습니다.",
-        "title": "모델"
-      },
-      "team": {
-        "description": "오늘 바로 팀을 온보딩하세요. 조직 내에서 워크플로우와 에셋을 공유할 수 있습니다.",
-        "title": "팀"
-      },
-      "workflows": {
-        "description": "아이디어에서 결과까지 몇 분 만에. 여러 변형을 나란히 생성하세요.",
-        "title": "워크플로우"
-      }
-    }
+    "slideRoleDescription": "슬라이드",
+    "slideStatus": "{title}, 슬라이드 {current}/{total}"
   },
   "cloudNotification": {
     "continueLocally": "로컬에서 계속하기",
@@ -577,11 +565,9 @@
   "cloudPrivateBeta_title": "클라우드는 현재 프라이빗 베타 단계입니다",
   "cloudSorryContactSupport_title": "죄송합니다, 지원팀에 문의하세요",
   "cloudStart_desc": "설정 불필요. 모든 기기에서 작동합니다.",
-  "cloudStart_download": "ComfyUI 다운로드",
   "cloudStart_explain": "한 번에 여러 결과물 생성. 워크플로우를 손쉽게 공유하세요.",
   "cloudStart_learnAboutButton": "클라우드 알아보기",
   "cloudStart_title": "몇 초 만에 제작 시작",
-  "cloudStart_wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?",
   "cloudSurvey_steps_experience": "ComfyUI를 얼마나 잘 알고 계신가요?",
   "cloudSurvey_steps_focus": "무엇을 만들고 계신가요?",
   "cloudSurvey_steps_intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
@@ -812,6 +798,9 @@
       "buy": "구매",
       "buyCredits": "결제 계속하기",
       "buyNow": "지금 구매",
+      "chargedImmediatelyNote": "저장된 카드로 즉시 결제됩니다.",
+      "confirmSubtitle": "결제가 완료되면 크레딧이 이 워크스페이스에 즉시 추가됩니다.",
+      "confirmTitle": "확인",
       "contactUs": "문의하기",
       "creditsDescription": "크레딧은 워크플로우 또는 파트너 노드 실행에 사용됩니다.",
       "creditsPerDollar": "달러당 크레딧",
@@ -826,6 +815,7 @@
       "minRequired": "최소 {credits} 크레딧",
       "minimumPurchase": "최소 ${amount} ({credits} 크레딧)",
       "needMore": "더 필요하신가요?",
+      "payAmount": "{amount} 결제하기",
       "purchaseError": "구매 실패",
       "purchaseErrorDetail": "크레딧 구매 실패: {error}",
       "purchaseSuccess": "크레딧이 성공적으로 추가되었습니다!",
@@ -836,6 +826,8 @@
       "topUp": "충전하기",
       "unknownError": "알 수 없는 오류가 발생했습니다",
       "usdAmount": "${amount}",
+      "verifyBody": "결제를 완료하려면 은행의 추가 인증이 필요합니다.",
+      "verifyTitle": "결제 인증",
       "videosEstimate": "~{count}개 비디오",
       "viewPricing": "요금 세부정보 보기",
       "youGet": "크레딧",
@@ -862,7 +854,6 @@
     "BOOLEAN": "논리값",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "BOUNDING_BOXES",
-    "CAMERA_CONTROL": "카메라 제어",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION 출력",
@@ -1874,6 +1865,26 @@
     "warning": "경고",
     "workflow": "워크플로",
     "you": "당신"
+  },
+  "gettingStarted": {
+    "loadFailed": "템플릿을 불러올 수 없습니다.",
+    "retry": "다시 시도하기",
+    "retryTemplate": "{title} 다시 시도하기",
+    "startBlank": "빈 캔버스에서 시작하기",
+    "subtitle": "준비된 워크플로우를 선택하거나, 빈 캔버스에서 시작하세요.",
+    "tabs": {
+      "templates": "템플릿",
+      "tutorials": "튜토리얼"
+    },
+    "tabsLabel": "시작 옵션",
+    "templateFailed": "이 템플릿을 열 수 없습니다.",
+    "title": "무엇인가를 만들어봅시다",
+    "tutorials": {
+      "imageToImage": "이미지에서 이미지로",
+      "inpaint": "인페인팅",
+      "interfaceOverview": "인터페이스 개요",
+      "textToImage": "텍스트에서 이미지로"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "캔버스 모드",
@@ -3087,6 +3098,74 @@
     },
     "back": "이전",
     "done": "완료",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "지금은 안 할래요",
+        "explore": "템플릿 탐색",
+        "noTour": {
+          "body": "템플릿을 둘러보고 만들고 싶은 것을 선택하세요.",
+          "title": "수백 가지 템플릿이 더 있습니다"
+        },
+        "ran": {
+          "body": "첫 번째 결과를 만들었습니다. 더 다양한 결과를 탐색해보세요.",
+          "title": "수백 번 중 첫 번째였습니다"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "이미지가 장면을 설정합니다. 이 설명이 다음에 일어날 일을 알려줍니다.",
+          "title": "움직임을 설명하세요"
+        },
+        "image-edit": {
+          "body": "이미지는 그대로 유지됩니다. 바꾸고 싶은 점을 설명하세요.",
+          "title": "변경할 내용을 말하세요"
+        },
+        "other": {
+          "body": "이것이 프롬프트입니다. 결과를 바꾸려면 내용을 변경하세요.",
+          "title": "무엇을 만들지 알려주세요"
+        },
+        "t2i": {
+          "body": "이 설명을 바탕으로 이미지가 만들어집니다. 원하는 대로 시도해보세요.",
+          "title": "원하는 것을 설명하세요"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "여기에 아무것도 표시되지 않았습니다. 투어를 닫고 다시 실행해보세요.",
+          "title": "실행이 완료되지 않았습니다"
+        },
+        "generating": {
+          "body": "결과가 준비되는 즉시 여기에 표시됩니다.",
+          "title": "잠시만 기다려주세요"
+        },
+        "image": {
+          "body": "새 이미지가 여기에 표시됩니다 — 다운로드 또는 공유할 수 있습니다.",
+          "title": "결과가 도착했습니다"
+        },
+        "video": {
+          "body": "새 비디오가 여기에 표시됩니다 — 다운로드 또는 공유할 수 있습니다.",
+          "title": "결과가 도착했습니다"
+        }
+      },
+      "run": {
+        "body": "실행 버튼을 눌러 결과 생성을 시작하세요.",
+        "title": "워크플로우 실행"
+      },
+      "upload": {
+        "i2v": {
+          "body": "이 사진이 첫 프레임입니다. 언제든지 원하는 이미지로 교체할 수 있습니다.",
+          "title": "이미지로 시작하기"
+        },
+        "image-edit": {
+          "body": "이 사진을 편집하게 됩니다. 언제든지 원하는 이미지로 교체할 수 있습니다.",
+          "title": "이미지로 시작하기"
+        },
+        "other": {
+          "body": "이 이미지는 워크플로우에 입력됩니다. 언제든지 원하는 이미지로 교체할 수 있습니다.",
+          "title": "이미지로 시작하기"
+        }
+      }
+    },
     "loadError": "이 투어를 표시하는 중에 문제가 발생했습니다",
     "next": "다음",
     "skip": "건너뛰기",
@@ -3990,6 +4069,17 @@
     "partnerNodesCredits": "파트너 노드 크레딧",
     "partnerNodesDescription": "상용/독점 모델 실행용",
     "partnerNodesPricingTable": "파트너 노드 요금표",
+    "paymentRecovery": {
+      "memberCta": "확인",
+      "memberDescription": "워크스페이스 소유자에게 구독 복구를 요청하세요.",
+      "memberRunLabel": "실행",
+      "memberRunTooltip": "워크스페이스 소유자에게 이 구독 복구를 요청하세요",
+      "ownerCta": "결제 정보 업데이트",
+      "ownerDescription": "결제 수단을 업데이트하여 워크스페이스의 구독을 복구하고 워크플로우를 실행하세요.",
+      "ownerRunLabel": "실행하려면 결제 정보 업데이트",
+      "ownerRunTooltip": "이 구독을 복구하려면 결제 정보를 업데이트하세요",
+      "title": "구독이 일시 중지됨"
+    },
     "perMonth": "USD / 월",
     "personalHeader": "개인 플랜은 개인 사용만을 위한 것입니다. {action}",
     "personalHeaderAction": "팀원을 추가하려면 팀 플랜을 구독하세요.",
@@ -4277,6 +4367,7 @@
     "logoProviderSeparator": " & "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "이 ComfyUI 설치에 핵심 노드가 없어서 워크플로우를 불러올 수 없습니다. 백엔드가 올바르게 시작되었는지 확인하세요.",
     "cannotCreateSubgraph": "서브그래프를 생성할 수 없습니다",
     "couldNotDetermineFileType": "파일 유형을 결정할 수 없습니다",
     "dropFileError": "드롭된 항목을 처리할 수 없습니다: {error}",
@@ -4326,6 +4417,7 @@
     "invalidTemplateData": "노드 템플릿을 불러오지 못했습니다: 잘못된 데이터",
     "legacyMaskEditorDeprecated": "레거시 마스크 에디터는 더 이상 지원되지 않으며 곧 제거될 예정입니다.",
     "migrateToLitegraphReroute": "향후 버전에서는 Reroute 노드가 제거됩니다. LiteGraph 에서 자체 제공하는 경유점으로 변환하려면 클릭하세요.",
+    "missingMediaVerificationFailed": "누락된 미디어를 확인하지 못했습니다. 일부 입력값이 오류 탭에 표시되지 않을 수 있습니다.",
     "missingModelVerificationFailed": "누락된 모델 검증에 실패했습니다. 일부 모델이 오류 탭에 표시되지 않을 수 있습니다.",
     "modelLoadedSuccessfully": "3D 모델이 성공적으로 로드됨",
     "no3dScene": "텍스처를 적용할 3D 장면이 없습니다",
@@ -4509,7 +4601,11 @@
       "notAuthenticated": "워크스페이스에 접근하려면 로그인해야 합니다.",
       "tokenExchangeFailed": "워크스페이스 인증에 실패했습니다: {error}",
       "workspaceNotFound": "워크스페이스를 찾을 수 없습니다."
-    }
+    },
+    "initializationFailed": "워크스페이스를 불러올 수 없습니다",
+    "initializationFailedDetail": "연결 상태를 확인하고 다시 시도하세요.",
+    "initializationFailedSignOutDetail": "계정에서 로그아웃 후 다시 로그인하세요.",
+    "retry": "다시 시도"
   },
   "workspacePanel": {
     "activity": {
@@ -4549,7 +4645,6 @@
       },
       "updatePayment": "결제 업데이트",
       "warning": {
-        "body": "최근 결제가 처리되지 않았습니다. 결제가 업데이트되지 않으면 {date}에 구독이 일시 중지됩니다.",
         "bodyNoDate": "최근 결제가 처리되지 않았습니다. 일시 중지를 피하려면 결제를 업데이트하세요.",
         "title": "결제 거부됨"
       }

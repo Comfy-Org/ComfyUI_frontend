@@ -6,6 +6,10 @@ const translations = {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
   },
+  'tags.openWeights': {
+    en: 'Open Weights',
+    'zh-CN': '开放权重'
+  },
   'tags.imageToVideo': {
     en: 'Image To Video',
     'zh-CN': '图像生成视频'
@@ -113,6 +117,33 @@ const translations = {
   'hero.runFirstWorkflow': {
     en: 'Run your first workflow',
     'zh-CN': '运行你的第一个工作流'
+  },
+
+  // Model release card (home page)
+  'modelRelease.eyebrow': {
+    en: 'New Model Release',
+    'zh-CN': '新模型发布'
+  },
+  'modelRelease.title': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'modelRelease.body': {
+    en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it.',
+    'zh-CN':
+      '完整的多模态输入输出，原生立体声剪辑。最高 2K，每次生成 5 至 15 秒。H3 真正基于输入音频进行条件生成，而其他模型则会覆盖或丢弃它。'
+  },
+  'modelRelease.viewFeatures': {
+    en: 'View Model Features',
+    'zh-CN': '查看模型特性'
+  },
+  'modelRelease.tryWorkflows': {
+    en: 'Try Workflows',
+    'zh-CN': '试用工作流'
+  },
+  'modelRelease.videoAriaLabel': {
+    en: 'MiniMax H3 preview',
+    'zh-CN': 'MiniMax H3 预览'
   },
 
   // ProductShowcaseSection
@@ -804,6 +835,36 @@ const translations = {
   'download.hero.installGithub': {
     en: 'INSTALL FROM GITHUB',
     'zh-CN': '从 GITHUB 安装'
+  },
+
+  // Download – MobileDownloadEmailForm
+  'download.emailForm.heading': {
+    en: 'Get download link',
+    'zh-CN': '获取下载链接'
+  },
+  'download.emailForm.emailLabel': {
+    en: 'Email address',
+    'zh-CN': '邮箱地址'
+  },
+  'download.emailForm.placeholder': {
+    en: 'you@email.com',
+    'zh-CN': 'you@email.com'
+  },
+  'download.emailForm.submit': {
+    en: 'Send download link',
+    'zh-CN': '发送下载链接'
+  },
+  'download.emailForm.success': {
+    en: 'The link is sent to {email}!',
+    'zh-CN': '下载链接已发送至 {email}！'
+  },
+  'download.emailForm.invalidEmail': {
+    en: 'Please enter a valid email address.',
+    'zh-CN': '请输入有效的邮箱地址。'
+  },
+  'download.emailForm.error': {
+    en: 'Something went wrong. Please try again.',
+    'zh-CN': '出错了，请重试。'
   },
 
   // Download – CloudBannerSection
@@ -2477,16 +2538,20 @@ const translations = {
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW: COMFY MCP',
-    'zh-CN': '全新发布：Comfy MCP'
+    en: 'NEW RELEASE: MINIMAX H3',
+    'zh-CN': '全新发布：MiniMax H3'
   },
   'nav.featuredProductsAlt': {
-    en: 'Comfy MCP feature image',
-    'zh-CN': 'Comfy MCP 精选图片'
+    en: 'MiniMax H3 feature image',
+    'zh-CN': 'MiniMax H3 精选图片'
+  },
+  'nav.featuredProductsCta': {
+    en: 'TRY WORKFLOW',
+    'zh-CN': '试用工作流'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Get started with Comfy MCP',
-    'zh-CN': '开始使用 Comfy MCP'
+    en: 'Try the MiniMax H3 workflow',
+    'zh-CN': '试用 MiniMax H3 工作流'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -2523,6 +2588,7 @@ const translations = {
   'footer.company': { en: 'Company', 'zh-CN': '公司' },
   'footer.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   'footer.minimaxH3': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
+  'footer.seedance': { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
   'footer.about': { en: 'About', 'zh-CN': '关于' },
   'footer.termsOfService': { en: 'Terms of Service', 'zh-CN': '服务条款' },
   'footer.privacyPolicy': { en: 'Privacy Policy', 'zh-CN': '隐私政策' },
@@ -4549,6 +4615,18 @@ const translations = {
     en: 'READ SUBSCRIPTION DOCS',
     'zh-CN': '查看订阅文档'
   },
+  'payment.failed.statusPrompt.prefix': {
+    en: 'Check our',
+    'zh-CN': '请查看我们的'
+  },
+  'payment.failed.statusPrompt.statusLink': {
+    en: 'status page',
+    'zh-CN': '状态页面'
+  },
+  'payment.failed.statusPrompt.suffix': {
+    en: 'for more information.',
+    'zh-CN': '了解更多信息。'
+  },
 
   // AffiliateHeroSection
   'affiliate.hero.label': { en: 'AFFILIATE', 'zh-CN': '联盟' },
@@ -4929,23 +5007,184 @@ const translations = {
     'zh-CN': '联系我们'
   },
 
+  // Shared by every model-launch gallery card (see templates/model-launch).
+  'modelLaunch.tagFree': { en: 'Free', 'zh-CN': '免费' },
+  'modelLaunch.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
+  // Flux 3 model page (/flux-3)
+  'flux3.meta.title': {
+    en: 'Flux 3 on Comfy — Video With Native Audio',
+    'zh-CN': 'Comfy 上的 Flux 3 — 带原生音频的视频模型'
+  },
+  'flux3.meta.description': {
+    en: "Run Flux 3 on Comfy: Black Forest Labs' multimodal model generates video with native audio, up to 20 seconds in one generation, from text, image, video or keyframes.",
+    'zh-CN':
+      '在 Comfy 上运行 Flux 3：Black Forest Labs 的多模态模型可生成带原生音频的视频，单次生成最长 20 秒，支持文本、图像、视频或关键帧输入。'
+  },
+  'flux3.breadcrumb.model': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
+  'flux3.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'flux3.hero.title': {
+    en: 'Flux 3',
+    'zh-CN': 'Flux 3'
+  },
+  'flux3.hero.titleRest': {
+    en: ' is here',
+    'zh-CN': ' 已上线'
+  },
+  'flux3.hero.description': {
+    en: 'Flux 3 generates video with native audio, up to 20 seconds in a single generation. Go text to video or image to video. Run it on Comfy Cloud today. Open weights coming soon.',
+    'zh-CN':
+      'Flux 3 可生成带原生音频的视频，单次生成最长 20 秒。支持文本生成视频与图像生成视频。今天就在 Comfy Cloud 上运行它。开源权重即将推出。'
+  },
+  'flux3.hero.tagPartnerNodes': {
+    en: 'Partner nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'flux3.hero.tagOpenWeightsSoon': {
+    en: 'Open weights coming soon',
+    'zh-CN': '开源权重即将推出'
+  },
+  'flux3.hero.primaryCta': {
+    en: 'RUN FLUX 3',
+    'zh-CN': '运行 Flux 3'
+  },
+  'flux3.hero.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
+  },
+  'flux3.cta.heading': {
+    en: 'Twenty seconds with sound, in one generation.',
+    'zh-CN': '二十秒，自带声音，一次生成。'
+  },
+  'flux3.cta.primaryCta': {
+    en: 'RUN FLUX 3',
+    'zh-CN': '运行 Flux 3'
+  },
+  'flux3.cta.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
+  },
+  'flux3.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'flux3.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'flux3.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'flux3.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+  'flux3.models.heading': {
+    en: 'Made with Flux 3',
+    'zh-CN': '用 Flux 3 制作'
+  },
+  'flux3.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'flux3.runOptions.subtitle': {
+    en: 'Run Flux 3 in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中运行 Flux 3。用 API 批量制作，或部署到自有环境。'
+  },
+  'flux3.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'flux3.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'flux3.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'flux3.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'flux3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  // Seedance 2.5 model page (/seedance-2.5) — announcement until the model ships
+  'seedance.meta.title': {
+    en: 'Seedance 2.5 on Comfy — Coming Soon',
+    'zh-CN': 'Comfy 上的 Seedance 2.5 — 即将推出'
+  },
+  'seedance.meta.description': {
+    en: 'Seedance 2.5 is coming to Comfy. Run it on Comfy Cloud the day it lands, or start building workflows for free now with every other model Comfy supports.',
+    'zh-CN':
+      'Seedance 2.5 即将登陆 Comfy。上线当天即可在 Comfy Cloud 上运行；现在就可以用 Comfy 支持的其他模型免费开始搭建工作流。'
+  },
+  'seedance.breadcrumb.model': {
+    en: 'Seedance 2.5',
+    'zh-CN': 'Seedance 2.5'
+  },
+  'seedance.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'seedance.hero.eyebrow': { en: 'Coming soon', 'zh-CN': '即将推出' },
+  'seedance.hero.title': {
+    en: 'Seedance 2.5',
+    'zh-CN': 'Seedance 2.5'
+  },
+  'seedance.hero.primaryCta': {
+    en: 'RUN COMFY FOR FREE',
+    'zh-CN': '免费使用 Comfy'
+  },
+  'seedance.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'seedance.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中搭建工作流。用 API 批量制作，或部署到自有环境。'
+  },
+  'seedance.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'seedance.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'seedance.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'seedance.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'seedance.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
   },
   'minimax.meta.description': {
-    en: 'Run MiniMax H3 on Comfy: available as Open Weights and through Partner Nodes, multi-modal in/out, native stereo audio on every clip, up to 2K and 5–15s per generation. Draft free on Wan 2.2 and spend credits only on the final render.',
+    en: 'Run MiniMax H3 on Comfy: Open Weights or Partner Nodes, multi-modal in/out, native stereo audio on every clip, up to 2K and 5-15s per generation. Free to start.',
     'zh-CN':
-      '在 Comfy 上运行 MiniMax H3：以开源权重形式提供，也可通过合作伙伴节点使用，多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
+      '在 Comfy 上运行 MiniMax H3：以开源权重形式提供，也可通过合作伙伴节点使用，多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。免费开始使用。'
   },
   'minimax.breadcrumb.model': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
   'minimax.breadcrumb.updated': {
     en: 'Updated August 2026',
     'zh-CN': '更新于 2026 年 8 月'
   },
-  'minimax.hero.title': {
-    en: 'MiniMax H3 is here',
-    'zh-CN': 'MiniMax H3 已上线'
+  // The hero h1 renders titleModel bright and titleRest muted (Figma two-tone
+  // heading); together they read "MiniMax H3 is here".
+  'minimax.hero.titleModel': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'minimax.hero.titleRest': {
+    en: ' is here',
+    'zh-CN': ' 已上线'
   },
   'minimax.hero.description': {
     en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. H3 is available as Open Weights and through Partner Nodes.',
@@ -4963,46 +5202,28 @@ const translations = {
     'zh-CN': '合作伙伴节点'
   },
   'minimax.hero.footnote': {
-    en: 'Pay-as-you-go credits · No watermark · Commercial use included',
-    'zh-CN': '按量付费积分 · 无水印 · 包含商业使用授权'
+    en: 'Free to start · No watermark · Commercial use included',
+    'zh-CN': '免费开始 · 无水印 · 包含商业使用授权'
   },
-  'minimax.showcase.heading': {
-    en: 'Native stereo, up to 2K',
-    'zh-CN': '原生立体声，最高 2K'
-  },
-  'minimax.showcase.promptLabel': { en: 'Prompt', 'zh-CN': '提示词' },
-  'minimax.showcase.cta': { en: 'RUN MINIMAX', 'zh-CN': '运行 MiniMax' },
-  'minimax.steps.heading': {
-    en: 'Direct your first MiniMax shot',
-    'zh-CN': '执导你的第一个 MiniMax 镜头'
-  },
-  'minimax.steps.leadIn': {
-    en: 'The model is the artist. You write the brief.',
-    'zh-CN': '模型即艺术家，你只需写下创意简报。'
-  },
-  'minimax.steps.step': { en: 'Step', 'zh-CN': '步骤' },
   'minimax.models.heading': {
     en: 'Made with MiniMax H3',
     'zh-CN': '用 MiniMax H3 制作'
   },
-  'minimax.models.tagFree': { en: 'Free', 'zh-CN': '免费' },
-  'minimax.models.cardCta': { en: 'Try now', 'zh-CN': '立即试用' },
-  'minimax.models.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
   'minimax.faq.heading': {
     en: 'Q&A',
     'zh-CN': '问答'
   },
   'minimax.cta.heading': {
-    en: 'Open weights.\nFull control.',
-    'zh-CN': '开源权重，\n完全掌控。'
+    en: 'Up to 2K, with sound, in one generation.',
+    'zh-CN': '最高 2K，自带声音，一次生成。'
   },
   'minimax.cta.primaryCta': {
-    en: 'SIGN UP FOR FREE',
-    'zh-CN': '免费注册'
-  },
-  'minimax.cta.secondaryCta': {
     en: 'RUN MINIMAX H3',
     'zh-CN': '运行 MiniMax H3'
+  },
+  'minimax.cta.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
   },
   'minimax.runOptions.heading': {
     en: 'One engine, every way to run it',
@@ -5032,7 +5253,6 @@ const translations = {
       '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
   'minimax.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
-  'minimax.pricing.heading': { en: 'Pricing', 'zh-CN': '价格' },
   'minimax.pricing.banner.title': {
     en: "Start free. Upgrade when you're ready.",
     'zh-CN': '免费开始，准备好了再升级。'
@@ -5041,63 +5261,7 @@ const translations = {
     en: '5 free runs on real GPUs — no credit card required.',
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
-  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
-  'minimax.pricing.plan.standard.description': {
-    en: 'For individuals creating workflows',
-    'zh-CN': '适合创建工作流的个人用户'
-  },
-  'minimax.pricing.plan.creator.description': {
-    en: 'Small teams building fine-tuned, repeatable workflows',
-    'zh-CN': '适合构建精调、可复用工作流的小型团队'
-  },
-  'minimax.pricing.plan.pro.description': {
-    en: 'For growing teams running Comfy in production',
-    'zh-CN': '适合在生产环境中运行 Comfy 的成长型团队'
-  },
-  'minimax.pricing.credits': {
-    en: 'Includes {credits} monthly credits with top-ups available',
-    'zh-CN': '包含每月 {credits} 积分，支持随时充值'
-  },
-  'minimax.pricing.plan.standard.estimate': {
-    en: '~380 5s videos*',
-    'zh-CN': '约 380 个 5 秒视频*'
-  },
-  'minimax.pricing.plan.creator.estimate': {
-    en: '~670 5s videos*',
-    'zh-CN': '约 670 个 5 秒视频*'
-  },
-  'minimax.pricing.plan.pro.estimate': {
-    en: '~1,915 5s videos*',
-    'zh-CN': '约 1,915 个 5 秒视频*'
-  },
-  'minimax.pricing.everythingInStandard': {
-    en: 'Everything in Standard, plus:',
-    'zh-CN': '包含标准版全部功能，另有：'
-  },
-  'minimax.pricing.everythingInCreator': {
-    en: 'Everything in Creator, plus:',
-    'zh-CN': '包含创作者版全部功能，另有：'
-  },
-  'minimax.pricing.feature.runtime30': {
-    en: '30-minute max runtime per workflow',
-    'zh-CN': '单个工作流最长运行 30 分钟'
-  },
-  'minimax.pricing.feature.loras': {
-    en: 'Import your own LoRAs',
-    'zh-CN': '导入你自己的 LoRA'
-  },
-  'minimax.pricing.feature.apiJobs3': {
-    en: '3 concurrent API jobs',
-    'zh-CN': '3 个并发 API 任务'
-  },
-  'minimax.pricing.feature.longRuntime': {
-    en: 'Longer workflow runtime (up to 1 hour)',
-    'zh-CN': '更长工作流运行时长（最长 1 小时）'
-  },
-  'minimax.pricing.feature.apiJobs5': {
-    en: '5 concurrent API jobs',
-    'zh-CN': '5 个并发 API 任务'
-  }
+  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations

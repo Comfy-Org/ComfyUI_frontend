@@ -7,6 +7,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 
+import { heuristicRoles } from './heuristicRoles'
 import { TOUR_ROLE_PINS } from './tourRolePins'
 import type {
   RolePin,
@@ -21,30 +22,49 @@ export interface ResolvedRoles {
   mediaKind: TourMediaKind
 }
 
-/** The root-graph node a pin is spotlit through: itself, or the subgraph node holding it. */
-function rootHost(node: LGraphNode, root: LGraph): LGraphNode | null {
-  if (node.graph === root) return node
+/** The root-graph node a role is spotlit through: itself, or the subgraph node holding it. */
+function rootHost(
+  node: LGraphNode | null | undefined,
+  root: LGraph
+): NodeId | null {
+  if (!node) return null
+  if (node.graph === root) return node.id
   const executionId = getExecutionIdByNode(root, node)
-  return executionId ? getRootParentNode(root, executionId) : null
+  return executionId ? (getRootParentNode(root, executionId)?.id ?? null) : null
 }
 
 /** The pinned type is the guard: an id alone matches any graph that has it. */
 function resolvePin(pin: RolePin | undefined, root: LGraph): NodeId | null {
   if (!pin) return null
   const node = resolveNode(pin.id, root)
-  return node?.type === pin.type ? (rootHost(node, root)?.id ?? null) : null
+  return node?.type === pin.type ? rootHost(node, root) : null
+}
+
+/** Read off the graph itself, then host-mapped the same way pins are. */
+function resolveFromGraph(graph: LGraph): ResolvedRoles | null {
+  const roles = heuristicRoles(graph)
+  if (!roles) return null
+
+  return {
+    source: rootHost(roles.source, graph),
+    promptHost: rootHost(roles.prompt, graph),
+    sink: rootHost(roles.sink, graph),
+    mediaKind: roles.mediaKind
+  }
 }
 
 /**
- * Validates a template's pins against the live graph. A template the tour does
- * not support gets no roles at all; a pin the graph no longer contains degrades
- * to null so its step is omitted rather than spotlighting a node that is gone.
+ * Validates a template's pins against the live graph, falling back to reading
+ * the roles off the graph for anything unpinned — a shared workflow, or a
+ * template URL nobody curated. A pin the graph no longer contains degrades to
+ * null so its step is omitted rather than spotlighting a node that is gone.
  */
 export function resolveTourRoles(
   graph: LGraph,
-  templateId: string
+  templateId?: string
 ): ResolvedRoles | null {
-  if (!Object.hasOwn(TOUR_ROLE_PINS, templateId)) return null
+  if (templateId === undefined || !Object.hasOwn(TOUR_ROLE_PINS, templateId))
+    return resolveFromGraph(graph)
   const pins = TOUR_ROLE_PINS[templateId as SupportedTemplateId]
 
   return {
