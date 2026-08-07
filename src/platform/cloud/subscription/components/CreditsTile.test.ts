@@ -34,8 +34,8 @@ const state = vi.hoisted(() => ({
   showTopUpCreditsDialog: vi.fn(),
   trackAddApiCreditButtonClicked: vi.fn(),
   checkForCompletedTopup: vi.fn(),
-  getBillingEvents: vi.fn().mockResolvedValue({ events: [] }),
   getMyEvents: vi.fn().mockResolvedValue({ events: [] }),
+  customerEventsError: null as string | null,
   toastErrorHandler: vi.fn()
 }))
 
@@ -73,12 +73,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: computed(() => state.type === 'workspace')
-  })
-}))
-
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({ canTopUp: state.canTopUp }))
@@ -105,15 +99,10 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
-  workspaceApi: {
-    getBillingEvents: state.getBillingEvents
-  }
-}))
-
 vi.mock('@/services/customerEventsService', () => ({
   useCustomerEventsService: () => ({
-    getMyEvents: state.getMyEvents
+    getMyEvents: state.getMyEvents,
+    error: computed(() => state.customerEventsError)
   })
 }))
 
@@ -215,6 +204,7 @@ describe('CreditsTile', () => {
     state.isLoading = false
     state.canTopUp = true
     state.type = 'workspace'
+    state.customerEventsError = null
     mockIsCloud.value = true
     vi.clearAllMocks()
     vi.unstubAllEnvs()
@@ -476,6 +466,7 @@ describe('CreditsTile', () => {
 
   it('keeps refreshing on focus until a pending top-up is confirmed', async () => {
     activeProSubscription()
+    state.type = 'legacy'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     renderTile()
 
@@ -490,6 +481,7 @@ describe('CreditsTile', () => {
 
   it('runs a trailing refresh when focus returns during an active refresh', async () => {
     activeProSubscription()
+    state.type = 'legacy'
     renderTile()
     await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledOnce())
     await new Promise((resolve) => setTimeout(resolve, 0))
@@ -515,11 +507,12 @@ describe('CreditsTile', () => {
 
     await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(2))
     expect(state.fetchStatus).toHaveBeenCalledTimes(2)
-    expect(state.getBillingEvents).toHaveBeenCalledTimes(2)
+    expect(state.getMyEvents).toHaveBeenCalledTimes(2)
   })
 
   it('waits for a failed refresh to settle before its trailing refresh', async () => {
     activeProSubscription()
+    state.type = 'legacy'
     renderTile()
     await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledOnce())
     await new Promise((resolve) => setTimeout(resolve, 0))
@@ -544,20 +537,22 @@ describe('CreditsTile', () => {
 
     await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(2))
     expect(state.fetchStatus).toHaveBeenCalledTimes(2)
-    expect(state.getBillingEvents).toHaveBeenCalledOnce()
+    expect(state.getMyEvents).toHaveBeenCalledOnce()
   })
 
-  it('clears a confirmed workspace top-up before the next focus', async () => {
+  it('clears a confirmed legacy top-up before the next focus', async () => {
     activeProSubscription()
+    state.type = 'legacy'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
-    const events = [{ event_type: 'topup_completed' }]
-    state.getBillingEvents.mockResolvedValueOnce({ events })
+    const events = [{ event_type: 'credit_added' }]
+    state.getMyEvents.mockResolvedValueOnce({ events })
     state.checkForCompletedTopup.mockImplementationOnce(() => {
       localStorage.removeItem('pending_topup_timestamp')
       return true
     })
 
     renderTile()
+
     await waitFor(() =>
       expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
     )
@@ -567,27 +562,17 @@ describe('CreditsTile', () => {
     window.dispatchEvent(new Event('focus'))
 
     await waitFor(() => expect(state.fetchBalance).not.toHaveBeenCalled())
-    expect(state.getBillingEvents).not.toHaveBeenCalled()
+    expect(state.getMyEvents).not.toHaveBeenCalled()
   })
 
-  it('reconciles pending legacy top-ups against customer events', async () => {
+  it('retries legacy completion reconciliation after a request failure', async () => {
     activeProSubscription()
     state.type = 'legacy'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
-
-    renderTile()
-
-    await waitFor(() => expect(state.getMyEvents).toHaveBeenCalledOnce())
-    expect(state.getBillingEvents).not.toHaveBeenCalled()
-  })
-
-  it('retries completion reconciliation after a request failure', async () => {
-    activeProSubscription()
-    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
-    const failure = new Error('events unavailable')
-    state.getBillingEvents
-      .mockRejectedValueOnce(failure)
-      .mockResolvedValueOnce({ events: [{ event_type: 'topup_completed' }] })
+    state.customerEventsError = 'events unavailable'
+    state.getMyEvents
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ events: [{ event_type: 'credit_added' }] })
     state.checkForCompletedTopup.mockImplementationOnce(() => {
       localStorage.removeItem('pending_topup_timestamp')
       return true
@@ -595,7 +580,9 @@ describe('CreditsTile', () => {
 
     renderTile()
     await waitFor(() =>
-      expect(state.toastErrorHandler).toHaveBeenCalledWith(failure)
+      expect(state.toastErrorHandler).toHaveBeenCalledWith(
+        new Error('events unavailable')
+      )
     )
     expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
 
@@ -604,7 +591,7 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
     )
-    expect(state.getBillingEvents).toHaveBeenCalledTimes(2)
+    expect(state.getMyEvents).toHaveBeenCalledTimes(2)
   })
 
   it('surfaces a failure toast when a refresh rejects', async () => {

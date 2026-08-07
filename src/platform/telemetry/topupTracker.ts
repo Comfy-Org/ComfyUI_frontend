@@ -41,12 +41,9 @@ export function checkForCompletedTopup(
 
   if (!events || events.length === 0) return false
 
-  // Find a credit top-up event that occurred after our timestamp.
-  // Legacy /customers/events emits `credit_added`; the unified
-  // /api/billing/events feed emits `topup_completed`.
   const completedTopup = events.find(
     (e) =>
-      (e.event_type === 'credit_added' || e.event_type === 'topup_completed') &&
+      e.event_type === 'credit_added' &&
       e.createdAt &&
       new Date(e.createdAt).getTime() > timestamp
   )
