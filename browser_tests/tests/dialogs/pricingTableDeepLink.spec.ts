@@ -85,8 +85,6 @@ const STANDARD_ANNUAL_PLAN = {
 
 const ACTIVE_TEAM_STATUS = {
   is_active: true,
-  max_seats: 50,
-  occupied_seats: 1,
   subscription_status: 'active',
   subscription_tier: 'TEAM',
   subscription_duration: 'ANNUAL',
@@ -98,13 +96,13 @@ const ACTIVE_TEAM_STATUS = {
     id: 'team_700',
     credits_monthly: 147_700,
     stop_usd: 700
-  }
+  },
+  max_seats: 5,
+  occupied_seats: 1
 } satisfies BillingStatusResponse
 
 const ACTIVE_STANDARD_STATUS = {
   is_active: true,
-  max_seats: 1,
-  occupied_seats: 1,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
   subscription_duration: 'ANNUAL',
@@ -112,7 +110,9 @@ const ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
-  team_credit_stop: null
+  team_credit_stop: null,
+  max_seats: 1,
+  occupied_seats: 1
 } satisfies BillingStatusResponse
 
 const ACTIVE_CREATOR_STATUS = {

@@ -4,13 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
 
 const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
-const mockTopup = vi.fn<(amountCents: number) => Promise<CreateTopupResponse>>()
+const mockTopup =
+  vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
 const mockStartOperation = vi.fn()
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
@@ -217,6 +219,46 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     })
   })
 
+  it('fires a started event before the purchase resolves', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'topup',
+        stage: 'started',
+        outcome: 'pending'
+      })
+    )
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'topup'
+    })
+  })
+
+  it('reports failure telemetry when topup resolves with no response', async () => {
+    mockTopup.mockResolvedValue(undefined)
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'unknown',
+        duration_ms: expect.any(Number)
+      })
+    )
+  })
+
   it('allows a top-up while an unrelated billing operation is pending', () => {
     renderDialog()
 
@@ -314,7 +356,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
     expect(payButton).toBeDisabled()
-    expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
+    expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup', {
+      attemptStartedAt: expect.any(Number)
+    })
 
     payButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(mockTopup).toHaveBeenCalledOnce()
@@ -343,7 +387,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'failed',
       outcome: 'failure',
       billing_op_id: 'op-1',
-      failure_category: 'unknown'
+      failure_category: 'unknown',
+      duration_ms: expect.any(Number)
     })
     expect(consoleError).toHaveBeenCalledWith('Purchase failed')
     consoleError.mockRestore()
@@ -363,7 +408,16 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       operation: 'topup',
       stage: 'succeeded',
       outcome: 'success',
-      billing_op_id: 'op-1'
+      billing_op_id: 'op-1',
+      duration_ms: expect.any(Number)
+    })
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'operation',
+      stage: 'succeeded',
+      outcome: 'success',
+      operation_type: 'topup',
+      billing_op_id: 'op-1',
+      duration_ms: expect.any(Number)
     })
   })
 
@@ -376,12 +430,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledTimes(1)
+    expect(mockTrackBillingEvent).toHaveBeenCalledTimes(4)
     expect(mockTrackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'succeeded',
       outcome: 'success',
-      billing_op_id: 'op-1'
+      billing_op_id: 'op-1',
+      duration_ms: expect.any(Number)
     })
     expect(mockShowSettings).toHaveBeenCalledWith('workspace')
   })
@@ -393,10 +448,14 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup')
+    expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup', {
+      attemptStartedAt: expect.any(Number)
+    })
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
-    expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+    expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ stage: 'succeeded' })
+    )
   })
 
   it('does not refresh balance or status for a failed top-up', async () => {
@@ -413,8 +472,37 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'failed',
       outcome: 'failure',
       billing_op_id: 'op-1',
-      failure_category: 'unknown'
+      failure_category: 'provider_decline',
+      duration_ms: expect.any(Number)
     })
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'operation',
+      stage: 'failed',
+      outcome: 'failure',
+      operation_type: 'topup',
+      billing_op_id: 'op-1',
+      failure_category: 'provider_decline',
+      duration_ms: expect.any(Number)
+    })
+  })
+
+  it('categorizes a thrown topup error via the shared classifier', async () => {
+    const workspaceApiError = new WorkspaceApiError('upstream rejected', 500)
+    mockTopup.mockRejectedValue(workspaceApiError)
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'api_rejected',
+        duration_ms: expect.any(Number)
+      })
+    )
   })
 
   it('does not top up after the workspace role loses permission', async () => {
