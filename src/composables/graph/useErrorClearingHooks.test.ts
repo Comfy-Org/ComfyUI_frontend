@@ -1315,14 +1315,8 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
     installErrorClearingHooks(outerSubgraph)
 
-    innerSubgraphNode.mode = LGraphEventMode.ALWAYS
-    outerSubgraph.onTrigger?.({
-      type: 'node:property:changed',
-      nodeId: innerSubgraphNode.id,
-      property: 'mode',
-      oldValue: LGraphEventMode.BYPASS,
-      newValue: LGraphEventMode.ALWAYS
-    })
+    innerSubgraphNode.mode = LGraphEventMode.BYPASS
+    setNodeMode(outerSubgraph, innerSubgraphNode, LGraphEventMode.ALWAYS)
 
     expect(useMissingModelStore().missingModelCandidates).toEqual([
       hostCandidate
