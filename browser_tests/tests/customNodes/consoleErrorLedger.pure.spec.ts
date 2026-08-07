@@ -215,6 +215,8 @@ test.describe('consoleErrorLedger', () => {
       "Uncaught page error: TypeError: Cannot read properties of null (reading 'imgH')\n    at widget.computeSize (http://localhost/extensions/ComfyUI-LTXVideo/js/sparse_track_editor.js:224:29)"
     const radiance =
       '[Radiance] WebGL context lost - renderer paused. Waiting for recovery... [http://localhost/extensions/radiance/radiance_webgl.js?v=2.3.2]'
+    const queryVideo =
+      'Failed to load resource: the server responded with a status of 502 (Bad Gateway) [http://localhost/api/vhs/queryvideo?filename=bedroom.mp4&type=input&format=video%2Fmp4]'
     const previous = process.env.CUSTOM_NODES_ENV
     try {
       process.env.CUSTOM_NODES_ENV = 'core'
@@ -241,13 +243,19 @@ test.describe('consoleErrorLedger', () => {
       ])
 
       process.env.CUSTOM_NODES_ENV = 'cloud'
-      const packs = ['ComfyUI-KJNodes', 'ComfyUI-LTXVideo', 'radiance']
+      const packs = [
+        'ComfyUI-KJNodes',
+        'ComfyUI-LTXVideo',
+        'radiance',
+        'comfyui-videohelpersuite'
+      ]
       expect(
         unallowlistedConnectivityErrorsForPacks(packs, [
           points,
           spline,
           ltx,
           radiance,
+          queryVideo,
           vhs
         ])
       ).toEqual([vhs])
@@ -256,9 +264,20 @@ test.describe('consoleErrorLedger', () => {
           points,
           spline,
           ltx,
-          radiance
+          radiance,
+          queryVideo
         ])
       ).toEqual([])
+      expect(
+        unallowlistedConnectivityErrorsForPacks(
+          ['comfyui-videohelpersuite'],
+          [
+            queryVideo.replace('502', '500'),
+            queryVideo.replace('type=input', 'type=output'),
+            queryVideo.replace('filename=bedroom.mp4', 'filename=other.mp4')
+          ]
+        )
+      ).toHaveLength(3)
       expect(
         unallowlistedConnectivityErrorsForPacks(['radiance'], [points])
       ).toEqual([points])

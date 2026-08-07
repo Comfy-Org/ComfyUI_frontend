@@ -283,6 +283,7 @@
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "LivePortraitLoadFaceAlignmentCropper",
+        "LivePortraitLoadCropper",
         "LivePortraitLoadMediaPipeCropper"
       ]
     },
@@ -550,7 +551,6 @@
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "AudioBPMDetector",
-        "AudioConcatenate",
         "AudioReverb",
         "AudioVocalCompressor"
       ]
@@ -846,6 +846,7 @@
         "LayerMask: PersonMaskUltra",
         "LayerMask: SegmentAnythingUltra",
         "LayerMask: TransparentBackgroundUltra",
+        "LayerMask: YoloV8Detect",
         "LayerUtility: DecodeQRCode",
         "LayerUtility: ImageAutoCrop",
         "LayerUtility: ImageAutoCrop V2",
@@ -1015,7 +1016,12 @@
       "expectedNodeCount": 7,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "AudioSeparation",
+        "AudioSpeedShift",
+        "AudioTempoMatch"
+      ]
     },
     {
       "pack": "basic_data_handling",
@@ -1238,7 +1244,7 @@
       "workflow": "",
       "expectedNodes": ["AddMask", "AnyPipeToBasic"],
       "expectedNodeCount": 185,
-      "expectedExtensions": [],
+      "expectedExtensions": ["Comfy.Impack"],
       "disabledNodes": {
         "ImageReceiver": ["DisabledOnCloud"],
         "ImageSender": ["DisabledOnCloud"],

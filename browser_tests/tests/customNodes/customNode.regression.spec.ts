@@ -128,7 +128,7 @@ for (const entry of loadManifest()) {
     test('T0 load: expected nodes register, render in both renderers, and frontend extensions load', async ({
       comfyPage
     }) => {
-      test.setTimeout(entry.timeoutMs)
+      if (customNodesEnv() !== 'cloud') test.setTimeout(entry.timeoutMs)
       const objectInfo = await target.getObjectInfo(comfyPage.page)
       expect(
         Object.keys(objectInfo).length,
@@ -227,7 +227,8 @@ for (const entry of loadManifest()) {
     // backend, GPU/models the runner lacks, workflow file absent locally).
     if (entry.tiers.includes('run'))
       test('T1 run: workflow executes without error', async ({ comfyPage }) => {
-        test.setTimeout(entry.timeoutMs + 15_000)
+        if (customNodesEnv() !== 'cloud')
+          test.setTimeout(entry.timeoutMs + 15_000)
         const objectInfo = await target.getObjectInfo(comfyPage.page)
         const missing = missingExpectedNodes(objectInfo, entry.expectedNodes)
         test.skip(
@@ -375,7 +376,7 @@ for (const entry of loadManifest()) {
 test('harness self-check: captures a real execution error @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(30_000)
+  if (customNodesEnv() !== 'cloud') test.setTimeout(30_000)
   const objectInfo = await target.getObjectInfo(comfyPage.page)
   expect(
     Object.keys(objectInfo).length,
@@ -440,7 +441,7 @@ test('collector self-check: captures uncaught page exceptions @custom-nodes', as
 test('attribution self-check: a foreign-prompt terminal event cannot fail this run @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(30_000)
+  if (customNodesEnv() !== 'cloud') test.setTimeout(30_000)
   const objectInfo = await target.getObjectInfo(comfyPage.page)
   test.skip(
     !('PrimitiveInt' in objectInfo) || !('PreviewAny' in objectInfo),

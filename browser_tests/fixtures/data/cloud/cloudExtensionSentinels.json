@@ -8,6 +8,7 @@
   "ControlAltAI-Nodes": ["ControlAltAI.IntegerSettingsAdvanced"],
   "RES4LYF": ["Comfy.RES4LYF.DisplayInfo"],
   "basic_data_handling": ["Basic data handling: dynamic input"],
+  "comfyui-impact-pack": ["Comfy.Impack"],
   "comfyui-PlyPreview": ["plypreview.gaussianpreview"],
   "comfyui-enricos-nodes": ["ComfyUI.Enrico.ColorPicker"],
   "comfyui-inpaint-cropandstitch": ["inpaint-cropandstitch.showcontrol"],

@@ -30,6 +30,7 @@ import {
 } from '@e2e/fixtures/customNode/typePairing'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 const CORE_PROOF_NODE_COUNT = 16
 // Pairs per page.evaluate. The sweep's cost is one round of createNode,
@@ -561,12 +562,15 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
         undefined,
         { x: 150, y: 200 }
       )
+      await comfyPage.nextFrame()
+      const producerWidth = (await producer.getSize()).width
       const consumer = await comfyPage.nodeOps.addNode(
         edge.consumer.nodeType,
         undefined,
-        { x: 700, y: 200 }
+        { x: 150 + producerWidth + 150, y: 200 }
       )
       await comfyPage.nextFrame()
+      await fitToViewInstant(comfyPage)
 
       const [outIndex, inIndex] = await comfyPage.page.evaluate(
         ([producerId, consumerId, outName, inName]) => {

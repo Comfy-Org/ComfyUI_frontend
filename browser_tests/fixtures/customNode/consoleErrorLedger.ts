@@ -196,6 +196,15 @@ const ENV_CONNECTIVITY_ERROR_ALLOWLIST: Record<
           'repeated Radiance node creation exhausts a page WebGL context and the pack enters its recovery path',
         requiredConnectivityId: 'cloud-radiance-webgl-recovery'
       }
+    ],
+    'comfyui-videohelpersuite': [
+      {
+        pattern:
+          /Failed to load resource.*502.*\/api\/vhs\/queryvideo\?(?=(?:[^&\s\]]*&)*filename=bedroom\.mp4(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*type=input(?:&|[\s\]]|$))/,
+        reason:
+          'Cloud returns Bad Gateway while VHS probes the advertised default input video',
+        requiredConnectivityId: 'cloud-vhs-queryvideo-bad-gateway'
+      }
     ]
   }
 }

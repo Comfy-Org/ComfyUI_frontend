@@ -42,6 +42,7 @@ import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
 const AUTOGROW_CASES = [
   {
     pack: 'ComfyUI-Impact-Pack',
+    extensionName: 'Comfy.Impack',
     consumerType: 'ImpactMakeImageList',
     producerType: 'EmptyImage',
     producerSlot: 'IMAGE'
@@ -102,6 +103,20 @@ for (const autogrowCase of AUTOGROW_CASES) {
         manifestEntry,
         `${autogrowCase.pack} is not a manifest pack - fix AUTOGROW_CASES`
       ).toBeDefined()
+      expect(
+        manifestEntry!.expectedExtensions,
+        `${autogrowCase.pack} autogrow requires its frontend extension sentinel`
+      ).toContain(autogrowCase.extensionName)
+      expect(
+        await comfyPage.page.evaluate(
+          (extensionName) =>
+            window.app!.extensions.some(
+              (extension) => extension.name === extensionName
+            ),
+          autogrowCase.extensionName
+        ),
+        `${autogrowCase.pack} autogrow extension ${autogrowCase.extensionName} is registered before S12`
+      ).toBe(true)
 
       for (const vueNodesEnabled of rendererPassesFor(manifestEntry!)) {
         const consoleErrors = collectConsoleErrors(comfyPage.page)

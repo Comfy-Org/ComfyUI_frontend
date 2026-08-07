@@ -209,6 +209,22 @@ const AUTO_RUN_UNSTABLE_NODES: Record<string, Record<string, string>> = {
   }
 }
 
+// Exact non-pass outcomes proven to vary with environment state. These nodes
+// still execute on every run; only the named outcome is accepted, so a crash
+// or validation failure remains red.
+const AUTO_RUN_ALLOWED_FAILURES: Record<
+  string,
+  Record<string, { outcomes: string[]; reason: string }>
+> = {
+  comfyui_controlnet_aux: {
+    ExecuteAllControlNetPreprocessors: {
+      outcomes: ['TIMEOUT'],
+      reason:
+        'executes every registered controlnet preprocessor in one aggregate; timed out cold after running clean warm as Cloud model/cache state changed'
+    }
+  }
+}
+
 // Plain-typed widgets whose value is owned by pack JS: a programmatic write
 // is legitimately rewritten, so set-and-stick does not apply. Keyed
 // `NodeType.widgetName`; every entry names the mechanism.
@@ -317,6 +333,7 @@ const MOUNT_WIDGET_ALLOWLIST: Record<string, Record<string, string>> = {
 // exceptions; this spec reads it through allowlistRulesFor above.
 
 const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
+  AUTO_RUN_ALLOWED_FAILURES,
   AUTO_RUN_EXCLUDE,
   AUTO_RUN_UNSTABLE_NODES,
   GEOMETRY_UNSTABLE_NODES,
@@ -1031,7 +1048,11 @@ for (const entry of loadManifest()) {
         // both. Each stage yields a frame so those effects actually flush
         // before the next serialize (a single evaluate would serialize before
         // any Vue component reacted).
-        for (const vueNodesEnabled of rendererPassesFor(entry)) {
+        const roundtripRenderers = rendererPassesFor(entry)
+        for (const [
+          rendererIndex,
+          vueNodesEnabled
+        ] of roundtripRenderers.entries()) {
           const rawValueIndices = packLedgerFor(
             rendererLedgerFor(
               vueNodesEnabled,
@@ -1391,6 +1412,20 @@ for (const entry of loadManifest()) {
               observedValueDrift.set(node, observed)
             }
           }
+          if (rendererIndex === roundtripRenderers.length - 1)
+            await expect
+              .poll(
+                () =>
+                  staleRequiredRoundtripErrorRules(entry.pack, [
+                    ...roundtripConsoleErrors,
+                    ...consoleErrors.errors
+                  ]),
+                {
+                  message:
+                    'required save/reload console errors arrive before the collector stops'
+                }
+              )
+              .toEqual([])
           consoleErrors.stop()
           roundtripConsoleErrors.push(...consoleErrors.errors)
           const allowlist = allowlistRulesFor(entry.pack)
@@ -1533,14 +1568,39 @@ for (const entry of loadManifest()) {
             keys,
             `stale AUTO_RUN_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
+        const allowedFailures = packLedgerFor(
+          AUTO_RUN_ALLOWED_FAILURES,
+          entry.pack
+        )
+        const allowedFailureKeys = stalenessCheckedKeys(entry, allowedFailures)
+        for (const ledgered of allowedFailureKeys)
+          expect(
+            keys,
+            `stale AUTO_RUN_ALLOWED_FAILURES entry: ${ledgered} is not registered by ${entry.pack}`
+          ).toContain(ledgered)
         const runnable = new Set(
           batches.flatMap((batch) => batch.map((verdict) => verdict.key))
         )
-        for (const [key, detail] of cannotRun)
-          if (!baseline.has(key) && !(key in unstable))
+        for (const ledgered of allowedFailureKeys)
+          expect(
+            [...runnable],
+            `stale AUTO_RUN_ALLOWED_FAILURES entry: ${ledgered} is no longer auto-runnable for ${entry.pack}`
+          ).toContain(ledgered)
+        for (const [key, detail] of cannotRun) {
+          const allowedFailure = allowedFailures[key]
+          if (
+            !baseline.has(key) &&
+            !(key in unstable) &&
+            !allowedFailure?.outcomes.includes(detail)
+          )
             hardFailures.push(
               `${key}: ${detail} - not in cannotRunAlone; a regression, or a new baseline entry (attach the run log)`
             )
+          else if (allowedFailure?.outcomes.includes(detail))
+            console.log(
+              `${entry.pack}: ${key} produced allowed ${detail} (${allowedFailure.reason})`
+            )
+        }
         for (const key of baseline) {
           if (ranClean.has(key))
             hardFailures.push(
