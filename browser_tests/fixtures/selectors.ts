@@ -108,6 +108,7 @@ export const TestIds = {
     workflowTabs: 'topbar-workflow-tabs',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
+    actionBars: 'top-menu-actionbars',
     freeTierQuota: 'free-tier-quota'
   },
   nodeLibrary: {
