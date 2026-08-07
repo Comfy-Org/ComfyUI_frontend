@@ -8,7 +8,10 @@ import { faqAnswerPlainText } from '../src/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
-const PATH = '/minimax'
+const PATH = '/minimax-h3'
+const LEGACY_PATH = '/minimax'
+const ZH_PATH = '/zh-CN/minimax-h3'
+const ZH_LEGACY_PATH = '/zh-CN/minimax'
 const HERO_TITLE =
   t('minimax.hero.titleModel', 'en') + t('minimax.hero.titleRest', 'en')
 const MODELS_HEADING = t('minimax.models.heading', 'en')
@@ -59,6 +62,31 @@ test.describe('MiniMax H3 page — desktop @smoke', () => {
     await expect(heading).toBeVisible()
     await expect(page.getByText(FIRST_REVIEW.name)).toBeVisible()
   })
+})
+
+test.describe('MiniMax H3 page — legacy URL @smoke', () => {
+  for (const legacyPath of [LEGACY_PATH, `${LEGACY_PATH}/`]) {
+    test(`redirects the old ${legacyPath} URL to the new page`, async ({
+      page
+    }) => {
+      await page.goto(legacyPath)
+
+      await expect(page).toHaveURL(`${PATH}/`)
+      await expect(
+        page.getByRole('heading', { level: 1, name: HERO_TITLE })
+      ).toBeVisible()
+    })
+  }
+
+  for (const legacyPath of [ZH_LEGACY_PATH, `${ZH_LEGACY_PATH}/`]) {
+    test(`redirects the old ${legacyPath} URL to the localized page`, async ({
+      page
+    }) => {
+      await page.goto(legacyPath)
+
+      await expect(page).toHaveURL(`${ZH_PATH}/`)
+    })
+  }
 })
 
 test.describe('MiniMax H3 page — link targets', () => {
