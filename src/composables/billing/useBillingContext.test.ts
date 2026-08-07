@@ -266,7 +266,6 @@ describe('useBillingContext', () => {
   })
 
   it('forwards billing abort signals through the workspace adapter', async () => {
-    mockTeamWorkspacesEnabled.value = true
     mockIsPersonal.value = false
     const signal = new AbortController().signal
     const { fetchStatus, fetchBalance, manageSubscription } =
