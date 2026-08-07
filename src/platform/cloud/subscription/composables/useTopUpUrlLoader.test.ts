@@ -46,11 +46,19 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({ permissions: mockPermissions })
 }))
 
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
+
 const mockBilling = vi.hoisted(() => ({
   fetchStatus: vi.fn().mockResolvedValue(undefined),
   subscription: { value: { isActive: true } as { isActive: boolean } | null },
-  isActiveSubscription: { value: true },
-  isFreeTier: { value: false }
+  canAccessSubscriptionFeatures: { value: true },
+  isTeamPlan: { value: false },
+  tier: { value: 'STANDARD' as string | null }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -71,8 +79,10 @@ describe('useTopUpUrlLoader', () => {
     mockPermissions.value = { canTopUp: true }
     mockBilling.fetchStatus.mockResolvedValue(undefined)
     mockBilling.subscription.value = { isActive: true }
-    mockBilling.isActiveSubscription.value = true
-    mockBilling.isFreeTier.value = false
+    mockIsCloud.value = true
+    mockBilling.canAccessSubscriptionFeatures.value = true
+    mockBilling.isTeamPlan.value = false
+    mockBilling.tier.value = 'STANDARD'
     mockShowTopUpCreditsDialog.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
@@ -148,17 +158,41 @@ describe('useTopUpUrlLoader', () => {
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
-  it('opens without deep_link telemetry for a lapsed or free-tier user', async () => {
+  it('opens without deep_link telemetry for a lapsed user', async () => {
     mockRouteQuery.value = { topup: '1' }
     // showTopUpCreditsDialog routes this user to the paywall internally; the
     // deep_link source must only count real top-up dialog opens.
-    mockBilling.isActiveSubscription.value = false
+    mockBilling.canAccessSubscriptionFeatures.value = false
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
     expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+  })
+
+  it('opens without deep_link telemetry for a free-tier user', async () => {
+    mockRouteQuery.value = { topup: '1' }
+    mockBilling.tier.value = 'FREE'
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+  })
+
+  it('emits deep_link telemetry for a free-tier user off Cloud, where top-up is allowed', async () => {
+    mockRouteQuery.value = { topup: '1' }
+    mockIsCloud.value = false
+    mockBilling.tier.value = 'FREE'
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
+      source: 'deep_link'
+    })
   })
 
   it('is a silent no-op for a team member', async () => {
