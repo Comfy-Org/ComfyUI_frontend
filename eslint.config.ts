@@ -421,6 +421,41 @@ export default defineConfig([
     }
   },
 
+  // src/lib/ holds vendored leaf libraries (litegraph). They may import from
+  // src/lib/ and from the shared base utilities, but never from an app layer —
+  // a vendored library depending on the app that vendors it is a dependency
+  // inversion. Reported as a warning while the pre-existing violations are
+  // worked off; see the tracking issue before promoting this to 'error'.
+  {
+    files: ['src/lib/**/*.{ts,vue}'],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'warn',
+        {
+          zones: [
+            {
+              target: './src/lib/**',
+              from: [
+                './src/components/**',
+                './src/composables/**',
+                './src/extensions/**',
+                './src/platform/**',
+                './src/renderer/**',
+                './src/services/**',
+                './src/stores/**',
+                './src/views/**',
+                './src/workbench/**',
+                './src/world/**'
+              ],
+              message:
+                'src/lib/ is vendored leaf code and cannot import from app layers (violates layer architecture: lib → base → platform → workbench → renderer). Invert the dependency: have the app layer pass what it needs in, or move the shared type down into src/lib/ or src/base/.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+
   // The website app is a marketing site with no vue-i18n setup
   {
     files: ['apps/website/**/*.vue'],
