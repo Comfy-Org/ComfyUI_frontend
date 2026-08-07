@@ -118,6 +118,37 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     return operations.value.get(opId)
   }
 
+  // An operation parked on a bank challenge is waiting on the customer, not on
+  // us, so it must not keep announcing "processing" — that reads as "nothing to
+  // do here" next to the verification prompt the same state renders.
+  function showProgressToast(
+    opId: string,
+    type: Exclude<OperationType, 'cancel'>,
+    actionRequired: boolean
+  ) {
+    const toastStore = useToastStore()
+    const previous = receivedToasts.get(opId)
+    if (previous) toastStore.remove(previous)
+
+    const messageKey =
+      type === 'subscription'
+        ? actionRequired
+          ? 'billingOperation.subscriptionActionRequired'
+          : 'billingOperation.subscriptionProcessing'
+        : actionRequired
+          ? 'billingOperation.topupActionRequired'
+          : 'billingOperation.topupProcessing'
+
+    const toastMessage: ToastMessageOptions = {
+      // 'warn' selects the prompt icon over the spinner in GlobalToast.
+      severity: actionRequired ? 'warn' : 'info',
+      summary: t(messageKey),
+      group: 'billing-operation'
+    }
+    receivedToasts.set(opId, toastMessage)
+    toastStore.add(toastMessage)
+  }
+
   function startOperation(
     opId: string,
     type: OperationType,
@@ -151,18 +182,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
     if (type !== 'cancel') {
-      const messageKey =
-        type === 'subscription'
-          ? 'billingOperation.subscriptionProcessing'
-          : 'billingOperation.topupProcessing'
-
-      const toastMessage: ToastMessageOptions = {
-        severity: 'info',
-        summary: t(messageKey),
-        group: 'billing-operation'
-      }
-      receivedToasts.set(opId, toastMessage)
-      useToastStore().add(toastMessage)
+      showProgressToast(opId, type, operation.authenticationRequiredSeen)
     }
 
     const terminal = new Promise<BillingOperation>((resolve) => {
@@ -262,12 +282,23 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
+    const authenticationRequiredSeen =
+      operation.authenticationRequiredSeen || actionUrl !== null
     operations.value = new Map(operations.value).set(opId, {
       ...operation,
       actionUrl,
-      authenticationRequiredSeen:
-        operation.authenticationRequiredSeen || actionUrl !== null
+      authenticationRequiredSeen
     })
+    // Only on the first transition: the toast is otherwise stable for the life
+    // of the operation, and re-adding it on every poll would resurface a
+    // notification the customer has already dismissed.
+    if (
+      operation.type !== 'cancel' &&
+      authenticationRequiredSeen &&
+      !operation.authenticationRequiredSeen
+    ) {
+      showProgressToast(opId, operation.type, true)
+    }
   }
 
   async function handleSuccess(opId: string) {
