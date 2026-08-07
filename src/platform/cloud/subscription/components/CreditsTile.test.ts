@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
-import type { CurrentTeamCreditStop } from '@/platform/workspace/api/workspaceApi'
+import type { TeamCreditStopSummary } from '@/platform/workspace/api/workspaceApi'
 
 type Balance = Pick<
   BalanceInfo,
@@ -15,7 +15,7 @@ type Balance = Pick<
 type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
 }
-type TeamStop = CurrentTeamCreditStop
+type TeamStop = TeamCreditStopSummary
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
