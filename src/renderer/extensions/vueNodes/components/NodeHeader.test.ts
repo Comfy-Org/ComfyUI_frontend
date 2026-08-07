@@ -11,6 +11,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
@@ -203,6 +204,45 @@ describe('NodeHeader.vue', () => {
     // eslint-disable-next-line testing-library/no-node-access
     const collapsedIcon = collapseButton.querySelector('i')!
     expect(collapsedIcon.classList).toContain('-rotate-90')
+  })
+
+  it.for([
+    { mode: LGraphEventMode.NEVER, label: 'Muted' },
+    { mode: LGraphEventMode.BYPASS, label: 'Bypassed' }
+  ])(
+    'controls the $label status badge independently',
+    async ({ mode, label }) => {
+      const { rerender } = renderHeader({
+        nodeData: makeNodeData({ mode }),
+        priceBadges: [{ required: '10.6', rest: 'credits' }]
+      })
+
+      expect(screen.getByText(label)).toBeInTheDocument()
+      expect(screen.getByText('10.6')).toBeInTheDocument()
+
+      await rerender({
+        nodeData: makeNodeData({ mode }),
+        collapsed: false,
+        priceBadges: [{ required: '10.6', rest: 'credits' }],
+        showStatusBadge: false
+      })
+
+      expect(screen.queryByText(label)).not.toBeInTheDocument()
+      expect(screen.getByText('10.6')).toBeInTheDocument()
+    }
+  )
+
+  it('keeps the pin indicator when status badges are hidden', () => {
+    renderHeader({
+      nodeData: makeNodeData({
+        mode: LGraphEventMode.BYPASS,
+        flags: { pinned: true }
+      }),
+      showStatusBadge: false
+    })
+
+    expect(screen.queryByText('Bypassed')).not.toBeInTheDocument()
+    expect(screen.getByTestId('node-pin-indicator')).toBeInTheDocument()
   })
 
   describe('Tooltips', () => {

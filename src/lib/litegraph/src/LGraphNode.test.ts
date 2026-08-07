@@ -17,11 +17,13 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
+import { TitleMode } from './types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
+  title_mode?: TitleMode
 }
 
 function getMockISerialisedNode(
@@ -539,6 +541,45 @@ describe('LGraphNode', () => {
   })
 
   describe('widget serialization', () => {
+    test('serializes persistable widgets densely for legacy restoration', () => {
+      const source = new LGraphNode('Source')
+      source.serialize_widgets = true
+      source.addWidget('button', 'action', 'Click', null).serialize = false
+      source.addWidget('number', 'steps', 20, null)
+
+      const serialized = source.serialize()
+      expect(serialized.widgets_values).toEqual([20])
+      expect(serialized.widgets_values_named).toEqual({ steps: 20 })
+
+      const restored = new LGraphNode('Restored')
+      restored.addWidget('button', 'action', 'Click', null).serialize = false
+      restored.addWidget('number', 'steps', 0, null)
+      LiteGraph.namedValuesRestore = false
+      restored.configure(serialized)
+
+      expect(restored.widgets!.map((widget) => widget.value)).toEqual([
+        'Click',
+        20
+      ])
+    })
+
+    test('round-trips widget values by name', () => {
+      const source = new LGraphNode('Source')
+      source.serialize_widgets = true
+      source.addWidget('number', 'steps', 20, null)
+      source.addWidget('number', 'seed', 12345, null)
+
+      const restored = new LGraphNode('Restored')
+      restored.addWidget('number', 'seed', 0, null)
+      restored.addWidget('number', 'steps', 0, null)
+      LiteGraph.namedValuesRestore = true
+      restored.configure(source.serialize())
+
+      expect(restored.widgets!.map((widget) => widget.value)).toEqual([
+        12345, 20
+      ])
+    })
+
     test('should only serialize widgets with serialize flag not set to false', () => {
       const node = new LGraphNode('TestNode')
       node.serialize_widgets = true
@@ -678,14 +719,39 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
-    test('Vue mode uses this.size directly for collapsed nodes', () => {
+    test('Vue mode uses visual collapsed width and preserves expanded size', () => {
       LiteGraph.vueNodesMode = true
+      node._collapsed_width = 96
       node.measure(out)
 
-      // Vue mode collapsed takes the expanded-style branch
-      expect(out[2]).toBe(150)
-      expect(out[3]).toBe(10 + LiteGraph.NODE_TITLE_HEIGHT)
+      expect(out[2]).toBe(96)
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+      expect(Array.from(node.size)).toEqual([150, 10])
     })
+
+    test.each([TitleMode.TRANSPARENT_TITLE, TitleMode.NO_TITLE])(
+      'Vue mode keeps collapsed height for title mode %s',
+      (titleMode) => {
+        LiteGraph.vueNodesMode = true
+        const nodeConstructor =
+          node.constructor as NodeConstructorWithSlotOffset
+        const hadOwnTitleMode = Object.hasOwn(nodeConstructor, 'title_mode')
+        const previousTitleMode = nodeConstructor.title_mode
+
+        try {
+          nodeConstructor.title_mode = titleMode
+          node.measure(out)
+
+          expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+        } finally {
+          if (hadOwnTitleMode) {
+            nodeConstructor.title_mode = previousTitleMode
+          } else {
+            delete nodeConstructor.title_mode
+          }
+        }
+      }
+    )
 
     test('Vue mode expanded behaves identically to legacy expanded', () => {
       LiteGraph.vueNodesMode = true

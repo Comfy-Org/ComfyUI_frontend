@@ -40,6 +40,7 @@ export interface Bounds {
 export interface NodeBoundsUpdate {
   nodeId: NodeId
   bounds: Bounds
+  preserveSize?: boolean
 }
 
 export type { LinkId }
@@ -195,7 +196,10 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
   entity: 'node'
   type: 'batchUpdateBounds'
   nodeIds: NodeId[]
-  bounds: Record<NodeId, { bounds: Bounds; previousBounds: Bounds }>
+  bounds: Record<
+    NodeId,
+    { bounds: Bounds; previousBounds: Bounds; preserveSize?: boolean }
+  >
 }
 
 /**

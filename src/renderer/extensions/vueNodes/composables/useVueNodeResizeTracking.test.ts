@@ -43,6 +43,7 @@ const resizeObserverState = vi.hoisted(() => {
 const testState = vi.hoisted(() => ({
   linearMode: false,
   nodeLayouts: new Map<NodeId, NodeLayout>(),
+  liteNodes: new Map<NodeId, { _collapsed_width?: number }>(),
   batchUpdateNodeBounds: vi.fn(),
   setSource: vi.fn(),
   syncNodeSlotLayoutsFromDOM: vi.fn(),
@@ -56,7 +57,12 @@ vi.mock('@vueuse/core', () => ({
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    linearMode: testState.linearMode
+    linearMode: testState.linearMode,
+    canvas: {
+      graph: {
+        getNodeById: (nodeId: NodeId) => testState.liteNodes.get(nodeId) ?? null
+      }
+    }
   })
 }))
 
@@ -160,6 +166,7 @@ describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     testState.linearMode = false
     testState.nodeLayouts.clear()
+    testState.liteNodes.clear()
     testState.batchUpdateNodeBounds.mockReset()
     testState.setSource.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
@@ -270,7 +277,7 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
-  it('writes collapsed dimensions through the normal bounds path', () => {
+  it('updates collapsed visual bounds without replacing expanded size', () => {
     const nodeId = toNodeId('test-node')
     const collapsedWidth = 200
     const collapsedHeight = 40
@@ -286,6 +293,8 @@ describe('useVueNodeResizeTracking', () => {
 
     // Seed with larger expanded size so the collapsed write is a real change
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+    const liteNode = { _collapsed_width: undefined }
+    testState.liteNodes.set(nodeId, liteNode)
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
@@ -298,10 +307,54 @@ describe('useVueNodeResizeTracking', () => {
           y: 200 + titleHeight,
           width: collapsedWidth,
           height: collapsedHeight
-        }
+        },
+        preserveSize: true
       }
     ])
+    expect(liteNode._collapsed_width).toBe(collapsedWidth)
+    expect(testState.nodeLayouts.get(nodeId)?.size).toEqual({
+      width: 240,
+      height: 180 - titleHeight
+    })
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('skips repeated collapsed measurements using cached visual bounds', () => {
+    const nodeId = toNodeId('test-node')
+    const collapsedWidth = 200
+    const collapsedHeight = 40
+    const { entry, rectSpy } = createResizeEntry({
+      nodeId,
+      width: collapsedWidth,
+      height: collapsedHeight,
+      left: 100,
+      top: 200,
+      collapsed: true
+    })
+    const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+    const layout = testState.nodeLayouts.get(nodeId)
+    if (!layout) throw new Error('Expected seeded node layout')
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    layout.bounds = {
+      x: 100,
+      y: 200 + titleHeight,
+      width: collapsedWidth,
+      height: collapsedHeight - titleHeight
+    }
+    layout.position = { x: 150, y: 200 + titleHeight }
+    testState.setSource.mockReset()
+    testState.batchUpdateNodeBounds.mockReset()
+    testState.syncNodeSlotLayoutsFromDOM.mockReset()
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(rectSpy).not.toHaveBeenCalled()
+    expect(testState.setSource).not.toHaveBeenCalled()
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 
   it('updates bounds with expanded dimensions on collapse-to-expand transition', () => {

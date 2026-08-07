@@ -426,9 +426,17 @@
   "Comfy_Validation_Workflows": {
     "name": "Validate workflows"
   },
+  "Comfy_VueNodes_CompactCollapsedNodes": {
+    "name": "Compact collapsed nodes",
+    "tooltip": "Size collapsed nodes to their titles and hide header badges while collapsed."
+  },
   "Comfy_VueNodes_Enabled": {
     "name": "Modern Node Design (Nodes 2.0)",
     "tooltip": "Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering."
+  },
+  "Comfy_VueNodes_HideStatusBadges": {
+    "name": "Hide node status badges",
+    "tooltip": "Hide Muted and Bypassed badges on Nodes 2.0."
   },
   "Comfy_WidgetControlMode": {
     "name": "Widget control mode",

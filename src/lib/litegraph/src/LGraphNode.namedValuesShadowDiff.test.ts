@@ -99,6 +99,17 @@ describe('LGraphNode configure named values shadow diff', () => {
     expect(trackNamedValuesShadowDiffMismatch).not.toHaveBeenCalled()
   })
 
+  it('ignores invalid named values without reporting a shadow diff', () => {
+    LiteGraph.namedValuesRestore = true
+    const info = mismatchInfo()
+    Object.assign(info, { widgets_values_named: [] })
+
+    node.configure(info)
+
+    expect(node.widgets!.map((w) => w.value)).toStrictEqual([30, 12345])
+    expect(trackNamedValuesShadowDiffMismatch).not.toHaveBeenCalled()
+  })
+
   it('reports has_on_serialize_hook and has_on_configure_hook as false with no hooks set', () => {
     LiteGraph.namedValuesRestore = true
 
