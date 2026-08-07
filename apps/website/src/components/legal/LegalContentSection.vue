@@ -8,6 +8,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { hasKey, t, translationKeys } from '../../i18n/translations'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { scrollTo } from '../../scripts/smoothScroll'
+import SafeRichText from '../common/SafeRichTextContent'
 
 const {
   prefix,
@@ -136,7 +137,7 @@ function listItems(key: TranslationKey): string[] {
           "
         >
           <summary
-            class="text-primary-comfy-canvas flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold tracking-wide select-none"
+            class="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold tracking-wide text-primary-comfy-canvas select-none"
           >
             <span>{{ t(tocLabelKey, locale) }}</span>
             <span
@@ -185,7 +186,7 @@ function listItems(key: TranslationKey): string[] {
               <a
                 :href="`#${item.id}`"
                 :aria-current="activeSection === item.id ? 'true' : undefined"
-                class="hover:text-primary-comfy-canvas block text-sm/snug transition-colors"
+                class="block text-sm/snug transition-colors hover:text-primary-comfy-canvas"
                 :class="
                   activeSection === item.id
                     ? 'text-primary-comfy-yellow font-semibold'
@@ -209,16 +210,17 @@ function listItems(key: TranslationKey): string[] {
           class="mb-16 scroll-mt-24 lg:scroll-mt-36"
         >
           <h2
-            class="text-primary-comfy-canvas mb-6 text-2xl font-light lg:text-3xl"
+            class="mb-6 text-2xl font-light text-primary-comfy-canvas lg:text-3xl"
           >
             {{ section.title }}
           </h2>
 
           <template v-for="block in section.blocks" :key="block.key">
-            <p
+            <SafeRichText
               v-if="block.type === 'paragraph'"
-              class="text-primary-comfy-canvas mt-4 text-sm/relaxed lg:text-base/relaxed"
-              v-html="t(block.key, locale)"
+              as="p"
+              class="mt-4 text-sm/relaxed text-primary-comfy-canvas lg:text-base/relaxed"
+              :html="t(block.key, locale)"
             />
             <ul
               v-else
@@ -227,13 +229,13 @@ function listItems(key: TranslationKey): string[] {
               <li
                 v-for="(item, j) in listItems(block.key)"
                 :key="j"
-                class="text-primary-comfy-canvas flex items-start gap-2"
+                class="flex items-start gap-2 text-primary-comfy-canvas"
               >
                 <span
                   class="bg-primary-comfy-yellow mt-2 size-1.5 shrink-0 rounded-full"
                   aria-hidden="true"
                 />
-                <span v-html="item" />
+                <SafeRichText as="span" :html="item" />
               </li>
             </ul>
           </template>

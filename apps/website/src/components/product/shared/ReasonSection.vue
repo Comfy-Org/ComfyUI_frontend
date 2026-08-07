@@ -2,6 +2,7 @@
 import type { Locale, TranslationKey } from '../../../i18n/translations'
 
 import { t } from '../../../i18n/translations'
+import SafeRichText from '../../common/SafeRichTextContent'
 
 export interface Reason {
   titleKey: TranslationKey
@@ -33,10 +34,10 @@ const {
   >
     <!-- Left heading -->
     <div
-      class="bg-primary-comfy-ink sticky top-20 z-10 w-full shrink-0 self-start py-4 lg:top-28 lg:w-115 lg:py-0"
+      class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 lg:top-28 lg:w-115 lg:py-0"
     >
       <h2
-        class="text-primary-comfy-canvas text-4xl/16 font-light whitespace-pre-line lg:text-5xl/16"
+        class="text-4xl/16 font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl/16"
       >
         {{ t(headingKey, locale)
         }}<span v-if="headingHighlightKey" :class="highlightClass">{{
@@ -46,7 +47,7 @@ const {
           t(headingSuffixKey, locale)
         }}</template>
       </h2>
-      <p v-if="subtitleKey" class="text-primary-comfy-canvas/70 mt-6 text-sm">
+      <p v-if="subtitleKey" class="mt-6 text-sm text-primary-comfy-canvas/70">
         {{ t(subtitleKey, locale) }}
       </p>
     </div>
@@ -56,16 +57,17 @@ const {
       <div
         v-for="reason in reasons"
         :key="reason.titleKey"
-        class="border-primary-comfy-canvas/20 flex flex-col gap-4 border-b py-10 first:pt-0 lg:flex-row lg:gap-12"
+        class="flex flex-col gap-4 border-b border-primary-comfy-canvas/20 py-10 first:pt-0 lg:flex-row lg:gap-12"
       >
         <div class="shrink-0 lg:w-84">
-          <h3
-            class="text-primary-comfy-canvas text-2xl font-light whitespace-pre-line"
-            v-html="t(reason.titleKey, locale)"
+          <SafeRichText
+            as="h3"
+            class="text-2xl font-light whitespace-pre-line text-primary-comfy-canvas"
+            :html="t(reason.titleKey, locale)"
           />
           <slot name="reason-extra" :reason="reason" />
         </div>
-        <p class="text-primary-comfy-canvas/70 flex-1 text-sm">
+        <p class="flex-1 text-sm text-primary-comfy-canvas/70">
           {{ t(reason.descriptionKey, locale) }}
         </p>
       </div>
