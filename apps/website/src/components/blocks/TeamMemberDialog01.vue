@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { ChevronRight } from '@lucide/vue'
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
 import DialogTrigger from '../ui/dialog/DialogTrigger.vue'
-import IconButton from '../ui/icon-button/IconButton.vue'
 
 const {
   name,
@@ -51,25 +50,15 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
         />
         <div class="flex flex-col items-start gap-5 sm:pr-16">
           <DialogTitle>{{ name }}</DialogTitle>
-          <a
+          <ButtonPill
             v-if="workflowsHref && workflowsLabel"
+            as="a"
             :href="workflowsHref"
-            class="group flex items-center gap-4"
+            variant="ghost"
+            icon-position="left"
           >
-            <IconButton
-              as="span"
-              variant="solid"
-              size="sm"
-              class="rounded-xl transition-opacity group-hover:opacity-90"
-            >
-              <ChevronRight class="size-5" />
-            </IconButton>
-            <span
-              class="text-primary-comfy-yellow text-sm font-extrabold tracking-wider uppercase"
-            >
-              {{ workflowsLabel }}
-            </span>
-          </a>
+            {{ workflowsLabel }}
+          </ButtonPill>
         </div>
       </div>
       <DialogDescription as="div" class="mt-8 space-y-4 lg:mt-10">

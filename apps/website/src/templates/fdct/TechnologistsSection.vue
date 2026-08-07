@@ -13,5 +13,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     :heading="t('fdct.technologists.title', locale)"
     :lead="t('fdct.technologists.lead', locale)"
     :people="technologists"
+    :workflows-label="t('fdct.technologists.workflows', locale)"
+    :close-label="t('fdct.technologists.close', locale)"
   />
 </template>

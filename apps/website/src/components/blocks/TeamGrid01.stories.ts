@@ -8,23 +8,32 @@ const people = [
   {
     id: 'person-1',
     name: 'Placeholder One',
-    description:
+    avatarSrc,
+    bio: [
       'Feature film background with ComfyUI on the back end of shipped work.',
-    avatarSrc
+      'Built production pipelines for studios and creative teams, from pitch through final delivery.'
+    ],
+    workflowsHref: '#'
   },
   {
     id: 'person-2',
     name: 'Placeholder Two',
-    description:
+    avatarSrc,
+    bio: [
       'Commercial and experiential work, from pitch to final delivery.',
-    avatarSrc
+      'Combines visual direction with the engineering required to deliver reliably on fixed deadlines.'
+    ],
+    workflowsHref: '#'
   },
   {
     id: 'person-3',
     name: 'Placeholder Three',
-    description:
+    avatarSrc,
+    bio: [
       'Production pipelines and creative tooling for in-house teams.',
-    avatarSrc
+      'Turns one-off experiments into workflows a team can run without help.'
+    ],
+    workflowsHref: '#'
   }
 ]
 
@@ -35,7 +44,9 @@ const meta: Meta<typeof TeamGrid01> = {
   args: {
     heading: 'Featured technologists',
     lead: 'FDCTs come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match technologists to each engagement based on the work, your stack, and the timeline.',
-    people
+    people,
+    closeLabel: 'Close',
+    workflowsLabel: 'See workflows'
   }
 }
 
@@ -48,12 +59,8 @@ export const CardsOnly: Story = {
   args: { heading: undefined, lead: undefined }
 }
 
-export const WithBackdropImages: Story = {
+export const WithoutWorkflowsLink: Story = {
   args: {
-    people: people.map((person) => ({
-      ...person,
-      imageSrc: avatarSrc,
-      imageAlt: ''
-    }))
+    people: people.map((person) => ({ ...person, workflowsHref: undefined }))
   }
 }

@@ -1,30 +1,32 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
 
+import CardArrow from '../common/CardArrow.vue'
 import Card from '../ui/card/Card.vue'
-import CardContent from '../ui/card/CardContent.vue'
-import CardDescription from '../ui/card/CardDescription.vue'
-import CardTitle from '../ui/card/CardTitle.vue'
+import TeamMemberDialog01 from './TeamMemberDialog01.vue'
 
 type Profile = {
   id: string
   name: string
-  description: string
   avatarSrc: string
-  imageSrc?: string
-  imageAlt?: string
+  bio: readonly string[]
+  workflowsHref?: string
 }
 
 const {
   heading,
   lead,
   people,
+  closeLabel,
+  workflowsLabel,
   class: className
 } = defineProps<{
   heading?: string
   lead?: string
   people: readonly Profile[]
+  closeLabel: string
+  workflowsLabel?: string
   class?: HTMLAttributes['class']
 }>()
 </script>
@@ -51,31 +53,46 @@ const {
       <Card
         v-for="person in people"
         :key="person.id"
-        class="gap-0 overflow-hidden"
+        class="group relative gap-0 p-2"
       >
-        <div class="relative flex justify-center pt-8 lg:pt-10">
-          <img
-            v-if="person.imageSrc"
-            :src="person.imageSrc"
-            :alt="person.imageAlt ?? ''"
-            class="absolute inset-0 size-full object-cover"
-          />
+        <TeamMemberDialog01
+          :name="person.name"
+          :avatar-src="person.avatarSrc"
+          :bio="person.bio"
+          :workflows-href="person.workflowsHref"
+          :workflows-label="workflowsLabel"
+          :close-label="closeLabel"
+        >
+          <template #trigger>
+            <button
+              :aria-label="person.name"
+              class="rounded-4.5xl focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+            />
+          </template>
+        </TeamMemberDialog01>
+        <div class="flex justify-center pt-8">
           <img
             :src="person.avatarSrc"
             alt=""
-            class="relative size-56 rounded-full object-cover lg:size-60"
+            class="size-56 rounded-full object-cover lg:size-60"
           />
         </div>
-        <CardContent class="flex flex-col gap-4 px-6 py-8 lg:px-8 lg:pb-10">
-          <CardTitle
-            class="text-2xl font-normal text-primary-warm-white lg:text-3xl"
-          >
+        <div class="flex flex-col gap-4 px-4 pt-8 pb-3">
+          <h3 class="text-2xl font-medium text-white lg:text-3xl">
             {{ person.name }}
-          </CardTitle>
-          <CardDescription class="text-sm lg:text-base">
-            {{ person.description }}
-          </CardDescription>
-        </CardContent>
+          </h3>
+          <div class="flex items-center gap-6">
+            <p
+              class="line-clamp-3 flex-1 text-sm/[1.35] font-semibold text-primary-comfy-canvas"
+            >
+              {{ person.bio.join(' ') }}
+            </p>
+            <CardArrow
+              hover="group"
+              class="size-8 shrink-0 rounded-xl bg-primary-warm-gray text-primary-warm-white"
+            />
+          </div>
+        </div>
       </Card>
     </div>
   </section>

@@ -5356,7 +5356,12 @@ const translations = {
     en: 'FDCTs come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match technologists to each engagement based on the work, your stack, and the timeline.',
     'zh-CN':
       'FDCT 来自真实制作一线：拥有电影长片、商业广告与体验项目背景，ComfyUI 支撑着已交付的作品。我们会根据项目内容、你的技术栈和时间表，为每次合作匹配合适的技术专家。'
-  }
+  },
+  'fdct.technologists.workflows': {
+    en: 'See workflows',
+    'zh-CN': '查看工作流'
+  },
+  'fdct.technologists.close': { en: 'Close', 'zh-CN': '关闭' }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
