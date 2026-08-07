@@ -16,12 +16,14 @@ const {
   loadCompositorSession,
   saveLayerState,
   savePreview,
-  session
+  session,
+  toastAdd
 } = vi.hoisted(() => ({
   afterChange: vi.fn(),
   autoSaveStop: vi.fn(),
   beforeChange: vi.fn(),
-  loadCompositorSession: vi.fn().mockResolvedValue(undefined),
+  loadCompositorSession: vi.fn().mockResolvedValue(0),
+  toastAdd: vi.fn(),
   saveLayerState: vi.fn(() => true),
   savePreview: vi.fn().mockResolvedValue(undefined),
   session: {
@@ -75,7 +77,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: vi.fn() })
+  useToastStore: () => ({ add: toastAdd })
 }))
 vi.mock(
   '@/renderer/extensions/compositor/composables/compositorSession',
@@ -129,8 +131,8 @@ describe('LayerEditorContent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     session.canUndo.value = false
-    session.loadImages.mockResolvedValue(undefined)
-    loadCompositorSession.mockResolvedValue(undefined)
+    session.loadImages.mockResolvedValue(0)
+    loadCompositorSession.mockResolvedValue(0)
     session.editor.floating.mockImplementation(() => null)
     session.editor.history.canUndo.mockImplementation(() => false)
     session.editor.history.canRedo.mockImplementation(() => false)
@@ -204,6 +206,30 @@ describe('LayerEditorContent', () => {
     expect(saveLayerState).not.toHaveBeenCalled()
     expect(savePreview).not.toHaveBeenCalled()
     expect(afterChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('warns and withholds auto-save when some layers fail to load', async () => {
+    loadCompositorSession.mockResolvedValueOnce(2)
+    renderEditor('compositor')
+
+    await vi.waitFor(() =>
+      expect(toastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
+    )
+    expect(useCompositorAutoSave).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed layer load and withholds auto-save', async () => {
+    loadCompositorSession.mockRejectedValueOnce(new Error('boom'))
+    renderEditor('compositor')
+
+    await vi.waitFor(() =>
+      expect(toastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    )
+    expect(useCompositorAutoSave).not.toHaveBeenCalled()
   })
 
   it('does not start auto-save when closed while layers are loading', async () => {

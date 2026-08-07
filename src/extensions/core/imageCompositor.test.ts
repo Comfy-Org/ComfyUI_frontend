@@ -33,16 +33,20 @@ function makeNode() {
     value: savedValue,
     callback: vi.fn()
   } as unknown as IBaseWidget
+  const priorOnExecuted = vi.fn()
+  const priorOnRemoved = vi.fn()
   const node = {
     id: nodeId,
     size: [100, 100],
     setSize: vi.fn(),
+    onExecuted: priorOnExecuted,
+    onRemoved: priorOnRemoved,
     constructor: { comfyClass: 'ImageCompositor' },
     widgets: [compositorWidget],
     widgets_values: [savedValue],
     graph: { setDirtyCanvas: vi.fn() }
   } as unknown as LGraphNode
-  return { node, compositorWidget }
+  return { node, compositorWidget, priorOnExecuted, priorOnRemoved }
 }
 
 function createdNode() {
@@ -142,5 +146,35 @@ describe('ImageCompositor extension', () => {
 
     expect(getCompositorLayers(nodeId)).toBeUndefined()
     expect(getCompositorInputsFingerprint(nodeId)).toBeUndefined()
+  })
+
+  it('chains through the prior onExecuted and onRemoved handlers', () => {
+    const { node, priorOnExecuted, priorOnRemoved } = createdNode()
+    const output = { compositor_layers: [{ filename: 'a.png' }] }
+
+    node.onExecuted?.(output)
+    node.onRemoved?.()
+
+    expect(priorOnExecuted).toHaveBeenCalledWith(output)
+    expect(priorOnRemoved).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps bboxes aligned when invalid layer entries are dropped', () => {
+    const { node } = createdNode()
+
+    node.onExecuted?.({
+      compositor_layers: [{ filename: 'a.png' }, {}, { filename: 'c.png' }],
+      compositor_bboxes: [
+        { x: 0, y: 0, width: 10, height: 10, name: 'a' },
+        { x: 5, y: 5, width: 10, height: 10, name: 'dropped' },
+        { x: 9, y: 9, width: 10, height: 10, name: 'c' }
+      ]
+    })
+
+    expect(getCompositorLayers(nodeId)).toHaveLength(2)
+    expect(getCompositorBBoxes(nodeId)?.map((bbox) => bbox?.name)).toEqual([
+      'a',
+      'c'
+    ])
   })
 })

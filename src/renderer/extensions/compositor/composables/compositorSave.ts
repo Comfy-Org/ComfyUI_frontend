@@ -35,6 +35,12 @@ export function saveCompositorLayerState(
       getCompositorInputsFingerprint(node.id),
       session.inputLayerIds()
     )
+    if (!layerState.inputs) {
+      console.warn(
+        '[Compositor] no inputs fingerprint; layer state would be unrestorable'
+      )
+      return false
+    }
     setCompositorWidgetValue(node, layerState)
     return true
   } catch (err) {

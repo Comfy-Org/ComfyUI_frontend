@@ -30,7 +30,10 @@ const DEFAULT_BACKGROUND_ENTRY: CompositorBackgroundEntry = {
   visible: false
 }
 
+const LAYER_STATE_VERSION = 1
+
 export interface CompositorLayerState {
+  version?: typeof LAYER_STATE_VERSION
   canvas?: { w: number; h: number }
   inputs?: string[]
   background?: CompositorBackgroundEntry
@@ -79,7 +82,7 @@ function isFiniteNumber(value: unknown): value is number {
 }
 
 function isBlendFn(value: unknown): value is BlendFn {
-  return typeof value === 'string' && value in LAYER_MODES
+  return typeof value === 'string' && Object.hasOwn(LAYER_MODES, value)
 }
 
 function parseTransform(value: unknown): Transform | null {
@@ -174,6 +177,7 @@ export function extractLayerState(
     order.length === entries.length &&
     order.every((value, index) => value === index)
   return {
+    version: LAYER_STATE_VERSION,
     canvas: { w: canvas.w, h: canvas.h },
     ...(inputs ? { inputs } : {}),
     ...(background ? { background: backgroundEntry(background) } : {}),
@@ -220,14 +224,14 @@ function parseOrder(value: unknown, layerCount: number): number[] | undefined {
     )
   )
     return undefined
-  return new Set(items).size === layerCount ? items : undefined
+  return new Set(items).size === layerCount ? [...items] : undefined
 }
 
 function parseInputs(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined
   const items: unknown[] = value
   return items.every((item): item is string => typeof item === 'string')
-    ? items
+    ? [...items]
     : undefined
 }
 
@@ -244,10 +248,11 @@ export function parseLayerState(value: unknown): CompositorLayerState | null {
   if (typeof raw !== 'object' || raw === null) return null
   if (Object.keys(raw).length === 0) return null
 
-  const { canvas, layers, inputs, background, order } = raw as Record<
+  const { version, canvas, layers, inputs, background, order } = raw as Record<
     string,
     unknown
   >
+  if (version !== undefined && version !== LAYER_STATE_VERSION) return null
   const canvasSize = parseCanvasSize(canvas)
   const parsedInputs = parseInputs(inputs)
   const parsedBackground = parseBackground(background)
@@ -255,6 +260,7 @@ export function parseLayerState(value: unknown): CompositorLayerState | null {
   const parsedOrder = parseOrder(order, parsedLayers.length)
 
   return {
+    version: LAYER_STATE_VERSION,
     ...(canvasSize ? { canvas: canvasSize } : {}),
     ...(parsedInputs ? { inputs: parsedInputs } : {}),
     ...(parsedBackground ? { background: parsedBackground } : {}),
@@ -282,7 +288,9 @@ function bboxLayerState(
     layers: bboxes.map((bbox) =>
       bbox
         ? {
-            ...(bbox.name ? { name: bbox.name } : {}),
+            ...(typeof bbox.name === 'string' && bbox.name
+              ? { name: bbox.name }
+              : {}),
             ...(typeof bbox.visible === 'boolean'
               ? { visible: bbox.visible }
               : {}),
@@ -325,7 +333,8 @@ export function applyLayerState(
   ops.setBackgroundOpacity(background.opacity)
   ops.setBackgroundVisible(background.visible)
 
-  const count = Math.min(layers.length, state.layers.length)
+  if (state.layers.length !== layers.length) return
+  const count = layers.length
   for (let i = 0; i < count; i++) {
     const entry = state.layers[i]
     if (!entry) continue

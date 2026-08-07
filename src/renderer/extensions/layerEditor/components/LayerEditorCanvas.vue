@@ -29,16 +29,28 @@
       ref="overlayRef"
       class="pointer-events-none absolute inset-0 size-full"
     />
+    <div
+      v-if="!session.glOk.value"
+      class="absolute inset-0 flex items-center justify-center"
+      data-testid="layer-editor-gl-unavailable"
+    >
+      <span class="text-danger rounded-md bg-base-background px-4 py-2 text-sm">
+        {{ t('layerEditor.webglUnavailable') }}
+      </span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
+
+const { t } = useI18n()
 
 const viewportRef = ref<HTMLDivElement | null>(null)
 const containerRef = ref<HTMLDivElement | null>(null)

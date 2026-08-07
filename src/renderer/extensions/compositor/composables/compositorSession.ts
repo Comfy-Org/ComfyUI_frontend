@@ -19,7 +19,7 @@ export async function loadCompositorSession(
   session: LayerEditorSession,
   node: LGraphNode,
   fallbackLayerName: (index: number) => string
-): Promise<void> {
+): Promise<number> {
   const refs = getCompositorLayers(node.id) ?? []
   const rand = app.getRandParam()
   const urls = refs.map((fileRef) =>
@@ -29,7 +29,7 @@ export async function loadCompositorSession(
     (fileRef, i) =>
       fileRef.filename.replace(/\.[^.]+$/, '') || fallbackLayerName(i)
   )
-  await session.loadImages(urls, names)
+  const failed = await session.loadImages(urls, names)
 
   const initialState = resolveInitialLayerState(
     parseLayerState(getCompositorWidgetValue(node)),
@@ -41,4 +41,5 @@ export async function loadCompositorSession(
     session.editor.history.clear()
     session.fitView()
   }
+  return failed
 }

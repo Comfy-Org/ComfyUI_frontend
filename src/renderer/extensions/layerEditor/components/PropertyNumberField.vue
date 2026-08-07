@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 import Input from '@/components/ui/input/Input.vue'
 
@@ -47,7 +47,13 @@ watch(
 
 function onChange(): void {
   const next = Number(draft.value)
-  if (Number.isFinite(next)) emit('commit', next)
-  else draft.value = value
+  if (Number.isFinite(next)) {
+    const low = min ?? -Infinity
+    const high = max ?? Infinity
+    emit('commit', Math.min(high, Math.max(low, next)))
+  }
+  void nextTick(() => {
+    draft.value = value
+  })
 }
 </script>

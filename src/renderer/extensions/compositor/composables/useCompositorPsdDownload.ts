@@ -22,8 +22,9 @@ export function useCompositorPsdDownload(
   async function downloadPsd(node: LGraphNode): Promise<void> {
     if (exporting.value) return
     exporting.value = true
-    const session = createSession()
+    let session: LayerEditorSession | null = null
     try {
+      session = createSession()
       if (!session.glOk.value) throw new Error('WebGL compositor unavailable')
       await loadCompositorSession(session, node, (i) =>
         t('layerEditor.layerN', { n: i + 1 })
@@ -38,7 +39,7 @@ export function useCompositorPsdDownload(
         detail: t('layerEditor.exportPsdFailed')
       })
     } finally {
-      session.dispose()
+      session?.dispose()
       exporting.value = false
     }
   }

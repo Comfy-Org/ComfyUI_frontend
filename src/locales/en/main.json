@@ -1287,6 +1287,9 @@
   },
   "layerEditor": {
     "title": "Compositor",
+    "webglUnavailable": "WebGL is unavailable - the canvas cannot render",
+    "loadFailed": "Failed to load layers",
+    "layersFailedToLoad": "{count} layer(s) failed to load - editing is disabled to protect the saved composition",
     "selectTool": "Select",
     "handTool": "Hand",
     "zoom": "Zoom",

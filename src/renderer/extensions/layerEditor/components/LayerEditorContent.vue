@@ -93,8 +93,8 @@ function onRestore(): void {
   while (session.editor.history.canUndo()) session.undo()
 }
 
-async function loadCompositorLayers(): Promise<void> {
-  await loadCompositorSession(session, node, (i) =>
+async function loadCompositorLayers(): Promise<number> {
+  return loadCompositorSession(session, node, (i) =>
     t('layerEditor.layerN', { n: i + 1 })
   )
 }
@@ -131,16 +131,33 @@ onMounted(() => {
   if (mode === 'compositor') {
     changeTracker?.beforeChange()
     loadCompositorLayers()
-      .then(() => {
+      .then((failed) => {
         if (closed) return
+        if (failed > 0) {
+          useToastStore().add({
+            severity: 'warn',
+            summary: t('layerEditor.title'),
+            detail: t('layerEditor.layersFailedToLoad', { count: failed })
+          })
+          return
+        }
         autoSave = useCompositorAutoSave(session, node)
       })
-      .catch((err) => console.error('[Compositor] Loading layers failed:', err))
+      .catch((err) => {
+        console.error('[Compositor] Loading layers failed:', err)
+        useToastStore().add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('layerEditor.loadFailed')
+        })
+      })
     return
   }
   const urls = useNodeOutputStore().getNodeImageUrls(node) ?? []
   const names = urls.map((url, i) => layerName(url, i))
-  void session.loadImages(urls, names)
+  session
+    .loadImages(urls, names)
+    .catch((err) => console.error('[LayerEditor] Loading images failed:', err))
 })
 
 onUnmounted(() => {

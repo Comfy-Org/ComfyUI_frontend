@@ -23,6 +23,7 @@ export const layerEditorDialogProps = {
   maximizable: false,
   maximized: true,
   closable: true,
+  closeOnEscape: false,
   showCloseButton: false,
   dismissableMask: false
 } satisfies DialogComponentProps

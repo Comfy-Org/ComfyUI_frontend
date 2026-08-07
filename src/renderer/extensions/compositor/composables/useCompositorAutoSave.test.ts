@@ -5,6 +5,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toNodeId } from '@/types/nodeId'
 
+import {
+  clearCompositorLayers,
+  setCompositorLayers
+} from './useCompositorLayers'
 import { useCompositorAutoSave } from './useCompositorAutoSave'
 
 function makeSession() {
@@ -44,10 +48,16 @@ function makeNode() {
 
 beforeEach(() => {
   vi.useFakeTimers()
+  setCompositorLayers(
+    toNodeId(7),
+    [{ filename: 'a.png', subfolder: '', type: 'temp' }],
+    ['hash-a']
+  )
 })
 
 afterEach(() => {
   vi.useRealTimers()
+  clearCompositorLayers(toNodeId(7))
 })
 
 describe('useCompositorAutoSave', () => {

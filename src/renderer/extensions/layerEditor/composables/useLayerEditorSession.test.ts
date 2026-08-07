@@ -849,12 +849,12 @@ describe('useLayerEditorSession', () => {
   })
 
   describe('applyLayerState integration', () => {
-    it('replays v2 flips onto the session, mirroring content and surviving history.clear', async () => {
+    it('replays saved flips onto the session, mirroring content and surviving history.clear', async () => {
       const { session } = await loadedSession()
       const [bottom, top] = [rasterLayer(session, 0), rasterLayer(session, 1)]
       const state = parseLayerState(
         JSON.stringify({
-          version: 2,
+          version: 1,
           canvas: { w: 64, h: 48 },
           layers: [
             {
@@ -1059,7 +1059,7 @@ describe('useLayerEditorSession', () => {
       const { session } = await loadedSession()
       const state = parseLayerState(
         JSON.stringify({
-          version: 2,
+          version: 1,
           inputs: ['stale-hash'],
           background: { color: '#000000', opacity: 0.1, visible: false },
           layers: []

@@ -101,6 +101,7 @@ describe('extractLayerState', () => {
     )
 
     expect(state).toEqual({
+      version: 1,
       canvas: { w: 64, h: 48 },
       layers: [
         {
@@ -214,11 +215,24 @@ describe('parseLayerState', () => {
 
   it('accepts a plain object directly', () => {
     const state = parseLayerState({ inputs: ['hash-a'], layers: [] })
-    expect(state).toEqual({ inputs: ['hash-a'], layers: [] })
+    expect(state).toEqual({ version: 1, inputs: ['hash-a'], layers: [] })
   })
 
   it('tolerates missing canvas and layers', () => {
-    expect(parseLayerState({ version: 2 })).toEqual({ layers: [] })
+    expect(parseLayerState({ inputs: [] })).toEqual({
+      version: 1,
+      inputs: [],
+      layers: []
+    })
+  })
+
+  it('accepts the current version and rejects unknown ones', () => {
+    expect(parseLayerState({ version: 1, layers: [] })).toEqual({
+      version: 1,
+      layers: []
+    })
+    expect(parseLayerState({ version: 2, layers: [] })).toBeNull()
+    expect(parseLayerState({ version: 'x', layers: [] })).toBeNull()
   })
 
   it('surfaces a string-array inputs field', () => {
@@ -317,10 +331,10 @@ describe('parseLayerState', () => {
     })
   })
 
-  it('parses v2 flips and rejects non-boolean flip values', () => {
+  it('parses flips and rejects non-boolean flip values', () => {
     const state = parseLayerState(
       JSON.stringify({
-        version: 2,
+        version: 1,
         layers: [
           {
             name: 'flipped',
@@ -365,6 +379,7 @@ describe('parseLayerState', () => {
     )
 
     expect(state).toEqual({
+      version: 1,
       canvas: { w: 10, h: 20 },
       layers: [
         null,
@@ -541,39 +556,34 @@ describe('applyLayerState', () => {
     expect(flipOrder).toBeLessThan(positionOrder)
   })
 
-  it('ignores extra state entries beyond the loaded layers', () => {
-    const ops = makeOps()
-    const state = extractLayerState(
+  it('bails out entirely when the saved layer count differs from the live one', () => {
+    const extraSaved = extractLayerState(
       { w: 8, h: 8 },
       [rasterNode('a', 'One'), rasterNode('b', 'Two')],
       noFlips
     )
-
-    applyLayerState(state, [{ id: 'a', visible: true }], ops)
-
-    expect(ops.renameLayer).toHaveBeenCalledTimes(1)
-    expect(ops.renameLayer).toHaveBeenCalledWith('a', 'One')
-  })
-
-  it('leaves layers without a state entry untouched', () => {
-    const ops = makeOps()
-    const state = extractLayerState(
+    const fewerSaved = extractLayerState(
       { w: 8, h: 8 },
       [rasterNode('a', 'One')],
       noFlips
     )
 
-    applyLayerState(
-      state,
+    for (const [state, layers] of [
+      [extraSaved, [{ id: 'a', visible: true }]],
       [
-        { id: 'a', visible: true },
-        { id: 'b', visible: true }
-      ],
-      ops
-    )
-
-    expect(ops.renameLayer).toHaveBeenCalledTimes(1)
-    expect(ops.renameLayer).toHaveBeenCalledWith('a', 'One')
+        fewerSaved,
+        [
+          { id: 'a', visible: true },
+          { id: 'b', visible: true }
+        ]
+      ]
+    ] as const) {
+      const ops = makeOps()
+      applyLayerState(state, [...layers], ops)
+      expect(ops.renameLayer).not.toHaveBeenCalled()
+      expect(ops.setLayerPosition).not.toHaveBeenCalled()
+      expect(ops.setLayerOrder).not.toHaveBeenCalled()
+    }
   })
 
   it('reorders layers by mapping order indices to ids, skipping unknown indices', () => {

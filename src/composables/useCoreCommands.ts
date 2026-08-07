@@ -21,7 +21,6 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -248,7 +247,7 @@ export function useCoreCommands(): ComfyCommand[] {
         // If Mask Editor is open, use its history instead of the graph
         if (dialogStore.isDialogOpen('global-mask-editor')) {
           maskEditorStore.canvasHistory.undo()
-        } else if (!dialogStore.isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) {
+        } else {
           await getTracker()?.undo?.()
         }
       }
@@ -261,7 +260,7 @@ export function useCoreCommands(): ComfyCommand[] {
       function: async () => {
         if (dialogStore.isDialogOpen('global-mask-editor')) {
           maskEditorStore.canvasHistory.redo()
-        } else if (!dialogStore.isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) {
+        } else {
           await getTracker()?.redo?.()
         }
       }

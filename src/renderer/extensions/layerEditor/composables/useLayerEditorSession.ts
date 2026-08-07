@@ -430,10 +430,11 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     )
   }
 
-  async function loadImages(urls: string[], names: string[]): Promise<void> {
+  async function loadImages(urls: string[], names: string[]): Promise<number> {
     flipParity.clear()
     inputOrderIds.length = 0
     ensureBackgroundLayer()
+    let failed = 0
     let docWidth = 0
     let docHeight = 0
     for (const [i, url] of urls.entries()) {
@@ -442,9 +443,10 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
         canvas = await loadImage(url)
       } catch (err) {
         console.warn('[LayerEditor] failed to load image', url, err)
+        failed += 1
         continue
       }
-      if (disposed) return
+      if (disposed) return failed
       docWidth = Math.max(docWidth, canvas.width)
       docHeight = Math.max(docHeight, canvas.height)
       const contentId = content.register(canvas, { uploadedUrl: url })
@@ -474,6 +476,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     editor.history.clear()
     fitView()
     requestRender()
+    return failed
   }
 
   function editProp<T>(
@@ -532,7 +535,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
         Dirty.DRAWABLE,
         () => n.mode,
         (m) => (n.mode = m),
-        defaultMode(v in LAYER_MODES ? v : 'normal'),
+        defaultMode(Object.hasOwn(LAYER_MODES, v) ? v : 'normal'),
         `blend:${tid}`
       )
     })
@@ -978,8 +981,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
       return
     }
     if (e.key === 'Escape') {
-      e.preventDefault()
-      editor.transformCancel()
+      if (editor.transformCancel()) e.preventDefault()
       return
     }
     if (e.code === 'Space') {

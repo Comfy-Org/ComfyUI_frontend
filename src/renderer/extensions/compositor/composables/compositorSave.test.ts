@@ -71,8 +71,17 @@ beforeEach(() => {
   clearCompositorLayers(toNodeId(7))
 })
 
+function cacheFingerprint() {
+  setCompositorLayers(
+    toNodeId(7),
+    [{ filename: 'a.png', subfolder: '', type: 'temp' }],
+    ['hash-a', 'hash-b']
+  )
+}
+
 describe('saveCompositorLayerState', () => {
   it('writes the layer state recipe to the compositor widget', () => {
+    cacheFingerprint()
     const session = makeSession()
     const { node, compositorWidget } = makeNode()
 
@@ -106,15 +115,17 @@ describe('saveCompositorLayerState', () => {
     expect(widgetValue(compositorWidget).inputs).toEqual(['hash-a', 'hash-b'])
   })
 
-  it('omits inputs from the saved state when no fingerprint is cached', () => {
+  it('refuses to save when no fingerprint is cached', () => {
     const { node, compositorWidget } = makeNode()
 
-    saveCompositorLayerState(makeSession(), node)
+    expect(saveCompositorLayerState(makeSession(), node)).toBe(false)
 
-    expect('inputs' in widgetValue(compositorWidget)).toBe(false)
+    expect(compositorWidget.callback).not.toHaveBeenCalled()
+    expect(node.widgets_values).toEqual([{}])
   })
 
   it('keeps widgets untouched when extraction fails', () => {
+    cacheFingerprint()
     const session = makeSession()
     session.layerFlips = () => {
       throw new Error('boom')

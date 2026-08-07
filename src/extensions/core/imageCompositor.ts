@@ -31,20 +31,19 @@ useExtensionService().registerExtension({
     node.onExecuted = function (output: ImageCompositorOutput) {
       onExecuted?.call(this, output)
 
-      const layers = (output.compositor_layers ?? [])
-        .filter((layer) => layer?.filename)
-        .map((layer) => ({
-          filename: layer.filename,
-          subfolder: layer.subfolder ?? '',
-          type: layer.type ?? 'temp'
-        }))
+      const kept = (output.compositor_layers ?? [])
+        .map((layer, index) => [layer, index] as const)
+        .filter(([layer]) => layer?.filename)
+      const layers = kept.map(([layer]) => ({
+        filename: layer.filename,
+        subfolder: layer.subfolder ?? '',
+        type: layer.type ?? 'temp'
+      }))
+      const bboxes = output.compositor_bboxes
+        ? kept.map(([, index]) => output.compositor_bboxes?.[index] ?? null)
+        : undefined
       if (layers.length)
-        setCompositorLayers(
-          node.id,
-          layers,
-          output.compositor_inputs,
-          output.compositor_bboxes
-        )
+        setCompositorLayers(node.id, layers, output.compositor_inputs, bboxes)
       clearCompositorPreviewOverride(node.id)
 
       if (output.compositor_state_stale?.[0]) {

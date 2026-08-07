@@ -81,8 +81,8 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   lines: 70
 }
 
-// WebGL2 / pixel-processing passes that need a real rendering context;
-// exercised via browser tests rather than happy-dom unit tests
+// WebGL2 / pixel-processing passes that need a real rendering context,
+// which happy-dom does not provide. TODO: cover via browser tests.
 const LAYER_EDITOR_GPU_COVERAGE_EXCLUDE = [
   'src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts'
 ]

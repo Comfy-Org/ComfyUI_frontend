@@ -107,6 +107,18 @@ describe('useCompositorPsdDownload', () => {
     expect(exporting.value).toBe(false)
   })
 
+  it('recovers when session creation throws', async () => {
+    const { exporting, downloadPsd } = useCompositorPsdDownload(() => {
+      throw new Error('boom')
+    })
+
+    await downloadPsd(node)
+
+    expect(downloadBlob).not.toHaveBeenCalled()
+    expect(toastAdd).toHaveBeenCalledTimes(1)
+    expect(exporting.value).toBe(false)
+  })
+
   it('ignores clicks while an export is in flight', async () => {
     let resolveBlob!: (blob: Blob) => void
     buildSessionPsdBlob.mockImplementationOnce(
