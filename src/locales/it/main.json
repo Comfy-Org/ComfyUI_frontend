@@ -8,13 +8,6 @@
     "share": "Condividi",
     "shareTooltip": "Condividi workflow"
   },
-  "addApiCredits": "Aggiungi crediti API",
-  "addCredits": "Aggiungi crediti",
-  "addCreditsLabel": "Aggiungi più crediti quando vuoi",
-  "additionalCredits": "Crediti aggiuntivi",
-  "additionalCreditsInUse": "In uso",
-  "additionalCreditsInfo": "Informazioni sui crediti aggiuntivi",
-  "additionalCreditsTooltip": "Crediti aggiunti oltre al tuo piano. Utilizzati dopo l'esaurimento dei crediti mensili. Scadono un anno dopo l'acquisto.",
   "apiNodesCostBreakdown": {
     "costPerRun": "Costo per esecuzione",
     "title": "Nodo/i API",
@@ -348,36 +341,8 @@
       "submitBlockedHint": "Completa la verifica sopra per abilitare la registrazione."
     }
   },
-  "authTimeout": {
-    "causes": [
-      "Firewall aziendale o proxy che blocca i servizi di autenticazione",
-      "Restrizioni VPN o di rete",
-      "Estensioni del browser che interferiscono con le richieste",
-      "Limitazioni di rete regionali",
-      "Prova un altro browser o rete"
-    ],
-    "helpText": "Hai bisogno di aiuto? Contatta",
-    "message": "Stiamo riscontrando problemi di connessione a ComfyUI Cloud. Potrebbe essere dovuto a una connessione lenta o a un problema temporaneo del servizio.",
-    "restart": "Esci e riprova",
-    "supportLink": "supporto",
-    "technicalDetails": "Dettagli tecnici",
-    "title": "Connessione troppo lenta",
-    "troubleshooting": "Cause comuni:"
-  },
   "batch": {
     "index": "{current} / {total}"
-  },
-  "benefits": {
-    "benefit1": "Crediti mensili per Partner Nodes — ricarica quando necessario",
-    "benefit1FreeTier": "Crediti mensili, ricarica in qualsiasi momento",
-    "benefit2": "Fino a 1 ora di esecuzione per job su Pro",
-    "benefit3": "Porta i tuoi modelli (Creator & Pro)"
-  },
-  "billedMonthly": "Fatturato mensilmente",
-  "billedYearly": "{total} Fatturato annualmente",
-  "billingComingSoon": {
-    "message": "La fatturazione team arriverà presto. Potrai abbonarti a un piano per il tuo workspace con prezzi per utente. Resta aggiornato per le novità.",
-    "title": "Prossimamente"
   },
   "billingOperation": {
     "cancelFailed": "Annullamento dell'abbonamento non riuscito",
@@ -466,8 +431,6 @@
     "switchToOutputs": "Passa alle Uscite",
     "viewApp": "Visualizza app"
   },
-  "changeTo": "Cambia in {plan}",
-  "checkingStatus": "Verifica dello stato dell'account...",
   "clipboard": {
     "errorMessage": "Copia negli appunti non riuscita",
     "errorNotSupported": "API degli appunti non supportata dal tuo browser",
@@ -503,7 +466,50 @@
     "title": "Esegui ComfyUI nel Cloud"
   },
   "cloudOnboarding": {
+    "authTimeout": {
+      "causes": [
+        "Firewall aziendale o proxy che blocca i servizi di autenticazione",
+        "Restrizioni VPN o di rete",
+        "Estensioni del browser che interferiscono con le richieste",
+        "Limitazioni di rete regionali",
+        "Prova un browser o una rete diversa"
+      ],
+      "helpText": "Hai bisogno di aiuto? Contatta",
+      "message": "Stiamo riscontrando problemi di connessione a ComfyUI Cloud. Potrebbe essere dovuto a una connessione lenta o a un problema temporaneo del servizio.",
+      "restart": "Esci e riprova",
+      "supportLink": "supporto",
+      "technicalDetails": "Dettagli tecnici",
+      "title": "Connessione troppo lenta",
+      "troubleshooting": "Cause comuni:"
+    },
+    "checkingStatus": "Verifica dello stato dell'account in corso...",
+    "forgotPassword": {
+      "backToLogin": "Torna al login",
+      "didntReceiveEmail": "Non hai ricevuto l'email? Contattaci a",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Inserisci la tua email",
+      "emailRequired": "L'email è obbligatoria",
+      "instructions": "Inserisci il tuo indirizzo email e ti invieremo un link per reimpostare la password.",
+      "passwordResetError": "Invio dell'email di reset della password non riuscito. Riprova.",
+      "passwordResetSent": "Email per il reset della password inviata",
+      "sendResetLink": "Invia link di reimpostazione",
+      "title": "Password dimenticata"
+    },
+    "privateBeta": {
+      "desc": "Accedi per unirti alla lista d'attesa. Ti avviseremo quando sarà il tuo turno. Hai già ricevuto la notifica? Accedi per iniziare a usare Cloud.",
+      "title": "Cloud è attualmente in beta privata"
+    },
+    "retry": "Riprova",
+    "retrying": "Riprovo...",
     "skipToCloudApp": "Salta all'app cloud",
+    "start": {
+      "desc": "Nessuna configurazione richiesta. Funziona su qualsiasi dispositivo.",
+      "download": "Scarica ComfyUI",
+      "explain": "Genera più risultati contemporaneamente. Condividi i workflow con facilità.",
+      "learnAboutButton": "Scopri Cloud",
+      "title": "inizia a creare in pochi secondi",
+      "wantToRun": "Vuoi eseguire ComfyUI in locale?"
+    },
     "survey": {
       "errors": {
         "answerTooLong": "Mantieni la risposta entro {max} caratteri.",
@@ -691,8 +697,6 @@
     "theme": "Tema",
     "toggleBottomPanel": "Mostra/Nascondi Pannello Inferiore"
   },
-  "contactOwnerToSubscribe": "Contatta il proprietario del workspace per abbonarti",
-  "contactUs": "Contattaci",
   "contextMenu": {
     "Add Group": "Aggiungi gruppo",
     "Add Group For Selected Nodes": "Aggiungi gruppo per i nodi selezionati",
@@ -835,19 +839,10 @@
     },
     "yourCreditBalance": "Il tuo saldo crediti"
   },
-  "creditsLeftOfTotal": "{remaining} di {total} rimanenti",
-  "creditsRemainingThisMonth": "Inclusi (Ricarica il {date})",
-  "creditsRemainingThisYear": "Inclusi (Ricarica il {date})",
-  "creditsUsed": "{used} utilizzati",
-  "creditsYouveAdded": "Aggiuntivi",
-  "currentPlan": "Piano attuale",
   "curveWidget": {
     "linear": "Lineare",
     "monotone_cubic": "Morbida"
   },
-  "customLoRAsLabel": "Importa i tuoi LoRA",
-  "customNodes": "Nodi personalizzati",
-  "customNodesDescription": "Reinstalla i nodi personalizzati da installazioni ComfyUI esistenti.",
   "dataTypes": {
     "*": "*",
     "ARRAY": "ARRAY",
@@ -954,8 +949,6 @@
     "WAN_CAMERA_EMBEDDING": "EMBEDDING CAMERA WAN",
     "WEBCAM": "WEBCAM"
   },
-  "description": "Scegli il piano migliore per te",
-  "descriptionWorkspace": "Scegli un piano",
   "desktopDialogs": {
     "": {
       "buttons": {
@@ -1009,13 +1002,6 @@
     "pause": "Metti in pausa download",
     "paused": "In pausa",
     "resume": "Riprendi download"
-  },
-  "enterprise": {
-    "cta": "Scopri di più",
-    "flexibility": "Cerchi più flessibilità o funzionalità personalizzate?",
-    "name": "Enterprise",
-    "needMoreMembers": "Hai bisogno di più membri?",
-    "reachOut": "Contattaci e fissiamo una chiamata."
   },
   "errorCatalog": {
     "fallbacks": {
@@ -1449,7 +1435,6 @@
     "video-selection-masking": "Selezione & Mascheratura Video",
     "video-transform": "Trasformazione Video"
   },
-  "everythingInPlus": "Tutto in {plan}, più:",
   "execution": {
     "decoding": "Decodifica…",
     "encoding": "Codifica…",
@@ -1479,22 +1464,6 @@
   },
   "feedback": {
     "title": "Condividi feedback"
-  },
-  "forgotPassword": {
-    "backToLogin": "Torna al login",
-    "didntReceiveEmail": "Non hai ricevuto l'email? Contattaci a",
-    "emailLabel": "Email",
-    "emailPlaceholder": "Inserisci la tua email",
-    "emailRequired": "L'email è obbligatoria",
-    "instructions": "Inserisci il tuo indirizzo email e ti invieremo un link per reimpostare la password.",
-    "passwordResetError": "Impossibile inviare l'email di reimpostazione. Riprova.",
-    "passwordResetSent": "Email per reimpostare la password inviata",
-    "sendResetLink": "Invia link di reimpostazione",
-    "title": "Password dimenticata"
-  },
-  "freePerks": {
-    "freeRuns": "{count} esecuzione gratuita | {count} esecuzioni gratuite",
-    "maxRuntime": "{duration} tempo massimo di esecuzione"
   },
   "g": {
     "1x": "1x",
@@ -1917,7 +1886,6 @@
       "textToImage": "Da testo a immagine"
     }
   },
-  "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
   "graphCanvasMenu": {
     "canvasMode": "Modalità canvas",
     "canvasToolbar": "Barra strumenti canvas",
@@ -1936,7 +1904,6 @@
     "zoomOptions": "Opzioni zoom",
     "zoomOut": "Riduci"
   },
-  "haveQuestions": "Hai domande o sei interessato all'enterprise?",
   "hdrViewer": {
     "channel": "Canale",
     "channels": {
@@ -1993,7 +1960,6 @@
     "updateComfyUISuccessDetail": "ComfyUI è stato aggiornato. Riavvio in corso...",
     "whatsNew": "Novità"
   },
-  "helpImprove": "Aiuta a migliorare ComfyUI",
   "icon": {
     "bookmark": "Segnalibro",
     "box": "Scatola",
@@ -2023,21 +1989,13 @@
     "copyError": "Errore di copia",
     "title": "Importazione fallita"
   },
-  "inactive": {
-    "memberCta": "Ok, capito",
-    "memberDescription": "Chiedi al proprietario del workspace di riattivare l'abbonamento per eseguire workflow.",
-    "memberRunTooltip": "Contatta il proprietario del workspace per riattivare l'abbonamento",
-    "memberTitle": "L'abbonamento di questo workspace è inattivo",
-    "runLabel": "Esegui"
-  },
-  "inactiveTeamDescription": "Riattiva il tuo piano team per aggiungere altri membri ed eseguire workflow",
-  "inactiveTeamPlanIncludes": "Un piano attivo include tutto in {plan}, più:",
-  "inactiveTeamTitle": "Abbonamento team inattivo",
   "install": {
     "appDataLocationTooltip": "Directory dei dati dell'app ComfyUI. Contiene:\n- Log\n- Configurazioni server",
     "appPathLocationTooltip": "Directory delle risorse dell'app ComfyUI. Contiene il codice e le risorse di ComfyUI",
     "cannotWrite": "Impossibile scrivere nel percorso selezionato",
     "chooseInstallationLocation": "Scegli il percorso di installazione",
+    "customNodes": "Nodi personalizzati",
+    "customNodesDescription": "Reinstalla i nodi personalizzati da installazioni ComfyUI esistenti.",
     "desktopAppSettings": "Impostazioni app desktop",
     "desktopAppSettingsDescription": "Configura il comportamento di ComfyUI sul desktop. Puoi modificare queste impostazioni in seguito.",
     "desktopSettings": "Impostazioni desktop",
@@ -2071,6 +2029,7 @@
       "selectGpu": "Seleziona GPU",
       "selectGpuDescription": "Seleziona il tipo di GPU che possiedi"
     },
+    "helpImprove": "Aiuta a migliorare ComfyUI",
     "insideAppInstallDir": "Questa cartella si trova all'interno del bundle dell'applicazione ComfyUI Desktop e verrà eliminata durante gli aggiornamenti. Scegli una directory al di fuori della cartella di installazione, come Documenti/ComfyUI.",
     "insideUpdaterCache": "Questa cartella si trova all'interno della cache dell'aggiornamento di ComfyUI, che viene cancellata ad ogni aggiornamento. Seleziona una posizione diversa per i tuoi dati.",
     "installLocation": "Percorso di installazione",
@@ -2095,14 +2054,18 @@
       "title": "Configurazione manuale",
       "virtualEnvironmentPath": "Percorso ambiente virtuale"
     },
+    "metricsDisabled": "Metriche disabilitate",
+    "metricsEnabled": "Metriche abilitate",
     "migrateFromExistingInstallation": "Migra da installazione esistente",
     "migration": "Migrazione",
     "migrationOptional": "La migrazione è opzionale. Se non hai un'installazione esistente, puoi saltare questo passaggio.",
     "migrationSourcePathDescription": "Se hai già un'installazione di ComfyUI, possiamo copiare/collegare i tuoi file utente e modelli esistenti nella nuova installazione. La tua installazione ComfyUI esistente non verrà modificata.",
+    "moreInfo": "Per maggiori informazioni, leggi la nostra",
     "nonDefaultDrive": "Installa ComfyUI sull'unità di sistema (es. C:\\). Unità con file system diversi possono causare problemi imprevedibili. Modelli e altri file possono essere archiviati su altre unità dopo l'installazione.",
     "parentMissing": "Il percorso non esiste - crea prima la directory contenitore",
     "pathExists": "La directory esiste già - assicurati di aver eseguito il backup di tutti i dati",
     "pathValidationFailed": "Impossibile convalidare il percorso",
+    "privacyPolicy": "informativa sulla privacy",
     "selectItemsToMigrate": "Seleziona elementi da migrare",
     "settings": {
       "allowMetrics": "Metriche di utilizzo",
@@ -2137,13 +2100,12 @@
       "pythonMirrorPlaceholder": "Inserisci l'URL del mirror Python"
     },
     "systemLocations": "Percorsi di sistema",
-    "unhandledError": "Errore sconosciuto"
+    "unhandledError": "Errore sconosciuto",
+    "updateConsent": "Hai precedentemente acconsentito alla segnalazione degli arresti anomali. Ora stiamo monitorando metriche basate su eventi per aiutare a identificare bug e migliorare l'app. Nessuna informazione personale identificabile viene raccolta."
   },
-  "invoiceHistory": "Storico fatture",
   "issueReport": {
     "helpFix": "Aiuta a risolvere questo"
   },
-  "learnMore": "Scopri di più",
   "linearMode": {
     "appModeToolbar": {
       "appBuilder": "Costruttore app",
@@ -2375,7 +2337,6 @@
       "updaterCache": "Il percorso base si trova all'interno della cache dell'updater di ComfyUI, che viene svuotata ad ogni aggiornamento. Scegli una posizione diversa per i tuoi dati."
     }
   },
-  "managePlan": "Gestisci piano",
   "manager": {
     "actions": "Azioni",
     "allMissingNodesInstalled": "Tutti i nodi mancanti sono stati installati con successo",
@@ -2585,15 +2546,6 @@
     "undo": "Annulla",
     "white": "Bianco"
   },
-  "maxDuration": {
-    "creator": "30 min",
-    "founder": "30 min",
-    "free": "10 min",
-    "pro": "1 ora",
-    "standard": "30 min"
-  },
-  "maxDurationLabel": "Durata massima esecuzione",
-  "maxMembersLabel": "Membri massimi",
   "mediaAsset": {
     "actions": {
       "copyJobId": "Copia ID lavoro",
@@ -2658,7 +2610,6 @@
     "workflowExportedSuccessfully": "Workflow esportato con successo",
     "workflowOpenedInNewTab": "Workflow aperto in una nuova scheda"
   },
-  "memberCount": "{count} membro | {count} membri",
   "menu": {
     "autoQueue": "Coda automatica",
     "batchCount": "Conteggio batch",
@@ -2818,9 +2769,6 @@
     "Zoom to fit": "Adatta allo schermo",
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
-  "messageSupport": "Contatta il supporto",
-  "metricsDisabled": "Metriche disabilitate",
-  "metricsEnabled": "Metriche abilitate",
   "minimap": {
     "nodeColors": "Colori dei nodi",
     "renderBypassState": "Visualizza stato di bypass",
@@ -2858,20 +2806,6 @@
       "title": "Questo workflow ha nodi mancanti"
     }
   },
-  "monthly": "Mensile",
-  "monthlyBonusDescription": "Bonus crediti mensile",
-  "monthlyCredits": "crediti mensili",
-  "monthlyCreditsInfo": "Questi crediti si rinnovano mensilmente e non si trasferiscono",
-  "monthlyCreditsLabel": "Crediti mensili",
-  "monthlyCreditsPerMemberLabel": "Crediti mensili / membro",
-  "monthlyCreditsRollover": "Questi crediti saranno trasferiti al mese successivo",
-  "monthlyCreditsUsedUpDescription": "Ora stai utilizzando crediti aggiuntivi.",
-  "monthlyCreditsUsedUpTitle": "Crediti mensili esauriti. Ricarica il {date}",
-  "monthlyCreditsUsedUpTitleNoDate": "Crediti mensili esauriti",
-  "monthlyUsageProgress": "{used} di {total} crediti mensili utilizzati",
-  "moreInfo": "Per ulteriori informazioni, leggi la nostra",
-  "mostPopular": "Più popolare",
-  "nextBillingCycle": "prossimo ciclo di fatturazione",
   "nightly": {
     "badge": {
       "label": "Versione di anteprima",
@@ -3250,9 +3184,6 @@
     "openWorkflow": "Apri workflow",
     "opening": "Apertura workflow condiviso in corso..."
   },
-  "outOfCreditsDescription": "Aggiungi altri crediti per continuare a generare.",
-  "outOfCreditsTitle": "Hai esaurito i crediti. Ricarica il {date}",
-  "outOfCreditsTitleNoDate": "Hai esaurito i crediti",
   "painter": {
     "background": "Sfondo",
     "brush": "Pennello",
@@ -3269,102 +3200,6 @@
   "palette": {
     "addColor": "Aggiungi un colore",
     "swatchTitle": "Clicca per modificare · trascina per riordinare · clic destro per rimuovere"
-  },
-  "partnerNodesBalance": "Saldo crediti \"Partner Nodes\"",
-  "partnerNodesCredits": "Prezzi Partner Nodes",
-  "partnerNodesDescription": "Per eseguire modelli commerciali/proprietari",
-  "partnerNodesPricingTable": "Tabella prezzi Partner Nodes",
-  "paymentRecovery": {
-    "memberCta": "Ok, capito",
-    "memberDescription": "Chiedi al proprietario del workspace di ripristinare l'abbonamento.",
-    "memberRunLabel": "Esegui",
-    "memberRunTooltip": "Chiedi al proprietario del workspace di ripristinare questo abbonamento",
-    "ownerCta": "Aggiorna pagamento",
-    "ownerDescription": "Aggiorna il metodo di pagamento per ripristinare l'abbonamento del workspace ed eseguire workflow.",
-    "ownerRunLabel": "Aggiorna pagamento per eseguire",
-    "ownerRunTooltip": "Aggiorna pagamento per ripristinare questo abbonamento",
-    "title": "Abbonamento in pausa"
-  },
-  "personalHeader": "I piani personali sono solo per uso individuale. {action}",
-  "personalHeaderAction": "Per aggiungere membri, abbonati al piano team.",
-  "planLoadError": "Impossibile caricare i dettagli del tuo piano.",
-  "planLoadErrorRetry": "Riprova",
-  "planScope": {
-    "personal": "Per uso personale",
-    "team": "Per team"
-  },
-  "plansAndPricing": "Piani e prezzi",
-  "prepaidCreditsInfo": "I crediti prepagati scadono dopo 1 anno dalla data di acquisto.",
-  "prepaidDescription": "Crediti prepagati",
-  "preview": {
-    "addCreditCard": "Aggiungi carta di credito",
-    "afterThat": "Dopo di che",
-    "backToAllPlans": "Torna a tutti i piani",
-    "billedEachMonth": "{amount} fatturato ogni mese. Puoi annullare in qualsiasi momento.",
-    "commitment": "impegno",
-    "completeVerification": "Completa la verifica",
-    "confirm": "Conferma",
-    "confirmChange": "Conferma modifica",
-    "confirmChangeTitle": "Rivedi la modifica programmata",
-    "confirmPayment": "Conferma il pagamento",
-    "confirmPlanChange": "Conferma il cambio piano",
-    "confirmUpgradeCta": "Conferma upgrade",
-    "confirmUpgradeTitle": "Conferma il tuo upgrade",
-    "creditFromCurrent": "Credito dal {plan} attuale",
-    "creditsRefillMonthlyTo": "I crediti si ricaricano mensilmente a",
-    "creditsRefillTo": "I crediti si ricaricano a",
-    "creditsYoullGetToday": "Crediti che riceverai oggi",
-    "currentMonthly": "piano mensile",
-    "eachMonthCreditsRefill": "Ogni mese i crediti si ricaricano a",
-    "eachYearCreditsRefill": "Ogni anno i crediti si ricaricano a",
-    "ends": "Termina il {date}",
-    "everyMonthStarting": "Ogni mese a partire dal {date}",
-    "hideFeatures": "Nascondi funzionalità",
-    "newMonthlySubscription": "Nuovo abbonamento mensile",
-    "nextPaymentDue": "Prossimo pagamento il {date}. Puoi annullare in qualsiasi momento.",
-    "paymentPopupBlocked": "Impossibile aprire la pagina di pagamento — consenti i popup e riprova.",
-    "perMember": "/ membro",
-    "privacyPolicy": "Informativa sulla privacy",
-    "proratedCharge": "Addebito proporzionale per {plan}",
-    "proratedRefund": "Rimborso proporzionale per {plan}",
-    "reactivation": {
-      "amountChanged": "L'importo dell'addebito è cambiato da quando hai confermato — controlla e riprova",
-      "checkboxLabel": "Ho capito che mi verrà addebitato {amount} oggi",
-      "confirmButton": "Conferma e riattiva",
-      "confirmButtonWithCharge": "Conferma e riattiva — {amount} oggi",
-      "confirmationRequired": "Il tuo abbonamento è annullato — conferma l'addebito di riattivazione prima di continuare",
-      "downgradeBody": "Il tuo {plan} era previsto per terminare il {date}. Passando a {newPlan} lo riattivi — oggi non ti verrà addebitato nulla, ma si rinnoverà automaticamente il {nextDate} al nuovo prezzo invece di terminare.",
-      "durationChangeBody": "Il tuo {plan} era previsto per terminare il {date}. Passando alla fatturazione annuale lo riattivi e ti verrà addebitato l'intero anno, {amount}, oggi. Si rinnoverà poi annualmente il {nextDate} invece di terminare.",
-      "durationChangeBodyMonthly": "Il tuo {plan} era previsto per terminare il {date}. Passando alla fatturazione mensile lo riattivi — ti verrà addebitato {amount} oggi e si rinnoverà automaticamente il {nextDate} invece di terminare.",
-      "title": "Riattivazione dell'abbonamento",
-      "titleAnnual": "Riattivazione dell'abbonamento — anno intero fatturato oggi",
-      "unavailable": "Non possiamo confermare questa riattivazione ora — scegli di nuovo il tuo piano",
-      "upgradeBody": "Il tuo {plan} era previsto per terminare il {date}. L'upgrade ora lo riattiva — ti verrà addebitato {amount} oggi e si rinnoverà automaticamente il {nextDate} invece di terminare."
-    },
-    "refillReplacesNote": "Sostituisce la tua ricarica mensile. Il saldo esistente viene mantenuto.",
-    "showMoreFeatures": "Mostra più funzionalità",
-    "starting": "Inizia il {date}",
-    "startingToday": "Inizia oggi",
-    "startsOn": "Inizia il {date}",
-    "stayOnUntil": "Rimarrai su {plan} fino al {date}.",
-    "subscribeToPlan": "Abbonati a {plan}",
-    "switchToPlan": "Passa a {plan}",
-    "switchesToday": "Cambia oggi",
-    "terms": "Termini",
-    "termsAgreement": "Continuando, accetti i {terms} e la {privacy} di Comfy Org.",
-    "totalDueToday": "Totale dovuto oggi",
-    "yearlySubscription": "Abbonamento annuale",
-    "youllBeCharged": "Ti verrà addebitato"
-  },
-  "pricingBlurb": "*Basato su questo template, {seeDetails}. Contattaci per {questions} o {enterpriseDiscussions}. Per maggiori dettagli sui prezzi, {clickHere}.",
-  "pricingBlurbClickHere": "clicca qui",
-  "pricingBlurbEnterprise": "discussioni enterprise",
-  "pricingBlurbQuestions": "domande",
-  "pricingBlurbSeeDetails": "vedi dettagli",
-  "privacyPolicy": "informativa sulla privacy",
-  "privateBeta": {
-    "desc": "Accedi per unirti alla lista d'attesa. Ti avviseremo quando sarà il tuo turno. Sei già stato avvisato? Accedi per iniziare a usare Cloud.",
-    "title": "Cloud è attualmente in beta privata"
   },
   "progressToast": {
     "allDownloadsCompleted": "Tutti i download completati",
@@ -3435,10 +3270,6 @@
     "jobQueueing": "Lavoro in coda",
     "toggleJobHistory": "Mostra/Nascondi cronologia lavori"
   },
-  "reactivateToUseCredits": "Riattiva il tuo piano per utilizzare questi crediti",
-  "refillsDate": "Ricarica il {date}",
-  "refillsNextCycle": "Ricarica al prossimo ciclo",
-  "refreshCredits": "Aggiorna crediti",
   "releaseToast": {
     "description": "Scopri i miglioramenti e le nuove funzionalità di questo aggiornamento.",
     "newVersionAvailable": "Nuovo aggiornamento disponibile!",
@@ -3446,17 +3277,6 @@
     "update": "Aggiorna",
     "whatsNew": "Scopri le novità"
   },
-  "remaining": "rimanenti",
-  "required": {
-    "pollingFailed": "Attivazione abbonamento fallita",
-    "pollingSuccess": "Abbonamento attivato con successo!",
-    "pollingTimeout": "Tempo scaduto in attesa dell'abbonamento. Aggiorna e riprova.",
-    "subscribe": "Abbonati",
-    "title": "Abbonati a",
-    "waitingForSubscription": "Completa il tuo abbonamento nella nuova scheda. Rileveremo automaticamente quando avrai finito!"
-  },
-  "retry": "Riprova",
-  "retrying": "Riprovo...",
   "rightSidePanel": {
     "addFavorite": "Preferito",
     "advancedInputs": "INPUT AVANZATI",
@@ -3579,8 +3399,6 @@
     "togglePanel": "Attiva/disattiva pannello proprietà",
     "workflowOverview": "Panoramica del workflow"
   },
-  "saveYearly": "Risparmia 20%",
-  "saveYearlyUpTo": "Risparmia fino al 20%",
   "secrets": {
     "addSecret": "Aggiungi Segreto",
     "createdAt": "Creato il {date}",
@@ -4111,14 +3929,6 @@
     },
     "workflows": "Workflow"
   },
-  "start": {
-    "desc": "Nessuna configurazione richiesta. Funziona su qualsiasi dispositivo.",
-    "download": "Scarica ComfyUI",
-    "explain": "Genera più risultati contemporaneamente. Condividi workflow con facilità.",
-    "learnAboutButton": "Scopri Cloud",
-    "title": "inizia a creare in pochi secondi",
-    "wantToRun": "Vuoi usare ComfyUI in locale?"
-  },
   "subgraphStore": {
     "blueprintName": "Nome Subgraph",
     "blueprintNamePrompt": "Nome Subgraph:",
@@ -4146,16 +3956,28 @@
     "shown": "Mostrato sul nodo",
     "unpromoteWidget": "Annulla Promozione Widget: {name}"
   },
-  "subscribe": "Abbonati",
-  "subscribeForMore": "Aggiorna",
-  "subscribeNow": "Abbonati ora",
-  "subscribeTo": "Abbonati a {plan}",
-  "subscribeToComfyCloud": "Abbonati a Comfy Cloud",
-  "subscribeToRun": "Abbonati",
-  "subscribeToRunFull": "Abbonati per eseguire",
   "subscription": {
+    "addApiCredits": "Aggiungi crediti API",
+    "addCredits": "Aggiungi crediti",
+    "addCreditsLabel": "Aggiungi altri crediti quando vuoi",
+    "additionalCredits": "Crediti aggiuntivi",
+    "additionalCreditsInUse": "In uso",
+    "additionalCreditsInfo": "Informazioni sui crediti aggiuntivi",
+    "additionalCreditsTooltip": "Crediti aggiunti al tuo piano. Utilizzati dopo l'esaurimento dei crediti mensili. Ognuno scade un anno dopo l'acquisto.",
+    "benefits": {
+      "benefit1": "Crediti mensili per Partner Nodes — ricarica quando necessario",
+      "benefit1FreeTier": "Crediti mensili, ricarica in qualsiasi momento",
+      "benefit2": "Fino a 1 ora di esecuzione per job su Pro",
+      "benefit3": "Porta i tuoi modelli (Creator & Pro)"
+    },
     "beta": "BETA",
+    "billedMonthly": "Fatturato mensilmente",
+    "billedYearly": "{total} Fatturato annualmente",
     "billingAndInvoices": "Fatturazione e fatture",
+    "billingComingSoon": {
+      "message": "La fatturazione team arriverà presto. Potrai abbonarti a un piano per il tuo workspace con prezzi per utente. Resta aggiornato per le novità.",
+      "title": "Prossimamente"
+    },
     "cancelDialog": {
       "confirmCancel": "Annulla abbonamento",
       "description": "Il tuo accesso continua fino al {date}. Non ti verrà più addebitato nulla e il tuo workspace e i tuoi crediti saranno conservati. Puoi riattivare l'abbonamento in qualsiasi momento.",
@@ -4177,10 +3999,22 @@
       "title": "Il tuo abbonamento è stato annullato"
     },
     "changePlan": "Cambia piano",
+    "changeTo": "Cambia a {plan}",
     "changesToPlanOnDate": "Cambia in {plan} il {date}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Logo Comfy Cloud",
+    "contactOwnerToSubscribe": "Contatta il proprietario del workspace per abbonarsi",
+    "contactUs": "Contattaci",
     "creditSliderSave": "Risparmia {percent}% ({amount})",
+    "creditsLeftOfTotal": "{remaining} rimanenti su {total}",
+    "creditsRemainingThisMonth": "Inclusi (Ricarica {date})",
+    "creditsRemainingThisYear": "Inclusi (Ricarica {date})",
+    "creditsUsed": "{used} utilizzati",
+    "creditsYouveAdded": "Aggiuntivi",
+    "currentPlan": "Piano attuale",
+    "customLoRAsLabel": "Importa i tuoi LoRA",
+    "description": "Scegli il piano migliore per te",
+    "descriptionWorkspace": "Scegli un piano",
     "downgrade": {
       "body": "Tutti gli altri membri di questo workspace saranno rimossi immediatamente.",
       "bodyReactivation": "Il tuo abbonamento è annullato. Cambiando piano lo riattiverai e ti verrà addebitato {amount} oggi.",
@@ -4199,39 +4033,275 @@
       "title": "Passare al piano {plan}?"
     },
     "endsOnDate": "Termina il {date}",
+    "enterprise": {
+      "cta": "Scopri di più",
+      "flexibility": "Cerchi più flessibilità o funzionalità personalizzate?",
+      "name": "Enterprise",
+      "needMoreMembers": "Hai bisogno di più membri?",
+      "reachOut": "Contattaci e fissiamo una chiamata."
+    },
+    "everythingInPlus": "Tutto in {plan}, più:",
     "expiresDate": "Scade il {date}",
+    "freePerks": {
+      "freeRuns": "{count} esecuzione gratuita | {count} esecuzioni gratuite",
+      "maxRuntime": "{duration} tempo massimo di esecuzione"
+    },
+    "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+    "haveQuestions": "Hai domande o sei interessato all'enterprise?",
+    "inactive": {
+      "memberCta": "Ok, capito",
+      "memberDescription": "Chiedi al proprietario del workspace di riattivare l'abbonamento per eseguire workflow.",
+      "memberRunTooltip": "Contatta il proprietario del workspace per riabbonarsi",
+      "memberTitle": "L'abbonamento di questo workspace è inattivo",
+      "runLabel": "Esegui"
+    },
+    "inactiveTeamDescription": "Riattiva il tuo piano team per aggiungere altri membri ed eseguire workflow",
+    "inactiveTeamPlanIncludes": "Un piano attivo include tutto in {plan}, più:",
+    "inactiveTeamTitle": "Abbonamento team inattivo",
     "inviteUpTo": "Invita fino a",
+    "invoiceHistory": "Storico fatture",
+    "learnMore": "Scopri di più",
     "manageBilling": "Gestisci fatturazione",
+    "managePlan": "Gestisci piano",
     "manageSubscription": "Gestisci abbonamento",
+    "maxDuration": {
+      "creator": "30 min",
+      "founder": "30 min",
+      "free": "10 min",
+      "pro": "1 ora",
+      "standard": "30 min"
+    },
+    "maxDurationLabel": "Durata massima esecuzione",
+    "maxMembersLabel": "Numero massimo membri",
     "member": "membro",
+    "memberCount": "{count} membro | {count} membri",
+    "messageSupport": "Contatta il supporto",
+    "monthly": "Mensile",
+    "monthlyBonusDescription": "Bonus crediti mensile",
+    "monthlyCredits": "crediti mensili",
+    "monthlyCreditsInfo": "Questi crediti si rinnovano mensilmente e non si accumulano",
+    "monthlyCreditsLabel": "Crediti mensili",
+    "monthlyCreditsPerMemberLabel": "Crediti mensili / membro",
+    "monthlyCreditsRollover": "Questi crediti verranno trasferiti al mese successivo",
+    "monthlyCreditsUsedUpDescription": "Ora stai utilizzando crediti aggiuntivi.",
+    "monthlyCreditsUsedUpTitle": "Crediti mensili esauriti. Ricarica {date}",
+    "monthlyCreditsUsedUpTitleNoDate": "Crediti mensili esauriti",
+    "monthlyUsageProgress": "{used} di {total} crediti mensili utilizzati",
+    "mostPopular": "Più popolare",
     "needTeamWorkspace": "Hai bisogno di un workspace di team?",
+    "nextBillingCycle": "prossimo ciclo di fatturazione",
+    "outOfCreditsDescription": "Aggiungi altri crediti per continuare a generare.",
+    "outOfCreditsTitle": "Crediti esauriti. Ricarica crediti {date}",
+    "outOfCreditsTitleNoDate": "Crediti esauriti",
+    "partnerNodesBalance": "Saldo crediti \"Partner Nodes\"",
+    "partnerNodesCredits": "Prezzi Partner Nodes",
+    "partnerNodesDescription": "Per eseguire modelli commerciali/proprietari",
+    "partnerNodesPricingTable": "Tabella prezzi Partner Nodes",
+    "paymentRecovery": {
+      "memberCta": "Ok, capito",
+      "memberDescription": "Chiedi al proprietario del workspace di ripristinare l'abbonamento.",
+      "memberRunLabel": "Esegui",
+      "memberRunTooltip": "Chiedi al proprietario del workspace di ripristinare questo abbonamento",
+      "ownerCta": "Aggiorna pagamento",
+      "ownerDescription": "Aggiorna il metodo di pagamento per ripristinare l'abbonamento del workspace ed eseguire workflow.",
+      "ownerRunLabel": "Aggiorna pagamento per eseguire",
+      "ownerRunTooltip": "Aggiorna pagamento per ripristinare questo abbonamento",
+      "title": "Abbonamento in pausa"
+    },
     "perMonth": "/ mese",
+    "personalHeader": "I piani personali sono solo per uso individuale. {action}",
+    "personalHeaderAction": "Per aggiungere membri, abbonati al piano team.",
     "personalWorkspace": "Workspace personale",
+    "planLoadError": "Non siamo riusciti a caricare i dettagli del tuo piano.",
+    "planLoadErrorRetry": "Riprova",
+    "planScope": {
+      "personal": "Per uso personale",
+      "team": "Per team"
+    },
+    "plansAndPricing": "Piani e prezzi",
     "plansForWorkspace": "Piani per {workspace}",
+    "prepaidCreditsInfo": "I crediti prepagati scadono dopo 1 anno dalla data di acquisto.",
+    "prepaidDescription": "Crediti prepagati",
+    "preview": {
+      "addCreditCard": "Aggiungi carta di credito",
+      "afterThat": "Dopo di ciò",
+      "backToAllPlans": "Torna a tutti i piani",
+      "billedEachMonth": "{amount} fatturato ogni mese. Puoi annullare in qualsiasi momento.",
+      "commitment": "impegno",
+      "completeVerification": "Completa la verifica",
+      "confirm": "Conferma",
+      "confirmChange": "Conferma modifica",
+      "confirmChangeTitle": "Rivedi la tua modifica programmata",
+      "confirmPayment": "Conferma il pagamento",
+      "confirmPlanChange": "Conferma il cambio piano",
+      "confirmUpgradeCta": "Conferma upgrade",
+      "confirmUpgradeTitle": "Conferma il tuo upgrade",
+      "creditFromCurrent": "Credito dal {plan} attuale",
+      "creditsRefillMonthlyTo": "I crediti si ricaricano mensilmente a",
+      "creditsRefillTo": "Crediti ricaricati a",
+      "creditsYoullGetToday": "Crediti che riceverai oggi",
+      "currentMonthly": "piano mensile",
+      "eachMonthCreditsRefill": "Ogni mese i crediti si ricaricano a",
+      "eachYearCreditsRefill": "Ogni anno i crediti si ricaricano a",
+      "ends": "Termina {date}",
+      "everyMonthStarting": "Ogni mese a partire da {date}",
+      "hideFeatures": "Nascondi funzionalità",
+      "newMonthlySubscription": "Nuovo abbonamento mensile",
+      "nextPaymentDue": "Prossimo pagamento dovuto {date}. Puoi annullare in qualsiasi momento.",
+      "paymentPopupBlocked": "Impossibile aprire la pagina di pagamento — consenti i popup e riprova.",
+      "perMember": "/ membro",
+      "privacyPolicy": "Informativa sulla privacy",
+      "proratedCharge": "Addebito proporzionale per {plan}",
+      "proratedRefund": "Rimborso proporzionale per {plan}",
+      "reactivation": {
+        "amountChanged": "L'importo dell'addebito è cambiato da quando l'hai confermato — rivedi e riprova",
+        "checkboxLabel": "Ho capito che mi verrà addebitato {amount} oggi",
+        "confirmButton": "Conferma e riattiva",
+        "confirmButtonWithCharge": "Conferma e riattiva — {amount} oggi",
+        "confirmationRequired": "Il tuo abbonamento è stato annullato — conferma l'addebito di riattivazione prima di continuare",
+        "downgradeBody": "Il tuo {plan} era previsto per terminare il {date}. Passando a {newPlan} lo riattivi — oggi non ti verrà addebitato nulla, ma si rinnoverà automaticamente il {nextDate} al nuovo prezzo invece di terminare.",
+        "durationChangeBody": "Il tuo {plan} era previsto per terminare il {date}. Passando alla fatturazione annuale lo riattivi e ti verrà addebitato l'intero anno, {amount}, oggi. Si rinnoverà poi annualmente il {nextDate} invece di terminare.",
+        "durationChangeBodyMonthly": "Il tuo {plan} era previsto per terminare il {date}. Passando alla fatturazione mensile lo riattivi — ti verrà addebitato {amount} oggi e si rinnoverà automaticamente il {nextDate} invece di terminare.",
+        "title": "Riattivazione dell'abbonamento",
+        "titleAnnual": "Riattivazione dell'abbonamento — anno intero fatturato oggi",
+        "unavailable": "Non possiamo confermare questa riattivazione ora — scegli di nuovo il tuo piano",
+        "upgradeBody": "Il tuo {plan} era previsto per terminare il {date}. L'upgrade ora lo riattiva — ti verrà addebitato {amount} oggi e si rinnoverà automaticamente il {nextDate} invece di terminare."
+      },
+      "refillReplacesNote": "Sostituisce la tua ricarica mensile. Il saldo esistente viene mantenuto.",
+      "showMoreFeatures": "Mostra più funzionalità",
+      "starting": "Inizio {date}",
+      "startingToday": "Inizia oggi",
+      "startsOn": "Inizia {date}",
+      "stayOnUntil": "Rimarrai su {plan} fino al {date}.",
+      "subscribeToPlan": "Abbonati a {plan}",
+      "switchToPlan": "Passa a {plan}",
+      "switchesToday": "Cambia oggi",
+      "terms": "Termini",
+      "termsAgreement": "Continuando, accetti i {terms} e la {privacy} di Comfy Org.",
+      "totalDueToday": "Totale dovuto oggi",
+      "yearlySubscription": "Abbonamento annuale",
+      "youllBeCharged": "Ti verrà addebitato"
+    },
+    "pricingBlurb": "*Basato su questo template, {seeDetails}. Contattaci per {questions} o {enterpriseDiscussions}. Per maggiori dettagli sui prezzi, {clickHere}.",
+    "pricingBlurbClickHere": "clicca qui",
+    "pricingBlurbEnterprise": "discussioni enterprise",
+    "pricingBlurbQuestions": "domande",
+    "pricingBlurbSeeDetails": "vedi dettagli",
     "reactivatePlan": "Riattiva piano",
+    "reactivateToUseCredits": "Riattiva il tuo piano per utilizzare questi crediti",
+    "refillsDate": "Ricarica {date}",
+    "refillsNextCycle": "Ricarica al prossimo ciclo",
+    "refreshCredits": "Aggiorna crediti",
+    "remaining": "rimanenti",
     "renewsDate": "Si rinnova il {date}",
     "renewsOnDate": "Si rinnova il {date}",
+    "required": {
+      "pollingFailed": "Attivazione abbonamento fallita",
+      "pollingSuccess": "Abbonamento attivato con successo!",
+      "pollingTimeout": "Tempo scaduto in attesa dell'abbonamento. Aggiorna e riprova.",
+      "subscribe": "Abbonati",
+      "title": "Abbonati a",
+      "waitingForSubscription": "Completa il tuo abbonamento nella nuova scheda. Rileveremo automaticamente quando hai finito!"
+    },
     "resubscribe": "Riattiva abbonamento",
     "resubscribeFailed": "Impossibile riattivare l'abbonamento",
     "resubscribeSuccess": "Abbonamento riattivato con successo",
     "resubscribeTo": "Riattiva abbonamento a {plan}",
+    "saveYearly": "Risparmia il 20%",
+    "saveYearlyUpTo": "Risparmia fino al 20%",
     "soloUseOnly": "Solo uso personale",
+    "subscribe": "Abbonati",
     "subscribeFailed": "Impossibile completare l'abbonamento",
+    "subscribeForMore": "Aggiorna",
+    "subscribeNow": "Abbonati ora",
+    "subscribeTo": "Abbonati a {plan}",
+    "subscribeToComfyCloud": "Abbonati a Comfy Cloud",
+    "subscribeToRun": "Abbonati",
+    "subscribeToRunFull": "Abbonati per eseguire",
+    "subscriptionRequiredMessage": "È necessario un abbonamento per i membri per eseguire workflow su Cloud e invitare membri",
+    "success": {
+      "allSet": "Tutto pronto",
+      "inviteEmailsPlaceholder": "Inserisci email separate da virgola",
+      "inviteSubtext": "Puoi anche invitare persone più tardi dalle Impostazioni",
+      "inviteTitle": "Invita il tuo team",
+      "planUpdated": "Il tuo piano è stato aggiornato con successo.",
+      "receiptEmailed": "Ricevuta inviata via email.",
+      "sendInvites": "Invia inviti"
+    },
+    "teamHeader": "Per team che vogliono collaborare. Hai bisogno di più membri? {learnMore} sull'enterprise.",
+    "teamHeaderLearnMore": "Scopri di più",
+    "teamPerks": {
+      "concurrentRuns": "I membri possono eseguire workflow contemporaneamente",
+      "inviteMembers": "Invita membri",
+      "rolePermissions": "Permessi basati sui ruoli",
+      "sharedCreditPool": "Pool di crediti condiviso per tutti i membri"
+    },
+    "teamPlan": {
+      "changePlan": "Cambia piano",
+      "comingSoonLabel": "Prossimamente:",
+      "cta": "Abbonati a Team Annuale",
+      "ctaMonthly": "Abbonati a Team Mensile",
+      "currentPlan": "Piano attuale",
+      "detailsTitle": "Dettagli",
+      "name": "Piano Team",
+      "perkConcurrentRuns": "I membri possono eseguire workflow contemporaneamente",
+      "perkInviteMembers": "Invita membri del team",
+      "perkProjectAssets": "Gestione progetti e asset",
+      "perkRolePermissions": "Permessi basati sui ruoli",
+      "perkSharedPool": "Pool di crediti condiviso per tutti i membri",
+      "tagline": "Scegli il tuo abbonamento mensile di crediti. Ottieni uno sconto maggiore con un abbonamento di crediti più grande.",
+      "unavailable": "Questo piano team non è attualmente disponibile."
+    },
+    "teamPlanIncludes": "Il tuo piano include tutto in {plan}, più:",
+    "teamPlanName": "Team",
     "teamWorkspace": "Workspace di team",
+    "tierNameYearly": "{name} Annuale",
+    "tiers": {
+      "creator": {
+        "feature1": "Importa i tuoi modelli",
+        "name": "Creator"
+      },
+      "founder": {
+        "name": "Founder's Edition"
+      },
+      "free": {
+        "name": "Gratis"
+      },
+      "pro": {
+        "feature1": "Esecuzione workflow più lunga (fino a 1 ora)",
+        "name": "Pro"
+      },
+      "standard": {
+        "feature1": "30 minuti di esecuzione massima per workflow",
+        "feature2": "Aggiungi altri crediti in qualsiasi momento",
+        "name": "Standard"
+      }
+    },
     "title": "Abbonamento",
     "titleUnsubscribed": "Abbonati a Comfy Cloud",
+    "totalCredits": "Crediti totali",
+    "upgrade": "AGGIORNA",
+    "upgradePlan": "Aggiorna piano",
+    "upgradeTo": "Aggiorna a {plan}",
+    "upgradeToAddCredits": "Aggiorna per aggiungere crediti",
     "usdPerMonth": "USD / mese",
-    "usdPerMonthPerMember": "USD / mese / membro"
-  },
-  "subscriptionRequiredMessage": "È necessario un abbonamento per eseguire workflow su Cloud e invitare membri",
-  "success": {
-    "allSet": "Tutto pronto",
-    "inviteEmailsPlaceholder": "Inserisci email separate da virgole",
-    "inviteSubtext": "Puoi anche invitare persone più tardi dalle Impostazioni",
-    "inviteTitle": "Invita il tuo team",
-    "planUpdated": "Il tuo piano è stato aggiornato con successo.",
-    "receiptEmailed": "Ricevuta inviata via email.",
-    "sendInvites": "Invia inviti"
+    "usdPerMonthPerMember": "USD / mese / membro",
+    "usedAfterMonthly": "Utilizzati dopo l'esaurimento dei crediti mensili",
+    "videoEstimate": "Genera ~{count} video da 5s*",
+    "videoEstimateExplanation": "Queste stime si basano sul template Wan 2.2 Image-to-Video con impostazioni predefinite (5 sec, 16fps, 640x640, 4-step sampling).",
+    "videoEstimateHelp": "Maggiori dettagli su questo template",
+    "videoEstimateLabel": "Numero approssimativo di video da 5s generati con il template Wan 2.2 Image-to-Video",
+    "videoEstimateTryTemplate": "Prova questo template",
+    "videoTemplateBasedCredits": "Video generati con Wan 2.2 Image to Video",
+    "viewEnterprise": "Vedi enterprise",
+    "viewMoreDetails": "Visualizza altri dettagli",
+    "viewMoreDetailsPlans": "Visualizza altri dettagli su piani e prezzi",
+    "viewUsageHistory": "Visualizza cronologia utilizzo",
+    "whatsIncluded": "Cosa è incluso:",
+    "workspaceNotSubscribed": "Questo workspace non ha un abbonamento attivo",
+    "yearly": "Annuale",
+    "yearlyCreditsLabel": "Crediti annuali totali",
+    "yourPlanIncludes": "Il tuo piano include:"
   },
   "tabMenu": {
     "addToBookmarks": "Aggiungi ai preferiti",
@@ -4242,32 +4312,6 @@
     "duplicateTab": "Duplica scheda",
     "removeFromBookmarks": "Rimuovi dai preferiti"
   },
-  "teamHeader": "Per team che vogliono collaborare. Hai bisogno di più membri? {learnMore} sull'enterprise.",
-  "teamHeaderLearnMore": "Scopri di più",
-  "teamPerks": {
-    "concurrentRuns": "I membri possono eseguire workflow contemporaneamente",
-    "inviteMembers": "Invita membri",
-    "rolePermissions": "Permessi basati sul ruolo",
-    "sharedCreditPool": "Pool di crediti condiviso per tutti i membri"
-  },
-  "teamPlan": {
-    "changePlan": "Cambia piano",
-    "comingSoonLabel": "Prossimamente:",
-    "cta": "Abbonati a Team Annuale",
-    "ctaMonthly": "Abbonati a Team Mensile",
-    "currentPlan": "Piano attuale",
-    "detailsTitle": "Dettagli",
-    "name": "Piano Team",
-    "perkConcurrentRuns": "I membri possono eseguire workflow contemporaneamente",
-    "perkInviteMembers": "Invita membri del team",
-    "perkProjectAssets": "Gestione progetti e asset",
-    "perkRolePermissions": "Permessi basati sul ruolo",
-    "perkSharedPool": "Pool di crediti condiviso per tutti i membri",
-    "tagline": "Scegli il tuo abbonamento mensile a crediti. Ottieni uno sconto maggiore con un abbonamento a crediti più grande.",
-    "unavailable": "Questo piano team non è attualmente disponibile."
-  },
-  "teamPlanIncludes": "Il tuo piano include tutto in {plan}, più:",
-  "teamPlanName": "Team",
   "teamWorkspacesDialog": {
     "confirmCallbackFailed": "Workspace creato ma configurazione incompleta",
     "createWorkspace": "Crea workspace",
@@ -4350,28 +4394,6 @@
   "templates": {
     "logoProviderSeparator": " & "
   },
-  "tierNameYearly": "{name} Annuale",
-  "tiers": {
-    "creator": {
-      "feature1": "Importa i tuoi modelli",
-      "name": "Creator"
-    },
-    "founder": {
-      "name": "Founder's Edition"
-    },
-    "free": {
-      "name": "Gratis"
-    },
-    "pro": {
-      "feature1": "Esecuzione workflow più lunga (fino a 1 ora)",
-      "name": "Pro"
-    },
-    "standard": {
-      "feature1": "30 minuti di esecuzione massima per workflow",
-      "feature2": "Aggiungi più crediti in qualsiasi momento",
-      "name": "Standard"
-    }
-  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Impossibile caricare il workflow perché questa installazione di ComfyUI non ha i nodi core. Verifica che il backend sia stato avviato correttamente.",
     "cannotCreateSubgraph": "Impossibile creare il subgraph",
@@ -4444,16 +4466,9 @@
     "useApiKeyTip": "Suggerimento: Non riesci ad accedere con il login normale? Usa l'opzione Comfy API Key.",
     "userNotAuthenticated": "Utente non autenticato"
   },
-  "totalCredits": "Crediti totali",
   "typeform": {
     "loadError": "Impossibile caricare il modulo. Riprova più tardi."
   },
-  "updateConsent": "In precedenza hai acconsentito alla segnalazione degli arresti anomali. Ora stiamo monitorando metriche basate su eventi per aiutare a identificare bug e migliorare l'app. Nessuna informazione personale identificabile viene raccolta.",
-  "upgrade": "AGGIORNA",
-  "upgradePlan": "Aggiorna piano",
-  "upgradeTo": "Aggiorna a {plan}",
-  "upgradeToAddCredits": "Aggiorna per aggiungere crediti",
-  "usedAfterMonthly": "Utilizzati dopo l'esaurimento dei crediti mensili",
   "userSelect": {
     "enterUsername": "Inserisci un nome utente",
     "existingUser": "Utente esistente",
@@ -4525,16 +4540,6 @@
     "startFrame": "Fotogramma iniziale",
     "trimVideo": "Taglia video"
   },
-  "videoEstimate": "Genera ~{count} video da 5s*",
-  "videoEstimateExplanation": "Queste stime si basano sul template Wan 2.2 Image-to-Video con impostazioni predefinite (5 sec, 16fps, 640x640, 4-step sampling).",
-  "videoEstimateHelp": "Maggiori dettagli su questo template",
-  "videoEstimateLabel": "Numero approssimativo di video da 5s generati con il template Wan 2.2 Image-to-Video",
-  "videoEstimateTryTemplate": "Prova questo template",
-  "videoTemplateBasedCredits": "Video generati con Wan 2.2 Image to Video",
-  "viewEnterprise": "Visualizza enterprise",
-  "viewMoreDetails": "Visualizza più dettagli",
-  "viewMoreDetailsPlans": "Visualizza più dettagli su piani e prezzi",
-  "viewUsageHistory": "Visualizza cronologia utilizzo",
   "vueNodesBanner": {
     "desc": "– Workflow più flessibili, nuovi widget potenti, progettato per l'estensibilità",
     "title": "Presentazione di Nodes 2.0",
@@ -4554,7 +4559,6 @@
     "getStarted": "Inizia",
     "title": "Benvenuto in ComfyUI"
   },
-  "whatsIncluded": "Cosa è incluso:",
   "whatsNewPopup": {
     "later": "Più tardi",
     "learnMore": "Scopri di più",
@@ -4631,7 +4635,6 @@
     "initializationFailedSignOutDetail": "Esci e accedi nuovamente per continuare.",
     "retry": "Riprova"
   },
-  "workspaceNotSubscribed": "Questo workspace non ha un abbonamento attivo",
   "workspacePanel": {
     "activity": {
       "columns": {
@@ -4876,9 +4879,6 @@
     "subscribe": "Abbonati",
     "switchWorkspace": "Cambia workspace"
   },
-  "yearly": "Annuale",
-  "yearlyCreditsLabel": "Crediti annuali totali",
-  "yourPlanIncludes": "Il tuo piano include:",
   "zoomControls": {
     "hideMinimap": "Nascondi minimappa",
     "label": "Controlli zoom",
