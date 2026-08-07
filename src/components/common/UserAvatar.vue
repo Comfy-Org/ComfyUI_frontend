@@ -11,22 +11,24 @@
     }"
     shape="circle"
     :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
-    @error="handleImageError"
   />
 </template>
 
 <script setup lang="ts">
+import { useImage } from '@vueuse/core'
 import Avatar from 'primevue/avatar'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 const { photoUrl, ariaLabel } = defineProps<{
   photoUrl?: string | null
   ariaLabel?: string
 }>()
 
-const imageError = ref(false)
-const handleImageError = () => {
-  imageError.value = true
-}
+const { error: imageError } = useImage(
+  computed(() => ({
+    src: photoUrl ?? '',
+    alt: ariaLabel ?? ''
+  }))
+)
 const hasAvatar = computed(() => photoUrl && !imageError.value)
 </script>
