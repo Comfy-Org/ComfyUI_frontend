@@ -15,6 +15,7 @@ import { st, t } from '@/i18n'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
+  inputAsSerialisable,
   LGraph,
   LGraphCanvas,
   LGraphNode,
@@ -22,7 +23,10 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
@@ -41,6 +45,7 @@ import type {
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
@@ -82,7 +87,6 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -1187,9 +1191,14 @@ export class ComfyApp {
     }
   }
 
-  private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
-    if (useMissingNodesErrorStore().surfaceMissingNodes(missingNodeTypes)) {
-      useExecutionErrorStore().showErrorOverlay()
+  private showMissingNodesError(
+    missingNodeTypes: MissingNodeType[],
+    options?: { deferWarnings?: boolean }
+  ) {
+    const activeWorkflow = useWorkspaceStore().workflow.activeWorkflow
+    updatePendingWarnings(activeWorkflow, { missingNodeTypes })
+    if (!options?.deferWarnings) {
+      useWorkflowService().showPendingWarnings(activeWorkflow)
     }
   }
 
@@ -1975,7 +1984,9 @@ export class ComfyApp {
             ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
             : prompt
         if (this.isApiJson(promptObj)) {
-          this.loadApiJson(promptObj, fileName)
+          await this.loadApiJson(promptObj, fileName, {
+            deferWarnings: options?.deferWarnings
+          })
           return
         }
       } catch (err) {
@@ -2130,25 +2141,71 @@ export class ComfyApp {
     })
   }
 
-  loadApiJson(apiData: ComfyApiWorkflow, fileName: string) {
+  async loadApiJson(
+    apiData: ComfyApiWorkflow,
+    fileName: string,
+    options: { deferWarnings?: boolean } = {}
+  ): Promise<void> {
     useWorkflowService().beforeLoadNewGraph()
-
-    const missingNodeTypes = Object.values(apiData).filter(
-      (n) => !LiteGraph.registered_node_types[n.class_type]
-    )
-    if (missingNodeTypes.length) {
-      this.showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
-    }
+    this.canvas.setGraph(this.rootGraph)
+    this.clean()
 
     const ids = Object.keys(apiData)
-    app.rootGraph.clear()
+    const missingNodeTypes: MissingNodeType[] = []
+    const nodeReplacementStore = useNodeReplacementStore()
+    await nodeReplacementStore.load()
     for (const id of ids) {
       const data = apiData[id]
-      const node = LiteGraph.createNode(data.class_type)
-      if (!node) continue
-      node.id = toNodeId(isNaN(+id) ? id : +id)
+      const nodeId = toNodeId(isNaN(+id) ? id : +id)
+      let node = LiteGraph.createNode(data.class_type)
+      let placeholderEntry:
+        | Extract<MissingNodeType, { type: string }>
+        | undefined
+      if (!node) {
+        node = new LGraphNode(data._meta?.title ?? data.class_type)
+        node.type = sanitizeNodeName(data.class_type)
+        node.has_errors = true
+        const widgetValues: TWidgetValue[] = []
+        const widgetValuesNamed: Record<string, TWidgetValue> =
+          Object.create(null)
+        for (const [input, value] of Object.entries(data.inputs ?? {})) {
+          if (value instanceof Array) {
+            node.addInput(input, '*')
+          } else {
+            widgetValues.push(value)
+            widgetValuesNamed[input] = value
+          }
+        }
+        node.last_serialization = {
+          id: nodeId,
+          type: data.class_type,
+          pos: [node.pos[0], node.pos[1]],
+          size: [node.size[0], node.size[1]],
+          flags: {},
+          order: 0,
+          mode: node.mode,
+          title: data._meta?.title ?? data.class_type,
+          inputs: node.inputs.map(inputAsSerialisable),
+          widgets_values: widgetValues,
+          widgets_values_named: widgetValuesNamed
+        }
+        const replacement = nodeReplacementStore.getReplacementFor(
+          data.class_type
+        )
+        placeholderEntry = {
+          type: data.class_type,
+          isReplaceable: replacement !== null,
+          replacement: replacement ?? undefined
+        }
+        missingNodeTypes.push(placeholderEntry)
+      }
+      node.id = nodeId
       node.title = data._meta?.title ?? node.title
       app.rootGraph.add(node)
+      if (placeholderEntry && node.last_serialization) {
+        node.last_serialization.id = node.id
+        placeholderEntry.nodeId = String(node.id)
+      }
     }
 
     const processNodeInputs = (id: string) => {
@@ -2193,6 +2250,9 @@ export class ComfyApp {
           }
         }
       }
+      if (node.last_serialization) {
+        node.last_serialization.inputs = node.inputs.map(inputAsSerialisable)
+      }
     }
 
     for (const id of ids) processNodeInputs(id)
@@ -2200,10 +2260,13 @@ export class ComfyApp {
     for (const id of ids) processNodeInputs(id)
     app.rootGraph.arrange()
 
-    useWorkflowService().afterLoadNewGraph(
+    await useWorkflowService().afterLoadNewGraph(
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+    if (missingNodeTypes.length) {
+      this.showMissingNodesError(missingNodeTypes, options)
+    }
   }
 
   /**
