@@ -155,7 +155,8 @@ function getUIConfig(
  */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
-  const { isActiveSubscription, isTeamPlan, subscription } = useBillingContext()
+  const { canAccessSubscriptionFeatures, isTeamPlan, subscription } =
+    useBillingContext()
   const { flags } = useFeatureFlags()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
@@ -221,7 +222,8 @@ function useWorkspaceUIInternal() {
   // their menus can't desync on a billing-flag change.
   const isDeleteDisabled = computed(
     () =>
-      isActiveSubscription.value && !(subscription.value?.isCancelled ?? false)
+      canAccessSubscriptionFeatures.value &&
+      !(subscription.value?.isCancelled ?? false)
   )
 
   const deleteDisabledTooltipKey = computed(() =>
@@ -236,7 +238,7 @@ function useWorkspaceUIInternal() {
     workspaceRole,
     isInPersonalWorkspace,
     isWorkspaceSubscribed,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isOriginalOwner,
     isSubscriptionCancelled,
     isTeamPlanCancelled,

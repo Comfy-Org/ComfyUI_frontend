@@ -205,7 +205,9 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     })),
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: computed(
+      () => mockIsActiveSubscription.value
+    ),
     isSubscriptionCancelled: mockIsSubscriptionCancelled,
     isTeamPlanCancelled: mockIsTeamPlanCancelled,
     isDeleteDisabled: mockIsDeleteDisabled,
