@@ -2,7 +2,15 @@ import { toGroupId } from '@/types/groupId'
 import { fromAny } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import * as Y from 'yjs'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
@@ -1494,6 +1502,39 @@ describe('Zero UUID handling in configure', () => {
   })
 })
 
+describe('keep-old root identity', () => {
+  it('retains the live identity when only floating links are populated', () => {
+    const graph = new LGraph()
+    const originalId = graph.id
+    const replacementId = createUuidv4()
+    graph.addFloatingLink(
+      new LLink(
+        toLinkId(7),
+        '*',
+        UNASSIGNED_NODE_ID,
+        -1,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+    )
+    const data = { ...graph.asSerialisable(), id: replacementId }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => warn.mockRestore())
+
+    graph.configure(data, true)
+
+    expect(graph.id).toBe(originalId)
+    expect(warn).toHaveBeenCalledWith(
+      '[LGraph] Keeping current root identity during configuration',
+      {
+        currentGraphId: originalId,
+        mode: 'keep-old',
+        requestedGraphId: replacementId
+      }
+    )
+  })
+})
+
 describe('Subgraph configure events', () => {
   it('does not apply subgraph data when configuration is canceled', () => {
     const root = new LGraph()
@@ -1898,7 +1939,10 @@ describe('node layout registration', () => {
     onConnectionChange.mockClear()
     onNodeRemoved.mockClear()
     subgraphNode.onRemoved = () => {}
-    vi.spyOn(layoutStore, 'applyOperations').mockReturnValueOnce('rejected')
+    const applyOperations = vi
+      .spyOn(layoutStore, 'applyOperations')
+      .mockReturnValueOnce('rejected')
+    onTestFinished(() => applyOperations.mockRestore())
     expect(() => graph.remove(subgraphNode)).not.toThrow()
 
     expect(graph.nodes).toContain(subgraphNode)
@@ -2200,14 +2244,24 @@ describe('graph teardown drops layout entries', () => {
     const applyOperations = vi
       .spyOn(layoutStore, 'applyOperations')
       .mockReturnValueOnce('rejected')
+    onTestFinished(() => applyOperations.mockRestore())
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => warn.mockRestore())
 
     graph.configure(replacement)
-    applyOperations.mockRestore()
 
     expect(graph.id).toBe(originalId)
     expect(graph.nodes).toEqual(originalNodes)
     expect(graph.extra).toBe(originalExtra)
     expect(layoutEntryCount(graph)).toBe(4)
+    expect(warn).toHaveBeenCalledWith(
+      '[LGraph] Configuration teardown rejected',
+      {
+        graphId: originalId,
+        mode: 'clear',
+        result: 'rejected'
+      }
+    )
   })
 
   it('does not overwrite a foreign replacement while compensating clear', () => {

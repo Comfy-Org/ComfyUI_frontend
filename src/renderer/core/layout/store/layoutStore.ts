@@ -227,8 +227,10 @@ class LayoutStore {
       for (const key of nodeKeys) {
         const ynode = this.ynodes.get(key)
         if (ynode) {
-          const { zIndex } = yNodeToLayout(ynode)
-          this.highestZIndex = Math.max(this.highestZIndex, zIndex)
+          const zIndex = ynode.get('zIndex')
+          if (typeof zIndex === 'number') {
+            this.highestZIndex = Math.max(this.highestZIndex, zIndex)
+          }
         }
         this.nodeTriggers.get(toScopedLayoutKey(key))?.()
       }
@@ -584,6 +586,13 @@ class LayoutStore {
     return layout ? structuredClone(layout) : null
   }
 
+  getReroutePosition(rootGraphId: UUID, rerouteId: RerouteId): Point | null {
+    const position = this.rerouteLayouts.get(
+      makeScopedLayoutKey(rootGraphId, rerouteId)
+    )?.position
+    return position ? { ...position } : null
+  }
+
   /**
    * Returns all slot layout keys currently tracked by the store.
    * Useful for global passes without relying on spatial queries.
@@ -933,9 +942,7 @@ class LayoutStore {
         const existing = this.ygroups.get(key)
         if (
           !existing ||
-          (operation.registrationId === undefined
-            ? existing.get('registrationId') !== undefined
-            : existing.get('registrationId') !== operation.registrationId)
+          !this.hasLayoutOwnership(existing, operation.registrationId)
         ) {
           return
         }
@@ -944,9 +951,7 @@ class LayoutStore {
           const liveGroup = this.ygroups.get(key)
           if (
             !liveGroup ||
-            (operation.registrationId === undefined
-              ? liveGroup.get('registrationId') !== undefined
-              : liveGroup.get('registrationId') !== operation.registrationId)
+            !this.hasLayoutOwnership(liveGroup, operation.registrationId)
           ) {
             return false
           }
@@ -1442,9 +1447,7 @@ class LayoutStore {
     const existing = this.yreroutes.get(rerouteKey)
     if (
       !existing ||
-      (operation.registrationId === undefined
-        ? existing.get('registrationId') !== undefined
-        : existing.get('registrationId') !== operation.registrationId)
+      !this.hasLayoutOwnership(existing, operation.registrationId)
     ) {
       return
     }
@@ -1453,9 +1456,7 @@ class LayoutStore {
       const liveReroute = this.yreroutes.get(rerouteKey)
       if (
         !liveReroute ||
-        (operation.registrationId === undefined
-          ? liveReroute.get('registrationId') !== undefined
-          : liveReroute.get('registrationId') !== operation.registrationId)
+        !this.hasLayoutOwnership(liveReroute, operation.registrationId)
       ) {
         return false
       }
@@ -1624,7 +1625,7 @@ class LayoutStore {
   private notifyGeometryChange(graphIds: ReadonlySet<UUID>): void {
     this.geometryChangeListeners.forEach((listener) => {
       try {
-        listener(graphIds)
+        listener(new Set(graphIds))
       } catch (error) {
         console.error('Error in geometry change listener:', error)
       }
@@ -1645,6 +1646,11 @@ class LayoutStore {
     entity: 'reroute',
     rootGraphId: UUID,
     id: RerouteId
+  ): string | undefined
+  getRegistrationId(
+    entity: 'node' | 'group' | 'reroute',
+    rootGraphId: UUID,
+    id: NodeId | GroupId | RerouteId
   ): string | undefined
   getRegistrationId(
     entity: 'node' | 'group' | 'reroute',

@@ -234,7 +234,9 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     group.graph = graph
     group.pos = [150, 150]
     group.size = [300, 200]
-    registerGroupLayout(graph, group, 'normalize-me-registration')
+    expect(registerGroupLayout(graph, group, 'normalize-me-registration')).toBe(
+      'applied'
+    )
     graph.groups!.push(group)
 
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')

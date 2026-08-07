@@ -1,5 +1,5 @@
 // oxlint-disable no-empty-pattern
-import { test as baseTest } from 'vitest'
+import { onTestFinished, test as baseTest } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type {
@@ -29,6 +29,7 @@ export const test = baseTest.extend<LitegraphFixtures>({
     // Before each test function
     const serialisable = structuredClone(minimalSerialisableGraph)
     const lGraph = new LGraph(serialisable)
+    onTestFinished(() => lGraph.clear())
 
     // use the fixture value
     await use(lGraph)
@@ -45,6 +46,7 @@ export const test = baseTest.extend<LitegraphFixtures>({
       floatingBranch as unknown as ISerialisedGraph
     )
     const graph = new LGraph(cloned)
+    onTestFinished(() => graph.clear())
     await use(graph)
   },
 
@@ -53,6 +55,7 @@ export const test = baseTest.extend<LitegraphFixtures>({
       reroutesComplex as unknown as ISerialisedGraph
     )
     const graph = new LGraph(cloned)
+    onTestFinished(() => graph.clear())
     await use(graph)
   }
 })

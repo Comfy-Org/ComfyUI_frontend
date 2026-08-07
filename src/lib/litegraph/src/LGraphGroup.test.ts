@@ -9,6 +9,7 @@ import * as Y from 'yjs'
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
+  attachGroupLayout,
   registerGroupLayout,
   registerNodeLayout,
   unregisterNodeLayout,
@@ -427,10 +428,22 @@ describe('group layout in layoutStore', () => {
     const node = new LGraphNode('node')
     node.id = toNodeId(812)
     useLayoutMutations().createNode(graph.id, node.id, {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => warn.mockRestore())
 
     expect(graph.add(node)).toBeUndefined()
     expect(node.graph).toBeNull()
     expect(graph.nodes).not.toContain(node)
+    expect(warn).toHaveBeenCalledWith(
+      '[LGraph] Node layout registration not applied',
+      {
+        graphId: graph.id,
+        nodeId: toNodeId(812),
+        nodeTitle: 'node',
+        nodeType: '',
+        result: 'no-op'
+      }
+    )
   })
 
   test('restores node identity when registration compensation throws', () => {
@@ -447,6 +460,7 @@ describe('group layout in layoutStore', () => {
     const compensationError = new Error('compensation failed')
     const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
     applyOperation.mockImplementation((operation) => {
       if (operation.type === 'deleteNode') {
         throw compensationError
@@ -479,6 +493,38 @@ describe('group layout in layoutStore', () => {
     applyOperation.mockRestore()
     expect(graph.add(node)).toBe(node)
     expect(graph.nodes).toEqual([node])
+  })
+
+  test('logs compensation failures when registration throws a non-Error', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', 814)
+    const primaryError: unknown = undefined
+    const compensationError = new Error('compensation failed')
+    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockImplementation((operation) => {
+        if (operation.type === 'deleteGroup') throw compensationError
+        const result = originalApplyOperation(operation)
+        if (operation.type === 'createGroup') throw primaryError
+        return result
+      })
+    onTestFinished(() => applyOperation.mockRestore())
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    onTestFinished(() => consoleError.mockRestore())
+
+    let thrown = false
+    try {
+      attachGroupLayout(graph, group)
+    } catch {
+      thrown = true
+    }
+
+    expect(thrown).toBe(true)
+    expect(consoleError).toHaveBeenCalledWith(
+      'Layout registration and compensation failed',
+      { compensationError, primaryError }
+    )
   })
 
   test('reconciles an empty-token registration after cleanup fails', () => {
@@ -648,8 +694,10 @@ describe('group layout in layoutStore', () => {
     second.size = [400, 500]
     const firstLastGroupId = firstGraph.state.lastGroupId
     const secondLastGroupId = secondGraph.state.lastGroupId
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => warn.mockRestore())
 
-    expect(() => secondGraph.add(second)).toThrow(/layout.*owned/i)
+    expect(() => secondGraph.add(second)).not.toThrow()
 
     expect(firstGraph.groups).toEqual([first])
     expect(secondGraph.groups).toHaveLength(0)
@@ -660,6 +708,15 @@ describe('group layout in layoutStore', () => {
     expect([...second.size]).toEqual([400, 500])
     expect(firstGraph.state.lastGroupId).toBe(firstLastGroupId)
     expect(secondGraph.state.lastGroupId).toBe(secondLastGroupId)
+    expect(warn).toHaveBeenCalledWith(
+      '[LGraph] Group layout registration not applied',
+      {
+        graphId: firstGraph.id,
+        groupId: first.id,
+        groupTitle: 'second',
+        result: 'no-op'
+      }
+    )
     expect(layoutStore.getGroupLayout(firstGraph.id, first.id)).toEqual({
       id: first.id,
       position: { x: 100, y: 100 },
@@ -1003,6 +1060,7 @@ describe('group layout in layoutStore', () => {
     let registeredKey: string | undefined
     const originalTransact = ydoc.transact.bind(ydoc)
     const transact = vi.spyOn(ydoc, 'transact')
+    onTestFinished(() => transact.mockRestore())
     transact.mockImplementation((transaction, origin) => {
       originalTransact(transaction, origin)
       registeredKey = [...groups.keys()].find((key) =>
@@ -1024,21 +1082,33 @@ describe('group layout in layoutStore', () => {
     expect(() => graph.add(group)).toThrow('group finalization failed')
     transact.mockRestore()
 
+    if (!registeredKey) throw new Error('Expected registered group key')
+    const key = registeredKey
+
     expect(group.graph).toBeUndefined()
     expect(graph.groups).toHaveLength(0)
     expect(graph.state.lastGroupId).toBe(originalLastGroupId)
-    const groupId = toGroupId(
-      Number(registeredKey!.slice(registeredKey!.lastIndexOf(':') + 1))
-    )
+    const groupId = toGroupId(Number(key.slice(key.lastIndexOf(':') + 1)))
     expect(layoutStore.getGroupLayout(rootGraphId, groupId)).toEqual({
       id: groupId,
       position: { x: 20, y: 30 },
       size: { width: 40, height: 50 }
     })
 
-    const foreignLayout = groups.get(registeredKey!)
-    expect(() => graph.add(group)).toThrow(/layout|registration/i)
-    expect(groups.get(registeredKey!)).toBe(foreignLayout)
+    const foreignLayout = groups.get(key)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => warn.mockRestore())
+    expect(() => graph.add(group)).not.toThrow()
+    expect(groups.get(key)).toBe(foreignLayout)
+    expect(warn).toHaveBeenCalledWith(
+      '[LGraph] Group layout registration not applied',
+      {
+        graphId: rootGraphId,
+        groupId,
+        groupTitle: 'group',
+        result: 'no-op'
+      }
+    )
   })
 
   test('stale registered group writes preserve a foreign replacement', () => {

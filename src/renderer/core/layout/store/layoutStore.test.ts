@@ -4,7 +4,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, watch } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { toLinkId } from '@/types/linkId'
@@ -329,12 +329,13 @@ describe('layoutStore CRDT operations', () => {
         foreign.set('registrationId', 'foreign')
         const ydoc = getLayoutStoreYDoc()
         const originalTransact = ydoc.transact.bind(ydoc)
-        vi.spyOn(ydoc, 'transact').mockImplementationOnce(
-          (transaction, origin) => {
+        const transact = vi
+          .spyOn(ydoc, 'transact')
+          .mockImplementationOnce((transaction, origin) => {
             collection.set(key, foreign)
             originalTransact(transaction, origin)
-          }
-        )
+          })
+        onTestFinished(() => transact.mockRestore())
 
         expect(layoutStore.applyOperation(operation)).toBe('no-op')
         expect(collection.get(key)).toBe(foreign)
@@ -937,6 +938,7 @@ describe('layoutStore CRDT operations', () => {
       const ydoc = getLayoutStoreYDoc()
       const error = new Error('before transaction failed')
       const transact = vi.spyOn(ydoc, 'transact')
+      onTestFinished(() => transact.mockRestore())
       transact.mockImplementation(() => {
         throw error
       })
@@ -1107,6 +1109,31 @@ describe('layoutStore CRDT operations', () => {
     stop()
   })
 
+  it('reads only z-index when tracking the highest changed node', () => {
+    const nodeId = toNodeId('z-index-read')
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      graphId: GRAPH,
+      nodeId,
+      layout: createTestNode(nodeId),
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+    const ynode = getLayoutStoreYDoc()
+      .getMap<Y.Map<unknown>>('nodes')
+      .get(`${GRAPH}:${nodeId}`)
+    if (!ynode) throw new Error('Expected stored node layout')
+    const get = vi.spyOn(ynode, 'get')
+    onTestFinished(() => get.mockRestore())
+
+    ynode.set('zIndex', 99)
+
+    expect(get.mock.calls).toEqual([['zIndex']])
+    expect(layoutStore.allocateZIndex()).toBe(100)
+  })
+
   it('isolates errors between geometry change listeners', () => {
     const listenerError = new Error('geometry listener failed')
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -1137,6 +1164,30 @@ describe('layoutStore CRDT operations', () => {
     stopThrowing()
     stopLater()
     consoleError.mockRestore()
+  })
+
+  it('isolates graph IDs between geometry change listeners', () => {
+    const stopMutating = layoutStore.onGeometryChange((graphIds) => {
+      Set.prototype.clear.call(graphIds)
+    })
+    onTestFinished(stopMutating)
+    const laterListener = vi.fn()
+    const stopLater = layoutStore.onGeometryChange(laterListener)
+    onTestFinished(stopLater)
+    const nodeId = toNodeId('listener-isolation-node')
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      graphId: GRAPH,
+      nodeId,
+      layout: createTestNode(nodeId),
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    expect(laterListener).toHaveBeenCalledWith(new Set([GRAPH]))
   })
 
   it('projects remote node moves into reactive geometry', async () => {

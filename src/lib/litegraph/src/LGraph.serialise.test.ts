@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe } from 'vitest'
+import { beforeEach, describe, onTestFinished } from 'vitest'
 
 import {
   LGraph,
@@ -34,11 +34,11 @@ describe('LGraph Serialisation', () => {
     const deserialised = JSON.parse(serialised) as ISerialisedGraph
 
     const copied = new LGraph(deserialised)
+    onTestFinished(() => copied.clear())
     expect(copied.nodes.length).toBe(1)
     expect(copied.nodes[0].title).toEqual(nodeTitle)
     expect(copied.groups.length).toBe(1)
     expect(copied.groups[0].title).toEqual(groupTitle)
-    copied.clear()
   })
 
   test('registers connected links after a JSON round trip', ({ expect }) => {
@@ -52,6 +52,7 @@ describe('LGraph Serialisation', () => {
 
     LiteGraph.registerNodeType('test/connected', ConnectedNode)
     const graph = new LGraph()
+    onTestFinished(() => graph.clear())
     const source = LiteGraph.createNode('test/connected', 'Source')!
     const target = LiteGraph.createNode('test/connected', 'Target')!
     graph.add(source)
@@ -69,6 +70,7 @@ describe('LGraph Serialisation', () => {
     graph.clear()
 
     const copied = new LGraph(JSON.parse(serialised) as ISerialisedGraph)
+    onTestFinished(() => copied.clear())
     const copiedLink = useLinkStore().getInputSlotLink(
       copied.rootGraph.id,
       expectedLink.targetNodeId,
@@ -76,6 +78,5 @@ describe('LGraph Serialisation', () => {
     )
 
     expect(copiedLink).toMatchObject(expectedLink)
-    copied.clear()
   })
 })

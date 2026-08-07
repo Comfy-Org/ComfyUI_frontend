@@ -125,7 +125,8 @@ describe('notifyLayoutChanges', () => {
   })
 
   it('invalidates rendering for a raw Yjs geometry change', () => {
-    const { graph, node, setDirty, stop } = setup()
+    using context = setup()
+    const { graph, node, setDirty } = context
     const doc = getLayoutStoreYDoc()
     setDirty.mockClear()
     doc
@@ -134,7 +135,6 @@ describe('notifyLayoutChanges', () => {
       ?.set('position', { x: 80, y: 90 })
 
     expect(setDirty).toHaveBeenCalledWith(true, true)
-    stop()
   })
 
   it('stops notifying once stopped', async () => {

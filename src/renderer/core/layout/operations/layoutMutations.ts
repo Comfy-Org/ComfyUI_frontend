@@ -22,6 +22,7 @@ import type {
 
 const logger = log.getLogger('LayoutMutations')
 
+/** ID-based mutations intentionally target the entity currently owning this ID. */
 function getNodeRegistrationId(
   rootGraphId: UUID,
   nodeId: NodeId

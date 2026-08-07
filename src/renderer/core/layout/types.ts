@@ -134,6 +134,7 @@ type NodeOpBase = OperationMeta & {
 type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
   rerouteId: RerouteId
+  registrationId?: string
 }
 
 /**
@@ -219,7 +220,6 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
 export interface CreateRerouteOperation extends RerouteOpBase {
   type: 'createReroute'
   position: Point
-  registrationId?: string
 }
 
 /**
@@ -227,7 +227,6 @@ export interface CreateRerouteOperation extends RerouteOpBase {
  */
 export interface DeleteRerouteOperation extends RerouteOpBase {
   type: 'deleteReroute'
-  registrationId?: string
 }
 
 /**
@@ -236,18 +235,17 @@ export interface DeleteRerouteOperation extends RerouteOpBase {
 export interface MoveRerouteOperation extends RerouteOpBase {
   position: Point
   type: 'moveReroute'
-  registrationId?: string
 }
 
 type GroupOpBase = OperationMeta & {
   entity: 'group'
   groupId: GroupId
+  registrationId?: string
 }
 
 interface CreateGroupOperation extends GroupOpBase {
   type: 'createGroup'
   layout: GroupLayout
-  registrationId?: string
 }
 
 /**
@@ -258,12 +256,10 @@ export interface SetGroupBoundsOperation extends GroupOpBase {
   position: Point
   size: Size
   type: 'setGroupBounds'
-  registrationId?: string
 }
 
 interface DeleteGroupOperation extends GroupOpBase {
   type: 'deleteGroup'
-  registrationId?: string
 }
 
 interface ClearGraphOperation extends OperationMeta {

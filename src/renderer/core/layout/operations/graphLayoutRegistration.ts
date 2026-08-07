@@ -67,10 +67,7 @@ function reconcilePendingRegistration(
   const registrationId = pendingRegistrations.get(key)
   if (registrationId === undefined) return true
 
-  const storedId =
-    entity === 'group'
-      ? layoutStore.getRegistrationId(entity, graphId, id)
-      : layoutStore.getRegistrationId(entity, graphId, id)
+  const storedId = layoutStore.getRegistrationId(entity, graphId, id)
   if (storedId === registrationId) {
     const result = deleteRegistration(registrationId)
     if (result === 'rejected') return false
@@ -80,9 +77,9 @@ function reconcilePendingRegistration(
 }
 
 function reconcilePendingGraph(graphId: UUID): LayoutOperationResult {
+  const groupPrefix = `group:${graphId}:`
+  const reroutePrefix = `reroute:${graphId}:`
   for (const key of [...pendingRegistrations.keys()]) {
-    const groupPrefix = `group:${graphId}:`
-    const reroutePrefix = `reroute:${graphId}:`
     if (key.startsWith(groupPrefix)) {
       const groupId = toGroupId(Number(key.slice(groupPrefix.length)))
       if (
@@ -324,15 +321,16 @@ function restoreGraphLayoutRegistration(
 
 function retainCompensationError(
   error: unknown,
-  compensationError: unknown
+  compensationError: unknown,
+  message = 'Layout teardown and compensation failed'
 ): void {
-  if (!(error instanceof Error)) return
+  if (!(error instanceof Error)) {
+    console.error(message, { compensationError, primaryError: error })
+    return
+  }
   Object.defineProperty(error, 'cause', {
     configurable: true,
-    value: new AggregateError(
-      [error.cause, compensationError],
-      'Layout teardown and compensation failed'
-    )
+    value: new AggregateError([error.cause, compensationError], message)
   })
 }
 
@@ -411,15 +409,11 @@ function compensateRegistration(error: unknown, unregister: () => void): never {
   try {
     unregister()
   } catch (compensationError) {
-    if (error instanceof Error) {
-      Object.defineProperty(error, 'cause', {
-        configurable: true,
-        value: new AggregateError(
-          [error.cause, compensationError],
-          'Layout registration and compensation failed'
-        )
-      })
-    }
+    retainCompensationError(
+      error,
+      compensationError,
+      'Layout registration and compensation failed'
+    )
   }
   throw error
 }
@@ -583,20 +577,9 @@ export function materializeRerouteLayout(
       newRegistrationId
     )
   } catch (error) {
-    try {
+    compensateRegistration(error, () => {
       unregisterRerouteLayout(graph, reroute, newRegistrationId)
-    } catch (compensationError) {
-      if (error instanceof Error) {
-        Object.defineProperty(error, 'cause', {
-          configurable: true,
-          value: new AggregateError(
-            [error.cause, compensationError],
-            'Layout registration and compensation failed'
-          )
-        })
-      }
-    }
-    throw error
+    })
   }
 }
 
@@ -704,10 +687,10 @@ export function registerGroupLayout(
     },
     registrationId
   )
+  pendingRegistrations.delete(key)
   if (result === 'applied') {
-    pendingRegistrations.delete(key)
     groupRegistrationIds.set(group, registrationId)
-  } else pendingRegistrations.delete(key)
+  }
   return result
 }
 
@@ -786,7 +769,9 @@ export function unregisterRerouteLayout(
     graphId,
     reroute.id
   )
-  if (storedRegistrationId === resolvedRegistrationId) void reroute.pos[0]
+  if (storedRegistrationId === resolvedRegistrationId) {
+    syncReroutePositionFromLayout(reroute)
+  }
   const result = layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'reroute',
@@ -849,10 +834,10 @@ export function registerRerouteLayout(
     position,
     registrationId
   )
+  pendingRegistrations.delete(key)
   if (result === 'applied') {
-    pendingRegistrations.delete(key)
     rerouteRegistrationIds.set(reroute, registrationId)
-  } else pendingRegistrations.delete(key)
+  }
   return result
 }
 
@@ -876,6 +861,10 @@ export function moveRerouteLayout(
 
 export function hasRerouteLayoutRegistration(reroute: Reroute): boolean {
   return rerouteRegistrationIds.has(reroute)
+}
+
+function syncReroutePositionFromLayout(reroute: Reroute): void {
+  void reroute.pos[0]
 }
 
 /**
@@ -993,7 +982,7 @@ export function unregisterAllGraphLayout(
         reroute.id
       )
       if (layout && storedRegistrationId === registrationId) {
-        void reroute.pos[0]
+        syncReroutePositionFromLayout(reroute)
         restorationOperations.push({
           actor,
           entity: 'reroute',
@@ -1028,13 +1017,7 @@ export function unregisterAllGraphLayout(
     try {
       layoutStore.applyOperations(restorationOperations)
     } catch (compensationError) {
-      Object.defineProperty(error, 'cause', {
-        configurable: true,
-        value: new AggregateError(
-          [error.cause, compensationError],
-          'Layout teardown and compensation failed'
-        )
-      })
+      retainCompensationError(error, compensationError)
     }
     throw error
   }

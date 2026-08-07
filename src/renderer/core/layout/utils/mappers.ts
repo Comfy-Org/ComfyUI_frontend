@@ -9,7 +9,7 @@ type StoredRect = [x: number, y: number, width: number, height: number]
 
 type StoredNode = {
   id: NodeId
-  rect: StoredRect
+  rect?: StoredRect
   position: NodeLayout['position']
   size: NodeLayout['size']
   visible: boolean

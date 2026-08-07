@@ -134,7 +134,7 @@ export class Reroute
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
 
-    if (!this._graphId) {
+    if (!this._graphId || !hasRerouteLayoutRegistration(this)) {
       this.position[0] = value[0]
       this.position[1] = value[1]
       return
@@ -168,7 +168,7 @@ export class Reroute
       return { x: this.position[0], y: this.position[1] }
     }
     return (
-      layoutStore.getRerouteLayout(this.rootGraphId, this.id)?.position ?? {
+      layoutStore.getReroutePosition(this.rootGraphId, this.id) ?? {
         x: this.position[0],
         y: this.position[1]
       }

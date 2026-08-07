@@ -208,6 +208,28 @@ export interface GraphAddOptions {
 const nodesAdoptingLayout = new WeakSet<LGraphNode>()
 const rerouteDataAdoptingLayout = new WeakSet<object>()
 
+function keepFirstRerouteDefinitions(
+  reroutes: SerialisableReroute[] | undefined,
+  graphId: UUID,
+  scope: string
+): SerialisableReroute[] | undefined {
+  if (!reroutes) return
+  const seen = new Set<RerouteId>()
+  return reroutes.filter(({ id }) => {
+    const rerouteId = toRerouteId(id)
+    if (!seen.has(rerouteId)) {
+      seen.add(rerouteId)
+      return true
+    }
+    console.warn('[LGraph] Duplicate reroute ignored', {
+      graphId,
+      rerouteId,
+      scope
+    })
+    return false
+  })
+}
+
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
@@ -1125,6 +1147,7 @@ export class LGraph
         node.id = toGroupId(++state.lastGroupId)
       }
       if (node.id > state.lastGroupId) state.lastGroupId = node.id
+      const attemptedGroupId = node.id
       let registrationResult: LayoutOperationResult
       try {
         registrationResult = attachGroupLayout(this, node)
@@ -1136,10 +1159,13 @@ export class LGraph
       if (registrationResult !== 'applied') {
         node.id = originalId
         state.lastGroupId = originalLastGroupId
-        if (layoutStore.getGroupLayout(this.rootGraph.id, node.id) !== null) {
-          throw new Error(`Group layout ${node.id} is already owned`)
-        }
-        throw new Error(`Group layout registration ${registrationResult}`)
+        console.warn('[LGraph] Group layout registration not applied', {
+          graphId: this.rootGraph.id,
+          groupId: attemptedGroupId,
+          groupTitle: node.title,
+          result: registrationResult
+        })
+        return
       }
       this._groups.push(node)
       this.setDirtyCanvas(true)
@@ -1183,6 +1209,7 @@ export class LGraph
       node.flags.ghost = true
     }
 
+    const attemptedNodeId = node.id
     let registrationResult: LayoutOperationResult
     try {
       registrationResult = attachNodeLayout(
@@ -1196,6 +1223,13 @@ export class LGraph
     }
     if (registrationResult !== 'applied') {
       restoreNodeIdentity()
+      console.warn('[LGraph] Node layout registration not applied', {
+        graphId: this.rootGraph.id,
+        nodeId: attemptedNodeId,
+        nodeTitle: node.title,
+        nodeType: node.type,
+        result: registrationResult
+      })
       return
     }
 
@@ -1853,8 +1887,8 @@ export class LGraph
 
       // Extract reroute from the reroute chain
       const { parentId, linkIds, floatingLinkIds } = reroute
-      for (const reroute of reroutes.values()) {
-        if (reroute.parentId === id) reroute.parentId = parentId
+      for (const child of reroutes.values()) {
+        if (child.parentId === id) child.parentId = parentId
       }
 
       for (const linkId of linkIds) {
@@ -2698,51 +2732,60 @@ export class LGraph
       data = options.data
       const keepsOldState = !options.clearGraph
 
-      const serializedRootId =
+      const requestedRootId =
         data.id && data.id !== zeroUuid ? data.id : undefined
       const retainsRootState =
         this._nodes.length > 0 ||
         this._groups.length > 0 ||
         this._links.size > 0 ||
+        this.floatingLinks.size > 0 ||
         this.reroutes.size > 0 ||
         this._subgraphs.size > 0
       if (
         keepsOldState &&
         this.isRootGraph &&
-        serializedRootId &&
-        serializedRootId !== this.id &&
+        requestedRootId &&
+        requestedRootId !== this.id &&
         retainsRootState
       ) {
-        throw new Error(
-          'Cannot change a populated root graph identity while keeping old state'
+        console.warn(
+          '[LGraph] Keeping current root identity during configuration',
+          {
+            currentGraphId: this.id,
+            mode: 'keep-old',
+            requestedGraphId: requestedRootId
+          }
         )
+        data = { ...structuredClone(data), id: this.id }
       }
+      const serializedRootId =
+        data.id && data.id !== zeroUuid ? data.id : undefined
       const targetGraphId = this.isRootGraph
         ? (serializedRootId ?? (keepsOldState ? this.id : undefined))
         : this.rootGraph.id
-      const serializedGraphs = [
+      const rootGraphId = targetGraphId ?? this.rootGraph.id
+      const rootReroutes = keepFirstRerouteDefinitions(
         data.version === 0.4 ? data.extra?.reroutes : data.reroutes,
-        ...(data.definitions?.subgraphs ?? []).map(
-          (subgraph) => subgraph.reroutes
-        )
-      ]
-      for (const reroutes of serializedGraphs) {
-        const graphRerouteIds = new Set<RerouteId>()
-        for (const { id } of reroutes ?? []) {
-          const rerouteId = toRerouteId(id)
-          if (graphRerouteIds.has(rerouteId)) {
-            throw new Error(
-              `Reroute ${rerouteId} appears more than once in the configuration`
-            )
-          }
-          graphRerouteIds.add(rerouteId)
-        }
+        rootGraphId,
+        'root'
+      )
+      if (data.version === 0.4) {
+        data = { ...data, extra: { ...data.extra, reroutes: rootReroutes } }
+      } else {
+        data = { ...data, reroutes: rootReroutes }
       }
 
       const temporaryState = { ...this.state }
       let subgraphs = data.definitions?.subgraphs
       if (subgraphs) {
         const clonedSubgraphs = structuredClone(subgraphs)
+        for (const subgraph of clonedSubgraphs) {
+          subgraph.reroutes = keepFirstRerouteDefinitions(
+            subgraph.reroutes,
+            rootGraphId,
+            subgraph.id
+          )
+        }
         const reservedRerouteIds = keepsOldState
           ? collectReservedRerouteIds(this)
           : new Set<RerouteId>()
@@ -2808,7 +2851,14 @@ export class LGraph
       const layoutResult = options.clearGraph
         ? this.clearWithResult()
         : unregisterAllGraphLayout(this)
-      if (layoutResult === 'rejected') return
+      if (layoutResult === 'rejected') {
+        console.warn('[LGraph] Configuration teardown rejected', {
+          graphId: this.rootGraph.id,
+          mode: options.clearGraph ? 'clear' : 'keep-old',
+          result: layoutResult
+        })
+        return
+      }
       this.state.lastRerouteId = temporaryState.lastRerouteId
 
       this._configureBase(data)
