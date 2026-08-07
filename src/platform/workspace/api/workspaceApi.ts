@@ -11,6 +11,7 @@ import type {
   CreateInviteRequest,
   CreateTopupRequest,
   CreateTopupResponse,
+  CreateWorkspaceRequest,
   ListInvitesResponse,
   ListMembersResponse as GeneratedListMembersResponse,
   ListWorkspacesResponse,
@@ -25,6 +26,7 @@ import type {
   SubscribeRequest,
   SubscribeResponse,
   TeamCreditStopSummary,
+  UpdateWorkspaceRequest,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
@@ -51,6 +53,7 @@ export type {
   SubscriptionDuration,
   SubscriptionTier,
   TeamCreditStops,
+  TeamCreditStopSummary,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 
@@ -75,14 +78,6 @@ type ListMembersResponse = Omit<GeneratedListMembersResponse, 'members'> & {
 export interface ListMembersParams {
   offset?: number
   limit?: number
-}
-
-interface CreateWorkspacePayload {
-  name: string
-}
-
-interface UpdateWorkspacePayload {
-  name: string
 }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
@@ -113,21 +108,22 @@ export type BillingSubscriptionStatus =
   | 'ended'
   | 'canceled'
 
-export type CurrentTeamCreditStop = TeamCreditStopSummary
-
-// Seat counts, `scheduled` status, the scheduled-change fields and
-// pending_billing_op_type are not in the spec yet.
+// Seat counts, `scheduled` status and the scheduled-change fields are not in
+// the spec yet.
 export type BillingStatusResponse = Omit<
   GeneratedBillingStatusResponse,
   'max_seats' | 'occupied_seats' | 'subscription_status' | 'team_credit_stop'
 > & {
+  // The spec marks these required, but older/billing-disabled deployments
+  // can omit them; getBillingStatus() normalizes a missing value to null.
   max_seats?: number | null
   occupied_seats?: number | null
   subscription_status?: BillingSubscriptionStatus
-  team_credit_stop?: CurrentTeamCreditStop
+  // The spec marks this required (always present, nullable); kept optional
+  // here to match how existing callers already read it defensively.
+  team_credit_stop?: TeamCreditStopSummary | null
   scheduled_plan_slug?: string
   change_at?: string
-  pending_billing_op_type?: 'subscription' | 'topup'
 }
 
 interface GetBillingEventsParams {
@@ -194,7 +190,7 @@ export const workspaceApi = {
    * Create a new workspace
    * POST /api/workspaces
    */
-  async create(payload: CreateWorkspacePayload): Promise<WorkspaceWithRole> {
+  async create(payload: CreateWorkspaceRequest): Promise<WorkspaceWithRole> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<WorkspaceWithRole>(
@@ -214,7 +210,7 @@ export const workspaceApi = {
    */
   async update(
     workspaceId: WorkspaceId,
-    payload: UpdateWorkspacePayload
+    payload: UpdateWorkspaceRequest
   ): Promise<WorkspaceWithRole> {
     const headers = await getAuthHeaderOrThrow()
     try {
