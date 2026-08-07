@@ -59,7 +59,7 @@ catalog:
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/node': ^25.9.5
-  '@types/semver': ^7.7.0
+  '@types/semver': ^7.8.0
   '@types/three': ^0.184.1
   '@vee-validate/zod': ^4.15.1
   '@vercel/analytics': ^2.0.1
@@ -69,6 +69,7 @@ catalog:
   '@vueuse/core': ^14.3.0
   '@vueuse/integrations': ^14.3.0
   '@webgpu/types': ^0.1.66
+  ag-psd: ^31.0.2
   algoliasearch: ^5.21.0
   astro: ^6.4.2
   axios: ^1.15.2

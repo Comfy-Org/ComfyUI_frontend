@@ -417,8 +417,23 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      await workspaceApi.resubscribe()
+      const response = await workspaceApi.resubscribe()
       await Promise.allSettled([fetchStatus(), fetchBalance()])
+      // A pending resubscribe (e.g. SCA/3DS re-authentication) isn't done
+      // yet: wait for the tracked billing op to actually resolve instead of
+      // reporting success the instant the request was accepted. fetchStatus
+      // above may have already started tracking this op via
+      // pending_billing_op_id; startOperation dedupes by opId either way.
+      if (response.status === 'pending') {
+        const operation = await billingOperationStore.startOperation(
+          response.billing_op_id,
+          'subscription'
+        )
+        if (operation.status !== 'succeeded') {
+          throw new Error(operation.errorMessage ?? 'Failed to resubscribe')
+        }
+        await Promise.allSettled([fetchStatus(), fetchBalance()])
+      }
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
         // Mirrors the success path, which refreshes balance too. allSettled,
