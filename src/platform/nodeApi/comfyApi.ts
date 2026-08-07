@@ -26,7 +26,10 @@ import type { Unsubscribe } from './widgetHandle'
 import { createGraphApi } from './graphHandle'
 import type { GraphHandle } from './graphHandle'
 import { createSettingsApi } from './settingsHandle'
+import { createStorageApi } from './storageHandle'
+import { createViewportObserver } from './viewport'
 import type { SettingsHandle } from './settingsHandle'
+import type { StorageHandle } from './storageHandle'
 import type { NodeHandle } from './nodeHandle'
 
 /**
@@ -100,6 +103,8 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['settings', '1.0'],
   ['commands', '1.0'],
   ['backend', '1.0'],
+  ['storage', '1.0'],
+  ['viewport.changed', '1.0'],
   ['interaction.state', '1.0'],
   ['interaction.nodeMoved', '1.0'],
   ['interaction.nodeDragEnd', '1.0']
@@ -160,6 +165,12 @@ export interface Comfy {
   readonly defs: DefRegistry
   /** Declaring, reading and writing pack settings. */
   readonly settings: SettingsHandle
+  /**
+   * Per-user persistent storage for documents the pack's users author —
+   * templates, presets, saved prompts. Server-side, so it follows the user
+   * between machines.
+   */
+  readonly storage: StorageHandle
   /** Commands, their keybindings, and notifications. */
   readonly commands: CommandsHandle
   /** Backend URLs and messages, including a pack's own events. */
@@ -185,6 +196,14 @@ export interface Comfy {
    * no drag lifecycle, so this never fires under it.
    */
   onNodeDragEnd(listener: (nodes: readonly NodeHandle[]) => void): Unsubscribe
+  /**
+   * The view panned, zoomed or was resized.
+   *
+   * For keeping something anchored to a node in sync — ask
+   * `node.getScreenRect()` again when this fires. Carries no payload: where a
+   * node is belongs to the node, and the transform belongs to the renderer.
+   */
+  onViewportChanged(listener: () => void): Unsubscribe
 }
 
 /** Per-major instances, memoised per graph provider. */
@@ -196,6 +215,7 @@ function buildMajor(
 ): Comfy {
   const graph = createGraphApi(getGraph, `v${major}`)
   const settings = createSettingsApi()
+  const storage = createStorageApi()
   const commands = createCommandsApi()
   const backend = createBackendApi()
 
@@ -223,11 +243,13 @@ function buildMajor(
     },
     graph,
     settings,
+    storage,
     commands,
     backend,
     isInteracting,
     onNodeMoved: createNodeMoveObserver((id) => graph.node(id)),
     onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
+    onViewportChanged: createViewportObserver(),
     defs: defs.forMajor((nodeId) => graph.node(nodeId)!)
   })
 }
