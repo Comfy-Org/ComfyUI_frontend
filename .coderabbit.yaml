@@ -5,6 +5,10 @@ reviews:
   profile: assertive
   high_level_summary: false
   request_changes_workflow: true
+  # Without this, a review that never happened (rate limit, internal error)
+  # still reports green, so an unreviewed PR is indistinguishable from a
+  # cleanly reviewed one.
+  fail_commit_status: true
   auto_review:
     drafts: true
     ignore_title_keywords:
