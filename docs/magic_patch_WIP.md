@@ -730,13 +730,27 @@ so keep the confidence field, keep it user-confirmed, and don't let it go silent
 
 ---
 
-## 10a. The conversion database moves to its own repo
+## 10a. What lives here, and what does not
 
-`db/` — the per-pack `<original>` / `v1` trees the conversions live in — does
-not belong in the frontend repo. It is third-party source, it is large, and it
-has no reason to share a history or a review process with the frontend.
+**This repo holds Magic Patch and the node API — the code. It does not hold the
+conversion database — the data.**
 
-**Decision: extract it to its own repository. Not yet — it is deferred, not
+Belongs here:
+
+- `src/platform/nodeApi/` — the published API packs are converted onto
+- `src/workbench/extensions/magicPatch/` — conversion rules, conformance,
+  verdicts, the runner
+- `scripts/magic-patch/` — the CLI around them
+- `.claude/skills/converting-custom-nodes/` — the conversion method
+
+Does not:
+
+- `db/` — the per-pack `<original>` / `v1` trees. Third-party source, large, and
+  with a different lifecycle: it changes when a pack changes or a conversion is
+  redone, not when the frontend does. It has no reason to share a history or a
+  review process with this repo.
+
+**Decision: extract `db/` to its own repository. Not yet — deferred, not
 declined.**
 
 Until then it stays gitignored, and the working copy is _not_ protected by
