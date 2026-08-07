@@ -376,19 +376,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           billing_op_id: opId
         })
       }
-      if (operation.downgradeToPersonal) {
-        telemetry?.trackBillingEvent({
-          operation: 'downgrade_to_personal',
-          stage: 'succeeded',
-          outcome: 'success',
-          member_removal_count:
-            operation.downgradeToPersonal.memberRemovalCount,
-          member_removal_failures:
-            operation.downgradeToPersonal.memberRemovalFailures,
-          target_tier: operation.downgradeToPersonal.targetTier,
-          duration_ms: now - operation.downgradeToPersonal.startedAt
-        })
-      }
     } else if (
       operation.type === 'topup' &&
       operation.businessAttemptStartedAt !== undefined
@@ -399,6 +386,20 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         outcome: 'success',
         billing_op_id: opId,
         duration_ms: now - operation.businessAttemptStartedAt
+      })
+    }
+    // Mirrors handleFailure's structure: not gated on businessAttemptStartedAt,
+    // since a downgrade always has its own startedAt for duration_ms below.
+    if (operation.downgradeToPersonal) {
+      telemetry?.trackBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'succeeded',
+        outcome: 'success',
+        member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
+        member_removal_failures:
+          operation.downgradeToPersonal.memberRemovalFailures,
+        target_tier: operation.downgradeToPersonal.targetTier,
+        duration_ms: now - operation.downgradeToPersonal.startedAt
       })
     }
 

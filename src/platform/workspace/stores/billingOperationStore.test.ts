@@ -461,7 +461,8 @@ describe('billingOperationStore', () => {
         downgradeToPersonal: {
           memberRemovalCount: 1,
           memberRemovalFailures: 0,
-          targetTier: 'creator'
+          targetTier: 'creator',
+          startedAt: Date.now()
         }
       })
 
@@ -874,7 +875,8 @@ describe('billingOperationStore', () => {
         downgradeToPersonal: {
           memberRemovalCount: 1,
           memberRemovalFailures: 0,
-          targetTier: 'creator'
+          targetTier: 'creator',
+          startedAt: Date.now()
         }
       })
 
