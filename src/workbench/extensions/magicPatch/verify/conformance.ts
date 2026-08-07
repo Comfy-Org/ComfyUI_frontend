@@ -137,11 +137,29 @@ const PROPERTY_WRITE =
  * A mutating call reached through `?.`, so a failed lookup silently skips it.
  * Reads are fine — `?.getValue()` yielding undefined is visible to the caller.
  */
-const SILENT_WRITE =
-  /\?\.[A-Za-z_]\w*\([^)]*\)?\s*\??\.\s*(?:set|add|move|reorder|connect|modify)[A-Z]\w*\(|\?\.(?:set|add|move|reorder|connect|modify)[A-Z]\w*\(/g
+const SILENT_WRITE = /\?\.([A-Za-z_]\w*)\s*\(/g
 
-/** Prototype assignment — `X.prototype.onExecuted =` and friends. */
-const PROTOTYPE_PATCH = /\.prototype\.([A-Za-z_]\w*)\s*=/g
+/**
+ * Whether an optional-chained call is a *published API* mutation.
+ *
+ * The prefix alone is not enough: `?.addEventListener(` starts with `add` and
+ * a capital, but it is a DOM call on an element the pack owns, and flagging it
+ * failed two correct conversions. Only members the API actually defines count.
+ */
+const isApiMutator = (name: string) =>
+  API_MEMBERS.has(name) &&
+  /^(set|add|move|reorder|connect|modify)[A-Z]/.test(name)
+
+/**
+ * Prototype assignment — `X.prototype.onExecuted =` and friends.
+ *
+ * The receiver must be a bare identifier. A dotted one is a third-party
+ * library being configured, not a node class being patched:
+ * `fabric.Object.prototype.cornerColor = …` is how alekpet's painter sets up
+ * fabric.js, and flagging it failed a correct conversion.
+ */
+const PROTOTYPE_PATCH =
+  /(?<![.\w$])[A-Za-z_$]\w*\.prototype\.([A-Za-z_]\w*)\s*=/g
 
 /**
  * Source with comments removed, for the checks that scan text for API usage.
@@ -152,11 +170,34 @@ const PROTOTYPE_PATCH = /\.prototype\.([A-Za-z_]\w*)\s*=/g
  * which is exactly backwards. Five of seven kjnodes failures were this.
  *
  * Quote-aware rather than a regex, so a `//` inside a string or a URL survives.
+ *
+ * Regex literals are skipped too, and that is not a nicety: a literal like
+ * `/(['"])/` contains a quote character, and treating it as the start of a
+ * string desynchronised the scanner for the rest of the file, after which no
+ * comment was stripped at all. Two conversions were failed for API members that
+ * appeared only inside the `// API-GAP:` comments they were asked to write.
  */
 function withoutComments(source: string): string {
   let out = ''
   let index = 0
   let quote: string | undefined
+
+  /**
+   * Whether a `/` here opens a regex rather than dividing.
+   *
+   * Decided by the previous significant character: division follows a value,
+   * a regex follows an operator, a keyword, or the start of an expression.
+   */
+  const startsRegex = () => {
+    let back = out.length - 1
+    while (back >= 0 && /\s/.test(out[back])) back--
+    if (back < 0) return true
+    const prev = out[back]
+    if ('(,=:[!&|?{};+-*%~^<>'.includes(prev)) return true
+    return /\b(return|typeof|instanceof|in|of|new|delete|void|case|do|else)$/.test(
+      out.slice(0, back + 1)
+    )
+  }
 
   while (index < source.length) {
     const char = source[index]
@@ -196,6 +237,31 @@ function withoutComments(source: string): string {
         index++
       }
       index += 2
+      continue
+    }
+
+    if (char === '/' && startsRegex()) {
+      // Consume the literal, including its character classes, so quotes and
+      // slashes inside it are never mistaken for anything else.
+      out += char
+      index++
+      let inClass = false
+      while (index < source.length) {
+        const c = source[index]
+        if (c === '\\') {
+          out += c + (source[index + 1] ?? '')
+          index += 2
+          continue
+        }
+        if (c === '[') inClass = true
+        else if (c === ']') inClass = false
+        else if (c === '/' && !inClass) break
+        else if (c === '\n') break
+        out += c
+        index++
+      }
+      out += source[index] ?? ''
+      index++
       continue
     }
 
@@ -494,9 +560,9 @@ const checks: readonly Check[] = [
       // exactly when that helper is called. The original mutated the widget
       // directly and always worked. Optional chaining turns a failed lookup
       // into silence, and the pack cannot tell.
-      const dropped = [
-        ...withoutComments(ctx.converted).matchAll(SILENT_WRITE)
-      ].map((m) => m[0].trim())
+      const dropped = [...withoutComments(ctx.converted).matchAll(SILENT_WRITE)]
+        .filter((m) => isApiMutator(m[1]))
+        .map((m) => m[0].trim())
       return dropped.length
         ? result(
             'no-silently-dropped-writes',
