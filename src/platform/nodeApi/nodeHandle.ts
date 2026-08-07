@@ -36,6 +36,13 @@ export interface Size {
   readonly width: number
   readonly height: number
 }
+/** A rectangle in graph space. */
+export interface Bounds {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+}
 
 export interface NodeSnapshot {
   readonly id: string
@@ -102,6 +109,25 @@ export interface NodeHandle extends HandleCommon {
   getSize(): Size
   setSize(size: Size): void
   /**
+   * The node's rectangle in graph space, title bar included.
+   *
+   * `getPosition()` is the body's top-left, so packs building a gesture were
+   * reconstructing this by subtracting a title height read off the renderer —
+   * which is only right for the default layout, and wrong for a collapsed node
+   * or under a different renderer. Ask the renderer instead of re-deriving it.
+   */
+  getBounds(): Bounds
+  /**
+   * Where a slot sits, in graph space.
+   *
+   * The renderer's own answer, so it stays correct for collapsed nodes,
+   * widget-backed inputs and layouts that are not the default vertical stack —
+   * all cases the `(index + 0.7) * slotHeight` reconstruction gets wrong.
+   *
+   * `undefined` if there is no slot at that index.
+   */
+  getSlotPosition(side: 'input' | 'output', index: number): Point | undefined
+  /**
    * Declares how the node may be sized, instead of re-asserting it per frame.
    *
    * 39 packs recompute size inside a draw or resize callback, which is both a
@@ -159,6 +185,8 @@ const SHAPE_TO_INTERNAL: Record<NodeShape, RenderShape | undefined> = {
 const freezePoint = (x: number, y: number): Point => Object.freeze({ x, y })
 const freezeSize = (width: number, height: number): Size =>
   Object.freeze({ width, height })
+const freezeBounds = (r: ArrayLike<number>): Bounds =>
+  Object.freeze({ x: r[0], y: r[1], width: r[2], height: r[3] })
 
 function snapshotOf(node: LGraphNode): Readonly<NodeSnapshot> {
   return Object.freeze({
@@ -303,6 +331,23 @@ export function createNodeHandles(
           n.pos = [x, y]
         },
         getSize: (n) => freezeSize(n.size[0], n.size[1]),
+        getBounds: (n) => {
+          // The rect is a per-frame cache, so it is stale (or all zeroes)
+          // until something has rendered. Refreshing is what the renderer
+          // does every frame anyway, and it keeps the answer correct for a
+          // pack that asks before the first paint.
+          n.updateArea()
+          return freezeBounds(n.getBounding())
+        },
+        getSlotPosition: (n, ...args) => {
+          const side = args[0] as 'input' | 'output'
+          const index = Number(args[1])
+          const slots = side === 'input' ? n.inputs : n.outputs
+          if (!slots?.[index]) return undefined
+          const [x, y] =
+            side === 'input' ? n.getInputPos(index) : n.getOutputPos(index)
+          return freezePoint(x, y)
+        },
         getSizeConstraints: (n) =>
           Object.freeze({ ...(constraintsByNode.get(String(n.id)) ?? {}) }),
         setSizeConstraints: (n, ...args) => {
