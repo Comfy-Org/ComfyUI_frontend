@@ -93,7 +93,6 @@ async function startPendingPromotedMediaVerification() {
 
   const pendingCandidate = {
     ...createPromotedMissingMediaCandidate(outerHost),
-    name: 'pending.png',
     isMissing: undefined
   }
   vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
@@ -961,6 +960,19 @@ describe('realtime verification staleness guards', () => {
         pendingCandidate
       ])
     })
+  })
+
+  it('skips verified media when the promoted host value changed while pending', async () => {
+    const { outerHost, resolveVerification } =
+      await startPendingPromotedMediaVerification()
+
+    const hostWidget = outerHost.widgets?.[0]
+    if (!hostWidget) throw new Error('Expected promoted image host widget')
+    hostWidget.value = 'user-picked-valid.png'
+    resolveVerification()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
   })
 
   it('skips verified media when its sole promoted consumer becomes bypassed', async () => {
