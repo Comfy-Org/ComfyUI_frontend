@@ -927,9 +927,30 @@ describe('group layout in layoutStore', () => {
     expect(group.serialize().bounding).toEqual([11, 12, 410, 310])
   })
 
-  test('group collections react to nested bounds updates', () => {
+  test('projects remote geometry into an attached group', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(808))
+    const ydoc = getLayoutStoreYDoc()
+    const remote = new Y.Doc()
+    Y.applyUpdate(remote, Y.encodeStateAsUpdate(ydoc))
+    const stateVector = Y.encodeStateVector(ydoc)
+    const onGeometryChange = vi.fn()
+    const stop = layoutStore.onGeometryChange(onGeometryChange)
+    onTestFinished(stop)
+
+    remote
+      .getMap<Y.Map<unknown>>('groups')
+      .get(`${graph.rootGraph.id}:${group.id}`)
+      ?.set('rect', [11, 12, 410, 310])
+    Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(remote, stateVector))
+
+    expect(onGeometryChange).toHaveBeenCalledWith(new Set([graph.rootGraph.id]))
+    expect([...group.boundingRect]).toEqual([11, 12, 410, 310])
+  })
+
+  test('group collections react to nested bounds updates', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(809))
     const groups = layoutStore.getAllGroups(graph.rootGraph.id)
 
     expect(groups.value.get(group.id)?.position.x).toBe(100)
