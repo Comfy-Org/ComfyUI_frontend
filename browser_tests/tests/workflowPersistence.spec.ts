@@ -487,6 +487,169 @@ test.describe('Workflow Persistence', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountB)
   })
 
+  test('Repairs real V1 workflow draft storage after a false V2 migration marker', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #14897 — V2 migration looked for scoped V1 keys and treated an empty V2 index as a permanent migration marker'
+    })
+
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    const legacyWorkflow = await comfyPage.workflow.getExportedWorkflow()
+    const legacyName = `legacy-${generateUniqueFilename()}`
+    const legacyPath = `workflows/${legacyName}.json`
+    const legacyData = JSON.stringify(legacyWorkflow)
+
+    await comfyPage.page.evaluate(
+      ({ path, name, data }) => {
+        const removeKeysWithPrefix = (storage: Storage, prefix: string) => {
+          for (let i = storage.length - 1; i >= 0; i--) {
+            const key = storage.key(i)
+            if (key?.startsWith(prefix)) storage.removeItem(key)
+          }
+        }
+
+        removeKeysWithPrefix(localStorage, 'Comfy.Workflow.Draft.v2:personal:')
+        localStorage.removeItem('Comfy.Workflow.LastActivePath:personal')
+        localStorage.removeItem('Comfy.Workflow.LastOpenPaths:personal')
+        removeKeysWithPrefix(sessionStorage, 'Comfy.Workflow.ActivePath:')
+        removeKeysWithPrefix(sessionStorage, 'Comfy.Workflow.OpenPaths:')
+
+        localStorage.setItem(
+          'Comfy.Workflow.Drafts',
+          JSON.stringify({
+            [path]: {
+              data,
+              updatedAt: Date.now(),
+              name: `${name}.json`,
+              isTemporary: true
+            }
+          })
+        )
+        localStorage.setItem(
+          'Comfy.Workflow.DraftOrder',
+          JSON.stringify([path])
+        )
+
+        // Reproduce the marker written by the broken migration: the old V1
+        // blob still exists, while V2 falsely claims migration is complete.
+        localStorage.setItem(
+          'Comfy.Workflow.DraftIndex.v2:personal',
+          JSON.stringify({
+            v: 2,
+            updatedAt: Date.now(),
+            order: [],
+            entries: {}
+          })
+        )
+
+        localStorage.setItem('Comfy.OpenWorkflowsPaths', JSON.stringify([path]))
+        localStorage.setItem('Comfy.ActiveWorkflowIndex', JSON.stringify(0))
+        localStorage.setItem('workflow', data)
+      },
+      { path: legacyPath, name: legacyName, data: legacyData }
+    )
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    // Unsaved restored drafts carry the modified-dot marker in the topbar.
+    // Verify the workflow identity without treating that UI decoration as part
+    // of the persisted name.
+    await expect
+      .poll(() => comfyPage.menu.topbar.getActiveTabName())
+      .toContain(legacyName)
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+
+    const storageState = await comfyPage.page.evaluate((path) => {
+      const rawIndex = localStorage.getItem(
+        'Comfy.Workflow.DraftIndex.v2:personal'
+      )
+      const index = rawIndex
+        ? (JSON.parse(rawIndex) as {
+            entries?: Record<string, { path?: string }>
+          })
+        : null
+      const rawOpenPaths = localStorage.getItem(
+        'Comfy.Workflow.LastOpenPaths:personal'
+      )
+      const openPaths = rawOpenPaths
+        ? (JSON.parse(rawOpenPaths) as { paths?: string[] })
+        : null
+
+      return {
+        hasV2Entry: Object.values(index?.entries ?? {}).some(
+          (entry) => entry.path === path
+        ),
+        legacyDrafts: localStorage.getItem('Comfy.Workflow.Drafts'),
+        legacyOrder: localStorage.getItem('Comfy.Workflow.DraftOrder'),
+        legacyWorkflow: localStorage.getItem('workflow'),
+        durableOpenPaths: openPaths?.paths ?? []
+      }
+    }, legacyPath)
+
+    expect(storageState.hasV2Entry).toBe(true)
+    expect(storageState.legacyDrafts).toBeNull()
+    expect(storageState.legacyOrder).toBeNull()
+    expect(storageState.legacyWorkflow).toBeNull()
+    expect(storageState.durableOpenPaths).toContain(legacyPath)
+    await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+  })
+
+  test('Does not save a startup-only workflow and deduplicates load failures', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #14897 — startup graph loads and two independent draft-save callers could emit repeated quota errors for one workflow load'
+    })
+
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+
+    // Fault-inject only V2 draft storage on the next document. Other settings,
+    // restore pointers and ordinary localStorage users remain writable.
+    await comfyPage.page.addInitScript(() => {
+      const originalSetItem = Storage.prototype.setItem
+      Storage.prototype.setItem = function (key: string, value: string) {
+        if (
+          key.startsWith('Comfy.Workflow.Draft.v2:') ||
+          key.startsWith('Comfy.Workflow.DraftIndex.v2:')
+        ) {
+          throw new DOMException('Quota exceeded', 'QuotaExceededError')
+        }
+        return originalSetItem.call(this, key, value)
+      }
+    })
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    // Internal startup graph activation is not user work and must not attempt a
+    // draft write that produces an error toast.
+    await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    // A graph load can hit the pre-load save and the active-workflow autosave.
+    // Both see the same origin-wide storage failure, so the user gets one error.
+    await expect(comfyPage.toast.toastErrors).toHaveCount(1)
+
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await expect(comfyPage.toast.toastErrors).toHaveCount(1)
+  })
+
   test('Restores saved workflow drafts from inactive restored tabs', async ({
     comfyPage
   }) => {

@@ -62,7 +62,11 @@ export const useWorkflowService = () => {
   }
 
   const persistActiveWorkflowDraft = (activeWorkflow: ComfyWorkflow) => {
-    if (!settingStore.get('Comfy.Workflow.Persist') || !activeWorkflow.path) {
+    if (
+      workflowDraftStore.isPersistencePaused() ||
+      !settingStore.get('Comfy.Workflow.Persist') ||
+      !activeWorkflow.path
+    ) {
       return
     }
 
@@ -79,12 +83,16 @@ export const useWorkflowService = () => {
         }
       )
 
-      if (!saved) {
+      if (saved) {
+        workflowDraftStore.markSaveSucceeded()
+      } else if (workflowDraftStore.shouldNotifySaveFailure()) {
         showFailedToSaveDraftToast()
       }
     } catch (err) {
       console.error('Failed to persist active workflow draft', err)
-      showFailedToSaveDraftToast()
+      if (workflowDraftStore.shouldNotifySaveFailure()) {
+        showFailedToSaveDraftToast()
+      }
     }
   }
 
