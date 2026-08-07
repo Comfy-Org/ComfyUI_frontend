@@ -85,7 +85,7 @@ const connectivityEntries = loadManifest().filter((entry) =>
 test('connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(120_000)
+  if (customNodesEnv() !== 'cloud') test.setTimeout(120_000)
   const defs = (await comfyPage.page.evaluate(() =>
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
@@ -139,7 +139,8 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // values and links flow through the same stores in both renderers). The
   // curated drag test below covers real pointer wiring under BOTH renderers.
   const consoleErrors = collectConsoleErrors(comfyPage.page)
-  test.setTimeout(SWEEP_SETUP_MS + plan.pairs.length * SWEEP_MS_PER_PAIR)
+  if (customNodesEnv() !== 'cloud')
+    test.setTimeout(SWEEP_SETUP_MS + plan.pairs.length * SWEEP_MS_PER_PAIR)
   const sweepStart = Date.now()
   const results = await runPairsInPage(comfyPage.page, plan.pairs)
   const sweepMs = Date.now() - sweepStart

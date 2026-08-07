@@ -107,6 +107,8 @@ test.describe('matchesTopologyExpectation', () => {
     expect(matchesTopologyExpectation(expectation, 101, 5)).toBe(false)
     const vueExpectations =
       ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE['WhatDreamsCost-ComfyUI']
+    for (const exactExpectation of [expectation, vueExpectations.LTXKeyframer])
+      expect(exactExpectation).toMatchObject({ before: 102, after: [2, 5] })
     expect(
       matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 5)
     ).toBe(true)

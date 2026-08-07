@@ -15,32 +15,22 @@
 # failure here too - a skip means a cloud pack, devtools, or an under-enrolled
 # cloud manifest failed to surface a tier, not an honest pass.
 #
-# PRE-CALIBRATION HONESTY: this workflow cannot pass for real yet. The cloud
-# manifest (`customNodeManifest.cloud.json`) is generated from a Cloud
-# `/object_info` probe snapshot that has not landed, so `loadManifest()` throws
-# under `CUSTOM_NODES_ENV=cloud`. The gate step below therefore checks BOTH
-# preconditions - the smoke user credentials are configured AND the generated
-# manifest exists in the checkout - and no-ops the job green with a loud
-# `::notice` naming whichever is missing. It never fake-passes with a green
-# "0 tests", and it never reds on the half-ready states (secrets landed
-# before the manifest, or the reverse). The suite runs for real the first
-# time both are present. Which rows carry the run tier is decided by the
-# curated overlay (browser_tests/fixtures/data/cloud/
+# LIVE GATING: the generated cloud manifest is committed. The gate step below
+# still checks both required inputs - smoke user credentials and the manifest -
+# and fails the job if either is unavailable. It never fake-passes with a green
+# "0 tests". Which rows carry the run tier is decided
+# by the curated overlay (browser_tests/fixtures/data/cloud/
 # curatedCloudWorkflows.json), the one hand-maintained generator input;
 # generated rows without an overlay entry are load+connectivity only and
 # register no run test at all.
-#
-# SHARDING (plan A2.7): at the full ~88-pack cloud manifest this job must
-# partition manifest rows across a CI matrix; set the shard count from the
-# first calibration run's timings, before promotion to required.
 #
 # FORK-SAFETY: fork PRs never reach secrets. GitHub does not expose repo
 # secrets to `pull_request` runs from forks, AND the same-repo `if:` on the job
 # (mirrored from the core gate) skips the whole job on a fork PR. A skipped job
 # counts as passing, so the required check stays green-safe for forks; fork
 # coverage of the frontend still comes from the main e2e shards. The gate
-# step is a second, defence-in-depth backstop: even on a same-repo run, an
-# unconfigured secret no-ops rather than erroring.
+# step is a second, defence-in-depth backstop: on a same-repo run, an
+# unconfigured secret is a hard activation failure.
 name: 'CI: Tests Custom Nodes Cloud'
 
 on:
@@ -63,24 +53,19 @@ concurrency:
   # itself submitted - but the sharing still bites: waitForQueueQuiet
   # (customNodeSuite.ts) legitimately waits on the WHOLE queue before the
   # auto-run tier, and a queue read cannot tell a prior pack's leftover
-  # from another run's work. Retire this group when the smoke-account pool
-  # lands and each run owns its own queue.
+  # from another run's work. Keep this shared group while the suite observes
+  # the whole queue; this proof remains intentionally serial and unsharded.
   # cancel-in-progress:false protects the IN-PROGRESS run from being killed
   # mid backend interaction, but GitHub still cancels a PENDING run when a
   # newer one queues into the group - under 3+ concurrent triggers the middle
-  # run is cancelled, not queued. Fine while this check is non-required and
-  # no-ops in seconds (pre-calibration); NOT fine for a required check running
-  # for real. Do not mark this check required until the scoped drain and
-  # account pool retire this group (then switch to the core gate's per-ref
-  # group) or an in-job lock replaces group serialization.
+  # run is cancelled, not queued. This is not safe for a required check. Do not
+  # mark this check required while pending runs can be evicted from this group.
   # workflow_dispatch runs get their own group: main-push runs share the
   # instance group and each new pending run EVICTS the older pending one
   # (GitHub keeps one pending slot per group) - calibration dispatches
   # 30316897509/30317780440/30318407927 died queued or displaced under main
-  # churn (30312432225 is the separate timeout kill, cited above). Pre-merge
-  # this overlap is safe: main runs no-op green in seconds (the manifest
-  # gate). Re-unify the groups once the scoped drain and account pool make
-  # serialization unnecessary, before this check is marked required.
+  # churn. Keep dispatches isolated from automatic runs and preserve serial
+  # execution while whole-queue observation remains part of the proof.
   group: ${{ github.event_name == 'workflow_dispatch' && 'custom-nodes-cloud-dispatch' || 'custom-nodes-cloud-instance' }}
   cancel-in-progress: false
 
@@ -113,32 +98,9 @@ jobs:
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
-    # CALIBRATED, and the answer is that this job cannot pass unsharded:
-    # run 30312432225 was timeout-killed at 60m, and run 30326101049 at 150m
-    # (122m of testing, 562 of the retried attempts over 359 tests, still
-    # inside allNodes). All three every-node tiers run against cloud at ~185
-    # attempts each (mount, save/reload, auto-run).
-    #
-    # SHARDING IS THE REMEDY, and it is blocked on this repo, not on Cloud.
-    # Divide that run out: 122m over 359 tests is ~20s per test, against an
-    # app-load budget this suite sets itself at 45-60s (CLOUD_APP_BOOT_TIMEOUT,
-    # and the cloud branch of playwright.config.ts). The dominant cost is
-    # per-test app load in the browser ON THE RUNNER - a multi-MB /object_info
-    # fetch plus auth seeding, paid once per test - not backend contention.
-    # Runner-bound cost is exactly what sharding fixes, near-linearly.
-    # What blocks it: every shard would sign in as the SAME smoke account and
-    # the drain is unscoped, so shards would cancel each other's prompts (see
-    # the concurrency comment). Land the prompt-scoped drain and the
-    # smoke-account pool, then shard rows and drop the shared group. A tier
-    # split (mount + save/reload parallel, auto-run serial) is a weaker
-    # fallback that needs neither, if the pool is delayed.
-    # 360 is GitHub's hosted-runner hard maximum - there is no knob past it.
-    # Raised to the wall so ONE complete run can produce the timing map that
-    # sizes the shards; the ceiling also remains the fuse that stops a
-    # hung pack (non-interruptible loops exist in the corpus) from squatting
-    # on the one smoke account's queue all day. A multi-hour job is
-    # calibration only, never a required gate.
-    timeout-minutes: 360
+    # This proof is intentionally one worker and unsharded. Cloud app boots are
+    # network-bound, and waitForQueueQuiet observes the whole shared queue.
+    # Preserve the serial execution contract for the S1-S12 gate.
     permissions:
       contents: read
     steps:
@@ -147,17 +109,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      # Pre-calibration + defence-in-depth gate on the TWO activation
-      # preconditions. Reads the two smoke user credentials into env (secrets are
-      # unavailable to `if:` expressions, so the check is a run step that
-      # writes a step output every later step consumes) and tests that the
-      # generated cloud manifest exists in the checkout - secrets landing
-      # first would otherwise red the suite at collection (`loadManifest()`
-      # throws on the missing file). When either precondition is missing it
-      # emits a LOUD `::notice` naming exactly what, sets run-cloud=false,
-      # and exits 0 - so the job goes green WITHOUT running a single test
-      # step (no fake "0 tests" pass). When both hold the suite runs for
-      # real.
+      # Fail closed on the two activation preconditions. Secrets are unavailable
+      # to `if:` expressions, so this run step checks them and the committed
+      # manifest before any setup cost. A same-repository gate without either
+      # prerequisite has no S1-S12 evidence and must be red.
       - name: Gate on cloud secrets and manifest
         id: gate
         env:
@@ -170,11 +125,11 @@ jobs:
           [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
           [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::notice::custom-nodes-e2e-cloud did not run: smoke user credentials unconfigured (missing: ${missing[*]}). Expected pre-calibration - the gate no-ops green until these repo secrets AND the generated customNodeManifest.cloud.json land. See docs/custom-node-regression-suite.md."
-            echo "run-cloud=false" >> "$GITHUB_OUTPUT"
+            echo "::error::custom-nodes-e2e-cloud cannot prove S1-S12: smoke user credentials are missing (${missing[*]})."
+            exit 1
           elif [ ! -f browser_tests/fixtures/data/customNodeManifest.cloud.json ]; then
-            echo "::notice::custom-nodes-e2e-cloud did not run: secrets are configured but the generated browser_tests/fixtures/data/customNodeManifest.cloud.json is not in this checkout. Generate it from the Phase-1 probe snapshot ('pnpm gen:cloud-manifest') and commit it - the gate no-ops green until then. See docs/custom-node-regression-suite.md."
-            echo "run-cloud=false" >> "$GITHUB_OUTPUT"
+            echo "::error::custom-nodes-e2e-cloud cannot prove S1-S12: browser_tests/fixtures/data/customNodeManifest.cloud.json is missing."
+            exit 1
           else
             echo "run-cloud=true" >> "$GITHUB_OUTPUT"
           fi
@@ -260,28 +215,30 @@ jobs:
       # run-cloud so it only runs when the suite actually ran (else there is
       # no results json to read); always() so a red suite still gets its skips
       # surfaced. Byte-for-byte the core gate's jq logic.
-      - name: Forbid skipped or flaky tests
+      - name: Forbid failed, skipped, or flaky tests
         if: always() && steps.gate.outputs.run-cloud == 'true'
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
         run: |
           set -euo pipefail
-          # An earlier step (build, preview, the suite itself) may have failed
-          # before Playwright wrote its json; the job is already red, so
-          # surface that rather than a confusing jq "no such file" error.
-          # A missing json after a SUCCESSFUL suite is different: the result
-          # gate cannot run at all, so fail closed rather than pass a job whose
-          # zero-skip and zero-flaky invariants went unchecked.
+          # The JSON result is mandatory even when the suite step failed: the
+          # gate must independently prove the failed, skipped, and flaky totals.
           if [ ! -f custom-nodes-cloud-results.json ]; then
-            if [ "${SUITE_OUTCOME:-}" = "success" ]; then
-              echo "::error::suite succeeded but wrote no results json - the skip/flaky gate could not run"
-              exit 1
-            fi
-            echo "no results json - the suite step already failed (${SUITE_OUTCOME:-unknown})"
-            exit 0
+            echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
+            exit 1
           fi
-          skipped=$(jq '.stats.skipped' custom-nodes-cloud-results.json)
+          unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-cloud-results.json)
+          echo "failed tests: $unexpected"
+          if [ "$unexpected" != "0" ]; then
+            echo "::error::$unexpected test(s) failed - failed results are not acceptable in the gating job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "unexpected"))
+                     | .title' custom-nodes-cloud-results.json | sort -u | head -40
+            exit 1
+          fi
+          skipped=$(jq -er '.stats.skipped | numbers' custom-nodes-cloud-results.json)
           echo "skipped tests: $skipped"
           if [ "$skipped" != "0" ]; then
             echo "::error::$skipped test(s) skipped - a cloud pack, devtools, or an under-enrolled cloud manifest failed to surface a tier; skips are not acceptable in the gating job"
@@ -291,7 +248,7 @@ jobs:
                      | .title' custom-nodes-cloud-results.json | sort -u | head -40
             exit 1
           fi
-          flaky=$(jq '.stats.flaky' custom-nodes-cloud-results.json)
+          flaky=$(jq -er '.stats.flaky | numbers' custom-nodes-cloud-results.json)
           echo "flaky tests: $flaky"
           if [ "$flaky" != "0" ]; then
             echo "::error::$flaky test(s) passed only after retry - flaky results are not acceptable in the gating job"
@@ -302,10 +259,9 @@ jobs:
             exit 1
           fi
 
-      # always() so a red suite still publishes its report. On the no-op path
-      # (secrets or manifest absent) nothing ran, so there is no
-      # playwright-report/ and if-no-files-found:warn simply warns - it never
-      # fails the green no-op.
+      # always() so a red suite or failed activation gate still publishes any
+      # diagnostics that exist. if-no-files-found:warn preserves the gate's
+      # original failure when no suite artifact could be created.
       - name: Upload Playwright report and raw diagnostics
         if: always()
         uses: actions/upload-artifact@v6

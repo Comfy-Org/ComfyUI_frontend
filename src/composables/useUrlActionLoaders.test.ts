@@ -9,11 +9,6 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-const mockFlags = vi.hoisted(() => ({ value: { teamWorkspacesEnabled: true } }))
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ flags: mockFlags.value })
-}))
-
 const mocks = vi.hoisted(() => ({
   loadInvite: vi.fn().mockResolvedValue(undefined),
   loadCreateWorkspace: vi.fn().mockResolvedValue(undefined),
@@ -55,7 +50,6 @@ describe('useUrlActionLoaders', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsCloud.value = true
-    mockFlags.value = { teamWorkspacesEnabled: true }
   })
 
   it('does not instantiate or run any loader off cloud', async () => {
@@ -74,24 +68,12 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadTopUp).not.toHaveBeenCalled()
   })
 
-  it('runs all loaders on cloud when team workspaces are enabled', async () => {
+  it('runs all loaders on Cloud', async () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
     expect(mocks.loadInvite).toHaveBeenCalledOnce()
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
-    expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
-    expect(mocks.loadTopUp).toHaveBeenCalledOnce()
-  })
-
-  it('runs the pricing and top-up loaders but skips the flag-gated loaders when team workspaces are disabled', async () => {
-    mockFlags.value = { teamWorkspacesEnabled: false }
-
-    const { runUrlActionLoaders } = useUrlActionLoaders()
-    await runUrlActionLoaders()
-
-    expect(mocks.loadInvite).not.toHaveBeenCalled()
-    expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
   })

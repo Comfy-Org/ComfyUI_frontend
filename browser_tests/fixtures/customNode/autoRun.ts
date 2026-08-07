@@ -234,13 +234,6 @@ export const AUTO_RUN_ALLOWED_FAILURES: Record<
         'deployed 1.5.0 produced this exact phase-vocoder failure in one exact run while another ran clean'
     }
   },
-  comfyui_controlnet_aux: {
-    ExecuteAllControlNetPreprocessors: {
-      outcomes: ['TIMEOUT'],
-      reason:
-        'executes every registered controlnet preprocessor in one aggregate; timed out cold after running clean warm as Cloud model/cache state changed'
-    }
-  },
   'comfyui-rmbg': {
     SAM3Segment: {
       outcomes: ['TIMEOUT'],

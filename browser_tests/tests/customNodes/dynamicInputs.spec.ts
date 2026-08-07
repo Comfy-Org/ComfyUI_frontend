@@ -10,6 +10,7 @@ import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLe
 import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
+  customNodesEnv,
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
@@ -76,7 +77,7 @@ for (const autogrowCase of AUTOGROW_CASES) {
     test(`${autogrowCase.consumerType} grows on connect and shrinks on disconnect (drag + programmatic, both renderers)`, async ({
       comfyPage
     }) => {
-      test.setTimeout(120_000)
+      if (customNodesEnv() !== 'cloud') test.setTimeout(120_000)
       const objectInfo = await target.getObjectInfo(comfyPage.page)
       expect(
         Object.keys(objectInfo).length,

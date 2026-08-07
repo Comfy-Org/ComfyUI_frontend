@@ -669,7 +669,7 @@ for (const entry of loadManifest()) {
     test('every registered node mounts, survives save/reload, and executes', async ({
       comfyPage
     }) => {
-      test.setTimeout(1_620_000)
+      if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
       const { keys, defs } = await packNodeKeys(comfyPage.page, entry.pack)
       test.skip(
         keys.length === 0,

@@ -65,15 +65,6 @@ jobs:
     # Don't run the cron on forks.
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    # Drift reds run slower than green (retries multiply every failure); the
-    # historical all-broken run needed ~90 minutes. The suite STEP carries its
-    # own lower timeout so an overrun FAILS the step (failure() stays true,
-    # the report uploads, the issue files); this job ceiling is headroom only
-    # - a job-level timeout CANCELS, and cancelled steps skip failure() gates.
-    # 100, not 90: setup (pip/torch installs) runs before the 75-min suite
-    # step, and a slow setup day must not let the job cancel beat the step
-    # timeout.
-    timeout-minutes: 100
     permissions:
       contents: read
       issues: write
@@ -139,22 +130,33 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
 
       - name: Run custom-node suite
-        # Step timeout below the job ceiling: an overlong run fails HERE
-        # (keeping failure() true for the filing step) instead of tripping
-        # the job-level cancel.
-        timeout-minutes: 75
+        id: suite
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
         run: |
+          set -o pipefail
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=list,json,html --workers=1
+            --project=custom-nodes --reporter=list,json,html --workers=1 \
+            2>&1 | tee custom-nodes-canary.log
 
-      - name: Forbid skipped tests
+      - name: Forbid failed, skipped, or flaky tests
         if: always()
         shell: bash
+        env:
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
         run: |
           set -euo pipefail
-          skipped=$(jq '.stats.skipped' custom-nodes-results.json)
+          if [ ! -f custom-nodes-results.json ]; then
+            echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
+            exit 1
+          fi
+          unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-results.json)
+          echo "failed tests: $unexpected"
+          if [ "$unexpected" != "0" ]; then
+            echo "::error::$unexpected test(s) failed - failed results are not acceptable in the canary job"
+            exit 1
+          fi
+          skipped=$(jq -er '.stats.skipped | numbers' custom-nodes-results.json)
           echo "skipped tests: $skipped"
           if [ "$skipped" != "0" ]; then
             echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load on current core"
@@ -164,13 +166,26 @@ jobs:
                      | .title' custom-nodes-results.json | sort -u | head -40
             exit 1
           fi
+          flaky=$(jq -er '.stats.flaky | numbers' custom-nodes-results.json)
+          echo "flaky tests: $flaky"
+          if [ "$flaky" != "0" ]; then
+            echo "::error::$flaky test(s) passed only after retry - flaky results are not acceptable in the canary job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "flaky"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
 
-      - name: Upload Playwright report
+      - name: Upload Playwright report and raw diagnostics
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: playwright-report-custom-nodes-canary
-          path: playwright-report/
+          path: |
+            playwright-report/
+            custom-nodes-results.json
+            custom-nodes-canary.log
           retention-days: 7
           if-no-files-found: warn
 
@@ -207,9 +222,6 @@ jobs:
     # core stays at the gate's exact pin. Don't run the cron on forks.
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    # 100/75 split for the same reason as Job A: red is this job's expected
-    # steady state, and the report must survive it.
-    timeout-minutes: 100
     permissions:
       contents: read
       issues: write
@@ -273,22 +285,33 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
 
       - name: Run custom-node suite
-        # Step timeout below the job ceiling: an overlong run fails HERE
-        # (keeping failure() true for the filing step) instead of tripping
-        # the job-level cancel.
-        timeout-minutes: 75
+        id: suite
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
         run: |
+          set -o pipefail
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=list,json,html --workers=1
+            --project=custom-nodes --reporter=list,json,html --workers=1 \
+            2>&1 | tee custom-nodes-canary-packs.log
 
-      - name: Forbid skipped tests
+      - name: Forbid failed, skipped, or flaky tests
         if: always()
         shell: bash
+        env:
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
         run: |
           set -euo pipefail
-          skipped=$(jq '.stats.skipped' custom-nodes-results.json)
+          if [ ! -f custom-nodes-results.json ]; then
+            echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
+            exit 1
+          fi
+          unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-results.json)
+          echo "failed tests: $unexpected"
+          if [ "$unexpected" != "0" ]; then
+            echo "::error::$unexpected test(s) failed - failed results are not acceptable in the canary job"
+            exit 1
+          fi
+          skipped=$(jq -er '.stats.skipped | numbers' custom-nodes-results.json)
           echo "skipped tests: $skipped"
           if [ "$skipped" != "0" ]; then
             echo "::error::$skipped test(s) skipped - a pack HEAD or devtools failed to load"
@@ -298,13 +321,26 @@ jobs:
                      | .title' custom-nodes-results.json | sort -u | head -40
             exit 1
           fi
+          flaky=$(jq -er '.stats.flaky | numbers' custom-nodes-results.json)
+          echo "flaky tests: $flaky"
+          if [ "$flaky" != "0" ]; then
+            echo "::error::$flaky test(s) passed only after retry - flaky results are not acceptable in the canary job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "flaky"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
 
-      - name: Upload Playwright report
+      - name: Upload Playwright report and raw diagnostics
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: playwright-report-custom-nodes-canary-packs
-          path: playwright-report/
+          path: |
+            playwright-report/
+            custom-nodes-results.json
+            custom-nodes-canary-packs.log
           retention-days: 7
           if-no-files-found: warn
 
@@ -341,28 +377,16 @@ jobs:
     # share one ComfyUI queue. Per-test cleanup is now scoped to the page's
     # own prompt ids, but waitForQueueQuiet (customNodeSuite.ts) still
     # waits on the WHOLE queue before the auto-run tier and cannot tell a
-    # prior pack's leftover from another run's work. Remove this block when
-    # the smoke-account pool gives each run its own queue; the group's name
-    # predates that analysis and is being retired with it.
+    # prior pack's leftover from another run's work. Keep this group while the
+    # Cloud proof remains serial and whole-queue observation is required.
     # Known gap while this block exists: if this job is still PENDING in
     # the group when a newer gate/record run queues, GitHub evicts it (the
     # gate's concurrency comment documents observed evictions by run ID)
     # and the night is silently lost - no step runs, so nothing files.
-    # Structural exits: an in-job lock, or leaving the group once the
-    # scoped drain + account pool land.
+    # This pending-run eviction remains a known infrastructure risk.
     concurrency:
       group: custom-nodes-cloud-instance
       cancel-in-progress: false
-    # Step timeout below the job ceiling, same reason as Jobs A/B: an
-    # overrun must fail the STEP (failure() stays true, the report uploads,
-    # the issue files); a job-level cancel would skip both. 330/350 sized
-    # from the only completed post-merge measurement: gate run 30411202735's
-    # suite step ran ~287 minutes (a FAILING run, retry-multiplied - the
-    # regime drift nights live in) under GitHub's 360 hard wall. A red
-    # night may still truncate at 330; the partial report uploads and the
-    # issue files by design. Re-size from the instrumented timing map when
-    # it lands.
-    timeout-minutes: 350
     permissions:
       contents: read
       issues: write
@@ -370,11 +394,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      # Defense-in-depth mirror of the cloud gate's activation gate: no-op
-      # green with a loud notice when the smoke credentials are unset (an
-      # unconfigured repo or a port of this workflow) or the generated
-      # cloud manifest is absent from the checkout. Never a silent fake
-      # pass.
+      # Defense-in-depth mirror of the Cloud gate: fail closed when credentials
+      # or the committed manifest are absent. A green drift canary must carry a
+      # real suite result, not only a notice that no tests ran.
       - name: Gate on cloud secrets and manifest
         id: gate
         env:
@@ -387,11 +409,11 @@ jobs:
           [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
           [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::notice::canary-cloud-drift did not run: smoke user credentials unconfigured (missing: ${missing[*]})."
-            echo "run-cloud=false" >> "$GITHUB_OUTPUT"
+            echo "::error::canary-cloud-drift cannot run: smoke user credentials are missing (${missing[*]})."
+            exit 1
           elif [ ! -f browser_tests/fixtures/data/customNodeManifest.cloud.json ]; then
-            echo "::notice::canary-cloud-drift did not run: browser_tests/fixtures/data/customNodeManifest.cloud.json is not in this checkout."
-            echo "run-cloud=false" >> "$GITHUB_OUTPUT"
+            echo "::error::canary-cloud-drift cannot run: browser_tests/fixtures/data/customNodeManifest.cloud.json is missing."
+            exit 1
           else
             echo "run-cloud=true" >> "$GITHUB_OUTPUT"
           fi
@@ -433,7 +455,6 @@ jobs:
       - name: Run custom-node cloud suite
         id: suite
         if: steps.gate.outputs.run-cloud == 'true'
-        timeout-minutes: 330
         env:
           CUSTOM_NODES_ENV: cloud
           PLAYWRIGHT_TEST_URL: http://localhost:4173
@@ -441,10 +462,14 @@ jobs:
           SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
           SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         run: |
+          set -o pipefail
+          # S13 stays deferred on Cloud until its baselines are recorded.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=list,json,html --workers=1
+            --project=custom-nodes --reporter=list,json,html --workers=1 \
+            --grep-invert "interaction profiles:" \
+            2>&1 | tee custom-nodes-canary-cloud.log
 
-      - name: Forbid skipped tests
+      - name: Forbid failed, skipped, or flaky tests
         if: always() && steps.gate.outputs.run-cloud == 'true'
         shell: bash
         env:
@@ -452,14 +477,16 @@ jobs:
         run: |
           set -euo pipefail
           if [ ! -f custom-nodes-cloud-results.json ]; then
-            if [ "${SUITE_OUTCOME:-}" = "success" ]; then
-              echo "::error::suite succeeded but wrote no results json - the skip gate could not run"
-              exit 1
-            fi
-            echo "no results json - the suite step already failed (${SUITE_OUTCOME:-unknown})"
-            exit 0
+            echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
+            exit 1
           fi
-          skipped=$(jq '.stats.skipped' custom-nodes-cloud-results.json)
+          unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-cloud-results.json)
+          echo "failed tests: $unexpected"
+          if [ "$unexpected" != "0" ]; then
+            echo "::error::$unexpected test(s) failed - failed results are not acceptable in the canary job"
+            exit 1
+          fi
+          skipped=$(jq -er '.stats.skipped | numbers' custom-nodes-cloud-results.json)
           echo "skipped tests: $skipped"
           if [ "$skipped" != "0" ]; then
             echo "::error::$skipped test(s) skipped - a cloud pack, devtools, or an under-enrolled cloud manifest failed to surface a tier"
@@ -469,13 +496,26 @@ jobs:
                      | .title' custom-nodes-cloud-results.json | sort -u | head -40
             exit 1
           fi
+          flaky=$(jq -er '.stats.flaky | numbers' custom-nodes-cloud-results.json)
+          echo "flaky tests: $flaky"
+          if [ "$flaky" != "0" ]; then
+            echo "::error::$flaky test(s) passed only after retry - flaky results are not acceptable in the canary job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "flaky"))
+                     | .title' custom-nodes-cloud-results.json | sort -u | head -40
+            exit 1
+          fi
 
-      - name: Upload Playwright report
+      - name: Upload Playwright report and raw diagnostics
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: playwright-report-custom-nodes-canary-cloud
-          path: playwright-report/
+          path: |
+            playwright-report/
+            custom-nodes-cloud-results.json
+            custom-nodes-canary-cloud.log
           retention-days: 7
           if-no-files-found: warn
 

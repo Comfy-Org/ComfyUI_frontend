@@ -69,10 +69,8 @@ export default defineConfig({
       // 15.1s, and 60s lost 125 of 128 in gate run 30456554768 at 1.0m - a
       // run whose 3 passes prove the app does boot, just not on a schedule a
       // fixed number can predict. A cap converts slow-but-working into
-      // failed; the step and job ceilings already bound a genuine hang, and
-      // the fixture logs sign-in and boot durations so slowness stays
-      // visible instead of fatal. Do not reintroduce a number here: size the
-      // ceilings from the logged distribution instead.
+      // failed. The fixture logs sign-in and boot durations so slowness stays
+      // visible instead of fatal. Do not reintroduce a numeric cap here.
       timeout: process.env.CUSTOM_NODES_ENV === 'cloud' ? 0 : 15000,
       // No retries on cloud. Every cloud failure so far has been in the
       // beforeEach hook - sign-in plus app boot - which fails identically

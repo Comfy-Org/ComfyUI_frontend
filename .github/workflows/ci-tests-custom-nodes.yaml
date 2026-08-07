@@ -43,13 +43,8 @@ jobs:
       - id: changes
         uses: ./.github/actions/changes-filter
 
-  # Deliberately NOT sharded yet: the suite is ~8 min but every shard would
-  # pay the full ~4.5 min setup (clone + pip-install every pack + boot the
-  # backend), so 2 shards buy ~4 min of wall time for double the runner cost,
-  # with diminishing returns beyond that. Sharding pays once test time dwarfs
-  # setup time -
-  # first cut setup with a prebuilt image of the pinned packs, then shard if
-  # the job exceeds ~12 minutes.
+  # This proof is intentionally serial and unsharded: its backend queue and
+  # cross-test state contracts require one worker for an accepted verdict.
   custom-nodes-e2e-core:
     needs: changes
     # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
@@ -174,28 +169,30 @@ jobs:
 
       # A skip here means a pack or devtools did not load: on this backend every
       # tier is meant to run, so a skip is a gate failure, not an honest pass.
-      - name: Forbid skipped or flaky tests
+      - name: Forbid failed, skipped, or flaky tests
         if: always()
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
         run: |
           set -euo pipefail
-          # An earlier step (build, server boot, the suite itself) may have
-          # failed before Playwright wrote its json; the job is already red,
-          # so surface that rather than a confusing jq "no such file" error.
-          # A missing json after a SUCCESSFUL suite is different: the result
-          # gate cannot run at all, so fail closed rather than pass a job whose
-          # zero-skip and zero-flaky invariants went unchecked.
+          # The JSON result is mandatory even when the suite step failed: the
+          # gate must independently prove the failed, skipped, and flaky totals.
           if [ ! -f custom-nodes-results.json ]; then
-            if [ "${SUITE_OUTCOME:-}" = "success" ]; then
-              echo "::error::suite succeeded but wrote no results json - the skip/flaky gate could not run"
-              exit 1
-            fi
-            echo "no results json - the suite step already failed (${SUITE_OUTCOME:-unknown})"
-            exit 0
+            echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
+            exit 1
           fi
-          skipped=$(jq '.stats.skipped' custom-nodes-results.json)
+          unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-results.json)
+          echo "failed tests: $unexpected"
+          if [ "$unexpected" != "0" ]; then
+            echo "::error::$unexpected test(s) failed - failed results are not acceptable in the gating job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "unexpected"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
+          skipped=$(jq -er '.stats.skipped | numbers' custom-nodes-results.json)
           echo "skipped tests: $skipped"
           if [ "$skipped" != "0" ]; then
             echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load; skips are not acceptable in the gating job"
@@ -207,7 +204,7 @@ jobs:
                      | .title' custom-nodes-results.json | sort -u | head -40
             exit 1
           fi
-          flaky=$(jq '.stats.flaky' custom-nodes-results.json)
+          flaky=$(jq -er '.stats.flaky | numbers' custom-nodes-results.json)
           echo "flaky tests: $flaky"
           if [ "$flaky" != "0" ]; then
             echo "::error::$flaky test(s) passed only after retry - flaky results are not acceptable in the gating job"
