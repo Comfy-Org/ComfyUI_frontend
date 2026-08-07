@@ -105,7 +105,7 @@ describe('deriveBillingPolicyState', () => {
         isCloud,
         canAccessSubscriptionFeatures: true,
         isTeamPlan: false,
-        tier: 'TEAM' as unknown as Parameters<
+        tier: 'TIER_ADDED_AFTER_THIS_BUILD' as unknown as Parameters<
           typeof deriveBillingPolicyState
         >[0]['tier']
       })
