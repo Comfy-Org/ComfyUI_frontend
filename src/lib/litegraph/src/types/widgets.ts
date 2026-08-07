@@ -1,4 +1,5 @@
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
@@ -145,6 +146,7 @@ export type IWidget =
   | IBoundingBoxWidget
   | ICurveWidget
   | IPainterWidget
+  | ICompositorWidget
   | IRangeWidget
   | IBoundingBoxesWidget
   | IColorsWidget
@@ -348,6 +350,14 @@ export interface ICurveWidget extends IBaseWidget<CurveData, 'curve'> {
 export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
   type: 'painter'
   value: string
+}
+
+export interface ICompositorWidget extends IBaseWidget<
+  CompositorWidgetValue,
+  'compositor'
+> {
+  type: 'compositor'
+  value: CompositorWidgetValue
 }
 
 export interface IBoundingBoxesWidget extends IBaseWidget<

@@ -72,6 +72,7 @@ catalog:
   '@vueuse/core': ^14.3.0
   '@vueuse/integrations': ^14.3.0
   '@webgpu/types': ^0.1.66
+  ag-psd: ^31.0.2
   algoliasearch: ^5.21.0
   astro: ^6.4.2
   axios: ^1.15.2
