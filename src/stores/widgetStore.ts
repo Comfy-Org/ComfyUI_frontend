@@ -32,9 +32,15 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
+  /** Drops a registration, so a pack can retire the type it declared. */
+  function unregisterCustomWidget(type: string) {
+    customWidgets.value.delete(type)
+  }
+
   return {
     widgets,
     inputIsWidget,
-    registerCustomWidgets
+    registerCustomWidgets,
+    unregisterCustomWidget
   }
 })
