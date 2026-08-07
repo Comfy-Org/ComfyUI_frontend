@@ -158,6 +158,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'setCollapsed',
   'setColor',
   'setDisabled',
+  'setExecution',
   'setHidden',
   'setLabel',
   'setMode',
