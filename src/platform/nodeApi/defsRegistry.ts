@@ -86,6 +86,20 @@ export interface NodeDefBuilder {
 
   setTitle(title: string): void
   setCategory(category: string): void
+  /**
+   * Declares that this node type never reaches the backend.
+   *
+   * `defs.define` takes `execution: 'frontend'` for a type the pack owns, but
+   * packs also mark *backend-registered* types frontend-only — a tools or
+   * control node that exists to drive other nodes and must not appear in the
+   * prompt. Without this they reach for `node.isVirtualNode`, and dropping that
+   * line puts a new node into `graphToPrompt`, which is a wire-format break.
+   *
+   * Supply `resolve` when the node carries a value through to something else;
+   * omit it and the node is simply left out. See `resolution.ts` — `resolve` is
+   * pure over a read-only view and must not mutate the graph.
+   */
+  setExecution(execution: 'backend' | 'frontend', resolve?: Resolver): void
   addWidget(def: WidgetDef): void
   hideWidget(name: string): void
 
@@ -513,6 +527,8 @@ export function createDefRegistry(): {
         run: (node: NodeHandle, event: BeforeConnectEvent) => boolean | void
         handleFor: (nodeId: string) => NodeHandle
       }[] = []
+      let frontendOnly = false
+      let declaredResolver: Resolver | undefined
       const menuItems: {
         item: NodeMenuItem
         handleFor: (nodeId: string) => NodeHandle
@@ -543,6 +559,10 @@ export function createDefRegistry(): {
           },
           setCategory: (category) => {
             def = Object.freeze({ ...def, category })
+          },
+          setExecution: (execution, resolve) => {
+            frontendOnly = execution === 'frontend'
+            if (resolve) declaredResolver = resolve
           },
           addWidget: (def) => widgets.push({ def, handleFor }),
           hideWidget: (name) => hidden.push({ name, handleFor }),
@@ -578,6 +598,13 @@ export function createDefRegistry(): {
       // this returns and assigns `node.title` from it, so a pack renaming a
       // type saw nothing happen. The legacy hook this replaces modifies the
       // same object in place, so doing likewise keeps one contract, not two.
+      if (frontendOnly) {
+        // The same flag `defs.define` sets for a pack-declared frontend node.
+        // `graphToPrompt` skips it, which is the whole point.
+        ;(nodeType.prototype as Partial<LGraphNode>).isVirtualNode = true
+        if (declaredResolver) frontendResolvers.set(def.type, declaredResolver)
+      }
+
       const rawDef = raw as RawNodeDef
       if (def.title !== original.title) rawDef.display_name = def.title
       if (def.category !== original.category) rawDef.category = def.category
