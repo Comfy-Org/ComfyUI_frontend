@@ -225,14 +225,20 @@ export function createNodeHandles(
         type: {
           get: (n) => n.type,
           readonlyHint:
-            'Node type is identity. Use graph.replaceNode() to change it.'
+            'Node type is identity, and there is no published way to change it.'
         },
         inputs: { get: (n) => collections.inputs(String(n.id)) },
         outputs: { get: (n) => collections.outputs(String(n.id)) },
-        widgets: { get: (n) => collections.widgets(String(n.id)) }
+        widgets: { get: (n) => collections.widgets(String(n.id)) },
+        // A property, matching the interface. Registered as a method it read
+        // back as a bound function, so every `switch (node.comfyClass)` fell
+        // through silently — the exact failure this layer exists to prevent.
+        comfyClass: {
+          get: (n) => (n as { comfyClass?: string }).comfyClass ?? n.type,
+          readonlyHint: 'Node class is identity and cannot be reassigned.'
+        }
       },
       methods: {
-        comfyClass: (n) => (n as { comfyClass?: string }).comfyClass ?? n.type,
         getTitle: (n) => n.title,
         setTitle: (n, ...args) => {
           n.title = String(args[0])
