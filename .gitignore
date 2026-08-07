@@ -112,6 +112,7 @@ matrix-proof/
 # Agent telemetry working files
 /telemetry/
 
-# Magic Patch working copies: large, regenerable, and reviewed in place
-# rather than in history.
+# Magic Patch working copies. NOTE: conversions in db/**/v1/ are NOT in git, and
+# an external `git clean` once destroyed a day's output. Tracking them needs a
+# lint-staged exclusion first, or the hooks format third-party pack sources.
 db/
