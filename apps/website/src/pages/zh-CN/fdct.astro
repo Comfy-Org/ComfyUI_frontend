@@ -5,6 +5,7 @@ import { t } from '../../i18n/translations'
 import BuildersSection from '../../templates/fdct/BuildersSection.vue'
 import HeroSection from '../../templates/fdct/HeroSection.vue'
 import HowItWorksSection from '../../templates/fdct/HowItWorksSection.vue'
+import TechnologistsSection from '../../templates/fdct/TechnologistsSection.vue'
 import WhatYouGetSection from '../../templates/fdct/WhatYouGetSection.vue'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 
@@ -32,6 +33,7 @@ const { locale } = pageContext(
   <SocialProofBarSection />
   <HowItWorksSection client:load locale="zh-CN" />
   <WhatYouGetSection client:load locale="zh-CN" />
-  {/* Later sections land here in page order: featured technologists,
-      past projects, FAQ, CTA bands, closing CTA. */}
+  <TechnologistsSection client:load locale="zh-CN" />
+  {/* Later sections land here in page order: past projects, FAQ,
+      CTA bands, closing CTA. */}
 </BaseLayout>

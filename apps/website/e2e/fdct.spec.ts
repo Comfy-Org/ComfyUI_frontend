@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { technologists } from '../src/data/fdct'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -88,6 +89,18 @@ test.describe('FDCT page @smoke', () => {
       await expect(page.getByText(t(key, 'en'))).toBeVisible()
     }
   })
+
+  test('featured technologists renders the heading and three cards', async ({
+    page
+  }) => {
+    await page.goto('/fdct')
+    await expect(
+      page.getByRole('heading', { name: t('fdct.technologists.title', 'en') })
+    ).toBeVisible()
+    for (const person of technologists) {
+      await expect(page.getByText(person.name, { exact: true })).toBeVisible()
+    }
+  })
 })
 
 test.describe('FDCT page (zh-CN) @smoke', () => {
@@ -150,6 +163,20 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     ).toBeVisible()
     for (const key of whatYouGetItemKeys) {
       await expect(page.getByText(t(key, 'zh-CN'))).toBeVisible()
+    }
+  })
+
+  test('featured technologists renders the localized heading and three cards', async ({
+    page
+  }) => {
+    await page.goto('/zh-CN/fdct')
+    await expect(
+      page.getByRole('heading', {
+        name: t('fdct.technologists.title', 'zh-CN')
+      })
+    ).toBeVisible()
+    for (const person of technologists) {
+      await expect(page.getByText(person.name, { exact: true })).toBeVisible()
     }
   })
 })

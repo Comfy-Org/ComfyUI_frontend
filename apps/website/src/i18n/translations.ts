@@ -5347,6 +5347,15 @@ const translations = {
   'fdct.whatYouGet.item5': {
     en: 'Reusable creative assets your team keeps',
     'zh-CN': '可复用的创意资产，归你的团队所有'
+  },
+  'fdct.technologists.title': {
+    en: 'Featured technologists',
+    'zh-CN': '精选技术专家'
+  },
+  'fdct.technologists.lead': {
+    en: 'FDCTs come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match technologists to each engagement based on the work, your stack, and the timeline.',
+    'zh-CN':
+      'FDCT 来自真实制作一线：拥有电影长片、商业广告与体验项目背景，ComfyUI 支撑着已交付的作品。我们会根据项目内容、你的技术栈和时间表，为每次合作匹配合适的技术专家。'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
