@@ -417,7 +417,7 @@ import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   SubscriptionTier,
@@ -779,10 +779,12 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
 
+const currentAccountTier = computed(() =>
+  subscription.value?.tier && !isEnded.value ? subscription.value.tier : null
+)
+
 const currentTierKey = computed<TierKey | null>(() =>
-  subscription.value?.tier && !isEnded.value
-    ? TIER_TO_KEY[subscription.value.tier]
-    : null
+  currentAccountTier.value ? toTierKey(currentAccountTier.value) : null
 )
 
 const isYearlySubscription = computed(
@@ -816,8 +818,9 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
   }
 
   // Free tier is not a paid plan to "change" from — those users subscribe.
+  // Keyed off the account tier, not the catalog key, so a Team plan counts.
   const hasActivePaidPlan =
-    currentTierKey.value !== null && currentTierKey.value !== 'free'
+    currentAccountTier.value !== null && currentAccountTier.value !== 'FREE'
 
   return hasActivePaidPlan
     ? t('subscription.changeTo', { plan: planName })

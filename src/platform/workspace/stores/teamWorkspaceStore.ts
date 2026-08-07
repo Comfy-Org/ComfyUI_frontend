@@ -32,7 +32,7 @@ export interface WorkspaceMember {
   monthlyCreditLimit?: number | null
 }
 
-export interface PendingInvite {
+export interface WorkspacePendingInvite {
   id: string
   email: string
   inviteDate: Date
@@ -46,7 +46,7 @@ interface WorkspaceState extends WorkspaceWithRole {
   subscriptionPlan: SubscriptionPlan
   subscriptionTier: SubscriptionTier | null
   members: WorkspaceMember[]
-  pendingInvites: PendingInvite[]
+  pendingInvites: WorkspacePendingInvite[]
 }
 
 type InitState = 'uninitialized' | 'loading' | 'ready' | 'error'
@@ -64,7 +64,9 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
   }
 }
 
-function mapApiInviteToPendingInvite(invite: ApiPendingInvite): PendingInvite {
+function mapApiInviteToPendingInvite(
+  invite: ApiPendingInvite
+): WorkspacePendingInvite {
   return {
     id: invite.id,
     email: invite.email,
@@ -206,7 +208,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     return !!selfRow && selfRow.id === originalOwnerId.value
   })
 
-  const pendingInvites = computed<PendingInvite[]>(
+  const pendingInvites = computed<WorkspacePendingInvite[]>(
     () => activeWorkspace.value?.pendingInvites ?? []
   )
 
@@ -726,7 +728,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   /**
    * Fetch pending invites for the current workspace.
    */
-  async function fetchPendingInvites(): Promise<PendingInvite[]> {
+  async function fetchPendingInvites(): Promise<WorkspacePendingInvite[]> {
     const generation = identityGeneration
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return []
@@ -742,7 +744,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   /**
    * Create an invite for the current workspace.
    */
-  async function createInvite(email: string): Promise<PendingInvite> {
+  async function createInvite(email: string): Promise<WorkspacePendingInvite> {
     const generation = identityGeneration
     const workspaceId = activeWorkspaceId.value
     const response = await workspaceApi.createInvite({ email })
@@ -781,7 +783,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   const resendingInviteIds = new Set<string>()
 
-  async function resendInvite(inviteId: string): Promise<PendingInvite> {
+  async function resendInvite(
+    inviteId: string
+  ): Promise<WorkspacePendingInvite> {
     const generation = identityGeneration
     const resendKey = `${generation}:${inviteId}`
     if (resendingInviteIds.has(resendKey)) {

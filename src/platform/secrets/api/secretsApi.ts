@@ -1,4 +1,5 @@
 import type {
+  ErrorResponse,
   SecretListResponse,
   SecretProvidersResponse
 } from '@comfyorg/ingest-types'
@@ -14,11 +15,6 @@ import type {
 } from '../types'
 import { SECRET_ERROR_CODES } from '../types'
 
-interface ErrorResponse {
-  message?: string
-  code?: string
-}
-
 export class SecretsApiError extends Error {
   constructor(
     message: string,
@@ -32,7 +28,7 @@ export class SecretsApiError extends Error {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    let errorData: ErrorResponse = {}
+    let errorData: Partial<ErrorResponse> = {}
     try {
       errorData = await response.json()
     } catch {

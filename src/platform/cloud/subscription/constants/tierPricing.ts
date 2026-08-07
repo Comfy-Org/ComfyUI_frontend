@@ -1,5 +1,9 @@
+import type { SubscriptionTier as ApiSubscriptionTier } from '@comfyorg/ingest-types'
+
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { components } from '@/types/comfyRegistryTypes'
+
+export type { ApiSubscriptionTier }
 
 export type SubscriptionTier = components['schemas']['SubscriptionTier']
 
@@ -51,6 +55,11 @@ const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 }
 
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
+
+// TEAM is workspace-level, so it maps to no key in this personal plan catalog.
+export function toTierKey(tier: ApiSubscriptionTier): TierKey | null {
+  return tier === 'TEAM' ? null : TIER_TO_KEY[tier]
+}
 
 const FOUNDER_MONTHLY_PRICE = 20
 const FOUNDER_MONTHLY_CREDITS = 5460

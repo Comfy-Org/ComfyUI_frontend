@@ -1,3 +1,4 @@
+import type { SubscriptionDuration } from '@comfyorg/ingest-types'
 import {
   TIER_TO_KEY,
   getTierPrice
@@ -27,8 +28,6 @@ export const PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY =
   'comfy.subscription.pending_checkout_attempt'
 export const PENDING_SUBSCRIPTION_CHECKOUT_EVENT =
   'comfy:subscription-checkout-attempt-changed'
-
-type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
 
 interface SubscriptionStatusSnapshot {
   is_active?: boolean

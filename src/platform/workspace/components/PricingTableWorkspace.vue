@@ -307,7 +307,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   SubscriptionTier,
@@ -424,7 +424,7 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
 }
 
 const currentTierKey = computed<TierKey | null>(() =>
-  subscription.value?.tier ? TIER_TO_KEY[subscription.value.tier] : null
+  subscription.value?.tier ? toTierKey(subscription.value.tier) : null
 )
 
 const isYearlySubscription = computed(
