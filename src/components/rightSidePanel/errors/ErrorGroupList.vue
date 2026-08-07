@@ -326,6 +326,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@/platform/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
@@ -353,6 +354,7 @@ import type { ErrorGroup } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
+import { transferNodeLayoutRegistration } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 
 interface ExecutionItemListEntry {
   key: string
@@ -372,7 +374,23 @@ const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
 const { missingNodePacks } = useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   usePackInstall(() => missingNodePacks.value)
-const { replaceGroup, replaceAllGroups } = useNodeReplacement()
+
+function transferReplacementLayout(
+  node: LGraphNode,
+  replacement: LGraphNode
+): void {
+  const result = transferNodeLayoutRegistration(node, replacement)
+  if (result === 'applied') return
+  console.error('Failed to transfer node layout registration', {
+    graphId: node.graph?.rootGraph.id,
+    nodeId: replacement.id,
+    result
+  })
+}
+
+const { replaceGroup, replaceAllGroups } = useNodeReplacement(
+  transferReplacementLayout
+)
 
 const searchQuery = ref('')
 const expandedExecutionItemDetailKeys = ref(new Set<string>())

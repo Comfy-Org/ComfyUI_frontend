@@ -535,6 +535,31 @@ function adoptNodeLayout(
   return 'applied'
 }
 
+export function transferNodeLayoutRegistration(
+  node: LGraphNode,
+  replacement: LGraphNode
+): LayoutOperationResult {
+  const registration = nodeRegistrations.get(node)
+  if (!registration) return 'no-op'
+  if (
+    nodeRegistrations.has(replacement) ||
+    registration.nodeId !== replacement.id ||
+    layoutStore.getRegistrationId(
+      'node',
+      registration.graphId,
+      registration.nodeId
+    ) !== registration.registrationId
+  )
+    return 'rejected'
+
+  nodeRegistrations.delete(node)
+  node._layoutRegistered = false
+  nodeRegistrations.set(replacement, registration)
+  replacement._layoutRegistered = true
+  replacement._geometryVersion = layoutStore.geometryVersion
+  return 'applied'
+}
+
 export function materializeRerouteLayout(
   graph: Pick<LGraph, 'rootGraph'>,
   reroute: Reroute

@@ -13,6 +13,7 @@ import {
   layoutStore
 } from '@/renderer/core/layout/store/layoutStore'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
+import { transferNodeLayoutRegistration } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import {
   LGraph,
   LGraphGroup,
@@ -1594,6 +1595,49 @@ describe('node layout registration', () => {
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
     ).toBeNull()
+  })
+
+  it('transfers layout ownership to a replacement node', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('old')
+    node.pos = [120, 340]
+    graph.add(node)
+    const replacement = new LGraphNode('replacement')
+    replacement.id = node.id
+    replacement.graph = graph
+
+    expect(transferNodeLayoutRegistration(node, replacement)).toBe('applied')
+
+    replacement.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 220, y: 440 })
+
+    node.pos = [320, 540]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 220, y: 440 })
+  })
+
+  it('rejects transfer after layout ownership changes', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('old')
+    node.pos = [120, 340]
+    graph.add(node)
+    const replacement = new LGraphNode('replacement')
+    replacement.id = node.id
+    replacement.graph = graph
+    const nodes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('nodes')
+    const storedNode = nodes.get(`${graph.rootGraph.id}:${node.id}`)
+    if (!storedNode) throw new Error('Expected stored node layout')
+    storedNode.set('registrationId', 'foreign')
+
+    expect(transferNodeLayoutRegistration(node, replacement)).toBe('rejected')
+
+    replacement.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 120, y: 340 })
   })
 
   function zIndexOf(graph: LGraph, node: LGraphNode): number {

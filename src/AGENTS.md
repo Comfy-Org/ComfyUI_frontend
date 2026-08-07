@@ -4,6 +4,11 @@
 
 - User-friendly and actionable messages
 - Proper error propagation
+- Expected recoverable failures in mutation, lifecycle, workflow-loading, and
+  deserialization paths must preserve established result or sentinel contracts
+  and log enough context for diagnosis instead of throwing. Throws remain
+  appropriate for programmer errors, unrecoverable invariant violations, and
+  invalid input at trust boundaries when safe recovery is unavailable.
 
 ## Security
 

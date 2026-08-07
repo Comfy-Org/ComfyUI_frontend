@@ -157,7 +157,8 @@ function replaceWithMapping(
   newNode: LGraphNode,
   replacement: NodeReplacement,
   nodeGraph: LGraph,
-  idx: number
+  idx: number,
+  onNodeReplaced?: (node: LGraphNode, replacement: LGraphNode) => void
 ): void {
   node.onRemoved?.()
   newNode.id = node.id
@@ -170,6 +171,8 @@ function replaceWithMapping(
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   nodeGraph._nodes_by_id[newNode.id] = newNode
+
+  onNodeReplaced?.(node, newNode)
 
   // Bypasses graph.add(), so move the node-data registration by hand.
   unregisterNodeState(node)
@@ -234,7 +237,9 @@ function replaceWithMapping(
   nodeGraph.events.dispatch('node:added', { node: newNode })
 }
 
-export function useNodeReplacement() {
+export function useNodeReplacement(
+  onNodeReplaced?: (node: LGraphNode, replacement: LGraphNode) => void
+) {
   const toastStore = useToastStore()
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
@@ -297,7 +302,14 @@ export function useNodeReplacement() {
                 newNode
               )
             }
-        replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
+        replaceWithMapping(
+          node,
+          newNode,
+          effectiveReplacement,
+          nodeGraph,
+          idx,
+          onNodeReplaced
+        )
 
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)
