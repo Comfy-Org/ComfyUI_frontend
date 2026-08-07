@@ -264,10 +264,15 @@ test.describe('consoleErrorLedger', () => {
           points,
           spline,
           ltx,
-          radiance,
-          queryVideo
+          radiance
         ])
       ).toEqual([])
+      expect(staleRequiredConnectivityErrorRulesForPacks(packs, [])).toEqual([
+        'kj-points-empty-bbox-json',
+        'cloud-kj-spline-empty-points',
+        'cloud-ltx-size-after-remove',
+        'cloud-radiance-webgl-recovery'
+      ])
       expect(
         unallowlistedConnectivityErrorsForPacks(
           ['comfyui-videohelpersuite'],
@@ -287,7 +292,7 @@ test.describe('consoleErrorLedger', () => {
     }
   })
 
-  test('requires only the exact Core pysssss None-default 404', () => {
+  test('allows only the exact Core pysssss None-default 404 without requiring it', () => {
     const pysssss404 =
       'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:8188/api/pysssss/examples/loras%2FNone]'
     const previous = process.env.CUSTOM_NODES_ENV
@@ -304,7 +309,7 @@ test.describe('consoleErrorLedger', () => {
           ['ComfyUI-Custom-Scripts'],
           []
         )
-      ).toEqual(['core-pysssss-lora-none-examples'])
+      ).toEqual([])
       expect(
         staleRequiredConnectivityErrorRulesForPacks(
           ['ComfyUI-Custom-Scripts'],

@@ -409,12 +409,25 @@ test.describe('autoRun classifier', () => {
       )
     ).toBe(false)
 
-    const timeoutOutcomes =
+    const timeoutCases = [
       AUTO_RUN_ALLOWED_FAILURES.comfyui_controlnet_aux
-        .ExecuteAllControlNetPreprocessors.outcomes
-    expect(matchesAllowedAutoRunOutcome('TIMEOUT', timeoutOutcomes)).toBe(true)
-    expect(matchesAllowedAutoRunOutcome('TIMEOUT extra', timeoutOutcomes)).toBe(
-      false
-    )
+        .ExecuteAllControlNetPreprocessors.outcomes,
+      AUTO_RUN_ALLOWED_FAILURES['ComfyUI-Upscaler-Tensorrt']
+        .LoadUpscalerTensorrtModel.outcomes,
+      AUTO_RUN_ALLOWED_FAILURES['comfyui-rmbg'].SAM3Segment.outcomes
+    ]
+    for (const outcomes of timeoutCases) {
+      expect(matchesAllowedAutoRunOutcome('TIMEOUT', outcomes)).toBe(true)
+      expect(matchesAllowedAutoRunOutcome('TIMEOUT extra', outcomes)).toBe(
+        false
+      )
+      expect(matchesAllowedAutoRunOutcome('PARTIAL', outcomes)).toBe(false)
+      expect(
+        matchesAllowedAutoRunOutcome(
+          'EXECUTION_ERROR (Something else broke)',
+          outcomes
+        )
+      ).toBe(false)
+    }
   })
 })

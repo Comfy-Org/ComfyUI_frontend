@@ -6,8 +6,8 @@ interface AllowlistRule {
   requiredRoundtripId?: string
 }
 
-interface RequiredConnectivityRule extends AllowlistRule {
-  requiredConnectivityId: string
+interface ConnectivityRule extends AllowlistRule {
+  requiredConnectivityId?: string
 }
 
 // Pack-attributed console noise with no visible error surface. Shared by
@@ -139,24 +139,24 @@ const ENV_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
 
 // The breadth sweep intentionally creates and configures thousands of pack
 // nodes in one page. These exact pack-owned mechanisms are allowed only in
-// that tier, and every row must be observed on each run so a fixed or renamed
-// mechanism immediately makes the ledger stale instead of staying hidden.
-const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, RequiredConnectivityRule[]> =
-  {
-    'ComfyUI-KJNodes': [
-      {
-        pattern:
-          /Error parsing stored points: SyntaxError: Unexpected end of JSON input[\s\S]*\/extensions\/ComfyUI-KJNodes\/js\/editors\/point_editor_canvas\.js/,
-        reason:
-          'PointsEditor parses an empty bbox widget when the sweep configures the node',
-        requiredConnectivityId: 'kj-points-empty-bbox-json'
-      }
-    ]
-  }
+// that tier. Deterministic mechanisms opt into required observation so a
+// fixed or renamed mechanism immediately makes the ledger stale instead of
+// staying hidden; environment-state mechanisms remain exact but conditional.
+const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
+  'ComfyUI-KJNodes': [
+    {
+      pattern:
+        /Error parsing stored points: SyntaxError: Unexpected end of JSON input[\s\S]*\/extensions\/ComfyUI-KJNodes\/js\/editors\/point_editor_canvas\.js/,
+      reason:
+        'PointsEditor parses an empty bbox widget when the sweep configures the node',
+      requiredConnectivityId: 'kj-points-empty-bbox-json'
+    }
+  ]
+}
 
 const ENV_CONNECTIVITY_ERROR_ALLOWLIST: Record<
   'core' | 'cloud',
-  Record<string, RequiredConnectivityRule[]>
+  Record<string, ConnectivityRule[]>
 > = {
   core: {
     'ComfyUI-Custom-Scripts': [
@@ -164,8 +164,7 @@ const ENV_CONNECTIVITY_ERROR_ALLOWLIST: Record<
         pattern:
           /Failed to load resource.*status of 404\b.*http:\/\/localhost:8188\/api\/pysssss\/examples\/loras%2FNone(?:[\s\]]|$)/,
         reason:
-          'betterCombos requests examples for its literal None default and the pack route returns 404 when no matching lora exists',
-        requiredConnectivityId: 'core-pysssss-lora-none-examples'
+          'betterCombos conditionally requests examples for its literal None default and the pack route returns 404 when no matching lora exists'
       }
     ],
     'ComfyUI-VideoHelperSuite': [
@@ -211,8 +210,7 @@ const ENV_CONNECTIVITY_ERROR_ALLOWLIST: Record<
         pattern:
           /Failed to load resource.*502.*\/api\/vhs\/queryvideo\?(?=(?:[^&\s\]]*&)*filename=bedroom\.mp4(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*type=input(?:&|[\s\]]|$))/,
         reason:
-          'Cloud returns Bad Gateway while VHS probes the advertised default input video',
-        requiredConnectivityId: 'cloud-vhs-queryvideo-bad-gateway'
+          'Cloud conditionally returns Bad Gateway while VHS probes the advertised default input video'
       }
     ]
   }
@@ -243,9 +241,7 @@ export function allowlistRulesFor(pack: string): AllowlistRule[] {
   ]
 }
 
-function connectivityRulesForPacks(
-  packs: string[]
-): RequiredConnectivityRule[] {
+function connectivityRulesForPacks(packs: string[]): ConnectivityRule[] {
   const environmentRules = ENV_CONNECTIVITY_ERROR_ALLOWLIST[customNodesEnv()]
   return packs.flatMap((pack) => [
     ...foldedRulesFor(CONNECTIVITY_ERROR_ALLOWLIST, pack),
@@ -305,8 +301,12 @@ export function staleRequiredConnectivityErrorRulesForPacks(
   errors: string[]
 ): string[] {
   return connectivityRulesForPacks(packs)
-    .filter((rule) => !errors.some((error) => rule.pattern.test(error)))
-    .map((rule) => rule.requiredConnectivityId)
+    .filter(
+      (rule) =>
+        rule.requiredConnectivityId !== undefined &&
+        !errors.some((error) => rule.pattern.test(error))
+    )
+    .map((rule) => rule.requiredConnectivityId!)
 }
 
 // Execution errors surface on the tiers that actually queue prompts (the

@@ -46,6 +46,12 @@ export interface TopologyExpectation {
   reason: string
 }
 
+export interface RoundtripWidgetTopologyExpectation {
+  before: number
+  after: number | readonly number[]
+  reason: string
+}
+
 export const OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
   string,
   Record<string, TopologyExpectation>
@@ -76,28 +82,28 @@ export const OUTPUT_TOPOLOGY_EXPECTATIONS_VUE: Record<
 
 export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
   string,
-  Record<string, TopologyExpectation>
+  Record<string, RoundtripWidgetTopologyExpectation>
 > = {
   'WhatDreamsCost-ComfyUI': {
     LTXKeyframer: {
       before: 102,
-      after: 5,
+      after: [2, 5] as const,
       reason:
-        'pack JS asynchronously rebuilds one image into its header, frame, and strength widgets'
+        'pack JS restores either its two static widgets or one image header/frame/strength set according to restored num_images state'
     }
   }
 }
 
 export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE: Record<
   string,
-  Record<string, TopologyExpectation>
+  Record<string, RoundtripWidgetTopologyExpectation>
 > = {
   'WhatDreamsCost-ComfyUI': {
     LTXKeyframer: {
       before: 102,
-      after: 5,
+      after: [2, 5] as const,
       reason:
-        'pack JS asynchronously rebuilds one image into its header, frame, and strength widgets'
+        'pack JS restores either its two static widgets or one image header/frame/strength set according to restored num_images state'
     },
     LTXSequencer: {
       before: 154,
@@ -109,11 +115,17 @@ export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE: Record<
 }
 
 export function matchesTopologyExpectation(
-  expectation: TopologyExpectation | undefined,
+  expectation:
+    | TopologyExpectation
+    | RoundtripWidgetTopologyExpectation
+    | undefined,
   before: number,
   after: number
 ): boolean {
-  return expectation?.before === before && expectation.after === after
+  if (expectation?.before !== before) return false
+  return Array.isArray(expectation.after)
+    ? expectation.after.includes(after)
+    : expectation.after === after
 }
 
 export function rendererLedgerFor<T>(

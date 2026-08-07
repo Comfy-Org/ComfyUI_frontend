@@ -5,10 +5,26 @@ import {
 import type { NodeGeometry } from '@e2e/fixtures/customNode/geometry'
 import {
   diffGeometry,
+  GEOMETRY_UNSTABLE_NODES,
+  GEOMETRY_UNSTABLE_PATHS,
   loadPackGeometry,
   packGeometryRelativePath
 } from '@e2e/fixtures/customNode/geometry'
 import { loadManifest } from '@e2e/fixtures/customNode/manifest'
+
+test('ledgers only the two source-driven VHS preview height paths', () => {
+  expect(GEOMETRY_UNSTABLE_NODES['ComfyUI-VideoHelperSuite']).toBeUndefined()
+  expect(GEOMETRY_UNSTABLE_PATHS['ComfyUI-VideoHelperSuite']).toEqual({
+    VHS_LoadVideo: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio'
+    },
+    VHS_LoadVideoFFmpeg: {
+      'vue.h':
+        'preview height follows the same asynchronous default-media aspect-ratio mechanism'
+    }
+  })
+})
 
 // The differ is the geometry tier's entire failure-reporting contract:
 // every red a maintainer ever sees comes out of diffGeometry.
@@ -57,6 +73,27 @@ test.describe('diffGeometry', () => {
     measured.litegraph.h = 106.5
     expect(diffGeometry({ A: node() }, { A: measured })).toEqual([
       'A.litegraph.h: expected 106, got 106.5'
+    ])
+  })
+
+  test('ignores only ledgered paths while other fields on the node stay strict', () => {
+    const ignoredPaths = { A: { 'vue.h': 'async preview metadata' } }
+    const previewHeight = node()
+    previewHeight.vue!.h = 534
+    expect(
+      diffGeometry({ A: node() }, { A: previewHeight }, ignoredPaths)
+    ).toEqual([])
+
+    const litegraphHeight = node()
+    litegraphHeight.litegraph.h = 534
+    expect(
+      diffGeometry({ A: node() }, { A: litegraphHeight }, ignoredPaths)
+    ).toEqual(['A.litegraph.h: expected 106, got 534'])
+
+    const vueWidth = node()
+    vueWidth.vue!.w = 534
+    expect(diffGeometry({ A: node() }, { A: vueWidth }, ignoredPaths)).toEqual([
+      'A.vue.w: expected 263.8437566786189, got 534'
     ])
   })
 

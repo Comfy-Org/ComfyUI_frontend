@@ -179,6 +179,13 @@ export const AUTO_RUN_ALLOWED_FAILURES: Record<
   string,
   Record<string, { outcomes: Array<string | RegExp>; reason: string }>
 > = {
+  'ComfyUI-Upscaler-Tensorrt': {
+    LoadUpscalerTensorrtModel: {
+      outcomes: ['TIMEOUT'],
+      reason:
+        'downloads or builds the TensorRT engine when its model cache is cold and loads it directly when warm'
+    }
+  },
   'ComfyUI-LivePortraitKJ': {
     LivePortraitLoadCropper: {
       outcomes: [
@@ -232,6 +239,13 @@ export const AUTO_RUN_ALLOWED_FAILURES: Record<
       outcomes: ['TIMEOUT'],
       reason:
         'executes every registered controlnet preprocessor in one aggregate; timed out cold after running clean warm as Cloud model/cache state changed'
+    }
+  },
+  'comfyui-rmbg': {
+    SAM3Segment: {
+      outcomes: ['TIMEOUT'],
+      reason:
+        'downloads sam3.pt and builds its processor when the Cloud model cache is cold, then reuses both when warm'
     }
   }
 }

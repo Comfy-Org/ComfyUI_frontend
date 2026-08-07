@@ -260,7 +260,7 @@ jobs:
       # run-cloud so it only runs when the suite actually ran (else there is
       # no results json to read); always() so a red suite still gets its skips
       # surfaced. Byte-for-byte the core gate's jq logic.
-      - name: Forbid skipped tests
+      - name: Forbid skipped or flaky tests
         if: always() && steps.gate.outputs.run-cloud == 'true'
         shell: bash
         env:
@@ -270,12 +270,12 @@ jobs:
           # An earlier step (build, preview, the suite itself) may have failed
           # before Playwright wrote its json; the job is already red, so
           # surface that rather than a confusing jq "no such file" error.
-          # A missing json after a SUCCESSFUL suite is different: the skip gate
-          # cannot run at all, so fail closed rather than pass a job whose
-          # zero-skip invariant went unchecked.
+          # A missing json after a SUCCESSFUL suite is different: the result
+          # gate cannot run at all, so fail closed rather than pass a job whose
+          # zero-skip and zero-flaky invariants went unchecked.
           if [ ! -f custom-nodes-cloud-results.json ]; then
             if [ "${SUITE_OUTCOME:-}" = "success" ]; then
-              echo "::error::suite succeeded but wrote no results json - the skip gate could not run"
+              echo "::error::suite succeeded but wrote no results json - the skip/flaky gate could not run"
               exit 1
             fi
             echo "no results json - the suite step already failed (${SUITE_OUTCOME:-unknown})"
@@ -288,6 +288,16 @@ jobs:
             jq -r '.. | objects
                      | select(has("title") and has("tests"))
                      | select(any(.tests[]?; .status == "skipped"))
+                     | .title' custom-nodes-cloud-results.json | sort -u | head -40
+            exit 1
+          fi
+          flaky=$(jq '.stats.flaky' custom-nodes-cloud-results.json)
+          echo "flaky tests: $flaky"
+          if [ "$flaky" != "0" ]; then
+            echo "::error::$flaky test(s) passed only after retry - flaky results are not acceptable in the gating job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "flaky"))
                      | .title' custom-nodes-cloud-results.json | sort -u | head -40
             exit 1
           fi

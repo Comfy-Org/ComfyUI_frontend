@@ -38,6 +38,7 @@ import {
   anyPackGeometryRecorded,
   diffGeometry,
   GEOMETRY_UNSTABLE_NODES,
+  GEOMETRY_UNSTABLE_PATHS,
   loadPackGeometry,
   packGeometryRelativePath,
   savePackGeometry
@@ -323,6 +324,7 @@ const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
   AUTO_RUN_EXCLUDE,
   AUTO_RUN_UNSTABLE_NODES,
   GEOMETRY_UNSTABLE_NODES,
+  GEOMETRY_UNSTABLE_PATHS,
   MOUNT_WIDGET_ALLOWLIST,
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
@@ -719,10 +721,22 @@ for (const entry of loadManifest()) {
           GEOMETRY_UNSTABLE_NODES,
           entry.pack
         )
+        const geometryUnstablePaths = packLedgerFor(
+          GEOMETRY_UNSTABLE_PATHS,
+          entry.pack
+        )
         for (const ledgered of stalenessCheckedKeys(entry, geometryUnstable))
           expect(
             keys,
             `stale GEOMETRY_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
+          ).toContain(ledgered)
+        for (const ledgered of stalenessCheckedKeys(
+          entry,
+          geometryUnstablePaths
+        ))
+          expect(
+            keys,
+            `stale GEOMETRY_UNSTABLE_PATHS entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
         for (const ledgered of stalenessCheckedKeys(entry, ledger))
           expect(
@@ -959,6 +973,10 @@ for (const entry of loadManifest()) {
           console.log(
             `${entry.pack}: ${Object.keys(geometryUnstable).length} node(s) ledgered geometry-unstable; geometry not asserted for them`
           )
+        if (Object.keys(geometryUnstablePaths).length > 0)
+          console.log(
+            `${entry.pack}: ${Object.values(geometryUnstablePaths).reduce((count, paths) => count + Object.keys(paths).length, 0)} exact geometry path(s) ledgered unstable; all other geometry remains asserted`
+          )
         if (geometryRecordMode) {
           savePackGeometry(entry.pack, {
             recordedAt: {
@@ -997,8 +1015,12 @@ for (const entry of loadManifest()) {
             `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (docs/custom-node-regression-suite.md Step 5b)`
           ).not.toBeNull()
           expect(
-            diffGeometry(geometryBaseline!.nodes, measuredGeometry),
-            'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per docs/custom-node-regression-suite.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger by mechanism in GEOMETRY_UNSTABLE_NODES'
+            diffGeometry(
+              geometryBaseline!.nodes,
+              measuredGeometry,
+              geometryUnstablePaths
+            ),
+            'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per docs/custom-node-regression-suite.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger the exact mechanism in GEOMETRY_UNSTABLE_NODES or GEOMETRY_UNSTABLE_PATHS'
           ).toEqual([])
         }
       })
@@ -1382,17 +1404,31 @@ for (const entry of loadManifest()) {
               if (Object.keys(settledTopology).length === 0) return
               await expect
                 .poll(
-                  () =>
-                    comfyPage.page.evaluate(
+                  async () => {
+                    const current = await comfyPage.page.evaluate(
                       (types) => window.__cnRt!.currentWidgetCounts(types),
                       Object.keys(settledTopology)
-                    ),
+                    )
+                    return Object.entries(settledTopology).flatMap(
+                      ([node, expected]) => {
+                        const actual = current[node]
+                        const allowed = Array.isArray(expected)
+                          ? expected
+                          : [expected]
+                        return actual !== null && allowed.includes(actual)
+                          ? []
+                          : [
+                              `${node}: expected ${allowed.join(' or ')}, got ${String(actual)}`
+                            ]
+                      }
+                    )
+                  },
                   {
                     message:
                       'ledgered dynamic widgets reach their source-defined restored topology'
                   }
                 )
-                .toEqual(settledTopology)
+                .toEqual([])
             }
             await waitForSettledTopology()
             // Stage 3 - pristine verdict, then write non-default values.
