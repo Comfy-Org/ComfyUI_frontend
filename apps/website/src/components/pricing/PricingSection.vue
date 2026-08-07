@@ -115,7 +115,9 @@ const planCards = computed(() =>
       :class="
         cn(
           'rounded-5xl bg-transparency-white-t4 grid gap-2 p-2 max-lg:mx-auto max-lg:max-w-lg',
-          pricingPlans.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+          pricingPlans.length === 4
+            ? 'lg:grid-cols-2 xl:grid-cols-4'
+            : 'lg:grid-cols-3'
         )
       "
     >
@@ -143,9 +145,11 @@ const planCards = computed(() =>
         <PricingPrice
           v-if="priceKey"
           :price="t(priceKey, locale)"
-          :period="t('pricing.plan.period', locale)"
+          :period="
+            plan.isOneTime ? undefined : t('pricing.plan.period', locale)
+          "
           :original-price="originalPrice"
-          :billing-period="billingPeriod"
+          :billing-period="plan.isOneTime ? undefined : billingPeriod"
           :yearly-total="yearlyTotal"
           :locale
         />
@@ -161,6 +165,7 @@ const planCards = computed(() =>
           :estimate-key="plan.estimateKey"
           :locale
         />
+        <div v-else aria-hidden="true" />
 
         <div class="mt-8 flex self-end">
           <Button
