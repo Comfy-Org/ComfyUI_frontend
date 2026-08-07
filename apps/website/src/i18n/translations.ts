@@ -4615,9 +4615,25 @@ const translations = {
     en: 'READ SUBSCRIPTION DOCS',
     'zh-CN': '查看订阅文档'
   },
-  'payment.failed.statusLink': {
-    en: 'CHECK SYSTEM STATUS',
-    'zh-CN': '查看系统状态'
+  'payment.failed.statusPrompt.prefix': {
+    en: 'Check our',
+    'zh-CN': '请查看我们的'
+  },
+  'payment.failed.statusPrompt.statusLink': {
+    en: 'status page',
+    'zh-CN': '状态页面'
+  },
+  'payment.failed.statusPrompt.middle': {
+    en: 'for more information. Please reach out to',
+    'zh-CN': '了解更多信息。如果问题仍未解决，请联系'
+  },
+  'payment.failed.statusPrompt.supportLink': {
+    en: 'support',
+    'zh-CN': '支持团队'
+  },
+  'payment.failed.statusPrompt.suffix': {
+    en: 'if your issue persists.',
+    'zh-CN': '获取进一步帮助。'
   },
 
   // AffiliateHeroSection

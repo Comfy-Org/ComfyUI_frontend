@@ -97,13 +97,26 @@ const iconRingClass =
         </BrandButton>
       </div>
 
-      <a
+      <p
         v-if="status === 'failed'"
-        :href="externalLinks.cloudStatus"
-        class="text-xs font-semibold tracking-wider text-primary-comfy-canvas/60 uppercase underline underline-offset-4 transition-colors hover:text-primary-comfy-canvas"
+        class="max-w-xl text-sm font-light text-primary-comfy-canvas/60"
       >
-        {{ t('payment.failed.statusLink', locale) }}
-      </a>
+        {{ t('payment.failed.statusPrompt.prefix', locale) }}
+        <a
+          :href="externalLinks.cloudStatus"
+          class="text-primary-comfy-yellow underline underline-offset-4"
+        >
+          {{ t('payment.failed.statusPrompt.statusLink', locale) }}
+        </a>
+        {{ t('payment.failed.statusPrompt.middle', locale) }}
+        <a
+          :href="externalLinks.support"
+          class="text-primary-comfy-yellow underline underline-offset-4"
+        >
+          {{ t('payment.failed.statusPrompt.supportLink', locale) }}
+        </a>
+        {{ t('payment.failed.statusPrompt.suffix', locale) }}
+      </p>
     </div>
   </section>
 </template>

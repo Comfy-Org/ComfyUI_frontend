@@ -81,12 +81,19 @@ test.describe('Payment failed page @smoke', () => {
     await expect(cta).toHaveAttribute('href', DOCS_SUBSCRIPTION_URL)
   })
 
-  test('offers the status page so an outage can be ruled out', async ({
+  test('points at the status page and support so an outage can be ruled out', async ({
     page
   }) => {
-    const link = page.getByRole('link', { name: /CHECK SYSTEM STATUS/i })
-    await expect(link).toBeVisible()
-    await expect(link).toHaveAttribute('href', STATUS_URL)
+    const statusLink = page.getByRole('link', {
+      name: 'status page',
+      exact: true
+    })
+    await expect(statusLink).toBeVisible()
+    await expect(statusLink).toHaveAttribute('href', STATUS_URL)
+
+    const supportLink = page.getByRole('link', { name: 'support', exact: true })
+    await expect(supportLink).toBeVisible()
+    await expect(supportLink).toHaveAttribute('href', SUPPORT_URL)
   })
 })
 
@@ -121,7 +128,10 @@ test.describe('Payment pages zh-CN @smoke', () => {
       page.getByRole('link', { name: '查看订阅文档' })
     ).toHaveAttribute('href', DOCS_SUBSCRIPTION_URL)
     await expect(
-      page.getByRole('link', { name: '查看系统状态' })
+      page.getByRole('link', { name: '状态页面', exact: true })
     ).toHaveAttribute('href', STATUS_URL)
+    await expect(
+      page.getByRole('link', { name: '支持团队', exact: true })
+    ).toHaveAttribute('href', SUPPORT_URL)
   })
 })
