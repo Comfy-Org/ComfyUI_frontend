@@ -595,6 +595,31 @@ describe('applyLayerState', () => {
     expect(ops.setLayerOrder).not.toHaveBeenCalled()
   })
 
+  it('carries initial visibility, opacity, and blend from layer entries', () => {
+    const ops = makeOps()
+    const state = resolveInitialLayerState(null, undefined, [
+      {
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+        name: 'Shaded',
+        visible: false,
+        opacity: 0.5,
+        blend: 'multiply',
+        flipH: true
+      }
+    ])
+    expect(state).not.toBeNull()
+
+    applyLayerState(state!, [{ id: 'a', visible: true }], ops)
+
+    expect(ops.toggleVisible).toHaveBeenCalledWith('a')
+    expect(ops.setOpacity).toHaveBeenCalledWith('a', 0.5)
+    expect(ops.setBlendMode).toHaveBeenCalledWith('a', 'multiply')
+    expect(ops.flipLayer).toHaveBeenCalledWith('a', 'h')
+  })
+
   it('applies only the fields present on partial bbox-derived entries', () => {
     const ops = makeOps()
     const state = resolveInitialLayerState(null, undefined, [

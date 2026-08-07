@@ -44,6 +44,11 @@ export interface CompositorBBox {
   width: number
   height: number
   name?: string | null
+  visible?: boolean
+  opacity?: number
+  blend?: string
+  flipH?: boolean
+  flipV?: boolean
 }
 
 interface CompositorLayerStateInit {
@@ -278,6 +283,13 @@ function bboxLayerState(
       bbox
         ? {
             ...(bbox.name ? { name: bbox.name } : {}),
+            ...(typeof bbox.visible === 'boolean'
+              ? { visible: bbox.visible }
+              : {}),
+            ...(isFiniteNumber(bbox.opacity) ? { opacity: bbox.opacity } : {}),
+            ...(isBlendFn(bbox.blend) ? { blend: bbox.blend } : {}),
+            ...(bbox.flipH === true ? { flipH: true } : {}),
+            ...(bbox.flipV === true ? { flipV: true } : {}),
             transform: {
               x: bbox.x,
               y: bbox.y,
