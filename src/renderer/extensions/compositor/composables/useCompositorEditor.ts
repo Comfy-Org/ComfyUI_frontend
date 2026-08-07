@@ -1,10 +1,10 @@
 import { useI18n } from 'vue-i18n'
 
-import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
-import TopBarHeader from '@/renderer/extensions/layerEditor/components/dialog/TopBarHeader.vue'
 import { hasCompositorLayers } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import {
   LAYER_EDITOR_DIALOG_KEY,
+  LayerEditorDialogContent,
+  LayerEditorDialogHeader,
   layerEditorDialogProps
 } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -26,8 +26,8 @@ export function useCompositorEditor() {
 
     useDialogStore().showDialog({
       key: LAYER_EDITOR_DIALOG_KEY,
-      headerComponent: TopBarHeader,
-      component: LayerEditorContent,
+      headerComponent: LayerEditorDialogHeader,
+      component: LayerEditorDialogContent,
       props: {
         node,
         mode: 'compositor'
