@@ -4,7 +4,8 @@ import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowReactive } from 'vue'
 import {
   mapInputFileToAssetItem,
-  mapTaskOutputToAssetItem
+  mapTaskOutputToAssetItem,
+  unflattenOutputAssets
 } from '@/platform/assets/composables/media/assetMappers'
 import type {
   AssetItem,
@@ -117,8 +118,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
   // Pagination state
   const historyOffset = ref(0)
-  const hasMoreHistory = ref(true)
-  const isLoadingMore = ref(false)
+  const legacyHasMoreHistory = ref(true)
+  const legacyIsLoadingMore = ref(false)
 
   const allHistoryItems = ref<AssetItem[]>([])
 
@@ -155,7 +156,7 @@ export const useAssetsStore = defineStore('assets', () => {
     // Reset state for initial load
     if (!loadMore) {
       historyOffset.value = 0
-      hasMoreHistory.value = true
+      legacyHasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
     }
@@ -198,7 +199,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
     // Update pagination state
     historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.length === BATCH_SIZE
+    legacyHasMoreHistory.value = history.length === BATCH_SIZE
 
     if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
       const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
@@ -211,53 +212,53 @@ export const useAssetsStore = defineStore('assets', () => {
     return allHistoryItems.value
   }
 
-  const historyAssets = ref<AssetItem[]>([])
-  const historyLoading = ref(false)
-  const historyError = ref<unknown>(null)
+  const legacyHistoryAssets = ref<AssetItem[]>([])
+  const legacyHistoryLoading = ref(false)
+  const legacyHistoryError = ref<unknown>(null)
 
   /**
    * Initial load of history assets
    */
-  const updateHistory = async () => {
-    historyLoading.value = true
-    historyError.value = null
+  const legacyUpdateHistory = async () => {
+    legacyHistoryLoading.value = true
+    legacyHistoryError.value = null
     try {
       await fetchHistoryAssets(false)
-      historyAssets.value = allHistoryItems.value
+      legacyHistoryAssets.value = allHistoryItems.value
     } catch (err) {
       console.error('Error fetching history assets:', err)
-      historyError.value = err
+      legacyHistoryError.value = err
       // Keep existing data when error occurs
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
+      if (!legacyHistoryAssets.value.length) {
+        legacyHistoryAssets.value = []
       }
     } finally {
-      historyLoading.value = false
+      legacyHistoryLoading.value = false
     }
   }
 
   /**
    * Load more history items (infinite scroll)
    */
-  const loadMoreHistory = async () => {
+  const legacyLoadMoreHistory = async () => {
     // Guard: prevent concurrent loads and check if more items available
-    if (!hasMoreHistory.value || isLoadingMore.value) return
+    if (!legacyHasMoreHistory.value || legacyIsLoadingMore.value) return
 
-    isLoadingMore.value = true
-    historyError.value = null
+    legacyIsLoadingMore.value = true
+    legacyHistoryError.value = null
 
     try {
       await fetchHistoryAssets(true)
-      historyAssets.value = allHistoryItems.value
+      legacyHistoryAssets.value = allHistoryItems.value
     } catch (err) {
       console.error('Error loading more history:', err)
-      historyError.value = err
+      legacyHistoryError.value = err
       // Keep existing data when error occurs (consistent with updateHistory)
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
+      if (!legacyHistoryAssets.value.length) {
+        legacyHistoryAssets.value = []
       }
     } finally {
-      isLoadingMore.value = false
+      legacyIsLoadingMore.value = false
     }
   }
 
@@ -331,6 +332,18 @@ export const useAssetsStore = defineStore('assets', () => {
     await fetchFlatOutputs(true)
   }
 
+  // On cloud, grouped history is derived from the flat output assets rather
+  // than fetched from the history API.
+  const historyAssets = isCloud
+    ? computed(() => unflattenOutputAssets(flatOutputAssets.value))
+    : legacyHistoryAssets
+  const historyLoading = isCloud ? flatOutputLoading : legacyHistoryLoading
+  const historyError = isCloud ? flatOutputError : legacyHistoryError
+  const updateHistory = isCloud ? updateFlatOutputs : legacyUpdateHistory
+  const loadMoreHistory = isCloud ? loadMoreFlatOutputs : legacyLoadMoreHistory
+  const hasMoreHistory = isCloud ? flatOutputHasMore : legacyHasMoreHistory
+  const isLoadingMore = isCloud ? flatOutputIsLoadingMore : legacyIsLoadingMore
+
   /**
    * Patch preview_id/preview_url for a single asset already in memory,
    * matched by name. Used after persistThumbnail succeeds so an open Asset
@@ -352,8 +365,12 @@ export const useAssetsStore = defineStore('assets', () => {
         preview_url: previewUrl
       }
     }
-    patch(historyAssets.value)
-    patch(allHistoryItems.value)
+    if (isCloud) {
+      patch(flatOutputAssets.value)
+    } else {
+      patch(legacyHistoryAssets.value)
+      patch(allHistoryItems.value)
+    }
     patch(inputAssets.value)
   }
 

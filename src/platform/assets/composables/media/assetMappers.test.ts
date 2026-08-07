@@ -8,6 +8,8 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+vi.mock('@/scripts/app', () => ({ app: {} }))
+
 vi.mock('@/platform/distribution/cloudPreviewUtil', () => ({
   appendCloudResParam: vi.fn()
 }))
