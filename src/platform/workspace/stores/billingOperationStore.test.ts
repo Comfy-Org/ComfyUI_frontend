@@ -662,6 +662,124 @@ describe('billingOperationStore', () => {
       )
     })
 
+    it('replaces the processing toast when the operation parks on a bank challenge', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString(),
+        action_url: 'https://verify.example/sensitive-token'
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      const processingToast = {
+        severity: 'info',
+        summary: 'billingOperation.subscriptionProcessing',
+        group: 'billing-operation'
+      }
+      expect(mockToastAdd).toHaveBeenCalledWith(processingToast)
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockToastRemove).toHaveBeenCalledWith(processingToast)
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: 'billingOperation.subscriptionActionRequired',
+        group: 'billing-operation'
+      })
+    })
+
+    it('announces verification immediately when the action URL is known at start', () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation(
+        'op-1',
+        'topup',
+        undefined,
+        'https://verify.example/sensitive-token'
+      )
+
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: 'billingOperation.topupActionRequired',
+        group: 'billing-operation'
+      })
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          summary: 'billingOperation.topupProcessing'
+        })
+      )
+    })
+
+    it('returns to processing when the action URL clears while still pending', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-1',
+          status: 'pending',
+          started_at: new Date().toISOString(),
+          action_url: 'https://verify.example/sensitive-token'
+        })
+        .mockResolvedValue({
+          id: 'op-1',
+          status: 'pending',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      const actionRequiredToast = {
+        severity: 'warn',
+        summary: 'billingOperation.subscriptionActionRequired',
+        group: 'billing-operation'
+      }
+      expect(mockToastAdd).toHaveBeenCalledWith(actionRequiredToast)
+
+      // The verification action is gone, so the prompt pointing at it must go
+      // too rather than asking for something the customer can no longer do.
+      await vi.advanceTimersByTimeAsync(30_000)
+
+      expect(mockToastRemove).toHaveBeenCalledWith(actionRequiredToast)
+      expect(mockToastAdd).toHaveBeenLastCalledWith({
+        severity: 'info',
+        summary: 'billingOperation.subscriptionProcessing',
+        group: 'billing-operation'
+      })
+    })
+
+    it('does not re-announce verification on later polls', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString(),
+        action_url: 'https://verify.example/sensitive-token'
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      const actionRequiredAdds = () =>
+        mockToastAdd.mock.calls.filter(
+          (call) =>
+            call[0]?.summary === 'billingOperation.subscriptionActionRequired'
+        ).length
+
+      expect(actionRequiredAdds()).toBe(1)
+
+      await vi.advanceTimersByTimeAsync(30_000)
+      await vi.advanceTimersByTimeAsync(30_000)
+
+      expect(actionRequiredAdds()).toBe(1)
+    })
+
     it('rejects an action URL received after the discovery deadline', async () => {
       const actionUrl = 'https://verify.example/sensitive-token'
       let resolveStatus!: (response: BillingOpStatusResponse) => void
