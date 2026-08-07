@@ -1,6 +1,5 @@
 import type { TranslationKey } from '../i18n/translations'
 
-import { SHOW_FREE_TIER } from '../config/features'
 import { externalLinks } from '../config/routes'
 
 export type BillingCycle = 'monthly' | 'yearly'
@@ -28,6 +27,8 @@ export interface PricingPlan {
   eduYearlyPriceKey?: TranslationKey
   eduYearlyTotalKey?: TranslationKey
   creditsKey?: TranslationKey
+  creditsLabelKey: TranslationKey
+  periodKey?: TranslationKey
   estimateKey?: TranslationKey
   ctaKey: TranslationKey
   ctaHref: (cycle: BillingCycle) => string
@@ -52,12 +53,14 @@ const freePlan: PricingPlan = {
   labelKey: 'pricing.plan.free.label',
   priceKey: 'pricing.plan.free.price',
   creditsKey: 'pricing.plan.free.credits',
+  creditsLabelKey: 'pricing.plan.free.creditsLabel',
   estimateKey: 'pricing.plan.free.estimate',
   ctaKey: 'pricing.plan.free.cta',
   ctaHref: () => externalLinks.cloud,
   features: [
     { text: 'pricing.plan.free.feature1' },
-    { text: 'pricing.plan.free.feature2' }
+    { text: 'pricing.plan.free.feature2' },
+    { text: 'pricing.plan.free.featureNoPartnerNodes', status: 'excluded' }
   ]
 }
 
@@ -72,6 +75,8 @@ const standardPricingPlans: PricingPlan[] = [
     eduYearlyPriceKey: 'pricing.plan.standard.eduYearlyPrice',
     eduYearlyTotalKey: 'pricing.plan.standard.eduYearlyTotal',
     creditsKey: 'pricing.plan.standard.credits',
+    creditsLabelKey: 'pricing.creditsLabel',
+    periodKey: 'pricing.plan.period',
     estimateKey: 'pricing.plan.standard.estimate',
     ctaKey: 'pricing.plan.standard.cta',
     ctaHref: (cycle) => subscribeUrl('standard', cycle),
@@ -92,6 +97,8 @@ const standardPricingPlans: PricingPlan[] = [
     eduYearlyPriceKey: 'pricing.plan.creator.eduYearlyPrice',
     eduYearlyTotalKey: 'pricing.plan.creator.eduYearlyTotal',
     creditsKey: 'pricing.plan.creator.credits',
+    creditsLabelKey: 'pricing.creditsLabel',
+    periodKey: 'pricing.plan.period',
     estimateKey: 'pricing.plan.creator.estimate',
     ctaKey: 'pricing.plan.creator.cta',
     ctaHref: (cycle) => subscribeUrl('creator', cycle),
@@ -113,6 +120,8 @@ const standardPricingPlans: PricingPlan[] = [
     eduYearlyPriceKey: 'pricing.plan.pro.eduYearlyPrice',
     eduYearlyTotalKey: 'pricing.plan.pro.eduYearlyTotal',
     creditsKey: 'pricing.plan.pro.credits',
+    creditsLabelKey: 'pricing.creditsLabel',
+    periodKey: 'pricing.plan.period',
     estimateKey: 'pricing.plan.pro.estimate',
     ctaKey: 'pricing.plan.pro.cta',
     ctaHref: (cycle) => subscribeUrl('pro', cycle),
@@ -125,6 +134,4 @@ const standardPricingPlans: PricingPlan[] = [
   }
 ]
 
-export const pricingPlans: PricingPlan[] = SHOW_FREE_TIER
-  ? [freePlan, ...standardPricingPlans]
-  : standardPricingPlans
+export const pricingPlans: PricingPlan[] = [freePlan, ...standardPricingPlans]

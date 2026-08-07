@@ -1299,9 +1299,9 @@ const translations = {
     'zh-CN': 'Comfy Cloud 的费用是多少？'
   },
   'cloud.faq.12.a': {
-    en: 'Plans start at $20/mo with a credit-based model. For full pricing details — credits, plans, Team plan, billing, and refunds — see the <a href="/cloud/pricing#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
+    en: 'Paid plans start at $20/mo with a credit-based model. For full pricing details — credits, plans, Team plan, billing, and refunds — see the <a href="/cloud/pricing#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
     'zh-CN':
-      '计划起价为每月 $20，采用基于积分的模式。如需完整的定价详情——积分、计划、团队计划、账单和退款——请查看 <a href="/zh-CN/cloud/pricing#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
+      '付费计划起价为每月 $20，采用基于积分的模式。如需完整的定价详情——积分、计划、团队计划、账单和退款——请查看 <a href="/zh-CN/cloud/pricing#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
   },
 
   'buildWhat.row1': { en: 'BUILD WHAT', 'zh-CN': '构建' },
@@ -1379,12 +1379,16 @@ const translations = {
 
   'pricing.plan.free.label': { en: 'FREE', 'zh-CN': '免费版' },
   'pricing.plan.free.price': { en: '$0', 'zh-CN': '$0' },
-  'pricing.plan.free.credits': { en: '400', 'zh-CN': '400' },
-  'pricing.plan.free.estimate': {
-    en: 'Generates ~35 5s videos*',
-    'zh-CN': '约可生成 35 个 5 秒视频*'
+  'pricing.plan.free.credits': { en: '5', 'zh-CN': '5' },
+  'pricing.plan.free.creditsLabel': {
+    en: 'runs to try out Cloud',
+    'zh-CN': '次运行，体验 Cloud'
   },
-  'pricing.plan.free.cta': { en: 'START FREE', 'zh-CN': '免费开始' },
+  'pricing.plan.free.estimate': {
+    en: 'One time. No credit card required.',
+    'zh-CN': '一次性体验，无需信用卡。'
+  },
+  'pricing.plan.free.cta': { en: 'TRY NOW', 'zh-CN': '立即试用' },
   'pricing.plan.free.feature1': {
     en: '10-minute max runtime per workflow',
     'zh-CN': '单个工作流最长运行 10 分钟'
@@ -1392,6 +1396,10 @@ const translations = {
   'pricing.plan.free.feature2': {
     en: 'Runs on RTX 6000 Pro GPUs (96GB VRAM)',
     'zh-CN': '运行于 RTX 6000 Pro GPU（96GB 显存）'
+  },
+  'pricing.plan.free.featureNoPartnerNodes': {
+    en: 'No Partner Nodes',
+    'zh-CN': '不含合作伙伴节点'
   },
 
   'pricing.plan.standard.label': { en: 'STANDARD', 'zh-CN': '标准版' },
@@ -1552,9 +1560,9 @@ const translations = {
     'zh-CN': '积分余额'
   },
   'pricing.included.feature4.description': {
-    en: 'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.',
+    en: 'Paid plans include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro. The free plan comes with 5 one-time runs instead.',
     'zh-CN':
-      '所有计划均包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。'
+      '付费计划包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。免费计划则提供 5 次一次性运行。'
   },
   'pricing.included.feature5.title': {
     en: 'Add more credits anytime',

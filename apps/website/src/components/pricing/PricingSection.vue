@@ -63,7 +63,10 @@ const planCards = computed(() =>
     yearlyTotal: plan.yearlyTotalKey
       ? t(plan.yearlyTotalKey, locale)
       : undefined,
-    features: plan.features
+    features: plan.features,
+    period: plan.periodKey ? t(plan.periodKey, locale) : '',
+    cycle: plan.yearlyPriceKey ? billingPeriod.value : undefined,
+    creditsLabel: t(plan.creditsLabelKey, locale)
   }))
 )
 </script>
@@ -125,7 +128,10 @@ const planCards = computed(() =>
           priceKey,
           originalPrice,
           yearlyTotal,
-          features
+          features,
+          period,
+          cycle,
+          creditsLabel
         } in planCards"
         :key="plan.id"
         class="row-span-7 grid grid-rows-subgrid"
@@ -143,9 +149,9 @@ const planCards = computed(() =>
         <PricingPrice
           v-if="priceKey"
           :price="t(priceKey, locale)"
-          :period="t('pricing.plan.period', locale)"
+          :period="period"
           :original-price="originalPrice"
-          :billing-period="billingPeriod"
+          :billing-period="cycle"
           :yearly-total="yearlyTotal"
           :locale
         />
@@ -157,7 +163,7 @@ const planCards = computed(() =>
         <PricingCredits
           v-if="plan.creditsKey"
           :credits="t(plan.creditsKey, locale)"
-          :label="t('pricing.creditsLabel', locale)"
+          :label="creditsLabel"
           :estimate-key="plan.estimateKey"
           :locale
         />
