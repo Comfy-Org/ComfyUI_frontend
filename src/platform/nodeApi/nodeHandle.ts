@@ -184,26 +184,39 @@ function snapshotOf(node: LGraphNode): Readonly<NodeSnapshot> {
  */
 const constraintsByNode = new Map<string, SizeConstraints>()
 
-/** Clamps the node to its constraints now, and on every later resize. */
-function applyConstraints(node: LGraphNode, c: SizeConstraints) {
-  const clamp = () => {
-    const [width, height] = node.size
-    const next: [number, number] = [
-      Math.min(c.maxWidth ?? Infinity, Math.max(c.minWidth ?? 0, width)),
-      Math.min(c.maxHeight ?? Infinity, Math.max(c.minHeight ?? 0, height))
-    ]
-    if (next[0] !== width || next[1] !== height) node.size = next
-  }
+/** Nodes whose resize hook is installed, so repeat calls do not re-chain. */
+const constrained = new WeakSet<LGraphNode>()
 
-  // Chained rather than assigned: another pack may already be listening, and
-  // this layer must not be the one that breaks composition.
-  const previous = node.onResize
-  node.onResize = function (this: LGraphNode, size) {
-    previous?.call(this, size)
-    clamp()
+/** Clamps to whatever constraints the node currently declares. */
+function clampToConstraints(node: LGraphNode) {
+  const c = constraintsByNode.get(String(node.id))
+  if (!c) return
+  const [width, height] = node.size
+  const next: [number, number] = [
+    Math.min(c.maxWidth ?? Infinity, Math.max(c.minWidth ?? 0, width)),
+    Math.min(c.maxHeight ?? Infinity, Math.max(c.minHeight ?? 0, height))
+  ]
+  if (next[0] !== width || next[1] !== height) node.size = next
+}
+
+function applyConstraints(node: LGraphNode, c: SizeConstraints) {
+  // Installed once per node. Chaining on every call grew the handler list
+  // without bound, and each wrapper closed over the constraints it was built
+  // with — so re-declaring never replaced the old clamp, it added a competing
+  // one. Crystools calls this on every populate. The hook reads the current
+  // constraints instead, so the latest declaration is the only one that acts.
+  if (!constrained.has(node)) {
+    constrained.add(node)
+    // Chained rather than assigned: another pack may already be listening, and
+    // this layer must not be the one that breaks composition.
+    const previous = node.onResize
+    node.onResize = function (this: LGraphNode, size) {
+      previous?.call(this, size)
+      clampToConstraints(this)
+    }
   }
   if (c.autoHeight) node.size = [node.size[0], node.computeSize()[1]]
-  clamp()
+  clampToConstraints(node)
 }
 
 /** Mutating a copy avoids relying on in-place mutation of the flags object. */
