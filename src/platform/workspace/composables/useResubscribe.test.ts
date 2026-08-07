@@ -83,6 +83,19 @@ describe('useResubscribe', () => {
     expect(isResubscribing.value).toBe(false)
   })
 
+  it('fires a started event before resubscribe resolves', async () => {
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'started',
+      outcome: 'pending',
+      source: 'settings_billing_panel'
+    })
+  })
+
   it('does not report checkout launch as terminal legacy success', async () => {
     state.shouldUseWorkspaceBilling = false
     state.canManageSubscriptionLifecycle = false
@@ -101,6 +114,9 @@ describe('useResubscribe', () => {
       outcome: 'pending',
       source: 'settings_billing_panel'
     })
+    // Exactly one started event on the legacy success rail: the pre-call start,
+    // with no duplicate post-await started/pending emitted after resubscribe() resolves.
+    expect(state.trackBillingEvent).toHaveBeenCalledTimes(1)
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )

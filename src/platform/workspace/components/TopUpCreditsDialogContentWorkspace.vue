@@ -408,13 +408,40 @@ async function handleBuy() {
 
   loading.value = true
   paymentSubmitted.value = true
+  const attemptStartedAt = Date.now()
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'started',
+      outcome: 'pending'
+    })
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'topup'
+    })
 
     const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
     if (!response) {
       paymentSubmitted.value = false
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'unknown',
+        duration_ms: Date.now() - attemptStartedAt
+      })
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        operation_type: 'topup',
+        failure_category: 'unknown',
+        duration_ms: Date.now() - attemptStartedAt
+      })
       return
     }
 
@@ -423,7 +450,16 @@ async function handleBuy() {
         operation: 'topup',
         stage: 'succeeded',
         outcome: 'success',
-        billing_op_id: response.billing_op_id
+        billing_op_id: response.billing_op_id,
+        duration_ms: Date.now() - attemptStartedAt
+      })
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        operation_type: 'topup',
+        billing_op_id: response.billing_op_id,
+        duration_ms: Date.now() - attemptStartedAt
       })
       toast.add({
         severity: 'success',
@@ -435,12 +471,12 @@ async function handleBuy() {
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
       void billingOperationStore
-        .startOperation(response.billing_op_id, 'topup')
+        .startOperation(response.billing_op_id, 'topup', { attemptStartedAt })
         .then(() => {
           paymentSubmitted.value = false
         })
         .catch(() => {
-          reportPurchaseError(response.billing_op_id)
+          reportPurchaseError(attemptStartedAt, response.billing_op_id)
         })
     } else {
       // Synchronous 'failed' here means the charge was declined, not rejected pre-attempt.
@@ -450,7 +486,17 @@ async function handleBuy() {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: response.billing_op_id,
-        failure_category: 'provider_decline'
+        failure_category: 'provider_decline',
+        duration_ms: Date.now() - attemptStartedAt
+      })
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        operation_type: 'topup',
+        billing_op_id: response.billing_op_id,
+        failure_category: 'provider_decline',
+        duration_ms: Date.now() - attemptStartedAt
       })
       toast.add({
         severity: 'error',
@@ -459,13 +505,17 @@ async function handleBuy() {
       })
     }
   } catch (error) {
-    reportPurchaseError(undefined, error)
+    reportPurchaseError(attemptStartedAt, undefined, error)
   } finally {
     loading.value = false
   }
 }
 
-function reportPurchaseError(billingOpId?: string, error?: unknown) {
+function reportPurchaseError(
+  attemptStartedAt: number,
+  billingOpId?: string,
+  error?: unknown
+) {
   paymentSubmitted.value = false
   console.error('Purchase failed', ...(error === undefined ? [] : [error]))
 
@@ -475,7 +525,18 @@ function reportPurchaseError(billingOpId?: string, error?: unknown) {
     outcome: 'failure',
     ...(billingOpId ? { billing_op_id: billingOpId } : {}),
     failure_category:
-      error === undefined ? 'unknown' : categorizeBillingApiError(error)
+      error === undefined ? 'unknown' : categorizeBillingApiError(error),
+    duration_ms: Date.now() - attemptStartedAt
+  })
+  telemetry?.trackBillingEvent({
+    operation: 'operation',
+    stage: 'failed',
+    outcome: 'failure',
+    operation_type: 'topup',
+    ...(billingOpId ? { billing_op_id: billingOpId } : {}),
+    failure_category:
+      error === undefined ? 'unknown' : categorizeBillingApiError(error),
+    duration_ms: Date.now() - attemptStartedAt
   })
   toast.add({
     severity: 'error',

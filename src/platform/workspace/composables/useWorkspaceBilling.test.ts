@@ -758,7 +758,9 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.cancelSubscription()
 
-      expect(mockStartOperation).toHaveBeenCalledWith('op-cancel', 'cancel')
+      expect(mockStartOperation).toHaveBeenCalledWith('op-cancel', 'cancel', {
+        attemptStartedAt: expect.any(Number)
+      })
       expect(billing.error.value).toBeNull()
     })
 
@@ -826,6 +828,24 @@ describe('useWorkspaceBilling', () => {
       expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
+    it('fires a started event before the cancel API call resolves', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-cancel',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      mockStartOperation.mockResolvedValue(operation())
+
+      const billing = setupBilling()
+      await billing.cancelSubscription()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'cancel'
+      })
+    })
+
     it('fires billing telemetry directly when the initiating call fails before a billing_op_id exists', async () => {
       mockWorkspaceApi.cancelSubscription.mockRejectedValue(
         new mockWorkspaceApiError('Upstream failure', 502)
@@ -841,7 +861,8 @@ describe('useWorkspaceBilling', () => {
         stage: 'failed',
         outcome: 'failure',
         operation_type: 'cancel',
-        failure_category: 'api_rejected'
+        failure_category: 'api_rejected',
+        duration_ms: expect.any(Number)
       })
     })
 
@@ -872,7 +893,9 @@ describe('useWorkspaceBilling', () => {
       await expect(billing.cancelSubscription()).rejects.toThrow(
         'processor rejected'
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
+      )
     })
 
     it('falls back to a generic error message when cancel rejects with a non-Error', async () => {
@@ -908,7 +931,22 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(mockStartOperation).not.toHaveBeenCalled()
       expect(billing.isLoading.value).toBe(false)
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
+      )
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'cancel'
+      })
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        operation_type: 'cancel',
+        duration_ms: expect.any(Number)
+      })
     })
 
     it('stays a success when the follow-up status read also fails', async () => {

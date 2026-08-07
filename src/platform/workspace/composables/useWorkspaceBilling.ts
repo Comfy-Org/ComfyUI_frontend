@@ -319,6 +319,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function cancelSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
+    const attemptStartedAt = Date.now()
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'cancel'
+    })
     // Once set, the poller (billingOperationStore) owns failure telemetry; until then, this must report it.
     let billingOpId: string | undefined
     try {
@@ -326,7 +333,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       billingOpId = response.billing_op_id
       const operation = await billingOperationStore.startOperation(
         billingOpId,
-        'cancel'
+        'cancel',
+        { attemptStartedAt }
       )
 
       if (operation.status !== 'succeeded') {
@@ -340,6 +348,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'succeeded',
+          outcome: 'success',
+          operation_type: 'cancel',
+          duration_ms: Date.now() - attemptStartedAt
+        })
         return
       }
       if (billingOpId === undefined) {
@@ -348,7 +363,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
           stage: 'failed',
           outcome: 'failure',
           operation_type: 'cancel',
-          failure_category: categorizeBillingApiError(err)
+          failure_category: categorizeBillingApiError(err),
+          duration_ms: Date.now() - attemptStartedAt
         })
       }
       error.value =
