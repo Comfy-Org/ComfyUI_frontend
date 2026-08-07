@@ -616,6 +616,7 @@ export interface HelpResourceClickedMetadata {
     | 'help_feedback'
     | 'manager'
     | 'release_notes'
+    | 'status'
   is_external: boolean
   source:
     | 'menu'

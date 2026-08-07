@@ -24,7 +24,6 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
-import type { Distribution } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
@@ -46,21 +45,9 @@ type CreditPurchasePayload =
   operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
-
-/**
- * Request body for createCustomer. The Cloudflare Turnstile token captured at
- * signup is forwarded to the backend as `turnstile_token` (snake_case), which
- * reads this field on the CreateCustomer request; it is omitted for non-signup
- * flows and on OSS / localhost where Turnstile is not rendered.
- *
- * TODO: replace with the generated `operations['createCustomer']` request-body
- * type once the backend OpenAPI spec includes `turnstile_token`, so the field
- * name/optionality drift-checks against the backend at compile time.
- */
-type CreateCustomerPayload = {
-  turnstile_token?: string
-  signup_source?: Distribution
-}
+type CreateCustomerPayload = NonNullable<
+  operations['createCustomer']['requestBody']
+>['content']['application/json']
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
 type AccessBillingPortalResponse =
@@ -392,7 +379,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const createCustomer = async (
-    payload?: CreateCustomerPayload
+    payload?: Omit<CreateCustomerPayload, 'signup_source'>
   ): Promise<CreateCustomerResponse> => {
     const sessionUserId = currentUser.value?.uid
     const authHeader = await getAuthHeader()
@@ -560,7 +547,7 @@ export const useAuthStore = defineStore('auth', () => {
     action: (auth: Auth) => Promise<T>,
     options: {
       createCustomer?: boolean
-      customerPayload?: CreateCustomerPayload
+      customerPayload?: Omit<CreateCustomerPayload, 'signup_source'>
     } = {}
   ): Promise<T> => {
     loading.value = true
