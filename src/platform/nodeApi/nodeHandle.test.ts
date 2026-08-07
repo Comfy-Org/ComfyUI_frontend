@@ -36,6 +36,17 @@ describe('NodeHandle', () => {
       expect(handle().getTitle()).toBe('Test Title')
     })
 
+    it('reads comfyClass as a string, not a bound method', () => {
+      // Registered as a method it read back as a function, so every
+      // `switch (node.comfyClass)` in a converted pack fell through in silence.
+      ;(node as unknown as { comfyClass: string }).comfyClass = 'INTConstant'
+      expect(handle().comfyClass).toBe('INTConstant')
+    })
+
+    it('falls back to the node type when there is no comfyClass', () => {
+      expect(handle().comfyClass).toBe('TestNode')
+    })
+
     it('maps internal mode enum to public strings', () => {
       expect(handle().getMode()).toBe('always')
       node.mode = LGraphEventMode.BYPASS
@@ -97,7 +108,7 @@ describe('NodeHandle', () => {
       }).toThrow(ComfyReadonlyError)
       expect(() => {
         ;(handle() as { type: string }).type = 'Other'
-      }).toThrow(/replaceNode/)
+      }).toThrow(/no published way to change it/)
       expect(node.type).toBe('TestNode')
     })
 

@@ -11,6 +11,7 @@ import { parseWidgetId } from '@/types/widgetId'
 import { ComfyApiError, ComfyReadonlyError } from './errors'
 import { createWidgetCollection, createWidgetHandles } from './widgetHandle'
 import type { WidgetCollection } from './widgetHandle'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 describe('widget surface', () => {
   let graph: LGraph
@@ -410,6 +411,32 @@ describe('mounted and canvas widgets', () => {
     expect(() => widgets.mount({ name: 'panel', render: () => {} })).toThrow(
       ComfyApiError
     )
+  })
+
+  it('runs destroy when the whole node is removed, not just the widget', () => {
+    // A mounted element owns document listeners and timers. If teardown only
+    // fired on removeWidget, deleting the node would leave them running.
+    const destroy = vi.fn()
+    widgets.mount({ name: 'panel', render: () => {}, destroy })
+
+    node.graph!.remove(node)
+
+    expect(destroy).toHaveBeenCalledOnce()
+  })
+
+  it('still unregisters from the store when the pack supplies destroy', () => {
+    // `onRemove` is the method that unregisters a DOM widget from the store.
+    // Assigning the pack's teardown over it shadows that method and leaks the
+    // widget for the life of the page.
+    const store = useDomWidgetStore()
+    widgets.mount({ name: 'panel', render: () => {}, destroy: () => {} })
+    const mounted = node.widgets![0]
+    const { id } = mounted as unknown as { id: string }
+    expect(store.widgetStates.get(id)).toBeDefined()
+
+    mounted.onRemove?.()
+
+    expect(store.widgetStates.get(id)).toBeUndefined()
   })
 
   describe('canvas', () => {

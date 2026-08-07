@@ -6,6 +6,7 @@
  * arrives at the published API. Three capabilities shipped this week that were
  * tested in isolation and never connected; this is the half that catches that.
  */
+import { readFileSync } from 'node:fs'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
@@ -120,5 +121,22 @@ describe('node movement reaches the published API', () => {
     await settle()
 
     expect(seen).toEqual([])
+  })
+})
+
+describe('boot ordering', () => {
+  // A source-order check rather than a behavioural one, because what broke is
+  // a boot sequence: the bridge was installed in addApiUpdateHandlers(), four
+  // lines after loadExtensions(), so every pack that subscribed to
+  // onNodeMoved at module scope threw "the host has not provided a source".
+  // Three kjnodes gesture files did, and no unit test could see it.
+  it('installs the bridge before extensions load', () => {
+    const setup = readFileSync('src/scripts/app.ts', 'utf8')
+    const bridge = setup.indexOf('installNodeMoveBridge()')
+    const extensions = setup.indexOf('loadExtensions()')
+
+    expect(bridge).toBeGreaterThan(-1)
+    expect(extensions).toBeGreaterThan(-1)
+    expect(bridge).toBeLessThan(extensions)
   })
 })

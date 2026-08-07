@@ -906,8 +906,6 @@ export class ComfyApp {
       releaseSharedObjectUrl(blobUrl)
     })
 
-    installNodeMoveBridge()
-
     api.addEventListener('feature_flags', () => {
       void useNodeReplacementStore().load()
     })
@@ -974,8 +972,11 @@ export class ComfyApp {
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
 
-    // Before loadExtensions: extension modules run their top level during that
-    // call, so the API must already be reachable.
+    // Both before loadExtensions: extension modules run their top level during
+    // that call, so the API must already be reachable *and* fully sourced. The
+    // bridge used to be installed in addApiUpdateHandlers() below, four lines
+    // too late, so every pack subscribing to onNodeMoved at module scope threw.
+    installNodeMoveBridge()
     installComfyApi(() => useCanvasStore().currentGraph)
     await useExtensionService().loadExtensions()
 

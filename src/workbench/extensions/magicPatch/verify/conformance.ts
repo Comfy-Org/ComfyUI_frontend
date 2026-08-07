@@ -143,6 +143,75 @@ const SILENT_WRITE =
 /** Prototype assignment — `X.prototype.onExecuted =` and friends. */
 const PROTOTYPE_PATCH = /\.prototype\.([A-Za-z_]\w*)\s*=/g
 
+/**
+ * Source with comments removed, for the checks that scan text for API usage.
+ *
+ * A conversion is asked to name what it could not reach — `// API-GAP:
+ * node.chrome has no destination`. Scanning that comment made the gate fail the
+ * files that documented themselves best and pass the ones that stayed quiet,
+ * which is exactly backwards. Five of seven kjnodes failures were this.
+ *
+ * Quote-aware rather than a regex, so a `//` inside a string or a URL survives.
+ */
+function withoutComments(source: string): string {
+  let out = ''
+  let index = 0
+  let quote: string | undefined
+
+  while (index < source.length) {
+    const char = source[index]
+    const next = source[index + 1]
+
+    if (quote) {
+      if (char === '\\') {
+        out += char + (next ?? '')
+        index += 2
+        continue
+      }
+      if (char === quote) quote = undefined
+      out += char
+      index++
+      continue
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char
+      out += char
+      index++
+      continue
+    }
+
+    if (char === '/' && next === '/') {
+      // Stops at the newline rather than consuming it, so line counts hold.
+      while (index < source.length && source[index] !== '\n') index++
+      continue
+    }
+
+    if (char === '/' && next === '*') {
+      index += 2
+      while (
+        index < source.length &&
+        !(source[index] === '*' && source[index + 1] === '/')
+      ) {
+        index++
+      }
+      index += 2
+      continue
+    }
+
+    out += char
+    index++
+  }
+  return out
+}
+
+/** The unpublished surfaces this migration exists to make deletable. */
+const LEGACY_GLOBALS: readonly [string, RegExp][] = [
+  ['window.comfyAPI', /\bwindow\s*\.\s*comfyAPI\b/],
+  ['app.registerExtension', /\bapp\s*\.\s*registerExtension\s*\(/],
+  ['/scripts/ import', /\bfrom\s*['"](?:\.\.\/)*(?:\/)?scripts\//]
+]
+
 const CAPABILITY_PATTERNS: readonly [string, RegExp][] = [
   ['eval', /\beval\s*\(/],
   ['new Function', /\bnew\s+Function\s*\(/],
@@ -213,9 +282,10 @@ const checks: readonly Check[] = [
     description:
       'The conversion introduces no capability the original did not already have.',
     run: (ctx) => {
+      const converted = withoutComments(ctx.converted)
+      const original = withoutComments(ctx.original)
       const introduced = CAPABILITY_PATTERNS.filter(
-        ([, pattern]) =>
-          pattern.test(ctx.converted) && !pattern.test(ctx.original)
+        ([, pattern]) => pattern.test(converted) && !pattern.test(original)
       ).map(([name]) => name)
 
       return introduced.length
@@ -235,9 +305,9 @@ const checks: readonly Check[] = [
       // The whole point is that the unpublished surface becomes deletable. A
       // conversion that rewrites a function body but leaves the prototype
       // assignment that reaches it has moved nothing.
-      const patched = [...ctx.converted.matchAll(PROTOTYPE_PATCH)].map(
-        (m) => m[1]
-      )
+      const patched = [
+        ...withoutComments(ctx.converted).matchAll(PROTOTYPE_PATCH)
+      ].map((m) => m[1])
       if (!patched.length) {
         return result(
           'retires-the-old-surface',
@@ -245,7 +315,9 @@ const checks: readonly Check[] = [
           'No prototype patching remains.'
         )
       }
-      const before = [...ctx.original.matchAll(PROTOTYPE_PATCH)].length
+      const before = [
+        ...withoutComments(ctx.original).matchAll(PROTOTYPE_PATCH)
+      ].length
       return result(
         'retires-the-old-surface',
         'failed',
@@ -253,6 +325,35 @@ const checks: readonly Check[] = [
           `(${patched.length} of ${before} site(s) remain). ` +
           `Convert the registration itself, or punt as api-gap.`
       )
+    }
+  },
+  {
+    id: 'retires-the-legacy-global',
+    description:
+      'The conversion no longer reaches for window.comfyAPI or the script imports.',
+    run: (ctx) => {
+      // The most basic check there is, and it was missing: `retires-the-old-
+      // surface` only looks for prototype patching, so a file that converted
+      // every hook but kept `const { app } = window.comfyAPI.app` passed.
+      // kjnodes' ideogram4_prompt_builder.js did exactly that.
+      const converted = withoutComments(ctx.converted)
+      const held = LEGACY_GLOBALS.filter(([, pattern]) =>
+        pattern.test(converted)
+      ).map(([name]) => name)
+
+      return held.length
+        ? result(
+            'retires-the-legacy-global',
+            'failed',
+            `Still reaches the old surface: ${held.join(', ')}. ` +
+              `The point of the migration is that it becomes deletable — ` +
+              `convert the call site or punt the whole file as api-gap.`
+          )
+        : result(
+            'retires-the-legacy-global',
+            'passed',
+            'No legacy global held open.'
+          )
     }
   },
   {
@@ -265,9 +366,9 @@ const checks: readonly Check[] = [
       // handle has no such property — the write vanishes, or the whole pack
       // fails to register. kjnodes' appearance.js was converted this way and
       // took every type in the pack down with it.
-      const offenders = [...ctx.converted.matchAll(PROPERTY_WRITE)].map(
-        (m) => `${m[1]}.${m[2]}`
-      )
+      const offenders = [
+        ...withoutComments(ctx.converted).matchAll(PROPERTY_WRITE)
+      ].map((m) => `${m[1]}.${m[2]}`)
       return offenders.length
         ? result(
             'handles-use-accessors',
@@ -297,8 +398,8 @@ const checks: readonly Check[] = [
       // false positive on a valid conversion, and it cost a real file.
       const used = (source: string) =>
         new Set([...source.matchAll(HANDLE_MEMBER)].map((m) => m[2]))
-      const before = used(ctx.original)
-      const unknown = [...used(ctx.converted)].filter(
+      const before = used(withoutComments(ctx.original))
+      const unknown = [...used(withoutComments(ctx.converted))].filter(
         (name) =>
           !before.has(name) &&
           !API_MEMBERS.has(name) &&
@@ -337,8 +438,8 @@ const checks: readonly Check[] = [
           )
         ])
 
-      const before = symbols(ctx.original)
-      const after = symbols(ctx.converted)
+      const before = symbols(withoutComments(ctx.original))
+      const after = symbols(withoutComments(ctx.converted))
       const missing = [...before].filter(
         (name) => !after.has(name) && !RETIRED.has(name)
       )
@@ -374,9 +475,9 @@ const checks: readonly Check[] = [
       // exactly when that helper is called. The original mutated the widget
       // directly and always worked. Optional chaining turns a failed lookup
       // into silence, and the pack cannot tell.
-      const dropped = [...ctx.converted.matchAll(SILENT_WRITE)].map((m) =>
-        m[0].trim()
-      )
+      const dropped = [
+        ...withoutComments(ctx.converted).matchAll(SILENT_WRITE)
+      ].map((m) => m[0].trim())
       return dropped.length
         ? result(
             'no-silently-dropped-writes',

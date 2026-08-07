@@ -154,6 +154,50 @@ describe('general conversion conformance', () => {
     })
   })
 
+  describe('the legacy global', () => {
+    it('fails a file that converted its hooks but kept window.comfyAPI', () => {
+      // kjnodes' ideogram4_prompt_builder.js: every hook converted, and one
+      // `const { app } = window.comfyAPI.app` left holding the old surface
+      // open. retires-the-old-surface only looks at prototype patching, so it
+      // passed. The whole point is that the surface becomes deletable.
+      const report = runConformance(
+        context({
+          original: 'const { app } = window.comfyAPI.app; app.foo()',
+          converted:
+            "import { comfy } from '/comfy/api/v1.js';\n" +
+            'const { app } = window.comfyAPI.app;\n' +
+            'comfy.defs.extend("A", (b) => b.onCreated(() => app.foo()))',
+          edits: []
+        })
+      )
+      const check = find(report, 'retires-the-legacy-global')
+      expect(check.status).toBe('failed')
+      expect(check.detail).toMatch(/window\.comfyAPI/)
+    })
+
+    it('passes a file that is fully off it', () => {
+      const report = runConformance(
+        context({
+          original: 'const { app } = window.comfyAPI.app;',
+          converted: 'comfy.defs.extend("A", (b) => b.onCreated(() => {}))',
+          edits: []
+        })
+      )
+      expect(find(report, 'retires-the-legacy-global').status).toBe('passed')
+    })
+
+    it('does not fail on the name appearing only in a comment', () => {
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted: '// Replaces window.comfyAPI.app\nnode.setTitle("x")',
+          edits: []
+        })
+      )
+      expect(find(report, 'retires-the-legacy-global').status).toBe('passed')
+    })
+  })
+
   describe('invented API members', () => {
     it('fails a conversion that calls something the API does not define', () => {
       const report = runConformance(
@@ -175,6 +219,48 @@ describe('general conversion conformance', () => {
         context({
           original: 'this.widgets.length = 1',
           converted: 'node.widgets.remove(name)',
+          edits: []
+        })
+      )
+      expect(find(report, 'no-unknown-api-members').status).toBe('passed')
+    })
+
+    it('does not flag an API named only inside a comment', () => {
+      // Conversions are asked to name what they could not reach. Scanning the
+      // comment failed the files that documented themselves and passed the
+      // ones that stayed quiet — five of seven kjnodes failures were this.
+      const report = runConformance(
+        context({
+          original: 'node.chrome.addBadge("?")',
+          converted:
+            '// API-GAP: node.chrome has no destination; used a menu entry.\n' +
+            'b.addMenuItem({ label: "Help", run: () => {} })',
+          edits: []
+        })
+      )
+      expect(find(report, 'no-unknown-api-members').status).toBe('passed')
+    })
+
+    it('still flags an unknown member outside a comment', () => {
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted:
+            '// API-GAP: node.chrome is unavailable.\nnode.setMagicLayout()',
+          edits: []
+        })
+      )
+      const check = find(report, 'no-unknown-api-members')
+      expect(check.status).toBe('failed')
+      expect(check.detail).toMatch(/setMagicLayout/)
+      expect(check.detail).not.toMatch(/chrome/)
+    })
+
+    it('keeps a URL in a string, which is not a comment', () => {
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted: 'const u = "https://example.com/x"; node.setTitle(u)',
           edits: []
         })
       )
