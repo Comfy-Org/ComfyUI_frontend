@@ -175,13 +175,23 @@ export function useSubscriptionCheckout(
       ? activeCheckoutOperation.value.opId
       : null
   )
-  const isPolling = computed(
-    () =>
-      activeCheckoutOperation.value?.status === 'pending' &&
-      activeCheckoutOperation.value.authenticationState !==
-        'failed_retryable' &&
-      activeCheckoutOperation.value.authenticationState !== 'requires_action'
-  )
+  // Busy from submit until the checkout presents a terminal step. A pending
+  // operation only releases the confirm action while it is parked on the
+  // customer (a challenge to complete, a failed attempt to retry); the
+  // in-page challenge this tab drives keeps it busy, and a succeeded
+  // operation stays busy for the beat between settlement and the success
+  // step taking over — that beat reopened the pay button mid-checkout.
+  const isPolling = computed(() => {
+    const operation = activeCheckoutOperation.value
+    if (!operation) return false
+    if (operation.status === 'succeeded') return true
+    if (operation.status !== 'pending') return false
+    if (operation.isAuthenticating) return true
+    return (
+      operation.authenticationState !== 'failed_retryable' &&
+      operation.authenticationState !== 'requires_action'
+    )
+  })
   const selectedTeamStop = computed(
     () => selectedTeamCheckout.value?.stop ?? null
   )

@@ -142,6 +142,23 @@ describe('UnifiedStripePaymentSelector', () => {
     expect(emitted().confirm).toBeUndefined()
   })
 
+  it('blocks paying while a verification is pending', async () => {
+    render(UnifiedStripePaymentSelector, {
+      props: {
+        amountCents: 66500,
+        currency: 'usd',
+        verificationPending: true
+      },
+      global: { plugins: [i18n] }
+    })
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+
+    const payButton = screen.getByRole('button', {
+      name: 'Pay and subscribe'
+    })
+    expect((payButton as HTMLButtonElement).disabled).toBe(true)
+  })
+
   it('destroys the Stripe element when the preview unmounts', async () => {
     const { unmount } = renderSelector()
     await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))

@@ -38,7 +38,7 @@
       :variant="verificationPending ? 'tertiary' : 'inverted'"
       size="lg"
       class="w-full rounded-lg"
-      :disabled="!stripeElements || !canSubmit"
+      :disabled="!stripeElements || !canSubmit || verificationPending"
       :loading="isLoading || isSubmitting"
       @click="submit"
     >

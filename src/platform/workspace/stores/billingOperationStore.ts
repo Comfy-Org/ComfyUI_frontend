@@ -256,6 +256,20 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
+  // The slow cadence is for an operation parked on the customer: a challenge
+  // to complete elsewhere, or a failed attempt awaiting their retry. Once this
+  // tab's own challenge completes, the state reads processing and nothing
+  // waits on the customer anymore — holding the slow cadence there left a
+  // settled payment spinning for half a minute.
+  function isParkedAwaitingCustomer(operation: BillingOperation): boolean {
+    return (
+      operation.authenticationState === 'requires_action' ||
+      operation.actionUrl !== null ||
+      (operation.authenticationState === 'failed_retryable' &&
+        operation.authenticationRequiredSeen)
+    )
+  }
+
   function scheduleNextPoll(opId: string) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
@@ -263,7 +277,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // scheduled poll may still be armed, and two chains would double the
     // request rate and race each other's state writes.
     pausePolling(opId)
-    const nextInterval = operation.authenticationRequiredSeen
+    const nextInterval = isParkedAwaitingCustomer(operation)
       ? ACTION_REQUIRED_INTERVAL_MS
       : Math.min(
           (intervals.get(opId) ?? INITIAL_INTERVAL_MS) * BACKOFF_MULTIPLIER,
@@ -304,17 +318,30 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return true
 
+    const knownSecret = paymentIntentClientSecrets.get(opId)
     if (clientSecret) paymentIntentClientSecrets.set(opId, clientSecret)
-    const secret = clientSecret ?? paymentIntentClientSecrets.get(opId)
+    const secret = clientSecret ?? knownSecret
     // requires_action after a failed browser attempt is the same challenge the
     // customer just abandoned — the intent has not moved. Keeping the retry
     // presentation stops the failure alert and button label flapping between
     // polls; a state that actually advanced (processing, succeeded, failed)
     // still flows through and resolves the UI.
+    //
+    // Likewise after a browser attempt that SUCCEEDED: the server can keep
+    // reporting requires_action for the same intent until it observes the
+    // completion, and downgrading processing back to requires_action reopened
+    // the pay button mid-payment. A different client secret is a genuinely
+    // new challenge and still flows through.
+    const isEchoOfHandledChallenge =
+      state === 'requires_action' &&
+      operation.authenticationState === 'processing' &&
+      autoHandledPaymentActions.has(opId) &&
+      (!clientSecret || clientSecret === knownSecret)
     const displayState =
       state === 'requires_action' &&
-      operation.authenticationState === 'failed_retryable'
-        ? 'failed_retryable'
+      (operation.authenticationState === 'failed_retryable' ||
+        isEchoOfHandledChallenge)
+        ? operation.authenticationState
         : state
     updateOperation(opId, {
       authenticationState: displayState,
@@ -395,8 +422,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         authenticationState: 'processing',
         isAuthenticating: false,
         canRetryAuthentication: false,
-        errorMessage: null
+        errorMessage: null,
+        actionUrl: null
       })
+      autoHandledPaymentActions.add(opId)
       intervals.set(opId, INITIAL_INTERVAL_MS)
       return true
     } catch (error) {
@@ -452,6 +481,16 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
+    // An action link echoed while this tab's completed challenge is still
+    // processing points at that same challenge; surfacing it would ask the
+    // customer to redo a step they just finished.
+    if (
+      actionUrl !== null &&
+      operation.authenticationState === 'processing' &&
+      autoHandledPaymentActions.has(opId)
+    ) {
+      return
+    }
     operations.value = new Map(operations.value).set(opId, {
       ...operation,
       actionUrl,

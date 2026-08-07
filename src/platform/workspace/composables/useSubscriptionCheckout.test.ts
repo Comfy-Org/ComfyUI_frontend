@@ -2296,6 +2296,76 @@ describe('useSubscriptionCheckout', () => {
     })
   })
 
+  describe('busy continuity through checkout', () => {
+    async function startPendingCheckout(operation: Record<string, unknown>) {
+      const checkout = await setup()
+      checkout.checkoutStep.value = 'preview'
+      checkout.selectedTierKey.value = 'standard'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-busy'
+      })
+      mockGetOperation.mockImplementation((opId) =>
+        opId === 'op-busy' ? operation : undefined
+      )
+      let resolveOperation!: (operation: {
+        status: string
+        workspaceId: string
+      }) => void
+      mockStartOperation.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveOperation = resolve
+          })
+      )
+      const payment = checkout.handleAddCreditCard()
+      await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledOnce())
+      return { checkout, payment, finish: () => resolveOperation }
+    }
+
+    it('stays busy while this tab drives the payment challenge', async () => {
+      const { checkout, payment, finish } = await startPendingCheckout({
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        authenticationState: 'requires_action',
+        isAuthenticating: true
+      })
+
+      expect(checkout.isPolling.value).toBe(true)
+
+      finish()({ status: 'failed', workspaceId: 'workspace-1' })
+      await payment
+    })
+
+    it('releases the confirm action while parked on a challenge the customer abandoned', async () => {
+      const { checkout, payment, finish } = await startPendingCheckout({
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        authenticationState: 'requires_action',
+        isAuthenticating: false
+      })
+
+      expect(checkout.isPolling.value).toBe(false)
+
+      finish()({ status: 'failed', workspaceId: 'workspace-1' })
+      await payment
+    })
+
+    it('stays busy from settlement until the success step takes over', async () => {
+      const { checkout, payment, finish } = await startPendingCheckout({
+        status: 'succeeded',
+        workspaceId: 'workspace-1'
+      })
+
+      expect(checkout.isPolling.value).toBe(true)
+      expect(checkout.checkoutStep.value).toBe('preview')
+
+      finish()({ status: 'succeeded', workspaceId: 'workspace-1' })
+      await payment
+      expect(checkout.checkoutStep.value).toBe('success')
+    })
+  })
+
   describe('handleAddCreditCard', () => {
     it('shows existing success immediately without owning post-response reconciliation', async () => {
       const checkout = await setup()
