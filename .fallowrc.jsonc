@@ -47,7 +47,6 @@
     // via pnpm hoisting. Real (benign) phantom deps; tracked for follow-up
     // cleanup into apps/desktop-ui/package.json.
     "@pinia/testing",
-    "@storybook/vue3-vite",
     "@testing-library/jest-dom",
     "@testing-library/user-event",
     "@testing-library/vue",
@@ -127,7 +126,12 @@
 
   "duplicates": {
     "minOccurrences": 3,
-    "ignore": ["**/*.generated.*", "**/generatedManagerTypes.ts"]
+    "ignore": [
+      "**/*.gen.ts",
+      "**/*.generated.*",
+      "**/generatedManagerTypes.ts",
+      "packages/registry-types/src/comfyRegistryTypes.ts"
+    ]
   },
 
   // Staged adoption: the residual dead-code, complexity, and duplication findings
