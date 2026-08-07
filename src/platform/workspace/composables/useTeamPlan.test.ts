@@ -4,6 +4,7 @@ const {
   mockIsActiveSubscription,
   mockIsInitialized,
   mockIsTeamPlan,
+  mockMaxSeats,
   mockSubscription,
   mockSubscriptionStatus
 } = vi.hoisted(() => {
@@ -14,6 +15,7 @@ const {
     mockIsActiveSubscription: ref(true),
     mockIsInitialized: ref(true),
     mockIsTeamPlan: ref(true),
+    mockMaxSeats: ref<number | null>(30),
     mockSubscription: ref<{ isCancelled?: boolean } | null>({
       isCancelled: false
     }),
@@ -26,6 +28,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isActiveSubscription: mockIsActiveSubscription,
     isInitialized: mockIsInitialized,
     isTeamPlan: mockIsTeamPlan,
+    maxSeats: mockMaxSeats,
     subscription: mockSubscription,
     subscriptionStatus: mockSubscriptionStatus
   })
@@ -42,6 +45,7 @@ describe('useTeamPlan', () => {
     mockIsActiveSubscription.value = true
     mockIsInitialized.value = true
     mockIsTeamPlan.value = true
+    mockMaxSeats.value = 30
     mockSubscription.value = { isCancelled: false }
     mockSubscriptionStatus.value = 'active'
   })
@@ -57,6 +61,19 @@ describe('useTeamPlan', () => {
     const plan = await setup()
     expect(plan.hasTeamPlan.value).toBe(false)
     expect(plan.isOnTeamPlan.value).toBe(false)
+  })
+
+  it('enables member seats from backend capacity for a personal plan', async () => {
+    mockIsTeamPlan.value = false
+    mockMaxSeats.value = 4
+    const plan = await setup()
+    expect(plan.hasMemberSeats.value).toBe(true)
+  })
+
+  it('does not enable member seats for a single-seat plan', async () => {
+    mockMaxSeats.value = 1
+    const plan = await setup()
+    expect(plan.hasMemberSeats.value).toBe(false)
   })
 
   it('does not enable Team features for an inactive subscription', async () => {
