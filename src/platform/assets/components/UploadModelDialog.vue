@@ -64,13 +64,17 @@ import type {
   UploadModelSuccess
 } from '@/platform/assets/composables/useUploadModelWizard'
 import { useUploadModelWizard } from '@/platform/assets/composables/useUploadModelWizard'
+import type { ByomSurface } from '@/platform/telemetry/types'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
 const { modelTypes, fetchModelTypes } = useModelTypes()
 
-const { uploadContext } = defineProps<{
+const { uploadContext, byomFlowId, byomSurface } = defineProps<{
   uploadContext?: UploadModelDialogContext
+  /** Funnel correlation id + entry surface, minted by useModelUpload. */
+  byomFlowId?: string
+  byomSurface?: ByomSurface
 }>()
 
 const emit = defineEmits<{
@@ -102,7 +106,9 @@ const {
   goToPreviousStep,
   resetWizard
 } = useUploadModelWizard(modelTypes, {
-  requiredModelType: requiredModelType.value
+  requiredModelType: requiredModelType.value,
+  byomFlowId,
+  byomSurface
 })
 
 async function handleFetchMetadata() {

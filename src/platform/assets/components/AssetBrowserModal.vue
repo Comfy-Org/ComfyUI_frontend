@@ -178,8 +178,11 @@ void refreshAssets()
 const { fetchModelTypes } = useModelTypes()
 void fetchModelTypes()
 
-const { isUploadButtonEnabled, showUploadDialog } =
-  useModelUpload(refreshAssets)
+const { isUploadButtonEnabled, showUploadDialog } = useModelUpload(
+  refreshAssets,
+  undefined,
+  'asset_browser'
+)
 
 const {
   searchQuery,

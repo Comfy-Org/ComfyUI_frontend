@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -17,7 +17,18 @@ import {
   stripModelTypePrefix,
   toModelTypeTag
 } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  classifyByomError,
+  createByomFlowId
+} from '@/platform/assets/utils/byomTelemetry'
 import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
+import { useTelemetry } from '@/platform/telemetry'
+import type {
+  ByomFunnelMetadata,
+  ByomFunnelStage,
+  ByomModelTypeOrigin,
+  ByomSurface
+} from '@/platform/telemetry/types'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -66,6 +77,9 @@ export type UploadModelDialogContext = MissingModelUploadContext
 
 interface UploadModelWizardOptions {
   requiredModelType?: string
+  /** Correlation id minted at dialog open; see createByomFlowId. */
+  byomFlowId?: string
+  byomSurface?: ByomSurface
 }
 
 export function useUploadModelWizard(
@@ -78,6 +92,34 @@ export function useUploadModelWizard(
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
   const requiredModelType = options.requiredModelType
+  const telemetry = useTelemetry()
+  // Falls back to a fresh id so the wizard still emits a self-consistent flow
+  // if it is ever mounted outside useModelUpload.
+  const byomFlowId = options.byomFlowId ?? createByomFlowId()
+  const byomSurface: ByomSurface = options.byomSurface ?? 'asset_browser'
+  // Set once a terminal stage fires, so dialog teardown doesn't also report an
+  // abandon for a flow that already succeeded or failed.
+  let byomTerminalReported = false
+
+  function trackByom(
+    stage: ByomFunnelStage,
+    metadata: Partial<ByomFunnelMetadata> = {}
+  ) {
+    telemetry?.trackByomFunnel(stage, {
+      flow_id: byomFlowId,
+      surface: byomSurface,
+      ...metadata
+    })
+  }
+
+  function modelTypeOrigin(): ByomModelTypeOrigin {
+    if (requiredModelType) return 'required'
+    return autodetectedModelType ? 'autodetected' : 'manual'
+  }
+
+  // Tracks whether step 2's model type came from metadata tags rather than the
+  // user picking it, which is the signal for how well auto-detection works.
+  let autodetectedModelType = false
   const currentStep = ref(1)
   const isFetchingMetadata = ref(false)
   const isUploading = ref(false)
@@ -160,8 +202,16 @@ export function useUploadModelWizard(
       uploadError.value = t('assetBrowser.unsupportedUrlSource', {
         sources: supportedSources
       })
+      trackByom('metadata_resolved', {
+        outcome: 'error',
+        error_reason: 'unsupported_source'
+      })
       return
     }
+
+    // Only the resolved source type is emitted — never the URL itself, which
+    // can carry tokens or private-repo paths in its query params.
+    trackByom('url_submitted', { source: source.type })
 
     isFetchingMetadata.value = true
     try {
@@ -202,10 +252,17 @@ export function useUploadModelWizard(
         )
         if (typeTag) {
           selectedModelType.value = typeTag
+          autodetectedModelType = true
         }
       }
 
       currentStep.value = 2
+      trackByom('metadata_resolved', {
+        source: source.type,
+        outcome: 'success',
+        model_type_autodetected: autodetectedModelType,
+        has_preview: !!wizardData.value.previewImage
+      })
     } catch (error) {
       console.error('Failed to retrieve metadata:', error)
       uploadError.value =
@@ -216,6 +273,12 @@ export function useUploadModelWizard(
               'Failed to retrieve metadata. Please check the link and try again.'
             )
       currentStep.value = 1
+      // The raw message is intentionally not forwarded — see classifyByomError.
+      trackByom('metadata_resolved', {
+        source: source.type,
+        outcome: 'error',
+        error_reason: classifyByomError('metadata')
+      })
     } finally {
       isFetchingMetadata.value = false
     }
@@ -324,6 +387,13 @@ export function useUploadModelWizard(
     uploadTypeMismatch.value = null
     let uploadSuccess: UploadModelSuccess | null = null
 
+    trackByom('upload_submitted', {
+      source: source.type,
+      model_type: resolvedModelType.value,
+      model_type_origin: modelTypeOrigin(),
+      has_preview: !!wizardData.value.previewImage
+    })
+
     try {
       const modelType = resolvedModelType.value
       const subtypeTag =
@@ -377,6 +447,14 @@ export function useUploadModelWizard(
             if (status === 'completed') {
               resolved = true
               uploadStatus.value = 'success'
+              byomTerminalReported = true
+              trackByom('upload_completed', {
+                source: source.type,
+                model_type: modelType,
+                model_type_origin: modelTypeOrigin(),
+                mode: 'async',
+                outcome: 'success'
+              })
               await refreshModelCaches()
               stopAsyncWatch?.()
               stopAsyncWatch = undefined
@@ -391,6 +469,15 @@ export function useUploadModelWizard(
                 t('assetBrowser.downloadFailed', {
                   name: download?.assetName || ''
                 })
+              byomTerminalReported = true
+              trackByom('upload_completed', {
+                source: source.type,
+                model_type: modelType,
+                model_type_origin: modelTypeOrigin(),
+                mode: 'async',
+                outcome: 'failed',
+                error_reason: classifyByomError('upload')
+              })
               stopAsyncWatch?.()
               stopAsyncWatch = undefined
             }
@@ -411,10 +498,27 @@ export function useUploadModelWizard(
           blockMismatchedImportedModel(result.asset, modelType)
         ) {
           currentStep.value = 3
+          byomTerminalReported = true
+          trackByom('upload_completed', {
+            source: source.type,
+            model_type: modelType,
+            model_type_origin: modelTypeOrigin(),
+            mode: 'sync',
+            outcome: 'type_mismatch',
+            error_reason: 'type_mismatch'
+          })
           return null
         }
 
         uploadStatus.value = 'success'
+        byomTerminalReported = true
+        trackByom('upload_completed', {
+          source: source.type,
+          model_type: modelType,
+          model_type_origin: modelTypeOrigin(),
+          mode: 'sync',
+          outcome: 'success'
+        })
         await refreshModelCaches()
         uploadSuccess = {
           filename:
@@ -430,11 +534,36 @@ export function useUploadModelWizard(
       uploadError.value =
         error instanceof Error ? error.message : 'Failed to upload model'
       currentStep.value = 3
+      byomTerminalReported = true
+      trackByom('upload_completed', {
+        source: source.type,
+        model_type: resolvedModelType.value,
+        model_type_origin: modelTypeOrigin(),
+        mode: 'sync',
+        outcome: 'failed',
+        error_reason: classifyByomError('upload')
+      })
     } finally {
       isUploading.value = false
     }
     return uploadSuccess
   }
+
+  /**
+   * Reports the abandon stage unless a terminal stage already fired. Called on
+   * dialog teardown, so a user who closes the wizard mid-flow is attributed to
+   * the step they dropped at rather than silently vanishing from the funnel.
+   */
+  function reportByomAbandonedIfUnresolved() {
+    if (byomTerminalReported) return
+    byomTerminalReported = true
+    trackByom('dialog_abandoned', {
+      last_step: currentStep.value,
+      source: detectedSource.value?.type
+    })
+  }
+
+  onScopeDispose(reportByomAbandonedIfUnresolved)
 
   function goToPreviousStep() {
     if (currentStep.value > 1) {

@@ -16,7 +16,11 @@ const emit = defineEmits<{
 
 const filterSelected = defineModel<string>('filterSelected')
 
-const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
+const { isUploadButtonEnabled, showUploadDialog } = useModelUpload(
+  undefined,
+  undefined,
+  'model_dropdown'
+)
 
 const singleFilterOption = computed(() => filterOptions.length === 1)
 
