@@ -116,6 +116,30 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     ).toHaveText('Popular')
   })
 
+  test("dialog should preserve a returning user's Popular sort", async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', true)
+    await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'popular')
+
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+
+    await expect(comfyPage.templates.content).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('heading', {
+        name: 'All Templates',
+        exact: true
+      })
+    ).toBeVisible()
+    await comfyPage.templatesDialog.openFilters()
+    await expect(
+      comfyPage.templatesDialog.getCombobox('Sort by').filter({ visible: true })
+    ).toHaveText('Popular')
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.Templates.SortBy'))
+      .toBe('popular')
+  })
+
   test('dialog should not be shown when first-time user opens a shared workflow link', async ({
     comfyPage
   }) => {
