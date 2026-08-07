@@ -98,7 +98,6 @@ export interface Editor {
   setTool(id: string): void
   activeToolId(): string
   transformApply(): boolean
-  transformCancel(): boolean
   guides(): DocGuide[]
   activeNodeId(): string | null
   setActiveNode(id: string | null): void
@@ -603,7 +602,6 @@ export function createEditor(opts: EditorOptions): Editor {
     },
     activeToolId: () => toolId,
     transformApply: () => (isTransformTool(tool) ? tool.apply() : false),
-    transformCancel: () => (isTransformTool(tool) ? tool.cancel() : false),
     activeNodeId: activeNodeIdOf,
     setActiveNode: setActive,
     selectedNodeIds: liveSelectedIds,

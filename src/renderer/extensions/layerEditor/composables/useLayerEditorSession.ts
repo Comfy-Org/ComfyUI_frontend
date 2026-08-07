@@ -971,19 +971,10 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
         editor.anchorFloating()
         return
       }
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        editor.cancelFloating()
-        return
-      }
     }
     if (e.key === 'Enter') {
       e.preventDefault()
       editor.transformApply()
-      return
-    }
-    if (e.key === 'Escape') {
-      if (editor.transformCancel()) e.preventDefault()
       return
     }
     if (e.code === 'Space') {

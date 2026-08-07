@@ -368,7 +368,7 @@ describe('useLayerEditorSession', () => {
       expect(session.layers.value[0].kind).toBe('fill')
     })
 
-    it('lets Escape through to the dialog when there is nothing to cancel', async () => {
+    it('never swallows Escape so the dialog close stays reachable', async () => {
       const { session } = await loadedSession()
       const preventDefault = vi.fn()
       session.onKeyDown(key({ key: 'Escape', preventDefault }))
@@ -589,7 +589,7 @@ describe('useLayerEditorSession', () => {
       expect(session.editor.selectionBounds()).toBeNull()
     })
 
-    it('Enter anchors a floating item and Escape cancels one', async () => {
+    it('Enter anchors a floating item; Escape leaves it for the dialog', async () => {
       const { session } = await loadedSession()
       session.setElements(makeElements())
       const cid = session.content.register(fakeCanvas(8, 8))
@@ -601,8 +601,10 @@ describe('useLayerEditorSession', () => {
 
       const cid2 = session.content.register(fakeCanvas(8, 8))
       session.editor.startFloating(cid2, 8, 8, 'F2')
-      session.onKeyDown(key({ key: 'Escape' }))
-      expect(session.editor.floating()).toBeNull()
+      const preventDefault = vi.fn()
+      session.onKeyDown(key({ key: 'Escape', preventDefault }))
+      expect(session.editor.floating()).not.toBeNull()
+      expect(preventDefault).not.toHaveBeenCalled()
     })
 
     it('ignores hotkeys while typing in an input', async () => {
