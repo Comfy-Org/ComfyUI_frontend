@@ -37,7 +37,7 @@ export function deriveBillingBanner(
     return null
   }
 
-  if (inputs.billingControlEnabled || inputs.v1PaymentRecovery) {
+  if (inputs.v1PaymentRecovery) {
     if (inputs.billingStatus === 'paused') return 'paused'
     if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
       return 'paymentFailed'

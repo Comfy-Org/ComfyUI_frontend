@@ -317,39 +317,16 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
-  it('restores the previous recovery banners and copy when the new flag is off', async () => {
+  it('hides recovery banners when payment recovery is off', () => {
     mockV1PaymentRecovery.value = false
     paymentFailedState()
-    state.renewalDate = '2026-08-01T00:00:00Z'
     const { unmount } = renderBanner()
-    expect(screen.getByRole('status')).toHaveTextContent('Payment declined')
-    expect(screen.getByRole('status')).toHaveTextContent('will pause on')
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Update payment' })
-    )
-    expect(state.manageSubscription).toHaveBeenCalledOnce()
-    expect(state.manageSubscription).toHaveBeenCalledWith()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     unmount()
 
     pausedState()
-    mockCanManageSubscription.value = false
     renderBanner()
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Your workspace admins need to update the payment method'
-    )
-  })
-
-  it('falls back to the no-date payment-declined copy when there is no renewal date', () => {
-    mockV1PaymentRecovery.value = false
-    paymentFailedState()
-    state.renewalDate = null
-    renderBanner()
-
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Update payment to avoid a pause'
-    )
-    expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
-    expect(screen.getByRole('status')).not.toHaveTextContent('{date}')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('aborts a recovery banner portal request when its flag is rolled back', async () => {
