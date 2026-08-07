@@ -71,7 +71,7 @@ test.describe('MiniMax H3 page — legacy URL @smoke', () => {
     }) => {
       await page.goto(legacyPath)
 
-      await expect(page).toHaveURL(new RegExp(`${PATH}/?$`))
+      await expect(page).toHaveURL(`${PATH}/`)
       await expect(
         page.getByRole('heading', { level: 1, name: HERO_TITLE })
       ).toBeVisible()
@@ -84,7 +84,7 @@ test.describe('MiniMax H3 page — legacy URL @smoke', () => {
     }) => {
       await page.goto(legacyPath)
 
-      await expect(page).toHaveURL(new RegExp(`${ZH_PATH}/?$`))
+      await expect(page).toHaveURL(`${ZH_PATH}/`)
     })
   }
 })
