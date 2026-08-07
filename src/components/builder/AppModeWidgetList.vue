@@ -87,6 +87,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
         description: config?.description,
         nodeData: {
           ...fullNodeData,
+          showAdvanced: true,
           widgets: [matchingWidget]
         },
         action: { widget, node }

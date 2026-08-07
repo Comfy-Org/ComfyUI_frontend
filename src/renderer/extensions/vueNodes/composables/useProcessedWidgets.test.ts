@@ -4,15 +4,9 @@ import { setActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
@@ -24,8 +18,6 @@ import { widgetId } from '@/types/widgetId'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
-import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import {
   computeProcessedWidgets,
   getWidgetIdentity,
@@ -173,11 +165,11 @@ describe('isWidgetVisible', () => {
     expect(isWidgetVisible({ advanced: true }, true)).toBe(true)
   })
 
-  it('keeps advanced widgets visible when linked and showAdvanced is false', () => {
+  it('keeps advanced widgets visible when advanced filtering is ignored', () => {
     expect(isWidgetVisible({ advanced: true }, false, true)).toBe(true)
   })
 
-  it('keeps hidden widgets hidden when linked', () => {
+  it('keeps hidden widgets hidden when advanced filtering is ignored', () => {
     expect(isWidgetVisible({ hidden: true }, false, true)).toBe(false)
   })
 })
@@ -422,58 +414,24 @@ describe('computeProcessedWidgets visibility', () => {
   })
 
   it('keeps a promoted advanced widget visible without source metadata', () => {
-    const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
-    subgraph.rootGraph.add(subgraphNode)
+    const widget = createMockWidget({
+      name: 'max_shift',
+      type: 'number',
+      options: { advanced: true },
+      slotMetadata: {
+        index: 0,
+        linked: false,
+        promoted: true,
+        type: 'FLOAT'
+      },
+      sourceExecutionId: undefined,
+      sourceWidgetName: undefined
+    })
 
-    const interiorNode = new LGraphNode('ModelSamplingFlux')
-    const interiorInput = interiorNode.addInput('max_shift', 'FLOAT')
-    const interiorWidget = interiorNode.addWidget(
-      'number',
-      'max_shift',
-      1,
-      () => {},
-      { advanced: true }
-    )
-    interiorInput.widget = { name: interiorWidget.name }
-    subgraph.add(interiorNode)
+    const promotedWidget = processWidgets([widget])[0]
 
-    const promotion = promoteValueWidgetViaSubgraphInput(
-      subgraphNode,
-      interiorNode,
-      interiorWidget
-    )
-    expect(promotion.ok).toBe(true)
-
-    const rootGraphSpy = vi
-      .spyOn(app, 'rootGraph', 'get')
-      .mockReturnValue(subgraph.rootGraph)
-    try {
-      const nodeData = extractVueNodeData(subgraphNode)
-      const processedWidgets = computeProcessedWidgets({
-        nodeData: {
-          ...nodeData,
-          widgets: nodeData.widgets?.map((widget) => ({
-            ...widget,
-            sourceExecutionId: undefined,
-            sourceWidgetName: undefined
-          }))
-        },
-        graphId: subgraph.rootGraph.id,
-        showAdvanced: false,
-        isGraphReady: false,
-        rootGraph: null,
-        ui: noopUi
-      })
-      const promotedWidget = processedWidgets.find(
-        (widget) => widget.name === 'max_shift'
-      )
-
-      expect(promotedWidget).toBeDefined()
-      expect(promotedWidget?.visible).toBe(true)
-    } finally {
-      rootGraphSpy.mockRestore()
-    }
+    expect(promotedWidget).toBeDefined()
+    expect(promotedWidget?.visible).toBe(true)
   })
 })
 
