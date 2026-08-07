@@ -112,6 +112,27 @@ describe('NodeHandle', () => {
       expect(node.type).toBe('TestNode')
     })
 
+    it('re-declaring constraints replaces them rather than stacking', () => {
+      // The hook used to be chained on every call, each closure holding the
+      // constraints it was built with — so an updated maximum fought the old
+      // one instead of replacing it. Crystools calls this on every populate.
+      handle().setSizeConstraints({ minWidth: 400 })
+      handle().setSizeConstraints({ minWidth: 100 })
+
+      node.size = [120, 80]
+      node.onResize?.(node.size)
+
+      expect(node.size[0]).toBe(120)
+    })
+
+    it('installs the resize hook once, however often it is declared', () => {
+      handle().setSizeConstraints({ minWidth: 50 })
+      const hook = node.onResize
+      handle().setSizeConstraints({ minWidth: 60 })
+
+      expect(node.onResize).toBe(hook)
+    })
+
     it('moves and resizes via methods', () => {
       handle().setPosition({ x: 100, y: 200 })
       handle().setSize({ width: 300, height: 400 })
