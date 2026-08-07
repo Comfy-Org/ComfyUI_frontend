@@ -309,6 +309,15 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
         return inputNodeDto.resolveOutput(virtualSource.slot, type, visited)
       }
+      if (this.node.resolveVirtualValue) {
+        return {
+          node: this,
+          origin_id: this.id,
+          origin_slot: -1,
+          widgetInfo: { value: this.node.resolveVirtualValue(slot) }
+        }
+      }
+
       const virtualLink = this.node.getInputLink(slot)
       if (virtualLink) {
         const { inputNode } = virtualLink.resolve(this.graph)
