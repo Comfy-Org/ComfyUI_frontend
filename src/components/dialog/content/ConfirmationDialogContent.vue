@@ -1,10 +1,13 @@
 <template>
-  <section
-    class="m-2 mt-4 flex flex-col gap-6 wrap-break-word whitespace-pre-wrap"
-  >
-    <div>
-      <span>{{ message }}</span>
-      <ul v-if="itemList?.length" class="m-0 mt-2 flex flex-col gap-2 pl-4">
+  <SmallModalShell :title :title-id="titleId">
+    <div class="flex flex-col gap-4 wrap-break-word whitespace-pre-wrap">
+      <span :id="descriptionId" class="text-sm text-muted-foreground">{{
+        message
+      }}</span>
+      <ul
+        v-if="itemList?.length"
+        class="m-0 flex flex-col gap-2 pl-4 text-sm text-muted-foreground"
+      >
         <li v-for="item of itemList" :key="item">
           {{ item }}
         </li>
@@ -12,13 +15,11 @@
       <div
         v-if="hint"
         role="status"
-        class="mt-2 flex items-start gap-2 text-sm text-muted-foreground"
+        class="flex items-start gap-2 text-sm text-muted-foreground"
       >
         <i class="pi pi-info-circle mt-0.5" aria-hidden="true" />
         <span>{{ hint }}</span>
       </div>
-    </div>
-    <div class="flex shrink-0 flex-wrap justify-end gap-4">
       <div
         v-if="type === 'overwriteBlueprint'"
         class="flex flex-col justify-start gap-1"
@@ -30,7 +31,7 @@
             type="checkbox"
             class="size-4 cursor-pointer"
           />
-          <label for="doNotAskAgain">{{
+          <label for="doNotAskAgain" class="text-sm text-muted-foreground">{{
             t('missingModelsDialog.doNotAskAgain')
           }}</label>
         </div>
@@ -51,71 +52,76 @@
           </template>
         </i18n-t>
       </div>
+    </div>
 
+    <template #footer>
       <Button
         v-if="type !== 'info' && type !== 'dirtyClose'"
-        variant="secondary"
-        autofocus
+        variant="muted-textonly"
         @click="onCancel"
       >
-        <i class="pi pi-undo" />
         {{ $t('g.cancel') }}
       </Button>
-      <Button v-if="type === 'default'" variant="primary" @click="onConfirm">
-        <i class="pi pi-check" />
+      <Button
+        v-if="type === 'default'"
+        variant="primary"
+        size="lg"
+        @click="onConfirm"
+      >
         {{ $t('g.confirm') }}
       </Button>
       <Button
         v-else-if="type === 'delete'"
         variant="destructive"
+        size="lg"
         @click="onConfirm"
       >
-        <i class="pi pi-trash" />
         {{ $t('g.delete') }}
       </Button>
       <Button
         v-else-if="type === 'overwrite' || type === 'overwriteBlueprint'"
         variant="destructive"
+        size="lg"
         @click="onConfirm"
       >
-        <i class="pi pi-save" />
         {{ $t('g.overwrite') }}
       </Button>
       <template v-else-if="type === 'dirtyClose'">
-        <Button variant="secondary" @click="onDeny">
-          <i class="pi pi-times" />
+        <Button variant="muted-textonly" @click="onDeny">
           {{ denyLabel ?? $t('g.no') }}
         </Button>
-        <Button autofocus @click="onConfirm">
-          <i class="pi pi-save" />
+        <Button variant="primary" size="lg" @click="onConfirm">
           {{ $t('g.save') }}
         </Button>
       </template>
       <Button
         v-else-if="type === 'reinstall'"
         variant="destructive"
+        size="lg"
         @click="onConfirm"
       >
-        <i class="pi pi-eraser" />
         {{ $t('desktopMenu.reinstall') }}
       </Button>
-      <!-- Info - just show an OK button -->
-      <Button v-else-if="type === 'info'" variant="primary" @click="onCancel">
+      <Button
+        v-else-if="type === 'info'"
+        variant="primary"
+        size="lg"
+        @click="onCancel"
+      >
         {{ $t('g.ok') }}
       </Button>
-      <!-- Invalid - just show a close button. -->
-      <Button v-else variant="primary" @click="onCancel">
-        <i class="pi pi-times" />
+      <Button v-else variant="primary" size="lg" @click="onCancel">
         {{ $t('g.close') }}
       </Button>
-    </div>
-  </section>
+    </template>
+  </SmallModalShell>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SmallModalShell from '@/components/dialog/SmallModalShell.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -123,12 +129,15 @@ import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
+  title: string
   message: string
   type: ConfirmationDialogType
-  onConfirm: (value?: boolean) => void
+  onConfirm: (value: boolean) => void
   itemList?: string[]
   hint?: string
   denyLabel?: string
+  titleId?: string
+  descriptionId?: string
 }>()
 
 const { t } = useI18n()
