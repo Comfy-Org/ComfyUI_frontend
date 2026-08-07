@@ -52,14 +52,10 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfigErrorStatus: mockRemoteConfigErrorStatus
 }))
 
-const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: false }))
 const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
     flags: {
-      get teamWorkspacesEnabled() {
-        return mockTeamWorkspacesEnabled.value
-      },
       get unifiedCloudAuthEnabled() {
         return mockUnifiedCloudAuthEnabled.value
       }
@@ -122,7 +118,6 @@ describe('WorkspaceAuthGate', () => {
     mockIsCloud.value = true
     mockIsInitialized.value = false
     mockCurrentUser.value = null
-    mockTeamWorkspacesEnabled.value = false
     mockUnifiedCloudAuthEnabled.value = false
     mockRemoteConfigState.value = 'authenticated'
     mockRemoteConfigErrorStatus.value = null
@@ -218,16 +213,6 @@ describe('WorkspaceAuthGate', () => {
       })
     })
 
-    it('renders slot when teamWorkspacesEnabled is false', async () => {
-      mockTeamWorkspacesEnabled.value = false
-
-      mountComponent()
-      await flushPromises()
-
-      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
-    })
-
     it('mints unified auth after refreshing authenticated flags', async () => {
       mockRefreshRemoteConfig.mockImplementation(async () => {
         mockUnifiedCloudAuthEnabled.value = true
@@ -240,9 +225,7 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
-    it('initializes workspace store when teamWorkspacesEnabled is true', async () => {
-      mockTeamWorkspacesEnabled.value = true
-
+    it('initializes the workspace store', async () => {
       mountComponent()
       await flushPromises()
 
@@ -252,7 +235,6 @@ describe('WorkspaceAuthGate', () => {
 
     it('stops initialization when unmounted', async () => {
       let resolveRefresh: (() => void) | undefined
-      mockTeamWorkspacesEnabled.value = true
       mockRefreshRemoteConfig.mockImplementation(
         () =>
           new Promise<void>((resolve) => {
@@ -276,7 +258,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('calls resumePendingPricingFlow after successful workspace init', async () => {
-      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitState.value = 'ready'
 
       mountComponent()
@@ -286,7 +267,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('skips workspace init when store is already initialized', async () => {
-      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitState.value = 'ready'
 
       mountComponent()
@@ -355,7 +335,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when authenticated config is unavailable', async () => {
-      mockTeamWorkspacesEnabled.value = true
       mockRemoteConfigState.value = 'error'
 
       mountComponent()
@@ -400,7 +379,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when workspace store initialization fails', async () => {
-      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitialize.mockRejectedValue(
         new Error('Workspace init failed')
       )
@@ -414,7 +392,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('requires sign out when no workspace is available', async () => {
-      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitialize.mockRejectedValue(
         new Error('No workspaces available')
       )
@@ -432,7 +409,6 @@ describe('WorkspaceAuthGate', () => {
 
     it('shows a recoverable error when workspace setup clears unified auth', async () => {
       mockUnifiedCloudAuthEnabled.value = true
-      mockTeamWorkspacesEnabled.value = true
       mockGetUnifiedToken.mockReturnValue(undefined)
 
       mountComponent()
@@ -444,7 +420,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error without a ready workspace context', async () => {
-      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitState.value = 'loading'
 
       mountComponent()
@@ -457,7 +432,6 @@ describe('WorkspaceAuthGate', () => {
 
     it('renders the app after retrying a failed initialization', async () => {
       const user = userEvent.setup()
-      mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitialize
         .mockImplementationOnce(async () => {
           mockWorkspaceStoreInitState.value = 'error'
@@ -503,7 +477,6 @@ describe('WorkspaceAuthGate', () => {
     it('stops a pending retry before logging out', async () => {
       const user = userEvent.setup()
       let resolveRetry: (() => void) | undefined
-      mockTeamWorkspacesEnabled.value = true
       mockRefreshRemoteConfig
         .mockRejectedValueOnce(new Error('Network error'))
         .mockImplementationOnce(
