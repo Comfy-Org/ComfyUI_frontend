@@ -8,6 +8,7 @@
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
   RenderShape
@@ -127,6 +128,20 @@ export interface NodeHandle extends HandleCommon {
    * `undefined` if there is no slot at that index.
    */
   getSlotPosition(side: 'input' | 'output', index: number): Point | undefined
+  /**
+   * Where the node currently sits on screen, in client coordinates.
+   *
+   * For anchoring a floating panel to a node. Packs did this by reading the
+   * viewport's pan and zoom and doing the arithmetic themselves, which is both
+   * the renderer's business and wrong the moment the transform changes shape.
+   *
+   * The answer already accounts for zoom, so a pack needing to convert a pixel
+   * drag into graph units can divide by `width / getBounds().width` rather than
+   * asking for the scale factor.
+   *
+   * `undefined` when nothing is on screen to measure against.
+   */
+  getScreenRect(): Bounds | undefined
   /**
    * Declares how the node may be sized, instead of re-asserting it per frame.
    *
@@ -331,6 +346,23 @@ export function createNodeHandles(
           n.pos = [x, y]
         },
         getSize: (n) => freezeSize(n.size[0], n.size[1]),
+        getScreenRect: (n) => {
+          const canvas = LGraphCanvas.active_canvas
+          const element = canvas?.canvas
+          if (!canvas || !element) return undefined
+          n.updateArea()
+          const b = n.getBounding()
+          const { scale, offset } = canvas.ds
+          const rect = element.getBoundingClientRect()
+          // The same transform the renderer draws with: translate by the pan,
+          // then scale. Kept here so a pack never has to know it.
+          return freezeBounds([
+            (b[0] + offset[0]) * scale + rect.left,
+            (b[1] + offset[1]) * scale + rect.top,
+            b[2] * scale,
+            b[3] * scale
+          ])
+        },
         getBounds: (n) => {
           // The rect is a per-frame cache, so it is stale (or all zeroes)
           // until something has rendered. Refreshing is what the renderer

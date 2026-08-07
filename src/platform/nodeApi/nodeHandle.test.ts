@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 
 import { ComfyDeletedError, ComfyReadonlyError } from './errors'
@@ -96,6 +96,43 @@ describe('NodeHandle', () => {
       expect(output).toBeDefined()
       // An input sits on the left edge, an output on the right.
       expect(input!.x).toBeLessThan(output!.x)
+    })
+
+    it('reports where the node is on screen, accounting for zoom', () => {
+      // Packs anchoring a floating panel to a node were reading the viewport's
+      // pan and zoom and doing this arithmetic themselves.
+      const canvasEl = document.createElement('canvas')
+      canvasEl.getBoundingClientRect = () => ({ left: 100, top: 50 }) as DOMRect
+      const fake = {
+        canvas: canvasEl,
+        ds: { scale: 2, offset: [10, 20] }
+      } as unknown as typeof LGraphCanvas.active_canvas
+      const previous = LGraphCanvas.active_canvas
+      LGraphCanvas.active_canvas = fake
+
+      try {
+        node.pos = [100, 200]
+        node.size = [140, 80]
+        const graph = handle().getBounds()
+        const screen = handle().getScreenRect()!
+
+        expect(screen.x).toBe((graph.x + 10) * 2 + 100)
+        expect(screen.y).toBe((graph.y + 20) * 2 + 50)
+        // Scale is recoverable without publishing it.
+        expect(screen.width / graph.width).toBe(2)
+      } finally {
+        LGraphCanvas.active_canvas = previous
+      }
+    })
+
+    it('returns undefined when there is nothing on screen', () => {
+      const previous = LGraphCanvas.active_canvas
+      LGraphCanvas.active_canvas = undefined as never
+      try {
+        expect(handle().getScreenRect()).toBeUndefined()
+      } finally {
+        LGraphCanvas.active_canvas = previous
+      }
     })
 
     it('returns undefined for a slot that does not exist', () => {
