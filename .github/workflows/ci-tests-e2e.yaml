@@ -13,6 +13,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PNPM_CONFIG_STORE_DIR: /tmp/comfyui-frontend-pnpm-store
+
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -69,17 +72,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+      - name: Setup Node.js and restore pnpm store
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+          cache-dependency-path: './pnpm-lock.yaml'
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
           name: frontend-dist
           path: dist/
 
-      - name: Start ComfyUI server
-        uses: ./.github/actions/start-comfyui-server
-
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
+
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
 
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
@@ -127,17 +136,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+      - name: Setup Node.js and restore pnpm store
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+          cache-dependency-path: './pnpm-lock.yaml'
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
           name: ${{ (matrix.browser == 'cloud' || matrix.browser == 'mobile-safari') && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
-      - name: Start ComfyUI server
-        uses: ./.github/actions/start-comfyui-server
-
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
+
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
 
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
@@ -147,7 +162,7 @@ jobs:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
       - name: Generate HTML and JSON reports
-        if: always()
+        if: ${{ !cancelled() && steps.playwright.outcome != 'skipped' }}
         run: |
           # Generate HTML report from blob
           pnpm exec playwright merge-reports --reporter=html ./blob-report
