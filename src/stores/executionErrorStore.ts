@@ -83,15 +83,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state.
-   *  Missing model state is intentionally preserved here to avoid wiping
-   *  in-progress model repairs (importTaskIds, URL inputs, etc.).
-   *  Missing models are cleared separately during workflow load/clean paths. */
-  function clearAllErrors() {
+  /** Clear error state produced by a run. Missing-resource state describes the
+   *  loaded graph rather than the run, so only a graph swap invalidates it. */
+  function clearRunErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
     lastNodeErrors.value = null
-    missingNodesStore.setMissingNodeTypes([])
     isErrorOverlayOpen.value = false
   }
 
@@ -550,7 +547,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     recordPromptError,
 
     // Clearing
-    clearAllErrors,
+    clearRunErrors,
     clearExecutionStartErrors,
     clearPromptError,
 
