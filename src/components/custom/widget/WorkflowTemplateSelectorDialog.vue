@@ -662,7 +662,9 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
 }
 
 // Watch for changes from the two sources ('nav' and 'sort') and trigger the coordinator.
-watch(selectedNavItem, () => coordinateNavAndSort('nav'), { immediate: true })
+watch(selectedNavItem, () => coordinateNavAndSort('nav'), {
+  immediate: selectedNavItem.value === 'popular'
+})
 watch(sortSelection, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component
