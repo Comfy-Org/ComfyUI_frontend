@@ -23,6 +23,7 @@ import { GradientSliderWidget } from './GradientSliderWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
 import { BoundingBoxesWidget } from './BoundingBoxesWidget'
 import { ColorsWidget } from './ColorsWidget'
+import { CompositorWidget } from './CompositorWidget'
 import { PainterWidget } from './PainterWidget'
 import { RangeWidget } from './RangeWidget'
 import { ImageCropWidget } from './ImageCropWidget'
@@ -63,6 +64,7 @@ export type WidgetTypeMap = {
   boundingbox: BoundingBoxWidget
   curve: CurveWidget
   painter: PainterWidget
+  compositor: CompositorWidget
   range: RangeWidget
   boundingboxes: BoundingBoxesWidget
   colors: ColorsWidget
@@ -146,6 +148,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(CurveWidget, narrowedWidget, node)
     case 'painter':
       return toClass(PainterWidget, narrowedWidget, node)
+    case 'compositor':
+      return toClass(CompositorWidget, narrowedWidget, node)
     case 'range':
       return toClass(RangeWidget, narrowedWidget, node)
     case 'boundingboxes':

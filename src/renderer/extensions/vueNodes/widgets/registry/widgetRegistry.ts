@@ -69,6 +69,10 @@ const WidgetCurve = defineAsyncComponent(
 const WidgetPainter = defineAsyncComponent(
   () => import('@/components/painter/WidgetPainter.vue')
 )
+const WidgetCompositor = defineAsyncComponent(
+  () =>
+    import('@/renderer/extensions/compositor/components/WidgetCompositor.vue')
+)
 const WidgetRange = defineAsyncComponent(
   () => import('@/components/range/WidgetRange.vue')
 )
@@ -230,6 +234,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'compositor',
+    {
+      component: WidgetCompositor,
+      aliases: ['COMPOSITOR'],
+      essential: false
+    }
+  ],
+  [
     'range',
     {
       component: WidgetRange,
@@ -291,6 +303,7 @@ const EXPANDING_TYPES = [
   'load3DAdvanced',
   'curve',
   'painter',
+  'compositor',
   'imagecompare',
   'range',
   'boundingboxes'
