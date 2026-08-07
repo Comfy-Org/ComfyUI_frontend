@@ -1,3 +1,6 @@
+import { frontendResolverMap } from '@/platform/nodeApi/defsRegistry'
+import { resolveFrontendNodes } from '@/platform/nodeApi/resolution'
+
 import type {
   ExecutableLGraphNode,
   ExecutionId,
@@ -109,6 +112,11 @@ export const graphToPrompt = async (
     }
   }
 
+  // What each frontend node's outputs actually stand for. This replaces
+  // `applyToGraph`, which mutated the live graph mid-serialize; resolution is
+  // pure and leaves the graph untouched. Computed once for the whole prompt.
+  const resolutions = resolveFrontendNodes(graph, frontendResolverMap())
+
   const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
   for (const node of nodeDtoMap.values()) {
@@ -157,6 +165,26 @@ export const graphToPrompt = async (
       if (resolvedInput.widgetInfo) {
         const { value } = resolvedInput.widgetInfo
         inputs[input.name] = Array.isArray(value) ? { __value__: value } : value
+        continue
+      }
+
+      // A frontend node stands for something else — the source a reroute
+      // forwards, the value a Get node reads. Substitute it, or the prompt
+      // would reference a node the backend has never heard of.
+      const resolved = resolutions.get(
+        `${resolvedInput.origin_id}:${Number(resolvedInput.origin_slot)}`
+      )
+      if (resolved?.kind === 'omitted') continue
+      if (resolved?.kind === 'literal') {
+        inputs[input.name] = (
+          Array.isArray(resolved.value)
+            ? { __value__: resolved.value }
+            : resolved.value
+        ) as ComfyApiWorkflow[string]['inputs'][string]
+        continue
+      }
+      if (resolved?.kind === 'output') {
+        inputs[input.name] = [resolved.nodeId, resolved.output]
         continue
       }
 
