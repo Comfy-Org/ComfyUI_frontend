@@ -52,6 +52,9 @@ jobs:
       - name: Build website
         env:
           WEBSITE_GITHUB_STARS_OVERRIDE: 110000
+          # Un-hides the mobile download email form so e2e can exercise it;
+          # requests are intercepted in the specs, the key is never contacted.
+          PUBLIC_CUSTOMERIO_WRITE_KEY: test-e2e-write-key
         run: pnpm --filter @comfyorg/website build
 
       - name: Run Playwright tests

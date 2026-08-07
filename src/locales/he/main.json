@@ -255,6 +255,8 @@
       "backToGithubLogin": "הירשם באמצעות Github במקום",
       "backToLogin": "חזרה להתחברות",
       "backToSocialLogin": "הירשם באמצעות Google או Github במקום",
+      "cloudNewUser": "חדש ב-Comfy?",
+      "cloudSignUp": "הירשם כאן",
       "confirmPasswordLabel": "אישור הסיסמה",
       "confirmPasswordPlaceholder": "הזן שוב את אותה סיסמה",
       "didntReceiveEmail": "לא קיבלת מייל? צור איתנו קשר בכתובת",
@@ -263,6 +265,7 @@
       "failed": "ההתחברות נכשלה",
       "forgotPassword": "שכחת סיסמה?",
       "forgotPasswordError": "שליחת מייל לאיפוס הסיסמה נכשלה",
+      "freeRunsSuffix": "לקבלת {count} הרצה חינמית. | לקבלת {count} הרצות חינמיות.",
       "freeTierBadge": "זכאי לדרגה החינמית",
       "freeTierDescription": "הירשם באמצעות Google כדי לקבל {credits} קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
       "freeTierDescriptionGeneric": "הירשם באמצעות Google כדי לקבל קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
@@ -445,27 +448,12 @@
   "cloudForgotPassword_sendResetLink": "שליחת קישור לאיפוס",
   "cloudForgotPassword_title": "שכחת סיסמה",
   "cloudHero": {
+    "carouselLabel": "מודלים נבחרים",
+    "carouselRoleDescription": "קרוסלה",
     "nextSlide": "השקופית הבאה",
     "previousSlide": "השקופית הקודמת",
-    "slidePagerLabel": "מעבר לשקופית {index}",
-    "slides": {
-      "cloud": {
-        "description": "מתאים ביותר לרוב המשתמשים שרוצים לעבוד מכל מקום עם מודלים מאומתים לרישיון מסחרי.",
-        "title": "ענן"
-      },
-      "models": {
-        "description": "מודלים נבחרים ברישיון מסחרי, מוכנים להרצה ללא התקנה.",
-        "title": "מודלים"
-      },
-      "team": {
-        "description": "צרף את הצוות שלך עוד היום. שתף תהליכי עבודה ונכסים ברחבי הארגון שלך.",
-        "title": "צוות"
-      },
-      "workflows": {
-        "description": "מרעיון לפלט תוך דקות. צור וריאציות מרובות זו לצד זו.",
-        "title": "תהליכי עבודה"
-      }
-    }
+    "slideRoleDescription": "שקופית",
+    "slideStatus": "{title}, שקופית {current} מתוך {total}"
   },
   "cloudNotification": {
     "continueLocally": "המשך מקומית",
@@ -577,11 +565,9 @@
   "cloudPrivateBeta_title": "הענן נמצא כעת בבטא פרטית",
   "cloudSorryContactSupport_title": "מצטערים, צור קשר עם התמיכה",
   "cloudStart_desc": "אפס התקנה נדרשת. עובד על כל מכשיר.",
-  "cloudStart_download": "הורדת ComfyUI",
   "cloudStart_explain": "צור פלטים מרובים בו-זמנית. שתף תהליכי עבודה בקלות.",
   "cloudStart_learnAboutButton": "למד על הענן",
   "cloudStart_title": "התחל ליצור תוך שניות",
-  "cloudStart_wantToRun": "מעדיף להריץ את ComfyUI מקומית?",
   "cloudSurvey_steps_experience": "עד כמה אתם מכירים את ComfyUI?",
   "cloudSurvey_steps_focus": "מה אתם בונים?",
   "cloudSurvey_steps_intent": "מה ברצונך ליצור עם ComfyUI?",
@@ -868,7 +854,6 @@
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "תיבות גבול",
-    "CAMERA_CONTROL": "CAMERA_CONTROL",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
@@ -3113,6 +3098,74 @@
     },
     "back": "חזור",
     "done": "סיום",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "לא עכשיו",
+        "explore": "גלה תבניות",
+        "noTour": {
+          "body": "עיין בתבניות ובחר משהו לבנות.",
+          "title": "יש עוד מאות כאלה"
+        },
+        "ran": {
+          "body": "יצרת עכשיו את הראשונה שלך. גלה מה עוד אפשר לבנות.",
+          "title": "זו הייתה אחת מתוך מאות"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "התמונה קובעת את הסצנה. כאן תכתוב מה קורה בהמשך.",
+          "title": "תאר איך זה צריך לזוז"
+        },
+        "image-edit": {
+          "body": "התמונה שלך תישאר כפי שהיא. תאר מה תרצה שיהיה שונה.",
+          "title": "כתוב מה לשנות"
+        },
+        "other": {
+          "body": "זהו הפרומפט שלך. שנה אותו כדי לשנות את התוצאה.",
+          "title": "כתוב מה ליצור"
+        },
+        "t2i": {
+          "body": "התמונה שלך נוצרת מהתיאור הזה. נסה כל דבר שתרצה.",
+          "title": "תאר מה אתה רוצה"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "לא התקבלה תוצאה. סגור את הסיור ונסה להריץ שוב.",
+          "title": "ההרצה לא הושלמה"
+        },
+        "generating": {
+          "body": "התוצאה שלך תופיע כאן ברגע שהיא מוכנה.",
+          "title": "המתן בסבלנות"
+        },
+        "image": {
+          "body": "התמונה החדשה שלך הופיעה כאן — מוכנה להורדה או שיתוף.",
+          "title": "והנה זה כאן"
+        },
+        "video": {
+          "body": "הווידאו החדש שלך הופיע כאן — מוכן להורדה או שיתוף.",
+          "title": "והנה זה כאן"
+        }
+      },
+      "run": {
+        "body": "לחץ על 'הרץ' כדי להתחיל ליצור את התוצאה שלך.",
+        "title": "הרץ את תהליך העבודה שלך"
+      },
+      "upload": {
+        "i2v": {
+          "body": "התמונה הזו היא הפריים הראשון שלך. תוכל להחליף אותה בכל עת.",
+          "title": "התחל עם תמונה"
+        },
+        "image-edit": {
+          "body": "זוהי התמונה שתערוך. תוכל להחליף אותה בכל עת.",
+          "title": "התחל עם תמונה"
+        },
+        "other": {
+          "body": "תמונה זו מזינה את תהליך העבודה. תוכל להחליף אותה בכל עת.",
+          "title": "התחל עם תמונה"
+        }
+      }
+    },
     "loadError": "משהו השתבש בהצגת הסיור",
     "next": "הבא",
     "skip": "דלג",
@@ -3725,10 +3778,12 @@
       "dateToday": "היום",
       "filter3D": "תלת-ממד",
       "filterAudio": "שמע",
+      "filterBy": "סנן לפי...",
       "filterDate": "תאריך",
       "filterGroupAttribute": "מאפיין",
       "filterImage": "תמונה",
       "filterMediaType": "סוג מדיה",
+      "filterNoMatches": "לא נמצאו התאמות",
       "filterText": "טקסט",
       "filterVideo": "סרטון",
       "removeFilter": "הסר מסנן {label}",
@@ -4042,6 +4097,17 @@
     "partnerNodesCredits": "תמחור צמתי שותפים",
     "partnerNodesDescription": "להרצת מודלים מסחריים/קנייניים",
     "partnerNodesPricingTable": "טבלת תמחור צמתים שותפים",
+    "paymentRecovery": {
+      "memberCta": "הבנתי",
+      "memberDescription": "פנה לבעל סביבת העבודה כדי לשחזר את המנוי.",
+      "memberRunLabel": "הרץ",
+      "memberRunTooltip": "פנה לבעל סביבת העבודה כדי לשחזר את המנוי הזה",
+      "ownerCta": "עדכן תשלום",
+      "ownerDescription": "עדכן את אמצעי התשלום כדי לשחזר את המנוי של סביבת העבודה ולהריץ תהליכי עבודה.",
+      "ownerRunLabel": "עדכן תשלום להרצה",
+      "ownerRunTooltip": "עדכן תשלום כדי לשחזר את המנוי הזה",
+      "title": "המנוי הושהה"
+    },
     "perMonth": "/ חודש",
     "personalHeader": "תוכניות אישיות מיועדות לשימוש אישי בלבד. {action}",
     "personalHeaderAction": "להוספת חברי צוות, הירשם לתוכנית הצוות.",
@@ -4329,6 +4395,7 @@
     "logoProviderSeparator": " & "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "לא ניתן לטעון את תהליך העבודה כי התקנת ComfyUI זו חסרה צמתים חיוניים. בדוק שהשרת האחורי הופעל כראוי.",
     "cannotCreateSubgraph": "לא ניתן ליצור תת-גרף",
     "couldNotDetermineFileType": "לא ניתן היה לקבוע את סוג הקובץ",
     "dropFileError": "לא ניתן לעבד את הפריט שנגרר: {error}",
@@ -4378,6 +4445,7 @@
     "invalidTemplateData": "טעינת תבנית הצומת נכשלה: נתונים לא תקינים",
     "legacyMaskEditorDeprecated": "עורך המסכות הישן מיושן ויוסר בקרוב.",
     "migrateToLitegraphReroute": "צמתי ניתוב (Reroute) יוסרו בגרסאות עתידיות. לחץ כדי לעבור לניתוב המקורי של litegraph.",
+    "missingMediaVerificationFailed": "אימות המדיה החסרה נכשל. ייתכן שחלק מהקלטים לא יוצגו בלשונית השגיאות.",
     "missingModelVerificationFailed": "אימות המודלים החסרים נכשל. ייתכן שחלק מהמודלים לא יוצגו בכרטיסיית השגיאות.",
     "modelLoadedSuccessfully": "מודל התלת-ממד נטען בהצלחה",
     "no3dScene": "אין סצנת תלת-ממד להחלת המרקם",
@@ -4561,7 +4629,11 @@
       "notAuthenticated": "עליך להיות מחובר כדי לגשת לסביבות עבודה",
       "tokenExchangeFailed": "האימות מול סביבת העבודה נכשל: {error}",
       "workspaceNotFound": "סביבת העבודה לא נמצאה"
-    }
+    },
+    "initializationFailed": "לא ניתן לטעון את סביבת העבודה שלך",
+    "initializationFailedDetail": "בדוק את החיבור ונסה שוב.",
+    "initializationFailedSignOutDetail": "התנתק והתחבר מחדש כדי להמשיך.",
+    "retry": "נסה שוב"
   },
   "workspacePanel": {
     "activity": {
@@ -4601,7 +4673,6 @@
       },
       "updatePayment": "עדכן תשלום",
       "warning": {
-        "body": "התשלום האחרון שלך לא עבר. המנוי יושהה ב-{date} אלא אם תעדכן את התשלום.",
         "bodyNoDate": "התשלום האחרון שלך לא עבר. עדכן את התשלום כדי למנוע השהיה.",
         "title": "התשלום נדחה"
       }
