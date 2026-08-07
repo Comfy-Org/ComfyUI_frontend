@@ -7,7 +7,7 @@ const state = vi.hoisted(() => ({
   canLeaveWorkspace: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
-  isActiveSubscription: true,
+  canAccessSubscriptionFeatures: true,
   isDeleteDisabled: false,
   isFreeTier: false,
   isInPersonalWorkspace: false,
@@ -49,7 +49,9 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       workspaceMenuDisabledTooltip: null
     })),
     isInPersonalWorkspace: computed(() => state.isInPersonalWorkspace),
-    isActiveSubscription: computed(() => state.isActiveSubscription),
+    canAccessSubscriptionFeatures: computed(
+      () => state.canAccessSubscriptionFeatures
+    ),
     isSubscriptionCancelled: computed(() => state.isSubscriptionCancelled),
     isDeleteDisabled: {
       get value() {
@@ -70,7 +72,7 @@ describe('useWorkspaceMenuItems', () => {
     state.canLeaveWorkspace = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.isDeleteDisabled = false
     state.isFreeTier = false
     state.isInPersonalWorkspace = false
