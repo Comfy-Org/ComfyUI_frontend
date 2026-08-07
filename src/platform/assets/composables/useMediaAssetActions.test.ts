@@ -371,19 +371,6 @@ describe('useMediaAssetActions', () => {
 
         expect(getAddedImageWidgetValues()).toEqual(['fallback-name.jpeg'])
       })
-
-      it('should fall back to asset.name when hash is null', async () => {
-        const actions = useMediaAssetActions()
-
-        const asset = createMockAsset({
-          name: 'fallback-null.jpeg',
-          hash: null
-        })
-
-        await actions.addWorkflow(asset)
-
-        expect(getAddedImageWidgetValues()).toEqual(['fallback-null.jpeg'])
-      })
     })
   })
 

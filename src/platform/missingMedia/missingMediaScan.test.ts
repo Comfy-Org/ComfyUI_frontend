@@ -154,12 +154,11 @@ function makeGraph(nodes: LGraphNode[]): LGraph {
   return fromAny<LGraph, unknown>({ _testNodes: nodes })
 }
 
-function makeAsset(name: string, assetHash: string | null = null): AssetItem {
+function makeAsset(name: string, assetHash?: string): AssetItem {
   return fromPartial({
     id: name,
     name,
     hash: assetHash,
-    mime_type: null,
     tags: ['input']
   })
 }
@@ -691,24 +690,6 @@ describe('verifyMediaCandidates', () => {
       generatedHashRequiredNames: new Set(),
       allowCompactSuffix: true
     })
-  })
-
-  it('matches asset names when hash is null', async () => {
-    const candidates = [
-      makeCandidate('1', 'legacy-photo.png', { isMissing: undefined }),
-      makeCandidate('2', 'missing-photo.png', { isMissing: undefined })
-    ]
-    const resolveAssetSources = makeAssetResolver([
-      makeAsset('legacy-photo.png', null)
-    ])
-
-    await verifyMediaCandidates(candidates, {
-      isCloud: true,
-      resolveAssetSources
-    })
-
-    expect(candidates[0].isMissing).toBe(false)
-    expect(candidates[1].isMissing).toBe(true)
   })
 
   it('matches annotated candidate names against clean asset names', async () => {

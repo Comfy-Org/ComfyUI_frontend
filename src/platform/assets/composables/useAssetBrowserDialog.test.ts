@@ -18,7 +18,7 @@ vi.mock('@/i18n', () => ({
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return fromPartial<AssetItem>({
+  return fromPartial({
     id: 'asset-123',
     name: 'test-model.safetensors',
     size: 1024,

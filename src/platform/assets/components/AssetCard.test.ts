@@ -51,7 +51,7 @@ const ORIGINAL_FILENAME = 'sunset_photo.png'
 function createDisplayAsset(
   overrides: Partial<AssetDisplayItem> = {}
 ): AssetDisplayItem {
-  return fromPartial<AssetDisplayItem>({
+  return fromPartial({
     id: 'asset-1',
     name: HASH,
     hash: HASH,

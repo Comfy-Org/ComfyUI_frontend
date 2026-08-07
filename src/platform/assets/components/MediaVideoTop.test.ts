@@ -12,10 +12,9 @@ function createVideoAsset(
   src: string,
   mimeType: AssetMeta['mime_type'] = 'video/mp4'
 ): AssetMeta {
-  return fromPartial<AssetMeta>({
+  return fromPartial({
     id: 'video-1',
     name: 'clip.mp4',
-    hash: null,
     mime_type: mimeType,
     tags: [],
     kind: 'video',
