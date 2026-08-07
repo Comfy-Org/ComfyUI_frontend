@@ -108,9 +108,8 @@ describe('useUploadModelWizard telemetry', () => {
   })
 
   it('emits url_submitted with the resolved source, never the URL', async () => {
-    const { assetService } = await import(
-      '@/platform/assets/services/assetService'
-    )
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.getAssetMetadata).mockResolvedValue({
       filename: 'model.safetensors'
     } as never)
@@ -131,7 +130,7 @@ describe('useUploadModelWizard telemetry', () => {
     )
   })
 
-  it('emits metadata_resolved with unsupported_source for an unknown host', async () => {
+  it('does not emit telemetry for a URL that never resolves to a supported source', async () => {
     const { result } = setup()
     result.wizardData.value.url = 'https://example.com/model.safetensors'
     await result.fetchMetadata()
@@ -142,9 +141,8 @@ describe('useUploadModelWizard telemetry', () => {
   })
 
   it('reports metadata failure without leaking the raw error message', async () => {
-    const { assetService } = await import(
-      '@/platform/assets/services/assetService'
-    )
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.getAssetMetadata).mockRejectedValue(
       new Error('404 fetching https://huggingface.co/private/repo?hf_token=XYZ')
     )
@@ -164,9 +162,8 @@ describe('useUploadModelWizard telemetry', () => {
   })
 
   it('flags an auto-detected model type on metadata_resolved', async () => {
-    const { assetService } = await import(
-      '@/platform/assets/services/assetService'
-    )
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.getAssetMetadata).mockResolvedValue({
       filename: 'model.safetensors',
       tags: ['checkpoints']
@@ -183,14 +180,16 @@ describe('useUploadModelWizard telemetry', () => {
   })
 
   it('carries one flow_id across every stage of an attempt', async () => {
-    const { assetService } = await import(
-      '@/platform/assets/services/assetService'
-    )
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.getAssetMetadata).mockResolvedValue({
       filename: 'model.safetensors'
     } as never)
 
-    const { result } = setup({ byomFlowId: 'flow-abc', byomSurface: 'missing_model' })
+    const { result } = setup({
+      byomFlowId: 'flow-abc',
+      byomSurface: 'missing_model'
+    })
     result.wizardData.value.url = 'https://civitai.com/models/123'
     await result.fetchMetadata()
 
@@ -217,9 +216,8 @@ describe('useUploadModelWizard telemetry', () => {
   })
 
   it('does not report abandon after a terminal stage', async () => {
-    const { assetService } = await import(
-      '@/platform/assets/services/assetService'
-    )
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.getAssetMetadata).mockResolvedValue({
       filename: 'model.safetensors',
       tags: ['checkpoints']
