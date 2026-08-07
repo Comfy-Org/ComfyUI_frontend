@@ -246,6 +246,105 @@ describe('general conversion conformance', () => {
     })
   })
 
+  describe('what counts as patching or mutating', () => {
+    it('ignores a third-party library configuring its own prototype', () => {
+      // alekpet's painter does `fabric.Object.prototype.cornerColor = …` to
+      // set up fabric.js. That is not a node class being patched.
+      const report = runConformance(
+        context({
+          original: 'nodeType.prototype.onExecuted = function () {}',
+          converted:
+            'fabric.Object.prototype.cornerColor = "#108ce6"\n' +
+            'comfy.defs.extend("A", (b) => b.onExecuted(() => {}))',
+          edits: []
+        })
+      )
+      expect(find(report, 'retires-the-old-surface').status).toBe('passed')
+    })
+
+    it('still catches a real prototype patch', () => {
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted: 'nodeType.prototype.onExecuted = function () {}',
+          edits: []
+        })
+      )
+      expect(find(report, 'retires-the-old-surface').status).toBe('failed')
+    })
+
+    it('does not treat an optional-chained DOM call as a dropped write', () => {
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted: 'element?.addEventListener("input", fn)',
+          edits: []
+        })
+      )
+      expect(find(report, 'no-silently-dropped-writes').status).toBe('passed')
+    })
+
+    it('does not flag a bare remove/add, which DOM elements also have', () => {
+      // `remove`, `add` and `set` are published members too, so requiring the
+      // CamelCase form is what separates `widgets.remove(name)` -- called on a
+      // handle you already hold -- from `element?.remove()`.
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted: 'container?.remove()\nsomeSet?.add(x)',
+          edits: []
+        })
+      )
+      expect(find(report, 'no-silently-dropped-writes').status).toBe('passed')
+    })
+
+    it('still catches an optional-chained handle write', () => {
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted: 'node.widgets.get("seed")?.setValue(1)',
+          edits: []
+        })
+      )
+      expect(find(report, 'no-silently-dropped-writes').status).toBe('failed')
+    })
+  })
+
+  describe('the comment stripper', () => {
+    it('is not desynchronised by a regex literal containing a quote', () => {
+      // `/(['"])/` has a quote inside it. Treating that as the start of a
+      // string desynchronised the scanner for the rest of the file, after
+      // which no comment was stripped at all -- so two conversions were failed
+      // for members appearing only in the API-GAP comments they were asked to
+      // write.
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted:
+            'const re = /^(\\d+)=([\'"])([^\'"]*)$/\n' +
+            '// API-GAP: node.chrome has no destination\n' +
+            'node.setTitle("x")',
+          edits: []
+        })
+      )
+      const check = find(report, 'no-unknown-api-members')
+      expect(check.status).toBe('passed')
+      expect(check.detail).not.toMatch(/chrome/)
+    })
+
+    it('still treats a division as division', () => {
+      const report = runConformance(
+        context({
+          original: 'const a = 1',
+          converted:
+            'const half = total / 2\n// API-GAP: node.chrome\nnode.setTitle("x")',
+          edits: []
+        })
+      )
+      expect(find(report, 'no-unknown-api-members').status).toBe('passed')
+    })
+  })
+
   describe('the indentation report', () => {
     it('does not fail a file whose body was dedented wholesale', () => {
       // Unwrapping registerExtension takes two levels off everything inside
