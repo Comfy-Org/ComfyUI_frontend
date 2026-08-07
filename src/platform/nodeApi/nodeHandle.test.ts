@@ -66,6 +66,43 @@ describe('NodeHandle', () => {
     })
   })
 
+  describe('geometry the renderer owns', () => {
+    // These replace `comfy.constants`, which handed packs slotHeight and
+    // titleHeight so they could re-derive geometry themselves. Every use of it
+    // was a pack reimplementing hit-testing or slot layout, and getting it
+    // wrong for anything but the default vertical stack.
+    it('reports bounds including the title bar, not just the body', () => {
+      node.pos = [100, 200]
+      node.size = [140, 80]
+
+      const bounds = handle().getBounds()
+
+      expect(bounds.x).toBe(100)
+      // The body starts at pos.y; the rectangle starts above it.
+      expect(bounds.y).toBeLessThan(200)
+      expect(bounds.width).toBeGreaterThanOrEqual(140)
+      expect(bounds.height).toBeGreaterThan(80)
+      expect(Object.isFrozen(bounds)).toBe(true)
+    })
+
+    it('answers slot positions from the renderer', () => {
+      node.addInput('model', 'MODEL')
+      node.addOutput('latent', 'LATENT')
+
+      const input = handle().getSlotPosition('input', 0)
+      const output = handle().getSlotPosition('output', 0)
+
+      expect(input).toBeDefined()
+      expect(output).toBeDefined()
+      // An input sits on the left edge, an output on the right.
+      expect(input!.x).toBeLessThan(output!.x)
+    })
+
+    it('returns undefined for a slot that does not exist', () => {
+      expect(handle().getSlotPosition('input', 9)).toBeUndefined()
+    })
+  })
+
   describe('writes', () => {
     it('writes title through to the node', () => {
       handle().setTitle('Renamed')

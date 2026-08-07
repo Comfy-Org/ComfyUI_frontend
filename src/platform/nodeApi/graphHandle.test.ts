@@ -187,3 +187,19 @@ describe('graph API (composed)', () => {
     })
   })
 })
+
+describe('hit testing', () => {
+  it('finds the node under a point, and nothing where there is none', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('T', 'TestNode')
+    graph.add(node)
+    node.pos = [100, 100]
+    node.size = [140, 80]
+    // The hit test reads the rendered layout; stand in for a frame.
+    node.updateArea()
+    const api = createGraphApi(() => graph)
+
+    expect(api.nodeAt({ x: 150, y: 130 })?.id).toBe(String(node.id))
+    expect(api.nodeAt({ x: -500, y: -500 })).toBeUndefined()
+  })
+})

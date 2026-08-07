@@ -49,6 +49,20 @@ export interface GraphHandle {
    * Selection is a property of the document, so it is asked of the graph.
    */
   selection(): readonly NodeHandle[]
+  /**
+   * The topmost node at a point in graph space, if any.
+   *
+   * Packs building a gesture were walking every node and re-deriving its
+   * rectangle from renderer constants. The graph already knows, and its answer
+   * respects z-order, collapsed nodes and the active renderer's layout.
+   *
+   * Answers against the *rendered* layout, which is the only sensible reading
+   * of "what is under this point" — and is why it is not refreshed per call: a
+   * gesture asks this on every pointer move, and remeasuring every node each
+   * time would be the expensive mistake. Before the first frame it finds
+   * nothing.
+   */
+  nodeAt(point: { x: number; y: number }): NodeHandle | undefined
   /** Diagnostics: live handle-cache slots across all kinds. */
   readonly cacheSize: number
 }
@@ -144,6 +158,11 @@ export function createGraphApi(
       graph.add(node)
       if (init?.position) node.pos = [init.position.x, init.position.y]
       return handleFor(String(node.id))
+    },
+
+    nodeAt(point) {
+      const node = getGraph()?.getNodeOnPos(point.x, point.y)
+      return node ? handleFor(String(node.id)) : undefined
     },
 
     remove(id) {
