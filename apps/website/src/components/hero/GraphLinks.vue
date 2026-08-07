@@ -71,5 +71,47 @@ const links = computed(() => {
       stroke-width="1.5"
       vector-effect="non-scaling-stroke"
     />
+    <!-- Traveling pulses: a dashed twin of each wire whose offset advances
+         so light appears to flow from input to output. -->
+    <path
+      v-for="(d, i) in links"
+      :key="`flow-${i}`"
+      :d="d"
+      class="wire-flow"
+      stroke-width="1.5"
+      vector-effect="non-scaling-stroke"
+    />
   </svg>
 </template>
+
+<style scoped>
+.wire-flow {
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-dasharray: 14 106;
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wire-flow {
+    animation: wire-flow 2.4s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wire-flow {
+    display: none;
+  }
+}
+
+/* Decreasing offset pushes the dash toward the path's end — left to right. */
+@keyframes wire-flow {
+  from {
+    stroke-dashoffset: 120;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+</style>
