@@ -67,7 +67,7 @@ catalog:
   '@vitest/coverage-v8': ^4.1.10
   '@vitest/ui': ^4.1.10
   '@vueuse/core': ^14.3.0
-  '@vueuse/integrations': ^14.3.0
+  '@vueuse/integrations': ^14.4.0
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
   astro: ^6.4.2
@@ -137,12 +137,12 @@ catalog:
   vite-plugin-html: ^3.2.2
   vite-plugin-vue-devtools: ^8.1.5
   vitest: ^4.1.10
-  vue: ^3.5.39
-  vue-component-type-helpers: ^3.3.7
+  vue: ^3.5.40
+  vue-component-type-helpers: ^3.3.9
   vue-eslint-parser: ^10.4.1
-  vue-i18n: ^11.4.6
+  vue-i18n: ^11.4.8
   vue-router: ^5.2.0
-  vue-tsc: ^3.3.7
+  vue-tsc: ^3.3.9
   vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
   yjs: ^13.6.27
