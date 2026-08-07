@@ -41,7 +41,7 @@ function isAllowedHref(value: string): boolean {
   return (
     href.startsWith('https://') ||
     href.startsWith('mailto:') ||
-    (href.startsWith('/') && !href.startsWith('//'))
+    (href.startsWith('/') && !href.startsWith('//') && !href.includes('\\'))
   )
 }
 
