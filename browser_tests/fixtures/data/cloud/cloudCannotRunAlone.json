@@ -58,7 +58,6 @@
   "ComfyUI-Licon-MSR": ["LiconMSR"],
   "ComfyUI-LivePortraitKJ": [
     "LivePortraitLoadFaceAlignmentCropper",
-    "LivePortraitLoadCropper",
     "LivePortraitLoadMediaPipeCropper"
   ],
   "ComfyUI-Lotus": ["LoadLotusModel"],
@@ -141,7 +140,6 @@
     "LayerMask: PersonMaskUltra",
     "LayerMask: SegmentAnythingUltra",
     "LayerMask: TransparentBackgroundUltra",
-    "LayerMask: YoloV8Detect",
     "LayerUtility: DecodeQRCode",
     "LayerUtility: ImageAutoCrop",
     "LayerUtility: ImageAutoCrop V2",
@@ -251,11 +249,6 @@
     "LatentSender",
     "MasksToMaskList",
     "SAMLoader"
-  ],
-  "audio-separation-nodes-comfyui": [
-    "AudioSeparation",
-    "AudioSpeedShift",
-    "AudioTempoMatch"
   ],
   "comfyui-inpaint-nodes": ["INPAINT_ColorMatch", "INPAINT_LoadFooocusInpaint"],
   "comfyui-itools": ["iToolsLoadImagePlus"],

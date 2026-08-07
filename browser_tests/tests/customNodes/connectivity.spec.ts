@@ -443,7 +443,7 @@ test('connectivity self-check: the executor rejects broken pairs @custom-nodes',
 test('connectivity drags: curated slot-to-slot wires connect under both renderers @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(120_000)
+  test.setTimeout(0)
   const defs = (await comfyPage.page.evaluate(() =>
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>

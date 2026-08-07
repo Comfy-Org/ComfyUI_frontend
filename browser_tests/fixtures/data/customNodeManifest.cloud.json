@@ -283,7 +283,6 @@
       "timeoutMs": 30000,
       "cannotRunAlone": [
         "LivePortraitLoadFaceAlignmentCropper",
-        "LivePortraitLoadCropper",
         "LivePortraitLoadMediaPipeCropper"
       ]
     },
@@ -846,7 +845,6 @@
         "LayerMask: PersonMaskUltra",
         "LayerMask: SegmentAnythingUltra",
         "LayerMask: TransparentBackgroundUltra",
-        "LayerMask: YoloV8Detect",
         "LayerUtility: DecodeQRCode",
         "LayerUtility: ImageAutoCrop",
         "LayerUtility: ImageAutoCrop V2",
@@ -1016,12 +1014,7 @@
       "expectedNodeCount": 7,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000,
-      "cannotRunAlone": [
-        "AudioSeparation",
-        "AudioSpeedShift",
-        "AudioTempoMatch"
-      ]
+      "timeoutMs": 30000
     },
     {
       "pack": "basic_data_handling",

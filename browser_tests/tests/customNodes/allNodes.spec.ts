@@ -11,7 +11,9 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { RequiredSocket } from '@e2e/fixtures/customNode/autoRun'
 import {
+  AUTO_RUN_ALLOWED_FAILURES,
   batchAutoRunnable,
+  matchesAllowedAutoRunOutcome,
   planAutoRuns,
   SYNTH_PRODUCERS
 } from '@e2e/fixtures/customNode/autoRun'
@@ -206,22 +208,6 @@ const AUTO_RUN_UNSTABLE_NODES: Record<string, Record<string, string>> = {
   comfyui_essentials: {
     'TransitionMask+':
       'list-expanded execution; executed-set flip-flops PASS/PARTIAL'
-  }
-}
-
-// Exact non-pass outcomes proven to vary with environment state. These nodes
-// still execute on every run; only the named outcome is accepted, so a crash
-// or validation failure remains red.
-const AUTO_RUN_ALLOWED_FAILURES: Record<
-  string,
-  Record<string, { outcomes: string[]; reason: string }>
-> = {
-  comfyui_controlnet_aux: {
-    ExecuteAllControlNetPreprocessors: {
-      outcomes: ['TIMEOUT'],
-      reason:
-        'executes every registered controlnet preprocessor in one aggregate; timed out cold after running clean warm as Cloud model/cache state changed'
-    }
   }
 }
 
@@ -1588,15 +1574,14 @@ for (const entry of loadManifest()) {
           ).toContain(ledgered)
         for (const [key, detail] of cannotRun) {
           const allowedFailure = allowedFailures[key]
-          if (
-            !baseline.has(key) &&
-            !(key in unstable) &&
-            !allowedFailure?.outcomes.includes(detail)
-          )
+          const allowedOutcome =
+            allowedFailure !== undefined &&
+            matchesAllowedAutoRunOutcome(detail, allowedFailure.outcomes)
+          if (!baseline.has(key) && !(key in unstable) && !allowedOutcome)
             hardFailures.push(
               `${key}: ${detail} - not in cannotRunAlone; a regression, or a new baseline entry (attach the run log)`
             )
-          else if (allowedFailure?.outcomes.includes(detail))
+          else if (allowedOutcome)
             console.log(
               `${entry.pack}: ${key} produced allowed ${detail} (${allowedFailure.reason})`
             )
