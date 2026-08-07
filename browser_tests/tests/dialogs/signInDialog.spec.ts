@@ -46,6 +46,28 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
     await expect(dialog.passwordInput).toBeVisible()
   })
 
+  test('Should hide the password requirements once the password field loses focus', async () => {
+    await dialog.signUpLink.click()
+
+    await dialog.signUpPasswordInput.fill('Password1!')
+    await expect(dialog.signUpPasswordRequirements).toBeVisible()
+
+    await dialog.signUpConfirmPasswordInput.click()
+    await expect(dialog.signUpPasswordRequirements).toBeHidden()
+
+    await dialog.signUpPasswordInput.click()
+    await expect(dialog.signUpPasswordRequirements).toBeVisible()
+  })
+
+  test('Should keep the password requirements after blur while the password is invalid', async () => {
+    await dialog.signUpLink.click()
+
+    await dialog.signUpPasswordInput.fill('short')
+    await dialog.signUpConfirmPasswordInput.click()
+
+    await expect(dialog.signUpPasswordRequirements).toBeVisible()
+  })
+
   test('Should navigate to the API Key form and back', async () => {
     await dialog.apiKeyButton.click()
 
