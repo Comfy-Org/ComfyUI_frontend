@@ -13,8 +13,16 @@
           </DialogTitle>
           <DialogClose />
         </DialogHeader>
+        <!--
+          Browsers pair any text input followed by a password input and offer
+          saved login credentials. Here that filled the user's own email into
+          Name and their password into Secret Value — which would then be
+          encrypted server-side and unreadable. autocomplete is opted out on the
+          form and again per field, since form-level alone is widely ignored.
+        -->
         <form
           class="flex flex-col gap-4 px-4 py-2"
+          autocomplete="off"
           @submit.prevent="handleSubmit"
         >
           <div class="flex flex-col gap-1">
@@ -85,6 +93,8 @@
             <InputText
               id="secret-name"
               v-model="form.name"
+              pt:root:autocomplete="off"
+              name="secretName"
               :placeholder="$t('secrets.namePlaceholder')"
               :class="{ 'p-invalid': errors.name }"
             />
@@ -121,15 +131,24 @@
               <Textarea
                 id="secret-value"
                 v-model="form.secretValue"
+                pt:root:autocomplete="off"
+                name="secretValue"
                 :placeholder="$t('secrets.jsonFilePlaceholder')"
                 class="min-h-32 font-mono"
                 :class="{ 'p-invalid': errors.secretValue }"
               />
             </template>
+            <!--
+              new-password (not off) is what actually suppresses saved-credential
+              autofill in Chrome and Safari, which ignore autocomplete="off" on
+              password inputs. Same idiom as PasswordFields.vue.
+            -->
             <Password
               v-else
               id="secret-value"
               v-model="form.secretValue"
+              pt:pc-input-text:root:autocomplete="new-password"
+              name="secretValue"
               :placeholder="
                 mode === 'edit'
                   ? $t('secrets.secretValuePlaceholderEdit')
