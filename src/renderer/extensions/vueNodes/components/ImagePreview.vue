@@ -213,7 +213,6 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import { useLayerEditor } from '@/renderer/extensions/layerEditor/composables/useLayerEditor'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
@@ -234,7 +233,6 @@ interface ImagePreviewProps {
 const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
-const layerEditor = useLayerEditor()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
@@ -347,11 +345,13 @@ function handleEditMask() {
   maskEditor.openMaskEditor(node)
 }
 
-function handleOpenLayerEditor() {
+async function handleOpenLayerEditor() {
   if (!nodeId) return
   const node = resolveNode(nodeId)
   if (!node) return
-  layerEditor.openLayerEditor(node)
+  const { useLayerEditor } =
+    await import('@/renderer/extensions/layerEditor/composables/useLayerEditor')
+  useLayerEditor().openLayerEditor(node)
 }
 
 function handleDownload() {

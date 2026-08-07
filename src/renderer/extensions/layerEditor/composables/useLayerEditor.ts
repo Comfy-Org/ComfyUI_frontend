@@ -1,7 +1,7 @@
-import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
-import TopBarHeader from '@/renderer/extensions/layerEditor/components/dialog/TopBarHeader.vue'
 import {
   LAYER_EDITOR_DIALOG_KEY,
+  LayerEditorDialogContent,
+  LayerEditorDialogHeader,
   layerEditorDialogProps
 } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -23,8 +23,8 @@ export function useLayerEditor() {
 
     useDialogStore().showDialog({
       key: LAYER_EDITOR_DIALOG_KEY,
-      headerComponent: TopBarHeader,
-      component: LayerEditorContent,
+      headerComponent: LayerEditorDialogHeader,
+      component: LayerEditorDialogContent,
       props: {
         node
       },
