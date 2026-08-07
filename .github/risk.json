@@ -215,6 +215,7 @@
         "**/*.test.ts",
         "**/*.test.tsx",
         "**/*.spec.ts",
+        "**/*.spec.tsx",
         "browser_tests/**",
         "**/test/**",
         "**/tests/**",
