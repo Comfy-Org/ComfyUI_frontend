@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v2.104.0/schema.json",
 
   // Entry points fallow cannot infer. These files are roots (run by package.json
   // scripts / CI / tool CLIs / Storybook), not imported from the app graph.
