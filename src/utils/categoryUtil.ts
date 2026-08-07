@@ -110,7 +110,10 @@ export function getProviderName(category: string): string {
  */
 export function getProviderIcon(providerName: string): string {
   const iconKey = providerName.toLowerCase().replaceAll(/\s+/g, '-')
-  return `icon-[comfy--${PROVIDER_ICON_ALIASES[iconKey] ?? iconKey}]`
+  const aliasedKey = Object.hasOwn(PROVIDER_ICON_ALIASES, iconKey)
+    ? PROVIDER_ICON_ALIASES[iconKey]
+    : iconKey
+  return `icon-[comfy--${aliasedKey}]`
 }
 
 /**
@@ -120,7 +123,9 @@ export function getProviderIcon(providerName: string): string {
  */
 export function getProviderBorderStyle(providerName: string): string {
   const iconKey = providerName.toLowerCase().replaceAll(/\s+/g, '-')
-  const colors = PROVIDER_COLORS[iconKey]
+  const colors = Object.hasOwn(PROVIDER_COLORS, iconKey)
+    ? PROVIDER_COLORS[iconKey]
+    : undefined
 
   if (!colors) {
     return '#525252' // neutral-600 fallback

@@ -8,17 +8,21 @@ describe('CreditBadge', () => {
   it('provides a localized accessible name for the complete estimate', () => {
     render(CreditBadge, {
       props: {
-        text: 'Estimated 10-20 credits/run',
-        rest: '(model dependent)'
+        text: '10-20',
+        rest: 'credits/run (estimate, model dependent)'
       },
       global: { plugins: [i18n] }
     })
 
     expect(
       screen.getByLabelText(
-        'Cost estimate: Estimated 10-20 credits/run (model dependent)'
+        'Cost estimate: 10-20 credits/run (estimate, model dependent)'
       )
     ).toBeInTheDocument()
+    expect(screen.getByTestId('credit-badge-required')).toHaveAttribute(
+      'role',
+      'group'
+    )
     expect(screen.getByTestId('credit-badge-rest')).toHaveAttribute(
       'aria-hidden',
       'true'

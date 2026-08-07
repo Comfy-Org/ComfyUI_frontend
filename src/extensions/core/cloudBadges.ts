@@ -1,6 +1,7 @@
 import { computed, watch } from 'vue'
+import { i18n, t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { t } from '@/i18n'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import type { TopbarBadge } from '@/types/comfy'
@@ -25,11 +26,19 @@ const badges = computed<TopbarBadge[]>(() => {
 
 const canvasStore = useCanvasStore()
 watch(
-  () => canvasStore.canvas,
-  (canvas) => {
-    if (canvas) {
+  [
+    () => canvasStore.canvas,
+    () => isCloud || Boolean(remoteConfig.value.comfy_api_base_url),
+    () => i18n.global.locale.value
+  ],
+  ([canvas, showBranding]) => {
+    if (!canvas) return
+    if (showBranding) {
       canvas.info_text = t('g.comfyCloud')
       canvas.info_text_color = COMFY_CLOUD_YELLOW
+    } else if (canvas.info_text_color === COMFY_CLOUD_YELLOW) {
+      canvas.info_text = undefined
+      canvas.info_text_color = undefined
     }
   },
   { immediate: true }

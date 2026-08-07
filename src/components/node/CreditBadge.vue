@@ -2,6 +2,7 @@
   <span
     data-testid="credit-badge-required"
     :aria-label="accessibleLabel"
+    role="group"
     :class="
       cn(
         'flex h-5 shrink-0 items-center bg-component-node-widget-background p-1 text-xs',

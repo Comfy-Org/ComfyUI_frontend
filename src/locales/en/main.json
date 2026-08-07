@@ -3291,7 +3291,7 @@
     "loadError": "Failed to load help: {error}"
   },
   "nodePricing": {
-    "estimated": "Estimated",
+    "estimate": "estimate",
     "credits": "credits",
     "perRun": "/run",
     "costEstimate": "Cost estimate"

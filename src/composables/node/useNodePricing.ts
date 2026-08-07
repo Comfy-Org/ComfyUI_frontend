@@ -14,7 +14,7 @@ import { memoize } from 'es-toolkit'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
-import { t } from '@/i18n'
+import { i18n, t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -55,6 +55,7 @@ export const formatCreditsValue = (usd: number): string => {
   const rawCredits = usd * CREDITS_PER_USD
   return formatCredits({
     value: rawCredits,
+    locale: i18n.global.locale.value,
     numberOptions: getNumberOptions(rawCredits)
   })
 }
@@ -69,7 +70,7 @@ const formatEstimatedCredits = (
   value: string,
   { suffix, note, approximate }: CreditFormatOptions
 ): string =>
-  `${t('nodePricing.estimated')} ${makePrefix(approximate)}${value} ${t('nodePricing.credits')}${makeSuffix(suffix)}${appendNote(note)}`
+  `${makePrefix(approximate)}${value} ${t('nodePricing.credits')}${makeSuffix(suffix)}${appendNote(note)} (${t('nodePricing.estimate')})`
 
 const formatCreditsLabel = (
   usd: number,
@@ -301,6 +302,7 @@ const buildSignature = (
   for (const name of rule.depends_on.input_groups) {
     parts.push(`g:${name}=${ctx.inputGroups[name] ?? 0}`)
   }
+  parts.push(`locale:${i18n.global.locale.value}`)
   return parts.join('|')
 }
 
@@ -780,5 +782,8 @@ export const evaluateNodeDefPricing = memoize(
       return ''
     }
   },
-  { getCacheKey: (nodeDef: ComfyNodeDef) => nodeDef.name }
+  {
+    getCacheKey: (nodeDef: ComfyNodeDef) =>
+      `${nodeDef.name}:${i18n.global.locale.value}`
+  }
 )

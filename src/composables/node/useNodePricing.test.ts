@@ -9,6 +9,7 @@ import {
   formatPricingResult,
   useNodePricing
 } from '@/composables/node/useNodePricing'
+import { i18n } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
@@ -61,7 +62,7 @@ const creditValue = (usd: number): string => {
 }
 
 const creditsLabel = (usd: number, suffix = '/run'): string =>
-  `Estimated ${creditValue(usd)} credits${suffix}`
+  `${creditValue(usd)} credits${suffix} (estimate)`
 
 /**
  * Create a mock node with price_badge for testing JSONata-based pricing.
@@ -342,7 +343,7 @@ describe('useNodePricing', () => {
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/Estimated \d+\.?\d*-\d+\.?\d* credits\/run/)
+      expect(price).toMatch(/\d+\.?\d*-\d+\.?\d* credits\/run \(estimate\)/)
     })
 
     it('should format list_usd result', async () => {
@@ -356,7 +357,7 @@ describe('useNodePricing', () => {
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toMatch(
-        /Estimated \d+\.?\d*\/\d+\.?\d*\/\d+\.?\d* credits\/run/
+        /\d+\.?\d*\/\d+\.?\d*\/\d+\.?\d* credits\/run \(estimate\)/
       )
     })
 
@@ -383,7 +384,7 @@ describe('useNodePricing', () => {
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/^Estimated ~\d+\.?\d* credits\/run$/)
+      expect(price).toMatch(/^~\d+\.?\d* credits\/run \(estimate\)$/)
     })
 
     it('should add note suffix when specified', async () => {
@@ -396,7 +397,7 @@ describe('useNodePricing', () => {
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/credits\/run \(estimated\)$/)
+      expect(price).toMatch(/credits\/run \(estimated\) \(estimate\)$/)
     })
 
     it('should combine approximate prefix and note suffix', async () => {
@@ -411,7 +412,7 @@ describe('useNodePricing', () => {
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/^Estimated ~\d+\.?\d* credits\/image \(beta\)$/)
+      expect(price).toMatch(/^~\d+\.?\d* credits\/image \(beta\) \(estimate\)$/)
     })
 
     it('should use custom separator for list_usd', async () => {
@@ -426,7 +427,7 @@ describe('useNodePricing', () => {
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/Estimated \d+\.?\d* or \d+\.?\d* credits\/run/)
+      expect(price).toMatch(/\d+\.?\d* or \d+\.?\d* credits\/run \(estimate\)/)
     })
   })
 
@@ -908,7 +909,7 @@ describe('useNodePricing', () => {
         getNodeDisplayPrice(node)
         await new Promise((r) => setTimeout(r, 50))
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('Estimated 10.6 credits/run')
+        expect(price).toBe('10.6 credits/run (estimate)')
       })
 
       it('should not display decimal in badge for whole credits', async () => {
@@ -922,7 +923,7 @@ describe('useNodePricing', () => {
         getNodeDisplayPrice(node)
         await new Promise((r) => setTimeout(r, 50))
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('Estimated 211 credits/run')
+        expect(price).toBe('211 credits/run (estimate)')
       })
 
       it('should handle range with mixed decimal display', async () => {
@@ -937,7 +938,7 @@ describe('useNodePricing', () => {
         getNodeDisplayPrice(node)
         await new Promise((r) => setTimeout(r, 50))
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('Estimated 10.6-211 credits/run')
+        expect(price).toBe('10.6-211 credits/run (estimate)')
       })
     })
   })
@@ -951,7 +952,7 @@ describe('formatPricingResult', () => {
   describe('type: usd', () => {
     it('should format usd result', () => {
       const result = formatPricingResult({ type: 'usd', usd: 0.05 })
-      expect(result).toBe('Estimated 10.6 credits/run')
+      expect(result).toBe('10.6 credits/run (estimate)')
     })
 
     it('should return valueOnly format', () => {
@@ -983,7 +984,7 @@ describe('formatPricingResult', () => {
         min_usd: 0.05,
         max_usd: 0.1
       })
-      expect(result).toBe('Estimated 10.6-21.1 credits/run')
+      expect(result).toBe('10.6-21.1 credits/run (estimate)')
     })
 
     it('should return valueOnly format', () => {
@@ -1009,7 +1010,7 @@ describe('formatPricingResult', () => {
         type: 'list_usd',
         usd: [0.05, 0.1, 0.15]
       })
-      expect(result).toBe('Estimated 10.6/21.1/31.7 credits/run')
+      expect(result).toBe('10.6/21.1/31.7 credits/run (estimate)')
     })
 
     it('should return valueOnly format', () => {
@@ -1043,7 +1044,7 @@ describe('formatPricingResult', () => {
   describe('legacy format', () => {
     it('should handle {usd: number} without type field', () => {
       const result = formatPricingResult({ usd: 0.05 })
-      expect(result).toBe('Estimated 10.6 credits/run')
+      expect(result).toBe('10.6 credits/run (estimate)')
     })
 
     it('should return valueOnly for legacy format', () => {
@@ -1179,7 +1180,7 @@ describe('evaluateNodeDefPricing', () => {
       }
     })
     const result = await evaluateNodeDefPricing(nodeDef)
-    expect(result).toBe('Estimated 10.6 credits/run')
+    expect(result).toBe('10.6 credits/run (estimate)')
   })
 
   it('should use default value from input spec', async () => {
@@ -1201,7 +1202,7 @@ describe('evaluateNodeDefPricing', () => {
       }
     })
     const result = await evaluateNodeDefPricing(nodeDef)
-    expect(result).toBe('Estimated 21.1 credits/run')
+    expect(result).toBe('21.1 credits/run (estimate)')
   })
 
   it('should use first option for COMBO without default', async () => {
@@ -1224,7 +1225,7 @@ describe('evaluateNodeDefPricing', () => {
     })
     const result = await evaluateNodeDefPricing(nodeDef)
     // First option is "standard", not "pro", so should be 0.05 USD
-    expect(result).toBe('Estimated 10.6 credits/run')
+    expect(result).toBe('10.6 credits/run (estimate)')
   })
 
   it('should use "original" as fallback for dynamic COMBO without input', async () => {
@@ -1250,7 +1251,7 @@ describe('evaluateNodeDefPricing', () => {
     })
     const result = await evaluateNodeDefPricing(nodeDef)
     // Fallback to "original" = 0.05 USD
-    expect(result).toBe('Estimated 10.6 credits/run')
+    expect(result).toBe('10.6 credits/run (estimate)')
   })
 
   it('should handle dynamic combo with options array', async () => {
@@ -1276,7 +1277,7 @@ describe('evaluateNodeDefPricing', () => {
     })
     const result = await evaluateNodeDefPricing(nodeDef)
     // First option key is "model_a" = 0.05 USD
-    expect(result).toBe('Estimated 10.6 credits/run')
+    expect(result).toBe('10.6 credits/run (estimate)')
   })
 
   it('should assume inputs disconnected in preview', async () => {
@@ -1294,7 +1295,7 @@ describe('evaluateNodeDefPricing', () => {
     })
     const result = await evaluateNodeDefPricing(nodeDef)
     // In preview, inputs are assumed disconnected
-    expect(result).toBe('Estimated 10.6 credits/run')
+    expect(result).toBe('10.6 credits/run (estimate)')
   })
 
   it('should assume inputGroups have 0 count in preview', async () => {
@@ -1312,7 +1313,7 @@ describe('evaluateNodeDefPricing', () => {
     })
     const result = await evaluateNodeDefPricing(nodeDef)
     // 0.05 + 0 * 0.02 = 0.05 USD
-    expect(result).toBe('Estimated 10.6 credits/run')
+    expect(result).toBe('10.6 credits/run (estimate)')
   })
 
   it('should return empty on JSONata error', async () => {
@@ -1338,7 +1339,7 @@ describe('evaluateNodeDefPricing', () => {
       }
     })
     const result = await evaluateNodeDefPricing(nodeDef)
-    expect(result).toBe('Estimated 10.6-21.1 credits/run')
+    expect(result).toBe('10.6-21.1 credits/run (estimate)')
   })
 
   it('should handle approximate format in valueOnly mode', async () => {
@@ -1351,6 +1352,35 @@ describe('evaluateNodeDefPricing', () => {
       }
     })
     const result = await evaluateNodeDefPricing(nodeDef)
-    expect(result).toBe('Estimated ~10.6 credits/run')
+    expect(result).toBe('~10.6 credits/run (estimate)')
+  })
+
+  it('re-evaluates localized labels after a locale change', async () => {
+    const nodeDef = createMockNodeDef({
+      name: 'LocalizedPriceNode',
+      price_badge: {
+        engine: 'jsonata',
+        expr: '{"type":"usd","usd":0.05}',
+        depends_on: { widgets: [], inputs: [], input_groups: [] }
+      }
+    })
+    i18n.global.mergeLocaleMessage('fr', {
+      nodePricing: {
+        estimate: 'estimation',
+        credits: 'crédits',
+        perRun: '/exécution'
+      }
+    })
+
+    i18n.global.locale.value = 'en'
+    expect(await evaluateNodeDefPricing(nodeDef)).toBe(
+      '10.6 credits/run (estimate)'
+    )
+
+    i18n.global.locale.value = 'fr'
+    expect(await evaluateNodeDefPricing(nodeDef)).toBe(
+      '10,6 crédits/exécution (estimation)'
+    )
+    i18n.global.locale.value = 'en'
   })
 })

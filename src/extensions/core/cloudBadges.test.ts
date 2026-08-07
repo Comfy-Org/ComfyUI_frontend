@@ -1,22 +1,33 @@
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n } from '@/i18n'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { TopbarBadge } from '@/types/comfy'
 
 const mocks = vi.hoisted(() => ({
   canvasStore: { canvas: null as LGraphCanvas | null },
-  registerExtension: vi.fn(),
-  remoteConfig: { value: {} as RemoteConfig }
+  registerExtension: vi.fn()
 }))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
+vi.mock('@/i18n', async () => {
+  const { ref } = await import('vue')
+  const locale = ref('en')
+  return {
+    i18n: { global: { locale } },
+    t: (key: string) => `${key}:${locale.value}`
+  }
+})
+
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: false
 }))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: mocks.remoteConfig
-}))
+vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
+  const { ref } = await import('vue')
+  return { remoteConfig: ref({}) }
+})
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => mocks.canvasStore
@@ -33,21 +44,34 @@ describe('cloudBadges', () => {
     vi.resetModules()
     mocks.canvasStore.canvas = null
     mocks.registerExtension.mockReset()
-    mocks.remoteConfig.value = {}
+    remoteConfig.value = {}
+    i18n.global.locale.value = 'en'
   })
 
   it('brands the canvas with the accessible Comfy Cloud yellow', async () => {
     const canvas = {} as LGraphCanvas
     mocks.canvasStore.canvas = canvas
+    remoteConfig.value = {
+      comfy_api_base_url: 'https://api.example.com'
+    }
 
     await import('./cloudBadges')
 
-    expect(canvas.info_text).toBe('g.comfyCloud')
+    expect(canvas.info_text).toBe('g.comfyCloud:en')
     expect(canvas.info_text_color).toBe('#F0FF41')
+
+    i18n.global.locale.value = 'fr'
+    await nextTick()
+    expect(canvas.info_text).toBe('g.comfyCloud:fr')
+
+    remoteConfig.value = {}
+    await nextTick()
+    expect(canvas.info_text).toBeUndefined()
+    expect(canvas.info_text_color).toBeUndefined()
   })
 
   it('exposes server health alerts through the registered extension', async () => {
-    mocks.remoteConfig.value = {
+    remoteConfig.value = {
       server_health_alert: {
         message: 'Maintenance in progress',
         badge: 'STATUS',

@@ -45,6 +45,10 @@ describe('getProviderIcon', () => {
   it('converts to lowercase', () => {
     expect(getProviderIcon('GEMINI')).toBe('icon-[comfy--gemini]')
   })
+
+  it('does not resolve aliases through the object prototype', () => {
+    expect(getProviderIcon('constructor')).toBe('icon-[comfy--constructor]')
+  })
 })
 
 describe('getProviderBorderStyle', () => {
@@ -66,6 +70,7 @@ describe('getProviderBorderStyle', () => {
 
   it('returns fallback color for unknown providers', () => {
     expect(getProviderBorderStyle('Unknown Provider')).toBe('#525252')
+    expect(getProviderBorderStyle('constructor')).toBe('#525252')
   })
 
   it('handles provider names with spaces', () => {
