@@ -8,6 +8,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import {
+  hasImageOutput,
   isImageNode,
   isLGraphGroup,
   isLGraphNode,
@@ -79,6 +80,9 @@ export function useSelectionState() {
   })
 
   const hasImageNode = computed(() => isSingleImageNode.value)
+  const hasMultipleImageOutputNodes = computed(
+    () => selectedNodes.value.filter((node) => hasImageOutput(node)).length > 1
+  )
   const hasOutputNodesSelected = computed(
     () => filterOutputNodes(selectedNodes.value).length > 0
   )
@@ -130,6 +134,7 @@ export function useSelectionState() {
     isSingleImageNode,
     hasSubgraphs,
     hasImageNode,
+    hasMultipleImageOutputNodes,
     hasOutputNodesSelected,
     selectedNodesStates,
     computeSelectionFlags
