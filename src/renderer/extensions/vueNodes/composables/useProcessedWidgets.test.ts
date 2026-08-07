@@ -3,9 +3,11 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   cleanupComplexPromotionFixtureNodeType,
+  createTestRootGraph,
   resetSubgraphFixtureState,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -74,8 +76,7 @@ function createGraphWithNode(
   id: NodeId = toNodeId(1),
   type = 'TestNode'
 ): { graph: LGraph; node: LGraphNode } {
-  const graph = new LGraph()
-  graph.id = GRAPH_ID
+  const graph = createTestRootGraph(GRAPH_ID)
   const node = createNode(widgets, id, type)
   graph.add(node)
   return { graph, node }

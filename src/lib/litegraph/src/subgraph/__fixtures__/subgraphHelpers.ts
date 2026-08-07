@@ -11,6 +11,7 @@ import type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
   ISlotType,
+  Subgraph,
   UUID
 } from '@/lib/litegraph/src/litegraph'
 import {
@@ -23,8 +24,7 @@ import {
   LGraph,
   LGraphNode,
   LiteGraph,
-  SubgraphNode,
-  Subgraph
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 
 import { subgraphComplexPromotion1 } from './subgraphComplexPromotion1'
@@ -98,6 +98,7 @@ export function enableSubgraphNodeCreation(rootGraph: LGraph): () => void {
 export function createTestRootGraph(id: UUID = nextFixtureUuid()): LGraph {
   const graph = new LGraph()
   graph.id = id
+  onTestFinished(() => graph.clear())
   return graph
 }
 
@@ -247,7 +248,7 @@ export function createTestSubgraph(
   }
 
   // Create the subgraph
-  const subgraph = new Subgraph(rootGraph, subgraphData)
+  const subgraph = rootGraph.createSubgraph(subgraphData)
 
   if (options.inputs) {
     for (const input of options.inputs) {
