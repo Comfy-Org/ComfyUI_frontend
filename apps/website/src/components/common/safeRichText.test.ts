@@ -20,6 +20,12 @@ function collectAttr(nodes: SafeRichTextNode[], name: string): string[] {
   })
 }
 
+function collectTags(nodes: SafeRichTextNode[]): string[] {
+  return nodes.flatMap((node) =>
+    node.type === 'text' ? [] : [node.tag, ...collectTags(node.children)]
+  )
+}
+
 describe('parseSafeRichText', () => {
   it('keeps the supported rich-text structure and safe attributes', () => {
     expect(
@@ -84,14 +90,28 @@ describe('parseSafeRichText', () => {
 
   it('allows only HTTPS, mailto, and same-origin relative links', () => {
     const links = parseSafeRichText(
-      '<a href="https://comfy.org">HTTPS</a><a href="mailto:support@comfy.org">Mail</a><a href="//evil.example">Protocol relative</a><a href="http://evil.example">HTTP</a>'
+      '<a href="https://comfy.org">HTTPS</a><a href="mailto:support@comfy.org">Mail</a><a href="/docs">Relative</a><a href="//evil.example">Protocol relative</a><a href="/\\evil.example">Backslash</a><a href="http://evil.example">HTTP</a>'
     )
 
     expect(links).toMatchObject([
       { attrs: { href: 'https://comfy.org' } },
       { attrs: { href: 'mailto:support@comfy.org' } },
+      { attrs: { href: '/docs' } },
+      { attrs: {} },
       { attrs: {} },
       { attrs: {} }
+    ])
+  })
+
+  it('handles empty and malformed input', () => {
+    expect(parseSafeRichText('')).toEqual([])
+    expect(parseSafeRichText('<a href="/docs">Unclosed')).toEqual([
+      {
+        type: 'element',
+        tag: 'a',
+        attrs: { href: '/docs' },
+        children: [{ type: 'text', value: 'Unclosed' }]
+      }
     ])
   })
 
@@ -103,6 +123,11 @@ describe('parseSafeRichText', () => {
 
         const parsed = parseSafeRichText(source)
         const context = `${key} (${locale})`
+        expect(collectTags(parsed), context).toEqual(
+          [...source.matchAll(/<([a-z][\w-]*)\b/gi)].map((match) =>
+            match[1].toLowerCase()
+          )
+        )
         expect(collectText(parsed), context).toBe(
           source.replace(/<[^>]*>/g, '')
         )
