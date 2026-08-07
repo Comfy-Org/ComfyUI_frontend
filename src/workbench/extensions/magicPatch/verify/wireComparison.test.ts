@@ -41,16 +41,19 @@ describe('the wire comparison', () => {
     expect(changed({ ...NODE, size: [140, 88] })).toBe(false)
   })
 
-  it.each([
+  it.for([
     ['a changed widget value', { ...NODE, widgets_values: ['seed', 43] }],
     ['a dropped widget', { ...NODE, widgets_values: ['seed'] }],
     ['a changed property', { ...NODE, properties: { a: 2 } }],
     ['a changed mode', { ...NODE, mode: 4 }],
     ['a changed title', { ...NODE, title: 'Y' }],
     ['a new input', { ...NODE, inputs: [{ name: 'i', link: 1 }] }]
-  ])('still catches %s', (_label, mutated) => {
-    expect(changed(mutated)).toBe(true)
-  })
+  ] as [string, Record<string, unknown>][])(
+    'still catches %s',
+    ([, mutated]) => {
+      expect(changed(mutated)).toBe(true)
+    }
+  )
 
   it('still catches widgets_values disappearing entirely', () => {
     // The failure mode that prompted this: converting a DOM preview widget can
