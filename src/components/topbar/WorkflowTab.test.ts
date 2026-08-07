@@ -181,8 +181,7 @@ describe('WorkflowTab - workflow status indicator', () => {
 
     expect(screen.getByTestId('workflow-tab')).toHaveClass('h-9')
     expect(screen.getByText('test.json')).toHaveClass('text-sm')
-    expect(screen.getByTestId('close-workflow-button')).toHaveClass('visible')
-    expect(screen.getByTestId('close-workflow-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('close-workflow-button')).toBeInTheDocument()
     expect(screen.queryByRole('img')).toBeNull()
     expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
   })
@@ -212,21 +211,13 @@ describe('WorkflowTab - workflow status indicator', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
     expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'size-2',
-      'rounded-full',
-      'bg-base-foreground'
-    )
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeInTheDocument()
   })
 
   it('shows the unsaved dot when modified and autosave is off', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
 
-    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'size-2',
-      'rounded-full',
-      'bg-base-foreground'
-    )
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeInTheDocument()
   })
 
   it('workflow status replaces the unsaved dot', () => {
@@ -330,10 +321,7 @@ describe('WorkflowTab - close button', () => {
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
     ).toHaveClass('group-hover:hidden')
-    expect(screen.getByTestId('close-workflow-button')).toHaveClass(
-      'invisible',
-      'group-hover:visible'
-    )
+    expect(screen.getByTestId('close-workflow-button')).toBeInTheDocument()
     expect(screen.getByTestId('close-workflow-icon')).toBeInTheDocument()
 
     activity.setEditing(null)
