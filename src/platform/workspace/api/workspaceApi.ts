@@ -103,10 +103,8 @@ export interface PreviewSubscribeOptions {
 
 /** The spec omits `scheduled`; it is emitted for pending plan changes. */
 export type BillingSubscriptionStatus =
-  | 'active'
+  | NonNullable<GeneratedBillingStatusResponse['subscription_status']>
   | 'scheduled'
-  | 'ended'
-  | 'canceled'
 
 // Seat counts, `scheduled` status and the scheduled-change fields are not in
 // the spec yet.
