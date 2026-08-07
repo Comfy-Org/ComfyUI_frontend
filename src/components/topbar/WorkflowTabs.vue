@@ -411,10 +411,6 @@ onUpdated(() => {
   border-left-color: var(--border-default);
 }
 
-:deep(.p-togglebutton:hover) {
-  background-color: var(--color-charcoal-500);
-}
-
 :deep(.p-togglebutton:not(:first-child)) {
   border-left-width: 0;
 }

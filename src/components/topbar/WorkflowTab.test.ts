@@ -180,7 +180,11 @@ describe('WorkflowTab - workflow status indicator', () => {
     renderTab()
 
     expect(screen.getByTestId('workflow-tab')).toHaveClass('h-9')
-    expect(screen.getByText('test.json')).toHaveClass('text-sm')
+    expect(screen.getByText('test.json')).toHaveClass(
+      'text-sm',
+      'text-smoke-800',
+      'group-hover:text-base-foreground'
+    )
     expect(screen.getByTestId('close-workflow-button')).toBeInTheDocument()
     expect(screen.queryByRole('img')).toBeNull()
     expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
@@ -211,7 +215,20 @@ describe('WorkflowTab - workflow status indicator', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
     expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.getByTestId('workflow-dirty-indicator')).toBeInTheDocument()
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'bg-smoke-800'
+    )
+  })
+
+  it('uses the active foreground for an unsaved active tab dot', () => {
+    renderTab({
+      workflowOption: makeWorkflowOption({ isPersisted: false }),
+      activeWorkflowKey: 'test-key'
+    })
+
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'bg-base-foreground'
+    )
   })
 
   it('shows the unsaved dot when modified and autosave is off', () => {
@@ -309,9 +326,12 @@ describe('WorkflowTab - close button', () => {
     mockCloseWorkflow.mockClear()
   })
 
-  it('shows the close control at rest for the active idle tab', () => {
+  it('hides the close control until hover for an active idle tab', () => {
     renderTab({ activeWorkflowKey: 'test-key' })
-    expect(screen.getByTestId('close-workflow-button')).toHaveClass('visible')
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass(
+      'invisible',
+      'group-hover:visible'
+    )
   })
 
   it('hides the close control until hover for an inactive idle tab', () => {
