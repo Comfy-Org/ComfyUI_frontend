@@ -2287,4 +2287,26 @@ describe('graph teardown drops layout entries', () => {
     graph.clear()
     expect(nodes.get(key)).toBe(foreign)
   })
+
+  it('clears stale local registration after preserving foreign layout', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('node')
+    graph.add(node)
+    const nodes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('nodes')
+    const key = `${graph.rootGraph.id}:${node.id}`
+    const foreign = new Y.Map<unknown>()
+    foreign.set('registrationId', 'foreign')
+    nodes.set(key, foreign)
+
+    graph.clear()
+
+    expect(nodes.get(key)).toBe(foreign)
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
+    graph.add(node)
+    expect(applyOperation).toHaveBeenCalledOnce()
+    expect(applyOperation).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'createNode' })
+    )
+  })
 })
