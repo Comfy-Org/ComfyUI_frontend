@@ -11,7 +11,8 @@ export const TestIds = {
     nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
-    modeToggle: 'mode-toggle'
+    modeToggle: 'mode-toggle',
+    tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
     folder: 'tree-folder',
