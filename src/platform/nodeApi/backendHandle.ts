@@ -23,6 +23,16 @@ export interface BackendHandle {
    */
   url(route: string): string
   /**
+   * Absolute URL for a file the host serves, rather than an API route.
+   *
+   * Distinct from `url()` because that one addresses the API and prepends
+   * `/api`. A pack's own assets are static files under
+   * `/extensions/<pack>/…`, so building them through `url()` produced
+   * `/api/extensions/…`, which 404s. Every pack that ships an image, a font,
+   * an HTML page or a model needs this.
+   */
+  assetUrl(route: string): string
+  /**
    * Subscribes to a backend message. The name is whatever the backend emits;
    * `detail` is its payload, unparsed.
    */
@@ -38,6 +48,15 @@ export function createBackendApi(): BackendHandle {
         )
       }
       return api.apiURL(route)
+    },
+
+    assetUrl(route: string) {
+      if (!route.startsWith('/')) {
+        throw new ComfyApiError(
+          `Route '${route}' must start with '/', e.g. '/extensions/my-pack/icon.png'.`
+        )
+      }
+      return api.fileURL(route)
     },
 
     on(event: string, listener: (detail: unknown) => void) {

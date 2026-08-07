@@ -44,3 +44,31 @@ describe('backend access', () => {
     expect(seen).toEqual([{ step: 3 }])
   })
 })
+
+describe('asset urls', () => {
+  it('addresses a static file without the /api prefix', () => {
+    // `url()` is for the API and prepends /api, so building a pack's own
+    // asset through it produced /api/extensions/... and 404'd. Every pack
+    // shipping an image, font or HTML page hits this.
+    const backend = createBackendApi()
+
+    expect(backend.assetUrl('/extensions/my-pack/icon.png')).not.toContain(
+      '/api/'
+    )
+    expect(backend.assetUrl('/extensions/my-pack/icon.png')).toContain(
+      '/extensions/my-pack/icon.png'
+    )
+  })
+
+  it('still prefixes an API route, so the two are not interchangeable', () => {
+    const backend = createBackendApi()
+    expect(backend.url('/view?filename=x')).toContain('/api/')
+    expect(backend.assetUrl('/view?filename=x')).not.toContain('/api/')
+  })
+
+  it('refuses a route that does not start with a slash', () => {
+    expect(() => createBackendApi().assetUrl('extensions/x.png')).toThrow(
+      ComfyApiError
+    )
+  })
+})
