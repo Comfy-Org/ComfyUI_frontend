@@ -128,13 +128,6 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-// Mock useToastStore
-vi.mock('@/stores/toastStore', () => ({
-  useToastStore: () => ({
-    add: vi.fn()
-  })
-}))
-
 // Keep the real API singleton (other modules rely on its full surface) but
 // override resetSocket so we can assert socket lifecycle calls without opening
 // a real WebSocket.
