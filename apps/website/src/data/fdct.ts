@@ -1,3 +1,6 @@
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
 export interface FdctPageData {
   ctas: {
     contact: string
@@ -145,6 +148,18 @@ export const projects: readonly FdctProject[] = [
     href: 'https://comfy.org/workflows/7dca0438edf4-7dca0438edf4/'
   }
 ]
+
+const faqNumbers = [1, 2, 3, 4, 5] as const
+
+// One source for both the rendered Q&A section and the FAQPage json-ld node,
+// so the structured data always matches the on-page copy per locale.
+export function fdctFaqs(locale: Locale) {
+  return faqNumbers.map((n) => ({
+    id: String(n),
+    question: t(`fdct.faq.q${n}`, locale),
+    answer: t(`fdct.faq.a${n}`, locale)
+  }))
+}
 
 export const fdctPage: FdctPageData = {
   ctas: {

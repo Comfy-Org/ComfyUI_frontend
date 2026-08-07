@@ -5372,7 +5372,54 @@ const translations = {
     'zh-CN': '娱乐'
   },
   'fdct.projects.category.ecommerce': { en: 'Ecommerce', 'zh-CN': '电商' },
-  'fdct.projects.cta': { en: 'View project', 'zh-CN': '查看项目' }
+  'fdct.projects.cta': { en: 'View project', 'zh-CN': '查看项目' },
+  'fdct.faq.title': { en: 'Q&A', 'zh-CN': '问答' },
+  // FAQ answers are drafted from the page's own claims, pending review.
+  'fdct.faq.q1': {
+    en: 'Can this be a standalone consulting contract?',
+    'zh-CN': '可以签订独立的咨询合同吗？'
+  },
+  'fdct.faq.a1': {
+    en: "It can be. Most FDCT engagements run under an enterprise agreement, but if you have a specific project in mind, [contact us](https://comfy.org/contact) and we'll scope the right shape for it after the first call.",
+    'zh-CN':
+      '可以。大多数 FDCT 合作在企业协议下进行，但如果你有具体项目，欢迎[联系我们](https://comfy.org/contact)，首次沟通后我们会为它确定合适的合作形式。'
+  },
+  'fdct.faq.q2': {
+    en: 'Is it included in every enterprise contract?',
+    'zh-CN': '每份企业合同都包含这项服务吗？'
+  },
+  'fdct.faq.a2': {
+    en: "FDCT engagements run under your enterprise agreement, but they're scoped per engagement rather than bundled into every contract by default. If you're an enterprise customer, talk to your account team about adding one.",
+    'zh-CN':
+      'FDCT 合作在你的企业协议下进行，但按每次合作单独确定范围，并非默认包含在每份合同中。如果你是企业客户，可以向你的客户团队咨询如何添加。'
+  },
+  'fdct.faq.q3': {
+    en: 'Will someone be embedded full time with our team?',
+    'zh-CN': '会有人全职驻场加入我们的团队吗？'
+  },
+  'fdct.faq.a3': {
+    en: 'Embedded, yes — full time, not necessarily. We work inside your environment, on your models and infrastructure, and staffing follows the shape of the engagement: heavier during validation and build, lighter as your team takes over.',
+    'zh-CN':
+      '驻场是肯定的，但不一定是全职。我们在你的环境中工作，基于你的模型和基础设施；人员投入随合作阶段变化：验证和构建阶段更密集，团队接手后逐步减少。'
+  },
+  'fdct.faq.q4': {
+    en: 'What happens after the initial build?',
+    'zh-CN': '初始构建完成之后会怎样？'
+  },
+  'fdct.faq.a4': {
+    en: "Your team owns it. The workflow runs on your infrastructure, and your team is trained to run, modify, and extend it without us. The direct line stays open — we're here when your team needs us.",
+    'zh-CN':
+      '成果归你的团队所有。工作流运行在你的基础设施上，你的团队经过培训后可以独立运行、修改和扩展它。直达通道始终敞开——你的团队需要时，我们随时都在。'
+  },
+  'fdct.faq.q5': {
+    en: 'How do you staff an engagement?',
+    'zh-CN': '你们如何为一次合作配置人员？'
+  },
+  'fdct.faq.a5': {
+    en: 'We match a technologist to each engagement based on the work, your stack, and the timeline. FDCTs come from real production — feature film, commercial, and experiential — with ComfyUI on the back end of shipped work.',
+    'zh-CN':
+      '我们根据项目内容、你的技术栈和时间表，为每次合作匹配合适的技术专家。FDCT 来自真实制作一线——电影长片、商业广告与体验项目，ComfyUI 支撑着已交付的作品。'
+  }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations

@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { projects, technologists } from '../src/data/fdct'
+import { fdctFaqs, projects, technologists } from '../src/data/fdct'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -139,6 +139,51 @@ test.describe('FDCT page @smoke', () => {
         .first()
     ).toBeVisible()
   })
+
+  test('Q&A renders five questions and expands one to reveal its answer', async ({
+    page
+  }) => {
+    await page.goto('/fdct')
+    await expect(
+      page.getByRole('heading', { name: t('fdct.faq.title', 'en') })
+    ).toBeVisible()
+    const faqs = fdctFaqs('en')
+    for (const faq of faqs) {
+      await expect(
+        page.getByRole('button', { name: faq.question })
+      ).toBeVisible()
+    }
+    const fourth = faqs[3]
+    await page.getByRole('button', { name: fourth.question }).click()
+    await expect(page.getByText(fourth.answer)).toBeVisible()
+  })
+
+  test('emits FAQPage structured data with the five Q&A pairs', async ({
+    page
+  }) => {
+    await page.goto('/fdct')
+    const faqJsonLd = await page.evaluate(() => {
+      const scripts = Array.from(
+        document.querySelectorAll<HTMLScriptElement>(
+          'script[type="application/ld+json"]'
+        )
+      )
+      const match = scripts.find((s) =>
+        (s.textContent ?? '').includes('FAQPage')
+      )
+      return match?.textContent ?? null
+    })
+    expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
+    const graph = JSON.parse(faqJsonLd!)['@graph'] as {
+      '@type': string
+      mainEntity?: { name: string }[]
+    }[]
+    const faqPage = graph.find((node) => node['@type'] === 'FAQPage')
+    expect(faqPage, 'FAQPage node in @graph').toBeDefined()
+    expect(faqPage!.mainEntity!.map((entity) => entity.name)).toEqual(
+      fdctFaqs('en').map((faq) => faq.question)
+    )
+  })
 })
 
 test.describe('FDCT page (zh-CN) @smoke', () => {
@@ -245,5 +290,23 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
         )
         .first()
     ).toBeVisible()
+  })
+
+  test('Q&A renders the five localized questions and expands one', async ({
+    page
+  }) => {
+    await page.goto('/zh-CN/fdct')
+    await expect(
+      page.getByRole('heading', { name: t('fdct.faq.title', 'zh-CN') })
+    ).toBeVisible()
+    const faqs = fdctFaqs('zh-CN')
+    for (const faq of faqs) {
+      await expect(
+        page.getByRole('button', { name: faq.question })
+      ).toBeVisible()
+    }
+    const fourth = faqs[3]
+    await page.getByRole('button', { name: fourth.question }).click()
+    await expect(page.getByText(fourth.answer)).toBeVisible()
   })
 })

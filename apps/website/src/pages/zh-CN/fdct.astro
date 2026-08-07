@@ -1,19 +1,29 @@
 ---
 import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import { fdctFaqs } from '../../data/fdct'
 import { t } from '../../i18n/translations'
 import BuildersSection from '../../templates/fdct/BuildersSection.vue'
+import FAQSection from '../../templates/fdct/FAQSection.vue'
 import HeroSection from '../../templates/fdct/HeroSection.vue'
 import HowItWorksSection from '../../templates/fdct/HowItWorksSection.vue'
 import PastProjectsSection from '../../templates/fdct/PastProjectsSection.vue'
 import TechnologistsSection from '../../templates/fdct/TechnologistsSection.vue'
 import WhatYouGetSection from '../../templates/fdct/WhatYouGetSection.vue'
-import { absoluteUrl, pageContext } from '../../utils/jsonLd'
+import { faqAnswerPlainText } from '../../utils/faqAnswer'
+import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
 
-const { locale } = pageContext(
+const { locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
+)
+const faqPage = faqPageNode(
+  url,
+  fdctFaqs(locale).map((faq) => ({
+    question: faq.question,
+    answer: faqAnswerPlainText(faq.answer),
+  })),
 )
 ---
 
@@ -28,6 +38,7 @@ const { locale } = pageContext(
     },
     { name: t('breadcrumb.fdct', locale) },
   ]}
+  extraJsonLd={[faqPage]}
 >
   <HeroSection client:load locale="zh-CN" />
   <BuildersSection client:load locale="zh-CN" />
@@ -36,5 +47,6 @@ const { locale } = pageContext(
   <WhatYouGetSection client:load locale="zh-CN" />
   <TechnologistsSection client:load locale="zh-CN" />
   <PastProjectsSection client:load locale="zh-CN" />
-  {/* Later sections land here in page order: FAQ, CTA bands, closing CTA. */}
+  <FAQSection client:load locale="zh-CN" />
+  {/* Later sections land here in page order: CTA bands, closing CTA. */}
 </BaseLayout>
