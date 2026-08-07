@@ -3290,6 +3290,12 @@
     "documentationPage": "documentation page",
     "loadError": "Failed to load help: {error}"
   },
+  "nodePricing": {
+    "estimated": "Estimated",
+    "credits": "credits",
+    "perRun": "/run",
+    "costEstimate": "Cost estimate"
+  },
   "whatsNewPopup": {
     "learnMore": "Learn more",
     "later": "Later",
