@@ -55,6 +55,20 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     await expect(
       creditsContent.getByText('Upgrade to add credits')
     ).toHaveCount(0)
+    await expect(
+      creditsContent.getByRole('button', { name: 'Manage subscription' })
+    ).toHaveCount(0)
+    await expect(
+      creditsContent.getByRole('button', { name: 'Billing & invoices' })
+    ).toHaveCount(0)
+    await expect(
+      creditsContent.getByRole('button', { name: 'Invoice history' })
+    ).toBeVisible()
+    const invoiceRequest = page.waitForRequest('**/customers/billing')
+    await creditsContent
+      .getByRole('button', { name: 'Invoice history' })
+      .click()
+    expect((await invoiceRequest).method()).toBe('POST')
 
     const settingsAddCredits = creditsContent.getByRole('button', {
       name: 'Add credits'
