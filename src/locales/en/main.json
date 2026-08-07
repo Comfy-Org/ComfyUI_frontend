@@ -2690,11 +2690,13 @@
   },
   "billingOperation": {
     "subscriptionProcessing": "Processing payment — setting up your workspace...",
+    "subscriptionActionRequired": "Verify your payment to finish setting up your workspace",
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",
     "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
     "subscriptionTimeout": "Subscription verification timed out",
     "topupProcessing": "Processing payment — adding credits...",
+    "topupActionRequired": "Verify your payment to add your credits",
     "topupSuccess": "Credits added successfully",
     "topupFailed": "Top-up failed",
     "topupTimeout": "Top-up verification timed out",
