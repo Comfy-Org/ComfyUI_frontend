@@ -4542,6 +4542,18 @@ const translations = {
     en: 'READ SUBSCRIPTION DOCS',
     'zh-CN': '查看订阅文档'
   },
+  'payment.failed.statusPrompt.prefix': {
+    en: 'Check our',
+    'zh-CN': '请查看我们的'
+  },
+  'payment.failed.statusPrompt.statusLink': {
+    en: 'status page',
+    'zh-CN': '状态页面'
+  },
+  'payment.failed.statusPrompt.suffix': {
+    en: 'for more information.',
+    'zh-CN': '了解更多信息。'
+  },
 
   // AffiliateHeroSection
   'affiliate.hero.label': { en: 'AFFILIATE', 'zh-CN': '联盟' },
