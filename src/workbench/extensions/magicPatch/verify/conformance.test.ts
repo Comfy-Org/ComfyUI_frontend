@@ -198,6 +198,96 @@ describe('general conversion conformance', () => {
     })
   })
 
+  describe('sanctioned hold-outs', () => {
+    it('still fails, but says the hold-out was a decision', () => {
+      const report = runConformance(
+        context({
+          original: 'const { app } = window.comfyAPI.app; app.loadGraphData(x)',
+          converted:
+            '// SANCTIONED-HOLDOUT(workflow-save-load): no published loader.\n' +
+            'const { app } = window.comfyAPI.app;\n' +
+            'app.loadGraphData(x)',
+          edits: []
+        })
+      )
+      const check = find(report, 'retires-the-legacy-global')
+      expect(check.status).toBe('failed')
+      expect(check.detail).toMatch(/Sanctioned hold-out \(workflow-save-load\)/)
+    })
+
+    it('reads the marker even though it is a comment', () => {
+      // The check strips comments before scanning for API usage, so the
+      // marker has to be read off the raw source or it is never seen.
+      const report = runConformance(
+        context({
+          original: 'window.comfyAPI.app',
+          converted:
+            '/* SANCTIONED-HOLDOUT(document-api): nothing opens a workflow */\n' +
+            'const { app } = window.comfyAPI.app;',
+          edits: []
+        })
+      )
+      expect(find(report, 'retires-the-legacy-global').detail).toMatch(
+        /document-api/
+      )
+    })
+
+    it('an unmarked hold-out reads as unconverted, not sanctioned', () => {
+      const report = runConformance(
+        context({
+          original: 'window.comfyAPI.app',
+          converted: 'const { app } = window.comfyAPI.app;',
+          edits: []
+        })
+      )
+      const check = find(report, 'retires-the-legacy-global')
+      expect(check.detail).not.toMatch(/Sanctioned/)
+      expect(check.detail).toMatch(/becomes deletable/)
+    })
+  })
+
+  describe('the indentation report', () => {
+    it('does not fail a file whose body was dedented wholesale', () => {
+      // Unwrapping registerExtension takes two levels off everything inside
+      // it, and the conversion guidance requires that re-indent. The check
+      // used to fail exactly that, contradicting the guidance -- three correct
+      // kjnodes conversions failed on ~93% indentation-only lines.
+      const body = Array.from({ length: 40 }, (_, i) => `    doThing(${i})`)
+      const original = [
+        'app.registerExtension({',
+        '  setup() {',
+        ...body.map((l) => '  ' + l),
+        '  }',
+        '})'
+      ].join('\n')
+      const converted = body.map((l) => l.trimStart()).join('\n')
+
+      const report = runConformance(context({ original, converted, edits: [] }))
+
+      expect(find(report, 'diff-is-mostly-substance').status).toBe('passed')
+    })
+
+    it('never gates, whatever the ratio', () => {
+      const report = runConformance(
+        context({
+          original: 'a()\nb()\nc()',
+          converted: '        a()\n        b()\n        c()',
+          edits: []
+        })
+      )
+      expect(find(report, 'diff-is-mostly-substance').status).not.toBe('failed')
+    })
+
+    it('still counts genuinely new lines as substance', () => {
+      const report = runConformance(
+        context({ original: 'a()', converted: 'a()\nbrandNew()', edits: [] })
+      )
+      expect(find(report, 'diff-is-mostly-substance').detail).toMatch(
+        /1 substantive line/
+      )
+    })
+  })
+
   describe('invented API members', () => {
     it('fails a conversion that calls something the API does not define', () => {
       const report = runConformance(

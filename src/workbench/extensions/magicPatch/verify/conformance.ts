@@ -341,13 +341,32 @@ const checks: readonly Check[] = [
         pattern.test(converted)
       ).map(([name]) => name)
 
+      // A file may hold a surface open by decision rather than by omission.
+      // It still fails — the point is that the old surface becomes deletable,
+      // and a green gate would let the hold-out be forgotten — but the report
+      // has to distinguish "allowed, for now" from "nobody converted this",
+      // or every later audit re-litigates the same three files.
+      // Scanned on the RAW source: the marker is itself a comment, and
+      // `converted` above has had comments stripped.
+      const sanctioned = [
+        ...new Set(
+          [...ctx.converted.matchAll(/SANCTIONED-HOLDOUT\(([^)]+)\)/g)].map(
+            (m) => m[1]
+          )
+        )
+      ]
+
       return held.length
         ? result(
             'retires-the-legacy-global',
             'failed',
-            `Still reaches the old surface: ${held.join(', ')}. ` +
-              `The point of the migration is that it becomes deletable — ` +
-              `convert the call site or punt the whole file as api-gap.`
+            sanctioned.length
+              ? `Sanctioned hold-out (${sanctioned.join(', ')}): still reaches ` +
+                  `${held.join(', ')}. Allowed by decision, not by omission — ` +
+                  `retire it when the capability lands.`
+              : `Still reaches the old surface: ${held.join(', ')}. ` +
+                  `The point of the migration is that it becomes deletable — ` +
+                  `convert the call site or punt the whole file as api-gap.`
           )
         : result(
             'retires-the-legacy-global',
@@ -498,42 +517,44 @@ const checks: readonly Check[] = [
   {
     id: 'diff-is-mostly-substance',
     description:
-      'Most of the diff should be behaviour, not lines that merely moved indentation.',
+      'Reports how much of the diff is substance rather than re-indentation. Advisory.',
     run: (ctx) => {
-      const before = ctx.original.split('\n')
-      const after = ctx.converted.split('\n')
-      const kept = new Set(before.map((l) => l.trim()).filter(Boolean))
-      const removed = new Set(after.map((l) => l.trim()).filter(Boolean))
-
-      // A line present on both sides once trimmed did not change; it only
-      // moved.
+      // Whitespace-blind, and never gating.
       //
-      // Mostly informational. Removing a registerExtension wrapper dedents its
-      // entire body, and that churn is unavoidable — measured across the
-      // current database it runs 17-39% of added lines, all of it legitimate.
-      // Only a ratio high enough to mean the file was reformatted for its own
-      // sake is treated as a failure.
-      const changedOut = after.filter(
-        (line) => line.trim() && !before.includes(line)
+      // It used to fail a file whose added lines were mostly re-indented, on
+      // the theory that the file had been reflowed for its own sake. But
+      // unwrapping `app.registerExtension` around a large callback dedents the
+      // entire body, and the conversion guidance *requires* that re-indent —
+      // so the check and the guidance contradicted each other, and three
+      // correct conversions failed on ~93% indentation-only lines.
+      //
+      // The number is still worth reporting: a high ratio on a *small* body is
+      // still a hint that something was reflowed needlessly. It is a hint, not
+      // a gate.
+      const before = new Set(
+        ctx.original
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean)
       )
-      const movedOnly = changedOut.filter((line) => kept.has(line.trim()))
-      if (!changedOut.length) {
+      const added = ctx.converted
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .filter((l) => !before.has(l))
+
+      const converted = ctx.converted.split('\n').filter((l) => l.trim())
+      const movedOnly = converted.length - added.length
+
+      if (!converted.length) {
         return result('diff-is-mostly-substance', 'skipped', 'Nothing changed.')
       }
-      const ratio = movedOnly.length / changedOut.length
-      const detail =
-        `${movedOnly.length}/${changedOut.length} added line(s) differ only in ` +
-        `indentation.`
-      void removed
-      return ratio > 0.9
-        ? result(
-            'diff-is-mostly-substance',
-            'failed',
-            `${detail} At that proportion the file was reflowed rather than ` +
-              `converted. Leave the indentation of lines you are not otherwise ` +
-              `changing alone.`
-          )
-        : result('diff-is-mostly-substance', 'passed', detail)
+      return result(
+        'diff-is-mostly-substance',
+        'passed',
+        `${added.length} substantive line(s); ${movedOnly} carried over ` +
+          `unchanged apart from indentation.`
+      )
     }
   },
   {
