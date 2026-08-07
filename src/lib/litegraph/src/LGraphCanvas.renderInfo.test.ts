@@ -5,8 +5,10 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 describe('LGraphCanvas.renderInfo', () => {
   let lgCanvas: LGraphCanvas
   let ctx: CanvasRenderingContext2D
+  let fillTextColors: CanvasFillStrokeStyles['fillStyle'][]
 
   beforeEach(() => {
+    fillTextColors = []
     const canvasElement = document.createElement('canvas')
     ctx = {
       save: vi.fn(),
@@ -17,6 +19,9 @@ describe('LGraphCanvas.renderInfo', () => {
       textAlign: 'left' as CanvasTextAlign,
       fillText: vi.fn()
     } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
+    vi.mocked(ctx.fillText).mockImplementation(() => {
+      fillTextColors.push(ctx.fillStyle)
+    })
 
     canvasElement.getContext = vi.fn().mockReturnValue(ctx)
 
@@ -65,7 +70,16 @@ describe('LGraphCanvas.renderInfo', () => {
 
     lgCanvas.renderInfo(ctx, 10, 500)
 
-    expect(ctx.fillStyle).toBe('#f0ff41')
     expect(ctx.fillText).toHaveBeenLastCalledWith('Comfy Cloud', 5, 78)
+    expect(fillTextColors.at(-1)).toBe('#f0ff41')
+  })
+
+  it('renders additional info text in the fallback color', () => {
+    lgCanvas.info_text = 'Comfy Cloud'
+
+    lgCanvas.renderInfo(ctx, 10, 500)
+
+    expect(ctx.fillText).toHaveBeenLastCalledWith('Comfy Cloud', 5, 78)
+    expect(fillTextColors.at(-1)).toBe('#888')
   })
 })
