@@ -28,6 +28,10 @@ interface MemberMockState {
   patches: RoleChangeRequest[]
 }
 
+interface CloudWorkspaceMockOptions {
+  mockBilling?: boolean
+}
+
 const jsonRoute = (body: unknown) => ({
   status: 200,
   contentType: 'application/json',
@@ -48,9 +52,15 @@ export class CloudWorkspaceMockHelper {
   async setup(
     members: Member[] = DEFAULT_TEAM_MEMBERS,
     activeWorkspace: WorkspaceWithRole = TEAM_WORKSPACE,
-    billingStatus: BillingStatusResponse = TEAM_BILLING_STATUS
+    billingStatus: BillingStatusResponse = TEAM_BILLING_STATUS,
+    { mockBilling = true }: CloudWorkspaceMockOptions = {}
   ): Promise<MemberMockState> {
-    const state = await this.mockBoot(members, activeWorkspace, billingStatus)
+    const state = await this.mockBoot(
+      members,
+      activeWorkspace,
+      billingStatus,
+      mockBilling
+    )
     await new CloudAuthHelper(this.page).mockAuth()
     await this.page.addInitScript((workspaceId) => {
       localStorage.setItem('Comfy.userId', 'test-user-e2e')
@@ -62,7 +72,8 @@ export class CloudWorkspaceMockHelper {
   private async mockBoot(
     members: Member[],
     activeWorkspace: WorkspaceWithRole,
-    billingStatus: BillingStatusResponse
+    billingStatus: BillingStatusResponse,
+    mockBilling: boolean
   ): Promise<MemberMockState> {
     const state: MemberMockState = {
       members: members.map((m) => ({ ...m })),
@@ -135,41 +146,44 @@ export class CloudWorkspaceMockHelper {
       r.fulfill(jsonRoute({ invites: [] }))
     )
 
-    await page.route('**/api/billing/status', (r) =>
-      r.fulfill(jsonRoute(billingStatus))
-    )
-    await page.route('**/api/billing/balance', (r) =>
-      r.fulfill(
-        jsonRoute({
-          amount_micros: 6000,
-          currency: 'usd',
-          effective_balance_micros: 6000,
-          cloud_credit_balance_micros: 5000,
-          prepaid_balance_micros: 1000
-        })
+    if (mockBilling) {
+      await page.route('**/api/billing/status', (r) =>
+        r.fulfill(jsonRoute(billingStatus))
       )
-    )
-    const currentPlan: Plan =
-      billingStatus.plan_slug && billingStatus.plan_slug !== TEAM_PRO_PLAN.slug
-        ? {
-            ...TEAM_PRO_PLAN,
-            slug: billingStatus.plan_slug,
-            tier:
-              billingStatus.subscription_tier === 'TEAM'
-                ? TEAM_PRO_PLAN.tier
-                : (billingStatus.subscription_tier ?? TEAM_PRO_PLAN.tier),
-            duration:
-              billingStatus.subscription_duration ?? TEAM_PRO_PLAN.duration
-          }
-        : TEAM_PRO_PLAN
-    await page.route('**/api/billing/plans', (r) =>
-      r.fulfill(
-        jsonRoute({
-          current_plan_slug: currentPlan.slug,
-          plans: [currentPlan]
-        })
+      await page.route('**/api/billing/balance', (r) =>
+        r.fulfill(
+          jsonRoute({
+            amount_micros: 6000,
+            currency: 'usd',
+            effective_balance_micros: 6000,
+            cloud_credit_balance_micros: 5000,
+            prepaid_balance_micros: 1000
+          })
+        )
       )
-    )
+      const currentPlan: Plan =
+        billingStatus.plan_slug &&
+        billingStatus.plan_slug !== TEAM_PRO_PLAN.slug
+          ? {
+              ...TEAM_PRO_PLAN,
+              slug: billingStatus.plan_slug,
+              tier:
+                billingStatus.subscription_tier === 'TEAM'
+                  ? TEAM_PRO_PLAN.tier
+                  : (billingStatus.subscription_tier ?? TEAM_PRO_PLAN.tier),
+              duration:
+                billingStatus.subscription_duration ?? TEAM_PRO_PLAN.duration
+            }
+          : TEAM_PRO_PLAN
+      await page.route('**/api/billing/plans', (r) =>
+        r.fulfill(
+          jsonRoute({
+            current_plan_slug: currentPlan.slug,
+            plans: [currentPlan]
+          })
+        )
+      )
+    }
 
     return state
   }
