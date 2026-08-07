@@ -1165,6 +1165,12 @@ export class LGraphNode
         )
       }
 
+      // Main restores by widget NAME through the widget-value store, with a
+      // COMPACTED positional index as the fallback — and `serialiseWidgetValues`
+      // writes compacted too (`positional.push`). Our branch carried an
+      // indexed-read fix for a write-indexed/read-compacted mismatch; that
+      // mismatch does not exist here, so the fix is superseded rather than
+      // dropped. Re-introducing it would make the read disagree with the write.
       let positionalIndex = 0
       for (const widget of this.widgets) {
         if (widget.serialize === false) continue
