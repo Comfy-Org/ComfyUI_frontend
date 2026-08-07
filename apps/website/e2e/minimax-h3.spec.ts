@@ -65,22 +65,28 @@ test.describe('MiniMax H3 page — desktop @smoke', () => {
 })
 
 test.describe('MiniMax H3 page — legacy URL @smoke', () => {
-  test('redirects the old /minimax URL to the new page', async ({ page }) => {
-    await page.goto(LEGACY_PATH)
+  for (const legacyPath of [LEGACY_PATH, `${LEGACY_PATH}/`]) {
+    test(`redirects the old ${legacyPath} URL to the new page`, async ({
+      page
+    }) => {
+      await page.goto(legacyPath)
 
-    await expect(page).toHaveURL(new RegExp(`${PATH}/?$`))
-    await expect(
-      page.getByRole('heading', { level: 1, name: HERO_TITLE })
-    ).toBeVisible()
-  })
+      await expect(page).toHaveURL(new RegExp(`${PATH}/?$`))
+      await expect(
+        page.getByRole('heading', { level: 1, name: HERO_TITLE })
+      ).toBeVisible()
+    })
+  }
 
-  test('redirects the old zh-CN URL to the localized page', async ({
-    page
-  }) => {
-    await page.goto(ZH_LEGACY_PATH)
+  for (const legacyPath of [ZH_LEGACY_PATH, `${ZH_LEGACY_PATH}/`]) {
+    test(`redirects the old ${legacyPath} URL to the localized page`, async ({
+      page
+    }) => {
+      await page.goto(legacyPath)
 
-    await expect(page).toHaveURL(new RegExp(`${ZH_PATH}/?$`))
-  })
+      await expect(page).toHaveURL(new RegExp(`${ZH_PATH}/?$`))
+    })
+  }
 })
 
 test.describe('MiniMax H3 page — link targets', () => {
