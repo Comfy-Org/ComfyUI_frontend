@@ -136,6 +136,7 @@ describe('ErrorOverlay', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
         count: 1,
@@ -173,6 +174,7 @@ describe('ErrorOverlay', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
         count: 1,
