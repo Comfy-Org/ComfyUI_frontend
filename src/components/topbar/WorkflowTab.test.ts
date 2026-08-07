@@ -309,6 +309,19 @@ describe('WorkflowTab - close button', () => {
     mockCloseWorkflow.mockClear()
   })
 
+  it('shows the close control at rest for the active idle tab', () => {
+    renderTab({ activeWorkflowKey: 'test-key' })
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass('visible')
+  })
+
+  it('hides the close control until hover for an inactive idle tab', () => {
+    renderTab()
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass(
+      'invisible',
+      'group-hover:visible'
+    )
+  })
+
   it('keeps the close control available alongside each tab state marker', async () => {
     const { rerender } = renderTab()
     const activity = useWorkflowTabActivityStore()
@@ -321,7 +334,10 @@ describe('WorkflowTab - close button', () => {
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
     ).toHaveClass('group-hover:hidden')
-    expect(screen.getByTestId('close-workflow-button')).toBeInTheDocument()
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass(
+      'invisible',
+      'group-hover:visible'
+    )
     expect(screen.getByTestId('close-workflow-icon')).toBeInTheDocument()
 
     activity.setEditing(null)
