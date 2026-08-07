@@ -1,9 +1,8 @@
 <template>
   <div class="flex flex-col xl:h-full">
     <!-- Plan-scope toggle (personal vs team PLAN on one workspace): sits directly
-         on top of the content area — outside it, attached with no gap (DES QA).
-         Only shown when team plans are available (teamWorkspacesEnabled). -->
-    <div v-if="showTeam" class="flex justify-center">
+         on top of the content area — outside it, attached with no gap (DES QA). -->
+    <div class="flex justify-center">
       <SelectButton
         v-model="planMode"
         :options="planScopeOptions"
@@ -416,7 +415,6 @@ import { I18nT, useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   TIER_PRICING,
   TIER_TO_KEY
@@ -443,8 +441,7 @@ type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 interface Props {
   isLoading?: boolean
   loadingTier?: CheckoutTierKey | null
-  /** Initial plan scope. The toggle to switch is only shown when team plans
-   *  are available (`teamWorkspacesEnabled`). */
+  /** Initial plan scope. */
   initialPlanMode?: 'personal' | 'team'
 }
 
@@ -468,11 +465,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, n } = useI18n()
-const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
-
-/** Team plans only exist behind the flag (mirrors useBillingContext type). */
-const showTeam = computed(() => flags.teamWorkspacesEnabled)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 

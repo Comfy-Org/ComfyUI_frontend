@@ -255,6 +255,8 @@
       "backToGithubLogin": "ثبت‌نام با گیت‌هاب",
       "backToLogin": "بازگشت به ورود",
       "backToSocialLogin": "ثبت‌نام با Google یا Github",
+      "cloudNewUser": "جدید در Comfy هستید؟",
+      "cloudSignUp": "اینجا ثبت‌نام کنید",
       "confirmPasswordLabel": "تأیید رمز عبور",
       "confirmPasswordPlaceholder": "رمز عبور را مجدداً وارد کنید",
       "didntReceiveEmail": "ایمیلی دریافت نکردید؟ با ما تماس بگیرید:",
@@ -263,6 +265,7 @@
       "failed": "ورود ناموفق بود",
       "forgotPassword": "رمز عبور را فراموش کرده‌اید؟",
       "forgotPasswordError": "ارسال ایمیل بازیابی رمز عبور ناموفق بود",
+      "freeRunsSuffix": "برای دریافت {count} اجرای رایگان. | برای دریافت {count} اجرای رایگان.",
       "freeTierBadge": "واجد شرایط طرح رایگان",
       "freeTierDescription": "با ثبت‌نام از طریق Google هر ماه {credits} اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
       "freeTierDescriptionGeneric": "با ثبت‌نام از طریق Google هر ماه اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
@@ -445,27 +448,12 @@
   "cloudForgotPassword_sendResetLink": "ارسال لینک بازنشانی",
   "cloudForgotPassword_title": "فراموشی رمز عبور",
   "cloudHero": {
+    "carouselLabel": "مدل‌های ویژه",
+    "carouselRoleDescription": "چرخ‌وفلک",
     "nextSlide": "اسلاید بعدی",
     "previousSlide": "اسلاید قبلی",
-    "slidePagerLabel": "رفتن به اسلاید {index}",
-    "slides": {
-      "cloud": {
-        "description": "مناسب برای اکثر کاربران که می‌خواهند از هر مکانی با مدل‌های دارای مجوز تجاری کار کنند.",
-        "title": "ابر"
-      },
-      "models": {
-        "description": "مدل‌های منتخب با مجوز تجاری آماده اجرا بدون نیاز به تنظیمات اولیه.",
-        "title": "مدل‌ها"
-      },
-      "team": {
-        "description": "تیم خود را امروز اضافه کنید. به اشتراک‌گذاری workflowها و دارایی‌ها در سراسر سازمان شما.",
-        "title": "تیم"
-      },
-      "workflows": {
-        "description": "از ایده تا خروجی در چند دقیقه. تولید چندین واریاسیون به صورت همزمان.",
-        "title": "Workflowها"
-      }
-    }
+    "slideRoleDescription": "اسلاید",
+    "slideStatus": "{title}، اسلاید {current} از {total}"
   },
   "cloudNotification": {
     "continueLocally": "ادامه به صورت محلی",
@@ -577,11 +565,9 @@
   "cloudPrivateBeta_title": "کلود در حال حاضر در نسخه بتای خصوصی است",
   "cloudSorryContactSupport_title": "متاسفیم، با پشتیبانی تماس بگیرید",
   "cloudStart_desc": "بدون نیاز به تنظیمات. روی هر دستگاهی کار می‌کند.",
-  "cloudStart_download": "دانلود ComfyUI",
   "cloudStart_explain": "چندین خروجی را همزمان تولید کنید. workflowها را به راحتی به اشتراک بگذارید.",
   "cloudStart_learnAboutButton": "درباره Cloud بیشتر بدانید",
   "cloudStart_title": "در چند ثانیه شروع به خلق کنید",
-  "cloudStart_wantToRun": "مایلید ComfyUI را به صورت محلی اجرا کنید؟",
   "cloudSurvey_steps_experience": "تا چه حد با ComfyUI آشنایی دارید؟",
   "cloudSurvey_steps_focus": "در حال ساخت چه چیزی هستید؟",
   "cloudSurvey_steps_intent": "مایل هستید با ComfyUI چه چیزی ایجاد کنید؟",
@@ -868,7 +854,6 @@
     "BOOLEAN": "بولی",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "جعبه‌های مرزی",
-    "CAMERA_CONTROL": "کنترل دوربین",
     "CLIP": "clip",
     "CLIP_VISION": "بینایی clip",
     "CLIP_VISION_OUTPUT": "خروجی بینایی clip",
@@ -3113,6 +3098,74 @@
     },
     "back": "قبلی",
     "done": "پایان",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "فعلاً نه",
+        "explore": "مشاهده قالب‌ها",
+        "noTour": {
+          "body": "قالب‌ها را مرور کنید و چیزی برای ساختن انتخاب کنید.",
+          "title": "صدها مورد دیگر نیز وجود دارد"
+        },
+        "ran": {
+          "body": "شما اولین مورد را ساختید. ببینید چه چیزهای دیگری می‌توانید بسازید.",
+          "title": "این یکی از صدها مورد بود"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "تصویر صحنه را تعیین می‌کند. این توضیح می‌دهد که چه اتفاقی بیفتد.",
+          "title": "توصیف کنید چگونه باید حرکت کند"
+        },
+        "image-edit": {
+          "body": "تصویر شما همانطور باقی می‌ماند. توضیح دهید چه تغییری می‌خواهید.",
+          "title": "بگویید چه چیزی باید تغییر کند"
+        },
+        "other": {
+          "body": "این prompt شماست. برای تغییر نتیجه، آن را تغییر دهید.",
+          "title": "بگویید چه چیزی باید ساخته شود"
+        },
+        "t2i": {
+          "body": "تصویر شما بر اساس این توضیح ساخته می‌شود. هر چیزی دوست دارید امتحان کنید.",
+          "title": "توصیف کنید چه می‌خواهید"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "چیزی اینجا نمایش داده نشد. تور را ببندید و دوباره اجرا کنید.",
+          "title": "این اجرا کامل نشد"
+        },
+        "generating": {
+          "body": "نتیجه شما به محض آماده شدن اینجا نمایش داده می‌شود.",
+          "title": "کمی صبر کنید"
+        },
+        "image": {
+          "body": "تصویر جدید شما همین‌جا قرار می‌گیرد — آماده برای دانلود یا اشتراک‌گذاری.",
+          "title": "و این هم نتیجه"
+        },
+        "video": {
+          "body": "ویدیوی جدید شما همین‌جا قرار می‌گیرد — آماده برای دانلود یا اشتراک‌گذاری.",
+          "title": "و این هم نتیجه"
+        }
+      },
+      "run": {
+        "body": "برای شروع تولید نتیجه، دکمه اجرا را فشار دهید.",
+        "title": "workflow خود را اجرا کنید"
+      },
+      "upload": {
+        "i2v": {
+          "body": "این تصویر اولین فریم شماست. هر زمان خواستید می‌توانید تصویر خود را جایگزین کنید.",
+          "title": "با یک تصویر شروع کنید"
+        },
+        "image-edit": {
+          "body": "این تصویری است که ویرایش خواهید کرد. هر زمان خواستید می‌توانید تصویر خود را جایگزین کنید.",
+          "title": "با یک تصویر شروع کنید"
+        },
+        "other": {
+          "body": "این تصویر به workflow وارد می‌شود. هر زمان خواستید می‌توانید تصویر خود را جایگزین کنید.",
+          "title": "با یک تصویر شروع کنید"
+        }
+      }
+    },
     "loadError": "در نمایش این راهنما مشکلی پیش آمد",
     "next": "بعدی",
     "skip": "رد کردن",
@@ -3725,10 +3778,12 @@
       "dateToday": "امروز",
       "filter3D": "سه‌بعدی",
       "filterAudio": "صوت",
+      "filterBy": "فیلتر بر اساس...",
       "filterDate": "تاریخ",
       "filterGroupAttribute": "ویژگی",
       "filterImage": "تصویر",
       "filterMediaType": "نوع رسانه",
+      "filterNoMatches": "موردی یافت نشد",
       "filterText": "متن",
       "filterVideo": "ویدیو",
       "removeFilter": "حذف فیلتر {label}",
@@ -4042,6 +4097,17 @@
     "partnerNodesCredits": "قیمت‌گذاری Partner Nodes",
     "partnerNodesDescription": "برای اجرای مدل‌های تجاری/اختصاصی",
     "partnerNodesPricingTable": "جدول قیمت‌گذاری Partner Nodeها",
+    "paymentRecovery": {
+      "memberCta": "متوجه شدم",
+      "memberDescription": "از مالک workspace بخواهید تا اشتراک workspace را بازیابی کند.",
+      "memberRunLabel": "اجرا",
+      "memberRunTooltip": "از مالک workspace بخواهید این اشتراک را بازیابی کند",
+      "ownerCta": "به‌روزرسانی پرداخت",
+      "ownerDescription": "روش پرداخت خود را به‌روزرسانی کنید تا اشتراک workspace بازیابی شده و workflowها اجرا شوند.",
+      "ownerRunLabel": "برای اجرا، پرداخت را به‌روزرسانی کنید",
+      "ownerRunTooltip": "برای بازیابی این اشتراک، پرداخت را به‌روزرسانی کنید",
+      "title": "اشتراک متوقف شده است"
+    },
     "perMonth": "/ ماه",
     "personalHeader": "پلن‌های شخصی فقط برای استفاده فردی هستند. {action}",
     "personalHeaderAction": "برای افزودن هم‌تیمی، به پلن تیمی ارتقا دهید.",
@@ -4329,6 +4395,7 @@
     "logoProviderSeparator": " و "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "امکان بارگذاری workflow وجود ندارد زیرا این نصب ComfyUI فاقد nodeهای اصلی است. بررسی کنید که backend به درستی راه‌اندازی شده باشد.",
     "cannotCreateSubgraph": "امکان ایجاد subgraph وجود ندارد",
     "couldNotDetermineFileType": "نوع فایل قابل شناسایی نیست",
     "dropFileError": "امکان پردازش آیتم انداخته‌شده وجود ندارد: {error}",
@@ -4378,6 +4445,7 @@
     "invalidTemplateData": "بارگذاری قالب نود ناموفق بود: داده نامعتبر",
     "legacyMaskEditorDeprecated": "ویرایشگر mask قدیمی منسوخ شده و به‌زودی حذف خواهد شد.",
     "migrateToLitegraphReroute": "nodeهای reroute در نسخه‌های آینده حذف خواهند شد. برای مهاجرت به reroute بومی litegraph کلیک کنید.",
+    "missingMediaVerificationFailed": "تأیید رسانه‌های مفقودشده ناموفق بود. برخی ورودی‌ها ممکن است در برگه خطاها نمایش داده نشوند.",
     "missingModelVerificationFailed": "تأیید مدل‌های مفقود شده انجام نشد. برخی مدل‌ها ممکن است در برگه خطاها نمایش داده نشوند.",
     "modelLoadedSuccessfully": "مدل سه‌بعدی با موفقیت بارگذاری شد",
     "no3dScene": "صحنه سه‌بعدی برای اعمال بافت وجود ندارد",
@@ -4561,7 +4629,11 @@
       "notAuthenticated": "برای دسترسی به فضاهای کاری باید وارد شوید.",
       "tokenExchangeFailed": "احراز هویت با فضای کاری ناموفق بود: {error}",
       "workspaceNotFound": "فضای کاری پیدا نشد."
-    }
+    },
+    "initializationFailed": "امکان بارگذاری workspace شما وجود ندارد",
+    "initializationFailedDetail": "اتصال خود را بررسی کرده و دوباره تلاش کنید.",
+    "initializationFailedSignOutDetail": "خروج کرده و دوباره وارد شوید تا ادامه دهید.",
+    "retry": "تلاش مجدد"
   },
   "workspacePanel": {
     "activity": {
@@ -4601,7 +4673,6 @@
       },
       "updatePayment": "به‌روزرسانی پرداخت",
       "warning": {
-        "body": "آخرین پرداخت شما انجام نشد. اشتراک شما در تاریخ {date} متوقف می‌شود مگر اینکه پرداخت به‌روزرسانی شود.",
         "bodyNoDate": "آخرین پرداخت شما انجام نشد. برای جلوگیری از توقف، پرداخت را به‌روزرسانی کنید.",
         "title": "پرداخت ناموفق بود"
       }

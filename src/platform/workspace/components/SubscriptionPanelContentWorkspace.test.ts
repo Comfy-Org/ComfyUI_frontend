@@ -11,9 +11,9 @@ import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricin
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
-  CurrentTeamCreditStop,
   Plan,
-  TeamCreditStops
+  TeamCreditStops,
+  TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
@@ -71,7 +71,7 @@ const mockCanManageSubscription = ref(true)
 const mockCanManageSubscriptionLifecycle = ref(true)
 const mockCanLeaveWorkspace = ref(true)
 const mockTeamCreditStops = ref<TeamCreditStops | null>(teamCreditStops)
-const mockCurrentTeamCreditStop = ref<CurrentTeamCreditStop | null>({
+const mockCurrentTeamCreditStop = ref<TeamCreditStopSummary | null>({
   id: 'team_700',
   credits_monthly: 147700,
   stop_usd: 700

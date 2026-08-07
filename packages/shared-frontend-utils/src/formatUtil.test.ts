@@ -201,8 +201,10 @@ describe('formatUtil', () => {
   })
 
   describe('highlightQuery', () => {
-    it('should return text unchanged when query is empty', () => {
-      expect(highlightQuery('Hello World', '')).toBe('Hello World')
+    it('should sanitize text when query is empty', () => {
+      expect(highlightQuery('<img src=x onerror=alert(1)>Hello', '')).toBe(
+        '&#60;img src=x onerror=alert(1)&#62;Hello'
+      )
     })
 
     it('should wrap matching text in highlight span', () => {
@@ -218,6 +220,17 @@ describe('formatUtil', () => {
     it('should sanitize text by default', () => {
       const result = highlightQuery('<script>alert("xss")</script>', 'alert')
       expect(result).not.toContain('<script>')
+    })
+
+    it('should escape markup while preserving highlights', () => {
+      const result = highlightQuery(
+        '<img src=x onerror=alert(1)>Script <b>name</b>',
+        'script'
+      )
+      expect(result).toContain('<span class="highlight">Script</span>')
+      expect(result).not.toContain('<img')
+      expect(result).not.toContain('<b>')
+      expect(result).toContain('img src=x onerror=alert(1)')
     })
 
     it('should skip sanitization when sanitize is false', () => {

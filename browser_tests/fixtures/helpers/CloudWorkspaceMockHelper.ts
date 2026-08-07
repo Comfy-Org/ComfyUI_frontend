@@ -9,11 +9,11 @@ import type {
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import {
+  CLOUD_REMOTE_CONFIG,
   DEFAULT_TEAM_MEMBERS,
   TEAM_BILLING_STATUS,
   TEAM_PRO_PLAN,
-  TEAM_WORKSPACE,
-  WORKSPACE_FEATURE_FLAG
+  TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
@@ -71,7 +71,7 @@ export class CloudWorkspaceMockHelper {
     const { page } = this
 
     await page.route('**/api/features', (r) =>
-      r.fulfill(jsonRoute(WORKSPACE_FEATURE_FLAG))
+      r.fulfill(jsonRoute(CLOUD_REMOTE_CONFIG))
     )
     await page.route('**/api/system_stats', (r) =>
       r.fulfill(jsonRoute(mockSystemStats))

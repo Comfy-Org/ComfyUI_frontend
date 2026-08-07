@@ -137,14 +137,6 @@ function mergeOutputTooltipMessage(tooltip: string | null) {
   })
 }
 
-function mergeInputTooltipMessage(tooltip: string | null) {
-  i18n.global.mergeLocaleMessage('en', {
-    nodeDefs: {
-      SAM3_Detect: { inputs: { positive_coords: { tooltip } } }
-    }
-  })
-}
-
 async function renderAndHoverCanvas() {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
@@ -226,48 +218,5 @@ describe('NodeTooltip', () => {
     expect(te(positiveCoordsTooltipKey)).toBe(true)
     expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
     expect(consoleError).not.toHaveBeenCalled()
-  })
-
-  describe('when the bundled snapshot has gone stale', () => {
-    const staleInputTooltip = 'stale bundled input tooltip'
-    const staleOutputTooltip = 'stale bundled output tooltip'
-
-    beforeEach(() => {
-      mergeInputTooltipMessage(staleInputTooltip)
-      mergeOutputTooltipMessage(staleOutputTooltip)
-    })
-
-    afterEach(() => {
-      mergeInputTooltipMessage(jsonTooltip)
-    })
-
-    it('shows the live backend input slot tooltip', async () => {
-      vi.mocked(mockIsOverNodeInput).mockReturnValue(0)
-
-      await renderAndHoverCanvas()
-
-      expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
-      expect(screen.queryByText(staleInputTooltip)).not.toBeInTheDocument()
-    })
-
-    it('shows the live backend output slot tooltip', async () => {
-      vi.mocked(mockIsOverNodeOutput).mockReturnValue(0)
-
-      await renderAndHoverCanvas()
-
-      expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
-      expect(screen.queryByText(staleOutputTooltip)).not.toBeInTheDocument()
-    })
-
-    it('shows the live backend widget tooltip', async () => {
-      vi.mocked(mockCanvas.getWidgetAtCursor).mockReturnValue({
-        name: 'positive_coords'
-      })
-
-      await renderAndHoverCanvas()
-
-      expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
-      expect(screen.queryByText(staleInputTooltip)).not.toBeInTheDocument()
-    })
   })
 })

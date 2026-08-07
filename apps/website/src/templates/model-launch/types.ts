@@ -9,6 +9,11 @@ import type { LocalizedText, TranslationKey } from '../../i18n/translations'
 // add the `<model>.*` translation keys it points at, and add two page stubs
 // (`pages/<model>.astro` + `pages/zh-CN/<model>.astro`) that hand the config to
 // ModelLaunchPage.astro. No new components should be needed.
+//
+// An announcement page for a model that has not shipped is the same config with
+// less in it: give the hero `layout: 'overlay'` and a `placeholderImageSrc`,
+// omit gallery/pricing/faq/closingCta, and swap in the full config on launch
+// day. `src/data/seedance.ts` is the worked example.
 
 interface ModelLaunchCta {
   labelKey: TranslationKey
@@ -21,6 +26,10 @@ export interface ModelLaunchHero {
   // Still stand-in for the hero frame, for pages announcing a model whose
   // launch footage does not exist yet. Ignored once videoSrc is set.
   placeholderImageSrc?: string
+  // 'overlay' centres the eyebrow, heading and CTAs on top of the media behind
+  // a scrim, which is how the announcement pages are designed. Launch pages
+  // keep 'stacked', where the media sits above the text.
+  layout?: 'stacked' | 'overlay'
   // Small label above the heading, e.g. NEW.
   eyebrowKey?: TranslationKey
   // Brand mark drawn as a CSS mask over the top-right corner of the video.

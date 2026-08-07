@@ -18,7 +18,6 @@ export const APP_URL =
 // billing surfaces the cloud specs assert; without it they fall back to the
 // legacy variants.
 const DEFAULT_FEATURES = {
-  team_workspaces_enabled: true,
   consolidated_billing_enabled: true
 } satisfies RemoteConfig
 

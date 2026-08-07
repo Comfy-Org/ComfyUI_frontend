@@ -230,6 +230,7 @@ export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
+    allowedHosts: process.env.AMP_ORB ? true : undefined,
     watch: {
       ignored: [
         './browser_tests/**',

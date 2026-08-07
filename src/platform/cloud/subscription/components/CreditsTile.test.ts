@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
-import type { CurrentTeamCreditStop } from '@/platform/workspace/api/workspaceApi'
+import type { TeamCreditStopSummary } from '@/platform/workspace/api/workspaceApi'
 
 type Balance = Pick<
   BalanceInfo,
@@ -15,13 +15,15 @@ type Balance = Pick<
 type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
 }
-type TeamStop = CurrentTeamCreditStop
+type TeamStop = TeamCreditStopSummary
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
   subscription: null as Subscription | null,
   canAccessSubscriptionFeatures: false,
   isFreeTier: false,
+  isTeamPlan: false,
+  tier: null as SubscriptionInfo['tier'],
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   canTopUp: true,
@@ -58,6 +60,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
       () => state.canAccessSubscriptionFeatures
     ),
     isFreeTier: computed(() => state.isFreeTier),
+    isTeamPlan: computed(() => state.isTeamPlan),
+    tier: computed(() => state.tier),
     currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     isLoading: computed(() => state.isLoading),
     type: computed(() => state.type),
@@ -155,6 +159,7 @@ function renderTile(props: Record<string, unknown> = {}) {
 
 function activeProSubscription() {
   state.canAccessSubscriptionFeatures = true
+  state.tier = 'PRO'
   state.subscription = {
     tier: 'PRO',
     duration: 'MONTHLY',
@@ -174,6 +179,8 @@ describe('CreditsTile', () => {
     state.subscription = null
     state.canAccessSubscriptionFeatures = false
     state.isFreeTier = false
+    state.isTeamPlan = false
+    state.tier = null
     state.currentTeamCreditStop = null
     state.isLoading = false
     state.canTopUp = true
@@ -392,7 +399,7 @@ describe('CreditsTile', () => {
 
   it('offers the upgrade path instead of add-credits on the free tier', async () => {
     activeProSubscription()
-    state.isFreeTier = true
+    state.tier = 'FREE'
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))
@@ -402,7 +409,7 @@ describe('CreditsTile', () => {
   it('keeps offering add-credits on the free tier for non-cloud distributions', () => {
     mockIsCloud.value = false
     activeProSubscription()
-    state.isFreeTier = true
+    state.tier = 'FREE'
     renderTile()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
     expect(screen.getByText('Add credits')).toBeInTheDocument()

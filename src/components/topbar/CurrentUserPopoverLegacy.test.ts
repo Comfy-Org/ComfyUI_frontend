@@ -338,6 +338,18 @@ describe('CurrentUserPopoverLegacy', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  it('offers plan management on cloud', async () => {
+    const { user, onClose } = renderComponent()
+
+    const menuItem = screen.getByTestId('manage-plan-menu-item')
+    expect(menuItem).toHaveTextContent(enMessages.subscription.managePlan)
+
+    await user.click(menuItem)
+
+    expect(mockShowSettingsDialog).toHaveBeenCalledWith('subscription')
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   describe('facade balance handling', () => {
     it('uses effectiveBalanceMicros when present (positive balance)', () => {
       mockBalance.value = {
@@ -497,9 +509,17 @@ describe('CurrentUserPopoverLegacy', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('still shows manage plan menu item', () => {
-      renderComponent()
-      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+    it('offers credits and opens the credits panel', async () => {
+      const { user, onClose } = renderComponent()
+
+      const menuItem = screen.getByTestId('manage-plan-menu-item')
+      expect(menuItem).toHaveTextContent(enMessages.credits.credits)
+      expect(menuItem).not.toHaveTextContent(enMessages.subscription.managePlan)
+
+      await user.click(menuItem)
+
+      expect(mockShowSettingsDialog).toHaveBeenCalledWith('credits')
+      expect(onClose).toHaveBeenCalledTimes(1)
     })
 
     it('still shows user settings menu item', () => {
