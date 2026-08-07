@@ -1,6 +1,7 @@
 import { useRoute, useRouter } from 'vue-router'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
@@ -28,6 +29,7 @@ export function useTopUpUrlLoader() {
   const router = useRouter()
   const dialogService = useDialogService()
   const billingContext = useBillingContext()
+  const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
 
@@ -73,13 +75,10 @@ export function useTopUpUrlLoader() {
     // all overlaps with the swallowed-failure case guarded here.
     if (!billingContext.subscription.value) return
 
-    // Emit deep_link only for opens of the real top-up dialog, matching the
-    // other sources whose buttons render only for active paid users. This is
-    // the negation of the paywall gate in showTopUpCreditsDialog
-    // (dialogService.ts); keep the two in sync.
+    // Emit deep_link only for opens of the real top-up dialog, not for opens
+    // that divert to the paywall.
     const willOpenTopUpMode =
-      billingContext.isActiveSubscription.value &&
-      !billingContext.isFreeTier.value
+      billingPolicyCapabilities.value.topUpAccess === 'allowed'
     if (willOpenTopUpMode) {
       telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
     }
