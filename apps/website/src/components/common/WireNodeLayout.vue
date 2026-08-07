@@ -328,25 +328,33 @@ onMounted(() => {
     </template>
     <div
       v-else
-      class="flex items-center justify-between gap-3 rounded-[40px] border border-white/10 bg-white/5 px-8 py-7"
+      class="relative rounded-[40px] border border-white/10 bg-white/5 px-8 py-7"
     >
       <span class="text-2xl font-light text-primary-warm-white">
         {{ t(labelKey, locale) }}
       </span>
       <span
-        ref="mobileIfYouDotRef"
-        class="bg-primary-comfy-yellow size-3 shrink-0 rounded-full"
+        class="bg-primary-comfy-yellow absolute bottom-0 left-1/2 z-20 size-3 -translate-x-1/2 translate-y-1/2 rounded-full"
       />
     </div>
+
+    <span
+      v-if="variant === 'node'"
+      class="bg-primary-comfy-yellow mx-auto block h-12 w-px"
+    />
 
     <div
       :class="
         cn(
-          'relative mt-12 border border-white/10 bg-white/5 p-8',
-          variant === 'node' ? 'rounded-[40px]' : 'rounded-3xl'
+          'relative border border-white/10 bg-white/5 p-8',
+          variant === 'node' ? 'rounded-[40px]' : 'mt-12 rounded-3xl'
         )
       "
     >
+      <span
+        v-if="variant === 'node'"
+        class="bg-primary-comfy-yellow absolute top-0 left-1/2 z-20 size-3 -translate-1/2 rounded-full"
+      />
       <span
         v-if="hasMobileRightCard"
         ref="mobileOutputDotRef"
@@ -356,12 +364,22 @@ onMounted(() => {
         <div
           v-for="reason in reasons"
           :key="reason"
-          class="flex items-start justify-between gap-4"
+          :class="
+            cn(
+              'flex items-start',
+              variant === 'node' ? 'gap-3' : 'justify-between gap-4'
+            )
+          "
         >
+          <span
+            v-if="variant === 'node'"
+            class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
+          />
           <p class="text-base text-primary-comfy-canvas">
             {{ t(reason, locale) }}
           </p>
           <span
+            v-if="variant === 'split'"
             :ref="mobileReasonDots.set"
             class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
           />
