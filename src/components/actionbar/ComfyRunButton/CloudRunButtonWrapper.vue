@@ -8,7 +8,7 @@
 </template>
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -34,18 +34,39 @@ const dialogService = useDialogService()
 const dialogStore = useDialogStore()
 const { toastErrorHandler } = useErrorHandling()
 const isUpdatingPayment = ref(false)
-let paymentPortalRequest: Promise<void> | null = null
+let recoverySession = 0
+let paymentPortalRequest: {
+  session: number
+  controller: AbortController
+  promise: Promise<void>
+} | null = null
 let isUnmounted = false
 let refreshBillingOnFocus = false
+let billingRefreshController: AbortController | null = null
 
 onUnmounted(() => {
   isUnmounted = true
+  recoverySession++
+  paymentPortalRequest?.controller.abort()
+  paymentPortalRequest = null
+  billingRefreshController?.abort()
+  closePaymentRecoveryDialog()
 })
 
 useEventListener(window, 'focus', () => {
-  if (!refreshBillingOnFocus) return
+  if (!refreshBillingOnFocus || !flags.v1PaymentRecovery) return
   refreshBillingOnFocus = false
-  void Promise.allSettled([fetchStatus(), fetchBalance()])
+  billingRefreshController?.abort()
+  const controller = new AbortController()
+  billingRefreshController = controller
+  void Promise.allSettled([
+    fetchStatus(controller.signal),
+    fetchBalance(controller.signal)
+  ]).finally(() => {
+    if (billingRefreshController === controller) {
+      billingRefreshController = null
+    }
+  })
 })
 
 const paymentRecoveryLock = computed<'owner' | 'member' | null>(() =>
@@ -60,27 +81,73 @@ function closePaymentRecoveryDialog() {
   dialogStore.closeDialog({ key: DIALOG_KEY })
 }
 
-function updatePayment(): Promise<void> {
-  if (paymentPortalRequest) return paymentPortalRequest
+watch(paymentRecoveryLock, (lock, previousLock) => {
+  if (!previousLock || lock === previousLock) return
 
-  paymentPortalRequest = (async () => {
+  recoverySession++
+  isUpdatingPayment.value = false
+  refreshBillingOnFocus = false
+  paymentPortalRequest?.controller.abort()
+  paymentPortalRequest = null
+  closePaymentRecoveryDialog()
+})
+
+watch(
+  () => flags.v1PaymentRecovery,
+  (enabled) => {
+    if (enabled) return
+    billingRefreshController?.abort()
+    billingRefreshController = null
+  }
+)
+
+function updatePayment(session: number): Promise<void> {
+  if (
+    isUnmounted ||
+    session !== recoverySession ||
+    paymentRecoveryLock.value !== 'owner'
+  ) {
+    return Promise.resolve()
+  }
+  if (paymentPortalRequest?.session === session) {
+    return paymentPortalRequest.promise
+  }
+
+  const controller = new AbortController()
+  const request = (async () => {
     isUpdatingPayment.value = true
     dialogStore.updateDialog({
       key: DIALOG_KEY,
       contentProps: { isUpdatingPayment: true }
     })
     try {
-      await manageSubscription()
-      if (!isUnmounted) {
+      await manageSubscription(controller.signal)
+      if (
+        !isUnmounted &&
+        session === recoverySession &&
+        paymentRecoveryLock.value
+      ) {
         refreshBillingOnFocus = true
         closePaymentRecoveryDialog()
       }
     } catch (error) {
-      if (!isUnmounted) toastErrorHandler(error)
+      if (
+        !isUnmounted &&
+        session === recoverySession &&
+        paymentRecoveryLock.value
+      ) {
+        toastErrorHandler(error)
+      }
     } finally {
-      isUpdatingPayment.value = false
-      paymentPortalRequest = null
-      if (!isUnmounted) {
+      if (session === recoverySession) isUpdatingPayment.value = false
+      if (paymentPortalRequest?.session === session) {
+        paymentPortalRequest = null
+      }
+      if (
+        !isUnmounted &&
+        session === recoverySession &&
+        paymentRecoveryLock.value
+      ) {
         dialogStore.updateDialog({
           key: DIALOG_KEY,
           contentProps: { isUpdatingPayment: false }
@@ -89,18 +156,23 @@ function updatePayment(): Promise<void> {
     }
   })()
 
-  return paymentPortalRequest
+  paymentPortalRequest = { session, controller, promise: request }
+  return request
 }
 
 function showPaymentRecoveryDialog() {
+  if (!paymentRecoveryLock.value) return
+  const session = recoverySession
   dialogService.showLayoutDialog({
     key: DIALOG_KEY,
     component: SubscriptionPausedDialog,
     props: {
       canManage: paymentRecoveryLock.value === 'owner',
       isUpdatingPayment: isUpdatingPayment.value,
-      onClose: closePaymentRecoveryDialog,
-      onUpdatePayment: updatePayment
+      onClose: () => {
+        if (session === recoverySession) closePaymentRecoveryDialog()
+      },
+      onUpdatePayment: () => updatePayment(session)
     },
     dialogComponentProps: {
       renderer: 'reka',

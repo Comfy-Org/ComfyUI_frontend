@@ -146,10 +146,16 @@ const stubs = {
 }
 
 function renderQueueButton(
-  props: { paymentRecoveryLock?: 'owner' | 'member' } = {}
+  props: { paymentRecoveryLock?: 'owner' | 'member' | null } = {},
+  initialQueueMode: 'disabled' | 'change' = 'disabled'
 ) {
   const pinia = createTestingPinia({
     createSpy: vi.fn,
+    initialState: {
+      queueSettingsStore: {
+        mode: initialQueueMode
+      }
+    },
     stubActions: (actionName) => actionName !== 'recordPromptError'
   })
   const user = userEvent.setup()
@@ -187,8 +193,10 @@ describe('ComfyQueueButton', () => {
   ] as const)(
     'keeps the queue group mounted for a paused $paymentRecoveryLock and blocks execution',
     async ({ paymentRecoveryLock, label, variant }) => {
-      useQueueSettingsStore().mode = 'change'
-      const { user, emitted } = renderQueueButton({ paymentRecoveryLock })
+      const { user, emitted } = renderQueueButton(
+        { paymentRecoveryLock },
+        'change'
+      )
       const commandStore = useCommandStore()
 
       expect(screen.getByTestId('batch-count-edit')).toBeInTheDocument()
@@ -204,6 +212,30 @@ describe('ComfyQueueButton', () => {
       expect(emitted()).toHaveProperty('paymentRecoveryClick')
     }
   )
+
+  it('restores the previous queue mode when the recovery lock clears', async () => {
+    const { rerender } = renderQueueButton(
+      { paymentRecoveryLock: 'owner' },
+      'change'
+    )
+
+    expect(useQueueSettingsStore().mode).toBe('disabled')
+    await rerender({ paymentRecoveryLock: null })
+
+    expect(useQueueSettingsStore().mode).toBe('change')
+  })
+
+  it('restores the previous queue mode when the recovery control unmounts', () => {
+    const { unmount } = renderQueueButton(
+      { paymentRecoveryLock: 'member' },
+      'change'
+    )
+
+    expect(useQueueSettingsStore().mode).toBe('disabled')
+    unmount()
+
+    expect(useQueueSettingsStore().mode).toBe('change')
+  })
 
   it.for(missingResourceCases)(
     'clears the warning icon when missing $label are resolved',

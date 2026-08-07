@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
@@ -9,6 +9,10 @@ import type {
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
+
+const mockV1PaymentRecovery = ref(true)
+const mockBillingStatus = ref<BillingStatus | null>('paid')
+const mockCanManageSubscription = ref(true)
 
 interface Subscription {
   hasFunds: boolean
@@ -18,10 +22,8 @@ interface Subscription {
 
 const state = vi.hoisted(() => ({
   billingControlEnabled: true,
-  v1PaymentRecovery: true,
   isActiveSubscription: true,
   isTeamPlan: true,
-  billingStatus: 'paid' as string | null,
   subscription: {
     hasFunds: true,
     isCancelled: false,
@@ -29,11 +31,10 @@ const state = vi.hoisted(() => ({
   } as Subscription | null,
   renewalDate: null as string | null,
   workspaceType: 'team' as string,
-  canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canTopUp: true,
   showTopUpCreditsDialog: vi.fn(),
-  manageSubscription: vi.fn(),
+  manageSubscription: vi.fn().mockResolvedValue(undefined),
   handleResubscribe: vi.fn()
 }))
 
@@ -46,7 +47,7 @@ vi.mock('@/composables/useFeatureFlags', () => ({
         return state.billingControlEnabled
       },
       get v1PaymentRecovery() {
-        return state.v1PaymentRecovery
+        return mockV1PaymentRecovery.value
       }
     }
   })
@@ -56,7 +57,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => state.isActiveSubscription),
     isTeamPlan: computed(() => state.isTeamPlan),
-    billingStatus: computed(() => state.billingStatus as BillingStatus | null),
+    billingStatus: computed(() => mockBillingStatus.value),
     subscription: computed(() => state.subscription),
     renewalDate: computed(() => state.renewalDate),
     manageSubscription: state.manageSubscription,
@@ -68,7 +69,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
-      canManageSubscription: state.canManageSubscription,
+      canManageSubscription: mockCanManageSubscription.value,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle,
       canTopUp: state.canTopUp
     })),
@@ -97,11 +98,23 @@ const i18n = createI18n({
       workspacePanel: {
         billingStatus: {
           warning: {
+            title: 'Payment declined',
+            body: "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
+            bodyNoDate:
+              "Your last payment didn't go through. Update payment to avoid a pause."
+          },
+          paused: {
+            title: 'Subscription paused',
+            body: "This workspace's subscription is paused. Update payment to resume.",
+            memberBody:
+              "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+          },
+          recoveryWarning: {
             title: 'Payment failed',
             bodyNoDate:
               'Your payment failed to process. Update payment to avoid a pause.'
           },
-          paused: {
+          recoveryPaused: {
             title: 'Subscription paused',
             body: "This workspace's subscription is paused. Update payment to resume.",
             memberBody:
@@ -152,26 +165,26 @@ function exhausted() {
 // The spend gate folds billing_status into is_active, so the backend never emits
 // paused alongside an active subscription.
 function pausedState() {
-  state.billingStatus = 'paused'
+  mockBillingStatus.value = 'paused'
   state.isActiveSubscription = false
 }
 
 function paymentFailedState() {
-  state.billingStatus = 'payment_failed'
+  mockBillingStatus.value = 'payment_failed'
   state.isActiveSubscription = false
 }
 
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
     state.billingControlEnabled = true
-    state.v1PaymentRecovery = true
+    mockV1PaymentRecovery.value = true
+    mockCanManageSubscription.value = true
     state.isActiveSubscription = true
     state.isTeamPlan = true
-    state.billingStatus = 'paid'
+    mockBillingStatus.value = 'paid'
     state.subscription = { hasFunds: true, isCancelled: false, endDate: null }
     state.renewalDate = null
     state.workspaceType = 'team'
-    state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canTopUp = true
     vi.clearAllMocks()
@@ -200,7 +213,7 @@ describe('BillingStatusBanner', () => {
 
   it('shows out-of-credits contact-admin copy without an Add credits action for members', () => {
     state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
-    state.canManageSubscription = false
+    mockCanManageSubscription.value = false
     state.canTopUp = false
     renderBanner()
 
@@ -252,7 +265,7 @@ describe('BillingStatusBanner', () => {
 
   it('shows the paused member notice without an action', () => {
     pausedState()
-    state.canManageSubscription = false
+    mockCanManageSubscription.value = false
     state.canTopUp = false
     renderBanner()
 
@@ -279,7 +292,7 @@ describe('BillingStatusBanner', () => {
 
   it('does not expose payment controls to members', () => {
     paymentFailedState()
-    state.canManageSubscription = false
+    mockCanManageSubscription.value = false
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
@@ -289,18 +302,124 @@ describe('BillingStatusBanner', () => {
     expect(state.manageSubscription).not.toHaveBeenCalled()
   })
 
-  it('hides payment recovery states while preserving existing notices when the new flag is off', () => {
-    state.v1PaymentRecovery = false
+  it('blocks stale payment controls immediately after permission loss', async () => {
     paymentFailedState()
-    const { unmount } = renderBanner()
+    renderBanner()
+    const updatePayment = screen.getByRole('button', {
+      name: 'Update payment'
+    })
+
+    mockCanManageSubscription.value = false
+    updatePayment.click()
+
+    expect(state.manageSubscription).not.toHaveBeenCalled()
+    await nextTick()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('restores the previous recovery banners and copy when the new flag is off', async () => {
+    mockV1PaymentRecovery.value = false
+    paymentFailedState()
+    state.renewalDate = '2026-08-01T00:00:00Z'
+    const { unmount } = renderBanner()
+    expect(screen.getByRole('status')).toHaveTextContent('Payment declined')
+    expect(screen.getByRole('status')).toHaveTextContent('will pause on')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    expect(state.manageSubscription).toHaveBeenCalledOnce()
+    expect(state.manageSubscription).toHaveBeenCalledWith()
     unmount()
 
-    state.isActiveSubscription = true
-    state.billingStatus = 'paid'
-    exhausted()
+    pausedState()
+    mockCanManageSubscription.value = false
     renderBanner()
-    expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your workspace admins need to update the payment method'
+    )
+  })
+
+  it('falls back to the no-date payment-declined copy when there is no renewal date', () => {
+    mockV1PaymentRecovery.value = false
+    paymentFailedState()
+    state.renewalDate = null
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Update payment to avoid a pause'
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent('will pause on')
+    expect(screen.getByRole('status')).not.toHaveTextContent('{date}')
+  })
+
+  it('aborts a recovery banner portal request when its flag is rolled back', async () => {
+    state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
+    pausedState()
+    renderBanner()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    const signal = state.manageSubscription.mock.calls[0][0]
+    expect(signal).toBeInstanceOf(AbortSignal)
+
+    mockV1PaymentRecovery.value = false
+    await nextTick()
+
+    expect(signal.aborted).toBe(true)
+  })
+
+  it('aborts a recovery banner portal request on unmount', async () => {
+    state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
+    pausedState()
+    const { unmount } = renderBanner()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    const signal = state.manageSubscription.mock.calls[0][0]
+    expect(signal).toBeInstanceOf(AbortSignal)
+
+    unmount()
+
+    expect(signal.aborted).toBe(true)
+  })
+
+  it('aborts a recovery portal request when the owner loses permission', async () => {
+    state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
+    pausedState()
+    renderBanner()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    const signal = state.manageSubscription.mock.calls[0][0]
+
+    mockCanManageSubscription.value = false
+    await nextTick()
+
+    expect(signal.aborted).toBe(true)
+    expect(
+      screen.queryByRole('button', { name: 'Update payment' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('aborts a recovery portal request when billing recovers', async () => {
+    state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
+    pausedState()
+    renderBanner()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    const signal = state.manageSubscription.mock.calls[0][0]
+
+    mockBillingStatus.value = 'paid'
+    state.isActiveSubscription = true
+    await nextTick()
+
+    expect(signal.aborted).toBe(true)
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('lets a promoted owner reactivate an ending plan', async () => {
@@ -326,7 +445,7 @@ describe('BillingStatusBanner', () => {
       isCancelled: true,
       endDate: '2026-08-01T00:00:00Z'
     }
-    state.canManageSubscription = false
+    mockCanManageSubscription.value = false
     state.canManageSubscriptionLifecycle = false
     renderBanner()
 

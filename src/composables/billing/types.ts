@@ -45,8 +45,8 @@ export interface BalanceInfo {
 
 export interface BillingActions {
   initialize: () => Promise<void>
-  fetchStatus: () => Promise<void>
-  fetchBalance: () => Promise<void>
+  fetchStatus: (signal?: AbortSignal) => Promise<void>
+  fetchBalance: (signal?: AbortSignal) => Promise<void>
   subscribe: (
     planSlug: string,
     options?: SubscribeOptions
@@ -55,7 +55,7 @@ export interface BillingActions {
     planSlug: string,
     options?: PreviewSubscribeOptions
   ) => Promise<PreviewSubscribeResponse | null>
-  manageSubscription: () => Promise<void>
+  manageSubscription: (signal?: AbortSignal) => Promise<void>
   cancelSubscription: () => Promise<void>
   /**
    * Reactivates a cancelled-but-still-active subscription. Legacy has no

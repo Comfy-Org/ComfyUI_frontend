@@ -120,6 +120,26 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
   // Prevent older status and balance responses from overwriting newer state.
   const latestBillingReadIds = { status: 0, balance: 0 }
+  let latestPortalRequestId = 0
+  let activeLoadingOperations = 0
+
+  function beginLoading(signal?: AbortSignal): () => void {
+    activeLoadingOperations++
+    isLoading.value = true
+    let released = false
+
+    const release = () => {
+      if (released) return
+      released = true
+      signal?.removeEventListener('abort', release)
+      activeLoadingOperations--
+      isLoading.value = activeLoadingOperations > 0
+    }
+
+    signal?.addEventListener('abort', release, { once: true })
+    if (signal?.aborted) release()
+    return release
+  }
 
   const canAccessSubscriptionFeatures = computed(
     () => statusData.value?.is_active ?? false
@@ -190,7 +210,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
 
-    isLoading.value = true
+    const releaseLoading = beginLoading()
     error.value = null
     try {
       await Promise.all([fetchStatus(), fetchBalance(), fetchPlans()])
@@ -204,18 +224,20 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         err instanceof Error ? err.message : 'Failed to initialize billing'
       throw err
     } finally {
-      isLoading.value = false
+      releaseLoading()
     }
   }
 
-  async function fetchStatus(): Promise<void> {
+  async function fetchStatus(signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
-    isLoading.value = true
+    const releaseLoading = beginLoading(signal)
     error.value = null
     try {
-      const status = await workspaceApi.getBillingStatus()
+      const status = await workspaceApi.getBillingStatus(signal)
       if (
+        signal?.aborted ||
         requestId !== latestBillingReadIds.status ||
         workspaceId !== workspaceStore.activeWorkspace?.id
       ) {
@@ -254,33 +276,47 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         )
       }
     } catch (err) {
-      if (requestId === latestBillingReadIds.status) {
+      if (signal?.aborted) return
+      if (
+        requestId === latestBillingReadIds.status &&
+        workspaceId === workspaceStore.activeWorkspace?.id
+      ) {
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch billing status'
       }
       throw err
     } finally {
-      if (requestId === latestBillingReadIds.status) isLoading.value = false
+      releaseLoading()
     }
   }
 
-  async function fetchBalance(): Promise<void> {
+  async function fetchBalance(signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return
     const requestId = ++latestBillingReadIds.balance
-    isLoading.value = true
+    const workspaceId = workspaceStore.activeWorkspace?.id
+    const releaseLoading = beginLoading(signal)
     error.value = null
     try {
-      const balance = await workspaceApi.getBillingBalance()
-      if (requestId === latestBillingReadIds.balance) {
+      const balance = await workspaceApi.getBillingBalance(signal)
+      if (
+        !signal?.aborted &&
+        requestId === latestBillingReadIds.balance &&
+        workspaceId === workspaceStore.activeWorkspace?.id
+      ) {
         balanceData.value = balance
       }
     } catch (err) {
-      if (requestId === latestBillingReadIds.balance) {
+      if (signal?.aborted) return
+      if (
+        requestId === latestBillingReadIds.balance &&
+        workspaceId === workspaceStore.activeWorkspace?.id
+      ) {
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch balance'
       }
       throw err
     } finally {
-      if (requestId === latestBillingReadIds.balance) isLoading.value = false
+      releaseLoading()
     }
   }
 
@@ -333,17 +369,17 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     planSlug: string,
     options?: SubscribeOptions
   ): Promise<SubscribeResponse> {
-    isLoading.value = true
+    const releaseLoading = beginLoading()
     error.value = null
     try {
       const response = await workspaceApi.subscribe(planSlug, options)
-      isLoading.value = false
       void reconcileBillingStateAfterSubscribe()
       return response
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to subscribe'
-      isLoading.value = false
       throw err
+    } finally {
+      releaseLoading()
     }
   }
 
@@ -351,7 +387,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     planSlug: string,
     options?: PreviewSubscribeOptions
   ): Promise<PreviewSubscribeResponse | null> {
-    isLoading.value = true
+    const releaseLoading = beginLoading()
     error.value = null
     try {
       return await workspaceApi.previewSubscribe(planSlug, options)
@@ -360,30 +396,44 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         err instanceof Error ? err.message : 'Failed to preview subscription'
       throw err
     } finally {
-      isLoading.value = false
+      releaseLoading()
     }
   }
 
-  async function manageSubscription(): Promise<void> {
-    isLoading.value = true
+  async function manageSubscription(signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return
+    const requestId = signal ? ++latestPortalRequestId : null
+    const workspaceId = signal ? workspaceStore.activeWorkspace?.id : null
+    const isCurrentRequest = () =>
+      requestId === null || requestId === latestPortalRequestId
+    const isCurrentWorkspace = () =>
+      workspaceId === null || workspaceId === workspaceStore.activeWorkspace?.id
+    const releaseLoading = beginLoading(signal)
     error.value = null
     try {
       const returnUrl = window.location.href
-      const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
-      if (response.url) {
+      const response = await workspaceApi.getPaymentPortalUrl(returnUrl, signal)
+      if (
+        !signal?.aborted &&
+        isCurrentRequest() &&
+        isCurrentWorkspace() &&
+        response.url
+      ) {
         window.open(response.url, '_blank')
       }
     } catch (err) {
+      if (signal?.aborted || !isCurrentRequest() || !isCurrentWorkspace())
+        return
       error.value =
         err instanceof Error ? err.message : 'Failed to open billing portal'
       throw err
     } finally {
-      isLoading.value = false
+      releaseLoading()
     }
   }
 
   async function cancelSubscription(): Promise<void> {
-    isLoading.value = true
+    const releaseLoading = beginLoading()
     error.value = null
     try {
       const response = await workspaceApi.cancelSubscription()
@@ -409,12 +459,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         err instanceof Error ? err.message : 'Failed to cancel subscription'
       throw err
     } finally {
-      isLoading.value = false
+      releaseLoading()
     }
   }
 
   async function resubscribe(): Promise<void> {
-    isLoading.value = true
+    const releaseLoading = beginLoading()
     error.value = null
     try {
       const response = await workspaceApi.resubscribe()
@@ -449,12 +499,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       error.value = err instanceof Error ? err.message : 'Failed to resubscribe'
       throw err
     } finally {
-      isLoading.value = false
+      releaseLoading()
     }
   }
 
   async function topup(amountCents: number): Promise<CreateTopupResponse> {
-    isLoading.value = true
+    const releaseLoading = beginLoading()
     error.value = null
     try {
       return await workspaceApi.createTopup(amountCents)
@@ -463,12 +513,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         err instanceof Error ? err.message : 'Failed to top up credits'
       throw err
     } finally {
-      isLoading.value = false
+      releaseLoading()
     }
   }
 
   async function fetchPlans(): Promise<void> {
-    isLoading.value = true
+    const releaseLoading = beginLoading()
     error.value = null
     try {
       await billingPlans.fetchPlans()
@@ -476,7 +526,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         error.value = billingPlans.error.value
       }
     } finally {
-      isLoading.value = false
+      releaseLoading()
     }
   }
 

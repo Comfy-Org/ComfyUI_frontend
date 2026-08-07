@@ -418,12 +418,12 @@ export const workspaceApi = {
    * Get billing status for the current workspace
    * GET /api/billing/status
    */
-  async getBillingStatus(): Promise<BillingStatusResponse> {
+  async getBillingStatus(signal?: AbortSignal): Promise<BillingStatusResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingStatusResponse>(
         api.apiURL('/billing/status'),
-        { headers }
+        { headers, ...(signal ? { signal } : {}) }
       )
       return {
         ...response.data,
@@ -439,12 +439,14 @@ export const workspaceApi = {
    * Get credit balance for the current workspace
    * GET /api/billing/balance
    */
-  async getBillingBalance(): Promise<BillingBalanceResponse> {
+  async getBillingBalance(
+    signal?: AbortSignal
+  ): Promise<BillingBalanceResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingBalanceResponse>(
         api.apiURL('/billing/balance'),
-        { headers }
+        { headers, ...(signal ? { signal } : {}) }
       )
       return response.data
     } catch (err) {
@@ -582,14 +584,15 @@ export const workspaceApi = {
    * POST /api/billing/payment-portal
    */
   async getPaymentPortalUrl(
-    returnUrl?: string
+    returnUrl?: string,
+    signal?: AbortSignal
   ): Promise<PaymentPortalResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PaymentPortalResponse>(
         api.apiURL('/billing/payment-portal'),
         { return_url: returnUrl } satisfies PaymentPortalRequest,
-        { headers }
+        { headers, ...(signal ? { signal } : {}) }
       )
       return response.data
     } catch (err) {
