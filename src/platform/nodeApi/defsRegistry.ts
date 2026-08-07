@@ -496,6 +496,7 @@ export function createDefRegistry(): {
 
     applyTo(nodeType: { prototype: Partial<LGraphNode> }, raw: unknown) {
       let def = toNodeDef(raw as RawNodeDef)
+      const original = def
       known.set(def.type, def)
 
       type Bound<TArgs extends unknown[]> = {
@@ -570,6 +571,16 @@ export function createDefRegistry(): {
 
       if (!applied) return
       known.set(def.type, def)
+
+      // Write the definition back to the raw def, which is what the caller
+      // actually registers from. `setTitle`/`setCategory` used to update only
+      // the mirror above: the host builds its node class from `raw` *after*
+      // this returns and assigns `node.title` from it, so a pack renaming a
+      // type saw nothing happen. The legacy hook this replaces modifies the
+      // same object in place, so doing likewise keeps one contract, not two.
+      const rawDef = raw as RawNodeDef
+      if (def.title !== original.title) rawDef.display_name = def.title
+      if (def.category !== original.category) rawDef.category = def.category
 
       // Callbacks compose: each is invoked in registration order, and none can
       // suppress another by forgetting to chain.

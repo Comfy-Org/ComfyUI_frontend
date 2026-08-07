@@ -510,3 +510,55 @@ describe('connection veto and menu items', () => {
     expect(seen).toEqual([String(node.id)])
   })
 })
+
+describe('renaming a definition', () => {
+  // setTitle/setCategory used to update only the registry's own mirror. The
+  // host builds its node class from the raw def *after* applyTo returns and
+  // assigns node.title from it, so a pack renaming a type saw nothing happen.
+  // The translation pack (191K installs) is entirely this.
+  it('writes the title back to the raw def the host registers from', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    defs.extend('KSampler', (b) => b.setTitle('Sampler (translated)'))
+
+    const raw: Record<string, unknown> = {
+      name: 'KSampler',
+      display_name: 'KSampler',
+      category: 'sampling'
+    }
+    registry.applyTo({ prototype: {} }, raw)
+
+    expect(raw.display_name).toBe('Sampler (translated)')
+  })
+
+  it('writes the category back too', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    defs.extend('KSampler', (b) => b.setCategory('translated/sampling'))
+
+    const raw: Record<string, unknown> = {
+      name: 'KSampler',
+      display_name: 'KSampler',
+      category: 'sampling'
+    }
+    registry.applyTo({ prototype: {} }, raw)
+
+    expect(raw.category).toBe('translated/sampling')
+  })
+
+  it('leaves the raw def alone when nothing renamed it', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    defs.extend('KSampler', (b) => b.onCreated(() => {}))
+
+    const raw: Record<string, unknown> = {
+      name: 'KSampler',
+      display_name: 'KSampler',
+      category: 'sampling'
+    }
+    registry.applyTo({ prototype: {} }, raw)
+
+    expect(raw.display_name).toBe('KSampler')
+    expect(raw.category).toBe('sampling')
+  })
+})
