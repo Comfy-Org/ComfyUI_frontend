@@ -57,7 +57,14 @@
             class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-smoke-800 group-hover:hidden"
           />
           <Button
-            class="close-button invisible size-4 rounded-none p-0 text-smoke-800 group-hover:visible hover:bg-transparent"
+            :class="
+              cn(
+                'close-button size-4 rounded-none p-0 text-smoke-800 hover:bg-transparent',
+                isActiveTab && !hasTabStateMarker
+                  ? 'visible'
+                  : 'invisible group-hover:visible'
+              )
+            "
             variant="muted-textonly"
             size="unset"
             :aria-label="t('g.close')"
@@ -227,6 +234,14 @@ const showUnseenAgentDot = computed(
   () =>
     tabActivity.unseenModifiedPaths.has(props.workflowOption.workflow.path) &&
     workflowStatus.value !== 'failed'
+)
+
+const hasTabStateMarker = computed(
+  () =>
+    isAgentEditing.value ||
+    showUnseenAgentDot.value ||
+    workflowStatus.value !== undefined ||
+    shouldShowUnsavedIndicator.value
 )
 
 const workflowStatusLabel = computed(() =>
