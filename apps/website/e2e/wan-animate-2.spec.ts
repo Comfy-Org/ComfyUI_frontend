@@ -149,7 +149,6 @@ test.describe('Wan Animate 2 announcement page — mobile @mobile', () => {
       })
       .getByRole('link', { name: HERO_CTA })
 
-    await cta.scrollIntoViewIfNeeded()
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute('href', externalLinks.cloud)
 
@@ -159,8 +158,10 @@ test.describe('Wan Animate 2 announcement page — mobile @mobile', () => {
       throw new Error('hero CTA has no layout box to measure')
     }
 
-    // toBeVisible() does not imply the element sits inside the viewport, so
-    // check all four edges. One pixel of tolerance for subpixel rounding.
+    // Measured without scrolling first: the point is that the CTA is reachable
+    // on load, so scrolling it into view would make the vertical bounds pass no
+    // matter how far down the page it sat. One pixel of tolerance for subpixel
+    // rounding.
     expect(box.x).toBeGreaterThanOrEqual(-1)
     expect(box.y).toBeGreaterThanOrEqual(-1)
     expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1)
