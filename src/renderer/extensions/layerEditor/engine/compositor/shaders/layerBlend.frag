@@ -18,10 +18,6 @@ out vec4 fragColor;
 
 const float EPS = 1e-6;
 
-float safeDiv(float a, float b) {
-  return abs(a) <= EPS ? 0.0 : clamp(a / b, -1e6, 1e6);
-}
-
 float srgbToLinear(float c) {
   return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4);
 }
@@ -114,7 +110,9 @@ vec3 blendColor(vec3 i, vec3 l) {
   return l * ratio + offset;
 }
 vec3 blendLuminosity(vec3 i, vec3 l) {
-  return i * safeDiv(luminance(l), luminance(i));
+  float li = luminance(i);
+  if (li <= EPS) return vec3(luminance(l));
+  return i * (luminance(l) / li);
 }
 
 vec3 blendPixel(int mode, vec3 i, vec3 l) {
