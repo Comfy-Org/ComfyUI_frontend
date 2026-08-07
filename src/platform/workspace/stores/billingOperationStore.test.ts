@@ -753,6 +753,43 @@ describe('billingOperationStore', () => {
       )
     })
 
+    it('returns to processing when the action URL clears while still pending', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-1',
+          status: 'pending',
+          started_at: new Date().toISOString(),
+          action_url: 'https://verify.example/sensitive-token'
+        })
+        .mockResolvedValue({
+          id: 'op-1',
+          status: 'pending',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      const actionRequiredToast = {
+        severity: 'warn',
+        summary: 'billingOperation.subscriptionActionRequired',
+        group: 'billing-operation'
+      }
+      expect(mockToastAdd).toHaveBeenCalledWith(actionRequiredToast)
+
+      // The verification action is gone, so the prompt pointing at it must go
+      // too rather than asking for something the customer can no longer do.
+      await vi.advanceTimersByTimeAsync(30_000)
+
+      expect(mockToastRemove).toHaveBeenCalledWith(actionRequiredToast)
+      expect(mockToastAdd).toHaveBeenLastCalledWith({
+        severity: 'info',
+        summary: 'billingOperation.subscriptionProcessing',
+        group: 'billing-operation'
+      })
+    })
+
     it('does not re-announce verification on later polls', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',

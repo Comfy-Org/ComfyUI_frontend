@@ -182,7 +182,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
     if (type !== 'cancel') {
-      showProgressToast(opId, type, operation.authenticationRequiredSeen)
+      showProgressToast(opId, type, operation.actionUrl !== null)
     }
 
     const terminal = new Promise<BillingOperation>((resolve) => {
@@ -282,22 +282,20 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
-    const authenticationRequiredSeen =
-      operation.authenticationRequiredSeen || actionUrl !== null
     operations.value = new Map(operations.value).set(opId, {
       ...operation,
       actionUrl,
-      authenticationRequiredSeen
+      authenticationRequiredSeen:
+        operation.authenticationRequiredSeen || actionUrl !== null
     })
-    // Only on the first transition: the toast is otherwise stable for the life
-    // of the operation, and re-adding it on every poll would resurface a
-    // notification the customer has already dismissed.
-    if (
-      operation.type !== 'cancel' &&
-      authenticationRequiredSeen &&
-      !operation.authenticationRequiredSeen
-    ) {
-      showProgressToast(opId, operation.type, true)
+    // Tracks the CURRENT action_url, which the contract defines as present
+    // exactly while the operation cannot proceed without the customer — so the
+    // toast never outlives the verification action it points at. Swapped only
+    // when that answer changes, or a dismissed toast would return every poll.
+    const wasActionRequired = operation.actionUrl !== null
+    const isActionRequired = actionUrl !== null
+    if (operation.type !== 'cancel' && wasActionRequired !== isActionRequired) {
+      showProgressToast(opId, operation.type, isActionRequired)
     }
   }
 
