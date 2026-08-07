@@ -109,10 +109,8 @@ export const TestIds = {
     workflowTabs: 'topbar-workflow-tabs',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
-    actionBarCard: 'action-bar-card',
-    freeTierQuota: 'free-tier-quota',
-    queueInlineProgress: 'queue-inline-progress',
-    queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
+    actionBars: 'top-menu-actionbars',
+    freeTierQuota: 'free-tier-quota'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'

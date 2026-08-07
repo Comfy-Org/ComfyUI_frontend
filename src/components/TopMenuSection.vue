@@ -21,11 +21,12 @@
 
       <div class="mx-1 flex flex-col items-end gap-1">
         <div
+          data-testid="top-menu-actionbars"
           :inert="isActionBarsHidden"
           :aria-hidden="isActionBarsHidden"
           :class="
             cn(
-              'flex max-h-12 items-start gap-2 overflow-hidden transition-all duration-300 ease-in-out',
+              'flex max-h-24 items-start gap-2 overflow-hidden transition-all duration-300 ease-in-out',
               isActionBarsHidden && 'max-h-0 translate-x-8 opacity-0'
             )
           "
