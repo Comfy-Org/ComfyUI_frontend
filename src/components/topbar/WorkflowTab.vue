@@ -19,7 +19,7 @@
         <span
           :class="
             cn(
-              'workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal',
+              'workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal group-hover:text-base-foreground',
               isActiveTab ? 'text-base-foreground' : 'text-smoke-800'
             )
           "
@@ -54,17 +54,15 @@
           <span
             v-else-if="shouldShowUnsavedIndicator"
             data-testid="workflow-dirty-indicator"
-            class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-smoke-800 group-hover:hidden"
-          />
-          <Button
             :class="
               cn(
-                'close-button size-4 rounded-none p-0 text-smoke-800 hover:bg-transparent',
-                isActiveTab && !hasTabStateMarker
-                  ? 'visible'
-                  : 'invisible group-hover:visible'
+                'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-hover:hidden',
+                isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
               )
             "
+          />
+          <Button
+            class="close-button invisible size-4 rounded-none p-0 text-smoke-800 group-hover:visible"
             variant="muted-textonly"
             size="unset"
             :aria-label="t('g.close')"
@@ -234,14 +232,6 @@ const showUnseenAgentDot = computed(
   () =>
     tabActivity.unseenModifiedPaths.has(props.workflowOption.workflow.path) &&
     workflowStatus.value !== 'failed'
-)
-
-const hasTabStateMarker = computed(
-  () =>
-    isAgentEditing.value ||
-    showUnseenAgentDot.value ||
-    workflowStatus.value !== undefined ||
-    shouldShowUnsavedIndicator.value
 )
 
 const workflowStatusLabel = computed(() =>
