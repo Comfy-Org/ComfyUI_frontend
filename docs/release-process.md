@@ -89,6 +89,24 @@ unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
 never left unowned, but **exits non-zero** so the degradation is visible. A
 green run means a real sheriff was resolved from Datadog.
 
+A failed run also posts to **#frontend-releases** with the reason, because a
+failing scheduled workflow otherwise only notifies whoever last pushed to
+`main` — in practice nobody, which is how the placeholder config survived for
+weeks. Needs the `SLACK_BOT_TOKEN` secret; the post is `continue-on-error`, so
+Slack being down never masks the underlying result.
+
+It alerts on the **transition** into failure, not on every failing run: the job
+runs hourly, so a lasting breakage would otherwise post around the clock until
+someone fixed it, and a channel that cries wolf gets muted.
+
+The check walks recent **scheduled** runs and reads the conclusion of the
+`Assign release sheriff` **step**, not of the run. A run that died in checkout
+failed without ever reaching the sheriff, and treating that as "already
+alerted" would swallow the next real failure. Scheduled runs are used because
+the `pull_request_target` gate skips most other runs, so they are the ones
+dense in runs that decided anything. If the check itself cannot run it fails
+open and alerts, since a duplicate beats a silence.
+
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,
