@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -158,10 +158,6 @@ describe('Load3d', () => {
 
   beforeEach(() => {
     ctx = makeInstance()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('gizmo delegation', () => {

@@ -8,11 +8,11 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
 
 const mockAuthStore = vi.hoisted(() => ({
-  login: vi.fn().mockResolvedValue(undefined),
-  loginWithGoogle: vi.fn().mockResolvedValue(undefined),
-  loginWithGithub: vi.fn().mockResolvedValue(undefined),
-  register: vi.fn().mockResolvedValue(undefined),
-  logout: vi.fn().mockResolvedValue(undefined)
+  login: vi.fn(async () => undefined),
+  loginWithGoogle: vi.fn(async () => undefined),
+  loginWithGithub: vi.fn(async () => undefined),
+  register: vi.fn(async () => undefined),
+  logout: vi.fn(async () => undefined)
 }))
 
 const mockToastStore = vi.hoisted(() => ({
@@ -24,7 +24,7 @@ const mockWorkflowStore = vi.hoisted(() => ({
 }))
 
 const mockWorkflowService = vi.hoisted(() => ({
-  saveWorkflow: vi.fn().mockResolvedValue(true)
+  saveWorkflow: vi.fn(async () => true)
 }))
 
 const mockDialogService = vi.hoisted(() => ({
@@ -125,7 +125,6 @@ beforeEach(() => {
 describe('useAuthActions.logout', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockDistributionState.isCloud = true
     mockWorkflowStore.modifiedWorkflows = []
   })
@@ -284,7 +283,6 @@ describe('useAuthActions.logout', () => {
 describe('useAuthActions auth flow error telemetry', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockWorkflowStore.modifiedWorkflows = []
   })
 
@@ -363,7 +361,6 @@ describe('useAuthActions auth flow error telemetry', () => {
 describe('useAuthActions.reportError', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
   })
 
   it('shows the friendly message for a known Firebase auth code', () => {

@@ -174,7 +174,7 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    vi.resetAllMocks()
+    vi.stubGlobal('fetch', mockFetch)
     sessionStorage.clear()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 

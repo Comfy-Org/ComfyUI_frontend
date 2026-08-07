@@ -39,7 +39,6 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 describe('useAssetBrowser', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.restoreAllMocks()
     mockSupportsModelTypeTags.value = false
   })
 

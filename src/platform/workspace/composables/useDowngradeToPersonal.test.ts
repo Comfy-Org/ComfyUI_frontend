@@ -113,7 +113,6 @@ describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.resetAllMocks()
     mockMembers.value = []
     mockUserEmail.value = null
     // Once loaded (isInitialized true), subscription is never null in

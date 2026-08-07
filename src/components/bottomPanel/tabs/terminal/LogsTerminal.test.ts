@@ -100,7 +100,6 @@ const deferredRawLogs = () => {
 
 describe('LogsTerminal', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     apiMock.clientId = 'test-client'
   })
 

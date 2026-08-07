@@ -172,7 +172,6 @@ describe('useSubscription', () => {
     scope = effectScope()
     setDistribution('cloud')
 
-    vi.clearAllMocks()
     mockLocalStorage.__reset()
     mockIsLoggedIn.value = false
     mockTelemetry.trackSubscription.mockReset()

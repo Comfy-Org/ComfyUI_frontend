@@ -160,6 +160,7 @@ const {
   mockUserId,
   mockIsTeamPlan,
   mockShouldUseWorkspaceBilling,
+  mockSetActiveWorkspaceIdImpl,
   mockSetActiveWorkspaceId,
   mockPermissions,
   mockSubscription
@@ -192,7 +193,14 @@ const {
   mockUserId: { value: 'user-1' as string | null },
   mockIsTeamPlan: { value: false },
   mockShouldUseWorkspaceBilling: { value: true },
-  mockSetActiveWorkspaceId: vi.fn<(workspaceId: string) => void>(),
+  mockSetActiveWorkspaceIdImpl: {
+    value: undefined as ((workspaceId: string) => void) | undefined
+  },
+  mockSetActiveWorkspaceId: vi.fn<(workspaceId: string) => void>(
+    (workspaceId) => {
+      mockSetActiveWorkspaceIdImpl.value?.(workspaceId)
+    }
+  ),
   mockPermissions: {
     value: {
       canManageSubscription: true,
@@ -263,9 +271,9 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
   const { ref } = await import('vue')
   const activeWorkspaceId = ref('workspace-1')
-  mockSetActiveWorkspaceId.mockImplementation((workspaceId) => {
+  mockSetActiveWorkspaceIdImpl.value = (workspaceId) => {
     activeWorkspaceId.value = workspaceId
-  })
+  }
   return {
     useTeamWorkspaceStore: () => ({
       get activeWorkspaceId() {
@@ -338,7 +346,6 @@ describe('useSubscriptionCheckout', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
     mockFetchPlans.mockResolvedValue(undefined)

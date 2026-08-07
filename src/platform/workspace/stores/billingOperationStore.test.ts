@@ -82,7 +82,6 @@ import { useBillingOperationStore } from './billingOperationStore'
 describe('billingOperationStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     vi.useFakeTimers()
     mockActiveWorkspaceId.value = 'workspace-1'
   })

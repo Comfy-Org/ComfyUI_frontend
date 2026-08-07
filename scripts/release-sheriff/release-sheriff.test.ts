@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { PullRequestSummary } from './release-sheriff'
 import {
@@ -104,10 +104,6 @@ describe('CONFIG', () => {
 describe('fetchOnCallEmails', () => {
   const datadog = { datadogSite: 'datadoghq.com', scheduleId: 'sched-1' }
   const creds = { apiKey: 'api', appKey: 'app' }
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
 
   it('warns and skips the request when no schedule is configured', async () => {
     const fetchSpy = vi.fn()

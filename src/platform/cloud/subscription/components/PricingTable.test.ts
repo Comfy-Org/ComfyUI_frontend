@@ -235,7 +235,6 @@ const onChooseTeamWorkspace = vi.fn()
 
 describe('PricingTable', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockCanAccessSubscriptionFeatures.value = false
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'

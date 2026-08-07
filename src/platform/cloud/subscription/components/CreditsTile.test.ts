@@ -186,8 +186,6 @@ describe('CreditsTile', () => {
     state.canTopUp = true
     state.type = 'workspace'
     mockIsCloud.value = true
-    vi.clearAllMocks()
-    vi.unstubAllEnvs()
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {

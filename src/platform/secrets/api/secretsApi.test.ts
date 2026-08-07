@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { listSecretProviders } from './secretsApi'
 
@@ -21,10 +21,6 @@ function jsonResponse(body: unknown, init: Partial<Response> = {}): Response {
 }
 
 describe('listSecretProviders', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('requests the providers endpoint and returns the provider list', async () => {
     mockFetchApi.mockResolvedValue(
       jsonResponse({ data: [{ id: 'huggingface' }, { id: 'civitai' }] })

@@ -33,10 +33,6 @@ import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionEr
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
-beforeEach(() => {
-  vi.restoreAllMocks()
-})
-
 function createNestedSubgraphRuntime() {
   const rootGraph = new LGraph()
   const outerSubgraph = createTestSubgraph({ rootGraph })
