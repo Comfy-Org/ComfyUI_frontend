@@ -23,6 +23,8 @@ import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
 import type { Resolver } from './resolution'
 import type { Unsubscribe, WidgetDef } from './widgetHandle'
+import { createWidgetTypeRegistrar } from './widgetTypes'
+import type { WidgetTypeDef } from './widgetTypes'
 
 /**
  * The read view of a node definition. Frozen and inert, like every read here.
@@ -219,6 +221,15 @@ export interface NodeDefinition {
 
 export interface DefRegistry {
   /**
+   * Declares how an input *type* is presented — the replacement for
+   * `getCustomWidgets`.
+   *
+   * Not decoration: the host decides widget-vs-socket purely by whether a type
+   * is registered, so an unregistered one turns the input into a socket and
+   * drops its value from `widgets_values`. See `widgetTypes.ts`.
+   */
+  defineWidgetType(type: string, def: WidgetTypeDef): Unsubscribe
+  /**
    * Registers a node type the pack owns. Returns a handle that unregisters
    * it — which `LiteGraph.registerNodeType` never offered.
    */
@@ -410,6 +421,7 @@ export function createDefRegistry(): {
 } {
   const registrations = new Set<Registration>()
   const known = new Map<string, NodeDef>()
+  const registerWidgetType = createWidgetTypeRegistrar()
 
   const defineType = (
     definition: NodeDefinition,
@@ -496,6 +508,7 @@ export function createDefRegistry(): {
   const registry = {
     forMajor: (handleFor: (nodeId: string) => NodeHandle): DefRegistry => ({
       define: (definition: NodeDefinition) => defineType(definition, handleFor),
+      defineWidgetType: registerWidgetType,
       get: (type) => known.get(type),
       all: () => Object.freeze([...known.values()]),
       has: (type) => known.has(type),

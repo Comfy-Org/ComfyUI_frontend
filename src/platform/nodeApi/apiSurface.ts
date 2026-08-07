@@ -41,6 +41,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'def',
   'defaultValue',
   'define',
+  'defineWidgetType',
   'defs',
   'description',
   'destroy',
