@@ -3,7 +3,8 @@ import type {
   BillingBalanceResponse,
   BillingEventsResponse,
   BillingOpStatusResponse,
-  BillingPlansResponse,
+  BillingPlansResponse as GeneratedBillingPlansResponse,
+  BillingStatus,
   BillingStatusResponse as GeneratedBillingStatusResponse,
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
@@ -11,26 +12,32 @@ import type {
   CreateInviteRequest,
   CreateTopupRequest,
   CreateTopupResponse,
+  CreateWorkspaceRequest,
   ListInvitesResponse,
-  ListMembersResponse as GeneratedListMembersResponse,
-  ListWorkspacesResponse,
+  ListMembersResponse,
+  ListWorkspacesResponse as GeneratedListWorkspacesResponse,
   Member as GeneratedMember,
   PaymentPortalRequest,
   PaymentPortalResponse,
   PendingInvite,
+  Plan as GeneratedPlan,
   PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
   PreviewSubscribeResponse,
   ResubscribeRequest,
   ResubscribeResponse,
   SubscribeRequest,
   SubscribeResponse,
+  SubscriptionDuration,
+  TeamCreditStops,
   TeamCreditStopSummary,
-  WorkspaceWithRole
+  UpdateWorkspaceRequest,
+  WorkspaceWithRole as GeneratedWorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
+import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -39,37 +46,32 @@ import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
 
-export type {
-  BillingBalanceResponse,
-  BillingOpStatusResponse,
-  BillingStatus,
-  CreateTopupResponse,
-  PendingInvite,
-  Plan,
-  PreviewSubscribeResponse,
-  SubscribeResponse,
-  SubscriptionDuration,
-  SubscriptionTier,
-  TeamCreditStops,
-  WorkspaceWithRole
-} from '@comfyorg/ingest-types'
-
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
 export type BillingRail = NonNullable<
   GeneratedBillingStatusResponse['billing_rail']
 >
 
-// Credit fields are FE-only (FE-1277); is_original_owner stays optional
-// because callers fall back to earliest-joined when the server omits it.
-export type Member = Omit<GeneratedMember, 'is_original_owner'> & {
-  is_original_owner?: boolean
-  credits_used_this_month?: number
-  monthly_credit_limit?: number | null
+export type WorkspaceWithRole = Omit<
+  GeneratedWorkspaceWithRole,
+  'subscription_tier'
+> & {
+  // Uses the registry's SubscriptionTier (no TEAM) to match how the rest of
+  // the app threads subscription_tier through personal-plan pricing;
+  // workspace.type distinguishes team workspaces instead.
+  subscription_tier?: SubscriptionTier
 }
 
-type ListMembersResponse = Omit<GeneratedListMembersResponse, 'members'> & {
-  members: Member[]
+export type ListWorkspacesResponse = Omit<
+  GeneratedListWorkspacesResponse,
+  'workspaces'
+> & { workspaces: WorkspaceWithRole[] }
+
+export type Member = GeneratedMember & {
+  // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
+  // neither usage nor limit yet; persistence and real usage land in FE-1278.
+  credits_used_this_month?: number
+  monthly_credit_limit?: number | null
 }
 
 export interface ListMembersParams {
@@ -77,17 +79,23 @@ export interface ListMembersParams {
   limit?: number
 }
 
-interface CreateWorkspacePayload {
-  name: string
-}
+export type { PendingInvite }
 
-interface UpdateWorkspacePayload {
-  name: string
-}
+export type { SubscriptionTier }
+export type { SubscriptionDuration }
+
+// Uses the registry's SubscriptionTier (no TEAM); the personal plan catalog
+// never lists team plans.
+export type Plan = Omit<GeneratedPlan, 'tier'> & { tier: SubscriptionTier }
+export type BillingPlansResponse = Omit<
+  GeneratedBillingPlansResponse,
+  'plans'
+> & { plans: Plan[] }
+export type { TeamCreditStops }
+export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 
-/** `billing_cycle` is accepted by the endpoint but absent from the spec. */
 type PreviewSubscribeRequest = GeneratedPreviewSubscribeRequest & {
   billing_cycle?: SubscribeBillingCycle
 }
@@ -106,29 +114,38 @@ export interface PreviewSubscribeOptions {
   billingCycle?: SubscribeBillingCycle
 }
 
-/** The spec omits `scheduled`; it is emitted for pending plan changes. */
-export type BillingSubscriptionStatus =
-  | 'active'
-  | 'scheduled'
-  | 'ended'
-  | 'canceled'
+export type { SubscribeResponse }
 
-export type CurrentTeamCreditStop = TeamCreditStopSummary
+export type { PreviewSubscribeResponse }
 
-// Seat counts, `scheduled` status, the scheduled-change fields and
-// pending_billing_op_type are not in the spec yet.
+export type BillingSubscriptionStatus = NonNullable<
+  GeneratedBillingStatusResponse['subscription_status']
+>
+
+export type { BillingStatus }
+
 export type BillingStatusResponse = Omit<
   GeneratedBillingStatusResponse,
-  'max_seats' | 'occupied_seats' | 'subscription_status' | 'team_credit_stop'
+  'max_seats' | 'occupied_seats' | 'subscription_tier' | 'team_credit_stop'
 > & {
+  // The spec marks these required, but older/billing-disabled deployments
+  // can omit them; getBillingStatus() normalizes a missing value to null.
   max_seats?: number | null
   occupied_seats?: number | null
-  subscription_status?: BillingSubscriptionStatus
-  team_credit_stop?: CurrentTeamCreditStop
+  // Uses the registry's SubscriptionTier (no TEAM), matching WorkspaceWithRole.
+  subscription_tier?: SubscriptionTier
+  // The spec marks this required (always present, nullable); kept optional
+  // here to match how existing callers already read it defensively.
+  team_credit_stop?: TeamCreditStopSummary | null
+  // Not yet part of the ingest OpenAPI spec; scheduled-plan-change display
+  // ships ahead of the backend documenting these fields.
   scheduled_plan_slug?: string
   change_at?: string
-  pending_billing_op_type?: 'subscription' | 'topup'
 }
+
+export type { BillingBalanceResponse }
+export type { CreateTopupResponse }
+export type { BillingOpStatusResponse }
 
 interface GetBillingEventsParams {
   page?: number
@@ -194,7 +211,7 @@ export const workspaceApi = {
    * Create a new workspace
    * POST /api/workspaces
    */
-  async create(payload: CreateWorkspacePayload): Promise<WorkspaceWithRole> {
+  async create(payload: CreateWorkspaceRequest): Promise<WorkspaceWithRole> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<WorkspaceWithRole>(
@@ -214,7 +231,7 @@ export const workspaceApi = {
    */
   async update(
     workspaceId: WorkspaceId,
-    payload: UpdateWorkspacePayload
+    payload: UpdateWorkspaceRequest
   ): Promise<WorkspaceWithRole> {
     const headers = await getAuthHeaderOrThrow()
     try {
