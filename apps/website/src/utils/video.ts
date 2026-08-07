@@ -1,4 +1,3 @@
-/** @knipIgnoreUsedByStackedPR */
 export type VideoFormat = 'webm' | 'mp4'
 
 type VideoSource = {
