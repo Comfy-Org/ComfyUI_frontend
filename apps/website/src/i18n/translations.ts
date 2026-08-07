@@ -5273,6 +5273,10 @@ const translations = {
     'zh-CN':
       '资深创意专家驻场加入你的团队，为你构建生产级 ComfyUI 工作流，并教会你的团队独立运行。'
   },
+  'fdct.hero.eyebrow': {
+    en: 'NEW ENTERPRISE ADD-ON',
+    'zh-CN': '全新企业附加服务'
+  },
   'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
   'fdct.hero.applyCta': { en: 'Apply as an FDCT', 'zh-CN': '申请成为 FDCT' },
   'fdct.builders.title': {

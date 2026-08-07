@@ -42,6 +42,24 @@ const collageImages = [
   }
 ]
 
+// Below xl the collage collapses into a static three-image stack under the
+// CTAs (design 10373:39106), mapped from the same FPO set by aspect ratio.
+// The fourth desktop image has no slot in the mobile layout.
+const mobileCollageImages = [
+  {
+    src: 'https://media.comfy.org/website/enterprise/dark-fluid-texture.webp',
+    class: 'right-[-9%] top-0 aspect-[311/175] w-[51%]'
+  },
+  {
+    src: 'https://media.comfy.org/website/gallery/desert.webp',
+    class: 'left-[-7%] top-6 aspect-[185/256] w-[36%]'
+  },
+  {
+    src: 'https://media.comfy.org/website/gallery/gallery.webp',
+    class: 'left-[21%] top-[142px] aspect-[334/202] w-[62%]'
+  }
+]
+
 const sectionRef = ref<HTMLElement>()
 const imageRefs = collageImages.map(() => ref<HTMLElement>())
 
@@ -59,7 +77,10 @@ collageImages.forEach((image, index) => {
 </script>
 
 <template>
-  <section ref="sectionRef" class="relative pt-24 pb-16 lg:pt-40 lg:pb-44">
+  <section
+    ref="sectionRef"
+    class="relative overflow-x-clip pt-24 pb-16 lg:pt-40 lg:pb-44"
+  >
     <div
       aria-hidden="true"
       class="pointer-events-none absolute inset-0 hidden xl:block"
@@ -77,21 +98,46 @@ collageImages.forEach((image, index) => {
     </div>
 
     <HeroCentered01
+      :eyebrow="t('fdct.hero.eyebrow', locale)"
+      eyebrow-class="xl:hidden"
       :title="t('fdct.hero.title', locale)"
       :subtitle="t('fdct.hero.subtitle', locale)"
     >
-      <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+      <div
+        class="mt-10 flex w-full flex-col items-stretch gap-5 sm:w-auto sm:flex-row sm:items-center sm:justify-center sm:gap-4"
+      >
         <Button
           :href="localizeHref(fdctPage.ctas.contact, locale)"
           variant="default"
           size="lg"
+          class="h-12 text-sm sm:h-14 sm:text-base"
         >
           {{ t('fdct.hero.contactCta', locale) }}
         </Button>
-        <Button :href="fdctPage.ctas.applyFdct" variant="outline" size="lg">
+        <Button
+          :href="fdctPage.ctas.applyFdct"
+          variant="outline"
+          size="lg"
+          class="h-12 text-sm sm:h-14 sm:text-base"
+        >
           {{ t('fdct.hero.applyCta', locale) }}
         </Button>
       </div>
     </HeroCentered01>
+
+    <div
+      aria-hidden="true"
+      class="relative mx-auto mt-8 h-76 w-full max-w-md xl:hidden"
+    >
+      <img
+        v-for="image in mobileCollageImages"
+        :key="image.src"
+        :src="image.src"
+        alt=""
+        loading="lazy"
+        class="absolute rounded-2xl object-cover"
+        :class="image.class"
+      />
+    </div>
   </section>
 </template>

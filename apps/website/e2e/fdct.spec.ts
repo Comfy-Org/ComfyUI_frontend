@@ -49,6 +49,7 @@ test.describe('FDCT page @smoke', () => {
     await expect(
       hero.getByRole('link', { name: t('fdct.hero.applyCta', 'en') })
     ).toHaveAttribute('href', '#')
+    await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeHidden()
   })
 
   test('builders section renders the node label, reasons, and marquee', async ({
@@ -212,6 +213,29 @@ test.describe('FDCT page @smoke', () => {
     await expect(
       section.getByRole('link', { name: t('fdct.bands.creators.cta', 'en') })
     ).toHaveAttribute('href', '/careers')
+  })
+})
+
+test.describe('FDCT hero @mobile', () => {
+  test('shows the enterprise eyebrow and the stacked collage', async ({
+    page
+  }) => {
+    await page.goto('/fdct')
+    await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeVisible()
+    await expect(page.locator('img[src*="desert"]:visible')).toHaveCount(1)
+    await expect(page.locator('img[src*="dark-fluid"]:visible')).toHaveCount(1)
+    const hero = page.locator('section', {
+      has: page.getByRole('heading', { level: 1 })
+    })
+    const contactCta = hero.getByRole('link', {
+      name: t('fdct.hero.contactCta', 'en')
+    })
+    const applyCta = hero.getByRole('link', {
+      name: t('fdct.hero.applyCta', 'en')
+    })
+    const contactBox = await contactCta.boundingBox()
+    const applyBox = await applyCta.boundingBox()
+    expect(contactBox!.y).toBeLessThan(applyBox!.y)
   })
 })
 
