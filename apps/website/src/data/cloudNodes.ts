@@ -34,6 +34,42 @@ export interface NodesSnapshot {
   packs: Pack[]
 }
 
+type GridPackNode = Pick<PackNode, 'name' | 'displayName' | 'category'>
+
+export type GridPack = Pick<
+  Pack,
+  | 'id'
+  | 'displayName'
+  | 'description'
+  | 'bannerUrl'
+  | 'iconUrl'
+  | 'repoUrl'
+  | 'downloads'
+  | 'lastUpdated'
+> & { nodes: GridPackNode[] }
+
+// PackGridSection/PackCard/NodeList only render and search these fields;
+// dropping the rest (registryId, publisher, githubStars, latestVersion,
+// license, supportedOs, supportedAccelerators, per-node description/
+// deprecated/experimental) keeps the client-hydrated payload smaller.
+export function toGridPack(pack: Pack): GridPack {
+  return {
+    id: pack.id,
+    displayName: pack.displayName,
+    description: pack.description,
+    bannerUrl: pack.bannerUrl,
+    iconUrl: pack.iconUrl,
+    repoUrl: pack.repoUrl,
+    downloads: pack.downloads,
+    lastUpdated: pack.lastUpdated,
+    nodes: pack.nodes.map((node) => ({
+      name: node.name,
+      displayName: node.displayName,
+      category: node.category
+    }))
+  }
+}
+
 export function isNodesSnapshot(value: unknown): value is NodesSnapshot {
   if (value === null || typeof value !== 'object') return false
   const candidate = value as { fetchedAt?: unknown; packs?: unknown }
