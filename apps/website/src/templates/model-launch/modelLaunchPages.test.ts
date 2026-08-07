@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { flux3Page } from '../../data/flux3'
 import { minimaxPage } from '../../data/minimax'
+import { seedancePage } from '../../data/seedance'
 import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { ModelLaunchPage } from './types'
@@ -9,7 +10,8 @@ import type { ModelLaunchPage } from './types'
 // Add every new launch-page config here so it inherits these checks.
 const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimax', page: minimaxPage },
-  { name: 'flux3', page: flux3Page }
+  { name: 'flux3', page: flux3Page },
+  { name: 'seedance', page: seedancePage }
 ]
 
 describe.for(pages)('$name launch page config', ({ page }) => {
