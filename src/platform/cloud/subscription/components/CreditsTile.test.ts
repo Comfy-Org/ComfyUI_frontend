@@ -33,6 +33,9 @@ const state = vi.hoisted(() => ({
   showPricingTable: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
   trackAddApiCreditButtonClicked: vi.fn(),
+  checkForCompletedTopup: vi.fn(),
+  getBillingEvents: vi.fn().mockResolvedValue({ events: [] }),
+  getMyEvents: vi.fn().mockResolvedValue({ events: [] }),
   toastErrorHandler: vi.fn()
 }))
 
@@ -70,6 +73,12 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(() => state.type === 'workspace')
+  })
+}))
+
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({ canTopUp: state.canTopUp }))
@@ -91,7 +100,20 @@ vi.mock('@/services/dialogService', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackAddApiCreditButtonClicked: state.trackAddApiCreditButtonClicked
+    trackAddApiCreditButtonClicked: state.trackAddApiCreditButtonClicked,
+    checkForCompletedTopup: state.checkForCompletedTopup
+  })
+}))
+
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: {
+    getBillingEvents: state.getBillingEvents
+  }
+}))
+
+vi.mock('@/services/customerEventsService', () => ({
+  useCustomerEventsService: () => ({
+    getMyEvents: state.getMyEvents
   })
 }))
 
@@ -171,6 +193,14 @@ function activeProSubscription() {
     cloudCreditBalanceMicros: 200, // -> 422 monthly remaining
     prepaidBalanceMicros: 300 // -> 633 additional
   }
+}
+
+function createDeferred() {
+  let resolve: () => void = () => {}
+  const promise = new Promise<void>((resolvePromise) => {
+    resolve = resolvePromise
+  })
+  return { promise, resolve }
 }
 
 describe('CreditsTile', () => {
@@ -456,6 +486,125 @@ describe('CreditsTile', () => {
     await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(3))
     expect(state.fetchStatus).toHaveBeenCalledTimes(3)
     expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
+  })
+
+  it('runs a trailing refresh when focus returns during an active refresh', async () => {
+    activeProSubscription()
+    renderTile()
+    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledOnce())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    vi.clearAllMocks()
+
+    const balanceRefresh = createDeferred()
+    const statusRefresh = createDeferred()
+    state.fetchBalance
+      .mockImplementationOnce(() => balanceRefresh.promise)
+      .mockResolvedValue(undefined)
+    state.fetchStatus
+      .mockImplementationOnce(() => statusRefresh.promise)
+      .mockResolvedValue(undefined)
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+
+    window.dispatchEvent(new Event('focus'))
+    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledOnce())
+    window.dispatchEvent(new Event('focus'))
+    expect(state.fetchBalance).toHaveBeenCalledOnce()
+
+    balanceRefresh.resolve()
+    statusRefresh.resolve()
+
+    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(2))
+    expect(state.fetchStatus).toHaveBeenCalledTimes(2)
+    expect(state.getBillingEvents).toHaveBeenCalledTimes(2)
+  })
+
+  it('waits for a failed refresh to settle before its trailing refresh', async () => {
+    activeProSubscription()
+    renderTile()
+    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledOnce())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    vi.clearAllMocks()
+
+    const statusRefresh = createDeferred()
+    state.fetchBalance
+      .mockRejectedValueOnce(new Error('balance unavailable'))
+      .mockResolvedValue(undefined)
+    state.fetchStatus
+      .mockImplementationOnce(() => statusRefresh.promise)
+      .mockResolvedValue(undefined)
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+
+    window.dispatchEvent(new Event('focus'))
+    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledOnce())
+    window.dispatchEvent(new Event('focus'))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(state.fetchBalance).toHaveBeenCalledOnce()
+
+    statusRefresh.resolve()
+
+    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(2))
+    expect(state.fetchStatus).toHaveBeenCalledTimes(2)
+    expect(state.getBillingEvents).toHaveBeenCalledOnce()
+  })
+
+  it('clears a confirmed workspace top-up before the next focus', async () => {
+    activeProSubscription()
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    const events = [{ event_type: 'topup_completed' }]
+    state.getBillingEvents.mockResolvedValueOnce({ events })
+    state.checkForCompletedTopup.mockImplementationOnce(() => {
+      localStorage.removeItem('pending_topup_timestamp')
+      return true
+    })
+
+    renderTile()
+    await waitFor(() =>
+      expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
+    )
+    expect(state.checkForCompletedTopup).toHaveBeenCalledWith(events)
+    vi.clearAllMocks()
+
+    window.dispatchEvent(new Event('focus'))
+
+    await waitFor(() => expect(state.fetchBalance).not.toHaveBeenCalled())
+    expect(state.getBillingEvents).not.toHaveBeenCalled()
+  })
+
+  it('reconciles pending legacy top-ups against customer events', async () => {
+    activeProSubscription()
+    state.type = 'legacy'
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+
+    renderTile()
+
+    await waitFor(() => expect(state.getMyEvents).toHaveBeenCalledOnce())
+    expect(state.getBillingEvents).not.toHaveBeenCalled()
+  })
+
+  it('retries completion reconciliation after a request failure', async () => {
+    activeProSubscription()
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    const failure = new Error('events unavailable')
+    state.getBillingEvents
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce({ events: [{ event_type: 'topup_completed' }] })
+    state.checkForCompletedTopup.mockImplementationOnce(() => {
+      localStorage.removeItem('pending_topup_timestamp')
+      return true
+    })
+
+    renderTile()
+    await waitFor(() =>
+      expect(state.toastErrorHandler).toHaveBeenCalledWith(failure)
+    )
+    expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
+
+    window.dispatchEvent(new Event('focus'))
+
+    await waitFor(() =>
+      expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
+    )
+    expect(state.getBillingEvents).toHaveBeenCalledTimes(2)
   })
 
   it('surfaces a failure toast when a refresh rejects', async () => {

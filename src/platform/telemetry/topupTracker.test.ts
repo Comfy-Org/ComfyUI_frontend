@@ -257,5 +257,17 @@ describe('topupTracker', () => {
         'pending_topup_timestamp'
       )
     })
+
+    it.for(['invalid', Number.MAX_SAFE_INTEGER.toString()])(
+      'clears and returns false for an invalid marker: %s',
+      (timestamp) => {
+        mockLocalStorage.getItem.mockReturnValue(timestamp)
+
+        expect(pendingTopupNeedsRefresh()).toBe(false)
+        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+          'pending_topup_timestamp'
+        )
+      }
+    )
   })
 })

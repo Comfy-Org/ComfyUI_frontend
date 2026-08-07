@@ -225,6 +225,7 @@ import { useI18n } from 'vue-i18n'
 import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -237,7 +238,9 @@ import {
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { useTelemetry } from '@/platform/telemetry'
 import { pendingTopupNeedsRefresh } from '@/platform/telemetry/topupTracker'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useDialogService } from '@/services/dialogService'
 
 const { zeroState = false, inactivePlan } = defineProps<{
@@ -267,8 +270,10 @@ const {
   isLoadingBalance
 } = useSubscriptionCredits()
 const { permissions } = useWorkspaceUI()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { showPricingTable } = useSubscriptionDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const customerEventsService = useCustomerEventsService()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
 
@@ -408,9 +413,49 @@ const emptyStateNotice = computed(() => {
   return null
 })
 
-const handleRefresh = wrapWithErrorHandlingAsync(async () => {
-  await Promise.all([fetchBalance(), fetchStatus()])
-})
+async function refreshCredits() {
+  const results = await Promise.allSettled([fetchBalance(), fetchStatus()])
+  for (const result of results) {
+    if (result.status === 'rejected') throw result.reason
+  }
+
+  if (!pendingTopupNeedsRefresh()) return
+
+  const response = shouldUseWorkspaceBilling.value
+    ? await workspaceApi.getBillingEvents({ page: 1, limit: 10 })
+    : await customerEventsService.getMyEvents({ page: 1, limit: 10 })
+  telemetry?.checkForCompletedTopup(response?.events)
+}
+
+let refreshRequested = false
+let activeRefresh: Promise<void> | null = null
+
+async function refreshLatestCredits() {
+  refreshRequested = true
+  if (activeRefresh) return activeRefresh
+
+  activeRefresh = (async () => {
+    let lastError: unknown
+    while (refreshRequested) {
+      refreshRequested = false
+      try {
+        await refreshCredits()
+        lastError = undefined
+      } catch (error) {
+        lastError = error
+      }
+    }
+    if (lastError) throw lastError
+  })()
+
+  try {
+    await activeRefresh
+  } finally {
+    activeRefresh = null
+  }
+}
+
+const handleRefresh = wrapWithErrorHandlingAsync(refreshLatestCredits)
 
 function handleAddCredits() {
   telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
