@@ -8,6 +8,7 @@ const CLOUD_URL = externalLinks.cloud
 const PLATFORM_USAGE_URL = externalLinks.platformUsage
 const SUPPORT_URL = externalLinks.support
 const DOCS_SUBSCRIPTION_URL = externalLinks.docsSubscription
+const STATUS_URL = externalLinks.cloudStatus
 
 async function expectNoIndex(page: Page) {
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
@@ -79,6 +80,14 @@ test.describe('Payment failed page @smoke', () => {
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute('href', DOCS_SUBSCRIPTION_URL)
   })
+
+  test('offers the status page so an outage can be ruled out', async ({
+    page
+  }) => {
+    const link = page.getByRole('link', { name: /CHECK SYSTEM STATUS/i })
+    await expect(link).toBeVisible()
+    await expect(link).toHaveAttribute('href', STATUS_URL)
+  })
 })
 
 test.describe('Payment pages zh-CN @smoke', () => {
@@ -111,5 +120,8 @@ test.describe('Payment pages zh-CN @smoke', () => {
     await expect(
       page.getByRole('link', { name: '查看订阅文档' })
     ).toHaveAttribute('href', DOCS_SUBSCRIPTION_URL)
+    await expect(
+      page.getByRole('link', { name: '查看系统状态' })
+    ).toHaveAttribute('href', STATUS_URL)
   })
 })

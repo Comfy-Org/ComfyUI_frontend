@@ -75,13 +75,13 @@ const iconRingClass =
       <SectionLabel>{{ t(`payment.${status}.label`, locale) }}</SectionLabel>
 
       <h1
-        class="text-primary-comfy-canvas text-4xl/tight font-light md:text-5xl/tight lg:text-6xl/tight"
+        class="text-4xl/tight font-light text-primary-comfy-canvas md:text-5xl/tight lg:text-6xl/tight"
       >
         {{ t(`payment.${status}.title`, locale) }}
       </h1>
 
       <p
-        class="text-primary-comfy-canvas/80 max-w-xl text-base font-light lg:text-lg"
+        class="max-w-xl text-base font-light text-primary-comfy-canvas/80 lg:text-lg"
       >
         {{ t(`payment.${status}.subtitle`, locale) }}
       </p>
@@ -96,6 +96,14 @@ const iconRingClass =
           {{ t(`payment.${status}.secondaryCta`, locale) }}
         </BrandButton>
       </div>
+
+      <a
+        v-if="status === 'failed'"
+        :href="externalLinks.cloudStatus"
+        class="text-xs font-semibold tracking-wider text-primary-comfy-canvas/60 uppercase underline underline-offset-4 transition-colors hover:text-primary-comfy-canvas"
+      >
+        {{ t('payment.failed.statusLink', locale) }}
+      </a>
     </div>
   </section>
 </template>

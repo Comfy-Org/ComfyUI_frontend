@@ -4615,6 +4615,10 @@ const translations = {
     en: 'READ SUBSCRIPTION DOCS',
     'zh-CN': '查看订阅文档'
   },
+  'payment.failed.statusLink': {
+    en: 'CHECK SYSTEM STATUS',
+    'zh-CN': '查看系统状态'
+  },
 
   // AffiliateHeroSection
   'affiliate.hero.label': { en: 'AFFILIATE', 'zh-CN': '联盟' },
