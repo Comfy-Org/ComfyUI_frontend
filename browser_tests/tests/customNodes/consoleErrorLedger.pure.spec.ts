@@ -286,6 +286,60 @@ test.describe('consoleErrorLedger', () => {
       else process.env.CUSTOM_NODES_ENV = previous
     }
   })
+
+  test('requires only the exact Core pysssss None-default 404', () => {
+    const pysssss404 =
+      'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:8188/api/pysssss/examples/loras%2FNone]'
+    const previous = process.env.CUSTOM_NODES_ENV
+    try {
+      process.env.CUSTOM_NODES_ENV = 'core'
+      expect(
+        unallowlistedConnectivityErrorsForPacks(
+          ['ComfyUI-Custom-Scripts'],
+          [pysssss404]
+        )
+      ).toEqual([])
+      expect(
+        staleRequiredConnectivityErrorRulesForPacks(
+          ['ComfyUI-Custom-Scripts'],
+          []
+        )
+      ).toEqual(['core-pysssss-lora-none-examples'])
+      expect(
+        staleRequiredConnectivityErrorRulesForPacks(
+          ['ComfyUI-Custom-Scripts'],
+          [pysssss404]
+        )
+      ).toEqual([])
+      expect(
+        unallowlistedConnectivityErrorsForPacks(
+          ['ComfyUI-Custom-Scripts'],
+          [
+            pysssss404.replace('404', '500'),
+            pysssss404.replace('localhost:8188', 'localhost:4040'),
+            pysssss404.replace('loras%2FNone', 'loras%2FOther')
+          ]
+        )
+      ).toHaveLength(3)
+      expect(
+        unallowlistedConnectivityErrorsForPacks(
+          ['ComfyUI-VideoHelperSuite'],
+          [pysssss404]
+        )
+      ).toEqual([pysssss404])
+
+      process.env.CUSTOM_NODES_ENV = 'cloud'
+      expect(
+        unallowlistedConnectivityErrorsForPacks(
+          ['ComfyUI-Custom-Scripts'],
+          [pysssss404]
+        )
+      ).toEqual([pysssss404])
+    } finally {
+      if (previous === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = previous
+    }
+  })
 })
 
 // Filters a prior tier's async execution error out of the non-executing

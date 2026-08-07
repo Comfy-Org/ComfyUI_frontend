@@ -369,6 +369,7 @@ declare global {
     __cnRt?: {
       problems: string[]
       snapshotAndConfigure: () => void
+      currentWidgetCounts: (types: string[]) => Record<string, number | null>
       compare: (label: string, strict: boolean) => void
       setAndStick: () => void
       finish: () => {
@@ -1175,6 +1176,17 @@ for (const entry of loadManifest()) {
                     firstPass = window.app!.graph.serialize()
                     window.app!.graph.configure(firstPass)
                   },
+                  currentWidgetCounts(types: string[]) {
+                    const counts = Object.fromEntries(
+                      types.map((type) => [type, null])
+                    ) as Record<string, number | null>
+                    for (const node of window.app!.graph.nodes) {
+                      const type = created.get(String(node.id))?.type
+                      if (type && type in counts)
+                        counts[type] = (node.widgets ?? []).length
+                    }
+                    return counts
+                  },
                   // strict = pristine pass: reload may add dynamic widgets but
                   // must never shrink a node (the "widgets disappear after
                   // save/reload" bug class) and must preserve every value. The
@@ -1361,6 +1373,28 @@ for (const entry of loadManifest()) {
               window.__cnRt!.snapshotAndConfigure()
             )
             await comfyPage.nextFrame()
+            const settledTopology = Object.fromEntries(
+              Object.entries(topologyExpectations)
+                .filter(([node]) => chunk.includes(node))
+                .map(([node, topology]) => [node, topology.after])
+            )
+            const waitForSettledTopology = async () => {
+              if (Object.keys(settledTopology).length === 0) return
+              await expect
+                .poll(
+                  () =>
+                    comfyPage.page.evaluate(
+                      (types) => window.__cnRt!.currentWidgetCounts(types),
+                      Object.keys(settledTopology)
+                    ),
+                  {
+                    message:
+                      'ledgered dynamic widgets reach their source-defined restored topology'
+                  }
+                )
+                .toEqual(settledTopology)
+            }
+            await waitForSettledTopology()
             // Stage 3 - pristine verdict, then write non-default values.
             await comfyPage.page.evaluate(() => {
               window.__cnRt!.compare('pristine', true)
@@ -1372,6 +1406,7 @@ for (const entry of loadManifest()) {
               window.__cnRt!.snapshotAndConfigure()
             )
             await comfyPage.nextFrame()
+            await waitForSettledTopology()
             // Stage 5 - set-values verdict; collect and reset.
             const result = await comfyPage.page.evaluate(() => {
               window.__cnRt!.compare('set-values', false)

@@ -68,7 +68,6 @@
     "FB_Qwen3TTSVoiceClonePrompt",
     "FB_Qwen3TTSVoiceDesign"
   ],
-  "ComfyUI-Upscaler-Tensorrt": ["LoadUpscalerTensorrtModel"],
   "ComfyUI-WanAnimatePreprocess": ["OnnxDetectionModelLoader"],
   "ComfyUI-WanVideoWrapper": [
     "FantasyPortraitModelLoader",

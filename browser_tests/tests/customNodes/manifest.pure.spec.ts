@@ -186,6 +186,24 @@ test.describe('customNode manifest', () => {
     }
   })
 
+  test('does not retain the clean TensorRT loader in cannotRunAlone', () => {
+    const prior = process.env.CUSTOM_NODES_ENV
+    try {
+      process.env.CUSTOM_NODES_ENV = 'cloud'
+      const tensorrt = loadManifest().find(
+        (entry) => entry.pack === 'ComfyUI-Upscaler-Tensorrt'
+      )
+
+      expect(tensorrt).toBeDefined()
+      expect(tensorrt?.cannotRunAlone ?? []).not.toContain(
+        'LoadUpscalerTensorrtModel'
+      )
+    } finally {
+      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = prior
+    }
+  })
+
   test('deployRef admits both Cloud pin styles and nothing else', () => {
     expect(() => assertCloudEntry(validCloudEntry(), 0)).not.toThrow()
     const urlRef = `https://github.com/example/Example-Pack@${'a1'.repeat(20)}`

@@ -444,8 +444,7 @@
       "expectedNodeCount": 2,
       "expectedExtensions": ["UpscalerTensorrt.CustomResize"],
       "disabledNodes": {},
-      "timeoutMs": 30000,
-      "cannotRunAlone": ["LoadUpscalerTensorrtModel"]
+      "timeoutMs": 30000
     },
     {
       "pack": "ComfyUI-WanAnimatePreprocess",

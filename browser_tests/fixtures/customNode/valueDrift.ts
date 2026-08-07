@@ -81,9 +81,9 @@ export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
   'WhatDreamsCost-ComfyUI': {
     LTXKeyframer: {
       before: 102,
-      after: 2,
+      after: 5,
       reason:
-        'pack JS rebuilds the keyframe widgets from the configured image count'
+        'pack JS asynchronously rebuilds one image into its header, frame, and strength widgets'
     }
   }
 }
@@ -95,9 +95,9 @@ export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE: Record<
   'WhatDreamsCost-ComfyUI': {
     LTXKeyframer: {
       before: 102,
-      after: 2,
+      after: 5,
       reason:
-        'pack JS rebuilds the keyframe widgets from the configured image count'
+        'pack JS asynchronously rebuilds one image into its header, frame, and strength widgets'
     },
     LTXSequencer: {
       before: 154,

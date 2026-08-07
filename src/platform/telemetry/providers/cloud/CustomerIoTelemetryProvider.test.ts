@@ -126,6 +126,24 @@ describe('CustomerIoTelemetryProvider', () => {
     )
   })
 
+  it('reports page-view delivery failures', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    hoisted.analytics.page.mockRejectedValueOnce(new Error('page failed'))
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackPageView('workflow_editor', {
+      path: 'https://cloud.comfy.org/'
+    })
+
+    await vi.waitFor(() =>
+      expect(console.error).toHaveBeenCalledWith(
+        'Failed to track Customer.io page view:',
+        expect.any(Error)
+      )
+    )
+  })
+
   it('queues page views until the in-app plugin is registered', async () => {
     let resolveRegistration: (() => void) | undefined
     const registration = new Promise<void>((resolve) => {
@@ -500,7 +518,7 @@ describe('CustomerIoTelemetryProvider', () => {
     }
   )
 
-  it('awaits auth identification before tracking without raw identifiers', async () => {
+  it('assigns auth identity before tracking without raw identifiers', async () => {
     const identifyResult = createDeferred()
     hoisted.analytics.identify.mockReturnValueOnce(identifyResult.promise)
     const provider = createProvider()
@@ -518,10 +536,6 @@ describe('CustomerIoTelemetryProvider', () => {
       email: 'person@example.com',
       locale: 'en'
     })
-    expect(hoisted.analytics.track).not.toHaveBeenCalled()
-
-    identifyResult.resolve()
-
     await vi.waitFor(() =>
       expect(hoisted.analytics.track).toHaveBeenCalledWith(
         'app:user_auth_completed',
@@ -536,9 +550,10 @@ describe('CustomerIoTelemetryProvider', () => {
     expect(hoisted.analytics.identify.mock.invocationCallOrder[0]).toBeLessThan(
       hoisted.analytics.track.mock.invocationCallOrder[0]
     )
+    identifyResult.resolve()
   })
 
-  it('reuses matching resolved-user identification for auth delivery', async () => {
+  it('reuses a matching pending resolved-user identification', async () => {
     const identifyResult = createDeferred()
     hoisted.analytics.identify.mockReturnValueOnce(identifyResult.promise)
     const provider = createProvider()
@@ -554,9 +569,6 @@ describe('CustomerIoTelemetryProvider', () => {
     await vi.waitFor(() =>
       expect(hoisted.analytics.identify).toHaveBeenCalledOnce()
     )
-    expect(hoisted.analytics.track).not.toHaveBeenCalled()
-    identifyResult.resolve()
-
     await vi.waitFor(() =>
       expect(hoisted.analytics.track).toHaveBeenCalledWith(
         'app:user_auth_completed',
@@ -564,6 +576,7 @@ describe('CustomerIoTelemetryProvider', () => {
       )
     )
     expect(hoisted.analytics.identify).toHaveBeenCalledOnce()
+    identifyResult.resolve()
   })
 
   it('tracks auth before resetting identity on logout', async () => {
@@ -684,28 +697,19 @@ describe('CustomerIoTelemetryProvider', () => {
     expect(hoisted.analytics.reset).not.toHaveBeenCalled()
   })
 
-  it('does not stall later events when identification never settles', async () => {
-    vi.useFakeTimers()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('does not wait for identity delivery before tracking events', async () => {
     hoisted.analytics.identify.mockReturnValueOnce(new Promise(() => {}))
     const provider = createProvider()
     await vi.dynamicImportSettled()
 
     provider.trackAuth({ user_id: 'uid-1', email: 'person@example.com' })
     provider.trackWorkflowExecution()
-    expect(hoisted.analytics.track).not.toHaveBeenCalled()
-
-    await vi.advanceTimersByTimeAsync(10_000)
 
     await vi.waitFor(() =>
       expect(hoisted.analytics.track.mock.calls).toEqual([
         ['app:user_auth_completed', { ...SOURCE, user_id: 'uid-1' }],
         ['execution_start', SOURCE]
       ])
-    )
-    expect(console.error).toHaveBeenCalledWith(
-      'Failed to identify Customer.io user:',
-      expect.any(Error)
     )
   })
 
@@ -769,6 +773,93 @@ describe('CustomerIoTelemetryProvider', () => {
     )
   })
 
+  it('tracks auth after identification throws synchronously', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    hoisted.analytics.identify.mockImplementationOnce(() => {
+      throw new Error('identify threw')
+    })
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackAuth({
+      user_id: 'uid-1',
+      email: 'person@example.com'
+    })
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.track).toHaveBeenCalledWith(
+        'app:user_auth_completed',
+        { ...SOURCE, user_id: 'uid-1' }
+      )
+    )
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to identify Customer.io user:',
+      expect.any(Error)
+    )
+  })
+
+  it('keeps a newer identity cached when an earlier delivery fails late', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    let rejectFirst!: (reason: Error) => void
+    hoisted.analytics.identify.mockReturnValueOnce(
+      new Promise<void>((_resolve, reject) => {
+        rejectFirst = reject
+      })
+    )
+    createProvider()
+    await vi.dynamicImportSettled()
+
+    hoisted.resolveUser('uid-1')
+    hoisted.resolveUser('uid-2')
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.identify).toHaveBeenCalledTimes(2)
+    )
+
+    rejectFirst(new Error('late failure'))
+    await vi.waitFor(() =>
+      expect(console.error).toHaveBeenCalledWith(
+        'Failed to identify Customer.io user:',
+        expect.any(Error)
+      )
+    )
+    hoisted.resolveUser('uid-2')
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.identify).toHaveBeenCalledTimes(2)
+    )
+  })
+
+  it('keeps a newer retry cached when an older delivery of the same identity fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    let rejectFirst!: (reason: Error) => void
+    hoisted.analytics.identify.mockReturnValueOnce(
+      new Promise<void>((_resolve, reject) => {
+        rejectFirst = reject
+      })
+    )
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    hoisted.resolveUser('uid-1')
+    provider.trackAuth({ user_id: 'uid-2' })
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.identify).toHaveBeenCalledTimes(3)
+    )
+
+    rejectFirst(new Error('late failure'))
+    await vi.waitFor(() =>
+      expect(console.error).toHaveBeenCalledWith(
+        'Failed to identify Customer.io user:',
+        expect.any(Error)
+      )
+    )
+    hoisted.resolveUser('uid-1')
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.identify).toHaveBeenCalledTimes(3)
+    )
+  })
+
   it('flushes events buffered before load once, in order', async () => {
     const provider = createProvider()
     provider.trackWorkflowExecution()
@@ -783,7 +874,7 @@ describe('CustomerIoTelemetryProvider', () => {
     ])
   })
 
-  it('waits for queued auth identification before later events', async () => {
+  it('keeps queued event order without waiting for identity delivery', async () => {
     const identifyResult = createDeferred()
     hoisted.analytics.identify.mockReturnValueOnce(identifyResult.promise)
     const provider = createProvider()
@@ -795,14 +886,13 @@ describe('CustomerIoTelemetryProvider', () => {
 
     await vi.dynamicImportSettled()
 
-    expect(hoisted.analytics.track).not.toHaveBeenCalled()
-    identifyResult.resolve()
     await vi.waitFor(() =>
       expect(hoisted.analytics.track.mock.calls).toEqual([
         ['app:user_auth_completed', { ...SOURCE, user_id: 'uid-1' }],
         ['execution_start', SOURCE]
       ])
     )
+    identifyResult.resolve()
   })
 
   it('does not wait for event delivery before handing off later events', async () => {

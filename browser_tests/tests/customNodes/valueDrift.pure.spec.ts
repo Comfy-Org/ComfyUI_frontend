@@ -99,14 +99,17 @@ test.describe('matchesTopologyExpectation', () => {
       ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH['WhatDreamsCost-ComfyUI']
         .LTXKeyframer
 
-    expect(matchesTopologyExpectation(expectation, 102, 2)).toBe(true)
+    expect(matchesTopologyExpectation(expectation, 102, 5)).toBe(true)
     expect(matchesTopologyExpectation(expectation, 102, 0)).toBe(false)
-    expect(matchesTopologyExpectation(expectation, 101, 2)).toBe(false)
+    expect(matchesTopologyExpectation(expectation, 101, 5)).toBe(false)
     const vueExpectations =
       ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE['WhatDreamsCost-ComfyUI']
     expect(
-      matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 2)
+      matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 5)
     ).toBe(true)
+    expect(
+      matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 2)
+    ).toBe(false)
     expect(
       matchesTopologyExpectation(vueExpectations.LTXSequencer, 154, 4)
     ).toBe(true)

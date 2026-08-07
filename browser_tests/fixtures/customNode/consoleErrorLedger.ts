@@ -159,6 +159,15 @@ const ENV_CONNECTIVITY_ERROR_ALLOWLIST: Record<
   Record<string, RequiredConnectivityRule[]>
 > = {
   core: {
+    'ComfyUI-Custom-Scripts': [
+      {
+        pattern:
+          /Failed to load resource.*status of 404\b.*http:\/\/localhost:8188\/api\/pysssss\/examples\/loras%2FNone(?:[\s\]]|$)/,
+        reason:
+          'betterCombos requests examples for its literal None default and the pack route returns 404 when no matching lora exists',
+        requiredConnectivityId: 'core-pysssss-lora-none-examples'
+      }
+    ],
     'ComfyUI-VideoHelperSuite': [
       {
         pattern:
