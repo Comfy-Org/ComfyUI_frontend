@@ -81,6 +81,12 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   lines: 70
 }
 
+// WebGL2 / pixel-processing passes that need a real rendering context,
+// which happy-dom does not provide. TODO: cover via browser tests.
+const LAYER_EDITOR_GPU_COVERAGE_EXCLUDE = [
+  'src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts'
+]
+
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
   'src/lib/litegraph/imgs/**',
   'src/lib/litegraph/public/**',
@@ -230,6 +236,7 @@ export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
+    allowedHosts: process.env.AMP_ORB ? true : undefined,
     watch: {
       ignored: [
         './browser_tests/**',
@@ -653,6 +660,11 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/](yjs|lib0)[\\/]/,
               priority: 15
             },
+            {
+              name: 'vendor-ag-psd',
+              test: /[\\/]node_modules[\\/]ag-psd[\\/]/,
+              priority: 15
+            },
 
             // Utilities and validation
             {
@@ -749,6 +761,7 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/locales/**',
         'src/assets/**',
+        ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
       thresholds: {
