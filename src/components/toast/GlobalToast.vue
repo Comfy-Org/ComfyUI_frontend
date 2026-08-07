@@ -8,8 +8,13 @@
         <i
           v-if="slotProps.message.severity === 'warn'"
           class="pi pi-exclamation-circle text-warning-background"
+          aria-hidden="true"
         />
-        <i v-else class="pi pi-spin pi-spinner text-primary" />
+        <i
+          v-else
+          class="pi pi-spin pi-spinner text-primary"
+          aria-hidden="true"
+        />
         <span>{{ slotProps.message.summary }}</span>
       </div>
     </template>
