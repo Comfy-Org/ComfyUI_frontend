@@ -20,7 +20,7 @@ const env = vi.hoisted(() => {
     authenticatedConfigLoaded: false,
     partnerNodeGovernanceEnabled: false,
     userSecretsEnabled: false,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingType: 'legacy' as 'legacy' | 'workspace',
     workspaceRole: 'owner' as 'owner' | 'member',
     partnerNodeGovernanceStatus: 'inactive' as
@@ -50,7 +50,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    canAccessSubscriptionFeatures: env.fakeRef('isActiveSubscription'),
+    canAccessSubscriptionFeatures: env.fakeRef('canAccessSubscriptionFeatures'),
     type: env.fakeRef('billingType')
   })
 }))
@@ -151,7 +151,7 @@ describe('useSettingUI', () => {
       authenticatedConfigLoaded: false,
       partnerNodeGovernanceEnabled: false,
       userSecretsEnabled: false,
-      isActiveSubscription: false,
+      canAccessSubscriptionFeatures: false,
       billingType: 'legacy',
       workspaceRole: 'owner',
       partnerNodeGovernanceStatus: 'inactive',
@@ -234,7 +234,7 @@ describe('useSettingUI', () => {
         isCloud: true,
         isLoggedIn: true,
         authenticatedConfigLoaded: true,
-        isActiveSubscription: true,
+        canAccessSubscriptionFeatures: true,
         billingType: 'workspace'
       })
       window.__CONFIG__ = {
@@ -313,7 +313,7 @@ describe('useSettingUI', () => {
         billingControlEnabled: true,
         authenticatedConfigLoaded: true,
         partnerNodeGovernanceEnabled: true,
-        isActiveSubscription: true
+        canAccessSubscriptionFeatures: true
       })
       window.__CONFIG__ = {
         subscription_required: true
