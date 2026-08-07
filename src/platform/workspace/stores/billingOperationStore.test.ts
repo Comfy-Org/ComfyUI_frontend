@@ -224,6 +224,92 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling success', () => {
+    it('emits only the generic lifecycle for a recovered subscription operation', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-recovered',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-recovered', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackBillingEvent.mock.calls).toEqual([
+        [
+          {
+            operation: 'operation',
+            stage: 'started',
+            outcome: 'pending',
+            operation_type: 'subscription'
+          }
+        ],
+        [
+          {
+            operation: 'operation',
+            stage: 'succeeded',
+            outcome: 'success',
+            billing_op_id: 'op-recovered',
+            operation_type: 'subscription',
+            tier: undefined,
+            cycle: undefined,
+            checkout_type: undefined,
+            payment_intent_source: undefined,
+            duration_ms: 0
+          }
+        ]
+      ])
+    })
+
+    it('closes both terminal streams for an initiated subscription operation', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-initiated',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-initiated', 'subscription', {
+        tier: 'creator',
+        cycle: 'monthly',
+        checkoutType: 'new',
+        attemptStartedAt: Date.now()
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackBillingEvent.mock.calls).toEqual([
+        [
+          {
+            operation: 'operation',
+            stage: 'succeeded',
+            outcome: 'success',
+            billing_op_id: 'op-initiated',
+            operation_type: 'subscription',
+            tier: 'creator',
+            cycle: 'monthly',
+            checkout_type: 'new',
+            payment_intent_source: undefined,
+            duration_ms: 0
+          }
+        ],
+        [
+          {
+            operation: 'subscription_checkout',
+            stage: 'succeeded',
+            outcome: 'success',
+            tier: 'creator',
+            cycle: 'monthly',
+            checkout_type: 'new',
+            payment_intent_source: undefined,
+            billing_op_id: 'op-initiated',
+            duration_ms: 0
+          }
+        ]
+      ])
+    })
+
     it('updates status and shows toast on success', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
@@ -296,7 +382,9 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      void store.startOperation('op-1', 'subscription')
+      void store.startOperation('op-1', 'subscription', {
+        attemptStartedAt: Date.now()
+      })
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -325,7 +413,8 @@ describe('billingOperationStore', () => {
       void store.startOperation('op-1', 'subscription', {
         tier: 'creator',
         cycle: 'yearly',
-        checkoutType: 'new'
+        checkoutType: 'new',
+        attemptStartedAt: Date.now()
       })
 
       await vi.advanceTimersByTimeAsync(0)
@@ -366,10 +455,12 @@ describe('billingOperationStore', () => {
         tier: 'creator',
         cycle: 'monthly',
         checkoutType: 'change',
+        attemptStartedAt: Date.now(),
         downgradeToPersonal: {
           memberRemovalCount: 2,
           memberRemovalFailures: 0,
-          targetTier: 'creator'
+          targetTier: 'creator',
+          startedAt: Date.now()
         }
       })
 
@@ -395,7 +486,9 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      void store.startOperation('op-1', 'topup')
+      void store.startOperation('op-1', 'topup', {
+        attemptStartedAt: Date.now()
+      })
 
       await vi.advanceTimersByTimeAsync(0)
 
@@ -484,7 +577,8 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(1500)
 
       const successCall = mockTrackBillingEvent.mock.calls.find(
-        ([event]) => event.operation === 'topup' && event.stage === 'succeeded'
+        ([event]) =>
+          event.operation === 'operation' && event.stage === 'succeeded'
       )
       expect(successCall?.[0].duration_ms).toBeGreaterThanOrEqual(1500)
     })
@@ -657,7 +751,8 @@ describe('billingOperationStore', () => {
         downgradeToPersonal: {
           memberRemovalCount: 2,
           memberRemovalFailures: 0,
-          targetTier: 'free'
+          targetTier: 'free',
+          startedAt: Date.now()
         }
       })
 

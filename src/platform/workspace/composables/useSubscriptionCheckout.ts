@@ -128,6 +128,7 @@ export function useSubscriptionCheckout(
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   let teamPreviewRequestId = 0
   let refreshStatusOnFocus = false
+  let activeCheckoutAttemptStartedAt: number | undefined
   useEventListener(window, 'focus', () => {
     if (!refreshStatusOnFocus) return
     refreshStatusOnFocus = false
@@ -457,7 +458,7 @@ export function useSubscriptionCheckout(
         cycle: selectedBillingCycle.value,
         checkoutType: 'change'
       },
-      result.preview.is_immediate
+      false
     )
     return true
   }
@@ -640,6 +641,7 @@ export function useSubscriptionCheckout(
     previewData.value = null
     selectedTeamCheckout.value = null
     activeCheckoutOperationId.value = null
+    activeCheckoutAttemptStartedAt = undefined
   }
 
   function handleBackToPricing() {
@@ -677,8 +679,7 @@ export function useSubscriptionCheckout(
         await refreshPreviewOnReactivationBlock(planSlug)
         return
       }
-      const attemptStartedAt = Date.now()
-      trackSubscriptionStarted({
+      const attemptStartedAt = trackSubscriptionStarted({
         tier: tierKey,
         cycle: billingCycle,
         checkoutType
@@ -713,20 +714,23 @@ export function useSubscriptionCheckout(
         checkoutType,
         attemptStartedAt
       })
+      activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
-      trackSubscriptionFailure(
-        {
-          tier: tierKey,
-          cycle: billingCycle,
-          checkoutType
-        },
-        error
-      )
-      if (await recoverOutstandingPayment(error)) return
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
         await refreshPreviewOnReactivationBlock(planSlug)
         return
       }
+      trackSubscriptionFailure(
+        {
+          tier: tierKey,
+          cycle: billingCycle,
+          checkoutType,
+          attemptStartedAt: activeCheckoutAttemptStartedAt
+        },
+        error
+      )
+      activeCheckoutAttemptStartedAt = undefined
+      if (await recoverOutstandingPayment(error)) return
       if (await refreshExpiredProrationQuote(error, planSlug)) return
       showSubscribeError(error)
     } finally {
@@ -758,8 +762,15 @@ export function useSubscriptionCheckout(
     attemptStartedAt?: number
   }
 
-  function trackSubscriptionStarted(context: SubscriptionOutcomeContext) {
-    if (!shouldUseWorkspaceBilling.value) return
+  function trackSubscriptionStarted(
+    context: SubscriptionOutcomeContext
+  ): number | undefined {
+    if (activeCheckoutAttemptStartedAt !== undefined) {
+      return activeCheckoutAttemptStartedAt
+    }
+    if (!shouldUseWorkspaceBilling.value) return undefined
+
+    activeCheckoutAttemptStartedAt = Date.now()
 
     telemetry?.trackBillingEvent({
       operation: 'subscription_checkout',
@@ -770,6 +781,17 @@ export function useSubscriptionCheckout(
       checkout_type: context.checkoutType,
       payment_intent_source: paymentIntentSource
     })
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'subscription',
+      tier: context.tier,
+      cycle: context.cycle,
+      checkout_type: context.checkoutType,
+      payment_intent_source: paymentIntentSource
+    })
+    return activeCheckoutAttemptStartedAt
   }
 
   function trackSubscriptionFailure(
@@ -777,7 +799,7 @@ export function useSubscriptionCheckout(
     error?: unknown,
     errorCode?: 'missing_checkout_response'
   ) {
-    if (!shouldUseWorkspaceBilling.value) return
+    if (context.attemptStartedAt === undefined) return
 
     // No checkout_url is a malformed response, not a caught error — 'unknown' is honest here.
     const failureCategory = errorCode
@@ -793,7 +815,21 @@ export function useSubscriptionCheckout(
       checkout_type: context.checkoutType,
       payment_intent_source: paymentIntentSource,
       failure_category: failureCategory,
-      ...(errorCode && { error_code: errorCode })
+      ...(errorCode && { error_code: errorCode }),
+      duration_ms: Date.now() - context.attemptStartedAt
+    })
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'failed',
+      outcome: 'failure',
+      operation_type: 'subscription',
+      tier: context.tier,
+      cycle: context.cycle,
+      checkout_type: context.checkoutType,
+      payment_intent_source: paymentIntentSource,
+      failure_category: failureCategory,
+      ...(errorCode && { error_code: errorCode }),
+      duration_ms: Date.now() - context.attemptStartedAt
     })
   }
 
@@ -808,7 +844,11 @@ export function useSubscriptionCheckout(
     }
 
     if (response.status === 'subscribed') {
-      if (shouldTrackSubscriptionSuccess) {
+      if (
+        shouldTrackSubscriptionSuccess &&
+        context.attemptStartedAt !== undefined
+      ) {
+        const durationMs = Date.now() - context.attemptStartedAt
         telemetry?.trackBillingEvent({
           operation: 'subscription_checkout',
           stage: 'succeeded',
@@ -817,8 +857,23 @@ export function useSubscriptionCheckout(
           cycle: context.cycle,
           checkout_type: context.checkoutType,
           payment_intent_source: paymentIntentSource,
-          billing_op_id: response.billing_op_id
+          billing_op_id: response.billing_op_id,
+          duration_ms: durationMs
         })
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'succeeded',
+          outcome: 'success',
+          operation_type: 'subscription',
+          tier: context.tier,
+          cycle: context.cycle,
+          checkout_type: context.checkoutType,
+          payment_intent_source: paymentIntentSource,
+          billing_op_id: response.billing_op_id,
+          duration_ms: durationMs
+        })
+      }
+      if (shouldTrackSubscriptionSuccess) {
         // Also fires the legacy event for providers (Mixpanel, GTM) that don't implement trackBillingEvent.
         telemetry?.trackMonthlySubscriptionSucceeded({
           tier: context.tier,
@@ -918,8 +973,7 @@ export function useSubscriptionCheckout(
         })
         return
       }
-      const attemptStartedAt = Date.now()
-      trackSubscriptionStarted({
+      const attemptStartedAt = trackSubscriptionStarted({
         tier: 'team',
         cycle: billingCycle,
         checkoutType
@@ -959,16 +1013,8 @@ export function useSubscriptionCheckout(
         checkoutType,
         attemptStartedAt
       })
+      activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
-      trackSubscriptionFailure(
-        {
-          tier: 'team',
-          cycle: billingCycle,
-          checkoutType
-        },
-        error
-      )
-      if (await recoverOutstandingPayment(error)) return
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
         await refreshPreviewOnReactivationBlock(planSlug, {
           teamCreditStopId: stop.id,
@@ -976,6 +1022,17 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      trackSubscriptionFailure(
+        {
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType,
+          attemptStartedAt: activeCheckoutAttemptStartedAt
+        },
+        error
+      )
+      activeCheckoutAttemptStartedAt = undefined
+      if (await recoverOutstandingPayment(error)) return
       if (
         await refreshExpiredProrationQuote(error, planSlug, {
           teamCreditStopId: stop.id,

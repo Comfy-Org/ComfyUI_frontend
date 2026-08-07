@@ -352,7 +352,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
           operation: 'operation',
           stage: 'succeeded',
           outcome: 'success',
-          operation_type: 'cancel'
+          operation_type: 'cancel',
+          duration_ms: Date.now() - attemptStartedAt
         })
         return
       }
@@ -362,7 +363,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
           stage: 'failed',
           outcome: 'failure',
           operation_type: 'cancel',
-          failure_category: categorizeBillingApiError(err)
+          failure_category: categorizeBillingApiError(err),
+          duration_ms: Date.now() - attemptStartedAt
         })
       }
       error.value =

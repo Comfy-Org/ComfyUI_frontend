@@ -764,10 +764,8 @@ type SubscriptionCheckoutBillingEvent = {
   checkout_type?: SubscriptionCheckoutType
   payment_intent_source?: PaymentIntentSource
   /**
-   * Present when reported off the workspace billing-op poller. Client-observed
-   * end-to-end wall time from this attempt's canonical `started` event through
-   * to this terminal event, including the initiating API call's latency
-   * (not just the poll-observation window).
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
    */
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
@@ -782,7 +780,6 @@ type BillingOperationBillingEvent = {
   checkout_type?: SubscriptionCheckoutType
   payment_intent_source?: PaymentIntentSource
   /**
-   * Present when reported off the workspace billing-op poller.
    * Client-observed end-to-end wall time from this attempt's canonical
    * `started` event through to this terminal event, including the
    * initiating API call's latency (not just the poll-observation window).
@@ -802,10 +799,8 @@ type TopupBillingEvent = {
   operation: 'topup'
   billing_op_id?: string
   /**
-   * Present when reported off the workspace billing-op poller. Client-observed
-   * end-to-end wall time from this attempt's canonical `started` event through
-   * to this terminal event, including the initiating API call's latency
-   * (not just the poll-observation window).
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
    */
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
@@ -816,10 +811,8 @@ type DowngradeToPersonalBillingEvent = {
   member_removal_failures: number
   target_tier?: TierKey
   /**
-   * Present when reported off the workspace billing-op poller. Client-observed
-   * end-to-end wall time from this attempt's canonical `started` event through
-   * to this terminal event, including the initiating API call's latency
-   * (not just the poll-observation window).
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
    */
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)

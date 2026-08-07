@@ -43,6 +43,7 @@ export interface StartOperationMetadata {
     memberRemovalCount: number
     memberRemovalFailures: number
     targetTier?: TierKey
+    startedAt: number
   }
   /**
    * The timestamp the caller used for its own canonical `started` telemetry
@@ -61,8 +62,8 @@ interface BillingOperation {
   status: OperationStatus
   errorMessage: string | null
   startedAt: number
-  /** See `StartOperationMetadata.attemptStartedAt`. Used only for `duration_ms`. */
-  attemptStartedAt: number
+  operationStartedAt: number
+  businessAttemptStartedAt?: number
   actionUrl: string | null
   authenticationRequiredSeen: boolean
   workspaceId: string | null
@@ -150,7 +151,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       status: 'pending',
       errorMessage: null,
       startedAt: now,
-      attemptStartedAt: metadata?.attemptStartedAt ?? now,
+      operationStartedAt: metadata?.attemptStartedAt ?? now,
+      businessAttemptStartedAt: metadata?.attemptStartedAt,
       actionUrl,
       authenticationRequiredSeen: actionUrl !== null,
       workspaceId: workspaceStore.activeWorkspaceId,
@@ -163,6 +165,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     operations.value = new Map(operations.value).set(opId, operation)
     intervals.set(opId, INITIAL_INTERVAL_MS)
+
+    if (metadata?.attemptStartedAt === undefined) {
+      useTelemetry()?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: type
+      })
+    }
 
     if (type !== 'cancel') {
       const messageKey =
@@ -292,7 +303,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
-    const durationMs = Date.now() - operation.attemptStartedAt
+    const now = Date.now()
+    const operationDurationMs = now - operation.operationStartedAt
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'succeeded',
@@ -303,10 +315,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       cycle: operation.cycle,
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
-      duration_ms: durationMs
+      duration_ms: operationDurationMs
     })
 
-    if (operation.type === 'subscription') {
+    if (
+      operation.type === 'subscription' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      const durationMs = now - operation.businessAttemptStartedAt
       telemetry?.trackBillingEvent({
         operation: 'subscription_checkout',
         stage: 'succeeded',
@@ -336,16 +352,19 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           member_removal_failures:
             operation.downgradeToPersonal.memberRemovalFailures,
           target_tier: operation.downgradeToPersonal.targetTier,
-          duration_ms: durationMs
+          duration_ms: now - operation.downgradeToPersonal.startedAt
         })
       }
-    } else if (operation.type === 'topup') {
+    } else if (
+      operation.type === 'topup' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: opId,
-        duration_ms: durationMs
+        duration_ms: now - operation.businessAttemptStartedAt
       })
     }
 
@@ -405,7 +424,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
-    const durationMs = Date.now() - operation.attemptStartedAt
+    const now = Date.now()
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
@@ -417,8 +436,37 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
       failure_category: failureCategory,
-      duration_ms: durationMs
+      duration_ms: now - operation.operationStartedAt
     })
+    if (
+      operation.type === 'subscription' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: operation.tier,
+        cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
+        billing_op_id: opId,
+        failure_category: failureCategory,
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    } else if (
+      operation.type === 'topup' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: opId,
+        failure_category: failureCategory,
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    }
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
@@ -429,7 +477,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
         failure_category: failureCategory,
-        duration_ms: durationMs
+        duration_ms: now - operation.downgradeToPersonal.startedAt
       })
     }
 
@@ -454,7 +502,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
-    const durationMs = Date.now() - operation.attemptStartedAt
+    const now = Date.now()
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'timeout',
@@ -466,8 +514,37 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
       failure_category: 'poll_timeout',
-      duration_ms: durationMs
+      duration_ms: now - operation.operationStartedAt
     })
+    if (
+      operation.type === 'subscription' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: operation.tier,
+        cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
+        billing_op_id: opId,
+        failure_category: 'poll_timeout',
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    } else if (
+      operation.type === 'topup' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: opId,
+        failure_category: 'poll_timeout',
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    }
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
@@ -478,7 +555,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
         failure_category: 'poll_timeout',
-        duration_ms: durationMs
+        duration_ms: now - operation.downgradeToPersonal.startedAt
       })
     }
 

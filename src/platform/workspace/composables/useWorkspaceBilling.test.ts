@@ -861,7 +861,8 @@ describe('useWorkspaceBilling', () => {
         stage: 'failed',
         outcome: 'failure',
         operation_type: 'cancel',
-        failure_category: 'api_rejected'
+        failure_category: 'api_rejected',
+        duration_ms: expect.any(Number)
       })
     })
 
@@ -943,7 +944,8 @@ describe('useWorkspaceBilling', () => {
         operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',
-        operation_type: 'cancel'
+        operation_type: 'cancel',
+        duration_ms: expect.any(Number)
       })
     })
 

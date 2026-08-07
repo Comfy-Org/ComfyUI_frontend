@@ -739,7 +739,7 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('tracks conversion success for an immediate Team downgrade', async () => {
+    it('does not duplicate telemetry owned by the Team downgrade orchestration', async () => {
       mockIsTeamPlan.value = true
       mockShowDowngradeToPersonalDialog.mockResolvedValue({
         preview: { is_immediate: true },
@@ -756,16 +756,7 @@ describe('useSubscriptionCheckout', () => {
       })
 
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
-        operation: 'subscription_checkout',
-        stage: 'succeeded',
-        outcome: 'success',
-        tier: 'creator',
-        cycle: 'monthly',
-        checkout_type: 'change',
-        payment_intent_source: undefined,
-        billing_op_id: 'immediate-downgrade'
-      })
+      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
     })
   })
 
@@ -1293,6 +1284,16 @@ describe('useSubscriptionCheckout', () => {
         checkout_type: 'new',
         payment_intent_source: undefined
       })
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'subscription',
+        tier: 'team',
+        cycle: 'monthly',
+        checkout_type: 'new',
+        payment_intent_source: undefined
+      })
     })
 
     it('subscribes with the team plan slug, stop id and billing cycle', async () => {
@@ -1664,13 +1665,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'status unavailable'
         })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          operation: 'subscription_checkout',
-          stage: 'failed',
-          outcome: 'failure'
-        })
-      )
+      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
     })
 
     // Regression guard: drift recovery must reuse the same reactivation-
@@ -1774,13 +1769,8 @@ describe('useSubscriptionCheckout', () => {
           detail: 'subscription.preview.reactivation.confirmationRequired'
         })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          operation: 'subscription_checkout',
-          stage: 'failed',
-          outcome: 'failure',
-          tier: 'team'
-        })
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
       )
 
       mockPreviewSubscribe.mockResolvedValueOnce(preview)
@@ -1799,6 +1789,19 @@ describe('useSubscriptionCheckout', () => {
         })
       )
       expect(checkout.checkoutStep.value).toBe('success')
+      expect(
+        mockTrackBillingEvent.mock.calls.filter(
+          ([event]) =>
+            event.operation === 'subscription_checkout' &&
+            event.stage === 'started'
+        )
+      ).toHaveLength(1)
+      expect(
+        mockTrackBillingEvent.mock.calls.filter(
+          ([event]) =>
+            event.operation === 'operation' && event.stage === 'started'
+        )
+      ).toHaveLength(1)
     })
 
     it('uses the annual plan slug for the yearly cycle', async () => {
@@ -1902,7 +1905,8 @@ describe('useSubscriptionCheckout', () => {
         cycle: 'yearly',
         checkout_type: 'new',
         payment_intent_source: undefined,
-        failure_category: 'unknown'
+        failure_category: 'unknown',
+        duration_ms: expect.any(Number)
       })
     })
 
@@ -2147,6 +2151,16 @@ describe('useSubscriptionCheckout', () => {
         checkout_type: 'new',
         payment_intent_source: undefined
       })
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'subscription',
+        tier: 'standard',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        payment_intent_source: undefined
+      })
     })
 
     it('shows existing success immediately without owning post-response reconciliation', async () => {
@@ -2176,7 +2190,8 @@ describe('useSubscriptionCheckout', () => {
         cycle: 'yearly',
         checkout_type: 'new',
         payment_intent_source: undefined,
-        billing_op_id: 'op-1'
+        billing_op_id: 'op-1',
+        duration_ms: expect.any(Number)
       })
       expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledWith({
         tier: 'standard',
@@ -2386,7 +2401,8 @@ describe('useSubscriptionCheckout', () => {
         cycle: 'yearly',
         checkout_type: 'new',
         payment_intent_source: undefined,
-        failure_category: 'unknown'
+        failure_category: 'unknown',
+        duration_ms: expect.any(Number)
       })
     })
 
@@ -2407,7 +2423,8 @@ describe('useSubscriptionCheckout', () => {
         checkout_type: 'new',
         payment_intent_source: undefined,
         failure_category: 'unknown',
-        error_code: 'missing_checkout_response'
+        error_code: 'missing_checkout_response',
+        duration_ms: expect.any(Number)
       })
     })
 
@@ -2574,13 +2591,8 @@ describe('useSubscriptionCheckout', () => {
           detail: 'subscription.preview.reactivation.confirmationRequired'
         })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          operation: 'subscription_checkout',
-          stage: 'failed',
-          outcome: 'failure',
-          tier: 'standard'
-        })
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
       )
     })
 

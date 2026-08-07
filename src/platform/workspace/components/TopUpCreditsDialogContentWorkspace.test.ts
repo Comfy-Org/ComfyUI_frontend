@@ -233,6 +233,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         outcome: 'pending'
       })
     )
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'topup'
+    })
   })
 
   it('reports failure telemetry when topup resolves with no response', async () => {
@@ -247,7 +253,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
-        failure_category: 'unknown'
+        failure_category: 'unknown',
+        duration_ms: expect.any(Number)
       })
     )
   })
@@ -380,7 +387,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'failed',
       outcome: 'failure',
       billing_op_id: 'op-1',
-      failure_category: 'unknown'
+      failure_category: 'unknown',
+      duration_ms: expect.any(Number)
     })
     expect(consoleError).toHaveBeenCalledWith('Purchase failed')
     consoleError.mockRestore()
@@ -400,7 +408,16 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       operation: 'topup',
       stage: 'succeeded',
       outcome: 'success',
-      billing_op_id: 'op-1'
+      billing_op_id: 'op-1',
+      duration_ms: expect.any(Number)
+    })
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'operation',
+      stage: 'succeeded',
+      outcome: 'success',
+      operation_type: 'topup',
+      billing_op_id: 'op-1',
+      duration_ms: expect.any(Number)
     })
   })
 
@@ -413,12 +430,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledTimes(2)
+    expect(mockTrackBillingEvent).toHaveBeenCalledTimes(4)
     expect(mockTrackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'succeeded',
       outcome: 'success',
-      billing_op_id: 'op-1'
+      billing_op_id: 'op-1',
+      duration_ms: expect.any(Number)
     })
     expect(mockShowSettings).toHaveBeenCalledWith('workspace')
   })
@@ -454,7 +472,17 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'failed',
       outcome: 'failure',
       billing_op_id: 'op-1',
-      failure_category: 'provider_decline'
+      failure_category: 'provider_decline',
+      duration_ms: expect.any(Number)
+    })
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'operation',
+      stage: 'failed',
+      outcome: 'failure',
+      operation_type: 'topup',
+      billing_op_id: 'op-1',
+      failure_category: 'provider_decline',
+      duration_ms: expect.any(Number)
     })
   })
 
@@ -471,7 +499,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
-        failure_category: 'api_rejected'
+        failure_category: 'api_rejected',
+        duration_ms: expect.any(Number)
       })
     )
   })
