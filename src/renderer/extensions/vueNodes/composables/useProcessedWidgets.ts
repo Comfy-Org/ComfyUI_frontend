@@ -77,6 +77,7 @@ interface ProcessedWidget {
   visible: boolean
   vueComponent: Component
   slotMetadata?: WidgetSlotMetadata
+  linkedDisplay?: 'placeholder' | 'slot'
 }
 
 interface WidgetUiCallbacks {
@@ -322,11 +323,17 @@ export function computeProcessedWidgets({
   } of uniqueWidgets) {
     const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
 
+    const registeredComponent = getComponent(widget.type)
     const vueComponent =
-      getComponent(widget.type) ||
-      (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
+      registeredComponent ?? (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
 
     const { slotMetadata } = widget
+    const linkedDisplay =
+      slotMetadata?.linked && registeredComponent
+        ? shouldExpand(widget.type) || widget.hasLayoutSize
+          ? 'slot'
+          : 'placeholder'
+        : undefined
 
     const value = widgetState?.value as WidgetValue
 
@@ -390,7 +397,8 @@ export function computeProcessedWidgets({
         widget.name,
         widget.nodeId !== undefined
           ? (stripGraphPrefix(widget.nodeId) ?? undefined)
-          : undefined
+          : undefined,
+        Boolean(linkedDisplay)
       )
     }
 
@@ -418,6 +426,7 @@ export function computeProcessedWidgets({
       updateHandler,
       tooltipConfig,
       slotMetadata,
+      linkedDisplay,
       ...(bareWidgetId === null ? {} : { id: bareWidgetId })
     })
   }
@@ -478,7 +487,9 @@ export function useProcessedWidgets(
   const gridTemplateRows = computed((): string =>
     visibleWidgets.value
       .map((w) =>
-        shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
+        !w.linkedDisplay && (shouldExpand(w.type) || w.hasLayoutSize)
+          ? 'auto'
+          : 'min-content'
       )
       .join(' ')
   )

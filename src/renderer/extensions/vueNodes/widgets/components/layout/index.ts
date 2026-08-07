@@ -1,6 +1,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 export const WidgetInputBaseClass = cn([
+  'widget-input-base',
   // Background
   'not-disabled:bg-component-node-widget-background',
   'not-disabled:text-component-node-foreground',
