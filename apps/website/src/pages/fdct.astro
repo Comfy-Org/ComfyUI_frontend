@@ -4,6 +4,7 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import { fdctFaqs } from '../data/fdct'
 import { t } from '../i18n/translations'
 import BuildersSection from '../templates/fdct/BuildersSection.vue'
+import CtaBandsSection from '../templates/fdct/CtaBandsSection.vue'
 import FAQSection from '../templates/fdct/FAQSection.vue'
 import HeroSection from '../templates/fdct/HeroSection.vue'
 import HowItWorksSection from '../templates/fdct/HowItWorksSection.vue'
@@ -45,5 +46,6 @@ const faqPage = faqPageNode(
   <TechnologistsSection client:load locale={locale} />
   <PastProjectsSection client:load locale={locale} />
   <FAQSection client:load locale={locale} />
-  {/* Later sections land here in page order: CTA bands, closing CTA. */}
+  <CtaBandsSection client:load locale={locale} />
+  {/* The closing CTA lands here last. */}
 </BaseLayout>

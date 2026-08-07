@@ -5419,7 +5419,25 @@ const translations = {
     en: 'We match a technologist to each engagement based on the work, your stack, and the timeline. FDCTs come from real production — feature film, commercial, and experiential — with ComfyUI on the back end of shipped work.',
     'zh-CN':
       '我们根据项目内容、你的技术栈和时间表，为每次合作匹配合适的技术专家。FDCT 来自真实制作一线——电影长片、商业广告与体验项目，ComfyUI 支撑着已交付的作品。'
-  }
+  },
+  'fdct.bands.enterprise.label': {
+    en: 'FOR ENTERPRISE',
+    'zh-CN': '面向企业'
+  },
+  'fdct.bands.enterprise.text': {
+    en: "Tell us what you're trying to make. An FDCT validates it after the first call and builds from there.",
+    'zh-CN': '告诉我们你想做什么。首次沟通后，FDCT 会验证它并从此开始构建。'
+  },
+  'fdct.bands.enterprise.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
+  'fdct.bands.creators.label': {
+    en: 'FOR CREATORS',
+    'zh-CN': '面向创作者'
+  },
+  'fdct.bands.creators.text': {
+    en: "Building production-grade content with Comfy? We're hiring from the community.",
+    'zh-CN': '正在用 Comfy 制作生产级内容？我们正在从社区招募。'
+  },
+  'fdct.bands.creators.cta': { en: 'Apply now', 'zh-CN': '立即申请' }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
