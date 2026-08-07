@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import type { MissingNodeType } from '@/types/comfy'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
@@ -814,7 +813,7 @@ describe('hasMissingError', () => {
   })
 })
 
-describe('clearAllErrors', () => {
+describe('clearRunErrors', () => {
   let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
 
@@ -825,7 +824,7 @@ describe('clearAllErrors', () => {
     missingNodesStore = useMissingNodesErrorStore()
   })
 
-  it('resets all error categories and closes error overlay', () => {
+  it('resets run errors and closes the overlay, leaving missing resources', () => {
     executionErrorStore.recordExecutionError({
       prompt_id: 'test',
       timestamp: 0,
@@ -855,19 +854,19 @@ describe('clearAllErrors', () => {
         class_type: 'Test'
       }
     })
-    missingNodesStore.setMissingNodeTypes(
-      fromAny<MissingNodeType[], unknown>([{ type: 'MissingNode', hint: '' }])
-    )
+    missingNodesStore.setMissingNodeTypes([{ type: 'MissingNode', hint: '' }])
     executionErrorStore.showErrorOverlay()
 
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearRunErrors()
 
     expect(executionErrorStore.lastExecutionError).toBeNull()
     expect(executionErrorStore.lastPromptError).toBeNull()
     expect(executionErrorStore.lastNodeErrors).toBeNull()
-    expect(missingNodesStore.missingNodesError).toBeNull()
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
-    expect(executionErrorStore.hasAnyError).toBe(false)
+    expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+      { type: 'MissingNode', hint: '' }
+    ])
+    expect(executionErrorStore.hasAnyError).toBe(true)
   })
 })
 
