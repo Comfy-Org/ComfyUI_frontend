@@ -442,6 +442,17 @@ describe('usePaste', () => {
     )
   })
 
+  it('should ignore paste events without clipboard data', async () => {
+    usePaste()
+
+    document.dispatchEvent(new ClipboardEvent('paste'))
+
+    await Promise.resolve()
+    expect(createNode).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+  })
+
   it('should handle image paste', async () => {
     const mockNode = createMockNode()
     vi.mocked(createNode).mockResolvedValue(mockNode)
@@ -602,7 +613,7 @@ describe('usePaste', () => {
     expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
   })
 
-  it('should prefer the selected image node when mixed media is pasted', () => {
+  it('should prefer the selected image node when mixed media is pasted', async () => {
     const mockNode = createMockLGraphNode({
       is_selected: true,
       pasteFile: vi.fn(),
@@ -619,9 +630,11 @@ describe('usePaste', () => {
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
-    expect(createNode).not.toHaveBeenCalled()
-    expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
+    await vi.waitFor(() => {
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
+    })
     expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
+    expect(createNode).not.toHaveBeenCalled()
   })
 
   it('should call canvas pasteFromClipboard for non-workflow text', () => {

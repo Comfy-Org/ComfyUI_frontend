@@ -812,5 +812,5 @@ const nodeMedia = computed(() => {
 
 const nodeContainerRef = ref<HTMLDivElement>()
 const { isDraggingOver, handleDragOver, handleDragLeave, handleDrop } =
-  useVueNodeDragAndDrop(lgraphNode)
+  useVueNodeDragAndDrop(lgraphNode, toastErrorHandler)
 </script>

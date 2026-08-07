@@ -205,9 +205,7 @@ export const usePaste = () => {
     if (!canvas) return
 
     const clipboardData = e.clipboardData
-    if (!clipboardData) {
-      throw new Error('No clipboard data on clipboard event')
-    }
+    if (!clipboardData) return
 
     // Capture original files before cloning the DataTransfer.
     const files = getFilesFromItems(clipboardData.items)
