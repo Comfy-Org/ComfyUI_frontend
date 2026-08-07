@@ -58,7 +58,10 @@ describe('useTrimPlayback', () => {
     scope = undefined
   })
 
-  function createPlayback({ hasTrimTimeline = true } = {}) {
+  function createPlayback({
+    hasTrimTimeline = true,
+    frameToTime = (frame: number) => frame / 10
+  } = {}) {
     const video = new MockVideoElement()
     const startFrame = ref(0)
     const endFrame = ref(100)
@@ -73,7 +76,7 @@ describe('useTrimPlayback', () => {
         endFrame,
         playheadFrame,
         hasTrimTimeline: ref(hasTrimTimeline),
-        frameToTime: (frame) => frame / 10,
+        frameToTime,
         timeToFrame: (time) => Math.round(time * 10)
       })
     )!
@@ -118,6 +121,36 @@ describe('useTrimPlayback', () => {
     expect(playheadFrame.value).toBe(20)
     expect(video.currentTime).toBe(2)
   })
+
+  it('ignores seeks to a non-finite frame', async () => {
+    const { video, isPlaying, playheadFrame } = createPlayback()
+    video.currentTime = 4
+    await flushSeek()
+    playheadFrame.value = Number.NaN
+
+    isPlaying.value = true
+    await flushSeek()
+
+    expect(video.currentTime).toBe(4)
+    expect(video.play).toHaveBeenCalled()
+  })
+
+  it.for([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'skips seeking when the frame maps to the non-finite time %s',
+    async (mappedTime) => {
+      const { video, isPlaying } = createPlayback({
+        frameToTime: () => mappedTime
+      })
+      video.currentTime = 4
+      await flushSeek()
+
+      isPlaying.value = true
+      await flushSeek()
+
+      expect(video.currentTime).toBe(4)
+      expect(video.paused).toBe(false)
+    }
+  )
 
   it('stops playing when the video refuses to play', async () => {
     const { video, isPlaying } = createPlayback()

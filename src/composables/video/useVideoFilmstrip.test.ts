@@ -7,6 +7,7 @@ import { fetchVideoMetadata } from '@/utils/videoMetadataUtil'
 import {
   DEFAULT_VIDEO_FPS,
   FILMSTRIP_SAMPLE_COUNT,
+  FILMSTRIP_THUMBNAIL_HEIGHT,
   useVideoFilmstrip
 } from './useVideoFilmstrip'
 
@@ -81,20 +82,36 @@ class MockVideoElement {
   }
 }
 
+class MockOffscreenCanvas {
+  constructor(
+    public width: number,
+    public height: number
+  ) {}
+  getContext() {
+    return { drawImage: vi.fn() }
+  }
+  async convertToBlob() {
+    return new Blob(['thumb'], { type: 'image/jpeg' })
+  }
+}
+
 function createMockCanvas(context: unknown = { drawImage: vi.fn() }) {
   return {
     width: 0,
     height: 0,
     getContext: () => context,
-    toDataURL: () => 'data:image/jpeg;base64,thumb'
+    toBlob: (callback: BlobCallback) =>
+      callback(new Blob(['thumb'], { type: 'image/jpeg' }))
   } as unknown as HTMLCanvasElement
 }
 
 function installVideoMocks({
   onVideoCreated,
+  onCanvasCreated,
   canvasContext = { drawImage: vi.fn() } as unknown
 }: {
   onVideoCreated?: (video: MockVideoElement) => void
+  onCanvasCreated?: (canvas: HTMLCanvasElement) => void
   canvasContext?: unknown
 } = {}) {
   const originalCreateElement = document.createElement.bind(document)
@@ -109,7 +126,9 @@ function installVideoMocks({
       return video as unknown as HTMLVideoElement
     }
     if (tagName === 'canvas') {
-      return createMockCanvas(canvasContext)
+      const canvas = createMockCanvas(canvasContext)
+      onCanvasCreated?.(canvas)
+      return canvas
     }
     return originalCreateElement(tagName)
   })
@@ -127,6 +146,7 @@ describe('useVideoFilmstrip', () => {
     scope?.stop()
     scope = undefined
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('estimates total frames from duration and default fps', async () => {
@@ -182,6 +202,10 @@ describe('useVideoFilmstrip', () => {
     expect(fps.value).toBe(24)
     expect(totalFrames.value).toBe(240)
     expect(fileSize.value).toBe(5 * 1024 * 1024)
+    expect(fetchVideoMetadata).toHaveBeenCalledWith(
+      'https://example.com/video.mp4',
+      expect.any(AbortSignal)
+    )
   })
 
   it('derives duration and dimensions from backend metadata when the element reports a non-finite duration', async () => {
@@ -240,6 +264,80 @@ describe('useVideoFilmstrip', () => {
     expect(thumbnails.value).toHaveLength(FILMSTRIP_SAMPLE_COUNT)
   })
 
+  it('captures thumbnails via createImageBitmap when available', async () => {
+    const bitmap = { width: 171, height: 96, close: vi.fn() }
+    const createImageBitmapMock = vi.fn(
+      async (_source: unknown, _options?: ImageBitmapOptions) => bitmap
+    )
+    vi.stubGlobal('createImageBitmap', createImageBitmapMock)
+    vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas)
+
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        video.videoWidth = 1920
+        video.videoHeight = 1080
+      }
+    })
+
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { thumbnails, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
+    )
+
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(thumbnails.value).toHaveLength(FILMSTRIP_SAMPLE_COUNT)
+    expect(createImageBitmapMock).toHaveBeenCalledWith(expect.anything(), {
+      resizeWidth: Math.round(1920 * (FILMSTRIP_THUMBNAIL_HEIGHT / 1080)),
+      resizeHeight: FILMSTRIP_THUMBNAIL_HEIGHT
+    })
+    expect(bitmap.close).toHaveBeenCalledTimes(FILMSTRIP_SAMPLE_COUNT)
+  })
+
+  it('downscales captured thumbnails to the filmstrip height', async () => {
+    let canvas: HTMLCanvasElement | undefined
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        video.videoWidth = 1920
+        video.videoHeight = 1080
+      },
+      onCanvasCreated: (created) => {
+        canvas = created
+      }
+    })
+
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { loading } = runWithScope(() => useVideoFilmstrip(videoUrl))
+
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(canvas?.height).toBe(FILMSTRIP_THUMBNAIL_HEIGHT)
+    expect(canvas?.width).toBe(
+      Math.round(1920 * (FILMSTRIP_THUMBNAIL_HEIGHT / 1080))
+    )
+  })
+
+  it('keeps thumbnails at source size when the video is smaller than the filmstrip height', async () => {
+    let canvas: HTMLCanvasElement | undefined
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        video.videoWidth = 64
+        video.videoHeight = 64
+      },
+      onCanvasCreated: (created) => {
+        canvas = created
+      }
+    })
+
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { loading } = runWithScope(() => useVideoFilmstrip(videoUrl))
+
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(canvas?.width).toBe(64)
+    expect(canvas?.height).toBe(64)
+  })
+
   it('captures the first sample without a seeked event for same-position seeks', async () => {
     installVideoMocks({
       onVideoCreated: (video) => {
@@ -256,6 +354,73 @@ describe('useVideoFilmstrip', () => {
     await vi.waitFor(() => expect(loading.value).toBe(false))
 
     expect(thumbnails.value).toHaveLength(5)
+  })
+
+  it('keeps a placeholder slot when a single thumbnail capture fails', async () => {
+    const bitmap = { width: 171, height: 96, close: vi.fn() }
+    let captureCalls = 0
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => {
+        captureCalls += 1
+        if (captureCalls === 2) throw new Error('decode failed')
+        return bitmap
+      })
+    )
+    vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas)
+    installVideoMocks()
+
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { thumbnails, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
+    )
+
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(thumbnails.value).toHaveLength(FILMSTRIP_SAMPLE_COUNT)
+    expect(thumbnails.value[1]).toBe('')
+    expect(
+      thumbnails.value.filter((thumbnail) => thumbnail !== '')
+    ).toHaveLength(FILMSTRIP_SAMPLE_COUNT - 1)
+  })
+
+  it('aborts a superseded load so its video element is released immediately', async () => {
+    const videos: MockVideoElement[] = []
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        video.autoEmitMetadata = videos.length > 0
+        videos.push(video)
+      }
+    })
+
+    const videoUrl = ref('https://example.com/first.mp4')
+    const { loading } = runWithScope(() => useVideoFilmstrip(videoUrl))
+    await nextTick()
+    expect(videos[0].src).toBe('https://example.com/first.mp4')
+
+    videoUrl.value = 'https://example.com/second.mp4'
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(videos[0].src).toBe('')
+  })
+
+  it('aborts the in-flight load when the scope is disposed', async () => {
+    const videos: MockVideoElement[] = []
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        video.autoEmitMetadata = false
+        videos.push(video)
+      }
+    })
+
+    const videoUrl = ref('https://example.com/video.mp4')
+    runWithScope(() => useVideoFilmstrip(videoUrl))
+    await nextTick()
+    expect(videos[0].src).toBe('https://example.com/video.mp4')
+
+    scope!.stop()
+
+    await vi.waitFor(() => expect(videos[0].src).toBe(''))
   })
 
   it('reports load-failed and resets state when the video errors', async () => {

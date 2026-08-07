@@ -18,6 +18,10 @@ interface UseVideoEditModelOptions {
   height: Ref<number>
 }
 
+function finiteOrZero(value: number | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
 export function useVideoEditModel(
   modelValue: Ref<VideoEditValue>,
   options: UseVideoEditModelOptions
@@ -31,9 +35,13 @@ export function useVideoEditModel(
   const toFrame = (time: number) =>
     timeToFrame(time, duration.value, totalFrames.value, fps.value)
 
-  const trimSection = computed(
-    () => modelValue.value.trim ?? { start_time: 0, duration: 0 }
-  )
+  const trimSection = computed(() => {
+    const trim = modelValue.value.trim
+    return {
+      start_time: finiteOrZero(trim?.start_time),
+      duration: finiteOrZero(trim?.duration)
+    }
+  })
 
   const trimsToVideoEnd = computed(() => trimSection.value.duration === 0)
 
@@ -90,7 +98,12 @@ export function useVideoEditModel(
   const cropBounds = computed<Bounds>({
     get: () => {
       const crop = modelValue.value.crop
-      if (!crop || crop.width <= 0 || crop.height <= 0) {
+      if (
+        !crop ||
+        ![crop.x, crop.y, crop.width, crop.height].every(Number.isFinite) ||
+        crop.width <= 0 ||
+        crop.height <= 0
+      ) {
         return { x: 0, y: 0, width: width.value, height: height.value }
       }
       return { ...crop }

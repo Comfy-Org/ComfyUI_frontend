@@ -4,7 +4,8 @@ import type { Ref } from 'vue'
 import { fetchVideoMetadata } from '@/utils/videoMetadataUtil'
 
 export const DEFAULT_VIDEO_FPS = 20
-export const FILMSTRIP_SAMPLE_COUNT = 20
+export const FILMSTRIP_SAMPLE_COUNT = 5
+export const FILMSTRIP_THUMBNAIL_HEIGHT = 96
 
 const METADATA_EVENT_TIMEOUT_MS = 15000
 const SEEK_EVENT_TIMEOUT_MS = 5000
@@ -17,13 +18,19 @@ interface UseVideoFilmstripOptions {
 }
 
 class EventTimeoutError extends Error {}
+class LoadAbortedError extends Error {}
 
 function waitForEvent(
   target: EventTarget,
   eventName: string,
-  timeoutMs: number
+  timeoutMs: number,
+  signal?: AbortSignal
 ): Promise<Event> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new LoadAbortedError(`Aborted waiting for ${eventName}`))
+      return
+    }
     const onSuccess = (event: Event) => {
       cleanup()
       resolve(event)
@@ -31,6 +38,10 @@ function waitForEvent(
     const onError = () => {
       cleanup()
       reject(new Error(`Failed to load ${eventName}`))
+    }
+    const onAbort = () => {
+      cleanup()
+      reject(new LoadAbortedError(`Aborted waiting for ${eventName}`))
     }
     const timer = setTimeout(() => {
       cleanup()
@@ -40,25 +51,82 @@ function waitForEvent(
       clearTimeout(timer)
       target.removeEventListener(eventName, onSuccess)
       target.removeEventListener('error', onError)
+      signal?.removeEventListener('abort', onAbort)
     }
     target.addEventListener(eventName, onSuccess, { once: true })
     target.addEventListener('error', onError, { once: true })
+    signal?.addEventListener('abort', onAbort, { once: true })
   })
 }
 
-async function captureFrame(
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onloadend = () =>
+      resolve(typeof reader.result === 'string' ? reader.result : '')
+    reader.onerror = () => resolve('')
+    reader.readAsDataURL(blob)
+  })
+}
+
+function canvasToJpegDataUrl(canvas: HTMLCanvasElement): Promise<string> {
+  return new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => resolve(blob ? blobToDataUrl(blob) : ''),
+      'image/jpeg',
+      0.7
+    )
+  })
+}
+
+async function captureFrameViaBitmap(
+  video: HTMLVideoElement,
+  width: number,
+  height: number
+): Promise<string> {
+  const bitmap = await createImageBitmap(video, {
+    resizeWidth: width,
+    resizeHeight: height
+  })
+  const offscreen = new OffscreenCanvas(bitmap.width, bitmap.height)
+  const offscreenContext = offscreen.getContext('2d')
+  if (!offscreenContext) {
+    bitmap.close()
+    return ''
+  }
+  offscreenContext.drawImage(bitmap, 0, 0)
+  bitmap.close()
+  const blob = await offscreen.convertToBlob({
+    type: 'image/jpeg',
+    quality: 0.7
+  })
+  return blobToDataUrl(blob)
+}
+
+function captureFrame(
   video: HTMLVideoElement,
   canvas: HTMLCanvasElement,
   context: CanvasRenderingContext2D
 ): Promise<string> {
-  const width = video.videoWidth
-  const height = video.videoHeight
-  if (width <= 0 || height <= 0) return ''
+  const sourceWidth = video.videoWidth
+  const sourceHeight = video.videoHeight
+  if (sourceWidth <= 0 || sourceHeight <= 0) return Promise.resolve('')
+
+  const scale = Math.min(FILMSTRIP_THUMBNAIL_HEIGHT / sourceHeight, 1)
+  const width = Math.max(Math.round(sourceWidth * scale), 1)
+  const height = Math.max(Math.round(sourceHeight * scale), 1)
+
+  if (
+    typeof createImageBitmap === 'function' &&
+    typeof OffscreenCanvas === 'function'
+  ) {
+    return captureFrameViaBitmap(video, width, height).catch(() => '')
+  }
 
   canvas.width = width
   canvas.height = height
   context.drawImage(video, 0, 0, width, height)
-  return canvas.toDataURL('image/jpeg', 0.7)
+  return canvasToJpegDataUrl(canvas)
 }
 
 async function sampleFilmstripFrames(
@@ -67,9 +135,10 @@ async function sampleFilmstripFrames(
   context: CanvasRenderingContext2D,
   duration: number,
   sampleCount: number,
-  isStale: () => boolean
+  isStale: () => boolean,
+  signal: AbortSignal
 ): Promise<string[]> {
-  const thumbnails: string[] = []
+  const pendingThumbnails: Promise<string>[] = []
   const lastIndex = Math.max(sampleCount - 1, 1)
 
   for (let index = 0; index < sampleCount; index++) {
@@ -81,17 +150,19 @@ async function sampleFilmstripFrames(
     video.currentTime = target
     if (!alreadyAtTarget) {
       try {
-        await waitForEvent(video, 'seeked', SEEK_EVENT_TIMEOUT_MS)
+        await waitForEvent(video, 'seeked', SEEK_EVENT_TIMEOUT_MS, signal)
       } catch (waitError) {
-        if (waitError instanceof EventTimeoutError) continue
+        if (waitError instanceof EventTimeoutError) {
+          pendingThumbnails.push(Promise.resolve(''))
+          continue
+        }
         throw waitError
       }
     }
-    const thumbnail = await captureFrame(video, canvas, context)
-    if (thumbnail) thumbnails.push(thumbnail)
+    pendingThumbnails.push(captureFrame(video, canvas, context))
   }
 
-  return thumbnails
+  return Promise.all(pendingThumbnails)
 }
 
 export function useVideoFilmstrip(
@@ -111,9 +182,16 @@ export function useVideoFilmstrip(
   const error = ref<FilmstripError | null>(null)
 
   let activeLoadId = 0
+  let activeAbort: AbortController | undefined
 
   function isLoadStale(loadId: number, url: string) {
     return loadId !== activeLoadId || videoUrl.value !== url
+  }
+
+  function cancelActiveLoad() {
+    activeLoadId++
+    activeAbort?.abort()
+    activeAbort = undefined
   }
 
   function resetVideoState() {
@@ -127,6 +205,11 @@ export function useVideoFilmstrip(
   }
 
   async function loadVideo(url: string) {
+    activeAbort?.abort()
+    const abortController = new AbortController()
+    activeAbort = abortController
+    const signal = abortController.signal
+
     const loadId = ++activeLoadId
     loading.value = true
     error.value = null
@@ -148,7 +231,12 @@ export function useVideoFilmstrip(
 
     try {
       video.src = url
-      await waitForEvent(video, 'loadedmetadata', METADATA_EVENT_TIMEOUT_MS)
+      await waitForEvent(
+        video,
+        'loadedmetadata',
+        METADATA_EVENT_TIMEOUT_MS,
+        signal
+      )
 
       if (isLoadStale(loadId, url)) return
 
@@ -157,7 +245,7 @@ export function useVideoFilmstrip(
       width.value = video.videoWidth
       height.value = video.videoHeight
 
-      const metadata = await fetchVideoMetadata(url)
+      const metadata = await fetchVideoMetadata(url, signal)
 
       if (isLoadStale(loadId, url)) return
 
@@ -177,7 +265,8 @@ export function useVideoFilmstrip(
         context,
         effectiveDuration,
         sampleCount,
-        () => isLoadStale(loadId, url)
+        () => isLoadStale(loadId, url),
+        signal
       )
 
       if (isLoadStale(loadId, url)) return
@@ -191,6 +280,9 @@ export function useVideoFilmstrip(
       if (loadId === activeLoadId) {
         loading.value = false
       }
+      if (activeAbort === abortController) {
+        activeAbort = undefined
+      }
       video.removeAttribute('src')
       video.load()
     }
@@ -200,7 +292,7 @@ export function useVideoFilmstrip(
     videoUrl,
     (url) => {
       if (!url) {
-        activeLoadId++
+        cancelActiveLoad()
         loading.value = false
         error.value = null
         resetVideoState()
@@ -211,9 +303,7 @@ export function useVideoFilmstrip(
     { immediate: true }
   )
 
-  onScopeDispose(() => {
-    activeLoadId++
-  })
+  onScopeDispose(cancelActiveLoad)
 
   return {
     thumbnails,
