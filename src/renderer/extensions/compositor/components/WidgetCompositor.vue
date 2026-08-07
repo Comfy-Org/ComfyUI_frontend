@@ -109,9 +109,11 @@ watch(() => nodeOutputStore.nodeOutputs, updateOutputUrl, {
 })
 watch(() => nodeOutputStore.nodePreviewImages, updateOutputUrl, { deep: true })
 
-const previewUrl = computed(
-  () => getCompositorPreviewOverride(nodeId) ?? outputUrl.value
-)
+const previewUrl = computed(() => {
+  const node = litegraphNode.value
+  const override = node ? getCompositorPreviewOverride(node) : undefined
+  return override ?? outputUrl.value
+})
 
 watch(previewUrl, () => {
   naturalSize.value = null
@@ -121,7 +123,10 @@ const dimensionsLabel = computed(() =>
   naturalSize.value ? `${naturalSize.value.w} × ${naturalSize.value.h}` : null
 )
 
-const canOpen = computed(() => hasCompositorLayers(nodeId))
+const canOpen = computed(() => {
+  const node = litegraphNode.value
+  return node !== null && hasCompositorLayers(node)
+})
 
 function onPreviewLoad(event: Event): void {
   const img = event.target as HTMLImageElement

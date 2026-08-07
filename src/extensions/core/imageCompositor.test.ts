@@ -25,6 +25,7 @@ vi.mock('@/services/extensionService', () => ({
 }))
 
 const nodeId = toNodeId(11)
+const cacheNode = { id: nodeId } as unknown as LGraphNode
 
 function makeNode() {
   const savedValue = { layers: [] }
@@ -59,7 +60,7 @@ function createdNode() {
 
 describe('ImageCompositor extension', () => {
   beforeEach(() => {
-    clearCompositorLayers(nodeId)
+    clearCompositorLayers(cacheNode)
   })
 
   it('caches executed layers together with the inputs fingerprint', () => {
@@ -73,11 +74,11 @@ describe('ImageCompositor extension', () => {
       compositor_inputs: ['hash-a', 'hash-b']
     })
 
-    expect(getCompositorLayers(nodeId)).toEqual([
+    expect(getCompositorLayers(node)).toEqual([
       { filename: 'a.png', subfolder: 'sub', type: 'temp' },
       { filename: 'b.png', subfolder: '', type: 'temp' }
     ])
-    expect(getCompositorInputsFingerprint(nodeId)).toEqual(['hash-a', 'hash-b'])
+    expect(getCompositorInputsFingerprint(node)).toEqual(['hash-a', 'hash-b'])
   })
 
   it('caches executed bboxes, keeping null entries index-aligned', () => {
@@ -92,7 +93,7 @@ describe('ImageCompositor extension', () => {
       ]
     })
 
-    expect(getCompositorBBoxes(nodeId)).toEqual([
+    expect(getCompositorBBoxes(node)).toEqual([
       { x: 10, y: 20, width: 30, height: 40, name: 'Subject' },
       null
     ])
@@ -106,7 +107,7 @@ describe('ImageCompositor extension', () => {
       compositor_inputs: ['hash-a']
     })
 
-    expect(getCompositorBBoxes(nodeId)).toBeUndefined()
+    expect(getCompositorBBoxes(node)).toBeUndefined()
   })
 
   it('resets the compositor widget when the state is stale', () => {
@@ -144,8 +145,8 @@ describe('ImageCompositor extension', () => {
 
     node.onRemoved?.()
 
-    expect(getCompositorLayers(nodeId)).toBeUndefined()
-    expect(getCompositorInputsFingerprint(nodeId)).toBeUndefined()
+    expect(getCompositorLayers(node)).toBeUndefined()
+    expect(getCompositorInputsFingerprint(node)).toBeUndefined()
   })
 
   it('chains through the prior onExecuted and onRemoved handlers', () => {
@@ -171,8 +172,8 @@ describe('ImageCompositor extension', () => {
       ]
     })
 
-    expect(getCompositorLayers(nodeId)).toHaveLength(2)
-    expect(getCompositorBBoxes(nodeId)?.map((bbox) => bbox?.name)).toEqual([
+    expect(getCompositorLayers(node)).toHaveLength(2)
+    expect(getCompositorBBoxes(node)?.map((bbox) => bbox?.name)).toEqual([
       'a',
       'c'
     ])

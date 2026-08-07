@@ -39,12 +39,13 @@ useExtensionService().registerExtension({
         subfolder: layer.subfolder ?? '',
         type: layer.type ?? 'temp'
       }))
-      const bboxes = output.compositor_bboxes
-        ? kept.map(([, index]) => output.compositor_bboxes?.[index] ?? null)
+      const rawBboxes = output.compositor_bboxes
+      const bboxes = rawBboxes
+        ? kept.map(([, index]) => rawBboxes[index] ?? null)
         : undefined
       if (layers.length)
-        setCompositorLayers(node.id, layers, output.compositor_inputs, bboxes)
-      clearCompositorPreviewOverride(node.id)
+        setCompositorLayers(node, layers, output.compositor_inputs, bboxes)
+      clearCompositorPreviewOverride(node)
 
       if (output.compositor_state_stale?.[0]) {
         resetCompositorStateWidgets(node)
@@ -55,7 +56,7 @@ useExtensionService().registerExtension({
     const onRemoved = node.onRemoved
     node.onRemoved = function () {
       onRemoved?.call(this)
-      clearCompositorLayers(node.id)
+      clearCompositorLayers(node)
     }
   }
 })

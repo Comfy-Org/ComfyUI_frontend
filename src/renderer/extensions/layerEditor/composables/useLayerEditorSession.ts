@@ -468,10 +468,12 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
       inputOrderIds.push(layer.id)
     }
     if (docWidth > 0 && docHeight > 0) {
+      const width = Math.min(docWidth, CANVAS_SIZE_MAX)
+      const height = Math.min(docHeight, CANVAS_SIZE_MAX)
       const doc = editor.document()
-      doc.width = docWidth
-      doc.height = docHeight
-      if (glOk.value) compositor.resize(docWidth, docHeight)
+      doc.width = width
+      doc.height = height
+      if (glOk.value) compositor.resize(width, height)
     }
     editor.history.clear()
     fitView()

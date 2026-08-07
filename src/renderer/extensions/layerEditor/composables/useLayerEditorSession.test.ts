@@ -274,9 +274,13 @@ describe('useLayerEditorSession', () => {
       expect(session.canUndo.value).toBe(false)
     })
 
-    it('skips images that fail to load', async () => {
+    it('skips images that fail to load and reports the count', async () => {
       const { session } = makeSession()
-      await session.loadImages(['missing.png', 'a.png'], ['M', 'A'])
+      const failed = await session.loadImages(
+        ['missing.png', 'a.png'],
+        ['M', 'A']
+      )
+      expect(failed).toBe(1)
       const doc = session.editor.document()
       expect(doc.root.children.map((n) => n.name)).toEqual(['Background', 'A'])
       expect(doc.width).toBe(64)
@@ -362,6 +366,13 @@ describe('useLayerEditorSession', () => {
       session.moveLayer(session.imageLayers.value[0].id, 1)
       expect(session.imageLayers.value.map((n) => n.name)).toEqual(['B', 'A'])
       expect(session.layers.value[0].kind).toBe('fill')
+    })
+
+    it('lets Escape through to the dialog when there is nothing to cancel', async () => {
+      const { session } = await loadedSession()
+      const preventDefault = vi.fn()
+      session.onKeyDown(key({ key: 'Escape', preventDefault }))
+      expect(preventDefault).not.toHaveBeenCalled()
     })
 
     it('exposes a fresh activeNode snapshot after each edit so bindings update', async () => {

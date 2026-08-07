@@ -94,8 +94,14 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close', restore: 'Restore' },
-      layerEditor: { title: 'Layer Editor' }
+      g: { close: 'Close', restore: 'Restore', error: 'Error' },
+      compositor: { saveFailed: 'Failed to save composite' },
+      layerEditor: {
+        title: 'Layer Editor',
+        loadFailed: 'Failed to load layers',
+        layersFailedToLoad:
+          'One layer failed to load | {count} layers failed to load'
+      }
     }
   }
 })
@@ -214,10 +220,27 @@ describe('LayerEditorContent', () => {
 
     await vi.waitFor(() =>
       expect(toastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn' })
+        expect.objectContaining({
+          severity: 'warn',
+          detail: '2 layers failed to load'
+        })
       )
     )
     expect(useCompositorAutoSave).not.toHaveBeenCalled()
+  })
+
+  it('warns on close when edits could not be auto-saved', async () => {
+    loadCompositorSession.mockResolvedValueOnce(2)
+    const { unmount } = renderEditor('compositor')
+    await vi.waitFor(() => expect(toastAdd).toHaveBeenCalled())
+    session.editor.history.canUndo.mockReturnValue(true)
+
+    unmount()
+
+    expect(saveLayerState).not.toHaveBeenCalled()
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: 'Failed to save composite' })
+    )
   })
 
   it('reports a failed layer load and withholds auto-save', async () => {

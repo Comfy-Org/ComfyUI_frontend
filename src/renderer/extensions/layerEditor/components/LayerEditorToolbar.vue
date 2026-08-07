@@ -80,7 +80,7 @@
     </button>
     <button
       :class="toolButtonClass(false)"
-      :disabled="exporting"
+      :disabled="exporting || !session.glOk.value"
       :title="t('layerEditor.exportPsd')"
       :aria-label="t('layerEditor.exportPsd')"
       @click="onExportPsd"

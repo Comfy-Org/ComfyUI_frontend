@@ -235,6 +235,20 @@ describe('parseLayerState', () => {
     expect(parseLayerState({ version: 'x', layers: [] })).toBeNull()
   })
 
+  it('returns copies of validated arrays instead of aliasing the input', () => {
+    const rawInputs = ['hash-a']
+    const rawOrder = [1, 0]
+    const state = parseLayerState({
+      inputs: rawInputs,
+      order: rawOrder,
+      layers: [null, null]
+    })
+    expect(state?.inputs).toEqual(rawInputs)
+    expect(state?.inputs).not.toBe(rawInputs)
+    expect(state?.order).toEqual(rawOrder)
+    expect(state?.order).not.toBe(rawOrder)
+  })
+
   it('surfaces a string-array inputs field', () => {
     const state = parseLayerState(
       JSON.stringify({ inputs: ['hash-a', 'hash-b'], layers: [] })
@@ -366,7 +380,7 @@ describe('parseLayerState', () => {
       JSON.stringify({
         canvas: { w: 10, h: 20 },
         layers: [
-          { name: 'bad blend', visible: true, opacity: 1, blend: 'nope' },
+          { name: 'bad blend', visible: true, opacity: 1, blend: 'toString' },
           {
             name: 'ok',
             visible: true,
@@ -605,6 +619,24 @@ describe('applyLayerState', () => {
     expect(ops.setLayerOrder).not.toHaveBeenCalled()
   })
 
+  it('drops non-string layout names instead of throwing mid-restore', () => {
+    const ops = makeOps()
+    const state = resolveInitialLayerState(null, undefined, [
+      {
+        x: 0,
+        y: 0,
+        width: 5,
+        height: 5,
+        name: 7 as unknown as string
+      }
+    ])
+    expect(state).not.toBeNull()
+
+    applyLayerState(state!, [{ id: 'a', visible: true }], ops)
+
+    expect(ops.renameLayer).not.toHaveBeenCalled()
+  })
+
   it('carries initial visibility, opacity, and blend from layer entries', () => {
     const ops = makeOps()
     const state = resolveInitialLayerState(null, undefined, [
@@ -614,6 +646,7 @@ describe('applyLayerState', () => {
         width: 10,
         height: 10,
         name: 'Shaded',
+        rotation: Math.PI / 2,
         visible: false,
         opacity: 0.5,
         blend: 'multiply',
@@ -628,6 +661,7 @@ describe('applyLayerState', () => {
     expect(ops.setOpacity).toHaveBeenCalledWith('a', 0.5)
     expect(ops.setBlendMode).toHaveBeenCalledWith('a', 'multiply')
     expect(ops.flipLayer).toHaveBeenCalledWith('a', 'h')
+    expect(ops.setLayerRotationDeg).toHaveBeenCalledWith('a', 90)
   })
 
   it('applies only the fields present on partial bbox-derived entries', () => {

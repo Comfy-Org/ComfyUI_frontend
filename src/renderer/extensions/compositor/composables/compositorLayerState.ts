@@ -47,6 +47,7 @@ export interface CompositorBBox {
   width: number
   height: number
   name?: string | null
+  rotation?: number
   visible?: boolean
   opacity?: number
   blend?: string
@@ -303,7 +304,7 @@ function bboxLayerState(
               y: bbox.y,
               w: bbox.width,
               h: bbox.height,
-              rotation: 0
+              rotation: isFiniteNumber(bbox.rotation) ? bbox.rotation : 0
             }
           }
         : null

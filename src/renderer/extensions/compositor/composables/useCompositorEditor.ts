@@ -1,6 +1,9 @@
 import { useI18n } from 'vue-i18n'
 
-import { hasCompositorLayers } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
+import {
+  getCompositorInputsFingerprint,
+  hasCompositorLayers
+} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import {
   LAYER_EDITOR_DIALOG_KEY,
   LayerEditorDialogContent,
@@ -15,7 +18,10 @@ export function useCompositorEditor() {
   const { t } = useI18n()
 
   const openCompositorEditor = (node: LGraphNode): void => {
-    if (!hasCompositorLayers(node.id)) {
+    if (
+      !hasCompositorLayers(node) ||
+      !getCompositorInputsFingerprint(node)?.length
+    ) {
       useToastStore().add({
         severity: 'info',
         summary: t('layerEditor.title'),

@@ -33,7 +33,7 @@ describe('useCompositorEditor', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    clearCompositorLayers(node.id)
+    clearCompositorLayers(node)
   })
 
   it('shows a toast and keeps the dialog closed without cached layers', () => {
@@ -48,10 +48,28 @@ describe('useCompositorEditor', () => {
     expect(showDialog).not.toHaveBeenCalled()
   })
 
-  it('opens the layer editor in compositor mode when layers are cached', () => {
-    setCompositorLayers(node.id, [
+  it('shows a toast when layers are cached without a fingerprint', () => {
+    setCompositorLayers(node, [
       { filename: 'a.png', subfolder: '', type: 'temp' }
     ])
+
+    useCompositorEditor().openCompositorEditor(node)
+
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'info',
+        detail: 'compositor.runWorkflowFirst'
+      })
+    )
+    expect(showDialog).not.toHaveBeenCalled()
+  })
+
+  it('opens the layer editor in compositor mode when layers are cached', () => {
+    setCompositorLayers(
+      node,
+      [{ filename: 'a.png', subfolder: '', type: 'temp' }],
+      ['hash-a']
+    )
 
     useCompositorEditor().openCompositorEditor(node)
 

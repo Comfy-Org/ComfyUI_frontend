@@ -32,7 +32,7 @@ export function saveCompositorLayerState(
       session.canvasSize.value,
       session.layers.value,
       session.layerFlips,
-      getCompositorInputsFingerprint(node.id),
+      getCompositorInputsFingerprint(node),
       session.inputLayerIds()
     )
     if (!layerState.inputs) {
@@ -56,7 +56,7 @@ export async function saveCompositorPreview(
   try {
     session.editor.render()
     const blob = await session.compositor.toBlob()
-    setCompositorPreviewOverride(node.id, URL.createObjectURL(blob))
+    setCompositorPreviewOverride(node, URL.createObjectURL(blob))
   } catch (err) {
     console.error('[Compositor] Preview render failed:', err)
   }

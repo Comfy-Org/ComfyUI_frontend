@@ -1289,7 +1289,7 @@
     "title": "Compositor",
     "webglUnavailable": "WebGL is unavailable - the canvas cannot render",
     "loadFailed": "Failed to load layers",
-    "layersFailedToLoad": "{count} layer(s) failed to load - editing is disabled to protect the saved composition",
+    "layersFailedToLoad": "One layer failed to load | {count} layers failed to load",
     "selectTool": "Select",
     "handTool": "Hand",
     "zoom": "Zoom",

@@ -46,10 +46,12 @@ function makeNode() {
   return { node, compositorWidget }
 }
 
+const cacheNode = { id: toNodeId(7) } as unknown as LGraphNode
+
 beforeEach(() => {
   vi.useFakeTimers()
   setCompositorLayers(
-    toNodeId(7),
+    cacheNode,
     [{ filename: 'a.png', subfolder: '', type: 'temp' }],
     ['hash-a']
   )
@@ -57,10 +59,23 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers()
-  clearCompositorLayers(toNodeId(7))
+  clearCompositorLayers(cacheNode)
 })
 
 describe('useCompositorAutoSave', () => {
+  it('leaves the widget untouched when no fingerprint is cached', () => {
+    clearCompositorLayers(cacheNode)
+    const session = makeSession()
+    const { node, compositorWidget } = makeNode()
+    useCompositorAutoSave(session, node)
+
+    session.emitHistoryChange()
+    vi.advanceTimersByTime(2000)
+
+    expect(compositorWidget.callback).not.toHaveBeenCalled()
+    expect(node.widgets_values).toEqual([{}])
+  })
+
   it('debounces history changes into a single widget write', () => {
     const session = makeSession()
     const { node, compositorWidget } = makeNode()

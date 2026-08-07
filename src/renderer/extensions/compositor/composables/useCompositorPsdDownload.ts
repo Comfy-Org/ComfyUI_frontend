@@ -26,9 +26,10 @@ export function useCompositorPsdDownload(
     try {
       session = createSession()
       if (!session.glOk.value) throw new Error('WebGL compositor unavailable')
-      await loadCompositorSession(session, node, (i) =>
+      const failed = await loadCompositorSession(session, node, (i) =>
         t('layerEditor.layerN', { n: i + 1 })
       )
+      if (failed > 0) throw new Error(`${failed} layer(s) failed to load`)
       const blob = await buildSessionPsdBlob(session)
       downloadBlob(psdExportFilename(new Date()), blob)
     } catch (err) {
@@ -36,7 +37,10 @@ export function useCompositorPsdDownload(
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('layerEditor.exportPsdFailed')
+        detail:
+          session && !session.glOk.value
+            ? t('layerEditor.webglUnavailable')
+            : t('layerEditor.exportPsdFailed')
       })
     } finally {
       session?.dispose()

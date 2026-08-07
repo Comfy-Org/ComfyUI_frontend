@@ -112,15 +112,22 @@ function finalizeCompositorSession(): void {
     autoSave?.stop()
     if (autoSave && sessionHasEdits()) {
       session.editor.anchorFloating()
-      if (!saveCompositorLayerState(session, node)) {
+      if (saveCompositorLayerState(session, node)) {
+        void saveCompositorPreview(session, node)
+        node.graph?.setDirtyCanvas(true)
+      } else {
         useToastStore().add({
           severity: 'error',
           summary: t('g.error'),
           detail: t('compositor.saveFailed')
         })
       }
-      void saveCompositorPreview(session, node)
-      node.graph?.setDirtyCanvas(true)
+    } else if (sessionHasEdits()) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('compositor.saveFailed')
+      })
     }
   } finally {
     changeTracker?.afterChange()
@@ -145,6 +152,7 @@ onMounted(() => {
       })
       .catch((err) => {
         console.error('[Compositor] Loading layers failed:', err)
+        if (closed) return
         useToastStore().add({
           severity: 'error',
           summary: t('g.error'),
@@ -157,6 +165,14 @@ onMounted(() => {
   const names = urls.map((url, i) => layerName(url, i))
   session
     .loadImages(urls, names)
+    .then((failed) => {
+      if (closed || failed === 0) return
+      useToastStore().add({
+        severity: 'warn',
+        summary: t('layerEditor.title'),
+        detail: t('layerEditor.layersFailedToLoad', { count: failed })
+      })
+    })
     .catch((err) => console.error('[LayerEditor] Loading images failed:', err))
 })
 

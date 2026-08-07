@@ -20,7 +20,7 @@ export async function loadCompositorSession(
   node: LGraphNode,
   fallbackLayerName: (index: number) => string
 ): Promise<number> {
-  const refs = getCompositorLayers(node.id) ?? []
+  const refs = getCompositorLayers(node) ?? []
   const rand = app.getRandParam()
   const urls = refs.map((fileRef) =>
     api.apiURL(`/view?${imageRefViewQuery(fileRef)}${rand}`)
@@ -33,8 +33,8 @@ export async function loadCompositorSession(
 
   const initialState = resolveInitialLayerState(
     parseLayerState(getCompositorWidgetValue(node)),
-    getCompositorInputsFingerprint(node.id),
-    getCompositorBBoxes(node.id)
+    getCompositorInputsFingerprint(node),
+    getCompositorBBoxes(node)
   )
   if (initialState) {
     applyLayerState(initialState, session.imageLayers.value, session)

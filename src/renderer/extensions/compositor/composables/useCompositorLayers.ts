@@ -2,7 +2,12 @@ import { reactive } from 'vue'
 
 import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
 import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/compositorPaths'
-import type { NodeId } from '@/types/nodeId'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { isSubgraph } from '@/utils/typeGuardUtil'
+
+type CompositorNodeRef = Pick<LGraphNode, 'id' | 'graph'>
 
 interface CompositorNodeCache {
   layers: ImageFileRef[]
@@ -10,16 +15,23 @@ interface CompositorNodeCache {
   bboxes?: (CompositorBBox | null)[]
 }
 
-const cacheByNode = reactive(new Map<NodeId, CompositorNodeCache>())
-const previewOverrideByNode = reactive(new Map<NodeId, string>())
+const cacheByNode = reactive(new Map<NodeLocatorId, CompositorNodeCache>())
+const previewOverrideByNode = reactive(new Map<NodeLocatorId, string>())
+
+function cacheKey(node: CompositorNodeRef): NodeLocatorId {
+  return createNodeLocatorId(
+    isSubgraph(node.graph) ? node.graph.id : null,
+    node.id
+  )
+}
 
 export function setCompositorLayers(
-  nodeId: NodeId,
+  node: CompositorNodeRef,
   refs: ImageFileRef[],
   inputsFingerprint?: string[],
   bboxes?: (CompositorBBox | null)[]
 ): void {
-  cacheByNode.set(nodeId, {
+  cacheByNode.set(cacheKey(node), {
     layers: refs,
     ...(inputsFingerprint ? { inputsFingerprint } : {}),
     ...(bboxes ? { bboxes } : {})
@@ -27,26 +39,26 @@ export function setCompositorLayers(
 }
 
 export function getCompositorLayers(
-  nodeId: NodeId
+  node: CompositorNodeRef
 ): ImageFileRef[] | undefined {
-  return cacheByNode.get(nodeId)?.layers
+  return cacheByNode.get(cacheKey(node))?.layers
 }
 
 export function getCompositorInputsFingerprint(
-  nodeId: NodeId
+  node: CompositorNodeRef
 ): string[] | undefined {
-  return cacheByNode.get(nodeId)?.inputsFingerprint
+  return cacheByNode.get(cacheKey(node))?.inputsFingerprint
 }
 
 export function getCompositorBBoxes(
-  nodeId: NodeId
+  node: CompositorNodeRef
 ): (CompositorBBox | null)[] | undefined {
-  return cacheByNode.get(nodeId)?.bboxes
+  return cacheByNode.get(cacheKey(node))?.bboxes
 }
 
-export function clearCompositorLayers(nodeId: NodeId): void {
-  cacheByNode.delete(nodeId)
-  clearCompositorPreviewOverride(nodeId)
+export function clearCompositorLayers(node: CompositorNodeRef): void {
+  cacheByNode.delete(cacheKey(node))
+  clearCompositorPreviewOverride(node)
 }
 
 function revokeIfObjectUrl(url: string | undefined): void {
@@ -54,24 +66,26 @@ function revokeIfObjectUrl(url: string | undefined): void {
 }
 
 export function setCompositorPreviewOverride(
-  nodeId: NodeId,
+  node: CompositorNodeRef,
   url: string
 ): void {
-  revokeIfObjectUrl(previewOverrideByNode.get(nodeId))
-  previewOverrideByNode.set(nodeId, url)
+  const key = cacheKey(node)
+  revokeIfObjectUrl(previewOverrideByNode.get(key))
+  previewOverrideByNode.set(key, url)
 }
 
 export function getCompositorPreviewOverride(
-  nodeId: NodeId
+  node: CompositorNodeRef
 ): string | undefined {
-  return previewOverrideByNode.get(nodeId)
+  return previewOverrideByNode.get(cacheKey(node))
 }
 
-export function clearCompositorPreviewOverride(nodeId: NodeId): void {
-  revokeIfObjectUrl(previewOverrideByNode.get(nodeId))
-  previewOverrideByNode.delete(nodeId)
+export function clearCompositorPreviewOverride(node: CompositorNodeRef): void {
+  const key = cacheKey(node)
+  revokeIfObjectUrl(previewOverrideByNode.get(key))
+  previewOverrideByNode.delete(key)
 }
 
-export function hasCompositorLayers(nodeId: NodeId): boolean {
-  return (cacheByNode.get(nodeId)?.layers.length ?? 0) > 0
+export function hasCompositorLayers(node: CompositorNodeRef): boolean {
+  return (cacheByNode.get(cacheKey(node))?.layers.length ?? 0) > 0
 }

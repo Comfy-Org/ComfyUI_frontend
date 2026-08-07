@@ -66,14 +66,16 @@ function widgetValue(widget: IBaseWidget): CompositorLayerState {
   return widget.value as CompositorLayerState
 }
 
+const cacheNode = { id: toNodeId(7) } as unknown as LGraphNode
+
 beforeEach(() => {
   vi.clearAllMocks()
-  clearCompositorLayers(toNodeId(7))
+  clearCompositorLayers(cacheNode)
 })
 
 function cacheFingerprint() {
   setCompositorLayers(
-    toNodeId(7),
+    cacheNode,
     [{ filename: 'a.png', subfolder: '', type: 'temp' }],
     ['hash-a', 'hash-b']
   )
@@ -104,7 +106,7 @@ describe('saveCompositorLayerState', () => {
 
   it('embeds the cached inputs fingerprint into the saved state', () => {
     setCompositorLayers(
-      toNodeId(7),
+      cacheNode,
       [{ filename: 'a.png', subfolder: '', type: 'temp' }],
       ['hash-a', 'hash-b']
     )
@@ -149,7 +151,7 @@ describe('saveCompositorPreview', () => {
 
     expect(session.editor.render).toHaveBeenCalled()
     expect(session.compositor.toBlob).toHaveBeenCalled()
-    expect(getCompositorPreviewOverride(node.id)).toMatch(/^blob:/)
+    expect(getCompositorPreviewOverride(node)).toMatch(/^blob:/)
   })
 
   it('leaves the preview untouched when rendering fails', async () => {
@@ -159,6 +161,6 @@ describe('saveCompositorPreview', () => {
 
     await saveCompositorPreview(session, node)
 
-    expect(getCompositorPreviewOverride(node.id)).toBeUndefined()
+    expect(getCompositorPreviewOverride(node)).toBeUndefined()
   })
 })

@@ -11,7 +11,7 @@ const { buildSessionPsdBlob, downloadBlob, loadCompositorSession, toastAdd } =
   vi.hoisted(() => ({
     buildSessionPsdBlob: vi.fn(async () => new Blob(['psd'])),
     downloadBlob: vi.fn(),
-    loadCompositorSession: vi.fn().mockResolvedValue(undefined),
+    loadCompositorSession: vi.fn().mockResolvedValue(0),
     toastAdd: vi.fn()
   }))
 
@@ -48,7 +48,7 @@ const node = { id: toNodeId(5) } as unknown as LGraphNode
 describe('useCompositorPsdDownload', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    loadCompositorSession.mockResolvedValue(undefined)
+    loadCompositorSession.mockResolvedValue(0)
     buildSessionPsdBlob.mockResolvedValue(new Blob(['psd']))
   })
 
@@ -86,9 +86,24 @@ describe('useCompositorPsdDownload', () => {
     expect(toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
-        detail: 'layerEditor.exportPsdFailed'
+        detail: 'layerEditor.webglUnavailable'
       })
     )
+    expect(session.dispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('refuses to export when some layers failed to load', async () => {
+    loadCompositorSession.mockResolvedValueOnce(2)
+    const session = makeSession()
+    const { downloadPsd } = useCompositorPsdDownload(
+      () => session as unknown as LayerEditorSession
+    )
+
+    await downloadPsd(node)
+
+    expect(buildSessionPsdBlob).not.toHaveBeenCalled()
+    expect(downloadBlob).not.toHaveBeenCalled()
+    expect(toastAdd).toHaveBeenCalledTimes(1)
     expect(session.dispose).toHaveBeenCalledTimes(1)
   })
 
