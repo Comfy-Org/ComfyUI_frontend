@@ -56,6 +56,16 @@ test.describe('Wan Animate 2 announcement page @smoke', () => {
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
+  test('footer links back to this page', async ({ page }) => {
+    const footerLink = page
+      .locator('footer')
+      .getByRole('link', { name: t('footer.wanAnimate2') })
+    await expect(footerLink).toHaveAttribute(
+      'href',
+      getRoutes('en').wanAnimate2
+    )
+  })
+
   test('renders run options and reviews', async ({ page }) => {
     const runOptions = page.getByRole('heading', {
       level: 2,
@@ -108,11 +118,21 @@ test.describe('Wan Animate 2 announcement page — zh-CN', () => {
     ).toBeVisible()
   })
 
-  test('breadcrumb keeps visitors inside the locale', async ({ page }) => {
+  test('breadcrumb and footer keep visitors inside the locale', async ({
+    page
+  }) => {
     const modelsCrumb = page
       .getByRole('navigation', { name: t('ui.breadcrumb', 'zh-CN') })
       .getByRole('link', { name: t('models.breadcrumb.models', 'zh-CN') })
     await expect(modelsCrumb).toHaveAttribute('href', getRoutes('zh-CN').models)
+
+    const footerLink = page
+      .locator('footer')
+      .getByRole('link', { name: t('footer.wanAnimate2', 'zh-CN') })
+    await expect(footerLink).toHaveAttribute(
+      'href',
+      getRoutes('zh-CN').wanAnimate2
+    )
   })
 })
 
