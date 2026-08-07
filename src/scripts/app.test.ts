@@ -1301,17 +1301,15 @@ describe('ComfyApp', () => {
     })
   })
 
-    it('should process image files with empty MIME type when extension is recognized', async () => {
-      const mockNode = createMockNode({ id: 1 })
-      vi.mocked(pasteImageNodes).mockResolvedValue([mockNode])
+  it('should process image files with empty MIME type when extension is recognized', async () => {
+    const mockNode = createMockNode({ id: 1 })
+    vi.mocked(pasteImageNodes).mockResolvedValue([mockNode])
 
-      await app.handleFileList([createTestFile('test.jpg', '')])
+    await app.handleFileList([createTestFile('test.jpg', '')])
 
-      expect(pasteImageNodes).toHaveBeenCalledWith(mockCanvas, [
-        expect.any(File)
-      ])
-      expect(mockCanvas.selectItems).toHaveBeenCalledWith([mockNode])
-    })
+    expect(pasteImageNodes).toHaveBeenCalledWith(mockCanvas, [expect.any(File)])
+    expect(mockCanvas.selectItems).toHaveBeenCalledWith([mockNode])
+  })
 
   describe('handleAudioFileList', () => {
     it('should create audio nodes and select them', async () => {
@@ -1427,7 +1425,6 @@ describe('ComfyApp', () => {
         mockNode
       )
     })
-
 
     it('should handle image files with empty MIME type by extension', async () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
@@ -1870,6 +1867,5 @@ describe('ComfyApp', () => {
         canvasContainer.remove()
       }
     })
-
   })
 })
