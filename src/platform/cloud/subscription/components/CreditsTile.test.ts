@@ -188,6 +188,7 @@ describe('CreditsTile', () => {
     mockIsCloud.value = true
     vi.clearAllMocks()
     vi.unstubAllEnvs()
+    localStorage.clear()
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {
@@ -441,6 +442,20 @@ describe('CreditsTile', () => {
     )
     expect(state.fetchBalance).toHaveBeenCalledTimes(2)
     expect(state.fetchStatus).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps refreshing on focus until a pending top-up is confirmed', async () => {
+    activeProSubscription()
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    renderTile()
+
+    window.dispatchEvent(new Event('focus'))
+    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(2))
+
+    window.dispatchEvent(new Event('focus'))
+    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(3))
+    expect(state.fetchStatus).toHaveBeenCalledTimes(3)
+    expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
   })
 
   it('surfaces a failure toast when a refresh rejects', async () => {

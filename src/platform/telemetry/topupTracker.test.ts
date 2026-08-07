@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  consumePendingTopup,
+  pendingTopupNeedsRefresh,
   startTopupTracking,
   checkForCompletedTopup,
   clearTopupTracking
@@ -229,23 +229,22 @@ describe('topupTracker', () => {
     })
   })
 
-  describe('consumePendingTopup', () => {
+  describe('pendingTopupNeedsRefresh', () => {
     it('returns false and clears nothing when no marker exists', () => {
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      expect(consumePendingTopup()).toBe(false)
+      expect(pendingTopupNeedsRefresh()).toBe(false)
       expect(mockLocalStorage.removeItem).not.toHaveBeenCalled()
     })
 
-    it('clears and returns true for a fresh marker', () => {
+    it('keeps a fresh marker available across focus events', () => {
       mockLocalStorage.getItem.mockReturnValue(
         (Date.now() - 5 * 60 * 1000).toString()
       )
 
-      expect(consumePendingTopup()).toBe(true)
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        'pending_topup_timestamp'
-      )
+      expect(pendingTopupNeedsRefresh()).toBe(true)
+      expect(pendingTopupNeedsRefresh()).toBe(true)
+      expect(mockLocalStorage.removeItem).not.toHaveBeenCalled()
     })
 
     it('clears and returns false for a marker older than 24 hours', () => {
@@ -253,7 +252,7 @@ describe('topupTracker', () => {
         (Date.now() - 25 * 60 * 60 * 1000).toString()
       )
 
-      expect(consumePendingTopup()).toBe(false)
+      expect(pendingTopupNeedsRefresh()).toBe(false)
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
         'pending_topup_timestamp'
       )
