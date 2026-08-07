@@ -23,7 +23,7 @@ const baseRoutes = {
   contact: '/contact',
   models: '/p/supported-models',
   mcp: '/mcp',
-  minimax: '/minimax',
+  minimax: '/minimax-h3',
   flux3: '/flux-3',
   seedance: '/seedance-2.5',
   brand: '/brand'
