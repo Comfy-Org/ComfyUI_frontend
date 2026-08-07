@@ -730,6 +730,34 @@ so keep the confidence field, keep it user-confirmed, and don't let it go silent
 
 ---
 
+## 10a. The conversion database moves to its own repo
+
+`db/` — the per-pack `<original>` / `v1` trees the conversions live in — does
+not belong in the frontend repo. It is third-party source, it is large, and it
+has no reason to share a history or a review process with the frontend.
+
+**Decision: extract it to its own repository. Not yet — it is deferred, not
+declined.**
+
+Until then it stays gitignored, and the working copy is _not_ protected by
+version control. That is a real hazard and it has already cost a day's work
+once: 25 converted kjnodes files were removed by a clean and were unrecoverable.
+Snapshots are taken to `~/comfy/magic-patch-db-<stamp>-<commit>.tar.gz` after
+each batch, which survives a clean but is not versioned, reviewable, or portable.
+
+Do not "fix" this by tracking `db/` here. Tracking it also drags the commit
+hooks across vendored and minified pack sources, which is how the previous
+attempt failed — but that is a symptom. The reason not to track it is that it is
+a different artifact with a different lifecycle.
+
+What the extraction needs, when it happens:
+
+- the `<pack>/<commit>/{original,v1}` layout, which is already what `db/` holds
+- the conformance checker and `verify_db`/`compile_db`, which read that layout
+- a pointer from this repo to the pack database, and a pinned revision so a
+  frontend commit names the conversion set it was verified against
+- the snapshots as the migration source — they are currently the only copy
+
 ## 11. Explicitly deferred
 
 **On-device agent** for packs with no manifest entry. If the offline pipeline works,
