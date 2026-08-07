@@ -11,6 +11,12 @@ import {
   isImageNode,
   isVideoNode
 } from '@/utils/litegraphUtil'
+import {
+  getFilesFromItems,
+  hasAudioType,
+  hasImageType,
+  hasVideoType
+} from '@/utils/eventUtils'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 export function cloneDataTransfer(original: DataTransfer): DataTransfer {
@@ -60,36 +66,39 @@ function pasteClipboardItems(data: DataTransfer): boolean {
 function pasteItemsOnNode(
   items: DataTransferItemList,
   node: LGraphNode | null,
-  contentType: string
+  contentType: 'image' | 'audio' | 'video',
+  files = getFilesFromItems(items)
 ): void {
   if (!node) return
 
-  const filteredItems = Array.from(items).filter((item) =>
-    item.type.startsWith(contentType)
-  )
+  const matchesContentType = (file: File) =>
+    contentType === 'image'
+      ? hasImageType(file)
+      : contentType === 'audio'
+        ? hasAudioType(file)
+        : hasVideoType(file)
 
-  const blob = filteredItems[0]?.getAsFile()
+  const filteredFiles = files.filter(matchesContentType)
+
+  const blob = filteredFiles[0]
   if (!blob) return
 
   node.pasteFile?.(blob)
-  node.pasteFiles?.(
-    Array.from(filteredItems)
-      .map((i) => i.getAsFile())
-      .filter((f) => f !== null)
-  )
+  node.pasteFiles?.(filteredFiles)
 }
 
 export async function pasteImageNode(
   canvas: LGraphCanvas,
   items: DataTransferItemList,
-  imageNode: LGraphNode | null = null
+  imageNode: LGraphNode | null = null,
+  files?: File[]
 ): Promise<LGraphNode | null> {
   // No image node selected: add a new one
   if (!imageNode) {
     imageNode = await createNode(canvas, 'LoadImage')
   }
 
-  pasteItemsOnNode(items, imageNode, 'image')
+  pasteItemsOnNode(items, imageNode, 'image', files)
   return imageNode
 }
 
@@ -115,12 +124,13 @@ export async function pasteImageNodes(
 export async function pasteAudioNode(
   canvas: LGraphCanvas,
   items: DataTransferItemList,
-  audioNode: LGraphNode | null = null
+  audioNode: LGraphNode | null = null,
+  files?: File[]
 ): Promise<LGraphNode | null> {
   if (!audioNode) {
     audioNode = await createNode(canvas, 'LoadAudio')
   }
-  pasteItemsOnNode(items, audioNode, 'audio')
+  pasteItemsOnNode(items, audioNode, 'audio', files)
   return audioNode
 }
 
@@ -146,12 +156,13 @@ export async function pasteAudioNodes(
 export async function pasteVideoNode(
   canvas: LGraphCanvas,
   items: DataTransferItemList,
-  videoNode: LGraphNode | null = null
+  videoNode: LGraphNode | null = null,
+  files?: File[]
 ): Promise<LGraphNode | null> {
   if (!videoNode) {
     videoNode = await createNode(canvas, 'LoadVideo')
   }
-  pasteItemsOnNode(items, videoNode, 'video')
+  pasteItemsOnNode(items, videoNode, 'video', files)
   return videoNode
 }
 
@@ -193,10 +204,15 @@ export const usePaste = () => {
     const { canvas } = canvasStore
     if (!canvas) return
 
-    let data: DataTransfer | string | null = e.clipboardData
-    if (!data) throw new Error('No clipboard data on clipboard event')
-    data = cloneDataTransfer(data)
+    const clipboardData = e.clipboardData
+    if (!clipboardData) {
+      throw new Error('No clipboard data on clipboard event')
+    }
 
+    // Capture original files before cloning the DataTransfer.
+    const files = getFilesFromItems(clipboardData.items)
+
+    let data: DataTransfer | string = cloneDataTransfer(clipboardData)
     const { items } = data
 
     const currentNode = canvas.current_node as LGraphNode
@@ -216,16 +232,49 @@ export const usePaste = () => {
       ? currentNode
       : null
 
-    // Look for image paste data
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        await pasteImageNode(canvas as LGraphCanvas, items, imageNode)
+    const imageFiles = files.filter(hasImageType)
+    const videoFiles = files.filter(hasVideoType)
+    const audioFiles = files.filter(hasAudioType)
+
+    if (imageNode && imageFiles.length > 0) {
+      await pasteImageNode(canvas as LGraphCanvas, items, imageNode, imageFiles)
+      return
+    }
+    if (videoNode && videoFiles.length > 0) {
+      await pasteVideoNode(canvas as LGraphCanvas, items, videoNode, videoFiles)
+      return
+    }
+    if (audioNode && audioFiles.length > 0) {
+      await pasteAudioNode(canvas as LGraphCanvas, items, audioNode, audioFiles)
+      return
+    }
+
+    // Preserve the original clipboard ordering when choosing which media
+    // node type to create, while only passing files of that selected type.
+    for (const file of files) {
+      if (hasImageType(file)) {
+        await pasteImageNode(
+          canvas as LGraphCanvas,
+          items,
+          imageNode,
+          imageFiles
+        )
         return
-      } else if (item.type.startsWith('video/')) {
-        await pasteVideoNode(canvas as LGraphCanvas, items, videoNode)
+      } else if (hasVideoType(file)) {
+        await pasteVideoNode(
+          canvas as LGraphCanvas,
+          items,
+          videoNode,
+          videoFiles
+        )
         return
-      } else if (item.type.startsWith('audio/')) {
-        await pasteAudioNode(canvas as LGraphCanvas, items, audioNode)
+      } else if (hasAudioType(file)) {
+        await pasteAudioNode(
+          canvas as LGraphCanvas,
+          items,
+          audioNode,
+          audioFiles
+        )
         return
       }
     }

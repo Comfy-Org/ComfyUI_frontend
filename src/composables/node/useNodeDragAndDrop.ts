@@ -2,6 +2,10 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@/schemas/apiSchema'
+import {
+  getFilesFromItems,
+  isSyntheticImageBmpPlaceholder
+} from '@/utils/eventUtils'
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -23,26 +27,52 @@ export const useNodeDragAndDrop = <T>(
 ) => {
   const { onDragOver, onDrop, fileFilter = () => true } = options
 
-  const hasFiles = (items: DataTransferItemList) =>
-    !!Array.from(items).find((f) => f.kind === 'file')
-
   const filterFiles = (files: FileList | File[]) =>
-    Array.from(files).filter(fileFilter)
+    Array.from(files)
+      .filter((file) => !isSyntheticImageBmpPlaceholder(file))
+      .filter(fileFilter)
 
-  const hasValidFiles = (files: FileList) => filterFiles(files).length > 0
+  const filterItemFiles = (items: DataTransferItemList | undefined) =>
+    filterFiles(getFilesFromItems(items))
+
+  const hasFileItems = (items: DataTransferItemList | undefined) =>
+    !!items && Array.from(items).some((item) => item.kind === 'file')
 
   const isDraggingFiles = (e: DragEvent | undefined) => {
-    if (!e?.dataTransfer?.items) return false
+    if (!e?.dataTransfer) return false
+
+    const customDragOver = onDragOver?.(e)
+    if (customDragOver !== undefined) return customDragOver
+
+    if (filterFiles(e.dataTransfer.files).length > 0) {
+      return true
+    }
+
+    const itemFiles = getFilesFromItems(e.dataTransfer.items).filter(
+      (file) => !isSyntheticImageBmpPlaceholder(file)
+    )
+    if (itemFiles.length > 0) {
+      return itemFiles.some(fileFilter)
+    }
+
+    // Native OS drags may expose only opaque file items during dragover.
+    // Keep hover affordance permissive here; drop remains strictly filtered.
     return (
-      onDragOver?.(e) ??
-      (hasFiles(e.dataTransfer.items) ||
-        e?.dataTransfer?.types?.includes('text/uri-list'))
+      hasFileItems(e.dataTransfer.items) ||
+      e.dataTransfer.types.includes('text/uri-list')
     )
   }
 
   const isDraggingValidFiles = (e: DragEvent | undefined) => {
-    if (e?.dataTransfer?.files?.length)
-      return hasValidFiles(e.dataTransfer.files)
+    const files = filterFiles(e?.dataTransfer?.files ?? [])
+    if (files.length > 0) {
+      return true
+    }
+
+    const itemFiles = filterItemFiles(e?.dataTransfer?.items)
+    if (itemFiles.length > 0) {
+      return true
+    }
 
     return !!e?.dataTransfer?.getData('text/uri-list')
   }
@@ -51,9 +81,14 @@ export const useNodeDragAndDrop = <T>(
   node.onDragOver = installedDragOver
 
   const installedDragDrop = async function (e: DragEvent) {
-    if (!isDraggingValidFiles(e)) return false
+    const valid = isDraggingValidFiles(e)
+    if (!valid) return false
 
-    const files = filterFiles(e.dataTransfer!.files)
+    let files = filterFiles(e.dataTransfer?.files ?? [])
+    if (!files.length) {
+      files = filterItemFiles(e.dataTransfer?.items)
+    }
+
     if (files.length) {
       await onDrop(files)
       return true
