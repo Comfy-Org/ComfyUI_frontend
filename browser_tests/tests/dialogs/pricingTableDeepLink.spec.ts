@@ -14,7 +14,6 @@ import type {
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
-  BillingStatusResponse as FrontendBillingStatusResponse,
   Member,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
@@ -32,9 +31,6 @@ import {
   mockWorkspace,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
-
-type BillingStatusWithSeatCapacity = BillingStatusResponse &
-  Pick<FrontendBillingStatusResponse, 'max_seats' | 'occupied_seats'>
 
 /**
  * The `?pricing=` deep link opens the pricing table on app load, gated to the
@@ -106,7 +102,7 @@ const ACTIVE_TEAM_STATUS = {
     credits_monthly: 147_700,
     stop_usd: 700
   }
-} satisfies BillingStatusWithSeatCapacity
+} satisfies BillingStatusResponse
 
 const ACTIVE_STANDARD_STATUS = {
   is_active: true,
@@ -120,13 +116,13 @@ const ACTIVE_STANDARD_STATUS = {
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
   team_credit_stop: null
-} satisfies BillingStatusWithSeatCapacity
+} satisfies BillingStatusResponse
 
 const ACTIVE_CREATOR_STATUS = {
   ...ACTIVE_STANDARD_STATUS,
   subscription_tier: 'CREATOR',
   plan_slug: 'creator-annual'
-} satisfies BillingStatusWithSeatCapacity
+} satisfies BillingStatusResponse
 
 const LEGACY_ACTIVE_STANDARD_STATUS = {
   ...ACTIVE_STANDARD_STATUS,
