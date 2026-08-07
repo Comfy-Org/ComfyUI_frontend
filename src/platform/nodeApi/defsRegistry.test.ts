@@ -7,7 +7,11 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 
 import { createComfyApi } from './comfyApi'
 import type { Comfy } from './comfyApi'
-import { createDefRegistry, deliverPreview } from './defsRegistry'
+import {
+  createDefRegistry,
+  deliverPreview,
+  frontendResolverMap
+} from './defsRegistry'
 import type { DefSelector, NodeDefBuilder } from './defsRegistry'
 
 const RAW_DEF = {
@@ -560,5 +564,44 @@ describe('renaming a definition', () => {
 
     expect(raw.display_name).toBe('KSampler')
     expect(raw.category).toBe('sampling')
+  })
+})
+
+describe('marking an existing type frontend-only', () => {
+  // A pack that reaches for `node.isVirtualNode` on a BACKEND-registered type
+  // is saying "this never runs on the server". graphToPrompt skips virtual
+  // nodes, so dropping that line during conversion puts a new node into the
+  // prompt -- a wire-format break. `define` could say it; `extend` could not.
+  it('sets the flag graphToPrompt checks', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    defs.extend('CompositorTools3', (b) => b.setExecution('frontend'))
+
+    const nodeType: { prototype: Partial<LGraphNode> } = { prototype: {} }
+    registry.applyTo(nodeType, { name: 'CompositorTools3' })
+
+    expect(nodeType.prototype.isVirtualNode).toBe(true)
+  })
+
+  it('leaves a backend node alone', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    defs.extend('KSampler', (b) => b.onCreated(() => {}))
+
+    const nodeType: { prototype: Partial<LGraphNode> } = { prototype: {} }
+    registry.applyTo(nodeType, { name: 'KSampler' })
+
+    expect(nodeType.prototype.isVirtualNode).toBeUndefined()
+  })
+
+  it('registers a resolver when one is supplied', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    const resolve = () => ({ '0': { omit: true } }) as never
+    defs.extend('Passthrough', (b) => b.setExecution('frontend', resolve))
+
+    registry.applyTo({ prototype: {} }, { name: 'Passthrough' })
+
+    expect(frontendResolverMap().get('Passthrough')).toBe(resolve)
   })
 })
