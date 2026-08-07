@@ -16,7 +16,6 @@ export class SignInDialog extends BaseDialog {
   readonly signUpEmailInput: Locator
   readonly signUpPasswordInput: Locator
   readonly signUpConfirmPasswordInput: Locator
-  readonly signUpPasswordRequirements: Locator
   readonly signUpButton: Locator
   readonly apiKeyHeading: Locator
   readonly apiKeyInput: Locator
@@ -41,9 +40,6 @@ export class SignInDialog extends BaseDialog {
     this.signUpPasswordInput = this.root.locator('#comfy-org-sign-up-password')
     this.signUpConfirmPasswordInput = this.root.locator(
       '#comfy-org-sign-up-confirm-password'
-    )
-    this.signUpPasswordRequirements = this.root.getByText(
-      'Password requirements:'
     )
     this.signUpButton = this.root.getByRole('button', {
       name: 'Sign up',
