@@ -1,0 +1,273 @@
+{
+  "map_version": "v0-frontend",
+  "_comment": [
+    "ComfyUI_frontend override for the reusable pr-risk.yml grader (Comfy-Org/github-workflows).",
+    "REPLACES the generic map wholesale, so the generic R3 classes are re-stated here.",
+    "grade = worst(path_floor, provenance, reversibility); an axis can only raise a tier.",
+    "",
+    "Lane mapping to the Comfy CD risk-assessment fork:",
+    "  R0-R1 -> flagless merge lane (copy / docs / tests / storybook only)",
+    "  R2    -> feature flag required (default OFF) + ephemeral env validation",
+    "  R3    -> flag + ephemeral env + Sheriff/QA sign-off; serialization and auth/billing",
+    "           changes also need a (Feature) Test Plan entry"
+  ],
+  "tiers": ["R0", "R1", "R2", "R3"],
+  "default_tier": "R0",
+
+  "path_rules": [
+    {
+      "class": "risk-map",
+      "tier": "R3",
+      "why": "a PR must not be able to lower its own grade",
+      "paths": [
+        "**/risk-map.*.json",
+        "**/runbook-registry.*.json",
+        "**/pr-risk/**",
+        ".github/risk.json",
+        ".github/risk-runbooks.json",
+        "**/.github/risk.json",
+        "**/.github/risk-runbooks.json"
+      ]
+    },
+    {
+      "class": "codeowners",
+      "tier": "R3",
+      "why": "editing CODEOWNERS edits the review gate",
+      "paths": ["CODEOWNERS", ".github/CODEOWNERS", "**/CODEOWNERS"]
+    },
+    {
+      "class": "ci",
+      "tier": "R3",
+      "why": "workflows run with repo credentials",
+      "paths": [
+        ".github/workflows/**",
+        ".github/actions/**",
+        "**/.github/workflows/**"
+      ]
+    },
+    {
+      "class": "deps",
+      "tier": "R3",
+      "why": "manifests and the pnpm catalog pull in code nobody in the PR wrote",
+      "paths": [
+        "**/package.json",
+        "**/pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "**/.npmrc",
+        "**/requirements*.txt",
+        "**/pyproject.toml"
+      ]
+    },
+    {
+      "class": "secrets",
+      "tier": "R3",
+      "why": "secrets handling",
+      "paths": [
+        "**/secrets/**",
+        "**/*secret*.ts",
+        "secrets.env*",
+        "**/*credential*",
+        ".env*"
+      ]
+    },
+    {
+      "class": "auth",
+      "tier": "R3",
+      "why": "authentication / trust boundary",
+      "paths": [
+        "**/auth/**",
+        "src/platform/cloud/oauth/**",
+        "**/middleware/auth*",
+        "**/*token_validator*"
+      ]
+    },
+    {
+      "class": "billing",
+      "tier": "R3",
+      "why": "billing / credits — money moves",
+      "paths": ["**/billing/**", "**/pricing/**", "**/credits/**"]
+    },
+    {
+      "class": "workflow-serialization",
+      "tier": "R3",
+      "why": "saved user workflows are persistent state — a bad schema or serialize change corrupts files on save and does not cleanly revert",
+      "paths": [
+        "src/lib/litegraph/src/serialization*",
+        "src/schemas/**",
+        "src/core/schemas/**",
+        "src/platform/workflow/validation/schemas/**",
+        "**/workflowSchema*"
+      ]
+    },
+    {
+      "class": "extension-contract",
+      "tier": "R3",
+      "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos — consumers break out of band (ADR 0003/0008)",
+      "paths": [
+        "src/scripts/app.ts",
+        "src/scripts/api.ts",
+        "src/types/comfy*.ts",
+        "src/lib/litegraph/src/LGraph.ts",
+        "src/lib/litegraph/src/LGraphNode.ts",
+        "src/lib/litegraph/src/LGraphCanvas.ts",
+        "src/lib/litegraph/src/subgraph/**"
+      ]
+    },
+    {
+      "class": "api-contract",
+      "tier": "R3",
+      "why": "cross-repo API contract",
+      "paths": [
+        "openapi.yaml",
+        "openapi.yml",
+        "**/openapi.yaml",
+        "**/openapi.yml",
+        "**/*.proto"
+      ]
+    },
+    {
+      "class": "migrations",
+      "tier": "R3",
+      "why": "kept from the generic map — schema migrations do not cleanly revert",
+      "paths": ["**/migrations/**", "**/migrate/**"]
+    },
+    {
+      "class": "iac",
+      "tier": "R3",
+      "why": "kept from the generic map",
+      "paths": [
+        "infrastructure/**",
+        "terraform/**",
+        "**/*.tf",
+        "charts/**",
+        "helm/**"
+      ]
+    },
+    {
+      "class": "data-deletion",
+      "tier": "R3",
+      "why": "kept from the generic map — irreversible by construction",
+      "paths": ["**/deletion/**", "**/gdpr/**"]
+    },
+
+    {
+      "class": "flag-defaults",
+      "tier": "R2",
+      "why": "the flag config and flag plumbing are the rollout lever — flipping a default changes behavior for every user at once",
+      "paths": [
+        "src/config/clientFeatureFlags.json",
+        "**/useFeatureFlags*",
+        "**/useVueFeatureFlags*",
+        "**/devFeatureFlagOverride*"
+      ]
+    },
+    {
+      "class": "build-config",
+      "tier": "R2",
+      "why": "build config decides what ships in the bundle",
+      "paths": [
+        "**/vite.config.*",
+        "tsconfig*.json",
+        "index.html",
+        "scripts/**"
+      ]
+    },
+    {
+      "class": "core-infra",
+      "tier": "R2",
+      "why": "cross-cutting state, API layer, routing, bootstrap, canvas engine and published packages — blast radius is every feature, and packages/** breaks consumers out of band",
+      "paths": [
+        "src/stores/**",
+        "src/services/**",
+        "src/router.ts",
+        "src/main.ts",
+        "src/bootstrap.ts",
+        "src/base/**",
+        "src/core/**",
+        "src/lib/litegraph/**",
+        "packages/**"
+      ]
+    },
+
+    {
+      "class": "docs",
+      "tier": "R0",
+      "why": "prose only",
+      "paths": ["**/*.md", "docs/**", "**/*.mdx", "**/*.txt", "LICENSE"]
+    },
+    {
+      "class": "i18n-copy",
+      "tier": "R0",
+      "why": "translation copy",
+      "paths": ["**/locales/**"]
+    },
+    {
+      "class": "storybook",
+      "tier": "R0",
+      "why": "stories and storybook config do not ship to users",
+      "paths": ["**/*.stories.ts", "src/storybook/**", ".storybook/**"]
+    },
+    {
+      "class": "tests",
+      "tier": "R0",
+      "why": "test-only changes cannot break production behaviour",
+      "paths": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "browser_tests/**",
+        "**/test/**",
+        "**/tests/**",
+        "**/__tests__/**",
+        "**/testdata/**"
+      ]
+    }
+  ],
+
+  "provenance_tiers": {
+    "runbook": "R0",
+    "agent-supervised": "R1",
+    "human": "R1",
+    "external": "R3"
+  },
+
+  "reversibility": {
+    "irreversible_classes": [
+      "workflow-serialization",
+      "migrations",
+      "data-deletion",
+      "secrets"
+    ],
+    "delete_sensitive_classes": [
+      "workflow-serialization",
+      "extension-contract",
+      "auth",
+      "billing",
+      "api-contract",
+      "migrations",
+      "data-deletion",
+      "iac"
+    ],
+    "no_green_checks_tier": "R2",
+    "no_test_touched_tier": "R1",
+    "clean_tier": "R0",
+    "test_path_patterns": [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "browser_tests/**",
+      "**/test/**",
+      "**/tests/**",
+      "**/__tests__/**",
+      "**/testdata/**"
+    ]
+  },
+
+  "flippable_flag_paths": [
+    "**/useFeatureFlags*",
+    "**/useVueFeatureFlags*",
+    "**/clientFeatureFlags.json",
+    "**/devFeatureFlagOverride*"
+  ]
+}
