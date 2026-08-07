@@ -115,4 +115,6 @@ matrix-proof/
 # Magic Patch working copies. NOTE: conversions in db/**/v1/ are NOT in git, and
 # an external `git clean` once destroyed a day's output. Tracking them needs a
 # lint-staged exclusion first, or the hooks format third-party pack sources.
-db/
+# Symlink to the conversion database, which lives in its own repo.
+# No trailing slash: git sees a symlink as a file, and `db/` would not match it.
+db
