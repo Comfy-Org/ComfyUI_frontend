@@ -17,7 +17,7 @@ test.describe('MediaLightbox', { tag: ['@slow', '@vue-nodes'] }, () => {
     })
 
     // Open Assets sidebar tab and wait for it to load
-    await comfyPage.menu.assetsTab.open()
+    await comfyPage.menu.assetsTab.open({ waitForAssets: false })
     await comfyPage.page
       .locator('.sidebar-content-container')
       .waitFor({ state: 'visible' })
