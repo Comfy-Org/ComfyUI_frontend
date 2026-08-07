@@ -35,6 +35,7 @@ app.registerExtension({
       }
 
       this.growByPreview = function () {
+        // eslint-disable-next-line no-undef -- browser global; this script runs in the page
         const img = new Image()
         img.onload = () => {
           this.imgs = [img]

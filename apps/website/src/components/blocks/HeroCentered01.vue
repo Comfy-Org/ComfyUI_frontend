@@ -32,7 +32,7 @@ const {
     </p>
 
     <h1
-      class="text-primary-warm-white mt-4 text-4xl/snug font-light tracking-tight text-pretty lg:text-6xl/snug"
+      class="mt-4 text-4xl/snug font-light tracking-tight text-pretty text-primary-warm-white lg:text-6xl/snug"
     >
       {{ title }}
     </h1>

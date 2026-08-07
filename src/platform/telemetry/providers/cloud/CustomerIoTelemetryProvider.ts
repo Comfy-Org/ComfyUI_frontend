@@ -21,7 +21,7 @@ import type {
 
 export const EVENT_SOURCE = 'web-sdk'
 
-const SDK_OPERATION_TIMEOUT_MS = 10_000
+const RESET_TIMEOUT_MS = 10_000
 
 interface QueuedEvent {
   event: string
@@ -49,6 +49,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private eventQueue: QueuedEvent[] = []
   private pageViewQueued = false
   private identifiedUser: CustomerIoIdentity | null = null
+  private identityGeneration = 0
   private sessionIdentity: CustomerIoIdentity | null = null
   private operationQueue: Promise<void> = Promise.resolve()
 
@@ -146,12 +147,13 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   private async resetIdentity(): Promise<void> {
+    this.identityGeneration++
     this.identifiedUser = null
     const analytics = this.analytics
     if (!analytics) return
     await withTimeout(async () => {
       await analytics.reset()
-    }, SDK_OPERATION_TIMEOUT_MS)
+    }, RESET_TIMEOUT_MS)
   }
 
   private async restoreSessionIdentity(): Promise<void> {
@@ -162,7 +164,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     }
   }
 
-  private async identify(identity: CustomerIoIdentity): Promise<void> {
+  private identify(identity: CustomerIoIdentity): void {
     const analytics = this.analytics
     if (!analytics) return
 
@@ -175,18 +177,27 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     }
 
     this.identifiedUser = identity
+    const generation = ++this.identityGeneration
+    const reportFailure = (error: unknown) => {
+      if (
+        this.identityGeneration === generation &&
+        this.identifiedUser === identity
+      ) {
+        this.identifiedUser = null
+      }
+      console.error('Failed to identify Customer.io user:', error)
+    }
     try {
-      await withTimeout(async () => {
-        await analytics.identify(
+      void analytics
+        .identify(
           identity.userId,
           identity.email
             ? { email: identity.email, locale: identity.locale }
             : { locale: identity.locale }
         )
-      }, SDK_OPERATION_TIMEOUT_MS)
+        .catch(reportFailure)
     } catch (error) {
-      this.identifiedUser = null
-      console.error('Failed to identify Customer.io user:', error)
+      reportFailure(error)
     }
   }
 

@@ -39,7 +39,7 @@ function formatAndEslint(fileNames: string[]) {
   return [
     `pnpm exec oxfmt --write ${joinedPaths}`,
     `pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix ${joinedPaths}`,
-    `pnpm exec eslint --cache --fix --no-warn-ignored ${joinedPaths}`
+    `pnpm exec eslint --cache --fix --no-warn-ignored --no-error-on-unmatched-pattern ${joinedPaths}`
   ]
 }
 

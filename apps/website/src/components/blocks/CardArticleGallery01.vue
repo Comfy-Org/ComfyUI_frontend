@@ -52,7 +52,7 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
   <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
     <h2
       v-if="title && !tabs"
-      class="text-primary-warm-white text-3xl font-light tracking-tight lg:text-5xl"
+      class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
       :class="titleAlign === 'center' ? 'text-center' : undefined"
     >
       {{ title }}
@@ -67,7 +67,7 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
     >
       <h2
         v-if="title"
-        class="text-primary-warm-white text-3xl font-light tracking-tight lg:text-5xl"
+        class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
       >
         {{ title }}
       </h2>
