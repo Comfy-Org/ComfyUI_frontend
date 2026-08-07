@@ -5,6 +5,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import type { TopbarBadge } from '@/types/comfy'
 
+const COMFY_CLOUD_YELLOW = '#F0FF41'
+
 const badges = computed<TopbarBadge[]>(() => {
   const result: TopbarBadge[] = []
 
@@ -22,15 +24,12 @@ const badges = computed<TopbarBadge[]>(() => {
 })
 
 const canvasStore = useCanvasStore()
-const cloudLogoColor = getComputedStyle(document.documentElement)
-  .getPropertyValue('--color-brand-yellow')
-  .trim()
 watch(
   () => canvasStore.canvas,
   (canvas) => {
     if (canvas) {
       canvas.info_text = t('g.comfyCloud')
-      canvas.info_text_color = cloudLogoColor
+      canvas.info_text_color = COMFY_CLOUD_YELLOW
     }
   },
   { immediate: true }
