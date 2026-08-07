@@ -700,7 +700,7 @@ importers:
         specifier: 'catalog:'
         version: 25.9.5
       '@types/semver':
-        specifier: 7.8.0
+        specifier: 'catalog:'
         version: 7.8.0
       '@types/three':
         specifier: 'catalog:'
