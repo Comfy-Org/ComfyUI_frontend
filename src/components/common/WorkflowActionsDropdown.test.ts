@@ -53,7 +53,7 @@ vi.mock('@/composables/useNewMenuItemIndicator', async () => {
   const { ref } = await import('vue')
   return {
     useNewMenuItemIndicator: () => ({
-      hasUnseenItems: ref(true),
+      hasNewItems: ref(true),
       markAsSeen: spies.markAsSeen
     })
   }
@@ -111,6 +111,12 @@ describe('WorkflowActionsDropdown', () => {
     // label (label-in-name) while still matching the "Workflow actions" trigger.
     const active = screen.getByRole('button', { name: /workflow actions/ })
     expect(active).toHaveAttribute('aria-label', 'Graph mode, workflow actions')
+  })
+
+  it('shows a new-item indicator on the active menu trigger', () => {
+    renderDropdown()
+
+    expect(screen.getByTestId('new-menu-item-indicator')).toBeInTheDocument()
   })
 
   it('labels the inactive segment with its switch action only', () => {

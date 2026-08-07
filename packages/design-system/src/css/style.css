@@ -235,6 +235,10 @@
   --warning-background: var(--color-gold-400);
   --warning-background-hover: var(--color-gold-500);
   --success-background: var(--color-jade-600);
+  --code-comment-foreground: var(--muted-foreground);
+  --code-keyword-foreground: var(--color-magenta-700);
+  --code-string-foreground: var(--color-jade-600);
+  --code-url-foreground: var(--color-ocean-600);
   --border-default: var(--color-smoke-600);
   --border-subtle: var(--color-smoke-400);
   --muted-background: var(--color-smoke-700);
@@ -388,6 +392,10 @@
   --warning-background: var(--color-gold-600);
   --warning-background-hover: var(--color-gold-500);
   --success-background: var(--color-jade-600);
+  --code-comment-foreground: var(--muted-foreground);
+  --code-keyword-foreground: var(--color-magenta-300);
+  --code-string-foreground: var(--color-jade-400);
+  --code-url-foreground: var(--color-azure-300);
   --border-default: var(--color-charcoal-200);
   --border-subtle: var(--color-charcoal-300);
   --muted-background: var(--color-charcoal-100);
@@ -563,6 +571,10 @@
   --color-warning-background: var(--warning-background);
   --color-warning-background-hover: var(--warning-background-hover);
   --color-success-background: var(--success-background);
+  --color-code-comment-foreground: var(--code-comment-foreground);
+  --color-code-keyword-foreground: var(--code-keyword-foreground);
+  --color-code-string-foreground: var(--code-string-foreground);
+  --color-code-url-foreground: var(--code-url-foreground);
   --color-border-default: var(--border-default);
   --color-border-subtle: var(--border-subtle);
   --color-muted-background: var(--muted-background);

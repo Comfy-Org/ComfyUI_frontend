@@ -2,9 +2,11 @@ import type { ComputedRef, Ref } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { BadgeVariants } from '@/components/common/badge.variants'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { openExportWorkflowApiDialog } from '@/platform/workflow/export/composables/lazyExportWorkflowApiDialog'
 import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -39,6 +41,8 @@ interface AddItemOptions {
   disabled?: boolean
   prependSeparator?: boolean
   isNew?: boolean
+  badge?: string
+  badgeSeverity?: BadgeVariants['severity']
 }
 
 export function useWorkflowActionsMenu(
@@ -83,15 +87,16 @@ export function useWorkflowActionsMenu(
       visible = true,
       disabled = false,
       prependSeparator = false,
-      isNew = false
+      isNew = false,
+      badge,
+      badgeSeverity
     }: AddItemOptions) => {
       if (prependSeparator && visible) items.push({ separator: true })
       const item: WorkflowMenuAction = { id, label, icon, command, disabled }
       if (!visible) item.visible = false
-      if (isNew) {
-        item.badge = t('g.experimental')
-        item.isNew = true
-      }
+      if (badge || isNew) item.badge = badge ?? t('g.experimental')
+      if (isNew) item.isNew = true
+      if (badgeSeverity) item.badgeSeverity = badgeSeverity
       items.push(item)
     }
 
@@ -183,13 +188,15 @@ export function useWorkflowActionsMenu(
 
     addItem({
       id: 'export-api',
-      label: t('menuLabels.Export (API)'),
+      label: t('menuLabels.Export for API'),
       icon: 'pi pi-download',
       command: async () => {
         await ensureWorkflowActive(workflow)
-        await commandStore.execute('Comfy.ExportWorkflowAPI')
+        await openExportWorkflowApiDialog()
       },
-      visible: isRoot
+      visible: isRoot,
+      isNew: true,
+      badge: t('apiExport.newBadge')
     })
 
     addItem({
@@ -208,7 +215,8 @@ export function useWorkflowActionsMenu(
       command: toggleLinear,
       visible: showAppModeItems && !isLinearMode,
       prependSeparator: true,
-      isNew: true
+      isNew: true,
+      badgeSeverity: 'secondary'
     })
 
     addItem({
@@ -246,7 +254,8 @@ export function useWorkflowActionsMenu(
         enterBuilder()
       },
       visible: showAppModeItems,
-      isNew: true
+      isNew: true,
+      badgeSeverity: 'secondary'
     })
 
     addItem({

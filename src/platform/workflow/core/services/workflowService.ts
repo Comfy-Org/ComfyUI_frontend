@@ -134,10 +134,14 @@ export const useWorkflowService = () => {
    */
   const exportWorkflow = async (
     filename: string,
-    promptProperty: 'workflow' | 'output'
+    promptProperty: 'workflow' | 'output',
+    options: {
+      useWorkflowFilename?: boolean
+      promptFilename?: boolean
+    } = {}
   ): Promise<void> => {
     const workflow = workflowStore.activeWorkflow
-    if (workflow?.path) {
+    if (options.useWorkflowFilename !== false && workflow?.path) {
       filename = workflow.filename
     }
     const p = await app.graphToPrompt()
@@ -145,7 +149,8 @@ export const useWorkflowService = () => {
     addViewRestore(p.workflow)
     const json = JSON.stringify(p[promptProperty], null, 2)
     const blob = new Blob([json], { type: 'application/json' })
-    const file = await getFilename(filename)
+    const file =
+      options.promptFilename === false ? filename : await getFilename(filename)
     if (!file) return
     downloadBlob(file, blob)
   }

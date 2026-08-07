@@ -61,6 +61,8 @@ const mockFeatureFlags = vi.hoisted(() => ({
   flags: { linearToggleEnabled: false }
 }))
 
+const mockOpenExportWorkflowApiDialog = vi.hoisted(() => vi.fn())
+
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => mockWorkflowStore),
   useWorkflowBookmarkStore: vi.fn(() => mockBookmarkStore)
@@ -91,6 +93,13 @@ vi.mock('@/composables/useErrorHandling', () => ({}))
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: vi.fn(() => mockFeatureFlags)
 }))
+
+vi.mock(
+  '@/platform/workflow/export/composables/lazyExportWorkflowApiDialog',
+  () => ({
+    openExportWorkflowApiDialog: mockOpenExportWorkflowApiDialog
+  })
+)
 
 type MenuItems = ReturnType<typeof useWorkflowActionsMenu>['menuItems']['value']
 
@@ -135,7 +144,7 @@ describe('useWorkflowActionsMenu', () => {
     expect(labels).toContain('menuLabels.Save')
     expect(labels).toContain('menuLabels.Save As')
     expect(labels).toContain('menuLabels.Export')
-    expect(labels).toContain('menuLabels.Export (API)')
+    expect(labels).toContain('menuLabels.Export for API')
     expect(labels).toContain('breadcrumbsMenu.clearWorkflow')
     expect(labels).toContain('breadcrumbsMenu.deleteWorkflow')
   })
@@ -223,7 +232,7 @@ describe('useWorkflowActionsMenu', () => {
     expect(labels).not.toContain('tabMenu.addToBookmarks')
   })
 
-  it('adds badge to app mode items', () => {
+  it('uses secondary badges for app mode items', () => {
     mockFeatureFlags.flags.linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
@@ -232,7 +241,23 @@ describe('useWorkflowActionsMenu', () => {
       'breadcrumbsMenu.enterAppMode'
     )
 
-    expect(appModeItem.badge).toBeDefined()
+    expect(appModeItem.badge).toBe('g.experimental')
+    expect(appModeItem.badgeSeverity).toBe('secondary')
+  })
+
+  it('marks the API export as new and opens its dialog', async () => {
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const exportApiItem = findItem(menuItems.value, 'menuLabels.Export for API')
+
+    expect(exportApiItem.badge).toBe('apiExport.newBadge')
+    expect(exportApiItem.isNew).toBe(true)
+
+    await exportApiItem.command?.()
+
+    expect(mockOpenExportWorkflowApiDialog).toHaveBeenCalledOnce()
+    expect(mockCommandStore.execute).not.toHaveBeenCalledWith(
+      'Comfy.ExportWorkflowAPI'
+    )
   })
 
   it('calls startRename when rename command is invoked', async () => {

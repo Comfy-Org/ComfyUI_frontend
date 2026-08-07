@@ -2,6 +2,7 @@
 import { DropdownMenuItem, DropdownMenuSeparator } from 'reka-ui'
 import type { Component } from 'vue'
 
+import Badge from '@/components/common/Badge.vue'
 import OverlayIcon from '@/components/common/OverlayIcon.vue'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -42,12 +43,12 @@ const {
       <OverlayIcon v-if="item.overlayIcon" v-bind="item.overlayIcon" />
       <i v-else-if="item.icon" :class="item.icon" />
       <span class="flex-1">{{ item.label }}</span>
-      <span
+      <Badge
         v-if="item.badge"
-        class="ml-3 flex items-center gap-1 rounded-full bg-(--primary-background) px-1.5 py-0.5 text-2xs text-base-foreground uppercase"
-      >
-        {{ item.badge }}
-      </span>
+        class="ml-3 h-5 px-1.5 text-2xs"
+        :label="item.badge"
+        :severity="item.badgeSeverity"
+      />
     </component>
   </template>
 </template>

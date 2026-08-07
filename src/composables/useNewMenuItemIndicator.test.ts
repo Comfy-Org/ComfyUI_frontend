@@ -46,6 +46,14 @@ describe('useNewMenuItemIndicator', () => {
     expect(hasUnseenItems.value).toBe(false)
   })
 
+  it('reports visible new items even after they have been seen', () => {
+    mockSettingStore.get.mockReturnValue(['feature-a'])
+    const items = createItems('feature-a')
+    const { hasNewItems } = useNewMenuItemIndicator(() => items)
+
+    expect(hasNewItems.value).toBe(true)
+  })
+
   it('reports unseen when some new items are not yet seen', () => {
     mockSettingStore.get.mockReturnValue(['feature-a'])
     const items = createItems('feature-a', 'feature-b')
