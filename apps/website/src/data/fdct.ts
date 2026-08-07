@@ -16,7 +16,7 @@ export interface FdctTechnologist {
 }
 
 // Bios are verbatim from the FDCT page design. Headshots live on the media
-// CDN; workflowsHref is a placeholder until per-person workflow pages exist.
+// CDN. Chris's workflowsHref stays '#' until his hub page link is provided.
 export const technologists: readonly FdctTechnologist[] = [
   {
     id: 'doug-hogan',
@@ -28,7 +28,7 @@ export const technologists: readonly FdctTechnologist[] = [
       'Today Doug is a Forward Deployed Creative Technologist at Comfy, plugging ComfyUI directly into VFX and studio production pipelines: figuring out what new models can do, building workflows around them, and translating that into tools artists can use without losing control.',
       "He's also a longtime Nuke compositor and pipeline builder, writing Python-based tools and training ML models to automate repetitive work. He teaches VFX, Nuke, and generative AI through fxphd, ActionVFX, and other platforms. It's a tool!"
     ],
-    workflowsHref: '#'
+    workflowsHref: 'https://comfy.org/workflows/doughogan/'
   },
   {
     id: 'chris-v',
@@ -53,7 +53,96 @@ export const technologists: readonly FdctTechnologist[] = [
       'The work skews marketing and advertising, and it starts where the brief starts — with the aesthetic. Look first. Then the graph that reproduces it. Then the version that runs a hundred times without him in the room. A one-off becomes a workflow; a workflow becomes an automation engine a creative team can point at a campaign.',
       'The experimental side is the point, and so is sharing it. Nothing he learns in private gets to stay there.'
     ],
-    workflowsHref: '#'
+    workflowsHref: 'https://comfy.org/workflows/hellorob/'
+  }
+]
+
+type FdctProjectCategory = 'advertisement' | 'entertainment' | 'ecommerce'
+
+export interface FdctProject {
+  id: string
+  title: string
+  category: FdctProjectCategory
+  media: { type: 'image' | 'video'; src: string; poster?: string }
+  author: { name: string; avatarSrc: string }
+  href: string
+}
+
+function authorOf(personId: string) {
+  const person = technologists.find(({ id }) => id === personId)
+  if (!person) throw new Error(`Unknown technologist: ${personId}`)
+  return { name: person.name, avatarSrc: person.avatarSrc }
+}
+
+// Top workflows from each technologist's hub page (most-popular order);
+// cover videos are the hub's own preview assets. Chris's picks land once
+// his hub page link is provided.
+export const projects: readonly FdctProject[] = [
+  {
+    id: 'product-advertisement-video',
+    title: 'Product Advertisement Video',
+    category: 'advertisement',
+    media: {
+      type: 'video',
+      src: 'https://comfy-hub-assets.comfy.org/uploads/a8c26beb-d463-40a0-8547-fa942e53ad70.mp4'
+    },
+    author: authorOf('rob-losch'),
+    href: 'https://comfy.org/workflows/c98e5c457e1e-c98e5c457e1e/'
+  },
+  {
+    id: 'ltx-cleanplate-for-vfx',
+    title: 'LTX Cleanplate for VFX',
+    category: 'entertainment',
+    media: {
+      type: 'video',
+      src: 'https://comfy-hub-assets.comfy.org/uploads/8a3a846f-5017-428e-b2a2-24025c55e884.mp4'
+    },
+    author: authorOf('doug-hogan'),
+    href: 'https://comfy.org/workflows/8f2cf0df5da6-8f2cf0df5da6/'
+  },
+  {
+    id: 'lipdub-lora-voice-clone',
+    title: 'LTX 2.3 - Lipdub LoRA + Voice Clone',
+    category: 'entertainment',
+    media: {
+      type: 'video',
+      src: 'https://comfy-hub-assets.comfy.org/uploads/dfd1e800-d2d8-4ca9-b624-f4158e694785.mp4'
+    },
+    author: authorOf('rob-losch'),
+    href: 'https://comfy.org/workflows/e4ab88456b9b-e4ab88456b9b/'
+  },
+  {
+    id: 'vfx-utilities',
+    title: 'VFX Utilities',
+    category: 'entertainment',
+    media: {
+      type: 'video',
+      src: 'https://comfy-hub-assets.comfy.org/uploads/fd38a7e9-0d2a-4d6a-9d6a-b04bbce294cc.mp4'
+    },
+    author: authorOf('doug-hogan'),
+    href: 'https://comfy.org/workflows/be0889296f65-be0889296f65/'
+  },
+  {
+    id: 'viral-videos-character-swap',
+    title: 'Seedance 2.0 - Viral Videos Character Swap',
+    category: 'entertainment',
+    media: {
+      type: 'video',
+      src: 'https://comfy-hub-assets.comfy.org/uploads/61c7358d-96f5-49e2-81f5-4991d461ed1c.mp4'
+    },
+    author: authorOf('rob-losch'),
+    href: 'https://comfy.org/workflows/064da31db8f3-064da31db8f3/'
+  },
+  {
+    id: 'adjustment-frame-workflow',
+    title: 'Adjustment Frame Workflow',
+    category: 'entertainment',
+    media: {
+      type: 'video',
+      src: 'https://comfy-hub-assets.comfy.org/uploads/a643e6f2-f91e-450f-871c-4c99116193f0.mp4'
+    },
+    author: authorOf('doug-hogan'),
+    href: 'https://comfy.org/workflows/7dca0438edf4-7dca0438edf4/'
   }
 ]
 

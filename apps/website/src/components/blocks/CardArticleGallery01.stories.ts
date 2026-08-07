@@ -61,6 +61,25 @@ export const WithTabsAndLoadMore: Story = {
   }
 }
 
+export const ThreeColumnWithAuthors: Story = {
+  args: {
+    title: 'Past projects',
+    titleAlign: 'center',
+    layout: 'three-column',
+    items: ['Advertisement', 'Entertainment', 'Ecommerce'].flatMap((category) =>
+      [0, 1].map((row) => ({
+        ...item(`${category}-${row}`, 'Title of the project'),
+        category,
+        author: {
+          name: 'Person McPersonface',
+          avatarSrc: '/assets/images/fallback-gradient-avatar.svg'
+        },
+        cta: { label: 'View project', href: '#' }
+      }))
+    )
+  }
+}
+
 export const MixedLayout: Story = {
   args: {
     title: 'Latest Launches',

@@ -5,6 +5,7 @@ import { t } from '../i18n/translations'
 import BuildersSection from '../templates/fdct/BuildersSection.vue'
 import HeroSection from '../templates/fdct/HeroSection.vue'
 import HowItWorksSection from '../templates/fdct/HowItWorksSection.vue'
+import PastProjectsSection from '../templates/fdct/PastProjectsSection.vue'
 import TechnologistsSection from '../templates/fdct/TechnologistsSection.vue'
 import WhatYouGetSection from '../templates/fdct/WhatYouGetSection.vue'
 import { absoluteUrl, pageContext } from '../utils/jsonLd'
@@ -31,6 +32,6 @@ const { locale } = pageContext(
   <HowItWorksSection client:load locale={locale} />
   <WhatYouGetSection client:load locale={locale} />
   <TechnologistsSection client:load locale={locale} />
-  {/* Later sections land here in page order: past projects, FAQ,
-      CTA bands, closing CTA. */}
+  <PastProjectsSection client:load locale={locale} />
+  {/* Later sections land here in page order: FAQ, CTA bands, closing CTA. */}
 </BaseLayout>

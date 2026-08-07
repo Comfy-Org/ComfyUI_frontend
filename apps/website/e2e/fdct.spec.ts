@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { technologists } from '../src/data/fdct'
+import { projects, technologists } from '../src/data/fdct'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -94,12 +94,50 @@ test.describe('FDCT page @smoke', () => {
     page
   }) => {
     await page.goto('/fdct')
+    const section = page.locator('section', {
+      has: page.getByRole('heading', {
+        name: t('fdct.technologists.title', 'en')
+      })
+    })
     await expect(
-      page.getByRole('heading', { name: t('fdct.technologists.title', 'en') })
+      section.getByRole('heading', {
+        name: t('fdct.technologists.title', 'en')
+      })
     ).toBeVisible()
     for (const person of technologists) {
-      await expect(page.getByText(person.name, { exact: true })).toBeVisible()
+      await expect(
+        section.getByText(person.name, { exact: true })
+      ).toBeVisible()
     }
+  })
+
+  test('past projects renders six cards with author and category', async ({
+    page
+  }) => {
+    await page.goto('/fdct')
+    const section = page.locator('section', {
+      has: page.getByRole('heading', { name: t('fdct.projects.title', 'en') })
+    })
+    await expect(
+      section.locator(`a[aria-label$="${t('fdct.projects.cta', 'en')}"]`)
+    ).toHaveCount(projects.length)
+    for (const project of projects) {
+      await expect(
+        section.getByRole('link', {
+          name: `${project.title} — ${t('fdct.projects.cta', 'en')}`
+        })
+      ).toHaveCount(1)
+    }
+    await expect(
+      section.getByText(projects[0].author.name).first()
+    ).toBeVisible()
+    await expect(
+      section
+        .getByText(t(`fdct.projects.category.${projects[0].category}`, 'en'), {
+          exact: true
+        })
+        .first()
+    ).toBeVisible()
   })
 })
 
@@ -170,13 +208,42 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     page
   }) => {
     await page.goto('/zh-CN/fdct')
+    const section = page.locator('section', {
+      has: page.getByRole('heading', {
+        name: t('fdct.technologists.title', 'zh-CN')
+      })
+    })
     await expect(
-      page.getByRole('heading', {
+      section.getByRole('heading', {
         name: t('fdct.technologists.title', 'zh-CN')
       })
     ).toBeVisible()
     for (const person of technologists) {
-      await expect(page.getByText(person.name, { exact: true })).toBeVisible()
+      await expect(
+        section.getByText(person.name, { exact: true })
+      ).toBeVisible()
     }
+  })
+
+  test('past projects renders six cards under the localized heading', async ({
+    page
+  }) => {
+    await page.goto('/zh-CN/fdct')
+    const section = page.locator('section', {
+      has: page.getByRole('heading', {
+        name: t('fdct.projects.title', 'zh-CN')
+      })
+    })
+    await expect(
+      section.locator(`a[aria-label$="${t('fdct.projects.cta', 'zh-CN')}"]`)
+    ).toHaveCount(projects.length)
+    await expect(
+      section
+        .getByText(
+          t(`fdct.projects.category.${projects[0].category}`, 'zh-CN'),
+          { exact: true }
+        )
+        .first()
+    ).toBeVisible()
   })
 })

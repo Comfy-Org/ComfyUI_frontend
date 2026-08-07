@@ -5361,7 +5361,18 @@ const translations = {
     en: 'See workflows',
     'zh-CN': '查看工作流'
   },
-  'fdct.technologists.close': { en: 'Close', 'zh-CN': '关闭' }
+  'fdct.technologists.close': { en: 'Close', 'zh-CN': '关闭' },
+  'fdct.projects.title': { en: 'Past projects', 'zh-CN': '过往项目' },
+  'fdct.projects.category.advertisement': {
+    en: 'Advertisement',
+    'zh-CN': '广告'
+  },
+  'fdct.projects.category.entertainment': {
+    en: 'Entertainment',
+    'zh-CN': '娱乐'
+  },
+  'fdct.projects.category.ecommerce': { en: 'Ecommerce', 'zh-CN': '电商' },
+  'fdct.projects.cta': { en: 'View project', 'zh-CN': '查看项目' }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
