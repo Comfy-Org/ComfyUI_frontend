@@ -117,7 +117,11 @@ export class ComfyWorkflow extends UserFile {
     let draftState: ComfyWorkflowJSON | null = null
     let draftContent: string | null = null
 
-    if (draft) {
+    // Temporary workflows restored from a draft have a synthetic creation
+    // timestamp, not an authoritative backing-file modification time. Comparing
+    // the draft against that timestamp makes every restored temporary draft look
+    // stale and deletes it immediately after recovery.
+    if (draft && !this.isTemporary) {
       if (draft.updatedAt < this.lastModified) {
         draftStore.removeDraft(this.path)
         draft = undefined

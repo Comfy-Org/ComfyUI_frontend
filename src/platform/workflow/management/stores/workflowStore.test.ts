@@ -366,6 +366,35 @@ describe('useWorkflowStore', () => {
       expect(draftStore.getDraft(workflow.path)).toBeNull()
     })
 
+    it('should preserve a restored temporary V2 draft despite its synthetic timestamp', async () => {
+      enableWorkflowPersistence()
+
+      const path = 'workflows/restored-temporary.json'
+      const draftGraph = JSON.parse(defaultGraphJSON)
+      draftGraph.extra = {
+        ...(draftGraph.extra ?? {}),
+        draftMarker: 'restored-temporary'
+      }
+      const draftStore = saveV2Draft(path, {
+        data: JSON.stringify(draftGraph),
+        name: 'restored-temporary.json',
+        isTemporary: true
+      })
+
+      const workflow = store.createTemporary('restored-temporary.json')
+      // Recreate the startup invariant: a temporary workflow receives a fresh
+      // synthetic timestamp after the older draft was persisted/migrated.
+      workflow.lastModified = Date.now() + 60_000
+
+      await workflow.load()
+
+      expect(workflow.activeState?.extra?.draftMarker).toBe(
+        'restored-temporary'
+      )
+      expect(workflow.isModified).toBe(true)
+      expect(draftStore.getDraft(path)).not.toBeNull()
+    })
+
     it('should load and open a remote workflow', async () => {
       await syncRemoteWorkflows(['a.json', 'b.json'])
 

@@ -311,6 +311,94 @@ describe('useWorkflowPersistenceV2', () => {
     })
   })
 
+  describe('save failure notifications', () => {
+    it('shows one toast for a continuous storage failure across workflow paths', async () => {
+      await loadBlankIntoActiveWorkflow()
+
+      const workflowStore = useWorkflowStore()
+      const draftStore = useWorkflowDraftStoreV2()
+      const saveDraftSpy = vi.spyOn(draftStore, 'saveDraft')
+      saveDraftSpy.mockReturnValue(false)
+
+      mountWorkflowPersistence()
+
+      mocks.state.currentGraph = { nodes: [{ id: 1 }] }
+      mocks.state.graphChangedHandler?.()
+      await vi.runAllTimersAsync()
+
+      mocks.state.currentGraph = { nodes: [{ id: 2 }] }
+      mocks.state.graphChangedHandler?.()
+      await vi.runAllTimersAsync()
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+
+      const second = workflowStore.createTemporary('second-workflow.json')
+      await workflowStore.openWorkflow(second)
+      await nextTick()
+
+      // Loading another workflow invokes another save path while the same
+      // storage failure is active; it must not create another toast.
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+
+      mocks.state.currentGraph = { nodes: [{ id: 3 }] }
+      mocks.state.graphChangedHandler?.()
+      await vi.runAllTimersAsync()
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+
+      // Any successful draft save proves storage recovered.
+      saveDraftSpy.mockReturnValueOnce(true)
+      mocks.state.currentGraph = { nodes: [{ id: 4 }] }
+      mocks.state.graphChangedHandler?.()
+      await vi.runAllTimersAsync()
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+
+      saveDraftSpy.mockReturnValueOnce(false)
+      mocks.state.currentGraph = { nodes: [{ id: 5 }] }
+      mocks.state.graphChangedHandler?.()
+      await vi.runAllTimersAsync()
+      expect(mockToastAdd).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('active workflow transitions', () => {
+    it('cancels a pending graphChanged save before persisting the new active workflow', async () => {
+      await loadBlankIntoActiveWorkflow()
+
+      const workflowStore = useWorkflowStore()
+      const first = workflowStore.activeWorkflow!
+      const draftStore = useWorkflowDraftStoreV2()
+      const saveDraftSpy = vi.spyOn(draftStore, 'saveDraft')
+      saveDraftSpy.mockReturnValue(true)
+
+      mountWorkflowPersistence()
+
+      mocks.state.currentGraph = { nodes: [{ id: 'first-pending' }] }
+      mocks.state.graphChangedHandler?.()
+
+      const second = workflowStore.createTemporary('second-transition.json')
+      const loadedSecond = await second.load()
+      const secondGraph = { nodes: [{ id: 'second-active' }] }
+      mocks.state.currentGraph = secondGraph
+      workflowStore.activeWorkflow = loadedSecond
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(saveDraftSpy).toHaveBeenCalledTimes(1)
+      expect(saveDraftSpy).toHaveBeenCalledWith(
+        second.path,
+        JSON.stringify(secondGraph),
+        {
+          name: second.key,
+          isTemporary: true
+        }
+      )
+      expect(saveDraftSpy).not.toHaveBeenCalledWith(
+        first.path,
+        expect.any(String),
+        expect.any(Object)
+      )
+    })
+  })
+
   describe('loadPreviousWorkflowFromStorage', () => {
     it('does not restore the active workflow early when open tab state exists', async () => {
       const workflowStore = useWorkflowStore()
@@ -568,6 +656,29 @@ describe('useWorkflowPersistenceV2', () => {
   })
 
   describe('loadDefaultWorkflow', () => {
+    it('does not autosave startup-only workflow state', async () => {
+      loadBlankWorkflowMock.mockImplementation(async () => {
+        await loadBlankIntoActiveWorkflow()
+        mocks.state.currentGraph = { nodes: [{ id: 'startup' }] }
+        mocks.state.graphChangedHandler?.()
+      })
+
+      const draftStore = useWorkflowDraftStoreV2()
+      const saveDraftSpy = vi.spyOn(draftStore, 'saveDraft')
+      const { initializeWorkflow } = mountWorkflowPersistence()
+
+      await initializeWorkflow()
+      await vi.runAllTimersAsync()
+
+      expect(saveDraftSpy).not.toHaveBeenCalled()
+
+      mocks.state.currentGraph = { nodes: [{ id: 'user-edit' }] }
+      mocks.state.graphChangedHandler?.()
+      await vi.runAllTimersAsync()
+
+      expect(saveDraftSpy).toHaveBeenCalledOnce()
+    })
+
     it('reports a fresh start for first-time users', async () => {
       const { initializeWorkflow } = mountWorkflowPersistence()
 
