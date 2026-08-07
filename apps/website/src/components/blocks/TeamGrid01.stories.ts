@@ -46,7 +46,7 @@ const meta: Meta<typeof TeamGrid01> = {
     lead: 'FDCTs come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match technologists to each engagement based on the work, your stack, and the timeline.',
     people,
     closeLabel: 'Close',
-    workflowsLabel: 'See workflows'
+    workflowsLabel: 'See their work'
   }
 }
 

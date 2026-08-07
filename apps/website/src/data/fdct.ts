@@ -19,7 +19,8 @@ export interface FdctTechnologist {
 }
 
 // Bios are verbatim from the FDCT page design. Headshots live on the media
-// CDN. Chris's workflowsHref stays '#' until his hub page link is provided.
+// CDN. Chris has no workflowsHref until his hub page link is provided; the
+// dialog omits its CTA for profiles without one.
 export const technologists: readonly FdctTechnologist[] = [
   {
     id: 'doug-hogan',
@@ -42,8 +43,7 @@ export const technologists: readonly FdctTechnologist[] = [
       'A Forward Deployed Technical Creative at Comfy, Chris works across generative AI, creative technology, software development, and production infrastructure. His background sits between artist and engineer, combining visual direction with the ability to build the systems required to deliver reliably. His commercial work has supported global brands and multi-platinum recording artists, and appeared on Fortune 500 keynote stages and the Las Vegas Strip.',
       'Before joining Comfy, Chris spent four years architecting custom VFX, animation, and generative AI pipelines for studios and Creative Directors, extending into the underlying engineering: custom Python tools, ComfyUI nodes, backend services, model integrations, and full-stack production platforms built from the ground up.',
       "That combination lets him work across the entire production chain, shaping the creative approach, evaluating models, designing the workflow, writing the tooling, and carrying the system through deployment. A pipeline that stops before the last mile isn't a pipeline you actually control."
-    ],
-    workflowsHref: '#'
+    ]
   },
   {
     id: 'rob-losch',
@@ -164,9 +164,8 @@ export function fdctFaqs(locale: Locale) {
 export const fdctPage: FdctPageData = {
   ctas: {
     contact: '/contact',
-    // Placeholder until the FDCT role exists; repoint (likely to an Ashby
-    // posting) in a follow-up PR.
-    applyFdct: '#',
+    applyFdct:
+      'https://jobs.ashbyhq.com/comfy-org/b8faf3c0-a21c-4bed-8651-93daa6bfe81c',
     enterpriseBand: '/contact',
     creatorsBand: '/careers'
   }

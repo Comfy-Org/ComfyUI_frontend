@@ -18,7 +18,7 @@ const meta: Meta<typeof TeamMemberDialog01> = {
     avatarSrc: '/assets/images/fallback-gradient-avatar.svg',
     bio,
     workflowsHref: '#',
-    workflowsLabel: 'See workflows',
+    workflowsLabel: 'See their work',
     closeLabel: 'Close',
     defaultOpen: true
   },
