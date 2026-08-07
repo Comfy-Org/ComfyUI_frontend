@@ -70,7 +70,7 @@ onMounted(() => {
   window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault()
     const info = parsePreloadError(event.payload)
-    console.error('[vite:preloadError]', {
+    console.error('[vite:preloadError]', info.cause, {
       url: info.url,
       fileType: info.fileType,
       chunkName: info.chunkName,
@@ -80,6 +80,7 @@ onMounted(() => {
       captureException(event.payload, {
         tags: {
           error_type: 'vite_preload_error',
+          cause: info.cause,
           file_type: info.fileType,
           chunk_name: info.chunkName ?? undefined
         },

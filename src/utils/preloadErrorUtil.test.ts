@@ -89,4 +89,34 @@ describe('parsePreloadError', () => {
 
     expect(result.chunkName).toBe('index')
   })
+
+  describe('cause classification', () => {
+    it.for([
+      [
+        'app-chunk',
+        'Failed to fetch dynamically imported module: https://cloud.comfy.org/assets/GraphView-SWkPe07q.js'
+      ],
+      [
+        'extension-fetch',
+        'Failed to fetch dynamically imported module: https://cloud.comfy.org/extensions/comfyui-sam3/sam3-editor.js'
+      ],
+      [
+        'other-fetch',
+        'Failed to fetch dynamically imported module: https://cdn.example.com/widget.js'
+      ],
+      ['css-preload', 'Unable to preload CSS for /assets/style-abc123.css'],
+      ['module-parse', "Unexpected token '}'"],
+      ['module-parse', 'Unexpected end of input'],
+      ['module-parse', 'Importing a module script failed.'],
+      ['module-parse', 'expected expression, got end of script'],
+      ['module-parse', "unexpected garbage after module, starting with '}'"],
+      ['module-exec', "Extension named 'ColorOverlay' already registered."],
+      [
+        'module-exec',
+        "Cannot read properties of undefined (reading 'ClipspaceDialog')"
+      ]
+    ])('classifies %s from %j', ([cause, message]) => {
+      expect(parsePreloadError(new Error(message)).cause).toBe(cause)
+    })
+  })
 })
