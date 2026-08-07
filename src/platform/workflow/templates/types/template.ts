@@ -19,6 +19,13 @@ export interface TemplateInfo {
   localizedTitle?: string
   localizedDescription?: string
   isEssential?: boolean
+  /**
+   * Whether App Mode is this template's default view, from the workflow's own
+   * `extra.linearMode`. Supplied by `templates/index.json`; absent means a node
+   * graph. Do not fall back to the `.app` filename suffix, which is wrong in
+   * both directions (see the App badge in WorkflowTemplateSelectorDialog).
+   */
+  isApp?: boolean
   sourceModule?: string
   tags?: string[]
   models?: string[]
