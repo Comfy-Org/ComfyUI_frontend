@@ -4623,17 +4623,9 @@ const translations = {
     en: 'status page',
     'zh-CN': '状态页面'
   },
-  'payment.failed.statusPrompt.middle': {
-    en: 'for more information. Please reach out to',
-    'zh-CN': '了解更多信息。如果问题仍未解决，请联系'
-  },
-  'payment.failed.statusPrompt.supportLink': {
-    en: 'support',
-    'zh-CN': '支持团队'
-  },
   'payment.failed.statusPrompt.suffix': {
-    en: 'if your issue persists.',
-    'zh-CN': '获取进一步帮助。'
+    en: 'for more information.',
+    'zh-CN': '了解更多信息。'
   },
 
   // AffiliateHeroSection

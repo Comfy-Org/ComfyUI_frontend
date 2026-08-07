@@ -108,13 +108,6 @@ const iconRingClass =
         >
           {{ t('payment.failed.statusPrompt.statusLink', locale) }}
         </a>
-        {{ t('payment.failed.statusPrompt.middle', locale) }}
-        <a
-          :href="externalLinks.support"
-          class="text-primary-comfy-yellow underline underline-offset-4"
-        >
-          {{ t('payment.failed.statusPrompt.supportLink', locale) }}
-        </a>
         {{ t('payment.failed.statusPrompt.suffix', locale) }}
       </p>
     </div>
