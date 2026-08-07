@@ -1647,6 +1647,7 @@ export class ComfyApp {
     const executionErrorStore = useExecutionErrorStore()
     const telemetry = useTelemetry()
     executionErrorStore.clearRunErrors()
+    executionErrorStore.dismissErrorOverlay()
     let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token

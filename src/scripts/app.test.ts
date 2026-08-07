@@ -340,6 +340,30 @@ describe('ComfyApp', () => {
       expect(executionErrorStore.lastExecutionError).toBeNull()
     })
 
+    it('dismisses the error overlay when submitting a prompt', async () => {
+      prepareEmptyPromptQueue()
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.recordExecutionError({
+        prompt_id: 'previous-run',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'fail',
+        exception_type: 'RuntimeError',
+        traceback: []
+      })
+      executionErrorStore.showErrorOverlay()
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      await app.queuePrompt(0)
+
+      expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
+    })
+
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()
       const workflow = new ComfyWorkflow({
