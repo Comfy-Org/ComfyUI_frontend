@@ -16,14 +16,13 @@ import { createBackendApi } from './backendHandle'
 import type { BackendHandle } from './backendHandle'
 import { createCommandsApi } from './commandsHandle'
 import type { CommandsHandle } from './commandsHandle'
-import { apiConstants, isInteracting } from './constants'
+import { isInteracting } from './constants'
 import {
   createNodeDragEndObserver,
   createNodeMoveObserver
 } from './interaction'
 import type { NodeMoveEvent } from './interaction'
 import type { Unsubscribe } from './widgetHandle'
-import type { ApiConstants } from './constants'
 import { createGraphApi } from './graphHandle'
 import type { GraphHandle } from './graphHandle'
 import { createSettingsApi } from './settingsHandle'
@@ -101,7 +100,6 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['settings', '1.0'],
   ['commands', '1.0'],
   ['backend', '1.0'],
-  ['constants', '1.0'],
   ['interaction.state', '1.0'],
   ['interaction.nodeMoved', '1.0'],
   ['interaction.nodeDragEnd', '1.0']
@@ -167,12 +165,6 @@ export interface Comfy {
   /** Backend URLs and messages, including a pack's own events. */
   readonly backend: BackendHandle
   /**
-   * Renderer values a pack needs to lay itself out, replacing reads of
-   * `LiteGraph.*`. Values, not the object: the constants are the renderer's to
-   * change, and a pack holding a reference to it holds the renderer open.
-   */
-  readonly constants: ApiConstants
-  /**
    * The editor is already mid-gesture — dragging a link, resizing a node,
    * dragging a widget. A pack running its own pointer gesture must stand down
    * while this is true.
@@ -233,9 +225,6 @@ function buildMajor(
     settings,
     commands,
     backend,
-    get constants() {
-      return apiConstants()
-    },
     isInteracting,
     onNodeMoved: createNodeMoveObserver((id) => graph.node(id)),
     onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
