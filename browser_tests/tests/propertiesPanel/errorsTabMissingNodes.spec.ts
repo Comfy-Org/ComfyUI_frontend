@@ -30,6 +30,28 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     ).toHaveText(/\S/)
   })
 
+  test('Should keep the missing node pack card after submitting a prompt', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #14557 — submitting a prompt cleared missing-node state, emptying the Errors tab'
+    })
+
+    await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
+
+    const missingNodeCard = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodeCard
+    )
+    await expect(missingNodeCard).toBeVisible()
+
+    await comfyPage.runButton.click()
+
+    await expect(missingNodeCard).toBeVisible()
+    await expect(missingNodeCard.getByText('Unknown pack')).toBeVisible()
+  })
+
   test('Should show unknown pack node rows by default', async ({
     comfyPage
   }) => {

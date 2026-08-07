@@ -86,7 +86,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Clear errors tied to the previous run: execution, prompt, and node errors.
    *  Missing node, model, and media state is deliberately preserved because a
    *  submission cannot prove those resources are no longer missing. Missing
-   *  nodes are cleared by `ComfyApp.clean` and the graph error-clearing hooks. */
+   *  nodes are cleared by the paths that overwrite the whole list —
+   *  `ComfyApp.clean` and `showPendingWarnings`. The graph error-clearing hooks
+   *  only retire entries carrying a `nodeId`, so group-node entries, which are
+   *  pushed without one, survive them. */
   function clearRunErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
