@@ -34,12 +34,13 @@ function arbAssetList(
   maxLength = 20
 ): fc.Arbitrary<AssetItem[]> {
   return fc.uniqueArray(arbAssetId, { minLength, maxLength }).map((ids) =>
-    ids.map((id) =>
-      fromPartial<AssetItem>({
-        id,
-        name: `${id}.png`,
-        tags: ['output']
-      })
+    ids.map(
+      (id): AssetItem =>
+        fromPartial({
+          id,
+          name: `${id}.png`,
+          tags: ['output']
+        })
     )
   )
 }

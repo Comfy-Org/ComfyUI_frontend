@@ -36,7 +36,7 @@ export function mapTaskOutputToAssetItem(
     create_time: taskItem.createTime
   }
 
-  const created_at = taskItem.executionStartTimestamp
+  const executionTime = taskItem.executionStartTimestamp
     ? new Date(taskItem.executionStartTimestamp).toISOString()
     : new Date().toISOString()
 
@@ -45,8 +45,8 @@ export function mapTaskOutputToAssetItem(
     name: output.filename,
     display_name: output.display_name,
     size: 0,
-    created_at,
-    updated_at: created_at,
+    created_at: executionTime,
+    updated_at: executionTime,
     tags: ['output'],
     thumbnail_url: output.previewUrl,
     preview_url: output.url,

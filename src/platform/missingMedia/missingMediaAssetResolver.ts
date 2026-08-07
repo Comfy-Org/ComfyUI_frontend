@@ -313,7 +313,6 @@ function mapHistoryJobToAsset(job: JobListItem): AssetItem | null {
     id: `${job.id}-${output.filename}`,
     name: output.filename,
     display_name: output.display_name,
-    mime_type: null,
     tags: ['output'],
     created_at: createdAt,
     updated_at: createdAt,

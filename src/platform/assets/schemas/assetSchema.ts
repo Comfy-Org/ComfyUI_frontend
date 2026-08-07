@@ -1,29 +1,15 @@
-import { zListAssetsResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zAsset as zIngestAsset,
+  zListAssetsResponse
+} from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 // Zod schemas for asset API validation matching ComfyUI Assets REST API spec
 const zAsset = z.object({
-  id: z.string(),
-  name: z.string(),
-  hash: z.string().nullish(),
-  size: z.number().optional(), // TBD: Will be provided by history API in the future
-  mime_type: z.string().nullish(),
-  tags: z.array(z.string()).optional().default([]),
-  preview_id: z.string().nullable().optional(),
-  display_name: z.string().optional(),
-  /** Path within the model's category folder, i.e. the value a loader widget expects. */
-  loader_path: z.string().nullish(),
-  preview_url: z.string().optional(),
-  thumbnail_url: z.string().optional(),
-  created_at: z.string(),
-  updated_at: z.string(),
-  is_immutable: z.boolean().optional(),
-  last_access_time: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
-  user_metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
-  file_path: z.string().nullish(),
-  job_id: z.string().nullish(),
-  short_url: z.string().nullish()
+  ...zIngestAsset.shape,
+  size: zIngestAsset.shape.size.unwrap().transform(Number).optional(),
+  tags: zIngestAsset.shape.tags.default([]),
+  thumbnail_url: z.string().optional()
 })
 
 const zAssetResponse = zListAssetsResponse

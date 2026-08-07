@@ -46,12 +46,11 @@ vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async () => {
   }
 })
 
-function makeAsset(name: string, assetHash: string | null = null): AssetItem {
+function makeAsset(name: string, assetHash?: string): AssetItem {
   return fromPartial({
     id: name,
     name,
     hash: assetHash,
-    mime_type: null,
     tags: ['input']
   })
 }

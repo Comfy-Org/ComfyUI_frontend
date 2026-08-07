@@ -462,7 +462,6 @@ describe('assetMetadataUtils', () => {
       ...mockAsset,
       id: 'oss-asset-id',
       name: 'sunset.png',
-      hash: null,
       display_name: undefined
     }
 
