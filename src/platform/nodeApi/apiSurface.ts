@@ -18,6 +18,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'adopt',
   'all',
   'apply',
+  'assetUrl',
   'at',
   'autoHeight',
   'backend',
