@@ -41,10 +41,18 @@ export const useFirstRunEntry = createSharedComposable(() => {
    * Only a boot that opened a blank canvas can be onboarded over. `isNewUser()`
    * cannot carry that alone — it reads `Comfy.TutorialCompleted`, which is
    * exactly what a user predating the setting is missing.
+   *
+   * `Comfy.EmulateNewUser` also relaxes both guards. Forcing `isNewUser()` true
+   * is not enough on its own: both bail before candidacy is consulted, so a
+   * tester with any existing draft or a completed tutorial — which is every
+   * tester who has already run onboarding once — would flip the setting, reload
+   * and get nothing.
    */
   async function handleStartupOutcome(outcome: StartupOutcome) {
-    if (outcome === 'restored') return
-    if (settingStore.get('Comfy.TutorialCompleted')) return
+    if (!settingStore.get('Comfy.EmulateNewUser')) {
+      if (outcome === 'restored') return
+      if (settingStore.get('Comfy.TutorialCompleted')) return
+    }
 
     if (outcome === 'url-intent') {
       await markTutorialCompleted()

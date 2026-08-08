@@ -32,7 +32,19 @@ function _useNewUserService() {
     isNewUserCached.value = null
   }
 
+  /**
+   * `Comfy.EmulateNewUser` lets a tester re-run first-run onboarding without
+   * hand-clearing localStorage. It is per-user and server-side, so it works on
+   * any deployment and affects nobody else. Read once per load, like every
+   * other input to `checkIsNewUser`: flipping it takes effect on reload.
+   */
+  function isEmulatingNewUser(): boolean {
+    return settingStore.get('Comfy.EmulateNewUser') === true
+  }
+
   function checkIsNewUser(): boolean {
+    if (isEmulatingNewUser()) return true
+
     const isNewUserSettings =
       Object.keys(settingStore.settingValues).length === 0 ||
       !settingStore.get('Comfy.TutorialCompleted')
@@ -89,10 +101,16 @@ function _useNewUserService() {
       return
     }
 
-    await settingStore.set(
-      'Comfy.InstalledVersion',
-      __COMFYUI_FRONTEND_VERSION__
-    )
+    // Emulation deliberately skips this write. `Comfy.InstalledVersion` is a
+    // one-way marker that drives `defaultsByInstallVersion` (Nodes 2.0 among
+    // others); overwriting a real account's install version would outlive the
+    // emulation and silently change which defaults that account gets.
+    if (!isEmulatingNewUser()) {
+      await settingStore.set(
+        'Comfy.InstalledVersion',
+        __COMFYUI_FRONTEND_VERSION__
+      )
+    }
 
     for (const callback of pendingCallbacks.value) {
       try {
