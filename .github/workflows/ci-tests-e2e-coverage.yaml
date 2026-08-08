@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -147,7 +147,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download HTML report
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: e2e-coverage-html
           path: coverage/html

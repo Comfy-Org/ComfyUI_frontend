@@ -13,7 +13,7 @@ ignore_actions:
   - name: actions/cache
     ref: v5
   - name: actions/checkout
-    ref: v6
+    ref: v7
   - name: actions/setup-node
     ref: v6
   - name: actions/setup-python
@@ -21,6 +21,6 @@ ignore_actions:
   - name: actions/upload-artifact
     ref: v6
   - name: actions/download-artifact
-    ref: v7
+    ref: v8
   - name: actions/github-script
     ref: v8

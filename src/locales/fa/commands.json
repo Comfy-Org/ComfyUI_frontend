@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "توقف"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "باز کردن ویرایشگر لایه برای نود انتخاب‌شده"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "بارگذاری ورک‌فلو پیش‌فرض"
   },
