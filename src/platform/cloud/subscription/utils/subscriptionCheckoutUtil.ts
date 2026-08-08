@@ -1,9 +1,7 @@
 import { storeToRefs } from 'pinia'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
   createPendingSubscriptionCheckoutAttempt,
@@ -16,7 +14,9 @@ import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
 } from '@/platform/telemetry/types'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
@@ -86,35 +86,21 @@ export async function performSubscriptionCheckout(
   }
   const checkoutPayload = { ...checkoutAttribution }
 
-  const response = await fetchWithUnifiedRemint(
+  const response = await authStore.fetchWithCustomerRecovery(
     `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
     {
       method: 'POST',
       headers: { ...authHeader, 'Content-Type': 'application/json' },
       body: JSON.stringify(checkoutPayload)
-    },
-    isCloud && useFeatureFlags().flags.unifiedCloudAuthEnabled
+    }
   )
 
   if (!response.ok) {
-    let errorMessage = 'Failed to initiate checkout'
-    try {
-      const errorData = await response.json()
-      errorMessage = errorData.message || errorMessage
-    } catch {
-      // If JSON parsing fails, try to get text response or use HTTP status
-      try {
-        const errorText = await response.text()
-        errorMessage =
-          errorText || `HTTP ${response.status} ${response.statusText}`
-      } catch {
-        errorMessage = `HTTP ${response.status} ${response.statusText}`
-      }
-    }
+    const { message } = await parseErrorResponse(response)
 
     throw new AuthStoreError(
       t('toastMessages.failedToInitiateSubscription', {
-        error: errorMessage
+        error: message
       })
     )
   }

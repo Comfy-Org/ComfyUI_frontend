@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "添加图层",
+    "inputs": {
+      "blend_mode": {
+        "name": "混合模式",
+        "tooltip": "初始混合模式。"
+      },
+      "flip_h": {
+        "name": "水平翻转",
+        "tooltip": "水平翻转该图层。"
+      },
+      "flip_v": {
+        "name": "垂直翻转",
+        "tooltip": "垂直翻转该图层。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "初始显示高度。0 表示保持图像原始高度。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "以原始尺寸显示的图层内容。批量输入会扩展为连续的图层。"
+      },
+      "layers": {
+        "name": "图层组",
+        "tooltip": "要追加的图层堆栈。不连接则新建一个堆栈。"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "该图层的透明度遮罩。被遮罩的区域（值为1）变为透明，并与图像已有的 alpha 通道相乘。"
+      },
+      "name": {
+        "name": "名称",
+        "tooltip": "在合成器编辑器中显示的图层名称。"
+      },
+      "opacity": {
+        "name": "不透明度",
+        "tooltip": "初始图层不透明度。"
+      },
+      "rotation": {
+        "name": "旋转",
+        "tooltip": "初始顺时针旋转角度（度）。"
+      },
+      "width": {
+        "name": "宽度",
+        "tooltip": "初始显示宽度。0 表示保持图像原始宽度。"
+      },
+      "x": {
+        "name": "X",
+        "tooltip": "在画布上的初始水平位置。"
+      },
+      "y": {
+        "name": "Y",
+        "tooltip": "在画布上的初始垂直位置。"
+      },
+      "z_index": {
+        "name": "层级",
+        "tooltip": "堆叠顺序覆盖。图层按 z_index 稳定排序；相同值保持列表顺序。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "追加了该图层的图层堆栈。"
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "添加噪波",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "生成音频"
       },
+      "model_output_format": {
+        "name": "输出格式"
+      },
       "model_prompt": {
         "name": "提示词"
-      },
-      "model_ratio": {
-        "name": "比例"
       },
       "model_resolution": {
         "name": "分辨率"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "生成音频"
       },
+      "model_output_format": {
+        "name": "输出格式"
+      },
       "model_prompt": {
         "name": "提示词"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "分辨率"
+      },
+      "model_video_editing": {
+        "name": "视频编辑"
       },
       "seed": {
         "name": "种子",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "生成音频"
+      },
+      "model_output_format": {
+        "name": "输出格式"
       },
       "model_prompt": {
         "name": "提示词"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "将一张图像分解为一个背景底板和最多16个可重新定位的透明图层，每个图层具有堆叠顺序、边界框、名称和描述。",
+    "display_name": "ByteDance Seedream 5.0 Pro 图层分离",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "crop_layers": {
+        "name": "crop_layers",
+        "tooltip": "图层/蒙版批量输出的几何方式（layer_stack始终为紧凑）。全画布：每个图层在其边界框位置放置于基础尺寸画布上——可直接用ImageCompositeMasked重组。最小尺寸：每个图层裁剪到其边界框（为批量处理填充到最大图层）——张量更小；用Layers From Bounding Boxes和bboxes输出重建位置。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要分离的图像。仅支持一张图像，至少512x512像素，宽高比在1:16到16:1之间。大于约400万像素的输入会在上传前被缩小。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "如何分离图像。留空则自动检测并分离所有主要元素。用自然语言描述元素以控制分离，或用<bbox>left top right bottom</bbox>标签（0-1000千分比坐标）精确指定区域。"
+      },
+      "prompt_optimization": {
+        "name": "prompt_optimization",
+        "tooltip": "提示词优化模式：'standard' 提供更高质量，'fast' 生成速度更快。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "输出分辨率等级。'auto'将跟随输入图像大小（限制在1K-2K范围内）。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在图像上添加“AI生成”水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "图层堆叠的基础图像（背景底板）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "基础图像的透明度（1 = 透明，LoadImage 约定）；当前始终为完全不透明。"
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "自下而上排序的透明图层。全画布模式：放置于黑色基础尺寸画布上，位置为其边界框。最小尺寸模式：裁剪到边界框，左上角对齐，填充到最大图层。"
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "每个图层的透明度，与图层批次索引对齐（1 = 透明，LoadImage 约定）。用于ImageCompositeMasked风格合成时，需先添加InvertMask。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "每个图层一个放置框，与图层批次索引对齐（将两者及masks输入Layers From Bounding Boxes以重建每层位置）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] 表示图层在自身框架内的内容区域；最终落在画布上的位置为放置框位置加上该偏移。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "用于Create Layered Image的可编辑图层文档：基础底板加每个元素作为独立命名、紧凑裁剪的图层，保持真实位置和堆叠顺序。可直接连接，或用Add Layer扩展。"
       }
     }
   },
@@ -4098,6 +4236,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 的联合视频+音频潜空间。时长会对齐到模型的 17k+5 帧网格（24 帧/秒）。",
+    "display_name": "空 MiniMax H3 AV 潜空间",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "以 24 帧/秒计算的帧数，上调到模型的 17k+5 网格（124 ≈ 5秒；训练范围约为 124-362，超过此范围未测试）"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "空Latent视频（Mochi）",
     "inputs": {
@@ -4389,6 +4548,144 @@
       },
       "width": {
         "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageToVideoNode": {
+    "description": "使用 FLUX 3 为 1 到 10 张图像制作动画。每张图像成为 clip 的一帧：一张图像作为开头，两张图像从第一张变形到第二张，更多图像则分布在 clip 中或固定在你选择的时间点。",
+    "display_name": "Flux 3 图像转视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "输出宽高比。“auto” 会根据 prompt 和输入自动选择。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "clip 时长（秒）。“auto” 会根据内容自动调整时长。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "生成同步音频（环境音、语音、音效）。关闭时生成无音轨视频。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "1 到 10 张图像，按播放顺序排列。每张至少 256x256 像素。"
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "“spread across the clip” 让 FLUX 3 自动分布图像（第一张作为开头，两张分别作为开始和结束）；“at times” 则将每张图像固定在你选择的秒数。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "场景应如何移动和发声；prompt 会在生成前被解释和扩展。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "输出分辨率。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "审核容忍度，0 为最严格。发送图像或视频的请求无论设置如何都最多为 2。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；FLUX 3 会自行选择种子，因此无论此值如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3TextToVideoNode": {
+    "description": "通过 FLUX 3 根据文本 prompt 生成带同步音频的视频。",
+    "display_name": "Flux 3 文本转视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "输出宽高比。“auto” 会根据 prompt 和输入自动选择。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "clip 时长（秒）。“auto” 会根据内容自动调整时长。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "生成同步音频（环境音、语音、音效）。关闭时生成无音轨视频。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "你想要什么，用通俗语言描述；prompt 会在生成前被解释和扩展。请分别描述环境音、音乐和语音，以实现分层音频。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "输出分辨率。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "审核容忍度，0 为最严格。发送图像或视频的请求无论设置如何都最多为 2。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；FLUX 3 会自行选择种子，因此无论此值如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3VideoContinuationNode": {
+    "description": "使用 FLUX 3 继续视频：新片段将从你提供的视频最后几帧继续。",
+    "display_name": "Flux 3 视频续接",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "输出宽高比。'auto' 会根据提示词和输入自动选择。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "片段时长（秒）。'auto' 会根据内容自动调整长度。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "生成同步音频（环境音、语音、音效）。关闭时输出无音轨视频。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "续接内容描述；在生成前会对提示词进行解释和扩展。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "输出分辨率。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "内容审核容忍度，0 为最严格。发送图片或视频的请求无论设置如何都限制为最多 2。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于决定节点是否重新运行的种子；FLUX 3 会自行选择种子，因此无论此值如何，实际结果都是非确定性的。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要续接的片段。"
       }
     },
     "outputs": {
@@ -5704,6 +6001,15 @@
       "model_resolution": {
         "name": "分辨率"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "提示词",
         "tooltip": "描述期望视频的文本。"
@@ -6760,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "创建分层图像",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "由合成器编辑器保存的分层合成。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "要合成的图层堆栈；使用添加图层构建。项目按 z_index 叠加，批处理帧在项目内扩展为连续图层，项目的位置、透明度和混合模式定义初始合成。没有明确的文档画布时，尺寸将尽量取放置图层的最大范围。已保存且与当前输入匹配的合成优先。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "合成后的图像。当合成包含透明区域（如隐藏背景）时带有 alpha 通道，否则为普通 RGB。"
+      },
+      "1": {
+        "tooltip": "合成图像的透明度（1 = 完全透明）。当合成图像不透明时全部为零。"
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "裁剪图像",
     "inputs": {
@@ -7580,158 +7907,6 @@
       }
     }
   },
-  "KlingCameraControlI2VNode": {
-    "description": "将静态图像转化为具有专业摄像机运动的电影级视频，模拟真实世界的电影摄影。可控制虚拟摄像机的缩放、旋转、平移、俯仰和第一人称视角，同时保持对原始图像的聚焦。",
-    "display_name": "Kling 图像转视频（摄像机控制）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比"
-      },
-      "camera_control": {
-        "name": "镜头控制",
-        "tooltip": "可通过 Kling Camera Controls 节点创建。控制视频生成过程中的摄像机运动和动作。"
-      },
-      "cfg_scale": {
-        "name": "CFG"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "反向文本提示"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "正向文本提示"
-      },
-      "start_frame": {
-        "name": "起始帧",
-        "tooltip": "参考图像 - URL 或 Base64 编码字符串，不能超过 10MB，分辨率不低于 300*300 像素，宽高比在 1:2.5 ~ 2.5:1 之间。Base64 不应包含 data:image 前缀。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "视频ID",
-        "tooltip": null
-      },
-      "2": {
-        "name": "时长",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControlT2VNode": {
-    "description": "将文本转化为具有专业摄像机运动的电影级视频，模拟真实世界的电影摄影。可控制虚拟摄像机的动作，包括缩放、旋转、平移、俯仰和第一人称视角，同时保持对原始文本的聚焦。",
-    "display_name": "Kling 文本转视频（摄像机控制）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比"
-      },
-      "camera_control": {
-        "name": "镜头控制",
-        "tooltip": "可通过 Kling Camera Controls 节点创建。控制视频生成过程中的摄像机运动和移动。"
-      },
-      "cfg_scale": {
-        "name": "CFG"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "反向文本提示"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "正向文本提示"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "视频ID",
-        "tooltip": null
-      },
-      "2": {
-        "name": "时长",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControls": {
-    "description": "允许指定 Kling 相机控制和运动控制效果的配置选项。",
-    "display_name": "Kling 相机控制",
-    "inputs": {
-      "camera_control_type": {
-        "name": "镜头类型"
-      },
-      "horizontal_movement": {
-        "name": "水平移动",
-        "tooltip": "控制相机在水平轴（x 轴）上的移动。负值表示向左，正值表示向右。"
-      },
-      "pan": {
-        "name": "垂直旋转",
-        "tooltip": "控制相机在垂直平面（x 轴）上的旋转。负值表示向下旋转，正值表示向上旋转。"
-      },
-      "roll": {
-        "name": "滚转",
-        "tooltip": "控制相机的滚转量（z 轴）。负值表示逆时针，正值表示顺时针。"
-      },
-      "tilt": {
-        "name": "水平旋转",
-        "tooltip": "控制相机在水平平面（y 轴）上的旋转。负值表示向左旋转，正值表示向右旋转。"
-      },
-      "vertical_movement": {
-        "name": "垂直移动",
-        "tooltip": "控制相机在垂直轴（y 轴）上的移动。负值表示向下，正值表示向上。"
-      },
-      "zoom": {
-        "name": "变焦",
-        "tooltip": "控制相机焦距的变化。负值表示视野变窄，正值表示视野变宽。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "镜头控制",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingDualCharacterVideoEffectNode": {
-    "description": "根据 效果 在生成视频时实现不同的特效。第一张图片将被放置在合成画面的左侧，第二张图片在右侧。",
-    "display_name": "Kling 双角色视频特效",
-    "inputs": {
-      "duration": {
-        "name": "时长"
-      },
-      "effect_scene": {
-        "name": "效果"
-      },
-      "image_left": {
-        "name": "左侧图像",
-        "tooltip": "左侧图片"
-      },
-      "image_right": {
-        "name": "右侧图像",
-        "tooltip": "右侧图片"
-      },
-      "mode": {
-        "name": "模式"
-      },
-      "model_name": {
-        "name": "模型"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "时长",
-        "tooltip": null
-      }
-    }
-  },
   "KlingFirstLastFrameNode": {
     "description": "使用 Kling V3 通过首帧和末帧生成视频。",
     "display_name": "Kling 3.0 首帧-末帧生成视频",
@@ -8250,38 +8425,6 @@
       }
     }
   },
-  "KlingSingleImageVideoEffectNode": {
-    "description": "根据 效果 在生成视频时实现不同的特效。",
-    "display_name": "Kling 视频特效",
-    "inputs": {
-      "duration": {
-        "name": "时长"
-      },
-      "effect_scene": {
-        "name": "效果"
-      },
-      "image": {
-        "name": "图像3",
-        "tooltip": "参考图片。URL 或 Base64 编码字符串（不含 data:image 前缀）。文件大小不得超过 10MB，分辨率不低于 300*300 像素，宽高比在 1:2.5 ~ 2.5:1 之间。"
-      },
-      "model_name": {
-        "name": "模型"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "视频ID",
-        "tooltip": null
-      },
-      "2": {
-        "name": "时长",
-        "tooltip": null
-      }
-    }
-  },
   "KlingStartEndFrameNode": {
     "description": "生成一个在起始图像和结束图像之间过渡的视频序列。该节点会创建所有中间帧，实现从第一帧到最后一帧的平滑变换。",
     "display_name": "Kling 起止帧生成视频",
@@ -8468,26 +8611,6 @@
       "start_frame": {
         "name": "起始帧",
         "tooltip": "可选的起始帧图像。连接后切换为图生视频模式。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingVirtualTryOnNode": {
-    "description": "Kling 虚拟试穿节点。输入一张人物图片和一张服装图片，将服装试穿到人物身上。",
-    "display_name": "Kling 虚拟试穿",
-    "inputs": {
-      "cloth_image": {
-        "name": "服装"
-      },
-      "human_image": {
-        "name": "主体"
-      },
-      "model_name": {
-        "name": "模型"
       }
     },
     "outputs": {
@@ -8685,6 +8808,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "将视频潜空间和音频潜空间合并为联合 AV 潜空间（适用于任意 AV 模型，如 LTXV 或 MiniMax H3）。",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -9448,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "将图像批次及其边界框转换为图层堆栈，每帧一个图层，每个图层按其对应的框放置。当某个节点以批处理形式输出图层时使用——批处理为每帧携带一个放置信息，否则单独位置会丢失。",
+    "display_name": "从边界框生成图层",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "放置框，与图像批次索引对齐。接受边界框（x, y, width, height）、归一化元素（带有 'bbox'——这些需要 canvas_width/canvas_height 转换为像素），或上述任一的 JSON 字符串。没有匹配框的帧将放置在原点。框的宽度/高度会缩放图层以适应。metadata.name（或 desc）和 metadata.z_index 在存在时会被使用，metadata.content_rect（帧相对）会将帧裁剪到实际内容。"
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "文档画布高度。为 0 时根据放置的图层自动推断。"
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "文档画布宽度。为 0 时根据放置的图层自动推断。"
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "如有 metadata.content_rect，则将每帧裁剪到该区域，并将内容放置在框位置加上该区域偏移。对于帧有填充的批次建议开启——只保留真实内容并放在正确位置。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "图像批次；每帧成为一个图层。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "要追加的图层堆栈。不连接则新建堆栈。"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "每帧透明度，与图像批次索引对齐（1 = 透明，LoadImage 约定）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "图层堆栈，可用于创建分层图像。"
       }
     }
   },
@@ -11370,6 +11533,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 图像转视频",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "首帧"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "last_frame": {
+        "name": "末帧"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "以 24 帧/秒计算的帧数，上调到模型的 17k+5 网格（124 ≈ 5秒；训练范围约为 124-362，超过此范围未测试）"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<图片 i> / <视频 k> / <音频 j> 参考条件输入，适用于 MiniMax H3。提示时请使用相同标签。",
+    "display_name": "MiniMax H3 参考转视频",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "以 24 帧/秒计算的帧数（124 ≈ 5秒，训练范围约为 124-362）"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "ref_audios": {
+        "name": "参考音频"
+      },
+      "ref_image_size": {
+        "name": "参考图像尺寸",
+        "tooltip": "参考图像尺寸。'match' 会将每个参考（仅缩小，保持比例）缩放到生成图像的像素面积；'max' 使用参考流程的 2048px 短边以获得最佳身份一致性。参考 token 会贯穿每一步采样，因此 'max' 速度会慢数倍。"
+      },
+      "ref_images": {
+        "name": "参考图像"
+      },
+      "ref_video_audios": {
+        "name": "参考视频音频"
+      },
+      "ref_videos": {
+        "name": "参考视频"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "设置视频/音频流的偏移。",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "音频偏移"
+      },
+      "shift_video": {
+        "name": "视频偏移"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -20570,6 +20845,58 @@
       }
     }
   },
+  "TopazImageEnhanceV2": {
+    "description": "业界标准的放大与图像增强。",
+    "display_name": "Topaz 图像增强",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_color_preservation": {
+        "name": "color_preservation"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_crop_to_fill": {
+        "name": "crop_to_fill"
+      },
+      "model_face_enhancement": {
+        "name": "face_enhancement"
+      },
+      "model_face_enhancement_creativity": {
+        "name": "face_enhancement_creativity"
+      },
+      "model_face_enhancement_strength": {
+        "name": "face_enhancement_strength"
+      },
+      "model_face_preservation": {
+        "name": "face_preservation"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_subject_detection": {
+        "name": "subject_detection"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "为 0 时输出与原始高度相同，或按 output_width 比例缩放。Wonder 3.5 仅支持 1x 到 6x 放大。Bloom 2 和 Wonder 3.5 保持输入宽高比，并将请求尺寸作为目标。"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "为 0 时自动计算（通常为原始尺寸，或按 output_height 比例缩放）。Wonder 3.5 仅支持 1x 到 6x 放大。Bloom 2 和 Wonder 3.5 保持输入宽高比，并将请求尺寸作为目标。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TopazVideoEnhance": {
     "description": "通过强大的放大和修复技术，为视频注入新的生命。",
     "display_name": "Topaz 视频增强",
@@ -23176,6 +23503,129 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2Cache": {
+    "description": "缓存姿势视频每个区块的激活值，使其只运行一次，而不是在每个采样步骤都运行。大约可将生成时间减半。权衡是，在 bf16 精度下，480x832 分辨率/81 帧时约需 12.5 GB 系统内存（随分辨率和长度变化）。使用上下文窗口时，每个窗口单独缓存，因此内存占用随窗口数量增加；建议使用 static_standard 调度，因为 uniform 调度会在每一步移动窗口，导致缓存无法复用。",
+    "display_name": "WanAnimate2Cache",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "缓存存放位置。cpu（内存）是安全选择，通常情况下缓存无法与模型同时放入显存。gpu（显存）如果能放下会更快。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "存储精度。default 按模型计算精度存储激活值。int8 可将缓存减半，int4 可减至四分之一，convrot 用于保持精度。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2ToVideo": {
+    "description": "使用视频为参考图像中的角色添加动画，有效地复现视频中的面部动画、身体动作和手势。",
+    "display_name": "WanAnimate2ToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "同时生成的视频数量。"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "参考图像的 CLIP vision。"
+      },
+      "clip_vision_output_pose": {
+        "name": "clip_vision_output_pose",
+        "tooltip": "动作视频首帧的 CLIP vision。默认为 clip_vision_output。"
+      },
+      "continue_motion": {
+        "name": "continue_motion",
+        "tooltip": "用于时序一致性的前一段动作序列。"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "输出视频的高度（像素）。"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "要生成的帧数。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end_percent": {
+        "name": "pose_end_percent",
+        "tooltip": "动作影响结束的采样百分比。运动大多在早期建立，例如 0.7 可以在保持编排的同时放松细节。"
+      },
+      "pose_start_percent": {
+        "name": "pose_start_percent",
+        "tooltip": "动作影响开始的采样百分比。在该区间外，动作分支将被完全跳过，这也会加快这些步骤。"
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "调整动作视频对运动的影响程度。1.0 为训练时的行为；低于 1.0 减弱依赖，高于 1.0 增强影响。0.0 为静音，但不会完全移除。"
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "其动作将被转移到参考角色的视频。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "positive_pose": {
+        "name": "positive_pose",
+        "tooltip": "动作视频分支的提示词，描述动作而非角色。默认为 positive。用于 cond 和 uncond 两次推理。"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "要添加动画的角色。"
+      },
+      "reference_image_strength": {
+        "name": "reference_image_strength",
+        "tooltip": "调整生成帧对参考图像 latent 帧的关注程度。低于 1.0 会降低身份/外观的保持（如允许 prompt 重新风格化），高于 1.0 则更严格防止漂移。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "在动作视频中要跳过的帧数。扩展时连接到上一个节点的 video_frame_offset 输出。"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "输出视频的宽度（像素）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "3": {
+        "name": "trim_latent",
+        "tooltip": "解码前应裁剪的 latent 帧数。"
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": "扩展视频时重叠的图像帧数。"
+      },
+      "5": {
+        "name": "video_frame_offset",
+        "tooltip": "在动作视频中要跳过的帧数。"
       }
     }
   },

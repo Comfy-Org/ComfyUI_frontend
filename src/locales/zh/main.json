@@ -255,6 +255,8 @@
       "backToGithubLogin": "改用 Github 注册",
       "backToLogin": "返回登录",
       "backToSocialLogin": "改用 Google 或 Github 注册",
+      "cloudNewUser": "初次使用 Comfy？",
+      "cloudSignUp": "在这里注册",
       "confirmPasswordLabel": "确认密码",
       "confirmPasswordPlaceholder": "再次输入相同的密码",
       "didntReceiveEmail": "没有收到邮件？请联系我们：",
@@ -263,6 +265,7 @@
       "failed": "登录失败",
       "forgotPassword": "忘记密码？",
       "forgotPasswordError": "发送重置密码邮件失败",
+      "freeRunsSuffix": "可获得 {count} 次免费运行。| 可获得 {count} 次免费运行。",
       "freeTierBadge": "可享免费套餐",
       "freeTierDescription": "使用 Google 注册，每月可获得 {credits} 免费积分。无需绑定银行卡。",
       "freeTierDescriptionGeneric": "使用 Google 注册，每月可获得免费积分。无需绑定银行卡。",
@@ -344,11 +347,13 @@
   "billingOperation": {
     "cancelFailed": "取消订阅失败",
     "cancelTimeout": "订阅取消超时",
+    "subscriptionActionRequired": "请验证您的付款以完成工作区设置",
     "subscriptionFailed": "订阅更新失败",
     "subscriptionFailedDetail": "我们无法更新您的订阅。请重试。",
     "subscriptionProcessing": "正在处理付款 — 正在设置您的工作区...",
     "subscriptionSuccess": "订阅更新成功",
     "subscriptionTimeout": "订阅验证超时",
+    "topupActionRequired": "请验证您的付款以充值",
     "topupFailed": "充值失败",
     "topupProcessing": "正在处理付款 — 正在添加积分...",
     "topupSuccess": "积分添加成功",
@@ -445,27 +450,12 @@
   "cloudForgotPassword_sendResetLink": "发送重置链接",
   "cloudForgotPassword_title": "忘记密码",
   "cloudHero": {
+    "carouselLabel": "精选模型",
+    "carouselRoleDescription": "轮播图",
     "nextSlide": "下一张幻灯片",
     "previousSlide": "上一张幻灯片",
-    "slidePagerLabel": "跳转到第 {index} 张幻灯片",
-    "slides": {
-      "cloud": {
-        "description": "适合大多数希望随时随地使用、并需要经过商业授权验证模型的用户。",
-        "title": "云端"
-      },
-      "models": {
-        "description": "精选、具备商业授权的模型，开箱即用，无需配置。",
-        "title": "模型"
-      },
-      "team": {
-        "description": "立即邀请您的团队加入。可在组织内共享工作流和资源。",
-        "title": "团队"
-      },
-      "workflows": {
-        "description": "从创意到成果只需几分钟。可并排生成多个变体。",
-        "title": "工作流"
-      }
-    }
+    "slideRoleDescription": "幻灯片",
+    "slideStatus": "{title}，第 {current} 张，共 {total} 张"
   },
   "cloudNotification": {
     "continueLocally": "本地继续",
@@ -577,11 +567,9 @@
   "cloudPrivateBeta_title": "云服务目前处于内测阶段",
   "cloudSorryContactSupport_title": "抱歉，请联系客服",
   "cloudStart_desc": "无需任何设置。可在任何设备上使用。",
-  "cloudStart_download": "下载 ComfyUI",
   "cloudStart_explain": "一次性生成多个输出。轻松分享工作流。",
   "cloudStart_learnAboutButton": "了解云服务",
   "cloudStart_title": "几秒钟内开始创作",
-  "cloudStart_wantToRun": "想在本地运行 ComfyUI 吗？",
   "cloudSurvey_steps_experience": "你对 ComfyUI 有多了解？",
   "cloudSurvey_steps_focus": "你正在构建什么？",
   "cloudSurvey_steps_intent": "您希望用 ComfyUI 创作什么？",
@@ -711,6 +699,13 @@
     "theme": "主题",
     "toggleBottomPanel": "切换底部面板"
   },
+  "compositor": {
+    "downloadPsd": "下载 PSD",
+    "empty": "运行工作流以生成合成图像",
+    "open": "打开合成器",
+    "runWorkflowFirst": "请先运行一次工作流以加载输入图像",
+    "saveFailed": "合成保存失败"
+  },
   "contextMenu": {
     "Add Group": "添加组",
     "Add Group For Selected Nodes": "为选定节点添加组",
@@ -812,6 +807,9 @@
       "buy": "购买",
       "buyCredits": "继续付款",
       "buyNow": "立即购买",
+      "chargedImmediatelyNote": "您的已保存银行卡将立即扣款。",
+      "confirmSubtitle": "付款完成后，积分将立即添加到此工作区。",
+      "confirmTitle": "确认",
       "contactUs": "联系我们",
       "creditsDescription": "该工作流需要积分运行。",
       "creditsPerDollar": "每美元积分数",
@@ -826,6 +824,7 @@
       "minRequired": "最少{credits}积分",
       "minimumPurchase": "最低${amount}（{credits}积分）",
       "needMore": "需要更多？",
+      "payAmount": "支付 {amount}",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",
       "purchaseSuccess": "积分添加成功！",
@@ -836,6 +835,8 @@
       "topUp": "充值",
       "unknownError": "发生未知错误",
       "usdAmount": "${amount}",
+      "verifyBody": "您的银行需要额外验证以完成此次付款。",
+      "verifyTitle": "验证您的付款",
       "videosEstimate": "~{count} 个视频*",
       "viewPricing": "查看定价详情",
       "youGet": "获得积分",
@@ -862,7 +863,6 @@
     "BOOLEAN": "布尔",
     "BOUNDING_BOX": "边界框",
     "BOUNDING_BOXES": "边界框",
-    "CAMERA_CONTROL": "相机控制",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP视觉",
     "CLIP_VISION_OUTPUT": "CLIP视觉输出",
@@ -872,6 +872,7 @@
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
+    "COMPOSITOR": "合成器",
     "CONDITIONING": "条件",
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲线",
@@ -911,6 +912,7 @@
     "LATENT": "Latent",
     "LATENT_OPERATION": "Latent操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
+    "LAYERS": "图层",
     "LOAD3D_CAMERA": "加载3D相机",
     "LOAD3D_MODEL_INFO": "加载3D模型信息",
     "LOAD_3D": "加载3D",
@@ -1729,6 +1731,7 @@
     "off": "关",
     "ok": "确定",
     "on": "开",
+    "openLayerEditor": "打开图层编辑器",
     "openManager": "打开管理器",
     "openNewIssue": "打开新问题",
     "or": "或",
@@ -1790,6 +1793,7 @@
     "resizeFromTopLeft": "从左上角调整大小",
     "resizeFromTopRight": "从右上角调整大小",
     "restart": "重新启动",
+    "restore": "恢复",
     "restoreDialog": "还原对话框",
     "resultsCount": "找到 {count} 个结果",
     "running": "正在运行",
@@ -1875,6 +1879,26 @@
     "workflow": "工作流",
     "you": "你"
   },
+  "gettingStarted": {
+    "loadFailed": "我们无法加载模板。",
+    "retry": "重试",
+    "retryTemplate": "重试 {title}",
+    "startBlank": "从空白画布开始",
+    "subtitle": "选择一个现成的工作流开始，或从空白画布起步。",
+    "tabs": {
+      "templates": "模板",
+      "tutorials": "教程"
+    },
+    "tabsLabel": "入门选项",
+    "templateFailed": "我们无法打开此模板。",
+    "title": "让我们开始创作",
+    "tutorials": {
+      "imageToImage": "图像生成图像",
+      "inpaint": "图像修复",
+      "interfaceOverview": "界面总览",
+      "textToImage": "文本生成图像"
+    }
+  },
   "graphCanvasMenu": {
     "canvasMode": "画布模式",
     "canvasToolbar": "画布工具栏",
@@ -1940,6 +1964,7 @@
     "openDevTools": "打开开发者工具",
     "recentReleases": "最近发布",
     "reinstall": "重新安装",
+    "systemStatus": "系统状态",
     "updateAvailable": "更新",
     "updateComfyUI": "更新 ComfyUI",
     "updateComfyUIFailed": "更新 ComfyUI 失败，请重试。",
@@ -2094,6 +2119,71 @@
   },
   "issueReport": {
     "helpFix": "帮助修复这个"
+  },
+  "layerEditor": {
+    "alignBottom": "底部对齐",
+    "alignCenterHorizontal": "水平居中",
+    "alignCenterVertical": "垂直居中",
+    "alignLeft": "左对齐",
+    "alignRight": "右对齐",
+    "alignTop": "顶部对齐",
+    "alignment": "对齐",
+    "background": "背景",
+    "backgroundColor": "背景颜色",
+    "blend": {
+      "color": "颜色",
+      "colorBurn": "颜色加深",
+      "colorDodge": "颜色减淡",
+      "darken": "变暗",
+      "difference": "差值",
+      "divide": "除以",
+      "exclusion": "排除",
+      "grainExtract": "提取颗粒",
+      "grainMerge": "合并颗粒",
+      "hardLight": "强光",
+      "hardMix": "实色混合",
+      "hue": "色相",
+      "lighten": "变亮",
+      "linearBurn": "线性加深",
+      "linearDodge": "线性减淡",
+      "linearLight": "线性光",
+      "luminosity": "明度",
+      "multiply": "正片叠底",
+      "normal": "正常",
+      "overlay": "叠加",
+      "pinLight": "点光",
+      "saturation": "饱和度",
+      "screen": "滤色",
+      "softLight": "柔光",
+      "subtract": "减去",
+      "vividLight": "亮光"
+    },
+    "blendMode": "混合模式",
+    "dimensions": "尺寸",
+    "exportPsd": "导出 PSD",
+    "exportPsdFailed": "导出 PSD 失败",
+    "fill": "填充",
+    "fitView": "适应视图",
+    "flip": "翻转",
+    "flipHorizontal": "水平翻转",
+    "flipVertical": "垂直翻转",
+    "handTool": "抓手",
+    "layerN": "图层 {n}",
+    "layers": "图层",
+    "layersFailedToLoad": "有一个图层加载失败 | 有 {count} 个图层加载失败",
+    "loadFailed": "图层加载失败",
+    "moveDown": "下移图层",
+    "moveUp": "上移图层",
+    "opacity": "不透明度",
+    "position": "位置",
+    "redo": "重做",
+    "rotation": "旋转",
+    "selectTool": "选择",
+    "title": "合成器",
+    "toggleVisibility": "切换可见性",
+    "undo": "撤销",
+    "webglUnavailable": "WebGL 不可用 - 画布无法渲染",
+    "zoom": "缩放"
   },
   "linearMode": {
     "appModeToolbar": {
@@ -2703,6 +2793,7 @@
     "Open Custom Nodes Folder": "打开自定义节点文件夹",
     "Open DevTools": "打开开发者工具",
     "Open Inputs Folder": "打开输入文件夹",
+    "Open Layer Editor for Selected Node": "为所选节点打开图层编辑器",
     "Open Logs Folder": "打开日志文件夹",
     "Open Mask Editor for Selected Node": "为选中节点打开 Mask 编辑器",
     "Open Models Folder": "打开模型文件夹",
@@ -2905,6 +2996,7 @@
     "mage": "mage",
     "mask": "遮罩",
     "merging": "合并",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "模型",
     "model specific": "模型专用",
@@ -3086,6 +3178,74 @@
     },
     "back": "上一步",
     "done": "完成",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "暂不需要",
+        "explore": "探索模板",
+        "noTour": {
+          "body": "浏览模板，选择一个开始构建。",
+          "title": "还有更多模板等你探索"
+        },
+        "ran": {
+          "body": "您刚刚完成了第一次。探索还能构建什么。",
+          "title": "这只是数百次中的第一次"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "图片设定了场景。这里描述接下来会发生什么。",
+          "title": "描述它如何移动"
+        },
+        "image-edit": {
+          "body": "您的图片保持不变。描述您想要的不同之处。",
+          "title": "说明要更改的内容"
+        },
+        "other": {
+          "body": "这是您的提示词。修改它可以改变结果。",
+          "title": "告诉它要生成什么"
+        },
+        "t2i": {
+          "body": "您的图像将根据这个描述生成。可以尝试任何内容。",
+          "title": "描述您的需求"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "这里没有生成任何内容。关闭引导并重试运行。",
+          "title": "本次运行未完成"
+        },
+        "generating": {
+          "body": "结果准备好后会立即显示在这里。",
+          "title": "请稍候"
+        },
+        "image": {
+          "body": "您的新图像已生成，可立即下载或分享。",
+          "title": "结果已生成"
+        },
+        "video": {
+          "body": "您的新视频已生成，可立即下载或分享。",
+          "title": "结果已生成"
+        }
+      },
+      "run": {
+        "body": "点击运行以开始生成结果。",
+        "title": "运行您的工作流"
+      },
+      "upload": {
+        "i2v": {
+          "body": "这张图片是您的第一帧。随时可以替换为您自己的图片。",
+          "title": "从图片开始"
+        },
+        "image-edit": {
+          "body": "这是您将要编辑的图片。随时可以替换为您自己的图片。",
+          "title": "从图片开始"
+        },
+        "other": {
+          "body": "这张图片将作为工作流的输入。随时可以替换为您自己的图片。",
+          "title": "从图片开始"
+        }
+      }
+    },
     "loadError": "显示本次引导时出现问题",
     "next": "下一步",
     "skip": "跳过",
@@ -3698,10 +3858,12 @@
       "dateToday": "今天",
       "filter3D": "3D",
       "filterAudio": "音频",
+      "filterBy": "筛选条件...",
       "filterDate": "日期",
       "filterGroupAttribute": "属性",
       "filterImage": "图像",
       "filterMediaType": "媒体类型",
+      "filterNoMatches": "无匹配项",
       "filterText": "文本",
       "filterVideo": "视频",
       "removeFilter": "移除{label}筛选",
@@ -3891,6 +4053,7 @@
     "beta": "测试版",
     "billedMonthly": "每月付款",
     "billedYearly": "{total} 每年付款",
+    "billingAndInvoices": "账单与发票",
     "billingComingSoon": {
       "message": "团队计费功能即将上线。您将可以为您的工作区按成员数订阅套餐。敬请关注后续更新。",
       "title": "即将推出"
@@ -3972,6 +4135,9 @@
       "memberTitle": "此工作区的订阅已失效",
       "runLabel": "运行"
     },
+    "inactiveTeamDescription": "重新激活您的团队套餐以添加更多成员并运行工作流",
+    "inactiveTeamPlanIncludes": "激活套餐包含 {plan} 的所有内容，以及：",
+    "inactiveTeamTitle": "团队订阅已失效",
     "inviteUpTo": "可邀请多达",
     "invoiceHistory": "发票历史",
     "learnMore": "了解更多",
@@ -4011,6 +4177,17 @@
     "partnerNodesCredits": "合作伙伴节点积分",
     "partnerNodesDescription": "用于运行商业/专有模型",
     "partnerNodesPricingTable": "合作节点价格表",
+    "paymentRecovery": {
+      "memberCta": "好的，知道了",
+      "memberDescription": "请联系您的工作区所有者以恢复工作区订阅。",
+      "memberRunLabel": "运行",
+      "memberRunTooltip": "请联系您的工作区所有者以恢复此订阅",
+      "ownerCta": "更新支付方式",
+      "ownerDescription": "请更新您的支付方式以恢复工作区订阅并运行工作流。",
+      "ownerRunLabel": "更新支付后运行",
+      "ownerRunTooltip": "更新支付方式以恢复此订阅",
+      "title": "订阅已暂停"
+    },
     "perMonth": "美元 / 月",
     "personalHeader": "个人方案仅限个人使用。{action}",
     "personalHeaderAction": "如需添加团队成员，请订阅团队方案。",
@@ -4091,6 +4268,7 @@
     "pricingBlurbQuestions": "问题咨询",
     "pricingBlurbSeeDetails": "查看详情",
     "reactivatePlan": "重新激活套餐",
+    "reactivateToUseCredits": "请重新激活您的套餐以使用这些积分",
     "refillsDate": "补充 {date}",
     "refillsNextCycle": "下个周期补充",
     "refreshCredits": "刷新额度",
@@ -4297,6 +4475,7 @@
     "logoProviderSeparator": " 与 "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "无法加载工作流，因为此 ComfyUI 安装缺少核心节点。请检查后端是否已正确启动。",
     "cannotCreateSubgraph": "无法创建子工作流",
     "couldNotDetermineFileType": "无法确定文件类型",
     "dropFileError": "无法处理掉落的项目：{error}",
@@ -4346,6 +4525,7 @@
     "invalidTemplateData": "加载节点模板失败：数据无效",
     "legacyMaskEditorDeprecated": "旧版遮罩编辑器已弃用，即将删除。",
     "migrateToLitegraphReroute": "将来的版本中将删除重定向节点。点击以迁移到litegraph-native重定向。",
+    "missingMediaVerificationFailed": "验证缺失媒体失败。某些输入可能不会在错误标签页中显示。",
     "missingModelVerificationFailed": "验证缺失模型失败。部分模型可能不会在错误标签页中显示。",
     "modelLoadedSuccessfully": "3D模型加载成功",
     "no3dScene": "没有3D场景可以应用纹理",
@@ -4529,7 +4709,11 @@
       "notAuthenticated": "您必须登录才能访问工作区",
       "tokenExchangeFailed": "与工作区认证失败：{error}",
       "workspaceNotFound": "未找到工作区"
-    }
+    },
+    "initializationFailed": "无法加载您的工作区",
+    "initializationFailedDetail": "请检查您的网络连接并重试。",
+    "initializationFailedSignOutDetail": "请退出并重新登录以继续。",
+    "retry": "重试"
   },
   "workspacePanel": {
     "activity": {
@@ -4569,7 +4753,6 @@
       },
       "updatePayment": "更新付款方式",
       "warning": {
-        "body": "您的上一次付款未成功。如未更新付款方式，订阅将在 {date} 暂停。",
         "bodyNoDate": "您的上一次付款未成功。请更新付款方式以避免暂停。",
         "title": "付款被拒绝"
       }
