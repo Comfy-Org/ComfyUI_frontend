@@ -58,7 +58,6 @@ const icon = computed(() =>
       variant="muted-textonly"
       size="sm"
       data-testid="subgraph-widget-toggle"
-      :disabled="isPhysical"
       @click.stop="$emit('toggleVisibility')"
     >
       <i :class="icon" :data-testid="isPhysical ? 'icon-link' : 'icon-eye'" />
