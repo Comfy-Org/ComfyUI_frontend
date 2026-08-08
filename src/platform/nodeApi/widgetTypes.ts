@@ -48,6 +48,10 @@ export interface WidgetTypeDef {
   readonly defaultValue?: WidgetTypeData
   /** Height in pixels. Omit to size to content. */
   readonly height?: number
+  /** Smallest width the control needs, in pixels. */
+  readonly minWidth?: number
+  /** Smallest height the control needs, in pixels. */
+  readonly minHeight?: number
   /**
    * Whether the value is saved and sent. Defaults to `true`: this widget holds
    * a real input value, unlike a mounted decoration.
@@ -56,8 +60,15 @@ export interface WidgetTypeDef {
   /**
    * Fills the container. Return a teardown if the control owns listeners,
    * timers or observers.
+   *
+   * `name` is the input being rendered — controls commonly label themselves
+   * with it, which a type-level renderer otherwise has no way to know.
    */
-  render(container: HTMLElement, value: WidgetTypeValue): Unsubscribe | void
+  render(
+    container: HTMLElement,
+    value: WidgetTypeValue,
+    name: string
+  ): Unsubscribe | void
 }
 
 export function createWidgetTypeRegistrar() {
@@ -101,18 +112,22 @@ export function createWidgetTypeRegistrar() {
         for (const listener of listeners) listener(value as WidgetTypeData)
       } as typeof widget.callback
 
-      const teardown = def.render(container, {
-        get: () => widget.value as WidgetTypeData,
-        // The widget's own setter stores through `setValue` and then fires the
-        // callback, so calling it here as well would notify twice.
-        set: (value) => {
-          widget.value = value as typeof widget.value
+      const teardown = def.render(
+        container,
+        {
+          get: () => widget.value as WidgetTypeData,
+          // The widget's own setter stores through `setValue` and then fires
+          // the callback, so calling it here too would notify twice.
+          set: (value) => {
+            widget.value = value as typeof widget.value
+          },
+          onChange: (listener) => {
+            listeners.add(listener)
+            return () => listeners.delete(listener)
+          }
         },
-        onChange: (listener) => {
-          listeners.add(listener)
-          return () => listeners.delete(listener)
-        }
-      })
+        inputName
+      )
 
       if (teardown) {
         const onRemove = widget.onRemove
@@ -122,7 +137,7 @@ export function createWidgetTypeRegistrar() {
         }
       }
 
-      return { widget }
+      return { widget, minWidth: def.minWidth, minHeight: def.minHeight }
     }
 
     useWidgetStore().registerCustomWidgets({ [type]: constructor })
