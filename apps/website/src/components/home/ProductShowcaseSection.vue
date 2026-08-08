@@ -138,7 +138,13 @@ watch(activeIndex, (current, previous) => {
               <div
                 class="size-full overflow-hidden rounded-[calc(2rem-2px)] bg-primary-comfy-ink"
               >
+                <LottieScene
+                  v-if="feature.lottie"
+                  :src="feature.lottie"
+                  class="size-full"
+                />
                 <video
+                  v-else
                   :src="feature.video"
                   autoplay
                   loop
