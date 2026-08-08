@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import type { AutoplayState } from './idleAutoplay'
-import { advanceAutoplay, startAutoplay } from './idleAutoplay'
+import {
+  LEG_COUNT,
+  advanceAutoplay,
+  isAutoplayDone,
+  startAutoplay
+} from './idleAutoplay'
 
 const DEFAULT_POSE = {
   azimuth: 0,
@@ -10,6 +15,9 @@ const DEFAULT_POSE = {
   hue: 0,
   saturation: 1
 }
+
+const LEG_SECONDS = 2.5
+const TOUR_SECONDS = LEG_COUNT * LEG_SECONDS
 
 function run(from: AutoplayState, seconds: number, dt: number): AutoplayState {
   let state = from
@@ -35,7 +43,7 @@ describe('advanceAutoplay', () => {
   it('settles each leg onto an exactly shipped pose', () => {
     let state = startAutoplay(DEFAULT_POSE)
     for (let leg = 0; leg < 4; leg++) {
-      state = run(state, 2.5, 1 / 60)
+      state = run(state, LEG_SECONDS, 1 / 60)
       const offBucket =
         Math.abs(state.azimuth / 45 - Math.round(state.azimuth / 45)) * 45
       expect(offBucket).toBeLessThan(1)
@@ -53,7 +61,7 @@ describe('advanceAutoplay', () => {
     expect(Math.abs(held.azimuth - settled.azimuth)).toBeLessThan(1)
     expect(Math.abs(held.elevation - settled.elevation)).toBeLessThan(1)
     // ...then the next leg pulls it a full azimuth step onward.
-    const moved = run(held, 2.5, 1 / 60)
+    const moved = run(held, LEG_SECONDS, 1 / 60)
     expect(moved.azimuth - held.azimuth).toBeGreaterThan(30)
   })
 
@@ -68,7 +76,7 @@ describe('advanceAutoplay', () => {
 
   it('keeps every value inside the range its clamp accepts', () => {
     let state = startAutoplay(DEFAULT_POSE)
-    for (let i = 0; i < 60 * 120; i++) {
+    for (let i = 0; i < 60 * 30; i++) {
       state = advanceAutoplay(state, 1 / 60)
       expect(state.elevation).toBeGreaterThanOrEqual(-30)
       expect(state.elevation).toBeLessThanOrEqual(60)
@@ -79,13 +87,35 @@ describe('advanceAutoplay', () => {
     }
   })
 
-  it('orbits through every azimuth bucket over a full tour', () => {
+  it('orbits through every azimuth bucket over the tour', () => {
     let state = startAutoplay(DEFAULT_POSE)
     const buckets = new Set<number>()
-    for (let i = 0; i < 60 * 25; i++) {
+    for (let i = 0; i < 60 * TOUR_SECONDS; i++) {
       state = advanceAutoplay(state, 1 / 60)
       buckets.add(Math.round((((state.azimuth % 360) + 360) % 360) / 45) % 8)
     }
     expect(buckets.size).toBe(8)
+  })
+
+  it('completes after one full orbit, landing exactly on the starting pose', () => {
+    const start = { ...DEFAULT_POSE, hue: 20, saturation: 1 }
+    const done = run(startAutoplay(start), TOUR_SECONDS + 0.1, 1 / 60)
+    expect(isAutoplayDone(done)).toBe(true)
+    expect(done.azimuth).toBe(start.azimuth + 360)
+    expect(done.elevation).toBe(start.elevation)
+    expect(done.zoom).toBe(start.zoom)
+    expect(done.hue).toBe(start.hue + 360)
+    expect(done.saturation).toBe(start.saturation)
+  })
+
+  it('stays pinned once the tour is complete', () => {
+    const done = run(startAutoplay(DEFAULT_POSE), TOUR_SECONDS + 0.1, 1 / 60)
+    const later = run(done, 10, 1 / 60)
+    expect(later.legIndex).toBe(done.legIndex)
+    expect(later.azimuth).toBe(done.azimuth)
+    expect(later.elevation).toBe(done.elevation)
+    expect(later.zoom).toBe(done.zoom)
+    expect(later.hue).toBe(done.hue)
+    expect(later.saturation).toBe(done.saturation)
   })
 })

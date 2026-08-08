@@ -49,3 +49,5 @@ Qwen-Image-Edit-2511-Multiple-Angles-LoRA.
   which jumped on grab and inverted direction at some azimuths
 - invisible oversized hit-proxy spheres make the three handles easier to grab
   than upstream's exact-mesh raycast
+- the glow ring sits concentric with the image card (upstream draws it offset
+  behind), so the card reads as standing centred in its halo

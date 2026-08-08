@@ -114,7 +114,7 @@ function wrapperStyle(key: ElementKey) {
       :style="{
         width: `${FLOW.canvas.width}em`,
         height: `${FLOW.canvas.height}em`,
-        fontSize: `min(${100 / FLOW.canvas.width}cqw, 1rem)`
+        fontSize: `min(${100 / FLOW.canvas.width}cqw, 1.6rem)`
       }"
     >
       <GraphLinks :positions />
@@ -149,6 +149,7 @@ function wrapperStyle(key: ElementKey) {
           )
         "
         :style="wrapperStyle(key)"
+        data-hero-node
         :data-hero-angle="key === 'angle' ? '' : undefined"
         @pointerdown="onPointerDown(key, $event)"
         @pointermove="onPointerMove"

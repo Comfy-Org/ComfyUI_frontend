@@ -3,7 +3,7 @@
  * jtydhr88/ComfyUI-qwenmultiangle (MIT) — CameraWidget.ts / nodes.py.
  */
 
-export const AZIMUTH_LABELS = [
+const AZIMUTH_LABELS = [
   'front view',
   'front-right quarter view',
   'right side view',

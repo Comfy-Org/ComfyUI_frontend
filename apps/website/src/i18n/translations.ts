@@ -116,6 +116,43 @@ const translations = {
     'zh-CN': '免费开始使用'
   },
 
+  // FeaturedWorkflowsSection
+  'featuredWorkflows.label': {
+    en: 'FEATURED · STAFF PICK',
+    'zh-CN': '精选 · 官方推荐'
+  },
+  'featuredWorkflows.prev': {
+    en: 'Previous featured workflow',
+    'zh-CN': '上一个精选工作流'
+  },
+  'featuredWorkflows.next': {
+    en: 'Next featured workflow',
+    'zh-CN': '下一个精选工作流'
+  },
+
+  // ModelReleaseSection
+  'modelRelease.eyebrow': {
+    en: 'New Model Release',
+    'zh-CN': '新模型发布'
+  },
+  'modelRelease.title': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'modelRelease.body': {
+    en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it.',
+    'zh-CN':
+      '完整的多模态输入输出，原生立体声剪辑。最高 2K，每次生成 5 至 15 秒。H3 真正以输入音频为条件，而其他模型会覆盖或丢弃它。'
+  },
+  'modelRelease.cta': {
+    en: 'View Model Feature',
+    'zh-CN': '查看模型特性'
+  },
+  'modelRelease.videoLabel': {
+    en: 'MiniMax H3 preview',
+    'zh-CN': 'MiniMax H3 预览'
+  },
+
   // ProductShowcaseSection
   'showcase.subtitle1': {
     en: 'Connect models, processing steps, and outputs on a canvas where every decision is visible and every step is inspectable.',
@@ -156,40 +193,36 @@ const translations = {
   'showcase.badgeHow': { en: 'HOW', 'zh-CN': '了解' },
   'showcase.badgeWorks': { en: 'WORKS', 'zh-CN': '运行方式' },
 
-  // UseCaseSection
-  'useCase.label': {
-    en: 'Industries that create with ComfyUI',
-    'zh-CN': '使用 ComfyUI 创作的行业'
+  // IndustriesSection
+  'industries.label': {
+    en: 'Industries',
+    'zh-CN': '行业'
   },
-  'useCase.navLabel': {
+  'industries.navLabel': {
     en: 'Industry categories',
     'zh-CN': '行业分类'
   },
-  'useCase.vfx': {
-    en: 'VFX &\nAnimation',
-    'zh-CN': '视觉特效 &\n动画'
+  'industries.vfx': {
+    en: 'VFX & Animation',
+    'zh-CN': '视觉特效 & 动画'
   },
-  'useCase.advertising': {
-    en: 'Advertising &\nCreative Studios',
-    'zh-CN': '广告 &\n创意工作室'
+  'industries.advertising': {
+    en: 'Advertising & Creative Studios',
+    'zh-CN': '广告 & 创意工作室'
   },
-  'useCase.gaming': {
+  'industries.gaming': {
     en: 'Gaming',
     'zh-CN': '电子游戏'
   },
-  'useCase.ecommerce': {
-    en: 'eCommerce &\nFashion',
-    'zh-CN': '电商 &\n时尚'
+  'industries.ecommerce': {
+    en: 'eCommerce & Fashion',
+    'zh-CN': '电商 & 时尚'
   },
-  'useCase.more': {
-    en: '& More',
-    'zh-CN': '& 更多'
+  'industries.body': {
+    en: 'Powered by 60,000+ nodes, thousands of workflows, and a community that builds faster than any one company could.',
+    'zh-CN': '60,000+ 节点，数千条工作流，一个比任何公司速度都更快的社区。'
   },
-  'useCase.body': {
-    en: 'Powered by 60,000+ nodes, thousands of workflows,\nand a community that builds faster than any one company could.',
-    'zh-CN': '60,000+ 节点，数千条工作流，\n一个比任何公司速度都更快的社区。'
-  },
-  'useCase.cta': {
+  'industries.cta': {
     en: 'EXPLORE WORKFLOWS',
     'zh-CN': '探索工作流'
   },

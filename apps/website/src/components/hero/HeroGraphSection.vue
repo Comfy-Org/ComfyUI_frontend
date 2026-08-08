@@ -12,24 +12,22 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-6 pb-16 lg:px-10"
+    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-6 pb-16 lg:px-10 2xl:max-w-none"
   >
     <div class="hidden w-full md:block">
       <HeroGraph :locale />
     </div>
 
-    <div class="flex w-full flex-col items-center gap-8 md:hidden">
-      <div class="flex flex-col items-center gap-6">
-        <HeroHeadline :locale class="text-3xl" />
-        <BrandButton
-          :href="externalLinks.cloudCta('hero_get_started_free')"
-          variant="outline"
-          class="uppercase"
-        >
-          {{ t('hero.getStartedFree', locale) }}
-        </BrandButton>
-      </div>
+    <div class="flex w-full flex-col items-center gap-6 md:hidden">
+      <HeroHeadline :locale class="text-3xl" />
       <HeroMobileFlow />
+      <BrandButton
+        :href="externalLinks.cloudCta('hero_get_started_free')"
+        variant="outline"
+        class="uppercase"
+      >
+        {{ t('hero.getStartedFree', locale) }}
+      </BrandButton>
     </div>
   </section>
 </template>

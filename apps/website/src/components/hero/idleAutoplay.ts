@@ -1,11 +1,13 @@
-/** Motion model for the hero's idle self-demo. Kept free of Vue and DOM so the
- * curve can be exercised directly; `useIdleAutoplay` owns the wiring.
+/** Motion model for the hero's one-shot self-demo. Kept free of Vue and DOM so
+ * the curve can be exercised directly; `useIdleAutoplay` owns the wiring.
  *
  * The demo moves like a person browsing poses: ease to a pose, settle, hold,
  * then move to the next. Every stop lands exactly on a shipped render —
- * azimuth on a 45-degree bucket, elevation alternating between the eye-level
+ * azimuth on a turntable bucket, elevation alternating between the eye-level
  * and elevated rings, zoom pinned to the medium shot — so the OUTPUT image
- * swaps once per leg while the camera is settling, never mid-glide. */
+ * swaps once per leg while the camera is settling, never mid-glide. The tour
+ * is a single full orbit whose final leg lands back exactly on the pose it
+ * started from, where the demo completes. */
 
 const TRAVEL_SECONDS = 1.4
 const HOLD_SECONDS = 1.1
@@ -20,54 +22,50 @@ const AZIMUTH_STEP = 45
 const HUE_STEP = 40
 const ZOOM_TARGET = 4
 
-export interface AutoplayState {
+/** Legs in the tour: one full 360° orbit at 45° per leg. */
+export const LEG_COUNT = 360 / AZIMUTH_STEP
+
+interface DemoPose {
+  azimuth: number
+  elevation: number
+  zoom: number
+  hue: number
+  saturation: number
+}
+
+export interface AutoplayState extends DemoPose {
   /** Completed legs since the demo took over. */
   legIndex: number
   /** Seconds into the current leg (travel + hold). */
   legTime: number
-  /** Pose the visitor left behind; leg targets step away from it. */
-  azimuthBase: number
-  hueBase: number
-  azimuth: number
-  elevation: number
-  zoom: number
-  hue: number
-  saturation: number
+  /** Pose the tour started from; leg targets step away from it and the final
+   * leg returns to it. */
+  base: DemoPose
 }
 
-/** Seeds the demo from wherever the visitor left the controls, so taking over
- * and stepping away reads continuous. */
-export function startAutoplay(pose: {
-  azimuth: number
-  elevation: number
-  zoom: number
-  hue: number
-  saturation: number
-}): AutoplayState {
-  return {
-    legIndex: 0,
-    legTime: 0,
-    azimuthBase: pose.azimuth,
-    hueBase: pose.hue,
-    ...pose
+export function startAutoplay(pose: DemoPose): AutoplayState {
+  return { legIndex: 0, legTime: 0, base: { ...pose }, ...pose }
+}
+
+export function isAutoplayDone(state: AutoplayState): boolean {
+  return state.legIndex >= LEG_COUNT
+}
+
+function legTarget(state: AutoplayState): DemoPose {
+  const step = Math.min(state.legIndex + 1, LEG_COUNT)
+  if (step === LEG_COUNT) {
+    // Land exactly where the tour began, one full turn later.
+    return {
+      ...state.base,
+      azimuth: state.base.azimuth + AZIMUTH_STEP * LEG_COUNT,
+      hue: state.base.hue + 360
+    }
   }
-}
-
-interface LegTarget {
-  azimuth: number
-  elevation: number
-  zoom: number
-  hue: number
-  saturation: number
-}
-
-function legTarget(state: AutoplayState): LegTarget {
-  const step = state.legIndex + 1
   return {
-    azimuth: state.azimuthBase + AZIMUTH_STEP * step,
+    azimuth: state.base.azimuth + AZIMUTH_STEP * step,
     elevation: step % 2 === 0 ? 0 : 30,
     zoom: ZOOM_TARGET,
-    hue: state.hueBase + HUE_STEP * step,
+    hue: state.base.hue + HUE_STEP * step,
     saturation: step % 2 === 0 ? 1.15 : 0.85
   }
 }
@@ -87,19 +85,25 @@ function approach(
 }
 
 /** Advances one step. Azimuth and hue accumulate unwrapped so each leg keeps
- * orbiting the same direction; the caller clamps when writing to the pose. */
+ * orbiting the same direction; the caller clamps when writing to the pose.
+ * Once the final leg has landed, the state pins to its target for good. */
 export function advanceAutoplay(
   state: AutoplayState,
   dt: number
 ): AutoplayState {
   let legIndex = state.legIndex
   let legTime = state.legTime + dt
-  while (legTime >= LEG_SECONDS) {
+  while (legTime >= LEG_SECONDS && legIndex < LEG_COUNT) {
     legTime -= LEG_SECONDS
     legIndex += 1
   }
-  const next = { ...state, legIndex, legTime }
+  const next = {
+    ...state,
+    legIndex,
+    legTime: Math.min(legTime, LEG_SECONDS)
+  }
   const target = legTarget(next)
+  if (legIndex >= LEG_COUNT) return { ...next, ...target }
   return {
     ...next,
     azimuth: approach(state.azimuth, target.azimuth, dt, 2),
