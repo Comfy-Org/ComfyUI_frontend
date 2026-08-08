@@ -3,8 +3,8 @@ import type { Locator } from '@playwright/test'
 
 import type {
   Asset,
-  JobsListResponse,
-  ListAssetsResponse
+  ListAssetsResponse,
+  ListJobsResponse
 } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { createJobsWithExecutionTimes } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -75,7 +75,7 @@ function makeJobsResponseBody() {
     }
   } satisfies {
     jobs: unknown[]
-    pagination: JobsListResponse['pagination']
+    pagination: ListJobsResponse['pagination']
   }
 }
 
