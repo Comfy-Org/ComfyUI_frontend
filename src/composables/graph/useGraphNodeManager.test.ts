@@ -112,7 +112,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     return { graph, node, upstream, linkId: link.id }
   }
 
-  it('sets slotMetadata.linked to true when input has a link', () => {
+  it('identifies a linked regular widget input as unpromoted', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
@@ -121,6 +121,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 
     expect(widgetData?.slotMetadata).toBeDefined()
     expect(widgetData?.slotMetadata?.linked).toBe(true)
+    expect(widgetData?.slotMetadata?.promoted).toBe(false)
   })
 
   it('updates slotMetadata.linked to false after link disconnect event', async () => {
@@ -236,6 +237,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     expect(widgetData).toBeDefined()
     expect(widgetData?.sourceWidgetName).toBe('prompt')
     expect(widgetData?.slotMetadata).toBeDefined()
+    expect(widgetData?.slotMetadata?.promoted).toBe(true)
   })
 
   it('clears stale slotMetadata when input no longer matches widget', async () => {
