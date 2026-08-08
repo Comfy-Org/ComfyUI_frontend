@@ -2137,6 +2137,22 @@ const translations = {
     'zh-CN':
       '两种接入方式：自行添加服务器，或让你的智能体自动安装。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
   },
+  'mcp.setup.requirementPrefix': {
+    en: 'To use Comfy Cloud via MCP, you need a ',
+    'zh-CN': '如需通过 MCP 使用 Comfy Cloud，你需要'
+  },
+  'mcp.setup.requirementLinkLabel': {
+    en: 'subscription of any tier',
+    'zh-CN': '任意套餐的订阅'
+  },
+  'mcp.setup.requirementSuffix': {
+    en: '.',
+    'zh-CN': '。'
+  },
+  'mcp.setup.requirementFootnote': {
+    en: " A credit top-up alone isn't enough to run generations.",
+    'zh-CN': '仅充值积分不足以运行生成任务。'
+  },
   'mcp.setup.manual.title': {
     en: 'Install manually',
     'zh-CN': '手动安装'
@@ -2423,9 +2439,9 @@ const translations = {
     'zh-CN': '需要付费吗？'
   },
   'mcp.faq.4.a': {
-    en: "Connecting is free with a Comfy account, and searching models, nodes, and templates doesn't cost credits. Running a generation uses Comfy Cloud credits and needs a subscription or credit balance. Your agent confirms with you before it spends.",
+    en: "Connecting is free with a Comfy account, and searching models, nodes, and templates doesn't cost credits. Running a generation uses Comfy Cloud credits. To use Comfy Cloud via MCP, you need a [subscription of any tier](https://comfy.org/cloud/pricing) — a credit top-up alone isn't enough. Your agent confirms with you before it spends.",
     'zh-CN':
-      '使用 Comfy 账户连接是免费的，搜索模型、节点和模板也不消耗积分。运行生成会使用 Comfy Cloud 积分，需要订阅或积分余额。智能体在消费前会先与你确认。'
+      '使用 Comfy 账户连接是免费的，搜索模型、节点和模板也不消耗积分。运行生成会使用 Comfy Cloud 积分。如需通过 MCP 使用 Comfy Cloud，你需要[任意套餐的订阅](https://comfy.org/cloud/pricing)——仅充值积分是不够的。智能体在消费前会先与你确认。'
   },
   'mcp.faq.5.q': {
     en: 'Can I use it with my local ComfyUI?',
