@@ -17,11 +17,13 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
+import { TitleMode } from './types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
+  title_mode?: TitleMode
 }
 
 function getMockISerialisedNode(
@@ -539,30 +541,29 @@ describe('LGraphNode', () => {
   })
 
   describe('widget serialization', () => {
-    test('should only serialize widgets with serialize flag not set to false', () => {
+    test('should serialize persistable widgets densely', () => {
       const node = new LGraphNode('TestNode')
       node.serialize_widgets = true
 
-      // Add widgets with different serialization settings
+      node.addWidget('number', 'non-serializable', 3, null)
       node.addWidget('number', 'serializable1', 1, null)
       node.addWidget('number', 'serializable2', 2, null)
-      node.addWidget('number', 'non-serializable', 3, null)
       expect(node.widgets?.length).toBe(3)
 
-      // Set serialize flag to false for the last widget
-      node.widgets![2].serialize = false
+      node.widgets![0].serialize = false
 
-      // Set some widget values
-      node.widgets![0].value = 10
-      node.widgets![1].value = 20
-      node.widgets![2].value = 30
+      node.widgets![0].value = 30
+      node.widgets![1].value = 10
+      node.widgets![2].value = 20
 
-      // Serialize the node
       const serialized = node.serialize()
 
-      // Check that only serializable widgets' values are included
       expect(serialized.widgets_values).toEqual([10, 20])
       expect(serialized.widgets_values).toHaveLength(2)
+      expect(serialized.widgets_values_named).toEqual({
+        serializable1: 10,
+        serializable2: 20
+      })
     })
 
     test('should only configure widgets with serialize flag not set to false', () => {
@@ -678,14 +679,39 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
-    test('Vue mode uses this.size directly for collapsed nodes', () => {
+    test('Vue mode uses visual collapsed width and preserves expanded size', () => {
       LiteGraph.vueNodesMode = true
+      node._collapsed_width = 96
       node.measure(out)
 
-      // Vue mode collapsed takes the expanded-style branch
-      expect(out[2]).toBe(150)
-      expect(out[3]).toBe(10 + LiteGraph.NODE_TITLE_HEIGHT)
+      expect(out[2]).toBe(96)
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+      expect(Array.from(node.size)).toEqual([150, 10])
     })
+
+    test.each([TitleMode.TRANSPARENT_TITLE, TitleMode.NO_TITLE])(
+      'Vue mode keeps collapsed height for title mode %s',
+      (titleMode) => {
+        LiteGraph.vueNodesMode = true
+        const nodeConstructor =
+          node.constructor as NodeConstructorWithSlotOffset
+        const hadOwnTitleMode = Object.hasOwn(nodeConstructor, 'title_mode')
+        const previousTitleMode = nodeConstructor.title_mode
+
+        try {
+          nodeConstructor.title_mode = titleMode
+          node.measure(out)
+
+          expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+        } finally {
+          if (hadOwnTitleMode) {
+            nodeConstructor.title_mode = previousTitleMode
+          } else {
+            delete nodeConstructor.title_mode
+          }
+        }
+      }
+    )
 
     test('Vue mode expanded behaves identically to legacy expanded', () => {
       LiteGraph.vueNodesMode = true
