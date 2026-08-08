@@ -13,7 +13,7 @@
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref } from 'vue'
 
-import { stRaw } from '@/i18n'
+import { resolveNodeDefInputText, resolveNodeDefOutputText } from '@/i18n'
 import {
   LiteGraph,
   isOverNodeInput,
@@ -23,7 +23,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app as comfyApp } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
 let idleTimeout: number
 const nodeDefStore = useNodeDefStore()
@@ -65,7 +64,8 @@ function onIdle() {
   if (!node || node.flags?.ghost) return
 
   const ctor = node.constructor as { title_mode?: 0 | 1 | 2 | 3 }
-  const nodeDef = nodeDefStore.nodeDefsByName[node.type ?? '']
+  const nodeType = node.type ?? ''
+  const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
 
   if (
     ctor.title_mode !== LiteGraph.NO_TITLE &&
@@ -84,11 +84,14 @@ function onIdle() {
   )
   if (inputSlot !== -1) {
     const inputName = node.inputs[inputSlot].name
-    const translatedTooltip = stRaw(
-      `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(inputName)}.tooltip`,
-      nodeDef?.inputs[inputName]?.tooltip ?? ''
+    return showTooltip(
+      resolveNodeDefInputText(
+        'tooltip',
+        nodeType,
+        inputName,
+        nodeDef?.inputs[inputName]?.tooltip
+      )
     )
-    return showTooltip(translatedTooltip)
   }
 
   const outputSlot = isOverNodeOutput(
@@ -98,19 +101,24 @@ function onIdle() {
     [0, 0]
   )
   if (outputSlot !== -1) {
-    const translatedTooltip = stRaw(
-      `nodeDefs.${normalizeI18nKey(node.type ?? '')}.outputs.${outputSlot}.tooltip`,
-      nodeDef?.outputs[outputSlot]?.tooltip ?? ''
+    return showTooltip(
+      resolveNodeDefOutputText(
+        'tooltip',
+        nodeType,
+        outputSlot,
+        nodeDef?.outputs[outputSlot]?.tooltip
+      )
     )
-    return showTooltip(translatedTooltip)
   }
 
   const widget = comfyApp.canvas.getWidgetAtCursor()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !isDOMWidget(widget)) {
-    const translatedTooltip = stRaw(
-      `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(widget.name)}.tooltip`,
-      nodeDef?.inputs[widget.name]?.tooltip ?? ''
+    const translatedTooltip = resolveNodeDefInputText(
+      'tooltip',
+      nodeType,
+      widget.name,
+      nodeDef?.inputs[widget.name]?.tooltip
     )
     // Widget tooltip can be set dynamically, current translation collection does not support this.
     return showTooltip(widget.tooltip ?? translatedTooltip)
