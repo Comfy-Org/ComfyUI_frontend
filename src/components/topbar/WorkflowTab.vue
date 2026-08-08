@@ -17,12 +17,7 @@
           class="icon-[lucide--panels-top-left] bg-primary-background"
         />
         <span
-          :class="
-            cn(
-              'workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal group-hover:text-base-foreground',
-              isActiveTab ? 'text-base-foreground' : 'text-smoke-800'
-            )
-          "
+          class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
         >
           {{ workflowOption.workflow.filename }}
         </span>
