@@ -275,6 +275,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { useAmbientSubgraphPreviews } from '@/composables/node/useAmbientSubgraphPreviews'
+import { mergeSubgraphPreviews } from '@/composables/node/mergeSubgraphPreviews'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -297,6 +298,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -718,20 +720,21 @@ const lgraphNode = computed(() => {
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 const { ambientPreviews } = useAmbientSubgraphPreviews(lgraphNode)
+const previewExposureStore = usePreviewExposureStore()
 
-// Ambient previews fill in interior nodes with live output but no explicit
-// exposure; an exposure for the same node always wins so it keeps its
-// promoted name/ordering.
 const subgraphPreviews = computed(() => {
-  if (!ambientPreviews.value.length) return promotedPreviews.value
-
-  const exposedNodeIds = new Set(
-    promotedPreviews.value.map((preview) => String(preview.sourceNodeId))
+  const node = lgraphNode.value
+  const exposedSourceNodeIds =
+    node instanceof SubgraphNode
+      ? previewExposureStore
+          .getExposures(node.rootGraph.id, String(node.id))
+          .map((exposure) => exposure.sourceNodeId)
+      : []
+  return mergeSubgraphPreviews(
+    promotedPreviews.value,
+    ambientPreviews.value,
+    exposedSourceNodeIds
   )
-  const unexposed = ambientPreviews.value.filter(
-    (preview) => !exposedNodeIds.has(String(preview.sourceNodeId))
-  )
-  return [...promotedPreviews.value, ...unexposed]
 })
 
 const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
