@@ -594,6 +594,9 @@ export const comfyPageFixture = base.extend<{
         route.fulfill({ json: ZERO_BALANCE })
       )
       await mockWorkspace(context, workspace('personal', 'owner'), [])
+    }
+
+    if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {
       await comfyPage.cloudAuth.mockAuth()
     }
 
