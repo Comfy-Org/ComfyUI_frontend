@@ -1,17 +1,28 @@
-import { describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyExtension } from '@/types/comfy'
 
 import type { GroupNodeWorkflowData } from './groupNode'
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    registerExtension: vi.fn()
+    registerExtension: vi.fn(),
+    registerNodeDef: vi.fn(() => Promise.resolve())
   }
 }))
 
-import { GroupNodeConfig, replaceLegacySeparators } from './groupNode'
+import { app } from '@/scripts/app'
+
+import {
+  GroupNodeConfig,
+  GroupNodeHandler,
+  replaceLegacySeparators
+} from './groupNode'
 
 function makeNode(type: string): ComfyNode {
   return {
@@ -128,5 +139,61 @@ describe('GroupNodeConfig.processInputSlots', () => {
     )
 
     expect(inputMap).toEqual({ model: 0, latent_image: 1 })
+  })
+})
+
+describe('GroupNodeHandler.getGroupData', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('returns the registered GroupNodeConfig for legacy custom-node callers (#15116)', async () => {
+    const [ext] = vi
+      .mocked(app.registerExtension)
+      .mock.calls.find(
+        ([e]) => (e as ComfyExtension).name === 'Comfy.GroupNode'
+      ) as [ComfyExtension]
+    ext.addCustomNodeDefs?.(
+      {
+        KSampler: {
+          name: 'KSampler',
+          display_name: 'KSampler',
+          description: '',
+          category: 'sampling',
+          output_node: false,
+          python_module: 'nodes',
+          input: { required: {} },
+          output: [],
+          output_name: [],
+          output_is_list: []
+        }
+      },
+      app
+    )
+
+    class TestGroupNodeCtor extends LGraphNode {}
+    TestGroupNodeCtor.nodeData = {}
+    LiteGraph.registered_node_types['workflow>MyGroup'] = TestGroupNodeCtor
+
+    const config = new GroupNodeConfig('MyGroup', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+    await config.registerType()
+
+    const ctor = LiteGraph.registered_node_types['workflow>MyGroup']
+    const node = { constructor: ctor } as unknown as LGraphNode
+
+    // Cast rather than call directly: the legacy static method this test
+    // reproduces (#15116) does not exist on the type until the fix lands.
+    const { getGroupData } = GroupNodeHandler as unknown as {
+      getGroupData: (
+        node: LGraphNode | LGraphNodeConstructor
+      ) => GroupNodeConfig | undefined
+    }
+
+    expect(getGroupData(node)).toBe(config)
+    expect(getGroupData(ctor as LGraphNodeConstructor)).toBe(config)
   })
 })
