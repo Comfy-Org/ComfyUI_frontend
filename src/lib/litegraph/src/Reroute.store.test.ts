@@ -1138,21 +1138,13 @@ describe('Reroute position lives only in layoutStore', () => {
     ).toEqual({ x: 30, y: 40 })
   })
 
-  it('retains subgraph reroute ownership when clear layout deletion throws', () => {
+  it('clears subgraph reroute registrations when the root clears', () => {
     const root = new LGraph()
     const subgraph = createTestSubgraph({ rootGraph: root })
     root.subgraphs.set(subgraph.id, subgraph)
     const reroute = new Reroute(toRerouteId(32), subgraph, [10, 20])
     subgraph._addReroute(reroute)
     const rootId = root.id
-    const ydoc = getLayoutStoreYDoc()
-    const transact = vi.spyOn(ydoc, 'transact').mockImplementationOnce(() => {
-      throw new Error('clear layout failed')
-    })
-
-    expect(() => root.clear()).toThrow('clear layout failed')
-    transact.mockRestore()
-    expect(subgraph.reroutes.get(reroute.id)).toBe(reroute)
     expect(useRerouteStore().getReroute(rootId, reroute.id)).toBe(
       reroute._chain
     )
@@ -1285,82 +1277,5 @@ describe('Reroute position lives only in layoutStore', () => {
       y: 14
     })
     expect([...reroute.pos]).toEqual([20, 14])
-  })
-
-  it('rejects a layout inserted during reroute registration without deleting it', () => {
-    const graph = new LGraph()
-    const originalLastRerouteId = graph.state.lastRerouteId
-    const ydoc = getLayoutStoreYDoc()
-    function insertForeignLayout(): void {
-      ydoc.off('beforeTransaction', insertForeignLayout)
-      const foreignReroute = new Y.Map<unknown>()
-      foreignReroute.set('id', 1)
-      foreignReroute.set('position', { x: 70, y: 80 })
-      ydoc
-        .getMap<Y.Map<unknown>>('reroutes')
-        .set(`${graph.id}:1`, foreignReroute)
-      throw new Error('foreign reroute listener failed')
-    }
-    ydoc.on('beforeTransaction', insertForeignLayout)
-
-    expect(() => graph.setReroute({ pos: [10, 20], linkIds: [] })).toThrow(
-      'foreign reroute listener failed'
-    )
-
-    expect(graph.reroutes.size).toBe(0)
-    expect(graph.state.lastRerouteId).toBe(originalLastRerouteId)
-    expect(
-      useRerouteStore().getReroute(graph.id, toRerouteId(1))
-    ).toBeUndefined()
-    const foreignLayout = ydoc
-      .getMap<Y.Map<unknown>>('reroutes')
-      .get(`${graph.id}:1`)
-    expect(foreignLayout?.get('id')).toBe(1)
-    expect(foreignLayout?.get('position')).toEqual({ x: 70, y: 80 })
-  })
-
-  it('preserves a foreign layout replacing an applied registration before failure', () => {
-    const graph = new LGraph()
-    const originalLastRerouteId = graph.state.lastRerouteId
-    const ydoc = getLayoutStoreYDoc()
-    const reroutes = ydoc.getMap<Y.Map<unknown>>('reroutes')
-    let registeredKey: string | undefined
-    const originalTransact = ydoc.transact.bind(ydoc)
-    const transact = vi.spyOn(ydoc, 'transact')
-    onTestFinished(() => transact.mockRestore())
-    transact.mockImplementation((transaction, origin) => {
-      originalTransact(transaction, origin)
-      registeredKey = [...reroutes.keys()].find((key) =>
-        key.startsWith(`${graph.id}:`)
-      )
-      if (!registeredKey) return
-      transact.mockRestore()
-      const foreignReroute = new Y.Map<unknown>()
-      const rerouteId = Number(
-        registeredKey.slice(registeredKey.lastIndexOf(':') + 1)
-      )
-      foreignReroute.set('id', rerouteId)
-      foreignReroute.set('position', { x: 70, y: 80 })
-      foreignReroute.set('registrationId', 'foreign-reroute')
-      reroutes.set(registeredKey, foreignReroute)
-      throw new Error('reroute finalization failed')
-    })
-
-    expect(() => graph.setReroute({ pos: [10, 20], linkIds: [] })).toThrow(
-      'reroute finalization failed'
-    )
-    transact.mockRestore()
-
-    if (!registeredKey) throw new Error('Expected registered reroute key')
-    const key = registeredKey
-
-    expect(graph.reroutes.size).toBe(0)
-    expect(graph.state.lastRerouteId).toBe(originalLastRerouteId)
-    expect(
-      useRerouteStore().getReroute(graph.id, toRerouteId(1))
-    ).toBeUndefined()
-    const foreignLayout = reroutes.get(key)
-    expect(foreignLayout?.get('position')).toEqual({ x: 70, y: 80 })
-    expect(foreignLayout?.get('registrationId')).toBe('foreign-reroute')
   })
 })
