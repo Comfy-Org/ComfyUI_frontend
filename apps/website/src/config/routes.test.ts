@@ -22,6 +22,12 @@ describe('localizeHref', () => {
   })
 })
 
+describe('getRoutes models', () => {
+  it('serves the models catalog at its canonical path for zh-CN', () => {
+    expect(getRoutes('zh-CN').models).toBe('/p/supported-models')
+  })
+})
+
 describe('getRoutes seedance', () => {
   it('serves the seedance page at its canonical path for en', () => {
     expect(getRoutes('en').seedance).toBe('/seedance-2.5')

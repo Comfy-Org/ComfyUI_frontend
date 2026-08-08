@@ -68,7 +68,7 @@ test.describe('Seedance 2.5 page — link targets', () => {
 
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: 'Breadcrumb' })
+      .getByRole('navigation', { name: t('ui.breadcrumb', 'en') })
       .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
