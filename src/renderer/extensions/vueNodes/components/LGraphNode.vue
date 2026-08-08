@@ -206,6 +206,7 @@
         v-for="handle in RESIZE_HANDLES"
         :key="handle.corner"
         role="button"
+        data-node-lod="show"
         :data-corner="handle.corner"
         :aria-label="t(handle.i18nKey)"
         :class="
@@ -326,6 +327,9 @@ interface LGraphNodeProps {
 }
 
 const { nodeData, error = null } = defineProps<LGraphNodeProps>()
+const emit = defineEmits<{
+  'node-mounted': [nodeId: VueNodeData['id']]
+}>()
 
 const { t } = useI18n()
 
@@ -506,6 +510,7 @@ onMounted(() => {
     nodeData.id,
     handleLayoutChange
   )
+  emit('node-mounted', nodeData.id)
 })
 
 onUnmounted(() => {
@@ -513,7 +518,7 @@ onUnmounted(() => {
 })
 
 const baseResizeHandleClasses =
-  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
+  'absolute z-20 h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
 const mutations = useLayoutMutations()
 

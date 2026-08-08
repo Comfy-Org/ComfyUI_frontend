@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import { defineComponent, nextTick, ref } from 'vue'
@@ -11,14 +11,20 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { SlotLayout } from '@/renderer/core/layout/types'
+import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  deleteTrackedNodeSlotLayouts,
   syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
   requestSlotLayoutSyncForAllNodes,
   useSlotElementTracking
 } from './useSlotElementTracking'
+import {
+  clearViewportVirtualizedNodeIds,
+  replaceViewportVirtualizedNodeIds
+} from './viewportVirtualizationState'
 
 const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
 const mockCanvasState = vi.hoisted(() => ({
@@ -49,6 +55,7 @@ function createTestSetup(type: 'input' | 'output') {
   const el = ref<HTMLElement | null>(null)
   const TestComponent = defineComponent({
     setup() {
+      useNodeLayout(NODE_ID)
       useSlotElementTracking({
         nodeId: NODE_ID,
         index: SLOT_INDEX,
@@ -62,7 +69,10 @@ function createTestSetup(type: 'input' | 'output') {
   return { el, TestComponent }
 }
 
-function createSlotElement(collapsed = false): HTMLElement {
+function createSlotElement(
+  collapsed = false,
+  parent: Element = document.body
+): HTMLElement {
   const container = document.createElement('div')
   container.dataset.nodeId = NODE_ID
   if (collapsed) container.dataset.collapsed = ''
@@ -78,7 +88,7 @@ function createSlotElement(collapsed = false): HTMLElement {
       y: 0,
       toJSON: () => ({})
     }) as DOMRect
-  document.body.appendChild(container)
+  parent.appendChild(container)
 
   const el = document.createElement('div')
   el.getBoundingClientRect = () =>
@@ -101,13 +111,22 @@ function createSlotElement(collapsed = false): HTMLElement {
 /**
  * Mount the wrapper, set the element ref, and wait for slot registration.
  */
-async function mountAndRegisterSlot(type: 'input' | 'output') {
+async function mountAndRegisterSlot(
+  type: 'input' | 'output',
+  collapsed = false
+) {
   const { el, TestComponent } = createTestSetup(type)
-  const { unmount } = render(TestComponent)
-  el.value = createSlotElement()
+  const { container, unmount: unmountComponent } = render(TestComponent)
+  const slotElement = createSlotElement(collapsed, container)
+  el.value = slotElement
   await nextTick()
   flushScheduledSlotLayoutSync()
-  return { unmount }
+  return {
+    unmount() {
+      unmountComponent()
+      container.innerHTML = ''
+    }
+  }
 }
 
 describe('useSlotElementTracking', () => {
@@ -134,6 +153,11 @@ describe('useSlotElementTracking', () => {
     mockGraph._nodes = [{ id: 1 }]
     mockCanvasState.canvas = {}
     mockClientPosToCanvasPos.mockClear()
+    clearViewportVirtualizedNodeIds()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
   })
 
   it.for([
@@ -151,6 +175,238 @@ describe('useSlotElementTracking', () => {
 
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
     expect(registryStore.getNode(NODE_ID)).toBeUndefined()
+  })
+
+  it('retains measured slot geometry across a viewport unmount', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const registryStore = useNodeSlotRegistryStore()
+    const initialLayout = layoutStore.getSlotLayout(slotKey)
+    expect(initialLayout).not.toBeNull()
+
+    replaceViewportVirtualizedNodeIds([NODE_ID])
+    unmount()
+
+    const entry = registryStore.getNode(NODE_ID)?.slots.get(slotKey)
+    expect(entry?.el).toBeUndefined()
+    expect(layoutStore.getSlotLayout(slotKey)).toEqual(initialLayout)
+  })
+
+  it('translates cached geometry while a virtualized node moves', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const initialLayout = layoutStore.getSlotLayout(slotKey)!
+    replaceViewportVirtualizedNodeIds([NODE_ID])
+    unmount()
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      position: { x: 50, y: 75 },
+      previousPosition: { x: 0, y: 0 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+      x: initialLayout.position.x + 50,
+      y: initialLayout.position.y + 75
+    })
+  })
+
+  it.for([
+    { state: 'expanded', collapsed: false },
+    { state: 'collapsed', collapsed: true }
+  ])(
+    'translates $state slot geometry after repeated viewport remounts',
+    async ({ collapsed }) => {
+      let mounted:
+        | Awaited<ReturnType<typeof mountAndRegisterSlot>>
+        | undefined = await mountAndRegisterSlot('input', collapsed)
+      const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+
+      try {
+        for (let cycle = 1; cycle <= 2; cycle++) {
+          replaceViewportVirtualizedNodeIds([NODE_ID])
+          mounted?.unmount()
+          mounted = undefined
+          replaceViewportVirtualizedNodeIds([])
+
+          mounted = await mountAndRegisterSlot('input', collapsed)
+          const remountedLayout = layoutStore.getSlotLayout(slotKey)!
+          const previousPosition =
+            layoutStore.getNodeLayoutRef(NODE_ID).value!.position
+          const nextPosition = { x: cycle * 50, y: cycle * 75 }
+
+          layoutStore.batchUpdateNodeBounds([
+            {
+              nodeId: NODE_ID,
+              bounds: {
+                ...nextPosition,
+                width: 200,
+                height: 100
+              }
+            }
+          ])
+          await nextTick()
+
+          expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+            x: remountedLayout.position.x + nextPosition.x - previousPosition.x,
+            y: remountedLayout.position.y + nextPosition.y - previousPosition.y
+          })
+        }
+      } finally {
+        mounted?.unmount()
+      }
+    }
+  )
+
+  it('translates measured slot geometry while a mounted node moves', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const initialLayout = layoutStore.getSlotLayout(slotKey)!
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      position: { x: 50, y: 75 },
+      previousPosition: { x: 0, y: 0 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+      x: initialLayout.position.x + 50,
+      y: initialLayout.position.y + 75
+    })
+
+    unmount()
+  })
+
+  it('drops stale geometry when a moved slot has no cached offset', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const entry = useNodeSlotRegistryStore()
+      .getNode(NODE_ID)
+      ?.slots.get(slotKey)
+    if (!entry) throw new Error('Registered slot entry not found')
+    entry.cachedOffset = undefined
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      position: { x: 50, y: 75 },
+      previousPosition: { x: 0, y: 0 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+
+    unmount()
+  })
+
+  it('preserves cached geometry after a virtualized node resizes', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const registryStore = useNodeSlotRegistryStore()
+    const initialLayout = layoutStore.getSlotLayout(slotKey)
+    const initialOffset = registryStore
+      .getNode(NODE_ID)
+      ?.slots.get(slotKey)?.cachedOffset
+    replaceViewportVirtualizedNodeIds([NODE_ID])
+    unmount()
+
+    layoutStore.applyOperation({
+      type: 'resizeNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      size: { width: 300, height: 200 },
+      previousSize: { width: 200, height: 100 },
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)).toEqual(initialLayout)
+    expect(
+      registryStore.getNode(NODE_ID)?.slots.get(slotKey)?.cachedOffset
+    ).toEqual(initialOffset)
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      position: { x: 50, y: 75 },
+      previousPosition: { x: 0, y: 0 },
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+      x: initialLayout!.position.x + 50,
+      y: initialLayout!.position.y + 75
+    })
+
+    replaceViewportVirtualizedNodeIds([])
+    const remounted = await mountAndRegisterSlot('input')
+    const remountedLayout = layoutStore.getSlotLayout(slotKey)
+
+    expect(remountedLayout).not.toBeNull()
+    expect(layoutStore.getNodeLayoutRef(NODE_ID).value?.size).toEqual({
+      width: 300,
+      height: 200
+    })
+
+    remounted.unmount()
+  })
+
+  it('prunes cached geometry when virtualization clears before remount', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const registryStore = useNodeSlotRegistryStore()
+    replaceViewportVirtualizedNodeIds([NODE_ID])
+    unmount()
+    clearViewportVirtualizedNodeIds()
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      nodeId: NODE_ID,
+      position: { x: 50, y: 75 },
+      previousPosition: { x: 0, y: 0 },
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(registryStore.getNode(NODE_ID)).toBeUndefined()
+  })
+
+  it('clears retained geometry on real node deletion', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    replaceViewportVirtualizedNodeIds([NODE_ID])
+    unmount()
+
+    deleteTrackedNodeSlotLayouts(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(useNodeSlotRegistryStore().getNode(NODE_ID)).toBeUndefined()
   })
 
   it('clears pendingSlotSync when slot layouts already exist', () => {
@@ -273,6 +529,38 @@ describe('useSlotElementTracking', () => {
     expect(batchUpdateSpy).not.toHaveBeenCalled()
   })
 
+  it('uses a matching node container when a foreign slot entry comes first', () => {
+    const foreignContainer = document.createElement('div')
+    foreignContainer.dataset.nodeId = 'other-node'
+    document.body.appendChild(foreignContainer)
+
+    const foreignSlot = document.createElement('div')
+    foreignContainer.appendChild(foreignSlot)
+
+    const matchingSlot = createSlotElement()
+    const foreignSlotKey = getSlotKey(NODE_ID, 0, true)
+    const matchingSlotKey = getSlotKey(NODE_ID, 1, false)
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    node.slots.set(foreignSlotKey, {
+      el: foreignSlot,
+      index: 0,
+      type: 'input'
+    })
+    node.slots.set(matchingSlotKey, {
+      el: matchingSlot,
+      index: 1,
+      type: 'output'
+    })
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(matchingSlotKey)?.position).toEqual({
+      x: 15,
+      y: 35 - LiteGraph.NODE_TITLE_HEIGHT
+    })
+    expect(layoutStore.getSlotLayout(foreignSlotKey)).toBeNull()
+  })
+
   describe('collapsed node slot sync', () => {
     function registerCollapsedSlot() {
       const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
@@ -306,14 +594,39 @@ describe('useSlotElementTracking', () => {
       expect(layout!.position.y).toBe(screenCenter[1] * 0.5)
     })
 
-    it('clears cachedOffset for collapsed nodes', () => {
+    it('caches collapsed slot offsets relative to the node position', () => {
       const { slotKey, node } = registerCollapsedSlot()
       const entry = node.slots.get(slotKey)!
       expect(entry.cachedOffset).toBeDefined()
 
       syncNodeSlotLayoutsFromDOM(NODE_ID)
 
-      expect(entry.cachedOffset).toBeUndefined()
+      expect(entry.cachedOffset).toEqual({ x: 7.5, y: 17.5 })
+    })
+
+    it('translates collapsed slot geometry while the node moves', async () => {
+      const { unmount } = await mountAndRegisterSlot('input', true)
+      const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+      const initialLayout = layoutStore.getSlotLayout(slotKey)!
+
+      layoutStore.applyOperation({
+        type: 'moveNode',
+        entity: 'node',
+        nodeId: NODE_ID,
+        position: { x: 50, y: 75 },
+        previousPosition: { x: 0, y: 0 },
+        timestamp: Date.now(),
+        source: LayoutSource.Vue,
+        actor: 'test'
+      })
+      await nextTick()
+
+      expect(layoutStore.getSlotLayout(slotKey)?.position).toEqual({
+        x: initialLayout.position.x + 50,
+        y: initialLayout.position.y + 75
+      })
+
+      unmount()
     })
 
     it('defers sync when canvas is not initialized', () => {

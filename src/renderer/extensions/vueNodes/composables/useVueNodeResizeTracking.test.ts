@@ -270,7 +270,7 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
-  it('writes collapsed dimensions through the normal bounds path', () => {
+  it('records collapsed visual bounds without replacing expanded size', () => {
     const nodeId = toNodeId('test-node')
     const collapsedWidth = 200
     const collapsedHeight = 40
@@ -286,7 +286,6 @@ describe('useVueNodeResizeTracking', () => {
 
     // Seed with larger expanded size so the collapsed write is a real change
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
-
     resizeObserverState.callback?.([entry], createObserverMock())
 
     expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
@@ -298,10 +297,49 @@ describe('useVueNodeResizeTracking', () => {
           y: 200 + titleHeight,
           width: collapsedWidth,
           height: collapsedHeight
-        }
+        },
+        preserveSize: true
       }
     ])
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('skips repeated collapsed measurements using cached visual bounds', () => {
+    const nodeId = toNodeId('test-node')
+    const collapsedWidth = 200
+    const collapsedHeight = 40
+    const { entry, rectSpy } = createResizeEntry({
+      nodeId,
+      width: collapsedWidth,
+      height: collapsedHeight,
+      left: 100,
+      top: 200,
+      collapsed: true
+    })
+    const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+    const layout = testState.nodeLayouts.get(nodeId)
+    if (!layout) throw new Error('Expected seeded node layout')
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    layout.bounds = {
+      x: 100,
+      y: 200 + titleHeight,
+      width: collapsedWidth,
+      height: collapsedHeight - titleHeight
+    }
+    layout.position = { x: 150, y: 200 + titleHeight }
+    testState.setSource.mockReset()
+    testState.batchUpdateNodeBounds.mockReset()
+    testState.syncNodeSlotLayoutsFromDOM.mockReset()
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(rectSpy).not.toHaveBeenCalled()
+    expect(testState.setSource).not.toHaveBeenCalled()
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 
   it('updates bounds with expanded dimensions on collapse-to-expand transition', () => {

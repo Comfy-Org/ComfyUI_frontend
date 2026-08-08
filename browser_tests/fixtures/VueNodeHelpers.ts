@@ -4,9 +4,14 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+
+const VIEWPORT_VIRTUALIZATION_SETTING = 'Comfy.VueNodes.ViewportVirtualization'
 
 export class VueNodeHelpers {
   /**
@@ -18,7 +23,10 @@ export class VueNodeHelpers {
    */
   public readonly selectedNodes: Locator
 
-  constructor(private page: Page) {
+  constructor(
+    private page: Page,
+    private settings: SettingsHelper
+  ) {
     this.nodes = page.locator('[data-node-id]')
     this.selectedNodes = page.locator(
       '[data-node-id].outline-node-component-outline'
@@ -84,6 +92,55 @@ export class VueNodeHelpers {
     )
   }
 
+  async layoutNodesAndEnableVirtualization(
+    getPosition: (nodeId: string, index: number) => Point
+  ): Promise<{ nodeIds: string[]; restore: () => Promise<void> }> {
+    const nodeIds = await this.page.evaluate(() =>
+      window.app!.graph.nodes.map((node) => String(node.id))
+    )
+    const entries = nodeIds.map(
+      (nodeId, index) => [nodeId, getPosition(nodeId, index)] as const
+    )
+
+    await this.page.evaluate((entries) => {
+      const graph = window.app!.graph
+      if (graph.nodes.length !== entries.length) {
+        throw new Error('Graph nodes changed while applying test layout')
+      }
+      const positionById = new Map(entries)
+      graph.nodes.forEach((node) => {
+        const position = positionById.get(String(node.id))
+        if (!position) throw new Error(`Missing position for node ${node.id}`)
+        node.setPos(...position)
+        node.updateArea()
+      })
+      graph.groups.forEach((group) => group.recomputeInsideNodes())
+
+      const canvas = window.app!.canvas
+      canvas.ds.offset[0] = 0
+      canvas.ds.offset[1] = 0
+      canvas.ds.scale = 1
+      canvas.setDirty(true, true)
+    }, entries)
+    await nextFrame(this.page)
+    const restore = await this.enableViewportVirtualization()
+
+    return { nodeIds, restore }
+  }
+
+  async enableViewportVirtualization(): Promise<() => Promise<void>> {
+    const previousVirtualization = await this.settings.getSetting<boolean>(
+      VIEWPORT_VIRTUALIZATION_SETTING
+    )
+    await this.settings.setSetting(VIEWPORT_VIRTUALIZATION_SETTING, true)
+
+    return () =>
+      this.settings.setSetting(
+        VIEWPORT_VIRTUALIZATION_SETTING,
+        previousVirtualization
+      )
+  }
+
   /**
    * Select a specific Vue node by ID
    */
@@ -113,10 +170,12 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Clear all selections by clicking empty space
+   * Clear all selections.
    */
   async clearSelection(): Promise<void> {
-    await this.page.mouse.click(50, 50)
+    await this.page.locator('#graph-canvas').focus()
+    await this.page.evaluate(() => window.app!.canvas.deselectAll())
+    await nextFrame(this.page)
   }
 
   /**

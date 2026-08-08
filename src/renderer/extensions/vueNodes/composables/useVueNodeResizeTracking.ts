@@ -37,6 +37,8 @@ interface ElementBoundsUpdate {
   id: NodeId
   /** Updated bounds */
   bounds: Bounds
+  /** Whether bounds are visual-only and must not replace canonical size. */
+  preserveSize?: boolean
 }
 
 interface CachedNodeMeasurement {
@@ -63,9 +65,10 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
     {
       dataAttribute: 'nodeId',
       updateHandler: (updates) => {
-        const nodeUpdates = updates.map(({ id, bounds }) => ({
+        const nodeUpdates = updates.map(({ id, bounds, preserveSize }) => ({
           nodeId: id,
-          bounds
+          bounds,
+          ...(preserveSize ? { preserveSize: true } : {})
         }))
         layoutStore.batchUpdateNodeBounds(nodeUpdates)
       }
@@ -102,7 +105,8 @@ watch(visibility, (state) => {
 
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
-  if (useCanvasStore().linearMode) return
+  const canvasStore = useCanvasStore()
+  if (canvasStore.linearMode) return
 
   // Skip measurements when tab is hidden — bounding rects are unreliable
   if (visibility.value === 'hidden') {
@@ -162,6 +166,7 @@ const resizeObserver = new ResizeObserver((entries) => {
         }
     const width = Math.max(0, borderBox.inlineSize)
     const height = Math.max(0, borderBox.blockSize)
+    const isCollapsedNode = nodeId != null && element.dataset.collapsed != null
 
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value
@@ -175,14 +180,15 @@ const resizeObserver = new ResizeObserver((entries) => {
       previousMeasurement.nodeId === nodeId &&
       nodeLayout != null &&
       isBoundsEqual(previousMeasurement.bounds, nodeLayout.bounds)
+    const cachedSize = isCollapsedNode ? nodeLayout?.bounds : nodeLayout?.size
 
     // ResizeObserver emits entries where nothing changed (e.g. initial observe).
     // Skip expensive DOM reads when this exact element/node already measured at
     // the same normalized bounds and size.
     if (
-      nodeLayout &&
+      cachedSize &&
       !hasFreshMeasurementPending &&
-      isSizeEqual(nodeLayout.size, {
+      isSizeEqual(cachedSize, {
         width,
         height: normalizedHeight
       }) &&
@@ -237,7 +243,11 @@ const resizeObserver = new ResizeObserver((entries) => {
       updatesByType.set(elementType, updates)
     }
     if (!nodeId) continue
-    updates.push({ id: nodeId, bounds })
+    updates.push({
+      id: nodeId,
+      bounds,
+      ...(isCollapsedNode ? { preserveSize: true } : {})
+    })
 
     // If this entry is a node, mark it for slot layout resync
     nodesNeedingSlotResync.add(nodeId)

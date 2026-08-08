@@ -2,12 +2,34 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import {
   RESIZE_HANDLES,
   hasNorthEdge,
   hasWestEdge
 } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+
+async function resizeExpandedNode(
+  node: VueNodeFixture,
+  nodeRef: NodeReference
+) {
+  const initialSize = await nodeRef.getSize()
+  const box = await node.boundingBox()
+  if (!box) throw new Error('Node bounding box not found')
+
+  await node.resizeFromCorner('SE', 73, 47)
+
+  await expect
+    .poll(async () => {
+      const size = await nodeRef.getSize()
+      return size.width > initialSize.width && size.height > initialSize.height
+    })
+    .toBe(true)
+
+  return nodeRef.getSize()
+}
 
 test.describe(
   'Vue Node Resizing',
@@ -16,6 +38,13 @@ test.describe(
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
       await comfyPage.canvasOps.resetView()
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.VueNodes.ViewportVirtualization',
+        false
+      )
     })
 
     test('Resizing', async ({ comfyPage }) => {
@@ -73,6 +102,51 @@ test.describe(
       }
     })
 
+    test('resize handles only receive pointer hits inside the node', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const box = await node.boundingBox()
+      if (!box) throw new Error('Node bounding box not found')
+
+      const points = [
+        {
+          corner: 'NW',
+          inside: [box.x + 1, box.y + 1],
+          outside: [box.x - 1, box.y - 1]
+        },
+        {
+          corner: 'NE',
+          inside: [box.x + box.width - 1, box.y + 1],
+          outside: [box.x + box.width + 1, box.y - 1]
+        },
+        {
+          corner: 'SW',
+          inside: [box.x + 1, box.y + box.height - 1],
+          outside: [box.x - 1, box.y + box.height + 1]
+        },
+        {
+          corner: 'SE',
+          inside: [box.x + box.width - 1, box.y + box.height - 1],
+          outside: [box.x + box.width + 1, box.y + box.height + 1]
+        }
+      ] as const
+
+      const hitResizeCorner = ([x, y]: readonly [number, number]) =>
+        comfyPage.page.evaluate(
+          ([clientX, clientY]) =>
+            document
+              .elementFromPoint(clientX, clientY)
+              ?.closest<HTMLElement>('[data-corner]')?.dataset.corner ?? null,
+          [x, y] as const
+        )
+
+      for (const { corner, inside, outside } of points) {
+        expect(await hitResizeCorner(inside)).toBe(corner)
+        expect(await hitResizeCorner(outside)).toBeNull()
+      }
+    })
+
     test.describe('minimum size enforcement', () => {
       test('SW resize clamps width, keeping right edge fixed', async ({
         comfyPage
@@ -84,13 +158,16 @@ test.describe(
           return bounds ? bounds.x + bounds.width : -1
         }
         const getWidth = async () => (await node.boundingBox())?.width ?? -1
+        const scale = await comfyPage.canvasOps.getScale()
 
         const initialRight = await getRight()
 
         await node.resizeFromCorner('SW', box.width + 100, 0)
 
         await expect.poll(getRight).toBeCloseTo(initialRight, 0)
-        await expect.poll(getWidth).toBeGreaterThanOrEqual(MIN_NODE_WIDTH)
+        await expect
+          .poll(getWidth)
+          .toBeGreaterThanOrEqual(MIN_NODE_WIDTH * scale - 0.5)
       })
 
       test('NE resize clamps height at its lower bound', async ({
@@ -125,6 +202,119 @@ test.describe(
         await expect.poll(getHeight).toBeCloseTo(clampedHeight, 0)
         await expect.poll(getBottom).toBeCloseTo(bottomEdge, 0)
       })
+    })
+
+    test('preserves expanded size through collapse and expansion', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const nodeId = await node.root.getAttribute('data-node-id')
+      if (!nodeId) throw new Error('Node ID not found')
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
+      const expandedSize = await resizeExpandedNode(node, nodeRef)
+
+      await node.toggleCollapse()
+      await expect(node.root).toHaveAttribute('data-collapsed', 'true')
+      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+
+      await node.toggleCollapse()
+      await expect(node.root).not.toHaveAttribute('data-collapsed', 'true')
+      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+    })
+
+    test('restores collapsed node size after viewport remount', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const nodeId = await node.root.getAttribute('data-node-id')
+      if (!nodeId) throw new Error('Node ID not found')
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
+
+      const { restore } =
+        await comfyPage.vueNodes.layoutNodesAndEnableVirtualization(
+          (id, index) =>
+            id === nodeId ? [100, 250] : [4000 + index * 1000, 100]
+        )
+      try {
+        await expect(node.root).toBeVisible()
+
+        const expandedSize = await resizeExpandedNode(node, nodeRef)
+        const expandedBox = await node.boundingBox()
+        if (!expandedBox) throw new Error('Expanded node is not visible')
+
+        await node.toggleCollapse()
+        await expect(node.root).toHaveAttribute('data-collapsed', 'true')
+        await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+        await comfyPage.vueNodes.clearSelection()
+
+        await comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = -2000
+          canvas.setDirty(true, true)
+        })
+        await comfyPage.nextFrame()
+        await expect(node.root).toHaveCount(0)
+
+        await comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          canvas.ds.offset[0] = 0
+          canvas.setDirty(true, true)
+        })
+        await comfyPage.nextFrame()
+        await expect(node.root).toBeVisible()
+        await expect(node.root).toHaveAttribute('data-collapsed', 'true')
+
+        await node.toggleCollapse()
+        await expect(node.root).not.toHaveAttribute('data-collapsed', 'true')
+        await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+        await expect
+          .poll(async () => {
+            const width = (await node.boundingBox())?.width
+            return width === undefined
+              ? Number.POSITIVE_INFINITY
+              : Math.abs(width - expandedBox.width)
+          })
+          .toBeLessThanOrEqual(1)
+        await expect
+          .poll(async () => {
+            const height = (await node.boundingBox())?.height
+            return height === undefined
+              ? Number.POSITIVE_INFINITY
+              : Math.abs(height - expandedBox.height)
+          })
+          .toBeLessThanOrEqual(1)
+      } finally {
+        await restore()
+      }
+    })
+
+    test('preserves expanded size when a collapsed workflow is reloaded', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const nodeId = await node.root.getAttribute('data-node-id')
+      if (!nodeId) throw new Error('Node ID not found')
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById(nodeId)
+      const expandedSize = await resizeExpandedNode(node, nodeRef)
+
+      await node.toggleCollapse()
+      await expect(node.root).toHaveAttribute('data-collapsed', 'true')
+      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
+
+      const savedWorkflow = await comfyPage.workflow.getExportedWorkflow()
+      await comfyPage.workflow.loadGraphData(savedWorkflow)
+      await comfyPage.vueNodes.waitForNodes()
+
+      const reloadedNode =
+        await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      await expect(reloadedNode.root).toHaveAttribute('data-collapsed', 'true')
+
+      await reloadedNode.toggleCollapse()
+      await expect(reloadedNode.root).not.toHaveAttribute(
+        'data-collapsed',
+        'true'
+      )
+      await expect.poll(() => nodeRef.getSize()).toEqual(expandedSize)
     })
   }
 )

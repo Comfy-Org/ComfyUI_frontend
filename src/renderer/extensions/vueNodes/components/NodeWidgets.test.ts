@@ -132,6 +132,23 @@ describe('NodeWidgets', () => {
     })
   })
 
+  it('keeps a linked widget slot visible outside the low-detail widget wrapper', () => {
+    const nodeData = createMockNodeData('TestNode', [
+      createMockWidget({
+        slotMetadata: { index: 0, linked: true, type: 'number' }
+      })
+    ])
+
+    const { container } = renderComponent(nodeData)
+    const linkedSlot = container.querySelector('[data-node-lod="show"]')
+
+    expect(linkedSlot).not.toBeNull()
+    expect(linkedSlot!.closest('.lg-node-widget')).toBeNull()
+    expect(
+      linkedSlot!.parentElement?.querySelector('.lg-node-widget')
+    ).not.toBeNull()
+  })
+
   it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
     const duplicateEntityId = widgetId(
       GRAPH_ID,

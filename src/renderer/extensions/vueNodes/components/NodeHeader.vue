@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-header w-full min-w-0 p-1 text-xs',
+        'lg-node-header relative z-10 w-full min-w-0 p-1 text-xs',
         'text-node-component-slot-text',
         headerShapeClass
       )
@@ -64,6 +64,7 @@
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
+        data-node-lod="hide"
         class="icon-[comfy--pin] size-4"
         data-testid="node-pin-indicator"
       />
