@@ -43,6 +43,7 @@ export const useWorkflowTemplateSelectorDialog = () => {
       // Size it like the other large dialogs (Settings/Manager).
       dialogComponentProps: {
         size: 'full',
+        modal: false,
         contentClass:
           'w-[90vw] max-w-[1400px] sm:max-w-[1400px] h-[80vh] rounded-2xl overflow-hidden'
       }
