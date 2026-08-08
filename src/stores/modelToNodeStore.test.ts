@@ -29,7 +29,6 @@ const EXPECTED_DEFAULT_TYPES = [
   'chatterbox/chatterbox_multilingual',
   'chatterbox/chatterbox_vc',
   'latent_upscale_models',
-  'sam2',
   'sams',
   'ipadapter',
   'nlf',
@@ -77,7 +76,6 @@ const MOCK_NODE_NAMES = [
   'FL_ChatterboxMultilingualTTS',
   'FL_ChatterboxVC',
   'LatentUpscaleModelLoader',
-  'DownloadAndLoadSAM2Model',
   'SAMLoader',
   'IPAdapterModelLoader',
   'LoadNLFModel',
@@ -249,7 +247,6 @@ describe('useModelToNodeStore', () => {
     })
 
     it.for([
-      ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
       ['FlashVSR', 'FlashVSRNode', ''],
