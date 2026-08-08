@@ -1,9 +1,18 @@
 type PreloadFileType = 'js' | 'css' | 'font' | 'image' | 'unknown'
 
+type PreloadErrorCause =
+  | 'app-chunk'
+  | 'extension-fetch'
+  | 'other-fetch'
+  | 'module-parse'
+  | 'module-exec'
+  | 'css-preload'
+
 interface PreloadErrorInfo {
   url: string | null
   fileType: PreloadFileType
   chunkName: string | null
+  cause: PreloadErrorCause
   message: string
 }
 
@@ -11,6 +20,8 @@ const CSS_PRELOAD_RE = /Unable to preload CSS for (.+)/
 const JS_DYNAMIC_IMPORT_RE =
   /Failed to fetch dynamically imported module:\s*(.+)/
 const URL_FALLBACK_RE = /https?:\/\/[^\s"')]+/
+const MODULE_PARSE_RE =
+  /unexpected token|unexpected end of input|invalid or unexpected token|importing a module script failed|expected expression|unexpected garbage after module|parser error/i
 
 const FONT_EXTENSIONS = new Set(['woff', 'woff2', 'ttf', 'otf', 'eot'])
 const IMAGE_EXTENSIONS = new Set([
@@ -64,6 +75,17 @@ function extractChunkName(url: string): string | null {
   return withoutHash || null
 }
 
+function detectCause(message: string, url: string | null): PreloadErrorCause {
+  if (CSS_PRELOAD_RE.test(message)) return 'css-preload'
+  if (url) {
+    const pathname = new URL(url, 'https://cloud.comfy.org').pathname
+    if (pathname.startsWith('/assets/')) return 'app-chunk'
+    if (pathname.startsWith('/extensions/')) return 'extension-fetch'
+    return 'other-fetch'
+  }
+  return MODULE_PARSE_RE.test(message) ? 'module-parse' : 'module-exec'
+}
+
 export function parsePreloadError(error: Error): PreloadErrorInfo {
   const message = error.message || String(error)
   const url = extractUrl(message)
@@ -72,6 +94,7 @@ export function parsePreloadError(error: Error): PreloadErrorInfo {
     url,
     fileType: url ? detectFileType(url) : 'unknown',
     chunkName: url ? extractChunkName(url) : null,
+    cause: detectCause(message, url),
     message
   }
 }
