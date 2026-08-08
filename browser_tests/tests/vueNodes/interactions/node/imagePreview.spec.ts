@@ -189,6 +189,7 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       // LGraphNode.vue is relaxed to allow rendering previews on subgraph
       // nodes. Keep this test (don't delete) so it flips green automatically
       // once that guard changes.
+      // incident-94: waiting on LGraphNode.vue:172's `!lgraphNode?.isSubgraphNode()` guard.
       test.fail()
 
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
