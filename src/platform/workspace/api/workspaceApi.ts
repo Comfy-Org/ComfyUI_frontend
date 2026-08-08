@@ -101,6 +101,7 @@ interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
 }
 
 export interface SubscribeOptions {
+  idempotencyKey?: string
   returnUrl?: string
   cancelUrl?: string
   teamCreditStopId?: string
@@ -508,6 +509,7 @@ export const workspaceApi = {
         api.apiURL('/billing/subscribe'),
         {
           plan_slug: planSlug,
+          idempotency_key: options.idempotencyKey,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
