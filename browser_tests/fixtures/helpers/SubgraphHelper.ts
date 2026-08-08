@@ -85,11 +85,13 @@ export class SubgraphHelper {
           )
         }
 
-        // Handle the interaction based on action type
-        if (action === 'rightClick') {
-          // Right-click: try each slot until one works
+        type SlotInteractionResult =
+          | { success: true; slotName: string; x: number; y: number }
+          | { success: false }
+
+        const tryRightClick = (): SlotInteractionResult => {
           for (const slot of slotsToTry) {
-            if (!slot.pos) continue
+            if (!slot.pos || !node.onPointerDown) continue
 
             const event = {
               canvasX: slot.pos[0],
@@ -97,28 +99,29 @@ export class SubgraphHelper {
               button: 2, // Right mouse button
               preventDefault: () => {},
               stopPropagation: () => {}
-            }
+            } as unknown as CanvasPointerEvent
 
-            if (node.onPointerDown) {
-              node.onPointerDown(
-                event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
-                app.canvas.pointer,
-                app.canvas.linkConnector
-              )
-              return {
-                success: true,
-                slotName: slot.name,
-                x: slot.pos[0],
-                y: slot.pos[1]
-              }
+            node.onPointerDown(
+              event,
+              app.canvas.pointer,
+              app.canvas.linkConnector
+            )
+            return {
+              success: true,
+              slotName: slot.name,
+              x: slot.pos[0],
+              y: slot.pos[1]
             }
           }
-        } else if (action === 'doubleClick') {
-          // Double-click: use first slot with bounding rect center
+          return { success: false }
+        }
+
+        const tryDoubleClick = (): SlotInteractionResult => {
           const slot = slotsToTry[0]
           if (!slot.boundingRect) {
             throw new Error(`${slotType} slot bounding rect not found`)
           }
+          if (!node.onPointerDown) return { success: false }
 
           const rect = slot.boundingRect
           const testX = rect[0] + rect[2] / 2 // x + width/2
@@ -132,25 +135,23 @@ export class SubgraphHelper {
             stopPropagation: () => {}
           }
 
-          if (node.onPointerDown) {
-            node.onPointerDown(
-              event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
-              app.canvas.pointer,
-              app.canvas.linkConnector
-            )
+          node.onPointerDown(
+            event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
+            app.canvas.pointer,
+            app.canvas.linkConnector
+          )
 
-            // Trigger double-click
-            if (app.canvas.pointer.onDoubleClick) {
-              app.canvas.pointer.onDoubleClick(
-                event as Partial<CanvasPointerEvent> as CanvasPointerEvent
-              )
-            }
+          // Trigger double-click
+          if (app.canvas.pointer.onDoubleClick) {
+            app.canvas.pointer.onDoubleClick(
+              event as Partial<CanvasPointerEvent> as CanvasPointerEvent
+            )
           }
 
           return { success: true, slotName: slot.name, x: testX, y: testY }
         }
 
-        return { success: false }
+        return action === 'rightClick' ? tryRightClick() : tryDoubleClick()
       },
       { slotType, action, targetSlotName: slotName }
     )
