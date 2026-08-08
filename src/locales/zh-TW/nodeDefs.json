@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "新增圖層",
+    "inputs": {
+      "blend_mode": {
+        "name": "blend_mode",
+        "tooltip": "初始混合模式。"
+      },
+      "flip_h": {
+        "name": "flip_h",
+        "tooltip": "將圖層水平翻轉。"
+      },
+      "flip_v": {
+        "name": "flip_v",
+        "tooltip": "將圖層垂直翻轉。"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "初始顯示高度。設為 0 則保持圖像原始高度。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "以原始尺寸顯示的圖層內容。批次處理會展開為連續的圖層。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "要附加的圖層堆疊。若未連接則會開始新的堆疊。"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "此圖層的透明遮罩。遮罩區域（值為 1）會變為透明，並與圖像本身的 alpha 通道相乘。"
+      },
+      "name": {
+        "name": "name",
+        "tooltip": "在合成器編輯器中顯示的圖層名稱。"
+      },
+      "opacity": {
+        "name": "opacity",
+        "tooltip": "初始圖層不透明度。"
+      },
+      "rotation": {
+        "name": "rotation",
+        "tooltip": "初始旋轉角度（順時針，單位為度）。"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "初始顯示寬度。設為 0 則保持圖像原始寬度。"
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "在畫布上的初始水平位置。"
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "在畫布上的初始垂直位置。"
+      },
+      "z_index": {
+        "name": "z_index",
+        "tooltip": "堆疊順序覆寫。圖層會依 z_index 穩定排序；相同值則依列表順序排列。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已附加此圖層的圖層堆疊。"
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "新增雜訊",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "產生音訊"
       },
+      "model_output_format": {
+        "name": "output_format"
+      },
       "model_prompt": {
         "name": "提示詞"
-      },
-      "model_ratio": {
-        "name": "比例"
       },
       "model_resolution": {
         "name": "解析度"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "產生音訊"
       },
+      "model_output_format": {
+        "name": "output_format"
+      },
       "model_prompt": {
         "name": "提示詞"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "解析度"
+      },
+      "model_video_editing": {
+        "name": "video_editing"
       },
       "seed": {
         "name": "種子",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "產生音訊"
+      },
+      "model_output_format": {
+        "name": "output_format"
       },
       "model_prompt": {
         "name": "提示詞"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "將一張圖片分解為背景底圖以及最多 16 個可重新定位的透明圖層，每個圖層具有堆疊順序、邊界框、名稱與描述。",
+    "display_name": "ByteDance Seedream 5.0 Pro 圖層分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "crop_layers": {
+        "name": "裁切圖層",
+        "tooltip": "圖層／遮罩批次輸出的幾何方式（layer_stack 不受影響且始終為緊密裁切）。全畫布：每個圖層放在基底尺寸畫布上，依其邊界框位置擺放－可直接用 ImageCompositeMasked 重組。最小尺寸：每個圖層裁切至其邊界框（為批次處理會補齊到最大圖層尺寸）－張量更小；用 Layers From Bounding Boxes 與 bboxes 輸出重建位置。"
+      },
+      "image": {
+        "name": "圖片",
+        "tooltip": "要分離的圖片。僅限一張圖片，至少 512x512 像素，長寬比介於 1:16 與 16:1 之間。大於約 4MP 的輸入會在上傳前自動縮小。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "如何分離圖片。留空則自動偵測並分離所有主要元素。可用自然語言描述元素以控制分離，或用 <bbox>left top right bottom</bbox> 標籤（0-1000 千分比座標）精確指定區域。"
+      },
+      "prompt_optimization": {
+        "name": "提示詞優化",
+        "tooltip": "提示詞優化模式：'standard' 提供較高品質，'fast' 則縮短生成時間。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於生成的種子值。"
+      },
+      "size": {
+        "name": "尺寸",
+        "tooltip": "輸出解析度等級。'auto' 會依照輸入圖片尺寸（限制在 1K-2K 範圍內）。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在圖片上添加「AI 生成」浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "基底圖片",
+        "tooltip": "圖層堆疊的基底圖片（背景底圖）。"
+      },
+      "1": {
+        "name": "基底遮罩",
+        "tooltip": "基底圖片的透明度（1 = 透明，LoadImage 慣例）；目前總是完全不透明。"
+      },
+      "2": {
+        "name": "圖層",
+        "tooltip": "自下而上排序的透明圖層。全畫布模式：放在黑色基底尺寸畫布上，依其邊界框位置擺放。最小尺寸模式：裁切至其邊界框，左上角對齊，補齊到最大圖層尺寸。"
+      },
+      "3": {
+        "name": "遮罩",
+        "tooltip": "每個圖層的透明度，與圖層批次索引對齊（1 = 透明，LoadImage 慣例）。如需 ImageCompositeMasked 風格合成，請先加上 InvertMask。"
+      },
+      "4": {
+        "name": "邊界框",
+        "tooltip": "每個圖層一個定位框，與圖層批次索引對齊（將此、遮罩一同輸入 Layers From Bounding Boxes 以重建每層位置）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] 表示圖層內容在其自身框架內的位置；最終會以定位框位置加上此偏移量放置於畫布上。"
+      },
+      "5": {
+        "name": "圖層堆疊",
+        "tooltip": "可編輯的圖層文件（供 Create Layered Image 使用）：基底底圖加上每個元素作為獨立命名、緊密裁切的圖層，保留其實際位置與堆疊順序。可直接連接，或用 Add Layer 擴充。"
       }
     }
   },
@@ -4418,6 +4556,144 @@
       }
     }
   },
+  "Flux3ImageToVideoNode": {
+    "description": "使用 FLUX 3 將 1 到 10 張圖像製作成動畫。每張圖像成為影片的一個畫格：一張圖像作為開頭，兩張圖像則從第一張變形到第二張，更多圖像則平均分布或依你選擇的時間點固定。",
+    "display_name": "Flux 3 圖像轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "輸出長寬比。「自動」會根據提示詞與輸入自動選擇。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "影片長度（秒）。「自動」會根據內容自動調整長度。"
+      },
+      "generate_audio": {
+        "name": "產生音訊",
+        "tooltip": "產生同步音訊（環境音、語音、音效）。關閉時產生無音軌的影片。"
+      },
+      "keyframes": {
+        "name": "關鍵畫格",
+        "tooltip": "1 到 10 張圖像，依播放順序排列。每張至少 256x256 像素。"
+      },
+      "placement": {
+        "name": "放置方式",
+        "tooltip": "「平均分布於影片」讓 FLUX 3 自動安排圖像（第一張作為開頭，兩張則分別為開始與結束）；「指定時間點」則將每張圖像固定於你選擇的秒數。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述場景如何移動與發聲；提示詞會在生成前被解讀與擴展。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出解析度。"
+      },
+      "safety_tolerance": {
+        "name": "安全容忍度",
+        "tooltip": "審核容忍度，0 為最嚴格。傳送圖像或影片的請求不論設定為何，最多僅允許 2 個。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定此節點是否重新執行的種子值；FLUX 3 會自行選擇種子，因此實際結果無論此值如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3TextToVideoNode": {
+    "description": "透過 FLUX 3，從文字提示詞產生帶有同步音訊的影片。",
+    "display_name": "Flux 3 文字轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "輸出長寬比。「自動」會根據提示詞與輸入自動選擇。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "影片長度（秒）。「自動」會根據內容自動調整長度。"
+      },
+      "generate_audio": {
+        "name": "產生音訊",
+        "tooltip": "產生同步音訊（環境音、語音、音效）。關閉時產生無音軌的影片。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "請以白話描述你想要的內容；提示詞會在生成前被解讀與擴展。若需多層音訊，請分別描述環境音、音樂與語音。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出解析度。"
+      },
+      "safety_tolerance": {
+        "name": "安全容忍度",
+        "tooltip": "審核容忍度，0 為最嚴格。傳送圖像或影片的請求不論設定為何，最多僅允許 2 個。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定此節點是否重新執行的種子值；FLUX 3 會自行選擇種子，因此實際結果無論此值如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3VideoContinuationNode": {
+    "description": "使用 FLUX 3 繼續影片：新片段會從你提供的最後幾幀接續下去。",
+    "display_name": "Flux 3 影片續接",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "輸出長寬比。'auto' 會根據 prompt 與輸入自動選擇。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "片段長度（秒）。'auto' 會根據內容自動調整長度。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "產生同步音訊（環境音、語音、效果音）。關閉時產生無音軌影片。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "續接內容描述；prompt 會在生成前被解讀並擴展。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "輸出解析度。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "審核容忍度，0 為最嚴格。傳送圖片或影片的請求不論設定為何，最多只允許 2。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定此節點是否重新執行的種子值；FLUX 3 會自行選擇種子，因此實際結果無論此值如何都不具決定性。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要續接的片段。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxDisableGuidance": {
     "description": "此節點會完全停用 Flux 及類似 Flux 模型上的引導嵌入",
     "display_name": "FluxDisableGuidance",
@@ -6790,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "建立分層影像",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "由合成器編輯器儲存的分層合成。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "要合成的圖層堆疊；請使用新增圖層來建立。項目會依 z_index 疊加，批次中的每個影格會展開為連續圖層，並由項目的位置、不透明度與混合模式決定初始合成效果。若未明確指定文件畫布，則尺寸會盡量以已放置圖層的最大範圍為準。若有已儲存且符合目前輸入的合成，將優先使用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已合成的影像。若合成中有透明區域（如隱藏背景），則包含 alpha 通道，否則為純 RGB。"
+      },
+      "1": {
+        "tooltip": "合成影像的透明度（1 = 完全透明）。若合成為不透明則全為零。"
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "圖片裁切",
     "inputs": {
@@ -7610,158 +7907,6 @@
       }
     }
   },
-  "KlingCameraControlI2VNode": {
-    "description": "將靜態圖片轉換為具有專業攝影機運鏡的電影感影片。可模擬真實世界的攝影效果，並控制虛擬攝影機的動作，包括縮放、旋轉、平移、傾斜及第一人稱視角，同時保持對原始圖片的聚焦。",
-    "display_name": "Kling 靜態圖轉影片（攝影機控制）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "可透過 Kling Camera Controls 節點建立。控制影片生成時的攝影機運動與動作。"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "負向文字提示"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "正向文字提示"
-      },
-      "start_frame": {
-        "name": "start_frame",
-        "tooltip": "參考圖片 - 輸入 URL 或 Base64 編碼字串，檔案大小不得超過 10MB，解析度不得低於 300*300 像素，長寬比需介於 1:2.5 ~ 2.5:1。Base64 不需包含 data:image 前綴。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "時長",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControlT2VNode": {
-    "description": "將文字轉換為具備專業攝影機運鏡的電影級影片，模擬真實世界的攝影效果。可控制虛擬攝影機的動作，包括縮放、旋轉、平移、傾斜及第一人稱視角，同時保持對原始文字的聚焦。",
-    "display_name": "Kling 文字轉影片（攝影機控制）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "可透過 Kling Camera Controls 節點建立。控制影片生成時的攝影機運動與動作。"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "負向文字提示"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "正向文字提示"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "時長",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControls": {
-    "description": "允許指定 Kling 攝影機控制與動作控制效果的設定選項。",
-    "display_name": "Kling 攝影機控制",
-    "inputs": {
-      "camera_control_type": {
-        "name": "camera_control_type"
-      },
-      "horizontal_movement": {
-        "name": "horizontal_movement",
-        "tooltip": "控制攝影機在水平軸（x 軸）上的移動。負值表示向左，正值表示向右。"
-      },
-      "pan": {
-        "name": "pan",
-        "tooltip": "控制攝影機在垂直平面（x 軸）上的旋轉。負值表示向下旋轉，正值表示向上旋轉。"
-      },
-      "roll": {
-        "name": "roll",
-        "tooltip": "控制攝影機在 z 軸上的滾動量。負值表示逆時針，正值表示順時針。"
-      },
-      "tilt": {
-        "name": "tilt",
-        "tooltip": "控制攝影機在水平平面（y 軸）上的旋轉。負值表示向左旋轉，正值表示向右旋轉。"
-      },
-      "vertical_movement": {
-        "name": "vertical_movement",
-        "tooltip": "控制攝影機在垂直軸（y 軸）上的移動。負值表示向下，正值表示向上。"
-      },
-      "zoom": {
-        "name": "zoom",
-        "tooltip": "控制攝影機焦距的變化。負值表示視野較窄，正值表示視野較寬。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "camera_control",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingDualCharacterVideoEffectNode": {
-    "description": "根據 effect_scene 產生影片時，實現不同的特效。第一張圖片會放在合成畫面的左側，第二張圖片會放在右側。",
-    "display_name": "Kling 雙角色影片特效",
-    "inputs": {
-      "duration": {
-        "name": "時長"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "image_left": {
-        "name": "image_left",
-        "tooltip": "左側圖片"
-      },
-      "image_right": {
-        "name": "image_right",
-        "tooltip": "右側圖片"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "model_name": {
-        "name": "model_name"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "時長",
-        "tooltip": null
-      }
-    }
-  },
   "KlingFirstLastFrameNode": {
     "description": "使用 Kling V3 以首尾影格產生影片。",
     "display_name": "Kling 3.0 首尾影格轉影片",
@@ -8280,38 +8425,6 @@
       }
     }
   },
-  "KlingSingleImageVideoEffectNode": {
-    "description": "根據 effect_scene 產生影片時，實現不同的特殊效果。",
-    "display_name": "Kling 影片特效",
-    "inputs": {
-      "duration": {
-        "name": "時長"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "image": {
-        "name": "影像",
-        "tooltip": "參考圖片。可為 URL 或 Base64 編碼字串（不含 data:image 前綴）。檔案大小不得超過 10MB，解析度不得低於 300*300 像素，長寬比需介於 1:2.5 ~ 2.5:1 之間"
-      },
-      "model_name": {
-        "name": "model_name"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "時長",
-        "tooltip": null
-      }
-    }
-  },
   "KlingStartEndFrameNode": {
     "description": "根據您提供的起始與結束影像，產生一段影像序列。此節點會自動生成中間所有影格，讓第一張影像平滑轉換到最後一張影像。",
     "display_name": "Kling 起始-結束影格轉影片",
@@ -8498,26 +8611,6 @@
       "start_frame": {
         "name": "起始畫格",
         "tooltip": "可選的起始畫格圖片。連接後將切換為圖片轉影片模式。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingVirtualTryOnNode": {
-    "description": "Kling 虛擬試穿節點。輸入一張人物圖片和一張服裝圖片，將服裝試穿在人物身上。",
-    "display_name": "Kling 虛擬試穿",
-    "inputs": {
-      "cloth_image": {
-        "name": "cloth_image"
-      },
-      "human_image": {
-        "name": "human_image"
-      },
-      "model_name": {
-        "name": "model_name"
       }
     },
     "outputs": {
@@ -9479,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "將影像批次及其邊界框轉換為圖層堆疊，每個影格一個圖層，各自依其框位置放置。當節點以批次形式輸出圖層時使用——批次僅為每個影格帶有單一位置，否則個別位置會遺失。",
+    "display_name": "由邊界框產生圖層",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "放置框，與影像批次索引對齊。可接受邊界框（x, y, width, height）、標準化元素（帶有 'bbox'——這些需 canvas_width/canvas_height 轉換為像素），或其 JSON 字串。沒有對應框的影格會放在原點。框的寬高會縮放圖層以適應。metadata.name（或 desc）及 metadata.z_index 若有則會使用，metadata.content_rect（影格相對）會將影格裁切至實際內容。"
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "文件畫布高度。0 代表自動從已放置圖層推算。"
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "文件畫布寬度。0 代表自動從已放置圖層推算。"
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "若有 metadata.content_rect，則將每個影格裁切至該區域，並將內容放置於框位置加上該區域偏移。若批次影格有填充建議開啟——僅保留真實內容於正確位置。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "影像批次；每個影格成為一個圖層。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "要附加的圖層堆疊。若要開始新堆疊請保持未連接。"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "每影格透明度，與影像批次索引對齊（1 = 透明，LoadImage 慣例）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "圖層堆疊，可直接用於建立分層影像。"
       }
     }
   },
@@ -20713,6 +20845,58 @@
       }
     }
   },
+  "TopazImageEnhanceV2": {
+    "description": "業界標準的放大與影像增強。",
+    "display_name": "Topaz 影像增強",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_color_preservation": {
+        "name": "color_preservation"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_crop_to_fill": {
+        "name": "crop_to_fill"
+      },
+      "model_face_enhancement": {
+        "name": "face_enhancement"
+      },
+      "model_face_enhancement_creativity": {
+        "name": "face_enhancement_creativity"
+      },
+      "model_face_enhancement_strength": {
+        "name": "face_enhancement_strength"
+      },
+      "model_face_preservation": {
+        "name": "face_preservation"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_subject_detection": {
+        "name": "subject_detection"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "設為 0 代表與原始高度相同，或依 output_width 等比例縮放。Wonder 3.5 僅支援 1x 至 6x 放大。Bloom 2 與 Wonder 3.5 會保留輸入長寬比，並將指定尺寸視為目標。"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "設為 0 代表自動計算（通常為原始尺寸，或依 output_height 等比例縮放）。Wonder 3.5 僅支援 1x 至 6x 放大。Bloom 2 與 Wonder 3.5 會保留輸入長寬比，並將指定尺寸視為目標。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TopazVideoEnhance": {
     "description": "以強大的升頻與修復技術為影片注入新生命。",
     "display_name": "Topaz Video Enhance",
@@ -23319,6 +23503,129 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2Cache": {
+    "description": "快取姿勢影片每個區塊的啟動值，因此只需運行一次，而非每個取樣步驟都運行。大約可將生成時間減半。權衡是以 bf16 格式在 480x832/81 幀下約需 12.5 GB 系統記憶體（會隨解析度與長度變動）。若使用 context windows，每個 window 會分別快取，因此記憶體用量會隨 window 數量增加；建議使用 static_standard 排程，因為 uniform 排程會在每一步移動 window，導致快取無法重複利用。",
+    "display_name": "WanAnimate2Cache",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "快取儲存位置。cpu（記憶體）是最安全的選擇，因為快取通常無法與模型同時放入 VRAM。gpu（顯示卡記憶體）若容量足夠則可更快。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "儲存精度。default 會以模型運算精度儲存啟動值。int8 可將快取減半，int4 減為四分之一，convrot 用於保留精度。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2ToVideo": {
+    "description": "使用影片為參考圖像中的角色製作動畫，有效複製影片中的臉部表情、身體動作與手勢。",
+    "display_name": "WanAnimate2ToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "同時產生的影片數量。"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "參考圖像的 CLIP vision。"
+      },
+      "clip_vision_output_pose": {
+        "name": "clip_vision_output_pose",
+        "tooltip": "動作影片第一幀的 CLIP vision。預設為 clip_vision_output。"
+      },
+      "continue_motion": {
+        "name": "continue_motion",
+        "tooltip": "要延續的前一段動作序列，以維持時間一致性。"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "輸出影片的高度（像素）。"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "要產生的影格數。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end_percent": {
+        "name": "pose_end_percent",
+        "tooltip": "動作影響結束的取樣百分比。動作大多在早期建立，例如設為 0.7 可在保留編舞的同時放寬細節。"
+      },
+      "pose_start_percent": {
+        "name": "pose_start_percent",
+        "tooltip": "動作影響開始的取樣百分比。在此區間外，動作分支會完全跳過，也會加快這些步驟。"
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "調整動作影片對動作的影響程度。1.0 為訓練時的行為；低於 1.0 會減弱依從度，高於 1.0 則會加強。0.0 為靜音，但不會完全移除。"
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "其動作將轉移到參考角色的影片。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "positive_pose": {
+        "name": "positive_pose",
+        "tooltip": "針對動作影片分支的提示，描述動作而非角色。預設為 positive。用於 cond 與 uncond 階段。"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "要製作動畫的角色。"
+      },
+      "reference_image_strength": {
+        "name": "reference_image_strength",
+        "tooltip": "調整產生影格對參考圖像 latent frame 的依從程度。低於 1.0 可放寬身分／外觀（例如讓 prompt 重新風格化），高於 1.0 則可防止漂移。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "在動作影片中要跳過的影格數。延長時請連接前一個節點的 video_frame_offset 輸出。"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "輸出影片的寬度（像素）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "3": {
+        "name": "trim_latent",
+        "tooltip": "解碼前應修剪的 latent 影格數。"
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": "延長影片時重疊的圖像影格數。"
+      },
+      "5": {
+        "name": "video_frame_offset",
+        "tooltip": "在動作影片中要跳過的影格數。"
       }
     }
   },

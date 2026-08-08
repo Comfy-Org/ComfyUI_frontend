@@ -2,6 +2,7 @@ import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const MCP_ENDPOINT = 'https://cloud.comfy.org/mcp'
 
@@ -134,6 +135,7 @@ test.describe('MCP page @smoke', () => {
     const question = page.getByRole('button', {
       name: "What's the server URL?"
     })
+    await waitForIsland(page, question)
     await question.click()
     await expect(question).toHaveAttribute('aria-expanded', 'true')
     await expect(

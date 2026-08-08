@@ -1,3 +1,4 @@
+import { captureException } from '@sentry/vue'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
@@ -25,6 +26,43 @@ import type {
   BillingState,
   SubscriptionInfo
 } from '../../../composables/billing/types'
+
+/**
+ * Which client path resumes a recovered operation. Exhaustive on purpose: the
+ * two-way check this replaces sent anything that was not `topup` down the
+ * subscription path, which covers the customer's real plan with a "setting up
+ * your subscription" spinner until the operation settles.
+ */
+function resumeModeFor(
+  type: BillingStatusResponse['pending_billing_op_type']
+): 'subscription' | 'topup' {
+  switch (type) {
+    case 'topup':
+      return 'topup'
+    case 'subscription':
+      return 'subscription'
+    // A server predating the field only ever had subscriptions to hand back.
+    case undefined:
+      return 'subscription'
+    default: {
+      const unexpected: never = type
+      // JSON.stringify, not String: the latter throws on a value with no
+      // callable toString/valueOf, and throwing out of the branch that exists
+      // to absorb a bad value would abort recovery entirely. The value came
+      // from a parsed response, so it cannot be circular.
+      captureException(
+        new Error(
+          `Unknown pending billing op type: ${JSON.stringify(unexpected)}`
+        ),
+        { tags: { error_type: 'billing_unknown_resume_mode' } }
+      )
+      // Reachable only against a newer server. Dropping recovery strands a
+      // customer who cannot reach the payment page; a wrong panel clears on
+      // reload, so recovery wins.
+      return 'subscription'
+    }
+  }
+}
 
 /**
  * Whether a rejection means the subscription already holds the state the caller
@@ -210,7 +248,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       ) {
         void billingOperationStore.startOperation(
           status.pending_billing_op_id,
-          status.pending_billing_op_type === 'topup' ? 'topup' : 'subscription',
+          resumeModeFor(status.pending_billing_op_type),
           undefined,
           status.action_url
         )
@@ -379,8 +417,23 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      await workspaceApi.resubscribe()
+      const response = await workspaceApi.resubscribe()
       await Promise.allSettled([fetchStatus(), fetchBalance()])
+      // A pending resubscribe (e.g. SCA/3DS re-authentication) isn't done
+      // yet: wait for the tracked billing op to actually resolve instead of
+      // reporting success the instant the request was accepted. fetchStatus
+      // above may have already started tracking this op via
+      // pending_billing_op_id; startOperation dedupes by opId either way.
+      if (response.status === 'pending') {
+        const operation = await billingOperationStore.startOperation(
+          response.billing_op_id,
+          'subscription'
+        )
+        if (operation.status !== 'succeeded') {
+          throw new Error(operation.errorMessage ?? 'Failed to resubscribe')
+        }
+        await Promise.allSettled([fetchStatus(), fetchBalance()])
+      }
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
         // Mirrors the success path, which refreshes balance too. allSettled,
