@@ -70,4 +70,14 @@ describe('getBillingPolicyCapabilities', () => {
   ])('maps %s to %o', ([kind, expected]) => {
     expect(getBillingPolicyCapabilities({ kind })).toEqual(expected)
   })
+
+  it('returns usable capabilities for a state that only exists at runtime', () => {
+    const capabilities = getBillingPolicyCapabilities({
+      kind: 'CloudAndSomethingNewFromTheBackend'
+    } as unknown as Parameters<typeof getBillingPolicyCapabilities>[0])
+
+    expect(capabilities).toBeDefined()
+    expect(capabilities.topUpAccess).toBe('allowed')
+    expect(capabilities.showsSubscribeUpsellUI).toBe(false)
+  })
 })

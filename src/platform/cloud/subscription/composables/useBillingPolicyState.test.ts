@@ -94,4 +94,24 @@ describe('deriveBillingPolicyState', () => {
       ).toEqual({ kind })
     }
   )
+
+  it.for<[boolean, string]>([
+    [false, 'LocalAndUnknown'],
+    [true, 'CloudAndUnknown']
+  ])(
+    'falls back to a real state for an unrecognised tier (isCloud=%s)',
+    ([isCloud, kind]) => {
+      const state = deriveBillingPolicyState({
+        isCloud,
+        canAccessSubscriptionFeatures: true,
+        isTeamPlan: false,
+        tier: 'TIER_ADDED_AFTER_THIS_BUILD' as unknown as Parameters<
+          typeof deriveBillingPolicyState
+        >[0]['tier']
+      })
+
+      expect(state).toEqual({ kind })
+      expect(typeof state).toBe('object')
+    }
+  )
 })
