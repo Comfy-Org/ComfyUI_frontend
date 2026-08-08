@@ -66,6 +66,17 @@ function isOverCanvas(clientX: number, clientY: number): boolean {
   )
 }
 
+// The canvas is full-bleed and sidebar/properties panels are pointer-events-auto
+// overlays painted on top of it, so a point inside the canvas rect can still be
+// over a panel. Hit-test the actual event target instead, mirroring how native
+// drag treats the canvas as its only drop target: releasing over a panel cancels.
+function isCanvasTarget(target: EventTarget | null): boolean {
+  const canvasElement = useCanvasStore().canvas?.canvas
+  return (
+    !!canvasElement && target instanceof Node && canvasElement.contains(target)
+  )
+}
+
 function addNodeAtPosition(clientX: number, clientY: number): boolean {
   const nodeDef = draggedNode.value
   if (!nodeDef) return false
@@ -101,7 +112,7 @@ function endDrag(e: PointerEvent) {
   if (dragMode.value !== 'click') return
 
   try {
-    addNodeAtPosition(e.clientX, e.clientY)
+    if (isCanvasTarget(e.target)) addNodeAtPosition(e.clientX, e.clientY)
   } finally {
     cancelDrag()
   }
@@ -114,7 +125,7 @@ function handleKeydown(e: KeyboardEvent) {
 // Prevent LiteGraph's empty-canvas hit-test from deselecting the placed node on pointerup.
 function blockCommitPointerDown(e: PointerEvent) {
   if (!isDragging.value || dragMode.value !== 'click') return
-  if (!isOverCanvas(e.clientX, e.clientY)) return
+  if (!isCanvasTarget(e.target)) return
   e.stopImmediatePropagation()
 }
 
@@ -139,6 +150,13 @@ function cleanupGlobalListeners() {
 }
 
 function cancelDrag() {
+  // isGhostPlacing is shared with litegraph's own ghost-placement event. We
+  // both set and clear it only for a click drag, assuming a litegraph ghost and
+  // a library click-drag never overlap. If that ever changes, a litegraph reset
+  // could flip the flag off mid-drag, re-enable node hit-testing, and reintroduce
+  // FE-688 — a dedicated flag OR'd into the inert computed would be needed then.
+  if (isDragging.value && dragMode.value === 'click')
+    useCanvasStore().isGhostPlacing = false
   isDragging.value = false
   draggedNode.value = null
   dragMode.value = 'click'
@@ -162,6 +180,13 @@ export function useNodeDragToCanvas() {
     dragMode.value = mode
     pendingWidgetValues.value = widgetValues
     pendingSource.value = source
+    // Reuse the litegraph ghost-placement flag: Vue nodes render inert while
+    // it is set, so the release hit-tests the canvas instead of an existing
+    // node's DOM and placement over occupied areas isn't silently cancelled.
+    // Only the click path relies on DOM hit-testing; the native path commits
+    // via geometric coords, so leave node interaction (its @dragover/@drop)
+    // intact during a native drag.
+    if (mode === 'click') useCanvasStore().isGhostPlacing = true
     setupGlobalListeners()
   }
 
