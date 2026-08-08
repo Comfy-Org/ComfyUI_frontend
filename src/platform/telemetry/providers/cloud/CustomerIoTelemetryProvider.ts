@@ -4,6 +4,8 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
+import { reportThirdPartyLoadFailure } from '@/platform/telemetry/thirdPartyLoadFailure'
 import type { AuthUserInfo } from '@/types/authTypes'
 
 import { TelemetryEvents } from '../../types'
@@ -67,7 +69,15 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     }
 
     void import('@customerio/cdp-analytics-browser')
-      .then(({ AnalyticsBrowser, InAppPlugin }) => {
+      .catch((error) => {
+        reportThirdPartyLoadFailure('Customer.io', error)
+        this.isEnabled = false
+        this.eventQueue = []
+        return null
+      })
+      .then(async (sdk) => {
+        if (!sdk) return
+        const { AnalyticsBrowser, InAppPlugin } = sdk
         const analytics = AnalyticsBrowser.load({ writeKey })
         const inAppRegistration = analytics.register(
           InAppPlugin({
@@ -81,6 +91,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         )
         this.analytics = analytics
 
+        await whenStoresReady()
         const currentUser = useCurrentUser()
         const identifyResolvedUser = (user: AuthUserInfo) => {
           const identity = {
@@ -130,7 +141,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
           })
       })
       .catch((error) => {
-        console.error('Failed to load Customer.io:', error)
+        console.error('Failed to initialize Customer.io:', error)
         this.isEnabled = false
         this.eventQueue = []
       })

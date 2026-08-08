@@ -20,6 +20,41 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops resource load failures from origins we do not control', () => {
+    const event = fromPartial<RumErrorEvent>({
+      type: 'error',
+      error: {
+        message: '[resource:loadError]',
+        source: 'source',
+        resource: { url: 'https://connect.facebook.net/en_US/fbevents.js' }
+      }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('keeps resource load failures from our own origin', () => {
+    const event = fromPartial<RumErrorEvent>({
+      type: 'error',
+      error: {
+        message: '[resource:loadError]',
+        source: 'source',
+        resource: { url: 'https://cloud.comfy.org/assets/app.js' }
+      }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps a runtime error thrown by a third-party script', () => {
+    const event = createErrorEvent(
+      'gtag is not a function',
+      'at push (https://www.googletagmanager.com/gtm.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('keeps application errors and tags their origin', () => {
     const event = createErrorEvent(
       'Application failed',
