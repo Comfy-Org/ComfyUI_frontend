@@ -69,42 +69,6 @@ describe('mappers', () => {
     expect(yNodeToLayout(ynode)).toEqual(layout)
   })
 
-  it.for([
-    {
-      name: 'legacy rect',
-      geometry: { rect: [640, 360, 320, 180] },
-      position: { x: 640, y: 360 },
-      size: { width: 320, height: 180 }
-    },
-    {
-      name: 'modern position with legacy rect',
-      geometry: {
-        rect: [640, 360, 320, 180],
-        position: { x: 12, y: 34 }
-      },
-      position: { x: 12, y: 34 },
-      size: { width: 320, height: 180 }
-    },
-    {
-      name: 'modern size with legacy rect',
-      geometry: {
-        rect: [640, 360, 320, 180],
-        size: { width: 111, height: 222 }
-      },
-      position: { x: 640, y: 360 },
-      size: { width: 111, height: 222 }
-    }
-  ])('maps $name geometry', ({ geometry, position, size }) => {
-    const ynode = new Y.Doc().getMap('node')
-    for (const [key, value] of Object.entries(geometry)) ynode.set(key, value)
-
-    expect(yNodeToLayout(ynode as NodeLayoutMap)).toMatchObject({
-      position,
-      size,
-      bounds: { ...position, ...size }
-    })
-  })
-
   it('merges concurrent position and size updates', () => {
     const first = new Y.Doc()
     const second = new Y.Doc()

@@ -1133,7 +1133,8 @@ describe('layoutStore CRDT operations', () => {
     applyRemoteChanges(remote, () => {
       const node = new Y.Map<unknown>()
       node.set('id', nodeId)
-      node.set('rect', [640, 360, 320, 180])
+      node.set('position', { x: 640, y: 360 })
+      node.set('size', { width: 320, height: 180 })
       node.set('zIndex', 0)
       node.set('visible', true)
       remote.getMap<Y.Map<unknown>>('nodes').set(`${GRAPH}:${nodeId}`, node)
