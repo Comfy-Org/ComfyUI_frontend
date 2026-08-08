@@ -308,6 +308,37 @@ describe('PartnerNodeAccessPanel', () => {
     expect(screen.queryByText('OpenAI (inc. Sora)')).toBeNull()
   })
 
+  it('keeps provider-name matches collapsed while searching', async () => {
+    const user = userEvent.setup()
+    mockProviders.value = [
+      ...mockProviders.value,
+      {
+        id: 'acme',
+        displayName: 'Acme',
+        nodeCategories: ['Acme']
+      }
+    ]
+    mockNodeDefsByName.value.AcmeNode = nodeDef(
+      'AcmeNode',
+      'Enhance image',
+      'partner/image/Acme'
+    )
+    renderComponent()
+    const search = screen.getByRole('combobox', {
+      name: 'Search providers and partner models...'
+    })
+
+    await user.type(search, 'Acme')
+    expect(screen.queryByText('Enhance image')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Acme' }))
+    expect(screen.getByText('Enhance image')).toBeTruthy()
+
+    await user.clear(search)
+    await user.type(search, 'Enhance')
+    expect(screen.getByText('Enhance image')).toBeTruthy()
+  })
+
   it('keeps name-matched providers without loaded nodes', async () => {
     const user = userEvent.setup()
     mockProviders.value = [

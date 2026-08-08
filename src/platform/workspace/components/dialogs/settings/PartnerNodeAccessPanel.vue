@@ -150,76 +150,76 @@
       <div
         role="table"
         :aria-label="$t('workspacePanel.partnerNodes.tableLabel')"
-        class="flex min-h-0 flex-col rounded-2xl border border-interface-stroke px-4 py-3"
+        class="flex min-h-0 grow flex-col rounded-2xl border border-interface-stroke px-4 py-3"
       >
-        <div
-          role="row"
-          :class="
-            cn(
-              'grid h-10 items-center gap-2 px-2 text-sm text-muted-foreground',
-              rowGridClass
-            )
-          "
-        >
-          <span
-            role="columnheader"
-            :aria-sort="sortField === 'provider' ? sortDirection : 'none'"
+        <div class="min-h-0 grow scrollbar-gutter-stable overflow-y-auto">
+          <div
+            role="row"
+            :class="
+              cn(
+                'sticky -top-px z-10 grid h-10 items-center gap-2 border-b border-border-default bg-base-background px-2 text-sm text-muted-foreground',
+                rowGridClass
+              )
+            "
           >
-            <Button
-              variant="textonly"
-              size="unset"
-              class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
-              @click="sortBy('provider')"
+            <span
+              role="columnheader"
+              :aria-sort="sortField === 'provider' ? sortDirection : 'none'"
             >
-              {{ $t('workspacePanel.partnerNodes.columns.provider') }}
-              <i
-                :class="cn('size-4 transition-transform', sortIcon('provider'))"
-                aria-hidden="true"
-              />
-            </Button>
-          </span>
-          <span
-            role="columnheader"
-            :aria-sort="sortField === 'models' ? sortDirection : 'none'"
-            class="hidden lg:block"
-          >
-            <Button
-              variant="textonly"
-              size="unset"
-              class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
-              @click="sortBy('models')"
+              <Button
+                variant="textonly"
+                size="unset"
+                class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
+                @click="sortBy('provider')"
+              >
+                {{ $t('workspacePanel.partnerNodes.columns.provider') }}
+                <i
+                  :class="
+                    cn('size-4 transition-transform', sortIcon('provider'))
+                  "
+                  aria-hidden="true"
+                />
+              </Button>
+            </span>
+            <span
+              role="columnheader"
+              :aria-sort="sortField === 'models' ? sortDirection : 'none'"
+              class="hidden lg:block"
             >
-              {{ $t('workspacePanel.partnerNodes.columns.models') }}
-              <i
-                :class="cn('size-4 transition-transform', sortIcon('models'))"
-                aria-hidden="true"
-              />
-            </Button>
-          </span>
-          <span
-            role="columnheader"
-            :aria-sort="sortField === 'state' ? sortDirection : 'none'"
-            class="hidden lg:flex lg:justify-end"
-          >
-            <Button
-              v-if="isRestricted"
-              variant="textonly"
-              size="unset"
-              class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
-              @click="sortBy('state')"
+              <Button
+                variant="textonly"
+                size="unset"
+                class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
+                @click="sortBy('models')"
+              >
+                {{ $t('workspacePanel.partnerNodes.columns.models') }}
+                <i
+                  :class="cn('size-4 transition-transform', sortIcon('models'))"
+                  aria-hidden="true"
+                />
+              </Button>
+            </span>
+            <span
+              role="columnheader"
+              :aria-sort="sortField === 'state' ? sortDirection : 'none'"
+              class="hidden lg:flex lg:justify-end"
             >
-              {{ $t('workspacePanel.partnerNodes.columns.state') }}
-              <i
-                :class="cn('size-4 transition-transform', sortIcon('state'))"
-                aria-hidden="true"
-              />
-            </Button>
-          </span>
-        </div>
+              <Button
+                v-if="isRestricted"
+                variant="textonly"
+                size="unset"
+                class="-m-2 gap-2 p-2 text-sm font-normal text-muted-foreground"
+                @click="sortBy('state')"
+              >
+                {{ $t('workspacePanel.partnerNodes.columns.state') }}
+                <i
+                  :class="cn('size-4 transition-transform', sortIcon('state'))"
+                  aria-hidden="true"
+                />
+              </Button>
+            </span>
+          </div>
 
-        <div aria-hidden="true" class="my-2 border-t border-border-default" />
-
-        <div class="min-h-0 grow overflow-auto">
           <template v-for="provider in sortedProviders" :key="provider.id">
             <div
               role="row"
@@ -235,15 +235,15 @@
                   variant="textonly"
                   size="unset"
                   class="h-10 w-full justify-start gap-2 p-0 text-left font-normal hover:bg-transparent"
-                  :aria-expanded="isProviderExpanded(provider.id)"
+                  :aria-expanded="isProviderExpanded(provider)"
                   @click="toggleExpanded(provider.id)"
                 >
                   <i
                     :class="
                       cn(
-                        'size-4 shrink-0 transition-transform',
+                        'size-4 shrink-0 text-muted-foreground transition-transform',
                         'icon-[lucide--chevron-down]',
-                        !isProviderExpanded(provider.id) && '-rotate-90'
+                        !isProviderExpanded(provider) && '-rotate-90'
                       )
                     "
                     aria-hidden="true"
@@ -297,9 +297,7 @@
             </div>
 
             <div
-              v-for="node in isProviderExpanded(provider.id)
-                ? provider.nodes
-                : []"
+              v-for="node in isProviderExpanded(provider) ? provider.nodes : []"
               :key="node.id"
               role="row"
               :class="
@@ -451,7 +449,9 @@ const filteredProviders = computed(() => {
     const nodes = provider.nodes.filter(({ name }) =>
       name.toLocaleLowerCase().includes(query)
     )
-    return nodes.length > 0 ? [{ ...provider, nodes }] : []
+    return nodes.length > 0
+      ? [{ ...provider, nodes, matchedByModel: true }]
+      : []
   })
 })
 
@@ -522,8 +522,14 @@ function toggleExpanded(providerId: string) {
   expandedProviderIds.value = nextIds
 }
 
-function isProviderExpanded(providerId: string) {
-  return isSearching.value || expandedProviderIds.value.has(providerId)
+function isProviderExpanded(provider: {
+  id: string
+  matchedByModel?: boolean
+}) {
+  return (
+    provider.matchedByModel === true ||
+    expandedProviderIds.value.has(provider.id)
+  )
 }
 
 async function performSave(action: () => Promise<void>) {
