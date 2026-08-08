@@ -5366,6 +5366,7 @@ const translations = {
     'zh-CN': '查看他们的作品'
   },
   'fdct.technologists.close': { en: 'Close', 'zh-CN': '关闭' },
+  'fdct.technologists.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
   'fdct.projects.title': { en: 'Past projects', 'zh-CN': '过往项目' },
   'fdct.projects.category.advertisement': {
     en: 'Advertisement',

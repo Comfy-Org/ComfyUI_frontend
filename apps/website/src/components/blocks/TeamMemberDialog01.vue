@@ -2,6 +2,8 @@
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { CardWorkflowItem } from './CardWorkflow01.vue'
+import CardWorkflow01 from './CardWorkflow01.vue'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
@@ -12,9 +14,11 @@ import DialogTrigger from '../ui/dialog/DialogTrigger.vue'
 const {
   name,
   avatarSrc,
-  bio,
+  description,
+  workflows = [],
   workflowsHref,
   workflowsLabel,
+  tryNowLabel,
   closeLabel,
   // Explicit undefined default keeps Vue from coercing the absent boolean to
   // false, which would lock the reka-ui DialogRoot into controlled-closed mode.
@@ -24,9 +28,11 @@ const {
 } = defineProps<{
   name: string
   avatarSrc: string
-  bio: readonly string[]
+  description: string
+  workflows?: readonly CardWorkflowItem[]
   workflowsHref?: string
   workflowsLabel?: string
+  tryNowLabel?: string
   closeLabel: string
   open?: boolean
   defaultOpen?: boolean
@@ -61,9 +67,20 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
           </ButtonPill>
         </div>
       </div>
-      <DialogDescription as="div" class="mt-8 space-y-4 lg:mt-10">
-        <p v-for="(paragraph, index) in bio" :key="index">{{ paragraph }}</p>
+      <DialogDescription class="mt-8">
+        {{ description }}
       </DialogDescription>
+      <div
+        v-if="workflows.length && tryNowLabel"
+        class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3"
+      >
+        <CardWorkflow01
+          v-for="workflow in workflows"
+          :key="workflow.id"
+          :item="workflow"
+          :try-now-label="tryNowLabel"
+        />
+      </div>
     </DialogContent>
   </Dialog>
 </template>

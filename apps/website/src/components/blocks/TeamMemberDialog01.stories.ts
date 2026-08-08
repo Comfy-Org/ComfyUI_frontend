@@ -2,11 +2,58 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import TeamMemberDialog01 from './TeamMemberDialog01.vue'
 
-const bio = [
-  "Doug is a Creative Technologist, VFX Supervisor, and educator who has spent his career in the messy middle where the creative team knows what they want but the pipeline doesn't yet know how to build it. His credits include The Book of Life, SCOOB!, and Netflix's Thelma the Unicorn, plus work for Universal Studios, Warner Bros., Netflix, and Samsung. He studied Visual Effects and Film & Television at Savannah College of Art and Design, then spent much of his career at Reel FX, eventually supervising compositing and matte painting teams.",
-  "That artist-engineer combination pulled him into AI and creative technology. At xAI, he worked on the Human Data team, training and evaluating frontier AI systems from a working artist's perspective. At Groove Jones, he built AI, VFX, real-time, and interactive pipelines for experiential projects, including ComfyUI-powered generative systems and AI experiences for the NCAA, Bandai Namco, and the US Army. He also works with brands like Amazon, Asteria, Crocs, and Apple, using generative techniques to hit high-end results in hybrid pipelines while keeping artists in control.",
-  'Today Doug is a Forward Deployed Creative Technologist at Comfy, plugging ComfyUI directly into VFX and studio production pipelines: figuring out what new models can do, building workflows around them, and translating that into tools artists can use without losing control.',
-  "He's also a longtime Nuke compositor and pipeline builder, writing Python-based tools and training ML models to automate repetitive work. He teaches VFX, Nuke, and generative AI through fxphd, ActionVFX, and other platforms. It's a tool!"
+const description =
+  "Doug is a Creative Technologist, VFX Supervisor, and educator who has spent his career in the messy middle where the creative team knows what they want but the pipeline doesn't yet know how to build it. He's also a longtime Nuke compositor and pipeline builder, writing Python-based tools and training ML models to automate repetitive work. He teaches VFX, Nuke, and generative AI through fxphd, ActionVFX, and other platforms. It's a tool!"
+
+const workflows = [
+  {
+    id: 'workflow-1',
+    title: 'LTX Cleanplate for VFX',
+    href: '#',
+    media: {
+      type: 'video' as const,
+      src: 'https://comfy-hub-assets.comfy.org/uploads/8a3a846f-5017-428e-b2a2-24025c55e884.mp4',
+      alt: 'LTX Cleanplate for VFX'
+    },
+    creator: {
+      name: 'Doug Hogan',
+      avatarSrc: '/assets/images/fallback-gradient-avatar.svg',
+      href: '#'
+    },
+    tags: ['Image Generation', 'Video']
+  },
+  {
+    id: 'workflow-2',
+    title: 'VFX Utilities',
+    href: '#',
+    media: {
+      type: 'video' as const,
+      src: 'https://comfy-hub-assets.comfy.org/uploads/fd38a7e9-0d2a-4d6a-9d6a-b04bbce294cc.mp4',
+      alt: 'VFX Utilities'
+    },
+    creator: {
+      name: 'Doug Hogan',
+      avatarSrc: '/assets/images/fallback-gradient-avatar.svg',
+      href: '#'
+    },
+    tags: ['Image Generation', 'Video']
+  },
+  {
+    id: 'workflow-3',
+    title: 'Adjustment Frame Workflow',
+    href: '#',
+    media: {
+      type: 'video' as const,
+      src: 'https://comfy-hub-assets.comfy.org/uploads/a643e6f2-f91e-450f-871c-4c99116193f0.mp4',
+      alt: 'Adjustment Frame Workflow'
+    },
+    creator: {
+      name: 'Doug Hogan',
+      avatarSrc: '/assets/images/fallback-gradient-avatar.svg',
+      href: '#'
+    },
+    tags: []
+  }
 ]
 
 const meta: Meta<typeof TeamMemberDialog01> = {
@@ -16,9 +63,11 @@ const meta: Meta<typeof TeamMemberDialog01> = {
   args: {
     name: 'Doug Hogan',
     avatarSrc: '/assets/images/fallback-gradient-avatar.svg',
-    bio,
+    description,
+    workflows,
     workflowsHref: '#',
     workflowsLabel: 'See their work',
+    tryNowLabel: 'Try now',
     closeLabel: 'Close',
     defaultOpen: true
   },
@@ -46,4 +95,8 @@ export const Default: Story = {}
 
 export const WithoutWorkflowsLink: Story = {
   args: { workflowsHref: undefined, workflowsLabel: undefined }
+}
+
+export const WithoutWorkflows: Story = {
+  args: { workflows: [] }
 }

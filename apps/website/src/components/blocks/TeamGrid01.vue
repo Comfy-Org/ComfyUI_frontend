@@ -4,13 +4,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import CardArrow from '../common/CardArrow.vue'
 import Card from '../ui/card/Card.vue'
+import type { CardWorkflowItem } from './CardWorkflow01.vue'
 import TeamMemberDialog01 from './TeamMemberDialog01.vue'
 
 type Profile = {
   id: string
   name: string
   avatarSrc: string
-  bio: readonly string[]
+  description: string
+  workflows?: readonly CardWorkflowItem[]
   workflowsHref?: string
 }
 
@@ -20,6 +22,7 @@ const {
   people,
   closeLabel,
   workflowsLabel,
+  tryNowLabel,
   class: className
 } = defineProps<{
   heading?: string
@@ -27,6 +30,7 @@ const {
   people: readonly Profile[]
   closeLabel: string
   workflowsLabel?: string
+  tryNowLabel?: string
   class?: HTMLAttributes['class']
 }>()
 </script>
@@ -58,9 +62,11 @@ const {
         <TeamMemberDialog01
           :name="person.name"
           :avatar-src="person.avatarSrc"
-          :bio="person.bio"
+          :description="person.description"
+          :workflows="person.workflows"
           :workflows-href="person.workflowsHref"
           :workflows-label="workflowsLabel"
+          :try-now-label="tryNowLabel"
           :close-label="closeLabel"
         >
           <template #trigger>
@@ -85,7 +91,7 @@ const {
             <p
               class="line-clamp-3 flex-1 text-sm/[1.35] font-semibold text-primary-comfy-canvas"
             >
-              {{ person.bio.join(' ') }}
+              {{ person.description }}
             </p>
             <CardArrow
               hover="group"

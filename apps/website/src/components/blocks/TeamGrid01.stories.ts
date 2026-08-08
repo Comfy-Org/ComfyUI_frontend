@@ -9,30 +9,24 @@ const people = [
     id: 'person-1',
     name: 'Placeholder One',
     avatarSrc,
-    bio: [
-      'Feature film background with ComfyUI on the back end of shipped work.',
-      'Built production pipelines for studios and creative teams, from pitch through final delivery.'
-    ],
+    description:
+      'Feature film background with ComfyUI on the back end of shipped work. Built production pipelines for studios and creative teams, from pitch through final delivery.',
     workflowsHref: '#'
   },
   {
     id: 'person-2',
     name: 'Placeholder Two',
     avatarSrc,
-    bio: [
-      'Commercial and experiential work, from pitch to final delivery.',
-      'Combines visual direction with the engineering required to deliver reliably on fixed deadlines.'
-    ],
+    description:
+      'Commercial and experiential work, from pitch to final delivery. Combines visual direction with the engineering required to deliver reliably on fixed deadlines.',
     workflowsHref: '#'
   },
   {
     id: 'person-3',
     name: 'Placeholder Three',
     avatarSrc,
-    bio: [
-      'Production pipelines and creative tooling for in-house teams.',
-      'Turns one-off experiments into workflows a team can run without help.'
-    ],
+    description:
+      'Production pipelines and creative tooling for in-house teams. Turns one-off experiments into workflows a team can run without help.',
     workflowsHref: '#'
   }
 ]
