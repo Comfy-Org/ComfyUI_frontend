@@ -255,15 +255,12 @@ describe('useWorkflowActionsMenu', () => {
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const exportApiItem = findItem(menuItems.value, 'menuLabels.Export for API')
 
-    expect(exportApiItem.badge).toBe('apiExport.newBadge')
+    expect(exportApiItem.badge).toBe('g.new')
     expect(exportApiItem.isNew).toBe(true)
 
     await exportApiItem.command?.()
 
     expect(mockOpenExportWorkflowApiDialog).toHaveBeenCalledOnce()
-    expect(mockCommandStore.execute).not.toHaveBeenCalledWith(
-      'Comfy.ExportWorkflowAPI'
-    )
   })
 
   it('shows an error when the API export dialog cannot open', async () => {

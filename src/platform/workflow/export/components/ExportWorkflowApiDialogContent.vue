@@ -11,9 +11,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
-const { onClose } = defineProps<{
-  onClose: () => void
-}>()
+const { onClose } = defineProps<{ onClose: () => void }>()
 
 const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
@@ -22,7 +20,6 @@ const workflowService = useWorkflowService()
 const { toastErrorHandler } = useErrorHandling()
 const isDownloading = ref(false)
 
-const quickstartUrl = buildDocsUrl('/', { includeLocale: true })
 const initialWorkflowBaseName =
   workflowStore.activeWorkflow?.filename ?? 'workflow_api'
 const workflowBaseName = ref(initialWorkflowBaseName)
@@ -30,30 +27,25 @@ const exportFilename = computed(() => {
   const baseName = stripJsonExtension(workflowBaseName.value.trim())
   return appendJsonExt(baseName || initialWorkflowBaseName)
 })
-
-function stripJsonExtension(filename: string) {
-  return filename.replace(/\.json$/i, '')
-}
+const stripJsonExtension = (filename: string) =>
+  filename.replace(/\.json$/i, '')
 
 function normalizeWorkflowBaseName() {
   const name = stripJsonExtension(workflowBaseName.value.trim()).trim()
   workflowBaseName.value = name || initialWorkflowBaseName
 }
 
-async function downloadWorkflow() {
+function downloadWorkflow() {
   normalizeWorkflowBaseName()
   isDownloading.value = true
-  try {
-    await workflowService.exportWorkflow(exportFilename.value, 'output', {
+  void workflowService
+    .exportWorkflow(exportFilename.value, 'output', {
       useWorkflowFilename: false,
       promptFilename: false
     })
-    onClose()
-  } catch (error) {
-    toastErrorHandler(error)
-  } finally {
-    isDownloading.value = false
-  }
+    .then(onClose)
+    .catch(toastErrorHandler)
+    .finally(() => (isDownloading.value = false))
 }
 </script>
 
@@ -63,30 +55,19 @@ async function downloadWorkflow() {
       {{ t('apiExport.description') }}
     </p>
 
-    <section class="flex flex-col gap-3">
-      <div class="flex flex-col gap-1">
-        <label
-          for="api-export-filename"
-          class="text-sm font-semibold text-base-foreground"
-        >
-          {{ t('apiExport.workflowFile') }}
-        </label>
-        <p
-          id="api-export-format-description"
-          class="m-0 text-sm text-muted-foreground"
-        >
-          {{ t('apiExport.apiFormat') }}
-        </p>
-      </div>
+    <div class="flex flex-col gap-1 text-sm">
+      <label for="api-export-filename" class="font-semibold">
+        {{ t('apiExport.workflowFile') }}
+      </label>
+      <span id="api-export-format-description" class="text-muted-foreground">
+        {{ t('apiExport.apiFormat') }}
+      </span>
       <div class="relative">
         <Input
           id="api-export-filename"
           v-model="workflowBaseName"
           class="pr-16"
           aria-describedby="api-export-format-description api-export-extension"
-          autocomplete="off"
-          spellcheck="false"
-          type="text"
           @blur="normalizeWorkflowBaseName"
         />
         <span
@@ -96,25 +77,15 @@ async function downloadWorkflow() {
           {{ t('apiExport.fileExtension') }}
         </span>
       </div>
-    </section>
+    </div>
 
-    <section class="flex flex-col gap-3">
-      <div class="flex flex-col gap-1">
-        <h3 class="m-0 text-sm font-semibold text-base-foreground">
-          {{ t('apiExport.runWithPython') }}
-        </h3>
-        <p class="m-0 text-sm text-pretty text-muted-foreground">
-          {{ t('apiExport.pythonDescription') }}
-        </p>
-      </div>
-      <PythonSdkCodeBlock :filename="exportFilename" />
-    </section>
+    <PythonSdkCodeBlock :filename="exportFilename" />
 
     <div class="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
       <Button
         as="a"
         class="w-full text-base-foreground no-underline visited:text-base-foreground sm:w-auto"
-        :href="quickstartUrl"
+        :href="buildDocsUrl('/', { includeLocale: true })"
         rel="noopener noreferrer"
         size="lg"
         target="_blank"

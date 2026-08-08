@@ -24,10 +24,6 @@ export function useNewMenuItemIndicator(
     () => settingStore.get('Comfy.WorkflowActions.SeenItems') ?? []
   )
 
-  const hasNewItems = computed(() =>
-    newActions.value.some((i) => i.visible !== false)
-  )
-
   const hasUnseenItems = computed(() => {
     const seen = new Set(seenItems.value)
     return newActions.value
@@ -54,5 +50,5 @@ export function useNewMenuItemIndicator(
     void settingStore.set('Comfy.WorkflowActions.SeenItems', nextSeen)
   }
 
-  return { hasNewItems, hasUnseenItems, markAsSeen }
+  return { hasUnseenItems, markAsSeen }
 }

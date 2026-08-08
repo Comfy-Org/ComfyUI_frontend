@@ -53,7 +53,7 @@ vi.mock('@/composables/useNewMenuItemIndicator', async () => {
   const { ref } = await import('vue')
   return {
     useNewMenuItemIndicator: () => ({
-      hasNewItems: ref(true),
+      hasUnseenItems: ref(true),
       markAsSeen: spies.markAsSeen
     })
   }

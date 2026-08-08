@@ -201,7 +201,7 @@ export function useWorkflowActionsMenu(
       },
       visible: isRoot,
       isNew: true,
-      badge: t('apiExport.newBadge')
+      badge: t('g.new')
     })
 
     addItem({

@@ -1476,14 +1476,11 @@
   },
   "apiExport": {
     "title": "Export for API",
-    "newBadge": "NEW",
     "description": "Export this workflow in API format. Then run it with the Python SDK.",
     "dialogLoadError": "Could not open API export. Please try again.",
     "workflowFile": "Workflow file",
     "fileExtension": ".json",
     "apiFormat": "API format (JSON)",
-    "runWithPython": "Run with Python",
-    "pythonDescription": "Install the SDK. Then run this code.",
     "openQuickstart": "Open quickstart",
     "downloadWorkflow": "Download workflow"
   },

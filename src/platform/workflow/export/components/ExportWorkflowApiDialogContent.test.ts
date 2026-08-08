@@ -11,6 +11,7 @@ const mockWorkflowService = vi.hoisted(() => ({
 }))
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
+const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 
 const mockWorkflowStore = vi.hoisted(() => ({
   activeWorkflow: {
@@ -38,7 +39,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
 }))
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
-  useCopyToClipboard: () => ({ copyToClipboard: vi.fn() })
+  useCopyToClipboard: () => ({ copyToClipboard: mockCopyToClipboard })
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -49,13 +50,14 @@ describe('ExportWorkflowApiDialogContent', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockWorkflowService.exportWorkflow.mockResolvedValue(undefined)
     mockWorkflowStore.activeWorkflow = {
       fullFilename: 'image_flux2.json',
       filename: 'image_flux2'
     } as ComfyWorkflow
   })
 
-  it('shows one SDK snippet for the current workflow', () => {
+  it('shows and copies one SDK snippet for the current workflow', async () => {
     render(ExportWorkflowApiDialogContent, {
       props: { onClose: vi.fn() }
     })
@@ -76,6 +78,21 @@ describe('ExportWorkflowApiDialogContent', () => {
     expect(
       screen.getByRole('link', { name: 'apiExport.openQuickstart' })
     ).toHaveAttribute('href', 'https://docs.comfy.org/')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'g.copyToClipboard' })
+    )
+    expect(mockCopyToClipboard).toHaveBeenCalledWith(
+      [
+        '# pip install comfy-sdk',
+        '',
+        'from comfy_sdk import Comfy',
+        '',
+        'client = Comfy("http://127.0.0.1:8189")',
+        'workflow = client.workflows.from_file("image_flux2.json")',
+        'job = client.run(workflow)'
+      ].join('\n')
+    )
   })
 
   it('updates the export filename and SDK snippet from the filename input', async () => {

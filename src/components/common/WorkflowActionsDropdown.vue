@@ -53,7 +53,7 @@ const { menuItems } = useWorkflowActionsMenu(
   () => useCommandStore().execute('Comfy.RenameWorkflow'),
   { isRoot: true }
 )
-const { hasNewItems, markAsSeen } = useNewMenuItemIndicator(
+const { hasUnseenItems, markAsSeen } = useNewMenuItemIndicator(
   () => menuItems.value
 )
 
@@ -244,7 +244,7 @@ const tooltipPt = {
               </span>
             </span>
             <Badge
-              v-if="seg.active && hasNewItems"
+              v-if="seg.active && hasUnseenItems"
               data-testid="new-menu-item-indicator"
               aria-hidden="true"
               class="absolute -top-0.5 -right-0.5"

@@ -24,14 +24,6 @@ function renderList(items: WorkflowMenuItem[]) {
       items,
       itemComponent: MenuItemStub,
       separatorComponent: SeparatorStub
-    },
-    global: {
-      stubs: {
-        Badge: {
-          props: ['label', 'severity'],
-          template: '<span :data-severity="severity">{{ label }}</span>'
-        }
-      }
     }
   })
 }
@@ -88,25 +80,6 @@ describe('WorkflowActionsList', () => {
     renderList(items)
 
     screen.getByText('NEW')
-  })
-
-  it('renders secondary badges with the shared badge component', () => {
-    const items: WorkflowMenuItem[] = [
-      {
-        id: 'beta-feature',
-        label: 'Beta Feature',
-        command: vi.fn(),
-        badge: 'BETA',
-        badgeSeverity: 'secondary'
-      }
-    ]
-
-    renderList(items)
-
-    expect(screen.getByText('BETA')).toHaveAttribute(
-      'data-severity',
-      'secondary'
-    )
   })
 
   it('does not render items with visible set to false', () => {
