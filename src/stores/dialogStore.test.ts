@@ -263,4 +263,43 @@ describe('dialogStore', () => {
       })
     })
   })
+
+  describe('stack overflow eviction', () => {
+    it('evicts the lowest priority dialog when the stack is full', () => {
+      const store = useDialogStore()
+
+      for (let priority = 0; priority < 10; priority++) {
+        store.showDialog({
+          key: `priority-${priority}`,
+          component: MockComponent,
+          priority
+        })
+      }
+
+      expect(store.dialogStack.map((d) => d.key)).toEqual([
+        'priority-9',
+        'priority-8',
+        'priority-7',
+        'priority-6',
+        'priority-5',
+        'priority-4',
+        'priority-3',
+        'priority-2',
+        'priority-1',
+        'priority-0'
+      ])
+
+      store.showDialog({
+        key: 'overflow',
+        component: MockComponent,
+        priority: 5
+      })
+
+      const keys = store.dialogStack.map((d) => d.key)
+
+      expect(keys).toContain('overflow')
+      expect(keys).toContain('priority-9')
+      expect(keys).not.toContain('priority-0')
+    })
+  })
 })
