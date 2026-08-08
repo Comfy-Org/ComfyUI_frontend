@@ -57,8 +57,20 @@
         >
           <i class="icon-[lucide--video-off] size-6 text-muted-foreground" />
           <p class="m-0 text-sm text-muted-foreground">
-            {{ t('videoEdit.loadFailed') }}
+            {{
+              error === 'canvas-unavailable'
+                ? t('videoEdit.canvasUnavailable')
+                : t('videoEdit.loadFailed')
+            }}
           </p>
+          <button
+            type="button"
+            data-testid="video-preview-retry"
+            class="mt-1 cursor-pointer rounded-md border-none bg-component-node-widget-background px-3 py-1 text-sm text-base-foreground hover:bg-component-node-widget-background-hovered"
+            @click="emit('retry')"
+          >
+            {{ t('videoEdit.retry') }}
+          </button>
         </div>
       </div>
     </div>
@@ -267,6 +279,10 @@ const {
   height: number
   loading?: boolean
   error?: FilmstripError | null
+}>()
+
+const emit = defineEmits<{
+  retry: []
 }>()
 
 const startFrame = defineModel<number>('startFrame', { default: 0 })

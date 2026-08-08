@@ -16,7 +16,7 @@ describe('useVideoEditModel', () => {
 
   function createModel(
     initial: VideoEditValue = {},
-    { duration = 10, fps = 10 } = {}
+    { duration = 10, fps = 10, width = 1920, height = 1080 } = {}
   ) {
     const modelValue = ref<VideoEditValue>(initial)
     scope = effectScope()
@@ -25,8 +25,8 @@ describe('useVideoEditModel', () => {
         duration: ref(duration),
         totalFrames: ref(100),
         fps: ref(fps),
-        width: ref(1920),
-        height: ref(1080)
+        width: ref(width),
+        height: ref(height)
       })
     )!
     return { modelValue, ...model }
@@ -92,6 +92,15 @@ describe('useVideoEditModel', () => {
 
       expect(startFrame.value).toBe(0)
       expect(endFrame.value).toBe(99)
+    })
+
+    it('normalizes corrupt trim values back into the model', async () => {
+      const { modelValue } = createModel({
+        trim: { start_time: Number.NaN, duration: -5 }
+      })
+      await nextTick()
+
+      expect(modelValue.value.trim).toEqual({ start_time: 0, duration: 0 })
     })
 
     it('writes clean values when editing after a corrupted trim', () => {
@@ -172,6 +181,34 @@ describe('useVideoEditModel', () => {
         y: 0,
         width: 1920,
         height: 1080
+      })
+    })
+
+    it('normalizes corrupt crop values back into the model', async () => {
+      const { modelValue } = createModel({
+        crop: { x: -10, y: 0, width: Number.POSITIVE_INFINITY, height: 100 }
+      })
+      await nextTick()
+
+      expect(modelValue.value.crop).toEqual({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+      })
+    })
+
+    it('clamps a stored crop that exceeds the current source frame', () => {
+      const { cropBounds } = createModel(
+        { crop: { x: 100, y: 100, width: 1920, height: 1080 } },
+        { width: 640, height: 480 }
+      )
+
+      expect(cropBounds.value).toEqual({
+        x: 100,
+        y: 100,
+        width: 540,
+        height: 380
       })
     })
 

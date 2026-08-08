@@ -152,6 +152,21 @@ describe('useTrimPlayback', () => {
     }
   )
 
+  it('leaves the playhead untouched when the frame maps to a non-finite time', async () => {
+    const { video, playheadFrame, handleScrub } = createPlayback({
+      frameToTime: () => Number.NaN
+    })
+    video.currentTime = 4
+    await flushSeek()
+    playheadFrame.value = 30
+
+    handleScrub(50)
+    await flushSeek()
+
+    expect(playheadFrame.value).toBe(30)
+    expect(video.currentTime).toBe(4)
+  })
+
   it('stops playing when the video refuses to play', async () => {
     const { video, isPlaying } = createPlayback()
     video.play.mockRejectedValueOnce(new Error('autoplay blocked'))

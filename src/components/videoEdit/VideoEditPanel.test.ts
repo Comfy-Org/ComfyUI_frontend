@@ -23,6 +23,9 @@ const i18n = createI18n({
         fileSize: 'File Size',
         resolution: '{width} × {height}',
         loadingVideo: 'Loading video preview',
+        loadFailed: 'Failed to load video',
+        canvasUnavailable: 'Failed to render video preview',
+        retry: 'Retry',
         setStartFrame: 'Reset start frame',
         setEndFrame: 'Reset end frame',
         durationZero: '0s',
@@ -199,6 +202,35 @@ describe('VideoEditPanel', () => {
     renderPanel({ loading: true })
 
     expect(screen.getByTestId('video-preview-loading')).toBeTruthy()
+  })
+
+  it('shows the load error state with a retry control', async () => {
+    const retries: number[] = []
+    renderPanel({
+      error: 'load-failed',
+      onRetry: () => retries.push(1)
+    } as Partial<PanelProps>)
+
+    expect(screen.getByTestId('video-preview-error')).toBeTruthy()
+    expect(screen.getByText('Failed to load video')).toBeTruthy()
+    expect(screen.queryByTestId('video-preview-loading')).toBeNull()
+
+    await userEvent.click(screen.getByTestId('video-preview-retry'))
+
+    expect(retries).toHaveLength(1)
+  })
+
+  it('describes canvas failures separately from load failures', () => {
+    renderPanel({ error: 'canvas-unavailable' })
+
+    expect(screen.getByText('Failed to render video preview')).toBeTruthy()
+  })
+
+  it('prefers the loading overlay over a stale error overlay', () => {
+    renderPanel({ error: 'load-failed', loading: true })
+
+    expect(screen.getByTestId('video-preview-loading')).toBeTruthy()
+    expect(screen.queryByTestId('video-preview-error')).toBeNull()
   })
 
   it('shows selected/total metadata when trim is a feature', () => {

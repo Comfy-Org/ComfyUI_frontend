@@ -6,6 +6,7 @@ import { fetchVideoMetadata } from '@/utils/videoMetadataUtil'
 export const DEFAULT_VIDEO_FPS = 20
 export const FILMSTRIP_SAMPLE_COUNT = 5
 export const FILMSTRIP_THUMBNAIL_HEIGHT = 96
+export const FILMSTRIP_THUMBNAIL_MAX_WIDTH = 384
 
 const METADATA_EVENT_TIMEOUT_MS = 15000
 const SEEK_EVENT_TIMEOUT_MS = 5000
@@ -86,7 +87,8 @@ async function captureFrameViaBitmap(
 ): Promise<string> {
   const bitmap = await createImageBitmap(video, {
     resizeWidth: width,
-    resizeHeight: height
+    resizeHeight: height,
+    resizeQuality: 'high'
   })
   const offscreen = new OffscreenCanvas(bitmap.width, bitmap.height)
   const offscreenContext = offscreen.getContext('2d')
@@ -112,7 +114,11 @@ function captureFrame(
   const sourceHeight = video.videoHeight
   if (sourceWidth <= 0 || sourceHeight <= 0) return Promise.resolve('')
 
-  const scale = Math.min(FILMSTRIP_THUMBNAIL_HEIGHT / sourceHeight, 1)
+  const scale = Math.min(
+    FILMSTRIP_THUMBNAIL_HEIGHT / sourceHeight,
+    FILMSTRIP_THUMBNAIL_MAX_WIDTH / sourceWidth,
+    1
+  )
   const width = Math.max(Math.round(sourceWidth * scale), 1)
   const height = Math.max(Math.round(sourceHeight * scale), 1)
 
@@ -139,11 +145,10 @@ async function sampleFilmstripFrames(
   signal: AbortSignal
 ): Promise<string[]> {
   const pendingThumbnails: Promise<string>[] = []
-  const lastIndex = Math.max(sampleCount - 1, 1)
 
   for (let index = 0; index < sampleCount; index++) {
     if (isStale()) break
-    const time = sampleCount <= 1 ? 0 : (duration * index) / lastIndex
+    const time = (duration * (index + 0.5)) / sampleCount
     const target = Math.min(time, Math.max(duration - 0.001, 0))
     const alreadyAtTarget =
       Math.abs(video.currentTime - target) < 0.001 && video.readyState >= 2
@@ -226,6 +231,10 @@ export function useVideoFilmstrip(
     if (!context) {
       loading.value = false
       error.value = 'canvas-unavailable'
+      resetVideoState()
+      if (activeAbort === abortController) {
+        activeAbort = undefined
+      }
       return
     }
 
@@ -272,7 +281,8 @@ export function useVideoFilmstrip(
       if (isLoadStale(loadId, url)) return
 
       thumbnails.value = sampledThumbnails
-    } catch {
+    } catch (loadError) {
+      if (loadError instanceof LoadAbortedError) return
       if (isLoadStale(loadId, url)) return
       error.value = 'load-failed'
       resetVideoState()
@@ -303,6 +313,11 @@ export function useVideoFilmstrip(
     { immediate: true }
   )
 
+  function retry() {
+    const url = videoUrl.value
+    if (url) void loadVideo(url)
+  }
+
   onScopeDispose(cancelActiveLoad)
 
   return {
@@ -314,6 +329,7 @@ export function useVideoFilmstrip(
     fps,
     fileSize,
     loading,
-    error
+    error,
+    retry
   }
 }

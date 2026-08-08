@@ -94,6 +94,40 @@ describe('VideoFilmstripTrim', () => {
     expect(filmstrip.style.right).toBe('16px')
   })
 
+  it('shows the skeleton only while loading', async () => {
+    const { rerender } = renderFilmstrip({
+      totalFrames: 1,
+      thumbnails: [],
+      startFrame: 0,
+      endFrame: 0,
+      playheadFrame: 0,
+      loading: true
+    })
+
+    expect(screen.getByTestId('filmstrip-skeleton')).toBeTruthy()
+
+    await rerender({ loading: false })
+
+    expect(screen.queryByTestId('filmstrip-skeleton')).toBeNull()
+  })
+
+  it('renders placeholders for failed thumbnails without shifting the strip', () => {
+    renderFilmstrip({
+      totalFrames: 100,
+      thumbnails: [
+        'data:image/jpeg;base64,one',
+        '',
+        'data:image/jpeg;base64,three'
+      ],
+      startFrame: 0,
+      endFrame: 99,
+      playheadFrame: 0
+    })
+
+    expect(screen.getAllByTestId('filmstrip-thumbnail')).toHaveLength(2)
+    expect(screen.getAllByTestId('filmstrip-placeholder')).toHaveLength(1)
+  })
+
   it('prevents filmstrip thumbnails from being dragged', () => {
     renderFilmstrip({
       totalFrames: 100,
