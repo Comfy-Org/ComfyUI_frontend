@@ -72,17 +72,6 @@ const logger = log.getLogger('LayoutStore')
 
 type ScopedLayoutKey = string & { readonly __brand: 'ScopedLayoutKey' }
 
-export class LayoutOperationError extends Error {
-  constructor(
-    message: string,
-    readonly applied: boolean,
-    options: ErrorOptions
-  ) {
-    super(message, options)
-    this.name = 'LayoutOperationError'
-  }
-}
-
 /** Yjs surfaces its own keys as raw strings; brand them back on the way in. */
 function toScopedLayoutKey(key: string): ScopedLayoutKey {
   return key as ScopedLayoutKey
@@ -885,26 +874,21 @@ class LayoutStore {
     const appliedChanges: LayoutChange[] = []
     this.isApplyingOperation = true
     try {
-      try {
-        this.ydoc.transact(() => {
-          for (const snapshot of snapshots) {
-            const change: LayoutChange = {
-              type: 'update',
-              nodeIds: [],
-              sizeChangedNodeIds: [],
-              timestamp: snapshot.timestamp,
-              source: snapshot.source,
-              operation: snapshot
-            }
-            if (!this.executeOperation(snapshot, change)) continue
-            applied = true
-            appliedChanges.push(change)
+      this.ydoc.transact(() => {
+        for (const snapshot of snapshots) {
+          const change: LayoutChange = {
+            type: 'update',
+            nodeIds: [],
+            sizeChangedNodeIds: [],
+            timestamp: snapshot.timestamp,
+            source: snapshot.source,
+            operation: snapshot
           }
-        }, snapshots[0].actor)
-      } catch (cause) {
-        const message = cause instanceof Error ? cause.message : String(cause)
-        throw new LayoutOperationError(message, applied, { cause })
-      }
+          if (!this.executeOperation(snapshot, change)) continue
+          applied = true
+          appliedChanges.push(change)
+        }
+      }, snapshots[0].actor)
 
       let finalizationCause: unknown
       for (const change of appliedChanges) {
@@ -915,10 +899,6 @@ class LayoutStore {
         }
       }
       if (finalizationCause !== undefined) throw finalizationCause
-    } catch (cause) {
-      if (cause instanceof LayoutOperationError) throw cause
-      const message = cause instanceof Error ? cause.message : String(cause)
-      throw new LayoutOperationError(message, applied, { cause })
     } finally {
       this.isApplyingOperation = false
     }

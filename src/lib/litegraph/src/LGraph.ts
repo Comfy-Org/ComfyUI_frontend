@@ -1356,7 +1356,7 @@ export class LGraph
         if (layoutDetach.result === 'rejected') return
         this.canvasAction((c) => c.deselect(node))
       } catch (error) {
-        if (node.graph === this) layoutDetach.restore(error)
+        if (node.graph === this) layoutDetach.restore()
         throw error
       }
       this._groups.splice(index, 1)
@@ -1385,13 +1385,6 @@ export class LGraph
       const releasedSubgraphs = node.isSubgraphNode()
         ? findReleasableSubgraphs(this.rootGraph, node)
         : []
-      for (const subgraph of releasedSubgraphs) {
-        layoutDetach.includeGraph(subgraph)
-        if (unregisterAllGraphLayout(subgraph) === 'rejected') {
-          layoutDetach.restore(undefined)
-          return
-        }
-      }
       this.beforeChange()
 
       this.events.dispatch('node:before-removed', { node })
@@ -1442,6 +1435,7 @@ export class LGraph
       }
 
       for (const subgraph of releasedSubgraphs) {
+        unregisterAllGraphLayout(subgraph)
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
         unregisterAllNodeStates(subgraph)
@@ -1464,7 +1458,7 @@ export class LGraph
         this._nodes.includes(node) || this._nodes_by_id[node.id] === node
       if (graphOwnsNode) {
         node.graph = this
-        layoutDetach.restore(error)
+        layoutDetach.restore()
       }
       throw error
     }
@@ -1974,7 +1968,7 @@ export class LGraph
       this.reroutesInternal.delete(id)
       unregisterRerouteChain(reroute)
     } catch (error) {
-      if (reroutes.get(id) === reroute) layoutDetach.restore(error)
+      if (reroutes.get(id) === reroute) layoutDetach.restore()
       throw error
     }
 

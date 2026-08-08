@@ -16,10 +16,7 @@ import type { UUID } from '@/utils/uuid'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import {
-  LayoutOperationError,
-  layoutStore
-} from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutRegistration'
@@ -933,7 +930,7 @@ describe('layoutStore CRDT operations', () => {
       stopNode()
     })
 
-    it('reports unapplied and permits retry when a transaction fails before mutation', () => {
+    it('propagates a transaction failure and permits retry', () => {
       createNode()
       const ydoc = getLayoutStoreYDoc()
       const error = new Error('before transaction failed')
@@ -951,13 +948,7 @@ describe('layoutStore CRDT operations', () => {
           position: { x: 300, y: 400 },
           type: 'moveNode'
         })
-      ).toThrow(
-        expect.objectContaining({
-          applied: false,
-          cause: error,
-          message: 'before transaction failed'
-        })
-      )
+      ).toThrow(error)
       transact.mockRestore()
       expect(
         layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position
@@ -969,106 +960,6 @@ describe('layoutStore CRDT operations', () => {
           nodeId,
           position: { x: 300, y: 400 },
           type: 'moveNode'
-        })
-      ).toBe('applied')
-    })
-
-    it('reports applied and clears the guard when transact throws afterward', () => {
-      createNode()
-      const ydoc = getLayoutStoreYDoc()
-      const error = new Error('transaction hook failed')
-      const originalTransact = ydoc.transact.bind(ydoc)
-      const transact = vi.spyOn(ydoc, 'transact')
-      transact.mockImplementation((transaction, origin) => {
-        originalTransact(transaction, origin)
-        throw error
-      })
-
-      let thrown: unknown
-      try {
-        layoutStore.applyOperation({
-          ...metadata,
-          entity: 'node',
-          nodeId,
-          position: { x: 300, y: 400 },
-          type: 'moveNode'
-        })
-      } catch (error) {
-        thrown = error
-      }
-      transact.mockRestore()
-      expect(thrown).toBeInstanceOf(LayoutOperationError)
-      expect(thrown).toMatchObject({
-        applied: true,
-        cause: error,
-        message: 'transaction hook failed'
-      })
-      expect(
-        layoutStore.applyOperation({
-          ...metadata,
-          entity: 'node',
-          nodeId,
-          position: { x: 500, y: 600 },
-          type: 'moveNode'
-        })
-      ).toBe('applied')
-    })
-
-    it('preserves an applied batch prefix and permits a subsequent operation', () => {
-      createNode()
-      const ynode = getLayoutStoreYDoc()
-        .getMap<Y.Map<unknown>>('nodes')
-        .get(`${graphId}:${nodeId}`)!
-      const error = new Error('later command failed')
-      const originalSet = ynode.set.bind(ynode)
-      const set = vi.spyOn(ynode, 'set')
-      set.mockImplementation((key, value) => {
-        if (key === 'size') throw error
-        return originalSet(key, value)
-      })
-
-      let thrown: unknown
-      try {
-        layoutStore.applyOperations([
-          {
-            ...metadata,
-            entity: 'node',
-            nodeId,
-            position: { x: 300, y: 400 },
-            type: 'moveNode'
-          },
-          {
-            ...metadata,
-            entity: 'node',
-            nodeId,
-            size: { width: 500, height: 600 },
-            type: 'resizeNode'
-          }
-        ])
-      } catch (error) {
-        thrown = error
-      }
-      set.mockRestore()
-
-      expect(thrown).toBeInstanceOf(LayoutOperationError)
-      expect(thrown).toMatchObject({
-        applied: true,
-        cause: error,
-        message: 'later command failed'
-      })
-      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value).toMatchObject(
-        {
-          position: { x: 300, y: 400 },
-          size: { width: 200, height: 100 }
-        }
-      )
-      expect(
-        layoutStore.applyOperation({
-          ...metadata,
-          entity: 'node',
-          nodeId,
-          size: { width: 700, height: 800 },
-          type: 'resizeNode'
         })
       ).toBe('applied')
     })

@@ -17,10 +17,7 @@ import type * as Y from 'yjs'
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import {
-  LayoutOperationError,
-  layoutStore
-} from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { transferNodeLayoutRegistration } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import {
@@ -1840,86 +1837,6 @@ describe('node layout registration', () => {
     ).toBeNull()
   })
 
-  it('retains primary cause when node removal compensation also fails', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    const primaryCause = new Error('primary cause')
-    const primaryError = new Error('removal failed', { cause: primaryCause })
-    const compensationError = new Error('compensation failed')
-    graph.onBeforeChange = () => {
-      throw primaryError
-    }
-    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
-    const applyOperation = vi
-      .spyOn(layoutStore, 'applyOperation')
-      .mockImplementation((operation) => {
-        if (operation.type === 'createNode') throw compensationError
-        return originalApplyOperation(operation)
-      })
-
-    let thrown: unknown
-    try {
-      graph.remove(node)
-    } catch (error) {
-      thrown = error
-    }
-    applyOperation.mockRestore()
-
-    expect(thrown).toBe(primaryError)
-    expect(thrown).toMatchObject({
-      cause: expect.objectContaining({
-        errors: [primaryCause, compensationError]
-      })
-    })
-  })
-
-  it('restores node registration when unregister throws after deletion', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.pos = [120, 340]
-    graph.add(node)
-    const registrationId = layoutStore.getRegistrationId(
-      'node',
-      graph.rootGraph.id,
-      node.id
-    )
-    const ydoc = getLayoutStoreYDoc()
-    const originalTransact = ydoc.transact.bind(ydoc)
-    const transact = vi
-      .spyOn(ydoc, 'transact')
-      .mockImplementationOnce((transaction, origin) => {
-        originalTransact(transaction, origin)
-        throw new Error('node unregister failed')
-      })
-
-    expect(() => graph.remove(node)).toThrow('node unregister failed')
-    transact.mockRestore()
-    expect(graph.nodes).toContain(node)
-    expect(node.graph).toBe(graph)
-    expect(
-      layoutStore.getRegistrationId('node', graph.rootGraph.id, node.id)
-    ).toBe(registrationId)
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
-    ).toEqual({
-      x: 120,
-      y: 340
-    })
-
-    node.pos = [220, 440]
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
-    ).toEqual({
-      x: 220,
-      y: 440
-    })
-    graph.remove(node)
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
-    ).toBeNull()
-  })
-
   it('restores node ownership when canvas deselect throws after detachment', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -1968,7 +1885,7 @@ describe('node layout registration', () => {
     ).toBeNull()
   })
 
-  it('preserves released subgraph registrations across failed removals', () => {
+  it('preserves subgraph graph and layout state when removal aborts', () => {
     const graph = new LGraph()
     const source = new LGraphNode('source')
     source.addOutput('out', '*')
@@ -2057,10 +1974,10 @@ describe('node layout registration', () => {
     onConnectionChange.mockClear()
     onNodeRemoved.mockClear()
     subgraphNode.onRemoved = () => {}
-    const applyOperations = vi
-      .spyOn(layoutStore, 'applyOperations')
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
       .mockReturnValueOnce('rejected')
-    onTestFinished(() => applyOperations.mockRestore())
+    onTestFinished(() => applyOperation.mockRestore())
     expect(() => graph.remove(subgraphNode)).not.toThrow()
 
     expect(graph.nodes).toContain(subgraphNode)
@@ -2270,114 +2187,6 @@ describe('graph teardown drops layout entries', () => {
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, interior.id).value
     ).toBeNull()
-  })
-
-  it('restores owned layouts when clear fails after a prefix deletion', () => {
-    const { graph, root, interior } = createGraphWithEveryLayoutEntryType()
-    const nodes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('nodes')
-    const registrations = [root, interior].map(
-      (node) =>
-        [
-          node.id,
-          layoutStore.getRegistrationId('node', graph.rootGraph.id, node.id)
-        ] as const
-    )
-    const originalDelete = nodes.delete.bind(nodes)
-    const failure = new Error('prefix delete failed')
-    let deletionCount = 0
-    const deleteNode = vi.spyOn(nodes, 'delete').mockImplementation((id) => {
-      originalDelete(id)
-      deletionCount += 1
-      if (deletionCount === 2) throw failure
-      return true
-    })
-
-    let thrown: unknown
-    try {
-      graph.clear()
-    } catch (error) {
-      thrown = error
-    }
-    deleteNode.mockRestore()
-
-    expect(thrown).toBeInstanceOf(LayoutOperationError)
-    expect(thrown).toMatchObject({ applied: false })
-    expect(graph.nodes).not.toHaveLength(0)
-    expect(layoutEntryCount(graph)).toBe(4)
-    for (const [id, registrationId] of registrations) {
-      expect(
-        layoutStore.getRegistrationId('node', graph.rootGraph.id, id)
-      ).toBe(registrationId)
-    }
-
-    graph.clear()
-    expect(layoutEntryCount(graph)).toBe(0)
-  })
-
-  it.for(['nodes', 'groups', 'reroutes'] as const)(
-    'restores layouts when the first %s delete writes then throws',
-    (mapName) => {
-      const graph = new LGraph()
-      graph.id = createUuidv4()
-      if (mapName === 'nodes') graph.add(new LGraphNode('node'))
-      if (mapName === 'groups') graph.add(new LGraphGroup('group'))
-      if (mapName === 'reroutes') {
-        graph._addReroute(new Reroute(REROUTE, graph, [10, 10]))
-      }
-      const layouts = getLayoutStoreYDoc().getMap<Y.Map<unknown>>(mapName)
-      const originalDelete = layouts.delete.bind(layouts)
-      const failure = new Error(`${mapName} delete failed`)
-      const deleteLayout = vi
-        .spyOn(layouts, 'delete')
-        .mockImplementation((id) => {
-          originalDelete(id)
-          throw failure
-        })
-
-      let thrown: unknown
-      try {
-        graph.clear()
-      } catch (error) {
-        thrown = error
-      }
-      deleteLayout.mockRestore()
-
-      expect(thrown).toBeInstanceOf(LayoutOperationError)
-      expect(thrown).toMatchObject({ applied: false })
-      expect(layoutEntryCount(graph)).toBe(1)
-      graph.clear()
-      expect(layoutEntryCount(graph)).toBe(0)
-    }
-  )
-
-  it('restores owned layouts when clear fails during finalization', () => {
-    const { graph } = createGraphWithEveryLayoutEntryType()
-    const failure = new Error('finalization failed')
-    const stop = layoutStore.onChange(vi.fn())
-    const originalStructuredClone = structuredClone
-    const clone = vi.spyOn(globalThis, 'structuredClone')
-    clone.mockImplementation((value) => {
-      if (typeof value === 'object' && value !== null && 'operation' in value) {
-        throw failure
-      }
-      return originalStructuredClone(value)
-    })
-
-    let thrown: unknown
-    try {
-      graph.clear()
-    } catch (error) {
-      thrown = error
-    }
-    clone.mockRestore()
-    stop()
-
-    expect(thrown).toBeInstanceOf(LayoutOperationError)
-    expect(thrown).toMatchObject({ applied: true })
-    expect(graph.nodes).not.toHaveLength(0)
-    expect(layoutEntryCount(graph)).toBe(4)
-    graph.clear()
-    expect(layoutEntryCount(graph)).toBe(0)
   })
 
   it('preserves existing entities when configure teardown is rejected', () => {

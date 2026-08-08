@@ -9,17 +9,13 @@ import * as Y from 'yjs'
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
-  attachGroupLayout,
   registerGroupLayout,
   registerNodeLayout,
   unregisterNodeLayout,
   unregisterGroupLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import {
-  LayoutOperationError,
-  layoutStore
-} from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -211,47 +207,6 @@ describe('group layout in layoutStore', () => {
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
   })
 
-  test('restores group registration when unregister throws after deletion', () => {
-    const graph = new LGraph()
-    const group = addedGroup(graph, toGroupId(810))
-    const ydoc = getLayoutStoreYDoc()
-    const registrationId = layoutStore.getRegistrationId(
-      'group',
-      graph.rootGraph.id,
-      group.id
-    )
-    const originalTransact = ydoc.transact.bind(ydoc)
-    const transact = vi
-      .spyOn(ydoc, 'transact')
-      .mockImplementationOnce((transaction, origin) => {
-        originalTransact(transaction, origin)
-        throw new Error('group unregister failed')
-      })
-
-    expect(() => graph.remove(group)).toThrow('group unregister failed')
-    transact.mockRestore()
-    expect(graph.groups).toContain(group)
-    expect(group.graph).toBe(graph)
-    expect(
-      layoutStore.getRegistrationId('group', graph.rootGraph.id, group.id)
-    ).toBe(registrationId)
-    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
-      id: group.id,
-      position: { x: 100, y: 100 },
-      size: { width: 300, height: 200 }
-    })
-
-    group.pos = [200, 250]
-    expect(
-      layoutStore.getGroupLayout(graph.rootGraph.id, group.id)?.position
-    ).toEqual({
-      x: 200,
-      y: 250
-    })
-    graph.remove(group)
-    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
-  })
-
   test('restores an attached group layout when canvas deselect throws', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(809))
@@ -284,7 +239,7 @@ describe('group layout in layoutStore', () => {
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
   })
 
-  test('drops stale group ownership when compensation preserves a foreign layout', () => {
+  test('drops stale group ownership when restore preserves a foreign layout', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(819))
     const groups = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('groups')
@@ -483,137 +438,6 @@ describe('group layout in layoutStore', () => {
     )
   })
 
-  test('restores node identity when registration compensation throws', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('node')
-    const originalId = node.id
-    const originalLastNodeId = graph.state.lastNodeId
-    const registrationCause = new Error('registration cause')
-    const registrationError = new LayoutOperationError(
-      'registration failed',
-      true,
-      { cause: registrationCause }
-    )
-    const compensationError = new Error('compensation failed')
-    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
-    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-    onTestFinished(() => applyOperation.mockRestore())
-    applyOperation.mockImplementation((operation) => {
-      if (operation.type === 'deleteNode') {
-        throw compensationError
-      }
-      const result = originalApplyOperation(operation)
-      if (operation.type === 'createNode') {
-        throw registrationError
-      }
-      return result
-    })
-
-    let thrown: unknown
-    try {
-      graph.add(node)
-    } catch (error) {
-      thrown = error
-    }
-
-    expect(thrown).toBe(registrationError)
-    expect(thrown).toMatchObject({
-      cause: expect.objectContaining({
-        errors: [registrationCause, compensationError]
-      })
-    })
-    expect(node.id).toBe(originalId)
-    expect(node.graph).toBeNull()
-    expect(graph.nodes).not.toContain(node)
-    expect(graph.state.lastNodeId).toBe(originalLastNodeId)
-
-    applyOperation.mockRestore()
-    expect(graph.add(node)).toBe(node)
-    expect(graph.nodes).toEqual([node])
-  })
-
-  test('logs compensation failures when registration throws a non-Error', () => {
-    const graph = new LGraph()
-    const group = new LGraphGroup('group', 814)
-    const primaryError: unknown = undefined
-    const compensationError = new Error('compensation failed')
-    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
-    const applyOperation = vi
-      .spyOn(layoutStore, 'applyOperation')
-      .mockImplementation((operation) => {
-        if (operation.type === 'deleteGroup') throw compensationError
-        const result = originalApplyOperation(operation)
-        if (operation.type === 'createGroup') throw primaryError
-        return result
-      })
-    onTestFinished(() => applyOperation.mockRestore())
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    onTestFinished(() => consoleError.mockRestore())
-
-    let thrown = false
-    try {
-      attachGroupLayout(graph, group)
-    } catch {
-      thrown = true
-    }
-
-    expect(thrown).toBe(true)
-    expect(consoleError).toHaveBeenCalledWith(
-      'Layout registration and compensation failed',
-      { compensationError, primaryError }
-    )
-  })
-
-  test('reconciles an empty-token registration after cleanup fails', () => {
-    const graph = new LGraph()
-    const group = new LGraphGroup('group', 816)
-    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
-    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-    onTestFinished(() => applyOperation.mockRestore())
-    applyOperation.mockImplementation((operation) => {
-      if (operation.type === 'deleteGroup') throw new Error('cleanup failed')
-      const result = originalApplyOperation(operation)
-      if (operation.type === 'createGroup') throw new Error('create failed')
-      return result
-    })
-
-    expect(() => registerGroupLayout(graph, group, '')).toThrow('create failed')
-    expect(() => unregisterGroupLayout(graph, group, '')).toThrow(
-      'cleanup failed'
-    )
-
-    applyOperation.mockRestore()
-    expect(registerGroupLayout(graph, group, 'retry')).toBe('applied')
-    expect(layoutStore.getRegistrationId('group', graph.id, group.id)).toBe(
-      'retry'
-    )
-  })
-
-  test('keeps a pending orphan after a foreign explicit unregister', () => {
-    const graph = new LGraph()
-    const group = new LGraphGroup('group', 818)
-    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
-    const applyOperation = vi
-      .spyOn(layoutStore, 'applyOperation')
-      .mockImplementation((operation) => {
-        const result = originalApplyOperation(operation)
-        if (operation.type === 'createGroup') throw new Error('create failed')
-        return result
-      })
-    onTestFinished(() => applyOperation.mockRestore())
-
-    expect(() => registerGroupLayout(graph, group, 'A')).toThrow(
-      'create failed'
-    )
-    expect(unregisterGroupLayout(graph, group, 'B')).toBe('no-op')
-
-    applyOperation.mockRestore()
-    expect(registerGroupLayout(graph, group, 'retry')).toBe('applied')
-    expect(layoutStore.getRegistrationId('group', graph.id, group.id)).toBe(
-      'retry'
-    )
-  })
-
   test('aborts reentrant configure when layout teardown is rejected', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')
@@ -732,32 +556,6 @@ describe('group layout in layoutStore', () => {
       })
 
     expect(() => graph.add(group)).toThrow('layout failed')
-    applyOperation.mockRestore()
-
-    expect(group.id).toBe(originalId)
-    expect(group.graph).toBeUndefined()
-    expect(graph.groups).toHaveLength(0)
-    expect(graph.state.lastGroupId).toBe(originalLastGroupId)
-    expect(layoutStore.getGroupLayout(graph.id, toGroupId(1))).toBeNull()
-  })
-
-  test('rolls back group add when layout registration throws after applying', () => {
-    const graph = new LGraph()
-    const group = new LGraphGroup('group')
-    const originalId = group.id
-    const originalLastGroupId = graph.state.lastGroupId
-    const originalApplyOperation = layoutStore.applyOperation.bind(layoutStore)
-    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-    applyOperation.mockImplementation((operation) => {
-      const result = originalApplyOperation(operation)
-      if (operation.type === 'createGroup') {
-        const cause = new Error('notify failed')
-        throw new LayoutOperationError(cause.message, true, { cause })
-      }
-      return result
-    })
-
-    expect(() => graph.add(group)).toThrow('notify failed')
     applyOperation.mockRestore()
 
     expect(group.id).toBe(originalId)
