@@ -138,6 +138,32 @@ describe('pack-declared widget types', () => {
     expect(built?.minHeight).toBe(22)
   })
 
+  it('gives each widget its own copy of an object default', () => {
+    // A default is declared once for the type. Handing out the same reference
+    // meant a curve editor that edits its points in place moved every other
+    // node's curve at the same time.
+    defineWidgetType('MTB_CURVE', {
+      render: () => {},
+      defaultValue: { 0: { x: 0, y: 0 } }
+    })
+
+    const a = build('MTB_CURVE', ['MTB_CURVE', {}])
+    const b = build('MTB_CURVE', ['MTB_CURVE', {}])
+    ;(a!.widget.value as Record<string, { x: number }>)[0].x = 99
+
+    expect((b!.widget.value as Record<string, { x: number }>)[0].x).toBe(0)
+  })
+
+  it('copies an object default declared on the node too', () => {
+    defineWidgetType('MTB_CURVE', { render: () => {} })
+    const declared = { 0: { x: 1, y: 1 } }
+
+    const a = build('MTB_CURVE', ['MTB_CURVE', { default: declared }])
+    ;(a!.widget.value as Record<string, { x: number }>)[0].x = 42
+
+    expect(declared[0].x).toBe(1)
+  })
+
   it('runs the renderer teardown when the widget goes', () => {
     const teardown = vi.fn()
     defineWidgetType('MTB_COLOR', { render: () => teardown })
