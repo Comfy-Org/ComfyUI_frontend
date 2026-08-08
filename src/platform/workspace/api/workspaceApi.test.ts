@@ -378,6 +378,25 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('forwards abort signals for billing refreshes', async () => {
+      const controller = new AbortController()
+      mockAxiosInstance.get.mockResolvedValue({ data: {} })
+
+      await workspaceApi.getBillingStatus(controller.signal)
+      await workspaceApi.getBillingBalance(controller.signal)
+
+      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
+        1,
+        '/api/billing/status',
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
+        2,
+        '/api/billing/balance',
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+    })
+
     it('getBillingPlans() sends GET /billing/plans', async () => {
       const data = { plans: [] }
       mockAxiosInstance.get.mockResolvedValue({ data })
@@ -551,18 +570,20 @@ describe('workspaceApi', () => {
   })
 
   describe('payment', () => {
-    it('getPaymentPortalUrl() sends POST with return_url', async () => {
+    it('getPaymentPortalUrl() sends POST with return_url and abort signal', async () => {
       const data = { url: 'https://stripe.com/portal' }
       mockAxiosInstance.post.mockResolvedValue({ data })
+      const controller = new AbortController()
 
       const result = await workspaceApi.getPaymentPortalUrl(
-        'https://app.com/settings'
+        'https://app.com/settings',
+        controller.signal
       )
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/payment-portal',
         { return_url: 'https://app.com/settings' },
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, signal: controller.signal }
       )
       expect(result).toEqual(data)
     })

@@ -54,9 +54,26 @@ describe('deriveBillingBanner', () => {
     )
   })
 
-  it('hides payment recovery states when their flag is off', () => {
+  it('hides recovery banners when payment recovery is off', () => {
     expect(derive({ ...paymentFailed, v1PaymentRecovery: false })).toBeNull()
     expect(derive({ ...paused, v1PaymentRecovery: false })).toBeNull()
+  })
+
+  it('shows recovery banners when only the recovery flag is on', () => {
+    expect(
+      derive({
+        ...paymentFailed,
+        billingControlEnabled: false,
+        v1PaymentRecovery: true
+      })
+    ).toBe('paymentFailed')
+    expect(
+      derive({
+        ...paused,
+        billingControlEnabled: false,
+        v1PaymentRecovery: true
+      })
+    ).toBe('paused')
   })
 
   it('does not move existing notices onto the payment recovery flag', () => {

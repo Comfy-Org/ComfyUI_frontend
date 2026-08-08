@@ -487,7 +487,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(mockManageSubscription).toHaveBeenCalledWith()
 
     await user.click(screen.getByRole('button', { name: 'Change plan' }))
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
