@@ -13,7 +13,8 @@ import {
 const zIntInputSpec = zIntInputOptions.extend({
   type: z.literal('INT'),
   name: z.string(),
-  isOptional: z.boolean().optional()
+  isOptional: z.boolean().optional(),
+  component: z.enum(['SetRandomInt']).optional()
 })
 
 const zFloatInputSpec = zFloatInputOptions.extend({
