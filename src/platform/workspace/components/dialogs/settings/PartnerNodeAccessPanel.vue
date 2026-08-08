@@ -14,34 +14,59 @@
         <ToggleSwitch
           :model-value="!isRestricted"
           readonly
-          :disabled="!canEditPolicy || isSaving || !isPolicyLoaded"
+          :disabled="!isGated && (!canEditPolicy || isSaving)"
           :aria-label="$t('workspacePanel.partnerNodes.accessMode')"
-          class="transition-transform active:scale-90"
+          :class="
+            cn('transition-transform active:scale-90', isGated && 'opacity-60')
+          "
         />
       </span>
       <div class="min-w-0 flex-1">
+        <div class="flex h-6 items-center gap-2">
+          <p
+            class="m-0 text-sm leading-[normal] font-normal text-base-foreground"
+          >
+            {{ $t('workspacePanel.partnerNodes.allowAll') }}
+          </p>
+          <span
+            v-if="isGated"
+            class="rounded-full bg-secondary-background px-2 py-0.5 text-xs text-base-foreground"
+          >
+            {{ $t('workspacePanel.partnerNodes.enterpriseBadge') }}
+          </span>
+        </div>
         <p
-          class="m-0 flex h-6 items-center text-sm leading-[normal] font-normal text-base-foreground"
+          v-if="isGated"
+          class="m-0 mt-1 text-sm leading-[normal] font-normal text-muted-foreground"
         >
-          {{ $t('workspacePanel.partnerNodes.allowAll') }}
+          {{ $t('workspacePanel.partnerNodes.gatedHint') }}
         </p>
         <p
-          v-if="isPolicyLoaded && !isRestricted"
-          class="m-0 mt-1 min-h-9 text-sm leading-[normal] font-normal text-muted-foreground"
+          v-else-if="isPolicyLoaded && !isRestricted"
+          class="m-0 mt-1 text-sm leading-[normal] font-normal text-muted-foreground"
         >
           {{ $t('workspacePanel.partnerNodes.allowAllOnHint') }}
         </p>
         <p
           v-else-if="isPolicyLoaded"
-          class="m-0 mt-1 flex min-h-9 items-start gap-2 text-sm leading-[normal] font-normal text-muted-foreground"
+          class="m-0 mt-1 flex items-center gap-2 text-sm/4 font-normal text-muted-foreground"
         >
           <i
-            class="mt-0.5 icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
+            class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
             aria-hidden="true"
           />
           <span>{{ $t('workspacePanel.partnerNodes.allowAllOffHint') }}</span>
         </p>
       </div>
+      <Button
+        v-if="isGated"
+        variant="inverted"
+        size="lg"
+        class="shrink-0 self-center"
+        @click="openEnterprisePage"
+      >
+        {{ $t('workspacePanel.partnerNodes.contactUs') }}
+      </Button>
     </div>
 
     <p v-if="isReadOnly" class="text-sm text-muted-foreground">
@@ -71,7 +96,7 @@
     </div>
 
     <div
-      v-else-if="status === 'ineligible' || status === 'inactive'"
+      v-else-if="(status === 'ineligible' && !isGated) || status === 'inactive'"
       role="status"
       class="flex min-h-48 items-center justify-center rounded-2xl border border-interface-stroke p-6 text-center"
     >
@@ -361,6 +386,7 @@ const { workspaceRole } = useWorkspaceUI()
 const { t } = useI18n()
 
 const searchQuery = ref('')
+const isSearching = computed(() => searchQuery.value.trim().length > 0)
 const expandedProviderIds = ref(new Set<string>())
 const saveError = ref(false)
 type SortDirection = 'ascending' | 'descending'
@@ -372,6 +398,9 @@ const sortDirection = ref<SortDirection>('ascending')
 const isRestricted = computed(() => policy.value?.enforcementEnabled === true)
 const isPolicyLoaded = computed(
   () => status.value === 'configured' || status.value === 'unconfigured'
+)
+const isGated = computed(
+  () => status.value === 'ineligible' && providers.value.length > 0
 )
 const isReadOnly = computed(() => workspaceRole.value !== 'owner')
 const canEditPolicy = computed(() => !isReadOnly.value && isPolicyLoaded.value)
@@ -425,8 +454,6 @@ const filteredProviders = computed(() => {
     return nodes.length > 0 ? [{ ...provider, nodes }] : []
   })
 })
-
-const isSearching = computed(() => searchQuery.value.trim().length > 0)
 
 const bulkMenuEntries = computed<MenuItem[]>(() => {
   const rows = filteredProviders.value
@@ -496,10 +523,7 @@ function toggleExpanded(providerId: string) {
 }
 
 function isProviderExpanded(providerId: string) {
-  return (
-    searchQuery.value.trim().length > 0 ||
-    expandedProviderIds.value.has(providerId)
-  )
+  return isSearching.value || expandedProviderIds.value.has(providerId)
 }
 
 async function performSave(action: () => Promise<void>) {
@@ -559,10 +583,39 @@ function confirmDisableAll() {
 }
 
 function requestAccessModeToggle() {
-  if (!canEditPolicy.value || isSaving.value || !isPolicyLoaded.value) return
+  if (isGated.value) {
+    confirmEnterpriseUpsell()
+    return
+  }
+  if (!canEditPolicy.value || isSaving.value) return
 
   const enabled = !isRestricted.value
   confirmAccessModeChange(enabled, () => setEnforcementEnabled(enabled))
+}
+
+function openEnterprisePage() {
+  window.open('https://www.comfy.org/enterprise', '_blank')
+}
+
+function confirmEnterpriseUpsell() {
+  const dialog = showConfirmDialog({
+    headerProps: {
+      title: t('workspacePanel.partnerNodes.gatedDialogTitle')
+    },
+    props: {
+      promptText: t('workspacePanel.partnerNodes.gatedDialogMessage')
+    },
+    footerProps: {
+      cancelText: t('workspacePanel.partnerNodes.notNow'),
+      confirmText: t('workspacePanel.partnerNodes.contactUs'),
+      confirmVariant: 'inverted',
+      onCancel: () => dialogStore.closeDialog(dialog),
+      onConfirm: () => {
+        openEnterprisePage()
+        dialogStore.closeDialog(dialog)
+      }
+    }
+  })
 }
 
 function confirmAccessModeChange(

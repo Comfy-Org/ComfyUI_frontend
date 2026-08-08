@@ -14,6 +14,7 @@ import {
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -58,6 +59,7 @@ export function useSettingUI(
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { workspaceRole } = useWorkspaceUI()
+  const governanceStore = usePartnerNodeGovernanceStore()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -411,7 +413,11 @@ export function useSettingUI(
               ? CATEGORY_ICONS.PlanCredits
               : (CATEGORY_ICONS[child.key] ??
                 CATEGORY_ICONS[child.label] ??
-                'icon-[lucide--plug]')
+                'icon-[lucide--plug]'),
+          ...(child.key === 'workspace-allowlist' &&
+          governanceStore.status === 'ineligible'
+            ? { suffixIcon: 'icon-[lucide--crown]' }
+            : {})
         }))
       }))
   )

@@ -83,39 +83,48 @@ export const usePartnerNodeGovernanceStore = defineStore(
       status.value = 'loading'
       error.value = null
 
-      try {
-        const [nextProviders, nextPolicy] = await Promise.all([
-          getPartnerProviders(),
-          getPartnerNodePolicy()
-        ])
-        if (
-          version !== requestVersion ||
-          governedWorkspaceId.value !== workspaceId
-        ) {
-          return
-        }
-        providers.value = nextProviders
+      const [providersResult, policyResult] = await Promise.allSettled([
+        getPartnerProviders(),
+        getPartnerNodePolicy()
+      ])
+      if (
+        version !== requestVersion ||
+        governedWorkspaceId.value !== workspaceId
+      ) {
+        return
+      }
+
+      const loadError =
+        policyResult.status === 'rejected'
+          ? policyResult.reason
+          : providersResult.status === 'rejected'
+            ? providersResult.reason
+            : null
+      if (loadError === null) {
+        const nextPolicy =
+          policyResult.status === 'fulfilled' ? policyResult.value : null
+        providers.value =
+          providersResult.status === 'fulfilled' ? providersResult.value : []
         policy.value = nextPolicy
         status.value = nextPolicy ? 'configured' : 'unconfigured'
-      } catch (loadError) {
-        if (
-          version !== requestVersion ||
-          governedWorkspaceId.value !== workspaceId
-        ) {
-          return
-        }
-        providers.value = []
-        policy.value = null
-        error.value =
-          loadError instanceof Error
-            ? loadError
-            : new Error('Failed to load partner provider policy')
-        status.value =
-          loadError instanceof PartnerNodePolicyApiError &&
-          loadError.status === 403
-            ? 'ineligible'
-            : 'error'
+        return
       }
+
+      // An ineligible workspace may still be allowed to read the catalog —
+      // keep it so the panel can render the gated view.
+      const ineligible =
+        loadError instanceof PartnerNodePolicyApiError &&
+        loadError.status === 403
+      providers.value =
+        ineligible && providersResult.status === 'fulfilled'
+          ? providersResult.value
+          : []
+      policy.value = null
+      error.value =
+        loadError instanceof Error
+          ? loadError
+          : new Error('Failed to load partner provider policy')
+      status.value = ineligible ? 'ineligible' : 'error'
     }
 
     async function savePolicy(nextPolicy: PartnerNodePolicy): Promise<void> {

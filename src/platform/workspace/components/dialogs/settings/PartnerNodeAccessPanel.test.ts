@@ -409,7 +409,7 @@ describe('PartnerNodeAccessPanel', () => {
 
     expect(
       screen.getByText(
-        'Users can run only the partner models allowed below. Partner models published later stay blocked until a workspace owner enables them.'
+        'Users can only run the models allowed below. New models are disabled by default.'
       )
     ).toBeTruthy()
   })
@@ -674,6 +674,7 @@ describe('PartnerNodeAccessPanel', () => {
     'shows an unavailable state while policy status is %s',
     (status) => {
       mockStatus.value = status
+      mockProviders.value = []
       renderComponent()
 
       expect(
@@ -683,6 +684,52 @@ describe('PartnerNodeAccessPanel', () => {
       ).toBeInTheDocument()
     }
   )
+
+  it('offers the enterprise dialog when the gated toggle is clicked', async () => {
+    const user = userEvent.setup()
+    mockStatus.value = 'ineligible'
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    renderComponent()
+
+    await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
+
+    expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    expect(options.headerProps.title).toBe(
+      'Restricting partner models is an Enterprise feature'
+    )
+    expect(options.footerProps.cancelText).toBe('Not now')
+    expect(options.footerProps.confirmText).toBe('Contact us')
+    await options.footerProps.onConfirm()
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://www.comfy.org/enterprise',
+      '_blank'
+    )
+    expect(mockCloseDialog).toHaveBeenCalled()
+    openSpy.mockRestore()
+  })
+
+  it('shows the enterprise upsell when the catalog loads but policy access is forbidden', () => {
+    mockStatus.value = 'ineligible'
+    renderComponent()
+
+    expect(screen.getByText('Enterprise')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Restricting partner models is an Enterprise plan feature.'
+      )
+    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Contact us' })).toBeEnabled()
+    expect(screen.getByText('2 models')).toBeTruthy()
+
+    const toggle = screen.getByRole('switch', { name: allowAllSwitchName })
+    expect(toggle).not.toBeDisabled()
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+    expect(
+      screen.queryByRole('button', { name: 'Disable all' })
+    ).not.toBeInTheDocument()
+  })
 
   it('confirms expanded access when a restricted provider is disabled', async () => {
     const user = userEvent.setup()

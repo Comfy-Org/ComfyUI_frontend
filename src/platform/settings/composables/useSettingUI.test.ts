@@ -22,7 +22,14 @@ const env = vi.hoisted(() => {
     userSecretsEnabled: false,
     isActiveSubscription: false,
     billingType: 'legacy' as 'legacy' | 'workspace',
-    workspaceRole: 'owner' as 'owner' | 'member'
+    workspaceRole: 'owner' as 'owner' | 'member',
+    partnerNodeGovernanceStatus: 'inactive' as
+      | 'inactive'
+      | 'loading'
+      | 'unconfigured'
+      | 'configured'
+      | 'ineligible'
+      | 'error'
   }
   const fakeRef = <K extends keyof typeof state>(key: K) => ({
     get value() {
@@ -91,6 +98,14 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
+  usePartnerNodeGovernanceStore: () => ({
+    get status() {
+      return env.state.partnerNodeGovernanceStatus
+    }
+  })
+}))
+
 interface MockSettingParams {
   id: string
   name: string
@@ -135,7 +150,8 @@ describe('useSettingUI', () => {
       userSecretsEnabled: false,
       isActiveSubscription: false,
       billingType: 'legacy',
-      workspaceRole: 'owner'
+      workspaceRole: 'owner',
+      partnerNodeGovernanceStatus: 'inactive'
     })
 
     vi.mocked(useSettingStore).mockReturnValue({

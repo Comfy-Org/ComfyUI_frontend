@@ -126,6 +126,18 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.providers).toEqual([])
   })
 
+  it('keeps the catalog when only policy access is forbidden', async () => {
+    mockGetPartnerNodePolicy.mockRejectedValue(
+      new PartnerNodePolicyApiError(403, 'Forbidden')
+    )
+
+    store = await createLoadedStore()
+
+    expect(store.status).toBe('ineligible')
+    expect(store.providers.length).toBeGreaterThan(0)
+    expect(store.policy).toBeNull()
+  })
+
   it('keeps the server-normalized policy after a domain update', async () => {
     const requestedPolicy: PartnerNodePolicy = {
       enforcementEnabled: true,
