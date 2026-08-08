@@ -34,12 +34,6 @@ const media = {
     src: 'https://media.comfy.org/website/seedance-2.5/grass.webm',
     posterSrc: 'https://media.comfy.org/website/seedance-2.5/grass-poster.webp'
   },
-  worldcup: {
-    kind: 'video',
-    src: 'https://media.comfy.org/website/seedance-2.5/worldcup.webm',
-    posterSrc:
-      'https://media.comfy.org/website/seedance-2.5/worldcup-poster.webp'
-  },
   city: {
     kind: 'video',
     src: 'https://media.comfy.org/website/seedance-2.5/city.webm',
@@ -73,8 +67,6 @@ const sharedCardIdentity = {
 const BALLOONS_PROMPT = `Animals crossing a rainy city street at dusk, holding up floating gold foil balloons that spell SEEDANCE 2.5. A bear, a giraffe, and a fox walk the wet crosswalk together, each gripping balloon strings. After the letters, a gold foil balloon shaped like the Comfy logo drifts into frame. Intercut between a POV through the car windshield with wipers and a shot from outside looking into the car, where a sloth sits at the steering wheel. Umbrellas, traffic lights, rain reflections, cinematic 16:9, natural handheld motion.`
 
 const GRASS_PROMPT = `Start in a dark surreal outdoor office corridor; lights turn on one by one, gradually revealing that the space is enormous. Cut to a close action sequence following an older man pushing a red lawnmower across a lush green lawn that covers the courtyard floor. Camera tracks him tightly from behind and beside. Then the camera rises up into a high-angle overhead shot of the courtyard: mowed into the grass in dry straw-colored lettering, SEEDANCE on top, 2.5 centered below it, and the Comfy logo underneath with clear space between 2.5 and the logo, 16:9.`
-
-const WORLDCUP_PROMPT = `Handheld shot inside a packed Brazilian soccer stadium at night. The camera finds a fan in a yellow jersey holding up a handmade cardboard sign with black marker handwriting that reads SEEDANCE 2.5 on top and 4K below. The camera pans across the cheering crowd and lands on another fan holding a second cardboard sign with the Comfy logo drawn on it in marker. Brazilian flags waving, stadium lights, shallow depth of field, energetic documentary feel, 16:9`
 
 const CITY_PROMPT = `Cool blue dusk lighting at the start, the same four people sitting and standing outside a café on a city sidewalk, warm lit windows behind them, chatting and laughing, drinking coffee, holding their same general positions but full of lively, animated physical movement — leaning in and back, gesturing broadly with their hands, shifting in their seats, turning to look at each other, genuinely active and expressive rather than mostly still. Partway through the shot, the scene cuts hard and instantly to a new setting with a fun, playful, almost cheeky snap — no blend, no dissolve, just a sudden, bouncy pop-cut, like a magic trick — the same four people now in warm, golden late-afternoon sunlight, seated in the same relative positions at a charming French bistro with a green awning, colorful flower pots, warm string lights, and cobblestone underfoot. No additional or new people appear at any point — only the original four throughout. The instant the cut happens, all four people react with visible confusion — pausing mid-gesture, glancing around at their unfamiliar new surroundings, exchanging puzzled looks with each other, one or two double-taking or squinting at the sudden change in light, before their conversation slowly resumes. Ambient café chatter and city sounds abruptly cut and restart at the pop-cut moment, a beat of surprised murmurs and puzzled “huh?” reactions, followed by a bright, playful whoosh-pop sound and a cheerful little musical sting marking the fun, sudden transition.
 
@@ -125,15 +117,6 @@ const clips = [
     description: {
       en: 'A meadow running down the middle of an empty office floor.',
       'zh-CN': '一片草地从空荡的办公楼中间蔓延开来。'
-    }
-  },
-  {
-    id: 'worldcup',
-    media: media.worldcup,
-    prompt: { en: WORLDCUP_PROMPT, 'zh-CN': WORLDCUP_PROMPT },
-    description: {
-      en: 'A packed stadium crowd, shot handheld from the stands.',
-      'zh-CN': '看台上人声鼎沸的球迷，手持镜头拍摄。'
     }
   },
   {
@@ -240,9 +223,8 @@ export const seedancePage: ModelLaunchPage = {
           'zh-CN': 'Seedance 2.5 相比 Seedance 2.0 有哪些新变化？'
         },
         answer: {
-          en: 'Longer native clips, higher resolution, and support for many more reference inputs than 2.0.',
-          'zh-CN':
-            '更长的原生片段、更高的分辨率，以及比 2.0 多得多的参考输入支持。'
+          en: 'Longer native clips and support for many more reference inputs than 2.0.',
+          'zh-CN': '更长的原生片段，以及比 2.0 多得多的参考输入支持。'
         }
       },
       {
@@ -267,17 +249,6 @@ export const seedancePage: ModelLaunchPage = {
           en: 'Up to 30 seconds natively, and you can chain shots on the canvas when you need a longer cut.',
           'zh-CN':
             '最长可原生生成 30 秒。需要更长的成片时，你可以在画布上串联多个镜头。'
-        }
-      },
-      {
-        id: 'generate-4k',
-        question: {
-          en: 'Can Seedance 2.5 generate 4K video?',
-          'zh-CN': 'Seedance 2.5 能生成 4K 视频吗？'
-        },
-        answer: {
-          en: 'Yes. Seedance 2.5 renders up to 4K.',
-          'zh-CN': '可以。Seedance 2.5 最高支持 4K 渲染。'
         }
       },
       {
@@ -347,8 +318,8 @@ export const seedancePage: ModelLaunchPage = {
           'zh-CN': '切换到 Seedance 2.5'
         },
         description: {
-          en: 'Final render, up to 4K',
-          'zh-CN': '最终渲染，最高 4K'
+          en: 'Final render, native audio',
+          'zh-CN': '最终渲染，原生音频'
         }
       }
     ],
