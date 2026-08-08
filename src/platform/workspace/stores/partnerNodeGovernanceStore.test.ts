@@ -413,7 +413,7 @@ describe('partnerNodeGovernanceStore', () => {
     })
   })
 
-  it('enables every provider when enforcement is disabled', async () => {
+  it('remembers provider states when enforcement is disabled', async () => {
     mockGetPartnerNodePolicy.mockResolvedValue({
       enforcementEnabled: true,
       providers: [
@@ -431,7 +431,7 @@ describe('partnerNodeGovernanceStore', () => {
     expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
       enforcementEnabled: false,
       providers: [
-        { providerId: 'openai', enabled: true },
+        { providerId: 'openai', enabled: false },
         { providerId: 'route-only', enabled: true }
       ]
     })
