@@ -3368,7 +3368,7 @@ export type CancelSubscriptionResponse = {
    */
   billing_op_id: string
   /**
-   * The date when the subscription will end (end of current billing period)
+   * The terminal cancellation time for a delinquent Stripe subscription, otherwise the end of the current billing period
    */
   cancel_at: string
 }
@@ -6174,7 +6174,7 @@ export type CancelSubscriptionData = {
 
 export type CancelSubscriptionErrors = {
   /**
-   * Invalid request (e.g., no active subscription)
+   * Invalid request (for example, no active subscription). Ambiguous legacy Stripe state uses code BILLING_RECONCILIATION_REQUIRED.
    */
   400: ErrorResponse
   /**

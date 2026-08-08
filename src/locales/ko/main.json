@@ -255,6 +255,8 @@
       "backToGithubLogin": "대신 Github로 가입하기",
       "backToLogin": "로그인으로 돌아가기",
       "backToSocialLogin": "Google 또는 Github로 가입하기",
+      "cloudNewUser": "Comfy를 처음 사용하시나요?",
+      "cloudSignUp": "여기에서 가입하세요",
       "confirmPasswordLabel": "비밀번호 확인",
       "confirmPasswordPlaceholder": "동일한 비밀번호를 다시 입력하세요",
       "didntReceiveEmail": "이메일을 받지 못하셨나요? 다음으로 문의하세요:",
@@ -263,6 +265,7 @@
       "failed": "로그인 실패",
       "forgotPassword": "비밀번호를 잊으셨나요?",
       "forgotPasswordError": "비밀번호 재설정 이메일 전송에 실패했습니다",
+      "freeRunsSuffix": "{count}회 무료 실행을 받으세요. | {count}회 무료 실행을 받으세요.",
       "freeTierBadge": "무료 등급 가능",
       "freeTierDescription": "Google로 가입하면 매월 {credits} 무료 크레딧을 받을 수 있습니다. 카드 필요 없음.",
       "freeTierDescriptionGeneric": "Google로 가입하면 매월 무료 크레딧을 받을 수 있습니다. 카드 필요 없음.",
@@ -344,11 +347,13 @@
   "billingOperation": {
     "cancelFailed": "구독 취소에 실패했습니다",
     "cancelTimeout": "구독 취소가 시간 초과되었습니다",
+    "subscriptionActionRequired": "작업 공간 설정을 완료하려면 결제를 인증하세요",
     "subscriptionFailed": "구독 업데이트에 실패했습니다",
     "subscriptionFailedDetail": "구독을 업데이트할 수 없습니다. 다시 시도해 주세요.",
     "subscriptionProcessing": "결제 처리 중 — 워크스페이스를 설정하는 중입니다...",
     "subscriptionSuccess": "구독이 성공적으로 업데이트되었습니다",
     "subscriptionTimeout": "구독 확인 시간이 초과되었습니다",
+    "topupActionRequired": "크레딧을 추가하려면 결제를 인증하세요",
     "topupFailed": "충전 실패",
     "topupProcessing": "결제 처리 중 — 크레딧을 추가하는 중입니다...",
     "topupSuccess": "크레딧이 성공적으로 추가되었습니다",
@@ -445,8 +450,12 @@
   "cloudForgotPassword_sendResetLink": "재설정 링크 보내기",
   "cloudForgotPassword_title": "비밀번호 찾기",
   "cloudHero": {
+    "carouselLabel": "추천 모델",
+    "carouselRoleDescription": "캐러셀",
     "nextSlide": "다음 슬라이드",
-    "previousSlide": "이전 슬라이드"
+    "previousSlide": "이전 슬라이드",
+    "slideRoleDescription": "슬라이드",
+    "slideStatus": "{title}, 슬라이드 {current}/{total}"
   },
   "cloudNotification": {
     "continueLocally": "로컬에서 계속하기",
@@ -690,6 +699,13 @@
     "theme": "테마",
     "toggleBottomPanel": "하단 패널 전환"
   },
+  "compositor": {
+    "downloadPsd": "PSD 다운로드",
+    "empty": "워크플로우를 실행하여 합성 이미지를 생성하세요",
+    "open": "컴포지터 열기",
+    "runWorkflowFirst": "입력 이미지를 불러오려면 워크플로우를 먼저 실행하세요",
+    "saveFailed": "합성 이미지 저장에 실패했습니다"
+  },
   "contextMenu": {
     "Add Group": "그룹 추가",
     "Add Group For Selected Nodes": "선택한 노드 그룹 추가",
@@ -847,7 +863,6 @@
     "BOOLEAN": "논리값",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "BOUNDING_BOXES",
-    "CAMERA_CONTROL": "카메라 제어",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION 출력",
@@ -857,6 +872,7 @@
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
+    "COMPOSITOR": "COMPOSITOR",
     "CONDITIONING": "조건",
     "CONTROL_NET": "컨트롤넷",
     "CURVE": "곡선",
@@ -896,6 +912,7 @@
     "LATENT": "잠재 데이터",
     "LATENT_OPERATION": "잠재 연산",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
+    "LAYERS": "LAYERS",
     "LOAD3D_CAMERA": "3D 카메라 불러오기",
     "LOAD3D_MODEL_INFO": "3D 모델 정보 불러오기",
     "LOAD_3D": "3D 로드",
@@ -1714,6 +1731,7 @@
     "off": "끄기",
     "ok": "확인",
     "on": "켜기",
+    "openLayerEditor": "레이어 편집기 열기",
     "openManager": "관리자 열기",
     "openNewIssue": "새 문제 열기",
     "or": "또는",
@@ -1775,6 +1793,7 @@
     "resizeFromTopLeft": "왼쪽 위 모서리에서 크기 조정",
     "resizeFromTopRight": "오른쪽 위 모서리에서 크기 조정",
     "restart": "재시작",
+    "restore": "복원",
     "restoreDialog": "대화 상자 복원",
     "resultsCount": "{count} 개의 결과를 찾았습니다",
     "running": "실행 중",
@@ -1945,6 +1964,7 @@
     "openDevTools": "개발자 도구 열기",
     "recentReleases": "최신 릴리스",
     "reinstall": "재설치",
+    "systemStatus": "시스템 상태",
     "updateAvailable": "업데이트",
     "updateComfyUI": "ComfyUI 업데이트",
     "updateComfyUIFailed": "ComfyUI 업데이트에 실패했습니다. 다시 시도해 주세요.",
@@ -2099,6 +2119,71 @@
   },
   "issueReport": {
     "helpFix": "이 문제 해결에 도움을 주세요"
+  },
+  "layerEditor": {
+    "alignBottom": "아래쪽 정렬",
+    "alignCenterHorizontal": "가로 중앙 정렬",
+    "alignCenterVertical": "세로 중앙 정렬",
+    "alignLeft": "왼쪽 정렬",
+    "alignRight": "오른쪽 정렬",
+    "alignTop": "위쪽 정렬",
+    "alignment": "정렬",
+    "background": "배경",
+    "backgroundColor": "배경 색상",
+    "blend": {
+      "color": "색상",
+      "colorBurn": "컬러 번",
+      "colorDodge": "컬러 닷지",
+      "darken": "어둡게",
+      "difference": "차이",
+      "divide": "나누기",
+      "exclusion": "제외",
+      "grainExtract": "그레인 추출",
+      "grainMerge": "그레인 병합",
+      "hardLight": "하드 라이트",
+      "hardMix": "하드 믹스",
+      "hue": "색조",
+      "lighten": "밝게",
+      "linearBurn": "리니어 번",
+      "linearDodge": "리니어 닷지",
+      "linearLight": "리니어 라이트",
+      "luminosity": "명도",
+      "multiply": "곱하기",
+      "normal": "일반",
+      "overlay": "오버레이",
+      "pinLight": "핀 라이트",
+      "saturation": "채도",
+      "screen": "스크린",
+      "softLight": "소프트 라이트",
+      "subtract": "빼기",
+      "vividLight": "비비드 라이트"
+    },
+    "blendMode": "혼합 모드",
+    "dimensions": "크기",
+    "exportPsd": "PSD 내보내기",
+    "exportPsdFailed": "PSD 내보내기에 실패했습니다",
+    "fill": "채우기",
+    "fitView": "화면에 맞추기",
+    "flip": "뒤집기",
+    "flipHorizontal": "수평 뒤집기",
+    "flipVertical": "수직 뒤집기",
+    "handTool": "손 도구",
+    "layerN": "레이어 {n}",
+    "layers": "레이어",
+    "layersFailedToLoad": "레이어 1개를 불러오지 못했습니다 | {count}개의 레이어를 불러오지 못했습니다",
+    "loadFailed": "레이어를 불러오지 못했습니다",
+    "moveDown": "레이어 아래로 이동",
+    "moveUp": "레이어 위로 이동",
+    "opacity": "불투명도",
+    "position": "위치",
+    "redo": "다시 실행",
+    "rotation": "회전",
+    "selectTool": "선택",
+    "title": "컴포지터",
+    "toggleVisibility": "가시성 전환",
+    "undo": "실행 취소",
+    "webglUnavailable": "WebGL을 사용할 수 없습니다 - 캔버스를 렌더링할 수 없습니다",
+    "zoom": "확대/축소"
   },
   "linearMode": {
     "appModeToolbar": {
@@ -2708,6 +2793,7 @@
     "Open Custom Nodes Folder": "커스텀 노드 폴더 열기",
     "Open DevTools": "개발자 도구 열기",
     "Open Inputs Folder": "입력 폴더 열기",
+    "Open Layer Editor for Selected Node": "선택한 노드의 레이어 편집기 열기",
     "Open Logs Folder": "로그 폴더 열기",
     "Open Mask Editor for Selected Node": "선택한 노드의 마스크 에디터 열기",
     "Open Models Folder": "모델 폴더 열기",
@@ -3092,6 +3178,74 @@
     },
     "back": "이전",
     "done": "완료",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "지금은 안 할래요",
+        "explore": "템플릿 탐색",
+        "noTour": {
+          "body": "템플릿을 둘러보고 만들고 싶은 것을 선택하세요.",
+          "title": "수백 가지 템플릿이 더 있습니다"
+        },
+        "ran": {
+          "body": "첫 번째 결과를 만들었습니다. 더 다양한 결과를 탐색해보세요.",
+          "title": "수백 번 중 첫 번째였습니다"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "이미지가 장면을 설정합니다. 이 설명이 다음에 일어날 일을 알려줍니다.",
+          "title": "움직임을 설명하세요"
+        },
+        "image-edit": {
+          "body": "이미지는 그대로 유지됩니다. 바꾸고 싶은 점을 설명하세요.",
+          "title": "변경할 내용을 말하세요"
+        },
+        "other": {
+          "body": "이것이 프롬프트입니다. 결과를 바꾸려면 내용을 변경하세요.",
+          "title": "무엇을 만들지 알려주세요"
+        },
+        "t2i": {
+          "body": "이 설명을 바탕으로 이미지가 만들어집니다. 원하는 대로 시도해보세요.",
+          "title": "원하는 것을 설명하세요"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "여기에 아무것도 표시되지 않았습니다. 투어를 닫고 다시 실행해보세요.",
+          "title": "실행이 완료되지 않았습니다"
+        },
+        "generating": {
+          "body": "결과가 준비되는 즉시 여기에 표시됩니다.",
+          "title": "잠시만 기다려주세요"
+        },
+        "image": {
+          "body": "새 이미지가 여기에 표시됩니다 — 다운로드 또는 공유할 수 있습니다.",
+          "title": "결과가 도착했습니다"
+        },
+        "video": {
+          "body": "새 비디오가 여기에 표시됩니다 — 다운로드 또는 공유할 수 있습니다.",
+          "title": "결과가 도착했습니다"
+        }
+      },
+      "run": {
+        "body": "실행 버튼을 눌러 결과 생성을 시작하세요.",
+        "title": "워크플로우 실행"
+      },
+      "upload": {
+        "i2v": {
+          "body": "이 사진이 첫 프레임입니다. 언제든지 원하는 이미지로 교체할 수 있습니다.",
+          "title": "이미지로 시작하기"
+        },
+        "image-edit": {
+          "body": "이 사진을 편집하게 됩니다. 언제든지 원하는 이미지로 교체할 수 있습니다.",
+          "title": "이미지로 시작하기"
+        },
+        "other": {
+          "body": "이 이미지는 워크플로우에 입력됩니다. 언제든지 원하는 이미지로 교체할 수 있습니다.",
+          "title": "이미지로 시작하기"
+        }
+      }
+    },
     "loadError": "이 투어를 표시하는 중에 문제가 발생했습니다",
     "next": "다음",
     "skip": "건너뛰기",
@@ -3995,6 +4149,17 @@
     "partnerNodesCredits": "파트너 노드 크레딧",
     "partnerNodesDescription": "상용/독점 모델 실행용",
     "partnerNodesPricingTable": "파트너 노드 요금표",
+    "paymentRecovery": {
+      "memberCta": "확인",
+      "memberDescription": "워크스페이스 소유자에게 구독 복구를 요청하세요.",
+      "memberRunLabel": "실행",
+      "memberRunTooltip": "워크스페이스 소유자에게 이 구독 복구를 요청하세요",
+      "ownerCta": "결제 정보 업데이트",
+      "ownerDescription": "결제 수단을 업데이트하여 워크스페이스의 구독을 복구하고 워크플로우를 실행하세요.",
+      "ownerRunLabel": "실행하려면 결제 정보 업데이트",
+      "ownerRunTooltip": "이 구독을 복구하려면 결제 정보를 업데이트하세요",
+      "title": "구독이 일시 중지됨"
+    },
     "perMonth": "USD / 월",
     "personalHeader": "개인 플랜은 개인 사용만을 위한 것입니다. {action}",
     "personalHeaderAction": "팀원을 추가하려면 팀 플랜을 구독하세요.",
@@ -4282,6 +4447,7 @@
     "logoProviderSeparator": " & "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "이 ComfyUI 설치에 핵심 노드가 없어서 워크플로우를 불러올 수 없습니다. 백엔드가 올바르게 시작되었는지 확인하세요.",
     "cannotCreateSubgraph": "서브그래프를 생성할 수 없습니다",
     "couldNotDetermineFileType": "파일 유형을 결정할 수 없습니다",
     "dropFileError": "드롭된 항목을 처리할 수 없습니다: {error}",
@@ -4331,6 +4497,7 @@
     "invalidTemplateData": "노드 템플릿을 불러오지 못했습니다: 잘못된 데이터",
     "legacyMaskEditorDeprecated": "레거시 마스크 에디터는 더 이상 지원되지 않으며 곧 제거될 예정입니다.",
     "migrateToLitegraphReroute": "향후 버전에서는 Reroute 노드가 제거됩니다. LiteGraph 에서 자체 제공하는 경유점으로 변환하려면 클릭하세요.",
+    "missingMediaVerificationFailed": "누락된 미디어를 확인하지 못했습니다. 일부 입력값이 오류 탭에 표시되지 않을 수 있습니다.",
     "missingModelVerificationFailed": "누락된 모델 검증에 실패했습니다. 일부 모델이 오류 탭에 표시되지 않을 수 있습니다.",
     "modelLoadedSuccessfully": "3D 모델이 성공적으로 로드됨",
     "no3dScene": "텍스처를 적용할 3D 장면이 없습니다",
@@ -4514,7 +4681,11 @@
       "notAuthenticated": "워크스페이스에 접근하려면 로그인해야 합니다.",
       "tokenExchangeFailed": "워크스페이스 인증에 실패했습니다: {error}",
       "workspaceNotFound": "워크스페이스를 찾을 수 없습니다."
-    }
+    },
+    "initializationFailed": "워크스페이스를 불러올 수 없습니다",
+    "initializationFailedDetail": "연결 상태를 확인하고 다시 시도하세요.",
+    "initializationFailedSignOutDetail": "계정에서 로그아웃 후 다시 로그인하세요.",
+    "retry": "다시 시도"
   },
   "workspacePanel": {
     "activity": {
@@ -4554,7 +4725,6 @@
       },
       "updatePayment": "결제 업데이트",
       "warning": {
-        "body": "최근 결제가 처리되지 않았습니다. 결제가 업데이트되지 않으면 {date}에 구독이 일시 중지됩니다.",
         "bodyNoDate": "최근 결제가 처리되지 않았습니다. 일시 중지를 피하려면 결제를 업데이트하세요.",
         "title": "결제 거부됨"
       }

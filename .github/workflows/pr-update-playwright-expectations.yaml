@@ -56,7 +56,7 @@ jobs:
           reactions: eyes
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.pr-info.outputs.branch }}
       - name: Setup frontend
@@ -94,11 +94,11 @@ jobs:
         shard: [1, 2, 3, 4, cloud]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.setup.outputs.branch }}
       - name: Download built frontend
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.shard == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
@@ -173,14 +173,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.setup.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
 
       # Download all changed snapshot files from shards
       - name: Download snapshot artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: snapshots-shard-*
           path: ./downloaded-snapshots
