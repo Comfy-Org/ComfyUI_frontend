@@ -9977,7 +9977,12 @@ export type CreateWorkflowUploadUrlResponse =
 export type ListWorkspaceApiKeysData = {
   body?: never
   path?: never
-  query?: never
+  query?: {
+    /**
+     * Include revoked API keys in the response
+     */
+    include_revoked?: boolean
+  }
   url: '/api/workspace/api-keys'
 }
 

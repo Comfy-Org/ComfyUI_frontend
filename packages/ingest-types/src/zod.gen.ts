@@ -4310,7 +4310,11 @@ export const zCreateWorkflowUploadUrlResponse = zUploadGrantResponse
 export const zListWorkspaceApiKeysData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
-  query: z.never().optional()
+  query: z
+    .object({
+      include_revoked: z.boolean().optional().default(false)
+    })
+    .optional()
 })
 
 /**
