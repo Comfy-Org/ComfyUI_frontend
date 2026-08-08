@@ -1091,7 +1091,7 @@ describe('Reroute position lives only in layoutStore', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 20], link)!
     unregisterRerouteLayout(graph, reroute)
-    registerRerouteLayout(graph, reroute, { x: 10, y: 20 }, '')
+    registerRerouteLayout(graph, reroute, { x: 10, y: 20 }, 'owner')
     const canvasAction = vi
       .spyOn(graph, 'canvasAction')
       .mockImplementation(() => {

@@ -211,7 +211,7 @@ describe('group layout in layoutStore', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(809))
     unregisterGroupLayout(graph, group)
-    registerGroupLayout(graph, group, '')
+    registerGroupLayout(graph, group, 'owner')
     const canvasAction = vi
       .spyOn(graph, 'canvasAction')
       .mockImplementation(() => {

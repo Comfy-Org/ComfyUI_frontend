@@ -84,6 +84,18 @@ function makeScopedLayoutKey(
   return toScopedLayoutKey(graphId + ':' + localId)
 }
 
+/** Ownership tokens are non-empty strings; `undefined` marks legacy layouts. */
+function isRegistrationId(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
+function hasInvalidRegistrationId(operation: LayoutOperation): boolean {
+  if ('registrationId' in operation) return operation.registrationId === ''
+  if ('registrationIds' in operation && operation.registrationIds)
+    return Object.values(operation.registrationIds).includes('')
+  return false
+}
+
 /** A UUID never contains `:`, so the first one always ends the graph id. */
 function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
   const separatorIndex = key.indexOf(':')
@@ -804,12 +816,14 @@ class LayoutStore {
    */
   applyOperation(operation: LayoutOperation): LayoutOperationResult {
     if (this.isApplyingOperation) return 'rejected'
+    if (hasInvalidRegistrationId(operation)) return 'rejected'
     return this.applySnapshots([structuredClone(operation)])
   }
 
   applyOperations(operations: LayoutOperation[]): LayoutOperationResult {
     if (this.isApplyingOperation) return 'rejected'
     if (operations.length === 0) return 'no-op'
+    if (operations.some(hasInvalidRegistrationId)) return 'rejected'
 
     const snapshots = operations.map((operation) => structuredClone(operation))
     return this.applySnapshots(snapshots)
@@ -1138,7 +1152,7 @@ class LayoutStore {
   // Operation handlers
   private getNodeRegistrationId(node: NodeLayoutMap): string | undefined {
     const registrationId = node.get('registrationId')
-    return typeof registrationId === 'string' ? registrationId : undefined
+    return isRegistrationId(registrationId) ? registrationId : undefined
   }
 
   private hasLayoutOwnership(
@@ -1542,7 +1556,7 @@ class LayoutStore {
     }[entity]
       .get(key)
       ?.get('registrationId')
-    return typeof registrationId === 'string' ? registrationId : undefined
+    return isRegistrationId(registrationId) ? registrationId : undefined
   }
 
   /**
@@ -1569,7 +1583,7 @@ class LayoutStore {
           ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
           : bounds
         const resolvedRegistrationId = ynode.get('registrationId')
-        if (typeof resolvedRegistrationId === 'string')
+        if (isRegistrationId(resolvedRegistrationId))
           registrationIds[nodeId] = resolvedRegistrationId
         nodeIds.push(nodeId)
       }

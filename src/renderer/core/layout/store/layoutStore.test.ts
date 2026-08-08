@@ -247,7 +247,8 @@ describe('layoutStore CRDT operations', () => {
 
     it('requires exact group and reroute ownership while preserving legacy updates', () => {
       createGroup(undefined, 'group-owner')
-      createReroute(undefined, '')
+      expect(createReroute(undefined, '')).toBe('rejected')
+      expect(createReroute()).toBe('applied')
 
       expect(
         layoutStore.applyOperation({
@@ -267,6 +268,16 @@ describe('layoutStore CRDT operations', () => {
           graphId,
           position: { x: 100, y: 200 },
           registrationId: '',
+          rerouteId,
+          type: 'moveReroute'
+        })
+      ).toBe('rejected')
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'reroute',
+          graphId,
+          position: { x: 100, y: 200 },
           rerouteId,
           type: 'moveReroute'
         })

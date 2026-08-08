@@ -62,10 +62,10 @@ describe('mappers', () => {
       visible: true,
       bounds: { x: 12, y: 34, width: 111, height: 222 }
     }
-    const ynode = layoutToYNode(layout, '')
+    const ynode = layoutToYNode(layout, 'owner')
     new Y.Doc().getMap('nodes').set('node-1', ynode)
 
-    expect(ynode.get('registrationId')).toBe('')
+    expect(ynode.get('registrationId')).toBe('owner')
     expect(yNodeToLayout(ynode)).toEqual(layout)
   })
 
