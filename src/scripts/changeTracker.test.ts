@@ -291,6 +291,11 @@ describe('ChangeTracker', () => {
           false,
           expect.stringContaining('captureCanvasState')
         )
+        // Assert messages reach external telemetry on cloud builds.
+        expect(mockAssert).not.toHaveBeenCalledWith(
+          false,
+          expect.stringContaining('/test/workflow.json')
+        )
       })
     })
 
