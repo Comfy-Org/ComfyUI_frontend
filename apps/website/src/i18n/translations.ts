@@ -5274,6 +5274,51 @@ const translations = {
   },
   'footer.wanAnimate2': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
+  // Wan 3.0 model page (/wan-3.0) — announcement until the model ships
+  'wan3.meta.title': {
+    en: 'Wan 3.0 on Comfy — Coming Soon',
+    'zh-CN': 'Comfy 上的 Wan 3.0 — 即将推出'
+  },
+  'wan3.meta.description': {
+    en: 'Wan 3.0 is coming to Comfy. Run it on Comfy Cloud the day it lands, or start building workflows for free now with every other model Comfy supports.',
+    'zh-CN':
+      'Wan 3.0 即将登陆 Comfy。上线当天即可在 Comfy Cloud 上运行；现在就可以用 Comfy 支持的其他模型免费开始搭建工作流。'
+  },
+  'wan3.breadcrumb.model': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
+  'wan3.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'wan3.hero.eyebrow': { en: 'Coming soon', 'zh-CN': '即将推出' },
+  'wan3.hero.title': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
+  'wan3.hero.primaryCta': {
+    en: 'RUN COMFY FOR FREE',
+    'zh-CN': '免费使用 Comfy'
+  },
+  'wan3.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'wan3.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中搭建工作流。用 API 批量制作，或部署到自有环境。'
+  },
+  'wan3.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'wan3.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'wan3.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'wan3.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'wan3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'footer.wan3': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
