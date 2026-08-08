@@ -1534,6 +1534,7 @@ describe('useExecutionStore - RAF batching', () => {
     })
 
     it('does not update reactive state before RAF fires', () => {
+      expect.assertions(1)
       const handler = getRegisteredHandler('progress')
 
       handler(makeProgressEvent(3, 10))
@@ -1601,6 +1602,7 @@ describe('useExecutionStore - RAF batching', () => {
     })
 
     it('does not update reactive state before RAF fires', () => {
+      expect.assertions(1)
       const handler = getRegisteredHandler('progress_state')
 
       handler(makeProgressStateEvent('1', 'running'))
@@ -1611,6 +1613,7 @@ describe('useExecutionStore - RAF batching', () => {
 
   describe('pending RAF is discarded when execution completes', () => {
     it('discards pending progress RAF on execution_success', () => {
+      expect.assertions(1)
       const progressHandler = getRegisteredHandler('progress')
       const startHandler = getRegisteredHandler('execution_start')
       const successHandler = getRegisteredHandler('execution_success')
@@ -1639,6 +1642,7 @@ describe('useExecutionStore - RAF batching', () => {
     })
 
     it('discards pending progress_state RAF on execution_success', () => {
+      expect.assertions(1)
       const progressStateHandler = getRegisteredHandler('progress_state')
       const startHandler = getRegisteredHandler('execution_start')
       const successHandler = getRegisteredHandler('execution_success')
@@ -1679,6 +1683,7 @@ describe('useExecutionStore - RAF batching', () => {
     })
 
     it('discards pending progress RAF on execution_error', () => {
+      expect.assertions(1)
       const progressHandler = getRegisteredHandler('progress')
       const startHandler = getRegisteredHandler('execution_start')
       const errorHandler = getRegisteredHandler('execution_error')
@@ -1714,6 +1719,7 @@ describe('useExecutionStore - RAF batching', () => {
     })
 
     it('discards pending progress RAF on execution_interrupted', () => {
+      expect.assertions(1)
       const progressHandler = getRegisteredHandler('progress')
       const startHandler = getRegisteredHandler('execution_start')
       const interruptedHandler = getRegisteredHandler('execution_interrupted')
@@ -1749,6 +1755,7 @@ describe('useExecutionStore - RAF batching', () => {
 
   describe('unbindExecutionEvents cancels pending RAFs', () => {
     it('cancels pending progress RAF on unbind', () => {
+      expect.assertions(1)
       const handler = getRegisteredHandler('progress')
 
       handler(
@@ -1764,6 +1771,7 @@ describe('useExecutionStore - RAF batching', () => {
     })
 
     it('cancels pending progress_state RAF on unbind', () => {
+      expect.assertions(1)
       const handler = getRegisteredHandler('progress_state')
 
       handler(
@@ -1788,6 +1796,77 @@ describe('useExecutionStore - RAF batching', () => {
       vi.advanceTimersToNextFrame()
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+    })
+  })
+
+  describe('executing cancels both coalescers', () => {
+    it('discards pending progress_state RAF when a new node starts executing', () => {
+      expect.assertions(1)
+      const progressStateHandler = getRegisteredHandler('progress_state')
+      const executingHandler = getRegisteredHandler('executing')
+
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 5,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      executingHandler(new CustomEvent('executing', { detail: '2' }))
+      vi.advanceTimersToNextFrame()
+
+      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+    })
+  })
+
+  describe('concurrent progress and progress_state in the same frame', () => {
+    it('applies both coalesced updates when RAFs fire in the same tick', () => {
+      expect.assertions(2)
+      const progressHandler = getRegisteredHandler('progress')
+      const progressStateHandler = getRegisteredHandler('progress_state')
+
+      progressHandler(
+        new CustomEvent('progress', {
+          detail: { value: 7, max: 10, prompt_id: 'job-1', node: '1' }
+        })
+      )
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 7,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      vi.advanceTimersToNextFrame()
+
+      expect(store._executingNodeProgress).toEqual(
+        expect.objectContaining({ value: 7 })
+      )
+      expect(store.nodeProgressStates['1']).toEqual(
+        expect.objectContaining({ value: 7, state: 'running' })
+      )
     })
   })
 })

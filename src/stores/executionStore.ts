@@ -525,7 +525,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuting(e: CustomEvent<string | number | null>): void {
-    progressCoalescer.cancel()
+    cancelPendingProgressUpdates()
 
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
@@ -566,14 +566,16 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = pruned
   }
 
-  const progressStateCoalescer =
-    createRafCoalescer<ProgressStateWsMessage>(_applyProgressState)
+  const progressStateCoalescer = createRafCoalescer<ProgressStateWsMessage>(
+    applyProgressState,
+    'raf:progress_state'
+  )
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     progressStateCoalescer.push(e.detail)
   }
 
-  function _applyProgressState(detail: ProgressStateWsMessage) {
+  function applyProgressState(detail: ProgressStateWsMessage) {
     const { nodes, prompt_id: jobId } = detail
 
     // Revoke previews for nodes that are starting to execute
@@ -613,7 +615,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
     _executingNodeProgress.value = detail
-  })
+  }, 'raf:progress')
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
     progressCoalescer.push(e.detail)

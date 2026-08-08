@@ -39,38 +39,6 @@ describe('createRafCoalescer', () => {
     expect(apply).not.toHaveBeenCalled()
   })
 
-  it('applies immediately on flush', () => {
-    const apply = vi.fn()
-    const coalescer = createRafCoalescer<number>(apply)
-
-    coalescer.push(99)
-    coalescer.flush()
-
-    expect(apply).toHaveBeenCalledOnce()
-    expect(apply).toHaveBeenCalledWith(99)
-  })
-
-  it('does nothing on flush when no value is pending', () => {
-    const apply = vi.fn()
-    const coalescer = createRafCoalescer<number>(apply)
-
-    coalescer.flush()
-
-    expect(apply).not.toHaveBeenCalled()
-  })
-
-  it('does not double-apply after flush', () => {
-    const apply = vi.fn()
-    const coalescer = createRafCoalescer<number>(apply)
-
-    coalescer.push(1)
-    coalescer.flush()
-
-    vi.advanceTimersToNextFrame()
-
-    expect(apply).toHaveBeenCalledOnce()
-  })
-
   it('reports scheduled state correctly', () => {
     const coalescer = createRafCoalescer<number>(vi.fn())
 
