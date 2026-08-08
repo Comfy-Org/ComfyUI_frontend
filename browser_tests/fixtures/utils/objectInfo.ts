@@ -46,6 +46,19 @@ function getRequiredInput(
   return input
 }
 
+export function setNodeDisplayName(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  displayName: string
+): void {
+  const nodeInfo = objectInfo[nodeType]
+  if (!nodeInfo) {
+    throw new Error(`Missing object_info entry for ${nodeType}`)
+  }
+
+  nodeInfo.display_name = displayName
+}
+
 export function setStringInputTooltip(
   objectInfo: ObjectInfoResponse,
   nodeType: string,
@@ -140,7 +153,25 @@ export async function routeObjectInfoFromSetupApi(
       return
     }
 
-    await customize?.(objectInfo)
+    try {
+      await customize?.(objectInfo)
+    } catch (error) {
+      // A throwing mutator (e.g. a node type that disappeared from a newer
+      // ComfyUI build) must still fulfill the route. An unfulfilled request
+      // hangs the page, so the test dies on an opaque Playwright timeout
+      // instead of reporting the reason.
+      const message = error instanceof Error ? error.message : String(error)
+      console.error(`Failed to customize object_info: ${message}`)
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: `Failed to customize object_info from ${objectInfoUrl}: ${message}`
+        })
+      })
+      return
+    }
+
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
