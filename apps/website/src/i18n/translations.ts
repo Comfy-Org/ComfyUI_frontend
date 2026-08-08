@@ -116,6 +116,20 @@ const translations = {
     'zh-CN': '免费开始使用'
   },
 
+  // FeaturedWorkflowsSection
+  'featuredWorkflows.label': {
+    en: 'FEATURED · STAFF PICK',
+    'zh-CN': '精选 · 官方推荐'
+  },
+  'featuredWorkflows.prev': {
+    en: 'Previous featured workflow',
+    'zh-CN': '上一个精选工作流'
+  },
+  'featuredWorkflows.next': {
+    en: 'Next featured workflow',
+    'zh-CN': '下一个精选工作流'
+  },
+
   // ModelReleaseSection
   'modelRelease.eyebrow': {
     en: 'New Model Release',
