@@ -249,7 +249,17 @@ else
     
     # Clean up temp directory
     rm -rf "$temp_dir"
-    
+
+    # Deploy the focused new-tests report (with embedded video), if the PR
+    # added spec files (see playwright-video-new-tests in ci-tests-e2e.yaml).
+    # Reuses the chromium project on its own branch so it doesn't clobber the
+    # main chromium report deployed above.
+    new_tests_url=""
+    if [ -d "reports/playwright-report-new-tests" ]; then
+        echo "Found new-tests report, deploying..."
+        new_tests_url=$(deploy_report "reports/playwright-report-new-tests" "chromium" "${cloudflare_branch}-new-tests")
+    fi
+
     # Calculate total test counts across all browsers
     total_passed=0
     total_failed=0
@@ -399,10 +409,15 @@ $test_line"
         i=$((i + 1))
     done
     unset IFS
-    
+
+    if [ -n "$new_tests_url" ] && [ "$new_tests_url" != "failed" ]; then
+        comment="$comment
+- **New-test walkthrough** (chromium, recorded video): [View Report](${new_tests_url})"
+    fi
+
     comment="$comment
 
 </details>"
-    
+
     post_comment "$comment"
 fi
