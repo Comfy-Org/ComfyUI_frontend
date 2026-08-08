@@ -18,13 +18,15 @@ const AMBIENT_PREVIEW_NAME = '$$ambient-preview'
 
 /**
  * Live-execution previews for a SubgraphNode host, derived directly from
- * each interior node's own output/preview state.
+ * each interior node's own streaming preview state.
  *
  * Deliberately independent of `previewExposureStore` and the link-promotion
- * system: it exists so any interior node currently producing output (e.g. a
- * second KSampler nobody promoted) still shows on the collapsed host, the
- * same way `nodeLocationProgressStates` bubbles up execution progress
- * regardless of promotion.
+ * system: it exists so any interior node currently producing a live preview
+ * (e.g. a second KSampler nobody promoted) still shows on the expanded host,
+ * loosely analogous to how `nodeLocationProgressStates` bubbles up execution
+ * progress regardless of promotion — though unlike that store, this only
+ * looks at the host's immediate interior nodes and does not recurse into
+ * nested subgraphs.
  */
 export function useAmbientSubgraphPreviews(
   lgraphNode: MaybeRefOrGetter<LGraphNode | null | undefined>
@@ -46,20 +48,7 @@ export function useAmbientSubgraphPreviews(
       const locatorId = createNodeLocatorId(subgraph.id, interiorNode.id)
       if (!locatorId) return []
 
-      // Touch reactive sources for Vue tracking; getNodeImageUrls reads
-      // non-reactive app state.
-      const reactiveOutput = nodeOutputStore.nodeOutputs[locatorId]
-      // An input-only output (e.g. a LoadImage node's own selected file) is
-      // static reference data, not a live execution result — surfacing it
-      // ambiently would make every unpromoted input node's thumbnail always
-      // visible on the host, defeating explicit promotion for those nodes.
-      const hasLiveOutputImages =
-        reactiveOutput?.images?.length &&
-        !nodeOutputStore.isInputPreviewOutput(reactiveOutput)
-      const hasReactiveOutputs =
-        hasLiveOutputImages ||
-        nodeOutputStore.nodePreviewImages[locatorId]?.length
-      if (!hasReactiveOutputs) return []
+      if (!nodeOutputStore.nodePreviewImages[locatorId]?.length) return []
 
       const urls = nodeOutputStore.getNodeImageUrls(interiorNode)
       if (!urls?.length) return []

@@ -430,7 +430,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     getNodePreviewImagesByExecutionId,
     getNodePreviews,
     getPreviewParam,
-    isInputPreviewOutput,
 
     setNodeOutputs,
     setNodeOutputsByExecutionId,
