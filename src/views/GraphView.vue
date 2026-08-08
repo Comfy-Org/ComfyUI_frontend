@@ -20,6 +20,7 @@
     </template>
   </div>
 
+  <CanaryDemoBanner />
   <GlobalToast />
   <InviteAcceptedToast />
   <RerouteMigrationToast />
@@ -68,6 +69,7 @@ import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
+import CanaryDemoBanner from '@/platform/cloud/components/CanaryDemoBanner.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
