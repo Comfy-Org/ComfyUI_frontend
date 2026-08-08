@@ -36,11 +36,12 @@ export const useExtensionStore = defineStore('extension', () => {
   // of the frontend extension disable list, in case the node pack is re-enabled.
   const inactiveDisabledExtensionNames = computed(() => {
     return Array.from(disabledExtensionNames.value).filter(
-      (name) => !(name in extensionByName.value)
+      (name) => !Object.hasOwn(extensionByName.value, name)
     )
   })
 
-  const isExtensionInstalled = (name: string) => name in extensionByName.value
+  const isExtensionInstalled = (name: string) =>
+    Object.hasOwn(extensionByName.value, name)
 
   const isExtensionEnabled = (name: string) =>
     !disabledExtensionNames.value.has(name)
@@ -55,13 +56,29 @@ export const useExtensionStore = defineStore('extension', () => {
     )
   }
 
-  function registerExtension(extension: ComfyExtension) {
+  /**
+   * Register an extension with the store.
+   *
+   * @returns `true` if the extension was registered, `false` if an extension
+   * with the same name was already registered and this one was skipped.
+   */
+  function registerExtension(extension: ComfyExtension): boolean {
     if (!extension.name) {
       throw new Error("Extensions must have a 'name' property.")
     }
 
-    if (extensionByName.value[extension.name]) {
-      throw new Error(`Extension named '${extension.name}' already registered.`)
+    if (Object.hasOwn(extensionByName.value, extension.name)) {
+      // Duplicate registrations are usually caused by the same extension file
+      // being served under two URLs (so the module executes twice) or by two
+      // node packs shipping a copy of the same extension file. The first
+      // registration already did all the work, so keep it and skip this one.
+      // Warn instead of throwing so the rest of the re-executed module (and
+      // the dynamic import that triggered it) doesn't fail. settingStore and
+      // commandStore handle duplicates the same way.
+      console.warn(
+        `Extension named '${extension.name}' already registered. Skipping duplicate registration.`
+      )
+      return false
     }
 
     if (disabledExtensionNames.value.has(extension.name)) {
@@ -69,6 +86,7 @@ export const useExtensionStore = defineStore('extension', () => {
     }
 
     extensionByName.value[extension.name] = markRaw(extension)
+    return true
   }
 
   function loadDisabledExtensionNames(names: string[]) {

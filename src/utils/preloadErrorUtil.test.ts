@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { parsePreloadError } from './preloadErrorUtil'
+import {
+  isExtensionOriginPreloadError,
+  parsePreloadError
+} from './preloadErrorUtil'
 
 describe('parsePreloadError', () => {
   it('parses CSS preload error', () => {
@@ -88,5 +91,139 @@ describe('parsePreloadError', () => {
     const result = parsePreloadError(error)
 
     expect(result.chunkName).toBe('index')
+  })
+})
+
+describe('isExtensionOriginPreloadError', () => {
+  function makeError(message: string, stack?: string): Error {
+    const error = new Error(message)
+    error.stack = stack ?? `Error: ${message}`
+    return error
+  }
+
+  it('detects a failed fetch of an extension module by URL', () => {
+    const error = makeError(
+      'Failed to fetch dynamically imported module: https://example.com/extensions/SomePack/js/widgets.js'
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(true)
+  })
+
+  it('detects a relative extension URL', () => {
+    const error = makeError(
+      'Failed to fetch dynamically imported module: /extensions/SomePack/widgets.js'
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(true)
+  })
+
+  it('detects an extension URL served under a reverse-proxy path prefix', () => {
+    const error = makeError(
+      'Failed to fetch dynamically imported module: https://example.com/comfy/extensions/SomePack/widgets.js'
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(true)
+  })
+
+  it('detects an evaluation error thrown inside an extension module via the stack', () => {
+    const error = makeError(
+      "Cannot read properties of undefined (reading 'SomeExport')",
+      [
+        "TypeError: Cannot read properties of undefined (reading 'SomeExport')",
+        '    at https://example.com/extensions/core/clipspace.js:3:55'
+      ].join('\n')
+    )
+    const info = parsePreloadError(error)
+
+    expect(info.url).toBeNull()
+    expect(isExtensionOriginPreloadError(error, info)).toBe(true)
+  })
+
+  it('does not flag first-party chunk fetch failures', () => {
+    const error = makeError(
+      'Failed to fetch dynamically imported module: https://example.com/assets/vendor-three-def456.js'
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
+
+  it('does not flag a first-party url even when the stack contains an extension frame', () => {
+    const error = makeError(
+      'Failed to fetch dynamically imported module: https://example.com/assets/vendor-three-def456.js',
+      [
+        'Error: Failed to fetch dynamically imported module: https://example.com/assets/vendor-three-def456.js',
+        '    at https://example.com/extensions/SomePack/js/init.js:1:100'
+      ].join('\n')
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
+
+  it('does not flag evaluation errors with first-party stacks', () => {
+    const error = makeError(
+      'Some chunk evaluation failure',
+      [
+        'Error: Some chunk evaluation failure',
+        '    at https://example.com/assets/index-abc123.js:1:100'
+      ].join('\n')
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
+
+  it('does not flag dev-server source paths under /src/extensions/', () => {
+    const error = makeError(
+      'Some dev evaluation failure',
+      [
+        'Error: Some dev evaluation failure',
+        '    at http://localhost:5173/src/extensions/core/clipspace.ts:3:55'
+      ].join('\n')
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
+
+  it('does not flag errors without url or stack URLs', () => {
+    const error = makeError('Something failed')
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
+
+  it('does not flag errors with no stack at all', () => {
+    const error = makeError('Something failed')
+    error.stack = undefined
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
+
+  it('does not throw when stack is a truthy non-string', () => {
+    const error = makeError('Something failed')
+    ;(error as unknown as Record<string, unknown>).stack = 42
+    const info = parsePreloadError(error)
+
+    expect(() => isExtensionOriginPreloadError(error, info)).not.toThrow()
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
+
+  it('ignores unparseable URLs in the stack', () => {
+    const error = makeError(
+      'Some failure',
+      [
+        'Error: Some failure',
+        '    at https://[invalid/extensions/SomePack/widgets.js:1:1'
+      ].join('\n')
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
   })
 })
