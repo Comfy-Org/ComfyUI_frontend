@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import TeamMemberDialog01 from './TeamMemberDialog01.vue'
 
 const description =
-  "Doug is a Creative Technologist, VFX Supervisor, and educator who has spent his career in the messy middle where the creative team knows what they want but the pipeline doesn't yet know how to build it. He's also a longtime Nuke compositor and pipeline builder, writing Python-based tools and training ML models to automate repetitive work. He teaches VFX, Nuke, and generative AI through fxphd, ActionVFX, and other platforms. It's a tool!"
+  "Doug's work spans Netflix, Universal Studios, Warner Bros., and Samsung, with deep expertise in VFX and studio production. As a Nuke compositor and Python tool builder, he teaches VFX, Nuke, and generative AI."
 
 const workflows = [
   {

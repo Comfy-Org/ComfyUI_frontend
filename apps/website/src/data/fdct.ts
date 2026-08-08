@@ -18,8 +18,7 @@ export interface FdctTechnologist {
   workflowsHref?: string
 }
 
-// Doug's description is verbatim from the FDCT dialog design; the others are
-// condensed from the same bios the design shortened. Headshots live on the
+// Descriptions are user-provided copy (2026-08-07). Headshots live on the
 // media CDN. Chris has no workflowsHref until his hub page link is provided;
 // the dialog omits its CTA and workflow grid for profiles without one.
 export const technologists: readonly FdctTechnologist[] = [
@@ -28,7 +27,7 @@ export const technologists: readonly FdctTechnologist[] = [
     name: 'Doug Hogan',
     avatarSrc: 'https://media.comfy.org/website/technologists/doug-hogan.png',
     description:
-      "Doug is a Creative Technologist, VFX Supervisor, and educator who has spent his career in the messy middle where the creative team knows what they want but the pipeline doesn't yet know how to build it. He's also a longtime Nuke compositor and pipeline builder, writing Python-based tools and training ML models to automate repetitive work. He teaches VFX, Nuke, and generative AI through fxphd, ActionVFX, and other platforms. It's a tool!",
+      "Doug's work spans Netflix, Universal Studios, Warner Bros., and Samsung, with deep expertise in VFX and studio production. As a Nuke compositor and Python tool builder, he teaches VFX, Nuke, and generative AI.",
     workflowsHref: 'https://comfy.org/workflows/doughogan/'
   },
   {
@@ -36,14 +35,14 @@ export const technologists: readonly FdctTechnologist[] = [
     name: 'Chris V.',
     avatarSrc: 'https://media.comfy.org/website/technologists/chris-v.png',
     description:
-      'Chris Vespaziani is a Forward Deployed Technical Creative at Comfy, working across generative AI, creative technology, software development, and production infrastructure. His background sits between artist and engineer, combining visual direction with the ability to build the systems required to deliver reliably: custom Python tools, ComfyUI nodes, backend services, and full-stack production platforms built from the ground up.'
+      "Chris's work spans global brands, artists, Fortune 500 keynote stages, and Art Basel Miami, with deep expertise in generative AI and production infrastructure. Sitting between artist and engineer, he architects custom VFX and AI pipelines."
   },
   {
     id: 'rob-losch',
     name: 'Rob Losch',
     avatarSrc: 'https://media.comfy.org/website/technologists/rob-losch.png',
     description:
-      "Rob has been in ComfyUI since day one — if you've used an in-app template since, chances are you've used one of his. A Creative Technologist at Comfy working at the intersection of art and technology, he's tested every model worth testing and knows where each one breaks, turning one-off experiments into workflows a creative team can run on a deadline.",
+      "Rob has been in ComfyUI since day one. He has numerous workflows covering marketing and advertising, and he can pinpoint the exact workflow you're looking for.",
     workflowsHref: 'https://comfy.org/workflows/hellorob/'
   }
 ]
@@ -131,16 +130,16 @@ export const projects: readonly FdctProject[] = [
     tags: ['Image Generation', 'Character Reference']
   },
   {
-    id: 'adjustment-frame-workflow',
-    title: 'Adjustment Frame Workflow',
+    id: 'face-swap-workflow',
+    title: 'Face Swap Workflow',
     category: 'entertainment',
     media: {
       type: 'video',
-      src: 'https://comfy-hub-assets.comfy.org/uploads/a643e6f2-f91e-450f-871c-4c99116193f0.mp4'
+      src: 'https://comfy-hub-assets.comfy.org/uploads/d0bc92f7-c5dc-4861-9588-5ae94b609c6d.mp4'
     },
     author: authorOf('doug-hogan'),
-    href: 'https://comfy.org/workflows/7dca0438edf4-7dca0438edf4/',
-    tags: ['Image Generation', 'Video']
+    href: 'https://comfy.org/workflows/93f286fbc2c8-93f286fbc2c8/',
+    tags: []
   }
 ]
 
