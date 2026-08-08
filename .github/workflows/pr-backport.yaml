@@ -487,13 +487,7 @@ jobs:
               CONFLICTS_INLINE=$(echo "${conflicts}" | tr ',' ' ')
               PR_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 
-              # Each labelled PR is cherry-picked onto the target independently,
-              # so a *stack* of PRs conflicts at every level above the first
-              # until the PR below it has actually merged into the target
-              # branch. Those conflicts are an artifact of picking in isolation,
-              # not a real incompatibility. If other backport PRs are still open
-              # against this target, say so rather than let the failure read as
-              # a genuine conflict. Best-effort only: never fail the comment.
+              # Stacked PRs conflict here until the one below them merges into the target; note other open backports so the failure reads as that artifact, not a real conflict.
               STACK_HINT=""
               OPEN_BACKPORTS=$(
                 gh pr list --repo "${GITHUB_REPOSITORY}" --state open \
