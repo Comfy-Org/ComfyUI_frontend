@@ -79,6 +79,14 @@ export class ContextMenu {
     return this
   }
 
+  async dismissPrimeVueMenu(): Promise<void> {
+    await expect(this.primeVueMenu).not.toHaveClass(
+      /p-contextmenu-enter-active/
+    )
+    await this.page.keyboard.press('Tab')
+    await this.waitForHidden()
+  }
+
   async waitForHidden(): Promise<void> {
     await Promise.all([
       this.primeVueMenu.waitFor({ state: 'hidden' }),

@@ -290,7 +290,12 @@ import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import {
+  hasLinkedInputPreviewWidget,
+  isInputMediaPreview
+} from '@/renderer/extensions/vueNodes/utils/linkedWidgetUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -411,6 +416,21 @@ const nodeOpacity = computed(() => {
 
 const hasInputs = computed(() => nonWidgetedInputs(nodeData).length > 0)
 const hasOutputs = computed((): boolean => !!nodeData.outputs?.length)
+const linkedWidgetKey = computed(() =>
+  (nodeData.widgets ?? [])
+    .filter(
+      (widget) => widget.slotMetadata?.linked && getComponent(widget.type)
+    )
+    .map(
+      (widget) =>
+        `${widget.widgetId ?? `${widget.name}:${widget.type}`}:${widget.slotMetadata?.index}`
+    )
+    .join('|')
+)
+const hasLinkedInputPreview = computed(() => {
+  const node = lgraphNode.value
+  return !!node && hasLinkedInputPreviewWidget(node, nodeData.widgets ?? [])
+})
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -457,7 +477,7 @@ const handleContextMenu = (event: MouseEvent) => {
   handleNodeRightClick(event as PointerEvent, nodeData.id)
 
   // Show the node options menu at the cursor position
-  showNodeOptions(event)
+  showNodeOptions(event, undefined, undefined, hasLinkedInputPreview.value)
 }
 
 /**
@@ -502,6 +522,7 @@ let unsubscribeLayoutChange: (() => void) | null = null
 
 onMounted(() => {
   initSizeStyles()
+  if (linkedWidgetKey.value) void fitNodeToVisibleContent()
   unsubscribeLayoutChange = layoutStore.onNodeChange(
     nodeData.id,
     handleLayoutChange
@@ -556,7 +577,22 @@ watch(isCollapsed, (collapsed) => {
   const currentHeight = element.style.getPropertyValue(`--node-height${from}`)
   element.style.setProperty(`--node-height${to}`, currentHeight)
   element.style.setProperty(`--node-height${from}`, '')
+
+  if (!collapsed && linkedWidgetKey.value) void fitNodeToVisibleContent()
 })
+
+watch(linkedWidgetKey, (key) => {
+  if (key) void fitNodeToVisibleContent()
+})
+
+async function fitNodeToVisibleContent() {
+  await nextTick()
+  const element = nodeContainerRef.value
+  if (!element || isCollapsed.value) return
+
+  element.style.setProperty('--node-height', '0px')
+  element.style.setProperty('--node-height', `${element.offsetHeight}px`)
+}
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
@@ -793,6 +829,8 @@ const nodeMedia = computed(() => {
     return undefined
 
   if (node instanceof SubgraphNode) return undefined
+  if (hasLinkedInputPreview.value && isInputMediaPreview(newOutputs))
+    return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined

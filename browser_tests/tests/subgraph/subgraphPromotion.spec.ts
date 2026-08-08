@@ -362,10 +362,10 @@ test.describe(
     })
 
     test.describe(
-      'Nested Promoted Widget Disabled State',
+      'Nested Promoted Widget Linked State',
       { tag: ['@vue-nodes'] },
       () => {
-        test('Externally linked promotions stay disabled while unlinked textareas remain editable', async ({
+        test('Externally linked promotions hide their controls while unlinked textareas remain editable', async ({
           comfyPage
         }) => {
           await comfyPage.workflow.loadWorkflow(
@@ -377,12 +377,16 @@ test.describe(
             .toEqual(expect.arrayContaining(['string_a', 'value']))
 
           const subgraphNode = comfyPage.vueNodes.getNodeLocator('5')
-          const linkedTextarea = subgraphNode.getByRole('textbox', {
-            name: 'string_a',
-            exact: true
-          })
-          await expect(linkedTextarea).toBeVisible()
-          await expect(linkedTextarea).toBeDisabled()
+          const linkedWidgetRow = subgraphNode
+            .getByTestId(TestIds.widgets.widget)
+            .filter({ hasText: 'string_a' })
+          await expect(linkedWidgetRow).toBeVisible()
+          await expect(
+            subgraphNode.getByRole('textbox', {
+              name: 'string_a',
+              exact: true
+            })
+          ).toHaveCount(0)
 
           const allTextareas = subgraphNode.getByRole('textbox')
           await expect(allTextareas.first()).toBeVisible()

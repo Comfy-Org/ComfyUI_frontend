@@ -745,6 +745,20 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 })
 
+describe('computeProcessedWidgets linked display', () => {
+  it('leaves fallback widgets on their existing disabled rendering path', () => {
+    const [processed] = processWidgets([
+      createMockWidget({
+        type: 'custom-fallback',
+        slotMetadata: { index: 0, linked: true, type: 'CUSTOM' }
+      })
+    ])
+
+    expect(processed.linkedDisplay).toBeUndefined()
+    expect(processed.simplified.options?.disabled).toBe(true)
+  })
+})
+
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

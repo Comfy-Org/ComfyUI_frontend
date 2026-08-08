@@ -1,6 +1,10 @@
 <template>
   <WidgetLayoutField :widget="widget">
-    <ColorPicker v-model="localValue" @update:model-value="onUpdate" />
+    <ColorPicker
+      v-model="localValue"
+      class="widget-input-base"
+      @update:model-value="onUpdate"
+    />
   </WidgetLayoutField>
 </template>
 

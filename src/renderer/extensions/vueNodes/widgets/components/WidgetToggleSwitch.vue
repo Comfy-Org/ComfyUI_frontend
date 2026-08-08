@@ -33,6 +33,7 @@
     >
       <Switch
         v-model="modelValue"
+        class="widget-input-base"
         :disabled="Boolean(widget.options?.disabled)"
         :readonly="Boolean(widget.options?.read_only)"
         :aria-label="widget.name"

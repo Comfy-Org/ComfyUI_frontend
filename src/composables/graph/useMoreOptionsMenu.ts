@@ -47,13 +47,30 @@ export enum BadgeVariant {
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
-const hoveredWidget = ref<[string, SerializedNodeId | undefined]>()
+interface NodeMenuContext {
+  widgetName?: string
+  widgetNodeId?: SerializedNodeId
+  contextualActionsDisabled: boolean
+}
+
+const nodeMenuContext = ref<NodeMenuContext>()
+
+const LEGACY_IMAGE_MENU_LABELS = new Set([
+  'Open Image',
+  'Copy Image',
+  'Paste Image',
+  'Paste (Clipspace)',
+  'Save Image',
+  'Open in Mask Editor',
+  'Open in MaskEditor | Image Canvas'
+])
 
 /**
  * Toggle the node options popover
  * @param event - The trigger event
  */
 export function toggleNodeOptions(event: Event) {
+  nodeMenuContext.value = undefined
   if (nodeOptionsInstance?.toggle) {
     nodeOptionsInstance.toggle(event)
   }
@@ -67,9 +84,13 @@ export function toggleNodeOptions(event: Event) {
 export function showNodeOptions(
   event: MouseEvent,
   widgetName?: string,
-  nodeId?: SerializedNodeId
+  widgetNodeId?: SerializedNodeId,
+  contextualActionsDisabled = false
 ) {
-  hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
+  nodeMenuContext.value =
+    widgetName || contextualActionsDisabled
+      ? { widgetName, widgetNodeId, contextualActionsDisabled }
+      : undefined
   if (nodeOptionsInstance?.show) {
     nodeOptionsInstance.show(event)
   }
@@ -177,6 +198,10 @@ export function useMoreOptionsMenu() {
     // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
     const node: LGraphNode | undefined = selectedNodes.value[0]
+    const menuContext = nodeMenuContext.value
+    const widget = menuContext?.widgetName
+      ? node?.widgets?.find((item) => item.name === menuContext.widgetName)
+      : undefined
     if (
       selectedNodes.value.length === 1 &&
       !groupContext &&
@@ -257,13 +282,15 @@ export function useMoreOptionsMenu() {
     options.push({ type: 'divider' })
 
     // Section 5: Image operations (if image node)
-    if (hasImageNode.value && selectedNodes.value.length > 0) {
+    if (
+      !menuContext?.contextualActionsDisabled &&
+      hasImageNode.value &&
+      selectedNodes.value.length > 0
+    ) {
       options.push(...getImageMenuOptions(selectedNodes.value[0]))
       options.push({ type: 'divider' })
     }
-    const [widgetName] = hoveredWidget.value ?? []
-    const widget = node?.widgets?.find((w) => w.name === widgetName)
-    if (widget) {
+    if (widget && !menuContext?.contextualActionsDisabled) {
       const widgetOptions = convertContextMenuToOptions(
         getExtraOptionsForWidget(node, widget)
       )
@@ -278,9 +305,21 @@ export function useMoreOptionsMenu() {
     // Mark all Vue options with source
     const markedVueOptions = markAsVueOptions(options)
 
-    if (litegraphOptions.length > 0) {
+    const suppressedLabels = new Set(LEGACY_IMAGE_MENU_LABELS)
+    if (menuContext?.contextualActionsDisabled && node && widget) {
+      for (const option of getExtraOptionsForWidget(node, widget)) {
+        if (option.content) suppressedLabels.add(option.content)
+      }
+    }
+    const visibleLitegraphOptions = menuContext?.contextualActionsDisabled
+      ? litegraphOptions.filter(
+          (option) => !option.label || !suppressedLabels.has(option.label)
+        )
+      : litegraphOptions
+
+    if (visibleLitegraphOptions.length > 0) {
       // Merge: LiteGraph options first, then Vue options (Vue will win in dedup)
-      const merged = [...litegraphOptions, ...markedVueOptions]
+      const merged = [...visibleLitegraphOptions, ...markedVueOptions]
       return buildStructuredMenu(merged)
     }
     // For other cases, structure the Vue options

@@ -15,6 +15,7 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -147,7 +148,9 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
         NodeHeader: true,
         NodeSlots: true,
         NodeWidgets: true,
-        NodeContent: true,
+        NodeContent: {
+          template: '<div data-testid="node-content" />'
+        },
         SlotConnectionDot: true
       }
     }
@@ -178,6 +181,7 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockData.mockExecuting = false
+    mockData.mockLgraphNode = null
 
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
@@ -245,6 +249,44 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-node-stroke-executing')
+  })
+
+  it('hides a load media preview while its selector is linked', () => {
+    mockData.mockLgraphNode = {
+      constructor: {
+        nodeData: {
+          input: {
+            required: {
+              upload: ['IMAGEUPLOAD', { imageInputName: 'image' }]
+            }
+          },
+          isCoreNode: true
+        }
+      },
+      isSubgraphNode: () => false
+    }
+    const nodeOutputStore = useNodeOutputStore()
+    nodeOutputStore.nodeOutputs['test-node-123'] = {
+      images: [{ filename: 'input.png', type: 'input', subfolder: '' }]
+    }
+    vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue(['/input.png'])
+
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        type: 'LoadImage',
+        widgets: [
+          {
+            name: 'image',
+            type: 'combo',
+            spec: { type: 'COMBO', name: 'image', image_upload: true },
+            slotMetadata: { index: 0, linked: true, type: 'IMAGE' }
+          }
+        ]
+      }
+    })
+
+    expect(screen.queryByTestId('node-content')).not.toBeInTheDocument()
   })
 
   it('should initialize height CSS vars for collapsed nodes', () => {

@@ -1,7 +1,7 @@
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -130,6 +130,45 @@ describe('NodeWidgets', () => {
       expect(stub).not.toBeNull()
       expect(stub!.getAttribute('data-node-type')).toBe('')
     })
+  })
+
+  it('keeps a linked simple widget mounted behind its empty display', () => {
+    const widget = createMockWidget({
+      slotMetadata: { index: 0, linked: true, type: 'IMAGE' }
+    })
+    const nodeData = createMockNodeData('LoadImage', [widget])
+
+    const { container } = renderComponent(nodeData)
+
+    expect(screen.getByTestId('linked-widget-placeholder')).toHaveAttribute(
+      'inert'
+    )
+    expect(screen.getByTestId('linked-widget-placeholder')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    expect(screen.getByTestId('linked-widget-indicator')).toBeInTheDocument()
+    expect(container.querySelector('.widget-stub')).not.toBeNull()
+  })
+
+  it('hides the full control for a linked expanding widget', () => {
+    const widget = createMockWidget({
+      name: 'curve',
+      type: 'curve',
+      slotMetadata: { index: 0, linked: true, type: 'CURVE' }
+    })
+    const nodeData = createMockNodeData('ColorCurve', [widget])
+
+    const { container } = renderComponent(nodeData)
+
+    expect(
+      screen.queryByTestId('linked-widget-placeholder')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('linked-widget-indicator')
+    ).not.toBeInTheDocument()
+    expect(container.querySelector('.widget-stub')).toBeNull()
+    expect(container.querySelector('input-slot-stub')).not.toBeNull()
   })
 
   it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
