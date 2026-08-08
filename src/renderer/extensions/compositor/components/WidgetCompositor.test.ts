@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { toNodeId } from '@/types/nodeId'
@@ -40,9 +41,20 @@ vi.mock(
     })
   })
 )
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      compositor: {
+        empty: 'Run the workflow to generate a composite',
+        open: 'Open Compositor',
+        runWorkflowFirst: 'Run the workflow once to load input images',
+        downloadPsd: 'Download PSD'
+      }
+    }
+  }
+})
 
 const nodeId = toNodeId(9)
 const graphNode = { id: nodeId, graph: null } as unknown as LGraphNode
@@ -50,7 +62,12 @@ const graphNode = { id: nodeId, graph: null } as unknown as LGraphNode
 function renderWidget() {
   return render(WidgetCompositor, {
     props: { nodeId },
-    global: { stubs: { Button: { template: '<button v-bind="$attrs" />' } } }
+    global: {
+      plugins: [i18n],
+      stubs: {
+        Button: { template: '<button v-bind="$attrs"><slot /></button>' }
+      }
+    }
   })
 }
 
@@ -64,8 +81,11 @@ describe('WidgetCompositor', () => {
   it('renders the empty state when the node is not in the graph (search preview)', () => {
     renderWidget()
 
-    expect(screen.getByTestId('compositor-empty')).toBeTruthy()
+    expect(screen.getByTestId('compositor-empty').textContent).toContain(
+      'Run the workflow to generate a composite'
+    )
     const open = screen.getByTestId('compositor-open-button')
+    expect(open.textContent).toContain('Open Compositor')
     expect(open.hasAttribute('disabled')).toBe(true)
   })
 
