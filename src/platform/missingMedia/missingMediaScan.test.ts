@@ -503,6 +503,17 @@ describe('isMissingMediaCandidateScopeActive', () => {
 
     expect(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(false)
   })
+
+  it('drops a candidate whose widget value changed while verification was pending', () => {
+    const { graph, node, widget } = createLoadImageGraph()
+    const candidate = makeCandidate(String(node.id), 'missing.png')
+
+    expect.soft(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(true)
+
+    widget.value = 'valid.png'
+
+    expect(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(false)
+  })
 })
 
 describe('scanAllMediaCandidates', () => {
