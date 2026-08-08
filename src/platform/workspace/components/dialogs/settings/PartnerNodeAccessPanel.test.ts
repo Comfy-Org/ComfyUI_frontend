@@ -630,7 +630,7 @@ describe('PartnerNodeAccessPanel', () => {
     await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
 
     const options = mockShowConfirmDialog.mock.calls[0][0]
-    expect(options.headerProps.title).toBe('Restrict access to partner nodes?')
+    expect(options.headerProps.title).toBe('Restrict access to partner models?')
     await options.footerProps.onConfirm()
     expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(true)
   })
@@ -782,7 +782,9 @@ describe('PartnerNodeAccessPanel', () => {
     await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
 
     const options = mockShowConfirmDialog.mock.calls[0][0]
-    expect(options.headerProps.title).toBe('Allow access to all partner nodes?')
+    expect(options.headerProps.title).toBe(
+      'Allow access to all partner models?'
+    )
     await options.footerProps.onConfirm()
     expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(false)
   })
@@ -797,9 +799,11 @@ describe('PartnerNodeAccessPanel', () => {
     expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
     expect(mockSetEnforcementEnabled).not.toHaveBeenCalled()
     const options = mockShowConfirmDialog.mock.calls[0][0]
-    expect(options.headerProps.title).toBe('Allow access to all partner nodes?')
+    expect(options.headerProps.title).toBe(
+      'Allow access to all partner models?'
+    )
     expect(options.props.promptText).toBe(
-      'Partner nodes from every provider will become available to every workspace member. This can take up to 10 minutes to apply across your workspace.'
+      'Partner models from every provider will become available to every workspace member. This can take up to 10 minutes to apply across your workspace.'
     )
     await options.footerProps.onConfirm()
     expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(false)
