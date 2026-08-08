@@ -19,7 +19,10 @@ const {
 </script>
 
 <template>
-  <template v-for="(item, index) in items" :key="index">
+  <template
+    v-for="(item, index) in items"
+    :key="item.separator ? `separator-${index}` : item.id"
+  >
     <component
       :is="separatorComponent"
       v-if="item.separator"

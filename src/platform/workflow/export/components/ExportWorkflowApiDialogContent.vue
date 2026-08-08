@@ -8,20 +8,19 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
 import PythonSdkCodeBlock from '@/platform/workflow/export/components/PythonSdkCodeBlock.vue'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
-const { onClose } = defineProps<{ onClose: () => void }>()
+const { initialWorkflowBaseName, onClose } = defineProps<{
+  initialWorkflowBaseName: string
+  onClose: () => void
+}>()
 
 const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
-const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const { toastErrorHandler } = useErrorHandling()
 const isDownloading = ref(false)
 
-const initialWorkflowBaseName =
-  workflowStore.activeWorkflow?.filename ?? 'workflow_api'
 const workflowBaseName = ref(initialWorkflowBaseName)
 const exportFilename = computed(() => {
   const baseName = stripJsonExtension(workflowBaseName.value.trim())

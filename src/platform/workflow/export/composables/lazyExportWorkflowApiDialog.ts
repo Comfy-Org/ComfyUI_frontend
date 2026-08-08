@@ -3,7 +3,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-export-workflow-api'
 
-export async function openExportWorkflowApiDialog() {
+export async function openExportWorkflowApiDialog(
+  initialWorkflowBaseName: string
+) {
   const { default: component } =
     await import('@/platform/workflow/export/components/ExportWorkflowApiDialogContent.vue')
   const dialogStore = useDialogStore()
@@ -13,7 +15,7 @@ export async function openExportWorkflowApiDialog() {
     key: DIALOG_KEY,
     title: t('apiExport.title'),
     component,
-    props: { onClose: close },
+    props: { initialWorkflowBaseName, onClose: close },
     dialogComponentProps: { renderer: 'reka', size: 'md' }
   })
 }

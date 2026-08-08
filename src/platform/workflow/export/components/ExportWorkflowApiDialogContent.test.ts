@@ -1,10 +1,8 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import ExportWorkflowApiDialogContent from '@/platform/workflow/export/components/ExportWorkflowApiDialogContent.vue'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
 const mockWorkflowService = vi.hoisted(() => ({
   exportWorkflow: vi.fn()
@@ -13,19 +11,8 @@ const mockWorkflowService = vi.hoisted(() => ({
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 
-const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: {
-    fullFilename: 'image_flux2.json',
-    filename: 'image_flux2'
-  } as ComfyWorkflow | undefined
-}))
-
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => mockWorkflowService
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => mockWorkflowStore
 }))
 
 vi.mock('@/composables/useExternalLink', () => ({
@@ -46,21 +33,23 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
+function renderDialog(
+  initialWorkflowBaseName = 'image_flux2',
+  onClose = vi.fn()
+) {
+  return render(ExportWorkflowApiDialogContent, {
+    props: { initialWorkflowBaseName, onClose }
+  })
+}
+
 describe('ExportWorkflowApiDialogContent', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.clearAllMocks()
     mockWorkflowService.exportWorkflow.mockResolvedValue(undefined)
-    mockWorkflowStore.activeWorkflow = {
-      fullFilename: 'image_flux2.json',
-      filename: 'image_flux2'
-    } as ComfyWorkflow
   })
 
   it('shows and copies one SDK snippet for the current workflow', async () => {
-    render(ExportWorkflowApiDialogContent, {
-      props: { onClose: vi.fn() }
-    })
+    renderDialog()
 
     expect(
       screen.getByRole('textbox', { name: 'apiExport.workflowFile' })
@@ -96,9 +85,7 @@ describe('ExportWorkflowApiDialogContent', () => {
   })
 
   it('updates the export filename and SDK snippet from the filename input', async () => {
-    render(ExportWorkflowApiDialogContent, {
-      props: { onClose: vi.fn() }
-    })
+    renderDialog()
 
     const input = screen.getByRole('textbox', {
       name: 'apiExport.workflowFile'
@@ -113,12 +100,8 @@ describe('ExportWorkflowApiDialogContent', () => {
     )
   })
 
-  it('uses the API fallback name without an active workflow', () => {
-    mockWorkflowStore.activeWorkflow = undefined
-
-    render(ExportWorkflowApiDialogContent, {
-      props: { onClose: vi.fn() }
-    })
+  it('uses the provided fallback name', () => {
+    renderDialog('workflow_api')
 
     expect(
       screen.getByRole('textbox', { name: 'apiExport.workflowFile' })
@@ -130,7 +113,7 @@ describe('ExportWorkflowApiDialogContent', () => {
 
   it('downloads with the existing command and closes the dialog', async () => {
     const onClose = vi.fn()
-    render(ExportWorkflowApiDialogContent, { props: { onClose } })
+    renderDialog('image_flux2', onClose)
 
     await userEvent.click(
       screen.getByRole('button', { name: 'apiExport.downloadWorkflow' })
@@ -148,7 +131,7 @@ describe('ExportWorkflowApiDialogContent', () => {
     const error = new Error('Export failed')
     const onClose = vi.fn()
     mockWorkflowService.exportWorkflow.mockRejectedValueOnce(error)
-    render(ExportWorkflowApiDialogContent, { props: { onClose } })
+    renderDialog('image_flux2', onClose)
 
     await userEvent.click(
       screen.getByRole('button', { name: 'apiExport.downloadWorkflow' })

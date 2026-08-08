@@ -21,7 +21,7 @@ describe('openExportWorkflowApiDialog', () => {
     const showDialog = vi.spyOn(dialogStore, 'showDialog')
     const closeDialog = vi.spyOn(dialogStore, 'closeDialog')
 
-    await openExportWorkflowApiDialog()
+    await openExportWorkflowApiDialog('image_flux2')
 
     const dialog = showDialog.mock.calls[0][0]
     expect(dialog).toMatchObject({
@@ -30,7 +30,10 @@ describe('openExportWorkflowApiDialog', () => {
       dialogComponentProps: { renderer: 'reka', size: 'md' }
     })
 
-    const props = dialog.props as { onClose?: () => void } | undefined
+    const props = dialog.props as
+      | { initialWorkflowBaseName?: string; onClose?: () => void }
+      | undefined
+    expect(props?.initialWorkflowBaseName).toBe('image_flux2')
     const onClose = props?.onClose
     expect(onClose).toEqual(expect.any(Function))
     if (typeof onClose !== 'function') return

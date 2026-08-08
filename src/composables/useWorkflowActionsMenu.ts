@@ -193,7 +193,9 @@ export function useWorkflowActionsMenu(
       icon: 'pi pi-download',
       command: async () => {
         await ensureWorkflowActive(workflow)
-        await openExportWorkflowApiDialog().catch((error: unknown) =>
+        await openExportWorkflowApiDialog(
+          workflow?.filename ?? 'workflow_api'
+        ).catch((error: unknown) =>
           toastErrorHandler(
             new Error(t('apiExport.dialogLoadError'), { cause: error })
           )
@@ -201,36 +203,32 @@ export function useWorkflowActionsMenu(
       },
       visible: isRoot,
       isNew: true,
-      badge: t('g.new')
+      badge: t('apiExport.newBadge')
     })
 
     addItem({
       id: 'share',
       label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',
-      command: () =>
-        openShareDialog().catch(useErrorHandling().toastErrorHandler),
+      command: () => openShareDialog().catch(toastErrorHandler),
       visible: isCloud && flags.workflowSharingEnabled
     })
 
     addItem({
-      id: 'enter-app-mode',
-      label: t('breadcrumbsMenu.enterAppMode'),
-      icon: 'icon-[lucide--panels-top-left]',
+      id: isLinearMode ? 'exit-app-mode' : 'enter-app-mode',
+      label: t(
+        isLinearMode
+          ? 'breadcrumbsMenu.exitAppMode'
+          : 'breadcrumbsMenu.enterAppMode'
+      ),
+      icon: isLinearMode
+        ? 'icon-[comfy--workflow]'
+        : 'icon-[lucide--panels-top-left]',
       command: toggleLinear,
-      visible: showAppModeItems && !isLinearMode,
+      visible: showAppModeItems || isLinearMode,
       prependSeparator: true,
-      isNew: true,
+      isNew: !isLinearMode,
       badgeSeverity: 'secondary'
-    })
-
-    addItem({
-      id: 'exit-app-mode',
-      label: t('breadcrumbsMenu.exitAppMode'),
-      icon: 'icon-[comfy--workflow]',
-      command: toggleLinear,
-      visible: isLinearMode,
-      prependSeparator: true
     })
 
     const isActive = workflow === workflowStore.activeWorkflow

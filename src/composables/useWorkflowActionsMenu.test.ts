@@ -18,7 +18,11 @@ const mockBookmarkStore = vi.hoisted(() => ({
 }))
 
 const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: { path: 'test.json', isPersisted: true } as ComfyWorkflow
+  activeWorkflow: {
+    path: 'test.json',
+    filename: 'test',
+    isPersisted: true
+  } as ComfyWorkflow
 }))
 
 const mockWorkflowService = vi.hoisted(() => ({
@@ -137,6 +141,7 @@ describe('useWorkflowActionsMenu', () => {
     mockAppModeStore.selectedOutputs.length = 0
     mockWorkflowStore.activeWorkflow = {
       path: 'test.json',
+      filename: 'test',
       isPersisted: true
     } as ComfyWorkflow
   })
@@ -255,12 +260,12 @@ describe('useWorkflowActionsMenu', () => {
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const exportApiItem = findItem(menuItems.value, 'menuLabels.Export for API')
 
-    expect(exportApiItem.badge).toBe('g.new')
+    expect(exportApiItem.badge).toBe('apiExport.newBadge')
     expect(exportApiItem.isNew).toBe(true)
 
     await exportApiItem.command?.()
 
-    expect(mockOpenExportWorkflowApiDialog).toHaveBeenCalledOnce()
+    expect(mockOpenExportWorkflowApiDialog).toHaveBeenCalledWith('test')
   })
 
   it('shows an error when the API export dialog cannot open', async () => {
