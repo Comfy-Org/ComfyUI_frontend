@@ -38,8 +38,16 @@ describe('getProviderIcon', () => {
     )
   })
 
+  it('returns the Comfy logo for Comfy Cloud', () => {
+    expect(getProviderIcon('Comfy Cloud')).toBe('icon-[comfy--comfy-c]')
+  })
+
   it('converts to lowercase', () => {
     expect(getProviderIcon('GEMINI')).toBe('icon-[comfy--gemini]')
+  })
+
+  it('does not resolve aliases through the object prototype', () => {
+    expect(getProviderIcon('constructor')).toBe('icon-[comfy--constructor]')
   })
 })
 
@@ -62,6 +70,7 @@ describe('getProviderBorderStyle', () => {
 
   it('returns fallback color for unknown providers', () => {
     expect(getProviderBorderStyle('Unknown Provider')).toBe('#525252')
+    expect(getProviderBorderStyle('constructor')).toBe('#525252')
   })
 
   it('handles provider names with spaces', () => {
@@ -69,6 +78,7 @@ describe('getProviderBorderStyle', () => {
       'linear-gradient(90deg, #9D39FF, #E80000)'
     )
     expect(getProviderBorderStyle('Moonvalley Marey')).toBe('#DAD9C5')
+    expect(getProviderBorderStyle('Comfy Cloud')).toBe('#F0FF41')
   })
 })
 

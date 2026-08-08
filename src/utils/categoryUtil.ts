@@ -59,6 +59,7 @@ const PROVIDER_COLORS: Record<string, string | [string, string]> = {
   anthropic: '#D97757',
   bfl: '#ffffff',
   bria: '#B6B6B6',
+  'comfy-cloud': '#F0FF41',
   elevenlabs: '#B6B6B6',
   bytedance: ['#00C8D2', '#325AB4'],
   gemini: ['#3186FF', '#FABC12'],
@@ -90,6 +91,10 @@ const PROVIDER_COLORS: Record<string, string | [string, string]> = {
   wavespeed: '#B6B6B6'
 }
 
+const PROVIDER_ICON_ALIASES: Record<string, string> = {
+  'comfy-cloud': 'comfy-c'
+}
+
 /**
  * Extracts the provider name from a node category path.
  * e.g. "api/image/BFL" -> "BFL"
@@ -105,7 +110,10 @@ export function getProviderName(category: string): string {
  */
 export function getProviderIcon(providerName: string): string {
   const iconKey = providerName.toLowerCase().replaceAll(/\s+/g, '-')
-  return `icon-[comfy--${iconKey}]`
+  const aliasedKey = Object.hasOwn(PROVIDER_ICON_ALIASES, iconKey)
+    ? PROVIDER_ICON_ALIASES[iconKey]
+    : iconKey
+  return `icon-[comfy--${aliasedKey}]`
 }
 
 /**
@@ -115,7 +123,9 @@ export function getProviderIcon(providerName: string): string {
  */
 export function getProviderBorderStyle(providerName: string): string {
   const iconKey = providerName.toLowerCase().replaceAll(/\s+/g, '-')
-  const colors = PROVIDER_COLORS[iconKey]
+  const colors = Object.hasOwn(PROVIDER_COLORS, iconKey)
+    ? PROVIDER_COLORS[iconKey]
+    : undefined
 
   if (!colors) {
     return '#525252' // neutral-600 fallback

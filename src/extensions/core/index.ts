@@ -35,12 +35,13 @@ import './uploadImage'
 import './webcamCapture'
 import './widgetInputs'
 
-// Cloud-only extensions - tree-shaken in OSS builds
+// Cloud-only extensions
 if (isCloud) {
   await import('./cloudRemoteConfig')
-  await import('./cloudBadges')
   await import('./cloudSessionCookie')
 }
+
+await import('./cloudBadges')
 
 // Feedback button for cloud and nightly builds
 if (isCloud || isNightly) {

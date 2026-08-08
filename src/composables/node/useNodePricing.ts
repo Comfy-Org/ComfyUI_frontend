@@ -14,6 +14,7 @@ import { memoize } from 'es-toolkit'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
+import { i18n, t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -54,21 +55,27 @@ export const formatCreditsValue = (usd: number): string => {
   const rawCredits = usd * CREDITS_PER_USD
   return formatCredits({
     value: rawCredits,
+    locale: i18n.global.locale.value,
     numberOptions: getNumberOptions(rawCredits)
   })
 }
 
 const makePrefix = (approximate?: boolean) => (approximate ? '~' : '')
 
-const makeSuffix = (suffix?: string) => suffix ?? '/Run'
+const makeSuffix = (suffix?: string) => suffix ?? t('nodePricing.perRun')
 
 const appendNote = (note?: string) => (note ? ` ${note}` : '')
 
+const formatEstimatedCredits = (
+  value: string,
+  { suffix, note, approximate }: CreditFormatOptions
+): string =>
+  `${makePrefix(approximate)}${value} ${t('nodePricing.credits')}${makeSuffix(suffix)}${appendNote(note)} (${t('nodePricing.estimate')})`
+
 const formatCreditsLabel = (
   usd: number,
-  { suffix, note, approximate }: CreditFormatOptions = {}
-): string =>
-  `${makePrefix(approximate)}${formatCreditsValue(usd)} credits${makeSuffix(suffix)}${appendNote(note)}`
+  options: CreditFormatOptions = {}
+): string => formatEstimatedCredits(formatCreditsValue(usd), options)
 
 export const formatCreditsRangeValue = (
   minUsd: number,
@@ -82,10 +89,10 @@ export const formatCreditsRangeValue = (
 const formatCreditsRangeLabel = (
   minUsd: number,
   maxUsd: number,
-  { suffix, note, approximate }: CreditFormatOptions = {}
+  options: CreditFormatOptions = {}
 ): string => {
   const rangeValue = formatCreditsRangeValue(minUsd, maxUsd)
-  return `${makePrefix(approximate)}${rangeValue} credits${makeSuffix(suffix)}${appendNote(note)}`
+  return formatEstimatedCredits(rangeValue, options)
 }
 
 export const formatCreditsListValue = (
@@ -98,10 +105,10 @@ export const formatCreditsListValue = (
 
 const formatCreditsListLabel = (
   usdValues: number[],
-  { suffix, note, approximate, separator }: CreditFormatOptions = {}
+  options: CreditFormatOptions = {}
 ): string => {
-  const value = formatCreditsListValue(usdValues, separator)
-  return `${makePrefix(approximate)}${value} credits${makeSuffix(suffix)}${appendNote(note)}`
+  const value = formatCreditsListValue(usdValues, options.separator)
+  return formatEstimatedCredits(value, options)
 }
 
 // -----------------------------
@@ -295,6 +302,7 @@ const buildSignature = (
   for (const name of rule.depends_on.input_groups) {
     parts.push(`g:${name}=${ctx.inputGroups[name] ?? 0}`)
   }
+  parts.push(`locale:${i18n.global.locale.value}`)
   return parts.join('|')
 }
 
@@ -381,7 +389,7 @@ export const formatPricingResult = (
     const fmt = { ...defaults, ...(result.format ?? {}) }
     if (valueOnly) {
       const prefix = fmt.approximate ? '~' : ''
-      return `${prefix}${formatCreditsListValue(usdValues)}`
+      return `${prefix}${formatCreditsListValue(usdValues, fmt.separator)}`
     }
     return formatCreditsListLabel(usdValues, fmt)
   }
@@ -768,11 +776,14 @@ export const evaluateNodeDefPricing = memoize(
 
       const context: JsonataEvalContext = { widgets, inputs, inputGroups }
       const result = await rule._compiled.evaluate(context)
-      return formatPricingResult(result, { valueOnly: true })
+      return formatPricingResult(result)
     } catch (e) {
       console.error('[evaluateNodeDefPricing] error:', e)
       return ''
     }
   },
-  { getCacheKey: (nodeDef: ComfyNodeDef) => nodeDef.name }
+  {
+    getCacheKey: (nodeDef: ComfyNodeDef) =>
+      `${nodeDef.name}:${i18n.global.locale.value}`
+  }
 )
