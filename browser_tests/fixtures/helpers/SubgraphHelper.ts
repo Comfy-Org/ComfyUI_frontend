@@ -89,7 +89,6 @@ export class SubgraphHelper {
           | { success: true; slotName: string; x: number; y: number }
           | { success: false }
 
-        // Right-click: try each slot until one works
         const tryRightClick = (): SlotInteractionResult => {
           for (const slot of slotsToTry) {
             if (!slot.pos || !node.onPointerDown) continue
@@ -100,10 +99,10 @@ export class SubgraphHelper {
               button: 2, // Right mouse button
               preventDefault: () => {},
               stopPropagation: () => {}
-            }
+            } as unknown as CanvasPointerEvent
 
             node.onPointerDown(
-              event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
+              event,
               app.canvas.pointer,
               app.canvas.linkConnector
             )
@@ -117,7 +116,6 @@ export class SubgraphHelper {
           return { success: false }
         }
 
-        // Double-click: use first slot with bounding rect center
         const tryDoubleClick = (): SlotInteractionResult => {
           const slot = slotsToTry[0]
           if (!slot.boundingRect) {
