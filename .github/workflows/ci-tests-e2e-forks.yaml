@@ -58,7 +58,6 @@ jobs:
           pr-number: ${{ steps.pr.outputs.number }}
           section-name: playwright
           section-content: '## 🎭 Playwright: ⏳ Running...'
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}
 
       - name: Download and Deploy Reports
@@ -91,19 +90,11 @@ jobs:
             "$BRANCH_NAME" \
             "completed"
 
-      - name: Read playwright section
-        id: section
-        if: steps.route.outputs.handle == 'true' && github.event.action == 'completed' && hashFiles('playwright-section.md') != ''
-        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
-        with:
-          path: playwright-section.md
-
-      - name: Upsert playwright section into unified report
-        if: steps.route.outputs.handle == 'true' && github.event.action == 'completed' && steps.section.outputs.content != ''
-        uses: ./.github/actions/upsert-comment-section
+      - name: Read and upsert playwright section
+        if: steps.route.outputs.handle == 'true' && github.event.action == 'completed'
+        uses: ./.github/actions/read-and-upsert-comment-section
         with:
           pr-number: ${{ steps.pr.outputs.number }}
           section-name: playwright
-          section-content: ${{ steps.section.outputs.content }}
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          section-file: playwright-section.md
           token: ${{ github.token }}

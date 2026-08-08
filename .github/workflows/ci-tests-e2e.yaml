@@ -214,6 +214,84 @@ jobs:
           [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
+  # Records video only for spec files newly added in this PR, to keep cost bounded.
+  playwright-video-new-tests:
+    needs: setup
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      has-new-tests: ${{ steps.detect.outputs.has-new-tests }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect newly-added test spec files
+        id: detect
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          NEW_FILES=$(git diff --name-only --diff-filter=A "$BASE_SHA"...HEAD -- browser_tests/tests | grep '\.spec\.ts$' || true)
+
+          if [ -z "$NEW_FILES" ]; then
+            echo "has-new-tests=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-new-tests=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          {
+            echo "files<<EOF_NEW_SPEC_FILES"
+            echo "$NEW_FILES"
+            echo "EOF_NEW_SPEC_FILES"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Newly-added spec files:"
+          echo "${NEW_FILES:-<none>}"
+
+      - name: Download built frontend
+        if: steps.detect.outputs.has-new-tests == 'true'
+        uses: actions/download-artifact@v7
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Start ComfyUI server
+        if: steps.detect.outputs.has-new-tests == 'true'
+        uses: ./.github/actions/start-comfyui-server
+
+      - name: Install frontend deps
+        if: steps.detect.outputs.has-new-tests == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Run new test(s) with video recording
+        if: steps.detect.outputs.has-new-tests == 'true'
+        env:
+          RECORD_VIDEO: 'true'
+          SLOW_MO: '1000'
+          NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
+        run: |
+          FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
+          pnpm exec playwright test --project=chromium $FILES
+
+      - name: Upload new-test report (with embedded video)
+        if: ${{ !cancelled() && steps.detect.outputs.has-new-tests == 'true' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-new-tests
+          path: ./playwright-report/
+          retention-days: 30
+          if-no-files-found: warn
+
   #### BEGIN Deployment and commenting (PRs with direct secret access)
   # when using pull_request event, we have permission to comment directly
   # otherwise, we use workflow_run in ci-tests-e2e-forks.yaml
@@ -222,6 +300,9 @@ jobs:
   comment-on-pr-start:
     needs: changes
     runs-on: ubuntu-latest
+    concurrency:
+      group: pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     if: >-
       ${{
         needs.changes.outputs.should-run == 'true' &&
@@ -241,13 +322,16 @@ jobs:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: playwright
           section-content: '## 🎭 Playwright: ⏳ Running...'
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}
 
   # Deploy and upsert final playwright section
   deploy-and-comment:
-    needs: [changes, playwright-tests, merge-reports]
+    needs:
+      [changes, playwright-tests, merge-reports, playwright-video-new-tests]
     runs-on: ubuntu-latest
+    concurrency:
+      group: pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     if: >-
       ${{
         always() &&
@@ -283,19 +367,11 @@ jobs:
             "$BRANCH_NAME" \
             "completed"
 
-      - name: Read playwright section
-        id: section
-        if: ${{ !cancelled() && hashFiles('playwright-section.md') != '' }}
-        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
-        with:
-          path: playwright-section.md
-
-      - name: Upsert playwright section into unified report
-        if: ${{ !cancelled() && steps.section.outputs.content != '' }}
-        uses: ./.github/actions/upsert-comment-section
+      - name: Read and upsert playwright section
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/read-and-upsert-comment-section
         with:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: playwright
-          section-content: ${{ steps.section.outputs.content }}
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          section-file: playwright-section.md
           token: ${{ github.token }}
