@@ -162,6 +162,28 @@ describe('History — merging', () => {
     h.push(new MergingCommand('opacity'))
     expect(first.merged).toBe(0)
   })
+
+  it('a merged edit is one dirty step that a single undo clears', () => {
+    const h = new History()
+    h.push(new MergingCommand('opacity'))
+    h.push(new MergingCommand('opacity'))
+    h.push(new MergingCommand('opacity'))
+    expect(h.dirty()).toBe(true)
+    h.undo()
+    expect(h.dirty()).toBe(false)
+  })
+
+  it('never merges across a save point, so the new edit stays undoable to clean', () => {
+    const h = new History()
+    const first = new MergingCommand('opacity')
+    h.push(first)
+    h.markSaved()
+    h.push(new MergingCommand('opacity'))
+    expect(first.merged).toBe(0)
+    expect(h.dirty()).toBe(true)
+    h.undo()
+    expect(h.dirty()).toBe(false)
+  })
 })
 
 describe('History — dirty tracking and eviction', () => {
