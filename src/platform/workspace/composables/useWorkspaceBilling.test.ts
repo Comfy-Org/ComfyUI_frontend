@@ -966,17 +966,22 @@ describe('useWorkspaceBilling', () => {
 
     it('keeps an older portal response out of a newer recovery session', async () => {
       const oldPortal = createDeferred<{ url: string }>()
+      const newPortal = createDeferred<{ url: string }>()
       const openSpy = vi.fn()
       vi.stubGlobal('open', openSpy)
       mockWorkspaceApi.getPaymentPortalUrl
         .mockReturnValueOnce(oldPortal.promise)
-        .mockResolvedValueOnce({ url: 'https://billing.example/new-portal' })
-      const oldController = new AbortController()
+        .mockReturnValueOnce(newPortal.promise)
       const billing = setupBilling()
 
-      const oldRequest = billing.manageSubscription(oldController.signal)
-      oldController.abort()
-      await billing.manageSubscription(new AbortController().signal)
+      const oldRequest = billing.manageSubscription(
+        new AbortController().signal
+      )
+      const newRequest = billing.manageSubscription(
+        new AbortController().signal
+      )
+      newPortal.resolve({ url: 'https://billing.example/new-portal' })
+      await newRequest
       oldPortal.resolve({ url: 'https://billing.example/old-portal' })
       await oldRequest
 

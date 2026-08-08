@@ -1,9 +1,23 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Component } from 'vue'
 import { nextTick, ref } from 'vue'
 
+import type { LayoutDialogOptions } from '@/services/dialogService'
+
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
+
+interface RecoveryDialogProps {
+  canManage: boolean
+  isUpdatingPayment: boolean
+  onClose: () => void
+  onUpdatePayment: () => Promise<void>
+}
+
+type RecoveryDialogOptions = Omit<LayoutDialogOptions<Component>, 'props'> & {
+  props: RecoveryDialogProps
+}
 
 const mockCanRunWorkflows = ref(true)
 const mockBillingStatus = ref<string | null>('paid')
@@ -14,7 +28,7 @@ const state = vi.hoisted(() => ({
   fetchStatus: vi.fn(),
   fetchBalance: vi.fn(),
   toastErrorHandler: vi.fn(),
-  showLayoutDialog: vi.fn(),
+  showLayoutDialog: vi.fn<(options: RecoveryDialogOptions) => void>(),
   closeDialog: vi.fn(),
   updateDialog: vi.fn()
 }))
@@ -263,7 +277,7 @@ describe('CloudRunButtonWrapper', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment to run' })
     )
-    const reopenedDialog = state.showLayoutDialog.mock.calls.at(-1)?.[0]
+    const reopenedDialog = state.showLayoutDialog.mock.calls.at(-1)![0]
     expect(reopenedDialog.props.isUpdatingPayment).toBe(true)
     expect(reopenedDialog.props.onUpdatePayment()).toBe(firstRequest)
     expect(repeatedRequest).toBe(firstRequest)
@@ -500,11 +514,16 @@ describe('CloudRunButtonWrapper', () => {
     await nextTick()
 
     await userEvent.click(screen.getByTestId('queue-button'))
-    const newDialog = state.showLayoutDialog.mock.calls.at(-1)?.[0]
+    const newDialog = state.showLayoutDialog.mock.calls.at(-1)![0]
     const newRequest = newDialog.props.onUpdatePayment()
 
     expect(newRequest).not.toBe(oldRequest)
     expect(state.manageSubscription).toHaveBeenCalledTimes(2)
+    const oldSignal = state.manageSubscription.mock.calls[0][0]
+    const newSignal = state.manageSubscription.mock.calls[1][0]
+    expect(newSignal).not.toBe(oldSignal)
+    expect(oldSignal.aborted).toBe(true)
+    expect(newSignal.aborted).toBe(false)
     await newRequest
     const closeCount = state.closeDialog.mock.calls.length
     const updateCount = state.updateDialog.mock.calls.length

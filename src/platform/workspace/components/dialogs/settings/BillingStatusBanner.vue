@@ -69,6 +69,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
@@ -79,6 +80,7 @@ type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
 const { t, d } = useI18n()
 const { renewalDate, subscription, manageSubscription } = useBillingContext()
+const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
 const { kind, dismiss } = useBillingBanner()
@@ -196,10 +198,14 @@ function handleUpdatePayment() {
   recoveryPortalController?.abort()
   const controller = new AbortController()
   recoveryPortalController = controller
-  void manageSubscription(controller.signal).finally(() => {
-    if (recoveryPortalController === controller) {
-      recoveryPortalController = null
-    }
-  })
+  void manageSubscription(controller.signal)
+    .catch((error) => {
+      if (!controller.signal.aborted) toastErrorHandler(error)
+    })
+    .finally(() => {
+      if (recoveryPortalController === controller) {
+        recoveryPortalController = null
+      }
+    })
 }
 </script>

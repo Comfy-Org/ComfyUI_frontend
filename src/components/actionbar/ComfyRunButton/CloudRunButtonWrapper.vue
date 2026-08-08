@@ -101,6 +101,14 @@ watch(
   }
 )
 
+function isCurrentRecoverySession(session: number) {
+  return (
+    !isUnmounted &&
+    session === recoverySession &&
+    Boolean(paymentRecoveryLock.value)
+  )
+}
+
 function updatePayment(session: number): Promise<void> {
   if (
     isUnmounted ||
@@ -122,20 +130,12 @@ function updatePayment(session: number): Promise<void> {
     })
     try {
       await manageSubscription(controller.signal)
-      if (
-        !isUnmounted &&
-        session === recoverySession &&
-        paymentRecoveryLock.value
-      ) {
+      if (isCurrentRecoverySession(session)) {
         refreshBillingOnFocus = true
         closePaymentRecoveryDialog()
       }
     } catch (error) {
-      if (
-        !isUnmounted &&
-        session === recoverySession &&
-        paymentRecoveryLock.value
-      ) {
+      if (isCurrentRecoverySession(session)) {
         toastErrorHandler(error)
       }
     } finally {
@@ -143,11 +143,7 @@ function updatePayment(session: number): Promise<void> {
       if (paymentPortalRequest?.session === session) {
         paymentPortalRequest = null
       }
-      if (
-        !isUnmounted &&
-        session === recoverySession &&
-        paymentRecoveryLock.value
-      ) {
+      if (isCurrentRecoverySession(session)) {
         dialogStore.updateDialog({
           key: DIALOG_KEY,
           contentProps: { isUpdatingPayment: false }

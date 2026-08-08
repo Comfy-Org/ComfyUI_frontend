@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -35,6 +35,7 @@ const state = vi.hoisted(() => ({
   canTopUp: true,
   showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn().mockResolvedValue(undefined),
+  toastErrorHandler: vi.fn(),
   handleResubscribe: vi.fn()
 }))
 
@@ -64,6 +65,10 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     fetchStatus: vi.fn(),
     fetchBalance: vi.fn()
   })
+}))
+
+vi.mock('@/composables/useErrorHandling', () => ({
+  useErrorHandling: () => ({ toastErrorHandler: state.toastErrorHandler })
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
@@ -329,22 +334,79 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
-  it('aborts a recovery banner portal request when its flag is rolled back', async () => {
-    state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
+  it('keeps non-recovery banners when payment recovery is off', () => {
+    mockV1PaymentRecovery.value = false
+    mockBillingStatus.value = 'paid'
+    exhausted()
+
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
+  })
+
+  it('surfaces a rejected recovery portal request', async () => {
+    const error = new Error('portal failed')
+    state.manageSubscription.mockRejectedValueOnce(error)
     pausedState()
     renderBanner()
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment' })
     )
-    const signal = state.manageSubscription.mock.calls[0][0]
-    expect(signal).toBeInstanceOf(AbortSignal)
 
-    mockV1PaymentRecovery.value = false
-    await nextTick()
-
-    expect(signal.aborted).toBe(true)
+    await waitFor(() =>
+      expect(state.toastErrorHandler).toHaveBeenCalledWith(error)
+    )
   })
+
+  it.for([
+    {
+      reason: 'its flag is rolled back',
+      invalidate: () => {
+        mockV1PaymentRecovery.value = false
+      },
+      assertInvalidated: () =>
+        expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    },
+    {
+      reason: 'the owner loses permission',
+      invalidate: () => {
+        mockCanManageSubscription.value = false
+      },
+      assertInvalidated: () =>
+        expect(
+          screen.queryByRole('button', { name: 'Update payment' })
+        ).not.toBeInTheDocument()
+    },
+    {
+      reason: 'billing recovers',
+      invalidate: () => {
+        mockBillingStatus.value = 'paid'
+        state.isActiveSubscription = true
+      },
+      assertInvalidated: () =>
+        expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    }
+  ])(
+    'aborts a recovery portal request when $reason',
+    async ({ invalidate, assertInvalidated }) => {
+      state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
+      pausedState()
+      renderBanner()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Update payment' })
+      )
+      const signal = state.manageSubscription.mock.calls[0][0]
+      expect(signal).toBeInstanceOf(AbortSignal)
+
+      invalidate()
+      await nextTick()
+
+      expect(signal.aborted).toBe(true)
+      assertInvalidated()
+    }
+  )
 
   it('aborts a recovery banner portal request on unmount', async () => {
     state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
@@ -360,43 +422,6 @@ describe('BillingStatusBanner', () => {
     unmount()
 
     expect(signal.aborted).toBe(true)
-  })
-
-  it('aborts a recovery portal request when the owner loses permission', async () => {
-    state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
-    pausedState()
-    renderBanner()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Update payment' })
-    )
-    const signal = state.manageSubscription.mock.calls[0][0]
-
-    mockCanManageSubscription.value = false
-    await nextTick()
-
-    expect(signal.aborted).toBe(true)
-    expect(
-      screen.queryByRole('button', { name: 'Update payment' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('aborts a recovery portal request when billing recovers', async () => {
-    state.manageSubscription.mockReturnValueOnce(new Promise(() => {}))
-    pausedState()
-    renderBanner()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Update payment' })
-    )
-    const signal = state.manageSubscription.mock.calls[0][0]
-
-    mockBillingStatus.value = 'paid'
-    state.isActiveSubscription = true
-    await nextTick()
-
-    expect(signal.aborted).toBe(true)
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('lets a promoted owner reactivate an ending plan', async () => {

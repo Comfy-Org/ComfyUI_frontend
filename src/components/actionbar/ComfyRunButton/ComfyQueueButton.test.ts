@@ -225,6 +225,18 @@ describe('ComfyQueueButton', () => {
     expect(useQueueSettingsStore().mode).toBe('change')
   })
 
+  it('keeps a queue mode chosen while the recovery lock was active', async () => {
+    const { rerender } = renderQueueButton(
+      { paymentRecoveryLock: 'owner' },
+      'change'
+    )
+
+    useQueueSettingsStore().mode = 'instant-idle'
+    await rerender({ paymentRecoveryLock: null })
+
+    expect(useQueueSettingsStore().mode).toBe('instant-idle')
+  })
+
   it('restores the previous queue mode when the recovery control unmounts', () => {
     const { unmount } = renderQueueButton(
       { paymentRecoveryLock: 'member' },
