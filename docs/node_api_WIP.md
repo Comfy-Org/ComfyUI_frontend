@@ -1609,6 +1609,37 @@ nothing. This is documented on the method.
 **Cost to reverse.** High — five kjnodes files, and the alternative is
 `comfy.constants`, which was removed on instruction.
 
+### `DefSelector` accepts a predicate
+
+**Forced by** pysssss `quickNodes.js` — a menu entry for "any node taking a VAE
+input", which is a _shape_, not a name.
+
+**The tension.** This partially undoes the reason selectors are declarative.
+§4d opens by arguing that a name check can be indexed while today's hooks run
+for every registered type, "millions of wasted callbacks at boot". A predicate
+has to run per type, which is the cost the design set out to remove.
+
+**Why it was added.** The alternative is worse in the same dimension: without
+it, a pack registers a `/./` catch-all and does the shape test inside the
+callback — which is _exactly_ the run-and-return pattern, plus a callback
+invocation. The predicate at least lets the host see the test and, in future,
+index or memoise it.
+
+**Guardrail.** It is documented as discouraged and listed last, and the doc
+comment names the only case it is for. If it starts appearing in place of a
+name, that is a signal the selector vocabulary is missing something.
+
+**Cost to reverse.** Low today — one pack, and it degrades to a catch-all with
+an internal guard.
+
+### `graph.duplicate()`
+
+Uncontested and listed only for completeness. `add(type)` makes a fresh node, so
+a pack duplicating a _configured_ node — a prompt box the user has filled in —
+lost its contents; pysssss's "Add 2nd Pass" dropped a menu entry rather than
+lose the user's text. Links are deliberately not copied: a duplicate wired into
+the same places is a different operation.
+
 ### The pattern worth noticing
 
 Four of these six exist because **the wire format has no safe failure mode.** A

@@ -50,6 +50,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'disabled',
   'disconnect',
   'draw',
+  'duplicate',
   'event',
   'execution',
   'extend',
