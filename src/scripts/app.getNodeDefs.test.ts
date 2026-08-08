@@ -49,12 +49,12 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(result.TestNode.display_name).toBe('Custom Display Name')
   })
 
-  test('falls back to the node name when display_name is empty', async () => {
+  test('leaves an empty display_name unresolved for the store to fill in', async () => {
     mockDefs(nodeDef({ display_name: '' }))
 
     const result = await comfyApp.getNodeDefs()
 
-    expect(result.TestNode.display_name).toBe('TestNode')
+    expect(result.TestNode.display_name).toBe('')
   })
 
   test('renders backend names containing i18n syntax verbatim', async () => {
@@ -65,7 +65,10 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(result.TestNode.display_name).toBe('Load Image {batch} | v2')
   })
 
-  test('lets custom-node translations win over the backend name', async () => {
+  // Resolution happens on read, in ComfyNodeDefImpl — see
+  // nodeDefStore.nodeText.test.ts. Baking it in here is what froze the text to
+  // the fetch-time locale, so the raw value has to survive this layer intact.
+  test('hands the store raw text rather than a translation', async () => {
     mergeCustomNodesI18n({
       en: { nodeDefs: { TestNode: { display_name: 'Translated Name' } } }
     })
@@ -73,18 +76,7 @@ describe('ComfyApp.getNodeDefs', () => {
 
     const result = await comfyApp.getNodeDefs()
 
-    expect(result.TestNode.display_name).toBe('Translated Name')
-  })
-
-  test('resolves dotted node names against the normalized key', async () => {
-    mergeCustomNodesI18n({
-      en: { nodeDefs: { my_node: { display_name: 'Dotted Translated' } } }
-    })
-    mockDefs(nodeDef({ name: 'my.node', display_name: 'My Node' }))
-
-    const result = await comfyApp.getNodeDefs()
-
-    expect(result['my.node'].display_name).toBe('Dotted Translated')
+    expect(result.TestNode.display_name).toBe('Object Info Display Name')
   })
 
   test('publishes backend text for consumers that only know the node name', async () => {
@@ -111,7 +103,7 @@ describe('ComfyApp.getNodeDefs', () => {
     }
   )
 
-  test('falls back to the bundled name when the backend omits display_name', async () => {
+  test('does not substitute the bundled snapshot for an omitted field', async () => {
     mockDefs(
       nodeDef({
         name: 'CLIPTextEncode',
@@ -122,17 +114,8 @@ describe('ComfyApp.getNodeDefs', () => {
 
     const result = await comfyApp.getNodeDefs()
 
-    expect(result.CLIPTextEncode.display_name).toBe('CLIP Text Encode (Prompt)')
-  })
-
-  test('falls back to the bundled description when the backend omits one', async () => {
-    mockDefs(
-      nodeDef({ name: 'CLIPTextEncode', display_name: 'x', description: '' })
-    )
-
-    const result = await comfyApp.getNodeDefs()
-
-    expect(result.CLIPTextEncode.description).toMatch(/^Encodes a text prompt/)
+    expect(result.CLIPTextEncode.display_name).toBeUndefined()
+    expect(result.CLIPTextEncode.description).toBe('')
   })
 
   test('resolves a def without a category to an empty category', async () => {
