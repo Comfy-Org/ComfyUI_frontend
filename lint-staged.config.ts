@@ -18,8 +18,8 @@ export default function lintStaged(stagedFiles: string[]) {
   const styleFiles = relativePaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
   )
-  const typecheckFiles = formattableFiles.filter(
-    (fileName) => !fileName.endsWith('.js')
+  const typecheckFiles = formattableFiles.filter((fileName) =>
+    /\.(ts|tsx|vue|mts)$/.test(fileName)
   )
 
   return [
