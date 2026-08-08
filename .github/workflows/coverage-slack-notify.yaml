@@ -64,7 +64,7 @@ jobs:
 
       - name: Resolve merged PR metadata
         id: pr-meta
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const sha = context.payload.workflow_run.head_sha;

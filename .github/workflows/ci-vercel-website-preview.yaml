@@ -63,7 +63,7 @@ jobs:
 
       - name: Fetch head commit metadata
         id: head-commit
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const { data } = await github.rest.repos.getCommit({
