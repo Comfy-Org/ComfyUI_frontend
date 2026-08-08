@@ -51,25 +51,23 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
     }
 
     // Walk the DOM and find candidates
+    //
+    // The helpers below are declared inside this callback (rather than at
+    // module scope) because Playwright serializes `page.evaluate`'s function
+    // body to run in the browser realm — it cannot close over anything
+    // defined in the Node/test scope.
     const candidates = await comfyPage.page.evaluate((): ContainCandidate[] => {
-      const results: ContainCandidate[] = []
+      interface ContainmentFlags {
+        alreadyContained: boolean
+        hasFixedWidth: boolean
+        isFlexChild: boolean
+        hasExplicitDimensions: boolean
+      }
 
-      const graphContainer =
-        document.querySelector('.graph-canvas-container') ??
-        document.querySelector('[class*="comfy-vue-node"]')?.parentElement ??
-        document.querySelector('.lg-node')?.parentElement
-
-      const root = graphContainer ?? document.body
-      const allElements = root.querySelectorAll('*')
-
-      allElements.forEach((el) => {
-        if (!(el instanceof HTMLElement)) return
-
-        const subtreeSize = el.querySelectorAll('*').length
-        if (subtreeSize < 5) return
-
-        const computed = getComputedStyle(el)
-
+      function computeContainmentFlags(
+        el: HTMLElement,
+        computed: CSSStyleDeclaration
+      ): ContainmentFlags {
         const containValue = computed.contain || 'none'
         const alreadyContained =
           containValue.includes('layout') || containValue.includes('strict')
@@ -89,44 +87,76 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
           (computed.minWidth !== '0px' && computed.minWidth !== 'auto') ||
           (computed.maxWidth !== 'none' && computed.maxWidth !== '0px')
 
-        let score = subtreeSize
-        if (hasExplicitDimensions) score *= 2
-        if (isFlexChild) score *= 1.5
-        if (alreadyContained) score = 0
-
-        let selector = el.tagName.toLowerCase()
-        const testId = el.getAttribute('data-testid')
-        if (testId) {
-          selector = `[data-testid="${testId}"]`
-        } else if (el.id) {
-          selector = `#${el.id}`
-        } else if (el.parentElement) {
-          // Use nth-child to disambiguate instead of fragile first-class fallback
-          // (e.g. Tailwind utilities like .flex, .relative are shared across many elements)
-          const children = Array.from(el.parentElement.children)
-          const index = children.indexOf(el) + 1
-          const parentTestId = el.parentElement.getAttribute('data-testid')
-          if (parentTestId) {
-            selector = `[data-testid="${parentTestId}"] > :nth-child(${index})`
-          } else if (el.parentElement.id) {
-            selector = `#${el.parentElement.id} > :nth-child(${index})`
-          } else {
-            const tag = el.tagName.toLowerCase()
-            selector = `${tag}:nth-child(${index})`
-          }
+        return {
+          alreadyContained,
+          hasFixedWidth,
+          isFlexChild,
+          hasExplicitDimensions
         }
+      }
+
+      function computeCandidateScore(
+        subtreeSize: number,
+        flags: ContainmentFlags
+      ): number {
+        if (flags.alreadyContained) return 0
+        let score = subtreeSize
+        if (flags.hasExplicitDimensions) score *= 2
+        if (flags.isFlexChild) score *= 1.5
+        return score
+      }
+
+      function computeSelector(el: HTMLElement): string {
+        const testId = el.getAttribute('data-testid')
+        if (testId) return `[data-testid="${testId}"]`
+        if (el.id) return `#${el.id}`
+        if (!el.parentElement) return el.tagName.toLowerCase()
+
+        // Use nth-child to disambiguate instead of fragile first-class fallback
+        // (e.g. Tailwind utilities like .flex, .relative are shared across many elements)
+        const children = Array.from(el.parentElement.children)
+        const index = children.indexOf(el) + 1
+        const parentTestId = el.parentElement.getAttribute('data-testid')
+        if (parentTestId) {
+          return `[data-testid="${parentTestId}"] > :nth-child(${index})`
+        }
+        if (el.parentElement.id) {
+          return `#${el.parentElement.id} > :nth-child(${index})`
+        }
+        return `${el.tagName.toLowerCase()}:nth-child(${index})`
+      }
+
+      const results: ContainCandidate[] = []
+
+      const graphContainer =
+        document.querySelector('.graph-canvas-container') ??
+        document.querySelector('[class*="comfy-vue-node"]')?.parentElement ??
+        document.querySelector('.lg-node')?.parentElement
+
+      const root = graphContainer ?? document.body
+      const allElements = root.querySelectorAll('*')
+
+      allElements.forEach((el) => {
+        if (!(el instanceof HTMLElement)) return
+
+        const subtreeSize = el.querySelectorAll('*').length
+        if (subtreeSize < 5) return
+
+        const computed = getComputedStyle(el)
+        const flags = computeContainmentFlags(el, computed)
+        const score = computeCandidateScore(subtreeSize, flags)
 
         results.push({
-          selector,
-          testId,
+          selector: computeSelector(el),
+          testId: el.getAttribute('data-testid'),
           tagName: el.tagName.toLowerCase(),
           className:
             typeof el.className === 'string' ? el.className.slice(0, 80) : '',
           subtreeSize,
-          hasFixedWidth,
-          isFlexChild,
-          hasExplicitDimensions,
-          alreadyContained,
+          hasFixedWidth: flags.hasFixedWidth,
+          isFlexChild: flags.isFlexChild,
+          hasExplicitDimensions: flags.hasExplicitDimensions,
+          alreadyContained: flags.alreadyContained,
           score
         })
       })
