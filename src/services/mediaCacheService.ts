@@ -160,16 +160,17 @@ class MediaCacheService {
 
   releaseUrl(src: string): void {
     const entry = this.cache.get(src)
-    if (entry?.objectUrl) {
-      const count = (this.urlRefCount.get(entry.objectUrl) || 1) - 1
-      if (count <= 0) {
-        URL.revokeObjectURL(entry.objectUrl)
-        this.urlRefCount.delete(entry.objectUrl)
-        // Remove from cache as well
-        this.cache.delete(src)
-      } else {
-        this.urlRefCount.set(entry.objectUrl, count)
-      }
+    if (!entry?.objectUrl) return
+
+    const currentCount = this.urlRefCount.get(entry.objectUrl) ?? 0
+    if (currentCount === 0) return
+
+    if (currentCount === 1) {
+      URL.revokeObjectURL(entry.objectUrl)
+      this.urlRefCount.delete(entry.objectUrl)
+      this.cache.delete(src)
+    } else {
+      this.urlRefCount.set(entry.objectUrl, currentCount - 1)
     }
   }
 
