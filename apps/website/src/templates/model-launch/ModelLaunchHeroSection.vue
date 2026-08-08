@@ -5,10 +5,10 @@ import { ChevronRight } from '@lucide/vue'
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchHero } from './types'
 
-import BrandButton from '../../components/common/BrandButton.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import Badge from '../../components/ui/badge/Badge.vue'
 import { t } from '../../i18n/translations'
+import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 
 const { locale = 'en', hero } = defineProps<{
   hero: ModelLaunchHero
@@ -79,27 +79,12 @@ const isContentFirst = hero.layout === 'content-first'
           {{ t(hero.descriptionKey, locale) }}
         </p>
 
-        <div class="mt-8 flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
-          <BrandButton
-            :href="hero.primaryCta.href"
-            :target="hero.primaryCta.target"
-            variant="outline-light"
-            size="lg"
-            class="w-full p-4 text-center lg:w-auto lg:min-w-52"
-          >
-            {{ t(hero.primaryCta.labelKey, locale) }}
-          </BrandButton>
-          <BrandButton
-            v-if="hero.secondaryCta"
-            :href="hero.secondaryCta.href"
-            :target="hero.secondaryCta.target"
-            variant="outline"
-            size="lg"
-            class="w-full p-4 text-center lg:w-auto lg:min-w-52"
-          >
-            {{ t(hero.secondaryCta.labelKey, locale) }}
-          </BrandButton>
-        </div>
+        <ModelLaunchHeroCtaButtons
+          :primary-cta="hero.primaryCta"
+          primary-variant="outline-light"
+          :secondary-cta="hero.secondaryCta"
+          :locale
+        />
 
         <div
           v-if="hero.badgeKeys?.length"
@@ -180,27 +165,12 @@ const isContentFirst = hero.layout === 'content-first'
         {{ t(hero.descriptionKey, locale) }}
       </p>
 
-      <div class="mt-8 flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
-        <BrandButton
-          :href="hero.primaryCta.href"
-          :target="hero.primaryCta.target"
-          variant="solid"
-          size="lg"
-          class="w-full p-4 text-center lg:w-auto lg:min-w-52"
-        >
-          {{ t(hero.primaryCta.labelKey, locale) }}
-        </BrandButton>
-        <BrandButton
-          v-if="hero.secondaryCta"
-          :href="hero.secondaryCta.href"
-          :target="hero.secondaryCta.target"
-          variant="outline"
-          size="lg"
-          class="w-full p-4 text-center lg:w-auto lg:min-w-52"
-        >
-          {{ t(hero.secondaryCta.labelKey, locale) }}
-        </BrandButton>
-      </div>
+      <ModelLaunchHeroCtaButtons
+        :primary-cta="hero.primaryCta"
+        primary-variant="solid"
+        :secondary-cta="hero.secondaryCta"
+        :locale
+      />
 
       <div
         v-if="hero.badgeKeys?.length"
