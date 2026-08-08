@@ -8,8 +8,8 @@ import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/rol
 import type { PromptResponse } from '@comfyorg/ingest-types'
 
 import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
-import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
@@ -43,10 +43,19 @@ const TOUR_FEATURE_FLAGS: RemoteConfig = {
   subscription_required: true
 }
 
-const ACTIVE_SUBSCRIPTION: CloudSubscriptionStatusResponse = {
+const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: true,
-  subscription_id: 'sub_first_run_tour',
-  renewal_date: '2099-01-01'
+  subscription_tier: 'PRO',
+  subscription_duration: 'MONTHLY',
+  renewal_date: '2099-01-01',
+  has_funds: true
+}
+
+const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
+  is_active: false,
+  subscription_tier: 'FREE',
+  subscription_duration: 'MONTHLY',
+  has_funds: false
 }
 
 const NO_ASSETS: AssetResponse = {
@@ -122,7 +131,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     await page.route('**/api/features', (route) =>
       route.fulfill(jsonRoute(TOUR_FEATURE_FLAGS))
     )
-    await page.route('**/customers/cloud-subscription-status', (route) =>
+    await page.route('**/api/billing/status', (route) =>
       route.fulfill(jsonRoute(ACTIVE_SUBSCRIPTION))
     )
     await page.route('**/api/assets**', (route) =>
@@ -237,6 +246,9 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('without a subscription', () => {
     test.beforeEach(async ({ page }) => {
       await mockBilling(page)
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill(jsonRoute(INACTIVE_SUBSCRIPTION))
+      )
     })
 
     test('leaves the nudge until the upgrade dialog closes', async ({

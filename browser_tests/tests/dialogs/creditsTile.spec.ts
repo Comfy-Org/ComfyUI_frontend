@@ -147,18 +147,6 @@ async function mockCloudBoot(
     )
   )
 
-  // Legacy billing (flag-off path, api.comfy.org/customers/*).
-  await page.route('**/customers/cloud-subscription-status', (r) =>
-    r.fulfill(
-      jsonRoute({
-        is_active: true,
-        subscription_tier: 'PRO',
-        subscription_duration: 'MONTHLY',
-        renewal_date: '2099-02-20T12:00:00Z',
-        end_date: null
-      })
-    )
-  )
   await page.route('**/customers/balance', (r) =>
     r.fulfill(balanceRoute(DEFAULT_BALANCE))
   )

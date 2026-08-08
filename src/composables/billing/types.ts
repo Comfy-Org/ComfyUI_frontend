@@ -104,9 +104,9 @@ export interface BillingState {
   canAccessSubscriptionFeatures: ComputedRef<boolean>
   /** Reflects the active workspace's tier, not the user's personal tier. */
   isFreeTier: ComputedRef<boolean>
-  /** Coarse funding state (`billing_status`); legacy reports null. */
+  /** Coarse funding state (`billing_status`). */
   billingStatus: ComputedRef<BillingStatus | null>
-  /** Lifecycle state; legacy synthesizes it from active/cancelled flags. */
+  /** Subscription lifecycle state. */
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
