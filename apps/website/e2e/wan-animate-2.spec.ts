@@ -41,6 +41,8 @@ test.describe('Wan Animate 2 page — desktop @smoke', () => {
     await heading.scrollIntoViewIfNeeded()
     await expect(heading).toBeVisible()
     await expect(page.getByText(FIRST_REVIEW.name)).toBeVisible()
+    // The name alone would still pass if the quote itself failed to render.
+    await expect(page.getByText(FIRST_REVIEW.body.en)).toBeVisible()
   })
 })
 
@@ -182,6 +184,9 @@ test.describe('Wan Animate 2 page — mobile @mobile', () => {
 
     const box = await ctaHeading.boundingBox()
     expect(box, 'CTA heading bounding box').not.toBeNull()
+    // Both edges: checking only the right edge lets a heading overflow to the
+    // left and still pass. One pixel of tolerance for subpixel rounding.
+    expect(box!.x).toBeGreaterThanOrEqual(-1)
     expect(box!.x + box!.width).toBeLessThanOrEqual(
       page.viewportSize()!.width + 1
     )
