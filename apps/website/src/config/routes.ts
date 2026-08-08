@@ -26,6 +26,7 @@ const baseRoutes = {
   minimax: '/minimax',
   flux3: '/flux-3',
   seedance: '/seedance-2.5',
+  wanAnimate2: '/wan-animate-2',
   brand: '/brand'
 } as const
 
