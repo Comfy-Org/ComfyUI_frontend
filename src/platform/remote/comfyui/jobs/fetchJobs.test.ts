@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   extractWorkflow,
@@ -46,6 +46,10 @@ function createMockResponse(
 }
 
 describe('fetchJobs', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   describe('fetchHistory', () => {
     it('fetches completed jobs', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
@@ -136,23 +140,23 @@ describe('fetchJobs', () => {
       expect(result[0].priority).toBe(999)
     })
 
-    it('returns empty array on error', async () => {
+    it('rejects on error', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const result = await fetchHistory(mockFetch)
-
-      expect(result).toEqual([])
+      await expect(fetchHistory(mockFetch)).rejects.toThrow('Network error')
     })
 
-    it('returns empty array on non-ok response', async () => {
+    it('rejects on non-ok response without logging', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 500
       })
 
-      const result = await fetchHistory(mockFetch)
-
-      expect(result).toEqual([])
+      await expect(fetchHistory(mockFetch)).rejects.toThrow(
+        '[Jobs API] Failed to fetch jobs: 500'
+      )
+      expect(errorSpy).not.toHaveBeenCalled()
     })
 
     it('parses batch containing text-only preview outputs', async () => {
@@ -269,12 +273,18 @@ describe('fetchJobs', () => {
       )
     })
 
-    it('returns empty arrays on error', async () => {
+    it('rejects on error', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const result = await fetchQueue(mockFetch)
+      await expect(fetchQueue(mockFetch)).rejects.toThrow('Network error')
+    })
 
-      expect(result).toEqual({ Running: [], Pending: [] })
+    it('rejects on non-ok response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503 })
+
+      await expect(fetchQueue(mockFetch)).rejects.toThrow(
+        '[Jobs API] Failed to fetch jobs: 503'
+      )
     })
   })
 
