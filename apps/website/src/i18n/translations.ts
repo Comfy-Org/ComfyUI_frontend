@@ -4798,9 +4798,9 @@ const translations = {
     'zh-CN': 'Comfy 上的 Seedance 2.5 — 电影级 AI 视频模型'
   },
   'seedance.meta.description': {
-    en: 'Run ByteDance Seedance 2.5 on Comfy: multi-shot cinematic video from text or image, 1080p to 4K. Draft free on Wan 2.2 and spend credits only on the final render.',
+    en: 'Run ByteDance Seedance 2.5 on Comfy: multi-shot cinematic video with native audio, from text or image. Draft free on Wan 2.2 and spend credits only on the final render.',
     'zh-CN':
-      '在 Comfy 上运行字节跳动 Seedance 2.5：从文本或图像生成多镜头电影级视频，支持 1080p 至 4K。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
+      '在 Comfy 上运行字节跳动 Seedance 2.5：从文本或图像生成带原生音频的多镜头电影级视频。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
   },
   'seedance.breadcrumb.model': { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
   'seedance.breadcrumb.updated': {
@@ -4812,9 +4812,9 @@ const translations = {
     'zh-CN': 'Seedance 2.5 已上线'
   },
   'seedance.hero.description': {
-    en: "ByteDance's cinematic video model — multi-shot sequences, 1080p to 4K, text or image in. You direct on the canvas; Seedance renders the cut.",
+    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut.",
     'zh-CN':
-      '字节跳动的电影级视频模型：多镜头序列，1080p 至 4K，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。'
+      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。'
   },
   'seedance.hero.primaryCta': {
     en: 'RUN SEEDANCE 2.5',
