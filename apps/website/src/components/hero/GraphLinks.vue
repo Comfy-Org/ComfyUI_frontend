@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useElementVisibility, useRafFn } from '@vueuse/core'
 
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { ElementKey } from './graphLayout'
@@ -26,6 +26,32 @@ useRafFn(({ delta }) => {
 
 const SAG = 6
 const SWAY = 3.5
+
+/** Comet geometry: SEG_LEN-long dashes stacked TRAIL deep, with opacity
+ * ramping 1 → 0 so the head reads solid and the tail dissolves, matching the
+ * showcase frame's sweep. The dash cycle is each wire's own length and the
+ * duration scales with it, so a short wire gets the same size pulse at the
+ * same speed as a long one rather than a squashed cycle. */
+const TRAIL = 14
+const SEG_LEN = 3
+/** Path units per second. */
+const SPEED = 70
+
+function trailOpacity(seg: number): number {
+  return Math.round((1 - seg / TRAIL) ** 1.8 * 100) / 100
+}
+
+/** Measured once per layout: sway shifts control points but barely changes
+ * arc length, so re-measuring every frame would burn layout for nothing. */
+const basePaths = ref<SVGPathElement[]>([])
+const lengths = ref<number[]>([])
+
+function measure() {
+  lengths.value = basePaths.value.map((p) => p?.getTotalLength?.() ?? 0)
+}
+
+onMounted(measure)
+watch(() => positions, measure, { deep: true, flush: 'post' })
 
 // Every endpoint has a DOM dot on its element (input card, node headers, the
 // OUTPUT pill), so the splines carry no dots of their own. The layer renders
@@ -66,21 +92,33 @@ const links = computed(() => {
     <path
       v-for="(d, i) in links"
       :key="i"
+      :ref="(el) => (basePaths[i] = el as SVGPathElement)"
       :d="d"
       stroke="#f2ff59"
       stroke-width="1.5"
       vector-effect="non-scaling-stroke"
     />
-    <!-- Traveling pulses: a dashed twin of each wire whose offset advances
-         so light appears to flow from input to output. -->
-    <path
-      v-for="(d, i) in links"
-      :key="`flow-${i}`"
-      :d="d"
-      class="wire-flow"
-      stroke-width="1.5"
-      vector-effect="non-scaling-stroke"
-    />
+    <!-- Traveling comet: each wire carries a stack of short dashes trailing
+         the head, their opacity ramping 100% → 0% like the conic sweep on the
+         showcase frame. One shared keyframe moves them all; the per-segment
+         dash offset is what spaces the tail out behind the head. -->
+    <template v-for="(d, i) in links" :key="`flow-${i}`">
+      <path
+        v-for="seg in TRAIL"
+        :key="`flow-${i}-${seg}`"
+        :d="d"
+        class="wire-flow"
+        stroke-width="1.5"
+        vector-effect="non-scaling-stroke"
+        :style="{
+          opacity: trailOpacity(seg),
+          strokeDasharray: `${SEG_LEN} ${Math.max(1, (lengths[i] ?? 0) - SEG_LEN)}`,
+          animationDuration: `${Math.max(0.6, (lengths[i] ?? 0) / SPEED)}s`,
+          '--seg-shift': seg * SEG_LEN,
+          '--cycle': lengths[i] ?? 0
+        }"
+      />
+    </template>
   </svg>
 </template>
 
@@ -88,13 +126,14 @@ const links = computed(() => {
 .wire-flow {
   stroke: #fff;
   stroke-linecap: round;
-  stroke-dasharray: 14 106;
-  opacity: 0.9;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .wire-flow {
-    animation: wire-flow 2.4s linear infinite;
+    /* Duration is set inline, scaled to each wire's measured length. */
+    animation-name: wire-flow;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
   }
 }
 
@@ -104,14 +143,16 @@ const links = computed(() => {
   }
 }
 
-/* Decreasing offset pushes the dash toward the path's end — left to right. */
+/* Decreasing offset pushes the dash toward the path's end — left to right.
+   --seg-shift holds each segment that much further back along the wire, so
+   the stack reads as one comet with a fading tail. */
 @keyframes wire-flow {
   from {
-    stroke-dashoffset: 120;
+    stroke-dashoffset: calc(var(--cycle) + var(--seg-shift));
   }
 
   to {
-    stroke-dashoffset: 0;
+    stroke-dashoffset: var(--seg-shift);
   }
 }
 </style>
