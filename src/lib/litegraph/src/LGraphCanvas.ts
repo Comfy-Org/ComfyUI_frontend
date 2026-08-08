@@ -1397,7 +1397,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value = LGraphCanvas.getPropertyPrintableValue(value, info.values)
 
       // value could contain invalid html characters, clean that
-      value = LGraphCanvas.decodeHTML(toString(value))
+      value = DOMPurify.sanitize(toString(value))
       entries.push({
         content:
           `<span class='property_name'>${info.label || i}</span>` +
@@ -1433,9 +1433,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** @deprecated */
   static decodeHTML(str: string): string {
-    const e = document.createElement('div')
-    e.textContent = str
-    return e.innerHTML
+    return DOMPurify.sanitize(str)
   }
 
   static onMenuResizeNode(
@@ -8360,9 +8358,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // clear
       panel.content.innerHTML = ''
       const nodeType = DOMPurify.sanitize(node.type)
+      // @ts-expect-error - FIXME: desc doesn't actually exist?
+      const nodeDescription = DOMPurify.sanitize(node.constructor.desc || '')
       panel.addHTML(
-        // @ts-expect-error - desc property
-        `<span class='node_type'>${nodeType}</span><span class='node_desc'>${node.constructor.desc || ''}</span><span class='separator'></span>`
+        `<span class='node_type'>${nodeType}</span><span class='node_desc'>${nodeDescription}</span><span class='separator'></span>`
       )
 
       panel.addHTML('<h3>Properties</h3>')

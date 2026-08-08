@@ -3,7 +3,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 
-test('Is not vulnarble to xss', async ({ comfyPage }) => {
+test('Is not vulnerable to xss', async ({ comfyPage }) => {
   await test.step('in subgraph type', async () => {
     await comfyPage.workflow.loadWorkflow('xss/xss-e1-subgraph-type')
     const node = await comfyPage.nodeOps.getNodeRefById(10)
