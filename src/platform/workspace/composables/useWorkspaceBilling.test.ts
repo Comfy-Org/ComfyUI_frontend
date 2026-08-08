@@ -1579,7 +1579,10 @@ describe('useWorkspaceBilling', () => {
         .spyOn(crypto, 'randomUUID')
         .mockReturnValueOnce(uuids[0])
         .mockReturnValueOnce(uuids[1])
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 
