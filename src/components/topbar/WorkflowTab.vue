@@ -203,7 +203,7 @@ const isBuilderState = computed(() => {
 })
 
 const isActiveTab = computed(() => {
-  return workflowStore.activeWorkflow?.key === props.workflowOption.workflow.key
+  return workflowStore.isActive(props.workflowOption.workflow)
 })
 
 const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
