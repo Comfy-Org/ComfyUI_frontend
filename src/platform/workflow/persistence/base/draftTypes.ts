@@ -51,6 +51,13 @@ export interface DraftPayloadV2 {
   data: string
   /** Last workflow content write timestamp. */
   updatedAt: number
+  /**
+   * Server-reported lastModified of the file revision this draft was based
+   * on. Compared against the file's current lastModified to detect drafts
+   * made stale by a save from elsewhere, without mixing client and server
+   * clocks. Absent on drafts saved before this field existed.
+   */
+  baseLastModified?: number
 }
 
 /**

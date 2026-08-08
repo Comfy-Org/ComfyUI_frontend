@@ -506,7 +506,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
         openWorkflowPaths.value.splice(openIndex, 1, workflow.path)
       }
 
-      draftStore.moveDraft(oldPath, newPath, workflow.key)
+      draftStore.moveDraft(
+        oldPath,
+        newPath,
+        workflow.key,
+        workflow.lastModified
+      )
 
       // Move thumbnail from old key to new key (using workflow keys, not full paths)
       const newKey = workflow.key

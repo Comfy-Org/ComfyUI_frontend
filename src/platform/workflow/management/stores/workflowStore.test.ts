@@ -79,12 +79,14 @@ describe('useWorkflowStore', () => {
       data?: string
       name?: string
       isTemporary?: boolean
+      baseLastModified?: number
     } = {}
   ) => {
     const draftStore = useWorkflowDraftStoreV2()
     draftStore.saveDraft(path, options.data ?? '{"dirty":true}', {
       name: options.name ?? path.split('/').at(-1) ?? path,
-      isTemporary: options.isTemporary ?? false
+      isTemporary: options.isTemporary ?? false,
+      baseLastModified: options.baseLastModified
     })
     return draftStore
   }
@@ -351,7 +353,8 @@ describe('useWorkflowStore', () => {
       }
       const draftStore = saveV2Draft(workflow.path, {
         data: JSON.stringify(draftGraph),
-        name: 'a.json'
+        name: 'a.json',
+        baseLastModified: remoteModifiedAt - 60_000
       })
 
       vi.mocked(api.getUserData).mockResolvedValue({
