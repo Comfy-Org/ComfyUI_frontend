@@ -128,11 +128,19 @@ function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
 
 function renderTab({
   workflowOption = makeWorkflowOption(),
-  activeWorkflowKey = 'other-key'
+  activeWorkflowKey = 'other-key',
+  activeWorkflowPath
 }: {
   workflowOption?: WorkflowOption
   activeWorkflowKey?: string
+  activeWorkflowPath?: string
 } = {}) {
+  const resolvedActiveWorkflowPath =
+    activeWorkflowPath ??
+    (activeWorkflowKey === workflowOption.workflow.key
+      ? workflowOption.workflow.path
+      : '/workflows/other.json')
+
   return render(WorkflowTab, {
     global: {
       plugins: [
@@ -141,7 +149,10 @@ function renderTab({
           initialState: {
             workspace: { shiftDown: false },
             workflow: {
-              activeWorkflow: { key: activeWorkflowKey }
+              activeWorkflow: {
+                key: activeWorkflowKey,
+                path: resolvedActiveWorkflowPath
+              }
             },
             setting: { settingValues: { 'Comfy.Workflow.AutoSave': 'off' } }
           }
@@ -220,6 +231,18 @@ describe('WorkflowTab - workflow status indicator', () => {
 
     expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
       'bg-base-foreground'
+    )
+  })
+
+  it('keeps an unsaved inactive tab dot muted when workflow keys collide', () => {
+    renderTab({
+      workflowOption: makeWorkflowOption({ isPersisted: false }),
+      activeWorkflowKey: 'test-key',
+      activeWorkflowPath: '/workflows/other.json'
+    })
+
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'bg-smoke-800'
     )
   })
 
