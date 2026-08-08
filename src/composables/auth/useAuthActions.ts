@@ -8,6 +8,7 @@ import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { startTopupTracking } from '@/platform/telemetry/topupTracker'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { clearAllWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
@@ -168,7 +169,9 @@ export const useAuthActions = () => {
       )
     }
 
-    useTelemetry()?.startTopupTracking()
+    // Mark the pending top-up directly, not via telemetry, so the balance
+    // refresh on return still fires when telemetry consent is off.
+    startTopupTracking()
     window.open(response.checkout_url, '_blank')
   }
 
