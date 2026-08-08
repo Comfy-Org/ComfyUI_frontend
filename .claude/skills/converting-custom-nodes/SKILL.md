@@ -423,6 +423,14 @@ lives here.
 | `references/widgets.md`          | Widget-array mutation and the converted-widget protocol — 286 packs / 21.6%, overlapping cohorts totalling more. Where naive conversions are most often silently wrong.                            |
 | `references/draw-callbacks.md`   | `onDraw*` — 420 packs, 32.2% of installs. Measured breakdown showing 47% never draw at all, a decision tree, and the canvas→CSS mapping.                                                           |
 
+### Adding a capability
+
+If a conversion is blocked and the fix is a **new API capability**, the addition
+is a design decision, not a detail. Record it in `docs/node_api_WIP.md` §4f
+alongside: what forced it, the alternative that was rejected, and what it would
+cost to reverse. An addition made under conversion pressure with its rationale
+only in a commit message is one nobody can argue with later.
+
 ### Adding a pattern
 
 Add a reference when a pattern is (a) seen in real pack code, not anticipated,

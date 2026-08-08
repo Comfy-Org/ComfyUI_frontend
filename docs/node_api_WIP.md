@@ -1458,6 +1458,168 @@ it is far cheaper than discovering the same things after authors have migrated.
 
 ---
 
+## 4f. ⚖️ Contested additions — argue with these
+
+Everything here was added because a real pack could not be converted without
+it, under time pressure, and every one is arguable. They are collected rather
+than scattered so a reviewer can overturn them in one pass.
+
+Each entry states what forced it, what the alternative was, why the alternative
+was rejected, and **what it would cost to reverse**. The cost line is the one
+that matters: some of these are cheap to withdraw and some are not.
+
+### `node.getScreenRect()` and `comfy.onViewportChanged()`
+
+**Forced by** kjnodes `ideogram4_prompt_builder.js` — a floating dock anchored
+to a node. It was the last file holding `window.comfyAPI` open for reasons that
+were not gaps: it worked before, so the capability was real.
+
+**The tension.** These are viewport-adjacent, and the standing instruction is
+that _how the graph draws_ does not belong in a node API. `comfy.constants` was
+removed for exactly that reason.
+
+**Why these are different.** They are the _question_, not the _mechanism_.
+`getScreenRect` answers "where is this node on screen"; it does not expose pan,
+zoom, or the transform. `onViewportChanged` says "that answer may have changed"
+and carries no payload. The arithmetic confirms the distinction: the old
+expression was
+
+```
+rect.left + (pos.x + offset.x) * scale
+```
+
+and the new one is `hostScreen.x + (pos.x - hostGraph.x) * scale` — **the pan
+offset and canvas rect cancel out**. The zoom factor is likewise recoverable as
+`getScreenRect().width / getBounds().width`, so it never had to be published.
+
+**Alternative rejected.** Exposing `viewport.transform()` (pan + scale). That is
+the mechanism, invites packs to re-derive geometry, and is the mistake
+`comfy.constants` made.
+
+**Cost to reverse.** Moderate. One pack uses them today. If withdrawn,
+node-anchored floating UI becomes unimplementable and ideogram's dock is lost.
+
+### `comfy.storage`
+
+**Forced by** the same file: named caption templates the user authors, kept
+server-side via `api.storeUserData`.
+
+**The tension.** Is per-user file storage a _node_ API concern at all? It is not
+about nodes, graphs or widgets. A reasonable reviewer could say packs should use
+`localStorage` and be done.
+
+**Why it was added.** `localStorage` does not follow a user between machines,
+and this is content a user _authored_ — losing it on a new machine is a data
+loss, not an inconvenience. `comfy.settings` is the wrong home: that is for
+values configured once, not documents.
+
+**Guardrails.** Names must be namespaced, exactly as setting ids are, and `..`
+is refused so a pack cannot climb out of its namespace into another pack's data
+or the user's own files.
+
+**Cost to reverse.** Low. One pack, one feature.
+
+**Open question.** Should there be a quota, or a way for a user to see and clear
+what a pack has stored? Neither exists.
+
+### `b.setExecution('frontend')`
+
+**Forced by** enricos `tools.js`. One line — `node.isVirtualNode = true` on a
+**backend-registered** type — was the whole refusal.
+
+**The tension.** This is the most powerful thing added. It lets a pack declare
+that a node the _server_ registered will never reach the prompt. Get it wrong,
+or apply it to the wrong selector, and nodes silently vanish from execution.
+
+**Why it was added anyway.** The alternative is worse. Without it a conversion
+must drop the line, which **adds** a node to `graphToPrompt` that was never
+there — a wire-format break rather than a degradation. `defs.define` could
+already say this for pack-owned types; `defs.extend` could not say it for
+existing ones, which is an asymmetry rather than a safety property.
+
+**Alternative rejected.** `setMode('never')` also keeps a node out of the
+prompt, but writes `mode: 2` into the saved workflow and reads to the user as
+manual muting. Not equivalent.
+
+**Cost to reverse.** High. Removing it re-refuses the file and leaves no
+expressible way to convert a frontend-only tools node.
+
+### `defs.defineWidgetType()`
+
+**Forced by** comfy-mtb (`MTB_COLOR`), rmbg (`COLORCODE`), mtb (`FLOAT_CURVE`).
+In mtb it cascaded: one registration blocked four files.
+
+**The tension.** It is a _global type registry_ — a pack claims a type name for
+the whole application. Two packs claiming the same name is unresolvable, and the
+existing precedent (`widgetStore` spreading core last) silently discards the
+loser.
+
+**Why it is not optional.** The host decides widget-vs-socket by a single
+lookup, and `addInputSocket` / `addInputWidget` are exact complements on it. An
+unregistered type does not degrade to a plain widget — the input becomes a
+**socket**, changing the serialized `inputs` array and dropping its
+`widgets_values` entry. That is a wire-format break, so "just leave it
+unregistered" was never available.
+
+**Known sharp edge, unresolved.** Core still wins a name collision. A pack
+registering `COLOR` is silently ignored, which is how three packs' widgets were
+found already dead. The published API therefore has a mode where a correct call
+does nothing. Fixing that means either failing loudly on collision or letting
+packs override core — see §3 of `IMPL_QUESTIONS_FOR_CHRISTIAN.md`.
+
+**Cost to reverse.** Very high. Six files across three packs, and no
+alternative expression.
+
+### `widgets.mount({ defaultValue })`
+
+**The tension.** `mount` was deliberately for _decoration_, and decoration must
+not touch the wire format. Giving it a value blurs that line.
+
+**Why it was added.** Packs mount value-holding controls — colour pickers, text
+boxes, vector editors — because that is what `addDOMWidget` was. Without a
+value cell those controls kept their `widgets_values` slot and **silently lost
+what the user typed**. mtb's `Constant` node was saving `''` for its colour,
+string and vector inputs. This was the root cause of most of the wire deltas
+reported during conversion.
+
+**How the line is held.** A mount is decoration _unless_ it declares
+`defaultValue`. Serialization follows that: a control that holds a value is
+saved and sent, a drawing is not, and the pack's explicit `serialize` still
+wins either way.
+
+**Cost to reverse.** High, and it would reintroduce silent data loss.
+
+### `node.getBounds()`, `node.getSlotPosition()`, `graph.nodeAt()`
+
+**Forced by** retiring `comfy.constants`. Every use of that was a pack
+reimplementing editor hit-testing and slot layout from raw metrics.
+
+**The tension.** Geometry is renderer-owned, and these publish it.
+
+**Why they are better than what they replaced.** They route to the renderer's
+own answers, so they stay correct for collapsed nodes, widget-backed inputs and
+Nodes 2.0 — all cases the `(index + 0.7) * slotHeight` reconstruction got wrong.
+The converted `utility.js` admitted as much in a comment before this existed.
+
+**Deliberate omission.** `nodeAt` answers against the _rendered_ layout and is
+not refreshed per call: a gesture asks it on every pointer move, and remeasuring
+every node each time is the expensive mistake. Before the first frame it finds
+nothing. This is documented on the method.
+
+**Cost to reverse.** High — five kjnodes files, and the alternative is
+`comfy.constants`, which was removed on instruction.
+
+### The pattern worth noticing
+
+Four of these six exist because **the wire format has no safe failure mode.** A
+missing capability does not degrade a pack, it changes what the user's saved
+workflow contains — a socket where a widget was, a node appearing in the prompt,
+a value silently emptied. That is why the refusals were refusals rather than
+partial conversions, and why the fixes could not wait for a design round.
+
+If any of these are overturned, the packs concerned should be **re-refused**,
+not converted with a warning.
+
 ## 5. Why the hooks are rewritten too
 
 **This is the part most likely to be argued with, so the reasoning is explicit.**
@@ -1534,6 +1696,10 @@ Test requirements — these are the ones worth writing first, because they're wh
 
 ## 7. Deliberately excluded
 
+> Additions that are _included_ but arguable are collected in
+> [§4f Contested additions](#4f-️-contested-additions--argue-with-these), with
+> the alternative that was rejected and the cost of reversing each one.
+
 | Not exposed                                              | Why                                        | If you need it                                                   |
 | -------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------- |
 | `app` / `ComfyApp`                                       | Reaches everything                         | Named capability on `comfy`                                      |
@@ -1552,6 +1718,10 @@ in _both_ modes, which the raw callbacks never did.
 ---
 
 ## 8. Open questions
+
+> See also [§4f](#4f-️-contested-additions--argue-with-these) for decisions
+> already taken that a reviewer may want to reverse, and
+> `IMPL_QUESTIONS_FOR_CHRISTIAN.md` for the ones blocking packs today.
 
 - **Q1.** `mount(el, ctx)` for custom widgets is framework-agnostic and dodges the
   dual-Vue problem — but it gives up Vue's reactivity and scoped styling for the
