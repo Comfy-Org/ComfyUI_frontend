@@ -34,5 +34,6 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   readNodeRect: vi.fn(() => false),
   setActor: vi.fn(),
   setPendingSlotSync: vi.fn(),
-  setSource: vi.fn()
+  setSource: vi.fn(),
+  withDeferredNotifications: vi.fn((callback: () => unknown) => callback())
 })
