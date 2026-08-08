@@ -189,14 +189,16 @@ export function useWorkflowActionsMenu(
       label: t('menuLabels.Export for API'),
       icon: 'pi pi-download',
       command: async () => {
-        await ensureWorkflowActive(workflow)
-        await openExportWorkflowApiDialog(
-          workflow?.filename ?? 'workflow_api'
-        ).catch((error: unknown) =>
+        try {
+          await ensureWorkflowActive(workflow)
+          await openExportWorkflowApiDialog(
+            workflow?.filename ?? 'workflow_api'
+          )
+        } catch (error: unknown) {
           toastErrorHandler(
             new Error(t('apiExport.dialogLoadError'), { cause: error })
           )
-        )
+        }
       },
       visible: isRoot,
       isNew: true,

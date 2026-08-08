@@ -194,6 +194,7 @@ describe('useWorkflowActionsMenu', () => {
     expect(labels).not.toContain('breadcrumbsMenu.enterAppMode')
 
     const exitAppMode = findItem(menuItems.value, 'breadcrumbsMenu.exitAppMode')
+    expect(exitAppMode.isNew).toBe(true)
     expect(exitAppMode.badge).toBe('g.experimental')
     expect(exitAppMode.badgeSeverity).toBe('secondary')
   })
@@ -219,8 +220,10 @@ describe('useWorkflowActionsMenu', () => {
       'breadcrumbsMenu.enterBuilderMode'
     )
 
+    expect(enterAppMode.isNew).toBe(true)
     expect(enterAppMode.badge).toBe('g.experimental')
     expect(enterAppMode.badgeSeverity).toBe('secondary')
+    expect(enterBuilderMode.isNew).toBe(true)
     expect(enterBuilderMode.badge).toBe('g.experimental')
     expect(enterBuilderMode.badgeSeverity).toBe('secondary')
   })
@@ -248,6 +251,28 @@ describe('useWorkflowActionsMenu', () => {
     expect(mockToastErrorHandler).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'apiExport.dialogLoadError' })
     )
+  })
+
+  it('shows an error when the API export workflow cannot be activated', async () => {
+    const workflow = ref({
+      path: 'other.json',
+      filename: 'other',
+      isPersisted: true
+    } as ComfyWorkflow)
+    mockWorkflowService.openWorkflow.mockRejectedValueOnce(
+      new Error('Failed to open workflow')
+    )
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      workflow
+    })
+
+    await findItem(menuItems.value, 'menuLabels.Export for API').command?.()
+
+    expect(mockToastErrorHandler).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'apiExport.dialogLoadError' })
+    )
+    expect(mockOpenExportWorkflowApiDialog).not.toHaveBeenCalled()
   })
 
   it('calls startRename when rename command is invoked', async () => {
