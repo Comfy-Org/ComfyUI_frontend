@@ -1,4 +1,14 @@
-import type { LGraph, LGraphState } from '../LGraph'
+import type { LGraph } from '../LGraph'
+import { toGroupId } from '@/types/groupId'
+import {
+  mintGroupId,
+  mintNodeId,
+  mintRerouteId,
+  observeGroupId,
+  observeNodeId,
+  observeRerouteId
+} from '@/types/idAllocation'
+import type { LGraphState } from '@/types/idAllocation'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -87,7 +97,9 @@ function remapNodeIds(
     const numericId = numericSerializedNodeId(id)
 
     if (usedNodeIdKeys.has(key)) {
-      const newId = findNextAvailableId(usedNodeIds, () => ++state.lastNodeId)
+      const newId = findNextAvailableId(usedNodeIds, () =>
+        Number(mintNodeId(state))
+      )
       remappedIds.set(key, newId)
       node.id = newId
       usedNodeIds.add(newId)
@@ -99,7 +111,7 @@ function remapNodeIds(
       usedNodeIdKeys.add(key)
       if (numericId !== null) {
         usedNodeIds.add(numericId)
-        if (numericId > state.lastNodeId) state.lastNodeId = numericId
+        observeNodeId(state, toNodeId(numericId))
       }
     }
   }
@@ -181,22 +193,19 @@ export function deduplicateSubgraphGroupIds(
   state: LGraphState
 ): void {
   const usedGroupIds = new Set(reservedGroupIds)
-  for (const id of reservedGroupIds) reserveGroupId(id, state)
+  for (const id of reservedGroupIds) observeGroupId(state, toGroupId(id))
 
   for (const subgraph of subgraphs) {
     remapNumericIds(
       subgraph.groups ?? [],
       usedGroupIds,
-      () => ++state.lastGroupId,
-      (id) => reserveGroupId(id, state),
+      () => mintGroupId(state),
+      (id) => observeGroupId(state, toGroupId(id)),
       'group'
     )
   }
 }
 
-function reserveGroupId(id: number, state: LGraphState): void {
-  if (id > state.lastGroupId) state.lastGroupId = id
-}
 export function collectReservedRerouteIds(
   graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
 ): Set<number> {
@@ -222,17 +231,12 @@ export function deduplicateSubgraphRerouteIds(
   state: LGraphState
 ): void {
   const usedRerouteIds = new Set(reservedRerouteIds)
-  for (const id of reservedRerouteIds) reserveRerouteId(id, state)
+  for (const id of reservedRerouteIds) observeRerouteId(state, toRerouteId(id))
 
   for (const subgraph of subgraphs) {
     const remapped = remapRerouteIds(subgraph, usedRerouteIds, state)
     if (remapped.size > 0) patchRerouteReferences(subgraph, remapped)
   }
-}
-
-/** Advances `state.lastRerouteId` so future allocations skip `id`. */
-function reserveRerouteId(id: number, state: LGraphState): void {
-  if (id > state.lastRerouteId) state.lastRerouteId = toRerouteId(id)
 }
 
 /**
@@ -248,11 +252,8 @@ function remapRerouteIds(
   return remapNumericIds(
     subgraph.reroutes ?? [],
     usedRerouteIds,
-    () => {
-      state.lastRerouteId = toRerouteId(state.lastRerouteId + 1)
-      return state.lastRerouteId
-    },
-    (id) => reserveRerouteId(id, state),
+    () => mintRerouteId(state),
+    (id) => observeRerouteId(state, toRerouteId(id)),
     'reroute'
   )
 }

@@ -114,6 +114,7 @@ export {
   type GraphAddOptions,
   type SubgraphId
 } from './LGraph'
+export type { LGraphState } from '@/types/idAllocation'
 export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'

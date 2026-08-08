@@ -22,6 +22,19 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutOperationResult } from '@/renderer/core/layout/types'
+import {
+  createLGraphState,
+  mintGroupId,
+  mintNodeId,
+  mintRerouteId,
+  observeGroupId,
+  observeLinkId,
+  observeNodeId,
+  observeRerouteId,
+  restoreIdState,
+  snapshotIdState
+} from '@/types/idAllocation'
+import type { LGraphState } from '@/types/idAllocation'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
@@ -142,6 +155,7 @@ export type {
   LGraphTriggerAction,
   LGraphTriggerParam
 } from './types/graphTriggers'
+export type { LGraphState } from '@/types/idAllocation'
 
 const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
@@ -149,20 +163,9 @@ function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
   return validTriggerActions.has(action as LGraphTriggerAction)
 }
 
-function nextNodeId(state: LGraphState): NodeId {
-  return toNodeId(++state.lastNodeId)
-}
-
 function numericNodeId(id: NodeId): number | null {
   const numericId = Number(id)
   return Number.isInteger(numericId) ? numericId : null
-}
-
-function syncLastNodeId(state: LGraphState, id: NodeId): void {
-  const numericId = numericNodeId(id)
-  if (numericId !== null && state.lastNodeId < numericId) {
-    state.lastNodeId = numericId
-  }
 }
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
@@ -172,14 +175,6 @@ export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
  * provided as a domain-specific alias for clarity at adoption sites.
  */
 export type SubgraphId = UUID
-
-export interface LGraphState {
-  /** Counter, not an id — brand at the point a group is constructed. */
-  lastGroupId: number
-  lastNodeId: number
-  lastLinkId: LinkId
-  lastRerouteId: RerouteId
-}
 
 type ParamsArray<T, K extends MethodNames<T>> = Parameters<
   Extract<T[K], (...args: never[]) => unknown>
@@ -439,12 +434,7 @@ export class LGraph
   list_of_graphcanvas: LGraphCanvas[] | null
   status: number = LGraph.STATUS_STOPPED
 
-  private _state: LGraphState = {
-    lastGroupId: 0,
-    lastNodeId: 0,
-    lastLinkId: toLinkId(0),
-    lastRerouteId: toRerouteId(0)
-  }
+  private _state: LGraphState = createLGraphState()
 
   get state(): LGraphState {
     return this._state
@@ -626,12 +616,7 @@ export class LGraph
     this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
-    this.state = {
-      lastGroupId: 0,
-      lastNodeId: 0,
-      lastLinkId: toLinkId(0),
-      lastRerouteId: toRerouteId(0)
-    }
+    this.state = createLGraphState()
 
     // used to detect changes
     this._version = -1
@@ -1185,18 +1170,17 @@ export class LGraph
     // groups
     if (node instanceof LGraphGroup) {
       const originalId = node.id
-      const originalLastGroupId = state.lastGroupId
+      const idStateSnapshot = snapshotIdState(state)
 
       // Assign group ID
-      if (node.id == null || node.id === -1)
-        node.id = toGroupId(++state.lastGroupId)
+      if (node.id == null || node.id === -1) node.id = mintGroupId(state)
       const idIsLive = [this.rootGraph, ...this.subgraphs.values()].some(
         (graph) => graph._groups.some((group) => group.id === node.id)
       )
       if (idIsLive) {
-        node.id = toGroupId(++state.lastGroupId)
+        node.id = mintGroupId(state)
       }
-      if (node.id > state.lastGroupId) state.lastGroupId = node.id
+      observeGroupId(state, node.id)
       const attemptedGroupId = node.id
       let registrationResult: LayoutOperationResult
       try {
@@ -1207,12 +1191,12 @@ export class LGraph
         )
       } catch (error) {
         node.id = originalId
-        state.lastGroupId = originalLastGroupId
+        restoreIdState(state, idStateSnapshot)
         throw error
       }
       if (registrationResult !== 'applied') {
         node.id = originalId
-        state.lastGroupId = originalLastGroupId
+        restoreIdState(state, idStateSnapshot)
         console.warn('[LGraph] Group layout registration not applied', {
           graphId: this.rootGraph.id,
           groupId: attemptedGroupId,
@@ -1230,11 +1214,11 @@ export class LGraph
     }
 
     const originalId = node.id
-    const originalLastNodeId = state.lastNodeId
+    const idStateSnapshot = snapshotIdState(state)
     const originalGhost = node.flags.ghost
     function restoreNodeIdentity(): void {
       node.id = originalId
-      state.lastNodeId = originalLastNodeId
+      restoreIdState(state, idStateSnapshot)
       if (originalGhost === undefined) delete node.flags.ghost
       else node.flags.ghost = originalGhost
     }
@@ -1244,7 +1228,7 @@ export class LGraph
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
-      node.id = nextNodeId(state)
+      node.id = mintNodeId(state)
     }
 
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
@@ -1253,9 +1237,9 @@ export class LGraph
 
     // give him an id
     if (node.id == null || node.id === UNASSIGNED_NODE_ID) {
-      node.id = nextNodeId(state)
+      node.id = mintNodeId(state)
     } else {
-      syncLastNodeId(state, node.id)
+      observeNodeId(state, node.id)
     }
 
     // Set ghost flag before registration so the node state carries it
@@ -1852,21 +1836,23 @@ export class LGraph
     serialisedReroute: OptionalProps<SerialisableReroute, 'id'>
   ): Reroute {
     const { id, parentId, pos, floating } = serialisedReroute
+    const idStateSnapshot = snapshotIdState(this.state)
     const rerouteId =
-      id === undefined
-        ? toRerouteId(Number(this.state.lastRerouteId) + 1)
-        : toRerouteId(id)
+      id === undefined ? mintRerouteId(this.state) : toRerouteId(id)
 
     const existingReroute = this.reroutes.get(rerouteId)
     const reroute = existingReroute ?? new Reroute(rerouteId, this, pos)
-    this._addReroute(reroute, entitiesAdoptingLayout.has(serialisedReroute))
+    try {
+      this._addReroute(reroute, entitiesAdoptingLayout.has(serialisedReroute))
+    } catch (error) {
+      restoreIdState(this.state, idStateSnapshot)
+      throw error
+    }
     if (pos && existingReroute) reroute.pos = pos
     reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
     reroute.floating = floating
-    if (rerouteId > this.state.lastRerouteId) {
-      this.state.lastRerouteId = rerouteId
-    }
+    observeRerouteId(this.state, rerouteId)
     return reroute
   }
 
@@ -1881,9 +1867,8 @@ export class LGraph
     if (!(before instanceof LLink) && !(before instanceof Reroute)) {
       return
     }
-    const originalLastRerouteId = this.state.lastRerouteId
-    const rerouteId = toRerouteId(Number(originalLastRerouteId) + 1)
-    this.state.lastRerouteId = rerouteId
+    const idStateSnapshot = snapshotIdState(this.state)
+    const rerouteId = mintRerouteId(this.state)
     const chainLinks =
       before instanceof Reroute
         ? [
@@ -1897,7 +1882,7 @@ export class LGraph
     try {
       this._addReroute(reroute)
     } catch (error) {
-      this.state.lastRerouteId = originalLastRerouteId
+      restoreIdState(this.state, idStateSnapshot)
       throw error
     }
 
@@ -2356,7 +2341,7 @@ export class LGraph
         }
       }
 
-      const newNodeId = nextNodeId(this.state)
+      const newNodeId = mintNodeId(this.state)
       nodeIdMap.set(toNodeId(n_info.id), newNodeId)
       node.id = newNodeId
       n_info.id = newNodeId
@@ -2459,7 +2444,7 @@ export class LGraph
     // Shared definitions may survive, so unpacked groups need fresh layout
     // ids, like the reroutes below.
     for (const groupInfo of groups) {
-      groupInfo.id = ++this.rootGraph.state.lastGroupId
+      groupInfo.id = mintGroupId(this.rootGraph.state)
       const group = new LGraphGroup(groupInfo.title, groupInfo.id)
       this.add(group, true)
       group.configure(groupInfo)
@@ -2531,8 +2516,7 @@ export class LGraph
     const rerouteIdMap = new Map<RerouteId, RerouteId>()
     const oldReroutes = subgraphNode.subgraph.reroutes
     for (const reroute of oldReroutes.values()) {
-      const migratedId = toRerouteId(Number(this.state.lastRerouteId) + 1)
-      this.state.lastRerouteId = migratedId
+      const migratedId = mintRerouteId(this.state)
       const migratedReroute = new Reroute(migratedId, this, [
         reroute.pos[0] + offsetX,
         reroute.pos[1] + offsetY
@@ -2909,16 +2893,11 @@ export class LGraph
           const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
             data.state
           const { state } = this
-          if (lastGroupId != null)
-            state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
-          if (lastLinkId != null)
-            state.lastLinkId = toLinkId(Math.max(state.lastLinkId, lastLinkId))
-          if (lastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, lastNodeId)
+          if (lastGroupId != null) observeGroupId(state, toGroupId(lastGroupId))
+          if (lastLinkId != null) observeLinkId(state, toLinkId(lastLinkId))
+          if (lastNodeId != null) observeNodeId(state, toNodeId(lastNodeId))
           if (lastRerouteId != null)
-            state.lastRerouteId = toRerouteId(
-              Math.max(state.lastRerouteId, lastRerouteId)
-            )
+            observeRerouteId(state, toRerouteId(lastRerouteId))
         }
 
         // Links

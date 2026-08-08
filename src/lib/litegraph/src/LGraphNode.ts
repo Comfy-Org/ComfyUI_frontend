@@ -11,6 +11,7 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
+import { mintLinkId } from '@/types/idAllocation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
@@ -3121,8 +3122,7 @@ export class LGraphNode
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
 
-    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
-    graph.state.lastLinkId = linkId
+    const linkId = mintLinkId(graph.state)
 
     const link = new LLink(
       linkId,
