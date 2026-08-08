@@ -41,12 +41,9 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 const SELF_EMAIL = 'e2e@test.comfy.org'
 
-// consolidated_billing_enabled routes personal workspaces to the unified
-// pricing table asserted here; without it they fall back to the legacy table.
 const BOOT_FEATURES = {
-  team_workspaces_enabled: true,
-  consolidated_billing_enabled: true,
-  billing_control_enabled: true
+  billing_control_enabled: true,
+  consolidated_billing_enabled: true
 } satisfies RemoteConfig
 // Disable the experimental Asset API: with it on (cloud default) the unmocked
 // asset endpoints 403 and workflow restore throws uncaught, aborting the
@@ -88,6 +85,8 @@ const STANDARD_ANNUAL_PLAN = {
 
 const ACTIVE_TEAM_STATUS = {
   is_active: true,
+  max_seats: 50,
+  occupied_seats: 1,
   subscription_status: 'active',
   subscription_tier: 'TEAM',
   subscription_duration: 'ANNUAL',
@@ -104,6 +103,8 @@ const ACTIVE_TEAM_STATUS = {
 
 const ACTIVE_STANDARD_STATUS = {
   is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
   subscription_duration: 'ANNUAL',
@@ -265,12 +266,45 @@ const PAYMENT_METHOD_REQUIRED_RESPONSE = {
   payment_method_url: 'https://pay.test/method'
 } satisfies SubscribeResponse
 
+const RETRIED_SUBSCRIPTION_OPERATION_ID = 'retried-subscription'
+const RETRIED_SUBSCRIPTION_ACTION_URL =
+  'https://verify.example/retried-subscription'
+
+const RETRIED_SUBSCRIPTION_RESPONSE = {
+  billing_op_id: RETRIED_SUBSCRIPTION_OPERATION_ID,
+  status: 'needs_payment_method',
+  payment_method_url: 'https://pay.test/retried-subscription'
+} satisfies SubscribeResponse
+
+const RETRIED_SUBSCRIPTION_OPERATION = {
+  id: RETRIED_SUBSCRIPTION_OPERATION_ID,
+  status: 'pending',
+  started_at: '2026-07-30T00:00:00Z'
+} satisfies BillingOpStatusResponse
+
 const UNEXPECTED_OPERATION_RESPONSE = {
   id: PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id,
   status: 'failed',
   error_message: 'Payment page was not opened',
   started_at: '2026-07-20T00:00:00Z',
   completed_at: '2026-07-20T00:00:01Z'
+} satisfies BillingOpStatusResponse
+
+const RECOVERED_3DS_OPERATION_ID = 'recovered-3ds-subscription'
+const RECOVERED_3DS_ACTION_URL = 'https://verify.example/3ds-session'
+
+const RECOVERED_3DS_STATUS = {
+  ...ACTIVE_TEAM_STATUS,
+  billing_status: 'pending_payment',
+  pending_billing_op_id: RECOVERED_3DS_OPERATION_ID,
+  action_url: RECOVERED_3DS_ACTION_URL
+} satisfies BillingStatusResponse
+
+const RECOVERED_3DS_OPERATION = {
+  id: RECOVERED_3DS_OPERATION_ID,
+  status: 'pending',
+  started_at: '2026-07-20T00:00:00Z',
+  action_url: RECOVERED_3DS_ACTION_URL
 } satisfies BillingOpStatusResponse
 
 const TRANSIENT_STATUS_ERROR = {
@@ -444,6 +478,36 @@ async function mockPopupBlockedCreatorDowngrade(page: Page) {
   }
 }
 
+async function mockRecovered3dsSubscription(page: Page) {
+  const statusRequests: Request[] = []
+  const operationPollRequests: Request[] = []
+  const subscribeRequests: Request[] = []
+
+  await page.route('**/api/billing/status', (route) => {
+    statusRequests.push(route.request())
+    return route.fulfill(jsonRoute(RECOVERED_3DS_STATUS))
+  })
+  await page.route(
+    `**/api/billing/ops/${RECOVERED_3DS_OPERATION_ID}`,
+    (route) => {
+      operationPollRequests.push(route.request())
+      return route.fulfill(jsonRoute(RECOVERED_3DS_OPERATION))
+    }
+  )
+  await page.route('**/api/billing/subscribe', (route) => {
+    subscribeRequests.push(route.request())
+    return route.fulfill({
+      ...jsonRoute({
+        code: 'unexpected_subscribe',
+        message: 'Recovered operations must not resubscribe'
+      } satisfies ErrorResponse),
+      status: 500
+    })
+  })
+
+  return { statusRequests, operationPollRequests, subscribeRequests }
+}
+
 const pricingHeading = (page: Page) =>
   page.getByRole('heading', { name: 'Choose a Plan' })
 
@@ -525,6 +589,80 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     ).toBeVisible()
     expect(subscribeRequests).toHaveLength(0)
     await expect(page).not.toHaveURL(/[?&](pricing|cycle)=/)
+  })
+
+  test('restores pending checkout when retrying a timed-out operation', async ({
+    page
+  }) => {
+    const subscribeRequests: Request[] = []
+    const operationPollRequests: Request[] = []
+    await page.addInitScript(() => {
+      window.open = () => window
+    })
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+    await page.route('**/api/billing/status', (route) =>
+      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+    )
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(
+        jsonRoute({
+          plans: [CREATOR_ANNUAL_PLAN]
+        } satisfies BillingPlansResponse)
+      )
+    )
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(NEW_CREATOR_SUBSCRIPTION))
+    )
+    await page.route('**/api/billing/subscribe', (route) => {
+      subscribeRequests.push(route.request())
+      return route.fulfill(jsonRoute(RETRIED_SUBSCRIPTION_RESPONSE))
+    })
+    await page.route(
+      `**/api/billing/ops/${RETRIED_SUBSCRIPTION_OPERATION_ID}`,
+      (route) => {
+        operationPollRequests.push(route.request())
+        return route.fulfill(
+          jsonRoute({
+            ...RETRIED_SUBSCRIPTION_OPERATION,
+            ...(subscribeRequests.length > 1 && {
+              action_url: RETRIED_SUBSCRIPTION_ACTION_URL
+            })
+          } satisfies BillingOpStatusResponse)
+        )
+      }
+    )
+
+    await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
+
+    const subscribeButton = page.getByRole('button', {
+      name: 'Subscribe to Creator'
+    })
+    const backButton = page.getByRole('button', { name: 'Back', exact: true })
+    await cloudAppExpect(subscribeButton).toBeVisible()
+    await page.clock.install({ time: new Date('2026-07-30T00:00:00Z') })
+    await subscribeButton.click()
+    await expect.poll(() => subscribeRequests.length).toBe(1)
+    await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
+    await expect(backButton).toBeDisabled()
+
+    await page.clock.fastForward(5 * 60_000 + 1)
+
+    await expect(backButton).toBeEnabled()
+    await expect(
+      page.getByText('Subscription verification timed out', { exact: true })
+    ).toBeVisible()
+    const pollCountAfterTimeout = operationPollRequests.length
+
+    await subscribeButton.click()
+
+    await expect.poll(() => subscribeRequests.length).toBe(2)
+    await expect(backButton).toBeDisabled()
+    await expect
+      .poll(() => operationPollRequests.length)
+      .toBeGreaterThan(pollCountAfterTimeout)
+    await expect(
+      page.getByRole('button', { name: 'Complete verification' })
+    ).toBeVisible()
   })
 
   test('cleans orphaned pricing params without opening the table', async ({
@@ -668,7 +806,7 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
     releasePostSubscribeRefresh = downgradeMock.releasePostSubscribeRefresh
   })
 
-  test('shows the existing success view when subscribe replays 200', async ({
+  test('completes the non-3DS flow when subscribe replays 200', async ({
     page
   }) => {
     await page.goto(`${APP_URL}/?pricing=personal`)
@@ -696,6 +834,9 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
         name: "You're all set"
       })
       await expect(successHeading).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: 'Complete verification' })
+      ).toBeHidden()
       await expect.poll(() => statusRefreshRequests.length).toBe(1)
       await expect.poll(() => balanceRefreshRequests.length).toBe(1)
       const successView = successHeading.locator('..').locator('..')
@@ -718,6 +859,64 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
     } finally {
       releasePostSubscribeRefresh()
     }
+  })
+})
+
+test.describe('Recovered 3DS subscription', { tag: '@cloud' }, () => {
+  let statusRequests: Request[]
+  let operationPollRequests: Request[]
+  let subscribeRequests: Request[]
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.open = (url, target, features) => {
+        document.documentElement.dataset.openedUrl = String(url)
+        document.documentElement.dataset.openedTarget = target ?? ''
+        document.documentElement.dataset.openedFeatures = features ?? ''
+        return window
+      }
+    })
+    await setupCloudApp(page, workspace('team', 'owner'), [
+      member({ email: SELF_EMAIL, role: 'owner', is_original_owner: true })
+    ])
+    const recoveryMock = await mockRecovered3dsSubscription(page)
+    statusRequests = recoveryMock.statusRequests
+    operationPollRequests = recoveryMock.operationPollRequests
+    subscribeRequests = recoveryMock.subscribeRequests
+  })
+
+  test('recovers on a fresh page without resubscribing and opens verification on click', async ({
+    page
+  }) => {
+    await page.goto(APP_URL)
+    await waitForCloudApp(page)
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('manage-plan-menu-item').click()
+    await expect.poll(() => statusRequests.length).toBeGreaterThan(0)
+    await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
+
+    const verificationButton = page.getByRole('button', {
+      name: 'Complete verification'
+    })
+    await expect(verificationButton).toBeVisible()
+    await expect(page.locator('html')).not.toContainText(
+      RECOVERED_3DS_ACTION_URL
+    )
+    expect(subscribeRequests).toHaveLength(0)
+
+    await verificationButton.click()
+
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe(RECOVERED_3DS_ACTION_URL)
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-opened-target',
+      '_blank'
+    )
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-opened-features',
+      'noopener,noreferrer'
+    )
   })
 })
 

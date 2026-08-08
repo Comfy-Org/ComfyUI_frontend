@@ -9,6 +9,7 @@ const baseRoutes = {
   api: '/api',
   gallery: '/gallery',
   launches: '/launches',
+  events: '/events',
   about: '/about',
   careers: '/careers',
   customers: '/customers',
@@ -22,6 +23,10 @@ const baseRoutes = {
   contact: '/contact',
   models: '/p/supported-models',
   mcp: '/mcp',
+  minimax: '/minimax',
+  flux3: '/flux-3',
+  seedance: '/seedance-2.5',
+  wanAnimate2: '/wan-animate-2',
   brand: '/brand'
 } as const
 
@@ -77,6 +82,8 @@ export const externalLinks = {
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
+  cloudCta: (content: string) =>
+    `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${content}`,
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',

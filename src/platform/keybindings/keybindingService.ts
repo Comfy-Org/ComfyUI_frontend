@@ -2,6 +2,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { isModalOpen } from '@/utils/modalUtil'
 
 import { CORE_KEYBINDINGS } from './defaults'
 import { KeyComboImpl } from './keyCombo'
@@ -21,6 +22,11 @@ export function useKeybindingService() {
     }
 
     const target = event.composedPath()[0] as HTMLElement
+    // Let the active menu own Escape without also triggering the global shortcut.
+    if (event.key === 'Escape' && target.closest?.('[role="menu"]')) {
+      return
+    }
+
     if (
       keyCombo.isReservedByTextInput &&
       (target.tagName === 'TEXTAREA' ||
@@ -44,27 +50,8 @@ export function useKeybindingService() {
           return
         }
       }
-      if (
-        event.key === 'Escape' &&
-        !event.ctrlKey &&
-        !event.altKey &&
-        !event.metaKey
-      ) {
-        if (dialogStore.dialogStack.length > 0) {
-          return
-        }
-      }
-
-      /**
-       * Block global keybindings from triggering background actions while a
-       * modal dialog is open. Keybindings whose event target lives inside an
-       * open dialog still fire, so dialog-scoped shortcuts keep working.
-       */
-      if (dialogStore.dialogStack.length > 0) {
-        const inDialog = target.closest?.('[role="dialog"]') != null
-        if (!inDialog) {
-          return
-        }
+      if (isModalOpen(dialogStore.dialogStack.length)) {
+        return
       }
 
       event.preventDefault()

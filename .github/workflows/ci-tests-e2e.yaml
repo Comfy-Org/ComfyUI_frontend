@@ -21,7 +21,7 @@ jobs:
     outputs:
       should-run: ${{ steps.changes.outputs.should-run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -46,16 +46,7 @@ jobs:
           retention-days: 1
 
       - name: Build cloud frontend
-        run: pnpm build:cloud
-        env:
-          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
-
-      - name: Upload cloud frontend
-        uses: actions/upload-artifact@v6
-        with:
-          name: frontend-dist-cloud
-          path: dist/
-          retention-days: 1
+        uses: ./.github/actions/build-cloud-frontend
 
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
@@ -77,7 +68,7 @@ jobs:
         shardTotal: [16]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
@@ -135,7 +126,7 @@ jobs:
           [chromium-2x, chromium-0.5x, mobile-chrome, cloud, mobile-safari]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
@@ -179,7 +170,7 @@ jobs:
     if: ${{ !cancelled() && needs.changes.outputs.should-run == 'true' }}
     steps:
       - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           version: 10
 
@@ -223,11 +214,11 @@ jobs:
           [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
-  #### BEGIN Deployment and commenting (non-forked PRs only)
+  #### BEGIN Deployment and commenting (PRs with direct secret access)
   # when using pull_request event, we have permission to comment directly
-  # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
+  # otherwise, we use workflow_run in ci-tests-e2e-forks.yaml
 
-  # Post starting section into the unified PR report comment for non-forked PRs
+  # Post starting section into the unified PR report comment
   comment-on-pr-start:
     needs: changes
     runs-on: ubuntu-latest
@@ -235,13 +226,14 @@ jobs:
       ${{
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
+        github.event.pull_request.head.repo.fork == false &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
       }}
     permissions:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Upsert playwright starting section into unified report
         uses: ./.github/actions/upsert-comment-section
@@ -252,7 +244,7 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}
 
-  # Deploy and upsert final playwright section for non-forked PRs only
+  # Deploy and upsert final playwright section
   deploy-and-comment:
     needs: [changes, playwright-tests, merge-reports]
     runs-on: ubuntu-latest
@@ -261,14 +253,15 @@ jobs:
         always() &&
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
+        github.event.pull_request.head.repo.fork == false &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
       }}
     permissions:
       pull-requests: write
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download all playwright reports
         uses: actions/download-artifact@v7
@@ -306,4 +299,3 @@ jobs:
           section-content: ${{ steps.section.outputs.content }}
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}
-  #### END Deployment and commenting (non-forked PRs only)

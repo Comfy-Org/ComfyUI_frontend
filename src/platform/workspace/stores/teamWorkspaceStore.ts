@@ -5,6 +5,10 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import {
+  clearWorkflowRestoreState,
+  prepareWorkflowWorkspaceTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type {
@@ -117,7 +121,6 @@ function clearLastWorkspaceId(): void {
 }
 
 const MAX_OWNED_WORKSPACES = 10
-export const MAX_WORKSPACE_MEMBERS = 30
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
@@ -207,14 +210,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => activeWorkspace.value?.pendingInvites ?? []
   )
 
-  const totalMemberSlots = computed(
-    () => members.value.length + pendingInvites.value.length
-  )
-
-  const isInviteLimitReached = computed(
-    () => totalMemberSlots.value >= MAX_WORKSPACE_MEMBERS
-  )
-
   const workspaceId = computed(() => activeWorkspace.value?.id ?? null)
 
   const workspaceName = computed(() => activeWorkspace.value?.name ?? '')
@@ -266,7 +261,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Call once on app boot.
    */
   async function initialize(): Promise<void> {
-    if (initState.value !== 'uninitialized') return
+    if (initState.value !== 'uninitialized' && initState.value !== 'error')
+      return
 
     const generation = identityGeneration
     initState.value = 'loading'
@@ -311,19 +307,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           }
 
           // Session workspace not found (deleted/access revoked) - fallback to default
+          clearWorkflowRestoreState()
           workspaceAuthStore.clearWorkspaceContext()
 
           const personal = workspaces.value.find((w) => w.type === 'personal')
           const fallbackWorkspaceId = personal?.id ?? workspaces.value[0].id
 
-          try {
-            await workspaceAuthStore.switchWorkspace(fallbackWorkspaceId)
-          } catch {
-            if (isStaleIdentity(generation)) return
-            console.error(
-              '[teamWorkspaceStore] Token exchange failed during fallback'
-            )
-          }
+          await workspaceAuthStore.switchWorkspace(fallbackWorkspaceId)
 
           if (isStaleIdentity(generation)) return
 
@@ -359,15 +349,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         }
 
         // 4. Exchange Firebase token for workspace token
-        try {
-          await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
-        } catch {
-          if (isStaleIdentity(generation)) return
-          // Log but don't fail initialization - API calls will fall back to Firebase token
-          console.error(
-            '[teamWorkspaceStore] Token exchange failed during init'
-          )
-        }
+        await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
 
         if (isStaleIdentity(generation)) return
 
@@ -425,18 +407,17 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
-  /**
-   * Drop a revoked/deleted active workspace and reload so init falls back to the
-   * personal workspace. Skips the personal workspace to avoid a reload loop.
-   */
-  function forgetRevokedActiveWorkspace(workspaceId: string): void {
-    if (activeWorkspaceId.value !== workspaceId) return
+  /** Returns whether the revoked workspace was handled, with or without reload. */
+  function forgetRevokedActiveWorkspace(workspaceId: string): boolean {
+    if (activeWorkspaceId.value !== workspaceId) return false
 
     const revoked = workspaces.value.find((w) => w.id === workspaceId)
-    if (revoked?.type === 'personal') return
+    if (revoked?.type === 'personal') return true
 
+    prepareWorkflowWorkspaceTransition()
     clearLastWorkspaceId()
     window.location.reload()
+    return true
   }
 
   /**
@@ -469,6 +450,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       if (isStaleIdentity(generation)) return
 
       // Clear current workspace context and persist new workspace ID
+      prepareWorkflowWorkspaceTransition()
       workspaceAuthStore.clearWorkspaceContext()
       setLastWorkspaceId(workspaceId)
 
@@ -501,6 +483,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       workspaces.value = [...workspaces.value, workspaceState]
 
       // Clear context and switch to new workspace
+      prepareWorkflowWorkspaceTransition()
       workspaceAuthStore.clearWorkspaceContext()
       // Clear any preserved invite query to prevent stale invites from being
       // processed after the reload (prevents owner adding themselves as member)
@@ -544,6 +527,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       if (targetId === activeWorkspaceId.value) {
         // Deleted active workspace - go to personal
         const personal = personalWorkspace.value
+        prepareWorkflowWorkspaceTransition()
         workspaceAuthStore.clearWorkspaceContext()
         if (personal) {
           setLastWorkspaceId(personal.id)
@@ -600,6 +584,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       (workspace) =>
         workspace.type === 'personal' && workspace.id !== current.id
     )
+    prepareWorkflowWorkspaceTransition()
     workspaceAuthStore.clearWorkspaceContext()
     if (personal) {
       setLastWorkspaceId(personal.id)
@@ -901,8 +886,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     isCurrentUserOriginalOwner,
     pendingInvites,
     originalOwnerId,
-    totalMemberSlots,
-    isInviteLimitReached,
     workspaceId,
     workspaceName,
     isWorkspaceSubscribed,

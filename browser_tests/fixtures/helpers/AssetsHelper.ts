@@ -122,16 +122,29 @@ export function createMixedMediaJobs(
  * equals `durationMs`. The first spec becomes id `job-001`, etc.
  */
 export function createJobsWithExecutionTimes(
-  specs: ReadonlyArray<{ createTime: number; durationMs: number }>
+  specs: ReadonlyArray<{
+    createTime: number
+    durationMs: number
+    filename?: string
+    outputsCount?: number
+  }>
 ): RawJobListItem[] {
-  return specs.map((spec, i) =>
-    createMockJob({
+  return specs.map((spec, i) => {
+    const job = createMockJob({
       id: `job-${String(i + 1).padStart(3, '0')}`,
       create_time: spec.createTime,
       execution_start_time: spec.createTime,
-      execution_end_time: spec.createTime + spec.durationMs
+      execution_end_time: spec.createTime + spec.durationMs,
+      outputs_count: spec.outputsCount ?? 1
     })
-  )
+
+    return spec.filename && job.preview_output
+      ? {
+          ...job,
+          preview_output: { ...job.preview_output, filename: spec.filename }
+        }
+      : job
+  })
 }
 
 function parseLimit(url: URL, total: number): number {

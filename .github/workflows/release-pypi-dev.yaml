@@ -15,10 +15,10 @@ jobs:
       version: ${{ steps.current_version.outputs.version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
       - uses: actions/setup-node@v6
         with:
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Download dist artifact
         uses: actions/download-artifact@v7
         with:

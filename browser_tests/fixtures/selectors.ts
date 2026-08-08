@@ -11,7 +11,8 @@ export const TestIds = {
     nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
-    modeToggle: 'mode-toggle'
+    modeToggle: 'mode-toggle',
+    tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
     folder: 'tree-folder',
@@ -65,6 +66,8 @@ export const TestIds = {
     missingModelReferenceCount: 'missing-model-reference-count',
     missingModelUnsupportedSection:
       'missing-model-import-not-supported-section',
+    missingModelGatedAccess: 'missing-model-gated-access',
+    missingModelGatedHint: 'missing-model-gated-hint',
     missingModelDownload: 'missing-model-download',
     missingModelActions: 'missing-model-actions',
     missingModelDownloadAll: 'missing-model-download-all',
@@ -162,6 +165,8 @@ export const TestIds = {
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
+    layoutFieldLabel: 'widget-layout-field-label',
+    formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',
     increment: 'increment',
     valueControl: 'value-control',

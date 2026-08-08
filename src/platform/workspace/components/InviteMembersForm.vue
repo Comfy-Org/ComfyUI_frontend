@@ -49,7 +49,9 @@
       aria-live="polite"
       class="m-0 text-xs text-muted-foreground"
     >
-      {{ $t('workspacePanel.inviteMemberDialog.seatLimitReached', maxSeats) }}
+      {{
+        $t('workspacePanel.inviteMemberDialog.seatLimitReached', inviteLimit)
+      }}
     </p>
 
     <div
@@ -87,6 +89,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
 import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
@@ -104,12 +107,14 @@ import {
 } from '@/platform/workspace/utils/inviteEmails'
 import { cn } from '@comfyorg/tailwind-utils'
 
+const MAX_INVITES_PER_BATCH = 30
+
 const {
   submitLabel,
   placeholder,
   source,
   cancelLabel,
-  maxSeats = Number.POSITIVE_INFINITY,
+  maxSeats = MAX_INVITES_PER_BATCH,
   showSubmit = true,
   autoFocus = false,
   tagsInputClass = 'min-h-10 w-full bg-tertiary-background px-3 focus-within:bg-tertiary-background hover:bg-tertiary-background-hover'
@@ -137,6 +142,7 @@ const { t } = useI18n()
 const toast = useToast()
 const telemetry = useTelemetry()
 const workspaceStore = useTeamWorkspaceStore()
+const { fetchStatus } = useBillingContext()
 
 const emails = ref<string[]>([])
 const invitedEmails = ref<string[]>([])
@@ -148,11 +154,12 @@ const seatLimitHintId = useId()
 const invalidEmails = computed(() =>
   emails.value.filter((email) => !isValidEmail(email))
 )
-const isAtSeatLimit = computed(() => emails.value.length >= maxSeats)
+const inviteLimit = computed(() => Math.min(maxSeats, MAX_INVITES_PER_BATCH))
+const isAtSeatLimit = computed(() => emails.value.length >= inviteLimit.value)
 const canSubmit = computed(
   () =>
     emails.value.length > 0 &&
-    emails.value.length <= maxSeats &&
+    emails.value.length <= inviteLimit.value &&
     invalidEmails.value.length === 0
 )
 
@@ -167,7 +174,7 @@ const describedBy = computed(
 )
 
 function onEmailsUpdate(value: string[]) {
-  emails.value = sanitizeInviteEmails(value, maxSeats)
+  emails.value = sanitizeInviteEmails(value, inviteLimit.value)
 }
 
 async function onSubmit() {
@@ -191,12 +198,19 @@ async function onSubmit() {
         source,
         count: successfulEmails.length
       })
+      void fetchStatus().catch(console.error)
     }
 
     if (failedEmails.length === 0) {
       emit('submitted', [...invitedEmails.value])
       return
     }
+
+    telemetry?.trackWorkspaceInviteFailed({
+      source,
+      attempted_count: emailSnapshot.length,
+      failed_count: failedEmails.length
+    })
 
     emails.value = failedEmails
     toast.add({
