@@ -71,6 +71,13 @@ export interface WidgetTypeDef {
   ): Unsubscribe | void
 }
 
+/** A default is per-type; each widget needs its own copy of an object one. */
+function copyDefault(value: WidgetTypeData | undefined): WidgetTypeData {
+  if (value === undefined) return ''
+  if (typeof value !== 'object') return value
+  return structuredClone(value)
+}
+
 export function createWidgetTypeRegistrar() {
   return (type: string, def: WidgetTypeDef): Unsubscribe => {
     if (!type.trim()) {
@@ -94,7 +101,12 @@ export function createWidgetTypeRegistrar() {
       // A DOM widget's `value` is backed by these accessors, not a field, so
       // the cell has to exist before the widget does — assigning `.value`
       // without them is silently a no-op.
-      let current: WidgetTypeData = declared ?? def.defaultValue ?? ''
+      //
+      // Copied per widget: a default is declared once for the type, and an
+      // object default handed out by reference would be shared by every node
+      // of that type. A curve editor mutates its points in place, so dragging
+      // one node's curve moved every other node's too.
+      let current: WidgetTypeData = copyDefault(declared ?? def.defaultValue)
 
       const widget = node.addDOMWidget(inputName, type, container, {
         serialize: def.serialize ?? true,
