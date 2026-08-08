@@ -241,6 +241,20 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)).toBeUndefined()
       expect(store.getWidget(seedB)?.value).toBe(2)
     })
+
+    it('re-registering a reused widget id after clearGraph returns fresh state', () => {
+      const store = useWidgetValueStore()
+      const modeA = widgetId(graphA, toNodeId('node-1'), 'mode')
+
+      store.registerWidget(modeA, state('combo', 'Black White Levels'))
+      expect(store.getWidget(modeA)?.value).toBe('Black White Levels')
+
+      store.clearGraph(graphA)
+
+      const reused = store.registerWidget(modeA, state('combo', 'normal'))
+      expect(reused.value).toBe('normal')
+      expect(store.getWidget(modeA)?.value).toBe('normal')
+    })
   })
 
   describe('un-keyable widget ids', () => {

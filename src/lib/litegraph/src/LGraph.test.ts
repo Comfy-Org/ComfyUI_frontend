@@ -344,6 +344,66 @@ describe('Graph Clearing and Callbacks', () => {
       []
     )
   })
+
+  test('clear() purges widget state on a zero-UUID graph that holds nodes (node-id reuse leak)', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const graph = new LGraph()
+    expect(graph.id).toBe(zeroUuid)
+
+    const node = new LGraphNode('ImageAnalyze')
+    node.id = toNodeId(1)
+    graph.add(node)
+
+    const widgetValueStore = useWidgetValueStore()
+    const modeWidgetId = widgetId(graph.id, toNodeId(1), 'mode')
+    widgetValueStore.registerWidget(modeWidgetId, {
+      type: 'combo',
+      value: 'Black White Levels',
+      options: {},
+      label: undefined,
+      serialize: undefined,
+      disabled: undefined
+    })
+
+    const previewExposureStore = usePreviewExposureStore()
+    previewExposureStore.addExposure(graph.id, `${graph.id}:1`, {
+      sourceNodeId: '1',
+      sourcePreviewName: '$$canvas-image-preview'
+    })
+
+    graph.clear()
+
+    expect(widgetValueStore.getWidget(modeWidgetId)).toBeUndefined()
+    expect(
+      previewExposureStore.getExposures(graph.id, `${graph.id}:1`)
+    ).toEqual([])
+  })
+
+  test('constructing a new empty graph does not purge existing zero-UUID widget state', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+
+    const active = new LGraph()
+    const node = new LGraphNode('ImageAnalyze')
+    node.id = toNodeId(1)
+    active.add(node)
+
+    const widgetValueStore = useWidgetValueStore()
+    const modeWidgetId = widgetId(active.id, toNodeId(1), 'mode')
+    widgetValueStore.registerWidget(modeWidgetId, {
+      type: 'combo',
+      value: 'keep me',
+      options: {},
+      label: undefined,
+      serialize: undefined,
+      disabled: undefined
+    })
+
+    const throwaway = new LGraph()
+    expect(throwaway.id).toBe(zeroUuid)
+
+    expect(widgetValueStore.getWidget(modeWidgetId)?.value).toBe('keep me')
+  })
 })
 
 describe('node:before-removed event', () => {
