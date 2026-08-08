@@ -10,6 +10,8 @@ const config: KnipConfig = {
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
+        // Public v2 extension API barrel (@comfyorg/extension-api entry point)
+        'src/extension-api/index.ts',
         'src/storybook/mocks/**/*.ts'
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**']
