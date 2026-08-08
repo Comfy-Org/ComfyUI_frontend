@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useElementVisibility, useRafFn } from '@vueuse/core'
 
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, useId, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { ElementKey } from './graphLayout'
@@ -27,31 +27,73 @@ useRafFn(({ delta }) => {
 const SAG = 6
 const SWAY = 3.5
 
-/** Comet geometry: SEG_LEN-long dashes stacked TRAIL deep, with opacity
- * ramping 1 → 0 so the head reads solid and the tail dissolves, matching the
- * showcase frame's sweep. The dash cycle is each wire's own length and the
- * duration scales with it, so a short wire gets the same size pulse at the
- * same speed as a long one rather than a squashed cycle. */
-const TRAIL = 14
-const SEG_LEN = 3
-/** Path units per second. */
-const SPEED = 70
+/* ------------------------------------------------------------------------ *
+ * Travelling sweep
+ *
+ * Matches `animate-border-spin` on the showcase frame, which is a conic
+ * gradient ramping brand yellow 4% → 100% across the *whole* perimeter and
+ * rotating once every 2s. The important property is that no part of the
+ * border is ever dark: it is one continuous ramp with a single hard seam that
+ * travels. So this is not a comet on an unlit wire — the ramp spans the wire
+ * end to end, and the base stroke sits underneath at low opacity because in
+ * the reference the gradient *is* the border.
+ *
+ * Built from bands of a dashed stroke rather than a paint gradient: a
+ * <linearGradient> projects onto its axis, which is chord distance, not arc
+ * length — on these curves that runs the ramp up to 3.9x faster on the flat
+ * sections than the steep ones. Dashes are laid out along the path itself, so
+ * they are arc-length correct for free.
+ * ------------------------------------------------------------------------ */
 
-function trailOpacity(seg: number): number {
-  return Math.round((1 - seg / TRAIL) ** 1.8 * 100) / 100
+/** Declared on every band so dash maths runs in normalised units. The wires
+ * sway a little every frame, which changes true arc length; normalising means
+ * the dash pattern cannot breathe or drift in phase with it. */
+const PATH_UNITS = 100
+
+/** Bands per wrap. The alpha step between neighbours has to stay under the
+ * Mach-banding threshold — 32 gives ~3%, which reads as a smooth ramp. */
+const BANDS = 32
+
+/** Target arc length of one wrap, in viewBox units. Each wire rounds to a
+ * whole number of wraps, so all three sweep at near-identical linear speed
+ * instead of the short wire getting a squashed cycle. Set well above the
+ * longest wire (~158) so every wire carries exactly one ramp end to end,
+ * like the single gradient wrapping the reference's border. */
+const WRAP_UNITS = 400
+
+/** One wrap takes this long on every wire. Matches the 2s rotation of
+ * `animate-border-spin`. */
+const SWEEP_MS = 2000
+
+/** Floor of the ramp, mirroring the reference's `yellow 4%`. */
+const RAMP_FLOOR = 0.04
+
+/** Linear, like the conic. A gamma curve here is what made the old falloff
+ * read wrong. Band 0 is the head. */
+function bandOpacity(band: number): number {
+  const s = band / (BANDS - 1)
+  return Math.round((1 - s * (1 - RAMP_FLOOR)) * 1000) / 1000
 }
 
-/** Measured once per layout: sway shifts control points but barely changes
- * arc length, so re-measuring every frame would burn layout for nothing. */
+const bands = Array.from({ length: BANDS }, (_, i) => i)
+
+/** Measured once per layout off the *base* path, which carries no pathLength
+ * attribute — engines disagree on whether getTotalLength honours it. Only
+ * feeds the integer wrap count, so a little imprecision is harmless. */
 const basePaths = ref<SVGPathElement[]>([])
-const lengths = ref<number[]>([])
+const wraps = ref<number[]>([1, 1, 1])
 
 function measure() {
-  lengths.value = basePaths.value.map((p) => p?.getTotalLength?.() ?? 0)
+  wraps.value = basePaths.value.map((p) =>
+    Math.max(1, Math.round((p?.getTotalLength?.() ?? WRAP_UNITS) / WRAP_UNITS))
+  )
 }
 
 onMounted(measure)
 watch(() => positions, measure, { deep: true, flush: 'post' })
+
+const uid = useId()
+const geoId = (i: number) => `hero-wire-${uid}-${i}`
 
 // Every endpoint has a DOM dot on its element (input card, node headers, the
 // OUTPUT pill), so the splines carry no dots of their own. The layer renders
@@ -78,6 +120,15 @@ const links = computed(() => {
     return `M ${x1} ${y1} C ${x1 + d} ${y1 + droop + swing1}, ${x2 - d} ${y2 + droop + swing2}, ${x2} ${y2}`
   })
 })
+
+/** Dash geometry per wire, in normalised units. */
+const sweeps = computed(() =>
+  links.value.map((_, i) => {
+    const period = PATH_UNITS / (wraps.value[i] ?? 1)
+    const band = period / BANDS
+    return { period, band }
+  })
+)
 </script>
 
 <template>
@@ -89,70 +140,90 @@ const links = computed(() => {
     fill="none"
     aria-hidden="true"
   >
+    <!-- Shared geometry for the sweep bands. Carries no stroke properties of
+         its own: values set here would beat the ones inherited from <use>,
+         which would silently blank the whole sweep. -->
+    <defs>
+      <path
+        v-for="(d, i) in links"
+        :id="geoId(i)"
+        :key="`geo-${i}`"
+        :d="d"
+        :pathLength="PATH_UNITS"
+      />
+    </defs>
+
+    <!-- Base wire. Dim, because the sweep supplies the brightness — the
+         reference has no always-on border underneath its gradient. -->
     <path
       v-for="(d, i) in links"
-      :key="i"
+      :key="`base-${i}`"
       :ref="(el) => (basePaths[i] = el as SVGPathElement)"
       :d="d"
       stroke="#f2ff59"
       stroke-width="1.5"
+      stroke-opacity="0.22"
       vector-effect="non-scaling-stroke"
     />
-    <!-- Traveling comet: each wire carries a stack of short dashes trailing
-         the head, their opacity ramping 100% → 0% like the conic sweep on the
-         showcase frame. One shared keyframe moves them all; the per-segment
-         dash offset is what spaces the tail out behind the head. -->
-    <template v-for="(d, i) in links" :key="`flow-${i}`">
-      <path
-        v-for="seg in TRAIL"
-        :key="`flow-${i}-${seg}`"
-        :d="d"
-        class="wire-flow"
-        stroke-width="1.5"
-        vector-effect="non-scaling-stroke"
-        :style="{
-          opacity: trailOpacity(seg),
-          strokeDasharray: `${SEG_LEN} ${Math.max(1, (lengths[i] ?? 0) - SEG_LEN)}`,
-          animationDuration: `${Math.max(0.6, (lengths[i] ?? 0) / SPEED)}s`,
-          '--seg-shift': seg * SEG_LEN,
-          '--cycle': lengths[i] ?? 0
-        }"
-      />
-    </template>
+
+    <!-- Sweep. One <use> per band, all cloning the geometry above, so the rAF
+         loop writes 6 `d` attributes a frame rather than one per band. The
+         viewBox and canvas share an aspect ratio, so plain user-unit strokes
+         scale uniformly and `vector-effect` is unnecessary here — it is also
+         underspecified in combination with dashing. -->
+    <g class="wire-sweep">
+      <template v-for="(d, i) in links" :key="`sweep-${i}`">
+        <use
+          v-for="band in bands"
+          :key="`sweep-${i}-${band}`"
+          :href="`#${geoId(i)}`"
+          :style="{
+            strokeOpacity: bandOpacity(band),
+            strokeDasharray: `${sweeps[i].band} ${sweeps[i].period - sweeps[i].band}`,
+            animationDuration: `${SWEEP_MS}ms`,
+            '--period': sweeps[i].period,
+            '--phase': band * sweeps[i].band
+          }"
+        />
+      </template>
+    </g>
   </svg>
 </template>
 
 <style scoped>
-.wire-flow {
-  stroke: #fff;
-  stroke-linecap: round;
+.wire-sweep use {
+  stroke: #f2ff59;
+  /* User units, not non-scaling-stroke: dashing plus device-space strokes is
+     underspecified, and the canvas scales uniformly so this is equivalent. */
+  stroke-width: 1;
+  /* Butt caps abut exactly. Round caps extend each band by half the stroke
+     width at both ends, so neighbours bulge and overlap unevenly. */
+  stroke-linecap: butt;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .wire-flow {
-    /* Duration is set inline, scaled to each wire's measured length. */
-    animation-name: wire-flow;
+  .wire-sweep use {
+    animation-name: wire-sweep;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wire-flow {
+  .wire-sweep {
     display: none;
   }
 }
 
-/* Decreasing offset pushes the dash toward the path's end — left to right.
-   --seg-shift holds each segment that much further back along the wire, so
-   the stack reads as one comet with a fading tail. */
-@keyframes wire-flow {
+/* Decreasing offset carries the band forward — input to output. Each band
+   starts one band-length further back, so the stack reads as one ramp. */
+@keyframes wire-sweep {
   from {
-    stroke-dashoffset: calc(var(--cycle) + var(--seg-shift));
+    stroke-dashoffset: calc((var(--period) + var(--phase)) * 1px);
   }
 
   to {
-    stroke-dashoffset: var(--seg-shift);
+    stroke-dashoffset: calc(var(--phase) * 1px);
   }
 }
 </style>
