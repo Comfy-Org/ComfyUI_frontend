@@ -179,13 +179,14 @@ describe('WorkflowTab - workflow status indicator', () => {
     mockWorkflowStatus.value = new Map()
   })
 
-  it('renders the normal saved tab frame without activity indicators', () => {
+  it('inherits the toggle button color transition without activity indicators', () => {
     renderTab()
 
     expect(screen.getByTestId('workflow-tab')).toHaveClass('h-9')
-    expect(screen.getByText('test.json')).toHaveClass(
-      'text-sm',
+    expect(screen.getByText('test.json')).toHaveClass('text-sm', 'text-inherit')
+    expect(screen.getByText('test.json')).not.toHaveClass(
       'text-smoke-800',
+      'text-base-foreground',
       'group-hover:text-base-foreground'
     )
     expect(screen.getByTestId('close-workflow-button')).toBeInTheDocument()
