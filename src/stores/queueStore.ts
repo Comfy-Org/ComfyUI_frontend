@@ -499,6 +499,10 @@ export const useQueueStore = defineStore('queue', () => {
   let inFlight = false
   let dirty = false
 
+  // Bumped by reset(); an update() whose fetches resolve after a bump belongs
+  // to the previous identity and must not commit.
+  let identityGeneration = 0
+
   const tasks = computed<TaskItemImpl[]>(
     () =>
       [
@@ -530,11 +534,16 @@ export const useQueueStore = defineStore('queue', () => {
     inFlight = true
     dirty = false
     isLoading.value = true
+    const generation = identityGeneration
     try {
       const [queueResult, historyResult] = await Promise.allSettled([
         api.getQueue({ throwOnError: true }),
         api.getHistory(maxHistoryItems.value)
       ])
+
+      // Both commits below are synchronous, so one guard here covers them: the
+      // snapshots belong to an identity that has since been reset away.
+      if (generation !== identityGeneration) return
 
       if (queueResult.status === 'fulfilled') {
         const queue = queueResult.value
@@ -600,10 +609,14 @@ export const useQueueStore = defineStore('queue', () => {
         console.error('Failed to fetch history:', historyResult.reason)
       }
     } finally {
-      isLoading.value = false
-      inFlight = false
-      if (dirty) {
-        void update()
+      // A reset already released the slot and may have started the new
+      // identity's fetch; releasing it again would let a third one run alongside.
+      if (generation === identityGeneration) {
+        isLoading.value = false
+        inFlight = false
+        if (dirty) {
+          void update()
+        }
       }
     }
   }
@@ -623,6 +636,26 @@ export const useQueueStore = defineStore('queue', () => {
     await update()
   }
 
+  /**
+   * Drop every locally cached task so the previous account's queue and history
+   * stop rendering after an in-session identity change. Client state only —
+   * unlike clear(), nothing is deleted server-side.
+   *
+   * The single-flight slot is released too: a previous-identity request that
+   * never settles would otherwise pin `inFlight` and leave the new identity's
+   * update() coalescing into a fetch that can never re-fire.
+   */
+  const reset = () => {
+    identityGeneration++
+    inFlight = false
+    dirty = false
+    isLoading.value = false
+    runningTasks.value = []
+    pendingTasks.value = []
+    historyTasks.value = []
+    hasFetchedHistorySnapshot.value = false
+  }
+
   return {
     runningTasks,
     pendingTasks,
@@ -639,6 +672,7 @@ export const useQueueStore = defineStore('queue', () => {
 
     update,
     clear,
+    reset,
     delete: deleteTask
   }
 })

@@ -35,6 +35,8 @@ import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useQueueStore } from '@/stores/queueStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -146,6 +148,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
     if (identityChanged) {
       useTeamWorkspaceStore().resetForIdentityChange()
+      // The previous account's jobs and outputs are still rendered until they
+      // are dropped; nothing else refetches on an identity change.
+      useQueueStore().reset()
+      useAssetsStore().reset()
     }
 
     // A direct account switch (A -> B, or sign-out) must re-handshake the
