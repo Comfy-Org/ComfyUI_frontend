@@ -7,7 +7,7 @@ export default function lintStaged(stagedFiles: string[]) {
     return 'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1'
   }
 
-  const formattable = relativePaths.filter(
+  const formattableFiles = relativePaths.filter(
     (fileName) =>
       /\.(js|ts|tsx|vue|mts|json|yaml|md)$/.test(fileName) &&
       !fileName.endsWith('pnpm-lock.yaml')
@@ -18,57 +18,57 @@ export default function lintStaged(stagedFiles: string[]) {
   const styleFiles = relativePaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
   )
-  const typecheckFiles = formattable.filter(
+  const typecheckFiles = formattableFiles.filter(
     (fileName) => !fileName.endsWith('.js')
   )
-  const lintFileCount = new Set([...codeFiles, ...styleFiles]).size
-  const commands: string[] = []
 
-  if (formattable.length > 0) {
-    commands.push(`pnpm exec oxfmt --write ${joinPaths(formattable)}`)
+  return [
+    ...commandsWithFiles(formattableFiles, 'pnpm exec oxfmt --write'),
+    ...lintCommands(codeFiles, styleFiles),
+    ...typecheckCommands(typecheckFiles)
+  ]
+}
+
+function lintCommands(codeFiles: string[], styleFiles: string[]) {
+  if (new Set([...codeFiles, ...styleFiles]).size > 10) {
+    return ['pnpm lint']
   }
 
-  if (lintFileCount > 10) {
-    commands.push('pnpm lint')
-  } else {
-    if (styleFiles.length > 0) {
-      commands.push(
-        `pnpm exec stylelint --allow-empty-input ${joinPaths(styleFiles)}`
-      )
-    }
+  return [
+    ...commandsWithFiles(styleFiles, 'pnpm exec stylelint --allow-empty-input'),
+    ...commandsWithFiles(
+      codeFiles,
+      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix',
+      'pnpm exec eslint --cache --fix --no-warn-ignored'
+    )
+  ]
+}
 
-    if (codeFiles.length > 0) {
-      const joinedPaths = joinPaths(codeFiles)
-      commands.push(
-        `pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix ${joinedPaths}`,
-        `pnpm exec eslint --cache --fix --no-warn-ignored ${joinedPaths}`
-      )
-    }
+function typecheckCommands(fileNames: string[]) {
+  if (fileNames.length === 0) {
+    return []
   }
 
-  if (typecheckFiles.length > 0) {
-    commands.push('pnpm typecheck')
+  return [
+    'pnpm typecheck',
+    ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
+      ? ['pnpm typecheck:browser']
+      : []),
+    ...(fileNames.some((fileName) => fileName.startsWith('apps/website/'))
+      ? ['pnpm typecheck:website']
+      : [])
+  ]
+}
 
-    if (
-      typecheckFiles.some((fileName) => fileName.startsWith('browser_tests/'))
-    ) {
-      commands.push('pnpm typecheck:browser')
-    }
-
-    if (
-      typecheckFiles.some((fileName) => fileName.startsWith('apps/website/'))
-    ) {
-      commands.push('pnpm typecheck:website')
-    }
+function commandsWithFiles(fileNames: string[], ...commands: string[]) {
+  if (fileNames.length === 0) {
+    return []
   }
 
-  return commands
+  const joinedPaths = fileNames.map((fileName) => `"${fileName}"`).join(' ')
+  return commands.map((command) => `${command} ${joinedPaths}`)
 }
 
 function toRelativePath(fileName: string) {
   return path.relative(process.cwd(), fileName).replace(/\\/g, '/')
-}
-
-function joinPaths(fileNames: string[]) {
-  return fileNames.map((fileName) => `"${fileName}"`).join(' ')
 }
