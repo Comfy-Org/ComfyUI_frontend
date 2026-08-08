@@ -1474,6 +1474,17 @@
       }
     }
   },
+  "apiExport": {
+    "title": "Export for API",
+    "newBadge": "NEW",
+    "description": "Export this workflow in API format. Then run it with the Python SDK.",
+    "dialogLoadError": "Could not open API export. Please try again.",
+    "workflowFile": "Workflow file",
+    "fileExtension": ".json",
+    "apiFormat": "API format (JSON)",
+    "openQuickstart": "Open quickstart",
+    "downloadWorkflow": "Download workflow"
+  },
   "menuLabels": {
     "File": "File",
     "Edit": "Edit",
@@ -1525,6 +1536,7 @@
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
+    "Export for API": "Export for API",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
     "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Exit Subgraph": "Exit Subgraph",

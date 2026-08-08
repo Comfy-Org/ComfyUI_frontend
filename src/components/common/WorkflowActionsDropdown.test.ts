@@ -113,6 +113,12 @@ describe('WorkflowActionsDropdown', () => {
     expect(active).toHaveAttribute('aria-label', 'Graph mode, workflow actions')
   })
 
+  it('shows a new-item indicator on the active menu trigger', () => {
+    renderDropdown()
+
+    expect(screen.getByTestId('new-menu-item-indicator')).toBeInTheDocument()
+  })
+
   it('labels the inactive segment with its switch action only', () => {
     renderDropdown()
 

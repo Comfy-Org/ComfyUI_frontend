@@ -2,9 +2,11 @@ import type { ComputedRef, Ref } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { BadgeVariants } from '@/components/common/badge.variants'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { openExportWorkflowApiDialog } from '@/platform/workflow/export/composables/lazyExportWorkflowApiDialog'
 import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -13,7 +15,6 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type {
@@ -39,6 +40,8 @@ interface AddItemOptions {
   disabled?: boolean
   prependSeparator?: boolean
   isNew?: boolean
+  badge?: string
+  badgeSeverity?: BadgeVariants['severity']
 }
 
 export function useWorkflowActionsMenu(
@@ -52,10 +55,10 @@ export function useWorkflowActionsMenu(
   const bookmarkStore = useWorkflowBookmarkStore()
   const commandStore = useCommandStore()
   const subgraphStore = useSubgraphStore()
-  const menuItemStore = useMenuItemStore()
   const { flags } = useFeatureFlags()
   const appModeStore = useAppModeStore()
   const { enterBuilder, pruneLinearData } = appModeStore
+  const { toastErrorHandler } = useErrorHandling()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -83,23 +86,23 @@ export function useWorkflowActionsMenu(
       visible = true,
       disabled = false,
       prependSeparator = false,
-      isNew = false
+      isNew = false,
+      badge,
+      badgeSeverity
     }: AddItemOptions) => {
       if (prependSeparator && visible) items.push({ separator: true })
       const item: WorkflowMenuAction = { id, label, icon, command, disabled }
       if (!visible) item.visible = false
-      if (isNew) {
-        item.badge = t('g.experimental')
-        item.isNew = true
-      }
+      if (badge || isNew) item.badge = badge ?? t('g.experimental')
+      if (isNew) item.isNew = true
+      if (badgeSeverity) item.badgeSeverity = badgeSeverity
       items.push(item)
     }
 
     const workflowMode =
       workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
     const isLinearMode = workflowMode === 'app'
-    const showAppModeItems =
-      isRoot && (menuItemStore.hasSeenLinear || flags.linearToggleEnabled)
+    const showAppModeItems = isRoot
     const isBookmarked = bookmarkStore.isBookmarked(workflow?.path ?? '')
 
     const toggleLinear = async () => {
@@ -183,41 +186,51 @@ export function useWorkflowActionsMenu(
 
     addItem({
       id: 'export-api',
-      label: t('menuLabels.Export (API)'),
+      label: t('menuLabels.Export for API'),
       icon: 'pi pi-download',
       command: async () => {
-        await ensureWorkflowActive(workflow)
-        await commandStore.execute('Comfy.ExportWorkflowAPI')
+        try {
+          await ensureWorkflowActive(workflow)
+        } catch (error: unknown) {
+          toastErrorHandler(error)
+          return
+        }
+        await openExportWorkflowApiDialog(
+          workflow?.filename ?? 'workflow_api'
+        ).catch((error: unknown) =>
+          toastErrorHandler(
+            new Error(t('apiExport.dialogLoadError'), { cause: error })
+          )
+        )
       },
-      visible: isRoot
+      visible: isRoot,
+      isNew: true,
+      badge: t('apiExport.newBadge')
     })
 
     addItem({
       id: 'share',
       label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',
-      command: () =>
-        openShareDialog().catch(useErrorHandling().toastErrorHandler),
+      command: () => openShareDialog().catch(toastErrorHandler),
       visible: isCloud && flags.workflowSharingEnabled
     })
 
     addItem({
-      id: 'enter-app-mode',
-      label: t('breadcrumbsMenu.enterAppMode'),
-      icon: 'icon-[lucide--panels-top-left]',
+      id: isLinearMode ? 'exit-app-mode' : 'enter-app-mode',
+      label: t(
+        isLinearMode
+          ? 'breadcrumbsMenu.exitAppMode'
+          : 'breadcrumbsMenu.enterAppMode'
+      ),
+      icon: isLinearMode
+        ? 'icon-[comfy--workflow]'
+        : 'icon-[lucide--panels-top-left]',
       command: toggleLinear,
-      visible: showAppModeItems && !isLinearMode,
+      visible: showAppModeItems || isLinearMode,
       prependSeparator: true,
-      isNew: true
-    })
-
-    addItem({
-      id: 'exit-app-mode',
-      label: t('breadcrumbsMenu.exitAppMode'),
-      icon: 'icon-[comfy--workflow]',
-      command: toggleLinear,
-      visible: isLinearMode,
-      prependSeparator: true
+      isNew: true,
+      badgeSeverity: 'secondary'
     })
 
     const isActive = workflow === workflowStore.activeWorkflow
@@ -246,7 +259,8 @@ export function useWorkflowActionsMenu(
         enterBuilder()
       },
       visible: showAppModeItems,
-      isNew: true
+      isNew: true,
+      badgeSeverity: 'secondary'
     })
 
     addItem({
