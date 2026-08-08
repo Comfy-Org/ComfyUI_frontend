@@ -59,22 +59,34 @@ function renderedComboWidget(
 }
 
 describe('LGraphNodePreview', () => {
-  it('leads the combo options with the provided widget value', () => {
+  it('keeps only the provided combo value for the preview', () => {
     const widget = renderedComboWidget({
       widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' }
     })
 
-    expect(widget?.options?.values).toEqual([
-      'sd_xl_base_1.0.safetensors',
-      'a.safetensors',
-      'b.safetensors'
-    ])
+    expect(widget?.options?.values).toEqual(['sd_xl_base_1.0.safetensors'])
   })
 
-  it('keeps the combo options untouched when no value is provided', () => {
+  it('keeps only the first combo value when no value is provided', () => {
     const widget = renderedComboWidget()
 
-    expect(widget?.options?.values).toEqual(['a.safetensors', 'b.safetensors'])
+    expect(widget?.options?.values).toEqual(['a.safetensors'])
+  })
+
+  it('does not retain a large combo option list in the preview', () => {
+    const options = Array.from(
+      { length: 10_000 },
+      (_, index) => `input/image-${index}.png`
+    )
+    const widget = renderedWidgets(
+      fromPartial<ComfyNodeDefV2>({
+        name: 'LoadImage',
+        inputs: { image: { type: 'COMBO', options } },
+        outputs: []
+      })
+    ).find((item) => item.name === 'image')
+
+    expect(widget?.options?.values).toEqual([options[0]])
   })
 
   it('uses the input default when defined and empty string otherwise', () => {
