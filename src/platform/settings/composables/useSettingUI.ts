@@ -415,7 +415,8 @@ export function useSettingUI(
                 CATEGORY_ICONS[child.label] ??
                 'icon-[lucide--plug]'),
           ...(child.key === 'workspace-allowlist' &&
-          governanceStore.status === 'ineligible'
+          governanceStore.status === 'ineligible' &&
+          governanceStore.providers.length > 0
             ? { suffixIcon: 'icon-[lucide--crown]' }
             : {})
         }))

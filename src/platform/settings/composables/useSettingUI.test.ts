@@ -29,7 +29,8 @@ const env = vi.hoisted(() => {
       | 'unconfigured'
       | 'configured'
       | 'ineligible'
-      | 'error'
+      | 'error',
+    partnerNodeGovernanceProviders: [] as { id: string }[]
   }
   const fakeRef = <K extends keyof typeof state>(key: K) => ({
     get value() {
@@ -102,6 +103,9 @@ vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
   usePartnerNodeGovernanceStore: () => ({
     get status() {
       return env.state.partnerNodeGovernanceStatus
+    },
+    get providers() {
+      return env.state.partnerNodeGovernanceProviders
     }
   })
 }))
@@ -151,7 +155,8 @@ describe('useSettingUI', () => {
       isActiveSubscription: false,
       billingType: 'legacy',
       workspaceRole: 'owner',
-      partnerNodeGovernanceStatus: 'inactive'
+      partnerNodeGovernanceStatus: 'inactive',
+      partnerNodeGovernanceProviders: []
     })
 
     vi.mocked(useSettingStore).mockReturnValue({
@@ -354,6 +359,30 @@ describe('useSettingUI', () => {
       const { navGroups } = useSettingUI()
 
       expect(navKeys(navGroups.value)).not.toContain('workspace-allowlist')
+    })
+
+    it('shows the crown when ineligible with providers present (policy-restricted)', () => {
+      env.state.partnerNodeGovernanceStatus = 'ineligible'
+      env.state.partnerNodeGovernanceProviders = [{ id: 'provider-a' }]
+
+      const { navGroups } = useSettingUI()
+      const allowlistItem = navGroups.value
+        .flatMap((group) => group.items)
+        .find((item) => item.id === 'workspace-allowlist')
+
+      expect(allowlistItem?.suffixIcon).toBe('icon-[lucide--crown]')
+    })
+
+    it('does not show the crown when ineligible with no providers (catalog 403)', () => {
+      env.state.partnerNodeGovernanceStatus = 'ineligible'
+      env.state.partnerNodeGovernanceProviders = []
+
+      const { navGroups } = useSettingUI()
+      const allowlistItem = navGroups.value
+        .flatMap((group) => group.items)
+        .find((item) => item.id === 'workspace-allowlist')
+
+      expect(allowlistItem?.suffixIcon).toBeUndefined()
     })
 
     it('keeps OSS account navigation on the legacy layout', () => {
