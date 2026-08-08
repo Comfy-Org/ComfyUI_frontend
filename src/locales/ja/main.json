@@ -255,6 +255,8 @@
       "backToGithubLogin": "代わりにGithubでサインアップ",
       "backToLogin": "ログインに戻る",
       "backToSocialLogin": "GoogleまたはGithubでサインアップする",
+      "cloudNewUser": "Comfyを初めてご利用ですか？",
+      "cloudSignUp": "こちらからサインアップ",
       "confirmPasswordLabel": "パスワードの確認",
       "confirmPasswordPlaceholder": "もう一度同じパスワードを入力してください",
       "didntReceiveEmail": "メールが届きませんか？こちらまでご連絡ください：",
@@ -263,6 +265,7 @@
       "failed": "ログイン失敗",
       "forgotPassword": "パスワードを忘れましたか？",
       "forgotPasswordError": "パスワードリセット用メールの送信に失敗しました",
+      "freeRunsSuffix": "{count}回の無料実行を獲得しましょう。",
       "freeTierBadge": "無料プラン対象",
       "freeTierDescription": "Googleでサインアップすると、毎月{credits}の無料クレジットがもらえます。クレジットカード不要。",
       "freeTierDescriptionGeneric": "Googleでサインアップすると、毎月無料クレジットがもらえます。クレジットカード不要。",
@@ -445,27 +448,12 @@
   "cloudForgotPassword_sendResetLink": "リセットリンクを送信",
   "cloudForgotPassword_title": "パスワードを忘れた場合",
   "cloudHero": {
+    "carouselLabel": "注目モデル",
+    "carouselRoleDescription": "カルーセル",
     "nextSlide": "次のスライド",
     "previousSlide": "前のスライド",
-    "slidePagerLabel": "スライド{index}へ移動",
-    "slides": {
-      "cloud": {
-        "description": "商用ライセンスが確認されたモデルを使い、どこからでも作業したいほとんどのユーザーに最適です。",
-        "title": "クラウド"
-      },
-      "models": {
-        "description": "厳選された商用ライセンス付きモデルが、セットアップ不要ですぐに利用可能です。",
-        "title": "モデル"
-      },
-      "team": {
-        "description": "今すぐチームをオンボードしましょう。ワークフローやアセットを組織全体で共有できます。",
-        "title": "チーム"
-      },
-      "workflows": {
-        "description": "アイデアから出力まで数分で。複数のバリエーションを並べて生成できます。",
-        "title": "ワークフロー"
-      }
-    }
+    "slideRoleDescription": "スライド",
+    "slideStatus": "{title}、{total}枚中{current}枚目"
   },
   "cloudNotification": {
     "continueLocally": "ローカルで続行",
@@ -577,11 +565,9 @@
   "cloudPrivateBeta_title": "クラウドは現在プライベートベータ版です",
   "cloudSorryContactSupport_title": "申し訳ありません、サポートに連絡してください",
   "cloudStart_desc": "セットアップ不要。あらゆるデバイスで動作します。",
-  "cloudStart_download": "ComfyUIをダウンロード",
   "cloudStart_explain": "複数の出力を一度に生成。ワークフローを簡単に共有。",
   "cloudStart_learnAboutButton": "クラウドについて学ぶ",
   "cloudStart_title": "数秒で作成を開始",
-  "cloudStart_wantToRun": "代わりにローカルでComfyUIを実行したいですか？",
   "cloudSurvey_steps_experience": "ComfyUIの知識レベルは？",
   "cloudSurvey_steps_focus": "何を作成していますか？",
   "cloudSurvey_steps_intent": "ComfyUIで何を作成したいですか？",
@@ -812,6 +798,9 @@
       "buy": "購入",
       "buyCredits": "支払いに進む",
       "buyNow": "今すぐ購入",
+      "chargedImmediatelyNote": "ご登録のカードには即時に請求されます。",
+      "confirmSubtitle": "お支払いが完了すると、クレジットがこのワークスペースに追加されます。",
+      "confirmTitle": "確認",
       "contactUs": "お問い合わせ",
       "creditsDescription": "クレジットはワークフローやパートナーノードの実行に使用されます。",
       "creditsPerDollar": "1ドルあたりのクレジット数",
@@ -826,6 +815,7 @@
       "minRequired": "最低{credits}クレジット",
       "minimumPurchase": "最低購入額：${amount}（{credits}クレジット）",
       "needMore": "さらに必要ですか？",
+      "payAmount": "{amount} を支払う",
       "purchaseError": "購入に失敗しました",
       "purchaseErrorDetail": "クレジットの購入に失敗しました: {error}",
       "purchaseSuccess": "クレジットが正常に追加されました！",
@@ -836,6 +826,8 @@
       "topUp": "チャージ",
       "unknownError": "不明なエラーが発生しました",
       "usdAmount": "${amount}",
+      "verifyBody": "お支払いを完了するために、銀行による追加認証が必要です。",
+      "verifyTitle": "お支払いの認証",
       "videosEstimate": "約{count}本の動画",
       "viewPricing": "料金詳細を見る",
       "youGet": "クレジット",
@@ -862,7 +854,6 @@
     "BOOLEAN": "ブール",
     "BOUNDING_BOX": "バウンディングボックス",
     "BOUNDING_BOXES": "バウンディングボックス",
-    "CAMERA_CONTROL": "カメラコントロール",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
@@ -1874,6 +1865,26 @@
     "warning": "警告",
     "workflow": "ワークフロー",
     "you": "あなた"
+  },
+  "gettingStarted": {
+    "loadFailed": "テンプレートの読み込みに失敗しました。",
+    "retry": "再試行",
+    "retryTemplate": "{title} を再試行",
+    "startBlank": "空白のキャンバスから始める",
+    "subtitle": "すぐに使えるワークフローから始めるか、空白のキャンバスから始めましょう。",
+    "tabs": {
+      "templates": "テンプレート",
+      "tutorials": "チュートリアル"
+    },
+    "tabsLabel": "はじめに選択",
+    "templateFailed": "このテンプレートを開くことができませんでした。",
+    "title": "何かを作ってみましょう",
+    "tutorials": {
+      "imageToImage": "画像から画像へ",
+      "inpaint": "インペイント",
+      "interfaceOverview": "インターフェース概要",
+      "textToImage": "テキストから画像へ"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "キャンバスモード",
@@ -2905,6 +2916,7 @@
     "mage": "mage",
     "mask": "マスク",
     "merging": "マージ",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "モデル",
     "model specific": "モデル固有",
@@ -3086,6 +3098,74 @@
     },
     "back": "戻る",
     "done": "完了",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "今はしない",
+        "explore": "テンプレートを探す",
+        "noTour": {
+          "body": "テンプレートを見て、作りたいものを選びましょう。",
+          "title": "まだまだたくさんあります"
+        },
+        "ran": {
+          "body": "最初の作品ができました。他にもいろいろ作ってみましょう。",
+          "title": "これは何百ものうちのひとつです"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "画像がシーンを設定します。ここで次に何が起こるかを指示します。",
+          "title": "どのように動かすか説明しましょう"
+        },
+        "image-edit": {
+          "body": "画像はそのままです。変更したい点を説明してください。",
+          "title": "変更したい内容を伝えましょう"
+        },
+        "other": {
+          "body": "これがプロンプトです。変更すると結果も変わります。",
+          "title": "作りたいものを伝えましょう"
+        },
+        "t2i": {
+          "body": "この説明から画像が生成されます。自由に入力してみてください。",
+          "title": "作りたいものを説明しましょう"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "ここに何も表示されませんでした。ツアーを閉じて再度実行してください。",
+          "title": "実行が完了しませんでした"
+        },
+        "generating": {
+          "body": "準備ができ次第、ここに結果が表示されます。",
+          "title": "少々お待ちください"
+        },
+        "image": {
+          "body": "新しい画像がここに表示されます。ダウンロードや共有が可能です。",
+          "title": "できあがりました"
+        },
+        "video": {
+          "body": "新しい動画がここに表示されます。ダウンロードや共有が可能です。",
+          "title": "できあがりました"
+        }
+      },
+      "run": {
+        "body": "「実行」を押して結果の生成を開始しましょう。",
+        "title": "ワークフローを実行"
+      },
+      "upload": {
+        "i2v": {
+          "body": "この画像が最初のフレームです。いつでもご自身の画像に差し替えられます。",
+          "title": "画像から始めましょう"
+        },
+        "image-edit": {
+          "body": "これが編集する画像です。いつでもご自身の画像に差し替えられます。",
+          "title": "画像から始めましょう"
+        },
+        "other": {
+          "body": "この画像がワークフローに入力されます。いつでもご自身の画像に差し替えられます。",
+          "title": "画像から始めましょう"
+        }
+      }
+    },
     "loadError": "このツアーの表示中に問題が発生しました",
     "next": "次へ",
     "skip": "スキップ",
@@ -3865,6 +3945,7 @@
     "beta": "ベータ版",
     "billedMonthly": "毎月請求",
     "billedYearly": "{total} 年間請求",
+    "billingAndInvoices": "請求と請求書",
     "billingComingSoon": {
       "message": "チーム向けの請求機能が近日中に追加されます。ワークスペースごとに席数単位でプランに加入できるようになります。今後のアップデートをお待ちください。",
       "title": "近日公開"
@@ -3946,6 +4027,9 @@
       "memberTitle": "このワークスペースのサブスクリプションは無効です",
       "runLabel": "実行"
     },
+    "inactiveTeamDescription": "チームプランを再有効化して、メンバーを追加したりワークフローを実行したりできます",
+    "inactiveTeamPlanIncludes": "有効なプランには{plan}のすべてに加えて、以下が含まれます：",
+    "inactiveTeamTitle": "チームサブスクリプションが無効です",
     "inviteUpTo": "最大 {count} 人を招待",
     "invoiceHistory": "請求履歴",
     "learnMore": "詳細を見る",
@@ -3985,6 +4069,17 @@
     "partnerNodesCredits": "パートナーノードクレジット",
     "partnerNodesDescription": "商用/独自モデルの実行用",
     "partnerNodesPricingTable": "パートナーノードの料金表",
+    "paymentRecovery": {
+      "memberCta": "了解しました",
+      "memberDescription": "ワークスペースのオーナーにサブスクリプションの復元を依頼してください。",
+      "memberRunLabel": "実行",
+      "memberRunTooltip": "ワークスペースのオーナーにこのサブスクリプションの復元を依頼してください",
+      "ownerCta": "支払い方法を更新",
+      "ownerDescription": "お支払い方法を更新してワークスペースのサブスクリプションとワークフローの実行を復元してください。",
+      "ownerRunLabel": "支払い方法を更新して実行",
+      "ownerRunTooltip": "支払い方法を更新してこのサブスクリプションを復元",
+      "title": "サブスクリプションが一時停止中"
+    },
     "perMonth": "USD / 月",
     "personalHeader": "個人プランは個人利用専用です。{action}",
     "personalHeaderAction": "チームメンバーを追加するには、チームプランにご加入ください。",
@@ -4065,6 +4160,7 @@
     "pricingBlurbQuestions": "ご質問",
     "pricingBlurbSeeDetails": "詳細を見る",
     "reactivatePlan": "プランを再開",
+    "reactivateToUseCredits": "これらのクレジットを使用するにはプランを再有効化してください",
     "refillsDate": "{date}に補充",
     "refillsNextCycle": "次のサイクルで補充",
     "refreshCredits": "クレジットを更新",
@@ -4271,6 +4367,7 @@
     "logoProviderSeparator": " ＆ "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "このComfyUIインストールにはコアノードが不足しているため、ワークフローを読み込めませんでした。バックエンドが正しく起動しているか確認してください。",
     "cannotCreateSubgraph": "サブグラフを作成できません",
     "couldNotDetermineFileType": "ファイルタイプを判断できませんでした",
     "dropFileError": "ドロップされたアイテムを処理できません: {error}",
@@ -4320,6 +4417,7 @@
     "invalidTemplateData": "ノードテンプレートの読み込みに失敗しました：無効なデータです",
     "legacyMaskEditorDeprecated": "従来のマスクエディタは非推奨となり、まもなく削除されます。",
     "migrateToLitegraphReroute": "将来のバージョンではRerouteノードが削除されます。litegraph-native rerouteに移行するにはクリックしてください。",
+    "missingMediaVerificationFailed": "不足しているメディアの検証に失敗しました。一部の入力がエラータブに表示されない場合があります。",
     "missingModelVerificationFailed": "不足しているモデルの検証に失敗しました。一部のモデルはエラータブに表示されない場合があります。",
     "modelLoadedSuccessfully": "3Dモデルが正常に読み込まれました",
     "no3dScene": "テクスチャを適用する3Dシーンがありません",
@@ -4503,7 +4601,11 @@
       "notAuthenticated": "ワークスペースにアクセスするにはログインが必要です",
       "tokenExchangeFailed": "ワークスペースの認証に失敗しました: {error}",
       "workspaceNotFound": "ワークスペースが見つかりません"
-    }
+    },
+    "initializationFailed": "ワークスペースを読み込めませんでした",
+    "initializationFailedDetail": "接続を確認して、再度お試しください。",
+    "initializationFailedSignOutDetail": "サインアウトして再度ログインしてください。",
+    "retry": "再試行"
   },
   "workspacePanel": {
     "activity": {
@@ -4543,7 +4645,6 @@
       },
       "updatePayment": "お支払い方法を更新",
       "warning": {
-        "body": "前回のお支払いが完了しませんでした。{date}までにお支払い方法を更新しない場合、サブスクリプションが一時停止されます。",
         "bodyNoDate": "前回のお支払いが完了しませんでした。サブスクリプションの一時停止を避けるためにお支払い方法を更新してください。",
         "title": "支払いが拒否されました"
       }

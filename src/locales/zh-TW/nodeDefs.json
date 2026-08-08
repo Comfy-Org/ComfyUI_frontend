@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 的聯合視訊+音訊潛空間。時長會對齊至模型的 17k+5 幀格（24 fps）。",
+    "display_name": "Empty MiniMax H3 AV 潛空間",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度",
+        "tooltip": "以 24 fps 計算的幀數，會自動對齊至模型的 17k+5 幀格（124 ≈ 5 秒；訓練範圍約為 124-362，超出範圍未經測試）"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -4389,6 +4410,144 @@
       },
       "width": {
         "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageToVideoNode": {
+    "description": "使用 FLUX 3 將 1 到 10 張圖像製作成動畫。每張圖像成為影片的一個畫格：一張圖像作為開頭，兩張圖像則從第一張變形到第二張，更多圖像則平均分布或依你選擇的時間點固定。",
+    "display_name": "Flux 3 圖像轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "輸出長寬比。「自動」會根據提示詞與輸入自動選擇。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "影片長度（秒）。「自動」會根據內容自動調整長度。"
+      },
+      "generate_audio": {
+        "name": "產生音訊",
+        "tooltip": "產生同步音訊（環境音、語音、音效）。關閉時產生無音軌的影片。"
+      },
+      "keyframes": {
+        "name": "關鍵畫格",
+        "tooltip": "1 到 10 張圖像，依播放順序排列。每張至少 256x256 像素。"
+      },
+      "placement": {
+        "name": "放置方式",
+        "tooltip": "「平均分布於影片」讓 FLUX 3 自動安排圖像（第一張作為開頭，兩張則分別為開始與結束）；「指定時間點」則將每張圖像固定於你選擇的秒數。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述場景如何移動與發聲；提示詞會在生成前被解讀與擴展。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出解析度。"
+      },
+      "safety_tolerance": {
+        "name": "安全容忍度",
+        "tooltip": "審核容忍度，0 為最嚴格。傳送圖像或影片的請求不論設定為何，最多僅允許 2 個。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定此節點是否重新執行的種子值；FLUX 3 會自行選擇種子，因此實際結果無論此值如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3TextToVideoNode": {
+    "description": "透過 FLUX 3，從文字提示詞產生帶有同步音訊的影片。",
+    "display_name": "Flux 3 文字轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "輸出長寬比。「自動」會根據提示詞與輸入自動選擇。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "影片長度（秒）。「自動」會根據內容自動調整長度。"
+      },
+      "generate_audio": {
+        "name": "產生音訊",
+        "tooltip": "產生同步音訊（環境音、語音、音效）。關閉時產生無音軌的影片。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "請以白話描述你想要的內容；提示詞會在生成前被解讀與擴展。若需多層音訊，請分別描述環境音、音樂與語音。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出解析度。"
+      },
+      "safety_tolerance": {
+        "name": "安全容忍度",
+        "tooltip": "審核容忍度，0 為最嚴格。傳送圖像或影片的請求不論設定為何，最多僅允許 2 個。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定此節點是否重新執行的種子值；FLUX 3 會自行選擇種子，因此實際結果無論此值如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3VideoContinuationNode": {
+    "description": "使用 FLUX 3 繼續影片：新片段會從你提供的最後幾幀接續下去。",
+    "display_name": "Flux 3 影片續接",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "輸出長寬比。'auto' 會根據 prompt 與輸入自動選擇。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "片段長度（秒）。'auto' 會根據內容自動調整長度。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "產生同步音訊（環境音、語音、效果音）。關閉時產生無音軌影片。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "續接內容描述；prompt 會在生成前被解讀並擴展。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "輸出解析度。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "審核容忍度，0 為最嚴格。傳送圖片或影片的請求不論設定為何，最多只允許 2。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定此節點是否重新執行的種子值；FLUX 3 會自行選擇種子，因此實際結果無論此值如何都不具決定性。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要續接的片段。"
       }
     },
     "outputs": {
@@ -5703,6 +5862,15 @@
       },
       "model_resolution": {
         "name": "解析度"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       },
       "prompt": {
         "name": "提示詞",
@@ -7580,158 +7748,6 @@
       }
     }
   },
-  "KlingCameraControlI2VNode": {
-    "description": "將靜態圖片轉換為具有專業攝影機運鏡的電影感影片。可模擬真實世界的攝影效果，並控制虛擬攝影機的動作，包括縮放、旋轉、平移、傾斜及第一人稱視角，同時保持對原始圖片的聚焦。",
-    "display_name": "Kling 靜態圖轉影片（攝影機控制）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "可透過 Kling Camera Controls 節點建立。控制影片生成時的攝影機運動與動作。"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "負向文字提示"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "正向文字提示"
-      },
-      "start_frame": {
-        "name": "start_frame",
-        "tooltip": "參考圖片 - 輸入 URL 或 Base64 編碼字串，檔案大小不得超過 10MB，解析度不得低於 300*300 像素，長寬比需介於 1:2.5 ~ 2.5:1。Base64 不需包含 data:image 前綴。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "時長",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControlT2VNode": {
-    "description": "將文字轉換為具備專業攝影機運鏡的電影級影片，模擬真實世界的攝影效果。可控制虛擬攝影機的動作，包括縮放、旋轉、平移、傾斜及第一人稱視角，同時保持對原始文字的聚焦。",
-    "display_name": "Kling 文字轉影片（攝影機控制）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "可透過 Kling Camera Controls 節點建立。控制影片生成時的攝影機運動與動作。"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "負向文字提示"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "正向文字提示"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "時長",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControls": {
-    "description": "允許指定 Kling 攝影機控制與動作控制效果的設定選項。",
-    "display_name": "Kling 攝影機控制",
-    "inputs": {
-      "camera_control_type": {
-        "name": "camera_control_type"
-      },
-      "horizontal_movement": {
-        "name": "horizontal_movement",
-        "tooltip": "控制攝影機在水平軸（x 軸）上的移動。負值表示向左，正值表示向右。"
-      },
-      "pan": {
-        "name": "pan",
-        "tooltip": "控制攝影機在垂直平面（x 軸）上的旋轉。負值表示向下旋轉，正值表示向上旋轉。"
-      },
-      "roll": {
-        "name": "roll",
-        "tooltip": "控制攝影機在 z 軸上的滾動量。負值表示逆時針，正值表示順時針。"
-      },
-      "tilt": {
-        "name": "tilt",
-        "tooltip": "控制攝影機在水平平面（y 軸）上的旋轉。負值表示向左旋轉，正值表示向右旋轉。"
-      },
-      "vertical_movement": {
-        "name": "vertical_movement",
-        "tooltip": "控制攝影機在垂直軸（y 軸）上的移動。負值表示向下，正值表示向上。"
-      },
-      "zoom": {
-        "name": "zoom",
-        "tooltip": "控制攝影機焦距的變化。負值表示視野較窄，正值表示視野較寬。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "camera_control",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingDualCharacterVideoEffectNode": {
-    "description": "根據 effect_scene 產生影片時，實現不同的特效。第一張圖片會放在合成畫面的左側，第二張圖片會放在右側。",
-    "display_name": "Kling 雙角色影片特效",
-    "inputs": {
-      "duration": {
-        "name": "時長"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "image_left": {
-        "name": "image_left",
-        "tooltip": "左側圖片"
-      },
-      "image_right": {
-        "name": "image_right",
-        "tooltip": "右側圖片"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "model_name": {
-        "name": "model_name"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "時長",
-        "tooltip": null
-      }
-    }
-  },
   "KlingFirstLastFrameNode": {
     "description": "使用 Kling V3 以首尾影格產生影片。",
     "display_name": "Kling 3.0 首尾影格轉影片",
@@ -8250,38 +8266,6 @@
       }
     }
   },
-  "KlingSingleImageVideoEffectNode": {
-    "description": "根據 effect_scene 產生影片時，實現不同的特殊效果。",
-    "display_name": "Kling 影片特效",
-    "inputs": {
-      "duration": {
-        "name": "時長"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "image": {
-        "name": "影像",
-        "tooltip": "參考圖片。可為 URL 或 Base64 編碼字串（不含 data:image 前綴）。檔案大小不得超過 10MB，解析度不得低於 300*300 像素，長寬比需介於 1:2.5 ~ 2.5:1 之間"
-      },
-      "model_name": {
-        "name": "model_name"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "時長",
-        "tooltip": null
-      }
-    }
-  },
   "KlingStartEndFrameNode": {
     "description": "根據您提供的起始與結束影像，產生一段影像序列。此節點會自動生成中間所有影格，讓第一張影像平滑轉換到最後一張影像。",
     "display_name": "Kling 起始-結束影格轉影片",
@@ -8468,26 +8452,6 @@
       "start_frame": {
         "name": "起始畫格",
         "tooltip": "可選的起始畫格圖片。連接後將切換為圖片轉影片模式。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingVirtualTryOnNode": {
-    "description": "Kling 虛擬試穿節點。輸入一張人物圖片和一張服裝圖片，將服裝試穿在人物身上。",
-    "display_name": "Kling 虛擬試穿",
-    "inputs": {
-      "cloth_image": {
-        "name": "cloth_image"
-      },
-      "human_image": {
-        "name": "human_image"
-      },
-      "model_name": {
-        "name": "model_name"
       }
     },
     "outputs": {
@@ -8685,6 +8649,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "將視訊潛空間與音訊潛空間合併為聯合 AV 潛空間（適用於任何 AV 模型，如 LTXV 或 MiniMax H3）。",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -11370,6 +11335,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 圖片轉影片",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "首幀"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "last_frame": {
+        "name": "末幀"
+      },
+      "length": {
+        "name": "長度",
+        "tooltip": "以 24 fps 計算的幀數，會自動對齊至模型的 17k+5 幀格（124 ≈ 5 秒；訓練範圍約為 124-362，超出範圍未經測試）"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<圖片 i> / <影片 k> / <音訊 j> 參考條件設定，適用於 MiniMax H3。提示時請使用相同標籤。",
+    "display_name": "MiniMax H3 參考轉影片",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度",
+        "tooltip": "以 24 fps 計算的幀數（124 ≈ 5 秒，訓練範圍約為 124-362）"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "ref_audios": {
+        "name": "參考音訊"
+      },
+      "ref_image_size": {
+        "name": "參考圖片尺寸",
+        "tooltip": "參考圖片尺寸設定。「match」會將每張參考圖（僅縮小，保持比例）縮放至生成圖的像素面積；「max」則使用參考流程的 2048px 短邊以獲得最佳身份保真度。參考標記會貫穿每個取樣步驟，因此「max」模式可能會慢上數倍。"
+      },
+      "ref_images": {
+        "name": "參考圖片"
+      },
+      "ref_video_audios": {
+        "name": "參考影片音訊"
+      },
+      "ref_videos": {
+        "name": "參考影片"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "設定視訊/音訊流的偏移量。",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "shift_audio"
+      },
+      "shift_video": {
+        "name": "shift_video"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -20570,6 +20647,58 @@
       }
     }
   },
+  "TopazImageEnhanceV2": {
+    "description": "業界標準的放大與影像增強。",
+    "display_name": "Topaz 影像增強",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_color_preservation": {
+        "name": "color_preservation"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_crop_to_fill": {
+        "name": "crop_to_fill"
+      },
+      "model_face_enhancement": {
+        "name": "face_enhancement"
+      },
+      "model_face_enhancement_creativity": {
+        "name": "face_enhancement_creativity"
+      },
+      "model_face_enhancement_strength": {
+        "name": "face_enhancement_strength"
+      },
+      "model_face_preservation": {
+        "name": "face_preservation"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_subject_detection": {
+        "name": "subject_detection"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "設為 0 代表與原始高度相同，或依 output_width 等比例縮放。Wonder 3.5 僅支援 1x 至 6x 放大。Bloom 2 與 Wonder 3.5 會保留輸入長寬比，並將指定尺寸視為目標。"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "設為 0 代表自動計算（通常為原始尺寸，或依 output_height 等比例縮放）。Wonder 3.5 僅支援 1x 至 6x 放大。Bloom 2 與 Wonder 3.5 會保留輸入長寬比，並將指定尺寸視為目標。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TopazVideoEnhance": {
     "description": "以強大的升頻與修復技術為影片注入新生命。",
     "display_name": "Topaz Video Enhance",
@@ -23176,6 +23305,129 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2Cache": {
+    "description": "快取姿勢影片每個區塊的啟動值，因此只需運行一次，而非每個取樣步驟都運行。大約可將生成時間減半。權衡是以 bf16 格式在 480x832/81 幀下約需 12.5 GB 系統記憶體（會隨解析度與長度變動）。若使用 context windows，每個 window 會分別快取，因此記憶體用量會隨 window 數量增加；建議使用 static_standard 排程，因為 uniform 排程會在每一步移動 window，導致快取無法重複利用。",
+    "display_name": "WanAnimate2Cache",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "快取儲存位置。cpu（記憶體）是最安全的選擇，因為快取通常無法與模型同時放入 VRAM。gpu（顯示卡記憶體）若容量足夠則可更快。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "儲存精度。default 會以模型運算精度儲存啟動值。int8 可將快取減半，int4 減為四分之一，convrot 用於保留精度。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2ToVideo": {
+    "description": "使用影片為參考圖像中的角色製作動畫，有效複製影片中的臉部表情、身體動作與手勢。",
+    "display_name": "WanAnimate2ToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "同時產生的影片數量。"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "參考圖像的 CLIP vision。"
+      },
+      "clip_vision_output_pose": {
+        "name": "clip_vision_output_pose",
+        "tooltip": "動作影片第一幀的 CLIP vision。預設為 clip_vision_output。"
+      },
+      "continue_motion": {
+        "name": "continue_motion",
+        "tooltip": "要延續的前一段動作序列，以維持時間一致性。"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "輸出影片的高度（像素）。"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "要產生的影格數。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end_percent": {
+        "name": "pose_end_percent",
+        "tooltip": "動作影響結束的取樣百分比。動作大多在早期建立，例如設為 0.7 可在保留編舞的同時放寬細節。"
+      },
+      "pose_start_percent": {
+        "name": "pose_start_percent",
+        "tooltip": "動作影響開始的取樣百分比。在此區間外，動作分支會完全跳過，也會加快這些步驟。"
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "調整動作影片對動作的影響程度。1.0 為訓練時的行為；低於 1.0 會減弱依從度，高於 1.0 則會加強。0.0 為靜音，但不會完全移除。"
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "其動作將轉移到參考角色的影片。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "positive_pose": {
+        "name": "positive_pose",
+        "tooltip": "針對動作影片分支的提示，描述動作而非角色。預設為 positive。用於 cond 與 uncond 階段。"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "要製作動畫的角色。"
+      },
+      "reference_image_strength": {
+        "name": "reference_image_strength",
+        "tooltip": "調整產生影格對參考圖像 latent frame 的依從程度。低於 1.0 可放寬身分／外觀（例如讓 prompt 重新風格化），高於 1.0 則可防止漂移。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "在動作影片中要跳過的影格數。延長時請連接前一個節點的 video_frame_offset 輸出。"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "輸出影片的寬度（像素）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "3": {
+        "name": "trim_latent",
+        "tooltip": "解碼前應修剪的 latent 影格數。"
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": "延長影片時重疊的圖像影格數。"
+      },
+      "5": {
+        "name": "video_frame_offset",
+        "tooltip": "在動作影片中要跳過的影格數。"
       }
     }
   },

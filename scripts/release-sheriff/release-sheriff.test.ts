@@ -2,16 +2,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { PullRequestSummary } from './release-sheriff'
 import {
+  CONFIG,
+  fetchGithubLogins,
   fetchOnCallEmails,
   isSheriffPr,
+  parseGithubLogins,
   parseOnCallEmails,
   planActions,
-  resolveSheriff
+  resolveSheriff,
+  singleLine
 } from './release-sheriff'
 
 const config = {
   fallbackGithubLogin: 'fallback-dev',
-  githubLoginByEmail: { 'Sheriff@comfy.org': 'sheriff-dev' }
+  githubLoginByUser: { sheriff: 'sheriff-dev' }
 }
 
 function pr(overrides: Partial<PullRequestSummary> = {}): PullRequestSummary {
@@ -53,6 +57,58 @@ describe('parseOnCallEmails', () => {
         included: [{ type: 'users', attributes: { email: ' ' } }]
       })
     ).toEqual([])
+  })
+})
+
+describe('parseGithubLogins', () => {
+  it('reads github:<user>:<login> tags and ignores unrelated ones', () => {
+    const payload = {
+      data: {
+        attributes: {
+          tags: [
+            'github:ben:benceruleanlu',
+            'team:frontend',
+            'github:drjkl:drjkl',
+            'github:malformed',
+            42
+          ]
+        }
+      }
+    }
+
+    expect(parseGithubLogins(payload)).toEqual({
+      ben: 'benceruleanlu',
+      drjkl: 'drjkl'
+    })
+  })
+
+  it('ignores payloads without a usable tag list', () => {
+    expect(parseGithubLogins(null)).toEqual({})
+    expect(parseGithubLogins({ data: {} })).toEqual({})
+    expect(parseGithubLogins({ data: { attributes: { tags: 'no' } } })).toEqual(
+      {}
+    )
+  })
+})
+
+describe('singleLine', () => {
+  it('cannot emit a line that closes a GITHUB_OUTPUT heredoc early', () => {
+    expect(singleLine('before\n__EOF__\nafter')).toBe('before __EOF__ after')
+  })
+
+  it('collapses incidental whitespace', () => {
+    expect(singleLine('  a\t\tb \n c  ')).toBe('a b c')
+  })
+})
+
+describe('CONFIG', () => {
+  // The shipped config sat on placeholder values for weeks: every run warned
+  // "No Datadog On-Call schedule configured", assigned the fallback, and still
+  // went green. Reaching the credentials guard proves the schedule is wired.
+  it('is wired up far enough to attempt a Datadog lookup', async () => {
+    const result = await fetchOnCallEmails(CONFIG, {})
+
+    expect(result.warning).toMatch(/DATADOG_API_KEY \/ DATADOG_APP_KEY/)
   })
 })
 
@@ -139,6 +195,36 @@ describe('fetchOnCallEmails', () => {
       'DD-API-KEY': 'api',
       'DD-APPLICATION-KEY': 'app'
     })
+  })
+
+  it('reads the login directory from the schedule itself', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          data: { attributes: { tags: ['github:sheriff:sheriff-dev'] } }
+        })
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await fetchGithubLogins(datadog, creds)
+
+    expect(result).toEqual({
+      githubLoginByUser: { sheriff: 'sheriff-dev' },
+      warning: null
+    })
+    expect(String(fetchSpy.mock.calls[0][0])).toBe(
+      'https://api.datadoghq.com/api/v2/on-call/schedules/sched-1'
+    )
+  })
+
+  it('degrades the directory to empty when Datadog is unreachable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('boom')))
+
+    const result = await fetchGithubLogins(datadog, creds)
+
+    expect(result.githubLoginByUser).toEqual({})
+    expect(result.warning).toMatch(/lookup failed/)
   })
 })
 
@@ -245,7 +331,7 @@ describe('planActions', () => {
       pr({
         number: 2,
         labels: [{ name: 'backport' }],
-        author: { login: 'sheriff' }
+        author: { login: 'Sheriff' }
       })
     ]
 
@@ -261,7 +347,7 @@ describe('planActions', () => {
         number: 1,
         labels: [{ name: 'backport' }],
         assignees: [{ login: 'dev' }],
-        latestReviews: [{ author: { login: 'sheriff' } }],
+        latestReviews: [{ author: { login: 'Sheriff' } }],
         reviewDecision: 'CHANGES_REQUESTED'
       }),
       pr({

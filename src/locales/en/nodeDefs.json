@@ -4098,6 +4098,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "display_name": "Empty MiniMax H3 AV Latent",
+    "description": "Joint video+audio latent for MiniMax H3. Duration snaps to the model's 17k+5 frame grid at 24 fps.",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, snapped up to the model's 17k+5 grid (124 = ~5s; trained range is ~124-362, longer is untested)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -4389,6 +4410,144 @@
       },
       "height": {
         "name": "height"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageToVideoNode": {
+    "display_name": "Flux 3 Image to Video",
+    "description": "Animates 1 to 10 images with FLUX 3. Each image becomes a frame of the clip: one image opens it, two morph from the first to the second, and more are spread across it or pinned to times you choose.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "How the scene should move and sound; the prompt is interpreted and expanded before generation."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "1 to 10 images, in playback order. Minimum 256x256 pixels each."
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "'spread across the clip' lets FLUX 3 place the images (one opens the clip, two become its start and end); 'at times' pins every image to a second you choose."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Output aspect ratio. 'auto' picks one from the prompt and inputs."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Clip length in seconds. 'auto' fits the length to the content."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output resolution."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate synchronized audio (ambient, speech, effects). Off produces a video with no audio track."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderation tolerance, 0 is the strictest. Requests that send images or video are capped at 2 whatever you set here."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; FLUX 3 picks its own seed, so actual results are nondeterministic regardless of this value."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3TextToVideoNode": {
+    "display_name": "Flux 3 Text to Video",
+    "description": "Generates a video with synchronized audio from a text prompt via FLUX 3.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What you want, in plain language; the prompt is interpreted and expanded before generation. Describe ambient sound, music and speech separately for layered audio."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Output aspect ratio. 'auto' picks one from the prompt and inputs."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Clip length in seconds. 'auto' fits the length to the content."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output resolution."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate synchronized audio (ambient, speech, effects). Off produces a video with no audio track."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderation tolerance, 0 is the strictest. Requests that send images or video are capped at 2 whatever you set here."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; FLUX 3 picks its own seed, so actual results are nondeterministic regardless of this value."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3VideoContinuationNode": {
+    "display_name": "Flux 3 Video Continuation",
+    "description": "Continues a video with FLUX 3: the new clip carries on from the final frames of the one you provide.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "The clip to continue."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What the continuation should show; the prompt is interpreted and expanded before generation."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Output aspect ratio. 'auto' picks one from the prompt and inputs."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Clip length in seconds. 'auto' fits the length to the content."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output resolution."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate synchronized audio (ambient, speech, effects). Off produces a video with no audio track."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderation tolerance, 0 is the strictest. Requests that send images or video are capped at 2 whatever you set here."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; FLUX 3 picks its own seed, so actual results are nondeterministic regardless of this value."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5648,11 +5807,11 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 currently always requires an input image."
+        "tooltip": "The model to use for video generation."
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Text description of the desired video."
+        "tooltip": "Text description of the desired video. Optional for grok-imagine-video-1.5 when an input image is provided."
       },
       "resolution": {
         "name": "resolution",
@@ -5672,7 +5831,7 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Optional starting image for grok-imagine-video. Required for grok-imagine-video-1.5."
+        "tooltip": "Optional starting image. If omitted, the video is generated from the text prompt alone."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5686,7 +5845,7 @@
   },
   "GrokVideoReferenceNode": {
     "display_name": "Grok Reference-to-Video",
-    "description": "Generate video guided by reference images as style and content references.",
+    "description": "Generate video guided by reference images, with optional preset voice references.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -5711,6 +5870,15 @@
       },
       "model_resolution": {
         "name": "resolution"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       }
     },
     "outputs": {
@@ -7466,158 +7634,6 @@
       }
     }
   },
-  "KlingCameraControlI2VNode": {
-    "display_name": "Kling Image to Video (Camera Control)",
-    "description": "Transform still images into cinematic videos with professional camera movements that simulate real-world cinematography. Control virtual camera actions including zoom, rotation, pan, tilt, and first-person view, while maintaining focus on your original image.",
-    "inputs": {
-      "start_frame": {
-        "name": "start_frame",
-        "tooltip": "Reference Image - URL or Base64 encoded string, cannot exceed 10MB, resolution not less than 300*300px, aspect ratio between 1:2.5 ~ 2.5:1. Base64 should not include data:image prefix."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Positive text prompt"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative text prompt"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "Can be created using the Kling Camera Controls node. Controls the camera movement and motion during the video generation."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControls": {
-    "display_name": "Kling Camera Controls",
-    "description": "Allows specifying configuration options for Kling Camera Controls and motion control effects.",
-    "inputs": {
-      "camera_control_type": {
-        "name": "camera_control_type"
-      },
-      "horizontal_movement": {
-        "name": "horizontal_movement",
-        "tooltip": "Controls camera's movement along horizontal axis (x-axis). Negative indicates left, positive indicates right"
-      },
-      "vertical_movement": {
-        "name": "vertical_movement",
-        "tooltip": "Controls camera's movement along vertical axis (y-axis). Negative indicates downward, positive indicates upward."
-      },
-      "pan": {
-        "name": "pan",
-        "tooltip": "Controls camera's rotation in vertical plane (x-axis). Negative indicates downward rotation, positive indicates upward rotation."
-      },
-      "tilt": {
-        "name": "tilt",
-        "tooltip": "Controls camera's rotation in horizontal plane (y-axis). Negative indicates left rotation, positive indicates right rotation."
-      },
-      "roll": {
-        "name": "roll",
-        "tooltip": "Controls camera's rolling amount (z-axis). Negative indicates counterclockwise, positive indicates clockwise."
-      },
-      "zoom": {
-        "name": "zoom",
-        "tooltip": "Controls change in camera's focal length. Negative indicates narrower field of view, positive indicates wider field of view."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "camera_control",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControlT2VNode": {
-    "display_name": "Kling Text to Video (Camera Control)",
-    "description": "Transform text into cinematic videos with professional camera movements that simulate real-world cinematography. Control virtual camera actions including zoom, rotation, pan, tilt, and first-person view, while maintaining focus on your original text.",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Positive text prompt"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative text prompt"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "Can be created using the Kling Camera Controls node. Controls the camera movement and motion during the video generation."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingDualCharacterVideoEffectNode": {
-    "display_name": "Kling Dual Character Video Effects",
-    "description": "Achieve different special effects when generating a video based on the effect_scene. First image will be positioned on left side, second on right side of the composite.",
-    "inputs": {
-      "image_left": {
-        "name": "image_left",
-        "tooltip": "Left side image"
-      },
-      "image_right": {
-        "name": "image_right",
-        "tooltip": "Right side image"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "duration": {
-        "name": "duration"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingFirstLastFrameNode": {
     "display_name": "Kling 3.0 First-Last-Frame to Video",
     "description": "Generate videos with Kling V3 using first and last frames.",
@@ -8136,38 +8152,6 @@
       }
     }
   },
-  "KlingSingleImageVideoEffectNode": {
-    "display_name": "Kling Video Effects",
-    "description": "Achieve different special effects when generating a video based on the effect_scene.",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": " Reference Image. URL or Base64 encoded string (without data:image prefix). File size cannot exceed 10MB, resolution not less than 300*300px, aspect ratio between 1:2.5 ~ 2.5:1"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "duration": {
-        "name": "duration"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingStartEndFrameNode": {
     "display_name": "Kling Start-End Frame to Video",
     "description": "Generate a video sequence that transitions between your provided start and end images. The node creates all frames in between, producing a smooth transformation from the first frame to the last.",
@@ -8354,26 +8338,6 @@
       },
       "multi_shot_prompt": {
         "name": "prompt"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingVirtualTryOnNode": {
-    "display_name": "Kling Virtual Try On",
-    "description": "Kling Virtual Try On Node. Input a human image and a cloth image to try on the cloth on the human. You can merge multiple clothing item pictures into one image with a white background.",
-    "inputs": {
-      "human_image": {
-        "name": "human_image"
-      },
-      "cloth_image": {
-        "name": "cloth_image"
-      },
-      "model_name": {
-        "name": "model_name"
       }
     },
     "outputs": {
@@ -9700,7 +9664,8 @@
     }
   },
   "LTXVConcatAVLatent": {
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "Concat AV Latent",
+    "description": "Merge a video latent and an audio latent into a joint AV latent (any AV model, e.g. LTXV or MiniMax H3).",
     "inputs": {
       "video_latent": {
         "name": "video_latent"
@@ -10035,8 +10000,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "display_name": "LTXVSeparateAVLatent",
-    "description": "LTXV Separate AV Latent",
+    "display_name": "Separate AV Latent",
+    "description": "Split a joint AV latent into its video and audio latents (any AV model, e.g. LTXV or MiniMax H3).",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -11370,6 +11335,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Image to Video",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, snapped up to the model's 17k+5 grid (124 = ~5s; trained range is ~124-362, longer is untested)"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "display_name": "MiniMax H3 Reference to Video",
+    "description": "<Picture i> / <Video k> / <Audio j> reference conditioning for MiniMax H3. Use the same tags when prompting.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, (124 = ~5s, trained range is ~124-362)"
+      },
+      "ref_image_size": {
+        "name": "ref_image_size",
+        "tooltip": "Reference image sizing. 'match' scales each ref (down only, keeping aspect) to the generation's pixel area; 'max' uses the reference pipeline's 2048px short edge for best identity fidelity. Reference tokens ride through every sampling step, so 'max' can be several times slower."
+      },
+      "ref_images": {
+        "name": "ref_images"
+      },
+      "ref_videos": {
+        "name": "ref_videos"
+      },
+      "ref_video_audios": {
+        "name": "ref_video_audios"
+      },
+      "ref_audios": {
+        "name": "ref_audios"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "display_name": "ModelSamplingMiniMaxH3",
+    "description": "Set the video/audio flow shifts.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_video": {
+        "name": "shift_video"
+      },
+      "shift_audio": {
+        "name": "shift_audio"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -20512,7 +20589,7 @@
     }
   },
   "TopazImageEnhance": {
-    "display_name": "Topaz Image Enhance",
+    "display_name": "Topaz Image Enhance (Legacy)",
     "description": "Industry-standard upscaling and image enhancement.",
     "inputs": {
       "model": {
@@ -20562,6 +20639,58 @@
       "color_preservation": {
         "name": "color_preservation",
         "tooltip": "Preserve the original colors."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazImageEnhanceV2": {
+    "display_name": "Topaz Image Enhance",
+    "description": "Industry-standard upscaling and image enhancement.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "Zero value means to calculate automatically (usually it will be original size or scaled proportionally to output_height if specified). Wonder 3.5 supports upscale factors from 1x to 6x only. Bloom 2 and Wonder 3.5 preserve the input aspect ratio and treat the requested size as a target."
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "Zero value means to output in the same height as original or scaled proportionally to output_width if specified. Wonder 3.5 supports upscale factors from 1x to 6x only. Bloom 2 and Wonder 3.5 preserve the input aspect ratio and treat the requested size as a target."
+      },
+      "model_color_preservation": {
+        "name": "color_preservation"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_crop_to_fill": {
+        "name": "crop_to_fill"
+      },
+      "model_face_enhancement": {
+        "name": "face_enhancement"
+      },
+      "model_face_enhancement_creativity": {
+        "name": "face_enhancement_creativity"
+      },
+      "model_face_enhancement_strength": {
+        "name": "face_enhancement_strength"
+      },
+      "model_face_preservation": {
+        "name": "face_preservation"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_subject_detection": {
+        "name": "subject_detection"
       }
     },
     "outputs": {
@@ -23201,6 +23330,129 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2Cache": {
+    "display_name": "WanAnimate2Cache",
+    "description": "Caches the pose-video's per-block activations so it runs once instead of on every sampling step. Roughly halves generation time Tradeoff is ~12.5 GB of system RAM at 480x832/81 frames in bf16 (scales with resolution and length). With context windows each window is cached separately, so RAM scales with the window count; use the static_standard schedule, as uniform schedules shift the windows every step and nothing ever recurs to hit the cache.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "device": {
+        "name": "device",
+        "tooltip": "Where to keep the cache. cpu (RAM) is the safe choice, the cache will not fit in VRAM alongside the model at typical sizes. gpu (VRAM) can be faster if it fits."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Storage precision. default stores the activations in the model's compute dtype. int8 halves the cache, int4 quarters it, convrot is used to retain accuracy."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2ToVideo": {
+    "display_name": "WanAnimate2ToVideo",
+    "description": "Animate a character in a reference image using a video, effectively replicating the facial animation, body motion and hands gesture from the video.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Output video width in pixels."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Output video height in pixels."
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Number of frames to generate."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Number of videos to generate simultaneously."
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Frames to seek into the pose video. Connect to the video_frame_offset output of the previous node when extending."
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "Scales the pose video's influence on the motion. 1.0 is the trained behavior; below weakens adherence, above amplifies. 0.0 mutes it but does not fully remove it."
+      },
+      "pose_start_percent": {
+        "name": "pose_start_percent",
+        "tooltip": "Sampling percent at which the pose influence starts. Outside the window the pose branch is skipped entirely, which also speeds those steps up."
+      },
+      "pose_end_percent": {
+        "name": "pose_end_percent",
+        "tooltip": "Sampling percent at which the pose influence ends. Motion is mostly established early, so e.g. 0.7 can loosen fine detail while keeping the choreography."
+      },
+      "reference_image_strength": {
+        "name": "reference_image_strength",
+        "tooltip": "Scales how strongly generated frames attend to the reference image's latent frame. Below 1.0 loosens identity/appearance adherence (e.g. to let the prompt restyle), above tightens it against drift."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "The character to animate."
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "The video whose motion is transferred to the reference character."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "CLIP vision of the reference image."
+      },
+      "positive_pose": {
+        "name": "positive_pose",
+        "tooltip": "Prompt for the pose-video branch, describing the motion rather than the character. Defaults to positive. Used for both the cond and uncond passes."
+      },
+      "clip_vision_output_pose": {
+        "name": "clip_vision_output_pose",
+        "tooltip": "CLIP vision of the pose video's first frame. Defaults to clip_vision_output."
+      },
+      "continue_motion": {
+        "name": "continue_motion",
+        "tooltip": "Previous motion sequence to continue from for temporal consistency."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "3": {
+        "name": "trim_latent",
+        "tooltip": "Number of latent frames that should be trimmed before decoding."
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": "Number of overlapping image frames when extending a video."
+      },
+      "5": {
+        "name": "video_frame_offset",
+        "tooltip": "Frames to seek into the pose video."
       }
     }
   },

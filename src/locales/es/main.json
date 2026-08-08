@@ -255,6 +255,8 @@
       "backToGithubLogin": "Regístrate con Github en su lugar",
       "backToLogin": "Volver al inicio de sesión",
       "backToSocialLogin": "Regístrate con Google o Github en su lugar",
+      "cloudNewUser": "¿Nuevo en Comfy?",
+      "cloudSignUp": "Regístrate aquí",
       "confirmPasswordLabel": "Confirmar contraseña",
       "confirmPasswordPlaceholder": "Ingresa la misma contraseña nuevamente",
       "didntReceiveEmail": "¿No recibiste el correo? Contáctanos en",
@@ -263,6 +265,7 @@
       "failed": "Inicio de sesión fallido",
       "forgotPassword": "¿Olvidaste tu contraseña?",
       "forgotPasswordError": "No se pudo enviar el correo electrónico para restablecer la contraseña",
+      "freeRunsSuffix": "para obtener {count} ejecución gratuita. | para obtener {count} ejecuciones gratuitas.",
       "freeTierBadge": "Elegible para el plan gratuito",
       "freeTierDescription": "Regístrate con Google para obtener {credits} créditos gratis cada mes. No se necesita tarjeta.",
       "freeTierDescriptionGeneric": "Regístrate con Google para obtener créditos gratis cada mes. No se necesita tarjeta.",
@@ -445,27 +448,12 @@
   "cloudForgotPassword_sendResetLink": "Enviar enlace de restablecimiento",
   "cloudForgotPassword_title": "¿Olvidaste tu contraseña?",
   "cloudHero": {
+    "carouselLabel": "Modelos destacados",
+    "carouselRoleDescription": "carrusel",
     "nextSlide": "Siguiente diapositiva",
     "previousSlide": "Diapositiva anterior",
-    "slidePagerLabel": "Ir a la diapositiva {index}",
-    "slides": {
-      "cloud": {
-        "description": "Ideal para la mayoría de los usuarios que desean trabajar desde cualquier lugar con modelos verificados para uso comercial.",
-        "title": "Nube"
-      },
-      "models": {
-        "description": "Modelos seleccionados y con licencia comercial listos para usar sin configuración previa.",
-        "title": "Modelos"
-      },
-      "team": {
-        "description": "Incorpora a tu equipo hoy. Comparte flujos de trabajo y recursos en toda tu organización.",
-        "title": "Equipo"
-      },
-      "workflows": {
-        "description": "De la idea al resultado en minutos. Genera múltiples variaciones en paralelo.",
-        "title": "Flujos de trabajo"
-      }
-    }
+    "slideRoleDescription": "diapositiva",
+    "slideStatus": "{title}, diapositiva {current} de {total}"
   },
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
@@ -577,11 +565,9 @@
   "cloudPrivateBeta_title": "Cloud está actualmente en beta privada",
   "cloudSorryContactSupport_title": "Lo sentimos, contacta al soporte",
   "cloudStart_desc": "Cero configuración requerida. Funciona en cualquier dispositivo.",
-  "cloudStart_download": "Descargar ComfyUI",
   "cloudStart_explain": "Genera múltiples salidas a la vez. Comparte flujos de trabajo con facilidad.",
   "cloudStart_learnAboutButton": "Conoce más sobre Cloud",
   "cloudStart_title": "comienza a crear en segundos",
-  "cloudStart_wantToRun": "¿Prefieres ejecutar ComfyUI localmente?",
   "cloudSurvey_steps_experience": "¿Qué tanto conoces ComfyUI?",
   "cloudSurvey_steps_focus": "¿Qué estás construyendo?",
   "cloudSurvey_steps_intent": "¿Qué quieres crear con ComfyUI?",
@@ -812,6 +798,9 @@
       "buy": "Comprar",
       "buyCredits": "Continuar al pago",
       "buyNow": "Comprar ahora",
+      "chargedImmediatelyNote": "Tu tarjeta guardada se cargará de inmediato.",
+      "confirmSubtitle": "Los créditos se añadirán a este espacio de trabajo tan pronto como se complete el pago.",
+      "confirmTitle": "Confirmar",
       "contactUs": "Contáctanos",
       "creditsDescription": "Los créditos se utilizan para ejecutar flujos de trabajo o nodos de socios.",
       "creditsPerDollar": "créditos por dólar",
@@ -826,6 +815,7 @@
       "minRequired": "Mínimo {credits} créditos",
       "minimumPurchase": "Mínimo ${amount} ({credits} créditos)",
       "needMore": "¿Necesitas más?",
+      "payAmount": "Pagar {amount}",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
       "purchaseSuccess": "¡Créditos añadidos correctamente!",
@@ -836,6 +826,8 @@
       "topUp": "Recargar",
       "unknownError": "Ocurrió un error desconocido",
       "usdAmount": "${amount}",
+      "verifyBody": "Tu banco requiere verificación adicional para completar este pago.",
+      "verifyTitle": "Verifica tu pago",
       "videosEstimate": "~{count} videos",
       "viewPricing": "Ver detalles de precios",
       "youGet": "Créditos",
@@ -862,7 +854,6 @@
     "BOOLEAN": "BOOLEANO",
     "BOUNDING_BOX": "CUADRO DELIMITADOR",
     "BOUNDING_BOXES": "CUADROS DELIMITADORES",
-    "CAMERA_CONTROL": "CONTROL DE CÁMARA",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "SALIDA_CLIP_VISION",
@@ -1874,6 +1865,26 @@
     "warning": "Advertencia",
     "workflow": "Flujo de trabajo",
     "you": "Tú"
+  },
+  "gettingStarted": {
+    "loadFailed": "No pudimos cargar las plantillas.",
+    "retry": "Intentar de nuevo",
+    "retryTemplate": "Reintentar {title}",
+    "startBlank": "Comenzar con un lienzo en blanco",
+    "subtitle": "Elige un flujo de trabajo listo para usar o comienza con un lienzo en blanco.",
+    "tabs": {
+      "templates": "Plantillas",
+      "tutorials": "Tutoriales"
+    },
+    "tabsLabel": "Opciones para empezar",
+    "templateFailed": "No pudimos abrir esta plantilla.",
+    "title": "Vamos a crear algo",
+    "tutorials": {
+      "imageToImage": "Imagen a imagen",
+      "inpaint": "Relleno inteligente",
+      "interfaceOverview": "Resumen de la interfaz",
+      "textToImage": "Texto a imagen"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "Modo lienzo",
@@ -2905,6 +2916,7 @@
     "mage": "mage",
     "mask": "mask",
     "merging": "fusión",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "específico del modelo",
@@ -3086,6 +3098,74 @@
     },
     "back": "Atrás",
     "done": "Listo",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "Ahora no",
+        "explore": "Explorar plantillas",
+        "noTour": {
+          "body": "Explora las plantillas y elige algo para crear.",
+          "title": "Hay cientos más como esa"
+        },
+        "ran": {
+          "body": "Acabas de crear la primera. Explora qué más puedes construir.",
+          "title": "Esa fue una de cientos"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "La imagen establece la escena. Esto indica lo que sucede después.",
+          "title": "Describe cómo debe moverse"
+        },
+        "image-edit": {
+          "body": "Tu imagen se mantiene igual. Describe qué quieres diferente.",
+          "title": "Di qué quieres cambiar"
+        },
+        "other": {
+          "body": "Este es tu prompt. Cámbialo para modificar tu resultado.",
+          "title": "Indica qué crear"
+        },
+        "t2i": {
+          "body": "Tu imagen se crea a partir de esta descripción. Prueba lo que quieras.",
+          "title": "Describe lo que quieres"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "Nada apareció aquí. Cierra el recorrido e intenta ejecutar de nuevo.",
+          "title": "Esa ejecución no terminó"
+        },
+        "generating": {
+          "body": "Tu resultado aparecerá aquí en cuanto esté listo.",
+          "title": "Espera un momento"
+        },
+        "image": {
+          "body": "Tu nueva imagen aparece aquí — lista para descargar o compartir.",
+          "title": "Aquí está"
+        },
+        "video": {
+          "body": "Tu nuevo video aparece aquí — listo para descargar o compartir.",
+          "title": "Aquí está"
+        }
+      },
+      "run": {
+        "body": "Presiona Ejecutar para comenzar a generar tu resultado.",
+        "title": "Ejecuta tu flujo de trabajo"
+      },
+      "upload": {
+        "i2v": {
+          "body": "Esta imagen es tu primer fotograma. Cámbiala por la tuya cuando quieras.",
+          "title": "Empieza con una imagen"
+        },
+        "image-edit": {
+          "body": "Esta es la imagen que vas a editar. Cámbiala por la tuya cuando quieras.",
+          "title": "Empieza con una imagen"
+        },
+        "other": {
+          "body": "Esta imagen alimenta el flujo de trabajo. Cámbiala por la tuya cuando quieras.",
+          "title": "Empieza con una imagen"
+        }
+      }
+    },
     "loadError": "Algo salió mal al mostrar este recorrido",
     "next": "Siguiente",
     "skip": "Omitir",
@@ -3865,6 +3945,7 @@
     "beta": "BETA",
     "billedMonthly": "Facturado mensualmente",
     "billedYearly": "{total} facturado anualmente",
+    "billingAndInvoices": "Facturación y facturas",
     "billingComingSoon": {
       "message": "La facturación para equipos estará disponible pronto. Podrás suscribirte a un plan para tu espacio de trabajo con precios por usuario. Mantente atento para más actualizaciones.",
       "title": "Próximamente"
@@ -3946,6 +4027,9 @@
       "memberTitle": "La suscripción de este espacio de trabajo está inactiva",
       "runLabel": "Ejecutar"
     },
+    "inactiveTeamDescription": "Reactiva tu plan de equipo para añadir más miembros y ejecutar flujos de trabajo",
+    "inactiveTeamPlanIncludes": "Un plan activo incluye todo lo de {plan}, además de:",
+    "inactiveTeamTitle": "Suscripción de equipo inactiva",
     "inviteUpTo": "Invita hasta",
     "invoiceHistory": "Historial de facturas",
     "learnMore": "Más información",
@@ -3985,6 +4069,17 @@
     "partnerNodesCredits": "Créditos de Nodos de Socio",
     "partnerNodesDescription": "Para ejecutar modelos comerciales/propietarios",
     "partnerNodesPricingTable": "Tabla de precios de Partner Nodes",
+    "paymentRecovery": {
+      "memberCta": "Entendido",
+      "memberDescription": "Pide al propietario de tu espacio de trabajo que restaure la suscripción.",
+      "memberRunLabel": "Ejecutar",
+      "memberRunTooltip": "Pide al propietario de tu espacio de trabajo que restaure esta suscripción",
+      "ownerCta": "Actualizar pago",
+      "ownerDescription": "Actualiza tu método de pago para restaurar la suscripción del espacio de trabajo y ejecutar flujos de trabajo.",
+      "ownerRunLabel": "Actualiza el pago para ejecutar",
+      "ownerRunTooltip": "Actualiza el pago para restaurar esta suscripción",
+      "title": "Suscripción pausada"
+    },
     "perMonth": "USD / mes",
     "personalHeader": "Los planes personales son solo para uso individual. {action}",
     "personalHeaderAction": "Para agregar compañeros, suscríbete al plan de equipo.",
@@ -4065,6 +4160,7 @@
     "pricingBlurbQuestions": "preguntas",
     "pricingBlurbSeeDetails": "ver detalles",
     "reactivatePlan": "Reactivar plan",
+    "reactivateToUseCredits": "Reactiva tu plan para usar estos créditos",
     "refillsDate": "Recargas {date}",
     "refillsNextCycle": "Recargas en el próximo ciclo",
     "refreshCredits": "Actualizar créditos",
@@ -4271,6 +4367,7 @@
     "logoProviderSeparator": " y "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "No se pudo cargar el flujo de trabajo porque a esta instalación de ComfyUI le faltan nodos principales. Verifica que el backend se haya iniciado correctamente.",
     "cannotCreateSubgraph": "No se puede crear el subgrafo",
     "couldNotDetermineFileType": "No se pudo determinar el tipo de archivo",
     "dropFileError": "No se puede procesar el elemento soltado: {error}",
@@ -4320,6 +4417,7 @@
     "invalidTemplateData": "No se pudo cargar la plantilla de nodo: datos no válidos",
     "legacyMaskEditorDeprecated": "El editor de máscaras heredado está obsoleto y se eliminará pronto.",
     "migrateToLitegraphReroute": "Los nodos de reroute se eliminarán en futuras versiones. Haz clic para migrar a reroute nativo de litegraph.",
+    "missingMediaVerificationFailed": "No se pudo verificar el contenido multimedia faltante. Es posible que algunas entradas no se muestren en la pestaña de Errores.",
     "missingModelVerificationFailed": "No se pudo verificar los modelos faltantes. Algunos modelos pueden no aparecer en la pestaña de Errores.",
     "modelLoadedSuccessfully": "Modelo 3D cargado exitosamente",
     "no3dScene": "No hay escena 3D para aplicar textura",
@@ -4503,7 +4601,11 @@
       "notAuthenticated": "Debes iniciar sesión para acceder a los espacios de trabajo",
       "tokenExchangeFailed": "No se pudo autenticar con el espacio de trabajo: {error}",
       "workspaceNotFound": "Espacio de trabajo no encontrado"
-    }
+    },
+    "initializationFailed": "No se pudo cargar tu espacio de trabajo",
+    "initializationFailedDetail": "Verifica tu conexión e inténtalo de nuevo.",
+    "initializationFailedSignOutDetail": "Cierra sesión e inicia sesión nuevamente para continuar.",
+    "retry": "Intentar de nuevo"
   },
   "workspacePanel": {
     "activity": {
@@ -4543,7 +4645,6 @@
       },
       "updatePayment": "Actualizar pago",
       "warning": {
-        "body": "Tu último pago no se realizó correctamente. Tu suscripción se pausará el {date} a menos que actualices el pago.",
         "bodyNoDate": "Tu último pago no se realizó correctamente. Actualiza el pago para evitar una pausa.",
         "title": "Pago rechazado"
       }

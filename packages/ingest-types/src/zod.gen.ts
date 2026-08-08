@@ -638,6 +638,38 @@ export const zPublishHubWorkflowRequest = z.object({
 })
 
 /**
+ * One provider's policy state.
+ */
+export const zProviderPolicyEntry = z.object({
+  enabled: z.boolean(),
+  provider_id: z.string()
+})
+
+/**
+ * A workspace's partner-provider governance policy document — the exact shape PUT accepts (round-trips; entries come back sorted by provider_id, write order is not significant). Effective rule: enabled(P) = !enforcement_enabled || (the entry for P has enabled=true); absent from the array = unset (deny when enforcing).
+ */
+export const zProviderPolicy = z.object({
+  enforcement_enabled: z.boolean(),
+  providers: z.array(zProviderPolicyEntry)
+})
+
+/**
+ * Display data for one governable partner provider.
+ */
+export const zCatalogProvider = z.object({
+  display_name: z.string(),
+  node_categories: z.array(z.string()),
+  provider_id: z.string()
+})
+
+/**
+ * The partner-provider governance catalog: every governable provider, identical for all workspaces. A projection of the curated catalog minus the internal api_names.
+ */
+export const zProviderCatalogResponse = z.object({
+  providers: z.array(zCatalogProvider)
+})
+
+/**
  * Response returned after successfully queuing a workflow prompt.
  */
 export const zPromptResponse = z.object({
@@ -1116,6 +1148,7 @@ export const zAsset = z.object({
   is_immutable: z.boolean().optional(),
   job_id: z.string().uuid().nullish(),
   last_access_time: z.string().datetime().optional(),
+  loader_path: z.string().nullish(),
   metadata: z.record(z.unknown()).readonly().optional(),
   mime_type: z.string().optional(),
   name: z.string(),
@@ -1274,6 +1307,37 @@ export const zJobStatusResponse = z.object({
 })
 
 /**
+ * An asset produced by a job, enriched with the per-output node context
+ * (`node_id`, `output_key`, `output_index`) correlated from the job's
+ * execution outputs by content hash. The node-context fields are null
+ * when the asset cannot be matched to an output entry.
+ *
+ */
+export const zJobOutputAsset = z.object({
+  created_at: z.string().datetime(),
+  hash: z
+    .string()
+    .regex(/^blake3:[a-f0-9]{64}$/)
+    .optional(),
+  id: z.string().uuid(),
+  mime_type: z.string().optional(),
+  name: z.string(),
+  node_id: z.string().nullish(),
+  output_index: z.number().int().nullish(),
+  output_key: z.string().nullish(),
+  preview_url: z.string().optional(),
+  size: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
+})
+
+/**
  * Full job details including workflow and outputs
  */
 export const zJobDetailResponse = z.object({
@@ -1336,6 +1400,15 @@ export const zJobDetailResponse = z.object({
  */
 export const zJobCancelResponse = z.object({
   cancelled: z.boolean()
+})
+
+/**
+ * Paginated list of the assets produced by a single job.
+ */
+export const zJobAssetsResponse = z.object({
+  assets: z.array(zJobOutputAsset),
+  job_id: z.string().uuid(),
+  pagination: zPaginationInfo
 })
 
 /**
@@ -1981,7 +2054,10 @@ export const zBillingStatusResponse = z.object({
   cancel_at: z.string().datetime().optional(),
   has_funds: z.boolean(),
   is_active: z.boolean(),
+  max_seats: z.number().int(),
+  occupied_seats: z.number().int(),
   pending_billing_op_id: z.string().optional(),
+  pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
   subscription_duration: zSubscriptionDuration.optional(),
@@ -2056,6 +2132,7 @@ export const zAssetUpdated = z.object({
     .optional(),
   id: z.string().uuid(),
   job_id: z.string().uuid().nullish(),
+  loader_path: z.string().nullish(),
   mime_type: z.string().optional(),
   name: z.string().optional(),
   tags: z.array(z.string()).optional(),
@@ -2252,6 +2329,7 @@ export const zAssetWritable = z.object({
   is_immutable: z.boolean().optional(),
   job_id: z.string().uuid().nullish(),
   last_access_time: z.string().datetime().optional(),
+  loader_path: z.string().nullish(),
   mime_type: z.string().optional(),
   name: z.string(),
   preview_id: z.string().uuid().nullish(),
@@ -3480,6 +3558,24 @@ export const zGetJobDetailData = z.object({
  */
 export const zGetJobDetailResponse = zJobDetailResponse
 
+export const zGetJobAssetsData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    job_id: z.string().uuid()
+  }),
+  query: z
+    .object({
+      limit: z.number().int().gte(1).lte(500).optional().default(20),
+      offset: z.number().int().gte(0).optional().default(0)
+    })
+    .optional()
+})
+
+/**
+ * Success - Job assets returned
+ */
+export const zGetJobAssetsResponse = zJobAssetsResponse
+
 export const zCancelJobData = z.object({
   body: z.never().optional(),
   path: z.object({
@@ -3577,6 +3673,17 @@ export const zGetLegacyPromptByIdData = z.object({
   }),
   query: z.never().optional()
 })
+
+export const zGetProvidersData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * The provider catalog
+ */
+export const zGetProvidersResponse = zProviderCatalogResponse
 
 export const zGetQueueInfoData = z.object({
   body: z.never().optional(),
@@ -4350,6 +4457,28 @@ export const zUpdateWorkspaceMemberRoleData = z.object({
  */
 export const zUpdateWorkspaceMemberRoleResponse = zMember
 
+export const zGetProviderPolicyData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * The policy document
+ */
+export const zGetProviderPolicyResponse = zProviderPolicy
+
+export const zPutProviderPolicyData = z.object({
+  body: zProviderPolicy,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Policy replaced
+ */
+export const zPutProviderPolicyResponse = zProviderPolicy
+
 export const zListWorkspacesData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -4415,6 +4544,14 @@ export const zGetStaticExtensionsData = z.object({
   body: z.never().optional(),
   path: z.object({
     path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zRedirectExtensionScriptsData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    file: z.string()
   }),
   query: z.never().optional()
 })
@@ -4486,6 +4623,14 @@ export const zSubscribeToLogsData = z.object({
     enabled: z.boolean()
   }),
   path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetStaticKjwebAsyncData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
   query: z.never().optional()
 })
 

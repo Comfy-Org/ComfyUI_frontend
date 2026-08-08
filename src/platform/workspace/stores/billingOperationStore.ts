@@ -25,6 +25,10 @@ const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
 const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
+// Failure reason for a checkout the user replaced by picking a different plan
+// mid-flow. The operation is terminal-failed only because it never completed —
+// its replacement is proceeding normally, so there is nothing to report.
+const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
@@ -83,7 +87,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   const isAddingCredits = computed(() =>
     [...operations.value.values()].some(
-      (op) => op.status === 'pending' && op.type === 'topup'
+      (op) =>
+        op.status === 'pending' &&
+        op.type === 'topup' &&
+        op.workspaceId === workspaceStore.activeWorkspaceId
     )
   )
 
@@ -109,6 +116,37 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function getOperation(opId: string) {
     return operations.value.get(opId)
+  }
+
+  // An operation parked on a bank challenge is waiting on the customer, not on
+  // us, so it must not keep announcing "processing" — that reads as "nothing to
+  // do here" next to the verification prompt the same state renders.
+  function showProgressToast(
+    opId: string,
+    type: Exclude<OperationType, 'cancel'>,
+    actionRequired: boolean
+  ) {
+    const toastStore = useToastStore()
+    const previous = receivedToasts.get(opId)
+    if (previous) toastStore.remove(previous)
+
+    const messageKey =
+      type === 'subscription'
+        ? actionRequired
+          ? 'billingOperation.subscriptionActionRequired'
+          : 'billingOperation.subscriptionProcessing'
+        : actionRequired
+          ? 'billingOperation.topupActionRequired'
+          : 'billingOperation.topupProcessing'
+
+    const toastMessage: ToastMessageOptions = {
+      // 'warn' selects the prompt icon over the spinner in GlobalToast.
+      severity: actionRequired ? 'warn' : 'info',
+      summary: t(messageKey),
+      group: 'billing-operation'
+    }
+    receivedToasts.set(opId, toastMessage)
+    toastStore.add(toastMessage)
   }
 
   function startOperation(
@@ -144,18 +182,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
     if (type !== 'cancel') {
-      const messageKey =
-        type === 'subscription'
-          ? 'billingOperation.subscriptionProcessing'
-          : 'billingOperation.topupProcessing'
-
-      const toastMessage: ToastMessageOptions = {
-        severity: 'info',
-        summary: t(messageKey),
-        group: 'billing-operation'
-      }
-      receivedToasts.set(opId, toastMessage)
-      useToastStore().add(toastMessage)
+      showProgressToast(opId, type, operation.actionUrl !== null)
     }
 
     const terminal = new Promise<BillingOperation>((resolve) => {
@@ -261,6 +288,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       authenticationRequiredSeen:
         operation.authenticationRequiredSeen || actionUrl !== null
     })
+    // Tracks the CURRENT action_url, which the contract defines as present
+    // exactly while the operation cannot proceed without the customer — so the
+    // toast never outlives the verification action it points at. Swapped only
+    // when that answer changes, or a dismissed toast would return every poll.
+    const wasActionRequired = operation.actionUrl !== null
+    const isActionRequired = actionUrl !== null
+    if (operation.type !== 'cancel' && wasActionRequired !== isActionRequired) {
+      showProgressToast(opId, operation.type, isActionRequired)
+    }
   }
 
   async function handleSuccess(opId: string) {
@@ -271,6 +307,18 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'succeeded',
+      outcome: 'success',
+      billing_op_id: opId,
+      operation_type: operation.type,
+      tier: operation.tier,
+      cycle: operation.cycle,
+      checkout_type: operation.checkoutType,
+      payment_intent_source: operation.paymentIntentSource
+    })
+
     if (operation.type === 'subscription') {
       telemetry?.trackBillingEvent({
         operation: 'subscription_checkout',
@@ -300,14 +348,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: opId
-      })
-    } else {
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'succeeded',
-        outcome: 'success',
-        billing_op_id: opId,
-        operation_type: 'cancel'
       })
     }
 
@@ -353,6 +393,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation) return
 
+    const superseded = errorMessage === CHECKOUT_SUPERSEDED_REASON
+    const failureCategory = superseded ? 'stale_operation' : 'unknown'
     const defaultMessage = failureMessage(operation.type)
     const detail =
       operation.type === 'subscription'
@@ -373,7 +415,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       cycle: operation.cycle,
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
-      failure_category: 'unknown'
+      failure_category: failureCategory
     })
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
@@ -384,11 +426,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         member_removal_failures:
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
-        failure_category: 'unknown'
+        failure_category: failureCategory
       })
     }
 
-    if (operation.type !== 'cancel') {
+    if (operation.type !== 'cancel' && !superseded) {
       useToastStore().add({
         severity: 'error',
         summary: defaultMessage,

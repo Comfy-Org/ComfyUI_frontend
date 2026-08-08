@@ -12,7 +12,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import {
   mockWorkspaceTokenMint,
   workspace
@@ -28,10 +27,9 @@ import {
  * The credits tile only lives inside the authenticated cloud app, which the
  * shared `comfyPage` fixture can't boot (it expects the OSS devtools backend).
  * Instead this drives a raw page: mock Firebase auth + every boot endpoint so
- * the cloud app initializes against fully stubbed data. With team workspaces
- * enabled the facade routes a personal workspace through the workspace
- * `/api/billing/*` endpoints (mocked with an active Pro subscription); the
- * legacy `/customers/*` shapes are mocked too for the flag-off path. The tile
+ * the cloud app initializes against fully stubbed data. The facade routes a
+ * personal workspace through the workspace `/api/billing/*` endpoints (mocked
+ * with an active Pro subscription). The tile
  * should then render its total / progress bar / monthly+additional breakdown /
  * add-credits.
  */
@@ -63,21 +61,41 @@ const DEFAULT_BALANCE = { amount: 6000, monthly: 5000, prepaid: 1000 }
 
 const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
   has_funds: true
 }
 
-async function mockCloudBoot(page: Page, billingControlEnabled = true) {
+const freeBillingStatus: BillingStatusResponse = {
+  is_active: false,
+  subscription_tier: 'FREE',
+  has_funds: true
+}
+
+const endedPersonalBillingStatus: BillingStatusResponse = {
+  is_active: false,
+  subscription_status: 'ended',
+  subscription_tier: 'PRO',
+  subscription_duration: 'MONTHLY',
+  plan_slug: 'pro-monthly',
+  billing_status: 'inactive',
+  has_funds: true
+}
+
+async function mockCloudBoot(
+  page: Page,
+  billingControlEnabled = true,
+  billingStatus = mockBillingStatus
+) {
   // Frontend-origin boot endpoints (proxied to the backend in production).
-  // `/api/features` is the remote-config source: production builds resolve
-  // workspace availability and the billing UX rollout from it (the `ff:`
-  // localStorage override is dev-only).
+  // `/api/features` is the remote-config source for the billing UX rollout.
   await page.route('**/api/features', (r) =>
     r.fulfill(
       jsonRoute({
-        team_workspaces_enabled: true,
+        consolidated_billing_enabled: true,
         billing_control_enabled: billingControlEnabled
       } satisfies RemoteConfig)
     )
@@ -148,7 +166,10 @@ async function mockCloudBoot(page: Page, billingControlEnabled = true) {
   // Workspace billing (flag-on path) — a personal workspace now routes through
   // `/api/billing/*`.
   await page.route('**/api/billing/status', (r) =>
-    r.fulfill(jsonRoute(mockBillingStatus))
+    r.fulfill(jsonRoute(billingStatus))
+  )
+  await page.route('**/api/billing/payment-portal', (r) =>
+    r.fulfill(jsonRoute({ url: 'https://billing.example/portal' }))
   )
   await page.route('**/api/billing/balance', (r) =>
     r.fulfill(balanceRoute(DEFAULT_BALANCE))
@@ -209,6 +230,65 @@ async function openPlanAndCredits(page: Page) {
 }
 
 test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.open = (url) => {
+        document.documentElement.dataset.openedUrl = String(url)
+        return window
+      }
+    })
+  })
+
+  test('opens Billing & invoices for a paid owner without a duplicate invoice link', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page)
+
+    const content = await openPlanAndCredits(page)
+    await expect(
+      content.getByRole('button', { name: 'Invoice history' })
+    ).toHaveCount(0)
+    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe('https://billing.example/portal')
+  })
+
+  test('opens Billing & invoices for a Free owner without a subscription', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page, true, freeBillingStatus)
+
+    const content = await openPlanAndCredits(page)
+    await expect(content.getByRole('heading', { name: 'Free' })).toBeVisible()
+    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe('https://billing.example/portal')
+  })
+
+  test('keeps Billing & invoices available after a Personal subscription ends', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page, true, endedPersonalBillingStatus)
+
+    const content = await openPlanAndCredits(page)
+    await expect(content.getByText('Your subscription has ended')).toBeVisible()
+    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe('https://billing.example/portal')
+  })
+
   test('keeps the legacy Workspace UX when billing controls are disabled', async ({
     page
   }) => {
@@ -338,7 +418,7 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
         return window
       }
     })
-    await new CloudWorkspaceMockHelper(page).setup()
+    await mockCloudBoot(page)
     await page.route('**/api/settings/**', (route) => {
       if (route.request().method() !== 'GET') return route.fallback()
       return route.fulfill(jsonRoute({}))
@@ -373,14 +453,10 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
       )
     })
 
-    const settingsDialog = await openSettings(page)
-    await settingsDialog
-      .getByRole('combobox', { name: 'Search Settings...' })
-      .focus()
-    await page.keyboard.press('Escape')
-    await expect(settingsDialog).toBeHidden()
+    const content = await openPlanAndCredits(page)
     topupDialog = new TopUpCreditsDialog(page)
-    await topupDialog.open()
+    await content.getByRole('button', { name: 'Add credits' }).click()
+    await topupDialog.waitForVisible()
   })
 
   test('opens verification when the top-up operation requires authentication', async ({
@@ -388,6 +464,19 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
   }) => {
     await topupDialog.root.getByRole('button', { name: 'Add credits' }).click()
 
+    await expect(
+      topupDialog.root.getByRole('heading', { name: 'Confirm' })
+    ).toBeVisible()
+    await expect(
+      topupDialog.root.getByRole('button', { name: 'Back' })
+    ).toBeEnabled()
+    expect(operationPollRequests).toHaveLength(0)
+
+    await topupDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
+
+    await expect(
+      topupDialog.root.getByRole('button', { name: 'Back' })
+    ).toBeDisabled()
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
     const verificationButton = topupDialog.root.getByRole('button', {
       name: 'Complete verification'

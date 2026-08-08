@@ -255,6 +255,8 @@
       "backToGithubLogin": "سجّل باستخدام Github بدلاً من ذلك",
       "backToLogin": "العودة إلى تسجيل الدخول",
       "backToSocialLogin": "سجّل باستخدام Google أو Github بدلاً من ذلك",
+      "cloudNewUser": "جديد على Comfy؟",
+      "cloudSignUp": "سجّل هنا",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
       "confirmPasswordPlaceholder": "أدخل نفس كلمة المرور مرة أخرى",
       "didntReceiveEmail": "لم تستلم البريد الإلكتروني؟ اتصل بنا على",
@@ -263,6 +265,7 @@
       "failed": "فشل تسجيل الدخول",
       "forgotPassword": "هل نسيت كلمة المرور؟",
       "forgotPasswordError": "فشل في إرسال بريد إعادة تعيين كلمة المرور",
+      "freeRunsSuffix": "للحصول على {count} تشغيل مجاني. | للحصول على {count} تشغيلات مجانية.",
       "freeTierBadge": "مؤهل للخطة المجانية",
       "freeTierDescription": "سجّل باستخدام Google للحصول على {credits} رصيد مجاني كل شهر. لا حاجة لبطاقة.",
       "freeTierDescriptionGeneric": "سجّل باستخدام Google للحصول على رصيد مجاني كل شهر. لا حاجة لبطاقة.",
@@ -445,27 +448,12 @@
   "cloudForgotPassword_sendResetLink": "إرسال رابط إعادة التعيين",
   "cloudForgotPassword_title": "نسيت كلمة المرور",
   "cloudHero": {
+    "carouselLabel": "نماذج مميزة",
+    "carouselRoleDescription": "شريط تمرير",
     "nextSlide": "الشريحة التالية",
     "previousSlide": "الشريحة السابقة",
-    "slidePagerLabel": "انتقل إلى الشريحة {index}",
-    "slides": {
-      "cloud": {
-        "description": "الأفضل لمعظم المستخدمين الذين يرغبون في العمل من أي مكان مع نماذج تم التحقق من تراخيصها التجارية.",
-        "title": "السحابة"
-      },
-      "models": {
-        "description": "نماذج مختارة ومرخصة تجاريًا جاهزة للتشغيل دون أي إعداد.",
-        "title": "النماذج"
-      },
-      "team": {
-        "description": "قم بإضافة فريقك اليوم. شارك سير العمل والموارد عبر مؤسستك.",
-        "title": "الفريق"
-      },
-      "workflows": {
-        "description": "من الفكرة إلى الناتج في دقائق. أنشئ عدة تنويعات جنبًا إلى جنب.",
-        "title": "سير العمل"
-      }
-    }
+    "slideRoleDescription": "شريحة",
+    "slideStatus": "{title}، شريحة {current} من {total}"
   },
   "cloudNotification": {
     "continueLocally": "المتابعة محليًا",
@@ -577,11 +565,9 @@
   "cloudPrivateBeta_title": "السحابة حاليًا في نسخة تجريبية خاصة",
   "cloudSorryContactSupport_title": "عذرًا، اتصل بالدعم",
   "cloudStart_desc": "لا حاجة لإعداد مسبق. يعمل على أي جهاز.",
-  "cloudStart_download": "تنزيل ComfyUI",
   "cloudStart_explain": "أنتج عدة مخرجات في وقت واحد. شارك سير العمل بسهولة.",
   "cloudStart_learnAboutButton": "تعرف على السحابة",
   "cloudStart_title": "ابدأ الإبداع في ثوانٍ",
-  "cloudStart_wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
   "cloudSurvey_steps_experience": "ما مدى معرفتك بـ ComfyUI؟",
   "cloudSurvey_steps_focus": "ماذا تبني؟",
   "cloudSurvey_steps_intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
@@ -812,6 +798,9 @@
       "buy": "شراء",
       "buyCredits": "المتابعة للدفع",
       "buyNow": "اشترِ الآن",
+      "chargedImmediatelyNote": "سيتم خصم المبلغ من بطاقتك المحفوظة فوراً.",
+      "confirmSubtitle": "سيتم إضافة الرصيد إلى مساحة العمل هذه بمجرد إتمام الدفع.",
+      "confirmTitle": "تأكيد",
       "contactUs": "اتصل بنا",
       "creditsDescription": "يتم استخدام الرصيد لتشغيل سير العمل أو عقد الشركاء.",
       "creditsPerDollar": "أرصدة لكل دولار",
@@ -826,6 +815,7 @@
       "minRequired": "الحد الأدنى {credits} أرصدة",
       "minimumPurchase": "الحد الأدنى ${amount} ({credits} أرصدة)",
       "needMore": "تحتاج المزيد؟",
+      "payAmount": "ادفع {amount}",
       "purchaseError": "فشل الشراء",
       "purchaseErrorDetail": "فشل شراء الرصيد: {error}",
       "purchaseSuccess": "تمت إضافة الرصيد بنجاح!",
@@ -836,6 +826,8 @@
       "topUp": "شحن الرصيد",
       "unknownError": "حدث خطأ غير معروف",
       "usdAmount": "${amount} دولار أمريكي",
+      "verifyBody": "يتطلب بنكك تحققًا إضافيًا لإكمال عملية الدفع.",
+      "verifyTitle": "تحقق من الدفع",
       "videosEstimate": "~{count} فيديو",
       "viewPricing": "عرض تفاصيل التسعير",
       "youGet": "أرصدة",
@@ -862,7 +854,6 @@
     "BOOLEAN": "منطقي",
     "BOUNDING_BOX": "مربع التحديد",
     "BOUNDING_BOXES": "مربعات التحديد",
-    "CAMERA_CONTROL": "تحكم الكاميرا",
     "CLIP": "CLIP",
     "CLIP_VISION": "رؤية CLIP",
     "CLIP_VISION_OUTPUT": "خرج رؤية CLIP",
@@ -1874,6 +1865,26 @@
     "warning": "تحذير",
     "workflow": "سير العمل",
     "you": "أنت"
+  },
+  "gettingStarted": {
+    "loadFailed": "تعذر تحميل القوالب.",
+    "retry": "حاول مرة أخرى",
+    "retryTemplate": "إعادة المحاولة {title}",
+    "startBlank": "ابدأ بلوحة فارغة",
+    "subtitle": "اختر سير عمل جاهز للانطلاق أو ابدأ من لوحة فارغة.",
+    "tabs": {
+      "templates": "قوالب",
+      "tutorials": "دروس"
+    },
+    "tabsLabel": "خيارات البدء",
+    "templateFailed": "تعذر فتح هذا القالب.",
+    "title": "لنبدأ الإبداع",
+    "tutorials": {
+      "imageToImage": "تحويل صورة إلى صورة",
+      "inpaint": "التلوين الداخلي",
+      "interfaceOverview": "نظرة عامة على الواجهة",
+      "textToImage": "تحويل النص إلى صورة"
+    }
   },
   "graphCanvasMenu": {
     "canvasMode": "وضع اللوحة",
@@ -2905,6 +2916,7 @@
     "mage": "mage",
     "mask": "قناع",
     "merging": "دمج",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "نموذج",
     "model specific": "نموذج محدد",
@@ -3086,6 +3098,74 @@
     },
     "back": "السابق",
     "done": "تم",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "ليس الآن",
+        "explore": "استكشف القوالب",
+        "noTour": {
+          "body": "تصفح القوالب واختر شيئًا لتبنيه.",
+          "title": "هناك المئات غيرها"
+        },
+        "ran": {
+          "body": "لقد أنشأت أول نتيجة لك. استكشف ما يمكنك بناؤه أيضًا.",
+          "title": "كانت هذه واحدة من مئات"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "الصورة تحدد المشهد. هذا يخبرها بما سيحدث بعد ذلك.",
+          "title": "صف كيف يجب أن تتحرك"
+        },
+        "image-edit": {
+          "body": "صورتك ستبقى كما هي. صف ما تريد تغييره.",
+          "title": "قل ما الذي تريد تغييره"
+        },
+        "other": {
+          "body": "هذا هو التوجيه الخاص بك. غيّره لتغيير النتيجة.",
+          "title": "أخبره بما يجب إنشاؤه"
+        },
+        "t2i": {
+          "body": "يتم إنشاء صورتك من هذا الوصف. جرب أي شيء تريده.",
+          "title": "صف ما تريد"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "لم تظهر أي نتيجة هنا. أغلق الجولة وحاول التشغيل مرة أخرى.",
+          "title": "لم تكتمل هذه العملية"
+        },
+        "generating": {
+          "body": "ستظهر نتيجتك هنا فور جاهزيتها.",
+          "title": "انتظر قليلاً"
+        },
+        "image": {
+          "body": "صورتك الجديدة تظهر هنا — جاهزة للتنزيل أو المشاركة.",
+          "title": "ها هي النتيجة"
+        },
+        "video": {
+          "body": "فيديوك الجديد يظهر هنا — جاهز للتنزيل أو المشاركة.",
+          "title": "ها هي النتيجة"
+        }
+      },
+      "run": {
+        "body": "اضغط على تشغيل لبدء توليد النتيجة.",
+        "title": "شغّل سير العمل الخاص بك"
+      },
+      "upload": {
+        "i2v": {
+          "body": "هذه الصورة هي الإطار الأول لك. يمكنك استبدالها بأي صورة في أي وقت.",
+          "title": "ابدأ بصورة"
+        },
+        "image-edit": {
+          "body": "هذه هي الصورة التي ستقوم بتعديلها. يمكنك استبدالها بأي صورة في أي وقت.",
+          "title": "ابدأ بصورة"
+        },
+        "other": {
+          "body": "هذه الصورة تغذي سير العمل. يمكنك استبدالها بأي صورة في أي وقت.",
+          "title": "ابدأ بصورة"
+        }
+      }
+    },
     "loadError": "حدث خطأ أثناء عرض هذه الجولة",
     "next": "التالي",
     "skip": "تخطي",
@@ -3865,6 +3945,7 @@
     "beta": "نسخة تجريبية",
     "billedMonthly": "يتم الفوترة شهريًا",
     "billedYearly": "{total} يتم الفوترة سنويًا",
+    "billingAndInvoices": "الفواتير والفواتير الضريبية",
     "billingComingSoon": {
       "message": "سيتم إطلاق الفوترة الجماعية قريباً. ستتمكن من الاشتراك في خطة لمساحة العمل الخاصة بك مع تسعير لكل مستخدم. ترقبوا التحديثات.",
       "title": "قريباً"
@@ -3946,6 +4027,9 @@
       "memberTitle": "اشتراك مساحة العمل هذه غير نشط",
       "runLabel": "تشغيل"
     },
+    "inactiveTeamDescription": "أعد تفعيل خطة فريقك لإضافة المزيد من الأعضاء وتشغيل سير العمل",
+    "inactiveTeamPlanIncludes": "تشمل الخطة النشطة كل ما في {plan}، بالإضافة إلى:",
+    "inactiveTeamTitle": "اشتراك الفريق غير نشط",
     "inviteUpTo": "ادعُ حتى",
     "invoiceHistory": "سجل الفواتير",
     "learnMore": "معرفة المزيد",
@@ -3985,6 +4069,17 @@
     "partnerNodesCredits": "رصيد العقد الشريكة",
     "partnerNodesDescription": "لتشغيل النماذج التجارية/المملوكة",
     "partnerNodesPricingTable": "جدول أسعار Partner Nodes",
+    "paymentRecovery": {
+      "memberCta": "حسنًا، فهمت",
+      "memberDescription": "اطلب من مالك مساحة العمل استعادة اشتراك مساحة العمل.",
+      "memberRunLabel": "تشغيل",
+      "memberRunTooltip": "اطلب من مالك مساحة العمل استعادة هذا الاشتراك",
+      "ownerCta": "تحديث الدفع",
+      "ownerDescription": "قم بتحديث طريقة الدفع لاستعادة اشتراك مساحة العمل وتشغيل سير العمل.",
+      "ownerRunLabel": "حدّث الدفع للتشغيل",
+      "ownerRunTooltip": "حدّث الدفع لاستعادة هذا الاشتراك",
+      "title": "تم إيقاف الاشتراك مؤقتًا"
+    },
     "perMonth": "دولار أمريكي / شهر",
     "personalHeader": "الخطط الشخصية للاستخدام الفردي فقط. {action}",
     "personalHeaderAction": "لإضافة زملاء، اشترك في خطة الفريق.",
@@ -4065,6 +4160,7 @@
     "pricingBlurbQuestions": "الاستفسارات",
     "pricingBlurbSeeDetails": "اعرض التفاصيل",
     "reactivatePlan": "إعادة تفعيل الخطة",
+    "reactivateToUseCredits": "أعد تفعيل خطتك لاستخدام هذه الأرصدة",
     "refillsDate": "إعادة التعبئة {date}",
     "refillsNextCycle": "إعادة التعبئة في الدورة التالية",
     "refreshCredits": "تحديث الرصيد",
@@ -4271,6 +4367,7 @@
     "logoProviderSeparator": " و "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "تعذر تحميل سير العمل لأن تثبيت ComfyUI هذا يفتقد إلى العقد الأساسية. تحقق من أن الواجهة الخلفية بدأت بشكل صحيح.",
     "cannotCreateSubgraph": "لا يمكن إنشاء مخطط فرعي",
     "couldNotDetermineFileType": "تعذر تحديد نوع الملف",
     "dropFileError": "غير قادر على معالجة العنصر المسقط: {error}",
@@ -4320,6 +4417,7 @@
     "invalidTemplateData": "فشل في تحميل قالب العقدة: بيانات غير صالحة",
     "legacyMaskEditorDeprecated": "محرر القناع القديم لم يعد مدعوماً وسيتم إزالته قريباً.",
     "migrateToLitegraphReroute": "سيتم إزالة عقد إعادة التوجيه في الإصدارات المستقبلية. انقر للترحيل إلى إعادة التوجيه الأصلية في Litegraph.",
+    "missingMediaVerificationFailed": "فشل التحقق من الوسائط المفقودة. قد لا تظهر بعض المدخلات في علامة تبويب الأخطاء.",
     "missingModelVerificationFailed": "فشل التحقق من النماذج المفقودة. قد لا تظهر بعض النماذج في علامة تبويب الأخطاء.",
     "modelLoadedSuccessfully": "تم تحميل النموذج ثلاثي الأبعاد بنجاح",
     "no3dScene": "لا يوجد مشهد ثلاثي الأبعاد لتطبيق الخامة",
@@ -4503,7 +4601,11 @@
       "notAuthenticated": "يجب تسجيل الدخول للوصول إلى مساحات العمل",
       "tokenExchangeFailed": "فشل التحقق من مساحة العمل: {error}",
       "workspaceNotFound": "لم يتم العثور على مساحة العمل"
-    }
+    },
+    "initializationFailed": "تعذر تحميل مساحة العمل الخاصة بك",
+    "initializationFailedDetail": "تحقق من الاتصال وحاول مرة أخرى.",
+    "initializationFailedSignOutDetail": "سجّل الخروج ثم سجّل الدخول مرة أخرى للمتابعة.",
+    "retry": "حاول مرة أخرى"
   },
   "workspacePanel": {
     "activity": {
@@ -4543,7 +4645,6 @@
       },
       "updatePayment": "تحديث الدفع",
       "warning": {
-        "body": "لم تتم معالجة آخر دفعة لك. سيتم إيقاف اشتراكك في {date} ما لم يتم تحديث الدفع.",
         "bodyNoDate": "لم تتم معالجة آخر دفعة لك. يرجى تحديث الدفع لتجنب الإيقاف.",
         "title": "تم رفض الدفع"
       }
