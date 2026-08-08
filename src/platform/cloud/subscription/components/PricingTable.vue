@@ -248,7 +248,7 @@
           <span class="underline">
             {{ t('subscription.videoEstimateTryTemplate') }}
           </span>
-          <span class="no-underline" v-html="'&rarr;'"></span>
+          <span class="no-underline">&rarr;</span>
         </a>
       </div>
     </Popover>
