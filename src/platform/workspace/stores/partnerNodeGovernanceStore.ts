@@ -215,7 +215,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
             ? { providerId: id, enabled }
             : (currentPolicy.providers.find(
                 ({ providerId }) => providerId === id
-              ) ?? { providerId: id, enabled: true })
+              ) ?? { providerId: id, enabled: false })
         )
       })
     }

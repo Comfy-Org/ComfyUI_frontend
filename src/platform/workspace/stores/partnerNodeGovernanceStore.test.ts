@@ -372,6 +372,27 @@ describe('partnerNodeGovernanceStore', () => {
     })
   })
 
+  it('keeps a provider missing from an existing restricted policy disabled during a search-scoped bulk disable', async () => {
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    } satisfies PartnerNodePolicy)
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setProvidersEnabled(['openai'], false)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: false }
+      ]
+    })
+  })
+
   it('applies bulk changes to every catalog provider', async () => {
     mockUpdatePartnerNodePolicy.mockImplementation(
       async (nextPolicy: PartnerNodePolicy) => nextPolicy
