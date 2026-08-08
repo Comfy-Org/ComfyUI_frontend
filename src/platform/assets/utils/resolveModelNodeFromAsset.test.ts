@@ -26,6 +26,7 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     name: 'test-model.safetensors',
     size: 1024,
     created_at: '2025-10-01T00:00:00Z',
+    updated_at: '2025-10-01T00:00:00Z',
     tags: ['models', 'checkpoints'],
     user_metadata: {
       filename: 'models/checkpoints/test-model.safetensors'
