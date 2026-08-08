@@ -38,10 +38,10 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^2.1.0
-  '@storybook/addon-docs': ^10.5.0
-  '@storybook/addon-mcp': 0.1.6
-  '@storybook/vue3': ^10.5.0
-  '@storybook/vue3-vite': ^10.5.0
+  '@storybook/addon-docs': ^10.5.6
+  '@storybook/addon-mcp': 0.7.0
+  '@storybook/vue3': ^10.5.6
+  '@storybook/vue3-vite': ^10.5.6
   '@tailwindcss/vite': ^4.3.2
   '@tanstack/vue-virtual': ^3.13.12
   '@testing-library/jest-dom': ^6.9.1
@@ -66,8 +66,8 @@ catalog:
   '@vitejs/plugin-vue': ^6.0.8
   '@vitest/coverage-v8': ^4.1.10
   '@vitest/ui': ^4.1.10
-  '@vueuse/core': ^14.3.0
-  '@vueuse/integrations': ^14.3.0
+  '@vueuse/core': ^14.4.0
+  '@vueuse/integrations': ^14.4.0
   '@webgpu/types': ^0.1.66
   ag-psd: ^31.0.2
   algoliasearch: ^5.21.0
@@ -85,7 +85,7 @@ catalog:
   eslint-plugin-import-x: ^4.17.1
   eslint-plugin-oxlint: 1.73.0
   eslint-plugin-playwright: ^2.10.5
-  eslint-plugin-storybook: ^10.5.0
+  eslint-plugin-storybook: ^10.5.6
   eslint-plugin-testing-library: ^7.16.2
   eslint-plugin-unused-imports: ^4.4.1
   eslint-plugin-vue: ^10.9.2
@@ -118,7 +118,7 @@ catalog:
   primevue: 4.2.5
   reka-ui: 2.5.0
   rollup-plugin-visualizer: ^6.0.4
-  storybook: ^10.5.0
+  storybook: ^10.5.6
   stylelint: ^17.14.0
   tailwindcss: ^4.3.2
   tailwindcss-primeui: ^0.6.1
@@ -133,17 +133,17 @@ catalog:
   unplugin-vue-components: ^32.1.0
   uuid: ^11.1.1
   vee-validate: ^4.15.1
-  vite: ^8.1.4
+  vite: ^8.2.0
   vite-plugin-dts: ^5.0.3
   vite-plugin-html: ^3.2.2
-  vite-plugin-vue-devtools: ^8.1.5
+  vite-plugin-vue-devtools: ^8.2.1
   vitest: ^4.1.10
-  vue: ^3.5.39
-  vue-component-type-helpers: ^3.3.7
+  vue: ^3.5.40
+  vue-component-type-helpers: ^3.3.9
   vue-eslint-parser: ^10.4.1
-  vue-i18n: ^11.4.6
+  vue-i18n: ^11.4.8
   vue-router: ^5.2.0
-  vue-tsc: ^3.3.7
+  vue-tsc: ^3.3.9
   vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
   yjs: ^13.6.27

@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "Adicionar Camada",
+    "inputs": {
+      "blend_mode": {
+        "name": "modo_de_mesclagem",
+        "tooltip": "Modo de mesclagem inicial."
+      },
+      "flip_h": {
+        "name": "inverter_h",
+        "tooltip": "Inverter a camada horizontalmente."
+      },
+      "flip_v": {
+        "name": "inverter_v",
+        "tooltip": "Inverter a camada verticalmente."
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "Altura inicial de exibição. 0 mantém a altura nativa da imagem."
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Conteúdo da camada em seu tamanho nativo. Um lote expande para camadas consecutivas."
+      },
+      "layers": {
+        "name": "camadas",
+        "tooltip": "Pilha de camadas para anexar. Deixe desconectado para iniciar uma nova pilha."
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Máscara de transparência para esta camada. Áreas mascaradas (valor 1) tornam-se transparentes, multiplicando com qualquer canal alfa que a imagem já possua."
+      },
+      "name": {
+        "name": "nome",
+        "tooltip": "Nome da camada exibido no editor de composição."
+      },
+      "opacity": {
+        "name": "opacidade",
+        "tooltip": "Opacidade inicial da camada."
+      },
+      "rotation": {
+        "name": "rotação",
+        "tooltip": "Rotação inicial em graus, no sentido horário."
+      },
+      "width": {
+        "name": "largura",
+        "tooltip": "Largura inicial de exibição. 0 mantém a largura nativa da imagem."
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "Posicionamento horizontal inicial na tela."
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "Posicionamento vertical inicial na tela."
+      },
+      "z_index": {
+        "name": "z_index",
+        "tooltip": "Sobreposição de empilhamento. As camadas são ordenadas de forma estável por z_index; valores iguais mantêm a ordem da lista."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "A pilha de camadas com esta camada anexada."
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AddNoise",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "gerar_áudio"
       },
+      "model_output_format": {
+        "name": "formato_de_saida"
+      },
       "model_prompt": {
         "name": "prompt"
-      },
-      "model_ratio": {
-        "name": "proporção"
       },
       "model_resolution": {
         "name": "resolução"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "gerar_áudio"
       },
+      "model_output_format": {
+        "name": "formato_de_saida"
+      },
       "model_prompt": {
         "name": "prompt"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "resolução"
+      },
+      "model_video_editing": {
+        "name": "edição_de_vídeo"
       },
       "seed": {
         "name": "semente",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "gerar_áudio"
+      },
+      "model_output_format": {
+        "name": "formato_de_saida"
       },
       "model_prompt": {
         "name": "prompt"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "Decompõe uma imagem em uma placa de fundo mais até 16 camadas transparentes reposicionáveis, cada uma com ordem de empilhamento, caixa delimitadora, nome e descrição.",
+    "display_name": "ByteDance Seedream 5.0 Pro Separação de Camadas",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "crop_layers": {
+        "name": "recortar camadas",
+        "tooltip": "Geometria dos lotes de saída das camadas/máscaras (layer_stack não é afetado e sempre é justo). Tela cheia: cada camada em uma tela do tamanho da base na posição da sua caixa delimitadora - recomponha diretamente com ImageCompositeMasked. Tamanho mínimo: cada camada recortada para sua caixa delimitadora (preenchida até a maior camada para o lote) - tensores muito menores; reconstrua o posicionamento com Camadas a partir de Caixas Delimitadoras usando a saída bboxes."
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "A imagem a ser separada. Exatamente uma imagem, com pelo menos 512x512 pixels, proporção entre 1:16 e 16:1. Entradas maiores que cerca de 4MP serão redimensionadas antes do upload."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Como separar a imagem. Deixe em branco para detectar automaticamente e separar todos os elementos principais. Descreva os elementos em linguagem natural para controlar a separação, ou aponte regiões exatas com tags <bbox>esquerda topo direita base</bbox> (coordenadas em permil de 0-1000)."
+      },
+      "prompt_optimization": {
+        "name": "otimização do prompt",
+        "tooltip": "Modo de otimização do prompt: 'standard' oferece maior qualidade, 'fast' reduz o tempo de geração."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed a ser usada para geração."
+      },
+      "size": {
+        "name": "tamanho",
+        "tooltip": "Nível de resolução de saída. 'auto' segue o tamanho da imagem de entrada (limitado à faixa de 1K-2K)."
+      },
+      "watermark": {
+        "name": "marca d'água",
+        "tooltip": "Se deve adicionar uma marca d'água \"Gerado por IA\" às imagens."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagem base",
+        "tooltip": "A imagem base (placa de fundo) sobre a qual as camadas são empilhadas."
+      },
+      "1": {
+        "name": "máscara base",
+        "tooltip": "Transparência da imagem base (1 = transparente, convenção LoadImage); atualmente sempre totalmente opaca."
+      },
+      "2": {
+        "name": "camadas",
+        "tooltip": "Camadas transparentes ordenadas de baixo para cima. Modo tela cheia: posicionadas em uma tela preta do tamanho da base na posição da caixa delimitadora. Modo tamanho mínimo: recortadas para sua caixa delimitadora, ancoradas no canto superior esquerdo, preenchidas até a maior camada."
+      },
+      "3": {
+        "name": "máscaras",
+        "tooltip": "Transparência por camada, alinhada por índice com o lote de camadas (1 = transparente, convenção LoadImage). Para composição estilo ImageCompositeMasked, adicione InvertMask primeiro."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Uma caixa de posicionamento por camada, alinhada por índice com o lote de camadas (alimente ambos, mais máscaras, em Camadas a partir de Caixas Delimitadoras para reconstruir o posicionamento por camada): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [esquerda, topo, largura, altura] é a região de conteúdo da camada dentro de sua própria moldura; ela pousa na tela na posição da caixa mais esse deslocamento."
+      },
+      "5": {
+        "name": "pilha de camadas",
+        "tooltip": "Documento de camadas pronto para edição para Criar Imagem em Camadas: a placa base mais cada elemento como sua própria camada nomeada, recortada e posicionada corretamente com ordem de empilhamento. Conecte diretamente ou estenda com Adicionar Camada."
       }
     }
   },
@@ -6928,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "Criar Imagem em Camadas",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "Composição em camadas salva pelo editor de compositor."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "Pilha de camadas para compor; construa-a com Adicionar Camada. Os itens são empilhados pelo z_index, quadros em lote dentro de um item expandem para camadas consecutivas, e o posicionamento, opacidade e modo de mesclagem do item definem a composição inicial. Sem um canvas de documento explícito, o tamanho é o máximo possível das camadas posicionadas. Uma composição salva que corresponda às entradas atuais tem prioridade."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Imagem composta. Possui canal alfa quando a composição tem áreas transparentes (ex: fundo oculto), caso contrário, RGB simples."
+      },
+      "1": {
+        "tooltip": "Transparência da composição (1 = totalmente transparente). Todos zeros quando a composição é opaca."
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "Cortar Imagem",
     "inputs": {
@@ -9413,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "Transforme um lote de imagens e suas caixas delimitadoras em uma pilha de camadas, uma camada por quadro, cada uma posicionada por sua própria caixa. Use isto quando um nó emitir camadas como um lote - um lote carrega um único posicionamento para cada quadro, então as posições individuais seriam perdidas de outra forma.",
+    "display_name": "Camadas a partir de Caixas Delimitadoras",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Caixas de posicionamento, alinhadas por índice com o lote de imagens. Aceita caixas delimitadoras (x, y, largura, altura), elementos normalizados (com um 'bbox' - estes precisam de canvas_width/canvas_height para converter em pixels), ou uma string JSON de qualquer um deles. Quadros sem caixa correspondente são posicionados na origem. A largura/altura de uma caixa escala a camada para caber nela. metadata.name (ou desc) e metadata.z_index são usados quando presentes, e metadata.content_rect (relativo ao quadro) recorta o quadro para seu conteúdo real."
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "Altura do canvas do documento. 0 deriva a partir das camadas posicionadas."
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "Largura do canvas do documento. 0 deriva a partir das camadas posicionadas."
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "Recorta cada quadro para metadata.content_rect quando presente e posiciona o conteúdo na posição da caixa mais o deslocamento do retângulo. Mantenha ativado para lotes cujos quadros são preenchidos - mantém apenas o conteúdo real em seu local verdadeiro."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Lote de imagens; cada quadro se torna uma camada."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "Pilha de camadas para adicionar. Deixe desconectado para iniciar uma nova pilha."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Transparência por quadro, alinhada por índice com o lote de imagens (1 = transparente, convenção LoadImage)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "A pilha de camadas, pronta para Criar Imagem em Camadas."
       }
     }
   },
