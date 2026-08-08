@@ -396,6 +396,7 @@ describe('LGraphNode', () => {
     // LGraphNode.vue is relaxed to allow rendering previews on subgraph
     // nodes. Keep this test (don't delete) so it flips green automatically
     // once that guard changes.
+    // incident-94: waiting on LGraphNode.vue:172's `!lgraphNode?.isSubgraphNode()` guard.
     it.fails('renders the live preview image on a subgraph node with a populated preview', () => {
       mockData.mockLgraphNode = { isSubgraphNode: () => true }
       vi.mocked(useNodePreviewState).mockReturnValue({
