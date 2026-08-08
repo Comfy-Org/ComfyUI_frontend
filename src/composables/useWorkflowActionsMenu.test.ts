@@ -254,14 +254,13 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('shows an error when the API export workflow cannot be activated', async () => {
+    const activationError = new Error('Failed to open workflow')
     const workflow = ref({
       path: 'other.json',
       filename: 'other',
       isPersisted: true
     } as ComfyWorkflow)
-    mockWorkflowService.openWorkflow.mockRejectedValueOnce(
-      new Error('Failed to open workflow')
-    )
+    mockWorkflowService.openWorkflow.mockRejectedValueOnce(activationError)
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
       isRoot: true,
       workflow
@@ -269,9 +268,7 @@ describe('useWorkflowActionsMenu', () => {
 
     await findItem(menuItems.value, 'menuLabels.Export for API').command?.()
 
-    expect(mockToastErrorHandler).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'apiExport.dialogLoadError' })
-    )
+    expect(mockToastErrorHandler).toHaveBeenCalledWith(activationError)
     expect(mockOpenExportWorkflowApiDialog).not.toHaveBeenCalled()
   })
 

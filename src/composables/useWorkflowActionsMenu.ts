@@ -191,14 +191,17 @@ export function useWorkflowActionsMenu(
       command: async () => {
         try {
           await ensureWorkflowActive(workflow)
-          await openExportWorkflowApiDialog(
-            workflow?.filename ?? 'workflow_api'
-          )
         } catch (error: unknown) {
+          toastErrorHandler(error)
+          return
+        }
+        await openExportWorkflowApiDialog(
+          workflow?.filename ?? 'workflow_api'
+        ).catch((error: unknown) =>
           toastErrorHandler(
             new Error(t('apiExport.dialogLoadError'), { cause: error })
           )
-        }
+        )
       },
       visible: isRoot,
       isNew: true,
