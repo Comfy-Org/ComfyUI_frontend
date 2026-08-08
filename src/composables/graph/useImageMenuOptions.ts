@@ -2,12 +2,69 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 
 function canPasteImage(node?: LGraphNode): boolean {
   return typeof node?.pasteFiles === 'function'
+}
+
+/**
+ * Resolve the full-resolution source URL of a node's currently shown image.
+ *
+ * Strips the `preview` query param so callers get the original asset rather than
+ * the downscaled canvas preview. Returns null when the node has no image.
+ * Shared by every image action (open / save / copy) so URL derivation stays in
+ * one place.
+ */
+function getNodeImageUrl(node: LGraphNode): string | null {
+  const img = node?.imgs?.[node.imageIndex ?? 0]
+  if (!img) return null
+  const url = new URL(img.src)
+  url.searchParams.delete('preview')
+  return url.toString()
+}
+
+/**
+ * Fetch an image URL and return it as a PNG blob ready for the clipboard.
+ *
+ * Re-fetching the URL (instead of exporting the node's rendered <img> through a
+ * canvas) is what avoids the tainted-canvas SecurityError for cross-origin cloud
+ * assets: the fetched blob is always readable, whereas a canvas drawn from a
+ * non-CORS cross-origin image cannot be exported.
+ *
+ * The blob is re-encoded to PNG when the source is not already PNG, because the
+ * async clipboard only reliably accepts `image/png`. The bitmap is decoded from
+ * a same-origin blob, so this canvas is never tainted.
+ */
+async function fetchImageAsPngBlob(url: string): Promise<Blob> {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.status}`)
+  }
+
+  const blob = await response.blob()
+  if (blob.type === 'image/png') return blob
+
+  const bitmap = await createImageBitmap(blob)
+  try {
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Failed to get 2D canvas context')
+    ctx.drawImage(bitmap, 0, 0)
+
+    const pngBlob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/png')
+    })
+    if (!pngBlob) throw new Error('Failed to encode image as PNG')
+    return pngBlob
+  } finally {
+    bitmap.close()
+  }
 }
 
 async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
@@ -48,62 +105,47 @@ export function useImageMenuOptions() {
   }
 
   const openImage = (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
-    if (!img) return
-    const url = new URL(img.src)
-    url.searchParams.delete('preview')
-    void openFileInNewTab(url.toString())
+    const url = getNodeImageUrl(node)
+    if (url) void openFileInNewTab(url)
   }
 
   const copyImage = async (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
-    if (!img) return
-
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    ctx.drawImage(img, 0, 0)
+    const url = getNodeImageUrl(node)
+    if (!url) return
 
     try {
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, 'image/png')
-      })
-
-      if (!blob) {
-        console.warn('Failed to create image blob')
-        return
-      }
-
-      // Check if clipboard API is available
       if (!navigator.clipboard?.write) {
-        console.warn('Clipboard API not available')
-        return
+        throw new Error('Clipboard API not available')
       }
-
+      // Pass a Promise to ClipboardItem so the write is registered
+      // synchronously within the click's user-gesture, keeping activation
+      // alive across the fetch (required by Safari, tolerated by Chrome).
       await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
+        new ClipboardItem({ 'image/png': fetchImageAsPngBlob(url) })
       ])
     } catch (error) {
       console.error('Failed to copy image to clipboard:', error)
+      useToastStore().addAlert(
+        t('toastMessages.errorCopyImage', {
+          error: error instanceof Error ? error.message : String(error)
+        })
+      )
     }
   }
 
   const saveImage = (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
-    if (!img) return
+    const url = getNodeImageUrl(node)
+    if (!url) return
 
     try {
-      const url = new URL(img.src)
-      url.searchParams.delete('preview')
-      downloadFile(url.toString())
+      downloadFile(url)
     } catch (error) {
       console.error('Failed to save image:', error)
+      useToastStore().addAlert(
+        t('toastMessages.errorSaveImage', {
+          error: error instanceof Error ? error.message : String(error)
+        })
+      )
     }
   }
 
