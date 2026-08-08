@@ -19,6 +19,7 @@ import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -333,10 +334,10 @@ function useSubscriptionInternal() {
     )
 
     if (!response.ok) {
-      const errorData = await response.json()
+      const { message } = await parseErrorResponse(response)
       throw new AuthStoreError(
         t('toastMessages.failedToFetchSubscription', {
-          error: errorData.message
+          error: message
         })
       )
     }
@@ -425,10 +426,10 @@ function useSubscriptionInternal() {
       )
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const { message } = await parseErrorResponse(response)
         throw new AuthStoreError(
           t('toastMessages.failedToInitiateSubscription', {
-            error: errorData.message
+            error: message
           })
         )
       }
