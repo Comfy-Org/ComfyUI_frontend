@@ -150,7 +150,9 @@ export const useWorkflowService = () => {
     const json = JSON.stringify(p[promptProperty], null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const file =
-      options.promptFilename === false ? filename : await getFilename(filename)
+      options.promptFilename === false
+        ? appendJsonExt(filename)
+        : await getFilename(filename)
     if (!file) return
     downloadBlob(file, blob)
   }

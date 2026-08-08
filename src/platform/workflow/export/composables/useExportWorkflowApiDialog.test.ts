@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import ExportWorkflowApiDialogContent from '@/platform/workflow/export/components/ExportWorkflowApiDialogContent.vue'
@@ -11,7 +12,7 @@ vi.mock('@/i18n', () => ({
 
 describe('useExportWorkflowApiDialog', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('opens the API export dialog with the shared dialog system', () => {

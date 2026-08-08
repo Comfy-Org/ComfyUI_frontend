@@ -62,6 +62,7 @@ const mockFeatureFlags = vi.hoisted(() => ({
 }))
 
 const mockOpenExportWorkflowApiDialog = vi.hoisted(() => vi.fn())
+const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => mockWorkflowStore),
@@ -88,7 +89,11 @@ vi.mock('@/stores/appModeStore', () => ({
   useAppModeStore: vi.fn(() => mockAppModeStore)
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({}))
+vi.mock('@/composables/useErrorHandling', () => ({
+  useErrorHandling: vi.fn(() => ({
+    toastErrorHandler: mockToastErrorHandler
+  }))
+}))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: vi.fn(() => mockFeatureFlags)
@@ -123,6 +128,7 @@ describe('useWorkflowActionsMenu', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockOpenExportWorkflowApiDialog.mockResolvedValue(undefined)
     mockBookmarkStore.isBookmarked.mockReturnValue(false)
     mockSubgraphStore.isSubgraphBlueprint.mockReturnValue(false)
     mockMenuItemStore.hasSeenLinear = false
@@ -257,6 +263,19 @@ describe('useWorkflowActionsMenu', () => {
     expect(mockOpenExportWorkflowApiDialog).toHaveBeenCalledOnce()
     expect(mockCommandStore.execute).not.toHaveBeenCalledWith(
       'Comfy.ExportWorkflowAPI'
+    )
+  })
+
+  it('shows an error when the API export dialog cannot open', async () => {
+    mockOpenExportWorkflowApiDialog.mockRejectedValueOnce(
+      new Error('Failed to load dialog')
+    )
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+
+    await findItem(menuItems.value, 'menuLabels.Export for API').command?.()
+
+    expect(mockToastErrorHandler).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'apiExport.dialogLoadError' })
     )
   })
 

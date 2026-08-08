@@ -60,6 +60,7 @@ export function useWorkflowActionsMenu(
   const { flags } = useFeatureFlags()
   const appModeStore = useAppModeStore()
   const { enterBuilder, pruneLinearData } = appModeStore
+  const { toastErrorHandler } = useErrorHandling()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -192,7 +193,11 @@ export function useWorkflowActionsMenu(
       icon: 'pi pi-download',
       command: async () => {
         await ensureWorkflowActive(workflow)
-        await openExportWorkflowApiDialog()
+        await openExportWorkflowApiDialog().catch((error: unknown) =>
+          toastErrorHandler(
+            new Error(t('apiExport.dialogLoadError'), { cause: error })
+          )
+        )
       },
       visible: isRoot,
       isNew: true,

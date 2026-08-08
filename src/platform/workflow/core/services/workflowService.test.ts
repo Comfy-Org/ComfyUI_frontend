@@ -293,13 +293,13 @@ describe('useWorkflowService', () => {
       )
     })
 
-    it('uses the supplied filename without prompting when requested', async () => {
+    it('adds the JSON extension without prompting when requested', async () => {
       const workflowStore = useWorkflowStore()
       workflowStore.activeWorkflow = createModeTestWorkflow({
         path: 'workflows/current.json'
       })
 
-      await useWorkflowService().exportWorkflow('renamed.json', 'output', {
+      await useWorkflowService().exportWorkflow('renamed', 'output', {
         useWorkflowFilename: false,
         promptFilename: false
       })
