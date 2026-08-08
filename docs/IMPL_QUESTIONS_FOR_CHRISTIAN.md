@@ -216,6 +216,67 @@ shape at roughly seven times the size. Together ≈5.6% of all downloads.
 
 ---
 
+## 4a. rgthree is blocked, but not by resolution ❓
+
+**Correction to §4.** rgthree-comfy (#2, 3.69M downloads) was assumed to be the
+same broadcast shape as cg-use-everywhere. It is not, and the assumption was
+made from surface similarity rather than evidence.
+
+- **Reroute** (`reroute.ts:397`) and **Node Collector** are ordinary demand-side
+  passthroughs. Reroute is exactly `{forwardTo: {nodeId: self.id, input: 0}}`,
+  and `resolution.ts:165-174` already chains reroute→reroute to a fixpoint.
+- **Context, Context Big, Context Switch/Merge** and **Any Switch** are
+  **backend** nodes (`extends RgthreeBaseServerNode`, registered through
+  `beforeRegisterNodeDef`). Python does the switching; the frontend only does
+  connection ergonomics.
+- There is **no `applyToGraph` anywhere in the pack**, no fan-out, no injection
+  into another node's unconnected input.
+
+**What actually blocks it is larger.** rgthree replaced ComfyUI's node class,
+extension system, widget layer and menu system with its own: it intercepts
+`LiteGraph.registerNodeType` to substitute its own class
+(`base_node.ts:482-504`), patches 14 core prototypes (`rgthree.ts`), and ships a
+parallel widget framework (`utils_widgets.ts`). It is not a pack that calls a
+few deprecated APIs.
+
+| bucket                   | files | note                         |
+| ------------------------ | ----- | ---------------------------- |
+| converts cleanly today   | 7     | but cannot _run_ — see below |
+| blocked on a known gap   | 21    | loses named features         |
+| blocked on something new | 20    | 15 distinct new capabilities |
+
+The bucket counts understate it: `utils.js` is imported by **28** of 48,
+`rgthree.js` by 19, `base_node.js` by 17 — and all three are in the blocked set.
+So the 7 clean files can be written but not run until the foundation is
+rearchitected.
+
+**Recommendation: do not convert rgthree pack-wide.** If it is worth revisiting,
+three additions carry most of it, in order of leverage per cost:
+
+1. **A node-mode-change notification** (`onModeChange`). Cheap. rgthree does it
+   with `defineProperty(this, 'mode', {set})` (`base_node.ts:96-107`); it is the
+   sole driver of Node Mode Repeater.
+2. **A group API** (gap 18). Fast Groups Muter, Fast Groups Bypasser and the
+   group-header toggles are 100% dead without it.
+3. **A prompt-serialization lifecycle hook** (between serialize and POST).
+   Distinct from gap 26 ("no snapshot") and 27 ("no queueing"). Unblocks Seed
+   and Random Unmuter.
+
+Two things it needs that I would **not** build for it: substituting the node
+class for a backend-registered type, and intercepting an in-flight link drag.
+
+**The wire-format item that matters most, at this install base.** `context.ts`
+runs a slot-name migration on every load — including a `CLIP_HEIGTH` →
+`CLIP_HEIGHT` typo fix whose comment says it must live "in perpetuity". It _is_
+expressible (`b.onConfigured` + `slot.modify({name})` + `output.moveLinksTo()`),
+but only carried over verbatim. Dropped, old workflows silently land links on
+the wrong slot.
+
+**Seed is the other one.** `widgets_values` keeps the sentinel `-1` and the real
+seed is injected into the prompt after `graphToPrompt`. Converted without a
+prompt lifecycle hook, every queued prompt sends `-1` and the backend
+randomizes — reproducibility breaks, not just bytes.
+
 ## 5. `diff-is-mostly-substance` contradicts the conversion guidance ✅
 
 The check fails a file when most added lines differ only in indentation, on the
