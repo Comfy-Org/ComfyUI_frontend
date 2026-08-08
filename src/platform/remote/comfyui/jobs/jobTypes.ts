@@ -63,6 +63,7 @@ const zRawJobListItem = z
     execution_end_time: z.number().nullable().optional(),
     preview_output: zPreviewOutput.nullable().optional(),
     outputs_count: z.number().nullable().optional(),
+    previewable_outputs_count: z.number().nullable().optional(),
     execution_error: zExecutionError.nullable().optional(),
     workflow_id: z.string().nullable().optional(),
     priority: z.number().optional()

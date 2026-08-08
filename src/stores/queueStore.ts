@@ -330,6 +330,11 @@ export class TaskItemImpl {
     return this.job.outputs_count ?? undefined
   }
 
+  /** Absent on backends or jobs that predate this field. */
+  get previewableOutputsCount(): number | undefined {
+    return this.job.previewable_outputs_count ?? undefined
+  }
+
   get status() {
     return this.job.status
   }
