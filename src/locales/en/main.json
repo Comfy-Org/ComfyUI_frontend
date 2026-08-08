@@ -1291,6 +1291,7 @@
     "title": "Compositor",
     "webglUnavailable": "WebGL is unavailable - the canvas cannot render",
     "loadFailed": "Failed to load layers",
+    "needsTwoImages": "The layer editor needs at least two output images",
     "layersFailedToLoad": "One layer failed to load | {count} layers failed to load",
     "selectTool": "Select",
     "handTool": "Hand",

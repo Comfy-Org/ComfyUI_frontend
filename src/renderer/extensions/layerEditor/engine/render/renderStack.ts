@@ -283,12 +283,15 @@ export function renderDocument(
   deps.compositor.beginFrame?.()
   const used = new Set<string>()
   const { inputs, cleanup } = buildInputs(doc.root, doc, deps, used)
-  deps.compositor.composite(
-    extra?.length ? [...inputs, ...extra] : inputs,
-    null,
-    region ?? undefined
-  )
-  cleanup()
+  try {
+    deps.compositor.composite(
+      extra?.length ? [...inputs, ...extra] : inputs,
+      null,
+      region ?? undefined
+    )
+  } finally {
+    cleanup()
+  }
   if (deps.placedCache) {
     for (const key of [...deps.placedCache.keys()]) {
       if (!used.has(key)) deps.placedCache.delete(key)
