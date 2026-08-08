@@ -255,6 +255,8 @@
       "backToGithubLogin": "Regístrate con Github en su lugar",
       "backToLogin": "Volver al inicio de sesión",
       "backToSocialLogin": "Regístrate con Google o Github en su lugar",
+      "cloudNewUser": "¿Nuevo en Comfy?",
+      "cloudSignUp": "Regístrate aquí",
       "confirmPasswordLabel": "Confirmar contraseña",
       "confirmPasswordPlaceholder": "Ingresa la misma contraseña nuevamente",
       "didntReceiveEmail": "¿No recibiste el correo? Contáctanos en",
@@ -263,6 +265,7 @@
       "failed": "Inicio de sesión fallido",
       "forgotPassword": "¿Olvidaste tu contraseña?",
       "forgotPasswordError": "No se pudo enviar el correo electrónico para restablecer la contraseña",
+      "freeRunsSuffix": "para obtener {count} ejecución gratuita. | para obtener {count} ejecuciones gratuitas.",
       "freeTierBadge": "Elegible para el plan gratuito",
       "freeTierDescription": "Regístrate con Google para obtener {credits} créditos gratis cada mes. No se necesita tarjeta.",
       "freeTierDescriptionGeneric": "Regístrate con Google para obtener créditos gratis cada mes. No se necesita tarjeta.",
@@ -344,11 +347,13 @@
   "billingOperation": {
     "cancelFailed": "No se pudo cancelar la suscripción",
     "cancelTimeout": "La cancelación de la suscripción excedió el tiempo de espera",
+    "subscriptionActionRequired": "Verifica tu pago para finalizar la configuración de tu espacio de trabajo",
     "subscriptionFailed": "Error al actualizar la suscripción",
     "subscriptionFailedDetail": "No pudimos actualizar tu suscripción. Por favor, inténtalo de nuevo.",
     "subscriptionProcessing": "Procesando pago — configurando tu espacio de trabajo...",
     "subscriptionSuccess": "Suscripción actualizada correctamente",
     "subscriptionTimeout": "Tiempo de espera agotado al verificar la suscripción",
+    "topupActionRequired": "Verifica tu pago para añadir tus créditos",
     "topupFailed": "Error al recargar créditos",
     "topupProcessing": "Procesando pago — añadiendo créditos...",
     "topupSuccess": "Créditos añadidos correctamente",
@@ -445,8 +450,12 @@
   "cloudForgotPassword_sendResetLink": "Enviar enlace de restablecimiento",
   "cloudForgotPassword_title": "¿Olvidaste tu contraseña?",
   "cloudHero": {
+    "carouselLabel": "Modelos destacados",
+    "carouselRoleDescription": "carrusel",
     "nextSlide": "Siguiente diapositiva",
-    "previousSlide": "Diapositiva anterior"
+    "previousSlide": "Diapositiva anterior",
+    "slideRoleDescription": "diapositiva",
+    "slideStatus": "{title}, diapositiva {current} de {total}"
   },
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
@@ -690,6 +699,13 @@
     "theme": "Tema",
     "toggleBottomPanel": "Alternar panel inferior"
   },
+  "compositor": {
+    "downloadPsd": "Descargar PSD",
+    "empty": "Ejecuta el flujo de trabajo para generar un compuesto",
+    "open": "Abrir Compositor",
+    "runWorkflowFirst": "Ejecuta el flujo de trabajo una vez para cargar las imágenes de entrada",
+    "saveFailed": "No se pudo guardar el compuesto"
+  },
   "contextMenu": {
     "Add Group": "Agregar Grupo",
     "Add Group For Selected Nodes": "Agregar Grupo para Nodos Seleccionados",
@@ -847,7 +863,6 @@
     "BOOLEAN": "BOOLEANO",
     "BOUNDING_BOX": "CUADRO DELIMITADOR",
     "BOUNDING_BOXES": "CUADROS DELIMITADORES",
-    "CAMERA_CONTROL": "CONTROL DE CÁMARA",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "SALIDA_CLIP_VISION",
@@ -857,6 +872,7 @@
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
+    "COMPOSITOR": "COMPOSITOR",
     "CONDITIONING": "ACONDICIONAMIENTO",
     "CONTROL_NET": "RED_DE_CONTROL",
     "CURVE": "CURVA",
@@ -896,6 +912,7 @@
     "LATENT": "LATENTE",
     "LATENT_OPERATION": "OPERACIÓN_LATENTE",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
+    "LAYERS": "CAPAS",
     "LOAD3D_CAMERA": "CARGAR CÁMARA 3D",
     "LOAD3D_MODEL_INFO": "CARGAR_INFO_MODELO_3D",
     "LOAD_3D": "CARGAR_3D",
@@ -1714,6 +1731,7 @@
     "off": "Apagado",
     "ok": "OK",
     "on": "Encendido",
+    "openLayerEditor": "Abrir editor de capas",
     "openManager": "Abrir administrador",
     "openNewIssue": "Abrir nuevo problema",
     "or": "o",
@@ -1775,6 +1793,7 @@
     "resizeFromTopLeft": "Redimensionar desde la esquina superior izquierda",
     "resizeFromTopRight": "Redimensionar desde la esquina superior derecha",
     "restart": "Reiniciar",
+    "restore": "Restaurar",
     "restoreDialog": "Restaurar diálogo",
     "resultsCount": "Encontrados {count} resultados",
     "running": "En ejecución",
@@ -1945,6 +1964,7 @@
     "openDevTools": "Abrir herramientas de desarrollo",
     "recentReleases": "Lanzamientos recientes",
     "reinstall": "Reinstalar",
+    "systemStatus": "Estado del sistema",
     "updateAvailable": "Actualizar",
     "updateComfyUI": "Actualizar ComfyUI",
     "updateComfyUIFailed": "No se pudo actualizar ComfyUI. Por favor, inténtelo de nuevo.",
@@ -2099,6 +2119,71 @@
   },
   "issueReport": {
     "helpFix": "Ayuda a Solucionar Esto"
+  },
+  "layerEditor": {
+    "alignBottom": "Alinear abajo",
+    "alignCenterHorizontal": "Centrar horizontalmente",
+    "alignCenterVertical": "Centrar verticalmente",
+    "alignLeft": "Alinear a la izquierda",
+    "alignRight": "Alinear a la derecha",
+    "alignTop": "Alinear arriba",
+    "alignment": "Alineación",
+    "background": "Fondo",
+    "backgroundColor": "Color de fondo",
+    "blend": {
+      "color": "Color",
+      "colorBurn": "Sobreexponer color",
+      "colorDodge": "Subexponer color",
+      "darken": "Oscurecer",
+      "difference": "Diferencia",
+      "divide": "Dividir",
+      "exclusion": "Exclusión",
+      "grainExtract": "Extraer grano",
+      "grainMerge": "Fusionar grano",
+      "hardLight": "Luz fuerte",
+      "hardMix": "Mezcla fuerte",
+      "hue": "Tono",
+      "lighten": "Aclarar",
+      "linearBurn": "Sobreexposición lineal",
+      "linearDodge": "Subexposición lineal",
+      "linearLight": "Luz lineal",
+      "luminosity": "Luminosidad",
+      "multiply": "Multiplicar",
+      "normal": "Normal",
+      "overlay": "Superponer",
+      "pinLight": "Luz focal",
+      "saturation": "Saturación",
+      "screen": "Trama",
+      "softLight": "Luz suave",
+      "subtract": "Restar",
+      "vividLight": "Luz intensa"
+    },
+    "blendMode": "Modo de fusión",
+    "dimensions": "Dimensiones",
+    "exportPsd": "Exportar PSD",
+    "exportPsdFailed": "No se pudo exportar el PSD",
+    "fill": "Relleno",
+    "fitView": "Ajustar",
+    "flip": "Voltear",
+    "flipHorizontal": "Voltear horizontalmente",
+    "flipVertical": "Voltear verticalmente",
+    "handTool": "Mano",
+    "layerN": "Capa {n}",
+    "layers": "Capas",
+    "layersFailedToLoad": "No se pudo cargar una capa | No se pudieron cargar {count} capas",
+    "loadFailed": "No se pudieron cargar las capas",
+    "moveDown": "Mover capa abajo",
+    "moveUp": "Mover capa arriba",
+    "opacity": "Opacidad",
+    "position": "Posición",
+    "redo": "Rehacer",
+    "rotation": "Rotación",
+    "selectTool": "Seleccionar",
+    "title": "Compositor",
+    "toggleVisibility": "Alternar visibilidad",
+    "undo": "Deshacer",
+    "webglUnavailable": "WebGL no está disponible: el lienzo no puede renderizar",
+    "zoom": "Zoom"
   },
   "linearMode": {
     "appModeToolbar": {
@@ -2708,6 +2793,7 @@
     "Open Custom Nodes Folder": "Abrir carpeta de nodos personalizados",
     "Open DevTools": "Abrir herramientas de desarrollo",
     "Open Inputs Folder": "Abrir carpeta de entradas",
+    "Open Layer Editor for Selected Node": "Abrir editor de capas para el nodo seleccionado",
     "Open Logs Folder": "Abrir carpeta de registros",
     "Open Mask Editor for Selected Node": "Abrir el editor de mask para el nodo seleccionado",
     "Open Models Folder": "Abrir carpeta de modelos",
@@ -3092,6 +3178,74 @@
     },
     "back": "Atrás",
     "done": "Listo",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "Ahora no",
+        "explore": "Explorar plantillas",
+        "noTour": {
+          "body": "Explora las plantillas y elige algo para crear.",
+          "title": "Hay cientos más como esa"
+        },
+        "ran": {
+          "body": "Acabas de crear la primera. Explora qué más puedes construir.",
+          "title": "Esa fue una de cientos"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "La imagen establece la escena. Esto indica lo que sucede después.",
+          "title": "Describe cómo debe moverse"
+        },
+        "image-edit": {
+          "body": "Tu imagen se mantiene igual. Describe qué quieres diferente.",
+          "title": "Di qué quieres cambiar"
+        },
+        "other": {
+          "body": "Este es tu prompt. Cámbialo para modificar tu resultado.",
+          "title": "Indica qué crear"
+        },
+        "t2i": {
+          "body": "Tu imagen se crea a partir de esta descripción. Prueba lo que quieras.",
+          "title": "Describe lo que quieres"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "Nada apareció aquí. Cierra el recorrido e intenta ejecutar de nuevo.",
+          "title": "Esa ejecución no terminó"
+        },
+        "generating": {
+          "body": "Tu resultado aparecerá aquí en cuanto esté listo.",
+          "title": "Espera un momento"
+        },
+        "image": {
+          "body": "Tu nueva imagen aparece aquí — lista para descargar o compartir.",
+          "title": "Aquí está"
+        },
+        "video": {
+          "body": "Tu nuevo video aparece aquí — listo para descargar o compartir.",
+          "title": "Aquí está"
+        }
+      },
+      "run": {
+        "body": "Presiona Ejecutar para comenzar a generar tu resultado.",
+        "title": "Ejecuta tu flujo de trabajo"
+      },
+      "upload": {
+        "i2v": {
+          "body": "Esta imagen es tu primer fotograma. Cámbiala por la tuya cuando quieras.",
+          "title": "Empieza con una imagen"
+        },
+        "image-edit": {
+          "body": "Esta es la imagen que vas a editar. Cámbiala por la tuya cuando quieras.",
+          "title": "Empieza con una imagen"
+        },
+        "other": {
+          "body": "Esta imagen alimenta el flujo de trabajo. Cámbiala por la tuya cuando quieras.",
+          "title": "Empieza con una imagen"
+        }
+      }
+    },
     "loadError": "Algo salió mal al mostrar este recorrido",
     "next": "Siguiente",
     "skip": "Omitir",
@@ -3995,6 +4149,17 @@
     "partnerNodesCredits": "Créditos de Nodos de Socio",
     "partnerNodesDescription": "Para ejecutar modelos comerciales/propietarios",
     "partnerNodesPricingTable": "Tabla de precios de Partner Nodes",
+    "paymentRecovery": {
+      "memberCta": "Entendido",
+      "memberDescription": "Pide al propietario de tu espacio de trabajo que restaure la suscripción.",
+      "memberRunLabel": "Ejecutar",
+      "memberRunTooltip": "Pide al propietario de tu espacio de trabajo que restaure esta suscripción",
+      "ownerCta": "Actualizar pago",
+      "ownerDescription": "Actualiza tu método de pago para restaurar la suscripción del espacio de trabajo y ejecutar flujos de trabajo.",
+      "ownerRunLabel": "Actualiza el pago para ejecutar",
+      "ownerRunTooltip": "Actualiza el pago para restaurar esta suscripción",
+      "title": "Suscripción pausada"
+    },
     "perMonth": "USD / mes",
     "personalHeader": "Los planes personales son solo para uso individual. {action}",
     "personalHeaderAction": "Para agregar compañeros, suscríbete al plan de equipo.",
@@ -4282,6 +4447,7 @@
     "logoProviderSeparator": " y "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "No se pudo cargar el flujo de trabajo porque a esta instalación de ComfyUI le faltan nodos principales. Verifica que el backend se haya iniciado correctamente.",
     "cannotCreateSubgraph": "No se puede crear el subgrafo",
     "couldNotDetermineFileType": "No se pudo determinar el tipo de archivo",
     "dropFileError": "No se puede procesar el elemento soltado: {error}",
@@ -4331,6 +4497,7 @@
     "invalidTemplateData": "No se pudo cargar la plantilla de nodo: datos no válidos",
     "legacyMaskEditorDeprecated": "El editor de máscaras heredado está obsoleto y se eliminará pronto.",
     "migrateToLitegraphReroute": "Los nodos de reroute se eliminarán en futuras versiones. Haz clic para migrar a reroute nativo de litegraph.",
+    "missingMediaVerificationFailed": "No se pudo verificar el contenido multimedia faltante. Es posible que algunas entradas no se muestren en la pestaña de Errores.",
     "missingModelVerificationFailed": "No se pudo verificar los modelos faltantes. Algunos modelos pueden no aparecer en la pestaña de Errores.",
     "modelLoadedSuccessfully": "Modelo 3D cargado exitosamente",
     "no3dScene": "No hay escena 3D para aplicar textura",
@@ -4514,7 +4681,11 @@
       "notAuthenticated": "Debes iniciar sesión para acceder a los espacios de trabajo",
       "tokenExchangeFailed": "No se pudo autenticar con el espacio de trabajo: {error}",
       "workspaceNotFound": "Espacio de trabajo no encontrado"
-    }
+    },
+    "initializationFailed": "No se pudo cargar tu espacio de trabajo",
+    "initializationFailedDetail": "Verifica tu conexión e inténtalo de nuevo.",
+    "initializationFailedSignOutDetail": "Cierra sesión e inicia sesión nuevamente para continuar.",
+    "retry": "Intentar de nuevo"
   },
   "workspacePanel": {
     "activity": {
@@ -4554,7 +4725,6 @@
       },
       "updatePayment": "Actualizar pago",
       "warning": {
-        "body": "Tu último pago no se realizó correctamente. Tu suscripción se pausará el {date} a menos que actualices el pago.",
         "bodyNoDate": "Tu último pago no se realizó correctamente. Actualiza el pago para evitar una pausa.",
         "title": "Pago rechazado"
       }
