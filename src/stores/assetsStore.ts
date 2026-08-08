@@ -102,6 +102,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
+  const deletedOutputKeysByJob = ref(new Map<string, ReadonlySet<string>>())
 
   const setAssetDeleting = (assetId: string, isDeleting: boolean) => {
     if (isDeleting) {
@@ -356,6 +357,31 @@ export const useAssetsStore = defineStore('assets', () => {
     patch(allHistoryItems.value)
     patch(inputAssets.value)
   }
+
+  const replaceHistoryAsset = (jobId: string, replacement?: AssetItem) => {
+    const index = allHistoryItems.value.findIndex((asset) => asset.id === jobId)
+    if (index < 0) return
+
+    if (replacement) {
+      allHistoryItems.value[index] = { ...replacement, id: jobId }
+    } else {
+      allHistoryItems.value.splice(index, 1)
+      loadedIds.delete(jobId)
+    }
+    historyAssets.value = [...allHistoryItems.value]
+  }
+
+  const markHistoryOutputsDeleted = (
+    jobId: string,
+    outputKeys: ReadonlySet<string>
+  ) => {
+    const next = new Map(deletedOutputKeysByJob.value)
+    next.set(jobId, new Set([...(next.get(jobId) ?? []), ...outputKeys]))
+    deletedOutputKeysByJob.value = next
+  }
+
+  const isHistoryOutputDeleted = (jobId: string, outputKey: string) =>
+    deletedOutputKeysByJob.value.get(jobId)?.has(outputKey) === true
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -980,6 +1006,9 @@ export const useAssetsStore = defineStore('assets', () => {
     updateHistory,
     loadMoreHistory,
     setAssetPreview,
+    replaceHistoryAsset,
+    markHistoryOutputsDeleted,
+    isHistoryOutputDeleted,
 
     // Flat output assets (cloud-only, tag-based)
     flatOutputAssets,

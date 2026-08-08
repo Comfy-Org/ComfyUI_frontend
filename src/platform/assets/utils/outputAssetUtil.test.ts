@@ -4,13 +4,18 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import type { ResultItemImpl } from '@/stores/queueStore'
 import type { SerializedNodeId } from '@/types/nodeId'
 
-import { resolveOutputAssetItems } from './outputAssetUtil'
+import { findJobOutputAsset, resolveOutputAssetItems } from './outputAssetUtil'
 
 const mocks = vi.hoisted(() => ({
   getJobDetail: vi.fn(),
   getPreviewableOutputsFromJobDetail: vi.fn(),
   getJobAssets: vi.fn(),
+  apiGetJobAssets: vi.fn(),
   isCloud: false
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: { getJobAssets: mocks.apiGetJobAssets }
 }))
 
 vi.mock('@/services/jobOutputCache', () => ({
@@ -47,6 +52,63 @@ function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
     display_name: merged.display_name
   } as ResultItemImpl
 }
+
+describe('findJobOutputAsset', () => {
+  const metadata: OutputAssetMetadata = {
+    jobId: 'job-1',
+    nodeId: '2',
+    subfolder: ''
+  }
+
+  beforeEach(() => vi.clearAllMocks())
+
+  it('resolves a unique asset within the selected job', async () => {
+    mocks.apiGetJobAssets.mockResolvedValue({
+      complete: true,
+      assets: [{ id: 'asset-1', name: 'output.png', node_id: '2' }]
+    })
+
+    await expect(findJobOutputAsset(metadata, 'output.png')).resolves.toEqual(
+      expect.objectContaining({ id: 'asset-1' })
+    )
+    expect(mocks.apiGetJobAssets).toHaveBeenCalledWith('job-1')
+  })
+
+  it('uses node context to disambiguate duplicate filenames', async () => {
+    mocks.apiGetJobAssets.mockResolvedValue({
+      complete: true,
+      assets: [
+        { id: 'asset-1', name: 'output.png', node_id: '1' },
+        { id: 'asset-2', name: 'output.png', node_id: '2' }
+      ]
+    })
+
+    await expect(findJobOutputAsset(metadata, 'output.png')).resolves.toEqual(
+      expect.objectContaining({ id: 'asset-2' })
+    )
+  })
+
+  it('fails closed for incomplete or ambiguous results', async () => {
+    mocks.apiGetJobAssets.mockResolvedValueOnce({
+      complete: false,
+      assets: [{ id: 'asset-1', name: 'output.png', node_id: '2' }]
+    })
+    await expect(
+      findJobOutputAsset(metadata, 'output.png')
+    ).resolves.toBeUndefined()
+
+    mocks.apiGetJobAssets.mockResolvedValueOnce({
+      complete: true,
+      assets: [
+        { id: 'asset-1', name: 'output.png', node_id: '2' },
+        { id: 'asset-2', name: 'output.png', node_id: '2' }
+      ]
+    })
+    await expect(
+      findJobOutputAsset(metadata, 'output.png')
+    ).resolves.toBeUndefined()
+  })
+})
 
 describe('resolveOutputAssetItems', () => {
   beforeEach(() => {

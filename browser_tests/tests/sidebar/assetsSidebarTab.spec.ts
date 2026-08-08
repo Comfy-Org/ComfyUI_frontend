@@ -1,6 +1,8 @@
 import { expect, mergeTests } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
+import type { z } from 'zod'
 
+import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
@@ -10,13 +12,22 @@ import {
   routeMockJobTimestamp
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
+import { mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type {
   JobDetail,
-  RawJobListItem
+  JobOutputAsset,
+  RawJobListItem,
+  zJobAssetsResponse,
+  zJobsListResponse
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
+
+type JobAssetsResponse = z.infer<typeof zJobAssetsResponse>
+type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 interface ViewFile {
   body?: Buffer | string
@@ -103,6 +114,33 @@ const viewFiles = {
   'multi-output-b.png': {}
 }
 
+const alphaOutputAsset: Asset = {
+  id: 'alpha-asset-id',
+  name: 'ComfyUI_alpha.png',
+  hash: 'alpha.png',
+  mime_type: 'image/png',
+  tags: ['output'],
+  created_at: '2026-01-01T12:00:00Z',
+  updated_at: '2026-01-01T12:00:00Z'
+}
+
+const multiOutputAAsset: Asset = {
+  ...alphaOutputAsset,
+  id: 'multi-output-a-asset-id',
+  name: 'ComfyUI_multi-output-a.png',
+  hash: 'multi-output-a.png'
+}
+
+const multiOutputBAsset: Asset = {
+  ...alphaOutputAsset,
+  id: 'multi-output-b-asset-id',
+  name: 'ComfyUI_multi-output-b.png',
+  hash: 'multi-output-b.png'
+}
+
+const outputAssetsByPage = new WeakMap<Page, Asset[]>()
+const generatedJobsByPage = new WeakMap<Page, RawJobListItem[]>()
+
 async function mockInputFiles(page: Page, files: readonly string[]) {
   await page.route('**/internal/files/input**', async (route) => {
     if (route.request().method().toUpperCase() !== 'GET') {
@@ -167,6 +205,115 @@ const bulkInsertionTest = comfyPageFixture.extend({
     await mockInputFiles(page, [])
     await mockViewFiles(page, viewFiles)
     await use(page)
+  }
+})
+
+const loadImageNodeDef: ComfyNodeDef = {
+  name: 'LoadImage',
+  display_name: 'Load Image',
+  description: '',
+  category: 'image',
+  input: {
+    required: {
+      image: [['alpha.png [output]'], { image_upload: true }]
+    }
+  },
+  output: ['IMAGE', 'MASK'],
+  output_is_list: [false, false],
+  output_name: ['IMAGE', 'MASK'],
+  output_node: false,
+  python_module: 'nodes',
+  deprecated: false,
+  experimental: false
+}
+
+const cloudAssetDeletionTest = test.extend({
+  page: async ({ page }, use) => {
+    outputAssetsByPage.set(page, [multiOutputAAsset, multiOutputBAsset])
+    generatedJobsByPage.set(page, [multiOutputJob])
+    await mockCloudBoot(page, {
+      features: {},
+      settings: {
+        'Comfy.Queue.QPOV2': false,
+        'Comfy.RightSidePanel.ShowErrorsTab': false,
+        'Comfy.TutorialCompleted': true,
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.VersionCompatibility.DisableWarnings': true,
+        'Comfy.VueNodes.Enabled': true
+      }
+    })
+    await mockBilling(page)
+    await page.route('**/api/devtools/set_settings', (route) =>
+      route.fulfill({ json: {} })
+    )
+    await page.route(/\/api\/assets(?:\?.*)?$/, (route) => {
+      const assets = new URL(route.request().url()).searchParams
+        .get('include_tags')
+        ?.split(',')
+        .includes('output')
+        ? (outputAssetsByPage.get(page) ?? [])
+        : []
+      return route.fulfill({
+        json: {
+          assets,
+          total: assets.length,
+          has_more: false
+        } satisfies ListAssetsResponse
+      })
+    })
+    await page.route(/\/api\/jobs(?:\?.*)?$/, (route) => {
+      const url = new URL(route.request().url())
+      const isHistory = url.searchParams
+        .get('status')
+        ?.split(',')
+        .includes('completed')
+      const jobs = isHistory ? (generatedJobsByPage.get(page) ?? []) : []
+      const limit = Number(url.searchParams.get('limit') ?? 200)
+      const offset = Number(url.searchParams.get('offset') ?? 0)
+      return route.fulfill({
+        json: {
+          jobs,
+          pagination: {
+            offset,
+            limit,
+            total: jobs.length,
+            has_more: false
+          }
+        } satisfies JobsListResponse
+      })
+    })
+    await page.route('**/api/jobs/multi-output', (route) =>
+      route.fulfill({ json: multiOutputJobDetail })
+    )
+    await page.route('**/api/jobs/multi-output/assets**', (route) => {
+      const assets: JobOutputAsset[] = (outputAssetsByPage.get(page) ?? []).map(
+        (asset, outputIndex) => ({
+          id: asset.id,
+          name: asset.hash ?? asset.name,
+          hash: asset.hash,
+          node_id: '3',
+          output_key: 'images',
+          output_index: outputIndex
+        })
+      )
+      return route.fulfill({
+        json: {
+          assets,
+          pagination: {
+            offset: 0,
+            limit: 200,
+            total: assets.length,
+            has_more: false
+          }
+        } satisfies JobAssetsResponse
+      })
+    })
+    await page.route('**/api/object_info', (route) =>
+      route.fulfill({ json: { LoadImage: loadImageNodeDef } })
+    )
+    await use(page)
+    outputAssetsByPage.delete(page)
+    generatedJobsByPage.delete(page)
   }
 })
 
@@ -308,6 +455,108 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     )
   })
 })
+
+cloudAssetDeletionTest.describe(
+  'IR-91 generated output deletion',
+  { tag: '@cloud' },
+  () => {
+    cloudAssetDeletionTest.beforeEach(async ({ page }) => {
+      await mockInputFiles(page, [])
+      await mockViewFiles(page, viewFiles)
+    })
+
+    cloudAssetDeletionTest(
+      'deletes only the selected generated output',
+      async ({ comfyPage, page }) => {
+        const deletedAssetIds: string[] = []
+        await page.route(
+          '**/api/assets/multi-output-a-asset-id',
+          async (route) => {
+            if (route.request().method().toUpperCase() !== 'DELETE') {
+              await route.fallback()
+              return
+            }
+            deletedAssetIds.push('multi-output-a-asset-id')
+            outputAssetsByPage.set(page, [multiOutputBAsset])
+            await route.fulfill({ status: 204, body: '' })
+          }
+        )
+        await page.route(
+          '**/api/assets/multi-output-b-asset-id',
+          async (route) => {
+            if (route.request().method().toUpperCase() !== 'DELETE') {
+              await route.fallback()
+              return
+            }
+            deletedAssetIds.push('multi-output-b-asset-id')
+            await route.fulfill({ status: 204, body: '' })
+          }
+        )
+
+        await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+        await comfyPage.vueNodes.waitForNodes(1)
+        const imageWidgetButton = comfyPage.vueNodes
+          .getNodeByTitle('Load Image')
+          .getByRole('button', { name: 'Select image...' })
+        await imageWidgetButton.click()
+        const imagePicker = page
+          .getByRole('dialog')
+          .filter({ has: page.getByRole('button', { name: 'All' }) })
+          .first()
+        await expect(
+          imagePicker.getByText('ComfyUI_multi-output-a.png [output]', {
+            exact: true
+          })
+        ).toBeVisible()
+        await expect(
+          imagePicker.getByText('ComfyUI_multi-output-b.png [output]', {
+            exact: true
+          })
+        ).toBeVisible()
+        await page.keyboard.press('Escape')
+        await expect(imagePicker).toBeHidden()
+
+        const tab = comfyPage.menu.assetsTab
+        await tab.open()
+        await expect(tab.getAssetCardByName('multi-output-a')).toBeVisible()
+        const historyDeleteRequests: { delete: string[] }[] = []
+        await page.route('**/api/history', async (route) => {
+          if (route.request().method().toUpperCase() !== 'POST') {
+            await route.fallback()
+            return
+          }
+          historyDeleteRequests.push(route.request().postDataJSON())
+          await route.fulfill({ json: {} })
+        })
+        await tab
+          .getAssetCardByName('multi-output-a')
+          .click({ button: 'right' })
+        await tab.contextMenuItem('Delete').click()
+        await comfyPage.confirmDialog.delete.click()
+
+        await expect
+          .poll(() => deletedAssetIds)
+          .toEqual(['multi-output-a-asset-id'])
+        await expect(tab.getAssetCardByName('multi-output-a')).toHaveCount(0)
+        await expect(tab.getAssetCardByName('multi-output-b')).toBeVisible()
+        expect(historyDeleteRequests).toEqual([])
+        await tab.dismissToasts()
+        await tab.close()
+        await imageWidgetButton.click()
+        await expect(
+          imagePicker.getByText('ComfyUI_multi-output-a.png [output]', {
+            exact: true
+          })
+        ).toHaveCount(0)
+        await expect(
+          imagePicker.getByText('ComfyUI_multi-output-b.png [output]', {
+            exact: true
+          })
+        ).toBeVisible()
+      }
+    )
+  }
+)
 
 bulkInsertionTest.describe(
   'Assets sidebar - bulk insert as nodes',

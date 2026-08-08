@@ -1,12 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as OutputAssetUtil from '@/platform/assets/utils/outputAssetUtil'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 
 const mocks = vi.hoisted(() => ({
-  resolveOutputAssetItems: vi.fn()
+  resolveOutputAssetItems: vi.fn(),
+  deletedOutputKeys: new Set<string>()
+}))
+
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({
+    isHistoryOutputDeleted: (jobId: string, outputKey: string) =>
+      mocks.deletedOutputKeys.has(`${jobId}:${outputKey}`)
+  })
 }))
 
 vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => {
@@ -51,6 +59,7 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 describe('useOutputStacks', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    mocks.deletedOutputKeys = reactive(new Set<string>())
   })
 
   it('expands stacks and exposes children as selectable assets', async () => {
@@ -201,5 +210,28 @@ describe('useOutputStacks', () => {
       parent.id,
       child.id
     ])
+  })
+
+  it('reactively removes deleted outputs from an expanded stack', async () => {
+    const parent = createAsset({ id: 'parent', name: 'parent.png' })
+    const child = createAsset({
+      id: 'child',
+      name: 'child.png',
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: 'node-1',
+        subfolder: 'outputs'
+      }
+    })
+    vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([child])
+
+    const { assetItems, toggleStack } = useOutputStacks({
+      assets: ref([parent])
+    })
+    await toggleStack(parent)
+    mocks.deletedOutputKeys.add('job-1:node-1-outputs-child.png')
+    await nextTick()
+
+    expect(assetItems.value.map((item) => item.asset.id)).toEqual([parent.id])
   })
 })

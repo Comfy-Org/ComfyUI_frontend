@@ -4,9 +4,11 @@ import type { Ref } from 'vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
+  getAssetOutputKey,
   getOutputKey,
   resolveOutputAssetItems
 } from '@/platform/assets/utils/outputAssetUtil'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 export type OutputStackListItem = {
   key: string
@@ -19,6 +21,7 @@ type UseOutputStacksOptions = {
 }
 
 export function useOutputStacks({ assets }: UseOutputStacksOptions) {
+  const assetsStore = useAssetsStore()
   const expandedStackJobIds = ref<Set<string>>(new Set())
   const stackChildrenByJobId = ref<Record<string, AssetItem[]>>({})
   const loadingStackJobIds = ref<Set<string>>(new Set())
@@ -37,7 +40,9 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
         continue
       }
 
-      const children = stackChildrenByJobId.value[jobId] ?? []
+      const children = (stackChildrenByJobId.value[jobId] ?? []).filter(
+        (child) => !isDeletedOutput(jobId, child)
+      )
       for (const child of children) {
         items.push({
           key: `asset-${child.id}`,
@@ -57,6 +62,10 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
   function getStackJobId(asset: AssetItem): string | null {
     const metadata = getOutputAssetMetadata(asset.user_metadata)
     return metadata?.jobId ?? null
+  }
+
+  function isDeletedOutput(jobId: string, asset: AssetItem): boolean {
+    return assetsStore.isHistoryOutputDeleted(jobId, getAssetOutputKey(asset))
   }
 
   function isStackExpanded(asset: AssetItem): boolean {
@@ -119,10 +128,11 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
       }) ?? undefined
 
     try {
-      return await resolveOutputAssetItems(metadata, {
+      const children = await resolveOutputAssetItems(metadata, {
         createdAt: asset.created_at,
         excludeOutputKey
       })
+      return children.filter((child) => !isDeletedOutput(metadata.jobId, child))
     } catch (error) {
       console.error('Failed to resolve stack children:', error)
       return []

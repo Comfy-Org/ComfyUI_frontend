@@ -1,10 +1,12 @@
 import * as fc from 'fast-check'
-import { describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
+  getAssetOutputKey: (asset: AssetItem) => asset.name,
   getOutputKey: () => null,
   resolveOutputAssetItems: () => Promise.resolve([])
 }))
@@ -44,6 +46,10 @@ function arbAssetList(
 }
 
 describe('useOutputStacks properties', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('collapsed stacks: item count equals input asset count', () => {
     fc.assert(
       fc.property(arbAssetList(0, 30), (assets) => {

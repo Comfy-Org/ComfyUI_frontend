@@ -851,16 +851,19 @@ function createAssetService() {
    * Deletes an asset by ID
    * Only available in cloud environment
    *
+   * A 404 resolves successfully because the asset is already absent; successful
+   * resolution does not prove that the supplied ID previously existed.
+   *
    * @param id - The asset ID (UUID)
    * @returns Promise<void>
-   * @throws Error if deletion fails
+   * @throws Error if the server returns a non-404 failure status
    */
   async function deleteAsset(id: AssetId): Promise<void> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'DELETE'
     })
 
-    if (!res.ok) {
+    if (!res.ok && res.status !== 404) {
       throw new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )

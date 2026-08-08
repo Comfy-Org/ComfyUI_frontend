@@ -434,6 +434,14 @@ describe(assetService.deleteAsset, () => {
       expect.objectContaining({ method: 'DELETE' })
     )
   })
+
+  it('treats an already deleted asset as success', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse(null, { ok: false, status: 404 })
+    )
+
+    await expect(assetService.deleteAsset('asset-1')).resolves.toBeUndefined()
+  })
 })
 
 describe(assetService.getAssetModels, () => {

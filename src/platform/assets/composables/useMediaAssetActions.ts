@@ -28,6 +28,8 @@ import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetV
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import {
+  getAssetOutputKey,
+  findJobOutputAsset,
   getAssetOutputCount,
   resolveOutputAssetItems
 } from '../utils/outputAssetUtil'
@@ -94,24 +96,27 @@ export function useMediaAssetActions() {
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
 
-  /**
-   * Internal helper to perform the API deletion for a single asset
-   * Handles both output assets (via history API) and input assets (via asset service)
-   * @throws Error if deletion fails or is not allowed
-   */
   const deleteAssetApi = async (
     asset: AssetItem,
     assetType: string
   ): Promise<void> => {
-    // Temp files (e.g. preview-node outputs) are history-backed outputs that
-    // happen to live in the temp dir, so they delete via the history API too.
     if (assetType === 'output' || assetType === 'temp') {
-      const jobId =
-        getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
-      if (!jobId) {
-        throw new Error('Unable to extract job ID from asset')
+      if (!isCloud) {
+        const jobId =
+          getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
+        await api.deleteItem('history', jobId)
+        return
       }
-      await api.deleteItem('history', jobId)
+
+      const metadata = getOutputAssetMetadata(asset.user_metadata)
+      if (!metadata) {
+        await assetService.deleteAsset(asset.id)
+        return
+      }
+
+      const resolvedAsset = await findJobOutputAsset(metadata, asset.name)
+      if (!resolvedAsset) throw new Error(t('mediaAsset.failedToDeleteAsset'))
+      await assetService.deleteAsset(resolvedAsset.id)
     } else {
       // Input assets can only be deleted in cloud environment
       if (!isCloud) {
@@ -693,12 +698,15 @@ export function useMediaAssetActions() {
             )
 
             try {
-              // Delete all assets using Promise.allSettled to track individual results
-              const results = await Promise.allSettled(
-                assetArray.map((asset) =>
-                  deleteAssetApi(asset, getAssetType(asset))
-                )
-              )
+              const results: PromiseSettledResult<void>[] = []
+              for (const asset of assetArray) {
+                try {
+                  await deleteAssetApi(asset, getAssetType(asset))
+                  results.push({ status: 'fulfilled', value: undefined })
+                } catch (reason) {
+                  results.push({ status: 'rejected', reason })
+                }
+              }
 
               // Count successes and failures
               const succeeded = results.filter(
@@ -707,24 +715,91 @@ export function useMediaAssetActions() {
               const failed = results.filter((r) => r.status === 'rejected')
 
               // Log failed deletions for debugging
-              failed.forEach((result, index) => {
-                console.warn(
-                  `Failed to delete asset ${assetArray[index].name}:`,
-                  result.reason
-                )
+              results.forEach((result, index) => {
+                if (result.status === 'rejected') {
+                  console.warn(
+                    `Failed to delete asset ${assetArray[index].name}:`,
+                    result.reason
+                  )
+                }
               })
 
               // Update stores after deletions
-              const hasOutputAssets = assetArray.some((a) => {
-                const type = getAssetType(a)
+              const hasOutputAssets = assetArray.some((asset, index) => {
+                if (results[index].status !== 'fulfilled') return false
+                const type = getAssetType(asset)
                 return type === 'output' || type === 'temp'
               })
+              const deletedOutputKeysByJob = new Map<string, Set<string>>()
+              assetArray.forEach((asset, index) => {
+                if (results[index].status !== 'fulfilled') return
+                const type = getAssetType(asset)
+                if (type !== 'output' && type !== 'temp') return
+                const metadata = getOutputAssetMetadata(asset.user_metadata)
+                if (!metadata) return
+                const outputKey = getAssetOutputKey(asset)
+                const deletedKeys =
+                  deletedOutputKeysByJob.get(metadata.jobId) ?? new Set()
+                deletedKeys.add(outputKey)
+                deletedOutputKeysByJob.set(metadata.jobId, deletedKeys)
+              })
               const hasInputAssets = assetArray.some(
-                (a) => getAssetType(a) === 'input'
+                (asset, index) =>
+                  results[index].status === 'fulfilled' &&
+                  getAssetType(asset) === 'input'
               )
 
               if (hasOutputAssets) {
                 await assetsStore.updateHistory()
+                await assetsStore.updateFlatOutputs()
+                for (const [jobId, deletedKeys] of deletedOutputKeysByJob) {
+                  try {
+                    assetsStore.markHistoryOutputsDeleted(jobId, deletedKeys)
+                    const historyAsset = assetsStore.historyAssets.find(
+                      (asset) => asset.id === jobId
+                    )
+                    const metadata = getOutputAssetMetadata(
+                      historyAsset?.user_metadata
+                    )
+                    if (!historyAsset || !metadata) continue
+
+                    const outputs = await resolveOutputAssetItems(metadata, {
+                      createdAt: historyAsset.created_at
+                    })
+                    if (
+                      typeof metadata.outputCount === 'number' &&
+                      outputs.length < metadata.outputCount
+                    ) {
+                      continue
+                    }
+
+                    const survivingOutputs = outputs.filter((output) => {
+                      const outputKey = getAssetOutputKey(output)
+                      return !assetsStore.isHistoryOutputDeleted(
+                        jobId,
+                        outputKey
+                      )
+                    })
+                    const replacement = survivingOutputs[0]
+                    assetsStore.replaceHistoryAsset(
+                      jobId,
+                      replacement
+                        ? {
+                            ...replacement,
+                            user_metadata: {
+                              ...replacement.user_metadata,
+                              outputCount: survivingOutputs.length
+                            }
+                          }
+                        : undefined
+                    )
+                  } catch (error) {
+                    console.error(
+                      `Failed to reconcile history for job ${jobId}:`,
+                      error
+                    )
+                  }
+                }
               }
               if (hasInputAssets) {
                 await assetsStore.updateInputs()

@@ -1,7 +1,9 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { api } from '@/scripts/api'
 import {
   getJobAssets,
   getJobDetail,
@@ -64,6 +66,17 @@ export function getOutputKey({
   }
 
   return `${nodeId}-${subfolder}-${filename}`
+}
+
+export function getAssetOutputKey(asset: AssetItem): string {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  return (
+    getOutputKey({
+      nodeId: metadata?.nodeId,
+      subfolder: metadata?.subfolder,
+      filename: asset.name
+    }) ?? asset.name
+  )
 }
 
 /**
@@ -152,15 +165,32 @@ function overlayJobAsset(item: AssetItem, asset: JobOutputAsset): AssetItem {
   }
 }
 
-/**
- * Composite `(filename, node id)` key. The node id is stringified because the
- * output side carries a `SerializedNodeId` (`string | number`) while the
- * endpoint always sends a string, and `9` must pair with `'9'`.
- */
-function nodeScopedName(name: string, nodeId: unknown): string | null {
+function normalizedNodeId(nodeId: unknown): string | null {
   return typeof nodeId === 'string' || typeof nodeId === 'number'
-    ? JSON.stringify([name, String(nodeId)])
+    ? String(nodeId)
     : null
+}
+
+function nodeScopedName(name: string, nodeId: unknown): string | null {
+  const normalized = normalizedNodeId(nodeId)
+  return normalized === null ? null : JSON.stringify([name, normalized])
+}
+
+export async function findJobOutputAsset(
+  metadata: OutputAssetMetadata,
+  name: string
+): Promise<JobOutputAsset | undefined> {
+  const { assets, complete } = await api.getJobAssets(metadata.jobId)
+  if (!complete) return undefined
+
+  const nameMatches = assets.filter((asset) => asset.name === name)
+  if (nameMatches.length === 1) return nameMatches[0]
+
+  const expectedNodeId = normalizedNodeId(metadata.nodeId)
+  const nodeScopedMatches = nameMatches.filter(
+    (asset) => normalizedNodeId(asset.node_id) === expectedNodeId
+  )
+  return nodeScopedMatches.length === 1 ? nodeScopedMatches[0] : undefined
 }
 
 /**
