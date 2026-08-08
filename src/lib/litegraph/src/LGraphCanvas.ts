@@ -7091,7 +7091,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 iSlotConn,
                 node,
                 fromSlotType,
-                { afterRerouteId }
+                {
+                  afterRerouteId
+                }
               )
               if (!slot) console.warn('Failed to make new connection.')
               // }
@@ -7919,7 +7921,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     const dialog = this.createDialog(
-      `<span class='name'>${info.label || property}</span>${input_html}<button>OK</button>`,
+      `<span class='name'>${LGraphCanvas.decodeHTML(toString(info.label || property))}</span>${input_html}<button>OK</button>`,
       options
     )
 
