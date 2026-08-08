@@ -15,7 +15,6 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type {
@@ -56,7 +55,6 @@ export function useWorkflowActionsMenu(
   const bookmarkStore = useWorkflowBookmarkStore()
   const commandStore = useCommandStore()
   const subgraphStore = useSubgraphStore()
-  const menuItemStore = useMenuItemStore()
   const { flags } = useFeatureFlags()
   const appModeStore = useAppModeStore()
   const { enterBuilder, pruneLinearData } = appModeStore
@@ -104,8 +102,7 @@ export function useWorkflowActionsMenu(
     const workflowMode =
       workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
     const isLinearMode = workflowMode === 'app'
-    const showAppModeItems =
-      isRoot && (menuItemStore.hasSeenLinear || flags.linearToggleEnabled)
+    const showAppModeItems = isRoot
     const isBookmarked = bookmarkStore.isBookmarked(workflow?.path ?? '')
 
     const toggleLinear = async () => {
@@ -227,7 +224,7 @@ export function useWorkflowActionsMenu(
       command: toggleLinear,
       visible: showAppModeItems || isLinearMode,
       prependSeparator: true,
-      isNew: !isLinearMode,
+      isNew: true,
       badgeSeverity: 'secondary'
     })
 
