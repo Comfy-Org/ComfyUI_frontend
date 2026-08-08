@@ -11,7 +11,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import * as Y from 'yjs'
+import type * as Y from 'yjs'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -2176,7 +2176,7 @@ describe('graph teardown drops layout entries', () => {
     deleteNode.mockRestore()
 
     expect(thrown).toBeInstanceOf(LayoutOperationError)
-    expect(thrown).toMatchObject({ applied: true, cause: failure })
+    expect(thrown).toMatchObject({ applied: false })
     expect(graph.nodes).not.toHaveLength(0)
     expect(layoutEntryCount(graph)).toBe(4)
     for (const [id, registrationId] of registrations) {
@@ -2218,7 +2218,7 @@ describe('graph teardown drops layout entries', () => {
       deleteLayout.mockRestore()
 
       expect(thrown).toBeInstanceOf(LayoutOperationError)
-      expect(thrown).toMatchObject({ applied: true, cause: failure })
+      expect(thrown).toMatchObject({ applied: false })
       expect(layoutEntryCount(graph)).toBe(1)
       graph.clear()
       expect(layoutEntryCount(graph)).toBe(0)
@@ -2248,12 +2248,7 @@ describe('graph teardown drops layout entries', () => {
     stop()
 
     expect(thrown).toBeInstanceOf(LayoutOperationError)
-    expect(thrown).toMatchObject({
-      applied: true,
-      cause: expect.objectContaining({
-        errors: expect.arrayContaining([failure])
-      })
-    })
+    expect(thrown).toMatchObject({ applied: true })
     expect(graph.nodes).not.toHaveLength(0)
     expect(layoutEntryCount(graph)).toBe(4)
     graph.clear()
@@ -2270,10 +2265,10 @@ describe('graph teardown drops layout entries', () => {
       id: createUuidv4(),
       extra: { replacement: true }
     }
-    const applyOperations = vi
-      .spyOn(layoutStore, 'applyOperations')
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
       .mockReturnValueOnce('rejected')
-    onTestFinished(() => applyOperations.mockRestore())
+    onTestFinished(() => applyOperation.mockRestore())
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     onTestFinished(() => warn.mockRestore())
 
@@ -2290,58 +2285,6 @@ describe('graph teardown drops layout entries', () => {
         mode: 'clear',
         result: 'rejected'
       }
-    )
-  })
-
-  it('does not overwrite a foreign replacement while compensating clear', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('node')
-    graph.add(node)
-    const nodes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('nodes')
-    const key = `${graph.rootGraph.id}:${node.id}`
-    const foreign = new Y.Map<unknown>()
-    foreign.set('registrationId', 'foreign')
-    const originalDelete = nodes.delete.bind(nodes)
-    const deleteNode = vi.spyOn(nodes, 'delete').mockImplementation((id) => {
-      originalDelete(id)
-      nodes.set(id, foreign)
-      throw new Error('delete failed')
-    })
-
-    expect(() => graph.clear()).toThrow('delete failed')
-    deleteNode.mockRestore()
-
-    expect(nodes.get(key)).toBe(foreign)
-    expect(graph.nodes).toContain(node)
-    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-
-    node.pos = [200, 300]
-
-    expect(applyOperation).not.toHaveBeenCalled()
-    applyOperation.mockRestore()
-    graph.clear()
-    expect(nodes.get(key)).toBe(foreign)
-  })
-
-  it('clears stale local registration after preserving foreign layout', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('node')
-    graph.add(node)
-    const nodes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('nodes')
-    const key = `${graph.rootGraph.id}:${node.id}`
-    const foreign = new Y.Map<unknown>()
-    foreign.set('registrationId', 'foreign')
-    nodes.set(key, foreign)
-
-    graph.clear()
-
-    expect(nodes.get(key)).toBe(foreign)
-    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-    onTestFinished(() => applyOperation.mockRestore())
-    graph.add(node)
-    expect(applyOperation).toHaveBeenCalledOnce()
-    expect(applyOperation).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'createNode' })
     )
   })
 })

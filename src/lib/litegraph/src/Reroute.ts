@@ -80,7 +80,6 @@ export class Reroute
 
   /** The graph this reroute is registered with in {@link useRerouteStore}, if any. */
   _graphId?: UUID
-  _attachedGraph?: WeakRef<LinkNetwork>
 
   public get parentId(): RerouteId | undefined {
     return this._chain.parentId
@@ -857,11 +856,12 @@ export function anchorRerouteChain(network: LinkNetwork, link: LLink): void {
  */
 export function registerRerouteChain(
   graph: Pick<LGraph, 'rootGraph'>,
-  reroute: Reroute
+  reroute: Reroute,
+  adoptExisting = false
 ): void {
   const graphId = graph.rootGraph.id
   const registered = useRerouteStore().registerReroute(graphId, reroute._chain)
-  if (toRaw(registered) !== toRaw(reroute._chain)) {
+  if (!adoptExisting && toRaw(registered) !== toRaw(reroute._chain)) {
     throw new Error(
       `Reroute ${reroute.id} is already owned in root graph ${graphId}`
     )
@@ -879,13 +879,12 @@ export function unregisterRerouteChain(reroute: Reroute): void {
   if (!reroute._graphId) return
   useRerouteStore().deleteReroute(reroute._graphId, reroute._chain)
   reroute._graphId = undefined
-  reroute._attachedGraph = undefined
 }
 
 /**
  * Unregisters every reroute a graph owns. Used when a graph's reroutes
- * leave the store without a whole-bucket wipe: subgraph-definition removal,
- * and clearing a graph that shares its bucket with other graphs.
+ * leave the store without a whole-bucket wipe: subgraph-definition removal
+ * and clearing an unconfigured graph.
  * @param graph The graph whose reroutes should be unregistered
  */
 export function unregisterAllRerouteChains(

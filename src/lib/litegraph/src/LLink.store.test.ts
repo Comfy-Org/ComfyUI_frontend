@@ -96,6 +96,25 @@ describe('LLink ↔ linkStore integration', () => {
     expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
   })
 
+  it('adopts persisted topology during configuration', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in', 'INT')
+    graph.add(a)
+    graph.add(b)
+    const persisted = a.connect(0, b, 0)!
+    const materialized = new LLink(persisted.id, 'INT', a.id, 0, b.id, 0)
+
+    registerLinkTopology(graph, materialized, true)
+    materialized.parentId = toRerouteId(7)
+
+    expect(useLinkStore().getInputSlotLink(graph.id, b.id, 0)?.parentId).toBe(
+      toRerouteId(7)
+    )
+  })
+
   it('unregisters a subgraph definition’s links when its last instance is removed', () => {
     const subgraph = createTestSubgraph({ nodeCount: 2 })
     const [first, second] = subgraph.nodes

@@ -226,6 +226,17 @@ function isEntityAttached(
   return true
 }
 
+function assertRerouteIsAvailable(graph: LGraph, rerouteId: RerouteId): void {
+  const owner = [graph.rootGraph, ...graph.subgraphs.values()].find(
+    (candidate) => candidate !== graph && candidate.reroutes.has(rerouteId)
+  )
+  if (owner) {
+    throw new Error(
+      `Reroute ${rerouteId} is already owned in root graph ${graph.rootGraph.id}`
+    )
+  }
+}
+
 export function adoptNodeReplacement(
   graph: LGraph,
   node: LGraphNode,
@@ -575,35 +586,33 @@ export class LGraph
     this.clearWithResult()
   }
 
-  private clearWithResult(): LayoutOperationResult {
+  private clearWithResult(
+    scope: 'root-partition' | 'owned-entities' = 'root-partition'
+  ): LayoutOperationResult {
     const graphId = this.id
-    const layoutResult = unregisterAllGraphLayout(this)
+    const clearsRootPartition =
+      scope === 'root-partition' && this.isRootGraph && graphId !== zeroUuid
+    const layoutResult = clearsRootPartition
+      ? layoutStore.clearGraph(graphId)
+      : unregisterAllGraphLayout(this)
     if (layoutResult === 'rejected') return 'rejected'
     this.stop()
     this.status = LGraph.STATUS_STOPPED
-    if (this.isRootGraph && graphId !== zeroUuid) {
+    const graphsToClear = this.isRootGraph
+      ? [this, ...this._subgraphs.values()]
+      : [this]
+    if (clearsRootPartition) {
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(graphId)
       useNodeDataStore().clearGraph(graphId)
-    } else {
-      // Subgraphs and unconfigured (zero-uuid) graphs share their store
-      // bucket with other graphs, so unregister each entity individually.
-      unregisterAllLinkTopologies(this)
-      unregisterAllNodeStates(this)
+      useRerouteStore().clearGraph(graphId)
+      unregisterAllGraphLayout(this)
     }
-    unregisterAllRerouteChains(this)
-    if (this.isRootGraph) {
-      for (const subgraph of this._subgraphs.values()) {
-        unregisterAllRerouteChains(subgraph)
-      }
-    }
-    const pendingGraphs: LGraph[] = [this]
-    const detachedGraphs = new Set<LGraph>()
-    for (const graph of pendingGraphs) {
-      if (detachedGraphs.has(graph)) continue
-      detachedGraphs.add(graph)
-      if (this.isRootGraph) pendingGraphs.push(...graph._subgraphs.values())
+    for (const graph of graphsToClear) {
+      unregisterAllLinkTopologies(graph)
+      unregisterAllNodeStates(graph)
+      unregisterAllRerouteChains(graph)
       for (const group of graph._groups) {
         if (group.graph === graph) group.graph = undefined
       }
@@ -1713,12 +1722,12 @@ export class LGraph
     this.canvasAction((c) => c.setDirty(fg, bg))
   }
 
-  addFloatingLink(link: LLink): LLink {
+  addFloatingLink(link: LLink, adoptExisting = false): LLink {
     if (link.id === -1) {
       link.id = toLinkId(++this._lastFloatingLinkId)
     }
     this.floatingLinksInternal.set(link.id, link)
-    registerLinkTopology(this, link)
+    registerLinkTopology(this, link, adoptExisting)
     return link
   }
 
@@ -1741,9 +1750,9 @@ export class LGraph
    * with the link store. The single entry point for populating {@link _links};
    * routing every add through here keeps the store from silently desyncing.
    */
-  _addLink(link: LLink): void {
+  _addLink(link: LLink, adoptExisting = false): void {
     this._links.set(link.id, link)
-    registerLinkTopology(this, link)
+    registerLinkTopology(this, link, adoptExisting)
   }
 
   /**
@@ -1794,16 +1803,11 @@ export class LGraph
         `Reroute ${reroute.id} may only attach to its constructor graph`
       )
     }
-    const attachedGraph = reroute._attachedGraph?.deref()
-    if (attachedGraph && attachedGraph !== this) {
-      throw new Error(
-        `Reroute ${reroute.id} is already attached to another graph`
-      )
-    }
     const existing = this.reroutesInternal.get(reroute.id)
     if (existing && existing !== reroute) {
       throw new Error(`Reroute ${reroute.id} is already owned by this graph`)
     }
+    assertRerouteIsAvailable(this, reroute.id)
     if (existing) {
       if (adoptExisting) {
         const result = materializeRerouteLayout(this, reroute)
@@ -1815,7 +1819,7 @@ export class LGraph
     }
 
     const position = { x: reroute.pos[0], y: reroute.pos[1] }
-    registerRerouteChain(this, reroute)
+    registerRerouteChain(this, reroute, adoptExisting)
     let registrationResult: LayoutOperationResult
     try {
       registrationResult = attachRerouteLayout(this, reroute, position)
@@ -1831,7 +1835,6 @@ export class LGraph
       throw new Error(`Reroute layout registration ${registrationResult}`)
     }
     this.reroutesInternal.set(reroute.id, reroute)
-    reroute._attachedGraph = new WeakRef(this)
   }
 
   /**
@@ -2822,6 +2825,11 @@ export class LGraph
       } else {
         data = { ...data, reroutes: rootReroutes }
       }
+      if (keepsOldState || !this.isRootGraph) {
+        for (const { id } of rootReroutes ?? []) {
+          assertRerouteIsAvailable(this, toRerouteId(id))
+        }
+      }
 
       const temporaryState = { ...this.state }
       let subgraphs = data.definitions?.subgraphs
@@ -2853,51 +2861,14 @@ export class LGraph
         }
         subgraphs = clonedSubgraphs
       }
-      const graphs = [
-        {
-          graph: this,
-          reroutes: data.version === 0.4 ? data.extra?.reroutes : data.reroutes
-        },
-        ...(data.definitions?.subgraphs ?? []).map((subgraph) => ({
-          graph: this.subgraphs.get(subgraph.id),
-          reroutes: subgraph.reroutes
-        }))
-      ]
-      if (targetGraphId && targetGraphId !== zeroUuid) {
-        const store = useRerouteStore()
-        const replaceableOwners = keepsOldState
-          ? undefined
-          : new Set(
-              [
-                this,
-                ...(this.isRootGraph ? this.subgraphs.values() : [])
-              ].flatMap((graph) =>
-                [...graph.reroutes.values()].map((reroute) =>
-                  toRaw(reroute._chain)
-                )
-              )
-            )
-        for (const { graph, reroutes } of graphs) {
-          for (const { id } of reroutes ?? []) {
-            const rerouteId = toRerouteId(id)
-            const owner = store.getReroute(targetGraphId, rerouteId)
-            if (
-              owner &&
-              owner !== graph?.reroutes.get(rerouteId)?._chain &&
-              !replaceableOwners?.has(toRaw(owner))
-            ) {
-              throw new Error(
-                `Reroute ${rerouteId} is already owned in root graph ${targetGraphId}`
-              )
-            }
-          }
-        }
-      }
-
       // TODO: Finish typing configure()
       if (!data) return
+      const replacesRootPartition =
+        options.clearGraph && this.isRootGraph && targetGraphId !== this.id
       const layoutResult = options.clearGraph
-        ? this.clearWithResult()
+        ? this.clearWithResult(
+            replacesRootPartition ? 'root-partition' : 'owned-entities'
+          )
         : unregisterAllGraphLayout(this)
       if (layoutResult === 'rejected') {
         console.warn('[LGraph] Configuration teardown rejected', {
@@ -2920,7 +2891,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.createFromArray(linkData)
-            this._addLink(link)
+            this._addLink(link, true)
           }
         }
         // #region `extra` embeds for v0.4
@@ -2961,7 +2932,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            this._addLink(link)
+            this._addLink(link, true)
           }
         }
 
@@ -3093,7 +3064,7 @@ export class LGraph
       if (Array.isArray(data.floatingLinks)) {
         for (const linkData of data.floatingLinks) {
           const floatingLink = LLink.create(linkData)
-          this.addFloatingLink(floatingLink)
+          this.addFloatingLink(floatingLink, true)
 
           if (floatingLink.id > this._lastFloatingLinkId)
             this._lastFloatingLinkId = floatingLink.id

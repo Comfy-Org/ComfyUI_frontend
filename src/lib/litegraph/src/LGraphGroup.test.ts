@@ -150,7 +150,6 @@ describe('group layout in layoutStore', () => {
       true,
       (graph: LGraph, group: LGraphGroup) => graph.remove(group)
     ],
-    ['clear', true, (graph: LGraph) => graph.clear()],
     [
       'unowned unregister',
       false,

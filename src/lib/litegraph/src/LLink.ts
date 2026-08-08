@@ -619,11 +619,15 @@ export function slotFloatingLinks(
  */
 export function registerLinkTopology(
   graph: Pick<LGraph, 'rootGraph'>,
-  link: LLink
+  link: LLink,
+  adoptExisting = false
 ): void {
   if (link.id === toLinkId(-1)) return // transient toFloating clone
   const graphId = graph.rootGraph.id
-  const registered = useLinkStore().registerLink(graphId, link._state)
+  const store = useLinkStore()
+  const registered =
+    (adoptExisting ? store.getLink(graphId, link.id) : undefined) ??
+    store.registerLink(graphId, link._state)
   if (registered) {
     link._state = registered
     link._graphId = graphId

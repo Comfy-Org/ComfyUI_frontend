@@ -1082,15 +1082,27 @@ class LayoutStore {
   }
 
   /** Drops entity layout owned by a root graph and its subgraph definitions. */
-  clearGraph(rootGraphId: UUID): void {
-    this.applyOperation({
-      type: 'clearGraph',
-      entity: 'graph',
-      graphId: rootGraphId,
-      timestamp: Date.now(),
-      source: this.currentSource,
-      actor: this.currentActor
-    })
+  clearGraph(rootGraphId: UUID): LayoutOperationResult {
+    const undoManager = new Y.UndoManager(
+      [this.ynodes, this.ygroups, this.yreroutes],
+      { trackedOrigins: new Set([this.currentActor]) }
+    )
+    try {
+      return this.applyOperation({
+        actor: this.currentActor,
+        graphId: rootGraphId,
+        source: this.currentSource,
+        timestamp: Date.now(),
+        type: 'clearGraph',
+        entity: 'graph'
+      })
+    } catch (error) {
+      undoManager.undo()
+      throw error
+    } finally {
+      undoManager.clear()
+      undoManager.destroy()
+    }
   }
 
   /** Test-only full reset; attached graph entities become desynchronized. */
