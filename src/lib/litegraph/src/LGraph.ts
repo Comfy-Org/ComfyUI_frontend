@@ -589,6 +589,11 @@ export class LGraph
   private clearWithResult(
     scope: 'root-partition' | 'owned-entities' = 'root-partition'
   ): LayoutOperationResult {
+    if (!layoutStore.acceptsOperations) return 'rejected'
+    if (this._nodes) {
+      for (const node of this._nodes) fireNodeRemovalLifecycle(node)
+    }
+
     const graphId = this.id
     const clearsRootPartition =
       scope === 'root-partition' && this.isRootGraph && graphId !== zeroUuid
@@ -607,7 +612,6 @@ export class LGraph
       useLinkStore().clearGraph(graphId)
       useNodeDataStore().clearGraph(graphId)
       useRerouteStore().clearGraph(graphId)
-      unregisterAllGraphLayout(this)
     }
     for (const graph of graphsToClear) {
       unregisterAllLinkTopologies(graph)
@@ -632,13 +636,6 @@ export class LGraph
     // used to detect changes
     this._version = -1
     this._subgraphs.clear()
-
-    // safe clear
-    if (this._nodes) {
-      for (const _node of this._nodes) {
-        fireNodeRemovalLifecycle(_node)
-      }
-    }
 
     // nodes
     this._nodes = []
@@ -1268,14 +1265,46 @@ export class LGraph
 
     const attemptedNodeId = node.id
     let registrationResult: LayoutOperationResult
+    let layoutAttached = false
     try {
-      registrationResult = attachNodeLayout(
-        this,
-        node,
-        entitiesAdoptingLayout.has(node)
-      )
+      registrationResult = layoutStore.withDeferredNotifications(() => {
+        const result = attachNodeLayout(
+          this,
+          node,
+          entitiesAdoptingLayout.has(node)
+        )
+        if (result !== 'applied') return result
+        layoutAttached = true
+
+        node.graph = this
+        registerNodeState(this, node)
+
+        if (node.widgets) {
+          const widgetValueStore = useWidgetValueStore()
+          for (const widget of node.widgets) {
+            if (isNodeBindable(widget)) widget.setNodeId(node.id)
+          }
+          widgetValueStore.setNodeWidgetOrder(
+            this.rootGraph.id,
+            node.id,
+            getWidgetIds(node.widgets)
+          )
+        }
+
+        this._nodes.push(node)
+        this._nodes_by_id[node.id] = node
+
+        node.onAdded?.(this)
+
+        if (this.config.align_to_grid) node.alignToGrid()
+        if (!shouldSkipComputeOrder) this.updateExecutionOrder()
+
+        this.onNodeAdded?.(node)
+        this.events.dispatch('node:added', { node })
+        return result
+      })
     } catch (error) {
-      restoreNodeIdentity()
+      if (!layoutAttached) restoreNodeIdentity()
       throw error
     }
     if (registrationResult !== 'applied') {
@@ -1290,38 +1319,8 @@ export class LGraph
       return
     }
 
-    node.graph = this
+    if (node.graph !== this || this._nodes_by_id[node.id] !== node) return node
 
-    // Adopt the node-data store proxy now that the node has a valid id and graph.
-    registerNodeState(this, node)
-
-    // Register all widgets with the WidgetValueStore now that node has a
-    // valid ID and graph reference.
-    if (node.widgets) {
-      const widgetValueStore = useWidgetValueStore()
-      for (const widget of node.widgets) {
-        if (isNodeBindable(widget)) widget.setNodeId(node.id)
-      }
-      widgetValueStore.setNodeWidgetOrder(
-        this.rootGraph.id,
-        node.id,
-        getWidgetIds(node.widgets)
-      )
-    }
-
-    this._nodes.push(node)
-    this._nodes_by_id[node.id] = node
-
-    node.onAdded?.(this)
-
-    if (this.config.align_to_grid) node.alignToGrid()
-
-    if (!shouldSkipComputeOrder) this.updateExecutionOrder()
-
-    this.onNodeAdded?.(node)
-    this.events.dispatch('node:added', { node })
-
-    // Must follow onNodeAdded: its microtask-deferred hooks must run before the Vue flush this write schedules
     this.incrementVersion()
 
     this.setDirtyCanvas(true)

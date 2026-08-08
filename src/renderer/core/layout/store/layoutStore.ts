@@ -151,7 +151,11 @@ class LayoutStore {
     (graphIds: ReadonlySet<UUID>) => void
   >()
   private pendingGeometryGraphIds = new Set<UUID>()
+  private pendingNodeTriggerKeys = new Set<ScopedLayoutKey>()
   private isApplyingOperation = false
+  private notificationDeferralDepth = 0
+  private isFlushingDeferredNotifications = false
+  private deferredChanges: LayoutChange[] = []
 
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<ScopedLayoutKey, Ref<NodeLayout | null>>()
@@ -206,11 +210,9 @@ class LayoutStore {
 
     this.ydoc.on('afterTransaction', () => {
       if (this.pendingGeometryGraphIds.size === 0) return
+      if (this.notificationsDeferred) return
 
-      const graphIds = new Set(this.pendingGeometryGraphIds)
-      this.pendingGeometryGraphIds.clear()
-      this.version.value++
-      this.notifyGeometryChange(graphIds)
+      this.flushGeometryNotifications()
     })
 
     this.ynodes.observeDeep((events) => {
@@ -232,7 +234,12 @@ class LayoutStore {
             this.highestZIndex = Math.max(this.highestZIndex, zIndex)
           }
         }
-        this.nodeTriggers.get(toScopedLayoutKey(key))?.()
+        const scopedKey = toScopedLayoutKey(key)
+        if (this.notificationsDeferred) {
+          this.pendingNodeTriggerKeys.add(scopedKey)
+        } else {
+          this.nodeTriggers.get(scopedKey)?.()
+        }
       }
       for (const key of nodeKeys) {
         this.pendingGeometryGraphIds.add(parseLayoutKey(key).graphId)
@@ -832,6 +839,60 @@ class LayoutStore {
     return this.applySnapshots(snapshots)
   }
 
+  get acceptsOperations(): boolean {
+    return !this.isApplyingOperation
+  }
+
+  private get notificationsDeferred(): boolean {
+    return (
+      this.notificationDeferralDepth > 0 || this.isFlushingDeferredNotifications
+    )
+  }
+
+  withDeferredNotifications<T>(callback: () => T): T {
+    this.notificationDeferralDepth += 1
+    try {
+      return callback()
+    } finally {
+      this.notificationDeferralDepth -= 1
+      if (this.notificationDeferralDepth === 0)
+        this.flushDeferredNotifications()
+    }
+  }
+
+  private flushDeferredNotifications(): void {
+    if (this.isFlushingDeferredNotifications) return
+    this.isFlushingDeferredNotifications = true
+    try {
+      while (
+        this.pendingNodeTriggerKeys.size > 0 ||
+        this.pendingGeometryGraphIds.size > 0 ||
+        this.deferredChanges.length > 0
+      ) {
+        const nodeKeys = [...this.pendingNodeTriggerKeys]
+        this.pendingNodeTriggerKeys.clear()
+        for (const key of nodeKeys) {
+          try {
+            this.nodeTriggers.get(key)?.()
+          } catch (error) {
+            console.error('Error in deferred node trigger:', error)
+          }
+        }
+
+        this.flushGeometryNotifications()
+
+        const changes = this.deferredChanges
+        this.deferredChanges = []
+        for (const change of changes) {
+          this.notifyNodeChange(change)
+          this.queueGlobalChange(change)
+        }
+      }
+    } finally {
+      this.isFlushingDeferredNotifications = false
+    }
+  }
+
   private applySnapshots(
     snapshots: LayoutOperation[],
     firstPrepared?: { change: LayoutChange; mutation: PreparedMutation }
@@ -1000,6 +1061,11 @@ class LayoutStore {
    * Finalize operation after transaction
    */
   private finalizeOperation(change: LayoutChange): void {
+    if (this.notificationsDeferred) {
+      this.deferredChanges.push(change)
+      return
+    }
+
     // Keep node-scoped listeners synchronous for immediate local feedback,
     // but queue global listener fan-out to avoid blocking hot paths.
     this.notifyNodeChange(change)
@@ -1641,6 +1707,14 @@ class LayoutStore {
         console.error('Error in geometry change listener:', error)
       }
     })
+  }
+
+  private flushGeometryNotifications(): void {
+    if (this.pendingGeometryGraphIds.size === 0) return
+    const graphIds = new Set(this.pendingGeometryGraphIds)
+    this.pendingGeometryGraphIds.clear()
+    this.version.value++
+    this.notifyGeometryChange(graphIds)
   }
 
   getRegistrationId(

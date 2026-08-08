@@ -2,6 +2,7 @@ import { toGroupId } from '@/types/groupId'
 import { fromAny } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { nextTick, watch } from 'vue'
 import {
   afterEach,
   beforeEach,
@@ -1639,6 +1640,94 @@ describe('node layout registration', () => {
     ).toBeNull()
   })
 
+  it('queues deferred node:added work before the layout-driven Vue flush', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const order: string[] = []
+    const stop = watch(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, toNodeId(1)),
+      () => order.push('layout')
+    )
+    onTestFinished(stop)
+
+    graph.events.addEventListener('node:added', () => {
+      queueMicrotask(() => order.push('listener'))
+    })
+
+    graph.add(node)
+    await nextTick()
+
+    expect(order).toEqual(['listener', 'layout'])
+  })
+
+  it('drains layout writes triggered while deferred notifications flush', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const operationTypes: string[] = []
+    const stopChanges = layoutStore.onChange((change) => {
+      operationTypes.push(change.operation.type)
+    })
+    onTestFinished(stopChanges)
+    let moved = false
+    const stopWatch = watch(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, toNodeId(1)),
+      () => {
+        if (moved) return
+        moved = true
+        node.pos = [20, 30]
+      },
+      { flush: 'sync' }
+    )
+    onTestFinished(stopWatch)
+
+    graph.add(node)
+    await nextTick()
+
+    expect(operationTypes).toEqual(['createNode', 'moveNode'])
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 20, y: 30 })
+  })
+
+  it('does not publish a node when layout registration is rejected', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const added = vi.fn()
+    graph.events.addEventListener('node:added', added)
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockReturnValueOnce('rejected')
+    onTestFinished(() => applyOperation.mockRestore())
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => warn.mockRestore())
+
+    graph.add(node)
+
+    expect(graph.nodes).not.toContain(node)
+    expect(graph.getNodeById(node.id)).toBeNull()
+    expect(node.graph).toBeNull()
+    expect(added).not.toHaveBeenCalled()
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.id, graph.id)
+    ).not.toContain(node._state)
+  })
+
+  it('finishes layout publication when an add callback throws', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.onAdded = () => {
+      throw new Error('add failed')
+    }
+
+    expect(() => graph.add(node)).toThrow('add failed')
+
+    expect(graph.nodes).toContain(node)
+    expect(node.graph).toBe(graph)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).not.toBeNull()
+  })
+
   it('transfers layout ownership to a replacement node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('old')
@@ -2109,6 +2198,42 @@ describe('graph teardown drops layout entries', () => {
     teardown(populated.graph)
 
     expect(survivingEntries(populated)).toBe(0)
+  })
+
+  it('preserves graph state when a clear removal callback fails', () => {
+    const populated = createGraphWithEveryLayoutEntryType()
+    const { graph, subgraph, root } = populated
+    const graphId = graph.id
+    root.onRemoved = () => {
+      throw new Error('removal failed')
+    }
+
+    expect(() => graph.clear()).toThrow('removal failed')
+
+    expect(graph.id).toBe(graphId)
+    expect(graph.nodes).toContain(root)
+    expect(root.graph).toBe(graph)
+    expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
+    expect(survivingEntries(populated)).toBe(4)
+    expect(useRerouteStore().getReroute(graphId, REROUTE)).toBeDefined()
+    expect(
+      useNodeDataStore().getGraphNodesFor(graphId, subgraph.id)
+    ).not.toHaveLength(0)
+  })
+
+  it('does not fire removal lifecycle when clear cannot start', () => {
+    const { graph, root } = createGraphWithEveryLayoutEntryType()
+    const onRemoved = vi.fn()
+    root.onRemoved = onRemoved
+    const acceptsOperations = vi
+      .spyOn(layoutStore, 'acceptsOperations', 'get')
+      .mockReturnValue(false)
+    onTestFinished(() => acceptsOperations.mockRestore())
+
+    graph.clear()
+
+    expect(onRemoved).not.toHaveBeenCalled()
+    expect(graph.nodes).toContain(root)
   })
 
   it('drops nested definition entries during individual teardown', () => {
