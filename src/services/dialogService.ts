@@ -26,6 +26,13 @@ import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/co
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 
+export interface LayoutDialogOptions<C extends Component> {
+  key: string
+  component: C
+  props: ComponentAttrs<C>
+  dialogComponentProps?: DialogComponentProps
+}
+
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
   import('@/components/dialog/content/ApiNodesSignInContent.vue')
@@ -426,12 +433,9 @@ export const useDialogService = () => {
     }
   }
 
-  function showLayoutDialog<C extends Component>(options: {
-    key: string
-    component: C
-    props: ComponentAttrs<C>
-    dialogComponentProps?: DialogComponentProps
-  }) {
+  function showLayoutDialog<C extends Component>(
+    options: LayoutDialogOptions<C>
+  ) {
     const layoutDefaultProps: DialogComponentProps = {
       renderer: 'reka',
       headless: true,

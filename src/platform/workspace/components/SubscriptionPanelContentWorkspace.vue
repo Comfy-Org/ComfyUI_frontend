@@ -115,7 +115,7 @@
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
-                  @click="manageSubscription"
+                  @click="manageSubscription()"
                 >
                   {{ $t('subscription.billingAndInvoices') }}
                 </Button>
@@ -188,7 +188,7 @@
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
-                  @click="manageSubscription"
+                  @click="manageSubscription()"
                 >
                   {{ $t('subscription.billingAndInvoices') }}
                 </Button>
@@ -253,7 +253,7 @@
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
-                  @click="manageSubscription"
+                  @click="manageSubscription()"
                 >
                   {{
                     $t(

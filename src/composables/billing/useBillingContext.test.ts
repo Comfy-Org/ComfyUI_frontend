@@ -164,6 +164,7 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
       amount_micros: 10000000,
       currency: 'usd'
     }),
+    getPaymentPortalUrl: vi.fn().mockResolvedValue({ url: null }),
     subscribe: vi.fn().mockResolvedValue({ status: 'subscribed' }),
     previewSubscribe: vi.fn().mockResolvedValue({ allowed: true })
   }
@@ -262,6 +263,24 @@ describe('useBillingContext', () => {
     mockBillingRail.value = 'legacy_stripe'
     const { manageSubscription } = useBillingContext()
     await expect(manageSubscription()).resolves.toBeUndefined()
+  })
+
+  it('forwards billing abort signals through the workspace adapter', async () => {
+    mockIsPersonal.value = false
+    const signal = new AbortController().signal
+    const { fetchStatus, fetchBalance, manageSubscription } =
+      useBillingContext()
+
+    await fetchStatus(signal)
+    await fetchBalance(signal)
+    await manageSubscription(signal)
+
+    expect(workspaceApi.getBillingStatus).toHaveBeenCalledWith(signal)
+    expect(workspaceApi.getBillingBalance).toHaveBeenCalledWith(signal)
+    expect(workspaceApi.getPaymentPortalUrl).toHaveBeenCalledWith(
+      window.location.href,
+      signal
+    )
   })
 
   it('converts topup cents to whole dollars for the legacy credit endpoint', async () => {
