@@ -18,6 +18,7 @@ import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 import { comfyAPIPlugin } from './build/plugins'
+import { CRITICAL_COVERAGE_DIRS } from './scripts/critical-coverage/criticalCoverageDirs'
 
 dotenvConfig()
 
@@ -29,46 +30,6 @@ const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
-
-const CRITICAL_COVERAGE_DIRS = [
-  'src/base',
-  'src/composables',
-  'src/core',
-  'src/lib/litegraph/src/node',
-  'src/lib/litegraph/src/subgraph',
-  'src/lib/litegraph/src/utils',
-  'src/platform/assets/composables',
-  'src/platform/assets/mappings',
-  'src/platform/assets/schemas',
-  'src/platform/assets/services',
-  'src/platform/assets/utils',
-  'src/platform/errorCatalog',
-  'src/platform/keybindings',
-  'src/platform/missingMedia',
-  'src/platform/missingModel',
-  'src/platform/navigation',
-  'src/platform/nodeReplacement',
-  'src/platform/remote',
-  'src/platform/remoteConfig',
-  'src/platform/secrets',
-  'src/platform/settings',
-  'src/platform/workflow',
-  'src/platform/workspace/api',
-  'src/platform/workspace/auth',
-  'src/platform/workspace/composables',
-  'src/platform/workspace/stores',
-  'src/platform/workspace/utils',
-  'src/schemas',
-  'src/scripts',
-  'src/services',
-  'src/stores',
-  'src/utils',
-  'src/workbench/extensions/manager/composables',
-  'src/workbench/extensions/manager/services',
-  'src/workbench/extensions/manager/stores',
-  'src/workbench/extensions/manager/utils',
-  'src/workbench/utils'
-]
 
 // A single glob key so vitest aggregates all critical dirs into one
 // thresholds bucket instead of one bucket per glob
