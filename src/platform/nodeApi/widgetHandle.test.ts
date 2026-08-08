@@ -450,6 +450,16 @@ describe('mounted and canvas widgets', () => {
     expect(seen).toHaveBeenCalledWith('#abcdef')
   })
 
+  it('gives each mount its own copy of an object default', () => {
+    // Packs hoist one default object and pass it to every mount; a control
+    // that edits its value in place would edit every node's at once.
+    const shared = { points: [1, 2] }
+    widgets.mount({ name: 'a', defaultValue: shared, render: () => {} })
+    ;(node.widgets![0].value as { points: number[] }).points.push(3)
+
+    expect(shared.points).toEqual([1, 2])
+  })
+
   it('refuses to mount over an existing widget name', () => {
     widgets.mount({ name: 'panel', render: () => {} })
     expect(() => widgets.mount({ name: 'panel', render: () => {} })).toThrow(
