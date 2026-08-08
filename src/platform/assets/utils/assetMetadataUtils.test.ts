@@ -696,6 +696,15 @@ describe('getAssetNodeCategoryCandidates', () => {
     ).toEqual(['LLM/Qwen-VL/Qwen3-0.6B', 'LLM'])
   })
 
+  it("orders a QwenVL asset's deep model directory tag ahead of its shallow LLM tag, so node resolution tries the specific loader first", () => {
+    expect(
+      getAssetNodeCategoryCandidates(
+        asset(['models', 'LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'LLM']),
+        true
+      )
+    ).toEqual(['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'LLM'])
+  })
+
   it('strips the model_type: prefix when it is the only candidate', () => {
     expect(
       getAssetNodeCategoryCandidates(asset(['models', 'model_type:vae']), true)
