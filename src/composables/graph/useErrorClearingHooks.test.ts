@@ -87,13 +87,12 @@ async function startPendingPromotedMediaVerification() {
     rootGraph,
     hosts: [outerHost],
     sourceNodes: [leafNode]
-  } = createPromotedMediaRuntime({ depth: 2 })
+  } = createPromotedMediaRuntime({ depth: 2, hostValue: 'pending.png' })
   outerHost.mode = LGraphEventMode.BYPASS
   vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
 
   const pendingCandidate = {
     ...createPromotedMissingMediaCandidate(outerHost),
-    name: 'pending.png',
     isMissing: undefined
   }
   vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
