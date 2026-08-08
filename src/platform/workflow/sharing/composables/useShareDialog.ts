@@ -4,6 +4,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useWorkflowStore } from '../../management/stores/workflowStore'
+import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { t } from '@/i18n'
@@ -27,7 +28,7 @@ export function useShareDialog() {
 
     const isAppDefault = wf.initialMode === 'app'
     const linearData = wf.changeTracker?.activeState?.extra?.linearData
-    const { outputs } = pruneLinearData(linearData)
+    const { outputs } = pruneLinearData(linearData, app.rootGraph)
 
     if (isAppDefault && outputs.length === 0) {
       const dialog = showConfirmDialog({
