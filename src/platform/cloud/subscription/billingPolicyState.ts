@@ -1,0 +1,19 @@
+export type BillingPolicyState =
+  | { kind: 'LocalWithoutActiveSubscription' }
+  | { kind: 'LocalTeamWithoutActiveSubscription' }
+  | { kind: 'LocalAndUnknown' }
+  | { kind: 'LocalAndFree' }
+  | { kind: 'LocalAndStandard' }
+  | { kind: 'LocalAndCreator' }
+  | { kind: 'LocalAndPro' }
+  | { kind: 'LocalAndFounders' }
+  | { kind: 'LocalAndTeam' }
+  | { kind: 'CloudWithoutActiveSubscription' }
+  | { kind: 'CloudTeamWithoutActiveSubscription' }
+  | { kind: 'CloudAndUnknown' }
+  | { kind: 'CloudAndFree' }
+  | { kind: 'CloudAndStandard' }
+  | { kind: 'CloudAndCreator' }
+  | { kind: 'CloudAndPro' }
+  | { kind: 'CloudAndFounders' }
+  | { kind: 'CloudAndTeam' }

@@ -30,6 +30,7 @@ const mockShow = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockGetOperation = vi.hoisted(() => vi.fn())
 const mockSetWorkspaceBillingRail = vi.hoisted(() => vi.fn())
+const mockCaptureException = vi.hoisted(() => vi.fn())
 const mockActiveWorkspaceId = vi.hoisted(() => ({ value: 'workspace-1' }))
 
 // Hoisted so the vi.mock factory below can reference it: a plain top-level
@@ -72,6 +73,10 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
     getOperation: mockGetOperation,
     startOperation: mockStartOperation
   })
+}))
+
+vi.mock('@sentry/vue', () => ({
+  captureException: mockCaptureException
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
@@ -291,6 +296,30 @@ describe('useWorkspaceBilling', () => {
       )
     })
 
+    it('recovers a pending subscription reported explicitly', async () => {
+      // What the server sends today for an initial subscription or a plan
+      // change — distinct from the older servers that send no type at all.
+      const actionUrl = 'https://invoice.stripe.com/sensitive-token'
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        billing_status: 'pending_payment',
+        pending_billing_op_id: 'op-sub',
+        pending_billing_op_type: 'subscription',
+        action_url: actionUrl
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-sub',
+        'subscription',
+        undefined,
+        actionUrl
+      )
+      expect(mockCaptureException).not.toHaveBeenCalled()
+    })
+
     it('recovers a pending top-up as a top-up, not a subscription', async () => {
       const actionUrl = 'https://invoice.stripe.com/sensitive-token'
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
@@ -309,6 +338,35 @@ describe('useWorkspaceBilling', () => {
         'topup',
         undefined,
         actionUrl
+      )
+    })
+
+    it('reports a resume mode it does not recognize', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        billing_status: 'pending_payment',
+        pending_billing_op_id: 'op-future',
+        // A server ahead of this bundle. Unrepresentable in the current union,
+        // which is why the branch cannot be left to the type system alone.
+        pending_billing_op_type: 'seat_change'
+      } as unknown as BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(mockCaptureException).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('seat_change')
+        }),
+        { tags: { error_type: 'billing_unknown_resume_mode' } }
+      )
+      // Recovery is preserved deliberately: without it the customer has no way
+      // back to the payment page, while a wrong panel clears on reload.
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-future',
+        'subscription',
+        undefined,
+        undefined
       )
     })
 
@@ -981,7 +1039,10 @@ describe('useWorkspaceBilling', () => {
 
   describe('resubscribe', () => {
     it('refreshes status and balance after a successful resubscribe', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 
@@ -997,8 +1058,57 @@ describe('useWorkspaceBilling', () => {
       expect(billing.isLoading.value).toBe(false)
     })
 
+    it('waits for a pending resubscribe op to succeed before resolving', async () => {
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub-pending',
+        status: 'pending'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+      mockStartOperation.mockResolvedValue({
+        opId: 'op-resub-pending',
+        type: 'subscription',
+        status: 'succeeded',
+        errorMessage: null,
+        startedAt: 0
+      })
+
+      const billing = setupBilling()
+      await billing.resubscribe()
+
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-resub-pending',
+        'subscription'
+      )
+      expect(billing.error.value).toBeNull()
+    })
+
+    it('throws when a pending resubscribe op fails', async () => {
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub-failed',
+        status: 'pending'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+      mockStartOperation.mockResolvedValue({
+        opId: 'op-resub-failed',
+        type: 'subscription',
+        status: 'failed',
+        errorMessage: 'card declined',
+        startedAt: 0
+      })
+
+      const billing = setupBilling()
+
+      await expect(billing.resubscribe()).rejects.toThrow('card declined')
+      expect(billing.error.value).toBe('card declined')
+    })
+
     it('keeps the mutation successful when reconciliation fails', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockRejectedValue(
         new Error('status unavailable')
       )
@@ -1167,7 +1277,10 @@ describe('useWorkspaceBilling', () => {
 
   describe('resubscribe', () => {
     it('refreshes status and balance after a successful resubscribe', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 

@@ -446,26 +446,7 @@
   "cloudForgotPassword_title": "Забыли пароль",
   "cloudHero": {
     "nextSlide": "Следующий слайд",
-    "previousSlide": "Предыдущий слайд",
-    "slidePagerLabel": "Перейти к слайду {index}",
-    "slides": {
-      "cloud": {
-        "description": "Лучший выбор для большинства пользователей, которые хотят работать из любой точки мира с моделями, проверенными на коммерческую лицензию.",
-        "title": "Облако"
-      },
-      "models": {
-        "description": "Отобранные, коммерчески лицензированные модели, готовые к запуску без дополнительной настройки.",
-        "title": "Модели"
-      },
-      "team": {
-        "description": "Подключите свою команду уже сегодня. Делитесь рабочими процессами и ресурсами внутри вашей организации.",
-        "title": "Команда"
-      },
-      "workflows": {
-        "description": "От идеи до результата за считанные минуты. Генерируйте несколько вариантов одновременно.",
-        "title": "Рабочие процессы"
-      }
-    }
+    "previousSlide": "Предыдущий слайд"
   },
   "cloudNotification": {
     "continueLocally": "Продолжить локально",
@@ -577,11 +558,9 @@
   "cloudPrivateBeta_title": "Cloud сейчас в закрытой бета-версии",
   "cloudSorryContactSupport_title": "Извините, обратитесь в службу поддержки",
   "cloudStart_desc": "Не требует настройки. Работает на любом устройстве.",
-  "cloudStart_download": "Скачать ComfyUI",
   "cloudStart_explain": "Генерируйте несколько результатов одновременно. Легко делитесь рабочими процессами.",
   "cloudStart_learnAboutButton": "Узнать о Cloud",
   "cloudStart_title": "начать создавать за секунды",
-  "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
   "cloudSurvey_steps_experience": "Насколько хорошо вы знаете ComfyUI?",
   "cloudSurvey_steps_focus": "Что вы создаёте?",
   "cloudSurvey_steps_intent": "Что вы хотите создавать с помощью ComfyUI?",
