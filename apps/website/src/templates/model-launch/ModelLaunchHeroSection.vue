@@ -160,7 +160,7 @@ const isContentFirst = hero.layout === 'content-first'
       :class="
         cn(
           'mx-auto flex w-full max-w-2xl flex-col items-center text-center',
-          isContentFirst ? 'order-1 mb-10 lg:mb-0' : 'order-2 mt-10'
+          isContentFirst ? 'order-1 mb-10' : 'order-2 mt-10'
         )
       "
     >
@@ -232,8 +232,8 @@ const isContentFirst = hero.layout === 'content-first'
       rel="noopener"
       :class="
         cn(
-          'bg-transparency-white-t4 hover:border-primary-comfy-yellow/40 mt-10 hidden w-full flex-col items-start gap-4 rounded-4xl border border-white/10 p-6 text-left transition-colors sm:flex-row sm:items-center sm:justify-between lg:flex lg:px-10 lg:py-7',
-          isContentFirst ? 'order-2 mb-10' : 'order-3'
+          'bg-transparency-white-t4 hover:border-primary-comfy-yellow/40 hidden w-full flex-col items-start gap-4 rounded-4xl border border-white/10 p-6 text-left transition-colors sm:flex-row sm:items-center sm:justify-between lg:flex lg:px-10 lg:py-7',
+          isContentFirst ? 'order-2 mb-10' : 'order-3 mt-10'
         )
       "
     >
