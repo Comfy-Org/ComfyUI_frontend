@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
+import { toLinkId } from '@/types/linkId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -215,6 +216,26 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
       expect(externalNode.inputs[0].link).not.toBe(null)
       expect(subgraph.outputs[0].label).toBe('new_name')
       expect(subgraph.outputs[0].displayName).toBe('new_name')
+    }
+  )
+
+  subgraphTest(
+    'rejects connecting when the output already has more than one link',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const innerNode = subgraph.nodes[0]
+
+      const output = subgraph.outputs[0]
+      output.linkIds.push(toLinkId(998), toLinkId(999))
+
+      vi.stubEnv('DEV', true)
+      try {
+        expect(() => output.connect(innerNode.outputs[0], innerNode)).toThrow(
+          /at most one connection/
+        )
+      } finally {
+        vi.unstubAllEnvs()
+      }
     }
   )
 })
