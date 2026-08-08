@@ -28,7 +28,7 @@ describe('showConfirmDialog Reka renderer opt-in', () => {
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
-    expect(args.dialogComponentProps.headerClass).toBe('p-0')
+    expect(args.dialogComponentProps.headerClass).toBe('p-0 pr-3')
     expect(args.dialogComponentProps.bodyClass).toBe('p-0')
     expect(args.dialogComponentProps.footerClass).toBe('p-0')
     expect(args.dialogComponentProps.pt).toBeUndefined()
