@@ -7,6 +7,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import NodeBadge from '../common/NodeBadge.vue'
 import LottieScene from './LottieScene.vue'
+import VideoMaskScene from './VideoMaskScene.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -21,13 +22,17 @@ const features = [
   {
     title: t('showcase.feature2.title', locale),
     description: t('showcase.feature2.description', locale),
-    video: 'https://media.comfy.org/website/homepage/showcase/ui-overview.webm'
+    // Replaces ui-overview.webm. Source ships 22MB of PNGs embedded as base64;
+    // extracted to external WebP, which is why this is 804KB rather than 29MB.
+    lottie: '/animations/scene-2/scene-02.json'
   },
   {
     title: t('showcase.feature3.title', locale),
     description: t('showcase.feature3.description', locale),
-    video:
-      'https://media.comfy.org/website/homepage/showcase/video-showcase.webm'
+    // Replaces video-showcase.webm. Not Lottie: the source is a bespoke player
+    // driving real <video> layers behind animated rounded-rect masks, ported
+    // into VideoMaskScene.
+    maskScene: '/animations/scene-3/scene-03.json'
   }
 ]
 
@@ -96,6 +101,17 @@ watch(activeIndex, (current, previous) => {
               <LottieScene
                 v-if="feature.lottie"
                 :src="feature.lottie"
+                :active="activeIndex === i"
+                :class="
+                  cn(
+                    'absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
+                    activeIndex === i ? 'opacity-100' : 'opacity-0'
+                  )
+                "
+              />
+              <VideoMaskScene
+                v-else-if="feature.maskScene"
+                :src="feature.maskScene"
                 :active="activeIndex === i"
                 :class="
                   cn(
