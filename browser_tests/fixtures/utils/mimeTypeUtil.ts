@@ -8,6 +8,7 @@ export function getMimeType(fileName: string): string {
   if (name.endsWith('.webm')) return 'video/webm'
   if (name.endsWith('.mp4')) return 'video/mp4'
   if (name.endsWith('.mp3')) return 'audio/mpeg'
+  if (name.endsWith('.wav')) return 'audio/wav'
   if (name.endsWith('.flac')) return 'audio/flac'
   if (name.endsWith('.ogg') || name.endsWith('.opus')) return 'audio/ogg'
   if (name.endsWith('.json')) return 'application/json'
