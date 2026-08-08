@@ -12,30 +12,19 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
+import { getPreviewMediaType } from './usePromotedPreviews'
 import { useAmbientSubgraphPreviews } from './useAmbientSubgraphPreviews'
 
 type MockNodeOutputStore = Pick<
   ReturnType<typeof useNodeOutputStore>,
-  | 'nodeOutputs'
-  | 'nodePreviewImages'
-  | 'getNodeImageUrls'
-  | 'isInputPreviewOutput'
+  'nodeOutputs' | 'nodePreviewImages' | 'getNodeImageUrls'
 >
 
 vi.mock('@/stores/nodeOutputStore', () => {
   const store: MockNodeOutputStore = {
     nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
     nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),
-    getNodeImageUrls: vi.fn(),
-    isInputPreviewOutput: (output) => {
-      const images = (output as { images?: { type?: string }[] } | undefined)
-        ?.images
-      return (
-        Array.isArray(images) &&
-        images.length > 0 &&
-        images.every((i) => i?.type === 'input')
-      )
-    }
+    getNodeImageUrls: vi.fn()
   }
   return { useNodeOutputStore: () => store }
 })
@@ -73,9 +62,7 @@ function seedOutputs(subgraphId: string, nodeIds: Array<number | string>) {
   const store = useNodeOutputStore()
   for (const nodeId of nodeIds) {
     const locatorId = createNodeLocatorId(subgraphId, toNodeId(nodeId))
-    store.nodeOutputs[locatorId] = {
-      images: [{ filename: 'output.png' }]
-    }
+    store.nodePreviewImages[locatorId] = ['seeded-preview-url']
   }
 }
 
@@ -99,6 +86,12 @@ describe(useAmbientSubgraphPreviews, () => {
 
   it('returns empty array (does not throw) when SubgraphNode is detached', () => {
     const setup = createSetup()
+    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    seedOutputs(setup.subgraph.id, [10])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/view?filename=output.png'
+    ])
+
     const parentGraph = setup.subgraphNode.graph!
     parentGraph.add(setup.subgraphNode)
     parentGraph.remove(setup.subgraphNode)
@@ -136,7 +129,7 @@ describe(useAmbientSubgraphPreviews, () => {
     expect(ambientPreviews.value).toEqual([
       expect.objectContaining({
         sourceNodeId: '10',
-        type: 'image',
+        type: getPreviewMediaType(node),
         urls
       })
     ])
@@ -172,9 +165,11 @@ describe(useAmbientSubgraphPreviews, () => {
     expect(urlsBySourceNodeId.get(toNodeId(20))).toEqual(['/view?b=2'])
   })
 
-  it('skips interior nodes with no image output', () => {
+  it('skips interior nodes when getNodeImageUrls returns no urls despite a preview entry', () => {
     const setup = createSetup()
-    addInteriorNode(setup, { id: 10 })
+    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    seedOutputs(setup.subgraph.id, [10])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(undefined)
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
@@ -182,20 +177,20 @@ describe(useAmbientSubgraphPreviews, () => {
     expect(ambientPreviews.value).toEqual([])
   })
 
-  // An unpromoted LoadImage-style node's own selected file is an "input"
-  // preview, not a live execution result. Surfacing it ambiently would make
-  // every such node's thumbnail always visible regardless of promotion,
-  // breaking exclusivity of the promotion UI.
-  it('skips interior nodes whose only output is an input-type preview (e.g. LoadImage)', () => {
+  // Regression coverage for narrowing the gate to `nodePreviewImages` only:
+  // a committed output (as opposed to a streaming preview frame) must never
+  // surface ambiently, even when it looks like a valid image output —
+  // otherwise demoting an exposure becomes a no-op and every interior output
+  // node stacks a permanent preview on the host after every run.
+  it('does not surface a committed output that was never a streaming preview', () => {
     const setup = createSetup()
     const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
-    const store = useNodeOutputStore()
     const locatorId = createNodeLocatorId(setup.subgraph.id, toNodeId(10))!
-    store.nodeOutputs[locatorId] = {
-      images: [{ filename: 'input.png', type: 'input' }]
+    useNodeOutputStore().nodeOutputs[locatorId] = {
+      images: [{ filename: 'output.png' }]
     }
-    vi.mocked(store.getNodeImageUrls).mockImplementation((n) =>
-      n === node ? ['/view?filename=input.png'] : undefined
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
+      n === node ? ['/view?filename=output.png'] : undefined
     )
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
@@ -230,6 +225,24 @@ describe(useAmbientSubgraphPreviews, () => {
     const nestedHost = createTestSubgraphNode(nestedSubgraph, { id: 30 })
     setup.subgraph.add(nestedHost)
     seedOutputs(setup.subgraph.id, [30])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/view?filename=output.png'
+    ])
+
+    const { ambientPreviews } = useAmbientSubgraphPreviews(
+      () => setup.subgraphNode
+    )
+    expect(ambientPreviews.value).toEqual([])
+  })
+
+  it('skips interior nodes with hideOutputImages set', () => {
+    const setup = createSetup()
+    const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    node.hideOutputImages = true
+    seedOutputs(setup.subgraph.id, [10])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/view?filename=output.png'
+    ])
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
