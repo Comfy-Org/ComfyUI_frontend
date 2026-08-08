@@ -11,6 +11,7 @@
   "include": [
     "**/*.ts",
     "../src/types/**/*.d.ts",
+    "../src/vite-env.d.ts",
     "../global.d.ts",
     "types/**/*.d.ts"
   ]
