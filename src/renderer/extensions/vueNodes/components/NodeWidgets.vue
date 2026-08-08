@@ -8,7 +8,7 @@
     :class="
       cn(
         'lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1',
-        shouldHandleNodePointerEvents
+        shouldHandleNodePointerEvents && !agentNodeSelectionStore.isActive
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
@@ -91,6 +91,7 @@ import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
@@ -104,6 +105,7 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return

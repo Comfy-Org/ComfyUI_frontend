@@ -9,6 +9,7 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { createTestingPinia } from '@pinia/testing'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 
 const forwardEventToCanvasMock = vi.fn()
@@ -319,6 +320,38 @@ describe('useNodePointerInteractions', () => {
     pointerHandlers.onPointerup(upEvent)
 
     // On pointer up: toggle handler IS called with correct params
+    expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledWith(
+      testNodeId,
+      true
+    )
+  })
+
+  it('toggles without dragging or clearing selection in node selection mode', () => {
+    const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
+      useNodeEventHandlers()
+    const { startDrag } = useNodeDrag()
+    useAgentNodeSelectionStore().isActive = true
+    const { pointerHandlers } = useNodePointerInteractions(testNodeId)
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+    )
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        clientX: 150,
+        clientY: 150,
+        buttons: 1
+      })
+    )
+
+    expect(startDrag).not.toHaveBeenCalled()
+    expect(handleNodeSelect).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { clientX: 150, clientY: 150 })
+    )
+
     expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledWith(
       testNodeId,
       true

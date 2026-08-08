@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -13,11 +13,24 @@ import { createI18n } from 'vue-i18n'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeHeader from './NodeHeader.vue'
+
+const { toggleNodeSelectionAfterPointerUp } = vi.hoisted(() => ({
+  toggleNodeSelectionAfterPointerUp: vi.fn()
+}))
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+  () => ({
+    useNodeEventHandlers: () => ({ toggleNodeSelectionAfterPointerUp })
+  })
+)
 
 const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
   id: toNodeId('1'),
@@ -114,11 +127,20 @@ const createGlobalConfig = () => {
   }
 }
 
-const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
+const renderHeader = (
+  props?: Partial<ComponentProps<typeof NodeHeader>>,
+  {
+    selectionModeActive = false,
+    selected = false
+  }: { selectionModeActive?: boolean; selected?: boolean } = {}
+) => {
   const { global, tooltipDirective } = createGlobalConfig()
   const onCollapse = vi.fn()
   const onUpdateTitle = vi.fn()
   const user = userEvent.setup()
+
+  useAgentNodeSelectionStore().isActive = selectionModeActive
+  if (selected) useCanvasStore().selectedNodeIds.add(toNodeId('1'))
 
   const result = render(NodeHeader, {
     global,
@@ -135,6 +157,10 @@ const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
 }
 
 describe('NodeHeader.vue', () => {
+  beforeEach(() => {
+    toggleNodeSelectionAfterPointerUp.mockClear()
+  })
+
   it('emits collapse when collapse button is clicked', async () => {
     const { user, onCollapse } = renderHeader()
     await user.click(screen.getByTestId('node-collapse-button'))
@@ -247,6 +273,49 @@ describe('NodeHeader.vue', () => {
       expect(tooltipDirective.mounted).toHaveBeenCalled()
       const mountedEl = tooltipDirective.mounted.mock.calls[0][0]
       expect(mountedEl).toBe(screen.getByTestId('node-title'))
+    })
+  })
+
+  describe('node selection mode', () => {
+    it('replaces the collapse button with a selection checkbox', () => {
+      renderHeader(undefined, { selectionModeActive: true })
+
+      expect(screen.getByTestId('node-selection-checkbox')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('node-collapse-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('toggles without clearing other selected nodes', async () => {
+      const { user } = renderHeader(undefined, { selectionModeActive: true })
+
+      await user.click(screen.getByTestId('node-selection-checkbox'))
+
+      expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledWith(
+        toNodeId('1'),
+        true
+      )
+    })
+
+    it('shows selected nodes as checked', () => {
+      renderHeader(undefined, {
+        selectionModeActive: true,
+        selected: true
+      })
+
+      expect(screen.getByTestId('node-selection-checkbox')).toHaveAttribute(
+        'data-state',
+        'checked'
+      )
+    })
+
+    it('does not enter title editing', async () => {
+      renderHeader(undefined, { selectionModeActive: true })
+
+      // eslint-disable-next-line testing-library/prefer-user-event
+      await fireEvent.dblClick(screen.getByTestId('node-header-1'))
+
+      expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
     })
   })
 })

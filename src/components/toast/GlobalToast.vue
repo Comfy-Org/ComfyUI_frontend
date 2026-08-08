@@ -1,5 +1,8 @@
 <template>
-  <Toast />
+  <Toast
+    position="bottom-right"
+    class="graph-toast top-[calc(anchor(--graph-canvas-panel_top,1rem)+0.25rem)] left-[calc(anchor(--graph-canvas-panel_right,anchor(--docked-agent-panel_left,calc(100vw-0.75rem)))-25.5rem)] z-10000 h-fit w-100 [&_.p-toast-close-button]:size-7 [&_.p-toast-close-icon]:size-4 [&_.p-toast-close-icon]:text-base [&_.p-toast-detail]:text-sm [&_.p-toast-message]:mb-4 [&_.p-toast-message]:min-h-[73px] [&_.p-toast-message-content]:gap-2 [&_.p-toast-message-content]:p-3 [&_.p-toast-message-icon]:size-4.5 [&_.p-toast-message-icon]:text-lg [&_.p-toast-message-text]:gap-2 [&_.p-toast-summary]:text-base"
+  />
   <Toast group="billing-operation" position="top-right">
     <template #message="slotProps">
       <div class="flex items-center gap-2">
@@ -24,14 +27,12 @@
 <script setup lang="ts">
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { nextTick, watch } from 'vue'
+import { watch } from 'vue'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const toast = useToast()
 const toastStore = useToastStore()
-const settingStore = useSettingStore()
 
 watch(
   () => toastStore.messagesToAdd,
@@ -71,40 +72,5 @@ watch(
       toastStore.removeAllRequested = false
     }
   }
-)
-
-function updateToastPosition() {
-  const styleElement =
-    document.getElementById('dynamic-toast-style') || createStyleElement()
-  const rect = document
-    .querySelector('.graph-canvas-container')
-    ?.getBoundingClientRect()
-  if (!rect) return
-
-  styleElement.textContent = `
-    .p-toast.p-component.p-toast-top-right {
-      top: ${rect.top + 100}px !important;
-      right: ${window.innerWidth - (rect.left + rect.width) + 20}px !important;
-       z-index: 10000 !important;
-    }
-  `
-}
-
-function createStyleElement() {
-  const style = document.createElement('style')
-  style.id = 'dynamic-toast-style'
-  document.head.appendChild(style)
-  return style
-}
-
-watch(
-  () => settingStore.get('Comfy.UseNewMenu'),
-  () => nextTick(updateToastPosition),
-  { immediate: true }
-)
-watch(
-  () => settingStore.get('Comfy.Sidebar.Location'),
-  () => nextTick(updateToastPosition),
-  { immediate: true }
 )
 </script>

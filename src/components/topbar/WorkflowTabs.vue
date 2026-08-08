@@ -49,6 +49,22 @@
           />
         </template>
       </SelectButton>
+      <div
+        v-if="tabActivity.creatingTab"
+        data-testid="creating-tab-skeleton"
+        class="relative flex h-9 w-39 shrink-0 items-center justify-center gap-2 self-center bg-comfy-menu-bg px-4 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border-default after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border-default"
+      >
+        <Skeleton
+          aria-hidden="true"
+          data-testid="creating-tab-skeleton-shimmer"
+          class="h-4 w-25 animate-none bg-[linear-gradient(90deg,rgba(0,0,0,0.2)_0%,rgba(102,102,102,0.2)_50.481%,rgba(0,0,0,0.2)_100%),linear-gradient(90deg,#404040_0%,#404040_100%)]"
+        />
+        <i
+          role="img"
+          :aria-label="$t('g.agentWorking')"
+          class="icon-[lucide--loader-circle] size-4 text-smoke-800 motion-safe:animate-spin"
+        />
+      </div>
     </ScrollPanel>
     <Button
       v-if="showOverflowArrows"
@@ -85,15 +101,35 @@
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
+        v-if="agentPanelEnabled"
+        variant="link"
+        size="sm"
+        :class="
+          cn(
+            'no-drag shrink-0 border border-solid text-base-foreground',
+            isAgentPanelOpen
+              ? 'border-plum-500 bg-plum-600/20'
+              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
+          )
+        "
+        @click="onAgentEntryClick"
+      >
+        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
+        <span>{{ $t('agent.askComfyAgent') }}</span>
+      </Button>
+      <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         variant="muted-textonly"
-        size="icon"
-        class="shrink-0 text-base-foreground"
+        size="unset"
+        class="size-[32px] shrink-0 rounded-[8px] p-[8px] text-base-foreground"
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i class="icon-[lucide--message-square-text]" />
+        <i
+          data-testid="feedback-icon"
+          class="icon-[hugeicons--megaphone-03] size-[16px]"
+        />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
@@ -103,7 +139,9 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
@@ -112,6 +150,7 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -121,7 +160,10 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useTelemetry } from '@/platform/telemetry'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 
@@ -141,6 +183,17 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
+const agentPanelStore = useAgentPanelStore()
+const tabActivity = useWorkflowTabActivityStore()
+const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
+  storeToRefs(agentPanelStore)
+
+function onAgentEntryClick(): void {
+  useTelemetry()?.trackAgentEntryButtonClicked({
+    resulting_state: isAgentPanelOpen.value ? 'closed' : 'opened'
+  })
+  agentPanelStore.toggle()
+}
 const { isLoggedIn } = useCurrentUser()
 
 // Dismiss a tab's terminal status badge once it has been viewed
@@ -327,7 +380,7 @@ onUpdated(() => {
   border-radius: 0;
   background-color: transparent;
   padding: 0;
-  border-right-color: var(--border-color);
+  border-right-color: var(--border-default);
   min-width: 90px;
 }
 
@@ -355,7 +408,7 @@ onUpdated(() => {
 :deep(.p-togglebutton:first-child) {
   border-left-style: solid;
   border-left-width: 1px;
-  border-left-color: var(--border-color);
+  border-left-color: var(--border-default);
 }
 
 :deep(.p-togglebutton:not(:first-child)) {
@@ -365,17 +418,8 @@ onUpdated(() => {
 :deep(.p-togglebutton.p-togglebutton-checked) {
   height: 100%;
   border-bottom-style: solid;
-  border-bottom-width: 1px;
+  border-bottom-width: 2px;
   border-bottom-color: var(--p-button-text-primary-color);
-}
-
-:deep(.p-togglebutton:not(.p-togglebutton-checked)) {
-  opacity: 0.75;
-}
-
-:deep(.p-togglebutton-checked) .close-button,
-:deep(.p-togglebutton:hover) .close-button {
-  visibility: visible;
 }
 
 :deep(.p-scrollpanel-content) {
