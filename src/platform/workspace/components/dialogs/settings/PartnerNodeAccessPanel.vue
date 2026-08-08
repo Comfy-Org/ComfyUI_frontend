@@ -584,7 +584,7 @@ function confirmAccessModeChange(
     },
     footerProps: {
       confirmText: t('g.confirm'),
-      confirmVariant: 'inverted',
+      confirmVariant: 'secondary',
       optionsDisabled: isSaving,
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
