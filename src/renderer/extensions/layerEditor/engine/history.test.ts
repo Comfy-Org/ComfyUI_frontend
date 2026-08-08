@@ -215,6 +215,19 @@ describe('History — dirty tracking and eviction', () => {
     expect(h.labels().undo).toHaveLength(3)
   })
 
+  it('a branch that discards the save point stays dirty', () => {
+    const h = new History()
+    h.push(new TestCommand('a'))
+    h.markSaved()
+    h.undo()
+    h.push(new TestCommand('b'))
+    expect(h.dirty()).toBe(true)
+    h.undo()
+    expect(h.dirty()).toBe(true)
+    h.markSaved()
+    expect(h.dirty()).toBe(false)
+  })
+
   it('an evicted history stays dirty until the next markSaved', () => {
     const h = new History({ byteBudget: 1, minSteps: 1 })
     h.push(new TestCommand('a', Dirty.DRAWABLE, 64))

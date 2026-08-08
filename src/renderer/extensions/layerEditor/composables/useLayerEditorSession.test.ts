@@ -24,6 +24,7 @@ import type {
   RasterData
 } from '@/renderer/extensions/layerEditor/engine/node'
 
+import { reorderDropIndex } from './layerPanelDnd'
 import { useLayerEditorSession } from './useLayerEditorSession'
 
 class FakeCompositor implements Compositor {
@@ -381,6 +382,39 @@ describe('useLayerEditorSession', () => {
 
       session.undo()
       expect(session.imageLayers.value.map((n) => n.name)).toEqual(['A', 'B'])
+    })
+
+    it('drag-drop math lands the dragged layer around the target in both directions', async () => {
+      const { session } = makeSession()
+      await session.loadImages(['a.png', 'b.png', 'c.png'], ['A', 'B', 'C'])
+      const names = () => session.imageLayers.value.map((n) => n.name)
+      const idOf = (name: string) =>
+        session.imageLayers.value.find((n) => n.name === name)!.id
+      const drop = (
+        dragged: string,
+        target: string,
+        pos: 'above' | 'below'
+      ) => {
+        const toIndex = reorderDropIndex(
+          session.imageLayers.value.map((n) => n.id),
+          idOf(target),
+          pos,
+          1
+        )
+        session.moveLayerTo(idOf(dragged), toIndex!)
+      }
+
+      drop('A', 'C', 'above')
+      expect(names()).toEqual(['B', 'C', 'A'])
+
+      drop('A', 'B', 'below')
+      expect(names()).toEqual(['A', 'B', 'C'])
+
+      drop('C', 'B', 'below')
+      expect(names()).toEqual(['A', 'C', 'B'])
+
+      drop('A', 'B', 'below')
+      expect(names()).toEqual(['C', 'A', 'B'])
     })
 
     it('moveLayerTo refuses to drop below the background fill', async () => {

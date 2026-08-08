@@ -171,6 +171,26 @@ describe('renderDocument', () => {
     expect(c.freed).toEqual([c.allocated[0].id])
   })
 
+  it('frees every allocated target when a group composite throws mid-build', () => {
+    class ExplodingCompositor extends FakeCompositor {
+      targetComposites = 0
+      override composite(
+        inputs: CompositeInput[],
+        target?: FBOHandle | null,
+        region?: Rect
+      ) {
+        if (target && ++this.targetComposites === 2) throw new Error('boom')
+        super.composite(inputs, target, region)
+      }
+    }
+    const c = new ExplodingCompositor()
+    const first = group([leaf(1)], { id: 'g1' })
+    const second = group([leaf(0.9)], { id: 'g2' })
+    expect(() => renderDocument(doc([first, second]), deps(c))).toThrow('boom')
+    expect(c.allocated).toHaveLength(2)
+    expect([...c.freed].sort()).toEqual(c.allocated.map((h) => h.id).sort())
+  })
+
   it('splices a pass-through group directly into the parent stack (no isolation target)', () => {
     const c = new FakeCompositor()
     const g = group([leaf(1), leaf(1)], { passThrough: true })

@@ -115,6 +115,9 @@ export class History {
     this.undoStack.push(cmd)
     this.sizes.set(cmd, cmd.sizeBytes())
     this.undoBytes += this.sizes.get(cmd) ?? 0
+    if (this.redoStack.length > 0 && this.dirtyCount < 0) {
+      this.cleanReachable = false
+    }
     this.redoStack = []
     this.bumpDirty()
     this.evict()

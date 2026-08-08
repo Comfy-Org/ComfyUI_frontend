@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 
 import PropertyNumberField from './PropertyNumberField.vue'
 
@@ -28,6 +29,7 @@ describe('PropertyNumberField', () => {
   it('reverts an emptied field instead of committing 0', async () => {
     const { emitted } = renderField()
     const input = await commitValue('')
+    await nextTick()
     expect(emitted('commit')).toBeUndefined()
     expect(input.value).toBe('40')
   })
