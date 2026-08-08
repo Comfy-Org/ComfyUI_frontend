@@ -9,6 +9,8 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
+import { pageTeardownSignal } from '@/utils/pageTeardownUtil'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 import type {
   JobAssetsResult,
@@ -24,6 +26,8 @@ import {
   zJobsListResponse,
   zWorkflowContainer
 } from './jobTypes'
+
+type JobsApiFetcher = (url: string, options?: RequestInit) => Promise<Response>
 
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
@@ -46,24 +50,30 @@ export interface FetchHistoryPageResult {
  * @internal
  */
 async function fetchJobsRaw(
-  fetchApi: (url: string) => Promise<Response>,
+  fetchApi: JobsApiFetcher,
   statuses: JobStatus[],
   maxItems: number = 200,
   offset: number = 0
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
+  const noJobs: FetchJobsRawResult = {
+    jobs: [],
+    total: 0,
+    offset,
+    limit: maxItems,
+    hasMore: false
+  }
+  const signal = pageTeardownSignal()
   try {
-    const res = await fetchApi(url)
+    const res = await fetchApi(url, { signal })
     if (!res.ok) {
-      console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      return {
-        jobs: [],
-        total: 0,
-        offset,
-        limit: maxItems,
-        hasMore: false
-      }
+      const message = `[Jobs API] Failed to fetch jobs: ${res.status}`
+      // A poll that outran the session is a lifecycle state, not a fault: the
+      // request seam already waits for auth to resolve and re-mints once on 401.
+      if (res.status === 401) console.warn(message)
+      else console.error(message)
+      return noJobs
     }
     const data = zJobsListResponse.parse(await res.json())
     return {
@@ -74,8 +84,11 @@ async function fetchJobsRaw(
       hasMore: data.pagination.has_more
     }
   } catch (error) {
+    // `signal.aborted` rather than the error shape: a request cancelled while
+    // the page unloads can surface as a bare `TypeError: Failed to fetch`.
+    if (signal.aborted || isAbortError(error)) return noJobs
     console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+    return noJobs
   }
 }
 
@@ -101,7 +114,7 @@ function assignPriority(
  * Assigns synthetic priority starting from total (lower than queue jobs).
  */
 export async function fetchHistory(
-  fetchApi: (url: string) => Promise<Response>,
+  fetchApi: JobsApiFetcher,
   maxItems: number = 200,
   offset: number = 0
 ): Promise<JobListItem[]> {
@@ -113,7 +126,7 @@ export async function fetchHistory(
  * Fetches one page of history with server-provided pagination metadata.
  */
 export async function fetchHistoryPage(
-  fetchApi: (url: string) => Promise<Response>,
+  fetchApi: JobsApiFetcher,
   maxItems: number = 200,
   offset: number = 0
 ): Promise<FetchHistoryPageResult> {
@@ -139,7 +152,7 @@ export async function fetchHistoryPage(
  * Pending jobs get highest priority, then running jobs.
  */
 export async function fetchQueue(
-  fetchApi: (url: string) => Promise<Response>
+  fetchApi: JobsApiFetcher
 ): Promise<{ Running: JobListItem[]; Pending: JobListItem[] }> {
   const { jobs } = await fetchJobsRaw(
     fetchApi,
@@ -166,11 +179,12 @@ export async function fetchQueue(
  * Fetches full job details from /jobs/{job_id}
  */
 export async function fetchJobDetail(
-  fetchApi: (url: string) => Promise<Response>,
+  fetchApi: JobsApiFetcher,
   jobId: JobId
 ): Promise<JobDetail | undefined> {
+  const signal = pageTeardownSignal()
   try {
-    const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`)
+    const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`, { signal })
 
     if (!res.ok) {
       console.warn(`Job not found for job ${jobId}`)
@@ -179,6 +193,7 @@ export async function fetchJobDetail(
 
     return zJobDetail.parse(await res.json())
   } catch (error) {
+    if (signal.aborted || isAbortError(error)) return undefined
     console.error(`Failed to fetch job detail for job ${jobId}:`, error)
     return undefined
   }
