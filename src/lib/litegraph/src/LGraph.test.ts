@@ -1,12 +1,27 @@
 import { toGroupId } from '@/types/groupId'
+import { fromAny } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, watch } from 'vue'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import type * as Y from 'yjs'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
+import { transferNodeLayoutRegistration } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import {
+  adoptNodeReplacement,
   LGraph,
   LGraphGroup,
   LGraphNode,
@@ -23,6 +38,7 @@ import type {
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -49,7 +65,10 @@ import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  layoutStore.resetForTests()
+})
 
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
@@ -323,6 +342,7 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     reroutesComplexGraph
   }) => {
     const first = reroutesComplexGraph.asSerialisable()
+    reroutesComplexGraph.clear()
     const second = new LGraph(first).asSerialisable()
 
     const chainedLinks = (first.links ?? []).filter(
@@ -337,7 +357,9 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     expect,
     floatingLinkGraph
   }) => {
-    const first = new LGraph(floatingLinkGraph).asSerialisable()
+    const graph = new LGraph(floatingLinkGraph)
+    const first = graph.asSerialisable()
+    graph.clear()
     const second = new LGraph(first).asSerialisable()
 
     expect(first.floatingLinks?.length).toBeGreaterThan(0)
@@ -364,6 +386,7 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     reroutesComplexGraph
   }) => {
     const first = reroutesComplexGraph.asSerialisable()
+    reroutesComplexGraph.clear()
     const second = new LGraph(first).asSerialisable()
 
     const reroutes = first.reroutes ?? []
@@ -1400,6 +1423,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     sourceHost.properties.proxyWidgets = [['9999', 'seed']]
     const serialized = sourceHost.rootGraph.serialize()
     const instanceData = sourceHost.serialize()
+    sourceHost.rootGraph.clear()
 
     const previous = LGraph.proxyWidgetMigrationFlush
     LGraph.proxyWidgetMigrationFlush = undefined
@@ -1477,6 +1501,117 @@ describe('Zero UUID handling in configure', () => {
   })
 })
 
+describe('keep-old root identity', () => {
+  it('retains the live identity when only floating links are populated', () => {
+    const graph = new LGraph()
+    const originalId = graph.id
+    const replacementId = createUuidv4()
+    graph.addFloatingLink(
+      new LLink(
+        toLinkId(7),
+        '*',
+        UNASSIGNED_NODE_ID,
+        -1,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+    )
+    const data = { ...graph.asSerialisable(), id: replacementId }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => warn.mockRestore())
+
+    graph.configure(data, true)
+
+    expect(graph.id).toBe(originalId)
+    expect(warn).toHaveBeenCalledWith(
+      '[LGraph] Keeping current root identity during configuration',
+      {
+        currentGraphId: originalId,
+        mode: 'keep-old',
+        requestedGraphId: replacementId
+      }
+    )
+  })
+})
+
+describe('Subgraph configure events', () => {
+  it('does not apply subgraph data when configuration is canceled', () => {
+    const root = new LGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const originalName = subgraph.name
+    const data = { ...subgraph.asSerialisable(), name: 'Canceled' }
+    subgraph.events.addEventListener('configuring', (event) =>
+      event.preventDefault()
+    )
+
+    subgraph.configure(data)
+
+    expect(subgraph.name).toBe(originalName)
+  })
+
+  it('applies replacement data supplied by configuring listeners', () => {
+    const root = new LGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const replacement = { ...subgraph.asSerialisable(), name: 'Replacement' }
+    subgraph.events.addEventListener('configuring', (event) => {
+      event.detail.data = replacement
+    })
+
+    subgraph.configure({ ...subgraph.asSerialisable(), name: 'Original' })
+
+    expect(subgraph.name).toBe('Replacement')
+  })
+
+  it('keeps reentrant replacement and cancellation data invocation-local', () => {
+    const root = new LGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const appliedDuringOuter: string[] = []
+    subgraph.events.addEventListener('configuring', (event) => {
+      const name =
+        'name' in event.detail.data ? event.detail.data.name : undefined
+      if (name === 'Outer original') {
+        event.detail.data = createTestSubgraphData({
+          ...subgraph.asSerialisable(),
+          name: 'Outer replacement'
+        })
+      } else if (name === 'Inner original') {
+        event.detail.data = createTestSubgraphData({
+          ...subgraph.asSerialisable(),
+          name: 'Inner replacement'
+        })
+      } else if (name === 'Canceled original') {
+        event.preventDefault()
+      }
+    })
+    let reentered = false
+    subgraph.events.addEventListener('configured', () => {
+      if (reentered) return
+      reentered = true
+      subgraph.configure({
+        ...subgraph.asSerialisable(),
+        name: 'Inner original'
+      })
+      appliedDuringOuter.push(subgraph.name)
+      subgraph.configure({
+        ...subgraph.asSerialisable(),
+        name: 'Canceled original'
+      })
+      appliedDuringOuter.push(subgraph.name)
+    })
+
+    subgraph.configure({
+      ...subgraph.asSerialisable(),
+      name: 'Outer original'
+    })
+
+    expect(appliedDuringOuter).toEqual([
+      'Inner replacement',
+      'Inner replacement'
+    ])
+    expect(subgraph.name).toBe('Outer replacement')
+  })
+})
+
 describe('node layout registration', () => {
   beforeEach(() => {
     layoutStore.resetForTests()
@@ -1502,12 +1637,379 @@ describe('node layout registration', () => {
     ).toBeNull()
   })
 
+  it('queues deferred node:added work before the layout-driven Vue flush', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const order: string[] = []
+    const stop = watch(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, toNodeId(1)),
+      () => order.push('layout')
+    )
+    onTestFinished(stop)
+
+    graph.events.addEventListener('node:added', () => {
+      queueMicrotask(() => order.push('listener'))
+    })
+
+    graph.add(node)
+    await nextTick()
+
+    expect(order).toEqual(['listener', 'layout'])
+  })
+
+  it('drains layout writes triggered while deferred notifications flush', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const operationTypes: string[] = []
+    const stopChanges = layoutStore.onChange((change) => {
+      operationTypes.push(change.operation.type)
+    })
+    onTestFinished(stopChanges)
+    let moved = false
+    const stopWatch = watch(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, toNodeId(1)),
+      () => {
+        if (moved) return
+        moved = true
+        node.pos = [20, 30]
+      },
+      { flush: 'sync' }
+    )
+    onTestFinished(stopWatch)
+
+    graph.add(node)
+    await nextTick()
+
+    expect(operationTypes).toEqual(['createNode', 'moveNode'])
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 20, y: 30 })
+  })
+
+  it('does not publish a node when layout registration is rejected', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const added = vi.fn()
+    graph.events.addEventListener('node:added', added)
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockReturnValueOnce('rejected')
+    onTestFinished(() => applyOperation.mockRestore())
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => warn.mockRestore())
+
+    graph.add(node)
+
+    expect(graph.nodes).not.toContain(node)
+    expect(graph.getNodeById(node.id)).toBeNull()
+    expect(node.graph).toBeNull()
+    expect(added).not.toHaveBeenCalled()
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.id, graph.id)
+    ).not.toContain(node._state)
+  })
+
+  it('finishes layout publication when an add callback throws', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.onAdded = () => {
+      throw new Error('add failed')
+    }
+
+    expect(() => graph.add(node)).toThrow('add failed')
+
+    expect(graph.nodes).toContain(node)
+    expect(node.graph).toBe(graph)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).not.toBeNull()
+  })
+
+  it('transfers layout ownership to a replacement node', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('old')
+    node.pos = [120, 340]
+    graph.add(node)
+    const replacement = new LGraphNode('replacement')
+    replacement.id = node.id
+    replacement.graph = graph
+
+    expect(transferNodeLayoutRegistration(node, replacement)).toBe('applied')
+
+    replacement.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 220, y: 440 })
+
+    node.pos = [320, 540]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 220, y: 440 })
+  })
+
+  it('rejects transfer after layout ownership changes', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('old')
+    node.pos = [120, 340]
+    graph.add(node)
+    const replacement = new LGraphNode('replacement')
+    replacement.id = node.id
+    replacement.graph = graph
+    const nodes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('nodes')
+    const storedNode = nodes.get(`${graph.rootGraph.id}:${node.id}`)
+    if (!storedNode) throw new Error('Expected stored node layout')
+    storedNode.set('registrationId', 'foreign')
+
+    expect(transferNodeLayoutRegistration(node, replacement)).toBe('rejected')
+    expect(() => adoptNodeReplacement(graph, node, replacement, 0)).toThrow(
+      'Node layout registration transfer rejected'
+    )
+    expect(graph.nodes).toEqual([node])
+    expect(graph.getNodeById(node.id)).toBe(node)
+
+    replacement.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 120, y: 340 })
+  })
+
+  it('restores layout ownership when replacement removal lifecycle throws', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('old')
+    graph.add(node)
+    const replacement = new LGraphNode('replacement')
+    replacement.id = node.id
+    const lifecycleError = new Error('removal failed')
+    node.onRemoved = () => {
+      throw lifecycleError
+    }
+
+    expect(() => adoptNodeReplacement(graph, node, replacement, 0)).toThrow(
+      lifecycleError
+    )
+    expect(graph.nodes).toEqual([node])
+    expect(graph.getNodeById(node.id)).toBe(node)
+
+    node.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 220, y: 440 })
+  })
+
   function zIndexOf(graph: LGraph, node: LGraphNode): number {
     const zIndex = layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id)
       .value?.zIndex
     if (zIndex === undefined) throw new Error(`Node ${node.id} has no layout`)
     return zIndex
   }
+
+  it('restores an attached node layout when onBeforeChange throws', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [120, 340]
+    graph.add(node)
+    graph.onBeforeChange = () => {
+      throw new Error('before change failed')
+    }
+
+    expect(() => graph.remove(node)).toThrow('before change failed')
+    expect(graph.nodes).toContain(node)
+    expect(node.graph).toBe(graph)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 120,
+      y: 340
+    })
+
+    node.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 220,
+      y: 440
+    })
+
+    graph.onBeforeChange = undefined
+    graph.remove(node)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toBeNull()
+  })
+
+  it('restores node ownership when canvas deselect throws after detachment', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [120, 340]
+    graph.add(node)
+    const registrationId = layoutStore.getRegistrationId(
+      'node',
+      graph.rootGraph.id,
+      node.id
+    )
+    const canvas = fromAny<LGraphCanvas, unknown>({
+      checkPanels: vi.fn(),
+      selected_nodes: { [node.id]: node },
+      setDirty: vi.fn(),
+      deselect: vi.fn().mockImplementationOnce(() => {
+        expect(node.graph).toBeNull()
+        throw new Error('node deselect failed')
+      })
+    })
+    graph.list_of_graphcanvas = [canvas]
+
+    expect(() => graph.remove(node)).toThrow('node deselect failed')
+    expect(graph.nodes).toContain(node)
+    expect(graph.getNodeById(node.id)).toBe(node)
+    expect(node.graph).toBe(graph)
+    expect(
+      layoutStore.getRegistrationId('node', graph.rootGraph.id, node.id)
+    ).toBe(registrationId)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 120,
+      y: 340
+    })
+
+    node.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({
+      x: 220,
+      y: 440
+    })
+    graph.remove(node)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toBeNull()
+  })
+
+  it('preserves subgraph graph and layout state when removal aborts', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    source.addOutput('out', '*')
+    const target = new LGraphNode('target')
+    target.addInput('in', '*')
+    graph.add(source)
+    graph.add(target)
+    const subgraph = graph.createSubgraph(createTestSubgraphData())
+    const interior = new LGraphNode('interior')
+    interior.pos = [10, 20]
+    interior.addOutput('out', '*')
+    const peer = new LGraphNode('peer')
+    peer.addInput('in', '*')
+    subgraph.add(interior)
+    subgraph.add(peer)
+    const link = interior.connect(0, peer, 0)!
+    const group = new LGraphGroup('interior group')
+    group.pos = [5, 6]
+    subgraph.add(group)
+    const reroute = subgraph.createReroute([15, 16], link)!
+    const nested = graph.createSubgraph(createTestSubgraphData())
+    const nestedInterior = new LGraphNode('nested interior')
+    nestedInterior.pos = [50, 60]
+    nested.add(nestedInterior)
+    const nestedNode = createTestSubgraphNode(nested, { parentGraph: subgraph })
+    subgraph.add(nestedNode)
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraphNode.addInput('in', '*')
+    subgraphNode.addOutput('out', '*')
+    graph.add(subgraphNode)
+    source.connect(0, subgraphNode, 0)
+    subgraphNode.connect(0, target, 0)
+    const onConnectionChange = vi.fn()
+    graph.onConnectionChange = onConnectionChange
+    const onNodeRemoved = vi.fn()
+    graph.onNodeRemoved = onNodeRemoved
+    subgraphNode.onRemoved = () => {
+      throw new Error('outer removal failed')
+    }
+
+    expect(() => graph.remove(subgraphNode)).toThrow('outer removal failed')
+    expect(graph.nodes).toContain(subgraphNode)
+    expect(subgraphNode.graph).toBe(graph)
+    expect(subgraph.nodes).toContain(nestedNode)
+    expect(nestedNode.subgraph).toBe(nested)
+    expect(subgraph._links.get(link.id)).toBe(link)
+    expect(subgraph.reroutes.get(reroute.id)).toBe(reroute)
+    expect(link.parentId).toBe(reroute.id)
+    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(1)
+    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeDefined()
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)
+    ).not.toHaveLength(0)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, interior.id).value
+        ?.position
+    ).toEqual({
+      x: 10,
+      y: 20
+    })
+
+    interior.pos = [30, 40]
+    group.pos = [25, 26]
+    reroute.pos = [35, 36]
+    nestedInterior.pos = [70, 80]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, interior.id).value
+        ?.position
+    ).toEqual({
+      x: 30,
+      y: 40
+    })
+    expect(layoutStore.getGroupLayout(graph.id, group.id)?.position).toEqual({
+      x: 25,
+      y: 26
+    })
+    expect(
+      layoutStore.getRerouteLayout(graph.id, reroute.id)?.position
+    ).toEqual({ x: 35, y: 36 })
+    expect(
+      layoutStore.getNodeLayoutRef(graph.id, nestedInterior.id).value?.position
+    ).toEqual({ x: 70, y: 80 })
+
+    const inputLink = source.connect(0, subgraphNode, 0)!
+    const outputLink = subgraphNode.connect(0, target, 0)!
+    onConnectionChange.mockClear()
+    onNodeRemoved.mockClear()
+    subgraphNode.onRemoved = () => {}
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockReturnValueOnce('rejected')
+    onTestFinished(() => applyOperation.mockRestore())
+    expect(() => graph.remove(subgraphNode)).not.toThrow()
+
+    expect(graph.nodes).toContain(subgraphNode)
+    expect(graph.links.get(inputLink.id)).toBe(inputLink)
+    expect(graph.links.get(outputLink.id)).toBe(outputLink)
+    expect(onConnectionChange).not.toHaveBeenCalled()
+    expect(onNodeRemoved).not.toHaveBeenCalled()
+    expect(subgraphNode.graph).toBe(graph)
+    expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
+    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(3)
+    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeDefined()
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)
+    ).not.toHaveLength(0)
+
+    graph.remove(subgraphNode)
+
+    expect(graph.nodes).not.toContain(subgraphNode)
+    expect(graph.subgraphs.has(subgraph.id)).toBe(false)
+    expect(graph.subgraphs.has(nested.id)).toBe(false)
+    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(0)
+    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeUndefined()
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)
+    ).toHaveLength(0)
+    expect(layoutStore.getNodeLayoutRef(graph.id, interior.id).value).toBeNull()
+    expect(layoutStore.getGroupLayout(graph.id, group.id)).toBeNull()
+    expect(layoutStore.getRerouteLayout(graph.id, reroute.id)).toBeNull()
+    expect(
+      layoutStore.getNodeLayoutRef(graph.id, nestedInterior.id).value
+    ).toBeNull()
+  })
 
   it('stacks later nodes above earlier ones', () => {
     const graph = new LGraph()
@@ -1532,28 +2034,28 @@ describe('node layout registration', () => {
 
     expect(zIndexOf(graph, third)).toBeGreaterThan(zIndexOf(graph, second))
   })
-
-  it('registers after node:added so deferred listener work is queued first', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-
-    graph.events.addEventListener('node:added', () => {
-      expect(
-        layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
-      ).toBeNull()
-    })
-
-    graph.add(node)
-
-    expect.assertions(2)
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
-    ).not.toBeNull()
-  })
 })
 
 describe('graph teardown drops layout entries', () => {
   const REROUTE = toRerouteId(1)
+
+  function layoutEntryCount(graph: LGraph) {
+    const rootGraphId = graph.rootGraph.id
+    const nodeKeys = [
+      ...getLayoutStoreYDoc().getMap<Y.Map<unknown>>('nodes').keys()
+    ].filter((key) => key.startsWith(`${rootGraphId}:`))
+    return (
+      nodeKeys.length +
+      layoutStore.getAllGroups(rootGraphId).value.size +
+      (layoutStore.getRerouteLayout(rootGraphId, REROUTE) ? 1 : 0)
+    )
+  }
+
+  class ClearOverrideGraph extends LGraph {
+    override clear(): void {
+      super.clear()
+    }
+  }
 
   beforeEach(() => {
     layoutStore.resetForTests()
@@ -1591,6 +2093,15 @@ describe('graph teardown drops layout entries', () => {
     ].filter((entry) => entry !== null).length
   }
 
+  it('keeps clear void and override-compatible', () => {
+    const graph = new LGraph()
+    graph.add(new LGraphNode('node'))
+
+    expect(graph.clear()).toBeUndefined()
+    expect(graph.nodes).toHaveLength(0)
+    expect(new ClearOverrideGraph()).toBeInstanceOf(LGraph)
+  })
+
   it.for([
     ['clear', (graph: LGraph) => graph.clear()],
     [
@@ -1604,6 +2115,42 @@ describe('graph teardown drops layout entries', () => {
     teardown(populated.graph)
 
     expect(survivingEntries(populated)).toBe(0)
+  })
+
+  it('preserves graph state when a clear removal callback fails', () => {
+    const populated = createGraphWithEveryLayoutEntryType()
+    const { graph, subgraph, root } = populated
+    const graphId = graph.id
+    root.onRemoved = () => {
+      throw new Error('removal failed')
+    }
+
+    expect(() => graph.clear()).toThrow('removal failed')
+
+    expect(graph.id).toBe(graphId)
+    expect(graph.nodes).toContain(root)
+    expect(root.graph).toBe(graph)
+    expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
+    expect(survivingEntries(populated)).toBe(4)
+    expect(useRerouteStore().getReroute(graphId, REROUTE)).toBeDefined()
+    expect(
+      useNodeDataStore().getGraphNodesFor(graphId, subgraph.id)
+    ).not.toHaveLength(0)
+  })
+
+  it('does not fire removal lifecycle when clear cannot start', () => {
+    const { graph, root } = createGraphWithEveryLayoutEntryType()
+    const onRemoved = vi.fn()
+    root.onRemoved = onRemoved
+    const acceptsOperations = vi
+      .spyOn(layoutStore, 'acceptsOperations', 'get')
+      .mockReturnValue(false)
+    onTestFinished(() => acceptsOperations.mockRestore())
+
+    graph.clear()
+
+    expect(onRemoved).not.toHaveBeenCalled()
+    expect(graph.nodes).toContain(root)
   })
 
   it('drops nested definition entries during individual teardown', () => {
@@ -1640,5 +2187,38 @@ describe('graph teardown drops layout entries', () => {
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, interior.id).value
     ).toBeNull()
+  })
+
+  it('preserves existing entities when configure teardown is rejected', () => {
+    const { graph } = createGraphWithEveryLayoutEntryType()
+    const originalId = graph.id
+    const originalNodes = [...graph.nodes]
+    const originalExtra = graph.extra
+    const replacement = {
+      ...new LGraph().serialize(),
+      id: createUuidv4(),
+      extra: { replacement: true }
+    }
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockReturnValueOnce('rejected')
+    onTestFinished(() => applyOperation.mockRestore())
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => warn.mockRestore())
+
+    graph.configure(replacement)
+
+    expect(graph.id).toBe(originalId)
+    expect(graph.nodes).toEqual(originalNodes)
+    expect(graph.extra).toBe(originalExtra)
+    expect(layoutEntryCount(graph)).toBe(4)
+    expect(warn).toHaveBeenCalledWith(
+      '[LGraph] Configuration teardown rejected',
+      {
+        graphId: originalId,
+        mode: 'clear',
+        result: 'rejected'
+      }
+    )
   })
 })

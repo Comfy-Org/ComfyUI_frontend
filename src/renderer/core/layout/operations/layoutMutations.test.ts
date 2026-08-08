@@ -1,8 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import type * as Y from 'yjs'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { toGroupId } from '@/types/groupId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
@@ -33,21 +35,12 @@ function seedNode(
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
+  layoutStore.resetForTests()
   seedNode(NODE_1, [10, 20], [200, 100], 0)
   seedNode(NODE_2, [300, 400], [150, 80], 1)
 })
 
 describe('moveNode', () => {
-  it('does nothing when node does not exist', () => {
-    const { moveNode } = useLayoutMutations()
-    const before1 = { ...layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value }
-    const before2 = { ...layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value }
-    moveNode(GRAPH, MISSING_NODE, { x: 100, y: 200 })
-    expect(layoutStore.getNodeLayoutRef(GRAPH, MISSING_NODE).value).toBeNull()
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value).toEqual(before1)
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value).toEqual(before2)
-  })
-
   it('updates node position', () => {
     const { moveNode } = useLayoutMutations()
     moveNode(GRAPH, NODE_1, { x: 100, y: 200 })
@@ -58,19 +51,27 @@ describe('moveNode', () => {
       }
     )
   })
+
+  it('forwards current registration ownership', () => {
+    const { createNode, moveNode } = useLayoutMutations()
+    createNode(GRAPH, NEW_NODE, { position: { x: 10, y: 20 } })
+    getLayoutStoreYDoc()
+      .getMap<Y.Map<unknown>>('nodes')
+      .get(`${GRAPH}:${NEW_NODE}`)
+      ?.set('registrationId', 'owner')
+
+    moveNode(GRAPH, NEW_NODE, { x: 100, y: 200 })
+
+    expect(
+      layoutStore.getNodeLayoutRef(GRAPH, NEW_NODE).value?.position
+    ).toEqual({
+      x: 100,
+      y: 200
+    })
+  })
 })
 
 describe('resizeNode', () => {
-  it('does nothing when node does not exist', () => {
-    const { resizeNode } = useLayoutMutations()
-    const before1 = { ...layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value }
-    const before2 = { ...layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value }
-    resizeNode(GRAPH, MISSING_NODE, { width: 400, height: 200 })
-    expect(layoutStore.getNodeLayoutRef(GRAPH, MISSING_NODE).value).toBeNull()
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value).toEqual(before1)
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value).toEqual(before2)
-  })
-
   it('updates node size', () => {
     const { resizeNode } = useLayoutMutations()
     resizeNode(GRAPH, NODE_1, { width: 400, height: 200 })
@@ -82,16 +83,6 @@ describe('resizeNode', () => {
 })
 
 describe('setNodeZIndex', () => {
-  it('does nothing when node does not exist', () => {
-    const { setNodeZIndex } = useLayoutMutations()
-    const before1 = { ...layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value }
-    const before2 = { ...layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value }
-    setNodeZIndex(GRAPH, MISSING_NODE, 10)
-    expect(layoutStore.getNodeLayoutRef(GRAPH, MISSING_NODE).value).toBeNull()
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value).toEqual(before1)
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value).toEqual(before2)
-  })
-
   it('updates node z-index', () => {
     const { setNodeZIndex } = useLayoutMutations()
     setNodeZIndex(GRAPH, NODE_1, 42)
@@ -112,39 +103,48 @@ describe('createNode', () => {
   })
 })
 
-describe('deleteNode', () => {
-  it('does nothing when node does not exist', () => {
-    const { deleteNode } = useLayoutMutations()
-    const before1 = { ...layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value }
-    const before2 = { ...layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value }
-    deleteNode(GRAPH, MISSING_NODE)
-    expect(layoutStore.getNodeLayoutRef(GRAPH, MISSING_NODE).value).toBeNull()
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value).toEqual(before1)
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value).toEqual(before2)
-  })
+describe('missing node mutations', () => {
+  it.for([
+    {
+      name: 'moveNode',
+      mutate: () =>
+        useLayoutMutations().moveNode(GRAPH, MISSING_NODE, { x: 1, y: 2 })
+    },
+    {
+      name: 'resizeNode',
+      mutate: () =>
+        useLayoutMutations().resizeNode(GRAPH, MISSING_NODE, {
+          width: 3,
+          height: 4
+        })
+    },
+    {
+      name: 'setNodeZIndex',
+      mutate: () => useLayoutMutations().setNodeZIndex(GRAPH, MISSING_NODE, 5)
+    }
+  ])('$name is a no-op', ({ mutate }) => {
+    const before = [NODE_1, NODE_2].map(
+      (nodeId) => layoutStore.getNodeLayoutRef(GRAPH, nodeId).value
+    )
 
-  it('removes node from the store', () => {
-    const { deleteNode } = useLayoutMutations()
-    deleteNode(GRAPH, NODE_1)
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value).toBeNull()
+    mutate()
+
+    expect(layoutStore.getNodeLayoutRef(GRAPH, MISSING_NODE).value).toBeNull()
+    expect(
+      [NODE_1, NODE_2].map(
+        (nodeId) => layoutStore.getNodeLayoutRef(GRAPH, nodeId).value
+      )
+    ).toEqual(before)
   })
 })
 
 describe('batchMoveNodes', () => {
-  it('does nothing when updates array is empty', () => {
-    const { batchMoveNodes } = useLayoutMutations()
-    const before1 = { ...layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value }
-    const before2 = { ...layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value }
-    batchMoveNodes(GRAPH, [])
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value).toEqual(before1)
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value).toEqual(before2)
-  })
-
-  it('updates positions for all found nodes', () => {
+  it('updates found nodes, preserves size, and skips missing nodes', () => {
     const { batchMoveNodes } = useLayoutMutations()
     batchMoveNodes(GRAPH, [
       { nodeId: NODE_1, position: { x: 50, y: 60 } },
-      { nodeId: NODE_2, position: { x: 70, y: 80 } }
+      { nodeId: NODE_2, position: { x: 70, y: 80 } },
+      { nodeId: MISSING_NODE, position: { x: 0, y: 0 } }
     ])
     expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value?.position).toEqual(
       {
@@ -158,57 +158,23 @@ describe('batchMoveNodes', () => {
         y: 80
       }
     )
-  })
-
-  it('preserves existing node size when moving', () => {
-    const { batchMoveNodes } = useLayoutMutations()
-    batchMoveNodes(GRAPH, [{ nodeId: NODE_1, position: { x: 50, y: 60 } }])
     expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value?.size).toEqual({
       width: 200,
       height: 100
     })
-  })
-
-  it('skips nodes not found in the store', () => {
-    const { batchMoveNodes } = useLayoutMutations()
-    batchMoveNodes(GRAPH, [
-      { nodeId: MISSING_NODE, position: { x: 0, y: 0 } },
-      { nodeId: NODE_1, position: { x: 50, y: 60 } }
-    ])
     expect(layoutStore.getNodeLayoutRef(GRAPH, MISSING_NODE).value).toBeNull()
-    expect(layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value?.position).toEqual(
-      {
-        x: 50,
-        y: 60
-      }
-    )
   })
 })
 
 describe('bringNodeToFront', () => {
-  it('gives the node a higher z-index than all other nodes', () => {
+  it.for([
+    { name: 'ordinary ordering', first: 0, second: 10 },
+    { name: 'tied nodes', first: 5, second: 5 },
+    { name: 'already leading', first: 20, second: 5 }
+  ])('keeps the target frontmost with $name', ({ first, second }) => {
     const { setNodeZIndex, bringNodeToFront } = useLayoutMutations()
-    setNodeZIndex(GRAPH, NODE_2, 10)
-    bringNodeToFront(GRAPH, NODE_1)
-    const z1 = layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value?.zIndex ?? 0
-    const z2 = layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value?.zIndex ?? 0
-    expect(z1).toBeGreaterThan(z2)
-  })
-
-  it('gives the node a higher z-index when all nodes start at the same level', () => {
-    const { setNodeZIndex, bringNodeToFront } = useLayoutMutations()
-    setNodeZIndex(GRAPH, NODE_1, 5)
-    setNodeZIndex(GRAPH, NODE_2, 5)
-    bringNodeToFront(GRAPH, NODE_1)
-    const z1 = layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value?.zIndex ?? 0
-    const z2 = layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value?.zIndex ?? 0
-    expect(z1).toBeGreaterThan(z2)
-  })
-
-  it('remains frontmost when the already-leading node is brought to front again', () => {
-    const { setNodeZIndex, bringNodeToFront } = useLayoutMutations()
-    setNodeZIndex(GRAPH, NODE_1, 20)
-    setNodeZIndex(GRAPH, NODE_2, 5)
+    setNodeZIndex(GRAPH, NODE_1, first)
+    setNodeZIndex(GRAPH, NODE_2, second)
     bringNodeToFront(GRAPH, NODE_1)
     const z1 = layoutStore.getNodeLayoutRef(GRAPH, NODE_1).value?.zIndex ?? 0
     const z2 = layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value?.zIndex ?? 0
@@ -217,38 +183,27 @@ describe('bringNodeToFront', () => {
 })
 
 describe('deleting an entity that is already gone', () => {
-  it('emits nothing for a group', () => {
-    const rootGraphId = createUuidv4()
-    const groupId = toGroupId(1)
-    const { createGroup, deleteGroup } = useLayoutMutations()
-    createGroup(rootGraphId, groupId, {
-      position: { x: 0, y: 0 },
-      size: { width: 100, height: 50 }
-    })
-    deleteGroup(rootGraphId, groupId)
-    expect(layoutStore.getGroupLayout(rootGraphId, groupId)).toBeNull()
-
-    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-    onTestFinished(() => applyOperation.mockRestore())
-
-    deleteGroup(rootGraphId, groupId)
-
-    expect(applyOperation).not.toHaveBeenCalled()
-  })
-
-  it('emits nothing for a reroute', () => {
-    const rootGraphId = createUuidv4()
-    const rerouteId = toRerouteId(1)
-    const { createReroute, deleteReroute } = useLayoutMutations()
-    createReroute(rootGraphId, rerouteId, { x: 10, y: 10 })
-    deleteReroute(rootGraphId, rerouteId)
-    expect(layoutStore.getRerouteLayout(rootGraphId, rerouteId)).toBeNull()
-
-    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
-    onTestFinished(() => applyOperation.mockRestore())
-
-    deleteReroute(rootGraphId, rerouteId)
-
-    expect(applyOperation).not.toHaveBeenCalled()
-  })
+  it.for([{ entity: 'group' }, { entity: 'reroute' }] as const)(
+    'is a no-op for a $entity',
+    ({ entity }) => {
+      const rootGraphId = createUuidv4()
+      const mutations = useLayoutMutations()
+      if (entity === 'group') {
+        const groupId = toGroupId(1)
+        mutations.createGroup(rootGraphId, groupId, {
+          position: { x: 0, y: 0 },
+          size: { width: 100, height: 50 }
+        })
+        mutations.deleteGroup(rootGraphId, groupId)
+        expect(mutations.deleteGroup(rootGraphId, groupId)).toBe('no-op')
+        expect(layoutStore.getGroupLayout(rootGraphId, groupId)).toBeNull()
+      } else {
+        const rerouteId = toRerouteId(1)
+        mutations.createReroute(rootGraphId, rerouteId, { x: 10, y: 10 })
+        mutations.deleteReroute(rootGraphId, rerouteId)
+        expect(mutations.deleteReroute(rootGraphId, rerouteId)).toBe('no-op')
+        expect(layoutStore.getRerouteLayout(rootGraphId, rerouteId)).toBeNull()
+      }
+    }
+  )
 })

@@ -3,11 +3,12 @@ import { toRerouteId } from '@/types/rerouteId'
 
 test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
   test('survives subgraph navigation', async ({ comfyPage }) => {
+    const REROUTE_ID = toRerouteId(1)
     await comfyPage.workflow.loadWorkflow(
       'reroute/single-native-reroute-default-workflow'
     )
     await comfyPage.canvasOps.expectRootReroutePositions({
-      [toRerouteId(1)]: { x: 372.67, y: 415.33 }
+      [REROUTE_ID]: { x: 372.67, y: 415.33 }
     })
 
     const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
@@ -18,7 +19,7 @@ test.describe('Native reroute geometry', { tag: '@vue-nodes' }, () => {
     await comfyPage.subgraph.exitViaBreadcrumb()
 
     await comfyPage.canvasOps.expectRootReroutePositions({
-      [toRerouteId(1)]: { x: 372.67, y: 415.33 }
+      [REROUTE_ID]: { x: 372.67, y: 415.33 }
     })
   })
 })

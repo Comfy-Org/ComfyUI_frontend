@@ -312,6 +312,10 @@ export const useLinkStore = defineStore('link', () => {
     if (unkeyed) yield* unkeyed.values()
   }
 
+  function getLink(graphId: UUID, linkId: LinkTopology['id']) {
+    return [...graphTopologies(graphId)].find(({ id }) => id === linkId)
+  }
+
   function clearGraph(graphId: UUID): void {
     targetIndex.value.delete(graphId)
     unkeyedLinks.value.delete(graphId)
@@ -329,6 +333,7 @@ export const useLinkStore = defineStore('link', () => {
     isOutputSlotConnected,
     getOutputSlotLinks,
     graphTopologies,
+    getLink,
     clearGraph
   }
 })

@@ -1,9 +1,5 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  LiteGraph,
-  registerNodeState,
-  unregisterNodeState
-} from '@/lib/litegraph/src/litegraph'
+import { adoptNodeReplacement, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
@@ -159,7 +155,6 @@ function replaceWithMapping(
   nodeGraph: LGraph,
   idx: number
 ): void {
-  node.onRemoved?.()
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
@@ -167,13 +162,7 @@ function replaceWithMapping(
   newNode.mode = node.mode
   if (node.flags) newNode.flags = { ...node.flags }
 
-  nodeGraph._nodes[idx] = newNode
-  newNode.graph = nodeGraph
-  nodeGraph._nodes_by_id[newNode.id] = newNode
-
-  // Bypasses graph.add(), so move the node-data registration by hand.
-  unregisterNodeState(node)
-  registerNodeState(nodeGraph, newNode)
+  adoptNodeReplacement(nodeGraph, node, newNode, idx)
 
   for (const widget of newNode.widgets ?? []) {
     if (isNodeBindable(widget)) widget.setNodeId(newNode.id)

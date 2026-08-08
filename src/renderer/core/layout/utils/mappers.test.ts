@@ -27,19 +27,79 @@ describe('mappers', () => {
     expect(yNodeToLayout(ynode)).toEqual(layout)
   })
 
-  it('derives position, size and bounds from the one stored rect', () => {
-    const doc = new Y.Doc()
-    const ynode = doc.getMap('node') as NodeLayoutMap
-    ynode.set('rect', [5, 6, 70, 80])
+  it('isolates stored geometry from source and mapped layout mutations', () => {
+    const layout = {
+      id: toNodeId('node-1'),
+      position: { x: 12, y: 34 },
+      size: { width: 111, height: 222 },
+      zIndex: 5,
+      visible: true,
+      bounds: { x: 12, y: 34, width: 111, height: 222 }
+    }
+    const ynode = layoutToYNode(layout)
+    new Y.Doc().getMap('nodes').set('node', ynode)
 
-    const back = yNodeToLayout(ynode)
+    layout.position.x = 99
+    layout.size.width = 999
+    const mapped = yNodeToLayout(ynode)
+    mapped.position.y = 88
+    mapped.size.height = 888
 
-    expect(back.position).toEqual({ x: 5, y: 6 })
-    expect(back.size).toEqual({ width: 70, height: 80 })
-    expect(back.bounds).toEqual({ x: 5, y: 6, width: 70, height: 80 })
+    expect(ynode.get('position')).toEqual({ x: 12, y: 34 })
+    expect(ynode.get('size')).toEqual({ width: 111, height: 222 })
+    expect(yNodeToLayout(ynode)).toMatchObject({
+      position: { x: 12, y: 34 },
+      size: { width: 111, height: 222 }
+    })
   })
 
-  it('yields a usable layout for a map with no rect', () => {
+  it('keeps registration ownership out of the public node layout', () => {
+    const layout = {
+      id: toNodeId('node-1'),
+      position: { x: 12, y: 34 },
+      size: { width: 111, height: 222 },
+      zIndex: 5,
+      visible: true,
+      bounds: { x: 12, y: 34, width: 111, height: 222 }
+    }
+    const ynode = layoutToYNode(layout, 'owner')
+    new Y.Doc().getMap('nodes').set('node-1', ynode)
+
+    expect(ynode.get('registrationId')).toBe('owner')
+    expect(yNodeToLayout(ynode)).toEqual(layout)
+  })
+
+  it('merges concurrent position and size updates', () => {
+    const first = new Y.Doc()
+    const second = new Y.Doc()
+    const firstNode = layoutToYNode({
+      id: toNodeId('node-1'),
+      position: { x: 0, y: 0 },
+      size: { width: 100, height: 50 },
+      zIndex: 0,
+      visible: true,
+      bounds: { x: 0, y: 0, width: 100, height: 50 }
+    })
+    first.getMap('nodes').set('node-1', firstNode)
+    Y.applyUpdate(second, Y.encodeStateAsUpdate(first))
+
+    const secondNode = second.getMap('nodes').get('node-1') as NodeLayoutMap
+    firstNode.set('position', { x: 10, y: 20 })
+    secondNode.set('size', { width: 200, height: 80 })
+
+    Y.applyUpdate(first, Y.encodeStateAsUpdate(second))
+    Y.applyUpdate(second, Y.encodeStateAsUpdate(first))
+
+    const expected = {
+      position: { x: 10, y: 20 },
+      size: { width: 200, height: 80 },
+      bounds: { x: 10, y: 20, width: 200, height: 80 }
+    }
+    expect(yNodeToLayout(firstNode)).toMatchObject(expected)
+    expect(yNodeToLayout(secondNode)).toMatchObject(expected)
+  })
+
+  it('yields a usable layout for a map with no geometry', () => {
     const doc = new Y.Doc()
     const ynode = doc.getMap('node') as NodeLayoutMap
 

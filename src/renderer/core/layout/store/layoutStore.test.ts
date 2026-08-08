@@ -1,8 +1,11 @@
 import { toGroupId } from '@/types/groupId'
+import type { GroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, watch } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import * as Y from 'yjs'
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -14,12 +17,15 @@ import type { UUID } from '@/utils/uuid'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import type {
   LayoutChange,
   LayoutOperation,
+  MoveNodeOperation,
   NodeLayout,
+  Point,
   SlotLayout
 } from '@/renderer/core/layout/types'
 
@@ -62,101 +68,830 @@ describe('layoutStore CRDT operations', () => {
     bounds: { x: 100, y: 100, width: 200, height: 100 }
   })
 
-  it('should create and retrieve nodes', () => {
-    const nodeId = toNodeId('test-node-1')
-    const layout = createTestNode(nodeId)
+  function createRemoteDoc(): Y.Doc {
+    const remote = new Y.Doc()
+    Y.applyUpdate(remote, Y.encodeStateAsUpdate(getLayoutStoreYDoc()))
+    return remote
+  }
 
-    // Create node
-    layoutStore.setSource(LayoutSource.External)
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      layout,
-      timestamp: Date.now(),
+  function readRect(nodeId: NodeId): number[] | null {
+    const out = new Float64Array(4)
+    return layoutStore.readNodeRect(GRAPH, nodeId, out) ? [...out] : null
+  }
+
+  function applyRemoteChanges(remote: Y.Doc, change: () => void): void {
+    const stateVector = Y.encodeStateVector(getLayoutStoreYDoc())
+    change()
+    Y.applyUpdate(
+      getLayoutStoreYDoc(),
+      Y.encodeStateAsUpdate(remote, stateVector)
+    )
+  }
+
+  describe('explicit operation outcomes', () => {
+    const graphId = createUuidv4()
+    const nodeId = toNodeId('operation-outcome-node')
+    const groupId = 41 as GroupId
+    const rerouteId = toRerouteId(42)
+    const metadata = {
+      actor: 'test',
+      graphId,
       source: LayoutSource.External,
-      actor: 'test'
+      timestamp: 1
+    } as const
+
+    function createNode(
+      layout = createTestNode(nodeId),
+      registrationId?: string
+    ) {
+      return layoutStore.applyOperation({
+        ...metadata,
+        entity: 'node',
+        layout,
+        nodeId: layout.id,
+        registrationId,
+        type: 'createNode'
+      })
+    }
+
+    function createGroup(position = { x: 10, y: 20 }, registrationId?: string) {
+      return layoutStore.applyOperation({
+        ...metadata,
+        entity: 'group',
+        graphId,
+        groupId,
+        layout: {
+          id: groupId,
+          position,
+          size: { width: 30, height: 40 }
+        },
+        registrationId,
+        type: 'createGroup'
+      })
+    }
+
+    function createReroute(
+      position = { x: 10, y: 20 },
+      registrationId?: string
+    ) {
+      return layoutStore.applyOperation({
+        ...metadata,
+        entity: 'reroute',
+        graphId,
+        position,
+        registrationId,
+        rerouteId,
+        type: 'createReroute'
+      })
+    }
+
+    it('returns applied for a state transition and no-op for a missing target', () => {
+      expect(createNode()).toBe('applied')
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'node',
+          nodeId: toNodeId('missing'),
+          position: { x: 1, y: 2 },
+          type: 'moveNode'
+        })
+      ).toBe('no-op')
     })
 
-    // Retrieve node
-    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-    expect(nodeRef.value).toEqual(layout)
+    it('applies and persists changed node visibility', () => {
+      createNode()
+
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          type: 'setNodeVisibility',
+          visible: false
+        })
+      ).toBe('applied')
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.visible).toBe(
+        false
+      )
+    })
+
+    it('executes dependent batch commands in order', () => {
+      createNode()
+      const initialPosition = createTestNode(nodeId).position
+      const move = (position: Point): MoveNodeOperation => ({
+        ...metadata,
+        entity: 'node',
+        nodeId,
+        position,
+        type: 'moveNode'
+      })
+      const operations = [move({ x: 300, y: 400 }), move(initialPosition)]
+
+      expect(layoutStore.applyOperations(operations)).toBe('applied')
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position
+      ).toEqual(initialPosition)
+      expect(layoutStore.applyOperations(operations)).toBe('applied')
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position
+      ).toEqual(initialPosition)
+    })
+
+    it('rejects tokenless updates to a registered node', () => {
+      createNode(createTestNode(nodeId), 'owner')
+      const operations: LayoutOperation[] = [
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          position: { x: 300, y: 400 },
+          type: 'moveNode'
+        },
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          size: { width: 300, height: 400 },
+          type: 'resizeNode'
+        },
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          type: 'setNodeVisibility',
+          visible: false
+        },
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          type: 'setNodeZIndex',
+          zIndex: 10
+        },
+        {
+          ...metadata,
+          bounds: {
+            [nodeId]: { x: 1, y: 2, width: 3, height: 4 }
+          },
+          entity: 'node',
+          nodeIds: [nodeId],
+          type: 'batchUpdateBounds'
+        }
+      ]
+
+      expect(layoutStore.applyOperations(operations)).toBe('no-op')
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value).toEqual(
+        createTestNode(nodeId)
+      )
+    })
+
+    it('requires exact group and reroute ownership while preserving legacy updates', () => {
+      createGroup(undefined, 'group-owner')
+      expect(createReroute(undefined, '')).toBe('rejected')
+      expect(createReroute()).toBe('applied')
+
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'group',
+          graphId,
+          groupId,
+          position: { x: 100, y: 200 },
+          size: { width: 300, height: 400 },
+          type: 'setGroupBounds'
+        })
+      ).toBe('no-op')
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'reroute',
+          graphId,
+          position: { x: 100, y: 200 },
+          registrationId: '',
+          rerouteId,
+          type: 'moveReroute'
+        })
+      ).toBe('rejected')
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'reroute',
+          graphId,
+          position: { x: 100, y: 200 },
+          rerouteId,
+          type: 'moveReroute'
+        })
+      ).toBe('applied')
+
+      layoutStore.resetForTests()
+      createGroup()
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'group',
+          graphId,
+          groupId,
+          position: { x: 100, y: 200 },
+          size: { width: 300, height: 400 },
+          type: 'setGroupBounds'
+        })
+      ).toBe('applied')
+    })
+
+    it.for([
+      {
+        name: 'node',
+        operation: {
+          ...metadata,
+          entity: 'node',
+          nodeId: toNodeId('missing-node'),
+          size: { width: 1, height: 2 },
+          type: 'resizeNode'
+        } as const
+      },
+      {
+        name: 'group',
+        operation: {
+          ...metadata,
+          entity: 'group',
+          graphId,
+          groupId: 999 as GroupId,
+          position: { x: 1, y: 2 },
+          size: { width: 3, height: 4 },
+          type: 'setGroupBounds'
+        } as const
+      },
+      {
+        name: 'reroute',
+        operation: {
+          ...metadata,
+          entity: 'reroute',
+          graphId,
+          position: { x: 1, y: 2 },
+          rerouteId: toRerouteId(999),
+          type: 'moveReroute'
+        } as const
+      },
+      {
+        name: 'node visibility',
+        operation: {
+          ...metadata,
+          entity: 'node',
+          nodeId: toNodeId('missing-node'),
+          type: 'setNodeVisibility',
+          visible: false
+        } as const
+      }
+    ])('returns no-op for a missing $name update', ({ operation }) => {
+      expect(layoutStore.applyOperation(operation)).toBe('no-op')
+    })
+
+    it('returns no-op for repeated node, group, and reroute deletion', () => {
+      createNode()
+      createGroup()
+      createReroute()
+      const deletions = [
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          type: 'deleteNode'
+        },
+        {
+          ...metadata,
+          entity: 'group',
+          graphId,
+          groupId,
+          type: 'deleteGroup'
+        },
+        {
+          ...metadata,
+          entity: 'reroute',
+          graphId,
+          rerouteId,
+          type: 'deleteReroute'
+        }
+      ] as const
+
+      for (const operation of deletions) {
+        expect(layoutStore.applyOperation(operation)).toBe('applied')
+        expect(layoutStore.applyOperation(operation)).toBe('no-op')
+      }
+    })
+
+    it('rejects duplicate creates and preserves the original entities', () => {
+      createNode()
+      createGroup()
+      createReroute()
+
+      expect(
+        createNode({
+          ...createTestNode(nodeId),
+          position: { x: 500, y: 600 }
+        })
+      ).toBe('no-op')
+      expect(createGroup({ x: 500, y: 600 })).toBe('no-op')
+      expect(createReroute({ x: 500, y: 600 })).toBe('no-op')
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position
+      ).toEqual({
+        x: 100,
+        y: 100
+      })
+      expect(layoutStore.getGroupLayout(graphId, groupId)?.position).toEqual({
+        x: 10,
+        y: 20
+      })
+      expect(
+        layoutStore.getRerouteLayout(graphId, rerouteId)?.position
+      ).toEqual({ x: 10, y: 20 })
+    })
+
+    it('uses operation target IDs for node and group creation', async () => {
+      const embeddedNodeId = toNodeId('embedded-node')
+      const embeddedGroupId = 404 as GroupId
+      const listener = vi.fn()
+      const stop = layoutStore.onChange(listener)
+
+      layoutStore.applyOperation({
+        ...metadata,
+        entity: 'node',
+        layout: createTestNode(embeddedNodeId),
+        nodeId,
+        type: 'createNode'
+      })
+      layoutStore.applyOperation({
+        ...metadata,
+        entity: 'group',
+        graphId,
+        groupId,
+        layout: {
+          id: embeddedGroupId,
+          position: { x: 10, y: 20 },
+          size: { width: 30, height: 40 }
+        },
+        type: 'createGroup'
+      })
+      await nextTick()
+
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.id).toBe(
+        nodeId
+      )
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, embeddedNodeId).value
+      ).toBeNull()
+      expect(layoutStore.getGroupLayout(graphId, groupId)?.id).toBe(groupId)
+      expect(layoutStore.getGroupLayout(graphId, embeddedGroupId)).toBeNull()
+      expect(listener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nodeIds: [nodeId],
+          operation: expect.objectContaining({
+            layout: expect.objectContaining({ id: nodeId }),
+            nodeId
+          }),
+          source: LayoutSource.External,
+          type: 'create'
+        })
+      )
+      expect(listener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: expect.objectContaining({
+            groupId,
+            layout: expect.objectContaining({ id: groupId })
+          }),
+          type: 'create'
+        })
+      )
+      stop()
+    })
+
+    it('restores canonical entities and indexes after delete and recreate', () => {
+      createNode()
+      createGroup()
+      createReroute()
+
+      const deletions: LayoutOperation[] = [
+        { ...metadata, entity: 'node', nodeId, type: 'deleteNode' },
+        { ...metadata, entity: 'group', graphId, groupId, type: 'deleteGroup' },
+        {
+          ...metadata,
+          entity: 'reroute',
+          graphId,
+          rerouteId,
+          type: 'deleteReroute'
+        }
+      ]
+      deletions.forEach((operation) => layoutStore.applyOperation(operation))
+
+      createNode()
+      createGroup()
+      createReroute()
+
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value?.id).toBe(
+        nodeId
+      )
+      expect(layoutStore.getGroupLayout(graphId, groupId)?.id).toBe(groupId)
+      expect(layoutStore.getRerouteLayout(graphId, rerouteId)?.id).toBe(
+        rerouteId
+      )
+      expect(
+        layoutStore.queryRerouteAtPoint(graphId, { x: 10, y: 20 })?.id
+      ).toBe(rerouteId)
+    })
+
+    it('returns no-op for equal node, group, and reroute setters', () => {
+      createNode()
+      createGroup()
+      createReroute()
+
+      const operations: LayoutOperation[] = [
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          position: { x: 100, y: 100 },
+          type: 'moveNode'
+        },
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          size: { width: 200, height: 100 },
+          type: 'resizeNode'
+        },
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          type: 'setNodeZIndex',
+          zIndex: 0
+        },
+        {
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          type: 'setNodeVisibility',
+          visible: true
+        },
+        {
+          ...metadata,
+          entity: 'group',
+          graphId,
+          groupId,
+          position: { x: 10, y: 20 },
+          size: { width: 30, height: 40 },
+          type: 'setGroupBounds'
+        },
+        {
+          ...metadata,
+          entity: 'reroute',
+          graphId,
+          position: { x: 10, y: 20 },
+          rerouteId,
+          type: 'moveReroute'
+        }
+      ]
+
+      for (const operation of operations) {
+        expect(layoutStore.applyOperation(operation)).toBe('no-op')
+      }
+    })
+
+    it('applies a mixed batch only when an existing node changes', () => {
+      createNode()
+      const equalNodeId = toNodeId('equal-batch-node')
+      createNode({ ...createTestNode(equalNodeId), id: equalNodeId })
+
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          bounds: {
+            [nodeId]: { x: 5, y: 6, width: 7, height: 8 },
+            [equalNodeId]: { x: 100, y: 100, width: 200, height: 100 },
+            [toNodeId('missing')]: { x: 1, y: 2, width: 3, height: 4 }
+          },
+          entity: 'node',
+          nodeIds: [nodeId, equalNodeId, toNodeId('missing')],
+          type: 'batchUpdateBounds'
+        })
+      ).toBe('applied')
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, nodeId).value?.bounds
+      ).toEqual({
+        x: 5,
+        y: 6,
+        width: 7,
+        height: 8
+      })
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, equalNodeId).value?.bounds
+      ).toEqual({
+        x: 100,
+        y: 100,
+        width: 200,
+        height: 100
+      })
+    })
+
+    it('returns no-op for all-missing and all-equal batches', () => {
+      createNode()
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          bounds: {
+            [toNodeId('missing')]: { x: 1, y: 2, width: 3, height: 4 }
+          },
+          entity: 'node',
+          nodeIds: [toNodeId('missing')],
+          type: 'batchUpdateBounds'
+        })
+      ).toBe('no-op')
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          bounds: {
+            [nodeId]: { x: 100, y: 100, width: 200, height: 100 }
+          },
+          entity: 'node',
+          nodeIds: [nodeId],
+          type: 'batchUpdateBounds'
+        })
+      ).toBe('no-op')
+    })
+
+    it('does not finalize or project a no-op command', async () => {
+      createNode()
+      const nodeListener = vi.fn()
+      const globalListener = vi.fn()
+      const geometryListener = vi.fn()
+      const stopNode = layoutStore.onNodeChange(graphId, nodeId, nodeListener)
+      const stopGlobal = layoutStore.onChange(globalListener)
+      const stopGeometry = layoutStore.onGeometryChange(geometryListener)
+      const version = layoutStore.getVersion().value
+      const geometryVersion = layoutStore.geometryVersion
+
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          type: 'setNodeVisibility',
+          visible: true
+        })
+      ).toBe('no-op')
+      await Promise.resolve()
+
+      expect(nodeListener).not.toHaveBeenCalled()
+      expect(globalListener).not.toHaveBeenCalled()
+      expect(geometryListener).not.toHaveBeenCalled()
+      expect(layoutStore.getVersion().value).toBe(version)
+      expect(layoutStore.geometryVersion).toBe(geometryVersion)
+      stopNode()
+      stopGlobal()
+      stopGeometry()
+    })
+
+    it('finalizes an applied command exactly once', async () => {
+      createNode()
+      const nodeListener = vi.fn()
+      const globalListener = vi.fn()
+      const geometryListener = vi.fn()
+      const stopNode = layoutStore.onNodeChange(graphId, nodeId, nodeListener)
+      const stopGlobal = layoutStore.onChange(globalListener)
+      const stopGeometry = layoutStore.onGeometryChange(geometryListener)
+      const version = layoutStore.getVersion().value
+      const geometryVersion = layoutStore.geometryVersion
+
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'node',
+          nodeId,
+          type: 'setNodeVisibility',
+          visible: false
+        })
+      ).toBe('applied')
+      await Promise.resolve()
+
+      expect(nodeListener).toHaveBeenCalledOnce()
+      expect(globalListener).toHaveBeenCalledOnce()
+      expect(geometryListener).toHaveBeenCalledOnce()
+      expect(layoutStore.getVersion().value).toBe(version + 1)
+      expect(layoutStore.geometryVersion).toBe(geometryVersion + 1)
+      stopNode()
+      stopGlobal()
+      stopGeometry()
+    })
+
+    it('snapshots nested input and isolates notification listeners', async () => {
+      const operation: LayoutOperation = {
+        ...metadata,
+        entity: 'node',
+        layout: createTestNode(nodeId),
+        nodeId,
+        type: 'createNode'
+      }
+      const laterListener = vi.fn()
+      const stopMutating = layoutStore.onChange((change) => {
+        if (change.operation.type === 'createNode') {
+          change.operation.layout.position.x = 999
+        }
+      })
+      const stopLater = layoutStore.onChange(laterListener)
+
+      expect(layoutStore.applyOperation(operation)).toBe('applied')
+      if (operation.type === 'createNode') operation.layout.position.x = 500
+      await Promise.resolve()
+
+      expect(
+        layoutStore.getNodeLayoutRef(graphId, nodeId).value?.position.x
+      ).toBe(100)
+      expect(laterListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: expect.objectContaining({
+            layout: expect.objectContaining({ position: { x: 100, y: 100 } })
+          })
+        })
+      )
+      stopMutating()
+      stopLater()
+    })
+
+    it('rejects a reentrant command and preserves the outer actor', () => {
+      createNode()
+      const ydoc = getLayoutStoreYDoc()
+      const transactions: Y.Transaction[] = []
+      const nodeListener = vi.fn()
+      const stopNode = layoutStore.onNodeChange(graphId, nodeId, nodeListener)
+      let nestedResult:
+        | ReturnType<typeof layoutStore.applyOperation>
+        | undefined
+      function recordTransaction(transaction: Y.Transaction): void {
+        transactions.push(transaction)
+      }
+      function attemptNested(): void {
+        ydoc.off('beforeTransaction', attemptNested)
+        nestedResult = layoutStore.applyOperation({
+          ...metadata,
+          actor: 'nested-actor',
+          entity: 'node',
+          nodeId,
+          size: { width: 500, height: 600 },
+          type: 'resizeNode'
+        })
+      }
+      ydoc.on('beforeTransaction', attemptNested)
+      ydoc.on('afterTransaction', recordTransaction)
+
+      const result = layoutStore.applyOperation({
+        ...metadata,
+        actor: 'outer-actor',
+        entity: 'node',
+        nodeId,
+        position: { x: 300, y: 400 },
+        type: 'moveNode'
+      })
+
+      expect(result).toBe('applied')
+      expect(nestedResult).toBe('rejected')
+      expect(transactions).toHaveLength(1)
+      expect(transactions[0].origin).toBe('outer-actor')
+      expect(nodeListener).toHaveBeenCalledOnce()
+      expect(nodeListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: expect.objectContaining({ actor: 'outer-actor' })
+        })
+      )
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value).toMatchObject(
+        {
+          position: { x: 300, y: 400 },
+          size: { width: 200, height: 100 }
+        }
+      )
+      ydoc.off('afterTransaction', recordTransaction)
+      stopNode()
+    })
   })
 
-  it('should move nodes', () => {
-    const nodeId = toNodeId('test-node-2')
-    const layout = createTestNode(nodeId)
+  it('notifies geometry once for one remote transaction across entity maps', () => {
+    const remote = createRemoteDoc()
+    const onGeometryChange = vi.fn()
+    const stop = layoutStore.onGeometryChange(onGeometryChange)
+    const geometryVersion = layoutStore.geometryVersion
 
-    // Create node first
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
+    applyRemoteChanges(remote, () => {
+      remote.transact(() => {
+        const node = new Y.Map<unknown>()
+        node.set('id', 'remote-transaction-node')
+        node.set('position', { x: 10, y: 20 })
+        node.set('size', { width: 30, height: 40 })
+        node.set('zIndex', 0)
+        node.set('visible', true)
+        remote
+          .getMap<Y.Map<unknown>>('nodes')
+          .set('remote-transaction-node', node)
+
+        const group = new Y.Map<unknown>()
+        group.set('id', 1)
+        group.set('bounds', { x: 50, y: 60, width: 70, height: 80 })
+        remote.getMap<Y.Map<unknown>>('groups').set('remote-graph:1', group)
+
+        const reroute = new Y.Map<unknown>()
+        reroute.set('id', 2)
+        reroute.set('position', { x: 90, y: 100 })
+        remote.getMap<Y.Map<unknown>>('reroutes').set('remote-graph:2', reroute)
+      })
     })
 
-    // Move node
-    const newPosition = { x: 200, y: 300 }
-    layoutStore.applyOperation({
-      type: 'moveNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
-      position: newPosition,
-      timestamp: Date.now(),
-      source: LayoutSource.Vue,
-      actor: 'test'
-    })
-
-    // Verify position updated
-    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-    expect(nodeRef.value?.position).toEqual(newPosition)
+    expect(onGeometryChange).toHaveBeenCalledOnce()
+    expect(layoutStore.geometryVersion).toBe(geometryVersion + 1)
+    stop()
   })
 
-  it('should resize nodes', () => {
-    const nodeId = toNodeId('test-node-3')
-    const layout = createTestNode(nodeId)
-
-    // Create node
+  it('reads only z-index when tracking the highest changed node', () => {
+    const nodeId = toNodeId('z-index-read')
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
       graphId: GRAPH,
       nodeId,
-      layout,
+      layout: createTestNode(nodeId),
       timestamp: Date.now(),
-      source: LayoutSource.External,
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
+    const ynode = getLayoutStoreYDoc()
+      .getMap<Y.Map<unknown>>('nodes')
+      .get(`${GRAPH}:${nodeId}`)
+    if (!ynode) throw new Error('Expected stored node layout')
+    const get = vi.spyOn(ynode, 'get')
+    onTestFinished(() => get.mockRestore())
 
-    // Resize node
-    const newSize = { width: 300, height: 150 }
+    ynode.set('zIndex', 99)
+
+    expect(get.mock.calls).toEqual([['zIndex']])
+    expect(layoutStore.allocateZIndex()).toBe(100)
+  })
+
+  it('isolates errors between geometry change listeners', () => {
+    const listenerError = new Error('geometry listener failed')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const stopThrowing = layoutStore.onGeometryChange(() => {
+      throw listenerError
+    })
+    const laterListener = vi.fn()
+    const stopLater = layoutStore.onGeometryChange(laterListener)
+
+    expect(() => {
+      layoutStore.applyOperation({
+        type: 'createNode',
+        entity: 'node',
+        graphId: GRAPH,
+        nodeId: toNodeId('listener-error-node'),
+        layout: createTestNode(toNodeId('listener-error-node')),
+        timestamp: Date.now(),
+        source: LayoutSource.External,
+        actor: 'test'
+      })
+    }).not.toThrow()
+
+    expect(laterListener).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      'Error in geometry change listener:',
+      listenerError
+    )
+    stopThrowing()
+    stopLater()
+    consoleError.mockRestore()
+  })
+
+  it('isolates graph IDs between geometry change listeners', () => {
+    const stopMutating = layoutStore.onGeometryChange((graphIds) => {
+      Set.prototype.clear.call(graphIds)
+    })
+    onTestFinished(stopMutating)
+    const laterListener = vi.fn()
+    const stopLater = layoutStore.onGeometryChange(laterListener)
+    onTestFinished(stopLater)
+    const nodeId = toNodeId('listener-isolation-node')
+
     layoutStore.applyOperation({
-      type: 'resizeNode',
+      type: 'createNode',
       entity: 'node',
       graphId: GRAPH,
       nodeId,
-      size: newSize,
+      layout: createTestNode(nodeId),
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
     })
 
-    // Verify size updated
-    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-    expect(nodeRef.value?.size).toEqual(newSize)
+    expect(laterListener).toHaveBeenCalledWith(new Set([GRAPH]))
   })
 
-  it('should delete nodes', () => {
-    const nodeId = toNodeId('test-node-4')
+  it('projects remote node moves into reactive geometry', async () => {
+    const nodeId = toNodeId('remote-move')
     const layout = createTestNode(nodeId)
-
-    // Create node
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
@@ -167,21 +902,80 @@ describe('layoutStore CRDT operations', () => {
       source: LayoutSource.External,
       actor: 'test'
     })
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
+    const refChanges = vi.fn()
+    const stop = watch(nodeRef, refChanges)
+    const version = layoutStore.geometryVersion
+    const remote = createRemoteDoc()
 
-    // Delete node
+    applyRemoteChanges(remote, () => {
+      remote
+        .getMap<Y.Map<unknown>>('nodes')
+        .get(`${GRAPH}:${nodeId}`)
+        ?.set('position', { x: 500, y: 600 })
+    })
+    await nextTick()
+
+    expect(layoutStore.geometryVersion).toBe(version + 1)
+    expect(nodeRef.value?.position).toEqual({ x: 500, y: 600 })
+    expect(refChanges).toHaveBeenCalledOnce()
+    expect(readRect(nodeId)).toEqual([500, 600, 200, 100])
+    stop()
+  })
+
+  it('projects remote node creation and deletion into readable geometry', () => {
+    const nodeId = toNodeId('remote-create-delete')
+    const remote = createRemoteDoc()
+
+    applyRemoteChanges(remote, () => {
+      const node = new Y.Map<unknown>()
+      node.set('id', nodeId)
+      node.set('position', { x: 640, y: 360 })
+      node.set('size', { width: 320, height: 180 })
+      node.set('zIndex', 0)
+      node.set('visible', true)
+      remote.getMap<Y.Map<unknown>>('nodes').set(`${GRAPH}:${nodeId}`, node)
+    })
+    expect(readRect(nodeId)).toEqual([640, 360, 320, 180])
+
+    applyRemoteChanges(remote, () => {
+      remote.getMap('nodes').delete(`${GRAPH}:${nodeId}`)
+    })
+    expect(readRect(nodeId)).toBeNull()
+  })
+
+  it('projects remote reroute moves into layout and spatial queries', () => {
+    const graphId = createUuidv4() as UUID
+    const rerouteId = toRerouteId(42)
     layoutStore.applyOperation({
-      type: 'deleteNode',
-      entity: 'node',
-      graphId: GRAPH,
-      nodeId,
+      type: 'createReroute',
+      entity: 'reroute',
+      graphId,
+      rerouteId,
+      position: { x: 20, y: 30 },
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
     })
+    const remote = createRemoteDoc()
 
-    // Verify node deleted
-    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
-    expect(nodeRef.value).toBeNull()
+    applyRemoteChanges(remote, () => {
+      remote
+        .getMap<Y.Map<unknown>>('reroutes')
+        .get(`${graphId}:${rerouteId}`)
+        ?.set('position', { x: 400, y: 500 })
+    })
+
+    expect(layoutStore.getRerouteLayout(graphId, rerouteId)?.position).toEqual({
+      x: 400,
+      y: 500
+    })
+    expect(
+      layoutStore.queryRerouteAtPoint(graphId, { x: 20, y: 30 })
+    ).toBeNull()
+    expect(
+      layoutStore.queryRerouteAtPoint(graphId, { x: 400, y: 500 })?.id
+    ).toBe(rerouteId)
   })
 
   it('should handle source and actor tracking', async () => {
@@ -335,6 +1129,64 @@ describe('layoutStore CRDT operations', () => {
 
     unsubscribeNode()
     unsubscribeGlobal()
+  })
+
+  it('isolates node listeners and queued global listeners from mutations', async () => {
+    const nodeId = toNodeId('isolated-node-listener')
+    const canonicalPosition = { x: 120, y: 110 }
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      graphId: GRAPH,
+      nodeId,
+      layout: createTestNode(nodeId),
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    const laterNodeListener = vi.fn()
+    const globalListener = vi.fn()
+    const stopMutating = layoutStore.onNodeChange(GRAPH, nodeId, (change) => {
+      change.nodeIds.push(toNodeId('corrupted'))
+      change.operation.type = 'deleteNode'
+    })
+    const stopNode = layoutStore.onNodeChange(GRAPH, nodeId, laterNodeListener)
+    const stopGlobal = layoutStore.onChange(globalListener)
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      entity: 'node',
+      graphId: GRAPH,
+      nodeId,
+      position: canonicalPosition,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    expect(laterNodeListener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nodeIds: [nodeId],
+        operation: expect.objectContaining({
+          type: 'moveNode',
+          position: canonicalPosition
+        })
+      })
+    )
+    await Promise.resolve()
+    expect(globalListener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nodeIds: [nodeId],
+        operation: expect.objectContaining({
+          type: 'moveNode',
+          position: canonicalPosition
+        })
+      })
+    )
+    stopMutating()
+    stopNode()
+    stopGlobal()
   })
 
   it('clears node-scoped listeners when the viewed graph changes', () => {
@@ -494,6 +1346,34 @@ describe('layoutStore CRDT operations', () => {
     expect(nodeRef.value?.size.height).toBe(layout.size.height)
     expect(nodeRef.value?.size.width).toBe(layout.size.width)
     expect(nodeRef.value?.position).toEqual(layout.position)
+  })
+
+  it('restores the source when a batch update throws', () => {
+    const nodeId = toNodeId('throwing-batch-node')
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      graphId: GRAPH,
+      nodeId,
+      layout: createTestNode(nodeId),
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    layoutStore.setSource(LayoutSource.DOM)
+    const applyOperation = vi
+      .spyOn(layoutStore, 'applyOperation')
+      .mockImplementationOnce(() => {
+        throw new Error('batch failed')
+      })
+
+    expect(() =>
+      layoutStore.batchUpdateNodeBounds(GRAPH, [
+        { nodeId, bounds: { x: 1, y: 2, width: 3, height: 4 } }
+      ])
+    ).toThrow('batch failed')
+    applyOperation.mockRestore()
+    expect(layoutStore.getCurrentSource()).toBe(LayoutSource.DOM)
   })
 
   it('normalizes very small DOM-sourced heights safely', () => {
@@ -676,6 +1556,61 @@ describe('reroute layouts outlive an active-graph reseed', () => {
 
     expect(layoutStore.getRerouteLayout(GRAPH_ID, REROUTE)).toBeNull()
     expect(layoutStore.queryRerouteAtPoint(GRAPH_ID, POSITION)).toBeNull()
+  })
+})
+
+describe('reroute layout aliases', () => {
+  const GRAPH_ID = createUuidv4()
+  const REROUTE_ID = toRerouteId(4343)
+  const POSITION = { x: 100, y: 100 }
+
+  beforeEach(() => {
+    layoutStore.resetForTests()
+  })
+
+  function layout() {
+    return {
+      id: REROUTE_ID,
+      position: { ...POSITION },
+      radius: 10,
+      bounds: { x: 90, y: 90, width: 20, height: 20 }
+    }
+  }
+
+  function expectCanonicalLayout(version: number): void {
+    expect(layoutStore.getRerouteLayout(GRAPH_ID, REROUTE_ID)).toEqual(layout())
+    expect(layoutStore.queryRerouteAtPoint(GRAPH_ID, POSITION)).toEqual(
+      layout()
+    )
+    expect(
+      layoutStore.queryRerouteAtPoint(GRAPH_ID, { x: 300, y: 300 })
+    ).toBeNull()
+    expect(layoutStore.geometryVersion).toBe(version)
+  }
+
+  it.for([
+    {
+      boundary: 'input',
+      read: (input: ReturnType<typeof layout>) => input
+    },
+    {
+      boundary: 'getter',
+      read: () => layoutStore.getRerouteLayout(GRAPH_ID, REROUTE_ID)!
+    },
+    {
+      boundary: 'spatial query',
+      read: () => layoutStore.queryRerouteAtPoint(GRAPH_ID, POSITION)!
+    }
+  ])('isolates the $boundary alias', ({ read }) => {
+    const input = layout()
+    layoutStore.updateRerouteLayout(GRAPH_ID, REROUTE_ID, input)
+    const version = layoutStore.geometryVersion
+    const exposed = read(input)
+
+    exposed.position.x = 300
+    exposed.bounds.x = 290
+
+    expectCanonicalLayout(version)
   })
 })
 
@@ -984,7 +1919,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
     }
   )
 
-  it('ignores a null assignment; deletion goes through layoutMutations.deleteNode', () => {
+  it('ignores a null assignment', () => {
     const ref = layoutStore.getNodeLayoutRef(GRAPH, REF_NODE)
     const layout = baseLayout()
     ref.value = layout

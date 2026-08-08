@@ -102,7 +102,7 @@ export const useRerouteStore = defineStore('reroute', () => {
       console.warn(
         `[rerouteStore] Reroute ${chain.id} is already registered in graph ${graphId}; refusing to overwrite the live registration.`
       )
-      return chain
+      return existing
     }
     bucket.set(chain.id, chain)
     return bucket.get(chain.id)!

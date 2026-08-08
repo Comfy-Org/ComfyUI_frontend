@@ -5,49 +5,59 @@ import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
-/**
- * Stored geometry: one `[x, y, width, height]` tuple. Position, size and bounds
- * are views of it rather than fields of their own, so they cannot disagree, and
- * a whole-tuple replace is the write a CRDT register wants.
- */
-export type StoredRect = [x: number, y: number, width: number, height: number]
+type StoredRect = [x: number, y: number, width: number, height: number]
 
 type StoredNode = {
   id: NodeId
-  rect: StoredRect
-  zIndex: number
+  position: NodeLayout['position']
+  size: NodeLayout['size']
   visible: boolean
+  zIndex: number
+  registrationId?: string
 }
 
 export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
 
-const DEFAULT_NODE_RECT: StoredRect = [0, 0, 100, 50]
+const DEFAULT_NODE_POSITION: NodeLayout['position'] = { x: 0, y: 0 }
+const DEFAULT_NODE_SIZE: NodeLayout['size'] = { width: 100, height: 50 }
 
-export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
+export function layoutToYNode(
+  layout: NodeLayout,
+  registrationId?: string
+): NodeLayoutMap {
   const ynode = new Y.Map<StoredNode[keyof StoredNode]>() as NodeLayoutMap
   ynode.set('id', layout.id)
-  ynode.set('rect', [
-    layout.position.x,
-    layout.position.y,
-    layout.size.width,
-    layout.size.height
-  ])
+  ynode.set('position', { ...layout.position })
+  ynode.set('size', { ...layout.size })
   ynode.set('zIndex', layout.zIndex)
   ynode.set('visible', layout.visible)
+  if (registrationId !== undefined) {
+    ynode.set('registrationId', registrationId)
+  }
   return ynode
 }
 
-function yNodeRect(ynode: NodeLayoutMap): Readonly<StoredRect> {
-  return (ynode.get('rect') as StoredRect | undefined) ?? DEFAULT_NODE_RECT
+export function yNodeGeometry(
+  ynode: NodeLayoutMap
+): Pick<NodeLayout, 'position' | 'size'> {
+  const storedPosition =
+    (ynode.get('position') as NodeLayout['position'] | undefined) ??
+    DEFAULT_NODE_POSITION
+  const storedSize =
+    (ynode.get('size') as NodeLayout['size'] | undefined) ?? DEFAULT_NODE_SIZE
+  return {
+    position: { ...storedPosition },
+    size: { ...storedSize }
+  }
 }
 
 export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
-  const [x, y, width, height] = yNodeRect(ynode)
+  const { position, size } = yNodeGeometry(ynode)
   return {
     id: (ynode.get('id') ?? toNodeId('unknown-node')) as NodeId,
-    position: { x, y },
-    size: { width, height },
-    bounds: { x, y, width, height },
+    position,
+    size,
+    bounds: { ...position, ...size },
     zIndex: (ynode.get('zIndex') ?? 0) as number,
     visible: (ynode.get('visible') ?? true) as boolean
   }
@@ -56,13 +66,17 @@ export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
 type StoredGroup = {
   id: GroupId
   rect: StoredRect
+  registrationId?: string
 }
 
 export type GroupLayoutMap = Y.Map<StoredGroup[keyof StoredGroup]>
 
 const DEFAULT_GROUP_RECT: StoredRect = [0, 0, 140, 80]
 
-export function layoutToYGroup(layout: GroupLayout): GroupLayoutMap {
+export function layoutToYGroup(
+  layout: GroupLayout,
+  registrationId?: string
+): GroupLayoutMap {
   const ygroup = new Y.Map<StoredGroup[keyof StoredGroup]>() as GroupLayoutMap
   ygroup.set('id', layout.id)
   ygroup.set('rect', [
@@ -71,6 +85,7 @@ export function layoutToYGroup(layout: GroupLayout): GroupLayoutMap {
     layout.size.width,
     layout.size.height
   ])
+  if (registrationId !== undefined) ygroup.set('registrationId', registrationId)
   return ygroup
 }
 

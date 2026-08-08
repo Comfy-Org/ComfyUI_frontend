@@ -38,8 +38,8 @@ export interface Bounds {
 }
 
 export interface NodeBoundsUpdate {
-  nodeId: NodeId
   bounds: Bounds
+  nodeId: NodeId
 }
 
 export type { LinkId }
@@ -121,13 +121,20 @@ interface OperationMeta {
   type: OperationType
 }
 
+export type LayoutOperationResult = 'applied' | 'no-op' | 'rejected'
+
 /**
  * Entity-specific base types for proper type discrimination
  */
-type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
+type NodeOpBase = OperationMeta & {
+  entity: 'node'
+  nodeId: NodeId
+  registrationId?: string
+}
 type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
   rerouteId: RerouteId
+  registrationId?: string
 }
 
 /**
@@ -177,8 +184,8 @@ export interface SetNodeZIndexOperation extends NodeOpBase {
  * Create node operation
  */
 export interface CreateNodeOperation extends NodeOpBase {
-  type: 'createNode'
   layout: NodeLayout
+  type: 'createNode'
 }
 
 /**
@@ -200,10 +207,11 @@ interface SetNodeVisibilityOperation extends NodeOpBase {
  * Batch update operation for atomic multi-property changes
  */
 export interface BatchUpdateBoundsOperation extends OperationMeta {
-  entity: 'node'
-  type: 'batchUpdateBounds'
-  nodeIds: NodeId[]
   bounds: Record<NodeId, Bounds>
+  entity: 'node'
+  nodeIds: NodeId[]
+  type: 'batchUpdateBounds'
+  registrationIds?: Partial<Record<NodeId, string>>
 }
 
 /**
@@ -225,13 +233,14 @@ export interface DeleteRerouteOperation extends RerouteOpBase {
  * Move reroute operation
  */
 export interface MoveRerouteOperation extends RerouteOpBase {
-  type: 'moveReroute'
   position: Point
+  type: 'moveReroute'
 }
 
 type GroupOpBase = OperationMeta & {
   entity: 'group'
   groupId: GroupId
+  registrationId?: string
 }
 
 interface CreateGroupOperation extends GroupOpBase {
@@ -244,9 +253,9 @@ interface CreateGroupOperation extends GroupOpBase {
  * position and size from ever being written apart.
  */
 export interface SetGroupBoundsOperation extends GroupOpBase {
-  type: 'setGroupBounds'
   position: Point
   size: Size
+  type: 'setGroupBounds'
 }
 
 interface DeleteGroupOperation extends GroupOpBase {

@@ -1,4 +1,7 @@
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import {
+  hasRerouteLayoutRegistration,
+  moveRerouteLayout
+} from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
@@ -7,7 +10,8 @@ import type { NodeId } from '@/types/nodeId'
 import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { zeroUuid } from '@/utils/uuid'
+import { toRaw } from 'vue'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
@@ -30,11 +34,6 @@ import type {
 import { LiteGraph } from './litegraph'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
-
-const layoutMutations = useLayoutMutations()
-
-/** Fallback for a reroute whose store entry has already been deleted. */
-const ORIGIN = { x: 0, y: 0 } as const
 
 export type { FloatingRerouteSlot } from '@/types/rerouteChain'
 export type { RerouteId } from '@/types/rerouteId'
@@ -63,8 +62,10 @@ export class Reroute
   public readonly id: RerouteId
 
   /** The network this reroute belongs to.  Contains all valid links and reroutes. */
-  private readonly network: WeakRef<LinkNetwork>
-  private readonly rootGraphId: UUID
+  readonly network: WeakRef<LinkNetwork>
+  private get rootGraphId() {
+    return this.network.deref()?.rootGraph.id ?? this._graphId ?? zeroUuid
+  }
   private readonly position: Point = [0, 0]
   private readonly positionView = createGeometryView(this.position, {
     synchronize: () => this.syncPosition(),
@@ -119,8 +120,8 @@ export class Reroute
   }
 
   /**
-   * Position lives in {@link layoutStore} and nowhere else — the reroute
-   * registers itself on construction, so there is always an entry to read.
+   * Position lives in {@link layoutStore} after attachment. Before attachment,
+   * the stable position buffer retains the constructor-supplied value.
    */
   get pos(): Point {
     return this.positionView
@@ -132,8 +133,15 @@ export class Reroute
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
 
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.moveReroute(this.rootGraphId, this.id, {
+    if (!this._graphId || !hasRerouteLayoutRegistration(this)) {
+      this.position[0] = value[0]
+      this.position[1] = value[1]
+      return
+    }
+
+    const graph = this.network.deref()
+    if (!graph) return
+    moveRerouteLayout(graph, this, {
       x: value[0],
       y: value[1]
     })
@@ -155,9 +163,14 @@ export class Reroute
   }
 
   private get storedPosition(): Readonly<LayoutPoint> {
+    if (!hasRerouteLayoutRegistration(this)) {
+      return { x: this.position[0], y: this.position[1] }
+    }
     return (
-      layoutStore.getRerouteLayout(this.rootGraphId, this.id)?.position ??
-      ORIGIN
+      layoutStore.getReroutePosition(this.rootGraphId, this.id) ?? {
+        x: this.position[0],
+        y: this.position[1]
+      }
     )
   }
 
@@ -291,15 +304,10 @@ export class Reroute
   ) {
     this.id = id
     this.network = new WeakRef(network)
-    this.rootGraphId = network.rootGraph.id
     this._chain = { id }
     this.parentId = parentId
-
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createReroute(this.rootGraphId, id, {
-      x: pos?.[0] ?? 0,
-      y: pos?.[1] ?? 0
-    })
+    this.position[0] = pos?.[0] ?? 0
+    this.position[1] = pos?.[1] ?? 0
   }
 
   /**
@@ -848,10 +856,17 @@ export function anchorRerouteChain(network: LinkNetwork, link: LLink): void {
  */
 export function registerRerouteChain(
   graph: Pick<LGraph, 'rootGraph'>,
-  reroute: Reroute
+  reroute: Reroute,
+  adoptExisting = false
 ): void {
   const graphId = graph.rootGraph.id
-  reroute._chain = useRerouteStore().registerReroute(graphId, reroute._chain)
+  const registered = useRerouteStore().registerReroute(graphId, reroute._chain)
+  if (!adoptExisting && toRaw(registered) !== toRaw(reroute._chain)) {
+    throw new Error(
+      `Reroute ${reroute.id} is already owned in root graph ${graphId}`
+    )
+  }
+  reroute._chain = registered
   reroute._graphId = graphId
 }
 
@@ -868,8 +883,8 @@ export function unregisterRerouteChain(reroute: Reroute): void {
 
 /**
  * Unregisters every reroute a graph owns. Used when a graph's reroutes
- * leave the store without a whole-bucket wipe: subgraph-definition removal,
- * and clearing a graph that shares its bucket with other graphs.
+ * leave the store without a whole-bucket wipe: subgraph-definition removal
+ * and clearing an unconfigured graph.
  * @param graph The graph whose reroutes should be unregistered
  */
 export function unregisterAllRerouteChains(

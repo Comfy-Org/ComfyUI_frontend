@@ -27,6 +27,7 @@ import type {
   GroupLayout,
   LayoutChange,
   LayoutOperation,
+  LayoutOperationResult,
   LinkId,
   LinkLayout,
   LinkSegmentLayout,
@@ -58,27 +59,14 @@ import {
   setYGroupRect,
   layoutToYNode,
   yGroupToLayout,
+  yNodeGeometry,
   yNodeToLayout
 } from '@/renderer/core/layout/utils/mappers'
 import type {
   GroupLayoutMap,
-  NodeLayoutMap,
-  StoredRect
+  NodeLayoutMap
 } from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
-
-type YEventChange = {
-  action: 'add' | 'update' | 'delete'
-  oldValue: unknown
-}
-
-function isNodeRect(value: unknown): value is StoredRect {
-  return (
-    Array.isArray(value) &&
-    value.length === 4 &&
-    value.every((coordinate) => typeof coordinate === 'number')
-  )
-}
 
 const logger = log.getLogger('LayoutStore')
 
@@ -96,6 +84,18 @@ function makeScopedLayoutKey(
   return toScopedLayoutKey(graphId + ':' + localId)
 }
 
+/** Ownership tokens are non-empty strings; `undefined` marks legacy layouts. */
+function isRegistrationId(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
+function hasInvalidRegistrationId(operation: LayoutOperation): boolean {
+  if ('registrationId' in operation) return operation.registrationId === ''
+  if ('registrationIds' in operation && operation.registrationIds)
+    return Object.values(operation.registrationIds).includes('')
+  return false
+}
+
 /** A UUID never contains `:`, so the first one always ends the graph id. */
 function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
   const separatorIndex = key.indexOf(':')
@@ -108,7 +108,10 @@ function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
 interface RerouteData {
   id: RerouteId
   position: Point
+  registrationId?: string
 }
+
+type RerouteLayoutMap = Y.Map<RerouteData[keyof RerouteData]>
 
 // Generic typed Y.Map interface
 interface TypedYMap<T> {
@@ -125,7 +128,7 @@ class LayoutStore {
   // Yjs document and shared data structures
   private ydoc = new Y.Doc()
   private ynodes: Y.Map<NodeLayoutMap> // Maps nodeId -> NodeLayoutMap containing NodeLayout data
-  private yreroutes: Y.Map<Y.Map<unknown>> // Maps rerouteId -> Y.Map containing reroute data
+  private yreroutes: Y.Map<RerouteLayoutMap> // Maps rerouteId -> Y.Map containing reroute data
   private ygroups: Y.Map<GroupLayoutMap> // Maps groupId -> GroupLayoutMap containing GroupLayout data
 
   // Vue reactivity layer
@@ -144,6 +147,15 @@ class LayoutStore {
   >()
   private pendingGlobalChanges: LayoutChange[] = []
   private isGlobalDispatchQueued = false
+  private geometryChangeListeners = new Set<
+    (graphIds: ReadonlySet<UUID>) => void
+  >()
+  private pendingGeometryGraphIds = new Set<UUID>()
+  private pendingNodeTriggerKeys = new Set<ScopedLayoutKey>()
+  private isApplyingOperation = false
+  private notificationDeferralDepth = 0
+  private isFlushingDeferredNotifications = false
+  private deferredChanges: LayoutChange[] = []
 
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<ScopedLayoutKey, Ref<NodeLayout | null>>()
@@ -196,31 +208,78 @@ class LayoutStore {
     this.slotSpatialIndex = new SpatialIndexManager<SlotId>()
     this.rerouteSpatialIndex = new SpatialIndexManager<ScopedLayoutKey>()
 
-    // Listen for Yjs changes and trigger Vue reactivity
-    this.ynodes.observe((event: Y.YMapEvent<NodeLayoutMap>) => {
-      this.version.value++
+    this.ydoc.on('afterTransaction', () => {
+      if (this.pendingGeometryGraphIds.size === 0) return
+      if (this.notificationsDeferred) return
 
-      // Trigger all affected node refs
-      event.changes.keys.forEach((_change: YEventChange, key: string) => {
-        this.nodeTriggers.get(toScopedLayoutKey(key))?.()
-      })
+      this.flushGeometryNotifications()
     })
 
-    this.ygroups.observeDeep(() => {
-      this.version.value++
+    this.ynodes.observeDeep((events) => {
+      const nodeKeys = new Set<string>()
+      for (const event of events) {
+        if (event.path.length === 0 && event instanceof Y.YMapEvent) {
+          event.changes.keys.forEach((_change, key) => nodeKeys.add(key))
+        } else if (typeof event.path[0] === 'string') {
+          nodeKeys.add(event.path[0])
+        }
+      }
+      if (nodeKeys.size === 0) return
+
+      for (const key of nodeKeys) {
+        const ynode = this.ynodes.get(key)
+        if (ynode) {
+          const zIndex = ynode.get('zIndex')
+          if (typeof zIndex === 'number') {
+            this.highestZIndex = Math.max(this.highestZIndex, zIndex)
+          }
+        }
+        const scopedKey = toScopedLayoutKey(key)
+        if (this.notificationsDeferred) {
+          this.pendingNodeTriggerKeys.add(scopedKey)
+        } else {
+          this.nodeTriggers.get(scopedKey)?.()
+        }
+      }
+      for (const key of nodeKeys) {
+        this.pendingGeometryGraphIds.add(parseLayoutKey(key).graphId)
+      }
     })
 
-    // Listen for reroute changes and update spatial indexes
-    this.yreroutes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
-      this.version.value++
-      event.changes.keys.forEach((change, rerouteIdStr) => {
-        this.handleRerouteChange(change, toScopedLayoutKey(rerouteIdStr))
-      })
+    this.ygroups.observeDeep((events) => {
+      for (const event of events) {
+        if (event.path.length === 0 && event instanceof Y.YMapEvent) {
+          event.changes.keys.forEach((_change, key) => {
+            this.pendingGeometryGraphIds.add(parseLayoutKey(key).graphId)
+          })
+        } else if (typeof event.path[0] === 'string') {
+          this.pendingGeometryGraphIds.add(
+            parseLayoutKey(event.path[0]).graphId
+          )
+        }
+      }
+    })
+
+    this.yreroutes.observeDeep((events) => {
+      const rerouteKeys = new Set<string>()
+      for (const event of events) {
+        if (event.path.length === 0 && event instanceof Y.YMapEvent) {
+          event.changes.keys.forEach((_change, key) => rerouteKeys.add(key))
+        } else if (typeof event.path[0] === 'string') {
+          rerouteKeys.add(event.path[0])
+        }
+      }
+      if (rerouteKeys.size === 0) return
+
+      for (const key of rerouteKeys) this.projectReroute(toScopedLayoutKey(key))
+      for (const key of rerouteKeys) {
+        this.pendingGeometryGraphIds.add(parseLayoutKey(key).graphId)
+      }
     })
   }
 
   private getRerouteField<K extends keyof RerouteData>(
-    yreroute: Y.Map<unknown>,
+    yreroute: RerouteLayoutMap,
     field: K,
     defaultValue: RerouteData[K] = LayoutStore.REROUTE_DEFAULTS[field]
   ): RerouteData[K] {
@@ -251,8 +310,6 @@ class LayoutStore {
             return this.getNodeLayout(rootGraphId, nodeId)
           },
           set: (newLayout: NodeLayout | null) => {
-            // No caller assigns null through this ref; deletion goes through
-            // layoutMutations.deleteNode, which carries a graphId.
             if (newLayout === null) return
 
             // Update operation - detect what changed
@@ -283,6 +340,7 @@ class LayoutStore {
                   graphId: rootGraphId,
                   nodeId,
                   position: newLayout.position,
+                  registrationId: this.getNodeRegistrationId(existing),
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor
@@ -297,6 +355,7 @@ class LayoutStore {
                   entity: 'node',
                   graphId: rootGraphId,
                   nodeId,
+                  registrationId: this.getNodeRegistrationId(existing),
                   size: newLayout.size,
                   timestamp: Date.now(),
                   source: this.currentSource,
@@ -309,6 +368,7 @@ class LayoutStore {
                   entity: 'node',
                   graphId: rootGraphId,
                   nodeId,
+                  registrationId: this.getNodeRegistrationId(existing),
                   zIndex: newLayout.zIndex,
                   timestamp: Date.now(),
                   source: this.currentSource,
@@ -357,15 +417,14 @@ class LayoutStore {
   }
 
   readNodeRect(rootGraphId: UUID, nodeId: NodeId, out: Float64Array): boolean {
-    const rect = this.ynodes
-      .get(makeScopedLayoutKey(rootGraphId, nodeId))
-      ?.get('rect')
-    if (!isNodeRect(rect)) return false
+    const ynode = this.ynodes.get(makeScopedLayoutKey(rootGraphId, nodeId))
+    if (!ynode) return false
+    const { position, size } = yNodeGeometry(ynode)
 
-    out[0] = rect[0]
-    out[1] = rect[1]
-    out[2] = rect[2]
-    out[3] = rect[3]
+    out[0] = position.x
+    out[1] = position.y
+    out[2] = size.width
+    out[3] = size.height
     return true
   }
 
@@ -487,6 +546,7 @@ class LayoutStore {
   ): void {
     const rerouteKey = makeScopedLayoutKey(rootGraphId, rerouteId)
     const existing = this.rerouteLayouts.get(rerouteKey)
+    const storedLayout = structuredClone(layout)
 
     if (!existing) {
       logger.debug('Adding reroute layout:', {
@@ -498,13 +558,13 @@ class LayoutStore {
 
     if (existing) {
       // Update spatial index
-      this.rerouteSpatialIndex.update(rerouteKey, layout.bounds)
+      this.rerouteSpatialIndex.update(rerouteKey, storedLayout.bounds)
     } else {
       // Insert into spatial index
-      this.rerouteSpatialIndex.insert(rerouteKey, layout.bounds)
+      this.rerouteSpatialIndex.insert(rerouteKey, storedLayout.bounds)
     }
 
-    this.rerouteLayouts.set(rerouteKey, layout)
+    this.rerouteLayouts.set(rerouteKey, storedLayout)
   }
 
   /**
@@ -527,10 +587,17 @@ class LayoutStore {
     rootGraphId: UUID,
     rerouteId: RerouteId
   ): RerouteLayout | null {
-    return (
-      this.rerouteLayouts.get(makeScopedLayoutKey(rootGraphId, rerouteId)) ??
-      null
+    const layout = this.rerouteLayouts.get(
+      makeScopedLayoutKey(rootGraphId, rerouteId)
     )
+    return layout ? structuredClone(layout) : null
+  }
+
+  getReroutePosition(rootGraphId: UUID, rerouteId: RerouteId): Point | null {
+    const position = this.rerouteLayouts.get(
+      makeScopedLayoutKey(rootGraphId, rerouteId)
+    )?.position
+    return position ? { ...position } : null
   }
 
   /**
@@ -737,7 +804,7 @@ class LayoutStore {
             position: rerouteLayout.position,
             distance
           })
-          return rerouteLayout
+          return structuredClone(rerouteLayout)
         }
       }
     }
@@ -747,114 +814,201 @@ class LayoutStore {
   /**
    * Apply a layout operation using Yjs transactions
    */
-  applyOperation(operation: LayoutOperation): void {
-    // Create change object outside transaction so we can use it after
-    const change: LayoutChange = {
-      type: 'update',
-      nodeIds: [],
-      sizeChangedNodeIds: [],
-      timestamp: operation.timestamp,
-      source: operation.source,
-      operation
-    }
-
-    // Use Yjs transaction for atomic updates
-    this.ydoc.transact(() => {
-      this.applyOperationInTransaction(operation, change)
-    }, this.currentActor)
-
-    // Post-transaction updates
-    this.finalizeOperation(change)
+  applyOperation(operation: LayoutOperation): LayoutOperationResult {
+    if (this.isApplyingOperation) return 'rejected'
+    if (hasInvalidRegistrationId(operation)) return 'rejected'
+    return this.applySnapshots([structuredClone(operation)])
   }
 
-  /**
-   * Apply operation within a transaction
-   */
-  private applyOperationInTransaction(
+  applyOperations(operations: LayoutOperation[]): LayoutOperationResult {
+    if (this.isApplyingOperation) return 'rejected'
+    if (operations.length === 0) return 'no-op'
+    if (operations.some(hasInvalidRegistrationId)) return 'rejected'
+
+    const snapshots = operations.map((operation) => structuredClone(operation))
+    return this.applySnapshots(snapshots)
+  }
+
+  get acceptsOperations(): boolean {
+    return !this.isApplyingOperation
+  }
+
+  private get notificationsDeferred(): boolean {
+    return (
+      this.notificationDeferralDepth > 0 || this.isFlushingDeferredNotifications
+    )
+  }
+
+  withDeferredNotifications<T>(callback: () => T): T {
+    this.notificationDeferralDepth += 1
+    try {
+      return callback()
+    } finally {
+      this.notificationDeferralDepth -= 1
+      if (this.notificationDeferralDepth === 0)
+        this.flushDeferredNotifications()
+    }
+  }
+
+  private flushDeferredNotifications(): void {
+    if (this.isFlushingDeferredNotifications) return
+    this.isFlushingDeferredNotifications = true
+    try {
+      while (
+        this.pendingNodeTriggerKeys.size > 0 ||
+        this.pendingGeometryGraphIds.size > 0 ||
+        this.deferredChanges.length > 0
+      ) {
+        const nodeKeys = [...this.pendingNodeTriggerKeys]
+        this.pendingNodeTriggerKeys.clear()
+        for (const key of nodeKeys) {
+          try {
+            this.nodeTriggers.get(key)?.()
+          } catch (error) {
+            console.error('Error in deferred node trigger:', error)
+          }
+        }
+
+        this.flushGeometryNotifications()
+
+        const changes = this.deferredChanges
+        this.deferredChanges = []
+        for (const change of changes) {
+          this.notifyNodeChange(change)
+          this.queueGlobalChange(change)
+        }
+      }
+    } finally {
+      this.isFlushingDeferredNotifications = false
+    }
+  }
+
+  private applySnapshots(snapshots: LayoutOperation[]): LayoutOperationResult {
+    let applied = false
+    const appliedChanges: LayoutChange[] = []
+    this.isApplyingOperation = true
+    try {
+      this.ydoc.transact(() => {
+        for (const snapshot of snapshots) {
+          const change: LayoutChange = {
+            type: 'update',
+            nodeIds: [],
+            sizeChangedNodeIds: [],
+            timestamp: snapshot.timestamp,
+            source: snapshot.source,
+            operation: snapshot
+          }
+          if (!this.executeOperation(snapshot, change)) continue
+          applied = true
+          appliedChanges.push(change)
+        }
+      }, snapshots[0].actor)
+
+      let finalizationCause: unknown
+      for (const change of appliedChanges) {
+        try {
+          this.finalizeOperation(change)
+        } catch (cause) {
+          finalizationCause ??= cause
+        }
+      }
+      if (finalizationCause !== undefined) throw finalizationCause
+    } finally {
+      this.isApplyingOperation = false
+    }
+
+    if (!applied) return 'no-op'
+    return 'applied'
+  }
+
+  /** Runs inside a Yjs transaction; returns whether state changed. */
+  private executeOperation(
     operation: LayoutOperation,
     change: LayoutChange
-  ): void {
+  ): boolean {
     switch (operation.type) {
       case 'moveNode':
-        this.handleMoveNode(operation, change)
-        break
+        return this.handleMoveNode(operation, change)
       case 'resizeNode':
-        this.handleResizeNode(operation, change)
-        break
+        return this.handleResizeNode(operation, change)
       case 'setNodeZIndex':
-        this.handleSetNodeZIndex(operation, change)
-        break
+        return this.handleSetNodeZIndex(operation, change)
       case 'createNode':
-        this.handleCreateNode(operation, change)
-        break
+        return this.handleCreateNode(operation, change)
       case 'deleteNode':
-        this.handleDeleteNode(operation, change)
-        break
+        return this.handleDeleteNode(operation, change)
+      case 'setNodeVisibility':
+        return this.handleSetNodeVisibility(operation, change)
       case 'batchUpdateBounds':
-        this.handleBatchUpdateBounds(operation, change)
-        break
+        return this.handleBatchUpdateBounds(operation, change)
       case 'createReroute':
-        this.handleCreateReroute(operation, change)
-        break
+        return this.handleCreateReroute(operation, change)
       case 'deleteReroute':
-        this.handleDeleteReroute(operation, change)
-        break
+        return this.handleDeleteReroute(operation, change)
       case 'moveReroute':
-        this.handleMoveReroute(operation, change)
-        break
-      case 'createGroup':
-        this.ygroups.set(
-          makeScopedLayoutKey(operation.graphId, operation.groupId),
-          layoutToYGroup(operation.layout)
-        )
+        return this.handleMoveReroute(operation, change)
+      case 'createGroup': {
+        const key = makeScopedLayoutKey(operation.graphId, operation.groupId)
+        if (this.ygroups.has(key)) return false
+        const layout = { ...operation.layout, id: operation.groupId }
+        change.operation = { ...operation, layout }
         change.type = 'create'
-        break
+        this.ygroups.set(key, layoutToYGroup(layout, operation.registrationId))
+        return true
+      }
       case 'setGroupBounds':
-        this.handleSetGroupBounds(operation)
-        break
-      case 'deleteGroup':
-        this.ygroups.delete(
-          makeScopedLayoutKey(operation.graphId, operation.groupId)
-        )
+        return this.handleSetGroupBounds(operation)
+      case 'deleteGroup': {
+        const key = makeScopedLayoutKey(operation.graphId, operation.groupId)
+        const existing = this.ygroups.get(key)
+        if (
+          !existing ||
+          !this.hasLayoutOwnership(existing, operation.registrationId)
+        ) {
+          return false
+        }
         change.type = 'delete'
-        break
+        this.ygroups.delete(key)
+        return true
+      }
       case 'clearGraph':
-        this.handleClearGraph(operation.graphId, change)
-        break
+        change.type = 'delete'
+        return this.handleClearGraph(operation.graphId, change)
     }
   }
 
-  private handleClearGraph(graphId: UUID, change: LayoutChange): void {
+  private handleClearGraph(graphId: UUID, change: LayoutChange): boolean {
     const prefix = graphId + ':'
+    let cleared = false
 
     for (const key of [...this.ynodes.keys()]) {
       if (!key.startsWith(prefix)) continue
       this.ynodes.delete(key)
       change.nodeIds.push(toNodeId(parseLayoutKey(key).localId))
+      cleared = true
     }
     for (const key of [...this.ygroups.keys()]) {
-      if (key.startsWith(prefix)) this.ygroups.delete(key)
+      if (!key.startsWith(prefix)) continue
+      this.ygroups.delete(key)
+      cleared = true
     }
     for (const key of [...this.yreroutes.keys()]) {
-      if (key.startsWith(prefix)) this.yreroutes.delete(key)
+      if (!key.startsWith(prefix)) continue
+      this.yreroutes.delete(key)
+      cleared = true
     }
 
-    change.type = 'delete'
+    return cleared
   }
 
   /**
    * Finalize operation after transaction
    */
   private finalizeOperation(change: LayoutChange): void {
-    // Update version
-    this.version.value++
-
-    // Manually trigger affected node refs after transaction
-    // This is needed because Yjs observers don't fire for property changes
-    const { graphId } = change.operation
-    change.nodeIds.forEach((nodeId) => {
-      this.nodeTriggers.get(makeScopedLayoutKey(graphId, nodeId))?.()
-    })
+    if (this.notificationsDeferred) {
+      this.deferredChanges.push(change)
+      return
+    }
 
     // Keep node-scoped listeners synchronous for immediate local feedback,
     // but queue global listener fan-out to avoid blocking hot paths.
@@ -868,6 +1022,13 @@ class LayoutStore {
   onChange(callback: (change: LayoutChange) => void): () => void {
     this.changeListeners.add(callback)
     return () => this.changeListeners.delete(callback)
+  }
+
+  onGeometryChange(
+    callback: (graphIds: ReadonlySet<UUID>) => void
+  ): () => void {
+    this.geometryChangeListeners.add(callback)
+    return () => this.geometryChangeListeners.delete(callback)
   }
 
   onNodeChange(
@@ -931,15 +1092,27 @@ class LayoutStore {
   }
 
   /** Drops entity layout owned by a root graph and its subgraph definitions. */
-  clearGraph(rootGraphId: UUID): void {
-    this.applyOperation({
-      type: 'clearGraph',
-      entity: 'graph',
-      graphId: rootGraphId,
-      timestamp: Date.now(),
-      source: this.currentSource,
-      actor: this.currentActor
-    })
+  clearGraph(rootGraphId: UUID): LayoutOperationResult {
+    const undoManager = new Y.UndoManager(
+      [this.ynodes, this.ygroups, this.yreroutes],
+      { trackedOrigins: new Set([this.currentActor]) }
+    )
+    try {
+      return this.applyOperation({
+        actor: this.currentActor,
+        graphId: rootGraphId,
+        source: this.currentSource,
+        timestamp: Date.now(),
+        type: 'clearGraph',
+        entity: 'graph'
+      })
+    } catch (error) {
+      undoManager.undo()
+      throw error
+    } finally {
+      undoManager.clear()
+      undoManager.destroy()
+    }
   }
 
   /** Test-only full reset; attached graph entities become desynchronized. */
@@ -977,193 +1150,244 @@ class LayoutStore {
   }
 
   // Operation handlers
+  private getNodeRegistrationId(node: NodeLayoutMap): string | undefined {
+    const registrationId = node.get('registrationId')
+    return isRegistrationId(registrationId) ? registrationId : undefined
+  }
+
+  private hasLayoutOwnership(
+    layout: { get(key: string): unknown },
+    registrationId: string | undefined
+  ): boolean {
+    const storedRegistrationId = layout.get('registrationId')
+    return registrationId === undefined
+      ? storedRegistrationId === undefined
+      : storedRegistrationId === registrationId
+  }
+
   private handleMoveNode(
     operation: MoveNodeOperation,
     change: LayoutChange
-  ): void {
+  ): boolean {
     const { nodeId } = operation
-    const ynode = this.ynodes.get(
-      makeScopedLayoutKey(operation.graphId, nodeId)
-    )
-    if (!ynode) {
-      return
+    const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
+    const ynode = this.ynodes.get(nodeKey)
+    if (!ynode || !this.hasLayoutOwnership(ynode, operation.registrationId)) {
+      return false
     }
-
-    const size = yNodeToLayout(ynode).size
-
-    ynode.set('rect', [
-      operation.position.x,
-      operation.position.y,
-      size.width,
-      size.height
-    ])
-
+    if (isPointEqual(yNodeGeometry(ynode).position, operation.position)) {
+      return false
+    }
     change.nodeIds.push(nodeId)
+    ynode.set('position', { ...operation.position })
+    return true
   }
 
   private handleResizeNode(
     operation: ResizeNodeOperation,
     change: LayoutChange
-  ): void {
+  ): boolean {
     const { nodeId } = operation
-    const ynode = this.ynodes.get(
-      makeScopedLayoutKey(operation.graphId, nodeId)
-    )
-    if (!ynode) return
-
-    const rect = ynode.get('rect')
-    if (!isNodeRect(rect)) return
-    if (rect[2] !== operation.size.width || rect[3] !== operation.size.height) {
-      change.sizeChangedNodeIds.push(nodeId)
+    const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
+    const ynode = this.ynodes.get(nodeKey)
+    if (!ynode || !this.hasLayoutOwnership(ynode, operation.registrationId))
+      return false
+    const { size } = yNodeGeometry(ynode)
+    if (
+      size.width === operation.size.width &&
+      size.height === operation.size.height
+    ) {
+      return false
     }
-
-    ynode.set('rect', [
-      rect[0],
-      rect[1],
-      operation.size.width,
-      operation.size.height
-    ])
-
     change.nodeIds.push(nodeId)
+    change.sizeChangedNodeIds.push(nodeId)
+    ynode.set('size', { ...operation.size })
+    return true
   }
 
-  private handleSetGroupBounds(operation: SetGroupBoundsOperation): void {
-    const ygroup = this.ygroups.get(
-      makeScopedLayoutKey(operation.graphId, operation.groupId)
-    )
-    if (!ygroup) return
-
+  private handleSetGroupBounds(operation: SetGroupBoundsOperation): boolean {
+    const key = makeScopedLayoutKey(operation.graphId, operation.groupId)
+    const ygroup = this.ygroups.get(key)
+    if (!ygroup || !this.hasLayoutOwnership(ygroup, operation.registrationId))
+      return false
+    const current = yGroupToLayout(ygroup, operation.groupId)
+    if (
+      isPointEqual(current.position, operation.position) &&
+      current.size.width === operation.size.width &&
+      current.size.height === operation.size.height
+    ) {
+      return false
+    }
     setYGroupRect(ygroup, operation.position, operation.size)
+    return true
   }
 
   private handleSetNodeZIndex(
     operation: SetNodeZIndexOperation,
     change: LayoutChange
-  ): void {
+  ): boolean {
     const { nodeId } = operation
-    const ynode = this.ynodes.get(
-      makeScopedLayoutKey(operation.graphId, nodeId)
+    const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
+    const ynode = this.ynodes.get(nodeKey)
+    if (
+      !ynode ||
+      !this.hasLayoutOwnership(ynode, operation.registrationId) ||
+      ynode.get('zIndex') === operation.zIndex
     )
-    if (!ynode) return
-
+      return false
+    change.nodeIds.push(nodeId)
     ynode.set('zIndex', operation.zIndex)
     this.highestZIndex = Math.max(this.highestZIndex, operation.zIndex)
+    return true
+  }
+
+  private handleSetNodeVisibility(
+    operation: Extract<LayoutOperation, { type: 'setNodeVisibility' }>,
+    change: LayoutChange
+  ): boolean {
+    const { nodeId } = operation
+    const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
+    const ynode = this.ynodes.get(nodeKey)
+    if (
+      !ynode ||
+      !this.hasLayoutOwnership(ynode, operation.registrationId) ||
+      ynode.get('visible') === operation.visible
+    )
+      return false
     change.nodeIds.push(nodeId)
+    ynode.set('visible', operation.visible)
+    return true
   }
 
   private handleCreateNode(
     operation: CreateNodeOperation,
     change: LayoutChange
-  ): void {
+  ): boolean {
     const { nodeId } = operation
-    const ynode = layoutToYNode(operation.layout)
-    this.ynodes.set(makeScopedLayoutKey(operation.graphId, nodeId), ynode)
-    this.highestZIndex = Math.max(this.highestZIndex, operation.layout.zIndex)
-
+    const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
+    if (this.ynodes.has(nodeKey)) return false
+    const layout = { ...operation.layout, id: nodeId }
+    change.operation = { ...operation, layout }
     change.type = 'create'
     change.nodeIds.push(nodeId)
+    this.ynodes.set(nodeKey, layoutToYNode(layout, operation.registrationId))
+    this.highestZIndex = Math.max(this.highestZIndex, layout.zIndex)
+    return true
   }
 
   private handleDeleteNode(
     operation: DeleteNodeOperation,
     change: LayoutChange
-  ): void {
+  ): boolean {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
-    if (!this.ynodes.has(nodeKey)) return
-
-    this.ynodes.delete(nodeKey)
-    // Note: We intentionally do NOT delete nodeRefs and nodeTriggers here.
-    // During undo/redo, Vue components may still hold references to the old ref.
-    // If we delete the trigger, Vue won't be notified when the node is re-created.
-    // The trigger will be called in finalizeOperation to notify Vue of the change.
-    // We also intentionally do NOT delete slot layouts here for the same reason,
-    // and cleanup is handled by onUnmounted in useSlotElementTracking.
-    // Link geometry is cleaned up per-link by LLink.disconnect as the node's
-    // connections are severed, so nothing to do here.
-
+    const existing = this.ynodes.get(nodeKey)
+    if (
+      !existing ||
+      !this.hasLayoutOwnership(existing, operation.registrationId)
+    )
+      return false
+    // nodeRefs, nodeTriggers and slot layouts outlive the delete: undo/redo
+    // re-creates the node against the refs components already hold. Link
+    // geometry leaves per-link through LLink.disconnect.
     change.type = 'delete'
     change.nodeIds.push(nodeId)
+    this.ynodes.delete(nodeKey)
+    return true
   }
 
   private handleBatchUpdateBounds(
     operation: BatchUpdateBoundsOperation,
     change: LayoutChange
-  ): void {
+  ): boolean {
     for (const nodeId of operation.nodeIds) {
       const bounds = operation.bounds[nodeId]
       const ynode = this.ynodes.get(
         makeScopedLayoutKey(operation.graphId, nodeId)
       )
-      if (!ynode || !bounds) continue
-
-      const rect = ynode.get('rect')
       if (
-        isNodeRect(rect) &&
-        (rect[2] !== bounds.width || rect[3] !== bounds.height)
-      ) {
+        !bounds ||
+        !ynode ||
+        !this.hasLayoutOwnership(ynode, operation.registrationIds?.[nodeId])
+      )
+        continue
+      const current = yNodeToLayout(ynode).bounds
+      if (isBoundsEqual(current, bounds)) continue
+      if (current.width !== bounds.width || current.height !== bounds.height) {
         change.sizeChangedNodeIds.push(nodeId)
       }
-      ynode.set('rect', [bounds.x, bounds.y, bounds.width, bounds.height])
-
+      ynode.set('position', { x: bounds.x, y: bounds.y })
+      ynode.set('size', { width: bounds.width, height: bounds.height })
       change.nodeIds.push(nodeId)
     }
-
-    if (change.nodeIds.length) {
-      change.type = 'update'
-    }
+    return change.nodeIds.length > 0
   }
 
   private handleCreateReroute(
     operation: CreateRerouteOperation,
     change: LayoutChange
-  ): void {
-    const rerouteData = new Y.Map<unknown>()
-    rerouteData.set('id', operation.rerouteId)
-    rerouteData.set('position', operation.position)
-
+  ): boolean {
     const rerouteKey = makeScopedLayoutKey(
       operation.graphId,
       operation.rerouteId
     )
-    this.yreroutes.set(rerouteKey, rerouteData)
+    if (this.yreroutes.has(rerouteKey)) return false
     change.type = 'create'
+    const rerouteData = new Y.Map<RerouteData[keyof RerouteData]>()
+    rerouteData.set('id', operation.rerouteId)
+    rerouteData.set('position', { ...operation.position })
+    if (operation.registrationId !== undefined) {
+      rerouteData.set('registrationId', operation.registrationId)
+    }
+    this.yreroutes.set(rerouteKey, rerouteData)
+    return true
   }
 
   private handleDeleteReroute(
     operation: DeleteRerouteOperation,
     change: LayoutChange
-  ): void {
+  ): boolean {
     const rerouteKey = makeScopedLayoutKey(
       operation.graphId,
       operation.rerouteId
     )
-    if (!this.yreroutes.has(rerouteKey)) return
-
-    this.yreroutes.delete(rerouteKey)
-    this.rerouteLayouts.delete(rerouteKey)
-    this.rerouteSpatialIndex.remove(rerouteKey)
+    const existing = this.yreroutes.get(rerouteKey)
+    if (
+      !existing ||
+      !this.hasLayoutOwnership(existing, operation.registrationId)
+    ) {
+      return false
+    }
     change.type = 'delete'
+    this.yreroutes.delete(rerouteKey)
+    return true
   }
 
   private handleMoveReroute(
     operation: MoveRerouteOperation,
     change: LayoutChange
-  ): void {
+  ): boolean {
     const rerouteKey = makeScopedLayoutKey(
       operation.graphId,
       operation.rerouteId
     )
     const yreroute = this.yreroutes.get(rerouteKey)
-    if (!yreroute) return
-
-    yreroute.set('position', operation.position)
-    this.updateRerouteLayout(
-      operation.graphId,
-      operation.rerouteId,
-      this.createRerouteLayout(operation.rerouteId, operation.position)
+    if (
+      !yreroute ||
+      !this.hasLayoutOwnership(yreroute, operation.registrationId)
     )
+      return false
+    if (
+      isPointEqual(
+        this.getRerouteField(yreroute, 'position'),
+        operation.position
+      )
+    ) {
+      return false
+    }
     change.type = 'update'
+    yreroute.set('position', { ...operation.position })
+    return true
   }
 
   /**
@@ -1187,22 +1411,18 @@ class LayoutStore {
   /**
    * Handle reroute change events
    */
-  private handleRerouteChange(
-    change: YEventChange,
-    key: ScopedLayoutKey
-  ): void {
+  private projectReroute(key: ScopedLayoutKey): void {
     const parsed = parseLayoutKey(key)
     const graphId = parsed.graphId
     const rerouteId = toRerouteId(Number(parsed.localId))
 
-    if (change.action === 'delete') {
+    const rerouteData = this.yreroutes.get(key)
+    if (!rerouteData) {
       this.rerouteLayouts.delete(key)
       this.rerouteSpatialIndex.remove(key)
       return
     }
 
-    const rerouteData = this.yreroutes.get(key)
-    if (!rerouteData) return
     const position = this.getRerouteField(rerouteData, 'position')
     this.updateRerouteLayout(
       graphId,
@@ -1236,7 +1456,7 @@ class LayoutStore {
   private queueGlobalChange(change: LayoutChange): void {
     if (this.changeListeners.size === 0) return
 
-    this.pendingGlobalChanges.push(change)
+    this.pendingGlobalChanges.push(structuredClone(change))
     if (this.isGlobalDispatchQueued) return
 
     this.isGlobalDispatchQueued = true
@@ -1260,7 +1480,7 @@ class LayoutStore {
   private notifyChange(change: LayoutChange): void {
     this.changeListeners.forEach((listener) => {
       try {
-        listener(change)
+        listener(structuredClone(change))
       } catch (error) {
         console.error('Error in layout change listener:', error)
       }
@@ -1277,12 +1497,66 @@ class LayoutStore {
 
       listeners.forEach((listener) => {
         try {
-          listener(change)
+          listener(structuredClone(change))
         } catch (error) {
           console.error('Error in node-scoped layout change listener:', error)
         }
       })
     }
+  }
+
+  private notifyGeometryChange(graphIds: ReadonlySet<UUID>): void {
+    this.geometryChangeListeners.forEach((listener) => {
+      try {
+        listener(new Set(graphIds))
+      } catch (error) {
+        console.error('Error in geometry change listener:', error)
+      }
+    })
+  }
+
+  private flushGeometryNotifications(): void {
+    if (this.pendingGeometryGraphIds.size === 0) return
+    const graphIds = new Set(this.pendingGeometryGraphIds)
+    this.pendingGeometryGraphIds.clear()
+    this.version.value++
+    this.notifyGeometryChange(graphIds)
+  }
+
+  getRegistrationId(
+    entity: 'node',
+    rootGraphId: UUID,
+    id: NodeId
+  ): string | undefined
+  getRegistrationId(
+    entity: 'group',
+    rootGraphId: UUID,
+    id: GroupId
+  ): string | undefined
+  getRegistrationId(
+    entity: 'reroute',
+    rootGraphId: UUID,
+    id: RerouteId
+  ): string | undefined
+  getRegistrationId(
+    entity: 'node' | 'group' | 'reroute',
+    rootGraphId: UUID,
+    id: NodeId | GroupId | RerouteId
+  ): string | undefined
+  getRegistrationId(
+    entity: 'node' | 'group' | 'reroute',
+    rootGraphId: UUID,
+    id: NodeId | GroupId | RerouteId
+  ): string | undefined {
+    const key = makeScopedLayoutKey(rootGraphId, id)
+    const registrationId = {
+      node: this.ynodes,
+      group: this.ygroups,
+      reroute: this.yreroutes
+    }[entity]
+      .get(key)
+      ?.get('registrationId')
+    return isRegistrationId(registrationId) ? registrationId : undefined
   }
 
   /**
@@ -1294,38 +1568,42 @@ class LayoutStore {
     const originalSource = this.currentSource
     const shouldNormalizeHeights = originalSource === LayoutSource.DOM
     this.currentSource = LayoutSource.Vue
+    try {
+      const nodeIds: NodeId[] = []
+      const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
+      const registrationIds: NonNullable<
+        BatchUpdateBoundsOperation['registrationIds']
+      > = {}
 
-    const nodeIds: NodeId[] = []
-    const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
+      for (const { nodeId, bounds } of updates) {
+        const ynode = this.ynodes.get(makeScopedLayoutKey(rootGraphId, nodeId))
+        if (!ynode) continue
 
-    for (const { nodeId, bounds } of updates) {
-      if (!this.ynodes.has(makeScopedLayoutKey(rootGraphId, nodeId))) continue
+        boundsRecord[nodeId] = shouldNormalizeHeights
+          ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
+          : bounds
+        const resolvedRegistrationId = ynode.get('registrationId')
+        if (isRegistrationId(resolvedRegistrationId))
+          registrationIds[nodeId] = resolvedRegistrationId
+        nodeIds.push(nodeId)
+      }
 
-      boundsRecord[nodeId] = shouldNormalizeHeights
-        ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
-        : bounds
-      nodeIds.push(nodeId)
-    }
+      if (!nodeIds.length) return
 
-    if (!nodeIds.length) {
+      this.applyOperation({
+        type: 'batchUpdateBounds',
+        entity: 'node',
+        graphId: rootGraphId,
+        nodeIds,
+        registrationIds,
+        bounds: boundsRecord,
+        timestamp: Date.now(),
+        source: this.currentSource,
+        actor: this.currentActor
+      })
+    } finally {
       this.currentSource = originalSource
-      return
     }
-
-    const operation: BatchUpdateBoundsOperation = {
-      type: 'batchUpdateBounds',
-      entity: 'node',
-      graphId: rootGraphId,
-      nodeIds,
-      bounds: boundsRecord,
-      timestamp: Date.now(),
-      source: this.currentSource,
-      actor: this.currentActor
-    }
-
-    this.applyOperation(operation)
-
-    this.currentSource = originalSource
   }
 }
 
