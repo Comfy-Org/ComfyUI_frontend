@@ -23,6 +23,8 @@
       />
     </div>
 
+    <BillingStatusBanner class="mb-4" />
+
     <SubscriptionPanelContentWorkspace v-if="activeView === 'overview'" />
     <WorkspaceActivityContent v-else :search="searchQuery" />
   </div>
@@ -35,6 +37,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
+import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import WorkspaceActivityContent from '@/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.vue'
 
 type View = 'overview' | 'activity'

@@ -13,6 +13,8 @@ const funded: BillingBannerInputs = {
   hasFunds: true,
   isCancelled: false,
   endDate: null,
+  scheduledPlanSlug: null,
+  changeAt: null,
   canManage: true,
   outOfCreditsDismissed: false
 }
@@ -40,7 +42,7 @@ describe('deriveBillingBanner', () => {
     expect(derive({})).toBeNull()
   })
 
-  it('shows no banner outside a team plan', () => {
+  it('does not show team funding states outside a team plan', () => {
     expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
   })
 
@@ -128,6 +130,43 @@ describe('deriveBillingBanner', () => {
         canManage: false
       })
     ).toBeNull()
+  })
+
+  it('surfaces a scheduled plan change for a personal plan owner', () => {
+    expect(
+      derive({
+        isTeamPlan: false,
+        scheduledPlanSlug: 'creator-annual',
+        changeAt: '2026-08-03T00:00:00Z'
+      })
+    ).toBe('planChange')
+  })
+
+  it('requires complete scheduled plan details and billing permission', () => {
+    expect(derive({ scheduledPlanSlug: 'creator-annual' })).toBeNull()
+    expect(derive({ changeAt: '2026-08-03T00:00:00Z' })).toBeNull()
+    expect(
+      derive({
+        scheduledPlanSlug: 'creator-annual',
+        changeAt: '2026-08-03T00:00:00Z',
+        canManage: false
+      })
+    ).toBeNull()
+  })
+
+  it('prioritizes cancellation and credit warnings over a scheduled plan change', () => {
+    const scheduledChange = {
+      scheduledPlanSlug: 'creator-annual',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+    expect(derive({ ...scheduledChange, hasFunds: false })).toBe('outOfCredits')
+    expect(
+      derive({
+        ...scheduledChange,
+        isCancelled: true,
+        endDate: '2026-08-03T00:00:00Z'
+      })
+    ).toBe('ending')
   })
 
   it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {
