@@ -21,7 +21,7 @@ jobs:
     outputs:
       should-run: ${{ steps.changes.outputs.should-run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -68,7 +68,7 @@ jobs:
         shardTotal: [16]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
@@ -126,7 +126,7 @@ jobs:
           [chromium-2x, chromium-0.5x, mobile-chrome, cloud, mobile-safari]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
@@ -214,11 +214,11 @@ jobs:
           [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
-  #### BEGIN Deployment and commenting (non-forked PRs only)
+  #### BEGIN Deployment and commenting (PRs with direct secret access)
   # when using pull_request event, we have permission to comment directly
-  # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
+  # otherwise, we use workflow_run in ci-tests-e2e-forks.yaml
 
-  # Post starting section into the unified PR report comment for non-forked PRs
+  # Post starting section into the unified PR report comment
   comment-on-pr-start:
     needs: changes
     runs-on: ubuntu-latest
@@ -226,13 +226,14 @@ jobs:
       ${{
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
+        github.event.pull_request.head.repo.fork == false &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
       }}
     permissions:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Upsert playwright starting section into unified report
         uses: ./.github/actions/upsert-comment-section
@@ -243,7 +244,7 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}
 
-  # Deploy and upsert final playwright section for non-forked PRs only
+  # Deploy and upsert final playwright section
   deploy-and-comment:
     needs: [changes, playwright-tests, merge-reports]
     runs-on: ubuntu-latest
@@ -252,14 +253,15 @@ jobs:
         always() &&
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
+        github.event.pull_request.head.repo.fork == false &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
       }}
     permissions:
       pull-requests: write
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download all playwright reports
         uses: actions/download-artifact@v7
@@ -297,4 +299,3 @@ jobs:
           section-content: ${{ steps.section.outputs.content }}
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}
-  #### END Deployment and commenting (non-forked PRs only)
