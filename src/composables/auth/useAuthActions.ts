@@ -18,6 +18,37 @@ import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
+const isUnauthorizedDomainError = (error: unknown) =>
+  error instanceof FirebaseError &&
+  [
+    'auth/unauthorized-domain',
+    'auth/invalid-dynamic-link-domain',
+    'auth/unauthorized-continue-uri'
+  ].includes(error.code)
+
+/**
+ * User-facing copy for an auth failure, shared by the toast and any inline
+ * banner so the two never diverge.
+ */
+const authErrorMessage = (error: unknown): string => {
+  if (isUnauthorizedDomainError(error)) {
+    return t('toastMessages.unauthorizedDomain', {
+      domain: window.location.hostname,
+      email: 'support@comfy.org'
+    })
+  }
+  if (!(error instanceof FirebaseError)) {
+    return error instanceof Error ? error.message : t('g.unknownError')
+  }
+  // Firebase `beforeUserCreated` rejections collapse the thrown code into a
+  // generic `auth/internal-error`, so the message is the only reliable channel.
+  // `signup_blocked` is a cross-repo contract token; matched case-insensitively.
+  if (error.message.toLowerCase().includes('signup_blocked')) {
+    return t('auth.errors.signupBlocked')
+  }
+  return st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+}
+
 /**
  * Service for Firebase Auth actions.
  * All actions are wrapped with error handling.
@@ -30,6 +61,12 @@ export const useAuthActions = () => {
 
   const accessError = ref(false)
 
+  /**
+   * Message for the most recent failure, for callers that render an inline
+   * banner. Empty until an action fails; each action resets it before running.
+   */
+  const lastAuthErrorMessage = ref('')
+
   const reportAuthFlowError =
     (authAction: AuthFlowAction) => (error: unknown) => {
       useTelemetry()?.trackAuthFailed({
@@ -39,47 +76,20 @@ export const useAuthActions = () => {
       reportError(error)
     }
 
+  // Ref: https://firebase.google.com/docs/auth/admin/errors
   const reportError = (error: unknown) => {
-    // Ref: https://firebase.google.com/docs/auth/admin/errors
-    if (
-      error instanceof FirebaseError &&
-      [
-        'auth/unauthorized-domain',
-        'auth/invalid-dynamic-link-domain',
-        'auth/unauthorized-continue-uri'
-      ].includes(error.code)
-    ) {
-      accessError.value = true
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('toastMessages.unauthorizedDomain', {
-          domain: window.location.hostname,
-          email: 'support@comfy.org'
-        })
-      })
-    } else if (
-      error instanceof FirebaseError &&
-      error.message.toLowerCase().includes('signup_blocked')
-    ) {
-      // Match on `error.message`, not `error.code`: Firebase `beforeUserCreated`
-      // rejections collapse the thrown code into a generic `auth/internal-error`,
-      // so the message is the only reliable channel. `signup_blocked` is a
-      // cross-repo contract token; matched case-insensitively.
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('auth.errors.signupBlocked')
-      })
-    } else if (error instanceof FirebaseError) {
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
-      })
-    } else {
+    const message = authErrorMessage(error)
+    lastAuthErrorMessage.value = message
+    if (!(error instanceof FirebaseError)) {
       toastErrorHandler(error)
+      return
     }
+    if (isUnauthorizedDomainError(error)) accessError.value = true
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: message
+    })
   }
 
   const logout = wrapWithErrorHandlingAsync(async () => {
@@ -302,6 +312,7 @@ export const useAuthActions = () => {
     signUpWithEmail,
     updatePassword,
     accessError,
+    lastAuthErrorMessage,
     reportError
   }
 }

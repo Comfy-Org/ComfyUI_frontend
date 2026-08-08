@@ -4,7 +4,9 @@ import type { RouteLocationRaw } from 'vue-router'
 
 import { isEmbeddedWebView } from '@/base/webviewDetection'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { t } from '@/i18n'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
+import type { SignInData } from '@/schemas/signInSchema'
 
 /**
  * State shared by CloudLoginView and CloudSignupView. Sign-up passes
@@ -40,6 +42,22 @@ export function useCloudAuthPage(options: {
     }
   }
 
+  /**
+   * Social failures stay toast-only: no form is mounted to host a banner.
+   * Email sign-in also mirrors the failure into `authError` so CloudSignInForm
+   * can show it next to the fields the user is about to correct.
+   */
+  const signInWithEmail = async ({ email, password }: SignInData) => {
+    authError.value = ''
+    authActions.lastAuthErrorMessage.value = ''
+    if (await authActions.signInWithEmail(email, password)) {
+      await onAuthSuccess()
+      return
+    }
+    authError.value =
+      authActions.lastAuthErrorMessage.value || t('auth.errors.generic')
+  }
+
   return {
     authError,
     showEmailForm,
@@ -54,6 +72,7 @@ export function useCloudAuthPage(options: {
       showEmailForm.value = false
     },
     signInWithGoogle: () => signInWith(authActions.signInWithGoogle),
-    signInWithGithub: () => signInWith(authActions.signInWithGithub)
+    signInWithGithub: () => signInWith(authActions.signInWithGithub),
+    signInWithEmail
   }
 }

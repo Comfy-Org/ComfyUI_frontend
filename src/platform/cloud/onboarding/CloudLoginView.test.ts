@@ -1,21 +1,28 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 
+const authActions = vi.hoisted(() => ({
+  signInWithGoogle: vi.fn(),
+  signInWithGithub: vi.fn(),
+  signInWithEmail: vi.fn(),
+  lastAuthErrorMessage: { value: '' }
+}))
 vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: () => ({
-    signInWithGoogle: vi.fn(),
-    signInWithGithub: vi.fn(),
-    signInWithEmail: vi.fn()
-  })
+  useAuthActions: () => authActions
 }))
 
+const onAuthSuccess = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/cloud/onboarding/composables/usePostAuthRedirect', () => ({
-  usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
+  usePostAuthRedirect: () => ({ onAuthSuccess })
 }))
+
+vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
 const isEmbeddedWebView = vi.hoisted(() => ({ value: false }))
 vi.mock('@/base/webviewDetection', () => ({
@@ -65,6 +72,93 @@ async function renderLoginView(
 
 afterEach(() => {
   isEmbeddedWebView.value = false
+  authActions.lastAuthErrorMessage.value = ''
+  vi.clearAllMocks()
+})
+
+/**
+ * Drives the email sign-in path and returns the banner text CloudSignInForm
+ * ends up with. The form is stubbed to a plain submit button; that the banner
+ * renders from that prop is covered by CloudSignInForm.test.ts.
+ */
+async function submitEmailSignIn() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/cloud/login', name: 'cloud-login', component: CloudLoginView }
+    ]
+  })
+  await router.push('/cloud/login')
+  await router.isReady()
+
+  render(CloudLoginView, {
+    global: {
+      plugins: [
+        router,
+        createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+      ],
+      stubs: {
+        RouterLink: true,
+        Message: true,
+        CloudSocialAuthButtons: true,
+        CloudSignInForm: {
+          props: ['authError'],
+          template:
+            '<div><span v-if="authError" data-testid="auth-error">{{ authError }}</span>' +
+            "<button data-testid=\"do-submit\" @click=\"$emit('submit', { email: 'a@b.co', password: 'pw123456' })\" /></div>"
+        }
+      }
+    }
+  })
+
+  const user = userEvent.setup()
+  await user.click(
+    screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+  )
+  await user.click(screen.getByTestId('do-submit'))
+  await nextTick()
+}
+
+describe('CloudLoginView email sign-in failures', () => {
+  it('surfaces the failure inline instead of losing it', async () => {
+    authActions.signInWithEmail.mockImplementation(() => {
+      authActions.lastAuthErrorMessage.value = 'auth.errors.auth/wrong-password'
+      return Promise.resolve(undefined)
+    })
+
+    await submitEmailSignIn()
+
+    expect(screen.getByTestId('auth-error')).toHaveTextContent(
+      'auth.errors.auth/wrong-password'
+    )
+  })
+
+  it('falls back to generic copy when no message was recorded', async () => {
+    authActions.signInWithEmail.mockResolvedValue(undefined)
+
+    await submitEmailSignIn()
+
+    expect(screen.getByTestId('auth-error')).toHaveTextContent(
+      'auth.errors.generic'
+    )
+  })
+
+  it('does not redirect on a failed sign-in', async () => {
+    authActions.signInWithEmail.mockResolvedValue(undefined)
+
+    await submitEmailSignIn()
+
+    expect(onAuthSuccess).not.toHaveBeenCalled()
+  })
+
+  it('redirects and shows no banner on a successful sign-in', async () => {
+    authActions.signInWithEmail.mockResolvedValue({ user: {} })
+
+    await submitEmailSignIn()
+
+    expect(onAuthSuccess).toHaveBeenCalled()
+    expect(screen.queryByTestId('auth-error')).not.toBeInTheDocument()
+  })
 })
 
 describe('CloudLoginView', () => {

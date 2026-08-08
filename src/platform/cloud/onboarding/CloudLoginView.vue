@@ -64,36 +64,26 @@ import Message from 'primevue/message'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
-import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
 import { CLOUD_AUTH_LINK_BUTTON_CLASS } from '@/platform/cloud/onboarding/constants/authClasses'
-import type { SignInData } from '@/schemas/signInSchema'
 
 const { t } = useI18n()
 const route = useRoute()
-const authActions = useAuthActions()
 
 const {
   authError,
   showEmailForm,
-  onAuthSuccess,
   isSecureContext,
   showGoogleSsoInAppBrowserNotice,
   switchToEmailForm,
   switchToSocialLogin,
   signInWithGoogle,
-  signInWithGithub
+  signInWithGithub,
+  signInWithEmail
 } = useCloudAuthPage({
   successSummary: 'Login Completed',
   defaultRedirect: () => ({ name: 'cloud-user-check' })
 })
-
-const signInWithEmail = async (values: SignInData) => {
-  authError.value = ''
-  if (await authActions.signInWithEmail(values.email, values.password)) {
-    await onAuthSuccess()
-  }
-}
 </script>
