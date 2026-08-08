@@ -135,14 +135,18 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
         if (subtreeSize < 5) return
 
         const computed = getComputedStyle(el)
-        const flags = computeContainmentFlags(el, computed)
         const {
           alreadyContained,
           hasExplicitDimensions,
           hasFixedWidth,
           isFlexChild
-        } = flags
-        const score = computeCandidateScore(subtreeSize, flags)
+        } = computeContainmentFlags(el, computed)
+        const score = computeCandidateScore(subtreeSize, {
+          alreadyContained,
+          hasExplicitDimensions,
+          hasFixedWidth,
+          isFlexChild
+        })
 
         results.push({
           selector: computeSelector(el),
