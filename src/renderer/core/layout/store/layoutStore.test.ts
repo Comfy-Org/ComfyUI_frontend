@@ -430,6 +430,52 @@ describe('layoutStore CRDT operations', () => {
     unsubscribe()
   })
 
+  it('updates visual bounds while preserving canonical position and size', () => {
+    const nodeId = toNodeId('collapsed-node')
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    const visualBounds = {
+      x: layout.position.x,
+      y: layout.position.y,
+      width: 80,
+      height: 0
+    }
+    layoutStore.batchUpdateNodeBounds([
+      { nodeId, bounds: visualBounds, preserveSize: true }
+    ])
+
+    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    expect(nodeRef.value?.position).toEqual(layout.position)
+    expect(nodeRef.value?.size).toEqual(layout.size)
+    expect(nodeRef.value?.bounds).toEqual(visualBounds)
+    expect(
+      layoutStore.queryNodesInBounds({
+        x: visualBounds.x,
+        y: visualBounds.y,
+        width: visualBounds.width,
+        height: 1
+      })
+    ).toContain(nodeId)
+    expect(
+      layoutStore.queryNodesInBounds({
+        x: visualBounds.x + visualBounds.width + 1,
+        y: visualBounds.y,
+        width: 1,
+        height: 1
+      })
+    ).not.toContain(nodeId)
+  })
+
   it('should query nodes by spatial bounds', () => {
     const nodes = [
       { id: toNodeId('node-a'), position: { x: 0, y: 0 } },

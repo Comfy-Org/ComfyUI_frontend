@@ -182,7 +182,10 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
     if (conv) {
       const [cx, cy] = conv.clientPosToCanvasPos(screenCenter)
       centerCanvas = { x: cx, y: cy }
-      entry.cachedOffset = undefined
+      entry.cachedOffset = {
+        x: centerCanvas.x - nodeLayout.position.x,
+        y: centerCanvas.y - nodeLayout.position.y
+      }
     } else {
       if (!nodeRect || effectiveScale <= 0) continue
 
@@ -237,7 +240,7 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
 
   for (const [slotKey, entry] of node.slots) {
     if (!entry.cachedOffset) {
-      // schedule a sync to seed offset
+      layoutStore.deleteSlotLayout(slotKey)
       scheduleSlotLayoutSync(nodeId)
       continue
     }

@@ -1,4 +1,8 @@
-import { createSharedComposable, whenever } from '@vueuse/core'
+import {
+  createSharedComposable,
+  useEventListener,
+  whenever
+} from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
@@ -33,6 +37,9 @@ function useNodeDragIndividual() {
   const canvasStore = useCanvasStore()
 
   // Drag state
+  let activeDragNodeId: NodeId | null = null
+  let activePointerId: number | null = null
+  let dragPointerTarget: HTMLElement | null = null
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<NodeId, Point> | null = null
@@ -52,6 +59,12 @@ function useNodeDragIndividual() {
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
     if (!layout) return
     const position = layout.position ?? { x: 0, y: 0 }
+
+    resetDragState()
+    activeDragNodeId = nodeId
+    activePointerId = event.pointerId
+    dragPointerTarget =
+      event.currentTarget instanceof HTMLElement ? event.currentTarget : null
 
     // Track shift key state and sync to canvas for snap preview
     stopShiftSync = trackShiftKey(event)
@@ -96,7 +109,7 @@ function useNodeDragIndividual() {
     mutations.setSource(LayoutSource.Vue)
   }
 
-  function startAutoPan(event: PointerEvent, nodeId: NodeId) {
+  function startAutoPan(event: PointerEvent) {
     if (autoPan) {
       autoPan.updatePointer(event.clientX, event.clientY)
       return
@@ -124,7 +137,7 @@ function useNodeDragIndividual() {
             group.move(panX, panY, true)
           }
         }
-        updateNodePositions(nodeId)
+        updateNodePositions()
       }
     })
     autoPan.updatePointer(event.clientX, event.clientY)
@@ -135,8 +148,8 @@ function useNodeDragIndividual() {
    * Recalculates all dragged node positions based on the current mouse
    * position and canvas transform.
    */
-  function updateNodePositions(nodeId: NodeId) {
-    if (!dragStartPos || !dragStartMouse) return
+  function updateNodePositions() {
+    if (!activeDragNodeId || !dragStartPos || !dragStartMouse) return
 
     const mouseDelta = {
       x: lastPointerX - dragStartMouse.x,
@@ -153,7 +166,7 @@ function useNodeDragIndividual() {
     // Move drag updates in one transaction to avoid per-node notify fan-out.
     const updates = [
       {
-        nodeId,
+        nodeId: activeDragNodeId,
         position: {
           x: dragStartPos.x + canvasDelta.x,
           y: dragStartPos.y + canvasDelta.y
@@ -192,33 +205,83 @@ function useNodeDragIndividual() {
     lastCanvasDelta = canvasDelta
   }
 
-  function handleDrag(event: PointerEvent, nodeId: NodeId) {
-    if (!dragStartPos || !dragStartMouse) {
+  function handleDrag(event: PointerEvent) {
+    if (
+      !activeDragNodeId ||
+      activePointerId !== event.pointerId ||
+      !dragStartPos ||
+      !dragStartMouse
+    ) {
       return
     }
 
-    // Throttle position updates using requestAnimationFrame for better performance
-    if (rafId !== null) return // Skip if frame already scheduled
-
-    const { target, pointerId } = event
-    if (target instanceof HTMLElement && !target.hasPointerCapture(pointerId)) {
-      // Delay capture to drag to allow for the Node cloning
-      target.setPointerCapture(pointerId)
+    if (!(event.buttons & 1)) {
+      cancelActiveDrag()
+      return
     }
+
+    capturePointer(event)
 
     lastPointerX = event.clientX
     lastPointerY = event.clientY
-    startAutoPan(event, nodeId)
+    startAutoPan(event)
+
+    // Throttle position updates using requestAnimationFrame for better performance
+    if (rafId !== null) return
 
     rafId = requestAnimationFrame(() => {
       rafId = null
-      updateNodePositions(nodeId)
+      updateNodePositions()
     })
   }
 
-  function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
+  function handleActiveDrag(event: PointerEvent) {
+    if (!layoutStore.isDraggingVueNodes.value || !activeDragNodeId) return
+    handleDrag(event)
+  }
+
+  function capturePointer(event: PointerEvent) {
+    const target = dragPointerTarget
+    const { pointerId } = event
+    if (!target || target.hasPointerCapture(pointerId)) return
+
+    try {
+      // Delay capture to drag to allow for Node cloning.
+      target.setPointerCapture(pointerId)
+    } catch {
+      return
+    }
+  }
+
+  function releasePointerCapture() {
+    const target = dragPointerTarget
+    const pointerId = activePointerId
+    dragPointerTarget = null
+    if (!target || pointerId === null || !target.hasPointerCapture(pointerId)) {
+      return
+    }
+
+    try {
+      target.releasePointerCapture(pointerId)
+    } catch {
+      // Pointer capture may already have been released by the browser.
+    }
+  }
+
+  function endDrag(event: PointerEvent) {
+    const activeNodeId = activeDragNodeId
+    if (!activeNodeId || activePointerId !== event.pointerId) return
+
+    try {
+      applyFinalSnap(event, activeNodeId)
+    } finally {
+      resetDragState()
+    }
+  }
+
+  function applyFinalSnap(event: PointerEvent, nodeId: NodeId) {
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
-    if (shouldSnap(event) && nodeId) {
+    if (shouldSnap(event)) {
       const boundsUpdates: NodeBoundsUpdate[] = []
 
       // Snap main node
@@ -277,11 +340,13 @@ function useNodeDragIndividual() {
         layoutStore.batchUpdateNodeBounds(boundsUpdates)
       }
     }
-
-    resetDragState()
   }
 
   function resetDragState() {
+    releasePointerCapture()
+
+    activeDragNodeId = null
+    activePointerId = null
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
@@ -300,7 +365,26 @@ function useNodeDragIndividual() {
     }
   }
 
+  function cancelActiveDrag() {
+    if (!activeDragNodeId) return
+    resetDragState()
+    layoutStore.isDraggingVueNodes.value = false
+  }
+
+  function endActiveDrag(event: PointerEvent) {
+    if (!activeDragNodeId || activePointerId !== event.pointerId) return
+
+    try {
+      endDrag(event)
+    } finally {
+      layoutStore.isDraggingVueNodes.value = false
+    }
+  }
+
   whenever(() => !layoutStore.isDraggingVueNodes.value, resetDragState)
+  useEventListener(window, 'pointermove', handleActiveDrag)
+  useEventListener(window, ['pointerup', 'pointercancel'], endActiveDrag)
+
   return {
     startDrag,
     handleDrag,

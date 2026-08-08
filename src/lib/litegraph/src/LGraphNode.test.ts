@@ -17,11 +17,13 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
+import { TitleMode } from './types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
+  title_mode?: TitleMode
 }
 
 function getMockISerialisedNode(
@@ -588,6 +590,31 @@ describe('LGraphNode', () => {
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
     })
+
+    test('serializes and restores widgets sequentially when skipped widgets come first', () => {
+      const sourceNode = new LGraphNode('TestNode')
+      sourceNode.serialize_widgets = true
+      sourceNode.addWidget('number', 'non-serializable', 1, null)
+      sourceNode.addWidget('number', 'serializable', 2, null)
+      sourceNode.widgets![0].serialize = false
+      sourceNode.widgets![1].value = 20
+
+      const serialized = sourceNode.serialize()
+      expect(serialized.widgets_values).toEqual([20])
+      expect(serialized.widgets_values_named).toEqual({ serializable: 20 })
+
+      const restoredNode = new LGraphNode('TestNode')
+      restoredNode.addWidget('number', 'non-serializable', 1, null)
+      restoredNode.addWidget('number', 'serializable', 2, null)
+      restoredNode.widgets![0].serialize = false
+      restoredNode.configure(
+        getMockISerialisedNode({ widgets_values: serialized.widgets_values })
+      )
+
+      expect(restoredNode.widgets!.map((widget) => widget.value)).toEqual([
+        1, 20
+      ])
+    })
   })
 
   describe('getInputSlotPos', () => {
@@ -678,14 +705,39 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
-    test('Vue mode uses this.size directly for collapsed nodes', () => {
+    test('Vue mode uses visual collapsed width and preserves expanded size', () => {
       LiteGraph.vueNodesMode = true
+      node._collapsed_width = 96
       node.measure(out)
 
-      // Vue mode collapsed takes the expanded-style branch
-      expect(out[2]).toBe(150)
-      expect(out[3]).toBe(10 + LiteGraph.NODE_TITLE_HEIGHT)
+      expect(out[2]).toBe(96)
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+      expect(Array.from(node.size)).toEqual([150, 10])
     })
+
+    test.each([TitleMode.TRANSPARENT_TITLE, TitleMode.NO_TITLE])(
+      'Vue mode keeps collapsed height for title mode %s',
+      (titleMode) => {
+        LiteGraph.vueNodesMode = true
+        const nodeConstructor =
+          node.constructor as NodeConstructorWithSlotOffset
+        const hadOwnTitleMode = Object.hasOwn(nodeConstructor, 'title_mode')
+        const previousTitleMode = nodeConstructor.title_mode
+
+        try {
+          nodeConstructor.title_mode = titleMode
+          node.measure(out)
+
+          expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+        } finally {
+          if (hadOwnTitleMode) {
+            nodeConstructor.title_mode = previousTitleMode
+          } else {
+            delete nodeConstructor.title_mode
+          }
+        }
+      }
+    )
 
     test('Vue mode expanded behaves identically to legacy expanded', () => {
       LiteGraph.vueNodesMode = true

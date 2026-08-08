@@ -154,6 +154,17 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets!.map((w) => w.value)).toStrictEqual(expected)
     })
 
+    it('should ignore inherited named widget values', () => {
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+      const namedValues: Record<string, TWidgetValue> = { seed: 54321 }
+      Object.setPrototypeOf(namedValues, { steps: 15 })
+
+      node.configure(mockNode(undefined, namedValues))
+
+      expect(node.widgets!.map((w) => w.value)).toStrictEqual([20, 54321])
+    })
+
     it('should restore widgets which are dynamically added', () => {
       addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
 
