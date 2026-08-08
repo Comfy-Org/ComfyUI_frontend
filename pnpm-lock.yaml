@@ -216,6 +216,9 @@ catalogs:
     eslint-import-resolver-typescript:
       specifier: ^4.4.5
       version: 4.4.5
+    eslint-plugin-better-tailwindcss:
+      specifier: ^4.7.0
+      version: 4.7.0
     eslint-plugin-import-x:
       specifier: ^4.17.1
       version: 4.17.1
@@ -736,7 +739,7 @@ importers:
         specifier: 'catalog:'
         version: 4.4.5(eslint-plugin-import-x@4.17.1(@typescript-eslint/utils@8.66.0(eslint@10.8.0(jiti@2.7.0))(typescript@6.0.3))(eslint@10.8.0(jiti@2.7.0)))(eslint@10.8.0(jiti@2.7.0))
       eslint-plugin-better-tailwindcss:
-        specifier: 4.7.0
+        specifier: 'catalog:'
         version: 4.7.0(eslint@10.8.0(jiti@2.7.0))(oxlint@1.74.0(oxlint-tsgolint@0.24.0))(tailwindcss@4.3.2)(typescript@6.0.3)
       eslint-plugin-import-x:
         specifier: 'catalog:'
