@@ -56,12 +56,14 @@ vi.mock('@/stores/dialogStore', () => ({
 const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
 const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
 const mockUpdateHistory = vi.hoisted(() => vi.fn())
+const mockUpdateFlatOutputs = vi.hoisted(() => vi.fn())
 const mockUpdateInputs = vi.hoisted(() => vi.fn())
 const mockHasCategory = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     setAssetDeleting: mockSetAssetDeleting,
     updateHistory: mockUpdateHistory,
+    updateFlatOutputs: mockUpdateFlatOutputs,
     updateInputs: mockUpdateInputs,
     invalidateModelsForCategory: mockInvalidateModelsForCategory,
     hasCategory: mockHasCategory
@@ -72,9 +74,10 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => ({})
 }))
 
+const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 vi.mock('@/composables/useCopyToClipboard', () => ({
   useCopyToClipboard: () => ({
-    copyToClipboard: vi.fn()
+    copyToClipboard: mockCopyToClipboard
   })
 }))
 
@@ -146,12 +149,16 @@ vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
 })
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
+const mockDeleteLocalInputAsset = vi.hoisted(() => vi.fn())
+const mockOpenAssetLocation = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ task_id: 'test-task-id', status: 'pending' })
 )
 vi.mock('../services/assetService', () => ({
   assetService: {
     deleteAsset: mockDeleteAsset,
+    deleteLocalInputAsset: mockDeleteLocalInputAsset,
+    openAssetLocation: mockOpenAssetLocation,
     createAssetExport: mockCreateAssetExport
   }
 }))
@@ -1124,6 +1131,135 @@ describe('useMediaAssetActions', () => {
       actions.downloadAssets([j1, j1Duplicate])
 
       await expectExportToastFileCount(3)
+    })
+  })
+
+  describe('openAssetLocation', () => {
+    it('asks the server to reveal the selected file', async () => {
+      const actions = useMediaAssetActions()
+
+      await actions.openAssetLocation(
+        createMockAsset({ id: 'generated-output' })
+      )
+
+      expect(mockOpenAssetLocation).toHaveBeenCalledWith('generated-output')
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'success',
+          detail: 'mediaAsset.fileLocationOpened'
+        })
+      )
+    })
+
+    it('shows an error when the server rejects the request', async () => {
+      mockOpenAssetLocation.mockRejectedValueOnce(new Error('local only'))
+      const actions = useMediaAssetActions()
+
+      await actions.openAssetLocation(createMockAsset())
+
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'mediaAsset.failedToOpenFileLocation'
+        })
+      )
+    })
+  })
+
+  describe('deleteAssets - local files', () => {
+    it('deletes a local input file without opening a dialog', async () => {
+      mockGetAssetType.mockReturnValue('input')
+      const asset = createMockAsset({
+        id: 'local-input',
+        name: 'folder/image.png',
+        tags: ['input']
+      })
+      const actions = useMediaAssetActions()
+
+      await actions.deleteAssets(asset, { skipConfirmation: true })
+
+      expect(mockShowDialog).not.toHaveBeenCalled()
+      expect(mockDeleteLocalInputAsset).toHaveBeenCalledWith('folder/image.png')
+      expect(mockUpdateInputs).toHaveBeenCalled()
+    })
+
+    it('soft-deletes a persistent output while keeping workflow references', async () => {
+      mockGetAssetType.mockReturnValue('output')
+      const asset = createMockAsset({
+        id: 'persisted-output',
+        name: 'render.png',
+        loader_path: 'images/render.png',
+        tags: ['output']
+      })
+      const actions = useMediaAssetActions()
+
+      await actions.deleteAssets(asset, { skipConfirmation: true })
+
+      expect(mockDeleteAsset).toHaveBeenCalledWith('persisted-output', {
+        deleteContent: false
+      })
+      expect(mockUpdateFlatOutputs).toHaveBeenCalled()
+      expect(mockUpdateHistory).not.toHaveBeenCalled()
+      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
+      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
+    })
+
+    it('confirms before deleting a generated source file', async () => {
+      mockGetAssetType.mockReturnValue('output')
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+      const asset = createMockAsset({
+        id: 'persisted-output',
+        name: 'render.png',
+        loader_path: 'images/render.png',
+        tags: ['output']
+      })
+      const actions = useMediaAssetActions()
+
+      await actions.deleteAssets(asset, { deleteContent: true })
+
+      expect(mockShowDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'mediaAsset.deleteGeneratedSourceFileTitle',
+          props: expect.objectContaining({
+            message: 'mediaAsset.deleteGeneratedSourceFileDescription'
+          })
+        })
+      )
+      expect(mockDeleteAsset).toHaveBeenCalledWith('persisted-output', {
+        deleteContent: true
+      })
+      expect(mockUpdateFlatOutputs).toHaveBeenCalled()
+      expect(mockMarkMissingMedia).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        new Set(['images/render.png [output]'])
+      )
+      expect(mockClearWidgetValues).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        new Set(['images/render.png [output]'])
+      )
+    })
+  })
+
+  describe('copyJobId - persistent output provenance', () => {
+    it('copies the backend job id instead of the asset id', async () => {
+      mockGetAssetType.mockReturnValue('output')
+      const actions = useMediaAssetActions()
+
+      await actions.copyJobId(
+        createMockAsset({
+          id: 'asset-uuid',
+          loader_path: 'images/render.png',
+          job_id: 'prompt-123',
+          tags: ['output']
+        })
+      )
+
+      expect(mockCopyToClipboard).toHaveBeenCalledWith('prompt-123')
     })
   })
 

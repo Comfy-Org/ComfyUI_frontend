@@ -352,6 +352,15 @@ describe('assetMetadataUtils', () => {
       isCloudRef.value = false
       expect(getAssetStoredFilename(mockAsset)).toBe('test-model')
     })
+
+    it('returns the loader path for a local asset in a subfolder', () => {
+      isCloudRef.value = false
+      const asset = {
+        ...mockAsset,
+        loader_path: 'video/benchmarks/render.mp4'
+      }
+      expect(getAssetStoredFilename(asset)).toBe('video/benchmarks/render.mp4')
+    })
   })
 
   describe('getAssetFilename', () => {
