@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -27,7 +28,9 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
-  test('opens the top-up dialog for a team owner', async ({ page }) => {
+  test('opens workspace top-up and converts credits bidirectionally', async ({
+    page
+  }) => {
     test.slow()
     await setupCloudApp(page, {
       workspace: workspace('team', 'owner'),
@@ -44,6 +47,15 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
 
     await expect(topUpHeading(page)).toBeVisible({ timeout: 45_000 })
     await expect(page).not.toHaveURL(/[?&]topup=/)
+
+    const dialog = new TopUpCreditsDialog(page)
+    await expect(dialog.payAmountInput).toHaveValue('50')
+    await expect(dialog.getAmountInput).toHaveValue('10,550')
+
+    await dialog.incrementGetAmountButton.click()
+
+    await expect(dialog.getAmountInput).toHaveValue('11,605')
+    await expect(dialog.payAmountInput).toHaveValue('55')
   })
 
   test('routes a lapsed subscriber to the subscription paywall', async ({
