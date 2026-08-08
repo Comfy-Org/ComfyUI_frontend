@@ -227,41 +227,52 @@ function buildInputs(
     devicePixelRatio: deps.devicePixelRatio ?? 1
   }
 
-  for (const node of group.children) {
-    if (!node.visible || node.opacity <= 0) continue
+  try {
+    for (const node of group.children) {
+      if (!node.visible || node.opacity <= 0) continue
 
-    if (node.kind === 'group') {
-      const g = node as GroupData
-      const sub = buildInputs(g, doc, deps, used)
-      if (g.passThrough) {
-        inputs.push(...sub.inputs)
-        cleanups.push(sub.cleanup)
+      if (node.kind === 'group') {
+        const g = node as GroupData
+        const sub = buildInputs(g, doc, deps, used)
+        if (g.passThrough) {
+          inputs.push(...sub.inputs)
+          cleanups.push(sub.cleanup)
+          continue
+        }
+        const handle = deps.compositor.allocTarget(doc.width, doc.height)
+        try {
+          deps.compositor.composite(sub.inputs, handle)
+        } catch (err) {
+          deps.compositor.freeTarget(handle)
+          sub.cleanup()
+          throw err
+        }
+        sub.cleanup()
+        cleanups.push(() => deps.compositor.freeTarget(handle))
+        const groupTexture = deps.compositor.targetTexture(handle)
+        if (groupTexture) {
+          inputs.push({
+            texture: { source: groupTexture, rect: region, linear: true },
+            opacity: node.opacity,
+            mode: resolveMode(node.mode),
+            mask: renderMaskTexture(node, region, deps, placed, used)
+          })
+        }
         continue
       }
-      const handle = deps.compositor.allocTarget(doc.width, doc.height)
-      deps.compositor.composite(sub.inputs, handle)
-      sub.cleanup()
-      cleanups.push(() => deps.compositor.freeTarget(handle))
-      const groupTexture = deps.compositor.targetTexture(handle)
-      if (groupTexture) {
-        inputs.push({
-          texture: { source: groupTexture, rect: region, linear: true },
-          opacity: node.opacity,
-          mode: resolveMode(node.mode),
-          mask: renderMaskTexture(node, region, deps, placed, used)
-        })
-      }
-      continue
-    }
 
-    const texture = renderLeafTexture(node, ctx, deps, used)
-    if (!texture) continue
-    inputs.push({
-      texture,
-      opacity: node.opacity,
-      mode: resolveMode(node.mode),
-      mask: renderMaskTexture(node, region, deps, placed, used)
-    })
+      const texture = renderLeafTexture(node, ctx, deps, used)
+      if (!texture) continue
+      inputs.push({
+        texture,
+        opacity: node.opacity,
+        mode: resolveMode(node.mode),
+        mask: renderMaskTexture(node, region, deps, placed, used)
+      })
+    }
+  } catch (err) {
+    cleanups.forEach((fn) => fn())
+    throw err
   }
 
   return { inputs, cleanup: () => cleanups.forEach((fn) => fn()) }
@@ -283,12 +294,15 @@ export function renderDocument(
   deps.compositor.beginFrame?.()
   const used = new Set<string>()
   const { inputs, cleanup } = buildInputs(doc.root, doc, deps, used)
-  deps.compositor.composite(
-    extra?.length ? [...inputs, ...extra] : inputs,
-    null,
-    region ?? undefined
-  )
-  cleanup()
+  try {
+    deps.compositor.composite(
+      extra?.length ? [...inputs, ...extra] : inputs,
+      null,
+      region ?? undefined
+    )
+  } finally {
+    cleanup()
+  }
   if (deps.placedCache) {
     for (const key of [...deps.placedCache.keys()]) {
       if (!used.has(key)) deps.placedCache.delete(key)
