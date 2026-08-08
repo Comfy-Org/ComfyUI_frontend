@@ -36,7 +36,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
   workspace: 'icon-[lucide--building-2]',
-  'workspace-allowlist': 'icon-[lucide--list-checks]',
+  'workspace-allowlist': 'icon-[comfy--ai-model]',
   'workspace-members': 'icon-[lucide--users]'
 }
 

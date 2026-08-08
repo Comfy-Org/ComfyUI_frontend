@@ -190,6 +190,27 @@ export const usePartnerNodeGovernanceStore = defineStore(
       })
     }
 
+    async function setProvidersEnabled(
+      providerIds: string[],
+      enabled: boolean
+    ): Promise<void> {
+      const targetIds = new Set(providerIds)
+      if (!providers.value.some(({ id }) => targetIds.has(id))) return
+
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: currentPolicy.enforcementEnabled || !enabled,
+        providers: providers.value.map(({ id }) =>
+          targetIds.has(id)
+            ? { providerId: id, enabled }
+            : (currentPolicy.providers.find(
+                ({ providerId }) => providerId === id
+              ) ?? { providerId: id, enabled: true })
+        )
+      })
+    }
+
     async function setAllProvidersEnabled(enabled: boolean): Promise<void> {
       const currentPolicy = policy.value ?? createInitialPolicy()
       await savePolicy({
@@ -225,6 +246,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
       isProviderEnabled,
       loadPolicy,
       setProviderEnabled,
+      setProvidersEnabled,
       setAllProvidersEnabled,
       setEnforcementEnabled
     }
