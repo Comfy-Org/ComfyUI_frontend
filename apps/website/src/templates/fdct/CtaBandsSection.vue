@@ -1,0 +1,35 @@
+<script setup lang="ts">
+import type { Locale } from '../../i18n/translations'
+
+import CtaBands01 from '../../components/blocks/CtaBands01.vue'
+import { localizeHref } from '../../config/routes'
+import { fdctPage } from '../../data/fdct'
+import { t } from '../../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const bands = [
+  {
+    id: 'enterprise',
+    label: t('fdct.bands.enterprise.label', locale),
+    text: t('fdct.bands.enterprise.text', locale),
+    cta: {
+      label: t('fdct.bands.enterprise.cta', locale),
+      href: localizeHref(fdctPage.ctas.enterpriseBand, locale)
+    }
+  },
+  {
+    id: 'creators',
+    label: t('fdct.bands.creators.label', locale),
+    text: t('fdct.bands.creators.text', locale),
+    cta: {
+      label: t('fdct.bands.creators.cta', locale),
+      href: localizeHref(fdctPage.ctas.creatorsBand, locale)
+    }
+  }
+]
+</script>
+
+<template>
+  <CtaBands01 :bands="bands" />
+</template>

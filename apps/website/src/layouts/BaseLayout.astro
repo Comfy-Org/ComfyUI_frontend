@@ -88,7 +88,12 @@ const structuredData = noindex
 ---
 
 <!doctype html>
-<html lang={locale} class="overflow-x-clip">
+{
+  /* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
+     dialog scroll lock) only propagates to the viewport when the root is
+     visible. The horizontal clip lives on <body>. */
+}
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

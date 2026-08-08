@@ -2511,6 +2511,10 @@ const translations = {
   'breadcrumb.download': { en: 'Download', 'zh-CN': '下载' },
   'breadcrumb.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'breadcrumb.pricing': { en: 'Pricing', 'zh-CN': '定价' },
+  'breadcrumb.fdct': {
+    en: 'Forward Deployed Creative Technologists',
+    'zh-CN': '前沿驻场创意技术专家'
+  },
   'breadcrumb.supportedNodes': { en: 'Supported Nodes', 'zh-CN': '支持的节点' },
   'breadcrumb.events': { en: 'Events', 'zh-CN': '活动' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
@@ -5261,7 +5265,199 @@ const translations = {
     en: '5 free runs on real GPUs — no credit card required.',
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
-  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' }
+  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  // FDCT page (/fdct) — Forward Deployed Creative Technologists
+  'fdct.meta.title': {
+    en: 'Forward Deployed Creative Technologists | Comfy',
+    'zh-CN': '前沿驻场创意技术专家 | Comfy'
+  },
+  'fdct.meta.description': {
+    en: 'Senior creatives who embed with your team, build your production ComfyUI workflows, and teach your team to run them.',
+    'zh-CN':
+      '资深创意专家驻场加入你的团队，为你构建生产级 ComfyUI 工作流，并教会你的团队独立运行。'
+  },
+  'fdct.hero.title': {
+    en: 'Comfy Forward Deployed Creative Technologists',
+    'zh-CN': 'Comfy 前沿驻场创意技术专家'
+  },
+  'fdct.hero.subtitle': {
+    en: 'Senior creatives who embed with your team, build your production ComfyUI workflows, and teach your team to run them.',
+    'zh-CN':
+      '资深创意专家驻场加入你的团队，为你构建生产级 ComfyUI 工作流，并教会你的团队独立运行。'
+  },
+  'fdct.hero.eyebrow': {
+    en: 'NEW ENTERPRISE ADD-ON',
+    'zh-CN': '全新企业附加服务'
+  },
+  'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
+  'fdct.hero.applyCta': { en: 'Apply as an FDCT', 'zh-CN': '申请成为 FDCT' },
+  'fdct.builders.title': {
+    en: 'Builders, not advisors',
+    'zh-CN': '实干者，而非顾问'
+  },
+  'fdct.builders.lead': {
+    en: 'From “is this possible?” to a workflow your team owns. An FDCT is the person who builds it.',
+    'zh-CN':
+      '从“这可能吗？”到你的团队自己拥有的工作流。FDCT 就是把它构建出来的人。'
+  },
+  'fdct.builders.nodeLabel': { en: 'An FDCT', 'zh-CN': '一位 FDCT' },
+  'fdct.builders.reason1': {
+    en: 'validates the use case. We build the workflow and install it in your environment.',
+    'zh-CN': '验证用例。我们构建工作流，并将其部署到你的环境中。'
+  },
+  'fdct.builders.reason2': {
+    en: 'teaches your team to run it. Training and enablement are a part of the process.',
+    'zh-CN': '教你的团队运行它。培训与赋能是流程的一部分。'
+  },
+  'fdct.builders.reason3': {
+    en: 'comes from real production. Feature film, commercial, and experiential, on work that shipped.',
+    'zh-CN': '来自真实制作。电影长片、商业广告与体验项目，都是实际交付的作品。'
+  },
+  'fdct.builders.reason4': {
+    en: 'leaves you something you own. You keep the workflow and your team is trained to change it.',
+    'zh-CN':
+      '留下真正属于你的成果。工作流归你所有，你的团队经过培训后可自行修改。'
+  },
+  'fdct.howItWorks.title': { en: 'How it works', 'zh-CN': '如何运作' },
+  'fdct.howItWorks.step1.title': { en: 'Validate', 'zh-CN': '验证' },
+  'fdct.howItWorks.step1.description': {
+    en: 'We prove the outcome is achievable on your own material.',
+    'zh-CN': '我们用你自己的素材证明目标成果切实可行。'
+  },
+  'fdct.howItWorks.step2.title': { en: 'Build', 'zh-CN': '构建' },
+  'fdct.howItWorks.step2.description': {
+    en: 'inside your Comfy Enterprise environment',
+    'zh-CN': '在你的 Comfy Enterprise 环境中'
+  },
+  'fdct.howItWorks.step3.title': { en: 'Enable', 'zh-CN': '赋能' },
+  'fdct.howItWorks.step3.description': {
+    en: 'We train your team to run, modify, and extend it themselves.',
+    'zh-CN': '我们培训你的团队独立运行、修改和扩展它。'
+  },
+  'fdct.howItWorks.step4.title': { en: 'Own', 'zh-CN': '拥有' },
+  'fdct.howItWorks.step4.description': {
+    en: 'what we build is yours, and you can change it without us',
+    'zh-CN': '我们构建的成果归你所有，你无需我们也能修改它'
+  },
+  'fdct.howItWorks.footnote': {
+    en: "The direct line stays open. We're here when your team needs us.",
+    'zh-CN': '直达通道始终敞开。你的团队需要时，我们随时都在。'
+  },
+  'fdct.whatYouGet.title': { en: 'What you will get', 'zh-CN': '你将获得什么' },
+  'fdct.whatYouGet.item1': {
+    en: 'Use-case validation and a proof-of-concept build',
+    'zh-CN': '用例验证与概念验证构建'
+  },
+  'fdct.whatYouGet.item2': {
+    en: 'A production-grade workflow, built and installed',
+    'zh-CN': '生产级工作流，构建并完成部署'
+  },
+  'fdct.whatYouGet.item3': {
+    en: 'Enablement until your team is self-sufficient',
+    'zh-CN': '持续赋能，直到你的团队能够独立运作'
+  },
+  'fdct.whatYouGet.item4': {
+    en: 'White-glove access under your enterprise agreement',
+    'zh-CN': '企业协议下的白手套贴心服务'
+  },
+  'fdct.whatYouGet.item5': {
+    en: 'Reusable creative assets your team keeps',
+    'zh-CN': '可复用的创意资产，归你的团队所有'
+  },
+  'fdct.technologists.title': {
+    en: 'Featured technologists',
+    'zh-CN': '精选技术专家'
+  },
+  'fdct.technologists.lead': {
+    en: 'FDCTs come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match technologists to each engagement based on the work, your stack, and the timeline.',
+    'zh-CN':
+      'FDCT 来自真实制作一线：拥有电影长片、商业广告与体验项目背景，ComfyUI 支撑着已交付的作品。我们会根据项目内容、你的技术栈和时间表，为每次合作匹配合适的技术专家。'
+  },
+  'fdct.technologists.workflows': {
+    en: 'See their work',
+    'zh-CN': '查看他们的作品'
+  },
+  'fdct.technologists.close': { en: 'Close', 'zh-CN': '关闭' },
+  'fdct.technologists.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
+  'fdct.projects.title': { en: 'Past projects', 'zh-CN': '过往项目' },
+  'fdct.projects.category.advertisement': {
+    en: 'Advertisement',
+    'zh-CN': '广告'
+  },
+  'fdct.projects.category.entertainment': {
+    en: 'Entertainment',
+    'zh-CN': '娱乐'
+  },
+  'fdct.projects.category.ecommerce': { en: 'Ecommerce', 'zh-CN': '电商' },
+  'fdct.projects.cta': { en: 'View project', 'zh-CN': '查看项目' },
+  'fdct.faq.title': { en: 'Q&A', 'zh-CN': '问答' },
+  'fdct.faq.q1': {
+    en: 'Can this be a consulting or professional-services contract standalone?',
+    'zh-CN': '可以单独签订咨询或专业服务合同吗？'
+  },
+  'fdct.faq.a1': {
+    en: 'No. It is an add-on to your Comfy enterprise agreement. We bring deep Comfy expertise to your use case, as an optional add on to your enterprise contract.',
+    'zh-CN':
+      '不可以。它是你 Comfy 企业协议的附加服务。我们将深厚的 Comfy 专业能力带到你的用例中，作为企业合同的可选附加项。'
+  },
+  'fdct.faq.q2': {
+    en: 'Is it included in every enterprise contract?',
+    'zh-CN': '每份企业合同都包含这项服务吗？'
+  },
+  'fdct.faq.a2': {
+    en: 'No. It is available to any enterprise customer as an add-on, not bundled automatically into every contract.',
+    'zh-CN':
+      '不包含。它作为附加服务向所有企业客户开放，不会自动捆绑进每份合同。'
+  },
+  'fdct.faq.q3': {
+    en: 'Will someone be embedded full-time with our team?',
+    'zh-CN': '会有人全职驻场加入我们的团队吗？'
+  },
+  'fdct.faq.a3': {
+    en: 'FDCTs work with you on defined milestones and deliverables, with optional in-person time as well. We will customize this based on what your team needs.',
+    'zh-CN':
+      'FDCT 按明确的里程碑和交付物与你协作，也可选择安排现场时间。我们会根据你团队的需求定制协作方式。'
+  },
+  'fdct.faq.q4': {
+    en: 'What happens after the initial build?',
+    'zh-CN': '初始构建完成之后会怎样？'
+  },
+  'fdct.faq.a4': {
+    en: 'You own the workflow and your team is trained to change it. We provide ongoing support and stay available under the enterprise agreement for the next thing, plus optional workshops and one-on-one training.',
+    'zh-CN':
+      '工作流归你所有，你的团队经过培训后可以自行修改。我们在企业协议下提供持续支持、随时待命迎接下一个项目，还可选择工作坊和一对一培训。'
+  },
+  'fdct.faq.q5': {
+    en: 'Who are the people we would actually work with?',
+    'zh-CN': '我们实际会和哪些人合作？'
+  },
+  'fdct.faq.a5': {
+    en: 'Production-credible creatives from feature film, commercial, and experiential backgrounds. Short intro bios/videos on the solution page let you see who you are getting before you sign.',
+    'zh-CN':
+      '来自电影长片、商业广告和体验项目背景、具备真实制作履历的创意人才。解决方案页面上的简短介绍和视频，让你在签约前就能了解将与谁合作。'
+  },
+  'fdct.bands.enterprise.label': {
+    en: 'FOR ENTERPRISE',
+    'zh-CN': '面向企业'
+  },
+  'fdct.bands.enterprise.text': {
+    en: "Tell us what you're trying to make. An FDCT validates it after the first call and builds from there.",
+    'zh-CN': '告诉我们你想做什么。首次沟通后，FDCT 会验证它并从此开始构建。'
+  },
+  'fdct.bands.enterprise.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
+  'fdct.bands.creators.label': {
+    en: 'FOR CREATORS',
+    'zh-CN': '面向创作者'
+  },
+  'fdct.bands.creators.text': {
+    en: "Building production-grade content with Comfy? We're hiring from the community.",
+    'zh-CN': '正在用 Comfy 制作生产级内容？我们正在从社区招募。'
+  },
+  'fdct.bands.creators.cta': { en: 'Apply now', 'zh-CN': '立即申请' },
+  'fdct.closing.title': {
+    en: 'Build with the people that build Comfy.',
+    'zh-CN': '与打造 Comfy 的人一起构建。'
+  }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
