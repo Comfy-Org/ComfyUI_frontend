@@ -406,6 +406,50 @@ describe('mounted and canvas widgets', () => {
     expect(destroy).toHaveBeenCalledOnce()
   })
 
+  it('holds a value when the pack declares a default', () => {
+    // Without a cell a mounted control keeps its widgets_values slot but has
+    // nothing to put in it, so a converted colour picker silently lost what
+    // the user chose. This is the root of most of the wire deltas.
+    let api: { get(): unknown; set(v: unknown): void } | undefined
+    widgets.mount({
+      name: 'colour',
+      defaultValue: '#000000',
+      render: (_c, value) => {
+        api = value as never
+      }
+    })
+
+    expect(node.widgets![0].value).toBe('#000000')
+    api!.set('#ff0000')
+    expect(node.widgets![0].value).toBe('#ff0000')
+    expect(api!.get()).toBe('#ff0000')
+  })
+
+  it('serializes a value-holding mount, but not a decoration', () => {
+    widgets.mount({ name: 'panel', render: () => {} })
+    widgets.mount({ name: 'colour', defaultValue: '#000', render: () => {} })
+
+    expect(node.widgets![0].serialize).toBe(false)
+    expect(node.widgets![1].serialize).toBe(true)
+  })
+
+  it('tells a value-holding mount when the value changed elsewhere', () => {
+    const seen = vi.fn()
+    widgets.mount({
+      name: 'colour',
+      defaultValue: '#000000',
+      render: (_c, value) => {
+        value.onChange(seen)
+      }
+    })
+
+    // What a workflow load does.
+    node.widgets![0].value = '#abcdef'
+    node.widgets![0].callback?.('#abcdef' as never)
+
+    expect(seen).toHaveBeenCalledWith('#abcdef')
+  })
+
   it('refuses to mount over an existing widget name', () => {
     widgets.mount({ name: 'panel', render: () => {} })
     expect(() => widgets.mount({ name: 'panel', render: () => {} })).toThrow(
