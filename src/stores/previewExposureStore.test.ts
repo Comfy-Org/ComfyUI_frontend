@@ -124,6 +124,61 @@ describe(usePreviewExposureStore, () => {
     })
   })
 
+  describe('findExposure / hasExposure', () => {
+    beforeEach(() => {
+      store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+      store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '43',
+        sourcePreviewName: 'preview'
+      })
+    })
+
+    it('matches on both sourceNodeId and sourcePreviewName', () => {
+      const source = { sourceNodeId: '43', sourcePreviewName: 'preview' }
+
+      expect(store.hasExposure(rootGraphA, hostA, source)).toBe(true)
+      expect(store.findExposure(rootGraphA, hostA, source)).toEqual({
+        name: 'preview_1',
+        sourceNodeId: '43',
+        sourcePreviewName: 'preview'
+      })
+    })
+
+    it('does not match when only one field matches', () => {
+      expect(
+        store.hasExposure(rootGraphA, hostA, {
+          sourceNodeId: '42',
+          sourcePreviewName: 'other'
+        })
+      ).toBe(false)
+      expect(
+        store.hasExposure(rootGraphA, hostA, {
+          sourceNodeId: '99',
+          sourcePreviewName: 'preview'
+        })
+      ).toBe(false)
+    })
+
+    it('normalizes a numeric sourceNodeId before comparing', () => {
+      const source = { sourceNodeId: 42, sourcePreviewName: 'preview' }
+
+      expect(store.hasExposure(rootGraphA, hostA, source)).toBe(true)
+      expect(store.findExposure(rootGraphA, hostA, source)?.sourceNodeId).toBe(
+        '42'
+      )
+    })
+
+    it('returns undefined/false for an unknown host', () => {
+      const source = { sourceNodeId: '42', sourcePreviewName: 'preview' }
+
+      expect(store.findExposure(rootGraphA, hostB, source)).toBeUndefined()
+      expect(store.hasExposure(rootGraphA, hostB, source)).toBe(false)
+    })
+  })
+
   describe('getExposuresAsPromotionShape', () => {
     it('returns an empty array for unknown host', () => {
       expect(store.getExposuresAsPromotionShape(rootGraphA, hostA)).toEqual([])
