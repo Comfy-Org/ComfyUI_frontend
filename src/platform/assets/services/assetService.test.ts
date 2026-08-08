@@ -9,6 +9,7 @@ import {
   assetService
 } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
@@ -39,11 +40,13 @@ vi.mock('@/platform/settings/settingStore', () => ({
 vi.mock('@/stores/modelToNodeStore', () => {
   const registeredNodeTypes: Record<string, string> = {
     CheckpointLoaderSimple: 'ckpt_name',
-    LoraLoader: 'lora_name'
+    LoraLoader: 'lora_name',
+    AILab_QwenVL: 'model_name'
   }
   const nodeTypeCategories: Record<string, string> = {
     CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras'
+    LoraLoader: 'loras',
+    AILab_QwenVL: 'LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct'
   }
   return {
     useModelToNodeStore: vi.fn(() => ({
@@ -779,6 +782,25 @@ describe(assetService.getAssetModels, () => {
     expect(diffusion).toEqual([{ name: 'dual_use.safetensors', pathIndex: 0 }])
     // Both folder reads resolve from a single memoized models walk.
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.fails("resolves models when queried by the node-widget's full category path, not just the bucket's top-level folder key", async () => {
+    mockSupportsModelTypeTags.value = false
+    const category =
+      useModelToNodeStore().getCategoryForNodeType('AILab_QwenVL')
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'qwen-vl',
+          name: 'Qwen2.5-VL-3B-Instruct.safetensors',
+          tags: ['models', 'LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels(category!)
+
+    expect(models).not.toEqual([])
   })
 })
 
