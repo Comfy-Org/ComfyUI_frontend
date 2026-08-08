@@ -372,7 +372,6 @@ const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
 const { missingNodePacks } = useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   usePackInstall(() => missingNodePacks.value)
-
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 
 const searchQuery = ref('')
