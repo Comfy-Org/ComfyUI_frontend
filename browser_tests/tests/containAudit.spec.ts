@@ -50,18 +50,12 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
       await comfyPage.nextFrame()
     }
 
-    // Walk the DOM and find candidates
-    //
-    // The helpers below are declared inside this callback (rather than at
-    // module scope) because Playwright serializes `page.evaluate`'s function
-    // body to run in the browser realm — it cannot close over anything
-    // defined in the Node/test scope.
     const candidates = await comfyPage.page.evaluate((): ContainCandidate[] => {
       interface ContainmentFlags {
         alreadyContained: boolean
+        hasExplicitDimensions: boolean
         hasFixedWidth: boolean
         isFlexChild: boolean
-        hasExplicitDimensions: boolean
       }
 
       function computeContainmentFlags(
@@ -89,9 +83,9 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
 
         return {
           alreadyContained,
+          hasExplicitDimensions,
           hasFixedWidth,
-          isFlexChild,
-          hasExplicitDimensions
+          isFlexChild
         }
       }
 
@@ -112,8 +106,6 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
         if (el.id) return `#${el.id}`
         if (!el.parentElement) return el.tagName.toLowerCase()
 
-        // Use nth-child to disambiguate instead of fragile first-class fallback
-        // (e.g. Tailwind utilities like .flex, .relative are shared across many elements)
         const children = Array.from(el.parentElement.children)
         const index = children.indexOf(el) + 1
         const parentTestId = el.parentElement.getAttribute('data-testid')
@@ -144,6 +136,12 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
 
         const computed = getComputedStyle(el)
         const flags = computeContainmentFlags(el, computed)
+        const {
+          alreadyContained,
+          hasExplicitDimensions,
+          hasFixedWidth,
+          isFlexChild
+        } = flags
         const score = computeCandidateScore(subtreeSize, flags)
 
         results.push({
@@ -153,10 +151,10 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
           className:
             typeof el.className === 'string' ? el.className.slice(0, 80) : '',
           subtreeSize,
-          hasFixedWidth: flags.hasFixedWidth,
-          isFlexChild: flags.isFlexChild,
-          hasExplicitDimensions: flags.hasExplicitDimensions,
-          alreadyContained: flags.alreadyContained,
+          hasFixedWidth,
+          isFlexChild,
+          hasExplicitDimensions,
+          alreadyContained,
           score
         })
       })
