@@ -23,13 +23,13 @@ interface Particle {
 const COLS = 19
 const ROWS = 13
 
-const HEX_W = 72
-const HEX_H = HEX_W * 1.108
+const STEP_X = 72 * 0.616
+const STEP_Y = 72 * 1.108 * 0.335
 
-const STEP_X = HEX_W * 0.616
-const STEP_Y = HEX_H * 0.335
+const HEX_W = STEP_X
+const HEX_H = STEP_Y * 2
 
-const CORNER_R = 14
+const CORNER_R = 3
 const LIFT = HEX_H * 0.35
 const TICK_MS = 200
 
@@ -86,15 +86,15 @@ const DIRS = {
 } satisfies Record<string, Dir>
 const ALL_DIRS = [DIRS.up, DIRS.down, DIRS.left, DIRS.right]
 
-const KEY_INTENTS: Record<string, [number, number]> = {
-  arrowup: [0, -1],
-  w: [0, -1],
-  arrowdown: [0, 1],
-  s: [0, 1],
-  arrowleft: [-1, 0],
-  a: [-1, 0],
-  arrowright: [1, 0],
-  d: [1, 0]
+const KEY_INTENTS: Record<string, Dir> = {
+  arrowup: DIRS.left,
+  w: DIRS.left,
+  arrowdown: DIRS.right,
+  s: DIRS.right,
+  arrowleft: DIRS.down,
+  a: DIRS.down,
+  arrowright: DIRS.up,
+  d: DIRS.up
 }
 
 function resolveTurn(intent: [number, number], heading: Dir): Dir | null {
@@ -461,11 +461,14 @@ function step() {
   }
 
   dir = nextDir
-  const head: Cell = { i: snake[0].i + dir.i, j: snake[0].j + dir.j }
+  const head: Cell = {
+    i: (((snake[0].i + dir.i) % COLS) + COLS) % COLS,
+    j: (((snake[0].j + dir.j) % ROWS) + ROWS) % ROWS
+  }
 
   const willGrow = cellsEqual(head, food)
   const body = willGrow ? snake : snake.slice(0, -1)
-  if (!inBounds(head) || body.some((s) => cellsEqual(s, head))) {
+  if (body.some((s) => cellsEqual(s, head))) {
     snake.unshift(head)
     snake.pop()
     return gameOver()
@@ -679,8 +682,7 @@ function onKeyDown(e: KeyboardEvent) {
   if (!intent) return
   e.preventDefault()
   keyboardUntil = performance.now() + KEYBOARD_TIMEOUT_MS
-  const turn = resolveTurn(intent, dir)
-  if (turn) nextDir = turn
+  if (!(intent.i === -dir.i && intent.j === -dir.j)) nextDir = intent
 }
 
 document.addEventListener('keydown', onKeyDown)
