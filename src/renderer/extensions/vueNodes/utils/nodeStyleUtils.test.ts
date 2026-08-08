@@ -7,23 +7,14 @@ describe('shapeVariantClass', () => {
     box: 'box-class',
     card: 'card-class',
     default: 'default-class'
-  }
+  } as const
 
-  it('returns the box variant for RenderShape.BOX', () => {
-    expect(shapeVariantClass(RenderShape.BOX, variants)).toBe('box-class')
-  })
-
-  it('returns the card variant for RenderShape.CARD', () => {
-    expect(shapeVariantClass(RenderShape.CARD, variants)).toBe('card-class')
-  })
-
-  it('returns the default variant for any other shape', () => {
-    expect(shapeVariantClass(RenderShape.CIRCLE, variants)).toBe(
-      'default-class'
-    )
-  })
-
-  it('returns the default variant when shape is undefined', () => {
-    expect(shapeVariantClass(undefined, variants)).toBe('default-class')
+  it.for([
+    ['RenderShape.BOX', RenderShape.BOX, 'box-class'],
+    ['RenderShape.CARD', RenderShape.CARD, 'card-class'],
+    ['any other shape', RenderShape.CIRCLE, 'default-class'],
+    ['undefined shape', undefined, 'default-class']
+  ] as const)('returns the variant class for %s', ([, shape, expected]) => {
+    expect(shapeVariantClass(shape, variants)).toBe(expected)
   })
 })

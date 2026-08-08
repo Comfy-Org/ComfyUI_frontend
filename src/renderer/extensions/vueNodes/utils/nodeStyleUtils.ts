@@ -14,9 +14,9 @@ export function applyLightThemeColor(color?: string): string {
 }
 
 export interface ShapeClassVariants {
-  box: string
-  card: string
-  default: string
+  readonly box: string
+  readonly card: string
+  readonly default: string
 }
 
 /**
@@ -24,7 +24,7 @@ export interface ShapeClassVariants {
  * shape other than BOX and CARD as the default rounding.
  */
 export function shapeVariantClass(
-  shape: number | undefined,
+  shape: RenderShape | undefined,
   variants: ShapeClassVariants
 ): string {
   switch (shape) {
