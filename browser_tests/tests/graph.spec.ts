@@ -40,18 +40,48 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
   test('Deduplicates links without breaking connections on slot-drift workflow', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow('links/duplicate_links_slot_drift')
+    await test.step('Load workflow with slot-drifted duplicate links', async () => {
+      await comfyPage.workflow.loadWorkflow('links/duplicate_links_slot_drift')
+    })
+
+    const nodeIds = {
+      switchCfg: toNodeId(120),
+      ksampler85: toNodeId(85),
+      ksampler86: toNodeId(86)
+    }
 
     function evaluateGraph() {
-      const nodeIds = {
-        switchCfg: toNodeId(120),
-        ksampler85: toNodeId(85),
-        ksampler86: toNodeId(86)
-      }
-
       return comfyPage.page.evaluate((nodeIds) => {
-        const graph = window.app!.graph!
+        function findCfgInput<T extends { name: string }>(
+          inputs: readonly T[]
+        ) {
+          return inputs.find((input) => input.name === 'cfg')
+        }
 
+        function isLinkValid(
+          links: ReadonlyMap<unknown, unknown>,
+          linkId: unknown
+        ) {
+          return linkId != null && links.has(linkId)
+        }
+
+        function countLinksBetween(
+          links: Iterable<{ origin_id: unknown; target_id: unknown }>,
+          originId: string,
+          targetId: string
+        ) {
+          let count = 0
+          for (const link of links) {
+            if (
+              String(link.origin_id) === originId &&
+              String(link.target_id) === targetId
+            )
+              count++
+          }
+          return count
+        }
+
+        const graph = window.app!.graph!
         const subgraph = graph.subgraphs.values().next().value
         if (!subgraph) return { error: 'No subgraph found' }
 
@@ -63,65 +93,51 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
           return { error: 'Required nodes not found' }
 
         // Find cfg inputs by name (slot indices shift due to widget-to-input)
-        const cfgInput85 = ksampler85.inputs.find(
-          (i: { name: string }) => i.name === 'cfg'
-        )
-        const cfgInput86 = ksampler86.inputs.find(
-          (i: { name: string }) => i.name === 'cfg'
-        )
+        const cfgInput85 = findCfgInput(ksampler85.inputs)
+        const cfgInput86 = findCfgInput(ksampler86.inputs)
         const cfg85Linked = cfgInput85?.link != null
         const cfg86Linked = cfgInput86?.link != null
-
-        // Verify the surviving links exist in the subgraph link map
-        const cfg85LinkValid =
-          cfg85Linked && subgraph.links.has(cfgInput85!.link!)
-        const cfg86LinkValid =
-          cfg86Linked && subgraph.links.has(cfgInput86!.link!)
-
-        // Switch(CFG) output should have exactly 2 links (one to each KSampler)
-        const switchOutputLinkCount = switchCfg.outputs[0]?.links?.length ?? 0
-
-        // Count links from Switch(CFG) to node 85 cfg (should be 1, not 2)
-        let cfgLinkToNode85Count = 0
-        for (const link of subgraph.links.values()) {
-          if (
-            String(link.origin_id) === '120' &&
-            String(link.target_id) === '85'
-          )
-            cfgLinkToNode85Count++
-        }
 
         return {
           cfg85Linked,
           cfg86Linked,
-          cfg85LinkValid,
-          cfg86LinkValid,
+          // Verify the surviving links exist in the subgraph link map
+          cfg85LinkValid: isLinkValid(subgraph.links, cfgInput85?.link),
+          cfg86LinkValid: isLinkValid(subgraph.links, cfgInput86?.link),
           cfg85LinkId: cfgInput85?.link ?? null,
           cfg86LinkId: cfgInput86?.link ?? null,
           switchOutputLinkIds: [...(switchCfg.outputs[0]?.links ?? [])],
-          switchOutputLinkCount,
-          cfgLinkToNode85Count
+          // Switch(CFG) output should have exactly 2 links (one to each KSampler)
+          switchOutputLinkCount: switchCfg.outputs[0]?.links?.length ?? 0,
+          // Count links from Switch(CFG) to node 85 cfg (should be 1, not 2)
+          cfgLinkToNode85Count: countLinksBetween(
+            subgraph.links.values(),
+            '120',
+            '85'
+          )
         }
       }, nodeIds)
     }
 
-    // Poll graph state once, then assert all properties
-    await expect(async () => {
-      const r = await evaluateGraph()
-      // Both KSamplerAdvanced nodes must have their cfg input connected
-      expect(r.cfg85Linked).toBe(true)
-      expect(r.cfg86Linked).toBe(true)
-      // Links must exist in the subgraph link map
-      expect(r.cfg85LinkValid).toBe(true)
-      expect(r.cfg86LinkValid).toBe(true)
-      // Switch(CFG) output has exactly 2 links (one per KSamplerAdvanced)
-      expect(r.switchOutputLinkCount).toBe(2)
-      // Only 1 link from Switch(CFG) to node 85 (duplicate removed)
-      expect(r.cfgLinkToNode85Count).toBe(1)
-      // Output link IDs must match the input link IDs (source/target integrity)
-      expect(r.switchOutputLinkIds).toEqual(
-        expect.arrayContaining([r.cfg85LinkId, r.cfg86LinkId])
-      )
-    }).toPass({ timeout: 5000 })
+    await test.step('Verify duplicate links are removed without breaking connections', async () => {
+      // Poll graph state once, then assert all properties
+      await expect(async () => {
+        const r = await evaluateGraph()
+        // Both KSamplerAdvanced nodes must have their cfg input connected
+        expect(r.cfg85Linked).toBe(true)
+        expect(r.cfg86Linked).toBe(true)
+        // Links must exist in the subgraph link map
+        expect(r.cfg85LinkValid).toBe(true)
+        expect(r.cfg86LinkValid).toBe(true)
+        // Switch(CFG) output has exactly 2 links (one per KSamplerAdvanced)
+        expect(r.switchOutputLinkCount).toBe(2)
+        // Only 1 link from Switch(CFG) to node 85 (duplicate removed)
+        expect(r.cfgLinkToNode85Count).toBe(1)
+        // Output link IDs must match the input link IDs (source/target integrity)
+        expect(r.switchOutputLinkIds).toEqual(
+          expect.arrayContaining([r.cfg85LinkId, r.cfg86LinkId])
+        )
+      }).toPass({ timeout: 5000 })
+    })
   })
 })
