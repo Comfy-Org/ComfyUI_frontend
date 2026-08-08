@@ -3114,6 +3114,7 @@
         "state": "State"
       },
       "modelCount": "{count} model | {count} models",
+      "matchedModelCount": "{matched} of {total} matches | {matched} of {total} match",
       "disableAll": "Disable all",
       "disableAllCount": "Disable all {count} provider | Disable all {count} providers",
       "enableAllCount": "Enable all {count} provider | Enable all {count} providers",

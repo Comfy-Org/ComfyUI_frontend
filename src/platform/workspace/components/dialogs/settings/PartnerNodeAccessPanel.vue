@@ -271,10 +271,20 @@
                 class="hidden text-sm text-muted-foreground lg:block"
               >
                 {{
-                  $t(
-                    'workspacePanel.partnerNodes.modelCount',
-                    provider.nodes.length
-                  )
+                  provider.totalModelCount !== undefined &&
+                  provider.nodes.length < provider.totalModelCount
+                    ? $t(
+                        'workspacePanel.partnerNodes.matchedModelCount',
+                        {
+                          matched: provider.nodes.length,
+                          total: provider.totalModelCount
+                        },
+                        provider.nodes.length
+                      )
+                    : $t(
+                        'workspacePanel.partnerNodes.modelCount',
+                        provider.nodes.length
+                      )
                 }}
               </span>
               <div
@@ -437,20 +447,24 @@ const enabledModelCount = computed(() =>
   )
 )
 
-const filteredProviders = computed(() => {
+type FilteredProvider = (typeof providerRows)['value'][number] & {
+  totalModelCount?: number
+}
+
+const filteredProviders = computed<FilteredProvider[]>(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase()
   if (!query) return providerRows.value
 
-  return providerRows.value.flatMap((provider) => {
+  return providerRows.value.flatMap((provider): FilteredProvider[] => {
     if (provider.displayName.toLocaleLowerCase().includes(query)) {
-      return provider
+      return [provider]
     }
 
     const nodes = provider.nodes.filter(({ name }) =>
       name.toLocaleLowerCase().includes(query)
     )
     return nodes.length > 0
-      ? [{ ...provider, nodes, matchedByModel: true }]
+      ? [{ ...provider, nodes, totalModelCount: provider.nodes.length }]
       : []
   })
 })
@@ -522,14 +536,8 @@ function toggleExpanded(providerId: string) {
   expandedProviderIds.value = nextIds
 }
 
-function isProviderExpanded(provider: {
-  id: string
-  matchedByModel?: boolean
-}) {
-  return (
-    provider.matchedByModel === true ||
-    expandedProviderIds.value.has(provider.id)
-  )
+function isProviderExpanded(provider: { id: string }) {
+  return expandedProviderIds.value.has(provider.id)
 }
 
 async function performSave(action: () => Promise<void>) {

@@ -294,6 +294,11 @@ describe('PartnerNodeAccessPanel', () => {
       'Enhance image',
       'partner/image/Acme'
     )
+    mockNodeDefsByName.value.AcmeResize = nodeDef(
+      'AcmeResize',
+      'Resize video',
+      'partner/video/Acme'
+    )
     renderComponent()
 
     await user.type(
@@ -304,8 +309,15 @@ describe('PartnerNodeAccessPanel', () => {
     )
 
     expect(screen.getByText('Acme')).toBeTruthy()
-    expect(screen.getByText('Enhance image')).toBeTruthy()
+    expect(screen.getByText('1 of 2 matches')).toBeTruthy()
+    expect(screen.queryByText('Enhance image')).toBeNull()
     expect(screen.queryByText('OpenAI (inc. Sora)')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Acme' }))
+    expect(screen.getByText('Enhance image')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Acme' }))
+    expect(screen.queryByText('Enhance image')).toBeNull()
   })
 
   it('keeps provider-name matches collapsed while searching', async () => {
@@ -330,12 +342,9 @@ describe('PartnerNodeAccessPanel', () => {
 
     await user.type(search, 'Acme')
     expect(screen.queryByText('Enhance image')).toBeNull()
+    expect(screen.getByText('1 model')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Acme' }))
-    expect(screen.getByText('Enhance image')).toBeTruthy()
-
-    await user.clear(search)
-    await user.type(search, 'Enhance')
     expect(screen.getByText('Enhance image')).toBeTruthy()
   })
 
