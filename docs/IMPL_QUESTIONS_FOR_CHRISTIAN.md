@@ -315,6 +315,48 @@ field, so it can be neither set nor safely dropped.
 
 ---
 
+## 6b. Capabilities built since this document was written ✅
+
+Every one of these came from a pack that could not be converted without it, and
+each closed a refusal rather than a nicety.
+
+| capability                                                       | what it replaces                                           | what it unblocked                                                                       |
+| ---------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `comfy.backend.assetUrl()`                                       | `api.fileURL`                                              | any pack serving its own images, fonts, html — `backend.url()` prepends `/api` and 404s |
+| `node.getBounds()` / `node.getSlotPosition()` / `graph.nodeAt()` | packs re-deriving geometry from renderer constants         | retired `comfy.constants` entirely                                                      |
+| `b.setExecution('frontend')`                                     | `node.isVirtualNode = true` on a _backend-registered_ type | enricos' `tools.js` — one line, whole file refused                                      |
+| `comfy.storage`                                                  | `api.storeUserData` and friends                            | kjnodes' ideogram template store                                                        |
+| `node.getScreenRect()`                                           | reading pan and zoom to place a panel over a node          | ideogram's floating dock                                                                |
+| `comfy.onViewportChanged()`                                      | chaining a renderer draw callback                          | the same dock, and anything anchored                                                    |
+| `defs.defineWidgetType()`                                        | `getCustomWidgets`                                         | **four files in comfy-mtb**, plus rmbg `COLORCODE` and mtb `FLOAT_CURVE`                |
+| `widgets.mount({ defaultValue })`                                | a mounted control that holds a value                       | the root cause of most wire-format deltas                                               |
+
+Two are worth reading as design notes rather than entries.
+
+**`getScreenRect` instead of the viewport transform.** The dock needed "where is
+this node on screen" and "tell me when that changed". Exposing pan and zoom
+would have been the mechanism; these two are the intent. The arithmetic proves
+it — the pan offset and canvas rect cancel out of the old expression, and the
+zoom factor is recoverable as `getScreenRect().width / getBounds().width`. The
+renderer's transform stays private and nothing is lost.
+
+**`defineWidgetType` is not decoration.** The host decides widget-vs-socket by a
+single lookup, and `addInputSocket`/`addInputWidget` are exact complements on
+it. An unregistered type does not degrade to a plain widget — the input becomes
+a **socket**, changing the serialized `inputs` array and dropping its
+`widgets_values` entry. That is why three packs were refused rather than
+converted with a warning.
+
+### Still open, and now the largest items
+
+- **Supply-side resolution** (§4) — cg-use-everywhere and rgthree.
+- **Sidebar tabs** (gap 23) — mtb's input/output sidebar is entirely that.
+- **A dialog surface** (gap 30) — mtb's `note_plus` needs an editor; several
+  packs want a modal.
+- **Prompt-time widget values** (gap 6) — still the most-cited functional loss:
+  `screencap_stream` is inert, Impact Pack no longer embeds images, and
+  prompt-reader's seed control would queue `-1`.
+
 ## 7a. Conversion keeps finding packs that were already broken
 
 Worth knowing before reading any conversion result: some of what the migration
