@@ -4,7 +4,13 @@ import { setActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -560,6 +566,100 @@ describe('computeProcessedWidgets borderStyle', () => {
         options: { values: ['state value'] }
       }
     })
+  })
+
+  it('projects an exact host image value and keeps the interior fallback when context is ambiguous', () => {
+    const rootGraph = createTestRootGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph,
+      inputs: [{ name: 'image', type: 'COMBO' }]
+    })
+    const interiorNode = new LGraphNode('LoadImage')
+    interiorNode.id = toNodeId(5)
+    const interiorInput = interiorNode.addInput('image', 'COMBO')
+    interiorInput.widget = { name: 'image' }
+    interiorNode.addWidget('combo', 'image', 'interior.png', () => undefined, {
+      values: ['interior.png', 'first.png', 'second.png']
+    })
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+    const firstHost = createTestSubgraphNode(subgraph, { id: 11 })
+    const secondHost = createTestSubgraphNode(subgraph, { id: 12 })
+    rootGraph.add(firstHost)
+    rootGraph.add(secondHost)
+
+    const firstWidgetId = firstHost.inputs[0].widgetId
+    const secondWidgetId = secondHost.inputs[0].widgetId
+    expect(firstWidgetId).toBeDefined()
+    expect(secondWidgetId).toBeDefined()
+    if (!firstWidgetId || !secondWidgetId) return
+
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.registerWidget(
+      widgetId(rootGraph.id, interiorNode.id, 'image'),
+      {
+        type: 'combo',
+        value: 'interior.png',
+        options: {}
+      }
+    )
+    widgetValueStore.setValue(firstWidgetId, 'first.png')
+    widgetValueStore.setValue(secondWidgetId, 'second.png')
+
+    const imageWidget = createMockWidget({
+      name: 'image',
+      nodeId: interiorNode.id,
+      slotMetadata: { index: 0, linked: true, type: 'COMBO' },
+      spec: { type: 'COMBO', name: 'image', image_upload: true }
+    })
+    const nodeData = {
+      id: interiorNode.id,
+      type: 'LoadImage',
+      widgets: [imageWidget],
+      title: 'Load Image',
+      mode: 0,
+      selected: false,
+      executing: false,
+      inputs: [],
+      outputs: []
+    }
+    const baseOptions = {
+      nodeData,
+      graphId: rootGraph.id,
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph,
+      ui: noopUi
+    }
+
+    const exactResult = computeProcessedWidgets({
+      ...baseOptions,
+      activeSubgraphHostExecutionId: createNodeExecutionId([12])
+    })
+    const ambiguousResult = computeProcessedWidgets(baseOptions)
+
+    expect(exactResult[0]).toMatchObject({
+      value: 'second.png',
+      simplified: {
+        value: 'second.png',
+        options: { disabled: true, read_only: true }
+      }
+    })
+    expect(ambiguousResult[0]).toMatchObject({
+      value: 'interior.png',
+      simplified: {
+        value: 'interior.png',
+        options: { disabled: true, read_only: true }
+      }
+    })
+
+    ambiguousResult[0].updateHandler('changed.png')
+    expect(
+      widgetValueStore.getWidget(
+        widgetId(rootGraph.id, interiorNode.id, 'image')
+      )?.value
+    ).toBe('interior.png')
   })
 
   it('uses widget nodeId for simplified widget locator when present', () => {

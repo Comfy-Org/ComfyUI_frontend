@@ -1,4 +1,5 @@
 import QuickLRU from '@alloc/quick-lru'
+import { useEventListener } from '@vueuse/core'
 import { useRouteHash } from '@vueuse/router'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
@@ -9,9 +10,15 @@ import {
 } from 'vue-router'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
+import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  findSubgraphHostAncestorExecutionId,
+  findUniqueSubgraphHostExecutionId,
+  resolveEnteredSubgraphHostExecutionId
+} from '@/core/graph/subgraph/subgraphHostExecution'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
@@ -19,6 +26,7 @@ import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 export const VIEWPORT_CACHE_MAX_SIZE = 32
 
@@ -40,6 +48,15 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** The stack of subgraph IDs from the root graph to the currently opened subgraph. */
     const idStack = ref<string[]>([])
+
+    const activeSubgraphHostExecutionId = ref<NodeExecutionId>()
+
+    let pendingSubgraphEntry:
+      | {
+          detail: LGraphCanvasEventMap['subgraph-opening']
+          hostExecutionId: NodeExecutionId | undefined
+        }
+      | undefined
 
     /** LRU cache for viewport states. Key: `workflowPath:graphId` */
     const viewportCache = new QuickLRU<string, DragAndScaleState>({
@@ -95,6 +112,8 @@ export const useSubgraphNavigationStore = defineStore(
      */
     const restoreState = (subgraphIds: string[]) => {
       idStack.value.length = 0
+      activeSubgraphHostExecutionId.value = undefined
+      pendingSubgraphEntry = undefined
       for (const id of subgraphIds) idStack.value.push(id)
     }
 
@@ -178,9 +197,18 @@ export const useSubgraphNavigationStore = defineStore(
       const isInRootGraph = !subgraph
       if (isInRootGraph) {
         idStack.value.length = 0
+        activeSubgraphHostExecutionId.value = undefined
+        pendingSubgraphEntry = undefined
         restoreViewport(getCurrentRootGraphId())
         return
       }
+
+      activeSubgraphHostExecutionId.value =
+        findSubgraphHostAncestorExecutionId(
+          subgraph.rootGraph,
+          activeSubgraphHostExecutionId.value,
+          subgraph
+        ) ?? findUniqueSubgraphHostExecutionId(subgraph.rootGraph, subgraph)
 
       const path = findSubgraphPathById(subgraph.rootGraph, subgraph.id)
       const isInReachableSubgraph = !!path
@@ -192,6 +220,50 @@ export const useSubgraphNavigationStore = defineStore(
 
       restoreViewport(subgraph.id)
     }
+
+    useEventListener(
+      () => canvasStore.canvas?.canvas,
+      'subgraph-opening',
+      (event: CustomEvent<LGraphCanvasEventMap['subgraph-opening']>) => {
+        const { closingGraph, fromNode, subgraph } = event.detail
+        pendingSubgraphEntry = {
+          detail: event.detail,
+          hostExecutionId: resolveEnteredSubgraphHostExecutionId(
+            subgraph.rootGraph,
+            activeSubgraphHostExecutionId.value,
+            closingGraph,
+            fromNode
+          )
+        }
+      }
+    )
+
+    useEventListener(
+      () => canvasStore.canvas?.canvas,
+      'subgraph-opened',
+      (event: CustomEvent<LGraphCanvasEventMap['subgraph-opened']>) => {
+        const { closingGraph, fromNode, subgraph } = event.detail
+        const capturedEntry = pendingSubgraphEntry
+        pendingSubgraphEntry = undefined
+
+        if (
+          capturedEntry?.detail.closingGraph === closingGraph &&
+          capturedEntry.detail.fromNode === fromNode &&
+          capturedEntry.detail.subgraph === subgraph
+        ) {
+          activeSubgraphHostExecutionId.value = capturedEntry.hostExecutionId
+          return
+        }
+
+        activeSubgraphHostExecutionId.value =
+          resolveEnteredSubgraphHostExecutionId(
+            subgraph.rootGraph,
+            activeSubgraphHostExecutionId.value,
+            closingGraph,
+            fromNode
+          )
+      }
+    )
 
     // ── Watchers ─────────────────────────────────────────────────────
 
@@ -352,6 +424,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     return {
       activeSubgraph,
+      activeSubgraphHostExecutionId,
       navigationStack,
       restoreState,
       exportState,

@@ -16,6 +16,11 @@ export interface LGraphCanvasEventMap {
     /** The old active graph, or `null` if there was no active graph. */
     oldGraph: LGraph | Subgraph | null | undefined
   }
+  'subgraph-opening': {
+    subgraph: Subgraph
+    closingGraph: LGraph
+    fromNode: SubgraphNode
+  }
   'subgraph-opened': {
     subgraph: Subgraph
     closingGraph: LGraph

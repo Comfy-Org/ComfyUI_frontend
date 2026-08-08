@@ -85,6 +85,12 @@ describe('FormDropdownInput', () => {
       await user.click(screen.getByRole('button'))
       expect(onSelectClick).toHaveBeenCalledTimes(1)
     })
+
+    it('disables selection when the disabled prop is true', () => {
+      renderInput({ disabled: true })
+
+      expect(screen.getByRole('button')).toBeDisabled()
+    })
   })
 
   describe('Upload affordance', () => {

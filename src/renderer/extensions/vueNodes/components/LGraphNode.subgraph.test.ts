@@ -23,6 +23,12 @@ vi.mock('@/scripts/app', () => ({
   app: mockApp
 }))
 
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({
+    activeSubgraphHostExecutionId: undefined
+  })
+}))
+
 vi.mock('@/utils/graphTraversalUtil', () => ({
   getNodeByLocatorId: vi.fn(),
   getLocatorIdFromNodeData: vi.fn((nodeData) =>

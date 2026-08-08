@@ -4,9 +4,9 @@ import { computed, ref } from 'vue'
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
   getLiftedErrorSource,
-  liftNodeErrorsToBoundary,
-  resolveLiftChain
+  liftNodeErrorsToBoundary
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
+import { resolvePromotedInputBoundaryChain } from '@/core/graph/subgraph/promotedInputBoundary'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -169,13 +169,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         )
         if (!sourceExecutionId) return []
 
-        const clearsThisError = resolveLiftChain(
+        const clearsThisError = resolvePromotedInputBoundaryChain(
           app.rootGraph,
           sourceExecutionId,
           source.source_input_name
         ).some(
           (level) =>
-            level.hostExecId === executionId && level.hostInputName === slotName
+            level.hostExecutionId === executionId &&
+            level.inputName === slotName
         )
         return clearsThisError
           ? [

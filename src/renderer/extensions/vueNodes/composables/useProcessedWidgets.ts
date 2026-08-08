@@ -32,6 +32,7 @@ import {
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -52,6 +53,10 @@ import type {
   SimplifiedWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
+import {
+  isLinkedImageWidget,
+  resolveLinkedImageWidgetValue
+} from '@/renderer/extensions/vueNodes/composables/resolveLinkedImageWidgetValue'
 
 const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
 type TooltipValueType = (typeof TOOLTIP_VALUE_TYPES)[number]
@@ -90,6 +95,7 @@ interface ComputeProcessedWidgetsOptions {
   showAdvanced: boolean
   isGraphReady: boolean
   rootGraph: LGraph | null
+  activeSubgraphHostExecutionId?: NodeExecutionId
   ui: WidgetUiCallbacks
 }
 
@@ -226,6 +232,7 @@ export function computeProcessedWidgets({
   showAdvanced,
   isGraphReady,
   rootGraph,
+  activeSubgraphHostExecutionId,
   ui
 }: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData?.widgets) return []
@@ -327,13 +334,27 @@ export function computeProcessedWidgets({
       (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
 
     const { slotMetadata } = widget
+    const linkedImage = isLinkedImageWidget(widget)
 
-    const value = widgetState?.value as WidgetValue
+    const mirroredValue =
+      rootGraph && activeSubgraphHostExecutionId && nodeId && linkedImage
+        ? resolveLinkedImageWidgetValue(
+            rootGraph,
+            activeSubgraphHostExecutionId,
+            nodeId,
+            widget.name
+          )
+        : undefined
+    const value = mirroredValue
+      ? mirroredValue.value
+      : (widgetState?.value as WidgetValue)
 
     const isDisabled = slotMetadata?.linked || widgetState?.disabled
-    const widgetOptions = isDisabled
-      ? { ...mergedOptions, disabled: true }
-      : mergedOptions
+    const widgetOptions = linkedImage
+      ? { ...mergedOptions, disabled: true, read_only: true }
+      : isDisabled
+        ? { ...mergedOptions, disabled: true }
+        : mergedOptions
 
     const borderStyle = mergedOptions.advanced
       ? 'ring ring-component-node-widget-advanced'
@@ -368,13 +389,15 @@ export function computeProcessedWidgets({
       spec: widget.spec
     }
 
-    const updateHandler = createWidgetUpdateHandler(
-      widgetState,
-      widget,
-      nodeExecId,
-      widgetOptions,
-      executionErrorStore
-    )
+    const updateHandler = linkedImage
+      ? () => undefined
+      : createWidgetUpdateHandler(
+          widgetState,
+          widget,
+          nodeExecId,
+          widgetOptions,
+          executionErrorStore
+        )
 
     const valueTooltip =
       isTooltipValueType(widget.type) && String(value).length > 10
@@ -429,6 +452,7 @@ export function useProcessedWidgets(
   nodeDataGetter: () => VueNodeData | undefined
 ) {
   const canvasStore = useCanvasStore()
+  const subgraphNavigationStore = useSubgraphNavigationStore()
   const settingStore = useSettingStore()
   const { isSelectInputsMode } = useAppMode()
   const { handleNodeRightClick } = useNodeEventHandlers()
@@ -467,6 +491,8 @@ export function useProcessedWidgets(
       showAdvanced: showAdvanced.value,
       isGraphReady: app.isGraphReady,
       rootGraph: app.isGraphReady ? app.rootGraph : null,
+      activeSubgraphHostExecutionId:
+        subgraphNavigationStore.activeSubgraphHostExecutionId,
       ui
     })
   )

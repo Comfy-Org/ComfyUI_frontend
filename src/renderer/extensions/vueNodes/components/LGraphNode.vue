@@ -155,9 +155,31 @@
 
           <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
 
+          <Button
+            v-if="linkedImageWidgetProjection"
+            variant="link"
+            size="sm"
+            data-testid="linked-image-parent-button"
+            :aria-label="t('g.goToParentNode')"
+            class="mr-3 gap-1 self-end rounded-sm px-1.5 font-normal"
+            @pointerdown.stop
+            @click.stop="handleGoToLinkedImageHost"
+          >
+            <i
+              class="icon-[lucide--arrow-up-left] size-3.5"
+              aria-hidden="true"
+            />
+            <span>{{ t('g.parentNode') }}</span>
+          </Button>
+
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent
-              v-if="nodeMedia"
+              v-if="linkedImageWidgetMedia"
+              :media="linkedImageWidgetMedia"
+              read-only
+            />
+            <NodeContent
+              v-else-if="nodeMedia"
               :node-data="nodeData"
               :media="nodeMedia"
             />
@@ -254,6 +276,8 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import Button from '@/components/ui/button/Button.vue'
+import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -284,6 +308,11 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import {
+  getImageWidgetPreviewUrls,
+  isLinkedImageWidget,
+  resolveLinkedImageWidgetValue
+} from '@/renderer/extensions/vueNodes/composables/resolveLinkedImageWidgetValue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -296,6 +325,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -561,7 +591,8 @@ watch(isCollapsed, (collapsed) => {
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
   if (promotedPreviews.value.length > 0) return true
-  return !!nodeMedia.value && nodeMedia.value.urls.length > 0
+  const media = linkedImageWidgetMedia.value ?? nodeMedia.value
+  return !!media?.urls.length
 })
 
 // Computed classes and conditions for better reusability
@@ -701,6 +732,8 @@ const handleEnterSubgraph = () => {
 }
 
 const nodeOutputs = useNodeOutputStore()
+const subgraphNavigationStore = useSubgraphNavigationStore()
+const { focusNode } = useFocusNode()
 
 const nodeOutputLocatorId = computed(() =>
   nodeData.subgraphId ? `${nodeData.subgraphId}:${nodeData.id}` : nodeData.id
@@ -716,6 +749,40 @@ const lgraphNode = computed(() => {
 // TODO: Surface subgraph info more cleanly in VueNodeData instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
+
+const linkedImageWidget = computed(() =>
+  nodeData.widgets?.find(isLinkedImageWidget)
+)
+
+const linkedImageWidgetProjection = computed(() => {
+  const hostExecutionId = subgraphNavigationStore.activeSubgraphHostExecutionId
+  const imageWidget = linkedImageWidget.value
+  if (!hostExecutionId || !imageWidget || !app.isGraphReady) return undefined
+
+  const projection = resolveLinkedImageWidgetValue(
+    app.rootGraph,
+    hostExecutionId,
+    nodeData.id,
+    imageWidget.name
+  )
+  if (!projection) return undefined
+
+  return {
+    hostExecutionId: projection.hostExecutionId,
+    type: 'image',
+    urls: getImageWidgetPreviewUrls(projection.value)
+  } as const
+})
+
+const linkedImageWidgetMedia = computed(() => {
+  if (!linkedImageWidget.value) return undefined
+  return linkedImageWidgetProjection.value ?? nodeMedia.value
+})
+
+function handleGoToLinkedImageHost() {
+  const hostExecutionId = linkedImageWidgetProjection.value?.hostExecutionId
+  if (hostExecutionId) void focusNode(hostExecutionId)
+}
 
 const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
