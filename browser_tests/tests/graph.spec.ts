@@ -48,7 +48,7 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
       switchCfg: toNodeId(120),
       ksampler85: toNodeId(85),
       ksampler86: toNodeId(86)
-    }
+    } as const
 
     function evaluateGraph() {
       return comfyPage.page.evaluate((nodeIds) => {
@@ -65,20 +65,16 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
           return linkId != null && links.has(linkId)
         }
 
-        function countLinksBetween(
+        function countDuplicateLinks(
           links: Iterable<{ origin_id: unknown; target_id: unknown }>,
           originId: string,
           targetId: string
         ) {
-          let count = 0
-          for (const link of links) {
-            if (
+          return [...links].filter(
+            (link) =>
               String(link.origin_id) === originId &&
               String(link.target_id) === targetId
-            )
-              count++
-          }
-          return count
+          ).length
         }
 
         const graph = window.app!.graph!
@@ -107,10 +103,9 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
           cfg85LinkId: cfgInput85?.link ?? null,
           cfg86LinkId: cfgInput86?.link ?? null,
           switchOutputLinkIds: [...(switchCfg.outputs[0]?.links ?? [])],
-          // Switch(CFG) output should have exactly 2 links (one to each KSampler)
           switchOutputLinkCount: switchCfg.outputs[0]?.links?.length ?? 0,
           // Count links from Switch(CFG) to node 85 cfg (should be 1, not 2)
-          cfgLinkToNode85Count: countLinksBetween(
+          cfgLinkToNode85Count: countDuplicateLinks(
             subgraph.links.values(),
             '120',
             '85'
@@ -123,19 +118,24 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
       // Poll graph state once, then assert all properties
       await expect(async () => {
         const r = await evaluateGraph()
-        // Both KSamplerAdvanced nodes must have their cfg input connected
-        expect(r.cfg85Linked).toBe(true)
-        expect(r.cfg86Linked).toBe(true)
-        // Links must exist in the subgraph link map
-        expect(r.cfg85LinkValid).toBe(true)
-        expect(r.cfg86LinkValid).toBe(true)
-        // Switch(CFG) output has exactly 2 links (one per KSamplerAdvanced)
-        expect(r.switchOutputLinkCount).toBe(2)
-        // Only 1 link from Switch(CFG) to node 85 (duplicate removed)
-        expect(r.cfgLinkToNode85Count).toBe(1)
-        // Output link IDs must match the input link IDs (source/target integrity)
-        expect(r.switchOutputLinkIds).toEqual(
-          expect.arrayContaining([r.cfg85LinkId, r.cfg86LinkId])
+        expect(r).toEqual(
+          expect.objectContaining({
+            // Both KSamplerAdvanced nodes must have their cfg input connected
+            cfg85Linked: true,
+            cfg86Linked: true,
+            // Links must exist in the subgraph link map
+            cfg85LinkValid: true,
+            cfg86LinkValid: true,
+            // Switch(CFG) output has exactly 2 links (one per KSamplerAdvanced)
+            switchOutputLinkCount: 2,
+            // Only 1 link from Switch(CFG) to node 85 (duplicate removed)
+            cfgLinkToNode85Count: 1,
+            // Output link IDs must match the input link IDs (source/target integrity)
+            switchOutputLinkIds: expect.arrayContaining([
+              r.cfg85LinkId,
+              r.cfg86LinkId
+            ])
+          })
         )
       }).toPass({ timeout: 5000 })
     })
