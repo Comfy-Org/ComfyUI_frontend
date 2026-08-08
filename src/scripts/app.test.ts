@@ -714,6 +714,57 @@ describe('ComfyApp', () => {
       expect(showDialog).not.toHaveBeenCalled()
     })
 
+    it('builds governance node errors from denied class types', async () => {
+      prepareEmptyPromptQueue()
+      vi.mocked(app.graphToPrompt).mockResolvedValue({
+        output: {
+          '1': {
+            class_type: 'KlingImage2VideoNode',
+            inputs: {},
+            _meta: { title: 'Kling Image to Video' }
+          },
+          '2': {
+            class_type: 'OpenAIDalle3',
+            inputs: {},
+            _meta: { title: 'OpenAI DALL-E 3' }
+          }
+        },
+        workflow: createWorkflowGraphData()
+      })
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: {
+              type: 'PARTNER_NODE_DISABLED',
+              message: 'Workspace policy denied KlingImage2VideoNode',
+              details: '',
+              class_types: ['KlingImage2VideoNode']
+            }
+          },
+          403
+        )
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(useExecutionErrorStore().lastNodeErrors).toEqual({
+        '1': {
+          class_type: 'KlingImage2VideoNode',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'PARTNER_NODE_DISABLED',
+              message: 'Workspace policy denied KlingImage2VideoNode',
+              details: ''
+            }
+          ]
+        }
+      })
+      expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+      expect(showDialog).not.toHaveBeenCalled()
+    })
+
     it('keeps the access dialog for unrelated 403 responses', async () => {
       prepareEmptyPromptQueue()
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
@@ -723,7 +774,8 @@ describe('ComfyApp', () => {
             error: {
               type: 'access_denied',
               message: 'This workspace cannot run prompts',
-              details: ''
+              details: '',
+              class_types: ['KlingImage2VideoNode']
             }
           },
           403
