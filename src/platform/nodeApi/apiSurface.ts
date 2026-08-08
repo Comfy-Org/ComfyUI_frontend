@@ -37,6 +37,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'commands',
   'connectTo',
   'connected',
+  'container',
   'declare',
   'def',
   'defaultValue',

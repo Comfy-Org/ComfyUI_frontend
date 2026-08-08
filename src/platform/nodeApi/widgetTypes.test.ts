@@ -110,6 +110,34 @@ describe('pack-declared widget types', () => {
     expect(seen).toHaveBeenCalledWith('#abcdef')
   })
 
+  it('tells the renderer which input it is drawing', () => {
+    // A type-level renderer has no other way to know: rmbg's colour swatch
+    // labels itself `name (value)`.
+    let given: string | undefined
+    defineWidgetType('MTB_COLOR', {
+      render: (_c, _v, name) => {
+        given = name
+      }
+    })
+
+    build('MTB_COLOR')
+
+    expect(given).toBe('colour')
+  })
+
+  it('passes the size hints through to the host', () => {
+    defineWidgetType('MTB_COLOR', {
+      render: () => {},
+      minWidth: 150,
+      minHeight: 22
+    })
+
+    const built = build('MTB_COLOR')
+
+    expect(built?.minWidth).toBe(150)
+    expect(built?.minHeight).toBe(22)
+  })
+
   it('runs the renderer teardown when the widget goes', () => {
     const teardown = vi.fn()
     defineWidgetType('MTB_COLOR', { render: () => teardown })
