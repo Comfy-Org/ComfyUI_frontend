@@ -21,6 +21,7 @@ import {
   layoutStore
 } from '@/renderer/core/layout/store/layoutStore'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -284,6 +285,31 @@ describe('group layout in layoutStore', () => {
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
   })
 
+  test('drops stale group ownership when compensation preserves a foreign layout', () => {
+    const graph = new LGraph()
+    const group = addedGroup(graph, toGroupId(819))
+    const groups = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('groups')
+    const key = `${graph.id}:${group.id}`
+    const foreign = new Y.Map<unknown>()
+    foreign.set('id', group.id)
+    foreign.set('rect', [20, 30, 40, 50])
+    foreign.set('registrationId', 'foreign')
+    vi.spyOn(graph, 'canvasAction').mockImplementation(() => {
+      groups.set(key, foreign)
+      throw new Error('group deselect failed')
+    })
+
+    expect(() => graph.remove(group)).toThrow('group deselect failed')
+    expect(groups.get(key)).toBe(foreign)
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+    onTestFinished(() => applyOperation.mockRestore())
+
+    group.pos = [200, 250]
+
+    expect(applyOperation).not.toHaveBeenCalled()
+    expect(groups.get(key)).toBe(foreign)
+  })
+
   test('keeps group ownership when reentrant unregister is rejected', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(807))
@@ -401,6 +427,18 @@ describe('group layout in layoutStore', () => {
         (key) => key.startsWith(`${graph.rootGraph.id}:`)
       )
     ).toHaveLength(1)
+  })
+
+  test('rejects a node owned by another graph before mutation', () => {
+    const firstGraph = new LGraph()
+    const secondGraph = new LGraph()
+    const node = new LGraphNode('node')
+    firstGraph.add(node)
+
+    expect(() => secondGraph.add(node)).toThrow(/already belongs/)
+    expect(node.graph).toBe(firstGraph)
+    expect(firstGraph.nodes).toEqual([node])
+    expect(secondGraph.nodes).toHaveLength(0)
   })
 
   test('rolls back node add when reentrant registration is rejected', () => {
@@ -596,6 +634,52 @@ describe('group layout in layoutStore', () => {
     expect(graph.groups).toEqual([group])
     expect(node.graph).toBe(graph)
     expect(group.graph).toBe(graph)
+  })
+
+  test('adopts stored group ownership when configured from serialized data', () => {
+    const graph = new LGraph()
+    const groupId = toGroupId(811)
+    layoutStore.applyOperation({
+      actor: 'remote-peer',
+      entity: 'group',
+      graphId: graph.id,
+      groupId,
+      layout: {
+        id: groupId,
+        position: { x: 500, y: 300 },
+        size: { width: 400, height: 200 }
+      },
+      registrationId: 'remote-peer',
+      source: LayoutSource.External,
+      timestamp: Date.now(),
+      type: 'createGroup'
+    })
+    const data = graph.asSerialisable()
+    data.groups = [
+      {
+        bounding: [100, 100, 300, 150],
+        color: '#fff',
+        font_size: 24,
+        id: groupId,
+        title: 'configured'
+      }
+    ]
+
+    graph.configure(data)
+
+    const [group] = graph.groups
+    expect([...group.pos]).toEqual([500, 300])
+    expect([...group.size]).toEqual([400, 200])
+
+    group.pos = [600, 300]
+
+    expect(layoutStore.getGroupLayout(graph.id, groupId)?.position).toEqual({
+      x: 600,
+      y: 300
+    })
+    expect(layoutStore.getRegistrationId('group', graph.id, groupId)).toBe(
+      'remote-peer'
+    )
   })
 
   test('clear detaches groups so another graph can adopt them', () => {

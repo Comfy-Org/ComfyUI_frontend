@@ -6,6 +6,7 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
+  adoptNodeReplacement,
   LiteGraph,
   registerNodeState,
   unregisterNodeState
@@ -22,6 +23,7 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
     createNode: vi.fn(),
     registered_node_types: {}
   },
+  adoptNodeReplacement: vi.fn(),
   registerNodeState: vi.fn(),
   unregisterNodeState: vi.fn()
 }))
@@ -199,6 +201,16 @@ describe('useNodeReplacement', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createPinia())
+    vi.mocked(adoptNodeReplacement).mockImplementation(
+      (graph, node, replacement, index) => {
+        node.onRemoved?.()
+        graph._nodes[index] = replacement
+        replacement.graph = graph
+        graph._nodes_by_id[replacement.id] = replacement
+        unregisterNodeState(node)
+        registerNodeState(graph, replacement)
+      }
+    )
   })
 
   describe('replaceNodesInPlace', () => {
@@ -239,6 +251,37 @@ describe('useNodeReplacement', () => {
       expect(newNode.configure).not.toHaveBeenCalled()
       expect(newNode.id).toBe(1)
       expect(newNode.has_errors).toBe(false)
+    })
+
+    it('keeps the original node when layout ownership transfer is rejected', () => {
+      const placeholder = createPlaceholderNode(1, 'Load3DAnimation')
+      placeholder.onRemoved = vi.fn()
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      const newNode = createNewNode()
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+      vi.mocked(adoptNodeReplacement).mockImplementationOnce(() => {
+        throw new Error('Node layout registration transfer rejected')
+      })
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      const result = replaceNodesInPlace([
+        makeMissingNodeType('Load3DAnimation', {
+          new_node_id: 'Load3D',
+          old_node_id: 'Load3DAnimation',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(result).toEqual([])
+      expect(graph._nodes).toEqual([placeholder])
+      expect(graph._nodes_by_id[placeholder.id]).toBe(placeholder)
+      expect(placeholder.graph).toBe(graph)
+      expect(placeholder.onRemoved).not.toHaveBeenCalled()
     })
 
     it('should transfer input connections using input_mapping', () => {

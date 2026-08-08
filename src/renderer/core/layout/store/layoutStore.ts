@@ -1133,13 +1133,6 @@ class LayoutStore {
     return typeof registrationId === 'string' ? registrationId : undefined
   }
 
-  private hasNodeOwnership(
-    node: NodeLayoutMap,
-    registrationId: string | undefined
-  ): boolean {
-    return this.hasLayoutOwnership(node, registrationId)
-  }
-
   private hasLayoutOwnership(
     layout: { get(key: string): unknown },
     registrationId: string | undefined
@@ -1157,7 +1150,7 @@ class LayoutStore {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
     const ynode = this.ynodes.get(nodeKey)
-    if (!ynode || !this.hasNodeOwnership(ynode, operation.registrationId)) {
+    if (!ynode || !this.hasLayoutOwnership(ynode, operation.registrationId)) {
       return
     }
     if (isPointEqual(yNodeGeometry(ynode).position, operation.position)) {
@@ -1168,7 +1161,7 @@ class LayoutStore {
       const liveNode = this.ynodes.get(nodeKey)
       if (
         !liveNode ||
-        !this.hasNodeOwnership(liveNode, operation.registrationId) ||
+        !this.hasLayoutOwnership(liveNode, operation.registrationId) ||
         isPointEqual(yNodeGeometry(liveNode).position, operation.position)
       ) {
         return false
@@ -1186,7 +1179,7 @@ class LayoutStore {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
     const ynode = this.ynodes.get(nodeKey)
-    if (!ynode || !this.hasNodeOwnership(ynode, operation.registrationId))
+    if (!ynode || !this.hasLayoutOwnership(ynode, operation.registrationId))
       return
     const { size } = yNodeGeometry(ynode)
     if (
@@ -1201,7 +1194,7 @@ class LayoutStore {
       const liveNode = this.ynodes.get(nodeKey)
       if (
         !liveNode ||
-        !this.hasNodeOwnership(liveNode, operation.registrationId)
+        !this.hasLayoutOwnership(liveNode, operation.registrationId)
       )
         return false
       const liveSize = yNodeGeometry(liveNode).size
@@ -1262,7 +1255,7 @@ class LayoutStore {
     const ynode = this.ynodes.get(nodeKey)
     if (
       !ynode ||
-      !this.hasNodeOwnership(ynode, operation.registrationId) ||
+      !this.hasLayoutOwnership(ynode, operation.registrationId) ||
       ynode.get('zIndex') === operation.zIndex
     )
       return
@@ -1271,7 +1264,7 @@ class LayoutStore {
       const liveNode = this.ynodes.get(nodeKey)
       if (
         !liveNode ||
-        !this.hasNodeOwnership(liveNode, operation.registrationId) ||
+        !this.hasLayoutOwnership(liveNode, operation.registrationId) ||
         liveNode.get('zIndex') === operation.zIndex
       )
         return false
@@ -1291,7 +1284,7 @@ class LayoutStore {
     const ynode = this.ynodes.get(nodeKey)
     if (
       !ynode ||
-      !this.hasNodeOwnership(ynode, operation.registrationId) ||
+      !this.hasLayoutOwnership(ynode, operation.registrationId) ||
       ynode.get('visible') === operation.visible
     )
       return
@@ -1300,7 +1293,7 @@ class LayoutStore {
       const liveNode = this.ynodes.get(nodeKey)
       if (
         !liveNode ||
-        !this.hasNodeOwnership(liveNode, operation.registrationId) ||
+        !this.hasLayoutOwnership(liveNode, operation.registrationId) ||
         liveNode.get('visible') === operation.visible
       )
         return false
@@ -1337,7 +1330,10 @@ class LayoutStore {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
     const existing = this.ynodes.get(nodeKey)
-    if (!existing || !this.hasNodeOwnership(existing, operation.registrationId))
+    if (
+      !existing ||
+      !this.hasLayoutOwnership(existing, operation.registrationId)
+    )
       return
     // nodeRefs, nodeTriggers and slot layouts outlive the delete: undo/redo
     // re-creates the node against the refs components already hold. Link
@@ -1348,7 +1344,7 @@ class LayoutStore {
       const liveNode = this.ynodes.get(nodeKey)
       if (
         !liveNode ||
-        !this.hasNodeOwnership(liveNode, operation.registrationId)
+        !this.hasLayoutOwnership(liveNode, operation.registrationId)
       )
         return false
       markApplied()
@@ -1370,7 +1366,7 @@ class LayoutStore {
       if (
         !ynode ||
         !bounds ||
-        !this.hasNodeOwnership(ynode, operation.registrationIds?.[nodeId])
+        !this.hasLayoutOwnership(ynode, operation.registrationIds?.[nodeId])
       )
         continue
       const current = yNodeToLayout(ynode).bounds
@@ -1392,7 +1388,10 @@ class LayoutStore {
         if (
           !bounds ||
           !liveNode ||
-          !this.hasNodeOwnership(liveNode, operation.registrationIds?.[nodeId])
+          !this.hasLayoutOwnership(
+            liveNode,
+            operation.registrationIds?.[nodeId]
+          )
         )
           continue
         const liveBounds = yNodeToLayout(liveNode).bounds

@@ -1,9 +1,5 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  LiteGraph,
-  registerNodeState,
-  unregisterNodeState
-} from '@/lib/litegraph/src/litegraph'
+import { adoptNodeReplacement, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
@@ -157,10 +153,8 @@ function replaceWithMapping(
   newNode: LGraphNode,
   replacement: NodeReplacement,
   nodeGraph: LGraph,
-  idx: number,
-  onNodeReplaced?: (node: LGraphNode, replacement: LGraphNode) => void
+  idx: number
 ): void {
-  node.onRemoved?.()
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
@@ -168,15 +162,7 @@ function replaceWithMapping(
   newNode.mode = node.mode
   if (node.flags) newNode.flags = { ...node.flags }
 
-  nodeGraph._nodes[idx] = newNode
-  newNode.graph = nodeGraph
-  nodeGraph._nodes_by_id[newNode.id] = newNode
-
-  onNodeReplaced?.(node, newNode)
-
-  // Bypasses graph.add(), so move the node-data registration by hand.
-  unregisterNodeState(node)
-  registerNodeState(nodeGraph, newNode)
+  adoptNodeReplacement(nodeGraph, node, newNode, idx)
 
   for (const widget of newNode.widgets ?? []) {
     if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
@@ -237,9 +223,7 @@ function replaceWithMapping(
   nodeGraph.events.dispatch('node:added', { node: newNode })
 }
 
-export function useNodeReplacement(
-  onNodeReplaced?: (node: LGraphNode, replacement: LGraphNode) => void
-) {
+export function useNodeReplacement() {
   const toastStore = useToastStore()
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
@@ -302,14 +286,7 @@ export function useNodeReplacement(
                 newNode
               )
             }
-        replaceWithMapping(
-          node,
-          newNode,
-          effectiveReplacement,
-          nodeGraph,
-          idx,
-          onNodeReplaced
-        )
+        replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
 
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)

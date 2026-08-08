@@ -3,6 +3,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import RightSidePanel from './RightSidePanel.vue'
@@ -18,12 +20,12 @@ const i18n = createI18n({
 })
 
 describe('RightSidePanel', () => {
-  it('cancels a queued fallback when unmounted', async () => {
+  it('keeps a tab that becomes available before its queued fallback', async () => {
     const pinia = createTestingPinia({
       createSpy: vi.fn,
       initialState: { rightSidePanel: { activeTab: 'info' } }
     })
-    const { unmount } = render(RightSidePanel, {
+    render(RightSidePanel, {
       global: {
         plugins: [pinia, i18n],
         stubs: {
@@ -35,10 +37,12 @@ describe('RightSidePanel', () => {
       }
     })
     const rightSidePanelStore = useRightSidePanelStore()
+    const canvasStore = useCanvasStore()
 
-    unmount()
+    canvasStore.selectedItems = [new LGraphNode('selected')]
     await Promise.resolve()
 
+    expect(rightSidePanelStore.activeTab).toBe('info')
     expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
   })
 })

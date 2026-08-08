@@ -16,6 +16,7 @@ import {
   detachNodeLayout,
   detachRerouteLayout,
   materializeRerouteLayout,
+  transferNodeLayoutRegistration,
   unregisterAllGraphLayout,
   unregisterRerouteLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
@@ -205,8 +206,57 @@ export interface GraphAddOptions {
   skipComputeOrder?: boolean
 }
 
-const nodesAdoptingLayout = new WeakSet<LGraphNode>()
-const rerouteDataAdoptingLayout = new WeakSet<object>()
+const entitiesAdoptingLayout = new WeakSet<object>()
+
+function isEntityAttached(
+  graph: LGraph,
+  entity: LGraphNode | LGraphGroup
+): boolean {
+  const owner = entity.graph
+  if (!owner) return false
+  const isOwned =
+    entity instanceof LGraphGroup
+      ? owner._groups.includes(entity)
+      : owner._nodes.includes(entity)
+  if (!isOwned) return false
+  if (owner !== graph) {
+    const type = entity instanceof LGraphGroup ? 'Group' : 'Node'
+    throw new Error(`${type} ${entity.id} already belongs to another graph`)
+  }
+  return true
+}
+
+export function adoptNodeReplacement(
+  graph: LGraph,
+  node: LGraphNode,
+  replacement: LGraphNode,
+  index: number
+): void {
+  const transferResult = transferNodeLayoutRegistration(node, replacement)
+  if (transferResult !== 'applied') {
+    throw new Error(`Node layout registration transfer ${transferResult}`)
+  }
+
+  try {
+    node.onRemoved?.()
+  } catch (error) {
+    const rollbackResult = transferNodeLayoutRegistration(replacement, node)
+    if (rollbackResult !== 'applied') {
+      throw new AggregateError(
+        [error],
+        `Node layout registration rollback ${rollbackResult}`,
+        { cause: error }
+      )
+    }
+    throw error
+  }
+
+  graph._nodes[index] = replacement
+  replacement.graph = graph
+  graph._nodes_by_id[replacement.id] = replacement
+  unregisterNodeState(node)
+  registerNodeState(graph, replacement)
+}
 
 function keepFirstRerouteDefinitions(
   reroutes: SerialisableReroute[] | undefined,
@@ -1107,14 +1157,8 @@ export class LGraph
   ): LGraphNode | null | undefined {
     if (!node) return
 
-    if (node instanceof LGraphGroup) {
-      if (node.graph === this && this._groups.includes(node)) return
-      if (node.graph && node.graph !== this) {
-        throw new Error(`Group ${node.id} already belongs to another graph`)
-      }
-    } else {
-      if (node.graph === this && this._nodes.includes(node)) return node
-    }
+    if (isEntityAttached(this, node))
+      return node instanceof LGraphGroup ? undefined : node
 
     // Handle backwards compatibility: 2nd arg can be boolean or options
     const opts: GraphAddOptions =
@@ -1150,7 +1194,11 @@ export class LGraph
       const attemptedGroupId = node.id
       let registrationResult: LayoutOperationResult
       try {
-        registrationResult = attachGroupLayout(this, node)
+        registrationResult = attachGroupLayout(
+          this,
+          node,
+          entitiesAdoptingLayout.has(node)
+        )
       } catch (error) {
         node.id = originalId
         state.lastGroupId = originalLastGroupId
@@ -1215,7 +1263,7 @@ export class LGraph
       registrationResult = attachNodeLayout(
         this,
         node,
-        nodesAdoptingLayout.has(node)
+        entitiesAdoptingLayout.has(node)
       )
     } catch (error) {
       restoreNodeIdentity()
@@ -1815,7 +1863,7 @@ export class LGraph
 
     const existingReroute = this.reroutes.get(rerouteId)
     const reroute = existingReroute ?? new Reroute(rerouteId, this, pos)
-    this._addReroute(reroute, rerouteDataAdoptingLayout.has(serialisedReroute))
+    this._addReroute(reroute, entitiesAdoptingLayout.has(serialisedReroute))
     if (pos && existingReroute) reroute.pos = pos
     reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
@@ -2923,11 +2971,11 @@ export class LGraph
       // Reroutes
       if (Array.isArray(reroutes)) {
         for (const rerouteData of reroutes) {
-          rerouteDataAdoptingLayout.add(rerouteData)
+          entitiesAdoptingLayout.add(rerouteData)
           try {
             this.setReroute(rerouteData)
           } finally {
-            rerouteDataAdoptingLayout.delete(rerouteData)
+            entitiesAdoptingLayout.delete(rerouteData)
           }
         }
       }
@@ -3016,11 +3064,11 @@ export class LGraph
           // id it or it will create a new id
           node.id = toNodeId(n_info.id)
           // add before configure, otherwise configure cannot create links
-          nodesAdoptingLayout.add(node)
+          entitiesAdoptingLayout.add(node)
           try {
             this.add(node, true)
           } finally {
-            nodesAdoptingLayout.delete(node)
+            entitiesAdoptingLayout.delete(node)
           }
           nodeDataMap.set(node.id, n_info)
         }
@@ -3081,7 +3129,12 @@ export class LGraph
           // TODO: Search/remove these global object refs
           const group = new LiteGraph.LGraphGroup()
           group.configure(data)
-          this.add(group)
+          entitiesAdoptingLayout.add(group)
+          try {
+            this.add(group)
+          } finally {
+            entitiesAdoptingLayout.delete(group)
+          }
         }
       }
 

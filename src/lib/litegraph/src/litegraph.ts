@@ -107,6 +107,7 @@ export type {
   SlotIndex
 } from './interfaces'
 export {
+  adoptNodeReplacement,
   LGraph,
   type LGraphTriggerAction,
   type LGraphTriggerParam,

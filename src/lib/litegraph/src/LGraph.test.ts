@@ -23,6 +23,7 @@ import {
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { transferNodeLayoutRegistration } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import {
+  adoptNodeReplacement,
   LGraph,
   LGraphGroup,
   LGraphNode,
@@ -1674,11 +1675,39 @@ describe('node layout registration', () => {
     storedNode.set('registrationId', 'foreign')
 
     expect(transferNodeLayoutRegistration(node, replacement)).toBe('rejected')
+    expect(() => adoptNodeReplacement(graph, node, replacement, 0)).toThrow(
+      'Node layout registration transfer rejected'
+    )
+    expect(graph.nodes).toEqual([node])
+    expect(graph.getNodeById(node.id)).toBe(node)
 
     replacement.pos = [220, 440]
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
     ).toEqual({ x: 120, y: 340 })
+  })
+
+  it('restores layout ownership when replacement removal lifecycle throws', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('old')
+    graph.add(node)
+    const replacement = new LGraphNode('replacement')
+    replacement.id = node.id
+    const lifecycleError = new Error('removal failed')
+    node.onRemoved = () => {
+      throw lifecycleError
+    }
+
+    expect(() => adoptNodeReplacement(graph, node, replacement, 0)).toThrow(
+      lifecycleError
+    )
+    expect(graph.nodes).toEqual([node])
+    expect(graph.getNodeById(node.id)).toBe(node)
+
+    node.pos = [220, 440]
+    expect(
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
+    ).toEqual({ x: 220, y: 440 })
   })
 
   function zIndexOf(graph: LGraph, node: LGraphNode): number {
@@ -2284,6 +2313,12 @@ describe('graph teardown drops layout entries', () => {
 
     expect(nodes.get(key)).toBe(foreign)
     expect(graph.nodes).toContain(node)
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+
+    node.pos = [200, 300]
+
+    expect(applyOperation).not.toHaveBeenCalled()
+    applyOperation.mockRestore()
     graph.clear()
     expect(nodes.get(key)).toBe(foreign)
   })

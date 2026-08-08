@@ -39,41 +39,66 @@ const nodeRegistrations = new WeakMap<
 const rerouteRegistrationIds = new WeakMap<Reroute, string>()
 const pendingRegistrations = new Map<string, string>()
 
-function registrationKey(
-  entity: 'group' | 'reroute',
-  graphId: UUID,
-  id: number
-): string {
+type ScopedLayoutRegistration =
+  | { entity: 'group'; graphId: UUID; id: LGraphGroup['id'] }
+  | { entity: 'reroute'; graphId: UUID; id: Reroute['id'] }
+
+function registrationKey({
+  entity,
+  graphId,
+  id
+}: ScopedLayoutRegistration): string {
   return `${entity}:${graphId}:${id}`
 }
 
 function reconcilePendingRegistration(
-  ...[key, entity, graphId, id, deleteRegistration]:
-    | [
-        key: string,
-        entity: 'group',
-        graphId: UUID,
-        id: LGraphGroup['id'],
-        deleteRegistration: (registrationId: string) => LayoutOperationResult
-      ]
-    | [
-        key: string,
-        entity: 'reroute',
-        graphId: UUID,
-        id: Reroute['id'],
-        deleteRegistration: (registrationId: string) => LayoutOperationResult
-      ]
+  registration: ScopedLayoutRegistration
 ): boolean {
+  const { entity, graphId, id } = registration
+  const key = registrationKey(registration)
   const registrationId = pendingRegistrations.get(key)
   if (registrationId === undefined) return true
 
   const storedId = layoutStore.getRegistrationId(entity, graphId, id)
   if (storedId === registrationId) {
-    const result = deleteRegistration(registrationId)
+    const result = layoutStore.applyOperation(
+      entity === 'group'
+        ? {
+            ...canvasOperationMeta(),
+            entity,
+            graphId,
+            groupId: id,
+            registrationId,
+            type: 'deleteGroup'
+          }
+        : {
+            ...canvasOperationMeta(),
+            entity,
+            graphId,
+            registrationId,
+            rerouteId: id,
+            type: 'deleteReroute'
+          }
+    )
     if (result === 'rejected') return false
   }
   pendingRegistrations.delete(key)
   return true
+}
+
+function registerScopedLayout(
+  registration: ScopedLayoutRegistration & { registrationId: string },
+  create: () => LayoutOperationResult,
+  retain: () => void
+): LayoutOperationResult {
+  const key = registrationKey(registration)
+  if (!reconcilePendingRegistration(registration)) return 'rejected'
+
+  pendingRegistrations.set(key, registration.registrationId)
+  const result = create()
+  pendingRegistrations.delete(key)
+  if (result === 'applied') retain()
+  return result
 }
 
 function reconcilePendingGraph(graphId: UUID): LayoutOperationResult {
@@ -83,41 +108,21 @@ function reconcilePendingGraph(graphId: UUID): LayoutOperationResult {
     if (key.startsWith(groupPrefix)) {
       const groupId = toGroupId(Number(key.slice(groupPrefix.length)))
       if (
-        !reconcilePendingRegistration(
-          key,
-          'group',
+        !reconcilePendingRegistration({
+          entity: 'group',
           graphId,
-          groupId,
-          (registrationId) =>
-            layoutStore.applyOperation({
-              ...canvasOperationMeta(),
-              entity: 'group',
-              graphId,
-              groupId,
-              registrationId,
-              type: 'deleteGroup'
-            })
-        )
+          id: groupId
+        })
       )
         return 'rejected'
     } else if (key.startsWith(reroutePrefix)) {
       const rerouteId = toRerouteId(Number(key.slice(reroutePrefix.length)))
       if (
-        !reconcilePendingRegistration(
-          key,
-          'reroute',
+        !reconcilePendingRegistration({
+          entity: 'reroute',
           graphId,
-          rerouteId,
-          (registrationId) =>
-            layoutStore.applyOperation({
-              ...canvasOperationMeta(),
-              entity: 'reroute',
-              graphId,
-              registrationId,
-              rerouteId,
-              type: 'deleteReroute'
-            })
-        )
+          id: rerouteId
+        })
       )
         return 'rejected'
     }
@@ -128,16 +133,17 @@ function reconcilePendingGraph(graphId: UUID): LayoutOperationResult {
 interface TrackedNodeLayoutRegistration {
   entity: 'node'
   graphId: UUID
+  id: LGraphNode['id']
+  instance: LGraphNode
   layout?: NonNullable<ReturnType<typeof layoutStore.getNodeLayoutRef>['value']>
-  node: LGraphNode
-  nodeId: LGraphNode['id']
   registrationId: string
 }
 
 interface TrackedGroupLayoutRegistration {
   entity: 'group'
   graphId: UUID
-  group: LGraphGroup
+  id: LGraphGroup['id']
+  instance: LGraphGroup
   layout?: NonNullable<ReturnType<typeof layoutStore.getGroupLayout>>
   registrationId: string
 }
@@ -145,9 +151,10 @@ interface TrackedGroupLayoutRegistration {
 interface TrackedRerouteLayoutRegistration {
   entity: 'reroute'
   graphId: UUID
+  id: Reroute['id']
+  instance: Reroute
   layout?: NonNullable<ReturnType<typeof layoutStore.getRerouteLayout>>
   registrationId: string
-  reroute: Reroute
 }
 
 type TrackedLayoutRegistration =
@@ -183,7 +190,14 @@ function trackNodeLayoutRegistration(
     registration.registrationId
       ? (storedLayout ?? undefined)
       : undefined
-  return { entity: 'node', layout, node, ...registration }
+  return {
+    entity: 'node',
+    graphId,
+    id: nodeId,
+    instance: node,
+    layout,
+    registrationId: registration.registrationId
+  }
 }
 
 function trackGroupLayoutRegistration(
@@ -198,7 +212,14 @@ function trackGroupLayoutRegistration(
     layoutStore.getRegistrationId('group', graphId, group.id) === registrationId
       ? (storedLayout ?? undefined)
       : undefined
-  return { entity: 'group', graphId, group, layout, registrationId }
+  return {
+    entity: 'group',
+    graphId,
+    id: group.id,
+    instance: group,
+    layout,
+    registrationId
+  }
 }
 
 function trackRerouteLayoutRegistration(
@@ -214,7 +235,14 @@ function trackRerouteLayoutRegistration(
     registrationId
       ? (storedLayout ?? undefined)
       : undefined
-  return { entity: 'reroute', graphId, layout, registrationId, reroute }
+  return {
+    entity: 'reroute',
+    graphId,
+    id: reroute.id,
+    instance: reroute,
+    layout,
+    registrationId
+  }
 }
 
 function trackAllGraphLayoutRegistrations(
@@ -247,18 +275,18 @@ function restoreLocalLayoutRegistration(
   registration: TrackedLayoutRegistration
 ): void {
   if (registration.entity === 'node') {
-    nodeRegistrations.set(registration.node, {
+    nodeRegistrations.set(registration.instance, {
       graphId: registration.graphId,
-      nodeId: registration.nodeId,
+      nodeId: registration.id,
       registrationId: registration.registrationId
     })
-    registration.node._layoutRegistered = true
-    registration.node._geometryVersion = layoutStore.geometryVersion
+    registration.instance._layoutRegistered = true
+    registration.instance._geometryVersion = layoutStore.geometryVersion
   } else if (registration.entity === 'group') {
-    groupRegistrationIds.set(registration.group, registration.registrationId)
+    groupRegistrationIds.set(registration.instance, registration.registrationId)
   } else {
     rerouteRegistrationIds.set(
-      registration.reroute,
+      registration.instance,
       registration.registrationId
     )
   }
@@ -268,12 +296,24 @@ function clearLocalLayoutRegistration(
   registration: TrackedLayoutRegistration
 ): void {
   if (registration.entity === 'node') {
-    nodeRegistrations.delete(registration.node)
-    registration.node._layoutRegistered = false
+    nodeRegistrations.delete(registration.instance)
+    registration.instance._layoutRegistered = false
   } else if (registration.entity === 'group') {
-    groupRegistrationIds.delete(registration.group)
+    groupRegistrationIds.delete(registration.instance)
   } else {
-    rerouteRegistrationIds.delete(registration.reroute)
+    rerouteRegistrationIds.delete(registration.instance)
+  }
+}
+
+function reconcileLocalLayoutRegistration(
+  registration: TrackedLayoutRegistration
+): void {
+  const { entity, graphId, id, registrationId } = registration
+  const liveRegistrationId = layoutStore.getRegistrationId(entity, graphId, id)
+  if (liveRegistrationId === registrationId) {
+    restoreLocalLayoutRegistration(registration)
+  } else {
+    clearLocalLayoutRegistration(registration)
   }
 }
 
@@ -286,7 +326,7 @@ function createDeleteLayoutOperation(
       ...meta,
       entity: 'node',
       graphId: registration.graphId,
-      nodeId: registration.nodeId,
+      nodeId: registration.id,
       registrationId: registration.registrationId,
       type: 'deleteNode'
     }
@@ -296,7 +336,7 @@ function createDeleteLayoutOperation(
       ...meta,
       entity: 'group',
       graphId: registration.graphId,
-      groupId: registration.group.id,
+      groupId: registration.id,
       registrationId: registration.registrationId,
       type: 'deleteGroup'
     }
@@ -306,7 +346,7 @@ function createDeleteLayoutOperation(
     entity: 'reroute',
     graphId: registration.graphId,
     registrationId: registration.registrationId,
-    rerouteId: registration.reroute.id,
+    rerouteId: registration.id,
     type: 'deleteReroute'
   }
 }
@@ -322,7 +362,7 @@ function createRestoreLayoutOperation(
       entity: 'node',
       graphId: registration.graphId,
       layout: registration.layout,
-      nodeId: registration.nodeId,
+      nodeId: registration.id,
       registrationId: registration.registrationId,
       type: 'createNode'
     }
@@ -332,7 +372,7 @@ function createRestoreLayoutOperation(
       ...meta,
       entity: 'group',
       graphId: registration.graphId,
-      groupId: registration.group.id,
+      groupId: registration.id,
       layout: registration.layout,
       registrationId: registration.registrationId,
       type: 'createGroup'
@@ -344,7 +384,7 @@ function createRestoreLayoutOperation(
     graphId: registration.graphId,
     position: registration.layout.position,
     registrationId: registration.registrationId,
-    rerouteId: registration.reroute.id,
+    rerouteId: registration.id,
     type: 'createReroute'
   }
 }
@@ -361,7 +401,7 @@ function restoreGraphLayoutRegistration(
     compensationError = error
   }
 
-  restoreLocalLayoutRegistration(registration)
+  reconcileLocalLayoutRegistration(registration)
   if (compensationError) throw compensationError
 }
 
@@ -483,22 +523,35 @@ export function attachNodeLayout(
     })
   }
   return result === 'no-op' && adoptExisting
-    ? adoptNodeLayout(graph, node)
+    ? adoptExistingLayout(graph.rootGraph.id, {
+        entity: 'node',
+        id: node.id,
+        instance: node
+      })
     : result
 }
 
 export function attachGroupLayout(
   graph: Pick<LGraph, 'rootGraph'>,
-  group: LGraphGroup
+  group: LGraphGroup,
+  adoptExisting = false
 ): LayoutOperationResult {
   const registrationId = createUuidv4()
+  let result: LayoutOperationResult
   try {
-    return registerGroupLayout(graph, group, registrationId)
+    result = registerGroupLayout(graph, group, registrationId)
   } catch (error) {
     compensateRegistration(error, () => {
       unregisterGroupLayout(graph, group, registrationId)
     })
   }
+  return result === 'no-op' && adoptExisting
+    ? adoptExistingLayout(graph.rootGraph.id, {
+        entity: 'group',
+        id: group.id,
+        instance: group
+      })
+    : result
 }
 
 export function attachRerouteLayout(
@@ -565,17 +618,30 @@ export function registerNodeLayout(
   return result
 }
 
-function adoptNodeLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
-  node: LGraphNode
+function adoptExistingLayout(
+  graphId: UUID,
+  registration:
+    | { entity: 'node'; id: LGraphNode['id']; instance: LGraphNode }
+    | { entity: 'group'; id: LGraphGroup['id']; instance: LGraphGroup }
+    | { entity: 'reroute'; id: Reroute['id']; instance: Reroute }
 ): LayoutOperationResult {
-  const graphId = graph.rootGraph.id
-  const registrationId = layoutStore.getRegistrationId('node', graphId, node.id)
+  const registrationId = layoutStore.getRegistrationId(
+    registration.entity,
+    graphId,
+    registration.id
+  )
   if (registrationId === undefined) return 'no-op'
 
-  nodeRegistrations.set(node, { graphId, nodeId: node.id, registrationId })
-  node._layoutRegistered = true
-  node._geometryVersion = layoutStore.geometryVersion
+  if (registration.entity === 'node') {
+    const { id, instance } = registration
+    nodeRegistrations.set(instance, { graphId, nodeId: id, registrationId })
+    instance._layoutRegistered = true
+    instance._geometryVersion = layoutStore.geometryVersion
+  } else if (registration.entity === 'group') {
+    groupRegistrationIds.set(registration.instance, registrationId)
+  } else {
+    rerouteRegistrationIds.set(registration.instance, registrationId)
+  }
   return 'applied'
 }
 
@@ -608,15 +674,12 @@ export function materializeRerouteLayout(
   graph: Pick<LGraph, 'rootGraph'>,
   reroute: Reroute
 ): LayoutOperationResult {
-  const registrationId = layoutStore.getRegistrationId(
-    'reroute',
-    graph.rootGraph.id,
-    reroute.id
-  )
-  if (registrationId !== undefined) {
-    rerouteRegistrationIds.set(reroute, registrationId)
-    return 'applied'
-  }
+  const adopted = adoptExistingLayout(graph.rootGraph.id, {
+    entity: 'reroute',
+    id: reroute.id,
+    instance: reroute
+  })
+  if (adopted === 'applied') return adopted
 
   const newRegistrationId = createUuidv4()
   try {
@@ -708,40 +771,20 @@ export function registerGroupLayout(
   registrationId: string
 ): LayoutOperationResult {
   const graphId = graph.rootGraph.id
-  const key = registrationKey('group', graphId, group.id)
-  if (
-    !reconcilePendingRegistration(
-      key,
-      'group',
-      graphId,
-      group.id,
-      (pendingId) =>
-        layoutStore.applyOperation({
-          ...canvasOperationMeta(),
-          entity: 'group',
-          graphId,
-          groupId: group.id,
-          registrationId: pendingId,
-          type: 'deleteGroup'
-        })
-    )
+  return registerScopedLayout(
+    { entity: 'group', graphId, id: group.id, registrationId },
+    () =>
+      canvasLayoutMutations().createGroup(
+        graphId,
+        group.id,
+        {
+          position: { x: group.pos[0], y: group.pos[1] },
+          size: { width: group.size[0], height: group.size[1] }
+        },
+        registrationId
+      ),
+    () => groupRegistrationIds.set(group, registrationId)
   )
-    return 'rejected'
-  pendingRegistrations.set(key, registrationId)
-  const result = canvasLayoutMutations().createGroup(
-    graphId,
-    group.id,
-    {
-      position: { x: group.pos[0], y: group.pos[1] },
-      size: { width: group.size[0], height: group.size[1] }
-    },
-    registrationId
-  )
-  pendingRegistrations.delete(key)
-  if (result === 'applied') {
-    groupRegistrationIds.set(group, registrationId)
-  }
-  return result
 }
 
 export function unregisterGroupLayout(
@@ -763,7 +806,11 @@ export function unregisterGroupLayout(
     type: 'deleteGroup'
   })
   if (result !== 'rejected') {
-    const key = registrationKey('group', graph.rootGraph.id, group.id)
+    const key = registrationKey({
+      entity: 'group',
+      graphId: graph.rootGraph.id,
+      id: group.id
+    })
     const storedId = layoutStore.getRegistrationId(
       'group',
       graph.rootGraph.id,
@@ -831,7 +878,7 @@ export function unregisterRerouteLayout(
     type: 'deleteReroute'
   })
   if (result !== 'rejected') {
-    const key = registrationKey('reroute', graphId, reroute.id)
+    const key = registrationKey({ entity: 'reroute', graphId, id: reroute.id })
     const storedId = layoutStore.getRegistrationId(
       'reroute',
       graphId,
@@ -858,37 +905,17 @@ export function registerRerouteLayout(
   registrationId: string
 ): LayoutOperationResult {
   const graphId = graph.rootGraph.id
-  const key = registrationKey('reroute', graphId, reroute.id)
-  if (
-    !reconcilePendingRegistration(
-      key,
-      'reroute',
-      graphId,
-      reroute.id,
-      (pendingId) =>
-        layoutStore.applyOperation({
-          ...canvasOperationMeta(),
-          entity: 'reroute',
-          graphId,
-          registrationId: pendingId,
-          rerouteId: reroute.id,
-          type: 'deleteReroute'
-        })
-    )
+  return registerScopedLayout(
+    { entity: 'reroute', graphId, id: reroute.id, registrationId },
+    () =>
+      canvasLayoutMutations().createReroute(
+        graphId,
+        reroute.id,
+        position,
+        registrationId
+      ),
+    () => rerouteRegistrationIds.set(reroute, registrationId)
   )
-    return 'rejected'
-  pendingRegistrations.set(key, registrationId)
-  const result = canvasLayoutMutations().createReroute(
-    graphId,
-    reroute.id,
-    position,
-    registrationId
-  )
-  pendingRegistrations.delete(key)
-  if (result === 'applied') {
-    rerouteRegistrationIds.set(reroute, registrationId)
-  }
-  return result
 }
 
 export function moveRerouteLayout(
@@ -933,7 +960,7 @@ export function unregisterAllGraphLayout(
   const meta = canvasOperationMeta()
   for (const registration of registrations) {
     if (registration.entity === 'reroute' && registration.layout) {
-      syncReroutePositionFromLayout(registration.reroute)
+      syncReroutePositionFromLayout(registration.instance)
     }
   }
   const operations = registrations.map((registration) =>
@@ -953,6 +980,8 @@ export function unregisterAllGraphLayout(
     } catch (compensationError) {
       retainCompensationError(error, compensationError)
     }
+    for (const registration of registrations)
+      reconcileLocalLayoutRegistration(registration)
     throw error
   }
   if (result === 'rejected') return result
