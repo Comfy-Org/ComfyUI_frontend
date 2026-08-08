@@ -63,6 +63,25 @@ export interface GraphHandle {
    * nothing.
    */
   nodeAt(point: { x: number; y: number }): NodeHandle | undefined
+  /**
+   * A copy of a node, carrying its widget values and properties, added to the
+   * graph without links.
+   *
+   * `add(type)` only makes a fresh node of a type, so a pack duplicating a
+   * configured node — a prompt box the user has filled in — had no way to keep
+   * what it contained. Links are deliberately not copied: a duplicate wired
+   * into the same places is a different operation, and the caller can connect
+   * it themselves.
+   *
+   * `undefined` if the node is gone, or if its type is not registered — the
+   * copy is built through the registry, so there is nothing to build from.
+   * Widget values carry over only for a type that serializes them, which every
+   * backend-registered type does.
+   */
+  duplicate(
+    id: string,
+    position?: { x: number; y: number }
+  ): NodeHandle | undefined
   /** Diagnostics: live handle-cache slots across all kinds. */
   readonly cacheSize: number
 }
@@ -158,6 +177,17 @@ export function createGraphApi(
       graph.add(node)
       if (init?.position) node.pos = [init.position.x, init.position.y]
       return handleFor(String(node.id))
+    },
+
+    duplicate(id, position) {
+      const graph = getGraph()
+      const source = nodeById(id)
+      if (!graph || !source) return undefined
+      const copy = source.clone()
+      if (!copy) return undefined
+      graph.add(copy)
+      if (position) copy.pos = [position.x, position.y]
+      return handleFor(String(copy.id))
     },
 
     nodeAt(point) {

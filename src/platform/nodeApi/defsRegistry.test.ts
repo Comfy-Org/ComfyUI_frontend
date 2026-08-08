@@ -605,3 +605,27 @@ describe('marking an existing type frontend-only', () => {
     expect(frontendResolverMap().get('Passthrough')).toBe(resolve)
   })
 })
+
+describe('selecting definitions by shape', () => {
+  it('matches on a predicate when a name cannot express the guard', () => {
+    // "any node taking a VAE input" is a shape, not a name.
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    const seen: string[] = []
+    defs.extend(
+      (def) => def.inputs.some((i) => i.type === 'VAE'),
+      (b) => seen.push(b.def.type)
+    )
+
+    registry.applyTo(
+      { prototype: {} },
+      { name: 'VAEDecode', input: { required: { samples: ['VAE', {}] } } }
+    )
+    registry.applyTo(
+      { prototype: {} },
+      { name: 'KSampler', input: { required: { seed: ['INT', {}] } } }
+    )
+
+    expect(seen).toEqual(['VAEDecode'])
+  })
+})

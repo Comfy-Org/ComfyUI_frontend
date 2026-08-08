@@ -203,3 +203,43 @@ describe('hit testing', () => {
     expect(api.nodeAt({ x: -500, y: -500 })).toBeUndefined()
   })
 })
+
+describe('duplicating a node', () => {
+  it('copies widget values and properties, but not links', () => {
+    // `add(type)` only makes a fresh node, so a pack duplicating a prompt box
+    // the user had filled in lost its contents.
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    // Registered, and building its widget in the constructor, because that is
+    // what a real node type does: cloning makes a fresh instance from the
+    // class and then restores values onto the widgets it created.
+    class Dup extends LGraphNode {
+      constructor(title?: string) {
+        super(title ?? 'Dup')
+        // As every ComfyUI node type does: without it `serialize()` writes no
+        // widgets_values, and a copy has nothing to restore from.
+        this.serialize_widgets = true
+        this.addWidget('string', 'text', '', () => {}, {})
+      }
+    }
+    LiteGraph.registerNodeType('DupNode', Dup)
+    const graph = new LGraph()
+    const source = LiteGraph.createNode('DupNode')!
+    graph.add(source)
+    source.widgets![0].value = 'a filled prompt'
+    source.setProperty('mine', 7)
+    const api = createGraphApi(() => graph)
+
+    const copy = api.duplicate(String(source.id), { x: 40, y: 50 })!
+
+    expect(copy.id).not.toBe(String(source.id))
+    expect(copy.widgets.get('text')?.getValue()).toBe('a filled prompt')
+    expect(copy.getProperty('mine')).toBe(7)
+    expect(copy.getPosition()).toEqual({ x: 40, y: 50 })
+  })
+
+  it('returns undefined for a node that is not there', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    expect(createGraphApi(() => graph).duplicate('999')).toBeUndefined()
+  })
+})

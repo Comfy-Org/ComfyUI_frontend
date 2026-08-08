@@ -176,6 +176,18 @@ export type DefSelector =
   | readonly string[]
   | RegExp
   /**
+   * A predicate over the definition, for a guard the other forms cannot
+   * express — "any node taking a VAE input", which is a shape rather than a
+   * name.
+   *
+   * Deliberately last, and deliberately discouraged. The declarative forms
+   * exist because a name check can be indexed, while a predicate has to run for
+   * every registered type; with thousands of types that is the boot cost this
+   * API set out to remove. Use it only when the guard genuinely reads a def's
+   * inputs or outputs.
+   */
+  | ((def: NodeDef) => boolean)
+  /**
    * A `RegExp` category covers the prefix filter 53 packs open their hook with
    * (`nodeData.category.startsWith('KJNodes')` → `{ category: /^KJNodes/ }`).
    */
@@ -263,6 +275,7 @@ interface Registration {
  */
 function assertSelector(selector: DefSelector): void {
   const valid =
+    typeof selector === 'function' ||
     typeof selector === 'string' ||
     selector instanceof RegExp ||
     Array.isArray(selector) ||
@@ -278,6 +291,7 @@ function assertSelector(selector: DefSelector): void {
 }
 
 function matches(selector: DefSelector, def: NodeDef): boolean {
+  if (typeof selector === 'function') return selector(def)
   if (typeof selector === 'string') return def.type === selector
   if (selector instanceof RegExp) return selector.test(def.type)
   // `Array.isArray` does not narrow a `readonly` array out of a union.
