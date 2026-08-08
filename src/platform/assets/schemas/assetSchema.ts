@@ -7,6 +7,7 @@ import { z } from 'zod'
 // Zod schemas for asset API validation matching ComfyUI Assets REST API spec
 const zAsset = z.object({
   ...zIngestAsset.shape,
+  id: z.string(),
   size: zIngestAsset.shape.size.unwrap().transform(Number).optional(),
   tags: zIngestAsset.shape.tags.default([]),
   thumbnail_url: z.string().optional()
