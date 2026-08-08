@@ -33,6 +33,7 @@ export function computeCameraFromMatrices(
 ): CameraFromMatricesResult {
   assertMatrixShape(extrinsics, 4, 4, 'extrinsics')
   assertMatrixShape(intrinsics, 3, 3, 'intrinsics')
+  assertFiniteMatrix(extrinsics, 'extrinsics')
 
   const r00 = extrinsics[0][0]
   const r01 = extrinsics[0][1]
@@ -63,6 +64,7 @@ export function computeCameraFromMatrices(
       `intrinsics[1][1] (fy) must be a non-zero finite number, got ${fy}`
     )
   }
+  assertFiniteMatrix(intrinsics, 'intrinsics')
   const fovYRad = 2 * Math.atan(cy / fy)
   const fovYDegrees = (fovYRad * 180) / Math.PI
 
@@ -70,6 +72,22 @@ export function computeCameraFromMatrices(
     position: [posX, -posY, -posZ],
     target: [targetX, -targetY, -targetZ],
     fovYDegrees
+  }
+}
+
+function assertFiniteMatrix(
+  matrix: readonly (readonly number[])[],
+  name: string
+): void {
+  for (let row = 0; row < matrix.length; row++) {
+    for (let column = 0; column < matrix[row].length; column++) {
+      const value = matrix[row][column]
+      if (!Number.isFinite(value)) {
+        throw new Error(
+          `${name}[${row}][${column}] must be finite, got ${value}`
+        )
+      }
+    }
   }
 }
 
