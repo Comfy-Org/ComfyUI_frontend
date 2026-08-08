@@ -625,7 +625,7 @@ describe('useMediaAssetActions', () => {
       expect(mockDownloadFile).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).toHaveBeenCalledWith({
         job_ids: ['job1'],
-        naming_strategy: 'preserve',
+        naming_strategy: 'flat',
         include_previews: true
       })
       expect(mockTrackExport).toHaveBeenCalledWith('test-task-id')
@@ -890,7 +890,7 @@ describe('useMediaAssetActions', () => {
       })
     }
 
-    it('should use preserve strategy when selection spans a single job', async () => {
+    it('should use flat strategy with no name filters for a single job-level selection', async () => {
       const assets = [createOutputAsset('a1', 'img1.png', 'job1', 3)]
 
       const actions = useMediaAssetActions()
@@ -903,7 +903,7 @@ describe('useMediaAssetActions', () => {
       const payload = mockCreateAssetExport.mock.calls[0][0]
       expect(payload.job_ids).toEqual(['job1'])
       expect(payload.job_asset_name_filters).toBeUndefined()
-      expect(payload.naming_strategy).toBe('preserve')
+      expect(payload.naming_strategy).toBe('flat')
     })
 
     it('should omit name filters for multiple job-level selections', async () => {
@@ -921,7 +921,7 @@ describe('useMediaAssetActions', () => {
       const payload = mockCreateAssetExport.mock.calls[0][0]
       expect(payload.job_ids).toEqual(['job1', 'job2'])
       expect(payload.job_asset_name_filters).toBeUndefined()
-      expect(payload.naming_strategy).toBe('group_by_job_time')
+      expect(payload.naming_strategy).toBe('flat')
     })
 
     it('should export temp history outputs through their job IDs', async () => {
@@ -996,7 +996,7 @@ describe('useMediaAssetActions', () => {
         job1: ['img1.png'],
         job2: ['img2.png']
       })
-      expect(payload.naming_strategy).toBe('group_by_job_time')
+      expect(payload.naming_strategy).toBe('flat')
     })
 
     it('should mix: omit filters for known outputCount, keep for unknown', async () => {
@@ -1016,10 +1016,10 @@ describe('useMediaAssetActions', () => {
       expect(payload.job_asset_name_filters).toEqual({
         job2: ['img2.png']
       })
-      expect(payload.naming_strategy).toBe('group_by_job_time')
+      expect(payload.naming_strategy).toBe('flat')
     })
 
-    it('should preserve multiple selected outputs from one job', async () => {
+    it('should keep name filters for multiple selected outputs from one job', async () => {
       const asset1 = createOutputAsset('a1', 'img1.png', 'job1')
       const asset2 = createOutputAsset('a2', 'img2.png', 'job1')
 
@@ -1035,7 +1035,7 @@ describe('useMediaAssetActions', () => {
       expect(payload.job_asset_name_filters).toEqual({
         job1: ['img1.png', 'img2.png']
       })
-      expect(payload.naming_strategy).toBe('preserve')
+      expect(payload.naming_strategy).toBe('flat')
     })
   })
 
