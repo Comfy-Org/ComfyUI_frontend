@@ -2,9 +2,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
-export const mockWorkspacesRemoteConfig: RemoteConfig = {
-  team_workspaces_enabled: true
-}
+export const mockWorkspacesRemoteConfig: RemoteConfig = {}
 
 export const mockPersonalWorkspace: WorkspaceWithRole = {
   id: 'ws-personal',
