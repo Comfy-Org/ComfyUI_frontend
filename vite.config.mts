@@ -28,6 +28,7 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
+const EXPOSE_SOURCEMAP_URL = process.env.EXPOSE_SOURCEMAP_URL === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
 const CRITICAL_COVERAGE_DIRS = [
@@ -546,7 +547,13 @@ export default defineConfig({
     // browser-facing `//# sourceMappingURL=` comment is NOT injected into the JS
     // bundles. This kills the ~57k/3d `/assets/*.js.map` 404 noise in prod
     // (the .map files aren't served) without losing Sentry symbolication. See FE-1405.
-    sourcemap: GENERATE_SOURCEMAP ? 'hidden' : false,
+    // EXPOSE_SOURCEMAP_URL re-injects it for the CI E2E build, which serves its
+    // own .map files and needs them to map V8 coverage back to src/**.
+    sourcemap: GENERATE_SOURCEMAP
+      ? EXPOSE_SOURCEMAP_URL
+        ? true
+        : 'hidden'
+      : false,
     // Exclude heavy optional vendor chunks from initial module preload
     // These chunks are only needed when their features are used (3D, terminal, etc.)
     modulePreload: {

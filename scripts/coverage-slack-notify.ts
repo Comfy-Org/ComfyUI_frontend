@@ -5,6 +5,15 @@ const MILESTONE_STEP = 5
 const MIN_DELTA = 0.05
 const BAR_WIDTH = 20
 
+/** Repo-relative prefixes of the files whose coverage this report is about. */
+const PROJECT_SOURCE = /^(src|packages)\//
+/**
+ * Below this, the tracefile is degenerate rather than sparse — e.g. E2E coverage
+ * that failed to map back to source leaves only third-party scripts behind, and
+ * a handful of fully-covered ones reads as 100%.
+ */
+const MIN_SOURCE_FILES = 100
+
 interface CoverageData {
   percentage: number
   totalLines: number
@@ -19,13 +28,16 @@ interface SlackBlock {
   }
 }
 
-function parseLcovContent(content: string): CoverageData | null {
+export function parseLcovContent(content: string): CoverageData | null {
   const perFile = new Map<string, { lf: number; lh: number }>()
   let currentFile = ''
 
   for (const line of content.split('\n')) {
     if (line.startsWith('SF:')) {
-      currentFile = line.slice(3)
+      const file = line.slice(3)
+      currentFile = PROJECT_SOURCE.test(file) ? file : ''
+    } else if (!currentFile) {
+      continue
     } else if (line.startsWith('LF:')) {
       const n = parseInt(line.slice(3), 10) || 0
       const entry = perFile.get(currentFile) ?? { lf: 0, lh: 0 }
@@ -46,7 +58,7 @@ function parseLcovContent(content: string): CoverageData | null {
     coveredLines += lh
   }
 
-  if (totalLines === 0) return null
+  if (totalLines === 0 || perFile.size < MIN_SOURCE_FILES) return null
 
   return {
     percentage: (coveredLines / totalLines) * 100,
@@ -230,4 +242,6 @@ function main() {
   process.stdout.write(JSON.stringify(payload))
 }
 
-main()
+if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+  main()
+}
