@@ -343,6 +343,27 @@ class NodeWithPriceBadge(IO.ComfyNode):
     async def execute(cls, price):
         return IO.NodeOutput()
 
+
+class NodeWithNumericCombo(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithNumericCombo",
+            display_name="Node With Numeric Combo",
+            description="An API node whose combo options are numbers",
+            inputs=[IO.Combo.Input("duration", options=[5, 10], default=5)],
+            is_api_node=True,
+            price_badge=IO.PriceBadge(
+                depends_on=IO.PriceBadgeDepends(widgets=["duration"]),
+                expr='{"type":"usd","usd": widgets.duration / 5}',
+            ),
+        )
+
+    @classmethod
+    async def execute(cls, duration):
+        return IO.NodeOutput()
+
+
 class NodeWithDynamicCombo(IO.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -368,6 +389,27 @@ class NodeWithDynamicCombo(IO.ComfyNode):
         return IO.NodeOutput()
 
 
+class NodeRuntimeReflow:
+    """Emulates the runtime node-growth idioms that several popular custom-node
+    packs use (rgthree Power Lora Loader, Impact-Pack image previews, ...).
+
+    The growth itself is performed on the client in ``web/runtimeReflow.js``:
+    the node keeps this Python surface minimal and exposes two triggers on the
+    client node instance (widget-count growth and image-preview growth).
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "noop"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "A node that emulates runtime reflow growth (rgthree widget growth and Impact-Pack image-preview growth)"
+
+    def noop(self):
+        return ()
+
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
     "DevToolsNodeWithOptionalInput": NodeWithOptionalInput,
@@ -385,7 +427,9 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
     "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
+    "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
+    "DevToolsNodeRuntimeReflow": NodeRuntimeReflow,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -405,7 +449,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
     "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
+    "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
+    "DevToolsNodeRuntimeReflow": "Node Runtime Reflow",
 }
 
 __all__ = [
@@ -423,6 +469,7 @@ __all__ = [
     "NodeWithSeedInput",
     "NodeWithValidation",
     "NodeWithV2ComboInput",
+    "NodeWithNumericCombo",
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
 ]

@@ -1,3 +1,4 @@
+import { default as DOMPurify } from 'dompurify'
 import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
@@ -116,7 +117,7 @@ import type {
 import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
-import { findFirstNode, getAllNestedItems } from './utils/collections'
+import { findFirstNode, getDraggedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
 import { createUuidv4 } from '@/utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -415,8 +416,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   set read_only(value: boolean) {
+    const changed = this.state.readOnly !== value
     this.state.readOnly = value
     this._updateCursorStyle()
+    if (changed) {
+      this.dispatchEvent('litegraph:read-only-changed', { readOnly: value })
+    }
   }
 
   get isDragging(): boolean {
@@ -689,6 +694,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _visibleReroutes: Set<Reroute> = new Set()
   private _autoPan: AutoPanController | null = null
+  /**
+   * Modifier state of the most recent drag pointer event, so the auto-pan
+   * callback resolves the same dragged-item set as normal pointer movement
+   * (e.g. Cmd/Ctrl-drag moves a group without its contents). Updated on every
+   * drag move and seeded from the pointer-down event when a drag starts.
+   */
+  private _lastDragModifiers: Pick<MouseEvent, 'ctrlKey' | 'metaKey'> = {
+    ctrlKey: false,
+    metaKey: false
+  }
   private _ghostPointerHandler: ((e: PointerEvent) => void) | null = null
   private _ghostKeyHandler: ((e: KeyboardEvent) => void) | null = null
 
@@ -1382,7 +1397,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value = LGraphCanvas.getPropertyPrintableValue(value, info.values)
 
       // value could contain invalid html characters, clean that
-      value = LGraphCanvas.decodeHTML(toString(value))
+      value = DOMPurify.sanitize(toString(value))
       entries.push({
         content:
           `<span class='property_name'>${info.label || i}</span>` +
@@ -1418,9 +1433,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** @deprecated */
   static decodeHTML(str: string): string {
-    const e = document.createElement('div')
-    e.textContent = str
-    return e.innerHTML
+    return DOMPurify.sanitize(str)
   }
 
   static onMenuResizeNode(
@@ -3554,7 +3567,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._autoPan?.updatePointer(e.clientX, e.clientY)
 
         const selected = this.selectedItems
-        const allItems = e.ctrlKey ? selected : getAllNestedItems(selected)
+        this._lastDragModifiers = { ctrlKey: e.ctrlKey, metaKey: e.metaKey }
+        const allItems = getDraggedItems(selected, e)
 
         const deltaX = delta[0] / this.ds.scale
         const deltaY = delta[1] / this.ds.scale
@@ -3640,6 +3654,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.processSelect(item, pointer.eDown, sticky)
     this.isDragging = true
 
+    // Seed the auto-pan modifier state from the pointer-down event so a drag
+    // that reaches the canvas edge before the first move still honours the
+    // "move group without contents" modifier.
+    if (pointer.eDown) {
+      this._lastDragModifiers = {
+        ctrlKey: pointer.eDown.ctrlKey,
+        metaKey: pointer.eDown.metaKey
+      }
+    }
+
     this._startNodeAutoPan()
   }
 
@@ -3650,7 +3674,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       maxPanSpeed: this.auto_pan_speed,
       onPan: (panX, panY) => {
         const selected = this.selectedItems
-        const allItems = getAllNestedItems(selected)
+        const allItems = getDraggedItems(selected, this._lastDragModifiers)
 
         if (LiteGraph.vueNodesMode) {
           this.moveChildNodesInGroupVueMode(allItems, panX, panY)
@@ -3753,17 +3777,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param cancelled If true, the node is removed; otherwise it's placed
    */
   finalizeGhostPlacement(cancelled: boolean): void {
-    const nodeId = this.state.ghostNodeId
-    if (nodeId == null) return
-
-    this.state.ghostNodeId = null
-    this.isDragging = false
-    this.dispatchEvent('litegraph:ghost-placement', {
-      active: false,
-      nodeId
-    })
-    this._autoPan?.stop()
-    this._autoPan = null
+    const ownedGhostState =
+      this._ghostPointerHandler != null || this._ghostKeyHandler != null
 
     if (this._ghostPointerHandler) {
       document.removeEventListener('pointermove', this._ghostPointerHandler)
@@ -3778,6 +3793,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       document.removeEventListener('keydown', this._ghostKeyHandler, true)
       this._ghostKeyHandler = null
     }
+
+    if (ownedGhostState) {
+      this.isDragging = false
+      this._autoPan?.stop()
+      this._autoPan = null
+    }
+
+    const nodeId = this.state.ghostNodeId
+    if (nodeId == null) return
+
+    this.state.ghostNodeId = null
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: false,
+      nodeId
+    })
 
     const parsedNodeId = parseNodeId(nodeId)
     const node = parsedNodeId ? this.graph?.getNodeById(parsedNodeId) : null
@@ -3981,7 +4011,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (this._previously_dragging_canvas === null) {
           this._previously_dragging_canvas = this.dragging_canvas
         }
-        this.dragging_canvas = this.pointer.isDown
+        this.dragging_canvas =
+          this.pointer.isDown || !!this.linkConnector.renderLinks.length
         block_default = true
       } else if (e.key === 'Escape') {
         // esc
@@ -7886,8 +7917,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
+    const displayName = DOMPurify.sanitize(info.label || property)
     const dialog = this.createDialog(
-      `<span class='name'>${info.label || property}</span>${input_html}<button>OK</button>`,
+      `<span class='name'>${displayName}</span>${input_html}<button>OK</button>`,
       options
     )
 
@@ -8325,9 +8357,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const inner_refresh = () => {
       // clear
       panel.content.innerHTML = ''
+      const nodeType = DOMPurify.sanitize(node.type)
+      // @ts-expect-error - FIXME: desc doesn't actually exist?
+      const nodeDescription = DOMPurify.sanitize(node.constructor.desc || '')
       panel.addHTML(
-        // @ts-expect-error - desc property
-        `<span class='node_type'>${node.type}</span><span class='node_desc'>${node.constructor.desc || ''}</span><span class='separator'></span>`
+        `<span class='node_type'>${nodeType}</span><span class='node_desc'>${nodeDescription}</span><span class='separator'></span>`
       )
 
       panel.addHTML('<h3>Properties</h3>')

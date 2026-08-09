@@ -19,7 +19,7 @@ jobs:
     outputs:
       should-run: ${{ steps.changes.outputs.should-run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -29,10 +29,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
       - name: Use Node.js
         uses: actions/setup-node@v6
@@ -109,6 +109,24 @@ jobs:
             exit 1
           fi
           echo '✅ No PostHog references found'
+
+      - name: Scan dist for Datadog RUM references
+        run: |
+          set -euo pipefail
+          echo '🔍 Scanning for Datadog RUM references...'
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -e '@datadog/browser-rum' \
+            -e '041a9897-5516-4b1f-a245-1a9aa6895488' \
+            -e 'pub7704486e5b64eb4ff6f62891cda45559' \
+            -e 'comfy-cloud-frontend' \
+            dist; then
+            echo '❌ ERROR: Datadog RUM references found in dist assets!'
+            echo 'Datadog RUM must be properly tree-shaken from OSS builds.'
+            exit 1
+          fi
+          echo '✅ No Datadog RUM references found'
 
       - name: Scan dist for Customer.io telemetry references
         run: |

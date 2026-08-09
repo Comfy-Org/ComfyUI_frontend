@@ -1,0 +1,102 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import BreadcrumbBar from '../../components/common/BreadcrumbBar.vue'
+import ModelLaunchCtaSection from './ModelLaunchCtaSection.vue'
+import ModelLaunchFaqSection from './ModelLaunchFaqSection.vue'
+import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
+import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
+import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
+import ModelLaunchReviewsSection from './ModelLaunchReviewsSection.vue'
+import ModelLaunchStepsSection from './ModelLaunchStepsSection.vue'
+import ModelLaunchRunOptionsSection from './ModelLaunchRunOptionsSection.vue'
+import type { ModelLaunchPage } from './types'
+import { getRoutes } from '../../config/routes'
+import { t } from '../../i18n/translations'
+import { faqAnswerPlainText } from '../../utils/faqAnswer'
+import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
+
+interface Props {
+  page: ModelLaunchPage
+}
+
+const { page } = Astro.props
+
+const { locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const routes = getRoutes(locale)
+
+const crumbs = [
+  { label: t('breadcrumb.home', locale), href: routes.home },
+  { label: t('models.breadcrumb.models', locale), href: routes.models },
+  { label: t(page.breadcrumbLabelKey, locale) },
+]
+
+const breadcrumbs = crumbs.map((crumb) =>
+  crumb.href
+    ? { name: crumb.label, url: absoluteUrl(Astro.site, crumb.href) }
+    : { name: crumb.label },
+)
+
+// Launch models are third party, so these pages intentionally emit no Product /
+// AggregateRating / Review JSON-LD. FAQPage is the only page-specific node;
+// Organization / WebSite / WebPage / BreadcrumbList come from BaseLayout.
+const faqPage = page.faq
+  ? faqPageNode(
+      url,
+      page.faq.items.map((item) => ({
+        question: item.question[locale],
+        answer: faqAnswerPlainText(item.answer[locale]),
+      })),
+    )
+  : undefined
+---
+
+<BaseLayout
+  title={t(page.metaTitleKey, locale)}
+  description={t(page.metaDescriptionKey, locale)}
+  breadcrumbs={breadcrumbs}
+  extraJsonLd={faqPage ? [faqPage] : []}
+>
+  <BreadcrumbBar
+    crumbs={crumbs}
+    updated={t(page.breadcrumbUpdatedKey, locale)}
+    label={t('ui.breadcrumb', locale)}
+  />
+  <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
+  {
+    page.gallery && (
+      <ModelLaunchGallerySection
+        client:visible
+        gallery={page.gallery}
+        locale={locale}
+      />
+    )
+  }
+  {
+    page.pricing && (
+      <ModelLaunchPricingSection
+        client:load
+        pricing={page.pricing}
+        locale={locale}
+      />
+    )
+  }
+  {
+    page.faq && (
+      <ModelLaunchFaqSection client:visible faq={page.faq} locale={locale} />
+    )
+  }
+  {page.steps && <ModelLaunchStepsSection steps={page.steps} locale={locale} />}
+  {page.closingCta && (
+    <ModelLaunchCtaSection cta={page.closingCta} locale={locale} />
+  )}
+  <ModelLaunchRunOptionsSection runOptions={page.runOptions} locale={locale} />
+  <ModelLaunchReviewsSection
+    client:visible
+    reviews={page.reviews}
+    locale={locale}
+  />
+</BaseLayout>

@@ -1,4 +1,70 @@
 {
+  "AddLayer": {
+    "display_name": "Add Layer",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Layer content at its native size. A batch expands to consecutive layers."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "Layer stack to append to. Leave unconnected to start a new stack."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Transparency mask for this layer. Masked areas (value 1) become transparent, multiplying with any alpha channel the image already carries."
+      },
+      "name": {
+        "name": "name",
+        "tooltip": "Layer name shown in the compositor editor."
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "Initial horizontal placement on the canvas."
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "Initial vertical placement on the canvas."
+      },
+      "opacity": {
+        "name": "opacity",
+        "tooltip": "Initial layer opacity."
+      },
+      "blend_mode": {
+        "name": "blend_mode",
+        "tooltip": "Initial blend mode, applied against the layers below. On the bottom layer over the default transparent background, non-normal modes produce transparency."
+      },
+      "rotation": {
+        "name": "rotation",
+        "tooltip": "Initial rotation in degrees, clockwise."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Initial display width. 0 keeps the image's native width."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Initial display height. 0 keeps the image's native height."
+      },
+      "z_index": {
+        "name": "z_index",
+        "tooltip": "Stacking override. Layers are stable-sorted by z_index; equal values keep their list order."
+      },
+      "flip_h": {
+        "name": "flip_h",
+        "tooltip": "Flip the layer horizontally."
+      },
+      "flip_v": {
+        "name": "flip_v",
+        "tooltip": "Flip the layer vertically."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The layer stack with this layer appended."
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AddNoise",
     "inputs": {
@@ -115,6 +181,32 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "AnimaLLLiteApply": {
+    "display_name": "Apply Anima LLLite",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "image": {
+        "name": "image"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask"
       }
     }
   },
@@ -774,12 +866,12 @@
     }
   },
   "ByteDance2FirstLastFrameNode": {
-    "display_name": "ByteDance Seedance 2.0 First-Last-Frame to Video",
-    "description": "Generate video using Seedance 2.0 from a first frame image and optional last frame image.",
+    "display_name": "ByteDance Seedance 2.5 First-Last-Frame to Video",
+    "description": "Generate video using Seedance 2.5 or 2.0 from a first frame image and optional last frame image.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 1080p/4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -814,11 +906,11 @@
       "model_generate_audio": {
         "name": "generate_audio"
       },
+      "model_output_format": {
+        "name": "output_format"
+      },
       "model_prompt": {
         "name": "prompt"
-      },
-      "model_ratio": {
-        "name": "ratio"
       },
       "model_resolution": {
         "name": "resolution"
@@ -831,12 +923,12 @@
     }
   },
   "ByteDance2ReferenceNode": {
-    "display_name": "ByteDance Seedance 2.0 Reference to Video",
-    "description": "Generate, edit, or extend video using Seedance 2.0 with reference images, videos, and audio. Supports multimodal reference, video editing, and video extension.",
+    "display_name": "ByteDance Seedance 2.5 Reference to Video",
+    "description": "Generate, edit, or extend video using Seedance 2.5 or 2.0 with reference images, videos, and audio. Supports multimodal reference, video editing, and video extension.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 1080p/4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -861,6 +953,9 @@
       "model_generate_audio": {
         "name": "generate_audio"
       },
+      "model_output_format": {
+        "name": "output_format"
+      },
       "model_prompt": {
         "name": "prompt"
       },
@@ -869,6 +964,9 @@
       },
       "model_resolution": {
         "name": "resolution"
+      },
+      "model_video_editing": {
+        "name": "video_editing"
       }
     },
     "outputs": {
@@ -878,12 +976,12 @@
     }
   },
   "ByteDance2TextToVideoNode": {
-    "display_name": "ByteDance Seedance 2.0 Text to Video",
-    "description": "Generate video using Seedance 2.0 models based on a text prompt.",
+    "display_name": "ByteDance Seedance 2.5 Text to Video",
+    "description": "Generate video using Seedance 2.5 or 2.0 models based on a text prompt.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.0 for maximum quality; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 1080p/4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -901,6 +999,9 @@
       },
       "model_generate_audio": {
         "name": "generate_audio"
+      },
+      "model_output_format": {
+        "name": "output_format"
       },
       "model_prompt": {
         "name": "prompt"
@@ -1168,11 +1269,11 @@
   },
   "ByteDanceSeedAudio": {
     "display_name": "ByteDance Seed Audio 1.0",
-    "description": "Generate speech, music, sound effects and multi-speaker dialogue from a single prompt with ByteDance Seed Audio 1.0. Describe the voice(s), emotion, ambience, background music and sound effects in the prompt, and include the lines to speak. Optionally pick a built-in preset voice, clone voices from up to 3 reference clips (tagged {'@'}Audio1-3 in the prompt), or derive a voice from a character image. Up to 2 minutes of audio per run.",
+    "description": "Generate speech, music, sound effects and multi-speaker dialogue from a single prompt with ByteDance Seed Audio 1.0. Describe the voice(s), emotion, ambience, background music and sound effects in the prompt, and include the lines to speak. Optionally pick a built-in preset voice, clone voices from up to 3 reference clips (tagged {'@'}Audio1-3 in the prompt), or derive a voice from a character image. Up to 2 minutes of audio per run. The multilingual model supports 20 languages and timestamp-based timing control.",
     "inputs": {
       "text_prompt": {
         "name": "text_prompt",
-        "tooltip": "Describe the voice(s), emotion, pacing, ambience, background music and sound effects, and include the lines to speak (name characters inline for dialogue). In 'audio reference' mode, refer to connected clips by order as @Audio1, @Audio2, @Audio3. Maximum 3000 characters."
+        "tooltip": "Describe the voice(s), emotion, pacing, ambience, background music and sound effects, and include the lines to speak (name characters inline for dialogue). In 'audio reference' mode, refer to connected clips by order as @Audio1, @Audio2, @Audio3. With the multilingual model, a quoted line can start with a timestamp range that controls when and how long it is spoken, e.g. \"[5.5s:8.0s] Wait for me!\". Write the prompt in the same language as the lines to speak. Maximum 3000 characters."
       },
       "reference_mode": {
         "name": "reference_mode",
@@ -1197,6 +1298,10 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual: 20 languages (English, Chinese, Japanese, Korean, Mexican & Castilian Spanish, Indonesian, German, Brazilian Portuguese, French, Thai, Vietnamese, Malay, Filipino, Italian, Russian, Dutch, Polish, Turkish, Swedish) plus per-sentence timing control via \"[5.5s:8.0s] ...\" timestamps. seed-audio-1.0: English and Chinese only, no timing control."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -1238,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "display_name": "ByteDance Seedream 5.0 Pro Layer Separation",
+    "description": "Decompose an image into a background plate plus up to 16 repositionable transparent layers, each with stacking order, bounding box, name and description.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The image to separate. Exactly one image, at least 512x512 pixels, aspect ratio between 1:16 and 16:1. Inputs larger than about 4MP are downscaled before upload."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "How to separate the image. Leave empty to auto-detect and separate all major elements. Describe elements in natural language to control the separation, or target exact regions with <bbox>left top right bottom</bbox> tags (0-1000 per-mille coordinates)."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Output resolution level. 'auto' follows the input image size (clamped to the 1K-2K range)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "prompt_optimization": {
+        "name": "prompt_optimization",
+        "tooltip": "Prompt-optimization mode: 'standard' gives higher quality, 'fast' shorter generation time."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the images."
+      },
+      "crop_layers": {
+        "name": "crop_layers",
+        "tooltip": "Geometry of the layers/masks batch outputs (layer_stack is unaffected and always tight). Full canvas: each layer on a base-sized canvas at its bounding-box position - recompose directly with ImageCompositeMasked. Minimal size: each layer cropped to its bounding box (padded to the largest layer for batching) - much smaller tensors; rebuild placement with Layers From Bounding Boxes using the bboxes output."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "The base image (background plate) the layers stack onto."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Transparency of the base image (1 = transparent, LoadImage convention); currently always fully opaque."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Transparent layers ordered bottom to top. Full canvas mode: placed on a black base-sized canvas at their bounding-box position. Minimal size mode: cropped to their bounding box, anchored top-left, padded to the largest layer."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Per-layer transparency, index-aligned with the layers batch (1 = transparent, LoadImage convention). For ImageCompositeMasked-style compositing, add InvertMask first."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "One placement box per layer, index-aligned with the layers batch (feed both, plus masks, into Layers From Bounding Boxes to rebuild per-layer placement): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] is the layer's content region within its own frame; it lands on the canvas at the box position plus that offset."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Ready-to-edit layer document for Create Layered Image: the base plate plus each element as its own named, tight-cropped layer at its true position and stacking order. Connect directly, or extend with Add Layer."
       }
     }
   },
@@ -1643,9 +1811,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "temperature"
       }
     },
     "outputs": {
@@ -1681,7 +1846,7 @@
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm",
+    "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm",
     "inputs": {
       "clip_name": {
         "name": "clip_name"
@@ -4071,6 +4236,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "display_name": "Empty MiniMax H3 AV Latent",
+    "description": "Joint video+audio latent for MiniMax H3. Duration snaps to the model's 17k+5 frame grid at 24 fps.",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, snapped up to the model's 17k+5 grid (124 = ~5s; trained range is ~124-362, longer is untested)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -4362,6 +4548,144 @@
       },
       "height": {
         "name": "height"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageToVideoNode": {
+    "display_name": "Flux 3 Image to Video",
+    "description": "Animates 1 to 10 images with FLUX 3. Each image becomes a frame of the clip: one image opens it, two morph from the first to the second, and more are spread across it or pinned to times you choose.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "How the scene should move and sound; the prompt is interpreted and expanded before generation."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "1 to 10 images, in playback order. Minimum 256x256 pixels each."
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "'spread across the clip' lets FLUX 3 place the images (one opens the clip, two become its start and end); 'at times' pins every image to a second you choose."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Output aspect ratio. 'auto' picks one from the prompt and inputs."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Clip length in seconds. 'auto' fits the length to the content."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output resolution."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate synchronized audio (ambient, speech, effects). Off produces a video with no audio track."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderation tolerance, 0 is the strictest. Requests that send images or video are capped at 2 whatever you set here."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; FLUX 3 picks its own seed, so actual results are nondeterministic regardless of this value."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3TextToVideoNode": {
+    "display_name": "Flux 3 Text to Video",
+    "description": "Generates a video with synchronized audio from a text prompt via FLUX 3.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What you want, in plain language; the prompt is interpreted and expanded before generation. Describe ambient sound, music and speech separately for layered audio."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Output aspect ratio. 'auto' picks one from the prompt and inputs."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Clip length in seconds. 'auto' fits the length to the content."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output resolution."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate synchronized audio (ambient, speech, effects). Off produces a video with no audio track."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderation tolerance, 0 is the strictest. Requests that send images or video are capped at 2 whatever you set here."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; FLUX 3 picks its own seed, so actual results are nondeterministic regardless of this value."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3VideoContinuationNode": {
+    "display_name": "Flux 3 Video Continuation",
+    "description": "Continues a video with FLUX 3: the new clip carries on from the final frames of the one you provide.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "The clip to continue."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What the continuation should show; the prompt is interpreted and expanded before generation."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Output aspect ratio. 'auto' picks one from the prompt and inputs."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Clip length in seconds. 'auto' fits the length to the content."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output resolution."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Generate synchronized audio (ambient, speech, effects). Off produces a video with no audio track."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderation tolerance, 0 is the strictest. Requests that send images or video are capped at 2 whatever you set here."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; FLUX 3 picks its own seed, so actual results are nondeterministic regardless of this value."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -5621,11 +5945,11 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 currently always requires an input image."
+        "tooltip": "The model to use for video generation."
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Text description of the desired video."
+        "tooltip": "Text description of the desired video. Optional for grok-imagine-video-1.5 when an input image is provided."
       },
       "resolution": {
         "name": "resolution",
@@ -5645,7 +5969,7 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Optional starting image for grok-imagine-video. Required for grok-imagine-video-1.5."
+        "tooltip": "Optional starting image. If omitted, the video is generated from the text prompt alone."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5659,7 +5983,7 @@
   },
   "GrokVideoReferenceNode": {
     "display_name": "Grok Reference-to-Video",
-    "description": "Generate video guided by reference images as style and content references.",
+    "description": "Generate video guided by reference images, with optional preset voice references.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -5684,6 +6008,15 @@
       },
       "model_resolution": {
         "name": "resolution"
+      },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
       }
     },
     "outputs": {
@@ -5853,6 +6186,212 @@
       },
       "model_resolution": {
         "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatarVideoNode": {
+    "display_name": "HeyGen Avatar Video",
+    "description": "Generate a talking-presenter video from a HeyGen avatar. Includes HeyGen's most popular public avatars; any look ID can be supplied as an override.",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "Rendering engine; each choice lists only the avatars that support it. 'auto' offers every avatar and picks its best engine (Avatar IV preferred). Avatar V is highest fidelity, Avatar III is the most affordable."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "Drive the avatar with a text script (HeyGen text-to-speech) or your own audio."
+      },
+      "custom_avatar_id": {
+        "name": "custom_avatar_id",
+        "tooltip": "Optional HeyGen avatar look ID. When set, overrides the avatar selected above. Any of HeyGen's 3000+ public looks (or your private avatars) can be used."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output video resolution."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Output aspect ratio. 'auto' follows the avatar's source footage."
+      },
+      "background_color": {
+        "name": "background_color",
+        "tooltip": "Optional solid background color as a hex code (e.g. '#00ff00'). Leave empty for the avatar's own background."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Not sent to HeyGen; change it to force a re-run."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "engine_avatar": {
+        "name": "avatar"
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "text"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "display_name": "HeyGen Create Avatar",
+    "description": "Create your own reusable HeyGen avatar from a photo of a person or from a text prompt (a generated character). Feed the resulting avatar_id into HeyGen Avatar Video's custom_avatar_id — and save the ID somewhere to reuse the avatar in future workflows.",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Generate a new character from a text prompt, or create the avatar from a connected photo of a person."
+      },
+      "source_prompt": {
+        "name": "prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "avatar_id",
+        "tooltip": "Avatar look ID. Pass it to HeyGen Avatar Video's custom_avatar_id; save it to reuse the avatar later."
+      },
+      "1": {
+        "name": "preview",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "display_name": "HeyGen Talking Photo",
+    "description": "Animate any image of a person into a lip-synced talking video (HeyGen Avatar IV). Drive it with a text script or your own audio.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Image of a person to animate. Downscaled automatically if larger than 2K."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "Drive the avatar with a text script (HeyGen text-to-speech) or your own audio."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output video resolution."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Output aspect ratio. 'auto' follows the input image."
+      },
+      "expressiveness": {
+        "name": "expressiveness",
+        "tooltip": "How expressive the animated face and gestures are."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Not sent to HeyGen; change it to force a re-run."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "text"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "display_name": "HeyGen Text to Speech",
+    "description": "Generate speech audio from text using HeyGen's Starfish TTS engine. Includes HeyGen's most popular voices across 17 languages.",
+    "inputs": {
+      "text": {
+        "name": "text",
+        "tooltip": "Text to synthesize (up to 5000 characters). The generated speech must be at least 1 second long."
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "Voice to use (curated from HeyGen's most popular Starfish-compatible voices)."
+      },
+      "custom_voice_id": {
+        "name": "custom_voice_id",
+        "tooltip": "Optional HeyGen voice ID. When set, overrides the voice selected above. The voice must support the Starfish engine."
+      },
+      "speed": {
+        "name": "speed",
+        "tooltip": "Speech speed multiplier."
+      },
+      "ssml": {
+        "name": "ssml",
+        "tooltip": "Treat the text as SSML markup (for pauses, emphasis, and pronunciation control)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Not sent to HeyGen; change it to force a re-run."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "display_name": "HeyGen Video Translate",
+    "description": "Translate a spoken video into another language. Clones the original speaker's voice and re-animates the mouth to match the translated speech.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Video with speech to translate."
+      },
+      "output_language": {
+        "name": "output_language",
+        "tooltip": "Target language for the translated video."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "'speed' is faster; 'precision' produces higher-quality lip sync at twice the price."
+      },
+      "translate_audio_only": {
+        "name": "translate_audio_only",
+        "tooltip": "Only swap the audio track, keeping the original mouth movements (no lip sync)."
+      },
+      "speaker_count": {
+        "name": "speaker_count",
+        "tooltip": "Number of speakers in the video. 0 = detect automatically."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Not sent to HeyGen; change it to force a re-run."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -6267,6 +6806,48 @@
       }
     }
   },
+  "IdeogramPImage": {
+    "display_name": "Ideogram P-Image",
+    "description": "Generates images using P-Image, Ideogram's fast text-to-image model. Strong typography and photorealism; supports Ideogram 4.0 structured JSON captions for exact text, colors and layout.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt. Also accepts an Ideogram 4.0 structured JSON caption (exact colors as #RRGGBB hexes, exact text strings, bounding-box layout) — set prompt_upsampling to OFF to use it verbatim."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Speed/price/quality tier. MEDIUM is the everyday default; HIGH for complex prompts, fine detail and difficult text; VERY_LOW/LOW for drafts at scale. Difficult text renders poorly below MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output size class (exact pixels follow the aspect ratio, e.g. 16:9 gives 1280x720 at 1K and 2560x1440 at 2K). Prefer HIGH + 2K for crisp typography."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio for image generation."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Expands short prompts into a detailed structured caption before generation (the rewritten prompt is returned as final_prompt). Set OFF when supplying your own JSON caption or exact wording."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for reproducible generation. With prompt_upsampling OFF, the same seed and settings return the same image; with ON/AUTO the prompt rewrite varies per run — reproduce a result by reusing its final_prompt output with prompt_upsampling OFF and the same seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "The prompt the image was actually generated from (the rewritten structured caption when prompt_upsampling ran, else your prompt). Feed it back with prompt_upsampling OFF and the same seed to reproduce this image."
+      }
+    }
+  },
   "IdeogramV3": {
     "display_name": "Ideogram V3",
     "description": "Generates images using the Ideogram V3 model. Supports both regular image generation from text prompts and image editing with mask.",
@@ -6482,6 +7063,27 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ImageCompositor": {
+    "display_name": "Create Layered Image",
+    "inputs": {
+      "layers": {
+        "name": "layers",
+        "tooltip": "Layer stack to composite; build it with Add Layer. Items are stacked by z_index, batch frames inside an item expand to consecutive layers, and item placement, opacity, and blend mode define the initial composition. Without an explicit document canvas the size is a best-effort maximum extent of the placed layers. A saved composition that matches the current inputs takes priority."
+      },
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "Layered composition saved by the compositor editor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Composited image. Carries an alpha channel when the composite has transparent areas (e.g. hidden background), otherwise plain RGB."
+      },
+      "1": {
+        "tooltip": "Transparency of the composite (1 = fully transparent). All zeros when the composite is opaque."
       }
     }
   },
@@ -7191,158 +7793,6 @@
       }
     }
   },
-  "KlingCameraControlI2VNode": {
-    "display_name": "Kling Image to Video (Camera Control)",
-    "description": "Transform still images into cinematic videos with professional camera movements that simulate real-world cinematography. Control virtual camera actions including zoom, rotation, pan, tilt, and first-person view, while maintaining focus on your original image.",
-    "inputs": {
-      "start_frame": {
-        "name": "start_frame",
-        "tooltip": "Reference Image - URL or Base64 encoded string, cannot exceed 10MB, resolution not less than 300*300px, aspect ratio between 1:2.5 ~ 2.5:1. Base64 should not include data:image prefix."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Positive text prompt"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative text prompt"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "Can be created using the Kling Camera Controls node. Controls the camera movement and motion during the video generation."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControls": {
-    "display_name": "Kling Camera Controls",
-    "description": "Allows specifying configuration options for Kling Camera Controls and motion control effects.",
-    "inputs": {
-      "camera_control_type": {
-        "name": "camera_control_type"
-      },
-      "horizontal_movement": {
-        "name": "horizontal_movement",
-        "tooltip": "Controls camera's movement along horizontal axis (x-axis). Negative indicates left, positive indicates right"
-      },
-      "vertical_movement": {
-        "name": "vertical_movement",
-        "tooltip": "Controls camera's movement along vertical axis (y-axis). Negative indicates downward, positive indicates upward."
-      },
-      "pan": {
-        "name": "pan",
-        "tooltip": "Controls camera's rotation in vertical plane (x-axis). Negative indicates downward rotation, positive indicates upward rotation."
-      },
-      "tilt": {
-        "name": "tilt",
-        "tooltip": "Controls camera's rotation in horizontal plane (y-axis). Negative indicates left rotation, positive indicates right rotation."
-      },
-      "roll": {
-        "name": "roll",
-        "tooltip": "Controls camera's rolling amount (z-axis). Negative indicates counterclockwise, positive indicates clockwise."
-      },
-      "zoom": {
-        "name": "zoom",
-        "tooltip": "Controls change in camera's focal length. Negative indicates narrower field of view, positive indicates wider field of view."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "camera_control",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControlT2VNode": {
-    "display_name": "Kling Text to Video (Camera Control)",
-    "description": "Transform text into cinematic videos with professional camera movements that simulate real-world cinematography. Control virtual camera actions including zoom, rotation, pan, tilt, and first-person view, while maintaining focus on your original text.",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Positive text prompt"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative text prompt"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "Can be created using the Kling Camera Controls node. Controls the camera movement and motion during the video generation."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingDualCharacterVideoEffectNode": {
-    "display_name": "Kling Dual Character Video Effects",
-    "description": "Achieve different special effects when generating a video based on the effect_scene. First image will be positioned on left side, second on right side of the composite.",
-    "inputs": {
-      "image_left": {
-        "name": "image_left",
-        "tooltip": "Left side image"
-      },
-      "image_right": {
-        "name": "image_right",
-        "tooltip": "Right side image"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "duration": {
-        "name": "duration"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingFirstLastFrameNode": {
     "display_name": "Kling 3.0 First-Last-Frame to Video",
     "description": "Generate videos with Kling V3 using first and last frames.",
@@ -7861,38 +8311,6 @@
       }
     }
   },
-  "KlingSingleImageVideoEffectNode": {
-    "display_name": "Kling Video Effects",
-    "description": "Achieve different special effects when generating a video based on the effect_scene.",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": " Reference Image. URL or Base64 encoded string (without data:image prefix). File size cannot exceed 10MB, resolution not less than 300*300px, aspect ratio between 1:2.5 ~ 2.5:1"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "model_name": {
-        "name": "model_name"
-      },
-      "duration": {
-        "name": "duration"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingStartEndFrameNode": {
     "display_name": "Kling Start-End Frame to Video",
     "description": "Generate a video sequence that transitions between your provided start and end images. The node creates all frames in between, producing a smooth transformation from the first frame to the last.",
@@ -8079,26 +8497,6 @@
       },
       "multi_shot_prompt": {
         "name": "prompt"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingVirtualTryOnNode": {
-    "display_name": "Kling Virtual Try On",
-    "description": "Kling Virtual Try On Node. Input a human image and a cloth image to try on the cloth on the human. You can merge multiple clothing item pictures into one image with a white background.",
-    "inputs": {
-      "human_image": {
-        "name": "human_image"
-      },
-      "cloth_image": {
-        "name": "cloth_image"
-      },
-      "model_name": {
-        "name": "model_name"
       }
     },
     "outputs": {
@@ -8699,6 +9097,45 @@
       }
     }
   },
+  "LayersFromBoundingBoxes": {
+    "display_name": "Layers From Bounding Boxes",
+    "description": "Turn an image batch plus its bounding boxes into a layer stack, one layer per frame, each placed by its own box. Use this when a node emits layers as a batch - a batch carries a single placement for every frame, so the individual positions are otherwise lost.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Image batch; each frame becomes one layer."
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Placement boxes, index-aligned with the image batch. Accepts bounding boxes (x, y, width, height), normalized elements (with a 'bbox' - these need canvas_width/canvas_height to resolve to pixels), or a JSON string of either. Frames without a matching box are placed at the origin. A box's width/height scales the layer to fit it. metadata.name (or desc) and metadata.z_index are used when present, and metadata.content_rect (frame-relative) crops the frame to its real content."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Per-frame transparency, index-aligned with the image batch (1 = transparent, LoadImage convention)."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "Layer stack to append to. Leave unconnected to start a new stack."
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "Crop each frame to metadata.content_rect where present and place the content at the box position plus the rect offset. Leave on for batches whose frames are padded - it keeps only the real content at its true spot."
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "Document canvas width. 0 derives it from the placed layers."
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "Document canvas height. 0 derives it from the placed layers."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The layer stack, ready for Create Layered Image."
+      }
+    }
+  },
   "LazyCache": {
     "display_name": "LazyCache",
     "description": "A homebrew version of EasyCache - even 'easier' version of EasyCache to implement. Overall works worse than EasyCache, but better in some rare cases AND universal compatibility with everything in ComfyUI.",
@@ -8989,7 +9426,7 @@
     "inputs": {
       "folder_name": {
         "name": "folder_name",
-        "tooltip": "Name of folder containing the saved dataset (inside output directory)."
+        "tooltip": "Saved dataset to load, from the datasets directory."
       }
     },
     "outputs": {
@@ -9016,6 +9453,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "display_name": "Load Video (from Folder)",
+    "description": "Load a dataset of videos from a specified folder and return a list of videos. Supported formats: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "inputs": {
+      "folder": {
+        "name": "folder",
+        "tooltip": "The folder containing video files."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Lazy video references; frames are decoded only when needed downstream."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "display_name": "Load Video-Text (from Folder)",
+    "description": "Load a dataset of pairs of videos and text captions from a specified folder and return them as a list. Supported formats: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "inputs": {
+      "folder": {
+        "name": "folder",
+        "tooltip": "The folder containing video files and .txt captions."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Lazy video references; frames are decoded only when needed downstream."
+      },
+      "1": {
+        "name": "texts",
+        "tooltip": "List of text captions."
       }
     }
   },
@@ -9389,7 +9862,8 @@
     }
   },
   "LTXVConcatAVLatent": {
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "Concat AV Latent",
+    "description": "Merge a video latent and an audio latent into a joint AV latent (any AV model, e.g. LTXV or MiniMax H3).",
     "inputs": {
       "video_latent": {
         "name": "video_latent"
@@ -9724,8 +10198,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "display_name": "LTXVSeparateAVLatent",
-    "description": "LTXV Separate AV Latent",
+    "display_name": "Separate AV Latent",
+    "description": "Split a joint AV latent into its video and audio latents (any AV model, e.g. LTXV or MiniMax H3).",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -11063,9 +11537,240 @@
       }
     }
   },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Image to Video",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, snapped up to the model's 17k+5 grid (124 = ~5s; trained range is ~124-362, longer is untested)"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "display_name": "MiniMax H3 Reference to Video",
+    "description": "<Picture i> / <Video k> / <Audio j> reference conditioning for MiniMax H3. Use the same tags when prompting.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Frame count at 24 fps, (124 = ~5s, trained range is ~124-362)"
+      },
+      "ref_image_size": {
+        "name": "ref_image_size",
+        "tooltip": "Reference image sizing. 'match' scales each ref (down only, keeping aspect) to the generation's pixel area; 'max' uses the reference pipeline's 2048px short edge for best identity fidelity. Reference tokens ride through every sampling step, so 'max' can be several times slower."
+      },
+      "ref_images": {
+        "name": "ref_images"
+      },
+      "ref_videos": {
+        "name": "ref_videos"
+      },
+      "ref_video_audios": {
+        "name": "ref_video_audios"
+      },
+      "ref_audios": {
+        "name": "ref_audios"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "display_name": "ModelSamplingMiniMaxH3",
+    "description": "Set the video/audio flow shifts.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_video": {
+        "name": "shift_video"
+      },
+      "shift_audio": {
+        "name": "shift_audio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "display_name": "MiniMax H3 First-Last-Frame to Video",
+    "description": "Generate video from a first frame image and an optional last frame image using the MiniMax H3 model. The aspect ratio of the video follows the supplied images.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image for the video."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed. The same request with the same seed gives similar, but not guaranteed identical, results."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AIGC watermark to the video."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Optional last frame image for the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "display_name": "MiniMax H3 Reference to Video",
+    "description": "Generate video conditioned on reference images, videos, and audio using the MiniMax H3 model. Refer to the references in the prompt by their order: 'Image 1', 'Image 2', 'Video 1', 'Audio 1', and so on.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed. The same request with the same seed gives similar, but not guaranteed identical, results."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AIGC watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "display_name": "MiniMax H3 Text to Video",
+    "description": "Generate video from a text prompt using the MiniMax H3 model.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed. The same request with the same seed gives similar, but not guaranteed identical, results."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AIGC watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
-    "display_name": "MiniMax Hailuo Video",
-    "description": "Generates videos from prompt, with optional start frame using the new MiniMax Hailuo-02 model.",
+    "display_name": "MiniMax Hailuo 02 Video",
+    "description": "Generates videos from prompt, with optional start frame using the MiniMax Hailuo-02 model.",
     "inputs": {
       "prompt_text": {
         "name": "prompt_text",
@@ -14023,7 +14728,7 @@
   },
   "OpenRouterLLMNode": {
     "display_name": "OpenRouter LLM",
-    "description": "Generate text responses through OpenRouter. Routes to a curated set of popular models from xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), and Perplexity Sonar.",
+    "description": "Generate text responses through OpenRouter. Routes to a curated set of popular models from Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), and Perplexity Sonar.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -15238,7 +15943,7 @@
     }
   },
   "RecraftImageToImageNode": {
-    "display_name": "Recraft Image to Image",
+    "display_name": "Recraft V3 Image to Image",
     "description": "Modify image based on prompt and strength.",
     "inputs": {
       "image": {
@@ -15396,7 +16101,7 @@
     }
   },
   "RecraftTextToImageNode": {
-    "display_name": "Recraft Text to Image",
+    "display_name": "Recraft V3 Text to Image",
     "description": "Generates images synchronously based on prompt and resolution.",
     "inputs": {
       "prompt": {
@@ -15437,7 +16142,7 @@
     }
   },
   "RecraftTextToVectorNode": {
-    "display_name": "Recraft Text to Vector",
+    "display_name": "Recraft V3 Text to Vector",
     "description": "Generates SVG synchronously based on prompt and resolution.",
     "inputs": {
       "prompt": {
@@ -15479,7 +16184,7 @@
   },
   "RecraftV4TextToImageNode": {
     "display_name": "Recraft V4 Text to Image",
-    "description": "Generates images using Recraft V4 or V4 Pro models.",
+    "description": "Generates images using Recraft V4 and V4.1 models.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -15487,7 +16192,7 @@
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "An optional text description of undesired elements on an image."
+        "tooltip": "This input is ignored: negative prompt is not supported by Recraft V4 and V4.1 models."
       },
       "model": {
         "name": "model",
@@ -15520,7 +16225,7 @@
   },
   "RecraftV4TextToVectorNode": {
     "display_name": "Recraft V4 Text to Vector",
-    "description": "Generates SVG using Recraft V4 or V4 Pro models.",
+    "description": "Generates SVG using Recraft V4 and V4.1 models.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -15528,7 +16233,7 @@
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "An optional text description of undesired elements on an image."
+        "tooltip": "This input is ignored: negative prompt is not supported by Recraft V4 and V4.1 models."
       },
       "model": {
         "name": "model",
@@ -17730,7 +18435,7 @@
       },
       "folder_name": {
         "name": "folder_name",
-        "tooltip": "Name of folder to save dataset (inside output directory)."
+        "tooltip": "Name of folder to save the dataset into, inside the datasets directory. Subfolders like 'project/run1' are allowed."
       },
       "shard_size": {
         "name": "shard_size",
@@ -18317,6 +19022,60 @@
       "0": {
         "name": "images",
         "tooltip": "Shuffled images"
+      },
+      "1": {
+        "name": "texts",
+        "tooltip": "Shuffled texts"
+      }
+    }
+  },
+  "ShuffleVideoDataset": {
+    "display_name": "Shuffle Videos List",
+    "description": "Randomly shuffle the order of videos in a list.",
+    "inputs": {
+      "videos": {
+        "name": "videos",
+        "tooltip": "List of videos to shuffle."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Shuffled videos"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "display_name": "Shuffle Pairs of Video-Text",
+    "description": "Randomly shuffle the order of pairs of video-text in a list.",
+    "inputs": {
+      "videos": {
+        "name": "videos",
+        "tooltip": "List of videos to shuffle."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "List of texts to shuffle."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "videos",
+        "tooltip": "Shuffled videos"
       },
       "1": {
         "name": "texts",
@@ -19652,6 +20411,75 @@
       }
     }
   },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "images": {
+        "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "display_name": "TextEncodeMageFlowEdit",
+    "description": "Encode an edit instruction with one or more reference images for Mage-Flow-Edit. Reference latents are resized to the output resolution (width/height, or the first image's size when 0). Use the latent output for sampling so the sizes always match.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Reference image(s) to edit. All references are resized to the output resolution before encoding."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Output width. 0 = use the first reference image's size."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Output height. 0 = use the first reference image's size."
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
     "display_name": "TextEncodeQwenImageEdit",
     "inputs": {
@@ -19959,7 +20787,7 @@
     }
   },
   "TopazImageEnhance": {
-    "display_name": "Topaz Image Enhance",
+    "display_name": "Topaz Image Enhance (Legacy)",
     "description": "Industry-standard upscaling and image enhancement.",
     "inputs": {
       "model": {
@@ -20009,6 +20837,58 @@
       "color_preservation": {
         "name": "color_preservation",
         "tooltip": "Preserve the original colors."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazImageEnhanceV2": {
+    "display_name": "Topaz Image Enhance",
+    "description": "Industry-standard upscaling and image enhancement.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "Zero value means to calculate automatically (usually it will be original size or scaled proportionally to output_height if specified). Wonder 3.5 supports upscale factors from 1x to 6x only. Bloom 2 and Wonder 3.5 preserve the input aspect ratio and treat the requested size as a target."
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "Zero value means to output in the same height as original or scaled proportionally to output_width if specified. Wonder 3.5 supports upscale factors from 1x to 6x only. Bloom 2 and Wonder 3.5 preserve the input aspect ratio and treat the requested size as a target."
+      },
+      "model_color_preservation": {
+        "name": "color_preservation"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_crop_to_fill": {
+        "name": "crop_to_fill"
+      },
+      "model_face_enhancement": {
+        "name": "face_enhancement"
+      },
+      "model_face_enhancement_creativity": {
+        "name": "face_enhancement_creativity"
+      },
+      "model_face_enhancement_strength": {
+        "name": "face_enhancement_strength"
+      },
+      "model_face_preservation": {
+        "name": "face_preservation"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_subject_detection": {
+        "name": "subject_detection"
       }
     },
     "outputs": {
@@ -21526,6 +22406,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "display_name": "Sample Video Frame",
+    "description": "Sample a fixed number of frames from a video using various strategies.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Input video."
+      },
+      "num_frames": {
+        "name": "num_frames",
+        "tooltip": "Number of frames to sample."
+      },
+      "strategy": {
+        "name": "strategy",
+        "tooltip": "uniform: evenly spaced, head: first N, tail: last N, random: random sorted."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed (only used with 'random' strategy)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": "Sampled video."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "Video Linear CFG Guidance",
     "inputs": {
@@ -21534,6 +22445,57 @@
       },
       "min_cfg": {
         "name": "min_cfg"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "display_name": "Crop Video (Temporal Random)",
+    "description": "Randomly crop a continuous range of frames from a video.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Input video."
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Number of frames to keep."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": "Cropped video (lazy)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "display_name": "Crop Video (Temporal)",
+    "description": "Crop a continuous range of frames from a video.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Input video."
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Starting frame index."
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Number of frames to keep."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": "Cropped video (lazy)."
       }
     }
   },
@@ -22566,6 +23528,129 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2Cache": {
+    "display_name": "WanAnimate2Cache",
+    "description": "Caches the pose-video's per-block activations so it runs once instead of on every sampling step. Roughly halves generation time Tradeoff is ~12.5 GB of system RAM at 480x832/81 frames in bf16 (scales with resolution and length). With context windows each window is cached separately, so RAM scales with the window count; use the static_standard schedule, as uniform schedules shift the windows every step and nothing ever recurs to hit the cache.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "device": {
+        "name": "device",
+        "tooltip": "Where to keep the cache. cpu (RAM) is the safe choice, the cache will not fit in VRAM alongside the model at typical sizes. gpu (VRAM) can be faster if it fits."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Storage precision. default stores the activations in the model's compute dtype. int8 halves the cache, int4 quarters it, convrot is used to retain accuracy."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2ToVideo": {
+    "display_name": "WanAnimate2ToVideo",
+    "description": "Animate a character in a reference image using a video, effectively replicating the facial animation, body motion and hands gesture from the video.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Output video width in pixels."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Output video height in pixels."
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Number of frames to generate."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Number of videos to generate simultaneously."
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Frames to seek into the pose video. Connect to the video_frame_offset output of the previous node when extending."
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "Scales the pose video's influence on the motion. 1.0 is the trained behavior; below weakens adherence, above amplifies. 0.0 mutes it but does not fully remove it."
+      },
+      "pose_start_percent": {
+        "name": "pose_start_percent",
+        "tooltip": "Sampling percent at which the pose influence starts. Outside the window the pose branch is skipped entirely, which also speeds those steps up."
+      },
+      "pose_end_percent": {
+        "name": "pose_end_percent",
+        "tooltip": "Sampling percent at which the pose influence ends. Motion is mostly established early, so e.g. 0.7 can loosen fine detail while keeping the choreography."
+      },
+      "reference_image_strength": {
+        "name": "reference_image_strength",
+        "tooltip": "Scales how strongly generated frames attend to the reference image's latent frame. Below 1.0 loosens identity/appearance adherence (e.g. to let the prompt restyle), above tightens it against drift."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "The character to animate."
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "The video whose motion is transferred to the reference character."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "CLIP vision of the reference image."
+      },
+      "positive_pose": {
+        "name": "positive_pose",
+        "tooltip": "Prompt for the pose-video branch, describing the motion rather than the character. Defaults to positive. Used for both the cond and uncond passes."
+      },
+      "clip_vision_output_pose": {
+        "name": "clip_vision_output_pose",
+        "tooltip": "CLIP vision of the pose video's first frame. Defaults to clip_vision_output."
+      },
+      "continue_motion": {
+        "name": "continue_motion",
+        "tooltip": "Previous motion sequence to continue from for temporal consistency."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "3": {
+        "name": "trim_latent",
+        "tooltip": "Number of latent frames that should be trimmed before decoding."
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": "Number of overlapping image frames when extending a video."
+      },
+      "5": {
+        "name": "video_frame_offset",
+        "tooltip": "Frames to seek into the pose video."
       }
     }
   },
@@ -23925,6 +25010,33 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "Apply Wan Uni3C ControlNet",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "render_video": {
+        "name": "render_video",
+        "tooltip": "The guidance video rendered from the camera trajectory, most commonly warped point cloud renders of the input image."
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
       }
     }
   },

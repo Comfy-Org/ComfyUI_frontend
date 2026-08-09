@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "Ajouter un calque",
+    "inputs": {
+      "blend_mode": {
+        "name": "mode de fusion",
+        "tooltip": "Mode de fusion initial."
+      },
+      "flip_h": {
+        "name": "retourner_h",
+        "tooltip": "Retourner le calque horizontalement."
+      },
+      "flip_v": {
+        "name": "retourner_v",
+        "tooltip": "Retourner le calque verticalement."
+      },
+      "height": {
+        "name": "hauteur",
+        "tooltip": "Hauteur d’affichage initiale. 0 conserve la hauteur native de l’image."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Contenu du calque à sa taille native. Un lot s’étend en calques consécutifs."
+      },
+      "layers": {
+        "name": "calques",
+        "tooltip": "Pile de calques à laquelle ajouter. Laisser non connecté pour démarrer une nouvelle pile."
+      },
+      "mask": {
+        "name": "masque",
+        "tooltip": "Masque de transparence pour ce calque. Les zones masquées (valeur 1) deviennent transparentes, en se multipliant avec tout canal alpha déjà présent dans l’image."
+      },
+      "name": {
+        "name": "nom",
+        "tooltip": "Nom du calque affiché dans l’éditeur de composition."
+      },
+      "opacity": {
+        "name": "opacité",
+        "tooltip": "Opacité initiale du calque."
+      },
+      "rotation": {
+        "name": "rotation",
+        "tooltip": "Rotation initiale en degrés, dans le sens horaire."
+      },
+      "width": {
+        "name": "largeur",
+        "tooltip": "Largeur d’affichage initiale. 0 conserve la largeur native de l’image."
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "Position horizontale initiale sur le canevas."
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "Position verticale initiale sur le canevas."
+      },
+      "z_index": {
+        "name": "z_index",
+        "tooltip": "Priorité d’empilement. Les calques sont triés de façon stable par z_index ; des valeurs égales conservent leur ordre dans la liste."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "La pile de calques avec ce calque ajouté."
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AjouterBruit",
     "inputs": {
@@ -174,6 +240,32 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "AnimaLLLiteApply": {
+    "display_name": "Appliquer Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "pourcentage de fin"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "masque"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_patch": {
+        "name": "correctif du modèle"
+      },
+      "start_percent": {
+        "name": "pourcentage de début"
+      },
+      "strength": {
+        "name": "intensité"
       }
     }
   },
@@ -806,11 +898,11 @@
       "model_generate_audio": {
         "name": "générer_audio"
       },
+      "model_output_format": {
+        "name": "format_de_sortie"
+      },
       "model_prompt": {
         "name": "prompt"
-      },
-      "model_ratio": {
-        "name": "ratio"
       },
       "model_resolution": {
         "name": "résolution"
@@ -853,6 +945,9 @@
       "model_generate_audio": {
         "name": "générer_audio"
       },
+      "model_output_format": {
+        "name": "format_de_sortie"
+      },
       "model_prompt": {
         "name": "prompt"
       },
@@ -861,6 +956,9 @@
       },
       "model_resolution": {
         "name": "résolution"
+      },
+      "model_video_editing": {
+        "name": "montage_vidéo"
       },
       "seed": {
         "name": "seed",
@@ -893,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "générer_audio"
+      },
+      "model_output_format": {
+        "name": "format_de_sortie"
       },
       "model_prompt": {
         "name": "prompt"
@@ -1177,6 +1278,10 @@
         "name": "loudness_rate",
         "tooltip": "Volume. 0 = normal, 100 = 2,0x, -50 = 0,5x."
       },
+      "model": {
+        "name": "model",
+        "tooltip": "seed-audio-1.0-multilingual : 20 langues (anglais, chinois, japonais, coréen, espagnol mexicain et castillan, indonésien, allemand, portugais brésilien, français, thaï, vietnamien, malais, philippin, italien, russe, néerlandais, polonais, turc, suédois) avec contrôle du timing par phrase via des horodatages \"[5.5s:8.0s] ...\". seed-audio-1.0 : anglais et chinois uniquement, sans contrôle du timing."
+      },
       "pitch_rate": {
         "name": "pitch_rate",
         "tooltip": "Décalage de hauteur en demi-tons (-12 à 12)."
@@ -1238,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "Décompose une image en une plaque de fond et jusqu'à 16 couches transparentes repositionnables, chacune avec un ordre d'empilement, une boîte englobante, un nom et une description.",
+    "display_name": "ByteDance Seedream 5.0 Pro Séparation de Couches",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "crop_layers": {
+        "name": "découper les couches",
+        "tooltip": "Géométrie des sorties batch de couches/masques (layer_stack n'est pas affecté et reste toujours ajusté). Plein canvas : chaque couche sur un canvas de taille de base à sa position de boîte englobante – recomposer directement avec ImageCompositeMasked. Taille minimale : chaque couche découpée à sa boîte englobante (rembourrée à la plus grande couche pour le batch) – tenseurs beaucoup plus petits ; reconstruire le placement avec Layers From Bounding Boxes en utilisant la sortie bboxes."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "L'image à séparer. Une seule image, d'au moins 512x512 pixels, avec un ratio d'aspect entre 1:16 et 16:1. Les entrées de plus de 4MP sont réduites avant l'envoi."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Comment séparer l'image. Laisser vide pour détecter automatiquement et séparer tous les éléments principaux. Décrivez les éléments en langage naturel pour contrôler la séparation, ou ciblez des régions exactes avec les balises <bbox>left top right bottom</bbox> (coordonnées en pour-mille de 0 à 1000)."
+      },
+      "prompt_optimization": {
+        "name": "optimisation du prompt",
+        "tooltip": "Mode d'optimisation du prompt : 'standard' pour une meilleure qualité, 'fast' pour un temps de génération plus court."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed à utiliser pour la génération."
+      },
+      "size": {
+        "name": "taille",
+        "tooltip": "Niveau de résolution de sortie. 'auto' suit la taille de l'image d'entrée (limitée à la plage 1K-2K)."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane « Généré par IA » aux images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image_de_base",
+        "tooltip": "L'image de base (plaque de fond) sur laquelle les couches sont empilées."
+      },
+      "1": {
+        "name": "masque_de_base",
+        "tooltip": "Transparence de l'image de base (1 = transparent, convention LoadImage) ; actuellement toujours totalement opaque."
+      },
+      "2": {
+        "name": "couches",
+        "tooltip": "Couches transparentes ordonnées du bas vers le haut. Mode plein canvas : placées sur un canvas noir de taille de base à leur position de boîte englobante. Mode taille minimale : découpées à leur boîte englobante, ancrées en haut à gauche, rembourrées à la plus grande couche."
+      },
+      "3": {
+        "name": "masques",
+        "tooltip": "Transparence par couche, indexée comme le batch de couches (1 = transparent, convention LoadImage). Pour une composition de type ImageCompositeMasked, ajoutez d'abord InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Une boîte de placement par couche, indexée comme le batch de couches (utilisez les deux, plus les masques, dans Layers From Bounding Boxes pour reconstruire le placement de chaque couche) : {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] est la région de contenu de la couche dans son propre cadre ; elle atterrit sur le canvas à la position de la boîte plus ce décalage."
+      },
+      "5": {
+        "name": "pile_de_couches",
+        "tooltip": "Document de couches prêt à éditer pour Créer une Image à Couches : la plaque de base plus chaque élément comme sa propre couche nommée, découpée précisément à sa position réelle et ordre d'empilement. Connectez directement, ou étendez avec Ajouter une Couche."
       }
     }
   },
@@ -2010,9 +2178,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "température"
       },
       "prompt": {
         "name": "invite",
@@ -4071,6 +4236,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "Latent vidéo+audio conjoint pour MiniMax H3. La durée s'aligne sur la grille de 17k+5 images du modèle à 24 fps.",
+    "display_name": "Latent AV MiniMax H3 Vidéo+Audio Vide",
+    "inputs": {
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur",
+        "tooltip": "Nombre d’images à 24 fps, arrondi à la grille 17k+5 du modèle (124 = ~5s ; plage d’entraînement ~124-362, plus long non testé)"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -4362,6 +4548,144 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageToVideoNode": {
+    "description": "Anime de 1 à 10 images avec FLUX 3. Chaque image devient une image du clip : une image l’ouvre, deux font une morphose de la première à la seconde, et plus sont réparties dans le clip ou fixées à des moments choisis.",
+    "display_name": "Flux 3 Image vers Vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Format de sortie. « auto » en choisit un à partir du prompt et des entrées."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Durée du clip en secondes. « auto » adapte la durée au contenu."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Générer un audio synchronisé (ambiances, voix, effets). Désactivé produit une vidéo sans piste audio."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "1 à 10 images, dans l’ordre de lecture. Minimum 256x256 pixels chacune."
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "« Répartir dans le clip » laisse FLUX 3 placer les images (une ouvre le clip, deux deviennent le début et la fin) ; « à des moments » fixe chaque image à une seconde choisie."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Comment la scène doit bouger et sonner ; le prompt est interprété et enrichi avant la génération."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Résolution de sortie."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolérance de modération, 0 étant la plus stricte. Les requêtes envoyant des images ou vidéos sont limitées à 2, quel que soit votre réglage ici."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; FLUX 3 choisit sa propre graine, donc les résultats réels sont non déterministes, quelle que soit cette valeur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3TextToVideoNode": {
+    "description": "Génère une vidéo avec audio synchronisé à partir d’un prompt texte via FLUX 3.",
+    "display_name": "Flux 3 Texte vers Vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Format de sortie. « auto » en choisit un à partir du prompt et des entrées."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Durée du clip en secondes. « auto » adapte la durée au contenu."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Générer un audio synchronisé (ambiances, voix, effets). Désactivé produit une vidéo sans piste audio."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Ce que vous souhaitez, en langage courant ; le prompt est interprété et enrichi avant la génération. Décrivez séparément l’ambiance sonore, la musique et la voix pour un audio superposé."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Résolution de sortie."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolérance de modération, 0 étant la plus stricte. Les requêtes envoyant des images ou vidéos sont limitées à 2, quel que soit votre réglage ici."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; FLUX 3 choisit sa propre graine, donc les résultats réels sont non déterministes, quelle que soit cette valeur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3VideoContinuationNode": {
+    "description": "Prolonge une vidéo avec FLUX 3 : le nouveau clip continue à partir des dernières images de celui que vous fournissez.",
+    "display_name": "Flux 3 Continuation Vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d'aspect",
+        "tooltip": "Rapport d'aspect de sortie. 'auto' en choisit un à partir du prompt et des entrées."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée",
+        "tooltip": "Durée du clip en secondes. 'auto' adapte la durée au contenu."
+      },
+      "generate_audio": {
+        "name": "générer l'audio",
+        "tooltip": "Générer un audio synchronisé (ambiances, voix, effets). Désactivé produit une vidéo sans piste audio."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Ce que la continuation doit montrer ; le prompt est interprété et enrichi avant la génération."
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "Résolution de sortie."
+      },
+      "safety_tolerance": {
+        "name": "tolérance de sécurité",
+        "tooltip": "Tolérance de modération, 0 est la plus stricte. Les requêtes envoyant des images ou vidéos sont limitées à 2, quelle que soit la valeur définie ici."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed pour déterminer si le node doit être relancé ; FLUX 3 choisit son propre seed, donc les résultats réels sont non déterministes, quelle que soit cette valeur."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Le clip à continuer."
       }
     },
     "outputs": {
@@ -5677,6 +6001,15 @@
       "model_resolution": {
         "name": "résolution"
       },
+      "model_voice_1": {
+        "name": "voix_1"
+      },
+      "model_voice_2": {
+        "name": "voix_2"
+      },
+      "model_voice_3": {
+        "name": "voix_3"
+      },
       "prompt": {
         "name": "invite",
         "tooltip": "Description textuelle de la vidéo souhaitée."
@@ -5853,6 +6186,212 @@
       "watermark": {
         "name": "filigrane",
         "tooltip": "Ajouter ou non un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatarVideoNode": {
+    "description": "Générez une vidéo de présentateur parlant à partir d’un avatar HeyGen. Inclut les avatars publics les plus populaires de HeyGen ; tout identifiant de look peut être fourni en remplacement.",
+    "display_name": "Vidéo Avatar HeyGen",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "format d’image",
+        "tooltip": "Format d’image de sortie. 'auto' suit la source de l’avatar."
+      },
+      "background_color": {
+        "name": "couleur de fond",
+        "tooltip": "Couleur de fond unie optionnelle en code hexadécimal (ex : '#00ff00'). Laissez vide pour utiliser le fond de l’avatar."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "custom_avatar_id": {
+        "name": "identifiant_avatar_personnalisé",
+        "tooltip": "Identifiant de look d’avatar HeyGen optionnel. Lorsqu’il est défini, il remplace l’avatar sélectionné ci-dessus. N’importe lequel des 3000+ looks publics de HeyGen (ou vos avatars privés) peut être utilisé."
+      },
+      "engine": {
+        "name": "moteur",
+        "tooltip": "Moteur de rendu ; chaque choix liste uniquement les avatars qui le prennent en charge. 'auto' propose tous les avatars et sélectionne leur meilleur moteur (Avatar IV préféré). Avatar V offre la meilleure fidélité, Avatar III est le plus abordable."
+      },
+      "engine_avatar": {
+        "name": "avatar"
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "Résolution de la vidéo de sortie."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Non envoyé à HeyGen ; modifiez-le pour forcer une nouvelle génération."
+      },
+      "speech": {
+        "name": "parole",
+        "tooltip": "Animez l’avatar avec un script texte (HeyGen texte-à-parole) ou votre propre audio."
+      },
+      "speech_custom_voice_id": {
+        "name": "identifiant_voix_personnalisée"
+      },
+      "speech_text": {
+        "name": "texte"
+      },
+      "speech_voice": {
+        "name": "voix"
+      },
+      "speech_voice_speed": {
+        "name": "vitesse_voix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "Créez votre propre avatar HeyGen réutilisable à partir d’une photo d’une personne ou d’une invite texte (un personnage généré). Utilisez l’avatar_id résultant dans le champ custom_avatar_id de Vidéo Avatar HeyGen — et sauvegardez l’ID pour réutiliser l’avatar dans de futurs workflows.",
+    "display_name": "Créer un Avatar HeyGen",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Générez un nouveau personnage à partir d’une invite texte, ou créez l’avatar à partir d’une photo connectée d’une personne."
+      },
+      "source_prompt": {
+        "name": "invite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "avatar_id",
+        "tooltip": "Identifiant de look d’avatar. Passez-le au champ custom_avatar_id de Vidéo Avatar HeyGen ; sauvegardez-le pour réutiliser l’avatar plus tard."
+      },
+      "1": {
+        "name": "aperçu",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "Animez n'importe quelle image d'une personne en une vidéo parlante synchronisée sur les lèvres (HeyGen Avatar IV). Contrôlez-la avec un script texte ou votre propre audio.",
+    "display_name": "HeyGen Talking Photo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Format d'image de sortie. 'auto' suit l'image d'entrée."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "expressiveness": {
+        "name": "expressiveness",
+        "tooltip": "Degré d'expressivité du visage et des gestes animés."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image d'une personne à animer. Redimensionnée automatiquement si supérieure à 2K."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Résolution vidéo de sortie."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Non envoyé à HeyGen ; modifiez-le pour forcer une nouvelle génération."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "Animez l'avatar avec un script texte (HeyGen text-to-speech) ou votre propre audio."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "texte"
+      },
+      "speech_voice": {
+        "name": "voix"
+      },
+      "speech_voice_speed": {
+        "name": "vitesse_voix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "Générez un audio de parole à partir d'un texte grâce au moteur Starfish TTS de HeyGen. Inclut les voix les plus populaires de HeyGen dans 17 langues.",
+    "display_name": "HeyGen Texte en Parole",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "custom_voice_id": {
+        "name": "custom_voice_id",
+        "tooltip": "ID de voix HeyGen optionnel. Si défini, remplace la voix sélectionnée ci-dessus. La voix doit être compatible avec le moteur Starfish."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Non envoyé à HeyGen ; modifiez-le pour forcer une nouvelle génération."
+      },
+      "speed": {
+        "name": "vitesse",
+        "tooltip": "Multiplicateur de vitesse de la parole."
+      },
+      "ssml": {
+        "name": "ssml",
+        "tooltip": "Traiter le texte comme du balisage SSML (pour les pauses, l'emphase et le contrôle de la prononciation)."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Texte à synthétiser (jusqu'à 5000 caractères). La parole générée doit durer au moins 1 seconde."
+      },
+      "voice": {
+        "name": "voix",
+        "tooltip": "Voix à utiliser (sélection parmi les voix Starfish les plus populaires de HeyGen)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "Traduisez une vidéo parlée dans une autre langue. Clone la voix originale du locuteur et ré-anime la bouche pour correspondre à la parole traduite.",
+    "display_name": "HeyGen Traduction Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "'speed' est plus rapide ; 'precision' produit une synchronisation labiale de meilleure qualité à un coût doublé."
+      },
+      "output_language": {
+        "name": "langue de sortie",
+        "tooltip": "Langue cible pour la vidéo traduite."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Non envoyé à HeyGen ; modifiez-le pour forcer une nouvelle exécution."
+      },
+      "speaker_count": {
+        "name": "nombre de locuteurs",
+        "tooltip": "Nombre de locuteurs dans la vidéo. 0 = détection automatique."
+      },
+      "translate_audio_only": {
+        "name": "traduire uniquement l'audio",
+        "tooltip": "Remplace uniquement la piste audio, en conservant les mouvements de bouche originaux (pas de synchronisation labiale)."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo avec discours à traduire."
       }
     },
     "outputs": {
@@ -6267,6 +6806,48 @@
       }
     }
   },
+  "IdeogramPImage": {
+    "description": "Génère des images à l'aide de P-Image, le modèle texte-vers-image rapide d'Ideogram. Excellente typographie et photoréalisme ; prend en charge les légendes JSON structurées Ideogram 4.0 pour un texte, des couleurs et une mise en page exacts.",
+    "display_name": "Ideogram P-Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Le ratio d'aspect pour la génération d'image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt textuel. Accepte également une légende JSON structurée Ideogram 4.0 (couleurs exactes en hexadécimal #RRGGBB, chaînes de texte exactes, mise en page par boîte englobante) — réglez prompt_upsampling sur OFF pour l'utiliser tel quel."
+      },
+      "prompt_upsampling": {
+        "name": "prompt_upsampling",
+        "tooltip": "Développe les prompts courts en une légende structurée détaillée avant la génération (le prompt réécrit est renvoyé comme final_prompt). Réglez sur OFF lorsque vous fournissez votre propre légende JSON ou un texte exact."
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Niveau de vitesse/prix/qualité. MEDIUM est le choix par défaut quotidien ; HIGH pour des prompts complexes, des détails fins et du texte difficile ; VERY_LOW/LOW pour des brouillons à grande échelle. Le texte difficile est mal rendu en dessous de MEDIUM."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Classe de taille de sortie (les pixels exacts suivent le ratio d'aspect, par exemple 16:9 donne 1280x720 en 1K et 2560x1440 en 2K). Préférez HIGH + 2K pour une typographie nette."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour une génération reproductible. Avec prompt_upsampling sur OFF, la même graine et les mêmes paramètres donnent la même image ; avec ON/AUTO, la réécriture du prompt varie à chaque exécution — reproduisez un résultat en réutilisant la sortie final_prompt avec prompt_upsampling sur OFF et la même graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "Le prompt à partir duquel l'image a réellement été générée (la légende structurée réécrite si prompt_upsampling a été utilisé, sinon votre prompt). Réutilisez-le avec prompt_upsampling sur OFF et la même graine pour reproduire cette image."
+      }
+    }
+  },
   "IdeogramV3": {
     "description": "Génère des images de façon synchrone avec le modèle Ideogram V3.\n\nPrend en charge la génération d’images à partir de prompts textuels ainsi que l’édition d’images avec mask.\nLes liens des images sont disponibles pour une durée limitée ; si vous souhaitez conserver l’image, vous devez la télécharger.",
     "display_name": "Ideogram V3",
@@ -6482,6 +7063,27 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ImageCompositor": {
+    "display_name": "Créer une image en couches",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "Composition en couches enregistrée par l'éditeur de composition."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "Pile de couches à composer ; construisez-la avec Ajouter une couche. Les éléments sont empilés selon z_index, les images par lot à l'intérieur d'un élément s'étendent en couches consécutives, et le placement, l'opacité et le mode de fusion de chaque élément définissent la composition initiale. Sans canevas de document explicite, la taille correspond à la plus grande étendue possible des couches placées. Une composition enregistrée correspondant aux entrées actuelles est prioritaire."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Image composée. Contient un canal alpha si la composition a des zones transparentes (par exemple, arrière-plan masqué), sinon RGB simple."
+      },
+      "1": {
+        "tooltip": "Transparence de la composition (1 = totalement transparent). Tout à zéro si la composition est opaque."
       }
     }
   },
@@ -7305,158 +7907,6 @@
       }
     }
   },
-  "KlingCameraControlI2VNode": {
-    "description": "Transformez des images fixes en vidéos cinématographiques avec des mouvements de caméra professionnels qui simulent la cinématographie réelle. Contrôlez les actions de la caméra virtuelle, y compris le zoom, la rotation, le panoramique, l'inclinaison et la vue à la première personne, tout en maintenant la mise au point sur votre image d'origine.",
-    "display_name": "Kling Image to Video (Contrôle de la caméra)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "Peut être créé à l'aide du nœud Kling Camera Controls. Contrôle le mouvement et l'animation de la caméra pendant la génération de la vidéo."
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Invite textuelle négative"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Invite textuelle positive"
-      },
-      "start_frame": {
-        "name": "start_frame",
-        "tooltip": "Image de référence - URL ou chaîne encodée en Base64, ne peut pas dépasser 10 Mo, résolution d'au moins 300*300px, ratio d'aspect entre 1:2,5 et 2,5:1. Le Base64 ne doit pas inclure le préfixe data:image."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControlT2VNode": {
-    "description": "Transformez du texte en vidéos cinématographiques avec des mouvements de caméra professionnels qui simulent la cinématographie réelle. Contrôlez les actions de la caméra virtuelle, y compris le zoom, la rotation, le panoramique, l’inclinaison et la vue à la première personne, tout en gardant le focus sur votre texte d’origine.",
-    "display_name": "Kling Texte vers Vidéo (Contrôle de Caméra)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "Peut être créé à l’aide du nœud Kling Camera Controls. Contrôle le mouvement et l’animation de la caméra pendant la génération de la vidéo."
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Invite de texte négative"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Invite de texte positive"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControls": {
-    "description": "Permet de spécifier les options de configuration pour les contrôles de la caméra Kling et les effets de contrôle du mouvement.",
-    "display_name": "Contrôles de la caméra Kling",
-    "inputs": {
-      "camera_control_type": {
-        "name": "camera_control_type"
-      },
-      "horizontal_movement": {
-        "name": "horizontal_movement",
-        "tooltip": "Contrôle le mouvement de la caméra sur l’axe horizontal (axe x). Négatif indique la gauche, positif indique la droite."
-      },
-      "pan": {
-        "name": "pan",
-        "tooltip": "Contrôle la rotation de la caméra dans le plan vertical (axe x). Négatif indique une rotation vers le bas, positif indique une rotation vers le haut."
-      },
-      "roll": {
-        "name": "roll",
-        "tooltip": "Contrôle la quantité de roulis de la caméra (axe z). Négatif indique un mouvement antihoraire, positif indique un mouvement horaire."
-      },
-      "tilt": {
-        "name": "tilt",
-        "tooltip": "Contrôle la rotation de la caméra dans le plan horizontal (axe y). Négatif indique une rotation vers la gauche, positif indique une rotation vers la droite."
-      },
-      "vertical_movement": {
-        "name": "vertical_movement",
-        "tooltip": "Contrôle le mouvement de la caméra sur l’axe vertical (axe y). Négatif indique vers le bas, positif indique vers le haut."
-      },
-      "zoom": {
-        "name": "zoom",
-        "tooltip": "Contrôle le changement de la longueur focale de la caméra. Négatif indique un champ de vision plus étroit, positif indique un champ de vision plus large."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "camera_control",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingDualCharacterVideoEffectNode": {
-    "description": "Obtenez différents effets spéciaux lors de la génération d'une vidéo en fonction de l'effect_scene. La première image sera positionnée à gauche, la seconde à droite du composite.",
-    "display_name": "Effets vidéo à deux personnages Kling",
-    "inputs": {
-      "duration": {
-        "name": "duration"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "image_left": {
-        "name": "image_left",
-        "tooltip": "Image côté gauche"
-      },
-      "image_right": {
-        "name": "image_right",
-        "tooltip": "Image côté droit"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "model_name": {
-        "name": "model_name"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingFirstLastFrameNode": {
     "description": "Générez des vidéos avec Kling V3 en utilisant la première et la dernière image.",
     "display_name": "Kling 3.0 Première-Dernière-Image en Vidéo",
@@ -7975,38 +8425,6 @@
       }
     }
   },
-  "KlingSingleImageVideoEffectNode": {
-    "description": "Obtenez différents effets spéciaux lors de la génération d'une vidéo selon le effect_scene.",
-    "display_name": "Effets vidéo Kling",
-    "inputs": {
-      "duration": {
-        "name": "durée"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Image de référence. URL ou chaîne encodée en Base64 (sans le préfixe data:image). La taille du fichier ne doit pas dépasser 10 Mo, la résolution ne doit pas être inférieure à 300*300px, le ratio d'aspect doit être compris entre 1:2,5 et 2,5:1"
-      },
-      "model_name": {
-        "name": "model_name"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "durée",
-        "tooltip": null
-      }
-    }
-  },
   "KlingStartEndFrameNode": {
     "description": "Générez une séquence vidéo qui effectue une transition entre les images de début et de fin que vous fournissez. Le nœud crée tous les cadres intermédiaires, produisant une transformation fluide du premier au dernier cadre.",
     "display_name": "Kling Début-Fin Image vers Vidéo",
@@ -8193,26 +8611,6 @@
       "start_frame": {
         "name": "image de départ",
         "tooltip": "Image de départ optionnelle. Lorsqu’elle est connectée, passe en mode image-vers-vidéo."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingVirtualTryOnNode": {
-    "description": "Nœud Kling Virtual Try On. Importez une image humaine et une image de vêtement pour essayer le vêtement sur la personne.",
-    "display_name": "Kling Virtual Try On",
-    "inputs": {
-      "cloth_image": {
-        "name": "cloth_image"
-      },
-      "human_image": {
-        "name": "human_image"
-      },
-      "model_name": {
-        "name": "model_name"
       }
     },
     "outputs": {
@@ -8410,6 +8808,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "Fusionne un latent vidéo et un latent audio en un latent AV conjoint (tout modèle AV, ex. LTXV ou MiniMax H3).",
     "display_name": "Concaténation AV Latent LTXV",
     "inputs": {
       "audio_latent": {
@@ -9176,6 +9575,45 @@
       }
     }
   },
+  "LayersFromBoundingBoxes": {
+    "description": "Transformez un lot d’images et ses boîtes englobantes en une pile de couches, une couche par image, chacune placée selon sa propre boîte. Utilisez ceci lorsqu’un nœud émet des couches sous forme de lot – un lot transporte un seul placement pour chaque image, donc les positions individuelles seraient autrement perdues.",
+    "display_name": "Couches à partir de boîtes englobantes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Boîtes de placement, alignées par index avec le lot d’images. Accepte des boîtes englobantes (x, y, largeur, hauteur), des éléments normalisés (avec un 'bbox' – ceux-ci nécessitent canvas_width/canvas_height pour être convertis en pixels), ou une chaîne JSON de l’un ou l’autre. Les images sans boîte correspondante sont placées à l’origine. La largeur/hauteur d’une boîte redimensionne la couche pour l’adapter. metadata.name (ou desc) et metadata.z_index sont utilisés si présents, et metadata.content_rect (relatif à l’image) recadre l’image à son contenu réel."
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "Hauteur du canevas du document. 0 la déduit des couches placées."
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "Largeur du canevas du document. 0 la déduit des couches placées."
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "Recadre chaque image selon metadata.content_rect si présent et place le contenu à la position de la boîte plus le décalage du rectangle. Laissez activé pour les lots dont les images sont rembourrées – cela conserve uniquement le vrai contenu à sa position exacte."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Lot d’images ; chaque image devient une couche."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "Pile de couches à laquelle ajouter. Laissez non connecté pour démarrer une nouvelle pile."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Transparence par image, alignée par index avec le lot d’images (1 = transparent, convention LoadImage)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "La pile de couches, prête pour Créer une image en couches."
+      }
+    }
+  },
   "LazyCache": {
     "description": "Une version maison d'EasyCache - une version encore 'plus facile' d'EasyCache à implémenter. Fonctionne globalement moins bien qu'EasyCache, mais mieux dans certains cas rares ET une compatibilité universelle avec tout dans ComfyUI.",
     "display_name": "CacheParesseux",
@@ -9493,6 +9931,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "Chargez un ensemble de vidéos à partir d’un dossier spécifié et renvoie une liste de vidéos. Formats pris en charge : MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "Charger Vidéo (depuis dossier)",
+    "inputs": {
+      "folder": {
+        "name": "dossier",
+        "tooltip": "Le dossier contenant les fichiers vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vidéos",
+        "tooltip": "Références vidéo paresseuses ; les images sont décodées uniquement lorsque nécessaire en aval."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "Chargez un ensemble de paires vidéos et légendes textuelles à partir d’un dossier spécifié et les retourne sous forme de liste. Formats pris en charge : MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "Charger Vidéo-Texte (depuis dossier)",
+    "inputs": {
+      "folder": {
+        "name": "dossier",
+        "tooltip": "Le dossier contenant les fichiers vidéo et les légendes .txt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vidéos",
+        "tooltip": "Références vidéo paresseuses ; les images sont décodées uniquement lorsque nécessaire en aval."
+      },
+      "1": {
+        "name": "textes",
+        "tooltip": "Liste des légendes textuelles."
       }
     }
   },
@@ -11059,6 +11533,237 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Image vers Vidéo",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "première_image"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "last_frame": {
+        "name": "dernière_image"
+      },
+      "length": {
+        "name": "longueur",
+        "tooltip": "Nombre d’images à 24 fps, arrondi à la grille 17k+5 du modèle (124 = ~5s ; plage d’entraînement ~124-362, plus long non testé)"
+      },
+      "prompt": {
+        "name": "invite"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "Conditionnement de référence <Image i> / <Vidéo k> / <Audio j> pour MiniMax H3. Utilisez les mêmes tags lors de la génération.",
+    "display_name": "MiniMax H3 Référence vers Vidéo",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur",
+        "tooltip": "Nombre d’images à 24 fps (124 = ~5s, plage d’entraînement ~124-362)"
+      },
+      "prompt": {
+        "name": "invite"
+      },
+      "ref_audios": {
+        "name": "audios_de_référence"
+      },
+      "ref_image_size": {
+        "name": "taille_image_référence",
+        "tooltip": "Redimensionnement de l’image de référence. 'match' adapte chaque référence (réduction uniquement, en gardant le ratio) à la surface en pixels de la génération ; 'max' utilise le bord court de 2048px du pipeline de référence pour une meilleure fidélité d'identité. Les tokens de référence sont utilisés à chaque étape d’échantillonnage, donc 'max' peut être plusieurs fois plus lent."
+      },
+      "ref_images": {
+        "name": "images_de_référence"
+      },
+      "ref_video_audios": {
+        "name": "audios_vidéo_de_référence"
+      },
+      "ref_videos": {
+        "name": "vidéos_de_référence"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "Définir les décalages du flux vidéo/audio.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "modèle"
+      },
+      "shift_audio": {
+        "name": "décalage audio"
+      },
+      "shift_video": {
+        "name": "décalage vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03FirstLastFrameNode": {
+    "description": "Générez une vidéo à partir d'une image de première image et, éventuellement, d'une image de dernière image à l'aide du modèle MiniMax H3. Le ratio d'aspect de la vidéo suit celui des images fournies.",
+    "display_name": "MiniMax H3 Première-Dernière-Image vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Image de la première image pour la vidéo."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Image de la dernière image pour la vidéo (optionnelle)."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle à utiliser pour la génération vidéo."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine aléatoire. La même requête avec la même graine donne des résultats similaires, mais pas garantis identiques."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Ajouter ou non un filigrane AIGC à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ReferenceNode": {
+    "description": "Générez une vidéo à partir d’images, de vidéos et d’audio de référence en utilisant le modèle MiniMax H3. Référez-vous aux références dans le prompt selon leur ordre : « Image 1 », « Image 2 », « Vidéo 1 », « Audio 1 », etc.",
+    "display_name": "MiniMax H3 Référence vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération vidéo."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire. La même requête avec la même graine donne des résultats similaires, mais pas garantis identiques."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane AIGC à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03TextToVideoNode": {
+    "description": "Générez une vidéo à partir d’un prompt texte en utilisant le modèle MiniMax H3.",
+    "display_name": "MiniMax H3 Texte vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération vidéo."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire. La même requête avec la même graine donne des résultats similaires, mais pas garantis identiques."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane AIGC à la vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18445,6 +19150,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "Mélangez aléatoirement l’ordre des vidéos dans une liste.",
+    "display_name": "Mélanger la liste de vidéos",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire."
+      },
+      "videos": {
+        "name": "vidéos",
+        "tooltip": "Liste des vidéos à mélanger."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vidéos",
+        "tooltip": "Vidéos mélangées"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "Mélangez aléatoirement l’ordre des paires vidéo-texte dans une liste.",
+    "display_name": "Mélanger les paires Vidéo-Texte",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire."
+      },
+      "texts": {
+        "name": "textes",
+        "tooltip": "Liste des textes à mélanger."
+      },
+      "videos": {
+        "name": "vidéos",
+        "tooltip": "Liste des vidéos à mélanger."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vidéos",
+        "tooltip": "Vidéos mélangées"
+      },
+      "1": {
+        "name": "textes",
+        "tooltip": "Textes mélangés"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "Version générique du nœud SkipLayerGuidance qui peut être utilisée sur chaque modèle DiT.",
     "display_name": "SkipLayerGuidanceDiT",
@@ -19652,6 +20411,75 @@
       }
     }
   },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMageFlowEdit": {
+    "description": "Encode une instruction d’édition avec une ou plusieurs images de référence pour Mage-Flow-Edit. Les latents de référence sont redimensionnés à la résolution de sortie (largeur/hauteur, ou à la taille de la première image si 0). Utilisez la sortie latent pour l’échantillonnage afin que les tailles correspondent toujours.",
+    "display_name": "TextEncodeMageFlowEdit",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Hauteur de sortie. 0 = utiliser la taille de la première image de référence."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) de référence à éditer. Toutes les références sont redimensionnées à la résolution de sortie avant l’encodage."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Largeur de sortie. 0 = utiliser la taille de la première image de référence."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
     "display_name": "TextEncodeQwenImageEdit",
     "inputs": {
@@ -20009,6 +20837,58 @@
       },
       "subject_detection": {
         "name": "détection du sujet"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazImageEnhanceV2": {
+    "description": "Agrandissement et amélioration d’image de référence dans l’industrie.",
+    "display_name": "Topaz Amélioration d’Image",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_color_preservation": {
+        "name": "préservation des couleurs"
+      },
+      "model_creativity": {
+        "name": "créativité"
+      },
+      "model_crop_to_fill": {
+        "name": "recadrer pour remplir"
+      },
+      "model_face_enhancement": {
+        "name": "amélioration du visage"
+      },
+      "model_face_enhancement_creativity": {
+        "name": "créativité de l’amélioration du visage"
+      },
+      "model_face_enhancement_strength": {
+        "name": "intensité de l’amélioration du visage"
+      },
+      "model_face_preservation": {
+        "name": "préservation du visage"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_subject_detection": {
+        "name": "détection du sujet"
+      },
+      "output_height": {
+        "name": "hauteur de sortie",
+        "tooltip": "Une valeur zéro signifie une sortie à la même hauteur que l’original ou proportionnelle à output_width si spécifié. Wonder 3.5 prend en charge des facteurs d’agrandissement de 1x à 6x uniquement. Bloom 2 et Wonder 3.5 conservent le rapport d’aspect d’entrée et considèrent la taille demandée comme une cible."
+      },
+      "output_width": {
+        "name": "largeur de sortie",
+        "tooltip": "Une valeur zéro signifie un calcul automatique (généralement la taille d’origine ou proportionnelle à output_height si spécifié). Wonder 3.5 prend en charge des facteurs d’agrandissement de 1x à 6x uniquement. Bloom 2 et Wonder 3.5 conservent le rapport d’aspect d’entrée et considèrent la taille demandée comme une cible."
       }
     },
     "outputs": {
@@ -21644,6 +22524,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "Échantillonnez un nombre fixe d’images d’une vidéo en utilisant différentes stratégies.",
+    "display_name": "Échantillonner une image vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "num_frames": {
+        "name": "nombre d’images",
+        "tooltip": "Nombre d’images à échantillonner."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire (utilisée uniquement avec la stratégie 'random')."
+      },
+      "strategy": {
+        "name": "stratégie",
+        "tooltip": "uniform: espacement régulier, head: premiers N, tail: derniers N, random: aléatoire trié."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo d’entrée."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vidéo",
+        "tooltip": "Vidéo échantillonnée."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "Guidance VideoLinearCFG",
     "inputs": {
@@ -21652,6 +22563,57 @@
       },
       "model": {
         "name": "modèle"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "Rogne aléatoirement une plage continue d’images d’une vidéo.",
+    "display_name": "Rogner la vidéo (aléatoire temporel)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "length": {
+        "name": "longueur",
+        "tooltip": "Nombre d’images à conserver."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo d’entrée."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vidéo",
+        "tooltip": "Vidéo rognée (paresseux)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "Rogne une plage continue d’images d’une vidéo.",
+    "display_name": "Rogner la vidéo (temporel)",
+    "inputs": {
+      "length": {
+        "name": "longueur",
+        "tooltip": "Nombre d’images à conserver."
+      },
+      "start_frame": {
+        "name": "image de départ",
+        "tooltip": "Indice de l’image de départ."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo d’entrée."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vidéo",
+        "tooltip": "Vidéo rognée (paresseux)."
       }
     }
   },
@@ -22541,6 +23503,129 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2Cache": {
+    "description": "Met en cache les activations par bloc de la vidéo de pose afin qu'elles ne soient calculées qu'une seule fois au lieu de chaque étape d'échantillonnage. Réduit environ de moitié le temps de génération. Le compromis est une utilisation d'environ 12,5 Go de RAM système pour 480x832/81 images en bf16 (cela varie selon la résolution et la durée). Avec les fenêtres de contexte, chaque fenêtre est mise en cache séparément, donc la RAM utilisée augmente avec le nombre de fenêtres ; utilisez le planning static_standard, car les plannings uniformes déplacent les fenêtres à chaque étape et rien ne revient jamais pour utiliser le cache.",
+    "display_name": "WanAnimate2Cache",
+    "inputs": {
+      "device": {
+        "name": "appareil",
+        "tooltip": "Où stocker le cache. cpu (RAM) est le choix le plus sûr, le cache ne tiendra pas dans la VRAM avec le modèle aux tailles habituelles. gpu (VRAM) peut être plus rapide si le cache tient."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Précision de stockage. Par défaut, les activations sont stockées dans le dtype de calcul du modèle. int8 divise la taille du cache par deux, int4 par quatre, convrot est utilisé pour conserver la précision."
+      },
+      "model": {
+        "name": "modèle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2ToVideo": {
+    "description": "Animez un personnage dans une image de référence à l'aide d'une vidéo, en reproduisant efficacement l'animation faciale, les mouvements du corps et les gestes des mains de la vidéo.",
+    "display_name": "WanAnimate2ToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Nombre de vidéos à générer simultanément."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "CLIP vision de l’image de référence."
+      },
+      "clip_vision_output_pose": {
+        "name": "clip_vision_output_pose",
+        "tooltip": "CLIP vision de la première image de la vidéo de pose. Par défaut, utilise clip_vision_output."
+      },
+      "continue_motion": {
+        "name": "continue_motion",
+        "tooltip": "Séquence de mouvement précédente à poursuivre pour assurer la cohérence temporelle."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Hauteur de la vidéo de sortie en pixels."
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Nombre d’images à générer."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end_percent": {
+        "name": "pose_end_percent",
+        "tooltip": "Pourcentage d’échantillonnage auquel l’influence de la pose se termine. Le mouvement est principalement établi tôt, donc par exemple 0.7 peut relâcher les détails fins tout en conservant la chorégraphie."
+      },
+      "pose_start_percent": {
+        "name": "pose_start_percent",
+        "tooltip": "Pourcentage d’échantillonnage auquel l’influence de la pose commence. En dehors de cette fenêtre, la branche de pose est totalement ignorée, ce qui accélère aussi ces étapes."
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "Ajuste l’influence de la vidéo de pose sur le mouvement. 1.0 correspond au comportement entraîné ; en dessous, l’adhérence est réduite, au-dessus, elle est amplifiée. 0.0 la coupe mais ne la supprime pas totalement."
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "La vidéo dont le mouvement est transféré au personnage de référence."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "positive_pose": {
+        "name": "positive_pose",
+        "tooltip": "Prompt pour la branche vidéo de pose, décrivant le mouvement plutôt que le personnage. Par défaut, utilise positive. Utilisé pour les passes cond et uncond."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Le personnage à animer."
+      },
+      "reference_image_strength": {
+        "name": "reference_image_strength",
+        "tooltip": "Ajuste la force avec laquelle les images générées se réfèrent à la frame latente de l’image de référence. En dessous de 1.0, l’adhérence à l’identité/l’apparence est relâchée (par exemple pour permettre au prompt de restyler), au-dessus elle est renforcée pour éviter la dérive."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Nombre d’images à avancer dans la vidéo de pose. Connectez à la sortie video_frame_offset du nœud précédent lors de l’extension."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Largeur de la vidéo de sortie en pixels."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "3": {
+        "name": "trim_latent",
+        "tooltip": "Nombre de frames latentes à supprimer avant le décodage."
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": "Nombre d’images qui se chevauchent lors de l’extension d’une vidéo."
+      },
+      "5": {
+        "name": "video_frame_offset",
+        "tooltip": "Nombre d’images à avancer dans la vidéo de pose."
       }
     }
   },
@@ -23886,6 +24971,33 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "Appliquer Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "pourcentage de fin"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_patch": {
+        "name": "correctif du modèle"
+      },
+      "render_video": {
+        "name": "vidéo de rendu",
+        "tooltip": "La vidéo de guidage rendue à partir de la trajectoire de la caméra, le plus souvent des rendus de nuages de points déformés de l’image d’entrée."
+      },
+      "start_percent": {
+        "name": "pourcentage de début"
+      },
+      "strength": {
+        "name": "force"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

@@ -35,10 +35,11 @@
           </div>
 
           <div
-            class="pointer-events-auto z-1 flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
+            ref="actionbarCardRef"
+            data-testid="action-bar-card"
+            class="pointer-events-auto relative z-1 flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
           >
             <div
-              ref="actionbarContainerRef"
               :class="
                 cn(
                   'actionbar-container relative flex items-center gap-2',
@@ -56,7 +57,7 @@
               ></div>
 
               <ComfyActionbar
-                :top-menu-container="actionbarContainerRef"
+                :docked-progress-container="actionbarCardRef"
                 :queue-overlay-expanded="isQueueOverlayExpanded"
                 @update:progress-target="updateProgressTarget"
               />
@@ -64,7 +65,7 @@
                 v-if="isLoggedIn && !isIntegratedTabBar"
                 class="shrink-0"
               />
-              <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+              <LoginButton v-else-if="!isIntegratedTabBar" />
               <Button
                 v-if="isCloud && flags.workflowSharingEnabled"
                 v-tooltip.bottom="shareTooltipConfig"
@@ -170,7 +171,7 @@ import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud } from '@/platform/distribution/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   openShareDialog,
@@ -198,7 +199,7 @@ const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
-const actionbarContainerRef = ref<HTMLElement>()
+const actionbarCardRef = ref<HTMLElement>()
 const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(
@@ -215,8 +216,7 @@ const isActionbarFloating = computed(
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
-  if (isLoggedIn.value && !isIntegratedTabBar.value) return true
-  if (isDesktop && !isIntegratedTabBar.value) return true
+  if (!isIntegratedTabBar.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
   if (!isRightSidePanelOpen.value) return true
   return false

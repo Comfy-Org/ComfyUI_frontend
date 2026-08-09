@@ -42,6 +42,7 @@ vi.mock('@/scripts/app', () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    read_only: false,
     ds: mockDs,
     setDirty: vi.fn()
   }
@@ -103,10 +104,6 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuth', () => ({
-  useFirebaseAuth: vi.fn(() => null)
-}))
-
 vi.mock('firebase/auth', () => ({
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -149,10 +146,6 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
 
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn(() => ({}))
-}))
-
-vi.mock('@/stores/toastStore', () => ({
-  useToastStore: vi.fn(() => ({}))
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
@@ -208,14 +201,14 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    isActiveSubscription: vi.fn().mockReturnValue(true),
+    canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
     showSubscriptionDialog: vi.fn()
   }))
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: { value: true },
+    canAccessSubscriptionFeatures: { value: true },
     showSubscriptionDialog: vi.fn()
   }))
 }))
@@ -278,7 +271,7 @@ describe('useCoreCommands', () => {
   function createMockSettingStore(
     getReturnValue: boolean
   ): ReturnType<typeof useSettingStore> {
-    return {
+    return fromPartial<ReturnType<typeof useSettingStore>>({
       get: vi.fn().mockReturnValue(getReturnValue),
       addSetting: vi.fn(),
       load: vi.fn(),
@@ -305,7 +298,7 @@ describe('useCoreCommands', () => {
       $onAction: vi.fn(),
       $dispose: vi.fn(),
       _customProperties: new Set()
-    } satisfies ReturnType<typeof useSettingStore>
+    })
   }
 
   beforeEach(() => {
@@ -597,6 +590,22 @@ describe('useCoreCommands', () => {
       )
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
+
+    it.for([
+      { id: 'Comfy.Canvas.Lock', from: false, to: true },
+      { id: 'Comfy.Canvas.Unlock', from: true, to: false },
+      { id: 'Comfy.Canvas.ToggleLock', from: false, to: true },
+      { id: 'Comfy.Canvas.ToggleLock', from: true, to: false }
+    ] as const)(
+      '$id changes read-only state from $from to $to',
+      async ({ id, from, to }) => {
+        app.canvas.read_only = from
+
+        await findCmd(id).function()
+
+        expect(app.canvas.read_only).toBe(to)
+      }
+    )
   })
 
   describe('Workflow lifecycle commands', () => {

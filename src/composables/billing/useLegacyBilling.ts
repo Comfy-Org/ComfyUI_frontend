@@ -27,7 +27,7 @@ import type {
  */
 export function useLegacyBilling(): BillingState & BillingActions {
   const {
-    isActiveSubscription: legacyIsActiveSubscription,
+    canAccessSubscriptionFeatures: legacyCanAccessSubscriptionFeatures,
     subscriptionTier,
     subscriptionDuration,
     subscriptionStatus: legacySubscriptionStatus,
@@ -35,6 +35,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     fetchStatus: legacyFetchStatus,
     manageSubscription: legacyManageSubscription,
     subscribe: legacySubscribe,
+    subscribeDirect: legacySubscribeDirect,
     showSubscriptionDialog: legacyShowSubscriptionDialog
   } = useSubscription()
 
@@ -45,16 +46,20 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const isActiveSubscription = computed(() => legacyIsActiveSubscription.value)
+  const canAccessSubscriptionFeatures = computed(
+    () => legacyCanAccessSubscriptionFeatures.value
+  )
   const isFreeTier = computed(() => subscriptionTier.value === 'FREE')
+  const maxSeats = computed(() => null)
+  const occupiedSeats = computed(() => null)
 
   const subscription = computed<SubscriptionInfo | null>(() => {
-    if (!legacyIsActiveSubscription.value && !subscriptionTier.value) {
+    if (!legacyCanAccessSubscriptionFeatures.value && !subscriptionTier.value) {
       return null
     }
 
     return {
-      isActive: legacyIsActiveSubscription.value,
+      isActive: legacyCanAccessSubscriptionFeatures.value,
       tier: subscriptionTier.value,
       duration: subscriptionDuration.value,
       planSlug: null, // Legacy doesn't use plan slugs
@@ -85,7 +90,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const billingStatus = computed<BillingStatus | null>(() => null)
   const subscriptionStatus = computed<BillingSubscriptionStatus | null>(() => {
     if (isCancelled.value) return 'canceled'
-    if (legacyIsActiveSubscription.value) return 'active'
+    if (legacyCanAccessSubscriptionFeatures.value) return 'active'
     return null
   })
   const tier = computed(() => subscriptionTier.value)
@@ -172,9 +177,18 @@ export function useLegacyBilling(): BillingState & BillingActions {
     await legacyManageSubscription()
   }
 
-  async function resubscribe(): Promise<void> {
+  async function resubscribe(options?: {
+    source?: 'pricing_dialog' | 'settings_billing_panel'
+  }): Promise<void> {
     // Legacy has no resubscribe endpoint; resubscribing is a fresh checkout.
-    await legacySubscribe()
+    // Unwrapped so failures propagate to resubscribe telemetry instead of being swallowed.
+    // Tag the attempt as a resubscribe so the pending-checkout recovery in
+    // useSubscription.ts can later emit the canonical resubscribe terminal
+    // instead of leaving it indistinguishable from a plain subscribe.
+    await legacySubscribeDirect({
+      operation: 'resubscribe',
+      source: options?.source
+    })
   }
 
   async function topup(amountCents: number): Promise<void> {
@@ -189,7 +203,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
 
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
-    if (!isActiveSubscription.value) {
+    if (!canAccessSubscriptionFeatures.value) {
       legacyShowSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
@@ -207,9 +221,11 @@ export function useLegacyBilling(): BillingState & BillingActions {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    maxSeats,
+    occupiedSeats,
     isLoading,
     error,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isFreeTier,
     billingStatus,
     subscriptionStatus,
