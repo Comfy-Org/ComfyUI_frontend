@@ -2020,9 +2020,11 @@ export class ComfyApp {
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
       const outcome = await importA1111(this.rootGraph, parameters, () => {
-        useWorkflowService().beforeLoadNewGraph()
-        // This path replaces the graph without reaching `clean()`.
-        useMissingNodesErrorStore().setMissingNodeTypes([])
+        try {
+          useWorkflowService().beforeLoadNewGraph()
+        } finally {
+          useMissingNodesErrorStore().setMissingNodeTypes([])
+        }
         this.canvas.setGraph(this.rootGraph)
       })
       if (outcome === 'core-nodes-unavailable') {

@@ -46,8 +46,6 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     )
     await expect(missingNodeCard).toBeVisible()
 
-    // The clear this guards against runs inside queuePrompt, several awaits
-    // after the click resolves, so assert only once the submit has landed.
     const prompted = comfyPage.page.waitForResponse((response) =>
       response.url().includes('/api/prompt')
     )
