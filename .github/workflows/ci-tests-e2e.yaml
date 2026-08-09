@@ -260,7 +260,7 @@ jobs:
 
       - name: Download built frontend
         if: steps.detect.outputs.has-new-tests == 'true'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: dist/
