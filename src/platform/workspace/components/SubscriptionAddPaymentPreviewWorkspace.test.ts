@@ -255,6 +255,71 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(emitted().changePaymentMethod).toBeTruthy()
   })
 
+  it('labels a saved Alipay method without calling it a card', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: previewFixture('MONTHLY', 3500),
+        quoteIsCurrent: true,
+        selectedSavedMethodId: 'pm_alipay',
+        savedMethods: [{ type: 'alipay', id: 'pm_alipay', is_default: true }]
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('subscription.preview.alipay')).toBeTruthy()
+    expect(screen.queryByText(/card/i)).toBeNull()
+  })
+
+  it('prefers embedded verification over a hosted action URL', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        actionUrl: 'https://verify.example/sensitive-token',
+        authenticationState: 'failed_retryable',
+        canRetryAuthentication: true
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.queryByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    ).toBeNull()
+    expect(
+      screen.getByRole('button', {
+        name: 'billingOperation.retryVerification'
+      })
+    ).toBeTruthy()
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('locks every payment action while polling recovery is required', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: previewFixture('MONTHLY', 3500),
+        quoteIsCurrent: true,
+        pollRecoveryRequired: true,
+        savedMethods: [{ type: 'alipay', id: 'pm_alipay', is_default: true }]
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.payAndSubscribe'
+      })
+    ).toBeDisabled()
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.applyPromoCode'
+      })
+    ).toBeDisabled()
+  })
+
   it('opens verification only from its button without exposing the URL', async () => {
     const actionUrl = 'https://verify.example/sensitive-token'
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)

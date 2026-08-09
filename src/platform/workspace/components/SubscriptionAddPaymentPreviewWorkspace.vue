@@ -150,13 +150,13 @@
         <Button
           variant="secondary"
           size="lg"
-          :disabled="isLoading"
-          @click="$emit('applyPromotionCode', promotionCode)"
+          :disabled="interactionLocked"
+          @click="applyPromotionCode"
         >
           {{ $t('subscription.preview.applyPromoCode') }}
         </Button>
       </div>
-      <!-- Saved method: no capture column; a card row with a change
+      <!-- Saved method: no capture column; a payment-method row with a change
            affordance stands in for the form. -->
       <div v-if="savedMethods?.length" class="flex flex-col gap-2 pt-6">
         <span class="text-sm text-muted-foreground">
@@ -239,6 +239,16 @@
       </div>
 
       <Button
+        v-if="pollRecoveryRequired"
+        variant="inverted"
+        size="lg"
+        class="w-full rounded-lg"
+        @click="$emit('retryPolling')"
+      >
+        {{ $t('billingOperation.retryStatusCheck') }}
+      </Button>
+
+      <Button
         v-if="
           (authenticationState === 'failed_retryable' ||
             authenticationState === 'requires_action') &&
@@ -260,7 +270,7 @@
       </Button>
 
       <Button
-        v-if="actionUrl"
+        v-if="actionUrl && !canRetryAuthentication"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -277,9 +287,10 @@
           previewData?.payment_method_configuration_id ?? ''
         "
         :is-loading
-        :verification-pending="Boolean(actionUrl) || verificationRecoveryActive"
+        :verification-pending="Boolean(actionUrl) || interactionLocked"
         :can-submit="quoteIsCurrent"
         @confirm="confirmPayment"
+        @submitting-change="isCreatingConfirmationToken = $event"
       />
 
       <Button
@@ -288,7 +299,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="!quoteIsCurrent || verificationRecoveryActive"
+        :disabled="!quoteIsCurrent || interactionLocked"
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.payAndSubscribe') }}
@@ -300,7 +311,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="!quoteIsCurrent || verificationRecoveryActive"
+        :disabled="!quoteIsCurrent || interactionLocked"
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
@@ -350,6 +361,7 @@ interface Props {
   canRetryAuthentication?: boolean
   isAuthenticating?: boolean
   reconciliationOperationId?: string | null
+  pollRecoveryRequired?: boolean
   usePaymentElement?: boolean
   /** Saved payment methods; when present the capture form is skipped and the
    *  confirm renders as a narrow summary. One method shows a Change
@@ -373,6 +385,7 @@ const {
   canRetryAuthentication = false,
   isAuthenticating = false,
   reconciliationOperationId = null,
+  pollRecoveryRequired = false,
   usePaymentElement = false,
   savedMethods = null,
   selectedSavedMethodId = null,
@@ -388,9 +401,11 @@ const emit = defineEmits<{
   applyPromotionCode: [code: string]
   invalidateQuote: []
   retryAuthentication: []
+  retryPolling: []
 }>()
 
 const { t, n } = useI18n()
+const isCreatingConfirmationToken = ref(false)
 
 // The wide capture split only applies while a payment method is being
 // collected; with a saved method the confirm is a single narrow column.
@@ -409,10 +424,19 @@ const verificationRecoveryActive = computed(
     authenticationState === 'failed_retryable' ||
     Boolean(reconciliationOperationId)
 )
+const interactionLocked = computed(
+  () =>
+    isLoading ||
+    isCreatingConfirmationToken.value ||
+    verificationRecoveryActive.value ||
+    pollRecoveryRequired
+)
 
 function methodLabel(m: SavedPaymentMethod) {
   if (m.type === 'alipay') return t('subscription.preview.alipay')
-  return `${m.brand} •••• ${m.last4}`
+  return m.brand && m.last4
+    ? `${m.brand} •••• ${m.last4}`
+    : t('subscription.preview.savedPaymentMethod')
 }
 
 const savedMethodOptions = computed(() => [
@@ -451,7 +475,15 @@ function openVerification() {
 }
 
 function confirmPayment(confirmationToken: string) {
+  if (isLoading || verificationRecoveryActive.value || pollRecoveryRequired) {
+    return
+  }
   emit('confirmPayment', confirmationToken)
+}
+
+function applyPromotionCode() {
+  if (interactionLocked.value) return
+  emit('applyPromotionCode', promotionCode.value)
 }
 
 const tierName = computed(() =>

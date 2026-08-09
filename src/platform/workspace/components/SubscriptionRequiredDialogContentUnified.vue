@@ -98,7 +98,12 @@
         v-if="previewVariant === 'team-change'"
         :preview-data="previewData!"
         :team-plan="selectedTeamStop!"
-        :is-loading="isLoadingPreview || isSubscribing || isPolling"
+        :is-loading="
+          isLoadingPreview ||
+          isApplyingPromotionCode ||
+          isSubscribing ||
+          isPolling
+        "
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"
         :authentication-state
@@ -106,12 +111,14 @@
         :can-retry-authentication
         :is-authenticating
         :reconciliation-operation-id
+        :poll-recovery-required
         :quote-is-current="quoteIsCurrent"
         @confirm="handleTeamSubscribe"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
+        @retry-polling="retryBillingOperation"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -119,13 +126,19 @@
         :preview-data="previewData"
         :team-plan="selectedTeamStop!"
         :billing-cycle="selectedBillingCycle"
-        :is-loading="isLoadingPreview || isSubscribing || isPolling"
+        :is-loading="
+          isLoadingPreview ||
+          isApplyingPromotionCode ||
+          isSubscribing ||
+          isPolling
+        "
         :action-url="activeCheckoutActionUrl"
         :authentication-state
         :authentication-error
         :can-retry-authentication
         :is-authenticating
         :reconciliation-operation-id
+        :poll-recovery-required
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -138,6 +151,7 @@
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
+        @retry-polling="retryBillingOperation"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -145,13 +159,14 @@
         :preview-data="previewData"
         :tier-key="selectedTierKey!"
         :billing-cycle="selectedBillingCycle"
-        :is-loading="isSubscribing || isPolling"
+        :is-loading="isApplyingPromotionCode || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :authentication-state
         :authentication-error
         :can-retry-authentication
         :is-authenticating
         :reconciliation-operation-id
+        :poll-recovery-required
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -164,12 +179,13 @@
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
+        @retry-polling="retryBillingOperation"
       />
 
       <SubscriptionTransitionPreviewWorkspace
         v-else-if="previewVariant === 'personal-change'"
         :preview-data="previewData!"
-        :is-loading="isSubscribing || isPolling"
+        :is-loading="isApplyingPromotionCode || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"
         :authentication-state
@@ -177,12 +193,14 @@
         :can-retry-authentication
         :is-authenticating
         :reconciliation-operation-id
+        :poll-recovery-required
         :quote-is-current="quoteIsCurrent"
         @confirm="handleConfirmTransition"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
+        @retry-polling="retryBillingOperation"
       />
     </template>
 
@@ -272,6 +290,7 @@ const isEmbeddedSuccessStep = computed(
 const {
   checkoutStep,
   isLoadingPreview,
+  isApplyingPromotionCode,
   loadingTier,
   isSubscribing,
   isResubscribing,
@@ -289,6 +308,7 @@ const {
   canRetryAuthentication,
   isAuthenticating,
   reconciliationOperationId,
+  pollRecoveryRequired,
   isPolling,
   isTeamCheckout,
   previewVariant,
@@ -302,6 +322,7 @@ const {
   handleSubscriptionPayment,
   handleTeamSubscriptionPayment,
   retryPaymentAuthentication,
+  retryBillingOperation,
   applyPromotionCode,
   invalidateQuote,
   handleResubscribe

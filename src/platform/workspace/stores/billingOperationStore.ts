@@ -1,5 +1,6 @@
 import type { ToastMessageOptions } from 'primevue/toast'
 import { loadStripe } from '@stripe/stripe-js'
+import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -27,6 +28,8 @@ const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
 const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
+const MAX_CONSECUTIVE_POLL_FAILURES = 8
+const FORCED_POLL_THROTTLE_MS = 2000
 // Failure reason for a checkout the user replaced by picking a different plan
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
@@ -38,6 +41,7 @@ type OperationStatus =
   | 'succeeded'
   | 'failed'
   | 'timeout'
+  | 'poll_failed'
   | 'reconciliation_needed'
 
 export interface StartOperationMetadata {
@@ -86,6 +90,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
   const paymentIntentClientSecrets = new Map<string, string>()
+  const consecutivePollFailures = new Map<string, number>()
+  const inFlightPolls = new Set<string>()
+  const repollRequested = new Set<string>()
+  const lastForcedPollAt = new Map<string, number>()
+  const terminalToasts = new Map<string, ToastMessageOptions>()
 
   const hasPendingOperations = computed(() =>
     [...operations.value.values()].some((op) => op.status === 'pending')
@@ -120,7 +129,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           (op.actionUrl !== null ||
             op.authenticationState === 'requires_action' ||
             op.authenticationState === 'failed_retryable')) ||
-          op.status === 'reconciliation_needed')
+          op.status === 'reconciliation_needed' ||
+          op.status === 'poll_failed')
     )
   )
 
@@ -200,6 +210,20 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   }
 
   async function poll(opId: string) {
+    if (inFlightPolls.has(opId)) {
+      repollRequested.add(opId)
+      return
+    }
+    inFlightPolls.add(opId)
+    try {
+      await pollOnce(opId)
+    } finally {
+      inFlightPolls.delete(opId)
+      if (repollRequested.delete(opId)) void poll(opId)
+    }
+  }
+
+  async function pollOnce(opId: string) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
 
@@ -212,6 +236,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     try {
       const response = await workspaceApi.getBillingOpStatus(opId)
+      consecutivePollFailures.delete(opId)
       const currentOperation = operations.value.get(opId)
       if (currentOperation !== operation) return
       if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
@@ -252,9 +277,38 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       const currentOperation = operations.value.get(opId)
       if (currentOperation !== operation) return
       if (stopIfTimedOut(opId, currentOperation)) return
+      const failures = (consecutivePollFailures.get(opId) ?? 0) + 1
+      consecutivePollFailures.set(opId, failures)
+      if (failures >= MAX_CONSECUTIVE_POLL_FAILURES) {
+        handlePollFailure(opId)
+        return
+      }
       scheduleNextPoll(opId)
     }
   }
+
+  function pollPendingOperations() {
+    for (const operation of operations.value.values()) {
+      if (operation.workspaceId !== workspaceStore.activeWorkspaceId) continue
+      if (operation.status === 'poll_failed') {
+        void retryOperation(operation.opId)
+        continue
+      }
+      if (operation.status !== 'pending' || operation.isAuthenticating) {
+        continue
+      }
+      const lastPollAt = lastForcedPollAt.get(operation.opId) ?? 0
+      if (Date.now() - lastPollAt < FORCED_POLL_THROTTLE_MS) continue
+      lastForcedPollAt.set(operation.opId, Date.now())
+      pausePolling(operation.opId)
+      void poll(operation.opId)
+    }
+  }
+
+  useEventListener(window, 'focus', pollPendingOperations)
+  useEventListener(document, 'visibilitychange', () => {
+    if (document.visibilityState === 'visible') pollPendingOperations()
+  })
 
   // The slow cadence is for an operation parked on the customer: a challenge
   // to complete elsewhere, or a failed attempt awaiting their retry. Once this
@@ -401,10 +455,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
     const stripe = publishableKey ? await loadStripe(publishableKey) : null
     if (!stripe) {
-      setAuthenticationRetry(
-        opId,
-        t('billingOperation.authenticationUnavailable')
-      )
+      updateOperation(opId, {
+        authenticationState: 'failed_retryable',
+        isAuthenticating: false,
+        canRetryAuthentication: false,
+        errorMessage: t('billingOperation.authenticationUnavailable')
+      })
       return false
     }
 
@@ -489,6 +545,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operation.authenticationState === 'processing' &&
       autoHandledPaymentActions.has(opId)
     ) {
+      updateOperation(opId, { actionUrl: null })
       return
     }
     operations.value = new Map(operations.value).set(opId, {
@@ -631,11 +688,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     if (operation.type !== 'cancel' && !superseded) {
-      useToastStore().add({
+      const toastMessage: ToastMessageOptions = {
         severity: 'error',
         summary: defaultMessage,
-        detail: detail ?? undefined
-      })
+        detail: detail ?? undefined,
+        life: 7000
+      }
+      terminalToasts.set(opId, toastMessage)
+      useToastStore().add(toastMessage)
     }
 
     resolveTerminal(opId)
@@ -646,7 +706,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (!operation) return
     updateOperation(opId, {
       status: 'reconciliation_needed',
-      authenticationState: 'reconciliation_needed',
+      authenticationState: null,
       canRetryAuthentication: false,
       isAuthenticating: false,
       errorMessage: null,
@@ -654,6 +714,54 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
     cleanup(opId)
     resolveTerminal(opId)
+  }
+
+  function handlePollFailure(opId: string) {
+    const operation = operations.value.get(opId)
+    if (!operation) return
+    const message = t('billingOperation.pollFailed')
+    const clientSecret = paymentIntentClientSecrets.get(opId)
+    const actionWasHandled = autoHandledPaymentActions.has(opId)
+    updateOperationStatus(opId, 'poll_failed', message)
+    cleanup(opId)
+    if (clientSecret) paymentIntentClientSecrets.set(opId, clientSecret)
+    if (actionWasHandled) autoHandledPaymentActions.add(opId)
+    if (operation.type !== 'cancel') {
+      const toastMessage: ToastMessageOptions = {
+        severity: 'error',
+        summary: message,
+        detail: t('billingOperation.pollFailedDetail'),
+        life: 7000
+      }
+      terminalToasts.set(opId, toastMessage)
+      useToastStore().add(toastMessage)
+    }
+    resolveTerminal(opId)
+  }
+
+  function retryOperation(opId: string): Promise<BillingOperation | undefined> {
+    const operation = operations.value.get(opId)
+    if (!operation || operation.status !== 'poll_failed') {
+      return Promise.resolve(operation)
+    }
+    removeTerminalToast(opId)
+    updateOperation(opId, {
+      status: 'pending',
+      errorMessage: null,
+      authenticationState: null,
+      actionUrl: null,
+      canRetryAuthentication: false,
+      isAuthenticating: false
+    })
+    intervals.set(opId, INITIAL_INTERVAL_MS)
+    consecutivePollFailures.delete(opId)
+    lastForcedPollAt.delete(opId)
+    const terminal = new Promise<BillingOperation>((resolve) => {
+      terminalResolvers.set(opId, resolve)
+    })
+    terminalPromises.set(opId, terminal)
+    void poll(opId)
+    return terminal
   }
 
   function handleTimeout(opId: string) {
@@ -692,10 +800,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     if (operation.type !== 'cancel') {
-      useToastStore().add({
+      const toastMessage: ToastMessageOptions = {
         severity: 'error',
-        summary: message
-      })
+        summary: message,
+        life: 7000
+      }
+      terminalToasts.set(opId, toastMessage)
+      useToastStore().add(toastMessage)
     }
 
     resolveTerminal(opId)
@@ -737,6 +848,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       status,
       errorMessage,
       actionUrl: null,
+      authenticationState: null,
       canRetryAuthentication: false,
       isAuthenticating: false
     }
@@ -752,6 +864,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.delete(opId)
     autoHandledPaymentActions.delete(opId)
     paymentIntentClientSecrets.delete(opId)
+    consecutivePollFailures.delete(opId)
+    repollRequested.delete(opId)
+    lastForcedPollAt.delete(opId)
 
     // Remove the "received" toast
     const receivedToast = receivedToasts.get(opId)
@@ -761,8 +876,16 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
+  function removeTerminalToast(opId: string) {
+    const toastMessage = terminalToasts.get(opId)
+    if (!toastMessage) return
+    useToastStore().remove(toastMessage)
+    terminalToasts.delete(opId)
+  }
+
   function clearOperation(opId: string) {
     cleanup(opId)
+    removeTerminalToast(opId)
     const newMap = new Map(operations.value)
     newMap.delete(opId)
     operations.value = newMap
@@ -780,6 +903,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     getOperation,
     startOperation,
     retryPaymentAuthentication,
+    retryOperation,
+    pollPendingOperations,
     clearOperation
   }
 })

@@ -159,6 +159,28 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     )
   })
 
+  it('locks confirmation and promotion while polling recovery is required', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        quoteIsCurrent: true,
+        pollRecoveryRequired: true
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.applyPromoCode'
+      })
+    ).toBeDisabled()
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.confirmUpgradeCta'
+      })
+    ).toBeDisabled()
+  })
+
   it('renders a scheduled downgrade with the after-that block and no charge', () => {
     render(SubscriptionTransitionPreviewWorkspace, {
       props: {
