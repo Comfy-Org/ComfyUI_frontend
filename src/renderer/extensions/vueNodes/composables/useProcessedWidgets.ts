@@ -21,6 +21,7 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
+  shouldHideLinkedWidgetContent,
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
@@ -66,6 +67,7 @@ interface ProcessedWidget {
   hasError: boolean
   hidden: boolean
   id?: string
+  linkedDisplay?: 'control' | 'expanding' | 'switch'
   widgetId?: WidgetId
   name: string
   renderKey: string
@@ -77,6 +79,31 @@ interface ProcessedWidget {
   visible: boolean
   vueComponent: Component
   slotMetadata?: WidgetSlotMetadata
+}
+
+function getLinkedDisplay(
+  widget: SafeWidgetData,
+  options: IWidgetOptions
+): ProcessedWidget['linkedDisplay'] {
+  if (
+    !widget.slotMetadata?.linked ||
+    !shouldHideLinkedWidgetContent(widget.type)
+  ) {
+    return undefined
+  }
+
+  if (shouldExpand(widget.type)) return 'expanding'
+
+  const type = widget.type.toLowerCase()
+  if (
+    (type === 'boolean' || type === 'toggle') &&
+    options.on == null &&
+    options.off == null
+  ) {
+    return 'switch'
+  }
+
+  return 'control'
 }
 
 interface WidgetUiCallbacks {
@@ -330,7 +357,9 @@ export function computeProcessedWidgets({
 
     const value = widgetState?.value as WidgetValue
 
-    const isDisabled = slotMetadata?.linked || widgetState?.disabled
+    const linkedDisplay = getLinkedDisplay(widget, mergedOptions)
+    const isDisabled =
+      (!linkedDisplay && slotMetadata?.linked) || widgetState?.disabled
     const widgetOptions = isDisabled
       ? { ...mergedOptions, disabled: true }
       : mergedOptions
@@ -380,11 +409,17 @@ export function computeProcessedWidgets({
       isTooltipValueType(widget.type) && String(value).length > 10
         ? String(value)
         : undefined
-    const tooltipConfig = ui.getTooltipConfig(widget, valueTooltip)
+    const tooltipConfig = linkedDisplay
+      ? { disabled: true }
+      : ui.getTooltipConfig(widget, valueTooltip)
     const handleContextMenu = (e: PointerEvent) => {
       e.preventDefault()
       e.stopPropagation()
       if (nodeId !== undefined) ui.handleNodeRightClick(e, nodeId)
+      if (linkedDisplay) {
+        showNodeOptions(e)
+        return
+      }
       showNodeOptions(
         e,
         widget.name,
@@ -407,6 +442,7 @@ export function computeProcessedWidgets({
         missingMediaStore
       ),
       hidden: mergedOptions.hidden ?? false,
+      linkedDisplay,
       widgetId: widget.widgetId,
       name: widget.name,
       renderKey,

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getComponent,
   isEssential,
+  shouldHideLinkedWidgetContent,
   shouldRenderAsVue,
   FOR_TESTING
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
@@ -138,6 +139,57 @@ describe('widgetRegistry', () => {
         options: { canvasOnly: false }
       }
       expect(shouldRenderAsVue(widget)).toBe(true)
+    })
+  })
+
+  describe('shouldHideLinkedWidgetContent', () => {
+    it.for([
+      'text',
+      'string',
+      'STRING',
+      'int',
+      'INT',
+      'float',
+      'FLOAT',
+      'number',
+      'slider',
+      'boolean',
+      'BOOLEAN',
+      'toggle',
+      'combo',
+      'COMBO',
+      'color',
+      'COLOR',
+      'textarea',
+      'TEXTAREA',
+      'multiline',
+      'customtext'
+    ])('includes the standard %s widget type', (type) => {
+      expect(shouldHideLinkedWidgetContent(type)).toBe(true)
+    })
+
+    it.for([
+      'range',
+      'curve',
+      'imagecrop',
+      'boundingbox',
+      'bounds',
+      'gradientslider',
+      'asset',
+      'galleria',
+      'colors',
+      'chart',
+      'audiorecord',
+      'markdown',
+      'load3D',
+      'painter',
+      'imagecompare',
+      'boundingboxes',
+      'videoedit',
+      'legacy',
+      'custom_widget'
+    ])('excludes the special or fallback %s widget type', (type) => {
+      expect(shouldHideLinkedWidgetContent(type)).toBe(false)
     })
   })
 

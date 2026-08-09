@@ -27,9 +27,12 @@ import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 const GRAPH_ID = 'graph-test'
 const NODE_ID = toNodeId(1)
 
-const { executionIdToNodeLocatorId } = vi.hoisted(() => ({
-  executionIdToNodeLocatorId: vi.fn()
+const { executionIdToNodeLocatorId, showNodeOptions } = vi.hoisted(() => ({
+  executionIdToNodeLocatorId: vi.fn(),
+  showNodeOptions: vi.fn()
 }))
+
+vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({ showNodeOptions }))
 
 vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
   const actual = await importActual<typeof GraphTraversalUtil>()
@@ -70,7 +73,7 @@ const noopUi = {
   handleNodeRightClick: () => {}
 }
 
-function processWidgets(widgets: SafeWidgetData[]) {
+function processWidgets(widgets: SafeWidgetData[], ui: typeof noopUi = noopUi) {
   return computeProcessedWidgets({
     nodeData: {
       id: NODE_ID,
@@ -87,7 +90,7 @@ function processWidgets(widgets: SafeWidgetData[]) {
     showAdvanced: false,
     isGraphReady: false,
     rootGraph: null,
-    ui: noopUi
+    ui
   })
 }
 
@@ -734,6 +737,172 @@ describe('computeProcessedWidgets borderStyle', () => {
     })
 
     expect(result[0].id).toBeUndefined()
+  })
+})
+
+describe('computeProcessedWidgets linked presentation', () => {
+  const linkedSlot = {
+    index: 0,
+    linked: true,
+    originNodeId: toNodeId(2),
+    originOutputName: 'value',
+    type: 'STRING'
+  }
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    showNodeOptions.mockClear()
+  })
+
+  it('hides a linked standard value without applying a second disabled appearance', () => {
+    const id = widgetId(GRAPH_ID, NODE_ID, 'prompt')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'string',
+      value: 'stale local prompt',
+      options: {}
+    })
+    const widget = createMockWidget({
+      widgetId: id,
+      nodeId: NODE_ID,
+      name: 'prompt',
+      type: 'string',
+      slotMetadata: linkedSlot
+    })
+
+    const [linked] = processWidgets([widget])
+
+    expect(linked.linkedDisplay).toBe('control')
+    expect(linked.value).toBe('stale local prompt')
+    expect(linked.simplified.options?.disabled).toBeUndefined()
+    expect(linked.tooltipConfig.disabled).toBe(true)
+    expect(linked.simplified.linkedUpstream).toEqual({
+      nodeId: toNodeId(2),
+      outputName: 'value'
+    })
+  })
+
+  it('restores the standard widget state after disconnect', () => {
+    const id = widgetId(GRAPH_ID, NODE_ID, 'prompt')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'string',
+      value: 'local prompt',
+      options: {}
+    })
+    const widget = createMockWidget({
+      widgetId: id,
+      nodeId: NODE_ID,
+      name: 'prompt',
+      type: 'string',
+      slotMetadata: linkedSlot
+    })
+
+    expect(processWidgets([widget])[0].linkedDisplay).toBe('control')
+
+    const [unlinked] = processWidgets([
+      {
+        ...widget,
+        slotMetadata: { ...linkedSlot, linked: false }
+      }
+    ])
+
+    expect(unlinked.linkedDisplay).toBeUndefined()
+    expect(unlinked.value).toBe('local prompt')
+    expect(unlinked.simplified.options?.disabled).toBeUndefined()
+    expect(unlinked.simplified.linkedUpstream).toBeUndefined()
+    expect(unlinked.tooltipConfig.disabled).toBeUndefined()
+  })
+
+  it('distinguishes unlabeled switches from labeled toggle groups', () => {
+    const switchWidget = createMockWidget({
+      name: 'enabled',
+      type: 'boolean',
+      slotMetadata: { ...linkedSlot, type: 'BOOLEAN' }
+    })
+    const toggleId = widgetId(GRAPH_ID, NODE_ID, 'mode')
+    useWidgetValueStore().registerWidget(toggleId, {
+      type: 'boolean',
+      value: false,
+      options: { off: 'Disabled', on: 'Enabled' }
+    })
+    const toggleWidget = createMockWidget({
+      widgetId: toggleId,
+      nodeId: NODE_ID,
+      name: 'mode',
+      type: 'toggle',
+      slotMetadata: { ...linkedSlot, type: 'BOOLEAN' }
+    })
+
+    expect(processWidgets([switchWidget])[0].linkedDisplay).toBe('switch')
+    expect(processWidgets([toggleWidget])[0].linkedDisplay).toBe('control')
+  })
+
+  it.for(['textarea', 'TEXTAREA', 'multiline', 'customtext'])(
+    'uses the expanding linked display for %s',
+    (type) => {
+      const widget = createMockWidget({
+        name: 'text',
+        type,
+        slotMetadata: linkedSlot
+      })
+
+      expect(processWidgets([widget])[0].linkedDisplay).toBe('expanding')
+    }
+  )
+
+  it.for(['range', 'curve', 'imagecrop', 'boundingbox', 'gradientslider'])(
+    'keeps the upstream-relaying %s widget rendered',
+    (type) => {
+      const widget = createMockWidget({
+        type,
+        slotMetadata: linkedSlot
+      })
+
+      const [processed] = processWidgets([widget])
+
+      expect(processed.linkedDisplay).toBeUndefined()
+      expect(processed.simplified.options?.disabled).toBe(true)
+      expect(processed.simplified.linkedUpstream).toEqual({
+        nodeId: toNodeId(2),
+        outputName: 'value'
+      })
+    }
+  )
+
+  it('opens only node actions for a hidden linked widget', () => {
+    const handleNodeRightClick = vi.fn()
+    const event = fromAny<PointerEvent, unknown>({
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn()
+    })
+    const widget = createMockWidget({
+      name: 'prompt',
+      type: 'text',
+      slotMetadata: linkedSlot
+    })
+
+    processWidgets([widget], {
+      ...noopUi,
+      handleNodeRightClick
+    })[0].handleContextMenu(event)
+
+    expect(handleNodeRightClick).toHaveBeenCalledWith(event, NODE_ID)
+    expect(showNodeOptions).toHaveBeenCalledWith(event)
+  })
+
+  it('retains widget actions when the widget is unlinked', () => {
+    const event = fromAny<PointerEvent, unknown>({
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn()
+    })
+    const widget = createMockWidget({
+      name: 'prompt',
+      nodeId: NODE_ID,
+      type: 'text'
+    })
+
+    processWidgets([widget])[0].handleContextMenu(event)
+
+    expect(showNodeOptions).toHaveBeenCalledWith(event, 'prompt', NODE_ID)
   })
 })
 

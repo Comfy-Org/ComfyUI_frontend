@@ -306,6 +306,26 @@ export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
   return !widget.options?.canvasOnly && !!widget.type
 }
 
+const LINKED_CONTENT_HIDDEN_TYPES = new Set([
+  'text',
+  'string',
+  'int',
+  'float',
+  'number',
+  'slider',
+  'boolean',
+  'toggle',
+  'combo',
+  'color',
+  'textarea',
+  'multiline',
+  'customtext'
+])
+
+export function shouldHideLinkedWidgetContent(type: string): boolean {
+  return LINKED_CONTENT_HIDDEN_TYPES.has(type.toLowerCase())
+}
+
 const EXPANDING_TYPES = [
   'textarea',
   'markdown',

@@ -1,7 +1,7 @@
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -36,7 +36,7 @@ const WidgetStub = {
   name: 'WidgetStub',
   props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
   template:
-    '<div class="widget-stub" :data-node-type="nodeType">{{ nodeType }}</div>'
+    '<button class="widget-stub" :data-node-type="nodeType">{{ modelValue }}</button>'
 }
 
 vi.mock(
@@ -351,5 +351,100 @@ describe('NodeWidgets', () => {
     )
 
     expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
+  })
+
+  it('keeps linked content mounted but inert and hidden from accessibility', () => {
+    const linkedWidgetId = widgetId(GRAPH_ID, toNodeId('test_node'), 'prompt')
+    const nodeData = createMockNodeData('TestNode', [
+      createMockWidget({
+        widgetId: linkedWidgetId,
+        name: 'prompt',
+        type: 'text',
+        slotMetadata: {
+          index: 0,
+          linked: true,
+          type: 'STRING'
+        }
+      })
+    ])
+
+    const { container } = renderComponent(nodeData, () => {
+      useWidgetValueStore().registerWidget(linkedWidgetId, {
+        type: 'text',
+        value: 'stale local prompt',
+        options: {}
+      })
+    })
+
+    const linkedContent = screen.getByTestId('linked-widget-content')
+    expect(linkedContent).toHaveAttribute('inert')
+    expect(linkedContent).toHaveAttribute('aria-hidden', 'true')
+    expect(container.querySelector('.widget-stub')).not.toBeNull()
+    expect(within(linkedContent).queryByRole('button')).toBeNull()
+    expect(
+      screen.getByRole('img', { name: 'prompt: Linked input' })
+    ).toBeVisible()
+    expect(
+      screen.getByTestId('linked-widget-placeholder')
+    ).not.toHaveTextContent('stale local prompt')
+  })
+
+  it('places indicators on unlabeled switches and full labeled controls', () => {
+    const labeledWidgetId = widgetId(GRAPH_ID, toNodeId('test_node'), 'labeled')
+    const nodeData = createMockNodeData('TestNode', [
+      createMockWidget({
+        name: 'unlabeled',
+        type: 'boolean',
+        slotMetadata: {
+          index: 0,
+          linked: true,
+          type: 'BOOLEAN'
+        }
+      }),
+      createMockWidget({
+        widgetId: labeledWidgetId,
+        name: 'labeled',
+        type: 'toggle',
+        slotMetadata: {
+          index: 1,
+          linked: true,
+          type: 'BOOLEAN'
+        }
+      })
+    ])
+
+    renderComponent(nodeData, () => {
+      useWidgetValueStore().registerWidget(labeledWidgetId, {
+        type: 'toggle',
+        value: false,
+        options: { off: 'No', on: 'Yes' }
+      })
+    })
+
+    const placeholders = screen.getAllByTestId('linked-widget-placeholder')
+    expect(placeholders[0]).toHaveAttribute('data-linked-display', 'switch')
+    expect(placeholders[1]).toHaveAttribute('data-linked-display', 'control')
+  })
+
+  it('keeps the expanding textarea component mounted while linked', () => {
+    const nodeData = createMockNodeData('CLIPTextEncode', [
+      createMockWidget({
+        name: 'text',
+        type: 'customtext',
+        slotMetadata: {
+          index: 1,
+          linked: true,
+          type: 'STRING'
+        }
+      })
+    ])
+
+    const { container } = renderComponent(nodeData)
+
+    expect(container.querySelector('.widget-stub')).not.toBeNull()
+    expect(screen.getByTestId('linked-widget-placeholder')).toHaveAttribute(
+      'data-linked-display',
+      'expanding'
+    )
   })
 })
