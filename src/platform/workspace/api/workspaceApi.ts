@@ -1,6 +1,12 @@
 import type {
+  BillingOpStatusResponse,
   BillingStatusResponse as GeneratedBillingStatusResponse,
-  ChurnkeyAuthResponse
+  ChurnkeyAuthResponse,
+  PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
+  PreviewSubscribeResponse,
+  SavedPaymentMethod,
+  SubscribeRequest,
+  SubscribeResponse
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
 
@@ -153,40 +159,14 @@ interface BillingPlansResponse {
   team_credit_stops?: TeamCreditStops
 }
 
-type SubscriptionTransitionType =
-  | 'new_subscription'
-  | 'upgrade'
-  | 'downgrade'
-  | 'duration_change'
-
-interface PreviewSubscribeRequest {
-  plan_slug: string
-  team_credit_stop_id?: string
+type PreviewSubscribeRequest = GeneratedPreviewSubscribeRequest & {
   billing_cycle?: SubscribeBillingCycle
-  promotion_code?: string
 }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 
-interface SubscribeRequest {
-  plan_slug: string
-  idempotency_key?: string
-  confirmation_token?: string
-  promotion_code?: string
-  quote_id?: string
-  quote_version?: number
-  saved_payment_method_id?: string
-  return_url?: string
-  cancel_url?: string
-  /** Required for the per-credit Team plan; selects the slider stop. */
-  team_credit_stop_id?: string
-  billing_cycle?: SubscribeBillingCycle
-  /** Required to change plans while the current subscription is cancelled; server rejects the change without it. */
-  confirm_reactivation?: boolean
-  proration_at?: string
-}
-
 export interface SubscribeOptions {
+  idempotencyKey?: string
   confirmationToken?: string
   promotionCode?: string
   quoteId?: string
@@ -204,15 +184,6 @@ export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
   promotionCode?: string
-}
-
-type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
-
-export interface SubscribeResponse {
-  billing_op_id: string
-  status: SubscribeStatus
-  effective_at?: string
-  payment_method_url?: string
 }
 
 interface CancelSubscriptionRequest {
@@ -242,57 +213,11 @@ interface PaymentPortalResponse {
   url: string
 }
 
-interface PreviewPlanInfo {
-  slug: string
-  // The billing preview contract includes the workspace-level Team tier even
-  // though the registry subscription tier used by the personal plan catalog
-  // does not.
-  tier: SubscriptionTier | 'TEAM'
-  duration: SubscriptionDuration
-  price_cents: number
-  credits_cents: number
-  seat_summary: PlanSeatSummary
-  period_start?: string
-  period_end?: string
-}
-
-export interface PreviewSubscribeResponse {
-  allowed: boolean
-  reason?: string
-  transition_type: SubscriptionTransitionType
-  effective_at: string
-  is_immediate: boolean
-  cost_today_cents: number
-  cost_next_period_cents: number
-  credits_today_cents: number
-  credits_next_period_cents: number
-  current_plan?: PreviewPlanInfo
-  new_plan: PreviewPlanInfo
-  proration_at?: string
-  quote_id?: string
-  quote_version?: number
-  promotion_code?: string
-  discounts?: SubscriptionDiscount[]
-  amount_due_cents?: number
-  currency?: string
-  renewal_amount_cents?: number
-  renewal_at?: string
-  payment_method_configuration_id?: string
-}
-
-interface SubscriptionDiscount {
-  kind: 'plan' | 'promotion'
-  code: string
-  name?: string
-  amount_off_cents?: number
-}
-
-export interface SavedPaymentMethod {
-  type: 'card' | 'alipay'
-  brand?: string
-  last4?: string
-  id: string
-  is_default: boolean
+export type {
+  BillingOpStatusResponse,
+  PreviewSubscribeResponse,
+  SavedPaymentMethod,
+  SubscribeResponse
 }
 
 export type BillingSubscriptionStatus =
@@ -361,29 +286,9 @@ export interface CreateTopupResponse {
   amount_cents: number
 }
 
-type BillingOpStatus =
-  | 'pending'
-  | 'succeeded'
-  | 'failed'
-  | 'reconciliation_needed'
-
-export type BillingAuthenticationState =
-  | 'requires_action'
-  | 'processing'
-  | 'failed_retryable'
-  | 'succeeded'
-  | 'reconciliation_needed'
-
-export interface BillingOpStatusResponse {
-  id: string
-  status: BillingOpStatus
-  error_message?: string
-  authentication_state?: BillingAuthenticationState
-  started_at: string
-  completed_at?: string
-  action_url?: string
-  payment_intent_client_secret?: string
-}
+export type BillingAuthenticationState = NonNullable<
+  BillingOpStatusResponse['authentication_state']
+>
 
 interface BillingEvent {
   event_type: string
@@ -775,6 +680,7 @@ export const workspaceApi = {
         api.apiURL('/billing/subscribe'),
         {
           plan_slug: planSlug,
+          idempotency_key: options.idempotencyKey,
           confirmation_token: options.confirmationToken,
           promotion_code: options.promotionCode,
           quote_id: options.quoteId,

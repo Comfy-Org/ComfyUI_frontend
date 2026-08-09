@@ -121,6 +121,32 @@ describe('UnifiedStripePaymentSelector', () => {
     expect(emitted().confirm).toEqual([['ctoken_1']])
   })
 
+  it('creates one confirmation token for rapid click and Enter submits', async () => {
+    let resolveSubmit!: (result: object) => void
+    stripeMocks.submit.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSubmit = resolve
+      })
+    )
+    const user = userEvent.setup()
+    const { emitted } = renderSelector()
+
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    const button = screen.getByRole('button', { name: 'Pay and subscribe' })
+    await Promise.all([
+      user.click(button),
+      user.keyboard('{Enter}'),
+      user.keyboard('{Enter}')
+    ])
+
+    expect(stripeMocks.submit).toHaveBeenCalledTimes(1)
+    resolveSubmit({})
+    await waitFor(() => {
+      expect(stripeMocks.createConfirmationToken).toHaveBeenCalledTimes(1)
+    })
+    expect(emitted().confirm).toEqual([['ctoken_1']])
+  })
+
   it('keeps the customer in the form when Stripe rejects its contents', async () => {
     const user = userEvent.setup()
     stripeMocks.submit.mockResolvedValue({

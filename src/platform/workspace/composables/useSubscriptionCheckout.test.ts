@@ -486,6 +486,46 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('discards a promo quote invalidated while its request is in flight', async () => {
+      let resolvePromotion!: (
+        preview: Partial<PreviewSubscribeResponse>
+      ) => void
+      const checkout = await setup()
+      mockPreviewSubscribe
+        .mockResolvedValueOnce({
+          allowed: true,
+          transition_type: 'new_subscription',
+          quote_id: 'quote_original',
+          quote_version: 1
+        })
+        .mockImplementationOnce(
+          () =>
+            new Promise<Partial<PreviewSubscribeResponse>>((resolve) => {
+              resolvePromotion = resolve
+            })
+        )
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      const apply = checkout.applyPromotionCode('SAVE20')
+      checkout.invalidateQuote()
+      resolvePromotion({
+        allowed: true,
+        transition_type: 'new_subscription',
+        promotion_code: 'SAVE20',
+        quote_id: 'quote_stale',
+        quote_version: 2
+      })
+
+      expect(await apply).toBe(false)
+      expect(checkout.previewData.value?.quote_id).toBe('quote_original')
+      expect(checkout.quoteIsCurrent.value).toBe(false)
+      expect(checkout.isApplyingPromotionCode.value).toBe(false)
+      expect(mockPreviewSubscribe).toHaveBeenCalledTimes(2)
+    })
+
     it('omits the auto-selected saved method on a plan change', async () => {
       const checkout = await setup()
       mockListSavedPaymentMethods.mockResolvedValueOnce([
@@ -1473,13 +1513,17 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleTeamSubscribe()
 
-      expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_monthly', {
-        teamCreditStopId: 'team_700',
-        billingCycle: 'monthly',
-        returnUrl: 'https://app.test/subscribe',
-        cancelUrl: 'https://platform.comfy.org/payment/failed',
-        confirmReactivation: false
-      })
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        expect.objectContaining({
+          idempotencyKey: expect.any(String),
+          teamCreditStopId: 'team_700',
+          billingCycle: 'monthly',
+          returnUrl: 'https://app.test/subscribe',
+          cancelUrl: 'https://platform.comfy.org/payment/failed',
+          confirmReactivation: false
+        })
+      )
       expect(checkout.checkoutStep.value).toBe('success')
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -2367,6 +2411,34 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleAddCreditCard', () => {
+    it('submits only once when confirmation is invoked rapidly', async () => {
+      let resolveSubscribe!: (response: {
+        status: 'subscribed'
+        billing_op_id: string
+      }) => void
+      mockSubscribe.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSubscribe = resolve
+        })
+      )
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+
+      const first = checkout.handleSubscriptionPayment('ctoken_1')
+      const second = checkout.handleSubscriptionPayment('ctoken_2')
+      await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledTimes(1))
+
+      resolveSubscribe({ status: 'subscribed', billing_op_id: 'op-1' })
+      await Promise.all([first, second])
+
+      expect(mockSubscribe).toHaveBeenCalledTimes(1)
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({ confirmationToken: 'ctoken_1' })
+      )
+    })
+
     it('shows existing success immediately without owning post-response reconciliation', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
@@ -2380,11 +2452,15 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleAddCreditCard()
 
-      expect(mockSubscribe).toHaveBeenCalledWith('standard-yearly', {
-        returnUrl: 'https://app.test/subscribe',
-        cancelUrl: 'https://platform.comfy.org/payment/failed',
-        confirmReactivation: false
-      })
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({
+          idempotencyKey: expect.any(String),
+          returnUrl: 'https://app.test/subscribe',
+          cancelUrl: 'https://platform.comfy.org/payment/failed',
+          confirmReactivation: false
+        })
+      )
       expect(checkout.checkoutStep.value).toBe('success')
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',

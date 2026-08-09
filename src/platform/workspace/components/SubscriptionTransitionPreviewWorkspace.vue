@@ -248,6 +248,16 @@
       </div>
 
       <Button
+        v-if="pollRecoveryRequired"
+        variant="inverted"
+        size="lg"
+        class="w-full rounded-lg"
+        @click="$emit('retryPolling')"
+      >
+        {{ $t('billingOperation.retryStatusCheck') }}
+      </Button>
+
+      <Button
         v-if="
           (authenticationState === 'failed_retryable' ||
             authenticationState === 'requires_action') &&
@@ -269,7 +279,7 @@
       </Button>
 
       <Button
-        v-if="actionUrl"
+        v-if="actionUrl && !canRetryAuthentication"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -327,6 +337,7 @@ const {
   canRetryAuthentication = false,
   isAuthenticating = false,
   reconciliationOperationId = null,
+  pollRecoveryRequired = false,
   quoteIsCurrent = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
@@ -343,6 +354,7 @@ const {
   canRetryAuthentication?: boolean
   isAuthenticating?: boolean
   reconciliationOperationId?: string | null
+  pollRecoveryRequired?: boolean
   quoteIsCurrent?: boolean
 }>()
 
@@ -354,6 +366,7 @@ defineEmits<{
   applyPromotionCode: [code: string]
   invalidateQuote: []
   retryAuthentication: []
+  retryPolling: []
 }>()
 
 const { t, n } = useI18n()

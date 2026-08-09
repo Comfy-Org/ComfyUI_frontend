@@ -489,7 +489,8 @@ describe('billingOperationStore', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'billingOperation.subscriptionFailed',
-        detail: 'billingOperation.subscriptionFailedDetail'
+        detail: 'billingOperation.subscriptionFailedDetail',
+        life: 7000
       })
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
@@ -586,7 +587,8 @@ describe('billingOperationStore', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'billingOperation.topupFailed',
-        detail: undefined
+        detail: undefined,
+        life: 7000
       })
     })
 
@@ -608,7 +610,8 @@ describe('billingOperationStore', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'billingOperation.topupFailed',
-        detail: errorMessage
+        detail: errorMessage,
+        life: 7000
       })
     })
   })
@@ -1126,7 +1129,8 @@ describe('billingOperationStore', () => {
 
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
-        summary: 'billingOperation.subscriptionTimeout'
+        summary: 'billingOperation.subscriptionTimeout',
+        life: 7000
       })
     })
 
@@ -1335,7 +1339,8 @@ describe('billingOperationStore', () => {
 
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
-        summary: 'billingOperation.topupTimeout'
+        summary: 'billingOperation.topupTimeout',
+        life: 7000
       })
     })
 
@@ -1569,6 +1574,64 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(2250)
       expect(store.getOperation('op-1')?.status).toBe('succeeded')
     })
+
+    it('stops after three failures and can recover with an explicit retry', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockRejectedValue(
+        new Error('Network error')
+      )
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1500)
+      await vi.advanceTimersByTimeAsync(2250)
+
+      expect((await terminal).status).toBe('poll_failed')
+      expect(store.getOperation('op-1')).toMatchObject({
+        status: 'poll_failed',
+        authenticationState: null,
+        actionUrl: null,
+        canRetryAuthentication: false,
+        isAuthenticating: false
+      })
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(3)
+
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      const retry = store.retryOperation('op-1')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect((await retry).status).toBe('succeeded')
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(4)
+    })
+
+    it('polls immediately when a hosted challenge returns to focus', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        action_url: 'https://verify.example/action',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
+
+      const callsBeforeFocus = vi.mocked(workspaceApi.getBillingOpStatus).mock
+        .calls.length
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(
+        vi.mocked(workspaceApi.getBillingOpStatus).mock.calls.length
+      ).toBeGreaterThan(callsBeforeFocus)
+    })
   })
 
   describe('clearOperation', () => {
@@ -1590,6 +1653,23 @@ describe('billingOperationStore', () => {
 
       expect(store.operations.size).toBe(0)
       expect(store.getOperation('op-1')).toBeUndefined()
+    })
+
+    it('removes the operation-scoped terminal toast', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+      const terminalToast = mockToastAdd.mock.calls.at(-1)?.[0]
+
+      store.clearOperation('op-1')
+
+      expect(mockToastRemove).toHaveBeenCalledWith(terminalToast)
     })
   })
 

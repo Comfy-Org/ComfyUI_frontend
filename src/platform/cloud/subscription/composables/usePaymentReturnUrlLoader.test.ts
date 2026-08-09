@@ -5,7 +5,8 @@ import { usePaymentReturnUrlLoader } from './usePaymentReturnUrlLoader'
 const mocks = vi.hoisted(() => ({
   query: {} as Record<string, string>,
   replace: vi.fn().mockResolvedValue(undefined),
-  fetchStatus: vi.fn().mockResolvedValue(undefined)
+  fetchStatus: vi.fn().mockResolvedValue(undefined),
+  pollPendingOperations: vi.fn()
 }))
 
 vi.mock('vue-router', () => ({
@@ -15,6 +16,12 @@ vi.mock('vue-router', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({ fetchStatus: mocks.fetchStatus })
+}))
+
+vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
+  useBillingOperationStore: () => ({
+    pollPendingOperations: mocks.pollPendingOperations
+  })
 }))
 
 describe('usePaymentReturnUrlLoader', () => {
@@ -38,6 +45,10 @@ describe('usePaymentReturnUrlLoader', () => {
       query: { workspace: 'ws-1' }
     })
     expect(mocks.fetchStatus).toHaveBeenCalledOnce()
+    expect(mocks.pollPendingOperations).toHaveBeenCalledOnce()
+    expect(
+      mocks.pollPendingOperations.mock.invocationCallOrder[0]
+    ).toBeLessThan(mocks.fetchStatus.mock.invocationCallOrder[0])
   })
 
   it('does nothing on an ordinary page load', async () => {
