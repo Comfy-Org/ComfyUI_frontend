@@ -6,14 +6,18 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   ErrorResponse,
+  GetModelFoldersResponse,
   Plan,
   PreviewSubscribeResponse,
+  SavedPaymentMethod,
   SubscribeRequest,
   SubscribeResponse
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { zJobsListResponse } from '@/platform/remote/comfyui/jobs/jobTypes'
 
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -46,8 +50,8 @@ const STATUS = {
   billing_status: 'paid',
   has_funds: true,
   team_credit_stop: null,
-  billing_rail: 'legacy_stripe'
-} satisfies BillingStatusResponse & { billing_rail: 'legacy_stripe' }
+  billing_rail: 'stripe'
+} satisfies BillingStatusResponse
 
 const BALANCE = {
   amount_micros: 0,
@@ -55,6 +59,16 @@ const BALANCE = {
 } satisfies BillingBalanceResponse
 
 const PLANS = { plans: [PLAN] } satisfies BillingPlansResponse
+const MODEL_FOLDERS = [] satisfies GetModelFoldersResponse
+const SAVED_PAYMENT_METHODS = [
+  {
+    id: 'pm_saved_1',
+    type: 'card',
+    brand: 'visa',
+    last4: '4242',
+    is_default: true
+  }
+] satisfies SavedPaymentMethod[]
 
 function quote(code?: string, version = 1): PreviewSubscribeResponse {
   return {
@@ -136,6 +150,19 @@ export class BillingCheckoutStateMachineHelper {
     await this.page.route('**/api/queue', (route) =>
       route.fulfill(jsonRoute({ queue_running: [], queue_pending: [] }))
     )
+    await this.page.route('**/api/jobs?*', (route) =>
+      route.fulfill(
+        jsonRoute(
+          zJobsListResponse.parse({
+            jobs: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        )
+      )
+    )
+    await this.page.route('**/api/experiment/models', (route) =>
+      route.fulfill(jsonRoute(MODEL_FOLDERS))
+    )
     await mockBilling(this.page)
     await this.page.route('**/api/billing/status', (route) =>
       route.fulfill(jsonRoute(STATUS))
@@ -146,11 +173,15 @@ export class BillingCheckoutStateMachineHelper {
     await this.page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(PLANS))
     )
+    await this.page.route('**/api/billing/payment-methods**', (route) =>
+      route.fulfill(jsonRoute(SAVED_PAYMENT_METHODS))
+    )
     await bootCloud(this.page)
   }
 
   async openCheckout() {
     await this.page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
+    await waitForCloudApp(this.page)
     await expect(
       this.page.getByRole('heading', { name: 'Confirm your payment' })
     ).toBeVisible()
@@ -197,8 +228,10 @@ export class BillingCheckoutStateMachineHelper {
   }
 
   async installStripeBoundary() {
+    await this.page.route('**/api/billing/payment-methods**', (route) =>
+      route.fulfill(jsonRoute([] satisfies SavedPaymentMethod[]))
+    )
     await this.page.addInitScript(() => {
-      const root = document.documentElement
       Object.defineProperty(window, 'Stripe', {
         configurable: true,
         value: () => ({
@@ -211,6 +244,7 @@ export class BillingCheckoutStateMachineHelper {
             submit: async () => ({})
           }),
           createConfirmationToken: async () => {
+            const root = document.documentElement
             const count = Number(root.dataset.confirmationTokenCount ?? '0') + 1
             root.dataset.confirmationTokenCount = String(count)
             return { confirmationToken: { id: `ct_mock_${count}` } }

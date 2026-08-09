@@ -287,7 +287,7 @@
           previewData?.payment_method_configuration_id ?? ''
         "
         :is-loading
-        :verification-pending="Boolean(actionUrl) || verificationRecoveryActive"
+        :verification-pending="Boolean(actionUrl) || interactionLocked"
         :can-submit="quoteIsCurrent"
         @confirm="confirmPayment"
         @submitting-change="isCreatingConfirmationToken = $event"
@@ -299,7 +299,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="!quoteIsCurrent || verificationRecoveryActive"
+        :disabled="!quoteIsCurrent || interactionLocked"
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.payAndSubscribe') }}
@@ -311,7 +311,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="!quoteIsCurrent || verificationRecoveryActive"
+        :disabled="!quoteIsCurrent || interactionLocked"
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}

@@ -296,6 +296,30 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(open).not.toHaveBeenCalled()
   })
 
+  it('locks every payment action while polling recovery is required', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: previewFixture('MONTHLY', 3500),
+        quoteIsCurrent: true,
+        pollRecoveryRequired: true,
+        savedMethods: [{ type: 'alipay', id: 'pm_alipay', is_default: true }]
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.payAndSubscribe'
+      })
+    ).toBeDisabled()
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.applyPromoCode'
+      })
+    ).toBeDisabled()
+  })
+
   it('opens verification only from its button without exposing the URL', async () => {
     const actionUrl = 'https://verify.example/sensitive-token'
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)

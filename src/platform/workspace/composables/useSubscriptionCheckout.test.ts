@@ -153,6 +153,8 @@ const {
   mockToastAdd,
   mockStartOperation,
   mockRetryPaymentAuthentication,
+  mockRetryOperation,
+  mockClearOperation,
   mockGetOperation,
   mockSubscriptionActionOperation,
   mockListSavedPaymentMethods,
@@ -179,12 +181,14 @@ const {
   mockToastAdd: vi.fn(),
   mockStartOperation: vi.fn(),
   mockRetryPaymentAuthentication: vi.fn(),
+  mockRetryOperation: vi.fn(),
+  mockClearOperation: vi.fn(),
   mockGetOperation: vi.fn(),
   mockSubscriptionActionOperation: {
     value: undefined as
       | {
           opId?: string
-          status: 'pending'
+          status: 'pending' | 'failed' | 'poll_failed' | 'reconciliation_needed'
           workspaceId: string
           actionUrl?: string
           authenticationState?: 'failed_retryable'
@@ -268,6 +272,8 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     startOperation: mockStartOperation,
     retryPaymentAuthentication: mockRetryPaymentAuthentication,
+    retryOperation: mockRetryOperation,
+    clearOperation: mockClearOperation,
     getOperation: mockGetOperation,
     get subscriptionActionOperation() {
       return mockSubscriptionActionOperation.value
@@ -360,6 +366,8 @@ describe('useSubscriptionCheckout', () => {
     mockFetchStatus.mockReset()
     mockStartOperation.mockReset()
     mockRetryPaymentAuthentication.mockReset()
+    mockRetryOperation.mockReset()
+    mockClearOperation.mockReset()
     mockListSavedPaymentMethods.mockReset()
     mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
@@ -2411,6 +2419,45 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleAddCreditCard', () => {
+    it.for(['poll_failed', 'reconciliation_needed'] as const)(
+      'does not replace an unresolved %s operation',
+      async (status) => {
+        mockSubscriptionActionOperation.value = {
+          opId: 'op-unresolved',
+          status,
+          workspaceId: 'workspace-1'
+        }
+        const checkout = await setup()
+        checkout.selectedTierKey.value = 'standard'
+        checkout.selectedBillingCycle.value = 'yearly'
+
+        await checkout.handleSubscriptionPayment('ctoken_1')
+
+        expect(mockSubscribe).not.toHaveBeenCalled()
+        expect(mockClearOperation).not.toHaveBeenCalled()
+      }
+    )
+
+    it('reuses the attempt idempotency key after an ambiguous request failure', async () => {
+      mockSubscribe
+        .mockRejectedValueOnce(new Error('Connection lost'))
+        .mockResolvedValueOnce({
+          status: 'subscribed',
+          billing_op_id: 'op-replayed'
+        })
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+
+      await checkout.handleSubscriptionPayment('ctoken_1')
+      await checkout.handleSubscriptionPayment('ctoken_2')
+
+      expect(mockSubscribe).toHaveBeenCalledTimes(2)
+      expect(mockSubscribe.mock.calls[0][1].idempotencyKey).toBe(
+        mockSubscribe.mock.calls[1][1].idempotencyKey
+      )
+    })
+
     it('submits only once when confirmation is invoked rapidly', async () => {
       let resolveSubscribe!: (response: {
         status: 'subscribed'

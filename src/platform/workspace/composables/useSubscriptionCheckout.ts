@@ -28,6 +28,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
+import { createUuidv4 } from '@/utils/uuid'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -134,6 +135,7 @@ export function useSubscriptionCheckout(
   let teamPreviewRequestId = 0
   let promotionPreviewRequestId = 0
   let checkoutMutationLocked = false
+  let checkoutIdempotencyKey = createUuidv4()
   let refreshStatusOnFocus = false
   useEventListener(window, 'focus', () => {
     if (!refreshStatusOnFocus) return
@@ -261,13 +263,23 @@ export function useSubscriptionCheckout(
   function invalidateQuote(): void {
     promotionPreviewRequestId += 1
     quoteIsCurrent.value = false
+    checkoutIdempotencyKey = createUuidv4()
   }
 
   function beginCheckoutMutation(): boolean {
     if (checkoutMutationLocked || isApplyingPromotionCode.value) return false
     const operation = activeCheckoutOperation.value
-    if (operation?.status === 'pending') return false
+    if (
+      operation?.status === 'pending' ||
+      operation?.status === 'poll_failed' ||
+      operation?.status === 'reconciliation_needed'
+    ) {
+      return false
+    }
     if (operation) {
+      if (operation.status === 'failed') {
+        checkoutIdempotencyKey = createUuidv4()
+      }
       billingOperationStore.clearOperation(operation.opId)
       activeCheckoutOperationId.value = null
     }
@@ -615,6 +627,7 @@ export function useSubscriptionCheckout(
 
     const { tierKey, billingCycle } = payload
 
+    checkoutIdempotencyKey = createUuidv4()
     reactivationRequired.value = false
     isLoadingPreview.value = true
     loadingTier.value = tierKey
@@ -684,6 +697,7 @@ export function useSubscriptionCheckout(
     if (isSubscribing.value || !permissions.value.canManageSubscription) return
 
     const previewRequestId = ++teamPreviewRequestId
+    checkoutIdempotencyKey = createUuidv4()
     reactivationRequired.value = false
     selectedTeamCheckout.value = {
       stop: payload.stop,
@@ -816,7 +830,7 @@ export function useSubscriptionCheckout(
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
       const response = await subscribe(planSlug, {
-        idempotencyKey: crypto.randomUUID(),
+        idempotencyKey: checkoutIdempotencyKey,
         ...(confirmationToken && { confirmationToken }),
         ...(!confirmationToken &&
           subscribeAcceptsSavedMethod() &&
@@ -957,6 +971,7 @@ export function useSubscriptionCheckout(
         throw new Error(response?.reason || t('subscription.subscribeFailed'))
       }
       installPreview(response)
+      checkoutIdempotencyKey = createUuidv4()
       return true
     } catch (error) {
       if (requestId === promotionPreviewRequestId && showFailure) {
@@ -1146,7 +1161,7 @@ export function useSubscriptionCheckout(
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
       const response = await subscribe(planSlug, {
-        idempotencyKey: crypto.randomUUID(),
+        idempotencyKey: checkoutIdempotencyKey,
         ...(confirmationToken && { confirmationToken }),
         ...(!confirmationToken &&
           subscribeAcceptsSavedMethod() &&

@@ -39,14 +39,14 @@ test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
       await route.fulfill(jsonRoute(Checkout.quote(code, index)))
     })
     await billingCheckout.openCheckout()
-    const promo = page.getByPlaceholder('Enter promo code')
+    const promo = page.getByRole('textbox', { name: 'Promo code' })
 
     await promo.fill('STALE')
-    await page.getByRole('button', { name: 'Apply promo code' }).click()
+    await page.getByRole('button', { name: 'Apply', exact: true }).click()
     await promo.fill('SAVE20')
     releaseStale()
     await expect.poll(() => billingCheckout.previewRequests.length).toBe(2)
-    await page.getByRole('button', { name: 'Apply promo code' }).click()
+    await page.getByRole('button', { name: 'Apply', exact: true }).click()
 
     await expect.poll(() => billingCheckout.previewRequests.length).toBe(3)
     await expect(page.getByText('$268.80', { exact: true })).toBeVisible()

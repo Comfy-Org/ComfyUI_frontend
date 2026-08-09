@@ -201,6 +201,37 @@ describe('billingOperationStore', () => {
       expect(afterTerminal.status).toBe('succeeded')
     })
 
+    it('runs a requested follow-up after an in-flight poll settles', async () => {
+      let resolveFirstPoll!: (response: BillingOpStatusResponse) => void
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveFirstPoll = resolve
+            })
+        )
+        .mockResolvedValue({
+          id: 'op-1',
+          status: 'succeeded',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      store.pollPendingOperations()
+      resolveFirstPoll({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
+      expect((await terminal).status).toBe('succeeded')
+    })
+
     it('shows immediate processing toast for subscription operations', () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
@@ -617,6 +648,34 @@ describe('billingOperationStore', () => {
   })
 
   describe('payment authentication recovery', () => {
+    it('retains the hosted fallback when embedded authentication is unavailable', async () => {
+      const actionUrl = 'https://verify.example/acs'
+      mockLoadStripe.mockResolvedValue(null)
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-3ds',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret_current',
+        action_url: actionUrl,
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.subscriptionActionOperation).toMatchObject({
+        opId: 'op-3ds',
+        actionUrl,
+        canRetryAuthentication: false,
+        authenticationRequiredSeen: true
+      })
+      expect(mockHandleNextAction).not.toHaveBeenCalled()
+    })
+
     it('auto-runs requires_action once and keeps polling after challenge failure, without relaunching Stripe', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-3ds',
@@ -1575,7 +1634,7 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-1')?.status).toBe('succeeded')
     })
 
-    it('stops after three failures and can recover with an explicit retry', async () => {
+    it('stops after eight failures and can recover with an explicit retry', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockRejectedValue(
         new Error('Network error')
       )
@@ -1583,9 +1642,7 @@ describe('billingOperationStore', () => {
       const store = useBillingOperationStore()
       const terminal = store.startOperation('op-1', 'subscription')
 
-      await vi.advanceTimersByTimeAsync(0)
-      await vi.advanceTimersByTimeAsync(1500)
-      await vi.advanceTimersByTimeAsync(2250)
+      await vi.advanceTimersByTimeAsync(60_000)
 
       expect((await terminal).status).toBe('poll_failed')
       expect(store.getOperation('op-1')).toMatchObject({
@@ -1595,18 +1652,20 @@ describe('billingOperationStore', () => {
         canRetryAuthentication: false,
         isAuthenticating: false
       })
-      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(3)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(8)
 
+      const startedAt = store.getOperation('op-1')?.startedAt
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
         started_at: new Date().toISOString()
       })
       const retry = store.retryOperation('op-1')
+      expect(store.getOperation('op-1')?.startedAt).toBe(startedAt)
       await vi.advanceTimersByTimeAsync(0)
 
-      expect((await retry).status).toBe('succeeded')
-      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(4)
+      expect((await retry)?.status).toBe('succeeded')
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(9)
     })
 
     it('polls immediately when a hosted challenge returns to focus', async () => {

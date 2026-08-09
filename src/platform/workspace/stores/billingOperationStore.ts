@@ -28,7 +28,8 @@ const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
 const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
-const MAX_CONSECUTIVE_POLL_FAILURES = 3
+const MAX_CONSECUTIVE_POLL_FAILURES = 8
+const FORCED_POLL_THROTTLE_MS = 2000
 // Failure reason for a checkout the user replaced by picking a different plan
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
@@ -91,6 +92,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const paymentIntentClientSecrets = new Map<string, string>()
   const consecutivePollFailures = new Map<string, number>()
   const inFlightPolls = new Set<string>()
+  const repollRequested = new Set<string>()
+  const lastForcedPollAt = new Map<string, number>()
   const terminalToasts = new Map<string, ToastMessageOptions>()
 
   const hasPendingOperations = computed(() =>
@@ -207,12 +210,16 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   }
 
   async function poll(opId: string) {
-    if (inFlightPolls.has(opId)) return
+    if (inFlightPolls.has(opId)) {
+      repollRequested.add(opId)
+      return
+    }
     inFlightPolls.add(opId)
     try {
       await pollOnce(opId)
     } finally {
       inFlightPolls.delete(opId)
+      if (repollRequested.delete(opId)) void poll(opId)
     }
   }
 
@@ -282,12 +289,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function pollPendingOperations() {
     for (const operation of operations.value.values()) {
-      if (
-        operation.status !== 'pending' ||
-        operation.workspaceId !== workspaceStore.activeWorkspaceId
-      ) {
+      if (operation.workspaceId !== workspaceStore.activeWorkspaceId) continue
+      if (operation.status === 'poll_failed') {
+        void retryOperation(operation.opId)
         continue
       }
+      if (operation.status !== 'pending' || operation.isAuthenticating) {
+        continue
+      }
+      const lastPollAt = lastForcedPollAt.get(operation.opId) ?? 0
+      if (Date.now() - lastPollAt < FORCED_POLL_THROTTLE_MS) continue
+      lastForcedPollAt.set(operation.opId, Date.now())
       pausePolling(operation.opId)
       void poll(operation.opId)
     }
@@ -443,10 +455,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
     const stripe = publishableKey ? await loadStripe(publishableKey) : null
     if (!stripe) {
-      setAuthenticationRetry(
-        opId,
-        t('billingOperation.authenticationUnavailable')
-      )
+      updateOperation(opId, {
+        authenticationState: 'failed_retryable',
+        isAuthenticating: false,
+        canRetryAuthentication: false,
+        errorMessage: t('billingOperation.authenticationUnavailable')
+      })
       return false
     }
 
@@ -528,10 +542,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // customer to redo a step they just finished.
     if (
       actionUrl !== null &&
-      ((operation.authenticationState === 'processing' &&
-        autoHandledPaymentActions.has(opId)) ||
-        (Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) &&
-          paymentIntentClientSecrets.has(opId)))
+      operation.authenticationState === 'processing' &&
+      autoHandledPaymentActions.has(opId)
     ) {
       updateOperation(opId, { actionUrl: null })
       return
@@ -708,8 +720,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation) return
     const message = t('billingOperation.pollFailed')
+    const clientSecret = paymentIntentClientSecrets.get(opId)
+    const actionWasHandled = autoHandledPaymentActions.has(opId)
     updateOperationStatus(opId, 'poll_failed', message)
     cleanup(opId)
+    if (clientSecret) paymentIntentClientSecrets.set(opId, clientSecret)
+    if (actionWasHandled) autoHandledPaymentActions.add(opId)
     if (operation.type !== 'cancel') {
       const toastMessage: ToastMessageOptions = {
         severity: 'error',
@@ -723,16 +739,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     resolveTerminal(opId)
   }
 
-  function retryOperation(opId: string): Promise<BillingOperation> {
+  function retryOperation(opId: string): Promise<BillingOperation | undefined> {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'poll_failed') {
-      return Promise.resolve(operation!)
+      return Promise.resolve(operation)
     }
     removeTerminalToast(opId)
     updateOperation(opId, {
       status: 'pending',
       errorMessage: null,
-      startedAt: Date.now(),
       authenticationState: null,
       actionUrl: null,
       canRetryAuthentication: false,
@@ -740,6 +755,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     })
     intervals.set(opId, INITIAL_INTERVAL_MS)
     consecutivePollFailures.delete(opId)
+    lastForcedPollAt.delete(opId)
     const terminal = new Promise<BillingOperation>((resolve) => {
       terminalResolvers.set(opId, resolve)
     })
@@ -849,6 +865,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     autoHandledPaymentActions.delete(opId)
     paymentIntentClientSecrets.delete(opId)
     consecutivePollFailures.delete(opId)
+    repollRequested.delete(opId)
+    lastForcedPollAt.delete(opId)
 
     // Remove the "received" toast
     const receivedToast = receivedToasts.get(opId)

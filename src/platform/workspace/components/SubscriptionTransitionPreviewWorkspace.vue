@@ -211,7 +211,7 @@
         <Button
           variant="secondary"
           size="lg"
-          :disabled="isLoading"
+          :disabled="interactionLocked"
           @click="$emit('applyPromotionCode', promotionCode)"
         >
           {{ $t('subscription.preview.applyPromoCode') }}
@@ -293,9 +293,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="
-          confirmDisabled || !quoteIsCurrent || verificationRecoveryActive
-        "
+        :disabled="confirmDisabled || !quoteIsCurrent || interactionLocked"
         @click="$emit('confirm', confirmReactivation)"
       >
         {{ confirmCta }}
@@ -375,6 +373,9 @@ const verificationRecoveryActive = computed(
     authenticationState === 'requires_action' ||
     authenticationState === 'failed_retryable' ||
     Boolean(reconciliationOperationId)
+)
+const interactionLocked = computed(
+  () => isLoading || verificationRecoveryActive.value || pollRecoveryRequired
 )
 
 const { subscription } = useBillingContext()
