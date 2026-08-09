@@ -306,24 +306,26 @@ export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
   return !widget.options?.canvasOnly && !!widget.type
 }
 
-const LINKED_CONTENT_HIDDEN_TYPES = new Set([
-  'text',
-  'string',
-  'int',
-  'float',
-  'number',
-  'slider',
-  'boolean',
-  'toggle',
-  'combo',
-  'color',
-  'textarea',
-  'multiline',
-  'customtext'
+export type LinkedWidgetFamily = 'boolean' | 'combo' | 'control' | 'textarea'
+
+const linkedWidgetFamilies = new Map<Component, LinkedWidgetFamily>([
+  [WidgetInputText, 'control'],
+  [WidgetInputNumber, 'control'],
+  [WidgetToggleSwitch, 'boolean'],
+  [WidgetSelect, 'combo'],
+  [WidgetColorPicker, 'control'],
+  [WidgetTextarea, 'textarea']
 ])
 
-export function shouldHideLinkedWidgetContent(type: string): boolean {
-  return LINKED_CONTENT_HIDDEN_TYPES.has(type.toLowerCase())
+const LINKED_WIDGET_EXCLUDED_ALIASES = new Set(['asset', 'gradientslider'])
+
+export function getLinkedWidgetFamily(
+  type: string
+): LinkedWidgetFamily | undefined {
+  if (LINKED_WIDGET_EXCLUDED_ALIASES.has(type)) return undefined
+
+  const component = getComponent(type)
+  return component ? linkedWidgetFamilies.get(component) : undefined
 }
 
 const EXPANDING_TYPES = [

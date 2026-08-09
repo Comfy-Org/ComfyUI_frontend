@@ -4,7 +4,7 @@
       v-if="hasLabels"
       type="single"
       :model-value="modelValue ? 'on' : 'off'"
-      :disabled="Boolean(widget.options?.read_only)"
+      :disabled="Boolean(widget.options?.read_only || widget.options?.disabled)"
       :class="
         cn(
           WidgetInputBaseClass,

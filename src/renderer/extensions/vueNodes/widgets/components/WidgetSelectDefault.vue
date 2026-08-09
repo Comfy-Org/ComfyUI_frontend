@@ -162,7 +162,7 @@ import {
   ComboboxRoot,
   ComboboxTrigger
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
@@ -380,4 +380,8 @@ function handleOpenChange(open: boolean) {
     searchQuery.value = ''
   }
 }
+
+watch(disabled, (isDisabled) => {
+  if (isDisabled) handleOpenChange(false)
+})
 </script>

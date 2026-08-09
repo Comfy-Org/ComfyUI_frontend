@@ -16,6 +16,8 @@ import { widgetId } from '@/types/widgetId'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   computeProcessedWidgets,
   getWidgetIdentity,
@@ -27,12 +29,22 @@ import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 const GRAPH_ID = 'graph-test'
 const NODE_ID = toNodeId(1)
 
-const { executionIdToNodeLocatorId, showNodeOptions } = vi.hoisted(() => ({
+const {
+  executionIdToNodeLocatorId,
+  isAssetAPIEnabled,
+  shouldUseAssetBrowser,
+  showNodeOptions
+} = vi.hoisted(() => ({
   executionIdToNodeLocatorId: vi.fn(),
+  isAssetAPIEnabled: vi.fn(() => false),
+  shouldUseAssetBrowser: vi.fn(() => false),
   showNodeOptions: vi.fn()
 }))
 
 vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({ showNodeOptions }))
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: { isAssetAPIEnabled, shouldUseAssetBrowser }
+}))
 
 vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
   const actual = await importActual<typeof GraphTraversalUtil>()
@@ -751,10 +763,12 @@ describe('computeProcessedWidgets linked presentation', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    isAssetAPIEnabled.mockReturnValue(false)
+    shouldUseAssetBrowser.mockReturnValue(false)
     showNodeOptions.mockClear()
   })
 
-  it('hides a linked standard value without applying a second disabled appearance', () => {
+  it('hides a linked standard value and disables its mounted control', () => {
     const id = widgetId(GRAPH_ID, NODE_ID, 'prompt')
     useWidgetValueStore().registerWidget(id, {
       type: 'string',
@@ -773,12 +787,45 @@ describe('computeProcessedWidgets linked presentation', () => {
 
     expect(linked.linkedDisplay).toBe('control')
     expect(linked.value).toBe('stale local prompt')
-    expect(linked.simplified.options?.disabled).toBeUndefined()
+    expect(linked.simplified.options?.disabled).toBe(true)
     expect(linked.tooltipConfig.disabled).toBe(true)
     expect(linked.simplified.linkedUpstream).toEqual({
       nodeId: toNodeId(2),
       outputName: 'value'
     })
+  })
+
+  it.for([
+    'text',
+    'string',
+    'STRING',
+    'int',
+    'INT',
+    'float',
+    'FLOAT',
+    'number',
+    'slider',
+    'boolean',
+    'BOOLEAN',
+    'toggle',
+    'combo',
+    'COMBO',
+    'color',
+    'COLOR'
+  ])('uses the linked control display for the registered %s type', (type) => {
+    const widget = createMockWidget({
+      type,
+      slotMetadata: linkedSlot
+    })
+
+    const [processed] = processWidgets([widget])
+
+    expect(processed.linkedDisplay).toBe(
+      type === 'boolean' || type === 'BOOLEAN' || type === 'toggle'
+        ? 'switch'
+        : 'control'
+    )
+    expect(processed.simplified.options?.disabled).toBe(true)
   })
 
   it('restores the standard widget state after disconnect', () => {
@@ -848,6 +895,65 @@ describe('computeProcessedWidgets linked presentation', () => {
       expect(processWidgets([widget])[0].linkedDisplay).toBe('expanding')
     }
   )
+
+  it.for([
+    ['String', false, WidgetLegacy],
+    ['CoMbO', true, WidgetDOM]
+  ] as const)(
+    'keeps the unregistered mixed-case %s fallback visible',
+    ([type, isDOMWidget, component]) => {
+      const widget = createMockWidget({
+        isDOMWidget,
+        type,
+        slotMetadata: linkedSlot
+      })
+
+      const [processed] = processWidgets([widget])
+
+      expect(processed.linkedDisplay).toBeUndefined()
+      expect(processed.simplified.options?.disabled).toBe(true)
+      expect(processed.vueComponent).toBe(component)
+    }
+  )
+
+  it.for([
+    { name: 'asset alias', type: 'asset', spec: undefined },
+    {
+      name: 'upload-media COMBO',
+      type: 'COMBO',
+      spec: {
+        type: 'COMBO',
+        name: 'image',
+        image_upload: true
+      }
+    }
+  ] as const)('keeps the linked $name rendered', ({ type, spec }) => {
+    const widget = createMockWidget({
+      name: 'image',
+      type,
+      spec,
+      slotMetadata: linkedSlot
+    })
+
+    const [processed] = processWidgets([widget])
+
+    expect(processed.linkedDisplay).toBeUndefined()
+    expect(processed.simplified.options?.disabled).toBe(true)
+  })
+
+  it('keeps an asset-browser combo rendered while hiding an ordinary combo', () => {
+    shouldUseAssetBrowser.mockReturnValue(true)
+    const widget = createMockWidget({
+      name: 'ckpt_name',
+      type: 'COMBO',
+      slotMetadata: linkedSlot
+    })
+
+    expect(processWidgets([widget])[0].linkedDisplay).toBeUndefined()
+
+    shouldUseAssetBrowser.mockReturnValue(false)
+    expect(processWidgets([widget])[0].linkedDisplay).toBe('control')
+  })
 
   it.for(['range', 'curve', 'imagecrop', 'boundingbox', 'gradientslider'])(
     'keeps the upstream-relaying %s widget rendered',

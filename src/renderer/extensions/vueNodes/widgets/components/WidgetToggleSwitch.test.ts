@@ -286,6 +286,20 @@ describe('WidgetToggleSwitch Value Binding', () => {
       }
     })
 
+    it('disables ToggleGroup when disabled is set', () => {
+      const widget = createToggleWidget(false, {
+        on: 'yes',
+        off: 'no',
+        disabled: true
+      })
+      mountComponent(widget, false)
+
+      const buttons = screen.getAllByRole('button')
+      for (const button of buttons) {
+        expect(button).toBeDisabled()
+      }
+    })
+
     it('keeps an implicit switch unchanged when read_only is set', async () => {
       const widget = createToggleWidget(false, { read_only: true })
       const onModelUpdate = vi.fn()

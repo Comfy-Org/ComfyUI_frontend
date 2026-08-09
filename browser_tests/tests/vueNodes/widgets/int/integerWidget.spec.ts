@@ -15,6 +15,7 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
       TestIds.widgets.linkedPlaceholder
     )
     const linkedContent = samplerNode.getByTestId(TestIds.widgets.linkedContent)
+    const hiddenInput = linkedContent.locator('input[role="spinbutton"]')
     const nodeBounds = await samplerNode.boundingBox()
     const [samplerNodeRef] =
       await comfyPage.nodeOps.getNodeRefsByType('KSampler')
@@ -26,6 +27,7 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
 
     await expect(placeholder).toHaveAccessibleName('seed: Linked input')
     await expect(linkedContent).toHaveAttribute('inert', '')
+    await expect(hiddenInput).toBeDisabled()
     await expect(
       samplerNode.getByRole('spinbutton', { name: 'seed' })
     ).toHaveCount(0)

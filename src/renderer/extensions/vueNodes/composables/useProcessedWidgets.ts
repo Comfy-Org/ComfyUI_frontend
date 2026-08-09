@@ -12,6 +12,7 @@ import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { NodeError } from '@/schemas/apiSchema'
@@ -21,10 +22,11 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
-  shouldHideLinkedWidgetContent,
+  getLinkedWidgetFamily,
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { resolveWidgetSelectMode } from '@/renderer/extensions/vueNodes/widgets/utils/widgetSelectMode'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import {
   stripGraphPrefix,
@@ -83,23 +85,25 @@ interface ProcessedWidget {
 
 function getLinkedDisplay(
   widget: SafeWidgetData,
-  options: IWidgetOptions
+  options: IWidgetOptions,
+  nodeType: string
 ): ProcessedWidget['linkedDisplay'] {
-  if (
-    !widget.slotMetadata?.linked ||
-    !shouldHideLinkedWidgetContent(widget.type)
-  ) {
-    return undefined
+  if (!widget.slotMetadata?.linked) return undefined
+
+  const family = getLinkedWidgetFamily(widget.type)
+  if (!family) return undefined
+
+  if (family === 'combo') {
+    const mode = resolveWidgetSelectMode(widget, {
+      assetApiEnabled: assetService.isAssetAPIEnabled(),
+      useAssetBrowser: assetService.shouldUseAssetBrowser(nodeType, widget.name)
+    })
+    if (mode.isDropdownUIWidget) return undefined
   }
 
-  if (shouldExpand(widget.type)) return 'expanding'
+  if (family === 'textarea') return 'expanding'
 
-  const type = widget.type.toLowerCase()
-  if (
-    (type === 'boolean' || type === 'toggle') &&
-    options.on == null &&
-    options.off == null
-  ) {
+  if (family === 'boolean' && options.on == null && options.off == null) {
     return 'switch'
   }
 
@@ -357,9 +361,8 @@ export function computeProcessedWidgets({
 
     const value = widgetState?.value as WidgetValue
 
-    const linkedDisplay = getLinkedDisplay(widget, mergedOptions)
-    const isDisabled =
-      (!linkedDisplay && slotMetadata?.linked) || widgetState?.disabled
+    const linkedDisplay = getLinkedDisplay(widget, mergedOptions, nodeData.type)
+    const isDisabled = slotMetadata?.linked || widgetState?.disabled
     const widgetOptions = isDisabled
       ? { ...mergedOptions, disabled: true }
       : mergedOptions

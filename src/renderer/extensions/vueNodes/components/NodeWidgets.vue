@@ -100,7 +100,7 @@
           :title="st('widgets.linkedInput', 'Linked input')"
           :class="
             cn(
-              'pointer-events-auto z-20 row-start-1 flex cursor-default items-center justify-center overflow-hidden bg-component-node-widget-background-disabled text-component-node-foreground-secondary select-none',
+              'pointer-events-auto z-20 row-start-1 flex cursor-default items-center justify-center overflow-hidden bg-component-node-widget-background text-component-node-foreground-secondary select-none',
               widget.simplified.borderStyle,
               widget.linkedDisplay === 'expanding'
                 ? 'col-span-2 col-start-2 size-full rounded-lg'

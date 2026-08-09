@@ -36,7 +36,7 @@ const WidgetStub = {
   name: 'WidgetStub',
   props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
   template:
-    '<button class="widget-stub" :data-node-type="nodeType">{{ modelValue }}</button>'
+    '<button class="widget-stub" :data-node-type="nodeType" :disabled="widget.options?.disabled">{{ modelValue }}</button>'
 }
 
 vi.mock(
@@ -380,6 +380,7 @@ describe('NodeWidgets', () => {
     expect(linkedContent).toHaveAttribute('inert')
     expect(linkedContent).toHaveAttribute('aria-hidden', 'true')
     expect(container.querySelector('.widget-stub')).not.toBeNull()
+    expect(container.querySelector('.widget-stub')).toBeDisabled()
     expect(within(linkedContent).queryByRole('button')).toBeNull()
     expect(
       screen.getByRole('img', { name: 'prompt: Linked input' })

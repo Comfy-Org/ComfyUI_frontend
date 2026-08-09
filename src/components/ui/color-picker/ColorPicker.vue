@@ -14,7 +14,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import ColorPickerPanel from './ColorPickerPanel.vue'
 
-const { alpha = true } = defineProps<{
+const { alpha = true, disabled = false } = defineProps<{
   class?: string
   disabled?: boolean
   alpha?: boolean
@@ -69,6 +69,13 @@ const displayHex = computed(() => rgbToHex(baseRgb.value).toLowerCase())
 
 const isOpen = ref(false)
 const contentStyle = useModalLiftedZIndex(isOpen)
+
+watch(
+  () => disabled,
+  (isDisabled) => {
+    if (isDisabled) isOpen.value = false
+  }
+)
 </script>
 
 <template>
@@ -77,7 +84,7 @@ const contentStyle = useModalLiftedZIndex(isOpen)
       <slot name="trigger">
         <button
           type="button"
-          :disabled="$props.disabled"
+          :disabled
           :class="
             cn(
               'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-component-node-widget-background pr-2 outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-not-allowed disabled:opacity-50',
