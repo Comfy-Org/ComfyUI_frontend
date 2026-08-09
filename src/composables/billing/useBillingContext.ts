@@ -308,8 +308,10 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.cancelSubscription()
   }
 
-  async function resubscribe() {
-    return activeContext.value.resubscribe()
+  async function resubscribe(
+    options?: Parameters<BillingActions['resubscribe']>[0]
+  ) {
+    return activeContext.value.resubscribe(options)
   }
 
   async function topup(amountCents: number) {

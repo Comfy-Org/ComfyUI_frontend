@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { AuthStoreError } from '@/stores/authStore'
+
 import { useResubscribe } from './useResubscribe'
 
 const state = vi.hoisted(() => ({
@@ -44,6 +46,17 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+vi.mock('@/stores/authStore', () => ({
+  AuthStoreError: class AuthStoreError extends Error {
+    readonly status: number | undefined
+    constructor(message: string, status?: number) {
+      super(message)
+      this.name = 'AuthStoreError'
+      this.status = status
+    }
+  }
+}))
+
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: state.toastAdd })
 }))
@@ -72,7 +85,20 @@ describe('useResubscribe', () => {
     expect(isResubscribing.value).toBe(false)
   })
 
-  it('keeps legacy resubscribe behavior independent of workspace roles', async () => {
+  it('fires a started event before resubscribe resolves', async () => {
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'started',
+      outcome: 'pending',
+      source: 'settings_billing_panel'
+    })
+  })
+
+  it('does not report checkout launch as terminal legacy success', async () => {
     state.shouldUseWorkspaceBilling = false
     state.canManageSubscriptionLifecycle = false
     const { handleResubscribe } = useResubscribe()
@@ -81,7 +107,18 @@ describe('useResubscribe', () => {
 
     expect(state.resubscribe).toHaveBeenCalledOnce()
     expect(state.trackResubscribeClicked).toHaveBeenCalledOnce()
-    expect(state.trackBillingEvent).not.toHaveBeenCalled()
+    expect(state.trackBillingEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ stage: 'succeeded' })
+    )
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'started',
+      outcome: 'pending',
+      source: 'settings_billing_panel'
+    })
+    // Exactly one started event on the legacy success rail: the pre-call start,
+    // with no duplicate post-await started/pending emitted after resubscribe() resolves.
+    expect(state.trackBillingEvent).toHaveBeenCalledTimes(1)
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )
@@ -110,5 +147,62 @@ describe('useResubscribe', () => {
       failure_category: 'unknown'
     })
     expect(isResubscribing.value).toBe(false)
+  })
+
+  it('fires resubscribe failure telemetry on the legacy rail too, categorizing the error', async () => {
+    state.shouldUseWorkspaceBilling = false
+    const authStoreError = new AuthStoreError(
+      'checkout initiation rejected',
+      500
+    )
+    state.resubscribe.mockRejectedValueOnce(authStoreError)
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.trackBillingEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ stage: 'succeeded' })
+    )
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'failed',
+      outcome: 'failure',
+      source: 'settings_billing_panel',
+      failure_category: 'api_rejected'
+    })
+  })
+
+  it('categorizes an AuthStoreError with no status as a network failure, not an api rejection', async () => {
+    state.shouldUseWorkspaceBilling = false
+    const authStoreError = new AuthStoreError('offline')
+    state.resubscribe.mockRejectedValueOnce(authStoreError)
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'failed',
+      outcome: 'failure',
+      source: 'settings_billing_panel',
+      failure_category: 'network'
+    })
+  })
+
+  it('emits started before the awaited resubscribe call resolves', async () => {
+    const callOrder: string[] = []
+    state.resubscribe.mockImplementation(async () => {
+      callOrder.push('resubscribe')
+    })
+    state.trackBillingEvent.mockImplementation((event: { stage: string }) => {
+      callOrder.push(`trackBillingEvent:${event.stage}`)
+    })
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(callOrder.indexOf('trackBillingEvent:started')).toBeLessThan(
+      callOrder.indexOf('resubscribe')
+    )
   })
 })
