@@ -962,6 +962,19 @@ describe('realtime verification staleness guards', () => {
     })
   })
 
+  it('skips verified media whose host widget value changed while verification was pending', async () => {
+    const { outerHost, resolveVerification } =
+      await startPendingPromotedMediaVerification()
+    const hostWidget = outerHost.widgets?.[0]
+    if (!hostWidget) throw new Error('Expected promoted image host widget')
+
+    hostWidget.value = 'corrected.png'
+    resolveVerification()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
+
   it('skips verified media when its sole promoted consumer becomes bypassed', async () => {
     const { leafNode, resolveVerification } =
       await startPendingPromotedMediaVerification()
