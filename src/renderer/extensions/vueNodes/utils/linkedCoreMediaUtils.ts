@@ -11,10 +11,6 @@ const CORE_MEDIA_SELECTOR_NAMES = {
 type CoreMediaNodeClass = keyof typeof CORE_MEDIA_SELECTOR_NAMES
 type MediaSelectorWidget = Pick<SafeWidgetData, 'name' | 'slotMetadata'>
 
-export type CoreMediaMenuActionKind = 'input' | 'preview'
-
-const coreMediaMenuActionKinds = new WeakMap<object, CoreMediaMenuActionKind>()
-
 function isCoreMediaNodeClass(value: string): value is CoreMediaNodeClass {
   return Object.hasOwn(CORE_MEDIA_SELECTOR_NAMES, value)
 }
@@ -90,28 +86,4 @@ export function shouldHideCoreLoadAudioPlayer(
   widgets?: readonly MediaSelectorWidget[]
 ): boolean {
   return getLinkedCoreMediaNodeClass(node, widgets) === 'LoadAudio'
-}
-
-export function markCoreMediaMenuCallback<T extends object>(
-  callback: T,
-  kind: CoreMediaMenuActionKind
-): T {
-  coreMediaMenuActionKinds.set(callback, kind)
-  return callback
-}
-
-export function filterUnavailableCoreMediaMenuActions<T>(
-  options: readonly T[],
-  unavailableKinds: ReadonlySet<CoreMediaMenuActionKind>
-): T[] {
-  return options.filter((option) => {
-    if (!option || typeof option !== 'object' || !('callback' in option))
-      return true
-
-    const { callback } = option
-    if (typeof callback !== 'function') return true
-
-    const kind = coreMediaMenuActionKinds.get(callback)
-    return !kind || !unavailableKinds.has(kind)
-  })
 }

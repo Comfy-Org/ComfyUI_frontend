@@ -4,14 +4,14 @@ import type { Ref } from 'vue'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
-  filterUnavailableCoreMediaMenuActions,
   getLinkedCoreMediaNodeClass,
   shouldHideCoreInputMediaPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
-import type { CoreMediaMenuActionKind } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { SerializedNodeId } from '@/types/nodeId'
+import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
+import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
 import {
@@ -55,14 +55,12 @@ export enum BadgeVariant {
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
 const hoveredWidget = ref<[string, SerializedNodeId | undefined]>()
-const nodeMenuVersion = ref(0)
 
 /**
  * Toggle the node options popover
  * @param event - The trigger event
  */
 export function toggleNodeOptions(event: Event) {
-  nodeMenuVersion.value++
   if (nodeOptionsInstance?.toggle) {
     nodeOptionsInstance.toggle(event)
   }
@@ -79,7 +77,6 @@ export function showNodeOptions(
   nodeId?: SerializedNodeId
 ) {
   hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
-  nodeMenuVersion.value++
   if (nodeOptionsInstance?.show) {
     nodeOptionsInstance.show(event)
   }
@@ -173,7 +170,6 @@ export function useMoreOptionsMenu() {
   const menuOptions = computed((): MenuOption[] => {
     // Reference selection flags to ensure re-computation when they change
     void optionsVersion.value
-    void nodeMenuVersion.value
     const states = computeSelectionFlags()
 
     // Detect single group selection context (and no nodes explicitly selected)
