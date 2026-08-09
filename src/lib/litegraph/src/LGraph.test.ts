@@ -19,7 +19,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
-import { transferNodeLayoutRegistration } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import { transferLayoutRegistration } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import {
   adoptNodeReplacement,
   LGraph,
@@ -1909,7 +1909,7 @@ describe('node layout registration', () => {
     replacement.id = node.id
     replacement.graph = graph
 
-    expect(transferNodeLayoutRegistration(node, replacement)).toBe('applied')
+    expect(transferLayoutRegistration(node, replacement)).toBe('applied')
 
     replacement.pos = [220, 440]
     expect(
@@ -1935,7 +1935,7 @@ describe('node layout registration', () => {
     if (!storedNode) throw new Error('Expected stored node layout')
     storedNode.set('registrationId', 'foreign')
 
-    expect(transferNodeLayoutRegistration(node, replacement)).toBe('rejected')
+    expect(transferLayoutRegistration(node, replacement)).toBe('rejected')
     expect(() => adoptNodeReplacement(graph, node, replacement, 0)).toThrow(
       'Node layout registration transfer rejected'
     )

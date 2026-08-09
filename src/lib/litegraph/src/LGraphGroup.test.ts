@@ -9,10 +9,8 @@ import * as Y from 'yjs'
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
-  registerGroupLayout,
-  registerNodeLayout,
-  unregisterNodeLayout,
-  unregisterGroupLayout
+  attachLayout,
+  detachLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -149,7 +147,8 @@ describe('group layout in layoutStore', () => {
     [
       'unowned unregister',
       false,
-      (graph: LGraph, group: LGraphGroup) => unregisterGroupLayout(graph, group)
+      (graph: LGraph, group: LGraphGroup) =>
+        detachLayout(graph, 'group', group).result
     ]
   ] as const)('%s preserves a foreign layout', ([, attached, release]) => {
     const graph = new LGraph()
@@ -173,10 +172,13 @@ describe('group layout in layoutStore', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     graph.add(node)
-    unregisterNodeLayout(graph, node)
-    registerNodeLayout(graph, node, 'A')
+    detachLayout(graph, 'node', node)
+    attachLayout(graph, 'node', node, {
+      adoptExisting: false,
+      registrationId: 'A'
+    })
 
-    expect(unregisterNodeLayout(graph, node, 'B')).toBe('no-op')
+    expect(detachLayout(graph, 'node', node, 'B').result).toBe('no-op')
     node.pos = [220, 440]
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
@@ -185,7 +187,7 @@ describe('group layout in layoutStore', () => {
       y: 440
     })
 
-    expect(unregisterNodeLayout(graph, node, 'A')).toBe('applied')
+    expect(detachLayout(graph, 'node', node, 'A').result).toBe('applied')
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
     ).toBeNull()
@@ -194,24 +196,24 @@ describe('group layout in layoutStore', () => {
   test('keeps retained ownership after a foreign explicit unregister', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(817))
-    unregisterGroupLayout(graph, group)
-    registerGroupLayout(graph, group, 'A')
+    detachLayout(graph, 'group', group)
+    attachLayout(graph, 'group', group, { registrationId: 'A' })
 
-    expect(unregisterGroupLayout(graph, group, 'B')).toBe('no-op')
+    expect(detachLayout(graph, 'group', group, 'B').result).toBe('no-op')
     group.pos = [200, 250]
     expect(
       layoutStore.getGroupLayout(graph.rootGraph.id, group.id)?.position
     ).toEqual({ x: 200, y: 250 })
 
-    expect(unregisterGroupLayout(graph, group, 'A')).toBe('applied')
+    expect(detachLayout(graph, 'group', group, 'A').result).toBe('applied')
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
   })
 
   test('restores an attached group layout when canvas deselect throws', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(809))
-    unregisterGroupLayout(graph, group)
-    registerGroupLayout(graph, group, 'owner')
+    detachLayout(graph, 'group', group)
+    attachLayout(graph, 'group', group, { registrationId: 'owner' })
     const canvasAction = vi
       .spyOn(graph, 'canvasAction')
       .mockImplementation(() => {

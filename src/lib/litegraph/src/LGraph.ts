@@ -9,16 +9,11 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import {
-  attachGroupLayout,
-  attachNodeLayout,
-  attachRerouteLayout,
-  detachGroupLayout,
-  detachNodeLayout,
-  detachRerouteLayout,
+  attachLayout,
+  detachLayout,
   materializeRerouteLayout,
-  transferNodeLayoutRegistration,
-  unregisterAllGraphLayout,
-  unregisterRerouteLayout
+  transferLayoutRegistration,
+  unregisterAllGraphLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutOperationResult } from '@/renderer/core/layout/types'
@@ -239,7 +234,7 @@ export function adoptNodeReplacement(
   replacement: LGraphNode,
   index: number
 ): void {
-  const transferResult = transferNodeLayoutRegistration(node, replacement)
+  const transferResult = transferLayoutRegistration(node, replacement)
   if (transferResult !== 'applied') {
     throw new Error(`Node layout registration transfer ${transferResult}`)
   }
@@ -247,7 +242,7 @@ export function adoptNodeReplacement(
   try {
     node.onRemoved?.()
   } catch (error) {
-    const rollbackResult = transferNodeLayoutRegistration(replacement, node)
+    const rollbackResult = transferLayoutRegistration(replacement, node)
     if (rollbackResult !== 'applied') {
       throw new AggregateError(
         [error],
@@ -1185,11 +1180,9 @@ export class LGraph
       const attemptedGroupId = node.id
       let registrationResult: LayoutOperationResult
       try {
-        registrationResult = attachGroupLayout(
-          this,
-          node,
-          entitiesAdoptingLayout.has(node)
-        )
+        registrationResult = attachLayout(this, 'group', node, {
+          adoptExisting: entitiesAdoptingLayout.has(node)
+        })
       } catch (error) {
         node.id = originalId
         restoreIdState(state, idStateSnapshot)
@@ -1253,11 +1246,9 @@ export class LGraph
     let layoutAttached = false
     try {
       registrationResult = layoutStore.withDeferredNotifications(() => {
-        const result = attachNodeLayout(
-          this,
-          node,
-          entitiesAdoptingLayout.has(node)
-        )
+        const result = attachLayout(this, 'node', node, {
+          adoptExisting: entitiesAdoptingLayout.has(node)
+        })
         if (result !== 'applied') return result
         layoutAttached = true
 
@@ -1336,7 +1327,7 @@ export class LGraph
       const index = this._groups.indexOf(node)
       if (index === -1) return
 
-      const layoutDetach = detachGroupLayout(this, node)
+      const layoutDetach = detachLayout(this, 'group', node)
       try {
         if (layoutDetach.result === 'rejected') return
         this.canvasAction((c) => c.deselect(node))
@@ -1378,7 +1369,7 @@ export class LGraph
       node.onRemoved?.()
       this.onNodeRemoved?.(node)
 
-      const layoutDetach = detachNodeLayout(this, node)
+      const layoutDetach = detachLayout(this, 'node', node)
       if (layoutDetach.result === 'rejected') return
 
       try {
@@ -1817,7 +1808,7 @@ export class LGraph
     registerRerouteChain(this, reroute)
     let registrationResult: LayoutOperationResult
     try {
-      registrationResult = attachRerouteLayout(this, reroute, position)
+      registrationResult = attachLayout(this, 'reroute', reroute, { position })
     } catch (error) {
       unregisterRerouteChain(reroute)
       throw error
@@ -1840,7 +1831,7 @@ export class LGraph
   _removeReroute(id: RerouteId): void {
     const reroute = this.reroutesInternal.get(id)
     if (!reroute) return
-    if (unregisterRerouteLayout(this, reroute) === 'rejected') return
+    if (detachLayout(this, 'reroute', reroute).result === 'rejected') return
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
   }
@@ -1927,7 +1918,7 @@ export class LGraph
     const reroute = reroutes.get(id)
     if (!reroute) return
 
-    const layoutDetach = detachRerouteLayout(this, reroute)
+    const layoutDetach = detachLayout(this, 'reroute', reroute)
     try {
       if (layoutDetach.result === 'rejected') return
       this.canvasAction((c) => c.deselect(reroute))
@@ -3085,7 +3076,7 @@ export class LGraph
       for (const reroute of this.reroutes.values()) {
         if (
           reroute.totalLinks === 0 &&
-          unregisterRerouteLayout(this, reroute) !== 'rejected'
+          detachLayout(this, 'reroute', reroute).result !== 'rejected'
         ) {
           this.reroutesInternal.delete(reroute.id)
           unregisterRerouteChain(reroute)

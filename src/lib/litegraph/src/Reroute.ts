@@ -1,6 +1,6 @@
 import {
-  hasRerouteLayoutRegistration,
-  moveRerouteLayout
+  isLayoutRegistered,
+  moveLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
@@ -139,7 +139,7 @@ export class Reroute
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
 
-    if (!this._graphScope || !hasRerouteLayoutRegistration(this)) {
+    if (!this._graphScope || !isLayoutRegistered(this)) {
       this.position[0] = value[0]
       this.position[1] = value[1]
       return
@@ -147,7 +147,7 @@ export class Reroute
 
     const graph = this.network.deref()
     if (!graph) return
-    moveRerouteLayout(graph, this, {
+    moveLayout(graph, 'reroute', this, {
       x: value[0],
       y: value[1]
     })
@@ -169,7 +169,7 @@ export class Reroute
   }
 
   private get storedPosition(): Readonly<LayoutPoint> {
-    if (!hasRerouteLayoutRegistration(this)) {
+    if (!isLayoutRegistered(this)) {
       return { x: this.position[0], y: this.position[1] }
     }
     return (

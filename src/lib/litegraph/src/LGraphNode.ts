@@ -6,8 +6,8 @@ import {
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
-  moveNodeLayout,
-  resizeNodeLayout
+  moveLayout,
+  resizeLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
@@ -674,7 +674,7 @@ export class LGraphNode
       return
     }
 
-    moveNodeLayout(this, position)
+    if (this.graph) moveLayout(this.graph, 'node', this, position)
     this._geometryVersion = -1
     this.refreshGeometry()
   }
@@ -711,7 +711,7 @@ export class LGraphNode
       return
     }
 
-    resizeNodeLayout(this, {
+    resizeLayout(this, {
       width: this._size[0],
       height: this._size[1]
     })

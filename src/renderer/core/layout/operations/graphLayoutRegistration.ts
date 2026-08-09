@@ -32,6 +32,7 @@ type GraphLayoutOwner = Pick<
   LGraph,
   '_nodes' | '_groups' | '_subgraphs' | 'reroutes'
 >
+type LayoutGraph = { rootGraph: { id: UUID } }
 
 interface LayoutRegistration<TId> {
   graphId: UUID
@@ -318,79 +319,24 @@ function createGraphLayoutDetach(
   return {
     result,
     restore() {
-      if (registration?.layout) restoreGraphLayoutRegistration(registration)
+      if (result === 'applied' && registration?.layout)
+        restoreGraphLayoutRegistration(registration)
     }
   }
 }
 
-export function detachNodeLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
-  node: LGraphNode
-): GraphLayoutDetach {
-  return createGraphLayoutDetach(trackNodeLayoutRegistration(node), () =>
-    unregisterNodeLayout(graph, node)
-  )
-}
-
-export function detachGroupLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
-  group: LGraphGroup
-): GraphLayoutDetach {
-  return createGraphLayoutDetach(trackGroupLayoutRegistration(group), () =>
-    unregisterGroupLayout(graph, group)
-  )
-}
-
-export function detachRerouteLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
-  reroute: Reroute
-): GraphLayoutDetach {
-  return createGraphLayoutDetach(trackRerouteLayoutRegistration(reroute), () =>
-    unregisterRerouteLayout(graph, reroute)
-  )
-}
-
-export function attachNodeLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
-  node: LGraphNode,
-  adoptExisting: boolean
-): LayoutOperationResult {
-  const result = registerNodeLayout(graph, node, createUuidv4())
-  return result === 'no-op' && adoptExisting
-    ? adoptExistingLayout(graph.rootGraph.id, {
-        entity: 'node',
-        id: node.id,
-        instance: node
-      })
-    : result
-}
-
-export function attachGroupLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
-  group: LGraphGroup,
-  adoptExisting = false
-): LayoutOperationResult {
-  const result = registerGroupLayout(graph, group, createUuidv4())
-  return result === 'no-op' && adoptExisting
-    ? adoptExistingLayout(graph.rootGraph.id, {
-        entity: 'group',
-        id: group.id,
-        instance: group
-      })
-    : result
-}
-
-export function attachRerouteLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
+function attachRerouteLayout(
+  graph: LayoutGraph,
   reroute: Reroute,
-  position: Point
+  position: Point,
+  registrationId = createUuidv4()
 ): LayoutOperationResult {
-  return registerRerouteLayout(graph, reroute, position, createUuidv4())
+  return registerRerouteLayout(graph, reroute, position, registrationId)
 }
 
 /** A newly attached node stacks above those already registered. */
-export function registerNodeLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
+function registerNodeLayout(
+  graph: LayoutGraph,
   node: LGraphNode,
   registrationId = createUuidv4()
 ): LayoutOperationResult {
@@ -472,7 +418,94 @@ function adoptExistingLayout(
   return 'applied'
 }
 
-export function transferNodeLayoutRegistration(
+type AttachLayoutArgs =
+  | [
+      graph: LayoutGraph,
+      entity: 'node',
+      instance: LGraphNode,
+      options: { adoptExisting: boolean; registrationId?: string }
+    ]
+  | [
+      graph: LayoutGraph,
+      entity: 'group',
+      instance: LGraphGroup,
+      options?: { adoptExisting?: boolean; registrationId?: string }
+    ]
+  | [
+      graph: LayoutGraph,
+      entity: 'reroute',
+      instance: Reroute,
+      options: { position: Point; registrationId?: string }
+    ]
+
+export function attachLayout(
+  ...[graph, entity, instance, options = {}]: AttachLayoutArgs
+): LayoutOperationResult {
+  if (entity === 'node' && '_layoutRegistered' in instance) {
+    const registrationId = options.registrationId ?? createUuidv4()
+    const result = registerNodeLayout(graph, instance, registrationId)
+    return result === 'no-op' &&
+      'adoptExisting' in options &&
+      options.adoptExisting
+      ? adoptExistingLayout(graph.rootGraph.id, {
+          entity,
+          id: instance.id,
+          instance
+        })
+      : result
+  }
+  if (entity === 'group' && '_nodes' in instance) {
+    const registrationId = options.registrationId ?? createUuidv4()
+    const result = registerGroupLayout(graph, instance, registrationId)
+    return result === 'no-op' &&
+      'adoptExisting' in options &&
+      options.adoptExisting
+      ? adoptExistingLayout(graph.rootGraph.id, {
+          entity,
+          id: instance.id,
+          instance
+        })
+      : result
+  }
+  if (entity === 'reroute' && 'position' in options && 'network' in instance) {
+    return attachRerouteLayout(
+      graph,
+      instance,
+      options.position,
+      options.registrationId
+    )
+  }
+  return 'rejected'
+}
+
+type DetachLayoutArgs =
+  | [LayoutGraph, 'node', LGraphNode, registrationId?: string]
+  | [LayoutGraph, 'group', LGraphGroup, registrationId?: string]
+  | [LayoutGraph, 'reroute', Reroute, registrationId?: string]
+
+export function detachLayout(
+  ...[graph, entity, instance, registrationId]: DetachLayoutArgs
+): GraphLayoutDetach {
+  if (entity === 'node' && '_layoutRegistered' in instance) {
+    return createGraphLayoutDetach(trackNodeLayoutRegistration(instance), () =>
+      unregisterNodeLayout(graph, instance, registrationId)
+    )
+  }
+  if (entity === 'group' && '_nodes' in instance) {
+    return createGraphLayoutDetach(trackGroupLayoutRegistration(instance), () =>
+      unregisterGroupLayout(graph, instance, registrationId)
+    )
+  }
+  if (entity === 'reroute' && 'network' in instance) {
+    return createGraphLayoutDetach(
+      trackRerouteLayoutRegistration(instance),
+      () => unregisterRerouteLayout(graph, instance, registrationId)
+    )
+  }
+  return createGraphLayoutDetach(undefined, () => 'rejected')
+}
+
+export function transferLayoutRegistration(
   node: LGraphNode,
   replacement: LGraphNode
 ): LayoutOperationResult {
@@ -516,7 +549,7 @@ export function materializeRerouteLayout(
   )
 }
 
-export function moveNodeLayout(node: LGraphNode, position: Point): void {
+function moveNodeLayout(node: LGraphNode, position: Point): void {
   const registration = nodeRegistrations.get(node)
   if (!registration) return
   layoutStore.applyOperation({
@@ -530,7 +563,7 @@ export function moveNodeLayout(node: LGraphNode, position: Point): void {
   })
 }
 
-export function resizeNodeLayout(node: LGraphNode, size: Size): void {
+export function resizeLayout(node: LGraphNode, size: Size): void {
   const registration = nodeRegistrations.get(node)
   if (!registration) return
   layoutStore.applyOperation({
@@ -544,8 +577,8 @@ export function resizeNodeLayout(node: LGraphNode, size: Size): void {
   })
 }
 
-export function unregisterNodeLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
+function unregisterNodeLayout(
+  graph: LayoutGraph,
   node: LGraphNode,
   registrationId?: string
 ): LayoutOperationResult {
@@ -585,8 +618,8 @@ export function unregisterNodeLayout(
   return result
 }
 
-export function registerGroupLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
+function registerGroupLayout(
+  graph: LayoutGraph,
   group: LGraphGroup,
   registrationId: string
 ): LayoutOperationResult {
@@ -608,8 +641,8 @@ export function registerGroupLayout(
   return result
 }
 
-export function unregisterGroupLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
+function unregisterGroupLayout(
+  graph: LayoutGraph,
   group: LGraphGroup,
   registrationId?: string
 ): LayoutOperationResult {
@@ -636,7 +669,7 @@ export function unregisterGroupLayout(
   return result
 }
 
-export function setGroupBoundsLayout(
+export function setBoundsLayout(
   graph: { rootGraph: { id: UUID } },
   group: LGraphGroup,
   position: Point,
@@ -656,8 +689,8 @@ export function setGroupBoundsLayout(
   })
 }
 
-export function unregisterRerouteLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
+function unregisterRerouteLayout(
+  graph: LayoutGraph,
   reroute: Reroute,
   registrationId?: string
 ): LayoutOperationResult {
@@ -694,8 +727,8 @@ export function unregisterRerouteLayout(
   return result
 }
 
-export function registerRerouteLayout(
-  graph: Pick<LGraph, 'rootGraph'>,
+function registerRerouteLayout(
+  graph: LayoutGraph,
   reroute: Reroute,
   position: Point,
   registrationId: string
@@ -715,7 +748,7 @@ export function registerRerouteLayout(
   return result
 }
 
-export function moveRerouteLayout(
+function moveRerouteLayout(
   graph: { rootGraph: { id: UUID } },
   reroute: Reroute,
   position: Point
@@ -733,7 +766,21 @@ export function moveRerouteLayout(
   })
 }
 
-export function hasRerouteLayoutRegistration(reroute: Reroute): boolean {
+type MoveLayoutArgs =
+  | [LayoutGraph, 'node', LGraphNode, Point]
+  | [LayoutGraph, 'reroute', Reroute, Point]
+
+export function moveLayout(
+  ...[graph, entity, instance, position]: MoveLayoutArgs
+): void {
+  if (entity === 'node' && '_layoutRegistered' in instance) {
+    moveNodeLayout(instance, position)
+  } else if (entity === 'reroute' && 'network' in instance) {
+    moveRerouteLayout(graph, instance, position)
+  }
+}
+
+export function isLayoutRegistered(reroute: Reroute): boolean {
   return rerouteRegistrations.has(reroute)
 }
 

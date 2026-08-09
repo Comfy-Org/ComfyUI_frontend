@@ -16,8 +16,8 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import {
-  registerRerouteLayout,
-  unregisterRerouteLayout
+  attachLayout,
+  detachLayout
 } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -1089,7 +1089,7 @@ describe('Reroute position lives only in layoutStore', () => {
       'unowned unregister',
       false,
       (graph: LGraph, reroute: Reroute) =>
-        unregisterRerouteLayout(graph, reroute)
+        detachLayout(graph, 'reroute', reroute)
     ]
   ] as const)(
     '%s preserves a foreign reroute layout',
@@ -1116,16 +1116,19 @@ describe('Reroute position lives only in layoutStore', () => {
   it('keeps retained ownership after a foreign explicit unregister', () => {
     const graph = new LGraph()
     const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
-    unregisterRerouteLayout(graph, reroute)
-    registerRerouteLayout(graph, reroute, { x: 10, y: 20 }, 'A')
+    detachLayout(graph, 'reroute', reroute)
+    attachLayout(graph, 'reroute', reroute, {
+      position: { x: 10, y: 20 },
+      registrationId: 'A'
+    })
 
-    expect(unregisterRerouteLayout(graph, reroute, 'B')).toBe('no-op')
+    expect(detachLayout(graph, 'reroute', reroute, 'B').result).toBe('no-op')
     reroute.pos = [30, 40]
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
     ).toEqual({ x: 30, y: 40 })
 
-    expect(unregisterRerouteLayout(graph, reroute, 'A')).toBe('applied')
+    expect(detachLayout(graph, 'reroute', reroute, 'A').result).toBe('applied')
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)
     ).toBeNull()
@@ -1141,8 +1144,11 @@ describe('Reroute position lives only in layoutStore', () => {
   it('restores an attached reroute layout when canvas deselect throws', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 20], link)!
-    unregisterRerouteLayout(graph, reroute)
-    registerRerouteLayout(graph, reroute, { x: 10, y: 20 }, 'owner')
+    detachLayout(graph, 'reroute', reroute)
+    attachLayout(graph, 'reroute', reroute, {
+      position: { x: 10, y: 20 },
+      registrationId: 'owner'
+    })
     const canvasAction = vi
       .spyOn(graph, 'canvasAction')
       .mockImplementation(() => {

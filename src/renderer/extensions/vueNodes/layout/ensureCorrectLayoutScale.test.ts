@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
-import { attachGroupLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import { attachLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
@@ -234,7 +234,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     group.graph = graph
     group.pos = [150, 150]
     group.size = [300, 200]
-    expect(attachGroupLayout(graph, group)).toBe('applied')
+    expect(attachLayout(graph, 'group', group)).toBe('applied')
     graph.groups!.push(group)
 
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')

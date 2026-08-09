@@ -1,5 +1,5 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
-import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import { setBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toGroupId } from '@/types/groupId'
 import type { GroupId } from '@/types/groupId'
@@ -152,7 +152,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this.bounds.set([x, y, width, height])
     if (!this.graph || this.id === -1) return
 
-    setGroupBoundsLayout(this.graph, this, { x, y }, { width, height })
+    setBoundsLayout(this.graph, this, { x, y }, { width, height })
     this.syncBoundsFromStore()
   }
 
