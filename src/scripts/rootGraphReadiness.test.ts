@@ -52,4 +52,23 @@ describe('ComfyApp root graph readiness', () => {
 
     expect(onConfigured).toHaveBeenCalledOnce()
   })
+
+  it('rebinds a rootGraph.events listener when the graph is replaced', async () => {
+    const onConfigured = vi.fn()
+    const firstGraph = new LGraph()
+    setRootGraph(app, firstGraph)
+    scope.run(() => {
+      useEventListener(() => app.rootGraph?.events, 'configured', onConfigured)
+    })
+
+    const secondGraph = new LGraph()
+    setRootGraph(app, secondGraph)
+    await nextTick()
+
+    firstGraph.events.dispatch('configured')
+    expect(onConfigured).not.toHaveBeenCalled()
+
+    secondGraph.events.dispatch('configured')
+    expect(onConfigured).toHaveBeenCalledOnce()
+  })
 })
