@@ -22,6 +22,13 @@ const MAX_RAW_MESSAGE_LENGTH = 500
 const MARKUP_DOCUMENT = /^<[a-z!/?]/i
 
 /**
+ * A string body opening a JSON container only reaches here when parsing
+ * failed, so it is a truncated or corrupt machine payload (e.g.
+ * `{"code":"RATE_LIMITED","mess`), never prose worth showing.
+ */
+const UNPARSED_JSON_DOCUMENT = /^[{[]/
+
+/**
  * Coerce an already-parsed error body into the canonical
  * `ErrorResponse { code, message, details? }` shape.
  *
@@ -43,7 +50,8 @@ export function errorResponseFromBody(
     const usable =
       trimmed !== '' &&
       trimmed.length <= MAX_RAW_MESSAGE_LENGTH &&
-      !MARKUP_DOCUMENT.test(trimmed)
+      !MARKUP_DOCUMENT.test(trimmed) &&
+      !UNPARSED_JSON_DOCUMENT.test(trimmed)
     return {
       code: UNKNOWN_ERROR_CODE,
       message: usable ? trimmed : fallbackMessage

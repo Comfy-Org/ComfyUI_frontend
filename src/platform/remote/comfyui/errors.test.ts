@@ -112,6 +112,21 @@ describe('errorResponseFromBody', () => {
     })
   })
 
+  it('falls back for a truncated JSON body instead of showing the fragment', () => {
+    for (const fragment of [
+      '{"code":"RATE_LIMITED","mess',
+      '[{"message":"first"},',
+      '{'
+    ]) {
+      expect(
+        errorResponseFromBody(fragment, 'Failed to publish workflow')
+      ).toEqual({
+        code: 'UNKNOWN_ERROR',
+        message: 'Failed to publish workflow'
+      })
+    }
+  })
+
   it('falls back for a blank-string body', () => {
     expect(errorResponseFromBody('   ', 'fallback')).toEqual({
       code: 'UNKNOWN_ERROR',
@@ -219,6 +234,20 @@ describe('parseErrorResponse', () => {
         message: 'Bad Gateway'
       })
     }
+  })
+
+  it('falls back to the caller message for a truncated JSON body', async () => {
+    const response = makeResponse({
+      text: async () => '{"code":"USERNAME_TAKEN","message":"Username alrea',
+      statusText: 'Bad Gateway',
+      status: 502
+    })
+    await expect(
+      parseErrorResponse(response, 'Failed to create ComfyHub profile')
+    ).resolves.toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'Failed to create ComfyHub profile'
+    })
   })
 
   it('falls back to statusText when the body is empty', async () => {
