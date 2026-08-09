@@ -337,6 +337,7 @@ export default defineConfig([
     }
   },
   {
+    // Devtools extension scripts are loaded by ComfyUI in the browser.
     files: ['tools/devtools/web/**/*.js'],
     languageOptions: {
       globals: {
@@ -354,6 +355,14 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
+    }
+  },
+  {
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
     }
   },
 
