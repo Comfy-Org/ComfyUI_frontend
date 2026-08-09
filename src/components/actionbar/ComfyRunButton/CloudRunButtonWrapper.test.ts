@@ -6,6 +6,7 @@ import { nextTick, ref } from 'vue'
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 
 const mockCanRunWorkflows = ref(true)
+const mockIsInitialized = ref(true)
 const mockBillingStatus = ref<string | null>('paid')
 const state = vi.hoisted(() => ({
   v1PaymentRecovery: true,
@@ -19,15 +20,21 @@ const state = vi.hoisted(() => ({
   updateDialog: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    canRunWorkflows: mockCanRunWorkflows,
-    billingStatus: mockBillingStatus,
-    manageSubscription: state.manageSubscription,
-    fetchStatus: state.fetchStatus,
-    fetchBalance: state.fetchBalance
-  })
-}))
+vi.mock('@/composables/billing/useBillingContext', async () => {
+  const { computed } = await import('vue')
+  return {
+    useBillingContext: () => ({
+      canRunWorkflows: mockCanRunWorkflows,
+      showsSubscribeToRunPrompt: computed(
+        () => mockIsInitialized.value && !mockCanRunWorkflows.value
+      ),
+      billingStatus: mockBillingStatus,
+      manageSubscription: state.manageSubscription,
+      fetchStatus: state.fetchStatus,
+      fetchBalance: state.fetchBalance
+    })
+  }
+})
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
@@ -89,6 +96,7 @@ function renderWrapper() {
 describe('CloudRunButtonWrapper', () => {
   beforeEach(() => {
     mockCanRunWorkflows.value = true
+    mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'
     state.v1PaymentRecovery = true
     state.canManageSubscription = true
@@ -97,6 +105,18 @@ describe('CloudRunButtonWrapper', () => {
 
   it('renders the runnable queue button when the subscription is active', () => {
     renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the run button while billing status is still resolving', () => {
+    mockCanRunWorkflows.value = false
+    mockIsInitialized.value = false
+
+    render(CloudRunButtonWrapper)
 
     expect(screen.getByTestId('queue-button')).toBeInTheDocument()
     expect(

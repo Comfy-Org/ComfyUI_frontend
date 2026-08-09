@@ -162,6 +162,10 @@ function useBillingContextInternal(): BillingContext {
         freeTierQuota.freeTierExecutionPermitted.value)
   )
 
+  const showsSubscribeToRunPrompt = computed(
+    () => isInitialized.value && !canRunWorkflows.value
+  )
+
   const isLegacyTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
@@ -354,6 +358,7 @@ function useBillingContextInternal(): BillingContext {
     error,
     isActiveSubscription,
     canRunWorkflows,
+    showsSubscribeToRunPrompt,
     canAccessSubscriptionFeatures,
     isFreeTier,
     isLegacyTeamPlan,
