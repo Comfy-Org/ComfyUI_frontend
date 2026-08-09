@@ -176,6 +176,25 @@ describe('topupTracker', () => {
       expect(result).toBe(false)
       expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
     })
+
+    it('ignores topup_completed, which belongs to the unified rail that tracks completion via billing_op_id polling', () => {
+      const startTimestamp = Date.now()
+      localStorage.setItem('pending_topup_timestamp', startTimestamp.toString())
+
+      const events: AuditLog[] = [
+        {
+          event_id: 'evt-unified',
+          event_type: 'topup_completed',
+          createdAt: new Date(startTimestamp + 1000).toISOString(),
+          params: {}
+        }
+      ]
+
+      const result = checkForCompletedTopup(events)
+
+      expect(result).toBe(false)
+      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+    })
   })
 
   describe('clearTopupTracking', () => {

@@ -152,6 +152,30 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
       open.mock.invocationCallOrder[0]
     )
   })
+
+  it('does not start tracking or open checkout when no checkout URL is returned', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    mockAuthStore.initiateCreditPurchase.mockResolvedValueOnce({})
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await expect(purchaseCreditsDirect(25)).rejects.toThrow()
+
+    expect(mockStartTopupTracking).not.toHaveBeenCalled()
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('does not start tracking or open checkout when the purchase request rejects', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    mockAuthStore.initiateCreditPurchase.mockRejectedValueOnce(
+      new Error('network down')
+    )
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await expect(purchaseCreditsDirect(25)).rejects.toThrow('network down')
+
+    expect(mockStartTopupTracking).not.toHaveBeenCalled()
+    expect(open).not.toHaveBeenCalled()
+  })
 })
 
 describe('useAuthActions.logout', () => {
