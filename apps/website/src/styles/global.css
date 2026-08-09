@@ -14,8 +14,6 @@
   );
   --color-destructive: #f44336;
   --color-transparency-white-t4: rgb(from var(--color-white) r g b / 0.04);
-  --color-transparency-white-t8: rgb(from var(--color-white) r g b / 0.08);
-  --color-transparency-white-t20: rgb(from var(--color-white) r g b / 0.2);
   --color-transparency-ink-t80: rgb(
     from var(--color-primary-comfy-ink) r g b / 0.8
   );
