@@ -38,7 +38,14 @@ beforeEach(() => {
 })
 
 function stubRootGraph(graph: LGraph | undefined) {
-  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(fromAny(graph))
+  const rootGraph = vi.spyOn(app, 'rootGraph', 'get')
+  if (graph) {
+    rootGraph.mockReturnValue(graph)
+  } else {
+    rootGraph.mockImplementation(() => {
+      throw new Error('rootGraph accessed before initialization')
+    })
+  }
   vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(!!graph)
 }
 

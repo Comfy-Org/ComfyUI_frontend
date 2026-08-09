@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
@@ -17,7 +18,10 @@ describe('rootGraph access before ComfyApp.setup', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    consoleError.mockClear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('reports the graph as not ready without logging', () => {
@@ -31,10 +35,11 @@ describe('rootGraph access before ComfyApp.setup', () => {
   })
 
   it.each([
-    ['appMode', useAppModeStore],
-    ['favoritedWidgets', useFavoritedWidgetsStore]
-  ])('constructs the %s store without reading rootGraph', (_name, useStore) => {
-    useStore()
+    ['appMode store', useAppModeStore],
+    ['favoritedWidgets store', useFavoritedWidgetsStore],
+    ['resolvedSelectedInputs composable', useResolvedSelectedInputs]
+  ])('constructs the %s without reading rootGraph', (_name, construct) => {
+    construct()
     expect(countPreInitLogs(consoleError.mock.calls)).toBe(0)
   })
 })
