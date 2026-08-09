@@ -422,6 +422,18 @@ describe('fetchJobs', () => {
       expect(extractApiPrompt(jobDetail)).toBeUndefined()
     })
 
+    it('returns undefined when the embedded workflow is a malformed empty string', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: {
+          prompt: apiPrompt,
+          extra_data: { extra_pnginfo: { workflow: '' } }
+        }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toBeUndefined()
+    })
+
     it('returns undefined when the job stores no prompt', () => {
       const jobDetail = createMockJob('job1', 'completed')
 

@@ -279,7 +279,11 @@ export async function extractWorkflow(
 export function extractApiPrompt(job: JobDetail | undefined): unknown {
   const parsed = zWorkflowContainer.safeParse(job?.workflow)
   if (!parsed.success) return undefined
-  if (parsed.data.extra_data?.extra_pnginfo?.workflow) return undefined
+
+  const embeddedWorkflow = parsed.data.extra_data?.extra_pnginfo?.workflow
+  if (embeddedWorkflow !== undefined && embeddedWorkflow !== null) {
+    return undefined
+  }
 
   return parsed.data.prompt
 }
