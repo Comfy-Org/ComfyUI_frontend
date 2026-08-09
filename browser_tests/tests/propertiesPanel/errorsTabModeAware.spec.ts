@@ -18,8 +18,10 @@ import {
   expectNoMissingModelUi,
   expectResolvedPromotedModelSuppressesStaleInteriorErrors,
   expectSingleMissingModelReference,
+  expectStaleInteriorWidget,
   getMissingModelLabel,
   loadPromotedMissingModelAndOpenErrorsTab,
+  loadPromotedMissingModelWithHostValues,
   loadPromotedMissingModelWithHostValuesAndOpenErrorsTab,
   selectSectionComboPromotedModel,
   selectVueComboPromotedModelByTitle,
@@ -692,6 +694,61 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
             { subgraphNodeIdToEnter: '2', nodeTitle: 'Load Checkpoint' }
           ],
           RESOLVED_PROMOTED_MODEL_NAME,
+          FAKE_MODEL_NAME
+        )
+      }
+    )
+
+    promotedModelTest(
+      'Reloading resolved shared-definition promoted models keeps each host on its own stale interior value',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        const siblingHostNodeId =
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.sharedDefinitionSiblingHostNodeId
+        if (siblingHostNodeId === undefined) {
+          throw new Error('Expected a shared-definition sibling host')
+        }
+
+        await loadPromotedMissingModelWithHostValues(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          {
+            [NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeId]:
+              RESOLVED_PROMOTED_MODEL_NAME,
+            [siblingHostNodeId]: RESOLVED_PROMOTED_MODEL_NAME
+          }
+        )
+        await expectNoMissingModelUi(comfyPage)
+
+        await expectStaleInteriorWidget(
+          comfyPage,
+          {
+            subgraphNodeIdToEnter: String(
+              NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeId
+            ),
+            nodeTitle: 'Inner Subgraph with Promoted Missing Model'
+          },
+          FAKE_MODEL_NAME
+        )
+        await expectStaleInteriorWidget(
+          comfyPage,
+          { subgraphNodeIdToEnter: '2', nodeTitle: 'Load Checkpoint' },
+          FAKE_MODEL_NAME
+        )
+
+        await comfyPage.subgraph.exitViaBreadcrumb()
+
+        await expectStaleInteriorWidget(
+          comfyPage,
+          {
+            subgraphNodeIdToEnter: String(siblingHostNodeId),
+            nodeTitle: 'Inner Subgraph with Promoted Missing Model'
+          },
+          FAKE_MODEL_NAME
+        )
+        await expectStaleInteriorWidget(
+          comfyPage,
+          { subgraphNodeIdToEnter: '2', nodeTitle: 'Load Checkpoint' },
           FAKE_MODEL_NAME
         )
       }
