@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and usage help
+    url: https://discord.com/invite/comfyorg
+    about: For "how do I…" questions, setup help, and general usage, ask in Discord — you will get an answer faster there.
+  - name: Documentation
+    url: https://docs.comfy.org
+    about: Guides, node reference, and troubleshooting.
+  - name: Custom node problems
+    url: https://github.com/Comfy-Org/ComfyUI-Manager/issues
+    about: If the problem only happens with a specific custom node installed, report it to that node's repository or to ComfyUI-Manager.
+  - name: Backend, sampling, or model issues
+    url: https://github.com/comfyanonymous/ComfyUI/issues
+    about: For errors during generation, VRAM problems, model loading, or samplers — those live in the core ComfyUI repository.
