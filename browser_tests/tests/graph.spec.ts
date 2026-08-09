@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -17,8 +16,18 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
     await expect
       .poll(() =>
         comfyPage.page.evaluate(
-          (linkId) => window.app!.graph!.links.get(linkId)?.target_slot,
-          toLinkId(1)
+          ({ originId, originSlot, targetId }) =>
+            [...window.app!.graph!.links.values()].find(
+              (link) =>
+                link.origin_id === originId &&
+                link.origin_slot === originSlot &&
+                link.target_id === targetId
+            )?.target_slot,
+          {
+            originId: toNodeId(2),
+            originSlot: 0,
+            targetId: toNodeId(1)
+          }
         )
       )
       .toBe(1)

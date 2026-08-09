@@ -70,6 +70,7 @@ describe('minimapCanvasRenderer', () => {
     } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockGraph = createMockLGraph({
+      id: GRAPH_ID,
       _nodes: [
         createMockLGraphNode({
           id: '1',

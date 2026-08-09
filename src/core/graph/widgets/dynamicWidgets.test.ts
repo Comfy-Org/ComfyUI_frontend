@@ -137,8 +137,14 @@ describe('Dynamic Combos', () => {
     ])
 
     expect(node.isInputConnected(2)).toBe(true)
-    expect(node.getInputLink(2)?.id).toBe(otherLink.id)
-    expect(otherLink.target_slot).toBe(2)
+    const movedLink = node.getInputLink(2)
+    expect(movedLink).toMatchObject({
+      origin_id: otherLink.origin_id,
+      origin_slot: otherLink.origin_slot,
+      target_id: node.id,
+      target_slot: 2
+    })
+    expect(movedLink?.id).not.toBe(otherLink.id)
     expect(node.getInputLink(1)?.id).toBe(groupLink.id)
     expect(groupLink.target_slot).toBe(1)
     expect(graph.getLink(removedLink.id)).toBeUndefined()
@@ -167,8 +173,14 @@ describe('Dynamic Combos', () => {
     ])
 
     expect(node.isInputConnected(3)).toBe(true)
-    expect(node.getInputLink(3)?.id).toBe(otherLink.id)
-    expect(otherLink.target_slot).toBe(3)
+    const movedLink = node.getInputLink(3)
+    expect(movedLink).toMatchObject({
+      origin_id: otherLink.origin_id,
+      origin_slot: otherLink.origin_slot,
+      target_id: node.id,
+      target_slot: 3
+    })
+    expect(movedLink?.id).not.toBe(otherLink.id)
     expect(node.getInputLink(1)?.id).toBe(groupLink.id)
     expect(groupLink.target_slot).toBe(1)
   })

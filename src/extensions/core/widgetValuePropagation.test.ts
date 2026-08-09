@@ -71,6 +71,7 @@ function createSourceNode(options: {
   return {
     id: SOURCE_NODE_ID,
     graph: {
+      id: GRAPH_ID,
       rootGraph: { id: GRAPH_ID },
       getNodeById: vi.fn((id: TargetNode['id']) =>
         id === options.targetNode.id ? options.targetNode : null

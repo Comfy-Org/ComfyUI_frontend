@@ -78,7 +78,10 @@ function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
     id: 1,
     type: 'TestNode',
     isSubgraphNode: () => false,
-    graph: { rootGraph: { id: 'test-graph-id' } },
+    graph: {
+      id: 'test-graph-id',
+      rootGraph: { id: 'test-graph-id' }
+    },
     ...overrides
   })
 }

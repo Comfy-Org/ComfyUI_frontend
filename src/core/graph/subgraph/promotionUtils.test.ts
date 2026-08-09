@@ -757,18 +757,27 @@ describe('reorderSubgraphInputsByName', () => {
 
     reorderSubgraphInputsByName(host, ['second', 'first'])
 
-    expect(firstLink?.target_slot).toBe(1)
-    expect(secondLink?.target_slot).toBe(0)
-
     const store = useLinkStore()
+    const graphScope = graphScopeOf(subgraph.rootGraph)
+    const reorderedSecondLink = store.getInputSlotLink(graphScope, host.id, 0)
+    const reorderedFirstLink = store.getInputSlotLink(graphScope, host.id, 1)
+    expect(reorderedFirstLink).toMatchObject({
+      originNodeId: source.id,
+      originSlot: 0,
+      targetNodeId: host.id,
+      targetSlot: 1
+    })
+    expect(reorderedSecondLink).toMatchObject({
+      originNodeId: source.id,
+      originSlot: 0,
+      targetNodeId: host.id,
+      targetSlot: 0
+    })
+
     expect(host.isInputConnected(0)).toBe(true)
     expect(host.isInputConnected(1)).toBe(true)
-    expect(
-      store.getInputSlotLink(graphScopeOf(subgraph.rootGraph), host.id, 0)?.id
-    ).toBe(secondLink?.id)
-    expect(
-      store.getInputSlotLink(graphScopeOf(subgraph.rootGraph), host.id, 1)?.id
-    ).toBe(firstLink?.id)
+    expect(subgraph.rootGraph.links.get(reorderedSecondLink!.id)).toBeDefined()
+    expect(subgraph.rootGraph.links.get(reorderedFirstLink!.id)).toBeDefined()
   })
 })
 
