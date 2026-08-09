@@ -158,7 +158,24 @@ Entity geometry registers and unregisters with the entity that owns it
 (`LGraph.add` / `LGraph.remove`) rather than being seeded per graph on renderer
 entry. All three entity types key by `makeScopedLayoutKey(rootGraphId, id)`, so
 a root graph's teardown is one `clearGraph`; graphs sharing that bucket drop
-their entries individually through `unregisterAllGraphLayout`.
+their entries individually through `detachAllGraphLayout`.
+
+### Amendment (2026-08-09)
+
+Layout commands are purely ID-addressed. The `registrationId` ownership
+tokens formerly carried by `LayoutOperation` variants, stored in Yjs entity
+records, and compared by the store before applying mutations are removed
+entirely: create operations are first-wins (a colliding create is a no-op),
+updates and deletes apply iff the `(rootGraphId, entityId)` key exists and
+the value actually changes, and `rejected` signals only synchronous
+reentrancy. Entity IDs are treated as immutable, root-unique primary keys,
+which makes the key itself sufficient authority. The only lifecycle metadata
+retained is a private, tokenless `{ graphId, id }` attachment descriptor per
+live instance (WeakMaps in `graphLayoutAttachment.ts`), captured at attach
+time; detach clears the descriptor before issuing the store delete and
+restores it only if the delete is rejected. Since tokens never entered
+workflow JSON or any persistence, no data migration applies, and replicated
+state shrinks by one field per entity.
 
 ## Notes
 

@@ -327,6 +327,34 @@ describe('graph layout attachment contract', () => {
     expect(layoutStore.getNodeLayoutRef(graph.id, node.id).value).toBeNull()
   })
 
+  it('yields to an intervening entry instead of restoring a stale detach', () => {
+    const graph = new LGraph()
+    const node = addedNode(graph)
+    const detach = detachLayout(graph, 'node', node)
+    expect(detach.result).toBe('applied')
+
+    const replacement = new LGraphNode('replacement')
+    replacement.id = node.id
+    replacement.pos = [111, 222]
+    replacement.size = [33, 44]
+    expect(
+      attachLayout(graph, 'node', replacement, { adoptExisting: false })
+    ).toBe('applied')
+
+    detach.restore()
+
+    expect(node._layoutRegistered).toBe(false)
+    expect(replacement._layoutRegistered).toBe(true)
+    expect(layoutStore.getNodeLayoutRef(graph.id, node.id).value).toMatchObject(
+      { position: { x: 111, y: 222 } }
+    )
+
+    moveLayout(graph, 'node', node, { x: 999, y: 999 })
+    expect(layoutStore.getNodeLayoutRef(graph.id, node.id).value).toMatchObject(
+      { position: { x: 111, y: 222 } }
+    )
+  })
+
   it('does not restore a detach that was already detached', () => {
     const graph = new LGraph()
     const node = addedNode(graph)
