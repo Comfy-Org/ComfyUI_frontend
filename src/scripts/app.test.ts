@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -18,6 +19,7 @@ import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { ComfyApp, app as singletonApp } from './app'
+import { setRootGraph } from './__tests__/appTestUtils'
 import { createNode } from '@/utils/litegraphUtil'
 import {
   pasteAudioNode,
@@ -302,8 +304,8 @@ describe('ComfyApp', () => {
         size: 0
       })
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       mockWorkspaceWorkflow.activeWorkflow = workflow
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: {},
@@ -340,8 +342,8 @@ describe('ComfyApp', () => {
           ]
         }
       }
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       mockWorkspaceWorkflow.activeWorkflow = workflow
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: promptOutput,
@@ -792,8 +794,8 @@ describe('ComfyApp', () => {
     it('clears missing node packs before loading API JSON without missing nodes', async () => {
       const graph = new LGraph()
       const activeSubgraph = createTestSubgraph({ rootGraph: graph })
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       Reflect.set(mockCanvas, 'graph', activeSubgraph)
       Reflect.set(mockCanvas, 'subgraph', activeSubgraph)
       vi.mocked(mockCanvas.setGraph).mockImplementation((nextGraph) => {
@@ -829,8 +831,8 @@ describe('ComfyApp', () => {
 
     it('creates a removable placeholder for an API JSON missing node', async () => {
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const cleanupErrorHooks = installErrorClearingHooks(graph)
       const missingNodesStore = useMissingNodesErrorStore()
       const missingNodeType = 'Uninstalled<&Node>'
@@ -895,8 +897,8 @@ describe('ComfyApp', () => {
 
     it('preserves API JSON inputs on a missing node across reload', async () => {
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const sourceNodeType = 'test/ApiJsonSourceNode'
       const missingNodeType = 'UninstalledInputNode'
       class ApiJsonSourceNode extends LGraphNode {
@@ -1000,8 +1002,8 @@ describe('ComfyApp', () => {
 
     it('defers API JSON missing node warnings until they are flushed', async () => {
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const nodeReplacementStore = useNodeReplacementStore()
       vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
       vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
@@ -1129,7 +1131,7 @@ describe('ComfyApp', () => {
           experimental: false
         }
       }
-      Reflect.set(app, 'rootGraphInternal', rootGraph)
+      setRootGraph(app, rootGraph)
       vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
       vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
 
@@ -1148,15 +1150,15 @@ describe('ComfyApp', () => {
 
   describe('refreshMissingModels', () => {
     it('delegates to the app-independent missing model refresh pipeline', async () => {
-      const graph = {
+      const graph = fromPartial<LGraph>({
         nodes: [],
         serialize: vi.fn(() => createWorkflowGraphData())
-      }
+      })
       const result = {
         missingModels: [],
         confirmedCandidates: []
       }
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
       mockRefreshMissingModelPipeline.mockResolvedValue(result)
 
@@ -1176,11 +1178,11 @@ describe('ComfyApp', () => {
     })
 
     it('omits the node definition reload when reloadDefs is false', async () => {
-      const graph = {
+      const graph = fromPartial<LGraph>({
         nodes: [],
         serialize: vi.fn(() => createWorkflowGraphData())
-      }
-      Reflect.set(app, 'rootGraphInternal', graph)
+      })
+      setRootGraph(app, graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
       mockRefreshMissingModelPipeline.mockResolvedValue({
         missingModels: [],
@@ -1565,7 +1567,7 @@ describe('ComfyApp', () => {
     it('preserves the current graph when A1111 core nodes are unavailable', async () => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
       mockImportA1111.mockResolvedValue('core-nodes-unavailable')
 
@@ -1588,7 +1590,7 @@ describe('ComfyApp', () => {
     it('shows one file-load error when parameters are not A1111-shaped', async () => {
       const graph = new LGraph()
       const parameters = 'positive\nSteps: 20'
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
       mockImportA1111.mockResolvedValue('not-a1111')
 
@@ -1605,7 +1607,7 @@ describe('ComfyApp', () => {
     it('awaits persistence and orders its clear callback before setGraph', async () => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
       mockImportA1111.mockImplementation(
         async (_graph, _parameters, beforeGraphClear) => {
@@ -1656,8 +1658,8 @@ describe('ComfyApp', () => {
       } as unknown as LGraphCanvas
 
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const outgoingWorkflow = new ComfyWorkflow({
         path: 'workflows/outgoing.json',
         modified: 0,

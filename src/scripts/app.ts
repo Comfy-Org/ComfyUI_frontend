@@ -281,24 +281,25 @@ export class ComfyApp {
   private _nodeOutputs!: Record<string, NodeExecutionOutput>
   nodePreviewImages: Record<string, string[]>
 
-  private rootGraphInternal: LGraph | undefined
+  /** Shallow: the graph is observed for readiness, never deep-proxied. */
+  private readonly rootGraphRef = shallowRef<LGraph | undefined>(undefined)
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
   get graph() {
-    return this.rootGraphInternal!
+    return this.rootGraphRef.value!
   }
 
   get rootGraph(): LGraph {
-    if (!this.rootGraphInternal) {
+    if (!this.rootGraphRef.value) {
       console.error('ComfyApp graph accessed before initialization')
     }
-    return this.rootGraphInternal!
+    return this.rootGraphRef.value!
   }
 
   /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
   get isGraphReady(): boolean {
-    return !!this.rootGraphInternal
+    return !!this.rootGraphRef.value
   }
 
   canvas!: LGraphCanvas
@@ -957,7 +958,7 @@ export class ComfyApp {
 
     this.addAfterConfigureHandler(graph)
 
-    this.rootGraphInternal = graph
+    this.rootGraphRef.value = graph
     installNodeAddedTelemetry(graph)
     this.canvas = new LGraphCanvas(canvasEl, graph)
     // Make canvas states reactive so we can observe changes on them.
