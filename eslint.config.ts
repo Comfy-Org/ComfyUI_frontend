@@ -357,6 +357,14 @@ export default defineConfig([
       'no-console': 'off'
     }
   },
+  {
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
+    }
+  },
 
   // Turn off ESLint rules that are already handled by oxlint
   ...oxlint.buildFromOxlintConfigFile(

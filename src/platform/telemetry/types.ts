@@ -70,6 +70,20 @@ export interface AuthErrorMetadata {
   auth_action: AuthFlowAction
 }
 
+export type UnifiedAuthRetryFailureReason =
+  | 'missing_bearer'
+  | 'non_replayable_body'
+  | 'remint_failed'
+  | 'retry_rejected'
+  | 'retry_request_failed'
+
+export interface UnifiedAuthRetryMetadata {
+  transport: 'axios' | 'fetch'
+  outcome: 'succeeded' | 'failed'
+  final_status?: number
+  failure_reason?: UnifiedAuthRetryFailureReason
+}
+
 /**
  * Survey field ids mapped to answers. Fields are backend-overridable, so all
  * are optional.
@@ -94,16 +108,35 @@ export interface SurveyResponses {
   usage?: string
 }
 
-export type OnboardingTourStage =
+/** Stages inside the coachmark sequence, which is what `step_count` counts. */
+export type OnboardingTourStepStage =
+  | 'not_started'
   | 'started'
   | 'step_shown'
   | 'completed'
   | 'skipped'
 
+/** The nudge follows the tour, so it has no step to report. */
+export type OnboardingTourNudgeStage =
+  | 'nudge_shown'
+  | 'explore_templates_clicked'
+
+export type OnboardingTourStage =
+  | OnboardingTourStepStage
+  | OnboardingTourNudgeStage
+
 export type OnboardingTourSkipReason =
   | 'user'
   | 'target_timeout'
   | 'trigger_lost'
+  | 'postponed'
+
+export type OnboardingTourNotStartedReason =
+  | 'already_seen'
+  | 'no_roles'
+  | 'run_only'
+  | 'no_steps'
+  | 'resolver_failed'
 
 /**
  * `step_number` is 1-based and matches the "Step N of M" indicator the user
@@ -111,13 +144,23 @@ export type OnboardingTourSkipReason =
  * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
  * present only on the `skipped` stage.
  */
-export interface OnboardingTourMetadata {
+export interface OnboardingTourStepMetadata {
   tour: string
   step_count: number
   step_number?: number
   coach_id?: string
   skip_reason?: OnboardingTourSkipReason
+  not_started_reason?: OnboardingTourNotStartedReason
 }
+
+/** The nudge is post-tour, so it reports no step and no count. */
+export interface OnboardingTourNudgeMetadata {
+  tour: string
+}
+
+export type OnboardingTourMetadata =
+  | OnboardingTourStepMetadata
+  | OnboardingTourNudgeMetadata
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -344,7 +387,7 @@ export type WorkflowOpenSource = NonNullable<
  * Template library metadata
  */
 export interface TemplateLibraryMetadata {
-  source: 'sidebar' | 'menu' | 'command' | 'appbuilder'
+  source: 'sidebar' | 'menu' | 'command' | 'appbuilder' | 'first_run_nudge'
 }
 
 /**
@@ -486,6 +529,34 @@ export interface WidgetFavoriteToggledMetadata {
 }
 
 /**
+ * Fired once per node when its `widgets_values_named` restore path
+ * disagrees with what the legacy positional `widgets_values` restore
+ * would have produced. Diagnostic only — never reflects an actual
+ * mis-restored widget value, since the legacy side is a shadow
+ * computation that's never applied when the flag is on.
+ */
+export interface NamedValuesShadowDiffMismatchMetadata {
+  node_type: string
+  pack_id?: string
+  mismatch_widget_count: number
+  checked_widget_count: number
+  had_named_field: boolean
+  has_on_serialize_hook: boolean
+  has_on_configure_hook: boolean
+}
+
+/**
+ * Fired once per workflow load (sampled), aggregating the shadow-diff
+ * results across every node checked during that load.
+ */
+export interface NamedValuesShadowDiffSummaryMetadata {
+  total_nodes_checked: number
+  nodes_with_mismatch: number
+  distinct_node_types: string[]
+  distinct_pack_ids: string[]
+}
+
+/**
  * Help center opened metadata
  */
 export interface HelpCenterOpenedMetadata {
@@ -503,6 +574,7 @@ export interface HelpResourceClickedMetadata {
     | 'help_feedback'
     | 'manager'
     | 'release_notes'
+    | 'status'
   is_external: boolean
   source:
     | 'menu'
@@ -559,7 +631,11 @@ export interface SubscriptionMetadata {
 }
 
 export interface AddCreditsClickMetadata {
-  source: 'credits_panel' | 'avatar_menu' | 'settings_billing_panel'
+  source:
+    | 'credits_panel'
+    | 'avatar_menu'
+    | 'settings_billing_panel'
+    | 'deep_link'
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -622,6 +698,15 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   value?: number
   currency?: string
   ecommerce?: EcommerceMetadata
+  /**
+   * Set when the underlying checkout attempt was initiated from the resubscribe
+   * flow, so the pending-checkout recovery in `useSubscription.ts` can emit the
+   * canonical `billing.resubscribe.succeeded` terminal instead of leaving the
+   * legacy rail's `started`/`pending` resubscribe event unclosed forever.
+   */
+  operation?: 'resubscribe'
+  /** The click-time source, carried through so the terminal event can report it. */
+  resubscribe_source?: ResubscribeClickMetadata['source']
 }
 
 export interface WorkspaceInviteMetadata extends Record<string, unknown> {
@@ -652,6 +737,8 @@ type BillingErrorCode =
   | 'missing_checkout_response'
   | 'missing_payment_method_url'
   | 'payment_popup_blocked'
+  | 'reactivation_not_confirmed'
+  | 'reactivation_amount_changed'
 
 export interface BillingFailure {
   failure_category: BillingFailureCategory
@@ -686,34 +773,58 @@ type SubscriptionCheckoutBillingEvent = {
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
   payment_intent_source?: PaymentIntentSource
-} & (BillingSucceeded | BillingFailed)
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed)
 
 type BillingOperationBillingEvent = {
   operation: 'operation'
-  billing_op_id: string
+  /** Absent when the initiating call itself failed, before the backend returned one to poll. */
+  billing_op_id?: string
   operation_type: 'subscription' | 'topup' | 'cancel'
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
   payment_intent_source?: PaymentIntentSource
-} & (BillingSucceeded | BillingFailed | BillingTimedOut)
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event, including the
+   * initiating API call's latency (not just the poll-observation window).
+   * On `timeout` this is how long the client watched, not the operation's
+   * true duration.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
 
 type ResubscribeBillingEvent = {
   operation: 'resubscribe'
   source: ResubscribeClickMetadata['source']
   payment_intent_source?: PaymentIntentSource
-} & (BillingSucceeded | BillingFailed)
+} & (BillingStarted | BillingSucceeded | BillingFailed)
 
 type TopupBillingEvent = {
   operation: 'topup'
   billing_op_id?: string
-} & (BillingSucceeded | BillingFailed)
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed)
 
 type DowngradeToPersonalBillingEvent = {
   operation: 'downgrade_to_personal'
   member_removal_count: number
   member_removal_failures: number
   target_tier?: TierKey
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
 export type BillingTelemetryEvent =
@@ -771,7 +882,9 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
       member_removal_failures: event.member_removal_failures
     }),
     ...('target_tier' in event &&
-      event.target_tier !== undefined && { target_tier: event.target_tier })
+      event.target_tier !== undefined && { target_tier: event.target_tier }),
+    ...('duration_ms' in event &&
+      event.duration_ms !== undefined && { duration_ms: event.duration_ms })
   }
 }
 
@@ -784,6 +897,7 @@ export interface TelemetryProvider {
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
   trackAuthFailed?(metadata: AuthErrorMetadata): void
+  trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
@@ -820,8 +934,12 @@ export interface TelemetryProvider {
 
   // Onboarding coachmark tour events
   trackOnboardingTour?(
-    stage: OnboardingTourStage,
-    metadata: OnboardingTourMetadata
+    stage: OnboardingTourStepStage,
+    metadata: OnboardingTourStepMetadata
+  ): void
+  trackOnboardingTour?(
+    stage: OnboardingTourNudgeStage,
+    metadata: OnboardingTourNudgeMetadata
   ): void
 
   // Email verification events
@@ -887,6 +1005,14 @@ export interface TelemetryProvider {
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
+  // Named values shadow-diff diagnostics
+  trackNamedValuesShadowDiffMismatch?(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void
+  trackNamedValuesShadowDiffSummary?(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
 }
@@ -911,6 +1037,8 @@ export const TelemetryEvents = {
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_AUTH_FAILED: 'app:user_auth_failed',
   USER_LOGGED_IN: 'app:user_logged_in',
+  UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',
+  UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -932,14 +1060,19 @@ export const TelemetryEvents = {
   BEGIN_CHECKOUT: 'begin_checkout',
 
   // Canonical Billing Lifecycle
+  BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
+    'billing.subscription_checkout.started',
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
+  BILLING_OPERATION_STARTED: 'billing.operation.started',
   BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',
   BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
+  BILLING_RESUBSCRIBE_STARTED: 'billing.resubscribe.started',
   BILLING_RESUBSCRIBE_SUCCEEDED: 'billing.resubscribe.succeeded',
   BILLING_RESUBSCRIBE_FAILED: 'billing.resubscribe.failed',
+  BILLING_TOPUP_STARTED: 'billing.topup.started',
   BILLING_TOPUP_SUCCEEDED: 'billing.topup.succeeded',
   BILLING_TOPUP_FAILED: 'billing.topup.failed',
   BILLING_DOWNGRADE_TO_PERSONAL_STARTED:
@@ -953,10 +1086,14 @@ export const TelemetryEvents = {
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
 
   // Onboarding Coachmarks
+  ONBOARDING_TOUR_NOT_STARTED: 'app:onboarding_tour_not_started',
   ONBOARDING_TOUR_STARTED: 'app:onboarding_tour_started',
   ONBOARDING_TOUR_STEP_SHOWN: 'app:onboarding_tour_step_shown',
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
   ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
+  ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
+  ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
+    'app:onboarding_tour_explore_templates_clicked',
 
   // Email Verification
   USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
@@ -1017,6 +1154,10 @@ export const TelemetryEvents = {
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
+  // Named Values Shadow Diff (Comfy.Workflow.NamedValuesRestore diagnostics)
+  NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
+  NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
+
   // Page View
   PAGE_VIEW: 'app:page_view'
 } as const
@@ -1028,10 +1169,14 @@ export const OnboardingTourEvents: Record<
   OnboardingTourStage,
   TelemetryEventName
 > = {
+  not_started: TelemetryEvents.ONBOARDING_TOUR_NOT_STARTED,
   started: TelemetryEvents.ONBOARDING_TOUR_STARTED,
   step_shown: TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
-  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED
+  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED,
+  nudge_shown: TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN,
+  explore_templates_clicked:
+    TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED
 }
 
 export const CANCELLATION_STAGE_EVENTS = {
@@ -1068,6 +1213,7 @@ export type TelemetryEventProperties =
   | AuthMetadata
   | OnboardingTourMetadata
   | AuthErrorMetadata
+  | UnifiedAuthRetryMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
@@ -1089,6 +1235,8 @@ export type TelemetryEventProperties =
   | SettingChangedMetadata
   | UiButtonClickMetadata
   | WidgetFavoriteToggledMetadata
+  | NamedValuesShadowDiffMismatchMetadata
+  | NamedValuesShadowDiffSummaryMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
