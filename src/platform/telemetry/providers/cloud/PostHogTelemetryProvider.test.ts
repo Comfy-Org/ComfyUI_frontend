@@ -560,7 +560,8 @@ describe('PostHogTelemetryProvider', () => {
           stage: 'succeeded',
           outcome: 'success',
           billing_op_id: 'op-cancel',
-          operation_type: 'cancel'
+          operation_type: 'cancel',
+          duration_ms: 4200
         },
         TelemetryEvents.BILLING_OPERATION_SUCCEEDED
       ],

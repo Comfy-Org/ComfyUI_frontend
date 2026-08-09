@@ -2,6 +2,7 @@
   <div class="px-3">
     <div
       v-if="showGatedModelsHint"
+      :id="gatedHintId"
       data-testid="missing-model-gated-hint"
       role="note"
       class="mb-2 flex gap-2 rounded-md border border-warning-background/30 bg-warning-background/10 p-2.5"
@@ -11,6 +12,9 @@
         class="mt-0.5 icon-[lucide--lock] size-4 shrink-0 text-warning-background"
       />
       <p class="m-0 text-xs/relaxed text-warning-background">
+        <span class="font-semibold">
+          {{ t('rightSidePanel.missingModels.gatedModelsHintLabel') }}
+        </span>
         {{ t('rightSidePanel.missingModels.gatedModelsHint') }}
       </p>
     </div>
@@ -67,6 +71,7 @@
         variant="secondary"
         size="sm"
         class="h-8 min-w-0 flex-1 rounded-md text-xs"
+        :aria-describedby="showGatedModelsHint ? gatedHintId : undefined"
         @click="downloadAllModels"
       >
         <i aria-hidden="true" class="icon-[lucide--download] size-4 shrink-0" />
@@ -77,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { isCloud } from '@/platform/distribution/types'
@@ -114,6 +119,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const gatedHintId = useId()
 const missingModelStore = useMissingModelStore()
 const { downloadMissingModel } = useMissingModelDownload()
 

@@ -51,4 +51,30 @@ describe('initHostTelemetry', () => {
       undefined
     )
   })
+
+  it('dispatches canonical billing events through the host registry', () => {
+    const capture = vi.fn()
+    window.__comfyDesktop2 = { isRemote: () => false, Telemetry: { capture } }
+    remoteConfig.value = { enable_telemetry: true }
+
+    initHostTelemetry()
+    useTelemetry()?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'succeeded',
+      outcome: 'success',
+      billing_op_id: 'op-1',
+      tier: 'pro'
+    })
+
+    expect(capture).toHaveBeenCalledWith(
+      TelemetryEvents.BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED,
+      {
+        operation: 'subscription_checkout',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op-1',
+        tier: 'pro'
+      }
+    )
+  })
 })

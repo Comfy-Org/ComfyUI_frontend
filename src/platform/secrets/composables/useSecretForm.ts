@@ -11,6 +11,8 @@ import {
   getProviderLogo
 } from '../providers'
 import type {
+  SecretCredentialOption,
+  SecretCredentialType,
   SecretErrorCode,
   SecretInputType,
   SecretMetadata,
@@ -54,16 +56,6 @@ function isJsonObject(value: string): boolean {
 // file can't be read into memory or block the main thread on JSON.parse.
 const MAX_JSON_FILE_BYTES = 1024 * 1024
 
-// Typed over the generated enum so a new server-side credential_type is a
-// compile error here instead of silently degrading to 'text'.
-const CREDENTIAL_TYPE_TO_INPUT: Record<
-  NonNullable<SecretMetadata['credential_type']>,
-  SecretInputType
-> = {
-  api_key: 'text',
-  gcp_service_account: 'json_file'
-}
-
 interface UseSecretFormOptions {
   mode: 'create' | 'edit'
   secret?: MaybeRefOrGetter<SecretMetadata | undefined>
@@ -89,6 +81,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
   const apiErrorMessage = ref<string | null>(null)
   // Name of the uploaded credential file (json_file providers), for display.
   const fileName = ref('')
+  const selectedCredentialType = ref<SecretCredentialType | null>(null)
 
   const form = reactive<SecretFormState>({
     name: '',
@@ -102,8 +95,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
     provider: ''
   })
 
-  // The server-returned provider metadata keyed by id, so option rendering and
-  // the selected provider's input type can look up their `label`/`input_type`.
+  // The server-returned provider metadata keyed by id.
   const providerInfoById = computed(() => {
     const map = new Map<string, SecretProviderInfo>()
     for (const info of toValue(availableProviders) ?? []) map.set(info.id, info)
@@ -143,20 +135,35 @@ export function useSecretForm(options: UseSecretFormOptions) {
     }))
   })
 
-  // How the credential is entered. When editing, the stored secret's
-  // `credential_type` wins: the server validates an updated value against the
-  // stored type (immutable on update), so the rendered input and client-side
-  // validation must match it. Otherwise the selected provider's `input_type`
-  // applies; providers omitting it default to a single-line secret.
-  const selectedInputType = computed<SecretInputType>(() => {
-    const storedCredentialType =
-      mode === 'edit' ? toValue(secretRef)?.credential_type : undefined
-    if (storedCredentialType) {
-      return CREDENTIAL_TYPE_TO_INPUT[storedCredentialType] ?? 'text'
-    }
-    if (!form.provider) return 'text'
-    return providerInfoById.value.get(form.provider)?.input_type ?? 'text'
+  const credentialOptions = computed<SecretCredentialOption[]>(() => {
+    if (!form.provider) return []
+    return providerInfoById.value.get(form.provider)?.credential_options ?? []
   })
+
+  const storedCredentialType = computed(() =>
+    mode === 'edit' ? (toValue(secretRef)?.credential_type ?? null) : null
+  )
+
+  const credentialType = computed<SecretCredentialType | null>({
+    get: () =>
+      storedCredentialType.value ??
+      (
+        credentialOptions.value.find(
+          (option) => option.credential_type === selectedCredentialType.value
+        ) ?? credentialOptions.value[0]
+      )?.credential_type ??
+      null,
+    set: (value) => {
+      selectedCredentialType.value = value
+    }
+  })
+
+  const selectedInputType = computed<SecretInputType>(
+    () =>
+      credentialOptions.value.find(
+        (option) => option.credential_type === credentialType.value
+      )?.input_type ?? 'text'
+  )
 
   // Once the server allowlist resolves, drop a selection the resolved list no
   // longer offers so the user cannot submit an unlisted provider.
@@ -199,6 +206,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
       form.provider = null
     }
     fileName.value = ''
+    selectedCredentialType.value = null
     errors.name = ''
     errors.secretValue = ''
     errors.provider = ''
@@ -239,6 +247,18 @@ export function useSecretForm(options: UseSecretFormOptions) {
       latestFileReadId++
       form.secretValue = ''
       fileName.value = ''
+      selectedCredentialType.value = null
+    }
+  )
+
+  watch(
+    [credentialType, selectedInputType],
+    ([, inputType], [previousType, previousInputType]) => {
+      if (previousType === null && inputType === previousInputType) return
+      latestFileReadId++
+      form.secretValue = ''
+      fileName.value = ''
+      errors.secretValue = ''
     }
   )
 
@@ -289,7 +309,10 @@ export function useSecretForm(options: UseSecretFormOptions) {
         await createSecret({
           name: form.name.trim(),
           secret_value: form.secretValue,
-          provider: form.provider!
+          provider: form.provider!,
+          ...(credentialType.value
+            ? { credential_type: credentialType.value }
+            : {})
         })
       } else if (secret) {
         const updatePayload: { name: string; secret_value?: string } = {
@@ -320,6 +343,8 @@ export function useSecretForm(options: UseSecretFormOptions) {
     providerOptions,
     providerHelp,
     selectedInputType,
+    credentialOptions,
+    credentialType,
     fileName,
     loadSecretFromFile,
     handleSubmit

@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -132,7 +133,7 @@ const buttonStub = {
 function renderTab() {
   return render(AssetsSidebarTab, {
     global: {
-      plugins: [i18n],
+      plugins: [createPinia(), i18n],
       directives: {
         tooltip: {}
       },

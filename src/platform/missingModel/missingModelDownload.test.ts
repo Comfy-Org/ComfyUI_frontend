@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  clearMetadataCache,
   downloadModel,
   fetchModelMetadata,
   isModelDownloadable,
@@ -35,9 +36,8 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
   useSidebarTabStore: () => mockSidebarTabStore
 }))
 
-let testId = 0
-
 beforeEach(() => {
+  clearMetadataCache()
   vi.restoreAllMocks()
   vi.resetAllMocks()
   delete window.__comfyDesktop2
@@ -47,7 +47,6 @@ describe('fetchModelMetadata', () => {
   beforeEach(() => {
     mockIsDesktop.value = false
     mockSidebarTabStore.activeSidebarTabId = null
-    testId++
   })
 
   it('fetches file size via HEAD for non-Civitai URLs', async () => {
@@ -56,7 +55,7 @@ describe('fetchModelMetadata', () => {
       headers: new Headers({ 'content-length': '1048576' })
     })
 
-    const url = `https://huggingface.co/org/model/resolve/main/head-${testId}.safetensors`
+    const url = 'https://huggingface.co/org/model/resolve/main/head.safetensors'
     const metadata = await fetchModelMetadata(url)
     expect(metadata.fileSize).toBe(1048576)
     expect(metadata.gatedRepoUrl).toBeNull()
@@ -64,7 +63,7 @@ describe('fetchModelMetadata', () => {
   })
 
   it('uses Civitai API for Civitai model URLs', async () => {
-    const url = `https://civitai.com/api/download/models/${testId}`
+    const url = 'https://civitai.com/api/download/models/123'
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -76,7 +75,7 @@ describe('fetchModelMetadata', () => {
     expect(metadata.fileSize).toBe(1024 * 1024)
     expect(metadata.gatedRepoUrl).toBeNull()
     expect(fetchMock).toHaveBeenCalledWith(
-      `https://civitai.com/api/v1/model-versions/${testId}`
+      'https://civitai.com/api/v1/model-versions/123'
     )
   })
 
@@ -84,11 +83,35 @@ describe('fetchModelMetadata', () => {
     fetchMock.mockResolvedValueOnce({ ok: false })
 
     const metadata = await fetchModelMetadata(
-      `https://civitai.com/api/download/models/${testId}`
+      'https://civitai.com/api/download/models/123'
     )
     expect(metadata.fileSize).toBeNull()
     expect(metadata.gatedRepoUrl).toBeNull()
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('caches successful Civitai responses without a matching file', async () => {
+    const url = 'https://civitai.com/api/download/models/123'
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ files: [] })
+    })
+
+    const first = await fetchModelMetadata(url)
+    const second = await fetchModelMetadata(url)
+
+    expect(first.fileSize).toBeNull()
+    expect(second.fileSize).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries failed Civitai metadata responses', async () => {
+    const url = 'https://civitai.com/api/download/models/123'
+    fetchMock.mockResolvedValue({ ok: false })
+
+    expect((await fetchModelMetadata(url)).fileSize).toBeNull()
+    expect((await fetchModelMetadata(url)).fileSize).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it.for([401, 403, 451])(
@@ -101,14 +124,29 @@ describe('fetchModelMetadata', () => {
       })
 
       const metadata = await fetchModelMetadata(
-        `https://huggingface.co/bfl/FLUX.1/resolve/main/gated-${status}-${testId}.safetensors`
+        `https://huggingface.co/bfl/FLUX.1/resolve/main/gated-${status}.safetensors`
       )
       expect(metadata.gatedRepoUrl).toBe('https://huggingface.co/bfl/FLUX.1')
       expect(metadata.fileSize).toBeNull()
     }
   )
 
-  it.for([401, 403, 451, 404, 500])(
+  it('caches gated HuggingFace metadata', async () => {
+    const url =
+      'https://huggingface.co/bfl/FLUX.1/resolve/main/gated-cache.safetensors'
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      headers: new Headers({ 'x-error-code': 'GatedRepo' })
+    })
+
+    await fetchModelMetadata(url)
+    await fetchModelMetadata(url)
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.for([401, 403, 451])(
     'does not treat HuggingFace %s as gated without the GatedRepo error code',
     async (status) => {
       fetchMock.mockResolvedValueOnce({
@@ -118,12 +156,26 @@ describe('fetchModelMetadata', () => {
       })
 
       const metadata = await fetchModelMetadata(
-        `https://huggingface.co/org/model/resolve/main/not-gated-${status}-${testId}.safetensors`
+        `https://huggingface.co/org/model/resolve/main/not-gated-${status}.safetensors`
       )
       expect(metadata.gatedRepoUrl).toBeNull()
       expect(metadata.fileSize).toBeNull()
     }
   )
+
+  it('does not cache a non-gated HuggingFace failure', async () => {
+    const url =
+      'https://huggingface.co/org/model/resolve/main/not-gated-404.safetensors'
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 404,
+      headers: new Headers({ 'x-error-code': 'GatedRepo' })
+    })
+
+    expect((await fetchModelMetadata(url)).gatedRepoUrl).toBeNull()
+    expect((await fetchModelMetadata(url)).gatedRepoUrl).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 
   it('does not treat non-HuggingFace hosts as gated', async () => {
     fetchMock.mockResolvedValueOnce({
@@ -133,14 +185,14 @@ describe('fetchModelMetadata', () => {
     })
 
     const metadata = await fetchModelMetadata(
-      `https://huggingface.co.evil.com/org/model/resolve/main/gated-${testId}.safetensors`
+      'https://huggingface.co.evil.com/org/model/resolve/main/gated.safetensors'
     )
     expect(metadata.gatedRepoUrl).toBeNull()
     expect(metadata.fileSize).toBeNull()
   })
 
   it('returns null for unrecognized Civitai URL patterns', async () => {
-    const url = `https://civitai.com/api/v1/models/${testId}`
+    const url = 'https://civitai.com/api/v1/models/123'
     const metadata = await fetchModelMetadata(url)
     expect(metadata.fileSize).toBeNull()
     expect(metadata.gatedRepoUrl).toBeNull()
@@ -148,7 +200,8 @@ describe('fetchModelMetadata', () => {
   })
 
   it('returns cached metadata on second call', async () => {
-    const url = `https://huggingface.co/org/model/resolve/main/cached-${testId}.safetensors`
+    const url =
+      'https://huggingface.co/org/model/resolve/main/cached.safetensors'
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -164,7 +217,7 @@ describe('fetchModelMetadata', () => {
   })
 
   it('caches successful responses without content-length', async () => {
-    const url = `https://example.com/no-size-${testId}.safetensors`
+    const url = 'https://example.com/no-size.safetensors'
     fetchMock.mockResolvedValueOnce({
       ok: true,
       headers: new Headers({})
@@ -178,8 +231,20 @@ describe('fetchModelMetadata', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('returns null fileSize for an invalid content-length', async () => {
+    const url = 'https://example.com/invalid-size.safetensors'
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-length': 'abc' })
+    })
+
+    const metadata = await fetchModelMetadata(url)
+
+    expect(metadata.fileSize).toBeNull()
+  })
+
   it('retries after a metadata request fails', async () => {
-    const url = `https://example.com/retry-${testId}.safetensors`
+    const url = 'https://example.com/retry.safetensors'
     fetchMock
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
       .mockResolvedValueOnce({
@@ -196,7 +261,8 @@ describe('fetchModelMetadata', () => {
   })
 
   it('retries after a non-ok HEAD response', async () => {
-    const url = `https://huggingface.co/org/model/resolve/main/retry-${testId}.safetensors`
+    const url =
+      'https://huggingface.co/org/model/resolve/main/retry.safetensors'
     fetchMock
       .mockResolvedValueOnce({
         ok: false,
@@ -214,7 +280,8 @@ describe('fetchModelMetadata', () => {
   })
 
   it('deduplicates concurrent requests for the same URL', async () => {
-    const url = `https://huggingface.co/org/model/resolve/main/dedup-${testId}.safetensors`
+    const url =
+      'https://huggingface.co/org/model/resolve/main/dedup.safetensors'
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -361,6 +428,53 @@ describe('downloadModel', () => {
     mockIsDesktop.value = false
     mockSidebarTabStore.activeSidebarTabId = null
   })
+
+  it.for([
+    'https://huggingface.co/org/model/resolve/main/model.safetensors',
+    'http://localhost:8188/models/model.safetensors'
+  ])('opens browser downloads for supported URL schemes (%s)', (url) => {
+    const clickedAnchors: HTMLAnchorElement[] = []
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+      function (this: HTMLAnchorElement) {
+        clickedAnchors.push(this)
+      }
+    )
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url,
+        directory: 'checkpoints'
+      },
+      {}
+    )
+
+    expect(clickedAnchors).toHaveLength(1)
+    expect(clickedAnchors[0]?.href).toBe(url)
+    expect(clickedAnchors[0]?.download).toBe('model.safetensors')
+    expect(clickedAnchors[0]?.target).toBe('_blank')
+    expect(clickedAnchors[0]?.rel).toBe('noopener noreferrer')
+  })
+
+  it.for(['javascript:alert(1)', 'not a url'])(
+    'does not open browser downloads for unsafe URLs (%s)',
+    (url) => {
+      const anchorClick = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(() => {})
+
+      downloadModel(
+        {
+          name: 'model.safetensors',
+          url,
+          directory: 'checkpoints'
+        },
+        {}
+      )
+
+      expect(anchorClick).not.toHaveBeenCalled()
+    }
+  )
 
   it('uses the Desktop2 bridge directly instead of the browser fallback', () => {
     const anchorClick = vi

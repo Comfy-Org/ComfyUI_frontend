@@ -335,9 +335,39 @@ describe('MissingModelCard (OSS)', () => {
       'https://huggingface.co/comfy/test'
     await nextTick()
 
-    expect(screen.getByRole('note')).toHaveTextContent(
+    const hint = screen.getByRole('note')
+    expect(within(hint).getByText('Note:')).toBeInTheDocument()
+    expect(hint).toHaveTextContent(
       'Some models are gated. To download them, sign in to Hugging Face and accept the model license agreement.'
     )
+  })
+
+  it('associates Download all with visible gated model guidance', async () => {
+    const group = makeGroup({ withDownloadUrls: true })
+    const url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    mountCard({ missingModelGroups: [group] })
+
+    useMissingModelStore().gatedRepoUrls[url] =
+      'https://huggingface.co/comfy/test'
+    await nextTick()
+
+    const hint = screen.getByRole('note')
+    expect(hint.id).not.toBe('')
+    expect(screen.getByTestId('missing-model-download-all')).toHaveAttribute(
+      'aria-describedby',
+      hint.id
+    )
+  })
+
+  it('does not describe Download all with hidden gated guidance', () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+
+    expect(
+      screen.getByTestId('missing-model-download-all')
+    ).not.toHaveAttribute('aria-describedby')
   })
 
   it('does not show gated guidance for a model that is not downloadable', async () => {

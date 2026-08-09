@@ -34,6 +34,7 @@ const mockRenderer = vi.hoisted(() => {
       setBoolUniform: vi.fn(),
       bindCurveTexture: vi.fn(),
       bindInputImage: vi.fn(),
+      isContextLost: vi.fn(() => false),
       render: vi.fn(),
       toBlob: vi.fn(() => Promise.resolve(new Blob(['x']))),
       dispose: vi.fn()

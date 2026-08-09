@@ -5,7 +5,6 @@
     "feedbackTooltip": "Retour",
     "freeTierPartner": "Les nodes partenaires nécessitent un forfait payant",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} exécutions restantes",
-    "freeTierRunsExhausted": "Aucune exécution restante",
     "share": "Partager",
     "shareTooltip": "Partager le workflow"
   },
@@ -256,6 +255,8 @@
       "backToGithubLogin": "S'inscrire avec Github à la place",
       "backToLogin": "Retour à la connexion",
       "backToSocialLogin": "Inscrivez-vous avec Google ou Github à la place",
+      "cloudNewUser": "Nouveau sur Comfy ?",
+      "cloudSignUp": "Inscrivez-vous ici",
       "confirmPasswordLabel": "Confirmer le mot de passe",
       "confirmPasswordPlaceholder": "Entrez à nouveau le même mot de passe",
       "didntReceiveEmail": "Vous n'avez pas reçu d'e-mail ? Contactez-nous à",
@@ -264,6 +265,7 @@
       "failed": "Échec de la connexion",
       "forgotPassword": "Mot de passe oublié?",
       "forgotPasswordError": "Échec de l'envoi de l'e-mail de réinitialisation du mot de passe",
+      "freeRunsSuffix": "pour obtenir {count} exécution gratuite. | pour obtenir {count} exécutions gratuites.",
       "freeTierBadge": "Éligible à l’offre gratuite",
       "freeTierDescription": "Inscrivez-vous avec Google pour obtenir {credits} crédits gratuits chaque mois. Aucune carte requise.",
       "freeTierDescriptionGeneric": "Inscrivez-vous avec Google pour obtenir des crédits gratuits chaque mois. Aucune carte requise.",
@@ -345,10 +347,13 @@
   "billingOperation": {
     "cancelFailed": "Échec de l'annulation de l'abonnement",
     "cancelTimeout": "Délai d'annulation de l'abonnement dépassé",
+    "subscriptionActionRequired": "Vérifiez votre paiement pour finaliser la configuration de votre espace de travail",
     "subscriptionFailed": "Échec de la mise à jour de l'abonnement",
+    "subscriptionFailedDetail": "Nous n’avons pas pu mettre à jour votre abonnement. Veuillez réessayer.",
     "subscriptionProcessing": "Traitement du paiement — configuration de votre espace de travail...",
     "subscriptionSuccess": "Abonnement mis à jour avec succès",
     "subscriptionTimeout": "Le délai de vérification de l'abonnement a expiré",
+    "topupActionRequired": "Vérifiez votre paiement pour ajouter vos crédits",
     "topupFailed": "Échec de la recharge",
     "topupProcessing": "Traitement du paiement — ajout de crédits...",
     "topupSuccess": "Crédits ajoutés avec succès",
@@ -445,27 +450,12 @@
   "cloudForgotPassword_sendResetLink": "Envoyer le lien de réinitialisation",
   "cloudForgotPassword_title": "Mot de passe oublié",
   "cloudHero": {
+    "carouselLabel": "Modèles à la une",
+    "carouselRoleDescription": "carrousel",
     "nextSlide": "Diapositive suivante",
     "previousSlide": "Diapositive précédente",
-    "slidePagerLabel": "Aller à la diapositive {index}",
-    "slides": {
-      "cloud": {
-        "description": "Idéal pour la plupart des utilisateurs souhaitant travailler de n'importe où avec des modèles vérifiés pour une licence commerciale.",
-        "title": "Cloud"
-      },
-      "models": {
-        "description": "Modèles sélectionnés et licenciés commercialement, prêts à l’emploi sans configuration.",
-        "title": "Modèles"
-      },
-      "team": {
-        "description": "Intégrez votre équipe dès aujourd'hui. Partagez des workflows et des ressources dans toute votre organisation.",
-        "title": "Équipe"
-      },
-      "workflows": {
-        "description": "De l’idée au résultat en quelques minutes. Générez plusieurs variantes côte à côte.",
-        "title": "Workflows"
-      }
-    }
+    "slideRoleDescription": "diapositive",
+    "slideStatus": "{title}, diapositive {current} sur {total}"
   },
   "cloudNotification": {
     "continueLocally": "Continuer localement",
@@ -577,11 +567,9 @@
   "cloudPrivateBeta_title": "Cloud est actuellement en bêta privée",
   "cloudSorryContactSupport_title": "Désolé, contactez le support",
   "cloudStart_desc": "Aucune configuration requise. Fonctionne sur tous les appareils.",
-  "cloudStart_download": "Télécharger ComfyUI",
   "cloudStart_explain": "Générez plusieurs résultats à la fois. Partagez facilement vos flux de travail.",
   "cloudStart_learnAboutButton": "En savoir plus sur Cloud",
   "cloudStart_title": "créez en quelques secondes",
-  "cloudStart_wantToRun": "Vous préférez exécuter ComfyUI localement ?",
   "cloudSurvey_steps_experience": "Quel est votre niveau de connaissance de ComfyUI ?",
   "cloudSurvey_steps_focus": "Qu'êtes-vous en train de créer ?",
   "cloudSurvey_steps_intent": "Que souhaitez-vous créer avec ComfyUI ?",
@@ -652,6 +640,7 @@
     "next": "Suivant",
     "publishButton": "Publier sur Comfy Workflows",
     "publishFailedDescription": "Une erreur s’est produite lors de la publication de votre workflow. Veuillez réessayer.",
+    "publishFailedDescriptionWithReason": "Une erreur est survenue lors de la publication de votre workflow : {reason}",
     "publishFailedTitle": "Échec de la publication",
     "publishSuccessDescription": "Votre workflow est maintenant en ligne sur Comfy Workflows.",
     "publishSuccessTitle": "Publication réussie",
@@ -709,6 +698,13 @@
     "settings": "Paramètres",
     "theme": "Thème",
     "toggleBottomPanel": "Basculer le panneau inférieur"
+  },
+  "compositor": {
+    "downloadPsd": "Télécharger le PSD",
+    "empty": "Exécutez le workflow pour générer un composite",
+    "open": "Ouvrir le compositeur",
+    "runWorkflowFirst": "Exécutez d’abord le workflow pour charger les images d’entrée",
+    "saveFailed": "Échec de l’enregistrement du composite"
   },
   "contextMenu": {
     "Add Group": "Ajouter un Groupe",
@@ -811,6 +807,9 @@
       "buy": "Acheter",
       "buyCredits": "Continuer vers le paiement",
       "buyNow": "Acheter maintenant",
+      "chargedImmediatelyNote": "Votre carte enregistrée est débitée immédiatement.",
+      "confirmSubtitle": "Les crédits sont ajoutés à cet espace de travail dès que le paiement est effectué.",
+      "confirmTitle": "Confirmer",
       "contactUs": "Contactez-nous",
       "creditsDescription": "Les crédits sont utilisés pour exécuter des workflows ou des nœuds partenaires.",
       "creditsPerDollar": "crédits par dollar",
@@ -825,6 +824,7 @@
       "minRequired": "Minimum {credits} crédits",
       "minimumPurchase": "Achat minimum de ${amount} ({credits} crédits)",
       "needMore": "Besoin de plus ?",
+      "payAmount": "Payer {amount}",
       "purchaseError": "Échec de l'achat",
       "purchaseErrorDetail": "Échec de l'achat de crédits : {error}",
       "purchaseSuccess": "Crédits ajoutés avec succès !",
@@ -835,6 +835,8 @@
       "topUp": "Recharger",
       "unknownError": "Une erreur inconnue est survenue",
       "usdAmount": "${amount}",
+      "verifyBody": "Votre banque requiert une vérification supplémentaire pour finaliser ce paiement.",
+      "verifyTitle": "Vérifiez votre paiement",
       "videosEstimate": "~{count} vidéos",
       "viewPricing": "Voir les détails des tarifs",
       "youGet": "Crédits",
@@ -861,7 +863,6 @@
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOÎTE ENGLOBANTE",
     "BOUNDING_BOXES": "BOÎTES DE DÉLIMITATION",
-    "CAMERA_CONTROL": "Contrôle de la caméra",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "SORTIE_CLIP_VISION",
@@ -871,6 +872,7 @@
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
+    "COMPOSITOR": "COMPOSITEUR",
     "CONDITIONING": "CONDITIONNEMENT",
     "CONTROL_NET": "RESEAU_DE_CONTROLE",
     "CURVE": "COURBE",
@@ -910,6 +912,7 @@
     "LATENT": "LATENT",
     "LATENT_OPERATION": "OPERATION_LATENTE",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
+    "LAYERS": "CALQUES",
     "LOAD3D_CAMERA": "Charger la caméra 3D",
     "LOAD3D_MODEL_INFO": "CHARGER_INFO_MODÈLE_3D",
     "LOAD_3D": "CHARGER_3D",
@@ -1728,6 +1731,7 @@
     "off": "Désactivé",
     "ok": "OK",
     "on": "Activé",
+    "openLayerEditor": "Ouvrir l’éditeur de calques",
     "openManager": "Ouvrir le gestionnaire",
     "openNewIssue": "Ouvrir un nouveau problème",
     "or": "ou",
@@ -1789,6 +1793,7 @@
     "resizeFromTopLeft": "Redimensionner depuis le coin supérieur gauche",
     "resizeFromTopRight": "Redimensionner depuis le coin supérieur droit",
     "restart": "Redémarrer",
+    "restore": "Restaurer",
     "restoreDialog": "Restaurer la boîte de dialogue",
     "resultsCount": "{count} Résultats Trouvés",
     "running": "En cours",
@@ -1874,6 +1879,26 @@
     "workflow": "Flux de travail",
     "you": "Vous"
   },
+  "gettingStarted": {
+    "loadFailed": "Nous n'avons pas pu charger les modèles.",
+    "retry": "Réessayer",
+    "retryTemplate": "Réessayer {title}",
+    "startBlank": "Commencer avec un canevas vierge",
+    "subtitle": "Choisissez un workflow prêt à l'emploi pour commencer, ou débutez avec un canevas vierge.",
+    "tabs": {
+      "templates": "Modèles",
+      "tutorials": "Tutoriels"
+    },
+    "tabsLabel": "Options de démarrage",
+    "templateFailed": "Nous n'avons pas pu ouvrir ce modèle.",
+    "title": "Créons quelque chose",
+    "tutorials": {
+      "imageToImage": "Image vers image",
+      "inpaint": "Inpainting",
+      "interfaceOverview": "Présentation de l'interface",
+      "textToImage": "Texte vers image"
+    }
+  },
   "graphCanvasMenu": {
     "canvasMode": "Mode canevas",
     "canvasToolbar": "Barre d’outils du canevas",
@@ -1939,6 +1964,7 @@
     "openDevTools": "Ouvrir les outils de développement",
     "recentReleases": "Versions récentes",
     "reinstall": "Réinstaller",
+    "systemStatus": "État du système",
     "updateAvailable": "Mise à jour",
     "updateComfyUI": "Mettre à jour ComfyUI",
     "updateComfyUIFailed": "Échec de la mise à jour de ComfyUI. Veuillez réessayer.",
@@ -2093,6 +2119,71 @@
   },
   "issueReport": {
     "helpFix": "Aidez à résoudre cela"
+  },
+  "layerEditor": {
+    "alignBottom": "Aligner en bas",
+    "alignCenterHorizontal": "Aligner au centre horizontalement",
+    "alignCenterVertical": "Aligner au centre verticalement",
+    "alignLeft": "Aligner à gauche",
+    "alignRight": "Aligner à droite",
+    "alignTop": "Aligner en haut",
+    "alignment": "Alignement",
+    "background": "Arrière-plan",
+    "backgroundColor": "Couleur d’arrière-plan",
+    "blend": {
+      "color": "Couleur",
+      "colorBurn": "Densité couleur +",
+      "colorDodge": "Densité couleur –",
+      "darken": "Assombrir",
+      "difference": "Différence",
+      "divide": "Division",
+      "exclusion": "Exclusion",
+      "grainExtract": "Extraction du grain",
+      "grainMerge": "Fusion du grain",
+      "hardLight": "Lumière dure",
+      "hardMix": "Mélange dur",
+      "hue": "Teinte",
+      "lighten": "Éclaircir",
+      "linearBurn": "Densité linéaire +",
+      "linearDodge": "Densité linéaire –",
+      "linearLight": "Lumière linéaire",
+      "luminosity": "Luminosité",
+      "multiply": "Produit",
+      "normal": "Normal",
+      "overlay": "Incrustation",
+      "pinLight": "Lumière ponctuelle",
+      "saturation": "Saturation",
+      "screen": "Superposition",
+      "softLight": "Lumière tamisée",
+      "subtract": "Soustraction",
+      "vividLight": "Lumière vive"
+    },
+    "blendMode": "Mode de fusion",
+    "dimensions": "Dimensions",
+    "exportPsd": "Exporter en PSD",
+    "exportPsdFailed": "Échec de l’exportation du PSD",
+    "fill": "Remplir",
+    "fitView": "Ajuster",
+    "flip": "Retourner",
+    "flipHorizontal": "Retourner horizontalement",
+    "flipVertical": "Retourner verticalement",
+    "handTool": "Main",
+    "layerN": "Calque {n}",
+    "layers": "Calques",
+    "layersFailedToLoad": "Un calque n’a pas pu être chargé | {count} calques n’ont pas pu être chargés",
+    "loadFailed": "Échec du chargement des calques",
+    "moveDown": "Descendre le calque",
+    "moveUp": "Monter le calque",
+    "opacity": "Opacité",
+    "position": "Position",
+    "redo": "Rétablir",
+    "rotation": "Rotation",
+    "selectTool": "Sélectionner",
+    "title": "Compositeur",
+    "toggleVisibility": "Afficher/Masquer",
+    "undo": "Annuler",
+    "webglUnavailable": "WebGL n’est pas disponible – le canvas ne peut pas s’afficher",
+    "zoom": "Zoom"
   },
   "linearMode": {
     "appModeToolbar": {
@@ -2702,6 +2793,7 @@
     "Open Custom Nodes Folder": "Ouvrir le dossier des nœuds personnalisés",
     "Open DevTools": "Ouvrir les outils de développement",
     "Open Inputs Folder": "Ouvrir le dossier des entrées",
+    "Open Layer Editor for Selected Node": "Ouvrir l’éditeur de calques pour le nœud sélectionné",
     "Open Logs Folder": "Ouvrir le dossier des journaux",
     "Open Mask Editor for Selected Node": "Ouvrir l’éditeur de mask pour le nœud sélectionné",
     "Open Models Folder": "Ouvrir le dossier des modèles",
@@ -2904,6 +2996,7 @@
     "mage": "mage",
     "mask": "masque",
     "merging": "fusion",
+    "minimax": "minimax",
     "mochi": "mochi",
     "model": "modèle",
     "model specific": "spécifique au modèle",
@@ -3085,6 +3178,74 @@
     },
     "back": "Précédent",
     "done": "Terminé",
+    "firstRun": {
+      "nudge": {
+        "dismiss": "Pas maintenant",
+        "explore": "Explorer les modèles",
+        "noTour": {
+          "body": "Parcourez les modèles et choisissez-en un à réaliser.",
+          "title": "Des centaines d'autres à découvrir"
+        },
+        "ran": {
+          "body": "Vous venez de créer votre première. Explorez tout ce que vous pouvez construire.",
+          "title": "C'était l'une des centaines possibles"
+        }
+      },
+      "prompt": {
+        "i2v": {
+          "body": "L'image pose le décor. Ici, vous indiquez ce qui se passe ensuite.",
+          "title": "Décrivez comment ça doit bouger"
+        },
+        "image-edit": {
+          "body": "Votre image reste telle quelle. Décrivez ce que vous souhaitez modifier.",
+          "title": "Dites ce qu'il faut changer"
+        },
+        "other": {
+          "body": "Ceci est votre prompt. Modifiez-le pour changer le résultat.",
+          "title": "Dites-lui quoi créer"
+        },
+        "t2i": {
+          "body": "Votre image est générée à partir de cette description. Essayez ce que vous voulez.",
+          "title": "Décrivez ce que vous voulez"
+        }
+      },
+      "result": {
+        "failed": {
+          "body": "Aucun résultat ici. Fermez le guide et essayez à nouveau.",
+          "title": "L'exécution n'a pas abouti"
+        },
+        "generating": {
+          "body": "Votre résultat apparaîtra ici dès qu'il sera prêt.",
+          "title": "Patientez un instant"
+        },
+        "image": {
+          "body": "Votre nouvelle image apparaît ici — prête à être téléchargée ou partagée.",
+          "title": "Et voilà"
+        },
+        "video": {
+          "body": "Votre nouvelle vidéo apparaît ici — prête à être téléchargée ou partagée.",
+          "title": "Et voilà"
+        }
+      },
+      "run": {
+        "body": "Appuyez sur Exécuter pour commencer à générer votre résultat.",
+        "title": "Exécutez votre workflow"
+      },
+      "upload": {
+        "i2v": {
+          "body": "Cette image est votre première image clé. Remplacez-la par la vôtre quand vous voulez.",
+          "title": "Commencez avec une image"
+        },
+        "image-edit": {
+          "body": "C'est l'image que vous allez modifier. Remplacez-la par la vôtre quand vous voulez.",
+          "title": "Commencez avec une image"
+        },
+        "other": {
+          "body": "Cette image alimente le workflow. Remplacez-la par la vôtre quand vous voulez.",
+          "title": "Commencez avec une image"
+        }
+      }
+    },
     "loadError": "Une erreur est survenue lors de l'affichage de ce tutoriel",
     "next": "Suivant",
     "skip": "Passer",
@@ -3262,12 +3423,18 @@
       "copyUrl": "Copier l’URL",
       "customNodeDownloadDisabled": "L’environnement cloud ne prend pas en charge l’importation de modèles pour les nœuds personnalisés dans cette section. Veuillez utiliser des nœuds de chargement standard ou remplacer par un modèle de la bibliothèque ci-dessous.",
       "downloadAll": "Tout télécharger",
+      "downloadModel": "Télécharger {model}",
       "expandNodes": "Afficher les nœuds référencés",
+      "gatedModelDownloadTooltip": "Le téléchargement peut nécessiter une connexion à Hugging Face au préalable.",
+      "gatedModelTooltip": "Ce modèle est restreint et nécessite d’être connecté à Hugging Face et d’accepter son accord de licence.",
+      "gatedModelsHint": "Certains modèles sont restreints. Pour les télécharger, connectez-vous à Hugging Face et acceptez l’accord de licence du modèle.",
+      "gatedModelsHintLabel": "Remarque :",
       "import": "Importer",
       "importNotSupported": "Importation non prise en charge",
       "importing": "Importation...",
       "locateNode": "Localiser le nœud sur le canevas",
       "missingModelsTitle": "Modèles manquants",
+      "openHuggingFaceRepo": "Ouvrir le dépôt Hugging Face pour {model}",
       "refresh": "Rafraîchir",
       "refreshFailed": "Échec du rafraîchissement des modèles manquants. Veuillez réessayer.",
       "refreshing": "Rafraîchissement des modèles manquants.",
@@ -3315,6 +3482,8 @@
   "secrets": {
     "addSecret": "Ajouter un secret",
     "createdAt": "Créé le {date}",
+    "credentialType": "Type d’identifiant",
+    "credentialTypeHint": "Choisissez comment vous fournirez cet identifiant.",
     "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer « {name} » ? Cette action est irréversible.",
     "deleteConfirmTitle": "Supprimer le secret",
     "description": "Les secrets sont chiffrés et utilisés pour les données sensibles comme les clés API.",
@@ -3856,6 +4025,7 @@
     "beta": "BÊTA",
     "billedMonthly": "Facturé mensuellement",
     "billedYearly": "{total} facturé annuellement",
+    "billingAndInvoices": "Facturation et factures",
     "billingComingSoon": {
       "message": "La facturation d'équipe arrive bientôt. Vous pourrez souscrire à un abonnement pour votre espace de travail avec un tarif par utilisateur. Restez à l'écoute pour les mises à jour.",
       "title": "Bientôt disponible"
@@ -3866,17 +4036,23 @@
       "endOfBillingPeriod": "fin de la période de facturation",
       "failed": "Échec de l'annulation de l'abonnement",
       "keepSubscription": "Conserver l'abonnement",
-      "title": "Annuler l'abonnement"
+      "offerUnavailable": "Cette option n’est pas disponible. Veuillez en choisir une autre.",
+      "title": "Annuler l'abonnement",
+      "workspaceChanged": "Votre espace de travail actif a changé. Revenez à l’espace précédent et réessayez."
     },
     "cancelPlan": "Annuler l’abonnement",
     "cancelSuccess": "Abonnement annulé avec succès",
     "canceled": "Annulé",
     "canceledCard": {
       "description": "Vous ne serez plus facturé. Vos fonctionnalités restent actives jusqu'au {date}.",
+      "descriptionWithoutDate": "Vous ne serez plus facturé. Vos fonctionnalités restent actives jusqu’à la fin de votre période de facturation.",
+      "endedDescription": "Votre abonnement n’est plus actif.",
+      "endedTitle": "Votre abonnement a pris fin",
       "title": "Votre abonnement a été annulé"
     },
     "changePlan": "Changer d’abonnement",
     "changeTo": "Changer pour {plan}",
+    "changesToPlanOnDate": "Changements vers {plan} le {date}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Logo Comfy Cloud",
     "contactOwnerToSubscribe": "Contactez le propriétaire de l’espace de travail pour vous abonner",
@@ -3893,6 +4069,8 @@
     "descriptionWorkspace": "Choisissez la meilleure offre pour votre espace de travail",
     "downgrade": {
       "body": "Tous les autres membres de cet espace de travail seront immédiatement supprimés.",
+      "bodyReactivation": "Votre abonnement est annulé. Changer de formule le réactivera et vous serez facturé {amount} aujourd’hui.",
+      "bodyRemovalAndReactivation": "Tous les autres membres de cet espace de travail seront immédiatement supprimés. Votre abonnement est annulé, donc changer de formule le réactivera également et vous serez facturé {amount} aujourd’hui.",
       "confirm": "Changer de plan",
       "confirmationPhrase": "Je comprends",
       "confirmationPrompt": "Tapez « {phrase} » pour confirmer.",
@@ -3902,6 +4080,8 @@
       "notAllowed": "Ce changement de plan n'est pas disponible",
       "paymentMethodRequired": "Un moyen de paiement est requis pour changer de plan",
       "paymentPageBlocked": "Impossible d’ouvrir la page de paiement — veuillez réessayer",
+      "reactivationAmountChanged": "Le montant facturé a changé depuis votre confirmation — veuillez vérifier et réessayer",
+      "reactivationConfirmationRequired": "Veuillez confirmer le montant de la réactivation avant de continuer",
       "title": "Passer au plan {plan} ?"
     },
     "endsOnDate": "Se termine le {date}",
@@ -3915,23 +4095,8 @@
     "everythingInPlus": "Tout ce qui est dans {plan}, plus :",
     "expiresDate": "Expire le {date}",
     "freePerks": {
+      "freeRuns": "{count} exécution gratuite | {count} exécutions gratuites",
       "maxRuntime": "{duration} de temps d’exécution maximum"
-    },
-    "freeTier": {
-      "description": "Votre plan gratuit inclut {credits} crédits chaque mois pour essayer Comfy Cloud.",
-      "descriptionGeneric": "Votre plan gratuit inclut une allocation mensuelle de crédits pour essayer Comfy Cloud.",
-      "descriptionQuota": "Votre offre gratuite inclut {runs} exécutions pour commencer avec Comfy Cloud — aucune carte requise.",
-      "nextRefresh": "Vos crédits seront renouvelés le {date}.",
-      "outOfCredits": {
-        "subtitle": "Abonnez-vous pour débloquer les recharges et plus encore",
-        "title": "Vous n’avez plus de crédits gratuits"
-      },
-      "subscribeCta": "Abonnez-vous pour plus",
-      "title": "Vous êtes sur le plan Gratuit",
-      "topUpBlocked": {
-        "title": "Débloquez les recharges et plus encore"
-      },
-      "upgradeCta": "Voir les offres"
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Des questions ou besoin d'une offre entreprise ?",
@@ -3942,6 +4107,9 @@
       "memberTitle": "L’abonnement de cet espace de travail est inactif",
       "runLabel": "Exécuter"
     },
+    "inactiveTeamDescription": "Réactivez votre abonnement d'équipe pour ajouter des membres et exécuter des workflows",
+    "inactiveTeamPlanIncludes": "Un abonnement actif comprend tout ce qui est dans {plan}, plus :",
+    "inactiveTeamTitle": "Abonnement d'équipe inactif",
     "inviteUpTo": "Invitez jusqu’à",
     "invoiceHistory": "Historique des factures",
     "learnMore": "En savoir plus",
@@ -3981,6 +4149,17 @@
     "partnerNodesCredits": "Crédits Nœuds Partenaires",
     "partnerNodesDescription": "Pour exécuter des modèles commerciaux/propriétaires",
     "partnerNodesPricingTable": "Tableau des tarifs des Partner Nodes",
+    "paymentRecovery": {
+      "memberCta": "Ok, compris",
+      "memberDescription": "Demandez au propriétaire de l'espace de travail de réactiver l'abonnement.",
+      "memberRunLabel": "Exécuter",
+      "memberRunTooltip": "Demandez au propriétaire de l'espace de travail de réactiver cet abonnement",
+      "ownerCta": "Mettre à jour le paiement",
+      "ownerDescription": "Mettez à jour votre méthode de paiement pour réactiver l'abonnement de l'espace de travail et exécuter des workflows.",
+      "ownerRunLabel": "Mettre à jour le paiement pour exécuter",
+      "ownerRunTooltip": "Mettez à jour le paiement pour réactiver cet abonnement",
+      "title": "Abonnement en pause"
+    },
     "perMonth": "USD / mois",
     "personalHeader": "Les plans personnels sont réservés à un usage individuel. {action}",
     "personalHeaderAction": "Pour ajouter des coéquipiers, abonnez-vous au plan équipe.",
@@ -4001,6 +4180,7 @@
       "backToAllPlans": "Retour à toutes les offres",
       "billedEachMonth": "{amount} facturé chaque mois. Annulez à tout moment.",
       "commitment": "engagement",
+      "completeVerification": "Terminer la vérification",
       "confirm": "Confirmer",
       "confirmChange": "Confirmer la modification",
       "confirmChangeTitle": "Vérifiez votre modification programmée",
@@ -4025,6 +4205,20 @@
       "privacyPolicy": "Politique de confidentialité",
       "proratedCharge": "Facturation au prorata pour {plan}",
       "proratedRefund": "Remboursement au prorata pour {plan}",
+      "reactivation": {
+        "amountChanged": "Le montant facturé a changé depuis votre confirmation — veuillez vérifier et réessayer",
+        "checkboxLabel": "Je comprends que je serai facturé {amount} aujourd'hui",
+        "confirmButton": "Confirmer et réactiver",
+        "confirmButtonWithCharge": "Confirmer et réactiver — {amount} aujourd'hui",
+        "confirmationRequired": "Votre abonnement est annulé — veuillez confirmer le montant de la réactivation avant de continuer",
+        "downgradeBody": "Votre {plan} devait se terminer le {date}. Passer à {newPlan} réactive votre abonnement — vous ne serez pas facturé aujourd'hui, mais il se renouvellera automatiquement le {nextDate} au nouveau tarif au lieu de se terminer.",
+        "durationChangeBody": "Votre {plan} devait se terminer le {date}. Passer à la facturation annuelle réactive votre abonnement et facture l'année complète, {amount}, aujourd'hui. Il se renouvellera ensuite chaque année le {nextDate} au lieu de se terminer.",
+        "durationChangeBodyMonthly": "Votre {plan} devait se terminer le {date}. Passer à la facturation mensuelle réactive votre abonnement — vous serez facturé {amount} aujourd'hui, et il se renouvellera automatiquement le {nextDate} au lieu de se terminer.",
+        "title": "Réactivation de votre abonnement",
+        "titleAnnual": "Réactivation de votre abonnement — année complète facturée aujourd'hui",
+        "unavailable": "Nous ne pouvons pas confirmer cette réactivation pour le moment — veuillez choisir à nouveau votre abonnement",
+        "upgradeBody": "Votre {plan} devait se terminer le {date}. La mise à niveau réactive votre abonnement — vous serez facturé {amount} aujourd'hui, et il se renouvellera automatiquement le {nextDate} au lieu de se terminer."
+      },
       "refillReplacesNote": "Remplace votre recharge mensuelle. Le solde existant est conservé.",
       "showMoreFeatures": "Afficher plus de fonctionnalités",
       "starting": "À partir du {date}",
@@ -4046,6 +4240,7 @@
     "pricingBlurbQuestions": "questions",
     "pricingBlurbSeeDetails": "voir les détails",
     "reactivatePlan": "Réactiver l’abonnement",
+    "reactivateToUseCredits": "Réactivez votre abonnement pour utiliser ces crédits",
     "refillsDate": "Recharge le {date}",
     "refillsNextCycle": "Recharge au prochain cycle",
     "refreshCredits": "Actualiser les crédits",
@@ -4252,6 +4447,7 @@
     "logoProviderSeparator": " & "
   },
   "toastMessages": {
+    "a1111CoreNodesUnavailable": "Impossible de charger le workflow car cette installation de ComfyUI ne dispose pas des nœuds principaux. Vérifiez que le backend a démarré correctement.",
     "cannotCreateSubgraph": "Impossible de créer le sous-graphe",
     "couldNotDetermineFileType": "Impossible de déterminer le type de fichier",
     "dropFileError": "Impossible de traiter l'élément déposé : {error}",
@@ -4297,9 +4493,11 @@
     "fileTooLarge": "Fichier trop volumineux ({size} Mo). La taille maximale prise en charge est de {maxSize} Mo",
     "fileUploadFailed": "Échec du téléchargement du fichier",
     "interrupted": "L'exécution a été interrompue",
+    "invalidBillingPortalUrl": "URL du portail invalide",
     "invalidTemplateData": "Échec du chargement du modèle de nœud : données invalides",
     "legacyMaskEditorDeprecated": "L’éditeur de masque hérité est obsolète et sera bientôt supprimé.",
     "migrateToLitegraphReroute": "Les nœuds de reroute seront supprimés dans les futures versions. Cliquez pour migrer vers le reroute natif de litegraph.",
+    "missingMediaVerificationFailed": "Échec de la vérification des médias manquants. Certains fichiers d'entrée peuvent ne pas apparaître dans l'onglet Erreurs.",
     "missingModelVerificationFailed": "Échec de la vérification des modèles manquants. Certains modèles peuvent ne pas apparaître dans l’onglet Erreurs.",
     "modelLoadedSuccessfully": "Modèle 3D chargé avec succès",
     "no3dScene": "Aucune scène 3D pour appliquer la texture",
@@ -4370,16 +4568,29 @@
     "adjustCrop": "Ajuster la zone de recadrage",
     "adjustEndFrame": "Ajuster l'image de fin",
     "adjustStartFrame": "Ajuster l'image de début",
+    "cropVideo": "Rogner la vidéo",
+    "duration": "Durée",
     "durationSeconds": "{count}s",
     "durationZero": "0s",
+    "endFrame": "Image de fin",
+    "fileSize": "Taille du fichier",
     "fileSizeBytes": "{count} B",
     "fileSizeKilobytes": "{count} KB",
     "fileSizeMegabytes": "{count} MB",
     "fileSizeUnknown": "—",
+    "frames": "Nombre d’images",
     "loadingFilmstrip": "Chargement de la pellicule…",
+    "loadingVideo": "Chargement de l’aperçu vidéo",
+    "noVideoSource": "Sélectionnez ou connectez une vidéo pour prévisualiser et éditer",
     "pause": "Pause",
     "play": "Lire",
-    "seekVideo": "Naviguer dans la vidéo"
+    "resolution": "{width} × {height}",
+    "seekVideo": "Naviguer dans la vidéo",
+    "selectedOfTotal": "{selected} / {total}",
+    "setEndFrame": "Réinitialiser l’image de fin",
+    "setStartFrame": "Réinitialiser l’image de début",
+    "startFrame": "Image de début",
+    "trimVideo": "Couper la vidéo"
   },
   "vueNodesBanner": {
     "desc": "– Flux de travail plus flexibles, nouveaux widgets puissants, conçu pour l’extensibilité",
@@ -4470,7 +4681,11 @@
       "notAuthenticated": "Vous devez être connecté pour accéder aux espaces de travail",
       "tokenExchangeFailed": "Échec de l’authentification avec l’espace de travail : {error}",
       "workspaceNotFound": "Espace de travail introuvable"
-    }
+    },
+    "initializationFailed": "Impossible de charger votre espace de travail",
+    "initializationFailedDetail": "Vérifiez votre connexion et réessayez.",
+    "initializationFailedSignOutDetail": "Déconnectez-vous puis reconnectez-vous pour continuer.",
+    "retry": "Réessayer"
   },
   "workspacePanel": {
     "activity": {
@@ -4510,7 +4725,6 @@
       },
       "updatePayment": "Mettre à jour le paiement",
       "warning": {
-        "body": "Votre dernier paiement n'a pas abouti. Votre abonnement sera mis en pause le {date} sauf si le paiement est mis à jour.",
         "bodyNoDate": "Votre dernier paiement n'a pas abouti. Mettez à jour le paiement pour éviter une pause.",
         "title": "Paiement refusé"
       }

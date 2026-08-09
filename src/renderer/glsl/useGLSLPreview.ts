@@ -356,6 +356,11 @@ function createInnerPreview(
 
   function ensureRenderer(): ReturnType<typeof useGLSLRenderer> {
     const config = rendererConfig.value
+    if (renderer?.isContextLost()) {
+      renderer.dispose()
+      renderer = null
+      rendererReady = false
+    }
     if (renderer && lastRendererConfig) {
       const changed =
         config.maxInputs !== lastRendererConfig.maxInputs ||

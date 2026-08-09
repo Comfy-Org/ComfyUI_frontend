@@ -9,17 +9,18 @@ See `docs/testing/*.md` for detailed patterns.
 
 ## Test Quality
 
-- Do not write change detector tests (tests that just assert defaults)
-- Do not write tests dependent on non-behavioral features (styles, classes)
-- Do not write tests that just test mocks - ensure real code is exercised
-- Be parsimonious; avoid redundant tests
+The general test rules (no change-detector tests, no non-behavioral assertions,
+be parsimonious, don't mock what you don't own) live in the root `AGENTS.md`,
+which is always loaded. In addition:
+
+- Do not write tests that just test mocks - ensure real code is exercised (tests must fail when the code misbehaves)
+- Aim for behavioral coverage of critical and new features
 
 ## Mocking
 
 - Use Vitest's mocking utilities (`vi.mock`, `vi.spyOn`)
 - Keep module mocks contained - no global mutable state
 - Use `vi.hoisted()` for per-test mock manipulation
-- Don't mock what you don't own
 
 ## Component Testing
 

@@ -33,7 +33,8 @@ const {
   mockTelemetry: {
     trackSubscription: vi.fn(),
     trackMonthlySubscriptionSucceeded: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn()
+    trackMonthlySubscriptionCancelled: vi.fn(),
+    trackBillingEvent: vi.fn()
   },
   mockUserId: { value: 'user-123' },
   mockLocalStorage: (() => {
@@ -143,6 +144,8 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
     getAuthHeader: mockGetAuthHeader,
+    fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
+      fetch(input, init),
     get isInitialized() {
       return mockAuthStoreInitialized.value
     },
@@ -176,6 +179,7 @@ describe('useSubscription', () => {
     mockTelemetry.trackSubscription.mockReset()
     mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
+    mockTelemetry.trackBillingEvent.mockReset()
     mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
     mockUserId.value = 'user-123'
@@ -195,7 +199,7 @@ describe('useSubscription', () => {
   })
 
   describe('computed properties', () => {
-    it('should compute isActiveSubscription correctly when subscription is active', async () => {
+    it('should compute canAccessSubscriptionFeatures correctly when subscription is active', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -206,13 +210,14 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures, fetchStatus } =
+        useSubscriptionWithScope()
 
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
     })
 
-    it('should compute isActiveSubscription as false when subscription is inactive', async () => {
+    it('should compute canAccessSubscriptionFeatures as false when subscription is inactive', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -223,10 +228,11 @@ describe('useSubscription', () => {
       } as Response)
 
       mockIsLoggedIn.value = true
-      const { isActiveSubscription, fetchStatus } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures, fetchStatus } =
+        useSubscriptionWithScope()
 
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(false)
+      expect(canAccessSubscriptionFeatures.value).toBe(false)
     })
 
     it('should format renewal date correctly', async () => {
@@ -345,9 +351,10 @@ describe('useSubscription', () => {
         ok: true,
         json: async () => ({ is_active: true, subscription_id: 'sub_1' })
       } as Response)
-      const { fetchStatus, isActiveSubscription } = useSubscriptionWithScope()
+      const { fetchStatus, canAccessSubscriptionFeatures } =
+        useSubscriptionWithScope()
       await fetchStatus()
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
 
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: false,
@@ -355,7 +362,7 @@ describe('useSubscription', () => {
       } as Response)
       await fetchStatus().catch(() => {})
 
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
     })
   })
 
@@ -416,6 +423,64 @@ describe('useSubscription', () => {
       const { subscribe } = useSubscriptionWithScope()
 
       await expect(subscribe()).rejects.toThrow()
+    })
+  })
+
+  describe('subscribeDirect', () => {
+    it('performs the same checkout as subscribe on success', async () => {
+      const checkoutUrl = 'https://checkout.stripe.com/direct'
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ checkout_url: checkoutUrl })
+      } as Response)
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => window as unknown as Window)
+
+      const { subscribeDirect } = useSubscriptionWithScope()
+
+      await expect(subscribeDirect()).resolves.toBeUndefined()
+      expect(windowOpenSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+
+      windowOpenSpy.mockRestore()
+    })
+
+    it('rejects on failure without going through the error-swallowing wrapper', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({})
+      } as Response)
+
+      const { subscribeDirect } = useSubscriptionWithScope()
+
+      await expect(subscribeDirect()).rejects.toThrow()
+      expect(mockReportError).not.toHaveBeenCalled()
+    })
+
+    it('tags the pending attempt as a resubscribe when called with operation/source', async () => {
+      const checkoutUrl = 'https://checkout.stripe.com/direct'
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ checkout_url: checkoutUrl })
+      } as Response)
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => window as unknown as Window)
+
+      const { subscribeDirect } = useSubscriptionWithScope()
+
+      await subscribeDirect({
+        operation: 'resubscribe',
+        source: 'settings_billing_panel'
+      })
+
+      const stored = JSON.parse(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) ?? '{}'
+      )
+      expect(stored.operation).toBe('resubscribe')
+      expect(stored.resubscribe_source).toBe('settings_billing_panel')
+
+      windowOpenSpy.mockRestore()
     })
   })
 
@@ -508,6 +573,78 @@ describe('useSubscription', () => {
           })
         )
       })
+    })
+
+    it('emits the canonical resubscribe terminal when a resubscribe-tagged attempt becomes active', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-789',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new',
+          operation: 'resubscribe',
+          resubscribe_source: 'pricing_dialog'
+        })
+      )
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_789',
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY',
+          renewal_date: '2025-11-16'
+        })
+      } as Response)
+
+      mockIsLoggedIn.value = true
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+          operation: 'resubscribe',
+          stage: 'succeeded',
+          outcome: 'success',
+          source: 'pricing_dialog'
+        })
+      })
+    })
+
+    it('does not emit a resubscribe terminal for a plain (non-resubscribe) pending attempt', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-999',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_999',
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY',
+          renewal_date: '2025-11-16'
+        })
+      } as Response)
+
+      mockIsLoggedIn.value = true
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          mockTelemetry.trackMonthlySubscriptionSucceeded
+        ).toHaveBeenCalled()
+      })
+      expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
@@ -642,12 +779,12 @@ describe('useSubscription', () => {
       expect(global.fetch).not.toHaveBeenCalled()
     })
 
-    it('should report isActiveSubscription as true when not on cloud', () => {
+    it('should report canAccessSubscriptionFeatures as true when not on cloud', () => {
       mockIsCloud.value = false
 
-      const { isActiveSubscription } = useSubscriptionWithScope()
+      const { canAccessSubscriptionFeatures } = useSubscriptionWithScope()
 
-      expect(isActiveSubscription.value).toBe(true)
+      expect(canAccessSubscriptionFeatures.value).toBe(true)
     })
   })
 
