@@ -105,6 +105,13 @@ jobs:
       ref: ${{ github.event.pull_request.merge_commit_sha }}
     secrets: inherit
 
+  enforce_latest:
+    name: Enforce Latest Release
+    needs: draft_release
+    if: success()
+    uses: ./.github/workflows/release-enforce-latest.yaml
+    secrets: inherit
+
   comment_release_summary:
     name: Comment Release Summary
     needs:

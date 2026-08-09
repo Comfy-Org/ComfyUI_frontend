@@ -12,6 +12,7 @@ on:
   release:
     types: [published, edited, unpublished, deleted]
   workflow_dispatch: {}
+  workflow_call: {}
   schedule:
     - cron: '0 4 * * *' # daily backstop in case a release webhook is dropped
 
