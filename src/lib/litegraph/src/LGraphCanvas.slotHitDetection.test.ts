@@ -10,19 +10,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    getCurrentSource: vi.fn(),
-    getCurrentActor: vi.fn(),
-    applyOperation: vi.fn(),
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn()
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
 
 beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 

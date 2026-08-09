@@ -9,22 +9,24 @@ import { computed, customRef, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
+import { toGroupId } from '@/types/groupId'
+import type { GroupId } from '@/types/groupId'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
+import type { UUID } from '@/utils/uuid'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   BatchUpdateBoundsOperation,
-  Bounds,
   CreateNodeOperation,
   CreateRerouteOperation,
   DeleteNodeOperation,
   DeleteRerouteOperation,
+  GroupLayout,
   LayoutChange,
   LayoutOperation,
-  LayoutStore,
   LinkId,
   LinkLayout,
   LinkSegmentLayout,
@@ -37,6 +39,7 @@ import type {
   RerouteId,
   RerouteLayout,
   ResizeNodeOperation,
+  SetGroupBoundsOperation,
   SetNodeZIndexOperation,
   SlotId,
   SlotLayout
@@ -47,15 +50,21 @@ import {
 } from '@/renderer/core/layout/utils/geometry'
 import {
   REROUTE_RADIUS,
-  boundsIntersect,
   pointInBounds
 } from '@/renderer/core/layout/utils/layoutMath'
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
 import {
+  layoutToYGroup,
+  setYGroupRect,
   layoutToYNode,
+  yGroupToLayout,
   yNodeToLayout
 } from '@/renderer/core/layout/utils/mappers'
-import type { NodeLayoutMap } from '@/renderer/core/layout/utils/mappers'
+import type {
+  GroupLayoutMap,
+  NodeLayoutMap,
+  StoredRect
+} from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 type YEventChange = {
@@ -63,11 +72,37 @@ type YEventChange = {
   oldValue: unknown
 }
 
+function isNodeRect(value: unknown): value is StoredRect {
+  return (
+    Array.isArray(value) &&
+    value.length === 4 &&
+    value.every((coordinate) => typeof coordinate === 'number')
+  )
+}
+
 const logger = log.getLogger('LayoutStore')
 
-// Utility functions
-function asRerouteId(id: string | number): RerouteId {
-  return toRerouteId(Number(id))
+type ScopedLayoutKey = string & { readonly __brand: 'ScopedLayoutKey' }
+
+/** Yjs surfaces its own keys as raw strings; brand them back on the way in. */
+function toScopedLayoutKey(key: string): ScopedLayoutKey {
+  return key as ScopedLayoutKey
+}
+
+function makeScopedLayoutKey(
+  graphId: UUID,
+  localId: number | string
+): ScopedLayoutKey {
+  return toScopedLayoutKey(graphId + ':' + localId)
+}
+
+/** A UUID never contains `:`, so the first one always ends the graph id. */
+function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
+  const separatorIndex = key.indexOf(':')
+  return {
+    graphId: key.slice(0, separatorIndex) as UUID,
+    localId: key.slice(separatorIndex + 1)
+  }
 }
 
 interface RerouteData {
@@ -81,7 +116,7 @@ interface TypedYMap<T> {
   get<K extends keyof T>(key: K, defaultValue: T[K]): T[K]
 }
 
-class LayoutStoreImpl implements LayoutStore {
+class LayoutStore {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
     position: { x: 0, y: 0 }
@@ -91,10 +126,10 @@ class LayoutStoreImpl implements LayoutStore {
   private ydoc = new Y.Doc()
   private ynodes: Y.Map<NodeLayoutMap> // Maps nodeId -> NodeLayoutMap containing NodeLayout data
   private yreroutes: Y.Map<Y.Map<unknown>> // Maps rerouteId -> Y.Map containing reroute data
-  private yoperations: Y.Array<LayoutOperation> // Operation log
+  private ygroups: Y.Map<GroupLayoutMap> // Maps groupId -> GroupLayoutMap containing GroupLayout data
 
   // Vue reactivity layer
-  private version = 0
+  private version = ref(0)
   private currentSource: LayoutSource =
     ACTOR_CONFIG.DEFAULT_SOURCE as LayoutSource
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
@@ -104,27 +139,28 @@ class LayoutStoreImpl implements LayoutStore {
   // Change listeners
   private changeListeners = new Set<(change: LayoutChange) => void>()
   private nodeChangeListeners = new Map<
-    NodeId,
+    ScopedLayoutKey,
     Set<(change: LayoutChange) => void>
   >()
   private pendingGlobalChanges: LayoutChange[] = []
   private isGlobalDispatchQueued = false
 
   // CustomRef cache and trigger functions
-  private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
-  private nodeTriggers = new Map<NodeId, () => void>()
+  private nodeRefs = new Map<ScopedLayoutKey, Ref<NodeLayout | null>>()
+  private nodeTriggers = new Map<ScopedLayoutKey, () => void>()
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotLayouts = new Map<SlotId, SlotLayout>()
-  private rerouteLayouts = new Map<RerouteId, RerouteLayout>()
+  private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
-  private spatialIndex: SpatialIndexManager<NodeId> // For nodes
   private linkSegmentSpatialIndex: SpatialIndexManager<string> // For link segments (single index for all link geometry)
   private slotSpatialIndex: SpatialIndexManager<SlotId> // For slots
-  private rerouteSpatialIndex: SpatialIndexManager<string> // For reroutes
+  private rerouteSpatialIndex: SpatialIndexManager<ScopedLayoutKey> // For reroutes
+
+  private highestZIndex = 0
 
   // Vue dragging state for selection toolbox (public ref for direct mutation)
   public isDraggingVueNodes = ref(false)
@@ -153,32 +189,32 @@ class LayoutStoreImpl implements LayoutStore {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')
     this.yreroutes = this.ydoc.getMap('reroutes')
-    this.yoperations = this.ydoc.getArray('operations')
+    this.ygroups = this.ydoc.getMap('groups')
 
     // Initialize spatial index managers
-    this.spatialIndex = new SpatialIndexManager<NodeId>()
     this.linkSegmentSpatialIndex = new SpatialIndexManager<string>() // Single index for all link geometry
     this.slotSpatialIndex = new SpatialIndexManager<SlotId>()
-    this.rerouteSpatialIndex = new SpatialIndexManager<string>()
+    this.rerouteSpatialIndex = new SpatialIndexManager<ScopedLayoutKey>()
 
     // Listen for Yjs changes and trigger Vue reactivity
     this.ynodes.observe((event: Y.YMapEvent<NodeLayoutMap>) => {
-      this.version++
+      this.version.value++
 
       // Trigger all affected node refs
       event.changes.keys.forEach((_change: YEventChange, key: string) => {
-        const trigger = this.nodeTriggers.get(toNodeId(key))
-        if (trigger) {
-          trigger()
-        }
+        this.nodeTriggers.get(toScopedLayoutKey(key))?.()
       })
+    })
+
+    this.ygroups.observeDeep(() => {
+      this.version.value++
     })
 
     // Listen for reroute changes and update spatial indexes
     this.yreroutes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
-      this.version++
+      this.version.value++
       event.changes.keys.forEach((change, rerouteIdStr) => {
-        this.handleRerouteChange(change, rerouteIdStr)
+        this.handleRerouteChange(change, toScopedLayoutKey(rerouteIdStr))
       })
     })
   }
@@ -186,18 +222,23 @@ class LayoutStoreImpl implements LayoutStore {
   private getRerouteField<K extends keyof RerouteData>(
     yreroute: Y.Map<unknown>,
     field: K,
-    defaultValue: RerouteData[K] = LayoutStoreImpl.REROUTE_DEFAULTS[field]
+    defaultValue: RerouteData[K] = LayoutStore.REROUTE_DEFAULTS[field]
   ): RerouteData[K] {
     const typedReroute = yreroute as TypedYMap<RerouteData>
     const value = typedReroute.get(field)
     return value ?? defaultValue
   }
 
+  getNodeLayout(rootGraphId: UUID, nodeId: NodeId): NodeLayout | null {
+    const ynode = this.ynodes.get(makeScopedLayoutKey(rootGraphId, nodeId))
+    return ynode ? yNodeToLayout(ynode) : null
+  }
+
   /**
    * Get or create a customRef for a node layout
    */
-  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null> {
-    const nodeKey = nodeId
+  getNodeLayoutRef(rootGraphId: UUID, nodeId: NodeId): Ref<NodeLayout | null> {
+    const nodeKey = makeScopedLayoutKey(rootGraphId, nodeId)
     let nodeRef = this.nodeRefs.get(nodeKey)
 
     if (!nodeRef) {
@@ -207,9 +248,7 @@ class LayoutStoreImpl implements LayoutStore {
         return {
           get: () => {
             track()
-            const ynode = this.ynodes.get(nodeKey)
-            const layout = ynode ? yNodeToLayout(ynode) : null
-            return layout
+            return this.getNodeLayout(rootGraphId, nodeId)
           },
           set: (newLayout: NodeLayout | null) => {
             // No caller assigns null through this ref; deletion goes through
@@ -223,6 +262,7 @@ class LayoutStoreImpl implements LayoutStore {
               this.applyOperation({
                 type: 'createNode',
                 entity: 'node',
+                graphId: rootGraphId,
                 nodeId,
                 layout: newLayout,
                 timestamp: Date.now(),
@@ -240,9 +280,9 @@ class LayoutStoreImpl implements LayoutStore {
                 this.applyOperation({
                   type: 'moveNode',
                   entity: 'node',
+                  graphId: rootGraphId,
                   nodeId,
                   position: newLayout.position,
-                  previousPosition: existingLayout.position,
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor
@@ -255,9 +295,9 @@ class LayoutStoreImpl implements LayoutStore {
                 this.applyOperation({
                   type: 'resizeNode',
                   entity: 'node',
+                  graphId: rootGraphId,
                   nodeId,
                   size: newLayout.size,
-                  previousSize: existingLayout.size,
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor
@@ -267,9 +307,9 @@ class LayoutStoreImpl implements LayoutStore {
                 this.applyOperation({
                   type: 'setNodeZIndex',
                   entity: 'node',
+                  graphId: rootGraphId,
                   nodeId,
                   zIndex: newLayout.zIndex,
-                  previousZIndex: existingLayout.zIndex,
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor
@@ -288,79 +328,52 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Get nodes within bounds (reactive)
+   * Get all groups as a reactive map
    */
-  getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]> {
+  getAllGroups(
+    rootGraphId: UUID
+  ): ComputedRef<ReadonlyMap<GroupId, GroupLayout>> {
     return computed(() => {
-      // Touch version for reactivity
-      void this.version
+      void this.version.value
 
-      const result: NodeId[] = []
-      for (const [rawNodeId, ynode] of this.ynodes) {
-        const nodeId = toNodeId(rawNodeId)
-        const layout = yNodeToLayout(ynode)
-        if (boundsIntersect(layout.bounds, bounds)) {
-          result.push(nodeId)
-        }
+      const result = new Map<GroupId, GroupLayout>()
+      for (const [key, ygroup] of this.ygroups) {
+        const parsed = parseLayoutKey(key)
+        if (parsed.graphId !== rootGraphId) continue
+        const groupId = toGroupId(Number(parsed.localId))
+        result.set(groupId, yGroupToLayout(ygroup, groupId))
       }
       return result
     })
   }
 
-  /**
-   * Get all nodes as a reactive map
-   */
-  getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>> {
-    return computed(() => {
-      // Touch version for reactivity
-      void this.version
+  getGroupLayout(rootGraphId: UUID, groupId: GroupId): GroupLayout | null {
+    const ygroup = this.ygroups.get(makeScopedLayoutKey(rootGraphId, groupId))
+    return ygroup ? yGroupToLayout(ygroup, groupId) : null
+  }
 
-      const result = new Map<NodeId, NodeLayout>()
-      for (const [rawNodeId, ynode] of this.ynodes) {
-        const nodeId = toNodeId(rawNodeId)
-        const layout = yNodeToLayout(ynode)
-        result.set(nodeId, layout)
-      }
-      return result
-    })
+  get geometryVersion(): number {
+    return this.version.value
+  }
+
+  readNodeRect(rootGraphId: UUID, nodeId: NodeId, out: Float64Array): boolean {
+    const rect = this.ynodes
+      .get(makeScopedLayoutKey(rootGraphId, nodeId))
+      ?.get('rect')
+    if (!isNodeRect(rect)) return false
+
+    out[0] = rect[0]
+    out[1] = rect[1]
+    out[2] = rect[2]
+    out[3] = rect[3]
+    return true
   }
 
   /**
    * Get current version for change detection
    */
   getVersion(): ComputedRef<number> {
-    return computed(() => this.version)
-  }
-
-  /**
-   * Query node at point (non-reactive for performance)
-   */
-  queryNodeAtPoint(point: Point): NodeId | null {
-    const nodes: Array<[NodeId, NodeLayout]> = []
-
-    for (const [rawNodeId, ynode] of this.ynodes) {
-      const nodeId = toNodeId(rawNodeId)
-      const layout = yNodeToLayout(ynode)
-      nodes.push([nodeId, layout])
-    }
-
-    // Sort by zIndex (top to bottom)
-    nodes.sort(([, a], [, b]) => b.zIndex - a.zIndex)
-
-    for (const [nodeId, layout] of nodes) {
-      if (pointInBounds(point, layout.bounds)) {
-        return nodeId
-      }
-    }
-
-    return null
-  }
-
-  /**
-   * Query nodes in bounds (non-reactive for performance)
-   */
-  queryNodesInBounds(bounds: Bounds): NodeId[] {
-    return this.spatialIndex.query(bounds)
+    return computed(() => this.version.value)
   }
 
   /**
@@ -467,9 +480,13 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Update reroute layout data
    */
-  updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void {
-    const rerouteKey = String(rerouteId)
-    const existing = this.rerouteLayouts.get(rerouteId)
+  updateRerouteLayout(
+    rootGraphId: UUID,
+    rerouteId: RerouteId,
+    layout: RerouteLayout
+  ): void {
+    const rerouteKey = makeScopedLayoutKey(rootGraphId, rerouteId)
+    const existing = this.rerouteLayouts.get(rerouteKey)
 
     if (!existing) {
       logger.debug('Adding reroute layout:', {
@@ -487,19 +504,7 @@ class LayoutStoreImpl implements LayoutStore {
       this.rerouteSpatialIndex.insert(rerouteKey, layout.bounds)
     }
 
-    this.rerouteLayouts.set(rerouteId, layout)
-  }
-
-  /**
-   * Delete reroute layout data
-   */
-  deleteRerouteLayout(rerouteId: RerouteId): void {
-    const deleted = this.rerouteLayouts.delete(rerouteId)
-    if (deleted) {
-      // Remove from spatial index
-      const rerouteKey = String(rerouteId)
-      this.rerouteSpatialIndex.remove(rerouteKey)
-    }
+    this.rerouteLayouts.set(rerouteKey, layout)
   }
 
   /**
@@ -518,8 +523,14 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Get reroute layout data
    */
-  getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null {
-    return this.rerouteLayouts.get(rerouteId) || null
+  getRerouteLayout(
+    rootGraphId: UUID,
+    rerouteId: RerouteId
+  ): RerouteLayout | null {
+    return (
+      this.rerouteLayouts.get(makeScopedLayoutKey(rootGraphId, rerouteId)) ??
+      null
+    )
   }
 
   /**
@@ -692,7 +703,7 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Query reroute at point
    */
-  queryRerouteAtPoint(point: Point): RerouteLayout | null {
+  queryRerouteAtPoint(rootGraphId: UUID, point: Point): RerouteLayout | null {
     // Use spatial index to get candidate reroutes
     const maxRadius = 20 // Maximum expected reroute radius
     const searchArea = {
@@ -712,8 +723,9 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Check precise distance for candidates
     for (const rerouteKey of candidateRerouteKeys) {
-      const rerouteId = asRerouteId(rerouteKey)
-      const rerouteLayout = this.rerouteLayouts.get(rerouteId)
+      const parsed = parseLayoutKey(rerouteKey)
+      if (parsed.graphId !== rootGraphId) continue
+      const rerouteLayout = this.rerouteLayouts.get(rerouteKey)
       if (rerouteLayout) {
         const dx = point.x - rerouteLayout.position.x
         const dy = point.y - rerouteLayout.position.y
@@ -733,35 +745,6 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Query all items in bounds
-   */
-  queryItemsInBounds(bounds: Bounds): {
-    nodes: NodeId[]
-    links: LinkId[]
-    slots: SlotId[]
-    reroutes: RerouteId[]
-  } {
-    // Query segments and union their linkIds
-    const segmentKeys = this.linkSegmentSpatialIndex.query(bounds)
-    const linkIds = new Set<LinkId>()
-    for (const key of segmentKeys) {
-      const segment = this.linkSegmentLayouts.get(key)
-      if (segment) {
-        linkIds.add(segment.linkId)
-      }
-    }
-
-    return {
-      nodes: this.queryNodesInBounds(bounds),
-      links: Array.from(linkIds),
-      slots: this.slotSpatialIndex.query(bounds),
-      reroutes: this.rerouteSpatialIndex
-        .query(bounds)
-        .map((key) => asRerouteId(key))
-    }
-  }
-
-  /**
    * Apply a layout operation using Yjs transactions
    */
   applyOperation(operation: LayoutOperation): void {
@@ -769,6 +752,7 @@ class LayoutStoreImpl implements LayoutStore {
     const change: LayoutChange = {
       type: 'update',
       nodeIds: [],
+      sizeChangedNodeIds: [],
       timestamp: operation.timestamp,
       source: operation.source,
       operation
@@ -776,10 +760,6 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Use Yjs transaction for atomic updates
     this.ydoc.transact(() => {
-      // Add operation to log
-      this.yoperations.push([operation])
-
-      // Apply the operation
       this.applyOperationInTransaction(operation, change)
     }, this.currentActor)
 
@@ -822,7 +802,44 @@ class LayoutStoreImpl implements LayoutStore {
       case 'moveReroute':
         this.handleMoveReroute(operation, change)
         break
+      case 'createGroup':
+        this.ygroups.set(
+          makeScopedLayoutKey(operation.graphId, operation.groupId),
+          layoutToYGroup(operation.layout)
+        )
+        change.type = 'create'
+        break
+      case 'setGroupBounds':
+        this.handleSetGroupBounds(operation)
+        break
+      case 'deleteGroup':
+        this.ygroups.delete(
+          makeScopedLayoutKey(operation.graphId, operation.groupId)
+        )
+        change.type = 'delete'
+        break
+      case 'clearGraph':
+        this.handleClearGraph(operation.graphId, change)
+        break
     }
+  }
+
+  private handleClearGraph(graphId: UUID, change: LayoutChange): void {
+    const prefix = graphId + ':'
+
+    for (const key of [...this.ynodes.keys()]) {
+      if (!key.startsWith(prefix)) continue
+      this.ynodes.delete(key)
+      change.nodeIds.push(toNodeId(parseLayoutKey(key).localId))
+    }
+    for (const key of [...this.ygroups.keys()]) {
+      if (key.startsWith(prefix)) this.ygroups.delete(key)
+    }
+    for (const key of [...this.yreroutes.keys()]) {
+      if (key.startsWith(prefix)) this.yreroutes.delete(key)
+    }
+
+    change.type = 'delete'
   }
 
   /**
@@ -830,15 +847,13 @@ class LayoutStoreImpl implements LayoutStore {
    */
   private finalizeOperation(change: LayoutChange): void {
     // Update version
-    this.version++
+    this.version.value++
 
     // Manually trigger affected node refs after transaction
     // This is needed because Yjs observers don't fire for property changes
+    const { graphId } = change.operation
     change.nodeIds.forEach((nodeId) => {
-      const trigger = this.nodeTriggers.get(nodeId)
-      if (trigger) {
-        trigger()
-      }
+      this.nodeTriggers.get(makeScopedLayoutKey(graphId, nodeId))?.()
     })
 
     // Keep node-scoped listeners synchronous for immediate local feedback,
@@ -856,20 +871,22 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   onNodeChange(
+    rootGraphId: UUID,
     nodeId: NodeId,
     callback: (change: LayoutChange) => void
   ): () => void {
-    const listenersForNode = this.nodeChangeListeners.get(nodeId) ?? new Set()
+    const nodeKey = makeScopedLayoutKey(rootGraphId, nodeId)
+    const listenersForNode = this.nodeChangeListeners.get(nodeKey) ?? new Set()
     listenersForNode.add(callback)
-    this.nodeChangeListeners.set(nodeId, listenersForNode)
+    this.nodeChangeListeners.set(nodeKey, listenersForNode)
 
     return () => {
-      const existingListeners = this.nodeChangeListeners.get(nodeId)
+      const existingListeners = this.nodeChangeListeners.get(nodeKey)
       if (!existingListeners) return
 
       existingListeners.delete(callback)
       if (existingListeners.size === 0) {
-        this.nodeChangeListeners.delete(nodeId)
+        this.nodeChangeListeners.delete(nodeKey)
       }
     }
   }
@@ -902,67 +919,59 @@ class LayoutStoreImpl implements LayoutStore {
     return this.currentActor
   }
 
-  /**
-   * Clean up refs and triggers for a node when its Vue component unmounts.
-   * This should be called from the component's onUnmounted hook.
-   */
-  cleanupNodeRef(nodeId: NodeId): void {
-    this.nodeRefs.delete(nodeId)
-    this.nodeTriggers.delete(nodeId)
+  /** Allocates store-local stacking order, independent of `LGraph._nodes`. */
+  allocateZIndex(): number {
+    return ++this.highestZIndex
+  }
+
+  cleanupNodeRef(rootGraphId: UUID, nodeId: NodeId): void {
+    const nodeKey = makeScopedLayoutKey(rootGraphId, nodeId)
+    this.nodeRefs.delete(nodeKey)
+    this.nodeTriggers.delete(nodeKey)
+  }
+
+  /** Drops entity layout owned by a root graph and its subgraph definitions. */
+  clearGraph(rootGraphId: UUID): void {
+    this.applyOperation({
+      type: 'clearGraph',
+      entity: 'graph',
+      graphId: rootGraphId,
+      timestamp: Date.now(),
+      source: this.currentSource,
+      actor: this.currentActor
+    })
+  }
+
+  /** Test-only full reset; attached graph entities become desynchronized. */
+  resetForTests(): void {
+    this.highestZIndex = 0
+    this.ydoc.transact(() => {
+      this.ynodes.clear()
+      this.ygroups.clear()
+      this.yreroutes.clear()
+      this.rerouteLayouts.clear()
+      this.rerouteSpatialIndex.clear()
+    }, 'initialization')
+    this.clearViewGeometry()
   }
 
   /**
-   * Initialize store with existing nodes
+   * Clears view geometry and subscriptions; entity geometry has separate
+   * lifecycle cleanup.
    */
-  initializeFromLiteGraph(
-    nodes: Array<{
-      id: NodeId
-      pos: [number, number]
-      size: [number, number]
-    }>
-  ): void {
+  clearViewGeometry(): void {
     this.ydoc.transact(() => {
-      this.ynodes.clear()
-      // Note: We intentionally do NOT clear nodeRefs and nodeTriggers here.
-      // Vue components may already hold references to these refs, and clearing
-      // them would break the reactivity chain. The refs will be reused when
-      // nodes are recreated, and stale refs will be cleaned up over time.
+      // Preserve refs held by components so reactivity survives view changes.
       this.nodeChangeListeners.clear()
-      this.spatialIndex.clear()
       this.linkSegmentSpatialIndex.clear()
       this.slotSpatialIndex.clear()
-      this.rerouteSpatialIndex.clear()
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
       this.slotLayouts.clear()
-      this.rerouteLayouts.clear()
+      // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false
 
-      nodes.forEach((node, index) => {
-        const nodeId = node.id
-        const nodeKey = String(nodeId)
-        const layout: NodeLayout = {
-          id: nodeId,
-          position: { x: node.pos[0], y: node.pos[1] },
-          size: { width: node.size[0], height: node.size[1] },
-          zIndex: index,
-          visible: true,
-          bounds: {
-            x: node.pos[0],
-            y: node.pos[1],
-            width: node.size[0],
-            height: node.size[1]
-          }
-        }
-
-        this.ynodes.set(nodeKey, layoutToYNode(layout))
-
-        // Add to spatial index
-        this.spatialIndex.insert(nodeId, layout.bounds)
-      })
-
-      // Trigger all existing refs to notify Vue of the new data
       this.nodeTriggers.forEach((trigger) => trigger())
     }, 'initialization')
   }
@@ -973,26 +982,21 @@ class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const { nodeId } = operation
-    const ynode = this.ynodes.get(String(nodeId))
+    const ynode = this.ynodes.get(
+      makeScopedLayoutKey(operation.graphId, nodeId)
+    )
     if (!ynode) {
       return
     }
 
     const size = yNodeToLayout(ynode).size
-    const newBounds = {
-      x: operation.position.x,
-      y: operation.position.y,
-      width: size.width,
-      height: size.height
-    }
 
-    // Update spatial index FIRST, synchronously to prevent race conditions
-    // Hit detection queries can run before CRDT updates complete
-    this.spatialIndex.update(nodeId, newBounds)
-
-    // Then update CRDT
-    ynode.set('position', operation.position)
-    this.updateNodeBounds(ynode, operation.position, size)
+    ynode.set('rect', [
+      operation.position.x,
+      operation.position.y,
+      size.width,
+      size.height
+    ])
 
     change.nodeIds.push(nodeId)
   }
@@ -1002,26 +1006,34 @@ class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const { nodeId } = operation
-    const ynode = this.ynodes.get(String(nodeId))
+    const ynode = this.ynodes.get(
+      makeScopedLayoutKey(operation.graphId, nodeId)
+    )
     if (!ynode) return
 
-    const position = yNodeToLayout(ynode).position
-    const newBounds = {
-      x: position.x,
-      y: position.y,
-      width: operation.size.width,
-      height: operation.size.height
+    const rect = ynode.get('rect')
+    if (!isNodeRect(rect)) return
+    if (rect[2] !== operation.size.width || rect[3] !== operation.size.height) {
+      change.sizeChangedNodeIds.push(nodeId)
     }
 
-    // Update spatial index FIRST, synchronously to prevent race conditions
-    // Hit detection queries can run before CRDT updates complete
-    this.spatialIndex.update(nodeId, newBounds)
-
-    // Then update CRDT
-    ynode.set('size', operation.size)
-    this.updateNodeBounds(ynode, position, operation.size)
+    ynode.set('rect', [
+      rect[0],
+      rect[1],
+      operation.size.width,
+      operation.size.height
+    ])
 
     change.nodeIds.push(nodeId)
+  }
+
+  private handleSetGroupBounds(operation: SetGroupBoundsOperation): void {
+    const ygroup = this.ygroups.get(
+      makeScopedLayoutKey(operation.graphId, operation.groupId)
+    )
+    if (!ygroup) return
+
+    setYGroupRect(ygroup, operation.position, operation.size)
   }
 
   private handleSetNodeZIndex(
@@ -1029,10 +1041,13 @@ class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const { nodeId } = operation
-    const ynode = this.ynodes.get(String(nodeId))
+    const ynode = this.ynodes.get(
+      makeScopedLayoutKey(operation.graphId, nodeId)
+    )
     if (!ynode) return
 
     ynode.set('zIndex', operation.zIndex)
+    this.highestZIndex = Math.max(this.highestZIndex, operation.zIndex)
     change.nodeIds.push(nodeId)
   }
 
@@ -1042,10 +1057,8 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     const { nodeId } = operation
     const ynode = layoutToYNode(operation.layout)
-    this.ynodes.set(String(nodeId), ynode)
-
-    // Add to spatial index
-    this.spatialIndex.insert(nodeId, operation.layout.bounds)
+    this.ynodes.set(makeScopedLayoutKey(operation.graphId, nodeId), ynode)
+    this.highestZIndex = Math.max(this.highestZIndex, operation.layout.zIndex)
 
     change.type = 'create'
     change.nodeIds.push(nodeId)
@@ -1056,7 +1069,7 @@ class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const { nodeId } = operation
-    const nodeKey = String(nodeId)
+    const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
     if (!this.ynodes.has(nodeKey)) return
 
     this.ynodes.delete(nodeKey)
@@ -1066,8 +1079,6 @@ class LayoutStoreImpl implements LayoutStore {
     // The trigger will be called in finalizeOperation to notify Vue of the change.
     // We also intentionally do NOT delete slot layouts here for the same reason,
     // and cleanup is handled by onUnmounted in useSlotElementTracking.
-    // Remove from spatial index
-    this.spatialIndex.remove(nodeId)
     // Link geometry is cleaned up per-link by LLink.disconnect as the node's
     // connections are severed, so nothing to do here.
 
@@ -1079,27 +1090,23 @@ class LayoutStoreImpl implements LayoutStore {
     operation: BatchUpdateBoundsOperation,
     change: LayoutChange
   ): void {
-    const spatialUpdates: Array<{ nodeId: NodeId; bounds: Bounds }> = []
-
     for (const nodeId of operation.nodeIds) {
-      const data = operation.bounds[nodeId]
-      const ynode = this.ynodes.get(String(nodeId))
-      if (!ynode || !data) continue
+      const bounds = operation.bounds[nodeId]
+      const ynode = this.ynodes.get(
+        makeScopedLayoutKey(operation.graphId, nodeId)
+      )
+      if (!ynode || !bounds) continue
 
-      ynode.set('position', { x: data.bounds.x, y: data.bounds.y })
-      ynode.set('size', {
-        width: data.bounds.width,
-        height: data.bounds.height
-      })
-      ynode.set('bounds', data.bounds)
+      const rect = ynode.get('rect')
+      if (
+        isNodeRect(rect) &&
+        (rect[2] !== bounds.width || rect[3] !== bounds.height)
+      ) {
+        change.sizeChangedNodeIds.push(nodeId)
+      }
+      ynode.set('rect', [bounds.x, bounds.y, bounds.width, bounds.height])
 
-      spatialUpdates.push({ nodeId, bounds: data.bounds })
       change.nodeIds.push(nodeId)
-    }
-
-    // Batch update spatial index for better performance
-    if (spatialUpdates.length > 0) {
-      this.spatialIndex.batchUpdate(spatialUpdates)
     }
 
     if (change.nodeIds.length) {
@@ -1115,10 +1122,11 @@ class LayoutStoreImpl implements LayoutStore {
     rerouteData.set('id', operation.rerouteId)
     rerouteData.set('position', operation.position)
 
-    const rerouteKey = String(operation.rerouteId)
+    const rerouteKey = makeScopedLayoutKey(
+      operation.graphId,
+      operation.rerouteId
+    )
     this.yreroutes.set(rerouteKey, rerouteData)
-
-    // The observer will automatically update the spatial index
     change.type = 'create'
   }
 
@@ -1126,13 +1134,15 @@ class LayoutStoreImpl implements LayoutStore {
     operation: DeleteRerouteOperation,
     change: LayoutChange
   ): void {
-    const rerouteKey = String(operation.rerouteId)
+    const rerouteKey = makeScopedLayoutKey(
+      operation.graphId,
+      operation.rerouteId
+    )
     if (!this.yreroutes.has(rerouteKey)) return
 
     this.yreroutes.delete(rerouteKey)
-    this.rerouteLayouts.delete(operation.rerouteId) // Layout map uses numeric ID
+    this.rerouteLayouts.delete(rerouteKey)
     this.rerouteSpatialIndex.remove(rerouteKey)
-
     change.type = 'delete'
   }
 
@@ -1140,44 +1150,20 @@ class LayoutStoreImpl implements LayoutStore {
     operation: MoveRerouteOperation,
     change: LayoutChange
   ): void {
-    const rerouteKey = String(operation.rerouteId)
+    const rerouteKey = makeScopedLayoutKey(
+      operation.graphId,
+      operation.rerouteId
+    )
     const yreroute = this.yreroutes.get(rerouteKey)
     if (!yreroute) return
 
     yreroute.set('position', operation.position)
-
-    const pos = operation.position
-    const layout: RerouteLayout = {
-      id: operation.rerouteId,
-      position: pos,
-      radius: 8,
-      bounds: {
-        x: pos.x - 8,
-        y: pos.y - 8,
-        width: 16,
-        height: 16
-      }
-    }
-    this.updateRerouteLayout(operation.rerouteId, layout)
-
-    // Mark as update for listeners
+    this.updateRerouteLayout(
+      operation.graphId,
+      operation.rerouteId,
+      this.createRerouteLayout(operation.rerouteId, operation.position)
+    )
     change.type = 'update'
-  }
-
-  /**
-   * Update node bounds helper
-   */
-  private updateNodeBounds(
-    ynode: NodeLayoutMap,
-    position: Point,
-    size: { width: number; height: number }
-  ): void {
-    ynode.set('bounds', {
-      x: position.x,
-      y: position.y,
-      width: size.width,
-      height: size.height
-    })
   }
 
   /**
@@ -1203,39 +1189,26 @@ class LayoutStoreImpl implements LayoutStore {
    */
   private handleRerouteChange(
     change: YEventChange,
-    rerouteIdStr: string
+    key: ScopedLayoutKey
   ): void {
-    const rerouteId = asRerouteId(rerouteIdStr)
+    const parsed = parseLayoutKey(key)
+    const graphId = parsed.graphId
+    const rerouteId = toRerouteId(Number(parsed.localId))
 
     if (change.action === 'delete') {
-      this.handleRerouteDelete(rerouteId)
-    } else {
-      this.handleRerouteUpsert(rerouteId)
+      this.rerouteLayouts.delete(key)
+      this.rerouteSpatialIndex.remove(key)
+      return
     }
-  }
 
-  /**
-   * Handle reroute deletion
-   */
-  private handleRerouteDelete(rerouteId: RerouteId): void {
-    const rerouteKey = String(rerouteId)
-    this.rerouteLayouts.delete(rerouteId)
-    this.rerouteSpatialIndex.remove(rerouteKey)
-  }
-
-  /**
-   * Handle reroute upsert (update if exists, create if not)
-   */
-  private handleRerouteUpsert(rerouteId: RerouteId): void {
-    const rerouteKey = String(rerouteId)
-    const rerouteData = this.yreroutes.get(rerouteKey)
+    const rerouteData = this.yreroutes.get(key)
     if (!rerouteData) return
-
     const position = this.getRerouteField(rerouteData, 'position')
-    if (!position) return
-
-    const layout = this.createRerouteLayout(rerouteId, position)
-    this.updateRerouteLayout(rerouteId, layout)
+    this.updateRerouteLayout(
+      graphId,
+      rerouteId,
+      this.createRerouteLayout(rerouteId, position)
+    )
   }
 
   /**
@@ -1295,8 +1268,11 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   private notifyNodeChange(change: LayoutChange): void {
+    const { graphId } = change.operation
     for (const nodeId of new Set(change.nodeIds)) {
-      const listeners = this.nodeChangeListeners.get(nodeId)
+      const listeners = this.nodeChangeListeners.get(
+        makeScopedLayoutKey(graphId, nodeId)
+      )
       if (!listeners) continue
 
       listeners.forEach((listener) => {
@@ -1309,52 +1285,10 @@ class LayoutStoreImpl implements LayoutStore {
     }
   }
 
-  // CRDT-specific methods
-  getOperationsSince(timestamp: number): LayoutOperation[] {
-    const operations: LayoutOperation[] = []
-    this.yoperations.forEach((op: LayoutOperation) => {
-      if (op && op.timestamp > timestamp) {
-        operations.push(op)
-      }
-    })
-    return operations
-  }
-
-  getOperationsByActor(actor: string): LayoutOperation[] {
-    const operations: LayoutOperation[] = []
-    this.yoperations.forEach((op: LayoutOperation) => {
-      if (op && op.actor === actor) {
-        operations.push(op)
-      }
-    })
-    return operations
-  }
-
-  /**
-   * Get the Yjs document for network sync (future feature)
-   */
-  getYDoc(): Y.Doc {
-    return this.ydoc
-  }
-
-  /**
-   * Apply updates from remote peers (future feature)
-   */
-  applyUpdate(update: Uint8Array): void {
-    Y.applyUpdate(this.ydoc, update)
-  }
-
-  /**
-   * Get state as update for sending to peers (future feature)
-   */
-  getStateAsUpdate(): Uint8Array {
-    return Y.encodeStateAsUpdate(this.ydoc)
-  }
-
   /**
    * Batch update node bounds using Yjs transaction for atomicity.
    */
-  batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void {
+  batchUpdateNodeBounds(rootGraphId: UUID, updates: NodeBoundsUpdate[]): void {
     if (updates.length === 0) return
 
     const originalSource = this.currentSource
@@ -1365,21 +1299,11 @@ class LayoutStoreImpl implements LayoutStore {
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
     for (const { nodeId, bounds } of updates) {
-      const ynode = this.ynodes.get(String(nodeId))
-      if (!ynode) continue
-      const currentLayout = yNodeToLayout(ynode)
+      if (!this.ynodes.has(makeScopedLayoutKey(rootGraphId, nodeId))) continue
 
-      const normalizedBounds = shouldNormalizeHeights
-        ? {
-            ...bounds,
-            height: removeNodeTitleHeight(bounds.height)
-          }
+      boundsRecord[nodeId] = shouldNormalizeHeights
+        ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
         : bounds
-
-      boundsRecord[nodeId] = {
-        bounds: normalizedBounds,
-        previousBounds: currentLayout.bounds
-      }
       nodeIds.push(nodeId)
     }
 
@@ -1391,6 +1315,7 @@ class LayoutStoreImpl implements LayoutStore {
     const operation: BatchUpdateBoundsOperation = {
       type: 'batchUpdateBounds',
       entity: 'node',
+      graphId: rootGraphId,
       nodeIds,
       bounds: boundsRecord,
       timestamp: Date.now(),
@@ -1405,4 +1330,4 @@ class LayoutStoreImpl implements LayoutStore {
 }
 
 // Create singleton instance
-export const layoutStore = new LayoutStoreImpl()
+export const layoutStore = new LayoutStore()

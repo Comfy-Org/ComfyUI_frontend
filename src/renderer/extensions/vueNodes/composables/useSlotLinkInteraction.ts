@@ -138,7 +138,10 @@ export function useSlotLinkInteraction({
 
   const resolveRenderLinkSource = (link: RenderLink): Point | null => {
     if (link.fromReroute) {
-      const rerouteLayout = layoutStore.getRerouteLayout(link.fromReroute.id)
+      const graphId = app.canvas?.graph?.rootGraph.id
+      const rerouteLayout = graphId
+        ? layoutStore.getRerouteLayout(graphId, link.fromReroute.id)
+        : null
       if (rerouteLayout) return rerouteLayout.position
       const [x, y] = link.fromReroute.pos
       return toPoint(x, y)
@@ -245,7 +248,10 @@ export function useSlotLinkInteraction({
       const reroutes = LLink.getReroutes(graph, directLink)
       const lastReroute = reroutes.at(-1)
       if (lastReroute) {
-        const rerouteLayout = layoutStore.getRerouteLayout(lastReroute.id)
+        const rerouteLayout = layoutStore.getRerouteLayout(
+          graph.rootGraph.id,
+          lastReroute.id
+        )
         if (rerouteLayout) {
           return {
             position: { ...rerouteLayout.position },
@@ -270,7 +276,10 @@ export function useSlotLinkInteraction({
     if (!floatingLink) return null
 
     if (floatingLink.parentId != null) {
-      const rerouteLayout = layoutStore.getRerouteLayout(floatingLink.parentId)
+      const rerouteLayout = layoutStore.getRerouteLayout(
+        graph.rootGraph.id,
+        floatingLink.parentId
+      )
       if (rerouteLayout) {
         return {
           position: { ...rerouteLayout.position },
@@ -477,13 +486,15 @@ export function useSlotLinkInteraction({
 
   // Attempt to finalize by dropping on a reroute under the pointer
   const tryConnectViaRerouteAtPointer = (): boolean => {
-    const rerouteLayout = layoutStore.queryRerouteAtPoint({
+    const graph = app.canvas?.graph
+    const adapter = activeAdapter
+    if (!graph || !adapter) return false
+
+    const rerouteLayout = layoutStore.queryRerouteAtPoint(graph.rootGraph.id, {
       x: state.pointer.canvas.x,
       y: state.pointer.canvas.y
     })
-    const graph = app.canvas?.graph
-    const adapter = activeAdapter
-    if (!rerouteLayout || !graph || !adapter) return false
+    if (!rerouteLayout) return false
 
     const reroute = graph.getReroute(rerouteLayout.id)
     if (!reroute || !adapter.isRerouteValidDrop(reroute.id)) return false

@@ -4,12 +4,12 @@
  * This file contains all type definitions for the layout system
  * that manages node positions, bounds, spatial data, and operations.
  */
-import type { ComputedRef, Ref } from 'vue'
-
+import type { GroupId } from '@/types/groupId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { SlotDirection, SlotId, SlotIndex } from '@/types/slotId'
+import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -86,6 +86,17 @@ export interface LinkSegmentLayout {
   centerPos: Point
 }
 
+/**
+ * A group's geometry. Unlike {@link NodeLayout} there is no zIndex or spatial
+ * index: groups draw beneath nodes in insertion order and are hit-tested by the
+ * canvas against their own bounds, so nothing queries them positionally.
+ */
+export interface GroupLayout {
+  id: GroupId
+  position: Point
+  size: Size
+}
+
 export interface RerouteLayout {
   id: RerouteId
   position: Point
@@ -105,6 +116,7 @@ interface OperationMeta {
   actor: string
   /** Source system that initiated the operation */
   source: LayoutSource
+  graphId: UUID
   /** Operation type discriminator */
   type: OperationType
 }
@@ -132,6 +144,10 @@ type OperationType =
   | 'createReroute'
   | 'deleteReroute'
   | 'moveReroute'
+  | 'createGroup'
+  | 'setGroupBounds'
+  | 'deleteGroup'
+  | 'clearGraph'
 
 /**
  * Move node operation
@@ -139,7 +155,6 @@ type OperationType =
 export interface MoveNodeOperation extends NodeOpBase {
   type: 'moveNode'
   position: Point
-  previousPosition: Point
 }
 
 /**
@@ -148,7 +163,6 @@ export interface MoveNodeOperation extends NodeOpBase {
 export interface ResizeNodeOperation extends NodeOpBase {
   type: 'resizeNode'
   size: { width: number; height: number }
-  previousSize: { width: number; height: number }
 }
 
 /**
@@ -157,7 +171,6 @@ export interface ResizeNodeOperation extends NodeOpBase {
 export interface SetNodeZIndexOperation extends NodeOpBase {
   type: 'setNodeZIndex'
   zIndex: number
-  previousZIndex: number
 }
 
 /**
@@ -173,7 +186,6 @@ export interface CreateNodeOperation extends NodeOpBase {
  */
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
-  previousLayout: NodeLayout
 }
 
 /**
@@ -182,7 +194,6 @@ export interface DeleteNodeOperation extends NodeOpBase {
 interface SetNodeVisibilityOperation extends NodeOpBase {
   type: 'setNodeVisibility'
   visible: boolean
-  previousVisible: boolean
 }
 
 /**
@@ -192,7 +203,7 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
   entity: 'node'
   type: 'batchUpdateBounds'
   nodeIds: NodeId[]
-  bounds: Record<NodeId, { bounds: Bounds; previousBounds: Bounds }>
+  bounds: Record<NodeId, Bounds>
 }
 
 /**
@@ -216,7 +227,35 @@ export interface DeleteRerouteOperation extends RerouteOpBase {
 export interface MoveRerouteOperation extends RerouteOpBase {
   type: 'moveReroute'
   position: Point
-  previousPosition: Point
+}
+
+type GroupOpBase = OperationMeta & {
+  entity: 'group'
+  groupId: GroupId
+}
+
+interface CreateGroupOperation extends GroupOpBase {
+  type: 'createGroup'
+  layout: GroupLayout
+}
+
+/**
+ * Groups move and resize as one Rectangle, so a single bounds operation keeps
+ * position and size from ever being written apart.
+ */
+export interface SetGroupBoundsOperation extends GroupOpBase {
+  type: 'setGroupBounds'
+  position: Point
+  size: Size
+}
+
+interface DeleteGroupOperation extends GroupOpBase {
+  type: 'deleteGroup'
+}
+
+interface ClearGraphOperation extends OperationMeta {
+  entity: 'graph'
+  type: 'clearGraph'
 }
 
 /**
@@ -233,96 +272,16 @@ export type LayoutOperation =
   | CreateRerouteOperation
   | DeleteRerouteOperation
   | MoveRerouteOperation
+  | CreateGroupOperation
+  | SetGroupBoundsOperation
+  | DeleteGroupOperation
+  | ClearGraphOperation
 
 export interface LayoutChange {
   type: 'create' | 'update' | 'delete'
   nodeIds: NodeId[]
+  sizeChangedNodeIds: NodeId[]
   timestamp: number
   source: LayoutSource
   operation: LayoutOperation
-}
-
-// Store interfaces
-export interface LayoutStore {
-  // CustomRef accessors for shared write access
-  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
-  getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
-  getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
-  getVersion(): ComputedRef<number>
-
-  // Spatial queries (non-reactive)
-  queryNodeAtPoint(point: Point): NodeId | null
-  queryNodesInBounds(bounds: Bounds): NodeId[]
-
-  // Hit testing queries for links, slots, and reroutes
-  queryLinkAtPoint(point: Point, ctx?: CanvasRenderingContext2D): LinkId | null
-  queryLinkSegmentAtPoint(
-    point: Point,
-    ctx?: CanvasRenderingContext2D
-  ): { linkId: LinkId; rerouteId: RerouteId | null } | null
-  querySlotAtPoint(point: Point): SlotLayout | null
-  queryRerouteAtPoint(point: Point): RerouteLayout | null
-  queryItemsInBounds(bounds: Bounds): {
-    nodes: NodeId[]
-    links: LinkId[]
-    slots: SlotId[]
-    reroutes: RerouteId[]
-  }
-
-  // Update methods for link, slot, and reroute layouts
-  updateLinkLayout(linkId: LinkId, layout: LinkLayout): void
-  updateLinkSegmentLayout(
-    linkId: LinkId,
-    rerouteId: RerouteId | null,
-    layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
-  ): void
-  updateSlotLayout(key: SlotId, layout: SlotLayout): void
-  updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void
-
-  // Delete methods for cleanup
-  deleteLinkLayout(linkId: LinkId): void
-  deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void
-  deleteSlotLayout(key: SlotId): void
-  deleteRerouteLayout(rerouteId: RerouteId): void
-  clearAllSlotLayouts(): void
-
-  // Get layout data
-  getLinkLayout(linkId: LinkId): LinkLayout | null
-  getSlotLayout(key: SlotId): SlotLayout | null
-  getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null
-
-  // Returns all slot layout keys currently tracked by the store
-  getAllSlotKeys(): SlotId[]
-
-  // Direct mutation API (CRDT-ready)
-  applyOperation(operation: LayoutOperation): void
-
-  // Change subscription
-  onChange(callback: (change: LayoutChange) => void): () => void
-  onNodeChange(
-    nodeId: NodeId,
-    callback: (change: LayoutChange) => void
-  ): () => void
-
-  // Initialization
-  initializeFromLiteGraph(
-    nodes: Array<{
-      id: NodeId
-      pos: [number, number]
-      size: [number, number]
-    }>
-  ): void
-
-  // Source and actor management
-  setSource(source: LayoutSource): void
-  setActor(actor: string): void
-  getCurrentSource(): LayoutSource
-  getCurrentActor(): string
-
-  // Batch updates
-  batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void
-
-  batchUpdateSlotLayouts(
-    updates: Array<{ key: SlotId; layout: SlotLayout }>
-  ): void
 }

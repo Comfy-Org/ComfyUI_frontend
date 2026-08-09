@@ -1,4 +1,5 @@
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -7,12 +8,14 @@ import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
+import { createGeometryView } from './infrastructure/createGeometryView'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -29,6 +32,9 @@ import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
+
+/** Fallback for a reroute whose store entry has already been deleted. */
+const ORIGIN = { x: 0, y: 0 } as const
 
 export type { FloatingRerouteSlot } from '@/types/rerouteChain'
 export type { RerouteId } from '@/types/rerouteId'
@@ -58,6 +64,12 @@ export class Reroute
 
   /** The network this reroute belongs to.  Contains all valid links and reroutes. */
   private readonly network: WeakRef<LinkNetwork>
+  private readonly rootGraphId: UUID
+  private readonly position: Point = [0, 0]
+  private readonly positionView = createGeometryView(this.position, {
+    synchronize: () => this.syncPosition(),
+    commit: () => this.commitPosition()
+  })
 
   /**
    * The reroute's chain state. Once registered with {@link useRerouteStore},
@@ -106,10 +118,12 @@ export class Reroute
     this._chain.floating = value
   }
 
-  private readonly posInternal: Point = [0, 0]
-  /** @inheritdoc */
+  /**
+   * Position lives in {@link layoutStore} and nowhere else — the reroute
+   * registers itself on construction, so there is always an entry to read.
+   */
   get pos(): Point {
-    return this.posInternal
+    return this.positionView
   }
 
   set pos(value: Point) {
@@ -117,14 +131,40 @@ export class Reroute
       throw new TypeError(
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
-    this.posInternal[0] = value[0]
-    this.posInternal[1] = value[1]
+
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.moveReroute(this.rootGraphId, this.id, {
+      x: value[0],
+      y: value[1]
+    })
+  }
+
+  private syncPosition(): void {
+    const { x, y } = this.storedPosition
+    this.position.length = 2
+    this.position[0] = x
+    this.position[1] = y
+  }
+
+  private commitPosition(): void {
+    if (this.position.length !== 2) {
+      this.syncPosition()
+      return
+    }
+    this.pos = [this.position[0], this.position[1]]
+  }
+
+  private get storedPosition(): Readonly<LayoutPoint> {
+    return (
+      layoutStore.getRerouteLayout(this.rootGraphId, this.id)?.position ??
+      ORIGIN
+    )
   }
 
   /** @inheritdoc */
   get boundingRect(): ReadOnlyRect {
     const { radius } = Reroute
-    const [x, y] = this.posInternal
+    const { x, y } = this.storedPosition
     return [x - radius, y - radius, 2 * radius, 2 * radius]
   }
 
@@ -136,7 +176,7 @@ export class Reroute
     const xOffset = 2 * Reroute.slotOffset
     const yOffset = 2 * Math.max(Reroute.radius, Reroute.slotRadius)
 
-    const [x, y] = this.posInternal
+    const { x, y } = this.storedPosition
     return [x - xOffset, y - yOffset, 2 * xOffset, 2 * yOffset]
   }
 
@@ -251,9 +291,15 @@ export class Reroute
   ) {
     this.id = id
     this.network = new WeakRef(network)
+    this.rootGraphId = network.rootGraph.id
     this._chain = { id }
     this.parentId = parentId
-    if (pos) this.pos = pos
+
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createReroute(this.rootGraphId, id, {
+      x: pos?.[0] ?? 0,
+      y: pos?.[1] ?? 0
+    })
   }
 
   /**
@@ -399,17 +445,8 @@ export class Reroute
 
   /** @inheritdoc */
   move(deltaX: number, deltaY: number) {
-    const previousPos = { x: this.posInternal[0], y: this.posInternal[1] }
-    this.posInternal[0] += deltaX
-    this.posInternal[1] += deltaY
-
-    // Update Layout Store with new position
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.moveReroute(
-      this.id,
-      { x: this.posInternal[0], y: this.posInternal[1] },
-      previousPos
-    )
+    const { x, y } = this.storedPosition
+    this.pos = [x + deltaX, y + deltaY]
   }
 
   /** @inheritdoc */
@@ -417,13 +454,12 @@ export class Reroute
     if (!snapTo) return false
 
     const offsetY = LiteGraph.NODE_SLOT_HEIGHT * 0.7
-    const { pos } = this
-    const previousPos = { x: pos[0], y: pos[1] }
-    pos[0] = snapTo * Math.round(pos[0] / snapTo)
-    pos[1] = snapTo * Math.round((pos[1] - offsetY) / snapTo) + offsetY
+    const { x, y } = this.storedPosition
+    const snappedX = snapTo * Math.round(x / snapTo)
+    const snappedY = snapTo * Math.round((y - offsetY) / snapTo) + offsetY
+    if (snappedX === x && snappedY === y) return false
 
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.moveReroute(this.id, { x: pos[0], y: pos[1] }, previousPos)
+    this.pos = [snappedX, snappedY]
     return true
   }
 
@@ -472,15 +508,13 @@ export class Reroute
 
     sum /= angles.length
 
-    const originToReroute = Math.atan2(
-      this.posInternal[1] - linkStart[1],
-      this.posInternal[0] - linkStart[0]
-    )
+    const { x, y } = this.storedPosition
+    const originToReroute = Math.atan2(y - linkStart[1], x - linkStart[0])
     let diff = (originToReroute - sum) * 0.5
     if (Math.abs(diff) > Math.PI * 0.5) diff += Math.PI
     const dist = Math.min(
       Reroute.maxSplineOffset,
-      distance(linkStart, this.posInternal) * 0.25
+      distance(linkStart, [x, y]) * 0.25
     )
 
     // Store results

@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import type { Point, Size } from '@/renderer/core/layout/types'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
@@ -76,7 +77,10 @@ export function useNodeResize(
       return measured / currentScale
     }
 
-    const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+    const { rootGraphId } = useCanvasStore()
+    const nodeLayout = rootGraphId
+      ? layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
+      : null
     const startPosition: Point = nodeLayout
       ? { ...nodeLayout.position }
       : { x: 0, y: 0 }

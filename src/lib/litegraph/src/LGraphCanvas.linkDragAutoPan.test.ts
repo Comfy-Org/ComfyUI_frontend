@@ -3,14 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn()
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
 
 describe('LGraphCanvas link drag auto-pan', () => {
   let canvas: LGraphCanvas

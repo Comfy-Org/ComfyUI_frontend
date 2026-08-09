@@ -18,7 +18,8 @@ Map&lt;WidgetId, WidgetValue&gt;"]
         DomWidgetStore["domWidgetStore
 Map&lt;WidgetId, DomWidgetState&gt;"]
         LayoutStore["layoutStore (Y.js CRDT)
-nodeId / linkId / rerouteId → geometry"]
+raw nodeId/linkId; rootGraphId:localId
+for group/reroute geometry"]
         LinkStore["linkStore
 rootGraphId → targetNodeId:targetSlot
 → LinkTopology"]
@@ -68,7 +69,7 @@ graphId:nodeId:name
 subgraphId:nodeId"]
         NID["nodeId (raw)"]
         LID["linkId (raw)"]
-        RID["rerouteId (raw)"]
+        RID["rootGraphId:rerouteId"]
         TIS["targetNodeId:targetSlot
 (root-graph-scoped bucket)"]
     end
@@ -232,9 +233,9 @@ membership (`Reroute.linkIds` / `floatingLinkIds`) is **not stored** — it is
 derived per root graph by a cached computed reverse index walking the links'
 `parentId` chains, replacing ~10 hand-maintained write sites and the
 `validateLinks` set-repair. See
-[reroute-chain-store.md](reroute-chain-store.md). Reroute _position_ is not
-yet migrated: `Reroute.posInternal` remains the source of truth, with the
-layout store holding a partial `{ id, position }` mirror.
+[reroute-chain-store.md](reroute-chain-store.md). Reroute _position_ has since
+migrated too: `Reroute.posInternal` is deleted and the layout store's
+`{ id, position }` entry is the source of truth.
 
 ### Widget: Before vs After
 

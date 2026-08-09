@@ -472,7 +472,11 @@ let unsubscribeLayoutChange: (() => void) | null = null
 
 onMounted(() => {
   initSizeStyles()
+  const { rootGraphId } = canvasStore
+  if (!rootGraphId) return
+
   unsubscribeLayoutChange = layoutStore.onNodeChange(
+    rootGraphId,
     nodeData.id,
     handleLayoutChange
   )
@@ -498,9 +502,10 @@ const { startResize } = useNodeResize((result, element) => {
   element.style.setProperty('--node-height', `${result.size.height}px`)
 
   // Update position for non-SE corner resizing
-  if (result.position) {
+  const { rootGraphId } = canvasStore
+  if (result.position && rootGraphId) {
     mutations.setSource(LayoutSource.Vue)
-    mutations.moveNode(nodeData.id, result.position)
+    mutations.moveNode(rootGraphId, nodeData.id, result.position)
   }
 })
 

@@ -2,6 +2,8 @@ import { unregisterAllLinkTopologies } from '@/lib/litegraph/src/LLink'
 import { unregisterAllRerouteChains } from '@/lib/litegraph/src/Reroute'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
+import { unregisterAllGraphLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
@@ -105,9 +107,11 @@ export function releaseGraphStores(graph: LGraph | Subgraph): void {
     useLinkStore().clearGraph(graphId)
     useRerouteStore().clearGraph(graphId)
     useNodeDataStore().clearGraph(graphId)
+    layoutStore.clearGraph(graphId)
   } else {
     unregisterAllLinkTopologies(graph)
     unregisterAllRerouteChains(graph)
     detachAllNodesFromStores(graph)
+    unregisterAllGraphLayout(graph)
   }
 }

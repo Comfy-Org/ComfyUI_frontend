@@ -118,7 +118,7 @@ This combination provides both architectural and technical benefits:
 - **Eliminates Polling**: Observer pattern removes O(n) graph traversals, improving performance
 - **System Modularity**: Independent systems can be developed, tested, and optimized separately
 - **Renderer Flexibility**: Easy to add WebGL, DOM accessibility, or hybrid rendering systems
-- **Rich Interactions**: Command pattern enables robust undo/redo, macros, and interaction history
+- **Rich Interactions**: Command pattern enables robust undo/redo and macros
 - **Collaboration-Ready**: CRDT foundation enables real-time multi-user editing
 - **Conflict Resolution**: Eliminates position "snap-back" behavior between competing systems
 - **Better Developer Experience**: Clear separation of concerns and predictable data flow patterns
@@ -137,6 +137,28 @@ This combination provides both architectural and technical benefits:
 - Build compatibility layer for gradual, low-risk migration
 - Implement operation history pruning for long-running sessions
 - Phase implementation to validate approach before full migration
+
+### Amendment (2026-07-30)
+
+The Yjs operation log is deleted. Nothing ever read it: undo/redo is
+snapshot-based through `changeTracker`, and the two query methods
+(`getOperationsSince`, `getOperationsByActor`) had no callers outside tests.
+It was pure write amplification on every mutation, so the "operation history
+storage" memory cost and the history-pruning mitigation above no longer
+apply. What is lost is a timestamped, per-actor record: the interaction
+history promised above is struck, and the Yjs document runs with the default
+`gc: true`, so it is a mergeable state record rather than a replayable one.
+Transmission stays a capability of the document rather than of the store:
+`applyUpdate` / `getStateAsUpdate` were removed as callerless (see
+[Removed CRDT sync seam](../architecture/ecs-migration-plan.md)) and are a few
+lines against `this.ydoc` to reinstate. `LayoutOperation` is still the
+serializable command shape every mutation goes through.
+
+Entity geometry registers and unregisters with the entity that owns it
+(`LGraph.add` / `LGraph.remove`) rather than being seeded per graph on renderer
+entry. All three entity types key by `makeScopedLayoutKey(rootGraphId, id)`, so
+a root graph's teardown is one `clearGraph`; graphs sharing that bucket drop
+their entries individually through `unregisterAllGraphLayout`.
 
 ## Notes
 

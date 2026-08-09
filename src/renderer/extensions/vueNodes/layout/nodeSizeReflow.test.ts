@@ -16,15 +16,6 @@ function setup() {
   node.size[1] = 100
   graph.add(node)
 
-  // Registers the node in layoutStore with its current size.
-  layoutStore.initializeFromLiteGraph([
-    {
-      id: node.id,
-      pos: [node.pos[0], node.pos[1]],
-      size: [node.size[0], node.size[1]]
-    }
-  ])
-
   const applySpy = vi.spyOn(layoutStore, 'applyOperation')
   const resizeCommits = (): ResizeNodeOperation[] =>
     applySpy.mock.calls
@@ -34,13 +25,13 @@ function setup() {
           operation.type === 'resizeNode' && operation.nodeId === node.id
       )
 
-  return { graph, node, resizeCommits }
+  return { graph, node, resizeCommits, rootGraphId: graph.rootGraph.id }
 }
 
 describe('LGraphNode size reflow', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    layoutStore.initializeFromLiteGraph([])
+    layoutStore.resetForTests()
   })
 
   afterEach(() => {
@@ -48,8 +39,8 @@ describe('LGraphNode size reflow', () => {
   })
 
   it('commits once when a widget-growth idiom mutates size[1] directly', () => {
-    const { node, resizeCommits } = setup()
-    const layout = layoutStore.getNodeLayoutRef(node.id)
+    const { node, resizeCommits, rootGraphId } = setup()
+    const layout = layoutStore.getNodeLayoutRef(rootGraphId, node.id)
     expect(layout.value?.size.height).toBe(100)
 
     node.size[1] = 180
@@ -63,12 +54,12 @@ describe('LGraphNode size reflow', () => {
   })
 
   it('commits per-axis for sequential bare-element writes on both axes', () => {
-    const { node, resizeCommits } = setup()
+    const { node, resizeCommits, rootGraphId } = setup()
 
     node.size[0] = 260
     node.size[1] = 140
 
-    const layout = layoutStore.getNodeLayoutRef(node.id)
+    const layout = layoutStore.getNodeLayoutRef(rootGraphId, node.id)
     expect(layout.value?.size).toEqual({ width: 260, height: 140 })
     expect(
       resizeCommits().map((operation) => operation.size),
@@ -80,22 +71,22 @@ describe('LGraphNode size reflow', () => {
   })
 
   it('commits once when the whole size array is assigned via the setter', () => {
-    const { node, resizeCommits } = setup()
+    const { node, resizeCommits, rootGraphId } = setup()
 
     node.size = [260, 140]
 
-    const layout = layoutStore.getNodeLayoutRef(node.id)
+    const layout = layoutStore.getNodeLayoutRef(rootGraphId, node.id)
     expect(layout.value?.size).toEqual({ width: 260, height: 140 })
     expect(resizeCommits()).toHaveLength(1)
   })
 
   it('does not re-commit when the write-back path re-applies the current size (no feedback loop)', () => {
-    const { node, resizeCommits } = setup()
+    const { node, resizeCommits, rootGraphId } = setup()
 
     node.size[1] = 300
     expect(resizeCommits()).toHaveLength(1)
 
-    const layout = layoutStore.getNodeLayoutRef(node.id).value
+    const layout = layoutStore.getNodeLayoutRef(rootGraphId, node.id).value
     node.size = [layout!.size.width, layout!.size.height]
 
     expect(
@@ -105,13 +96,13 @@ describe('LGraphNode size reflow', () => {
   })
 
   it('commits when an in-place TypedArray method mutates size', () => {
-    const { node, resizeCommits } = setup()
+    const { node, resizeCommits, rootGraphId } = setup()
 
     const size = node.size
     if (!(size instanceof Float64Array)) throw new Error('not a Float64Array')
     size.set([260, 160])
 
-    const layout = layoutStore.getNodeLayoutRef(node.id)
+    const layout = layoutStore.getNodeLayoutRef(rootGraphId, node.id)
     expect(layout.value?.size).toEqual({ width: 260, height: 160 })
     expect(
       resizeCommits(),

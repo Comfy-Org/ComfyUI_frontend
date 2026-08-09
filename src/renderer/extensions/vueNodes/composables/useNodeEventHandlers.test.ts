@@ -10,7 +10,9 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { toNodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
+const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 const canvasSelectedItems = vi.hoisted(() => [] as Array<{ id?: string }>)
 const graphNode = vi.hoisted(() => ({
   id: 'node-1',
@@ -32,7 +34,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => {
     canvas: canvas as LGraphCanvas,
     currentGraph: currentGraph as LGraph,
     updateSelectedItems,
-    selectedItems: canvasSelectedItems
+    selectedItems: canvasSelectedItems,
+    rootGraphId: ROOT_GRAPH_ID
   }
   return {
     useCanvasStore: vi.fn(() => canvasStoreInstance)
@@ -101,6 +104,7 @@ describe('useNodeEventHandlers', () => {
 
       // On pointer down with multi-select: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
         'node-1'
       )
 
@@ -127,6 +131,7 @@ describe('useNodeEventHandlers', () => {
 
       // On pointer down: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
         'node-1'
       )
 
@@ -152,6 +157,7 @@ describe('useNodeEventHandlers', () => {
 
       // On pointer down with meta key: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
         'node-1'
       )
 
@@ -177,6 +183,7 @@ describe('useNodeEventHandlers', () => {
 
       // On pointer down with shift: bring to front
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
         'node-1'
       )
 
@@ -214,6 +221,7 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(event, testNodeId)
 
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
         'node-1'
       )
     })

@@ -4,7 +4,7 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeState } from '@/types/nodeState'
 
-import type { MinimapNodeData } from '../types'
+import type { MinimapGroupData, MinimapNodeData } from '../types'
 import { AbstractMinimapDataSource } from './AbstractMinimapDataSource'
 
 /**
@@ -24,12 +24,13 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
 
   getNodes(): MinimapNodeData[] {
     const states = this.viewedNodes()
-    if (states.length === 0) return []
+    const rootGraphId = this.graph?.rootGraph.id
+    if (states.length === 0 || !rootGraphId) return []
 
     const nodeProgressStates = useExecutionStore().nodeLocationProgressStates
 
     return states.flatMap((state): MinimapNodeData[] => {
-      const layout = layoutStore.getNodeLayoutRef(state.id).value
+      const layout = layoutStore.getNodeLayoutRef(rootGraphId, state.id).value
       if (!layout) return []
 
       return [
@@ -45,6 +46,28 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
           executionState:
             nodeProgressStates[createNodeLocatorId(null, state.id)]?.state ??
             null
+        }
+      ]
+    })
+  }
+
+  override getGroups(): MinimapGroupData[] {
+    const graph = this.graph
+    const groups = graph?._groups
+    if (!graph || !groups?.length) return []
+
+    const layouts = layoutStore.getAllGroups(graph.rootGraph.id).value
+    return groups.flatMap((group): MinimapGroupData[] => {
+      const layout = layouts.get(group.id)
+      if (!layout) return []
+
+      return [
+        {
+          x: layout.position.x,
+          y: layout.position.y,
+          width: layout.size.width,
+          height: layout.size.height,
+          color: group.color
         }
       ]
     })

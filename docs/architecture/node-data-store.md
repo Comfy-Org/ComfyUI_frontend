@@ -163,7 +163,7 @@ seeding and slot reprojection; both were resolved instead:
 | `makeReactiveNodeArrays` graft                           | deleted — reactivity is class-side from construction (Decision 3)                   |
 | `node:slot-label:changed` array reprojection             | deleted — slot objects are reactive, so `slot.label = …` is tracked                 |
 | layoutStore seeding + `onAfterGraphConfigured` deferral  | moved to `LGraph.add` / `LGraph.remove`                                             |
-| `onNodeAdded` replay loop over existing nodes            | deleted — `layoutStore.initializeFromLiteGraph` already re-seeds per graph          |
+| `onNodeAdded` replay loop over existing nodes            | deleted — every node registers its own geometry as it attaches                      |
 
 Moving layout seeding to `LGraph.add` needed no configure-time deferral:
 the entry is created with whatever geometry the node has, and the
@@ -171,10 +171,18 @@ the entry is created with whatever geometry the node has, and the
 it as `configure()` applies the real values. This follows the precedent
 already set by `LGraph.createReroute`.
 
-`useVueNodeLifecycle` keeps per-graph layout bootstrap and the
-Layout↔LiteGraph sync lifecycle. Its `setupEmptyGraphListener` is the last
-`onNodeAdded` monkeypatch in the renderer; it should be replaced with a
-`node:added` graph event, which `LGraphEventMap` does not yet define.
+Geometry now leaves the store the same way: `LGraph.remove` unregisters one
+entry, and bulk teardown goes through one of two paths. A root graph's `clear`
+calls `layoutStore.clearGraph(graphId)`, beside the five peer stores cleared
+there, because layout is keyed by `rootGraphId` and so has a bucket to wipe.
+Graphs that share the root's bucket — subgraphs, unconfigured graphs, and the
+orphaned subgraph release — call `unregisterAllGraphLayout` to drop entries
+individually, mirroring `unregisterAllNodeStates` exactly. Both live in a
+dedicated module so no teardown path re-derives the store writes by hand.
+
+`useVueNodeLifecycle` is gone; `GraphCanvas` owns only the Layout↔LiteGraph
+sync lifecycle, and while the Vue renderer is on it drops view-scoped slot and
+link geometry when the viewed graph changes.
 
 ## Decision 7: Enumerability & extension migration (implemented 2026-07-22)
 
