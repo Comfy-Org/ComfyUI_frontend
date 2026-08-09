@@ -59,8 +59,8 @@ describe('useTrimPlayback', () => {
   })
 
   function createPlayback({
-    hasTrimTimeline = true,
-    frameToTime = (frame: number) => frame / 10
+    frameToTime = (frame: number) => frame / 10,
+    frameMax = 100
   } = {}) {
     const video = new MockVideoElement()
     const startFrame = ref(0)
@@ -71,11 +71,10 @@ describe('useTrimPlayback', () => {
     const playback = scope.run(() =>
       useTrimPlayback({
         videoRef: ref(video) as unknown as Ref<HTMLVideoElement | null>,
-        frameMax: ref(100),
+        frameMax: ref(frameMax),
         startFrame,
         endFrame,
         playheadFrame,
-        hasTrimTimeline: ref(hasTrimTimeline),
         frameToTime,
         timeToFrame: (time) => Math.round(time * 10)
       })
@@ -224,16 +223,20 @@ describe('useTrimPlayback', () => {
     expect(isPlaying.value).toBe(false)
   })
 
-  it('ignores timeupdate when trim is not the active feature', async () => {
-    const { video, playheadFrame, isPlaying, handleTimeUpdate } =
-      createPlayback({ hasTrimTimeline: false })
+  it('keeps playing through timeupdates when the video has no frame model', async () => {
+    const { video, endFrame, isPlaying, handleTimeUpdate } = createPlayback({
+      frameMax: 0
+    })
+    endFrame.value = 0
+    await nextTick()
+
     isPlaying.value = true
     await flushSeek()
 
-    video.currentTime = 4
+    video.currentTime = 0.5
     handleTimeUpdate()
 
-    expect(playheadFrame.value).toBe(0)
+    expect(isPlaying.value).toBe(true)
   })
 
   it('releases the seek lock when no seeked event ever arrives', async () => {

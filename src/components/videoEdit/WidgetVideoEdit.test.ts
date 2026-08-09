@@ -56,7 +56,7 @@ vi.mock('@/composables/video/useVideoFilmstrip', () => {
   return {
     DEFAULT_VIDEO_FPS: 20,
     useVideoFilmstrip: () => ({
-      thumbnails: createRef([]),
+      thumbnail: createRef(''),
       duration: createRef(10),
       totalFrames: createRef(100),
       width: createRef(1920),
@@ -76,7 +76,7 @@ const PanelStub = defineComponent({
   props: {
     features: { type: Array as PropType<VideoEditFeature[]>, required: true },
     videoUrl: { type: String, required: false },
-    thumbnails: { type: Array as PropType<string[]>, required: true },
+    thumbnail: { type: String, required: true },
     totalFrames: { type: Number, required: true },
     duration: { type: Number, required: true },
     fps: { type: Number, required: true },

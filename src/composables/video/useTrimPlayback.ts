@@ -11,7 +11,6 @@ interface UseTrimPlaybackOptions {
   startFrame: Ref<number>
   endFrame: Ref<number>
   playheadFrame: Ref<number>
-  hasTrimTimeline: Ref<boolean>
   frameToTime: (frame: number) => number
   timeToFrame: (time: number) => number
 }
@@ -23,7 +22,6 @@ export function useTrimPlayback(options: UseTrimPlaybackOptions) {
     startFrame,
     endFrame,
     playheadFrame,
-    hasTrimTimeline,
     frameToTime,
     timeToFrame
   } = options
@@ -116,13 +114,12 @@ export function useTrimPlayback(options: UseTrimPlaybackOptions) {
 
   function handleTimeUpdate() {
     const video = videoRef.value
-    if (!video || !hasTrimTimeline.value || !isPlaying.value || isSeeking.value)
-      return
+    if (!video || !isPlaying.value || isSeeking.value) return
 
     const frame = timeToFrame(video.currentTime)
     playheadFrame.value = clamp(frame, startFrame.value, endFrame.value)
 
-    if (frame >= endFrame.value) {
+    if (frameMax.value > 0 && frame >= endFrame.value) {
       isPlaying.value = false
       void seekPreviewToFrame(endFrame.value)
     }

@@ -6,7 +6,6 @@ import { fetchVideoMetadata } from '@/utils/videoMetadataUtil'
 
 import {
   DEFAULT_VIDEO_FPS,
-  FILMSTRIP_SAMPLE_COUNT,
   FILMSTRIP_THUMBNAIL_HEIGHT,
   FILMSTRIP_THUMBNAIL_MAX_WIDTH,
   useVideoFilmstrip
@@ -170,7 +169,7 @@ describe('useVideoFilmstrip', () => {
     installVideoMocks()
 
     const videoUrl = ref<string | undefined>('https://example.com/video.mp4')
-    const { thumbnails, totalFrames, loading } = runWithScope(() =>
+    const { thumbnail, totalFrames, loading } = runWithScope(() =>
       useVideoFilmstrip(videoUrl)
     )
 
@@ -179,7 +178,7 @@ describe('useVideoFilmstrip', () => {
     videoUrl.value = undefined
     await nextTick()
 
-    expect(thumbnails.value).toEqual([])
+    expect(thumbnail.value).toBe('')
     expect(totalFrames.value).toBe(0)
     expect(loading.value).toBe(false)
   })
@@ -212,13 +211,9 @@ describe('useVideoFilmstrip', () => {
   })
 
   it('derives duration and dimensions from backend metadata when the element reports a non-finite duration', async () => {
-    let maxSeekTarget = 0
     installVideoMocks({
       onVideoCreated: (video) => {
         video.duration = Infinity
-        video.addEventListener('seeked', () => {
-          maxSeekTarget = Math.max(maxSeekTarget, video.currentTime)
-        })
       }
     })
     vi.mocked(fetchVideoMetadata).mockResolvedValueOnce({
@@ -241,13 +236,63 @@ describe('useVideoFilmstrip', () => {
     expect(width.value).toBe(640)
     expect(height.value).toBe(360)
     expect(totalFrames.value).toBe(Math.round(8 * 24))
-    expect(maxSeekTarget).toBeGreaterThan(7)
   })
 
-  it('samples the configured number of frames', async () => {
+  it('recovers the duration of videos that report a non-finite duration', async () => {
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        video.duration = Infinity
+        video.addEventListener('seeked', () => {
+          if (video.currentTime > 1000) {
+            video.duration = 12
+          }
+        })
+      }
+    })
+
+    const videoUrl = ref('https://example.com/recording.mp4')
+    const { duration, totalFrames, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
+    )
+
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(duration.value).toBe(12)
+    expect(totalFrames.value).toBe(Math.round(12 * DEFAULT_VIDEO_FPS))
+  })
+
+  it('captures a single thumbnail past any black intro frames', async () => {
+    let seekCount = 0
+    const seekTargets: number[] = []
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        video.addEventListener('seeked', () => {
+          seekCount += 1
+          seekTargets.push(video.currentTime)
+        })
+      }
+    })
+
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { thumbnail, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
+    )
+
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(seekCount).toBe(1)
+    expect(seekTargets).toEqual([1])
+    expect(thumbnail.value).not.toBe('')
+  })
+
+  it('captures without seeking when the frame is already at the target', async () => {
     let seekCount = 0
     installVideoMocks({
       onVideoCreated: (video) => {
+        video.shouldEmitSeeked = () => false
+        video.currentTime = 1
+        video.shouldEmitSeeked = () => true
+        video.readyState = 2
         video.addEventListener('seeked', () => {
           seekCount += 1
         })
@@ -255,19 +300,38 @@ describe('useVideoFilmstrip', () => {
     })
 
     const videoUrl = ref('https://example.com/video.mp4')
-    const { thumbnails, loading } = runWithScope(() =>
-      useVideoFilmstrip(videoUrl, {
-        sampleCount: FILMSTRIP_SAMPLE_COUNT
-      })
+    const { thumbnail, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
     )
 
     await vi.waitFor(() => expect(loading.value).toBe(false))
 
-    expect(seekCount).toBe(FILMSTRIP_SAMPLE_COUNT)
-    expect(thumbnails.value).toHaveLength(FILMSTRIP_SAMPLE_COUNT)
+    expect(seekCount).toBe(0)
+    expect(thumbnail.value).not.toBe('')
   })
 
-  it('captures thumbnails via createImageBitmap when available', async () => {
+  it('still completes when the first-frame seek times out', async () => {
+    vi.useFakeTimers()
+    try {
+      installVideoMocks({
+        onVideoCreated: (video) => {
+          video.shouldEmitSeeked = () => false
+        }
+      })
+
+      const videoUrl = ref('https://example.com/video.mp4')
+      const { error, loading } = runWithScope(() => useVideoFilmstrip(videoUrl))
+
+      await vi.advanceTimersByTimeAsync(6000)
+      await vi.waitFor(() => expect(loading.value).toBe(false))
+
+      expect(error.value).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('captures the thumbnail via createImageBitmap when available', async () => {
     const bitmap = { width: 171, height: 96, close: vi.fn() }
     const createImageBitmapMock = vi.fn(
       async (_source: unknown, _options?: ImageBitmapOptions) => bitmap
@@ -283,22 +347,44 @@ describe('useVideoFilmstrip', () => {
     })
 
     const videoUrl = ref('https://example.com/video.mp4')
-    const { thumbnails, loading } = runWithScope(() =>
+    const { thumbnail, loading } = runWithScope(() =>
       useVideoFilmstrip(videoUrl)
     )
 
     await vi.waitFor(() => expect(loading.value).toBe(false))
 
-    expect(thumbnails.value).toHaveLength(FILMSTRIP_SAMPLE_COUNT)
+    expect(thumbnail.value).not.toBe('')
+    expect(createImageBitmapMock).toHaveBeenCalledTimes(1)
     expect(createImageBitmapMock).toHaveBeenCalledWith(expect.anything(), {
       resizeWidth: Math.round(1920 * (FILMSTRIP_THUMBNAIL_HEIGHT / 1080)),
       resizeHeight: FILMSTRIP_THUMBNAIL_HEIGHT,
       resizeQuality: 'high'
     })
-    expect(bitmap.close).toHaveBeenCalledTimes(FILMSTRIP_SAMPLE_COUNT)
+    expect(bitmap.close).toHaveBeenCalledTimes(1)
   })
 
-  it('downscales captured thumbnails to the filmstrip height', async () => {
+  it('leaves the thumbnail empty when the capture fails', async () => {
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => {
+        throw new Error('decode failed')
+      })
+    )
+    vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas)
+    installVideoMocks()
+
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { thumbnail, error, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
+    )
+
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(thumbnail.value).toBe('')
+    expect(error.value).toBeNull()
+  })
+
+  it('downscales the captured thumbnail to the filmstrip height', async () => {
     let canvas: HTMLCanvasElement | undefined
     installVideoMocks({
       onVideoCreated: (video) => {
@@ -321,7 +407,7 @@ describe('useVideoFilmstrip', () => {
     )
   })
 
-  it('keeps thumbnails at source size when the video is smaller than the filmstrip height', async () => {
+  it('keeps the thumbnail at source size when the video is smaller than the filmstrip height', async () => {
     let canvas: HTMLCanvasElement | undefined
     installVideoMocks({
       onVideoCreated: (video) => {
@@ -340,53 +426,6 @@ describe('useVideoFilmstrip', () => {
 
     expect(canvas?.width).toBe(64)
     expect(canvas?.height).toBe(64)
-  })
-
-  it('captures samples without a seeked event for same-position seeks', async () => {
-    installVideoMocks({
-      onVideoCreated: (video) => {
-        video.duration = 0
-        video.readyState = 2
-        video.emitSeekedOnSameValue = false
-      }
-    })
-
-    const videoUrl = ref('https://example.com/video.mp4')
-    const { thumbnails, loading } = runWithScope(() =>
-      useVideoFilmstrip(videoUrl, { sampleCount: 5 })
-    )
-
-    await vi.waitFor(() => expect(loading.value).toBe(false))
-
-    expect(thumbnails.value).toHaveLength(5)
-    expect(thumbnails.value.every((thumbnail) => thumbnail !== '')).toBe(true)
-  })
-
-  it('keeps a placeholder slot when a seek times out', async () => {
-    vi.useFakeTimers()
-    try {
-      installVideoMocks({
-        onVideoCreated: (video) => {
-          video.shouldEmitSeeked = (value) => value !== 3
-        }
-      })
-
-      const videoUrl = ref('https://example.com/video.mp4')
-      const { thumbnails, loading } = runWithScope(() =>
-        useVideoFilmstrip(videoUrl)
-      )
-
-      await vi.advanceTimersByTimeAsync(6000)
-      await vi.waitFor(() => expect(loading.value).toBe(false))
-
-      expect(thumbnails.value).toHaveLength(FILMSTRIP_SAMPLE_COUNT)
-      expect(thumbnails.value[1]).toBe('')
-      expect(
-        thumbnails.value.filter((thumbnail) => thumbnail !== '')
-      ).toHaveLength(FILMSTRIP_SAMPLE_COUNT - 1)
-    } finally {
-      vi.useRealTimers()
-    }
   })
 
   it('caps thumbnail width for ultra-wide sources', async () => {
@@ -425,7 +464,7 @@ describe('useVideoFilmstrip', () => {
     })
 
     const videoUrl = ref('https://example.com/video.mp4')
-    const { thumbnails, error, loading, retry } = runWithScope(() =>
+    const { thumbnail, error, loading, retry } = runWithScope(() =>
       useVideoFilmstrip(videoUrl)
     )
 
@@ -435,35 +474,7 @@ describe('useVideoFilmstrip', () => {
     await vi.waitFor(() => expect(loading.value).toBe(false))
 
     expect(error.value).toBeNull()
-    expect(thumbnails.value).toHaveLength(FILMSTRIP_SAMPLE_COUNT)
-  })
-
-  it('keeps a placeholder slot when a single thumbnail capture fails', async () => {
-    const bitmap = { width: 171, height: 96, close: vi.fn() }
-    let captureCalls = 0
-    vi.stubGlobal(
-      'createImageBitmap',
-      vi.fn(async () => {
-        captureCalls += 1
-        if (captureCalls === 2) throw new Error('decode failed')
-        return bitmap
-      })
-    )
-    vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas)
-    installVideoMocks()
-
-    const videoUrl = ref('https://example.com/video.mp4')
-    const { thumbnails, loading } = runWithScope(() =>
-      useVideoFilmstrip(videoUrl)
-    )
-
-    await vi.waitFor(() => expect(loading.value).toBe(false))
-
-    expect(thumbnails.value).toHaveLength(FILMSTRIP_SAMPLE_COUNT)
-    expect(thumbnails.value[1]).toBe('')
-    expect(
-      thumbnails.value.filter((thumbnail) => thumbnail !== '')
-    ).toHaveLength(FILMSTRIP_SAMPLE_COUNT - 1)
+    expect(thumbnail.value).not.toBe('')
   })
 
   it('aborts a superseded load so its video element is released immediately', async () => {
@@ -514,7 +525,7 @@ describe('useVideoFilmstrip', () => {
     })
 
     const videoUrl = ref('https://example.com/broken.mp4')
-    const { error, duration, totalFrames, thumbnails, loading } = runWithScope(
+    const { error, duration, totalFrames, thumbnail, loading } = runWithScope(
       () => useVideoFilmstrip(videoUrl)
     )
 
@@ -523,7 +534,7 @@ describe('useVideoFilmstrip', () => {
     expect(error.value).toBe('load-failed')
     expect(duration.value).toBe(0)
     expect(totalFrames.value).toBe(0)
-    expect(thumbnails.value).toEqual([])
+    expect(thumbnail.value).toBe('')
   })
 
   it('reports canvas-unavailable when a 2d context cannot be created', async () => {

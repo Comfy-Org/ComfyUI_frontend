@@ -23,12 +23,15 @@
           ref="videoRef"
           data-testid="video-preview"
           :src="videoUrl"
+          :muted="isMuted"
+          :controls="isFullscreen"
           class="size-full object-contain"
           preload="metadata"
           crossorigin="anonymous"
           playsinline
           @loadedmetadata="handleVideoMetadata"
-          @timeupdate="handleTimeUpdate"
+          @timeupdate="handleVideoTimeUpdate"
+          @ended="isPlaying = false"
         />
         <VideoCropOverlay
           v-if="hasCrop && cropEnabled && !loading && width > 0 && height > 0"
@@ -77,6 +80,78 @@
 
     <div
       v-if="videoUrl"
+      data-testid="video-playback-controls"
+      class="flex h-8 items-center gap-2 px-1"
+    >
+      <button
+        type="button"
+        data-testid="playback-toggle"
+        :class="
+          cn(
+            'flex size-6 shrink-0 items-center justify-center rounded-md border-none bg-transparent text-component-node-foreground',
+            loading
+              ? 'cursor-default opacity-50'
+              : 'cursor-pointer hover:bg-component-node-widget-background-hovered'
+          )
+        "
+        :disabled="loading"
+        :aria-label="isPlaying ? t('videoEdit.pause') : t('videoEdit.play')"
+        @click="isPlaying = !isPlaying"
+      >
+        <i
+          :class="
+            cn(
+              isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]',
+              'size-4'
+            )
+          "
+        />
+      </button>
+      <span
+        data-testid="playback-timecode"
+        class="shrink-0 text-component-node-foreground-secondary tabular-nums"
+      >
+        {{ timecodeLabel }}
+      </span>
+      <Slider
+        class="min-w-0 flex-1"
+        :model-value="[playheadFrame]"
+        :min="0"
+        :max="Math.max(frameMax, 1)"
+        :step="1"
+        :disabled="loading || frameMax <= 0"
+        :aria-label="t('videoEdit.seekVideo')"
+        @update:model-value="handleSliderSeek"
+      />
+      <button
+        type="button"
+        data-testid="playback-fullscreen"
+        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-component-node-foreground-secondary hover:bg-component-node-widget-background-hovered"
+        :aria-label="t('videoEdit.fullscreen')"
+        @click="enterFullscreen"
+      >
+        <i class="icon-[lucide--maximize] size-4" />
+      </button>
+      <button
+        type="button"
+        data-testid="playback-mute"
+        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-component-node-foreground-secondary hover:bg-component-node-widget-background-hovered"
+        :aria-label="isMuted ? t('videoEdit.unmute') : t('videoEdit.mute')"
+        @click="isMuted = !isMuted"
+      >
+        <i
+          :class="
+            cn(
+              isMuted ? 'icon-[lucide--volume-x]' : 'icon-[lucide--volume-2]',
+              'size-4'
+            )
+          "
+        />
+      </button>
+    </div>
+
+    <div
+      v-if="videoUrl"
       class="grid grid-cols-[minmax(80px,min-content)_minmax(125px,1fr)] gap-1"
     >
       <WidgetToggleSwitch
@@ -87,15 +162,17 @@
       />
 
       <VideoFilmstripTrim
-        v-if="hasTrim"
+        v-if="hasTrim && trimEnabled"
         v-model:start-frame="startFrame"
         v-model:end-frame="endFrame"
         v-model:playhead-frame="playheadFrame"
-        v-model:is-playing="isPlaying"
         class="col-span-full"
         :trim-enabled="trimEnabled"
         :total-frames="effectiveTotalFrames"
-        :thumbnails="thumbnails"
+        :thumbnail="thumbnail"
+        :tile-aspect-ratio="
+          width > 0 && height > 0 ? width / height : undefined
+        "
         :loading="loading"
         @scrub="handleScrub"
       />
@@ -114,32 +191,6 @@
         :widget="endFrameWidget"
       />
 
-      <div
-        v-if="hasTrim && trimEnabled"
-        class="col-span-full grid grid-cols-2 gap-1"
-      >
-        <button
-          v-tooltip="t('videoEdit.setStartFrame')"
-          type="button"
-          :class="WidgetInputActionButtonClass"
-          :disabled="setStartFrameDisabled"
-          :aria-label="t('videoEdit.setStartFrame')"
-          @click="setStartFrame"
-        >
-          <i class="icon-[lucide--skip-back] size-4" />
-        </button>
-        <button
-          v-tooltip="t('videoEdit.setEndFrame')"
-          type="button"
-          :class="WidgetInputActionButtonClass"
-          :disabled="setEndFrameDisabled"
-          :aria-label="t('videoEdit.setEndFrame')"
-          @click="setEndFrame"
-        >
-          <i class="icon-[lucide--skip-forward] size-4" />
-        </button>
-      </div>
-
       <WidgetToggleSwitch
         v-if="hasCrop"
         v-model="cropEnabled"
@@ -149,44 +200,46 @@
 
       <div
         v-if="hasCrop && cropEnabled"
-        class="col-span-full flex items-center gap-2"
+        class="col-span-full grid grid-cols-subgrid items-center"
       >
-        <label class="text-xs text-muted-foreground">
+        <label class="truncate text-node-component-slot-text">
           {{ t('imageCrop.ratio') }}
         </label>
-        <Select v-model="selectedRatio" :disabled="!canLockRatio">
-          <SelectTrigger
-            class="h-7 w-24 text-xs"
-            :aria-label="t('imageCrop.ratio')"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="key in ratioKeys" :key="key" :value="key">
-              {{ key === 'custom' ? t('imageCrop.custom') : key }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          size="icon"
-          :variant="isLockEnabled ? 'primary' : 'secondary'"
-          class="size-7"
-          :disabled="!canLockRatio"
-          :aria-label="
-            isLockEnabled
-              ? t('imageCrop.unlockRatio')
-              : t('imageCrop.lockRatio')
-          "
-          @click="isLockEnabled = !isLockEnabled"
-        >
-          <i
-            :class="
+        <div class="flex min-w-0 items-center gap-1">
+          <Select v-model="selectedRatio" :disabled="!canLockRatio">
+            <SelectTrigger
+              class="h-8 min-w-0 flex-1 text-xs"
+              :aria-label="t('imageCrop.ratio')"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="key in ratioKeys" :key="key" :value="key">
+                {{ key === 'custom' ? t('imageCrop.custom') : key }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            size="icon"
+            :variant="isLockEnabled ? 'primary' : 'secondary'"
+            class="size-8 shrink-0"
+            :disabled="!canLockRatio"
+            :aria-label="
               isLockEnabled
-                ? 'icon-[lucide--lock] size-3.5'
-                : 'icon-[lucide--lock-open] size-3.5'
+                ? t('imageCrop.unlockRatio')
+                : t('imageCrop.lockRatio')
             "
-          />
-        </Button>
+            @click="isLockEnabled = !isLockEnabled"
+          >
+            <i
+              :class="
+                isLockEnabled
+                  ? 'icon-[lucide--lock] size-3.5'
+                  : 'icon-[lucide--lock-open] size-3.5'
+              "
+            />
+          </Button>
+        </div>
       </div>
 
       <WidgetBoundingBox
@@ -202,25 +255,26 @@
         <div
           v-for="row in metadataRows"
           :key="row.label"
-          class="col-span-full grid grid-cols-subgrid py-0.5 text-sm"
+          class="col-span-full grid grid-cols-subgrid py-0.5"
         >
-          <span class="truncate text-muted-foreground">{{ row.label }}</span>
-          <span class="text-right text-base-foreground">{{ row.value }}</span>
+          <span class="truncate text-node-component-slot-text">
+            {{ row.label }}
+          </span>
+          <span class="text-right text-component-node-foreground">
+            {{ row.value }}
+          </span>
         </div>
       </div>
-      <p
-        v-if="resolutionLabel"
-        class="col-span-full m-0 border-t border-node-stroke py-3 text-center text-sm text-base-foreground"
-      >
-        {{ resolutionLabel }}
-      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed, ref, toRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { clamp } from 'es-toolkit'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
 import Loader from '@/components/loader/Loader.vue'
@@ -230,6 +284,7 @@ import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
+import Slider from '@/components/ui/slider/Slider.vue'
 import VideoCropOverlay from '@/components/videoEdit/VideoCropOverlay.vue'
 import VideoFilmstripTrim from '@/components/videoEdit/VideoFilmstripTrim.vue'
 import { useCropRatioLock } from '@/composables/video/useCropRatioLock'
@@ -239,26 +294,16 @@ import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type { VideoEditFeature } from '@/lib/litegraph/src/types/widgets'
 import type { Bounds } from '@/renderer/core/layout/types'
-import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import WidgetToggleSwitch from '@/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const WidgetInputActionButtonClass = cn(
-  WidgetInputBaseClass,
-  'flex h-8 cursor-pointer items-center justify-center',
-  'not-disabled:hover:bg-component-node-widget-background-hovered',
-  'disabled:cursor-not-allowed disabled:bg-component-node-widget-background-disabled',
-  'disabled:text-muted-foreground disabled:opacity-50',
-  'disabled:hover:bg-component-node-widget-background-disabled'
-)
-
 const {
   features,
   videoUrl,
-  thumbnails,
+  thumbnail,
   totalFrames,
   duration,
   fps,
@@ -270,7 +315,7 @@ const {
 } = defineProps<{
   features: VideoEditFeature[]
   videoUrl?: string
-  thumbnails: string[]
+  thumbnail: string
   totalFrames: number
   duration: number
   fps: number
@@ -295,10 +340,12 @@ const trimEnabled = defineModel<boolean>('trimEnabled', { default: false })
 const cropEnabled = defineModel<boolean>('cropEnabled', { default: false })
 
 const { t } = useI18n()
-const { formatDuration, formatFileSize } = useVideoEditFormats()
+const { formatDuration, formatFileSize, formatTimecode } = useVideoEditFormats()
 
 const videoRef = useTemplateRef<HTMLVideoElement>('videoRef')
 const videoIntrinsicSize = ref<{ width: number; height: number } | null>(null)
+const isMuted = ref(false)
+const isFullscreen = ref(false)
 
 const hasTrim = computed(() => features.includes('trim'))
 const hasCrop = computed(() => features.includes('crop'))
@@ -318,36 +365,36 @@ const { isPlaying, seekPreviewToFrame, handleScrub, handleTimeUpdate } =
     startFrame,
     endFrame,
     playheadFrame,
-    hasTrimTimeline: hasTrim,
     frameToTime: toTime,
     timeToFrame: toFrame
   })
+
+useEventListener(document, 'fullscreenchange', () => {
+  const video = videoRef.value
+  const active =
+    document.fullscreenElement != null && document.fullscreenElement === video
+  isFullscreen.value = active
+  if (!active && video) {
+    isPlaying.value = !video.paused
+  }
+})
+
+function enterFullscreen() {
+  const video = videoRef.value
+  if (!video) return
+  void video.requestFullscreen().catch(() => {})
+}
+
+function handleVideoTimeUpdate() {
+  if (isFullscreen.value) return
+  handleTimeUpdate()
+}
 
 const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
   useCropRatioLock(cropBounds, {
     sourceWidth: toRef(() => width),
     sourceHeight: toRef(() => height)
   })
-
-const setStartFrameDisabled = computed(
-  () => !videoUrl || loading || startFrame.value <= 0
-)
-
-const setEndFrameDisabled = computed(
-  () => !videoUrl || loading || endFrame.value >= frameMax.value
-)
-
-function setStartFrame() {
-  isPlaying.value = false
-  startFrame.value = 0
-  void seekPreviewToFrame(0)
-}
-
-function setEndFrame() {
-  isPlaying.value = false
-  endFrame.value = frameMax.value
-  void seekPreviewToFrame(frameMax.value)
-}
 
 const trimToggleWidget = computed(
   (): SimplifiedWidget<boolean> => ({
@@ -411,6 +458,22 @@ const videoAspectRatioStyle = computed(() => {
   return { aspectRatio: '16 / 9' }
 })
 
+const timecodeLabel = computed(() =>
+  t('videoEdit.timecode', {
+    current: formatTimecode(toTime(playheadFrame.value)),
+    total: formatTimecode(duration)
+  })
+)
+
+function handleSliderSeek(value: number[] | undefined) {
+  const frame = value?.[0]
+  if (typeof frame !== 'number') return
+  const trimActive = hasTrim.value && trimEnabled.value
+  const minFrame = trimActive ? startFrame.value : 0
+  const maxFrame = trimActive ? endFrame.value : frameMax.value
+  handleScrub(clamp(frame, minFrame, maxFrame))
+}
+
 const selectedDurationSeconds = computed(() =>
   Math.max(toTime(endFrame.value + 1) - toTime(startFrame.value), 0)
 )
@@ -419,7 +482,22 @@ const selectedFrameCount = computed(() =>
   Math.max(endFrame.value - startFrame.value + 1, 0)
 )
 
+const dimensionsValue = computed(() => {
+  const intrinsic = videoIntrinsicSize.value
+  const displayWidth = width || intrinsic?.width
+  const displayHeight = height || intrinsic?.height
+  if (!displayWidth || !displayHeight) return '—'
+  return t('videoEdit.resolution', {
+    width: displayWidth,
+    height: displayHeight
+  })
+})
+
 const metadataRows = computed(() => [
+  {
+    label: t('videoEdit.dimensions'),
+    value: dimensionsValue.value
+  },
   {
     label: t('videoEdit.duration'),
     value: hasTrim.value
@@ -428,6 +506,13 @@ const metadataRows = computed(() => [
           total: formatDuration(duration)
         })
       : formatDuration(duration)
+  },
+  {
+    label: t('videoEdit.frameRate'),
+    value:
+      fps > 0
+        ? t('videoEdit.frameRateValue', { count: Math.round(fps * 100) / 100 })
+        : '—'
   },
   {
     label: t('videoEdit.frames'),
@@ -443,17 +528,6 @@ const metadataRows = computed(() => [
     value: formatFileSize(fileSize)
   }
 ])
-
-const resolutionLabel = computed(() => {
-  const intrinsic = videoIntrinsicSize.value
-  const displayWidth = width || intrinsic?.width
-  const displayHeight = height || intrinsic?.height
-  if (!displayWidth || !displayHeight) return ''
-  return t('videoEdit.resolution', {
-    width: displayWidth,
-    height: displayHeight
-  })
-})
 
 watch(
   toRef(() => videoUrl),

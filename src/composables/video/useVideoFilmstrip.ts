@@ -4,7 +4,6 @@ import type { Ref } from 'vue'
 import { fetchVideoMetadata } from '@/utils/videoMetadataUtil'
 
 export const DEFAULT_VIDEO_FPS = 20
-export const FILMSTRIP_SAMPLE_COUNT = 5
 export const FILMSTRIP_THUMBNAIL_HEIGHT = 96
 export const FILMSTRIP_THUMBNAIL_MAX_WIDTH = 384
 
@@ -15,7 +14,6 @@ export type FilmstripError = 'canvas-unavailable' | 'load-failed'
 
 interface UseVideoFilmstripOptions {
   fps?: number
-  sampleCount?: number
 }
 
 class EventTimeoutError extends Error {}
@@ -135,48 +133,49 @@ function captureFrame(
   return canvasToJpegDataUrl(canvas)
 }
 
-async function sampleFilmstripFrames(
+async function recoverUnknownDuration(
+  video: HTMLVideoElement,
+  signal: AbortSignal
+): Promise<number> {
+  video.currentTime = Number.MAX_SAFE_INTEGER
+  try {
+    await waitForEvent(video, 'seeked', SEEK_EVENT_TIMEOUT_MS, signal)
+  } catch (waitError) {
+    if (!(waitError instanceof EventTimeoutError)) throw waitError
+  }
+  return Number.isFinite(video.duration) ? video.duration : 0
+}
+
+function representativeFrameTime(duration: number): number {
+  return Number.isFinite(duration) && duration > 0
+    ? Math.min(1, duration * 0.1)
+    : 0
+}
+
+async function captureRepresentativeFrame(
   video: HTMLVideoElement,
   canvas: HTMLCanvasElement,
   context: CanvasRenderingContext2D,
   duration: number,
-  sampleCount: number,
-  isStale: () => boolean,
   signal: AbortSignal
-): Promise<string[]> {
-  const pendingThumbnails: Promise<string>[] = []
-
-  for (let index = 0; index < sampleCount; index++) {
-    if (isStale()) break
-    const time = (duration * (index + 0.5)) / sampleCount
-    const target = Math.min(time, Math.max(duration - 0.001, 0))
-    const alreadyAtTarget =
-      Math.abs(video.currentTime - target) < 0.001 && video.readyState >= 2
+): Promise<string> {
+  const target = representativeFrameTime(duration)
+  if (video.readyState < 2 || Math.abs(video.currentTime - target) > 0.001) {
     video.currentTime = target
-    if (!alreadyAtTarget) {
-      try {
-        await waitForEvent(video, 'seeked', SEEK_EVENT_TIMEOUT_MS, signal)
-      } catch (waitError) {
-        if (waitError instanceof EventTimeoutError) {
-          pendingThumbnails.push(Promise.resolve(''))
-          continue
-        }
-        throw waitError
-      }
+    try {
+      await waitForEvent(video, 'seeked', SEEK_EVENT_TIMEOUT_MS, signal)
+    } catch (waitError) {
+      if (!(waitError instanceof EventTimeoutError)) throw waitError
     }
-    pendingThumbnails.push(captureFrame(video, canvas, context))
   }
-
-  return Promise.all(pendingThumbnails)
+  return captureFrame(video, canvas, context)
 }
 
 export function useVideoFilmstrip(
   videoUrl: Ref<string | undefined>,
   options: UseVideoFilmstripOptions = {}
 ) {
-  const sampleCount = options.sampleCount ?? FILMSTRIP_SAMPLE_COUNT
-
-  const thumbnails = ref<string[]>([])
+  const thumbnail = ref('')
   const duration = ref(0)
   const totalFrames = ref(0)
   const width = ref(0)
@@ -200,7 +199,7 @@ export function useVideoFilmstrip(
   }
 
   function resetVideoState() {
-    thumbnails.value = []
+    thumbnail.value = ''
     duration.value = 0
     totalFrames.value = 0
     width.value = 0
@@ -218,7 +217,7 @@ export function useVideoFilmstrip(
     const loadId = ++activeLoadId
     loading.value = true
     error.value = null
-    thumbnails.value = []
+    thumbnail.value = ''
 
     const video = document.createElement('video')
     video.preload = 'metadata'
@@ -249,7 +248,12 @@ export function useVideoFilmstrip(
 
       if (isLoadStale(loadId, url)) return
 
-      const videoDuration = Number.isFinite(video.duration) ? video.duration : 0
+      const videoDuration = Number.isFinite(video.duration)
+        ? video.duration
+        : await recoverUnknownDuration(video, signal)
+
+      if (isLoadStale(loadId, url)) return
+
       duration.value = videoDuration
       width.value = video.videoWidth
       height.value = video.videoHeight
@@ -268,19 +272,17 @@ export function useVideoFilmstrip(
         metadata?.frame_count ??
         Math.max(Math.round(effectiveDuration * fps.value), 1)
 
-      const sampledThumbnails = await sampleFilmstripFrames(
+      const capturedThumbnail = await captureRepresentativeFrame(
         video,
         canvas,
         context,
         effectiveDuration,
-        sampleCount,
-        () => isLoadStale(loadId, url),
         signal
       )
 
       if (isLoadStale(loadId, url)) return
 
-      thumbnails.value = sampledThumbnails
+      thumbnail.value = capturedThumbnail
     } catch (loadError) {
       if (loadError instanceof LoadAbortedError) return
       if (isLoadStale(loadId, url)) return
@@ -321,7 +323,7 @@ export function useVideoFilmstrip(
   onScopeDispose(cancelActiveLoad)
 
   return {
-    thumbnails,
+    thumbnail,
     duration,
     totalFrames,
     width,

@@ -19,15 +19,22 @@ const i18n = createI18n({
         startFrame: 'Start Frame',
         endFrame: 'End Frame',
         duration: 'Duration',
+        dimensions: 'Dimensions',
+        frameRate: 'Frame Rate',
+        frameRateValue: '{count} fps',
         frames: 'Number of Frames',
         fileSize: 'File Size',
         resolution: '{width} × {height}',
+        timecode: '{current} / {total}',
+        play: 'Play',
+        pause: 'Pause',
+        mute: 'Mute',
+        unmute: 'Unmute',
+        fullscreen: 'Full screen',
         loadingVideo: 'Loading video preview',
         loadFailed: 'Failed to load video',
         canvasUnavailable: 'Failed to render video preview',
         retry: 'Retry',
-        setStartFrame: 'Reset start frame',
-        setEndFrame: 'Reset end frame',
         durationZero: '0s',
         durationSeconds: '{count}s',
         selectedOfTotal: '{selected} / {total}',
@@ -53,6 +60,17 @@ function stub(testId: string) {
   })
 }
 
+const SliderStub = defineComponent({
+  emits: ['update:modelValue'],
+  setup(_, { emit }) {
+    return () =>
+      h('button', {
+        'data-testid': 'stub-slider-seek',
+        onClick: () => emit('update:modelValue', [90])
+      })
+  }
+})
+
 const ToggleStub = defineComponent({
   props: {
     widget: { type: Object, required: true },
@@ -75,7 +93,7 @@ function renderPanel(props: Partial<PanelProps> = {}) {
     props: {
       features: ['trim', 'crop'],
       videoUrl: '/api/view?filename=clip.mp4',
-      thumbnails: ['data:image/jpeg;base64,one'],
+      thumbnail: 'data:image/jpeg;base64,one',
       totalFrames: 100,
       duration: 10,
       fps: 10,
@@ -95,6 +113,7 @@ function renderPanel(props: Partial<PanelProps> = {}) {
         WidgetBoundingBox: stub('stub-bounding-box'),
         WidgetToggleSwitch: ToggleStub,
         Loader: stub('stub-loader'),
+        Slider: SliderStub,
         Select: stub('stub-select'),
         SelectTrigger: stub('stub-select-trigger'),
         SelectValue: stub('stub-select-value'),
@@ -122,14 +141,15 @@ describe('VideoEditPanel', () => {
     expect(screen.queryByTestId('toggle-crop_enabled')).toBeNull()
   })
 
-  it('keeps the filmstrip visible but collapses trim controls until enabled', async () => {
+  it('hides the trim editor entirely until the trim toggle is enabled', async () => {
     renderPanel({ features: ['trim'] })
 
-    expect(screen.getByTestId('stub-filmstrip')).toBeTruthy()
+    expect(screen.queryByTestId('stub-filmstrip')).toBeNull()
     expect(screen.queryByTestId('stub-number-input')).toBeNull()
 
     await userEvent.click(screen.getByTestId('toggle-trim_enabled'))
 
+    expect(screen.getByTestId('stub-filmstrip')).toBeTruthy()
     expect(screen.getAllByTestId('stub-number-input')).toHaveLength(2)
   })
 
@@ -143,59 +163,6 @@ describe('VideoEditPanel', () => {
 
     expect(screen.getByTestId('stub-crop-overlay')).toBeTruthy()
     expect(screen.getByTestId('stub-bounding-box')).toBeTruthy()
-  })
-
-  it('resets the trim bounds from the reset frame buttons', async () => {
-    const updates: Array<[string, number]> = []
-    renderPanel({
-      features: ['trim'],
-      startFrame: 30,
-      endFrame: 60,
-      'onUpdate:startFrame': (value: number) => updates.push(['start', value]),
-      'onUpdate:endFrame': (value: number) => updates.push(['end', value])
-    } as Partial<PanelProps>)
-
-    await userEvent.click(screen.getByTestId('toggle-trim_enabled'))
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Reset start frame' })
-    )
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Reset end frame' })
-    )
-
-    expect(updates).toContainEqual(['start', 0])
-    expect(updates).toContainEqual(['end', 99])
-  })
-
-  it('disables the reset buttons at the trim extremes', async () => {
-    renderPanel({ features: ['trim'], startFrame: 0, endFrame: 99 })
-
-    await userEvent.click(screen.getByTestId('toggle-trim_enabled'))
-
-    expect(
-      screen.getByRole('button', { name: 'Reset start frame' })
-    ).toBeDisabled()
-    expect(
-      screen.getByRole('button', { name: 'Reset end frame' })
-    ).toBeDisabled()
-  })
-
-  it('disables the reset buttons while the filmstrip is still loading', async () => {
-    renderPanel({
-      features: ['trim'],
-      startFrame: 30,
-      endFrame: 60,
-      loading: true
-    })
-
-    await userEvent.click(screen.getByTestId('toggle-trim_enabled'))
-
-    expect(
-      screen.getByRole('button', { name: 'Reset start frame' })
-    ).toBeDisabled()
-    expect(
-      screen.getByRole('button', { name: 'Reset end frame' })
-    ).toBeDisabled()
   })
 
   it('shows a loading overlay while the filmstrip loads', () => {
@@ -252,9 +219,78 @@ describe('VideoEditPanel', () => {
     expect(screen.getByText('100')).toBeTruthy()
   })
 
-  it('renders the source resolution', () => {
+  it('renders dimensions and frame rate in the metadata rows', () => {
     renderPanel()
 
+    expect(screen.getByText('Dimensions')).toBeTruthy()
     expect(screen.getByText('1920 × 1080')).toBeTruthy()
+    expect(screen.getByText('Frame Rate')).toBeTruthy()
+    expect(screen.getByText('10 fps')).toBeTruthy()
+  })
+
+  it('shows playback controls with the current timecode', () => {
+    renderPanel()
+
+    expect(screen.getByTestId('video-playback-controls')).toBeTruthy()
+    expect(screen.getByTestId('playback-timecode').textContent?.trim()).toBe(
+      '0:00 / 0:10'
+    )
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()
+  })
+
+  it('clamps slider seeks into the trim window while trim is enabled', async () => {
+    const updates: number[] = []
+    renderPanel({
+      features: ['trim'],
+      startFrame: 30,
+      endFrame: 60,
+      trimEnabled: true,
+      'onUpdate:playheadFrame': (value: number) => updates.push(value)
+    } as Partial<PanelProps>)
+
+    await userEvent.click(screen.getByTestId('stub-slider-seek'))
+
+    expect(updates).toContain(60)
+    expect(updates).not.toContain(90)
+  })
+
+  it('lets slider seeks reach the full range while trim is disabled', async () => {
+    const updates: number[] = []
+    renderPanel({
+      features: ['trim'],
+      'onUpdate:playheadFrame': (value: number) => updates.push(value)
+    } as Partial<PanelProps>)
+
+    await userEvent.click(screen.getByTestId('stub-slider-seek'))
+
+    expect(updates).toContain(90)
+  })
+
+  it('requests native fullscreen on the video element', async () => {
+    renderPanel()
+
+    const video = screen.getByTestId('video-preview') as HTMLVideoElement
+    video.requestFullscreen = vi.fn().mockResolvedValue(undefined)
+
+    await userEvent.click(screen.getByTestId('playback-fullscreen'))
+
+    expect(video.requestFullscreen).toHaveBeenCalledTimes(1)
+  })
+
+  it('toggles the mute button label', async () => {
+    renderPanel()
+
+    const muteButton = screen.getByTestId('playback-mute')
+    expect(muteButton.getAttribute('aria-label')).toBe('Mute')
+
+    await userEvent.click(muteButton)
+
+    expect(muteButton.getAttribute('aria-label')).toBe('Unmute')
+  })
+
+  it('hides the playback controls without a video source', () => {
+    renderPanel({ videoUrl: undefined })
+
+    expect(screen.queryByTestId('video-playback-controls')).toBeNull()
   })
 })

@@ -8,7 +8,7 @@
       v-model:crop-enabled="cropEnabled"
       :features="features"
       :video-url="videoUrl"
-      :thumbnails="thumbnails"
+      :thumbnail="thumbnail"
       :total-frames="totalFrames"
       :duration="duration"
       :fps="fps"
@@ -61,7 +61,7 @@ const node = computed(() => {
 const { videoUrl } = useVideoSourceUrl(node)
 
 const {
-  thumbnails,
+  thumbnail,
   duration,
   totalFrames,
   width,

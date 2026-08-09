@@ -1,36 +1,11 @@
 <template>
-  <div class="flex h-16 w-full items-stretch gap-px" @pointerdown.stop>
-    <button
-      type="button"
-      :class="
-        cn(
-          'flex w-14 shrink-0 items-center justify-center rounded-l-lg border-none bg-component-node-widget-background px-4 text-muted-foreground',
-          !disabled &&
-            'cursor-pointer hover:bg-component-node-widget-background-hovered',
-          disabled && 'cursor-default opacity-50'
-        )
-      "
-      :disabled="disabled"
-      :aria-label="isPlaying ? t('videoEdit.pause') : t('videoEdit.play')"
-      @click="togglePlay"
-    >
-      <i
-        :class="
-          cn(
-            isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]',
-            !isPlaying && 'ml-0.5',
-            'size-5'
-          )
-        "
-      />
-    </button>
-
+  <div class="flex h-16 w-full items-stretch" @pointerdown.stop>
     <div
       ref="trackRef"
       data-testid="trim-track"
       :class="
         cn(
-          'relative min-w-0 flex-1 rounded-r-lg bg-component-node-widget-background',
+          'relative min-w-0 flex-1 rounded-lg bg-component-node-widget-background',
           disabled || totalFrames <= 1
             ? 'cursor-default'
             : isScrubDragging
@@ -92,32 +67,22 @@
         }"
         aria-hidden="true"
       >
-        <template v-for="(thumbnail, index) in thumbnails" :key="index">
-          <img
-            v-if="thumbnail"
-            data-testid="filmstrip-thumbnail"
-            :src="thumbnail"
-            alt=""
-            draggable="false"
-            class="h-full min-w-0 flex-1 object-cover select-none"
-          />
-          <div
-            v-else
-            data-testid="filmstrip-placeholder"
-            class="h-full min-w-0 flex-1 bg-component-node-widget-background"
-          />
-        </template>
         <div
-          v-if="isFilmstripLoading"
-          class="flex size-full items-stretch gap-px overflow-hidden"
+          v-if="thumbnail"
+          data-testid="filmstrip-tile"
+          class="size-full"
+          :style="{
+            backgroundImage: `url(${thumbnail})`,
+            backgroundRepeat: 'repeat-x',
+            backgroundSize: `${tileWidthPx}px 100%`,
+            backgroundPosition: 'left center'
+          }"
+        />
+        <Skeleton
+          v-else-if="isFilmstripLoading"
           data-testid="filmstrip-skeleton"
-        >
-          <Skeleton
-            v-for="index in FILMSTRIP_SAMPLE_COUNT"
-            :key="index"
-            class="h-full min-w-10 flex-1 rounded-none"
-          />
-        </div>
+          class="size-full rounded-none"
+        />
       </div>
 
       <div
@@ -191,10 +156,8 @@
         @pointerdown.stop="startScrubDrag"
       >
         <div
-          class="pointer-events-none flex w-1.5 items-center justify-center rounded-full bg-video-trim-playhead-background"
-        >
-          <span class="h-4 w-px rounded-full bg-secondary-background" />
-        </div>
+          class="pointer-events-none w-0.5 rounded-full bg-video-trim-playhead-background"
+        />
       </div>
     </div>
   </div>
@@ -207,12 +170,13 @@ import { useI18n } from 'vue-i18n'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useRangeEditor } from '@/composables/useRangeEditor'
 import { useTimelineScrub } from '@/composables/video/useTimelineScrub'
-import { FILMSTRIP_SAMPLE_COUNT } from '@/composables/video/useVideoFilmstrip'
 import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const HANDLE_WIDTH_PX = 16
 const TRACK_CONTENT_SPAN = `(100% - ${HANDLE_WIDTH_PX * 2}px)`
+const FILMSTRIP_TRACK_HEIGHT_PX = 48
+const DEFAULT_TILE_ASPECT_RATIO = 16 / 9
 
 function timelineInsetLeftStyle(normalized: number) {
   return {
@@ -222,13 +186,15 @@ function timelineInsetLeftStyle(normalized: number) {
 
 const {
   totalFrames,
-  thumbnails,
+  thumbnail,
+  tileAspectRatio = DEFAULT_TILE_ASPECT_RATIO,
   disabled = false,
   trimEnabled = true,
   loading = false
 } = defineProps<{
   totalFrames: number
-  thumbnails: string[]
+  thumbnail: string
+  tileAspectRatio?: number
   disabled?: boolean
   trimEnabled?: boolean
   loading?: boolean
@@ -237,7 +203,6 @@ const {
 const startFrame = defineModel<number>('startFrame', { required: true })
 const endFrame = defineModel<number>('endFrame', { required: true })
 const playheadFrame = defineModel<number>('playheadFrame', { required: true })
-const isPlaying = defineModel<boolean>('isPlaying', { default: false })
 
 const emit = defineEmits<{
   scrub: [frame: number]
@@ -305,7 +270,15 @@ function handleTrackKeydown(event: KeyboardEvent) {
   scrubToFrame(target)
 }
 
-const isFilmstripLoading = computed(() => loading && thumbnails.length === 0)
+const isFilmstripLoading = computed(() => loading && !thumbnail)
+
+const tileWidthPx = computed(() => {
+  const aspect =
+    Number.isFinite(tileAspectRatio) && tileAspectRatio > 0
+      ? tileAspectRatio
+      : DEFAULT_TILE_ASPECT_RATIO
+  return Math.max(Math.round(FILMSTRIP_TRACK_HEIGHT_PX * aspect), 1)
+})
 
 const trimSelectionBarClass = computed(() =>
   isFilmstripLoading.value
@@ -349,9 +322,4 @@ const activeHandleTooltipStyle = computed(() => {
   const norm = activeHandle.value === 'min' ? startNorm.value : endNorm.value
   return timelineInsetLeftStyle(norm)
 })
-
-function togglePlay() {
-  if (disabled) return
-  isPlaying.value = !isPlaying.value
-}
 </script>
