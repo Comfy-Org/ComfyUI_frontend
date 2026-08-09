@@ -34,7 +34,10 @@ test.describe(
       // background with the app's opaque generic hover gray, so the node's
       // custom color should still show through in the screenshot.
       await lockedInput.hover()
-      await comfyPage.expectScreenshot(targetNode, 'locked-widget-hover-color.png')
+      await comfyPage.expectScreenshot(
+        targetNode,
+        'locked-widget-hover-color.png'
+      )
     })
 
     test('editable field on the same node still shows the generic hover background', async ({
@@ -48,7 +51,10 @@ test.describe(
 
       await expect(editableInput).toBeVisible()
       await editableInput.hover()
-      await comfyPage.expectScreenshot(sourceNode, 'editable-widget-hover-color.png')
+      await comfyPage.expectScreenshot(
+        sourceNode,
+        'editable-widget-hover-color.png'
+      )
     })
   }
 )
