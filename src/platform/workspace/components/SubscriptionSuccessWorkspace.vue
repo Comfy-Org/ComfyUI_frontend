@@ -97,7 +97,6 @@
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -123,7 +122,6 @@ defineEmits<{
 }>()
 
 const { t, n } = useI18n()
-const { flags } = useFeatureFlags()
 const { maxSeats, occupiedSeats } = useBillingContext()
 
 const tierName = computed(() =>
@@ -153,9 +151,7 @@ const invitableSeats = computed(() => {
 })
 
 const showInviteBlock = computed(
-  () =>
-    flags.teamWorkspacesEnabled &&
-    (maxSeats.value === 0 || (maxSeats.value ?? 0) > 1)
+  () => maxSeats.value === 0 || (maxSeats.value ?? 0) > 1
 )
 
 const invitedEmails = ref<string[]>([])

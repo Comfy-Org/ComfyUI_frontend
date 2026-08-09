@@ -3,7 +3,7 @@ import { cloneDeep, uniq } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
-import { resolveNodeDefText, t } from '@/i18n'
+import { t } from '@/i18n'
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
@@ -36,6 +36,7 @@ export class ComfyNodeDefImpl
 {
   // ComfyNodeDef fields (V1)
   readonly name: string
+  readonly display_name: string
   /**
    * Category is not marked as readonly as the bookmark system
    * needs to write to it to assign a node to a custom folder.
@@ -43,6 +44,7 @@ export class ComfyNodeDefImpl
   category: string
   readonly main_category?: string
   readonly python_module: string
+  readonly description: string
   readonly help: string
   readonly deprecated: boolean
   readonly experimental: boolean
@@ -100,15 +102,6 @@ export class ComfyNodeDefImpl
   readonly inputTypes: string[]
 
   /**
-   * Raw `/object_info` text, kept unresolved so `display_name` and
-   * `description` can be resolved against the active locale on every read.
-   * Declared with TypeScript `private` rather than `#private`: Vue wraps store
-   * instances in a Proxy, and `#private` reads throw through one.
-   */
-  private readonly backendDisplayName?: string
-  private readonly backendDescription?: string
-
-  /**
    * @internal
    * Migrate default input options to forceInput.
    */
@@ -146,19 +139,16 @@ export class ComfyNodeDefImpl
     /**
      * Copy fields that are declared on this class but not explicitly assigned
      * below (e.g. `search_aliases`) straight from the source definition.
-     * `display_name` and `description` are held out: they are accessors with no
-     * setter, so assigning them here would throw.
      */
-    const { display_name, description, ...assignable } = obj
-    Object.assign(this, assignable)
+    Object.assign(this, obj)
 
     // Initialize V1 fields
     this.name = obj.name
-    this.backendDisplayName = display_name || undefined
-    this.backendDescription = description || undefined
+    this.display_name = obj.display_name
     this.category = obj.category
     this.main_category = obj.main_category
     this.python_module = obj.python_module
+    this.description = obj.description
     this.help = obj.help ?? ''
     this.deprecated = obj.deprecated ?? obj.category === ''
     this.experimental =
@@ -189,22 +179,6 @@ export class ComfyNodeDefImpl
     // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module, this.essentials_category)
     this.inputTypes = uniq(Object.values(this.inputs).flatMap(resolveInputType))
-  }
-
-  /**
-   * Resolved against the active locale on read, so a locale switch retitles
-   * every def without refetching `/object_info`.
-   */
-  get display_name(): string {
-    return resolveNodeDefText(
-      'display_name',
-      this.name,
-      this.backendDisplayName
-    )
-  }
-
-  get description(): string {
-    return resolveNodeDefText('description', this.name, this.backendDescription)
   }
 
   get nodePath(): string {
@@ -423,7 +397,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
           : new ComfyNodeDefImpl(nodeDef)
 
       newNodeDefsByName[nodeDef.name] = nodeDefImpl
-      newNodeDefsByDisplayName[nodeDefImpl.display_name] = nodeDefImpl
+      newNodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
     }
 
     nodeDefsByName.value = newNodeDefsByName
@@ -432,7 +406,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   function addNodeDef(nodeDef: ComfyNodeDefV1) {
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
     nodeDefsByName.value[nodeDef.name] = nodeDefImpl
-    nodeDefsByDisplayName.value[nodeDefImpl.display_name] = nodeDefImpl
+    nodeDefsByDisplayName.value[nodeDef.display_name] = nodeDefImpl
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     const nodeTypeName = node.constructor?.nodeData?.name ?? node.type

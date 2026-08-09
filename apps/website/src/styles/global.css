@@ -14,6 +14,8 @@
   );
   --color-destructive: #f44336;
   --color-transparency-white-t4: rgb(from var(--color-white) r g b / 0.04);
+  --color-transparency-white-t8: rgb(from var(--color-white) r g b / 0.08);
+  --color-transparency-white-t20: rgb(from var(--color-white) r g b / 0.2);
   --color-transparency-ink-t80: rgb(
     from var(--color-primary-comfy-ink) r g b / 0.8
   );
@@ -210,5 +212,5 @@ video::-webkit-media-controls-panel {
 :root {
   --site-bg: var(--color-primary-comfy-ink);
   --site-bg-soft: var(--color-site-bg-soft);
-  --site-border-subtle: rgb(255 255 255 / 0.1);
+  --site-border-subtle: rgb(from var(--color-white) r g b / 0.1);
 }

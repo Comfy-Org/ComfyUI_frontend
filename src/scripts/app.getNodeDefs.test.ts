@@ -49,12 +49,12 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(result.TestNode.display_name).toBe('Custom Display Name')
   })
 
-  test('leaves an empty display_name unresolved for the store to fill in', async () => {
+  test('falls back to the node name when display_name is empty', async () => {
     mockDefs(nodeDef({ display_name: '' }))
 
     const result = await comfyApp.getNodeDefs()
 
-    expect(result.TestNode.display_name).toBe('')
+    expect(result.TestNode.display_name).toBe('TestNode')
   })
 
   test('renders backend names containing i18n syntax verbatim', async () => {
@@ -65,10 +65,7 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(result.TestNode.display_name).toBe('Load Image {batch} | v2')
   })
 
-  // Resolution happens on read, in ComfyNodeDefImpl — see
-  // nodeDefStore.nodeText.test.ts. Baking it in here is what froze the text to
-  // the fetch-time locale, so the raw value has to survive this layer intact.
-  test('hands the store raw text rather than a translation', async () => {
+  test('lets custom-node translations win over the backend name', async () => {
     mergeCustomNodesI18n({
       en: { nodeDefs: { TestNode: { display_name: 'Translated Name' } } }
     })
@@ -76,7 +73,18 @@ describe('ComfyApp.getNodeDefs', () => {
 
     const result = await comfyApp.getNodeDefs()
 
-    expect(result.TestNode.display_name).toBe('Object Info Display Name')
+    expect(result.TestNode.display_name).toBe('Translated Name')
+  })
+
+  test('resolves dotted node names against the normalized key', async () => {
+    mergeCustomNodesI18n({
+      en: { nodeDefs: { my_node: { display_name: 'Dotted Translated' } } }
+    })
+    mockDefs(nodeDef({ name: 'my.node', display_name: 'My Node' }))
+
+    const result = await comfyApp.getNodeDefs()
+
+    expect(result['my.node'].display_name).toBe('Dotted Translated')
   })
 
   test('publishes backend text for consumers that only know the node name', async () => {
@@ -103,7 +111,7 @@ describe('ComfyApp.getNodeDefs', () => {
     }
   )
 
-  test('does not substitute the bundled snapshot for an omitted field', async () => {
+  test('falls back to the bundled name when the backend omits display_name', async () => {
     mockDefs(
       nodeDef({
         name: 'CLIPTextEncode',
@@ -114,8 +122,17 @@ describe('ComfyApp.getNodeDefs', () => {
 
     const result = await comfyApp.getNodeDefs()
 
-    expect(result.CLIPTextEncode.display_name).toBeUndefined()
-    expect(result.CLIPTextEncode.description).toBe('')
+    expect(result.CLIPTextEncode.display_name).toBe('CLIP Text Encode (Prompt)')
+  })
+
+  test('falls back to the bundled description when the backend omits one', async () => {
+    mockDefs(
+      nodeDef({ name: 'CLIPTextEncode', display_name: 'x', description: '' })
+    )
+
+    const result = await comfyApp.getNodeDefs()
+
+    expect(result.CLIPTextEncode.description).toMatch(/^Encodes a text prompt/)
   })
 
   test('resolves a def without a category to an empty category', async () => {
@@ -124,34 +141,6 @@ describe('ComfyApp.getNodeDefs', () => {
     const result = await comfyApp.getNodeDefs()
 
     expect(result.TestNode.category).toBe('')
-  })
-
-  test('names the malformed entries it discards', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    vi.mocked(api.getNodeDefs).mockResolvedValue({
-      TestNode: nodeDef({}),
-      NullEntry: null,
-      NamelessEntry: { category: 'test' }
-    } as unknown as Record<string, ComfyNodeDefV1>)
-
-    await comfyApp.getNodeDefs()
-
-    expect(warn).toHaveBeenCalledTimes(1)
-    const [message] = warn.mock.calls[0]
-    expect(message).toContain('NullEntry')
-    expect(message).toContain('NamelessEntry')
-    expect(message).not.toContain('TestNode')
-    warn.mockRestore()
-  })
-
-  test('stays silent when every entry is well formed', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    mockDefs(nodeDef({}))
-
-    await comfyApp.getNodeDefs()
-
-    expect(warn).not.toHaveBeenCalled()
-    warn.mockRestore()
   })
 
   test('discards malformed entries inside an otherwise valid response', async () => {
