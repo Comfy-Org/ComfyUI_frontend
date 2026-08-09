@@ -13,8 +13,6 @@ import {
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
-import { readFileAsArrayBuffer } from './readFile'
-
 const WEBM_SIGNATURE = [0x1a, 0x45, 0xdf, 0xa3]
 const MAX_READ_BYTES = 2 * 1024 * 1024
 const EBML_ID = {
