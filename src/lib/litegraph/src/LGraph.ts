@@ -1420,6 +1420,12 @@ export class LGraph
 
         for (const subgraph of releasedSubgraphs) {
           unregisterAllGraphLayout(subgraph)
+          for (const link of subgraph._links.values()) {
+            layoutStore.deleteLinkLayout(link.id)
+          }
+          for (const link of subgraph.floatingLinks.values()) {
+            layoutStore.deleteLinkLayout(link.id)
+          }
           unregisterAllLinkTopologies(subgraph)
           unregisterAllRerouteChains(subgraph)
           unregisterAllNodeStates(subgraph)
@@ -2206,8 +2212,6 @@ export class LGraph
       // Special handling: Subgraph input node
       i++
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        link.target_id = subgraphNode.id
-        link.target_slot = i - 1
         if (subgraphInput instanceof SubgraphInput) {
           subgraphInput.connect(
             subgraphNode.findInputSlotByType(link.type, true, true),
@@ -2247,9 +2251,6 @@ export class LGraph
         const { input, inputNode, link, subgraphOutput } = connection
         // Special handling: Subgraph output node
         if (link.target_id === SUBGRAPH_OUTPUT_ID) {
-          link.origin_id = subgraphNode.id
-          link.origin_slot = i - 1
-          this._addLink(link)
           if (subgraphOutput instanceof SubgraphOutput) {
             subgraphOutput.connect(
               subgraphNode.findOutputSlotByType(link.type, true, true),
@@ -2389,6 +2390,8 @@ export class LGraph
     }[] = []
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
+      let originId: NodeId
+      let originSlot = link.origin_slot
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
         const outerLinkId = inputLinkId(this, subgraphNode.id, link.origin_slot)
         if (!outerLinkId) {
@@ -2396,19 +2399,19 @@ export class LGraph
           continue
         }
         const outerLink = this.links[outerLinkId]
-        link.origin_id = outerLink.origin_id
-        link.origin_slot = outerLink.origin_slot
+        originId = outerLink.origin_id
+        originSlot = outerLink.origin_slot
         externalParentId = outerLink.parentId
       } else {
-        const origin_id =
+        const mappedOriginId =
           link.origin_id === UNASSIGNED_NODE_ID
             ? undefined
             : nodeIdMap.get(link.origin_id)
-        if (!origin_id) {
+        if (!mappedOriginId) {
           console.error('Missing Link ID when unpacking')
           continue
         }
-        link.origin_id = origin_id
+        originId = mappedOriginId
       }
       if (link.target_id === SUBGRAPH_OUTPUT_ID) {
         for (const sublink of outputLinks(
@@ -2417,8 +2420,8 @@ export class LGraph
           link.target_slot
         )) {
           newLinks.push({
-            oid: link.origin_id,
-            oslot: link.origin_slot,
+            oid: originId,
+            oslot: originSlot,
             tid: sublink.target_id,
             tslot: sublink.target_slot,
             id: link.id,
@@ -2429,21 +2432,19 @@ export class LGraph
           sublink.parentId = undefined
         }
         continue
-      } else {
-        const target_id =
-          link.target_id === UNASSIGNED_NODE_ID
-            ? undefined
-            : nodeIdMap.get(link.target_id)
-        if (!target_id) {
-          console.error('Missing Link ID when unpacking')
-          continue
-        }
-        link.target_id = target_id
+      }
+      const targetId =
+        link.target_id === UNASSIGNED_NODE_ID
+          ? undefined
+          : nodeIdMap.get(link.target_id)
+      if (!targetId) {
+        console.error('Missing Link ID when unpacking')
+        continue
       }
       newLinks.push({
-        oid: link.origin_id,
-        oslot: link.origin_slot,
-        tid: link.target_id,
+        oid: originId,
+        oslot: originSlot,
+        tid: targetId,
         tslot: link.target_slot,
         id: link.id,
         iparent: link.parentId,

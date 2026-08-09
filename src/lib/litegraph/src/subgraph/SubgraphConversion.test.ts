@@ -7,6 +7,7 @@ import {
   onTestFinished
 } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
@@ -16,6 +17,7 @@ import {
   createTestNode,
   createTestWidgetNode
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -31,6 +33,7 @@ import {
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
+  layoutStore.resetForTests()
   resetSubgraphFixtureState()
 })
 
@@ -43,8 +46,9 @@ describe('SubgraphConversion', () => {
       const exterior = createTestNode(rootGraph, [], ['number'])
       const origin = createTestNode(rootGraph, ['number'], ['number'])
       const target = createTestNode(rootGraph, ['number'])
-      exterior.connect(0, origin, 0)
-      origin.connect(0, target, 0)
+      const boundaryLink = exterior.connect(0, origin, 0)
+      const interiorLink = origin.connect(0, target, 0)
+      assert(boundaryLink && interiorLink)
 
       const { subgraph, node: subgraphNode } = rootGraph.convertToSubgraph(
         new Set<Positionable>([target, origin])
@@ -78,6 +82,14 @@ describe('SubgraphConversion', () => {
           0
         )
       ).toBe(true)
+      expect(rootGraph.getLink(boundaryLink.id)).toBeUndefined()
+      expect(rootGraph.getLink(interiorLink.id)).toBeUndefined()
+      expect(
+        linkStore.getLink(graphScopeOf(rootGraph), boundaryLink.id)
+      ).toBeUndefined()
+      expect(
+        linkStore.getLink(graphScopeOf(rootGraph), interiorLink.id)
+      ).toBeUndefined()
     })
 
     it('keeps interior reroute chains registered with live membership', () => {
@@ -135,13 +147,71 @@ describe('SubgraphConversion', () => {
 
       const node1 = createTestNode(subgraph, [], ['number'])
       const node2 = createTestNode(subgraph, ['number'])
-      node1.connect(0, node2, 0)
+      const innerLink = node1.connect(0, node2, 0)
+      assert(innerLink)
+      const originalEndpoints = [
+        innerLink.origin_id,
+        innerLink.origin_slot,
+        innerLink.target_id,
+        innerLink.target_slot
+      ]
 
       graph.unpackSubgraph(subgraphNode)
 
       expect(graph.nodes.length).toBe(2)
       expect(graph.links.size).toBe(1)
+      expect([
+        innerLink.origin_id,
+        innerLink.origin_slot,
+        innerLink.target_id,
+        innerLink.target_slot
+      ]).toEqual(originalEndpoints)
+      expect(
+        useLinkStore().getInputSlotLink(graphScopeOf(subgraph), node2.id, 0)
+      ).toBeUndefined()
     })
+
+    it('removes released inner link layout when unpacking', () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const node1 = createTestNode(subgraph, [], ['number'])
+      const node2 = createTestNode(subgraph, ['number'])
+      const innerLink = node1.connect(0, node2, 0)
+      assert(innerLink)
+      layoutStore.updateLinkLayout(innerLink.id, {
+        id: innerLink.id,
+        path: fromPartial<Path2D>({}),
+        bounds: { x: 0, y: 0, width: 1, height: 1 },
+        centerPos: { x: 0, y: 0 },
+        sourceNodeId: node1.id,
+        targetNodeId: node2.id,
+        sourceSlot: 0,
+        targetSlot: 0
+      })
+      expect(layoutStore.getLinkLayout(innerLink.id)).not.toBeNull()
+
+      graph.unpackSubgraph(subgraphNode)
+
+      const [newLink] = graph.links.values()
+      assert(newLink)
+      expect(newLink.id).not.toBe(innerLink.id)
+      layoutStore.updateLinkLayout(newLink.id, {
+        id: newLink.id,
+        path: fromPartial<Path2D>({}),
+        bounds: { x: 0, y: 0, width: 1, height: 1 },
+        centerPos: { x: 0, y: 0 },
+        sourceNodeId: newLink.origin_id,
+        targetNodeId: newLink.target_id,
+        sourceSlot: newLink.origin_slot,
+        targetSlot: newLink.target_slot
+      })
+      expect(layoutStore.getLinkLayout(innerLink.id)).toBeNull()
+      expect(layoutStore.getLinkLayout(newLink.id)).not.toBeNull()
+    })
+
     it('Should merge boundary links', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }],

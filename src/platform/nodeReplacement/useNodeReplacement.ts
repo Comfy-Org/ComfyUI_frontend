@@ -1,6 +1,9 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { adoptNodeReplacement, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { replaceLinkEndpoints } from '@/lib/litegraph/src/linkReplacement'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import type { LinkEndpoints } from '@/lib/litegraph/src/linkReplacement'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
@@ -16,6 +19,36 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 interface ReplacementGroup {
   type: string
   nodeTypes: MissingNodeType[]
+}
+
+interface LinkEndpointReplacement {
+  link: LLink
+  endpoints: LinkEndpoints
+}
+
+function collectLinkReplacement(
+  replacements: Map<LLink, LinkEndpoints>,
+  { link, endpoints }: LinkEndpointReplacement
+): void {
+  const existing = replacements.get(link) ?? endpoints
+  replacements.set(link, {
+    originId:
+      endpoints.originId === link.origin_id
+        ? existing.originId
+        : endpoints.originId,
+    originSlot:
+      endpoints.originSlot === link.origin_slot
+        ? existing.originSlot
+        : endpoints.originSlot,
+    targetId:
+      endpoints.targetId === link.target_id
+        ? existing.targetId
+        : endpoints.targetId,
+    targetSlot:
+      endpoints.targetSlot === link.target_slot
+        ? existing.targetSlot
+        : endpoints.targetSlot
+  })
 }
 
 /** Compares sanitized type strings to match placeholder → missing node type. */
@@ -37,7 +70,7 @@ function transferInputConnection(
   newNode: LGraphNode,
   newInputName: string,
   graph: LGraph
-): void {
+): LinkEndpointReplacement | undefined {
   const oldSlotIdx = oldNode.inputs?.findIndex((i) => i.name === oldInputName)
   const newSlotIdx = newNode.inputs?.findIndex((i) => i.name === newInputName)
   if (oldSlotIdx == null || oldSlotIdx === -1) return
@@ -49,8 +82,15 @@ function transferInputConnection(
   const link = graph.links.get(linkId)
   if (!link) return
 
-  link.target_id = newNode.id
-  link.target_slot = newSlotIdx
+  return {
+    link,
+    endpoints: {
+      originId: link.origin_id,
+      originSlot: link.origin_slot,
+      targetId: newNode.id,
+      targetSlot: newSlotIdx
+    }
+  }
 }
 
 function transferOutputConnections(
@@ -59,15 +99,20 @@ function transferOutputConnections(
   newNode: LGraphNode,
   newOutputIdx: number,
   graph: LGraph
-): void {
+): LinkEndpointReplacement[] {
   const links = outputLinks(graph, oldNode.id, oldOutputIdx)
-  if (!links.length) return
-  if (!newNode.outputs?.[newOutputIdx]) return
+  if (!links.length) return []
+  if (!newNode.outputs?.[newOutputIdx]) return []
 
-  for (const link of links) {
-    link.origin_id = newNode.id
-    link.origin_slot = newOutputIdx
-  }
+  return links.map((link) => ({
+    link,
+    endpoints: {
+      originId: newNode.id,
+      originSlot: newOutputIdx,
+      targetId: link.target_id,
+      targetSlot: link.target_slot
+    }
+  }))
 }
 
 /** Uses old_widget_ids as name→index lookup into widgets_values. */
@@ -169,6 +214,7 @@ function replaceWithMapping(
   }
 
   const serialized = node.last_serialization ?? node.serialize()
+  const linkReplacements = new Map<LLink, LinkEndpoints>()
 
   if (serialized.title != null) newNode.title = serialized.title
   if (serialized.properties) {
@@ -182,13 +228,15 @@ function replaceWithMapping(
     for (const inputMap of replacement.input_mapping) {
       if ('old_id' in inputMap) {
         if (isDotNotation(inputMap.new_id)) continue // Autogrow/DynamicCombo
-        transferInputConnection(
+        const linkReplacement = transferInputConnection(
           node,
           inputMap.old_id,
           newNode,
           inputMap.new_id,
           nodeGraph
         )
+        if (linkReplacement)
+          collectLinkReplacement(linkReplacements, linkReplacement)
         transferWidgetValue(
           serialized,
           replacement.old_widget_ids,
@@ -206,14 +254,23 @@ function replaceWithMapping(
 
   if (replacement.output_mapping) {
     for (const outMap of replacement.output_mapping) {
-      transferOutputConnections(
+      for (const linkReplacement of transferOutputConnections(
         node,
         outMap.old_idx,
         newNode,
         outMap.new_idx,
         nodeGraph
-      )
+      )) {
+        collectLinkReplacement(linkReplacements, linkReplacement)
+      }
     }
+  }
+
+  const liveLinkReplacements = [...linkReplacements]
+    .filter(([link]) => nodeGraph.getLink(link.id) === link)
+    .map(([link, endpoints]) => ({ link, endpoints }))
+  if (liveLinkReplacements.length > 0) {
+    replaceLinkEndpoints(nodeGraph, liveLinkReplacements)
   }
 
   newNode.has_errors = false
