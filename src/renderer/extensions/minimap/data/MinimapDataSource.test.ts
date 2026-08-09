@@ -1,17 +1,22 @@
+import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   createMockLGraph,
   createMockLGraphNode,
   createNodeState
 } from '@/utils/__tests__/litegraphTestUtils'
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -21,14 +26,23 @@ import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 const layouts = vi.hoisted(() => new Map<string, NodeLayout>())
+const groupLayouts = vi.hoisted(() => new Map<number, GroupLayout>())
+const getAllGroups = vi.hoisted(() =>
+  vi.fn(() => ({
+    get value() {
+      return groupLayouts
+    }
+  }))
+)
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getNodeLayoutRef: vi.fn((nodeId: NodeId) => ({
+    getNodeLayoutRef: vi.fn((_rootGraphId: UUID, nodeId: NodeId) => ({
       get value() {
         return layouts.get(String(nodeId)) ?? null
       }
-    }))
+    })),
+    getAllGroups
   }
 }))
 
@@ -41,8 +55,11 @@ vi.mock('@/stores/executionStore', () => ({
 
 const GRAPH_ID: UUID = 'minimap-graph'
 
-function createMockGraph(nodes: LGraphNode[] = []): LGraph {
-  return createMockLGraph({ id: GRAPH_ID, _nodes: nodes })
+function createMockGraph(
+  nodes: LGraphNode[] = [],
+  groups: LGraphGroup[] = []
+): LGraph {
+  return createMockLGraph({ id: GRAPH_ID, _nodes: nodes, _groups: groups })
 }
 
 /** Adds a node to `nodeDataStore`, which is how the layout source scopes. */
@@ -91,6 +108,7 @@ describe('MinimapDataSource', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     layouts.clear()
+    groupLayouts.clear()
     LiteGraph.vueNodesMode = false
   })
 
@@ -179,6 +197,54 @@ describe('MinimapDataSource', () => {
 
       expect(dataSource.getNodes()).toEqual([])
       expect(dataSource.hasData()).toBe(false)
+    })
+  })
+
+  describe('group geometry', () => {
+    /** Deliberately disagrees with the store so the read source is provable. */
+    function staleGroup(id: number): LGraphGroup {
+      return fromPartial<LGraphGroup>({
+        id,
+        pos: [-1, -1],
+        size: [1, 1],
+        color: '#abcdef'
+      })
+    }
+
+    it('reads group geometry from the store, not the group', () => {
+      LiteGraph.vueNodesMode = true
+      groupLayouts.set(toGroupId(7), {
+        id: toGroupId(7),
+        position: { x: 40, y: 60 },
+        size: { width: 300, height: 200 }
+      })
+      const dataSource = MinimapDataSourceFactory.create(
+        createMockGraph([graphNode('node1', [0, 0])], [staleGroup(7)])
+      )
+
+      expect(dataSource.getGroups()).toEqual([
+        { x: 40, y: 60, width: 300, height: 200, color: '#abcdef' }
+      ])
+      expect(getAllGroups).toHaveBeenCalledWith(GRAPH_ID)
+    })
+
+    it('skips groups with no store entry', () => {
+      LiteGraph.vueNodesMode = true
+      const dataSource = MinimapDataSourceFactory.create(
+        createMockGraph([graphNode('node1', [0, 0])], [staleGroup(7)])
+      )
+
+      expect(dataSource.getGroups()).toEqual([])
+    })
+
+    it('reads group geometry from the graph in legacy mode', () => {
+      const dataSource = MinimapDataSourceFactory.create(
+        createMockGraph([graphNode('node1', [0, 0])], [staleGroup(7)])
+      )
+
+      expect(dataSource.getGroups()).toEqual([
+        { x: -1, y: -1, width: 1, height: 1, color: '#abcdef' }
+      ])
     })
   })
 

@@ -15,9 +15,14 @@ import {
 } from '@/core/graph/nodeShell/nodeShellState'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import {
+  canvasLayoutMutations,
+  registerGroupLayout,
+  registerNodeLayout,
+  unregisterAllGraphLayout,
+  unregisterNodeLayout
+} from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import {
@@ -39,8 +44,9 @@ import {
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
+import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
-import type { GroupId } from './LGraphGroup'
+import { toGroupId } from '@/types/groupId'
 import { LGraphNode } from './LGraphNode'
 import {
   LLink,
@@ -115,7 +121,9 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
+  collectReservedGroupIds,
   collectReservedRerouteIds,
+  deduplicateSubgraphGroupIds,
   deduplicateSubgraphNodeIds,
   deduplicateSubgraphRerouteIds,
   topologicalSortSubgraphs
@@ -157,7 +165,8 @@ export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 export type SubgraphId = UUID
 
 export interface LGraphState {
-  lastGroupId: GroupId
+  /** Counter, not an id — brand at the point a group is constructed. */
+  lastGroupId: number
   lastNodeId: number
   lastLinkId: LinkId
   lastRerouteId: RerouteId
@@ -484,6 +493,7 @@ export class LGraph
     this.status = LGraph.STATUS_STOPPED
 
     releaseGraphStores(this)
+
     this.id = zeroUuid
     this.revision = 0
 
@@ -1049,13 +1059,15 @@ export class LGraph
     // groups
     if (node instanceof LGraphGroup) {
       // Assign group ID
-      if (node.id == null || node.id === -1) node.id = ++state.lastGroupId
+      if (node.id == null || node.id === -1)
+        node.id = toGroupId(++state.lastGroupId)
       if (node.id > state.lastGroupId) state.lastGroupId = node.id
 
       this._groups.push(node)
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
+      registerGroupLayout(this, node)
       this.incrementVersion()
       return
     }
@@ -1103,7 +1115,9 @@ export class LGraph
     this.onNodeAdded?.(node)
     this.events.dispatch('node:added', { node })
 
-    // Must follow onNodeAdded: its microtask-deferred hooks must run before the Vue flush this write schedules
+    // Keep after onNodeAdded so its deferred hooks run before these writes
+    // flush Vue.
+    registerNodeLayout(this, node)
     this.incrementVersion()
 
     this.setDirtyCanvas(true)
@@ -1137,6 +1151,7 @@ export class LGraph
       if (index != -1) {
         this._groups.splice(index, 1)
       }
+      canvasLayoutMutations().deleteGroup(this.rootGraph.id, node.id)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)
@@ -1192,6 +1207,7 @@ export class LGraph
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
         unregisterAllNodeStates(subgraph)
+        unregisterAllGraphLayout(subgraph)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
     }
@@ -1200,6 +1216,7 @@ export class LGraph
     node.onRemoved?.()
 
     unregisterNodeState(node)
+    unregisterNodeLayout(this, node)
 
     node.graph = null
     this.incrementVersion()
@@ -1563,9 +1580,7 @@ export class LGraph
     if (!reroute) return
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
-    const layoutMutations = useLayoutMutations()
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteReroute(id)
+    canvasLayoutMutations().deleteReroute(this.rootGraph.id, id)
   }
 
   /**
@@ -1587,10 +1602,11 @@ export class LGraph
       this.state.lastRerouteId = rerouteId
     }
 
-    const reroute = this.reroutes.get(rerouteId) ?? new Reroute(rerouteId, this)
+    const existingReroute = this.reroutes.get(rerouteId)
+    const reroute = existingReroute ?? new Reroute(rerouteId, this, pos)
     reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
-    if (pos) reroute.pos = pos
+    if (pos && existingReroute) reroute.pos = pos
     reroute.floating = floating
     this._addReroute(reroute)
     return reroute
@@ -1604,7 +1620,6 @@ export class LGraph
    * @returns The newly created reroute, or undefined when the segment cannot be resolved.
    */
   createReroute(pos: Point, before: LinkSegment): Reroute | undefined {
-    const layoutMutations = useLayoutMutations()
     if (!(before instanceof LLink) && !(before instanceof Reroute)) {
       return
     }
@@ -1621,10 +1636,6 @@ export class LGraph
         : [before]
     const reroute = new Reroute(rerouteId, this, pos, before.parentId)
     this._addReroute(reroute)
-
-    // Register reroute in Layout Store for spatial tracking
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.createReroute(rerouteId, { x: pos[0], y: pos[1] })
 
     // Splice the new reroute into every chain that contained `before`
     for (const link of chainLinks) {
@@ -1865,10 +1876,14 @@ export class LGraph
     // Position the subgraph input nodes
     subgraph.inputNode.arrange()
     subgraph.outputNode.arrange()
-    const { boundingRect: inputRect } = subgraph.inputNode
-    const { boundingRect: outputRect } = subgraph.outputNode
-    alignOutsideContainer(inputRect, Alignment.MidLeft, boundingRect, [50, 0])
-    alignOutsideContainer(outputRect, Alignment.MidRight, boundingRect, [50, 0])
+    for (const [ioNode, alignment] of [
+      [subgraph.inputNode, Alignment.MidLeft],
+      [subgraph.outputNode, Alignment.MidRight]
+    ] as const) {
+      const aligned = new Rectangle(...ioNode.boundingRect)
+      alignOutsideContainer(aligned, alignment, boundingRect, [50, 0])
+      ioNode.pos = [aligned[0], aligned[1]]
+    }
 
     this.rootGraph.events.dispatch('convert-to-subgraph', {
       subgraph,
@@ -1893,17 +1908,18 @@ export class LGraph
     // Resize to inputs/outputs
     subgraphNode.setSize(subgraphNode.computeSize())
 
-    // Center the subgraph node
-    alignToContainer(
-      subgraphNode._posSize,
-      Alignment.Centre | Alignment.Middle,
-      boundingRect
-    )
-
-    //Correct for title height. It's included in bounding box, but not _posSize
-    subgraphNode.setPos(
+    // Center the subgraph node. The title height is included in the bounding
+    // box but not in pos/size, so correct for it in the same assignment.
+    const centred = new Rectangle(
       subgraphNode.pos[0],
-      subgraphNode.pos[1] + LiteGraph.NODE_TITLE_HEIGHT / 2
+      subgraphNode.pos[1],
+      subgraphNode.size[0],
+      subgraphNode.size[1]
+    )
+    alignToContainer(centred, Alignment.Centre | Alignment.Middle, boundingRect)
+    subgraphNode.setPos(
+      centred[0],
+      centred[1] + LiteGraph.NODE_TITLE_HEIGHT / 2
     )
 
     // Add the subgraph node to the graph
@@ -2092,14 +2108,6 @@ export class LGraph
     const groups = structuredClone(
       [...subgraphNode.subgraph.groups].map((g) => g.serialize())
     )
-    for (const g_info of groups) {
-      const group = new LGraphGroup(g_info.title, g_info.id)
-      this.add(group, true)
-      group.configure(g_info)
-      group.pos[0] += offsetX
-      group.pos[1] += offsetY
-      toSelect.push(group)
-    }
     const newLinks: {
       oid: NodeId
       oslot: number
@@ -2175,6 +2183,17 @@ export class LGraph
       })
     }
     this.remove(subgraphNode)
+
+    // Shared definitions may survive, so unpacked groups need fresh layout
+    // ids, like the reroutes below.
+    for (const groupInfo of groups) {
+      groupInfo.id = ++this.rootGraph.state.lastGroupId
+      const group = new LGraphGroup(groupInfo.title, groupInfo.id)
+      this.add(group, true)
+      group.configure(groupInfo)
+      group.pos = [group.pos[0] + offsetX, group.pos[1] + offsetY]
+      toSelect.push(group)
+    }
 
     // Deduplicate links by (oid, oslot, tid, tslot) to prevent repeated
     // disconnect/reconnect cycles on widget inputs that can shift slot indices.
@@ -2481,6 +2500,7 @@ export class LGraph
       // TODO: Finish typing configure()
       if (!data) return
       if (options.clearGraph) this.clear()
+      else unregisterAllGraphLayout(this)
 
       this._configureBase(data)
 
@@ -2589,6 +2609,11 @@ export class LGraph
           : undefined
 
         if (deduplicated) {
+          deduplicateSubgraphGroupIds(
+            deduplicated.subgraphs,
+            collectReservedGroupIds(this, data.groups),
+            this.state
+          )
           deduplicateSubgraphRerouteIds(
             deduplicated.subgraphs,
             collectReservedRerouteIds(this),
@@ -2644,12 +2669,11 @@ export class LGraph
 
           if (LiteGraph.alwaysSnapToGrid && node) {
             const snapTo = this.getSnapToGridSize()
-            if (node.snapToGrid(snapTo)) {
-              // snapToGrid mutates the internal _pos array in-place, bypassing the setter
-              // This reassignment triggers the pos setter to sync to the Vue layout store
-              node.pos = [node.pos[0], node.pos[1]]
-            }
-            snapPoint(node.size, snapTo, 'ceil')
+            node.snapToGrid(snapTo)
+
+            const snappedSize: Point = [node.size[0], node.size[1]]
+            snapPoint(snappedSize, snapTo, 'ceil')
+            node.size = snappedSize
           }
         }
       }
@@ -2734,50 +2758,6 @@ export class LGraph
       return error
     } finally {
       this.events.dispatch('configured')
-    }
-  }
-
-  /**
-   * Ensures all node IDs are globally unique across the root graph and all
-   * subgraphs. Reassigns any colliding IDs found in subgraphs, preserving
-   * root graph IDs as canonical. Updates link references (`origin_id`,
-   * `target_id`) within the affected graph to match the new node IDs.
-   */
-  ensureGlobalIdUniqueness(reservedNodeIds?: Iterable<number>): void {
-    const { state } = this
-
-    const allGraphs: LGraph[] = [this, ...this._subgraphs.values()]
-
-    const usedNodeIds = new Set<number>(reservedNodeIds)
-    for (const graph of allGraphs) {
-      const remappedIds = new Map<NodeId, NodeId>()
-
-      for (const node of graph._nodes) {
-        const currentId = numericNodeId(node.id)
-        if (currentId === null) continue
-
-        if (usedNodeIds.has(currentId)) {
-          const oldId = node.id
-          while (usedNodeIds.has(++state.lastNodeId));
-          const newId = toNodeId(state.lastNodeId)
-          delete graph._nodes_by_id[oldId]
-          node.id = newId
-          graph._nodes_by_id[newId] = node
-          usedNodeIds.add(state.lastNodeId)
-          remappedIds.set(oldId, newId)
-          console.warn(
-            `LiteGraph: duplicate node ID ${oldId} reassigned to ${newId} in graph ${graph.id}`
-          )
-        } else {
-          usedNodeIds.add(currentId)
-          if (currentId > state.lastNodeId) state.lastNodeId = currentId
-        }
-      }
-
-      if (remappedIds.size > 0) {
-        patchLinkNodeIds(graph._links, remappedIds)
-        patchLinkNodeIds(graph.floatingLinksInternal, remappedIds)
-      }
     }
   }
 
@@ -3173,24 +3153,5 @@ export class Subgraph
         : undefined,
       extra: this.extra
     }
-  }
-}
-
-function patchLinkNodeIds(
-  links: Map<LinkId, LLink>,
-  remappedIds: Map<NodeId, NodeId>
-): void {
-  for (const link of links.values()) {
-    const newOrigin =
-      link.origin_id === UNASSIGNED_NODE_ID
-        ? undefined
-        : remappedIds.get(link.origin_id)
-    if (newOrigin !== undefined) link.origin_id = newOrigin
-
-    const newTarget =
-      link.target_id === UNASSIGNED_NODE_ID
-        ? undefined
-        : remappedIds.get(link.target_id)
-    if (newTarget !== undefined) link.target_id = newTarget
   }
 }

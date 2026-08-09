@@ -303,12 +303,7 @@ export class PrimitiveNode extends LGraphNode {
 
     if (!recreating) {
       const sz = this.computeSize()
-      if (this.size[0] < sz[0]) {
-        this.size[0] = sz[0]
-      }
-      if (this.size[1] < sz[1]) {
-        this.size[1] = sz[1]
-      }
+      this.size = [Math.max(this.size[0], sz[0]), Math.max(this.size[1], sz[1])]
 
       requestAnimationFrame(() => {
         this.onResize?.(this.size)

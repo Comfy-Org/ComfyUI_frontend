@@ -1,3 +1,4 @@
+import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -6,11 +7,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
+import { createUuidv4 } from '@/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutRegistration'
 import type {
   LayoutChange,
   LayoutOperation,
@@ -18,10 +23,16 @@ import type {
   SlotLayout
 } from '@/renderer/core/layout/types'
 
+const GRAPH = createUuidv4()
+
 function getOperationsAddedBy(action: () => void): LayoutOperation[] {
-  const operationCount = layoutStore.getOperationsSince(0).length
-  action()
-  return layoutStore.getOperationsSince(0).slice(operationCount)
+  const applySpy = vi.spyOn(layoutStore, 'applyOperation')
+  try {
+    action()
+    return applySpy.mock.calls.map(([operation]) => operation)
+  } finally {
+    applySpy.mockRestore()
+  }
 }
 
 function expectSingleOperation(
@@ -39,7 +50,7 @@ beforeEach(() => {
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
     // Clear the store before each test
-    layoutStore.initializeFromLiteGraph([])
+    layoutStore.resetForTests()
   })
   // Helper to create test node data
   const createTestNode = (id: NodeId): NodeLayout => ({
@@ -60,6 +71,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -68,7 +80,7 @@ describe('layoutStore CRDT operations', () => {
     })
 
     // Retrieve node
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value).toEqual(layout)
   })
 
@@ -80,6 +92,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -92,16 +105,16 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'moveNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       position: newPosition,
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
     })
 
     // Verify position updated
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.position).toEqual(newPosition)
   })
 
@@ -113,6 +126,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -125,16 +139,16 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'resizeNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       size: newSize,
-      previousSize: layout.size,
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
     })
 
     // Verify size updated
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.size).toEqual(newSize)
   })
 
@@ -146,6 +160,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -157,15 +172,15 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'deleteNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
-      previousLayout: layout,
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
     })
 
     // Verify node deleted
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value).toBeNull()
   })
 
@@ -187,6 +202,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -215,6 +231,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId: nodeA,
       layout: layoutA,
       timestamp: Date.now(),
@@ -225,6 +242,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId: nodeB,
       layout: layoutB,
       timestamp: Date.now(),
@@ -233,16 +251,20 @@ describe('layoutStore CRDT operations', () => {
     })
 
     const scopedChanges: LayoutChange[] = []
-    const unsubscribeScoped = layoutStore.onNodeChange(nodeA, (change) => {
-      scopedChanges.push(change)
-    })
+    const unsubscribeScoped = layoutStore.onNodeChange(
+      GRAPH,
+      nodeA,
+      (change) => {
+        scopedChanges.push(change)
+      }
+    )
 
     layoutStore.applyOperation({
       type: 'moveNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId: nodeB,
       position: { x: 400, y: 400 },
-      previousPosition: layoutB.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -255,9 +277,9 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'moveNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId: nodeA,
       position: { x: 200, y: 250 },
-      previousPosition: layoutA.position,
       timestamp: Date.now(),
       source: LayoutSource.Canvas,
       actor: 'test'
@@ -278,6 +300,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -286,7 +309,7 @@ describe('layoutStore CRDT operations', () => {
     })
 
     const callOrder: string[] = []
-    const unsubscribeNode = layoutStore.onNodeChange(nodeId, () => {
+    const unsubscribeNode = layoutStore.onNodeChange(GRAPH, nodeId, () => {
       callOrder.push('node')
     })
     const unsubscribeGlobal = layoutStore.onChange(() => {
@@ -296,9 +319,9 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'moveNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       position: { x: 320, y: 180 },
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -314,26 +337,26 @@ describe('layoutStore CRDT operations', () => {
     unsubscribeGlobal()
   })
 
-  it('clears node-scoped listeners when reinitializing from LiteGraph', () => {
+  it('clears node-scoped listeners when the viewed graph changes', () => {
     const nodeId = toNodeId('reinit-node')
     const staleListener = vi.fn()
 
-    layoutStore.onNodeChange(nodeId, staleListener)
+    layoutStore.onNodeChange(GRAPH, nodeId, staleListener)
 
-    layoutStore.initializeFromLiteGraph([
-      {
-        id: nodeId,
-        pos: [0, 0],
-        size: [200, 100]
-      }
-    ])
+    layoutStore.clearViewGeometry()
+    canvasLayoutMutations().createNode(GRAPH, nodeId, {
+      position: { x: 0, y: 0 },
+      size: { width: 200, height: 100 },
+      zIndex: 0,
+      visible: true
+    })
 
     layoutStore.applyOperation({
       type: 'moveNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       position: { x: 10, y: 20 },
-      previousPosition: { x: 0, y: 0 },
       timestamp: Date.now(),
       source: LayoutSource.Vue,
       actor: 'test'
@@ -349,6 +372,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -364,9 +388,9 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'moveNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       position: { x: 120, y: 110 },
-      previousPosition: layout.position,
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
@@ -374,9 +398,9 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'moveNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       position: { x: 150, y: 140 },
-      previousPosition: { x: 120, y: 110 },
       timestamp: Date.now(),
       source: LayoutSource.External,
       actor: 'test'
@@ -402,6 +426,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -415,7 +440,7 @@ describe('layoutStore CRDT operations', () => {
     })
 
     const newBounds = { x: 40, y: 60, width: 220, height: 120 }
-    layoutStore.batchUpdateNodeBounds([{ nodeId, bounds: newBounds }])
+    layoutStore.batchUpdateNodeBounds(GRAPH, [{ nodeId, bounds: newBounds }])
 
     // onChange notifications are deferred to a microtask.
     await vi.waitFor(() => {
@@ -427,100 +452,14 @@ describe('layoutStore CRDT operations', () => {
     const lastChange = changes[changes.length - 1]
     if (lastChange.operation.type === 'batchUpdateBounds') {
       expect(lastChange.nodeIds).toContain(nodeId)
-      expect(lastChange.operation.bounds[nodeId]?.bounds).toEqual(newBounds)
+      expect(lastChange.operation.bounds[nodeId]).toEqual(newBounds)
     }
 
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.position).toEqual({ x: 40, y: 60 })
     expect(nodeRef.value?.size).toEqual({ width: 220, height: 120 })
 
     unsubscribe()
-  })
-
-  it('should query nodes by spatial bounds', () => {
-    const nodes = [
-      { id: toNodeId('node-a'), position: { x: 0, y: 0 } },
-      { id: toNodeId('node-b'), position: { x: 100, y: 100 } },
-      { id: toNodeId('node-c'), position: { x: 250, y: 250 } }
-    ]
-
-    // Create nodes with proper bounds
-    nodes.forEach(({ id, position }) => {
-      const layout: NodeLayout = {
-        ...createTestNode(id),
-        position,
-        bounds: {
-          x: position.x,
-          y: position.y,
-          width: 200,
-          height: 100
-        }
-      }
-      layoutStore.applyOperation({
-        type: 'createNode',
-        entity: 'node',
-        nodeId: id,
-        layout,
-        timestamp: Date.now(),
-        source: LayoutSource.External,
-        actor: 'test'
-      })
-    })
-
-    // Query nodes in bounds
-    const nodesInBounds = layoutStore.queryNodesInBounds({
-      x: 50,
-      y: 50,
-      width: 200,
-      height: 200
-    })
-
-    // node-a: (0,0) to (200,100) - overlaps with query bounds (50,50) to (250,250)
-    // node-b: (100,100) to (300,200) - overlaps with query bounds
-    // node-c: (250,250) to (450,350) - touches corner of query bounds
-    expect(nodesInBounds).toContain('node-a')
-    expect(nodesInBounds).toContain('node-b')
-    expect(nodesInBounds).toContain('node-c')
-  })
-
-  it('should maintain operation history', () => {
-    const nodeId = toNodeId('test-node-history')
-    const layout = createTestNode(nodeId)
-    const startTime = Date.now()
-
-    // Create node
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId,
-      layout,
-      timestamp: startTime,
-      source: LayoutSource.External,
-      actor: 'test-actor'
-    })
-
-    // Move node
-    layoutStore.applyOperation({
-      type: 'moveNode',
-      entity: 'node',
-      nodeId,
-      position: { x: 150, y: 150 },
-      previousPosition: { x: 100, y: 100 },
-      timestamp: startTime + 100,
-      source: LayoutSource.Vue,
-      actor: 'test-actor'
-    })
-
-    // Get operations by actor
-    const operations = layoutStore.getOperationsByActor('test-actor')
-    expect(operations.length).toBeGreaterThanOrEqual(2)
-    expect(operations[0].type).toBe('createNode')
-    expect(operations[1].type).toBe('moveNode')
-
-    // Get operations since timestamp
-    const recentOps = layoutStore.getOperationsSince(startTime + 50)
-    expect(recentOps.length).toBeGreaterThanOrEqual(1)
-    expect(recentOps[0].type).toBe('moveNode')
   })
 
   it('normalizes DOM-sourced heights before storing', () => {
@@ -530,6 +469,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -538,7 +478,7 @@ describe('layoutStore CRDT operations', () => {
     })
 
     layoutStore.setSource(LayoutSource.DOM)
-    layoutStore.batchUpdateNodeBounds([
+    layoutStore.batchUpdateNodeBounds(GRAPH, [
       {
         nodeId,
         bounds: {
@@ -550,7 +490,7 @@ describe('layoutStore CRDT operations', () => {
       }
     ])
 
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.size.height).toBe(layout.size.height)
     expect(nodeRef.value?.size.width).toBe(layout.size.width)
     expect(nodeRef.value?.position).toEqual(layout.position)
@@ -564,6 +504,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -572,7 +513,7 @@ describe('layoutStore CRDT operations', () => {
     })
 
     layoutStore.setSource(LayoutSource.DOM)
-    layoutStore.batchUpdateNodeBounds([
+    layoutStore.batchUpdateNodeBounds(GRAPH, [
       {
         nodeId,
         bounds: {
@@ -584,7 +525,7 @@ describe('layoutStore CRDT operations', () => {
       }
     ])
 
-    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
     expect(nodeRef.value?.size.height).toBeGreaterThanOrEqual(0)
   })
 
@@ -595,6 +536,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
+      graphId: GRAPH,
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -614,7 +556,7 @@ describe('layoutStore CRDT operations', () => {
 
     try {
       layoutStore.setSource(LayoutSource.DOM)
-      layoutStore.batchUpdateNodeBounds([
+      layoutStore.batchUpdateNodeBounds(GRAPH, [
         {
           nodeId,
           bounds: {
@@ -626,7 +568,7 @@ describe('layoutStore CRDT operations', () => {
         }
       ])
 
-      const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+      const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, nodeId)
       expect(nodeRef.value?.size.height).toBe(layout.size.height)
     } finally {
       if (originalTitleHeightDescriptor) {
@@ -651,6 +593,7 @@ describe('layoutStore CRDT operations', () => {
       layoutStore.applyOperation({
         type: 'createNode',
         entity: 'node',
+        graphId: GRAPH,
         nodeId,
         layout,
         timestamp: Date.now(),
@@ -672,8 +615,8 @@ describe('layoutStore CRDT operations', () => {
       layoutStore.applyOperation({
         type: 'deleteNode',
         entity: 'node',
+        graphId: GRAPH,
         nodeId,
-        previousLayout: layout,
         timestamp: Date.now(),
         source: LayoutSource.External,
         actor: 'test'
@@ -685,9 +628,275 @@ describe('layoutStore CRDT operations', () => {
   )
 })
 
+describe('reroute layouts outlive an active-graph reseed', () => {
+  const GRAPH_ID = createUuidv4()
+  const REROUTE = toRerouteId(4242)
+  const POSITION = { x: 372, y: 415 }
+
+  function createReroute() {
+    layoutStore.setSource(LayoutSource.Canvas)
+    layoutStore.applyOperation({
+      type: 'createReroute',
+      entity: 'reroute',
+      graphId: GRAPH_ID,
+      rerouteId: REROUTE,
+      position: POSITION,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+  }
+
+  it('survives the view change that follows subgraph navigation', () => {
+    createReroute()
+
+    layoutStore.clearViewGeometry()
+
+    expect(layoutStore.getRerouteLayout(GRAPH_ID, REROUTE)?.position).toEqual(
+      POSITION
+    )
+    expect(layoutStore.queryRerouteAtPoint(GRAPH_ID, POSITION)?.id).toBe(
+      REROUTE
+    )
+  })
+
+  it('drops layout and spatial index together on delete', () => {
+    createReroute()
+
+    layoutStore.setSource(LayoutSource.Canvas)
+    layoutStore.applyOperation({
+      type: 'deleteReroute',
+      entity: 'reroute',
+      graphId: GRAPH_ID,
+      rerouteId: REROUTE,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    expect(layoutStore.getRerouteLayout(GRAPH_ID, REROUTE)).toBeNull()
+    expect(layoutStore.queryRerouteAtPoint(GRAPH_ID, POSITION)).toBeNull()
+  })
+})
+
+describe('root-scoped group and reroute layouts', () => {
+  const FIRST_GRAPH = createUuidv4()
+  const SECOND_GRAPH = createUuidv4()
+  const GROUP_ID = toGroupId(77)
+  const REROUTE_ID = toRerouteId(88)
+
+  function apply(operation: LayoutOperation): void {
+    layoutStore.applyOperation(operation)
+  }
+
+  function metadata() {
+    return {
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    } as const
+  }
+
+  it('isolates colliding local IDs across reads, moves, queries, deletes, and clears', () => {
+    for (const [graphId, offset] of [
+      [FIRST_GRAPH, 10],
+      [SECOND_GRAPH, 100]
+    ] as const) {
+      apply({
+        ...metadata(),
+        type: 'createGroup',
+        entity: 'group',
+        graphId,
+        groupId: GROUP_ID,
+        layout: {
+          id: GROUP_ID,
+          position: { x: offset, y: offset },
+          size: { width: 40, height: 40 }
+        }
+      })
+      apply({
+        ...metadata(),
+        type: 'createReroute',
+        entity: 'reroute',
+        graphId,
+        rerouteId: REROUTE_ID,
+        position: { x: offset + 5, y: offset + 5 }
+      })
+    }
+
+    apply({
+      ...metadata(),
+      type: 'setGroupBounds',
+      entity: 'group',
+      graphId: FIRST_GRAPH,
+      groupId: GROUP_ID,
+      position: { x: 20, y: 30 },
+      size: { width: 50, height: 60 }
+    })
+    apply({
+      ...metadata(),
+      type: 'moveReroute',
+      entity: 'reroute',
+      graphId: FIRST_GRAPH,
+      rerouteId: REROUTE_ID,
+      position: { x: 25, y: 35 }
+    })
+
+    expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)?.position).toEqual(
+      { x: 20, y: 30 }
+    )
+    expect(
+      layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)?.position
+    ).toEqual({ x: 100, y: 100 })
+    expect(layoutStore.getAllGroups(FIRST_GRAPH).value.size).toBe(1)
+    expect(layoutStore.getAllGroups(SECOND_GRAPH).value.size).toBe(1)
+    expect(
+      layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)?.position
+    ).toEqual({ x: 25, y: 35 })
+    expect(
+      layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)?.position
+    ).toEqual({ x: 105, y: 105 })
+    expect(
+      layoutStore.queryRerouteAtPoint(FIRST_GRAPH, { x: 25, y: 35 })?.id
+    ).toBe(REROUTE_ID)
+    expect(
+      layoutStore.queryRerouteAtPoint(SECOND_GRAPH, { x: 25, y: 35 })
+    ).toBeNull()
+
+    apply({
+      ...metadata(),
+      type: 'deleteGroup',
+      entity: 'group',
+      graphId: FIRST_GRAPH,
+      groupId: GROUP_ID
+    })
+    apply({
+      ...metadata(),
+      type: 'deleteReroute',
+      entity: 'reroute',
+      graphId: FIRST_GRAPH,
+      rerouteId: REROUTE_ID
+    })
+    expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)).toBeNull()
+    expect(layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)).toBeNull()
+    expect(layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)).not.toBeNull()
+    expect(
+      layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)
+    ).not.toBeNull()
+  })
+})
+describe('root-scoped node layouts', () => {
+  const FIRST_GRAPH = createUuidv4()
+  const SECOND_GRAPH = createUuidv4()
+  const GROUP_ID = toGroupId(3)
+  const REROUTE_ID = toRerouteId(4)
+
+  beforeEach(() => {
+    layoutStore.resetForTests()
+  })
+
+  function seedNode(graphId: UUID, nodeId: NodeId, x: number): void {
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      graphId,
+      nodeId,
+      layout: {
+        id: nodeId,
+        position: { x, y: 0 },
+        size: { width: 10, height: 10 },
+        zIndex: 0,
+        visible: true,
+        bounds: { x, y: 0, width: 10, height: 10 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+  }
+
+  it('isolates colliding node IDs across root graphs', () => {
+    const nodeId = toNodeId('1')
+    seedNode(FIRST_GRAPH, nodeId, 10)
+    seedNode(SECOND_GRAPH, nodeId, 100)
+
+    layoutStore.applyOperation({
+      type: 'deleteNode',
+      entity: 'node',
+      graphId: FIRST_GRAPH,
+      nodeId,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    expect(layoutStore.getNodeLayoutRef(FIRST_GRAPH, nodeId).value).toBeNull()
+    expect(
+      layoutStore.getNodeLayoutRef(SECOND_GRAPH, nodeId).value?.position
+    ).toEqual({ x: 100, y: 0 })
+  })
+
+  it('keys nodes whose IDs contain the scope separator', () => {
+    const nodeId = toNodeId('sub:7')
+    seedNode(FIRST_GRAPH, nodeId, 42)
+
+    expect(
+      layoutStore.getNodeLayoutRef(FIRST_GRAPH, nodeId).value?.position
+    ).toEqual({ x: 42, y: 0 })
+    expect(layoutStore.getNodeLayoutRef(SECOND_GRAPH, nodeId).value).toBeNull()
+  })
+
+  it('clearGraph drops one root graph and leaves the other intact', () => {
+    const nodeId = toNodeId('1')
+    seedNode(FIRST_GRAPH, nodeId, 10)
+    seedNode(SECOND_GRAPH, nodeId, 100)
+
+    for (const graphId of [FIRST_GRAPH, SECOND_GRAPH]) {
+      layoutStore.applyOperation({
+        type: 'createGroup',
+        entity: 'group',
+        graphId,
+        groupId: GROUP_ID,
+        layout: {
+          id: GROUP_ID,
+          position: { x: 0, y: 0 },
+          size: { width: 5, height: 5 }
+        },
+        timestamp: Date.now(),
+        source: LayoutSource.Canvas,
+        actor: 'test'
+      })
+      layoutStore.applyOperation({
+        type: 'createReroute',
+        entity: 'reroute',
+        graphId,
+        rerouteId: REROUTE_ID,
+        position: { x: 0, y: 0 },
+        timestamp: Date.now(),
+        source: LayoutSource.Canvas,
+        actor: 'test'
+      })
+    }
+
+    layoutStore.clearGraph(FIRST_GRAPH)
+
+    expect(layoutStore.getNodeLayoutRef(FIRST_GRAPH, nodeId).value).toBeNull()
+    expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)).toBeNull()
+    expect(layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)).toBeNull()
+
+    expect(
+      layoutStore.getNodeLayoutRef(SECOND_GRAPH, nodeId).value
+    ).not.toBeNull()
+    expect(layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)).not.toBeNull()
+    expect(
+      layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)
+    ).not.toBeNull()
+  })
+})
+
 describe('layoutStore getNodeLayoutRef setter', () => {
   beforeEach(() => {
-    layoutStore.initializeFromLiteGraph([])
+    layoutStore.resetForTests()
   })
 
   const REF_NODE = toNodeId('ref-node')
@@ -704,7 +913,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
   }
 
   it('creates a node when setter receives a layout for an unknown id', () => {
-    const ref = layoutStore.getNodeLayoutRef(REF_NODE)
+    const ref = layoutStore.getNodeLayoutRef(GRAPH, REF_NODE)
     const layout = baseLayout()
     expect(ref.value).toBeNull()
 
@@ -735,8 +944,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       expectedOperation: {
         type: 'moveNode',
         nodeId: REF_NODE,
-        position: { x: 99, y: 88 },
-        previousPosition: baseLayout().position
+        position: { x: 99, y: 88 }
       }
     },
     {
@@ -749,8 +957,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       expectedOperation: {
         type: 'resizeNode',
         nodeId: REF_NODE,
-        size: { width: 200, height: 80 },
-        previousSize: baseLayout().size
+        size: { width: 200, height: 80 }
       }
     },
     {
@@ -759,14 +966,13 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       expectedOperation: {
         type: 'setNodeZIndex',
         nodeId: REF_NODE,
-        zIndex: 5,
-        previousZIndex: 0
+        zIndex: 5
       }
     }
   ])(
     'emits a $name operation for layout-only updates',
     ({ nextLayout, expectedOperation }) => {
-      const ref = layoutStore.getNodeLayoutRef(REF_NODE)
+      const ref = layoutStore.getNodeLayoutRef(GRAPH, REF_NODE)
       ref.value = baseLayout()
 
       const operations = getOperationsAddedBy(() => {
@@ -779,7 +985,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
   )
 
   it('ignores a null assignment; deletion goes through layoutMutations.deleteNode', () => {
-    const ref = layoutStore.getNodeLayoutRef(REF_NODE)
+    const ref = layoutStore.getNodeLayoutRef(GRAPH, REF_NODE)
     const layout = baseLayout()
     ref.value = layout
 
@@ -792,67 +998,9 @@ describe('layoutStore getNodeLayoutRef setter', () => {
   })
 })
 
-describe('layoutStore queries', () => {
-  beforeEach(() => {
-    layoutStore.initializeFromLiteGraph([])
-  })
-
-  const seedNode = (id: NodeId, x: number, y: number, z = 0) => {
-    const layout: NodeLayout = {
-      id,
-      position: { x, y },
-      size: { width: 100, height: 50 },
-      zIndex: z,
-      visible: true,
-      bounds: { x, y, width: 100, height: 50 }
-    }
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId: id,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
-    })
-  }
-
-  it('getNodesInBounds returns reactive node IDs that intersect bounds', () => {
-    seedNode(toNodeId('inside'), 0, 0)
-    seedNode(toNodeId('outside'), 1000, 1000)
-
-    const inBounds = layoutStore.getNodesInBounds({
-      x: 0,
-      y: 0,
-      width: 200,
-      height: 200
-    })
-
-    expect(inBounds.value).toContain('inside')
-    expect(inBounds.value).not.toContain('outside')
-  })
-
-  it('queryNodeAtPoint returns the top-zIndex node containing the point', () => {
-    seedNode(toNodeId('low'), 0, 0, 0)
-    seedNode(toNodeId('high'), 0, 0, 10)
-
-    const hit = layoutStore.queryNodeAtPoint({ x: 25, y: 25 })
-
-    expect(hit).toBe('high')
-  })
-
-  it('queryNodeAtPoint returns null when no node contains the point', () => {
-    seedNode(toNodeId('only'), 0, 0)
-
-    const hit = layoutStore.queryNodeAtPoint({ x: 999, y: 999 })
-
-    expect(hit).toBeNull()
-  })
-})
-
 describe('layoutStore link layout updates', () => {
   beforeEach(() => {
-    layoutStore.initializeFromLiteGraph([])
+    layoutStore.resetForTests()
   })
 
   const stubPath = () => fromPartial<Path2D>({})

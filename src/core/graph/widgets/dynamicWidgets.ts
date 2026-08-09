@@ -205,7 +205,7 @@ function dynamicComboWidget(
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
 
-    node.size[1] = node.computeSize([...node.size])[1]
+    node.size = [node.size[0], node.computeSize([...node.size])[1]]
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
@@ -561,7 +561,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     }
     syncNodeWidgetOrder(node)
   }
-  node.size[1] = node.computeSize([...node.size])[1]
+  node.size = [node.size[0], node.computeSize([...node.size])[1]]
 }
 
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
