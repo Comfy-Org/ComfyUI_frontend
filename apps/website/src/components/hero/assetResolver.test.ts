@@ -14,6 +14,11 @@ const ZOOM_FOR_DISTANCE: Record<DistanceLabel, number> = {
   'close-up': 8
 }
 
+function circularDistance(a: number, b: number) {
+  const d = Math.abs(a - b) % 360
+  return Math.min(d, 360 - d)
+}
+
 describe('resolveAsset', () => {
   it('resolves every shipped pose to its exact frame', () => {
     for (const asset of ANGLE_ASSETS) {
@@ -37,15 +42,18 @@ describe('resolveAsset', () => {
     expect(resolveAsset({ azimuth: 90, elevation: 0, zoom: 10 }).src).toContain(
       'az090-0__eye-level-shot__close-up'
     )
-    expect(resolveAsset({ azimuth: 72, elevation: 30, zoom: 0 }).src).toContain(
-      'az072-0__elevated-shot__wide-shot'
+    expect(resolveAsset({ azimuth: 90, elevation: 30, zoom: 5 }).src).toContain(
+      'az090-0__elevated-shot__medium-shot'
+    )
+    expect(resolveAsset({ azimuth: 90, elevation: 30, zoom: 0 }).src).toContain(
+      'elevated-shot__wide-shot'
     )
     expect(
-      resolveAsset({ azimuth: 72, elevation: 30, zoom: 10 }).src
-    ).toContain('az072-0__elevated-shot__close-up')
+      resolveAsset({ azimuth: 90, elevation: 30, zoom: 10 }).src
+    ).toContain('elevated-shot__close-up')
   })
 
-  it('swaps elevation ring with the same azimuth and zoom', () => {
+  it('swaps elevation ring at the same azimuth and zoom', () => {
     expect(resolveAsset({ azimuth: 0, elevation: 0, zoom: 5 }).src).toContain(
       'az000-0__eye-level-shot__medium-shot'
     )
@@ -65,7 +73,7 @@ describe('resolveAsset', () => {
       'az202-5'
     )
     expect(resolveAsset({ azimuth: 20, elevation: 30, zoom: 5 }).src).toContain(
-      'az036-0__elevated-shot__medium-shot'
+      'az022-0__elevated-shot__medium-shot'
     )
   })
 
@@ -77,15 +85,35 @@ describe('resolveAsset', () => {
       'az337-5'
     )
     expect(
-      resolveAsset({ azimuth: 350, elevation: 30, zoom: 5 }).src
+      resolveAsset({ azimuth: 355, elevation: 30, zoom: 5 }).src
     ).toContain('az000-0__elevated-shot__medium-shot')
   })
 
-  it('keeps the pose azimuth when scrubbing elevation and zoom', () => {
-    for (const elevation of [-30, 0, 30, 60]) {
-      for (const zoom of [0, 5, 10]) {
-        const asset = resolveAsset({ azimuth: 180, elevation, zoom })
-        expect(asset.azimuthDegrees).toBe(180)
+  it('stays within half the ring frame spacing when snapping azimuth', () => {
+    const rings = new Map<string, number[]>()
+    for (const asset of ANGLE_ASSETS) {
+      const key = `${asset.elevation}|${asset.distance}`
+      rings.set(key, [...(rings.get(key) ?? []), asset.azimuthDegrees])
+    }
+    for (const [key, azimuths] of rings) {
+      const sorted = [...azimuths].sort((a, b) => a - b)
+      const maxGap = Math.max(
+        ...sorted.map((az, i) =>
+          i === sorted.length - 1 ? 360 - az + sorted[0] : sorted[i + 1] - az
+        )
+      )
+      const [elevation, distance] = key.split('|')
+      for (let azimuth = 0; azimuth < 360; azimuth += 15) {
+        const asset = resolveAsset({
+          azimuth,
+          elevation: ELEVATION_FOR[elevation as ElevationLabel] ?? 0,
+          zoom: ZOOM_FOR_DISTANCE[distance as DistanceLabel]
+        })
+        expect(asset.elevation).toBe(elevation)
+        expect(asset.distance).toBe(distance)
+        expect(
+          circularDistance(asset.azimuthDegrees, azimuth)
+        ).toBeLessThanOrEqual(maxGap / 2)
       }
     }
   })

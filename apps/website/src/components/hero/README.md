@@ -38,22 +38,25 @@ return an empty state — see `assetResolver.ts` and its tests.
 ## Adding angle assets
 
 The shipped set is six 360° turntable rings, each extracted from a single
-orbit video of the same scene and encoded as native-4:3 WebPs: three 16-frame
-eye-level orbits (22.5° steps) and three 10-frame elevated orbits (36° steps),
-one per distance (wide shot, medium shot, close-up). Zooming the camera swaps
-distance rings; raising it swaps elevation bands. Frames are named by
-turntable azimuth plus the label vocabulary from `cameraVocabulary.ts`:
-`az{degrees}__{elevation}__{distance}.webp`, e.g.
+orbit video and encoded as native-4:3 WebPs: three uniform 16-frame eye-level
+orbits (22.5° steps) and three 17-frame elevated orbits, one per distance
+(wide shot, medium shot, close-up). Zooming the camera swaps distance rings;
+raising it swaps elevation bands. The elevated orbit videos ease and their
+extraction deduplicates near-identical frames, so those frames sit at
+measured, non-uniform azimuths (estimated by integrating frame-to-frame
+visual change around the loop and cross-matching scene backgrounds between
+rings). Frames are named by turntable azimuth plus the label vocabulary from
+`cameraVocabulary.ts`: `az{degrees}__{elevation}__{distance}.webp`, e.g.
 `az022-5__eye-level-shot__medium-shot.webp` (degrees use `-5` for half steps).
 Each ring is phased so azimuth 0 reproduces the input image's viewpoint, and
 all rings orbit the same direction.
 
 To add further elevation bands (top/bottom views): convert the frames to WebP
-under `public/hero/angles/` at the matching slugs and add a `RingSpec` to
-`RINGS` in `assetResolver.ts`. The resolver matches the pose's elevation band
-first, then its distance band, then snaps azimuth circularly — so scrubbing
-azimuth never hops between rings, and bands without a shipped ring degrade to
-the nearest one.
+under `public/hero/angles/` at the matching slugs and add a `RingSpec` with
+its azimuth list to `RINGS` in `assetResolver.ts`. The resolver matches the
+pose's elevation band first, then its distance band, then snaps azimuth
+circularly — so scrubbing azimuth never hops between rings, and bands without
+a shipped ring degrade to the nearest one.
 
 ## Vendored code
 
