@@ -242,13 +242,18 @@ Rules for agent-based coding tasks.
 
 **Never resolve review comments on PRs where you are the author.**
 
-Per the team's [PR guidelines](CONTRIBUTING.md#comment-resolution), resolving comments is the reviewer's prerogative. As author, you may only resolve:
+Per the team's [PR guidelines](CONTRIBUTING.md#comment-resolution),
+resolving comments is the reviewer's prerogative. As author, you may only
+resolve:
 
 - Automated review comments (Coderabbit, Claude, etc.)
-- Trivial single-interpretation comments (e.g. fixing a typo exactly as suggested)
+- Trivial single-interpretation comments (e.g. fixing a typo exactly as
+  suggested)
 - Comments addressed via GitHub's "Apply suggestion" feature used as-is
 
-For all other comments: reply in the thread explaining what you changed (or why you disagree), then re-assign the PR to the reviewer. **Do not click Resolve.**
+For all other comments: reply in the thread explaining what you changed
+(or why you disagree), then re-assign the PR to the reviewer.
+**Do not click Resolve.**
 
 ### Chrome DevTools MCP
 
