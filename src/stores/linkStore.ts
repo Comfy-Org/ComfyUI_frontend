@@ -13,41 +13,6 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 
-export type EndpointPatch = Partial<
-  Pick<
-    LinkTopology,
-    'originNodeId' | 'originSlot' | 'targetNodeId' | 'targetSlot'
-  >
->
-
-export interface EndpointUpdate {
-  topology: LinkTopology
-  patch: EndpointPatch
-}
-interface EndpointUpdateError {
-  code:
-    | 'duplicate-topology'
-    | 'unowned-topology'
-    | 'duplicate-target'
-    | 'occupied-target'
-  message: string
-}
-
-type EndpointUpdateResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: EndpointUpdateError }
-
-function patchedEndpoints(
-  topology: LinkTopology,
-  patch: EndpointPatch
-): EndpointPatch {
-  return {
-    originNodeId: patch.originNodeId ?? topology.originNodeId,
-    originSlot: patch.originSlot ?? topology.originSlot,
-    targetNodeId: patch.targetNodeId ?? topology.targetNodeId,
-    targetSlot: patch.targetSlot ?? topology.targetSlot
-  }
-}
 /**
  * Endpoint slot keys are `${nodeId}:${slot}`; slot is numeric so the
  * separator is unambiguous for any node id. Target (input side) and origin
@@ -223,92 +188,6 @@ export const useLinkStore = defineStore('link', () => {
     return true
   }
 
-  function ownsPlacement(scope: GraphScope, topology: LinkTopology): boolean {
-    return toRaw(getBucket(scope)?.byId.get(topology.id)) === toRaw(topology)
-  }
-
-  function validateEndpointUpdates(
-    scope: GraphScope,
-    updates: readonly EndpointUpdate[],
-    vacating: readonly LinkTopology[] = []
-  ): EndpointUpdateError | undefined {
-    const bucket = getBucket(scope)
-    const participants = [
-      ...updates.map(({ topology }) => toRaw(topology)),
-      ...vacating.map((topology) => toRaw(topology))
-    ]
-    if (new Set(participants).size !== participants.length) {
-      return {
-        code: 'duplicate-topology',
-        message: 'A link topology may only appear once in an endpoint batch'
-      }
-    }
-
-    for (const topology of participants) {
-      if (!ownsPlacement(scope, topology)) {
-        return {
-          code: 'unowned-topology',
-          message: `Link ${topology.id} does not own its current placement`
-        }
-      }
-    }
-
-    const finalOwners = new Set<TargetSlotKey>()
-    for (const { topology, patch } of updates) {
-      const final = { ...toRaw(topology), ...patchedEndpoints(topology, patch) }
-      if (!hasUniqueTarget(final)) continue
-
-      const key = targetKey(final.targetNodeId, final.targetSlot)
-      if (finalOwners.has(key)) {
-        return {
-          code: 'duplicate-target',
-          message: `Multiple links target input slot ${key}`
-        }
-      }
-      finalOwners.add(key)
-
-      const incumbent = bucket?.targetIndex.get(key)
-      if (incumbent && !participants.includes(toRaw(incumbent))) {
-        return {
-          code: 'occupied-target',
-          message: `Link target slot ${key} is already occupied`
-        }
-      }
-    }
-  }
-
-  /** Atomically validates and applies endpoint updates and removals. */
-  function updateEndpoints(
-    scope: GraphScope,
-    updates: readonly EndpointUpdate[],
-    removals: readonly LinkTopology[] = []
-  ): EndpointUpdateResult<LinkTopology[]> {
-    const error = validateEndpointUpdates(scope, updates, removals)
-    if (error) return { ok: false, error }
-    const bucket = getBucket(scope)
-    if (!bucket) return { ok: true, value: [] }
-
-    for (const { topology } of updates) displace(scope, topology)
-    for (const topology of removals) displace(scope, topology)
-
-    const value = updates.map(({ topology, patch }) => {
-      Object.assign(reactive(topology), patchedEndpoints(topology, patch))
-      return placeValidated(bucket, topology)
-    })
-    pruneBucket(scope, bucket)
-    return { ok: true, value }
-  }
-
-  /** Applies one endpoint patch atomically. */
-  function updateEndpoint(
-    scope: GraphScope,
-    topology: LinkTopology,
-    patch: EndpointPatch
-  ): EndpointUpdateResult<LinkTopology> {
-    const result = updateEndpoints(scope, [{ topology, patch }])
-    return result.ok ? { ok: true, value: result.value[0] } : result
-  }
-
   function isInputSlotConnected(
     scope: GraphScope,
     nodeId: NodeId,
@@ -366,9 +245,6 @@ export const useLinkStore = defineStore('link', () => {
 
   return {
     registerLink,
-    updateEndpoint,
-    updateEndpoints,
-    validateEndpointUpdates,
     deleteLink,
     isInputSlotConnected,
     getInputSlotLink,

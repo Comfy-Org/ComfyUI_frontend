@@ -43,15 +43,26 @@ describe('LLink immutable registered identity', () => {
     })
   })
 
-  it.fails('given a registered link, when its endpoints are assigned, then its endpoint tuple remains immutable', () => {
+  it('given a registered link, when its identity is assigned, then its identity remains immutable', () => {
     const { sourceA, sourceB, target } = createRewireGraph()
     const link = sourceA.connect(0, target, 0)!
     const snapshot = link.asSerialisable()
 
-    link.origin_id = sourceB.id
-    link.origin_slot = 1
-    link.target_id = sourceA.id
-    link.target_slot = 2
+    expect(() => {
+      link.id = link.id
+    }).toThrow()
+    expect(() => {
+      link.origin_id = sourceB.id
+    }).toThrow()
+    expect(() => {
+      link.origin_slot = 1
+    }).toThrow()
+    expect(() => {
+      link.target_id = sourceA.id
+    }).toThrow()
+    expect(() => {
+      link.target_slot = 2
+    }).toThrow()
 
     expect(link.asSerialisable()).toEqual(snapshot)
   })

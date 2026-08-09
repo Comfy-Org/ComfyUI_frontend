@@ -12,7 +12,6 @@ import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
-import type { EndpointPatch } from '@/stores/linkStore'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
@@ -96,22 +95,6 @@ type BasicReadonlyNetwork = Pick<
   'getNodeById' | 'links' | 'getLink' | 'inputNode' | 'outputNode'
 >
 
-/** Routes an endpoint patch through {@link useLinkStore} if the link is registered, otherwise writes {@link LLink._state} directly. */
-function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
-  if (link._graphScope) {
-    const result = useLinkStore().updateEndpoint(
-      link._graphScope,
-      link._state,
-      patch
-    )
-    if (!result.ok) {
-      console.error('Failed to update link endpoints', result.error)
-    }
-  } else {
-    Object.assign(link._state, patch)
-  }
-}
-
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
@@ -131,6 +114,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set id(value: LinkId) {
+    this.assertIdentityMutable('id')
     this._state.id = value
   }
 
@@ -148,7 +132,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_id(value: NodeId) {
-    applyEndpointPatch(this, { originNodeId: value })
+    this.assertIdentityMutable('origin_id')
+    this._state.originNodeId = value
   }
 
   /** Output slot index */
@@ -157,7 +142,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_slot(value: number) {
-    applyEndpointPatch(this, { originSlot: value })
+    this.assertIdentityMutable('origin_slot')
+    this._state.originSlot = value
   }
 
   /** Input node ID */
@@ -166,7 +152,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_id(value: NodeId) {
-    applyEndpointPatch(this, { targetNodeId: value })
+    this.assertIdentityMutable('target_id')
+    this._state.targetNodeId = value
   }
 
   /** Input slot index */
@@ -175,7 +162,16 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_slot(value: number) {
-    applyEndpointPatch(this, { targetSlot: value })
+    this.assertIdentityMutable('target_slot')
+    this._state.targetSlot = value
+  }
+
+  private assertIdentityMutable(field: string): void {
+    if (!this._graphScope) return
+    const identity = field === 'id' ? 'IDs' : 'endpoints'
+    throw new Error(
+      `Registered link ${identity} are immutable: cannot assign ${field}; rewiring must create a replacement link`
+    )
   }
 
   get parentId() {
