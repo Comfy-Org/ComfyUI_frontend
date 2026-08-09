@@ -11,7 +11,7 @@ beforeEach(() => {
 })
 
 describe('LGraph node removal contract', () => {
-  it.fails("lets an extension's onRemoved callback read the node geometry while the node is being removed", () => {
+  it("lets an extension's onRemoved callback read the node geometry while the node is being removed", () => {
     const graph = new LGraph()
     const node = new LGraphNode('removed node')
     node.pos = [100, 50]
@@ -25,7 +25,7 @@ describe('LGraph node removal contract', () => {
     expect(observedGeometry).toEqual({ x: 100, y: 50 })
   })
 
-  it.fails('leaves the graph exactly as it was when removal fails', () => {
+  it('leaves the graph exactly as it was when removal fails', () => {
     const graph = new LGraph()
     const source = new LGraphNode('source')
     source.addOutput('out', '*')

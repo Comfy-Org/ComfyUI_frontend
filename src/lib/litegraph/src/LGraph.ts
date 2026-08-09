@@ -1361,40 +1361,12 @@ export class LGraph
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }
-    const layoutDetach = detachNodeLayout(this, node)
-
-    // sure? - almost sure is wrong
+    const releasedSubgraphs = node.isSubgraphNode()
+      ? findReleasableSubgraphs(this.rootGraph, node)
+      : []
+    this.beforeChange()
     try {
-      if (layoutDetach.result === 'rejected') return
-      const releasedSubgraphs = node.isSubgraphNode()
-        ? findReleasableSubgraphs(this.rootGraph, node)
-        : []
-      this.beforeChange()
-
       this.events.dispatch('node:before-removed', { node })
-
-      const { inputs, outputs } = node
-
-      // disconnect inputs
-      if (inputs) {
-        for (const [i] of inputs.entries()) {
-          if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
-        }
-      }
-
-      // disconnect outputs
-      if (outputs) {
-        for (const i of outputs.keys()) {
-          if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
-        }
-      }
-
-      // Floating links
-      for (const link of this.floatingLinks.values()) {
-        if (link.origin_id === node.id || link.target_id === node.id) {
-          this.removeFloatingLink(link)
-        }
-      }
 
       if (node.isSubgraphNode()) {
         for (const subgraph of releasedSubgraphs) {
@@ -1402,59 +1374,86 @@ export class LGraph
         }
       }
 
-      // callback
       node.onRemoved?.()
+      this.onNodeRemoved?.(node)
 
-      node.graph = null
+      const layoutDetach = detachNodeLayout(this, node)
+      if (layoutDetach.result === 'rejected') return
 
-      // remove from canvas render
-      const { list_of_graphcanvas } = this
-      if (list_of_graphcanvas) {
-        for (const canvas of list_of_graphcanvas) {
-          if (canvas.selected_nodes[node.id])
-            delete canvas.selected_nodes[node.id]
+      try {
+        const { inputs, outputs } = node
 
-          canvas.deselect(node)
+        // disconnect inputs
+        if (inputs) {
+          for (const [i] of inputs.entries()) {
+            if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
+          }
         }
-      }
 
-      for (const subgraph of releasedSubgraphs) {
-        unregisterAllGraphLayout(subgraph)
-        unregisterAllLinkTopologies(subgraph)
-        unregisterAllRerouteChains(subgraph)
-        unregisterAllNodeStates(subgraph)
-        if (this.rootGraph.subgraphs.get(subgraph.id) === subgraph) {
-          this.rootGraph.subgraphs.delete(subgraph.id)
+        // disconnect outputs
+        if (outputs) {
+          for (const i of outputs.keys()) {
+            if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
+          }
         }
+
+        // Floating links
+        for (const link of this.floatingLinks.values()) {
+          if (link.origin_id === node.id || link.target_id === node.id) {
+            this.removeFloatingLink(link)
+          }
+        }
+
+        node.graph = null
+
+        // remove from canvas render
+        const { list_of_graphcanvas } = this
+        if (list_of_graphcanvas) {
+          for (const canvas of list_of_graphcanvas) {
+            if (canvas.selected_nodes[node.id])
+              delete canvas.selected_nodes[node.id]
+
+            canvas.deselect(node)
+          }
+        }
+
+        for (const subgraph of releasedSubgraphs) {
+          unregisterAllGraphLayout(subgraph)
+          unregisterAllLinkTopologies(subgraph)
+          unregisterAllRerouteChains(subgraph)
+          unregisterAllNodeStates(subgraph)
+          if (this.rootGraph.subgraphs.get(subgraph.id) === subgraph) {
+            this.rootGraph.subgraphs.delete(subgraph.id)
+          }
+        }
+
+        unregisterNodeState(node)
+
+        this.incrementVersion()
+
+        // remove from containers
+        const pos = this._nodes.indexOf(node)
+        if (pos != -1) this._nodes.splice(pos, 1)
+
+        delete this._nodes_by_id[node.id]
+      } catch (error) {
+        const graphOwnsNode =
+          this._nodes.includes(node) || this._nodes_by_id[node.id] === node
+        if (graphOwnsNode) {
+          node.graph = this
+          layoutDetach.restore()
+        }
+        throw error
       }
+      this.events.dispatch('node:removed', { node })
 
-      unregisterNodeState(node)
+      // close panels
+      this.canvasAction((c) => c.checkPanels())
 
-      this.incrementVersion()
-
-      // remove from containers
-      const pos = this._nodes.indexOf(node)
-      if (pos != -1) this._nodes.splice(pos, 1)
-
-      delete this._nodes_by_id[node.id]
-    } catch (error) {
-      const graphOwnsNode =
-        this._nodes.includes(node) || this._nodes_by_id[node.id] === node
-      if (graphOwnsNode) {
-        node.graph = this
-        layoutDetach.restore()
-      }
-      throw error
+      this.setDirtyCanvas(true, true)
+    } finally {
+      this.afterChange()
     }
-    this.onNodeRemoved?.(node)
-    this.events.dispatch('node:removed', { node })
-
-    // close panels
-    this.canvasAction((c) => c.checkPanels())
-
-    this.setDirtyCanvas(true, true)
-    // sure? - almost sure is wrong
-    this.afterChange()
     this.change()
 
     this.updateExecutionOrder()

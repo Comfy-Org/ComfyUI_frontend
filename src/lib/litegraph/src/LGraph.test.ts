@@ -568,7 +568,7 @@ describe('node:before-removed event', () => {
     expect(order).toEqual([
       'before-removed(graph=set)',
       'onRemoved(graph=set)',
-      'onNodeRemoved(graph=null)'
+      'onNodeRemoved(graph=set)'
     ])
   })
 
@@ -1916,8 +1916,8 @@ describe('node layout registration', () => {
     subgraphNode.addInput('in', '*')
     subgraphNode.addOutput('out', '*')
     graph.add(subgraphNode)
-    source.connect(0, subgraphNode, 0)
-    subgraphNode.connect(0, target, 0)
+    const inputLink = source.connect(0, subgraphNode, 0)!
+    const outputLink = subgraphNode.connect(0, target, 0)!
     const onConnectionChange = vi.fn()
     graph.onConnectionChange = onConnectionChange
     const onNodeRemoved = vi.fn()
@@ -1929,12 +1929,18 @@ describe('node layout registration', () => {
     expect(() => graph.remove(subgraphNode)).toThrow('outer removal failed')
     expect(graph.nodes).toContain(subgraphNode)
     expect(subgraphNode.graph).toBe(graph)
+    expect(graph.links.get(inputLink.id)).toBe(inputLink)
+    expect(graph.links.get(outputLink.id)).toBe(outputLink)
+    expect(source.isOutputConnected(0)).toBe(true)
+    expect(subgraphNode.isInputConnected(0)).toBe(true)
+    expect(subgraphNode.isOutputConnected(0)).toBe(true)
+    expect(target.isInputConnected(0)).toBe(true)
     expect(subgraph.nodes).toContain(nestedNode)
     expect(nestedNode.subgraph).toBe(nested)
     expect(subgraph._links.get(link.id)).toBe(link)
     expect(subgraph.reroutes.get(reroute.id)).toBe(reroute)
     expect(link.parentId).toBe(reroute.id)
-    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(1)
+    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(3)
     expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeDefined()
     expect(
       useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)
@@ -1969,8 +1975,6 @@ describe('node layout registration', () => {
       layoutStore.getNodeLayoutRef(graph.id, nestedInterior.id).value?.position
     ).toEqual({ x: 70, y: 80 })
 
-    const inputLink = source.connect(0, subgraphNode, 0)!
-    const outputLink = subgraphNode.connect(0, target, 0)!
     onConnectionChange.mockClear()
     onNodeRemoved.mockClear()
     subgraphNode.onRemoved = () => {}
@@ -1984,7 +1988,7 @@ describe('node layout registration', () => {
     expect(graph.links.get(inputLink.id)).toBe(inputLink)
     expect(graph.links.get(outputLink.id)).toBe(outputLink)
     expect(onConnectionChange).not.toHaveBeenCalled()
-    expect(onNodeRemoved).not.toHaveBeenCalled()
+    expect(onNodeRemoved).toHaveBeenCalledOnce()
     expect(subgraphNode.graph).toBe(graph)
     expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
     expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(3)
