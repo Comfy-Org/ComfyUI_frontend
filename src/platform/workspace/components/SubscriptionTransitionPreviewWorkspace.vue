@@ -9,9 +9,7 @@
           variant="muted-textonly"
           class="shrink-0 rounded-full"
           :aria-label="$t('g.back')"
-          :disabled="
-            isLoading || isApplyingPromotionCode || pollRecoveryRequired
-          "
+          :disabled="interactionLocked"
           @click="$emit('back')"
         >
           <i class="pi pi-arrow-left text-base" />
@@ -206,6 +204,7 @@
       <div class="flex gap-2 pt-6">
         <input
           v-model="promotionCode"
+          :disabled="interactionLocked"
           class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
           :placeholder="$t('subscription.preview.promoCodePlaceholder')"
           @input="$emit('invalidateQuote')"
@@ -213,7 +212,7 @@
         <Button
           variant="secondary"
           size="lg"
-          :disabled="isLoading"
+          :disabled="interactionLocked"
           @click="$emit('applyPromotionCode', promotionCode)"
         >
           {{ $t('subscription.preview.applyPromoCode') }}
@@ -234,22 +233,6 @@
           {{ $t('billingOperation.reconciliationDetail') }}
           <span class="font-mono">{{ reconciliationOperationId }}</span>
         </p>
-      </div>
-
-      <div
-        v-if="pollRecoveryRequired"
-        role="alert"
-        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
-      >
-        <p class="m-0">{{ $t('billingOperation.pollFailedDetail') }}</p>
-        <Button
-          variant="secondary"
-          size="lg"
-          class="mt-3 w-full rounded-lg"
-          @click="$emit('retryPolling')"
-        >
-          {{ $t('billingOperation.retryStatusCheck') }}
-        </Button>
       </div>
 
       <div
@@ -287,7 +270,7 @@
       </Button>
 
       <Button
-        v-if="actionUrl && !canRetryAuthentication"
+        v-if="actionUrl"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -302,10 +285,7 @@
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="
-          confirmDisabled ||
-          !quoteIsCurrent ||
-          verificationRecoveryActive ||
-          pollRecoveryRequired
+          confirmDisabled || !quoteIsCurrent || verificationRecoveryActive
         "
         @click="$emit('confirm', confirmReactivation)"
       >
@@ -349,8 +329,7 @@ const {
   isAuthenticating = false,
   reconciliationOperationId = null,
   quoteIsCurrent = false,
-  isApplyingPromotionCode = false,
-  pollRecoveryRequired = false
+  isApplyingPromotionCode = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -368,7 +347,6 @@ const {
   reconciliationOperationId?: string | null
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
-  pollRecoveryRequired?: boolean
 }>()
 
 defineEmits<{
@@ -379,7 +357,6 @@ defineEmits<{
   applyPromotionCode: [code: string]
   invalidateQuote: []
   retryAuthentication: []
-  retryPolling: []
 }>()
 
 const { t, n } = useI18n()
@@ -389,6 +366,7 @@ const verificationRecoveryActive = computed(
     authenticationState === 'failed_retryable' ||
     Boolean(reconciliationOperationId)
 )
+const interactionLocked = computed(() => isLoading || isApplyingPromotionCode)
 
 const { subscription } = useBillingContext()
 const promotionCode = ref(previewData.promotion_code ?? '')

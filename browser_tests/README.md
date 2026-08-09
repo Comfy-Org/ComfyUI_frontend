@@ -95,11 +95,13 @@ pnpm test:browser:local --ui                # Interactive UI mode (use for devel
 ```
 
 The maintained billing checkout regression suite uses server-controlled
-responses and a development-only Stripe.js boundary. Run it against the local
-Vite app; every test attaches `billing-network-evidence.json` with sanitized
-request and response bodies for failure triage:
+responses and a mocked Stripe.js boundary. Start Vite with a synthetic
+publishable key, then run the suite; every test attaches
+`billing-network-evidence.json` with sanitized request and response bodies for
+failure triage:
 
 ```bash
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_billing_e2e pnpm dev
 pnpm test:browser:local browser_tests/tests/billing/billingCheckoutStateMachine.spec.ts --project=cloud
 ```
 

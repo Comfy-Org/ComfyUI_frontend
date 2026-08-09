@@ -126,9 +126,6 @@ export class BillingCheckoutStateMachineHelper {
         })
       )
     })
-    await this.page.addInitScript(() => {
-      window.__COMFY_E2E_STRIPE_PUBLISHABLE_KEY__ = 'pk_test_billing_e2e'
-    })
     await this.page.route('https://js.stripe.com/**', (route) =>
       route.fulfill({
         contentType: 'application/javascript',

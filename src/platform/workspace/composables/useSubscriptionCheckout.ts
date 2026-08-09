@@ -195,10 +195,6 @@ export function useSubscriptionCheckout(
       operation.authenticationState !== 'requires_action'
     )
   })
-  const pollRecoveryRequired = computed(
-    () => activeCheckoutOperation.value?.status === 'poll_failed'
-  )
-
   function beginCheckoutMutation(): boolean {
     if (checkoutMutationLocked) return false
     checkoutMutationLocked = true
@@ -607,6 +603,7 @@ export function useSubscriptionCheckout(
     }
 
     const { tierKey, billingCycle } = payload
+    promotionPreviewRequestId += 1
 
     reactivationRequired.value = false
     isLoadingPreview.value = true
@@ -677,6 +674,7 @@ export function useSubscriptionCheckout(
     if (isSubscribing.value || !permissions.value.canManageSubscription) return
 
     const previewRequestId = ++teamPreviewRequestId
+    promotionPreviewRequestId += 1
     reactivationRequired.value = false
     selectedTeamCheckout.value = {
       stop: payload.stop,
@@ -742,6 +740,7 @@ export function useSubscriptionCheckout(
 
   function resetToPricing() {
     teamPreviewRequestId += 1
+    promotionPreviewRequestId += 1
     isLoadingPreview.value = false
     reactivationRequired.value = false
     checkoutStep.value = 'pricing'
@@ -949,6 +948,7 @@ export function useSubscriptionCheckout(
       installPreview(response)
       return true
     } catch (error) {
+      if (requestId !== promotionPreviewRequestId) return false
       if (showFailure) showSubscribeError(error)
       return false
     } finally {
@@ -1246,10 +1246,6 @@ export function useSubscriptionCheckout(
     return handleSubscription(false, confirmationToken, promotionCode)
   }
 
-  function retryBillingOperation() {
-    billingOperationStore.pollPendingOperations()
-  }
-
   function handleTeamSubscriptionPayment(
     confirmationToken: string,
     promotionCode?: string
@@ -1278,7 +1274,6 @@ export function useSubscriptionCheckout(
     canRetryAuthentication,
     isAuthenticating,
     reconciliationOperationId,
-    pollRecoveryRequired,
     isPolling,
     isTeamCheckout,
     previewVariant,
@@ -1292,7 +1287,6 @@ export function useSubscriptionCheckout(
     handleSubscriptionPayment,
     handleTeamSubscriptionPayment,
     retryPaymentAuthentication,
-    retryBillingOperation,
     applyPromotionCode,
     invalidateQuote,
     handleResubscribe

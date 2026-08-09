@@ -143,6 +143,7 @@
       <div class="flex gap-2 pt-6">
         <input
           v-model="promotionCode"
+          :disabled="interactionLocked"
           class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
           :placeholder="$t('subscription.preview.promoCodePlaceholder')"
           @input="$emit('invalidateQuote')"
@@ -150,7 +151,7 @@
         <Button
           variant="secondary"
           size="lg"
-          :disabled="isLoading"
+          :disabled="interactionLocked"
           @click="$emit('applyPromotionCode', promotionCode)"
         >
           {{ $t('subscription.preview.applyPromoCode') }}
@@ -226,22 +227,6 @@
       </div>
 
       <div
-        v-if="pollRecoveryRequired"
-        role="alert"
-        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
-      >
-        <p class="m-0">{{ $t('billingOperation.pollFailedDetail') }}</p>
-        <Button
-          variant="secondary"
-          size="lg"
-          class="mt-3 w-full rounded-lg"
-          @click="$emit('retryPolling')"
-        >
-          {{ $t('billingOperation.retryStatusCheck') }}
-        </Button>
-      </div>
-
-      <div
         v-if="authenticationState === 'failed_retryable'"
         role="alert"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
@@ -276,7 +261,7 @@
       </Button>
 
       <Button
-        v-if="actionUrl && !canRetryAuthentication"
+        v-if="actionUrl"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -293,11 +278,7 @@
           previewData?.payment_method_configuration_id ?? ''
         "
         :is-loading
-        :verification-pending="
-          Boolean(actionUrl) ||
-          verificationRecoveryActive ||
-          pollRecoveryRequired
-        "
+        :verification-pending="Boolean(actionUrl) || verificationRecoveryActive"
         :can-submit="quoteIsCurrent"
         @submitting-change="stripeSubmissionPending = $event"
         @confirm="confirmPayment"
@@ -385,7 +366,6 @@ interface Props {
   selectedSavedMethodId?: string | null
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
-  pollRecoveryRequired?: boolean
 }
 
 const {
@@ -404,8 +384,7 @@ const {
   savedMethods = null,
   selectedSavedMethodId = null,
   quoteIsCurrent = false,
-  isApplyingPromotionCode = false,
-  pollRecoveryRequired = false
+  isApplyingPromotionCode = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -417,7 +396,6 @@ const emit = defineEmits<{
   applyPromotionCode: [code: string]
   invalidateQuote: []
   retryAuthentication: []
-  retryPolling: []
 }>()
 
 const { t, n } = useI18n()
@@ -470,11 +448,7 @@ const selectedMethod = computed({
 const promotionCode = ref(previewData?.promotion_code ?? '')
 const stripeSubmissionPending = ref(false)
 const interactionLocked = computed(
-  () =>
-    isLoading ||
-    isApplyingPromotionCode ||
-    pollRecoveryRequired ||
-    stripeSubmissionPending.value
+  () => isLoading || isApplyingPromotionCode || stripeSubmissionPending.value
 )
 watch(
   () => previewData?.promotion_code,

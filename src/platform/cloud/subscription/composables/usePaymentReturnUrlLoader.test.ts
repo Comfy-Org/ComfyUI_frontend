@@ -5,8 +5,7 @@ import { usePaymentReturnUrlLoader } from './usePaymentReturnUrlLoader'
 const mocks = vi.hoisted(() => ({
   query: {} as Record<string, string>,
   replace: vi.fn().mockResolvedValue(undefined),
-  fetchStatus: vi.fn().mockResolvedValue(undefined),
-  pollPendingOperations: vi.fn()
+  fetchStatus: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('vue-router', () => ({
@@ -16,12 +15,6 @@ vi.mock('vue-router', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({ fetchStatus: mocks.fetchStatus })
-}))
-
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    pollPendingOperations: mocks.pollPendingOperations
-  })
 }))
 
 describe('usePaymentReturnUrlLoader', () => {
@@ -45,7 +38,6 @@ describe('usePaymentReturnUrlLoader', () => {
       query: { workspace: 'ws-1' }
     })
     expect(mocks.fetchStatus).toHaveBeenCalledOnce()
-    expect(mocks.pollPendingOperations).toHaveBeenCalledOnce()
   })
 
   it('does nothing on an ordinary page load', async () => {
@@ -56,6 +48,5 @@ describe('usePaymentReturnUrlLoader', () => {
 
     expect(mocks.replace).not.toHaveBeenCalled()
     expect(mocks.fetchStatus).not.toHaveBeenCalled()
-    expect(mocks.pollPendingOperations).not.toHaveBeenCalled()
   })
 })

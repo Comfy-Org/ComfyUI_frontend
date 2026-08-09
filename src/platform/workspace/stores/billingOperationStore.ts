@@ -28,7 +28,6 @@ const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
 const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
-const MAX_CONSECUTIVE_POLL_FAILURES = 3
 // Failure reason for a checkout the user replaced by picking a different plan
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
@@ -40,7 +39,6 @@ type OperationStatus =
   | 'succeeded'
   | 'failed'
   | 'timeout'
-  | 'poll_failed'
   | 'reconciliation_needed'
 
 export interface StartOperationMetadata {
@@ -89,11 +87,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
   const paymentIntentClientSecrets = new Map<string, string>()
-  const consecutivePollFailures = new Map<string, number>()
   const inFlightPolls = new Map<string, Promise<void>>()
-  const pollAgain = new Set<string>()
 
-  useEventListener(window, 'focus', pollPendingOperations)
   useEventListener(document, 'visibilitychange', () => {
     if (document.visibilityState === 'visible') pollPendingOperations()
   })
@@ -213,14 +208,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   async function poll(opId: string) {
     const inFlight = inFlightPolls.get(opId)
     if (inFlight) {
-      pollAgain.add(opId)
       await inFlight
       return
     }
 
     const request = pollOnce(opId).finally(() => {
       inFlightPolls.delete(opId)
-      if (pollAgain.delete(opId)) void poll(opId)
     })
     inFlightPolls.set(opId, request)
     await request
@@ -229,6 +222,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   async function pollOnce(opId: string) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
+    pausePolling(opId)
+    if (operation.isAuthenticating) return
 
     if (stopIfTimedOut(opId, operation)) return
 
@@ -239,7 +234,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     try {
       const response = await workspaceApi.getBillingOpStatus(opId)
-      consecutivePollFailures.delete(opId)
       const currentOperation = operations.value.get(opId)
       if (currentOperation !== operation) return
       if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
@@ -280,12 +274,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       const currentOperation = operations.value.get(opId)
       if (currentOperation !== operation) return
       if (stopIfTimedOut(opId, currentOperation)) return
-      const failures = (consecutivePollFailures.get(opId) ?? 0) + 1
-      consecutivePollFailures.set(opId, failures)
-      if (failures >= MAX_CONSECUTIVE_POLL_FAILURES) {
-        handlePollFailure(opId)
-        return
-      }
       scheduleNextPoll(opId)
     }
   }
@@ -294,15 +282,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     for (const operation of operations.value.values()) {
       if (
         operation.workspaceId === workspaceStore.activeWorkspaceId &&
-        (operation.status === 'pending' || operation.status === 'poll_failed')
+        operation.status === 'pending' &&
+        !operation.isAuthenticating
       ) {
-        if (operation.status === 'poll_failed') {
-          updateOperation(operation.opId, {
-            status: 'pending',
-            errorMessage: null
-          })
-          consecutivePollFailures.delete(operation.opId)
-        }
         pausePolling(operation.opId)
         void poll(operation.opId)
       }
@@ -451,22 +433,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       errorMessage: null
     })
 
-    const publishableKey =
-      import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
-      (import.meta.env.DEV
-        ? window.__COMFY_E2E_STRIPE_PUBLISHABLE_KEY__
-        : undefined)
-    const stripe = publishableKey ? await loadStripe(publishableKey) : null
-    if (!stripe) {
-      setAuthenticationRetry(
-        opId,
-        t('billingOperation.authenticationUnavailable'),
-        false
-      )
-      return false
-    }
-
     try {
+      const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+      const stripe = publishableKey ? await loadStripe(publishableKey) : null
+      if (!stripe) {
+        setAuthenticationRetry(
+          opId,
+          t('billingOperation.authenticationUnavailable'),
+          false
+        )
+        return false
+      }
       const result = await stripe.handleNextAction({ clientSecret })
       if (result.error) {
         setAuthenticationRetry(
@@ -764,24 +741,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     resolveTerminal(opId)
   }
 
-  function handlePollFailure(opId: string) {
-    const operation = operations.value.get(opId)
-    if (!operation) return
-    updateOperation(opId, {
-      status: 'poll_failed',
-      errorMessage: t('billingOperation.pollFailedDetail'),
-      isAuthenticating: false,
-      canRetryAuthentication: false
-    })
-    pausePolling(opId)
-    useToastStore().add({
-      severity: 'error',
-      summary: t('billingOperation.pollFailed'),
-      detail: t('billingOperation.pollFailedDetail'),
-      life: 7000
-    })
-  }
-
   function failureMessage(type: OperationType) {
     if (type === 'subscription') return t('billingOperation.subscriptionFailed')
     if (type === 'topup') return t('billingOperation.topupFailed')
@@ -834,8 +793,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.delete(opId)
     autoHandledPaymentActions.delete(opId)
     paymentIntentClientSecrets.delete(opId)
-    consecutivePollFailures.delete(opId)
-    pollAgain.delete(opId)
 
     // Remove the "received" toast
     const receivedToast = receivedToasts.get(opId)

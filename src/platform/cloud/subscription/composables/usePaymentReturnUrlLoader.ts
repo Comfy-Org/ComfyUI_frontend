@@ -1,7 +1,6 @@
 import { useRoute, useRouter } from 'vue-router'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 const STRIPE_RETURN_PARAMS = [
   'payment_intent',
@@ -22,7 +21,6 @@ export function usePaymentReturnUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const billingContext = useBillingContext()
-  const billingOperationStore = useBillingOperationStore()
 
   async function loadPaymentReturnFromUrl() {
     const present = STRIPE_RETURN_PARAMS.filter(
@@ -42,7 +40,6 @@ export function usePaymentReturnUrlLoader() {
     }
 
     await billingContext.fetchStatus()
-    billingOperationStore.pollPendingOperations()
   }
 
   return {

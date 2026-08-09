@@ -37,7 +37,6 @@ interface CapturedMessages {
 
 declare global {
   interface Window {
-    __COMFY_E2E_STRIPE_PUBLISHABLE_KEY__?: string
     app?: ComfyApp
     graph?: LGraph
     LiteGraph?: LiteGraphGlobal

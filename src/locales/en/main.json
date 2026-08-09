@@ -2620,9 +2620,6 @@
     }
   },
   "billingOperation": {
-    "pollFailed": "We couldn't confirm your payment status",
-    "pollFailedDetail": "Check your connection and try checking the payment status again.",
-    "retryStatusCheck": "Check payment status again",
     "subscriptionProcessing": "Processing payment — setting up your workspace...",
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",

@@ -617,6 +617,32 @@ describe('billingOperationStore', () => {
   })
 
   describe('payment authentication recovery', () => {
+    it('recovers when Stripe.js fails to load', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-3ds',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+      mockLoadStripe.mockRejectedValue(new Error('Stripe.js blocked'))
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        status: 'pending',
+        authenticationState: 'failed_retryable',
+        canRetryAuthentication: true,
+        isAuthenticating: false,
+        errorMessage: 'Stripe.js blocked'
+      })
+    })
+
     it('auto-runs requires_action once and keeps polling after challenge failure, without relaunching Stripe', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-3ds',
@@ -1573,45 +1599,26 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-1')?.status).toBe('succeeded')
     })
 
-    it('stops after repeated failures and recovers on an explicit check', async () => {
+    it('keeps an uncertain operation pending through repeated failures', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockRejectedValue(
         new Error('Network error')
       )
 
       const store = useBillingOperationStore()
-      void store.startOperation('op-1', 'subscription')
-
-      await vi.advanceTimersByTimeAsync(0)
-      await vi.advanceTimersByTimeAsync(1500)
-      await vi.advanceTimersByTimeAsync(2250)
-
-      expect(store.getOperation('op-1')).toMatchObject({
-        status: 'poll_failed',
-        errorMessage: 'billingOperation.pollFailedDetail'
-      })
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'billingOperation.pollFailed',
-        detail: 'billingOperation.pollFailedDetail',
-        life: 7000
+      const terminal = store.startOperation('op-1', 'subscription')
+      let resolved = false
+      void terminal.then(() => {
+        resolved = true
       })
 
-      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
-        id: 'op-1',
-        status: 'succeeded',
-        started_at: new Date().toISOString()
-      })
-      store.pollPendingOperations()
-      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(20_000)
 
-      expect(store.getOperation('op-1')).toMatchObject({
-        status: 'succeeded',
-        errorMessage: null,
-        authenticationState: null,
-        actionUrl: null,
-        canRetryAuthentication: false,
-        isAuthenticating: false
-      })
+      expect(store.getOperation('op-1')?.status).toBe('pending')
+      expect(store.hasPendingOperations).toBe(true)
+      expect(resolved).toBe(false)
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
     })
 
     it('polls pending operations immediately when the page becomes visible', async () => {
@@ -1627,7 +1634,11 @@ describe('billingOperationStore', () => {
       const pollCount = vi.mocked(workspaceApi.getBillingOpStatus).mock.calls
         .length
 
-      window.dispatchEvent(new Event('focus'))
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        value: 'visible'
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
       await vi.advanceTimersByTimeAsync(0)
 
       expect(

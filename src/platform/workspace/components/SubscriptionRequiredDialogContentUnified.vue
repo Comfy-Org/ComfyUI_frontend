@@ -108,13 +108,11 @@
         :reconciliation-operation-id
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
-        :poll-recovery-required
         @confirm="handleTeamSubscribe"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
-        @retry-polling="retryBillingOperation"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -134,7 +132,6 @@
         :selected-saved-method-id="selectedSavedPaymentMethodId"
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
-        :poll-recovery-required
         @update:selected-saved-method-id="selectSavedPaymentMethod"
         @add-credit-card="handleTeamSubscribe"
         @change-payment-method="selectSavedPaymentMethod(null)"
@@ -143,7 +140,6 @@
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
-        @retry-polling="retryBillingOperation"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -163,7 +159,6 @@
         :selected-saved-method-id="selectedSavedPaymentMethodId"
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
-        :poll-recovery-required
         @update:selected-saved-method-id="selectSavedPaymentMethod"
         @add-credit-card="handleAddCreditCard"
         @change-payment-method="selectSavedPaymentMethod(null)"
@@ -172,7 +167,6 @@
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
-        @retry-polling="retryBillingOperation"
       />
 
       <SubscriptionTransitionPreviewWorkspace
@@ -188,13 +182,11 @@
         :reconciliation-operation-id
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
-        :poll-recovery-required
         @confirm="handleConfirmTransition"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
-        @retry-polling="retryBillingOperation"
       />
     </template>
 
@@ -237,10 +229,7 @@ const emit = defineEmits<{
 }>()
 
 const stripePaymentElementEnabled = Boolean(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
-  (import.meta.env.DEV
-    ? window.__COMFY_E2E_STRIPE_PUBLISHABLE_KEY__
-    : undefined)
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
 )
 
 // The embedded-payment confirm step keeps the pricing table's dialog
@@ -305,7 +294,6 @@ const {
   canRetryAuthentication,
   isAuthenticating,
   reconciliationOperationId,
-  pollRecoveryRequired,
   isPolling,
   isTeamCheckout,
   previewVariant,
@@ -319,7 +307,6 @@ const {
   handleSubscriptionPayment,
   handleTeamSubscriptionPayment,
   retryPaymentAuthentication,
-  retryBillingOperation,
   applyPromotionCode,
   invalidateQuote,
   handleResubscribe

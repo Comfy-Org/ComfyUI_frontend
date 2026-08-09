@@ -96,11 +96,7 @@ let paymentElement: StripePaymentElement | undefined
 let isUnmounted = false
 
 onMounted(async () => {
-  const publishableKey =
-    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
-    (import.meta.env.DEV
-      ? window.__COMFY_E2E_STRIPE_PUBLISHABLE_KEY__
-      : undefined)
+  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   if (!publishableKey) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
     return

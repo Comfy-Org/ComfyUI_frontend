@@ -22,6 +22,10 @@ export async function waitForCloudApp(page: Page): Promise<void> {
 }
 
 export async function gotoCloudApp(page: Page, url = APP_URL): Promise<void> {
+  if (!process.env.PLAYWRIGHT_LOCAL) {
+    await page.goto(url)
+    return
+  }
   await page.goto(new URL('/cloud/login?switchAccount=1', APP_URL).toString())
   await page.locator('#vue-app[data-v-app]').waitFor()
   await page.waitForFunction(async () => {

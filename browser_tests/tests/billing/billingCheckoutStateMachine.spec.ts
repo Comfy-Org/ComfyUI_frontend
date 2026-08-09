@@ -106,7 +106,7 @@ test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
     await expect(retry).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'Complete verification' })
-    ).toHaveCount(0)
+    ).toBeVisible()
     await retry.click()
 
     await expect(
@@ -171,14 +171,13 @@ test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
     await expect(billingCheckout.payButton).toBeEnabled()
   })
 
-  test('polls immediately after a hosted payment return', async ({
+  test('resumes the recovered operation after a hosted payment return', async ({
     billingCheckout,
     page
   }) => {
     billingCheckout.queueOperation('op-return', {
       id: 'op-return',
-      status: 'pending',
-      action_url: 'https://invoice.stripe.com/return',
+      status: 'succeeded',
       started_at: new Date().toISOString()
     })
     await page.route('**/api/billing/status', (route) =>
@@ -205,7 +204,7 @@ test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
 
     await expect
       .poll(() => billingCheckout.operationPollCount('op-return'))
-      .toBeGreaterThan(0)
+      .toBe(1)
     await expect(page).not.toHaveURL(/payment_intent/)
   })
 
