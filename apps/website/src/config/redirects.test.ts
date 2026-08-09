@@ -44,14 +44,16 @@ describe('legacy MiniMax H3 redirects', () => {
     ({ source, destination }) => {
       const redirect = findRedirect(source)
 
-      expect(redirect, `${source} is missing from vercel.json`).toBeDefined()
-      expect(redirect!.destination).toBe(destination)
+      if (!redirect) {
+        throw new Error(`${source} is missing from vercel.json`)
+      }
+
+      expect(redirect.destination).toBe(destination)
       // Temporary on purpose: /minimax will be reclaimed as an all-models hub,
       // so the legacy redirect must not permanently consolidate onto /minimax-h3.
-      expect(
-        redirect!.permanent,
-        `${source} must be a temporary redirect`
-      ).toBe(false)
+      expect(redirect.permanent, `${source} must be a temporary redirect`).toBe(
+        false
+      )
     }
   )
 
