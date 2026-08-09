@@ -374,8 +374,9 @@ describe('downloadUtil', () => {
 
       await openFileInNewTab('https://storage.googleapis.com/bucket/evil.png')
 
-      const [created] = createObjectURLSpy.mock.calls[0] as unknown as [Blob]
-      expect(created.type).toBe('application/octet-stream')
+      expect(createObjectURLSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'application/octet-stream' })
+      )
     })
 
     it('preserves a media type carrying codec parameters', async () => {
