@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { isCommandDisabled } from '@/platform/settings/utils/uiDisableList'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -100,6 +101,10 @@ export const useCommandStore = defineStore('command', () => {
       metadata?: Record<string, unknown>
     }
   ) => {
+    if (isCommandDisabled(commandId)) {
+      return
+    }
+
     const command = getCommand(commandId)
     if (command) {
       await wrapWithErrorHandlingAsync(
