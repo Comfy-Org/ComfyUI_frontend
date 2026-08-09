@@ -36,8 +36,11 @@ export default defineConfig({
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
       '/customers/series-entertainment/',
     '/zh-CN/terms-of-service': '/terms-of-service',
-    '/minimax': '/minimax-h3/',
-    '/zh-CN/minimax': '/zh-CN/minimax-h3/'
+    // Temporary (307) on purpose: /minimax will be reclaimed as a hub showcasing
+    // ALL MiniMax models, so search engines must not consolidate it onto
+    // /minimax-h3. Mirrors `permanent: false` in vercel.json.
+    '/minimax': { status: 307, destination: '/minimax-h3/' },
+    '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
   },
   build: {
     assets: '_website'

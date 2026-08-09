@@ -40,16 +40,18 @@ describe('legacy MiniMax H3 redirects', () => {
     { source: '/zh-CN/minimax', destination: minimaxZhCanonical },
     { source: '/zh-CN/minimax/', destination: minimaxZhCanonical }
   ])(
-    'sends $source to $destination with a permanent status',
+    'sends $source to $destination with a temporary status',
     ({ source, destination }) => {
       const redirect = findRedirect(source)
 
       expect(redirect, `${source} is missing from vercel.json`).toBeDefined()
       expect(redirect!.destination).toBe(destination)
+      // Temporary on purpose: /minimax will be reclaimed as an all-models hub,
+      // so the legacy redirect must not permanently consolidate onto /minimax-h3.
       expect(
         redirect!.permanent,
-        `${source} must be a permanent redirect`
-      ).toBe(true)
+        `${source} must be a temporary redirect`
+      ).toBe(false)
     }
   )
 
