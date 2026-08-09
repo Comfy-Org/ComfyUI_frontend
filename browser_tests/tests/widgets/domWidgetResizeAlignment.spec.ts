@@ -8,16 +8,6 @@ import {
   snapshotRelativeOffset
 } from '@e2e/fixtures/utils/domWidgetAlignment'
 
-// NOTE: These tests currently always pass in Chromium/CI. The regression
-// this suite guards against (DESK2-146: a stale DOM widget overlay left
-// behind after a native Electron window resize) has been confirmed to
-// reproduce only in ComfyUI Desktop (Electron), not in a browser tab -- so
-// nothing here will turn red if that underlying Electron bug resurfaces.
-// They still earn their keep as regression coverage for the browser-reachable
-// code paths involved (Classic mode DOM widget resize sync, Vue Nodes resize
-// sync) in case a future change breaks those specifically, and as a record of
-// what was ruled out during that investigation.
-
 const LARGE_VIEWPORT = { width: 1920, height: 1080 }
 const SMALL_VIEWPORT = { width: 900, height: 600 }
 
@@ -27,14 +17,20 @@ const RAPID_RESIZE_STEPS = [
   { width: 1100, height: 700 },
   { width: 1600, height: 900 },
   { width: 1300, height: 800 },
-  // Deliberately end on LARGE_VIEWPORT so the final state matches the
-  // viewport used by the single-resize tests above.
+  // Ends on LARGE_VIEWPORT to match the single-resize tests' final viewport.
   { width: 1920, height: 1080 }
 ]
 
 test.describe(
   'DOM widget alignment across viewport resize',
-  { tag: ['@widget', '@canvas'] },
+  {
+    tag: ['@widget', '@canvas'],
+    annotation: {
+      type: 'issue',
+      description:
+        'DESK2-146: stale DOM widget overlay after an Electron window resize. Repros only in Electron, not a browser tab, so this suite is a regression guard for the underlying resize-sync code paths.'
+    }
+  },
   () => {
     test('single-node DOM widget stays aligned with its node after one viewport resize', async ({
       comfyPage
@@ -115,15 +111,8 @@ test.describe(
         await comfyPage.workflow.loadWorkflow('widgets/multiline_single_node')
         await comfyPage.vueNodes.waitForNodes()
 
-        // Vue Nodes renders the widget as a plain child of the node's own DOM
-        // tree rather than the `.dom-widget` canvas-position overlay used in
-        // Classic/LiteGraph mode. That means the browser propagates the
-        // node's CSS transform to the widget for free on resize, so checking
-        // the widget against the canvas transform (like the Classic-mode
-        // tests above) would always pass by CSS cascade and never actually
-        // exercise anything. What can regress instead is the widget's
-        // position relative to its own parent node element, so that's the
-        // invariant asserted here.
+        // Vue Nodes widgets are plain DOM children of their node, so CSS
+        // keeps them attached on resize -- assert relative offset instead.
         const node = comfyPage.vueNodes.getNodeLocator('1')
         const widget = node.getByRole('textbox')
         await expect(widget).toBeVisible()

@@ -1,12 +1,8 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
-/**
- * Fresh (non-reactive) read of the canvas element's on-screen position plus
- * litegraph's current pan/zoom. Unlike the Vue-side position conversion used
- * to style `.dom-widget` overlays, this always reflects the DOM as it is
- * right now.
- */
+// Direct DOM read of the canvas's position + pan/zoom, unlike the reactive
+// Vue-side conversion used to style `.dom-widget` overlays.
 interface CanvasTransform {
   rectLeft: number
   rectTop: number
@@ -22,13 +18,8 @@ interface ClientRect {
   height: number
 }
 
-/**
- * Intentionally independent from useCanvasPositionConversion -- importing it
- * would make the test tautological (same formula, always agrees with
- * production).
- */
-
-/** Converts a client-space (viewport) rect into litegraph canvas-space units. */
+// Reimplements the projection math instead of importing
+// useCanvasPositionConversion, so it can't tautologically agree with prod.
 function toCanvasSpace(
   rect: ClientRect,
   transform: CanvasTransform
@@ -41,7 +32,6 @@ function toCanvasSpace(
   }
 }
 
-/** Converts a litegraph canvas-space rect back into client-space (viewport) units. */
 function toClientSpace(
   rect: ClientRect,
   transform: CanvasTransform
@@ -54,11 +44,6 @@ function toClientSpace(
   }
 }
 
-/**
- * Largest per-axis discrepancy between two client-space rects, in CSS pixels.
- * Used to assert a DOM widget overlay is still visually aligned with the
- * node it belongs to after the canvas transform changes.
- */
 function maxRectDeviation(a: ClientRect, b: ClientRect): number {
   return Math.max(
     Math.abs(a.x - b.x),
@@ -68,12 +53,8 @@ function maxRectDeviation(a: ClientRect, b: ClientRect): number {
   )
 }
 
-/**
- * Predicts where a DOM widget overlay should render given its rect under a
- * previous canvas transform and the current one. The widget's node hasn't
- * moved in canvas space, so re-projecting through the live transform gives
- * ground truth for where the overlay belongs right now.
- */
+// The node hasn't moved in canvas space, so re-projecting its previous rect
+// through the current transform gives ground truth for where it belongs now.
 function predictClientRect(
   previousClientRect: ClientRect,
   previousTransform: CanvasTransform,
@@ -98,12 +79,8 @@ export async function snapshotDomWidget(
   if (!widgetHandle) {
     throw new Error('Expected locator to have a visible bounding box')
   }
-  // Read the widget's rect and the canvas transform inside a single
-  // page.evaluate() call so both values are captured from the same JS
-  // microtask/frame. Two separate CDP round trips -- even fired concurrently
-  // via Promise.all -- can straddle an animation frame boundary and end up
-  // describing two different moments in time, which would make the
-  // predicted rect below latently flaky.
+  // Single evaluate() call so both reads land in the same frame -- two
+  // separate CDP round trips can straddle a frame boundary and go stale.
   return page.evaluate((widgetEl) => {
     const rect = widgetEl.getBoundingClientRect()
     const canvasEl = window.app!.canvas.canvas
@@ -129,15 +106,8 @@ export async function snapshotDomWidget(
 
 const DEFAULT_ALIGNMENT_TOLERANCE_PX = 2
 
-/**
- * Asserts a DOM widget overlay is still rendered exactly where its node's
- * (unmoved) canvas position projects to under the current canvas transform.
- * `before` should come from `snapshotDomWidget()` taken prior to whatever
- * changed the canvas transform (a resize, pan, or zoom).
- *
- * Uses `expect.poll` so ordinary async re-render latency isn't mistaken for
- * misalignment — only a deviation that persists past the poll timeout fails.
- */
+// expect.poll so ordinary async re-render latency isn't mistaken for
+// misalignment -- only a deviation that persists past the timeout fails.
 export async function expectDomWidgetAlignedAfterTransformChange(
   page: Page,
   widgetLocator: Locator,
@@ -168,16 +138,8 @@ interface RelativeOffset {
   y: number
 }
 
-/**
- * In Vue Nodes mode a widget is a plain CSS child of its node's own DOM
- * element (not a canvas-position overlay like Classic/LiteGraph's
- * `.dom-widget`), so the browser keeps it visually attached to the node for
- * free whenever the node's transform changes -- checking the widget against
- * the canvas transform (as `expectDomWidgetAlignedAfterTransformChange` does
- * for the overlay case) would always pass by CSS cascade and never actually
- * exercise anything. What *can* regress is the node/widget's position
- * relative to one another, so that's what this measures.
- */
+// Vue Nodes widgets are plain DOM children of their node (not a
+// canvas-position overlay), so CSS keeps them attached on resize for free.
 async function relativeOffset(
   nodeLocator: Locator,
   widgetLocator: Locator
@@ -195,10 +157,6 @@ async function relativeOffset(
   }, nodeHandle)
 }
 
-/**
- * Snapshot of a Vue Nodes widget's position relative to its parent node
- * element, for use with `expectRelativeOffsetUnchanged`.
- */
 export async function snapshotRelativeOffset(
   nodeLocator: Locator,
   widgetLocator: Locator
@@ -206,14 +164,8 @@ export async function snapshotRelativeOffset(
   return relativeOffset(nodeLocator, widgetLocator)
 }
 
-/**
- * Asserts a Vue Nodes widget's position relative to its parent node element
- * hasn't drifted from `before` (a snapshot taken via `snapshotRelativeOffset`
- * prior to whatever changed the node's layout, e.g. a viewport resize).
- *
- * Uses `expect.poll` so ordinary async re-render latency isn't mistaken for
- * misalignment -- only a deviation that persists past the poll timeout fails.
- */
+// expect.poll so ordinary async re-render latency isn't mistaken for
+// misalignment -- only a deviation that persists past the timeout fails.
 export async function expectRelativeOffsetUnchanged(
   nodeLocator: Locator,
   widgetLocator: Locator,
