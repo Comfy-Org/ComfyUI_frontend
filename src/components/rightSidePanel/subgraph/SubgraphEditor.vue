@@ -67,7 +67,7 @@ const activeNode = computed(() => {
 const promotedRows = shallowRef<readonly PromotedRow[]>([])
 function buildPromotedRows(node: SubgraphNode): PromotedRow[] {
   return node.inputs.flatMap((input): PromotedRow[] => {
-    const widget = promotedInputWidget(input)
+    const widget = promotedInputWidget(node, input)
     if (!widget) return []
     const source = promotedInputSource(node, input)
     if (!source) return []
