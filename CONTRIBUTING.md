@@ -267,9 +267,14 @@ The original litegraph repository (https://github.com/Comfy-Org/litegraph.js) is
    - `test:` for test additions/changes
    - `chore:` for maintenance tasks
 5. **Draft PRs**: Mark as Draft if not ready for review
-6. **Assign Reviewer**: When ready, set one person as `Assignee` — they'll receive a Slack notification. Use git blame and context to pick someone relevant.
-7. **Re-review**: After addressing comments, re-assign to the reviewer (and optionally ping them in Slack)
-8. **Merging**: Merge once all `Assignees` have approved and you feel all comments are addressed. Don't wait for non-assignee approvals unless they've added themselves as `Assignee`.
+6. **Assign Reviewer**: When ready, set one person as `Assignee` — they'll
+   receive a Slack notification. Use git blame and context to pick someone
+   relevant.
+7. **Re-review**: After addressing comments, re-assign to the reviewer
+   (and optionally ping them in Slack)
+8. **Merging**: Merge once all `Assignees` have approved and you feel all
+   comments are addressed. Don't wait for non-assignee approvals unless
+   they've added themselves as `Assignee`.
 9. **Auto-merge**: Only enable after full approvals, not while waiting
 
 ### Comment Types
@@ -303,10 +308,12 @@ Deferred work must have a tracking issue — implicit deferrals are not allowed.
 ### Review Process
 
 1. All PRs require at least one review
-2. Address review feedback promptly (reviewers should respond within 24 hours or reassign)
+2. Address review feedback promptly (reviewers should respond within 24
+   hours or reassign)
 3. Keep PRs focused - one feature/fix per PR
 4. Large features should be discussed in an issue first
-5. For extended discussions or potential huddles, post the PR link in `#frontend-code-reviews`
+5. For extended discussions or potential huddles, post the PR link in
+   `#frontend-code-reviews`
 
 ### Reviewer Decision Guide
 
@@ -332,7 +339,8 @@ Starting PR Review
 2. Create a huddle or schedule a live review for complex discussions
 3. Escalate to team leads if discussion goes in circles
 4. Document recurring style conflicts in Coderabbit config or `CLAUDE.md`
-5. Defer to the author for pure personal preference items (but don't mislabel technical decisions as preference)
+5. Defer to the author for pure personal preference items (but don't
+   mislabel technical decisions as preference)
 
 ## Questions?
 
