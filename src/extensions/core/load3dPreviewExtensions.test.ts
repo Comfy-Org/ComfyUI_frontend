@@ -348,20 +348,30 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     const { splatExt } = await loadExtensionsFresh()
     const load3d = makeLoad3dMock()
     const cameraState = { position: { x: 1, y: 2, z: 3 } }
-    load3d.getCameraState = vi.fn(() => cameraState)
-    load3d.getModelInfo = vi.fn(() => ({
+    const modelInfo = {
       position: { x: 0, y: 0, z: 0 },
       quaternion: { x: 0, y: 0, z: 0, w: 1 },
       scale: { x: 1, y: 1, z: 1 }
-    }))
+    }
+    load3d.getCameraState = vi.fn(() => cameraState)
+    load3d.getModelInfo = vi.fn(() => modelInfo)
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(load3d)
     )
     const sceneWidget: FakeWidget & {
       serializeValue?: () => Promise<unknown>
     } = { name: 'viewport_state', value: '' }
+    const properties = {
+      'Camera Config': {
+        cameraType: 'perspective',
+        state: { position: { x: 9, y: 8, z: 7 } }
+      },
+      'Model Config': { materialMode: 'wireframe' }
+    }
+    const propertiesBeforeSerialization = structuredClone(properties)
     const node = makePreviewNode({
-      widgets: [{ name: 'model_file', value: '' }, sceneWidget]
+      widgets: [{ name: 'model_file', value: '' }, sceneWidget],
+      properties
     })
     nodeToLoad3dMapMock.set(node, load3d)
 
@@ -373,7 +383,8 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
       model_3d_info: unknown[]
     }
     expect(payload.camera_info).toEqual(cameraState)
-    expect(payload.model_3d_info).toHaveLength(1)
+    expect(payload.model_3d_info).toEqual([modelInfo])
+    expect(node.properties).toEqual(propertiesBeforeSerialization)
   })
 
   it('shows an error toast when onExecuted has no file path', async () => {

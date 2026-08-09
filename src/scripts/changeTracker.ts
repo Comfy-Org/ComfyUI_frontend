@@ -87,6 +87,39 @@ const nonExecutionSlotProperties = new Set([
 const nonExecutionBoundaryNodeProperties = new Set(['bounding', 'pinned'])
 const nonExecutableNodeTypes = new Set(['Note', 'MarkdownNote'])
 
+const nonExecution3dUploadProperties = new Set(['Resource Folder'])
+const nonExecution3dAdvancedProperties = new Set([
+  ...nonExecution3dUploadProperties,
+  'Light Config'
+])
+const nonExecution3dAdvancedResultProperties = new Set([
+  ...nonExecution3dAdvancedProperties,
+  'Last Time Model File'
+])
+const nonExecution3dPreviewProperties = new Set([
+  ...nonExecution3dAdvancedResultProperties,
+  'Camera Config',
+  'Scene Config',
+  'Model Config'
+])
+const nonExecutionSaveGlbProperties = new Set([
+  ...nonExecution3dPreviewProperties,
+  'Last Time Model Folder'
+])
+
+const nonExecution3dPropertiesByNodeType = new Map([
+  ['Load3D', nonExecution3dUploadProperties],
+  ['Load3DAdvanced', nonExecution3dAdvancedProperties],
+  ['Preview3D', nonExecution3dPreviewProperties],
+  ['SaveGLB', nonExecutionSaveGlbProperties],
+  ['Preview3DAdvanced', nonExecution3dAdvancedResultProperties],
+  ['Save3DAdvanced', nonExecution3dAdvancedResultProperties],
+  ['PreviewGaussianSplat', nonExecution3dAdvancedResultProperties],
+  ['PreviewPointCloud', nonExecution3dAdvancedResultProperties],
+  ['SaveGaussianSplat', nonExecution3dAdvancedResultProperties],
+  ['SavePointCloud', nonExecution3dAdvancedResultProperties]
+])
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -109,11 +142,26 @@ function getExecutionSlotState(value: unknown): unknown {
   return slot ? omitProperties(slot, nonExecutionSlotProperties) : value
 }
 
+function getExecutionNodePropertiesState(node: Record<string, unknown>) {
+  const properties = asRecord(node.properties)
+  const ignoredProperties =
+    typeof node.type === 'string'
+      ? nonExecution3dPropertiesByNodeType.get(node.type)
+      : undefined
+
+  return properties && ignoredProperties
+    ? omitProperties(properties, ignoredProperties)
+    : node.properties
+}
+
 function getExecutionNodeState(value: unknown): unknown {
   const node = asRecord(value)
   if (!node) return value
 
   const executionNode = omitProperties(node, nonExecutionNodeProperties)
+  if ('properties' in node) {
+    executionNode.properties = getExecutionNodePropertiesState(node)
+  }
   if ('id' in node) {
     executionNode.id = normalizeNodeId(node.id)
   }

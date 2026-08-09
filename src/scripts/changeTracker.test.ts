@@ -590,6 +590,278 @@ describe('ChangeTracker', () => {
         expectAutoQueueGraphChangedNotDispatched()
       })
 
+      describe('3D presentation state', () => {
+        const advancedResultNodeTypes = [
+          'Preview3DAdvanced',
+          'Save3DAdvanced',
+          'PreviewGaussianSplat',
+          'PreviewPointCloud',
+          'SaveGaussianSplat',
+          'SavePointCloud'
+        ]
+        const previewProperties = {
+          'Camera Config': {
+            cameraType: 'perspective',
+            fov: 35,
+            state: { position: { x: 0, y: 0, z: 1 } }
+          },
+          'Light Config': { intensity: 1 },
+          'Scene Config': {
+            showGrid: true,
+            backgroundColor: '#000000'
+          },
+          'Model Config': {
+            upDirection: 'original',
+            materialMode: 'original',
+            showSkeleton: false
+          },
+          'Resource Folder': 'models',
+          'Last Time Model File': 'preview.glb'
+        }
+        const updatedPreviewProperties = {
+          'Camera Config': {
+            cameraType: 'orthographic',
+            fov: 50,
+            state: { position: { x: 1, y: 2, z: 3 } }
+          },
+          'Light Config': { intensity: 2 },
+          'Scene Config': {
+            showGrid: false,
+            backgroundColor: '#ffffff'
+          },
+          'Model Config': {
+            upDirection: '+z',
+            materialMode: 'wireframe',
+            showSkeleton: true
+          },
+          'Resource Folder': 'updated-models',
+          'Last Time Model File': 'updated-preview.glb'
+        }
+        const advancedProperties = {
+          'Light Config': { intensity: 1 },
+          'Resource Folder': 'models',
+          'Last Time Model File': 'preview.glb'
+        }
+        const updatedAdvancedProperties = {
+          'Light Config': { intensity: 2 },
+          'Resource Folder': 'updated-models',
+          'Last Time Model File': 'updated-preview.glb'
+        }
+        const presentationOnlyCases = [
+          {
+            nodeType: 'Load3D',
+            added: { 'Resource Folder': 'models' },
+            updated: { 'Resource Folder': 'updated-models' }
+          },
+          {
+            nodeType: 'Load3DAdvanced',
+            added: {
+              'Light Config': { intensity: 1 },
+              'Resource Folder': 'models'
+            },
+            updated: {
+              'Light Config': { intensity: 2 },
+              'Resource Folder': 'updated-models'
+            }
+          },
+          {
+            nodeType: 'Preview3D',
+            added: previewProperties,
+            updated: updatedPreviewProperties
+          },
+          {
+            nodeType: 'SaveGLB',
+            added: {
+              ...previewProperties,
+              'Last Time Model Folder': 'output'
+            },
+            updated: {
+              ...updatedPreviewProperties,
+              'Last Time Model Folder': 'temp'
+            }
+          },
+          ...advancedResultNodeTypes.map((nodeType) => ({
+            nodeType,
+            added: advancedProperties,
+            updated: updatedAdvancedProperties
+          }))
+        ]
+
+        it.each(presentationOnlyCases)(
+          'ignores $nodeType presentation property addition and mutation',
+          ({ nodeType, added, updated }) => {
+            const initial = createState(1)
+            initial.nodes[0].type = nodeType
+            initial.nodes[0].properties = {
+              'Node name for S&R': nodeType
+            }
+            const tracker = createTracker(initial)
+
+            const addedState = structuredClone(initial)
+            Object.assign(addedState.nodes[0].properties, added)
+            mockCanvasState(addedState)
+            tracker.captureCanvasState()
+
+            expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+              'graphChanged',
+              addedState
+            )
+            expectAutoQueueGraphChangedNotDispatched()
+
+            vi.mocked(api.dispatchCustomEvent).mockClear()
+            const updatedState = structuredClone(addedState)
+            Object.assign(updatedState.nodes[0].properties, updated)
+            mockCanvasState(updatedState)
+            tracker.captureCanvasState()
+
+            expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+              'graphChanged',
+              updatedState
+            )
+            expectAutoQueueGraphChangedNotDispatched()
+
+            vi.mocked(api.dispatchCustomEvent).mockClear()
+            const executionChanged = structuredClone(updatedState)
+            executionChanged.nodes[0].properties['Node name for S&R'] =
+              `${nodeType} changed`
+            mockCanvasState(executionChanged)
+            tracker.captureCanvasState()
+
+            expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+              'autoQueueGraphChanged'
+            )
+          }
+        )
+
+        it('ignores deletion of Preview3D presentation state', () => {
+          const initial = createState(1)
+          initial.nodes[0].type = 'Preview3D'
+          initial.nodes[0].properties['Camera Config'] = {
+            state: { position: { x: 1, y: 2, z: 3 } }
+          }
+          const tracker = createTracker(initial)
+          const changed = structuredClone(initial)
+          delete changed.nodes[0].properties['Camera Config']
+          mockCanvasState(changed)
+
+          tracker.captureCanvasState()
+
+          expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+            'graphChanged',
+            changed
+          )
+          expectAutoQueueGraphChangedNotDispatched()
+        })
+
+        it.each([
+          {
+            property: 'Camera Config',
+            initialValue: {
+              cameraType: 'perspective',
+              fov: 35,
+              state: { position: { x: 0, y: 0, z: 1 } }
+            },
+            updatedValue: {
+              cameraType: 'perspective',
+              fov: 35,
+              state: { position: { x: 1, y: 2, z: 3 } }
+            }
+          },
+          {
+            property: 'Scene Config',
+            initialValue: { showGrid: true, backgroundColor: '#000000' },
+            updatedValue: { showGrid: false, backgroundColor: '#ffffff' }
+          },
+          {
+            property: 'Light Config',
+            initialValue: { intensity: 1 },
+            updatedValue: { intensity: 2 }
+          },
+          {
+            property: 'Model Config',
+            initialValue: { materialMode: 'original' },
+            updatedValue: { materialMode: 'wireframe' }
+          }
+        ])(
+          'keeps Load3D $property execution-relevant',
+          ({ property, initialValue, updatedValue }) => {
+            const initial = createState(1)
+            initial.nodes[0].type = 'Load3D'
+            initial.nodes[0].properties[property] = initialValue
+            const tracker = createTracker(initial)
+            const changed = structuredClone(initial)
+            changed.nodes[0].properties[property] = updatedValue
+            mockCanvasState(changed)
+
+            tracker.captureCanvasState()
+
+            expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+              'autoQueueGraphChanged'
+            )
+          }
+        )
+
+        it.each(['Load3DAdvanced', ...advancedResultNodeTypes])(
+          'keeps %s camera and model state execution-relevant',
+          (nodeType) => {
+            const initial = createState(1)
+            initial.nodes[0].type = nodeType
+            initial.nodes[0].properties = {
+              'Camera Config': {
+                state: { position: { x: 0, y: 0, z: 1 } }
+              },
+              'Model Config': {
+                gizmo: { position: { x: 0, y: 0, z: 0 } }
+              }
+            }
+            const tracker = createTracker(initial)
+            const cameraChanged = structuredClone(initial)
+            cameraChanged.nodes[0].properties['Camera Config'] = {
+              state: { position: { x: 1, y: 2, z: 3 } }
+            }
+            mockCanvasState(cameraChanged)
+
+            tracker.captureCanvasState()
+
+            expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+              'autoQueueGraphChanged'
+            )
+
+            vi.mocked(api.dispatchCustomEvent).mockClear()
+            const modelChanged = structuredClone(cameraChanged)
+            modelChanged.nodes[0].properties['Model Config'] = {
+              gizmo: { position: { x: 1, y: 0, z: 0 } }
+            }
+            mockCanvasState(modelChanged)
+
+            tracker.captureCanvasState()
+
+            expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+              'autoQueueGraphChanged'
+            )
+          }
+        )
+
+        it('keeps matching properties execution-relevant for non-core nodes', () => {
+          const initial = createState(1)
+          initial.nodes[0].properties['Camera Config'] = {
+            state: { position: { x: 0, y: 0, z: 1 } }
+          }
+          const tracker = createTracker(initial)
+          const changed = structuredClone(initial)
+          changed.nodes[0].properties['Camera Config'] = {
+            state: { position: { x: 1, y: 2, z: 3 } }
+          }
+          mockCanvasState(changed)
+
+          tracker.captureCanvasState()
+
+          expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+            'autoQueueGraphChanged'
+          )
+        })
+      })
+
       it('does not dispatch a graph change for the canvas viewport', () => {
         const initial = createState(1)
         const tracker = createTracker(initial)

@@ -96,7 +96,7 @@ useExtensionService().registerExtension({
           console.error('No load3d instance found for node')
           return null
         }
-        return snapshotLoad3dState(node, currentLoad3d)
+        return snapshotLoad3dState(currentLoad3d)
       }
     })
   }

@@ -856,7 +856,15 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
   it('serializeValue returns live camera_info plus empty media fields, omitting model_3d_info when none', async () => {
     const { preview3DAdvancedExt } = await loadExtensionsFresh()
     const widgets: FakeWidget[] = [{ name: 'viewport_state', value: '' }]
-    const node = makePreview3DAdvancedNode({ widgets })
+    const properties = {
+      'Camera Config': {
+        cameraType: 'orthographic',
+        state: { position: [9, 8, 7], target: [0, 0, 0] }
+      },
+      'Model Config': { materialMode: 'wireframe' }
+    }
+    const propertiesBeforeSerialization = structuredClone(properties)
+    const node = makePreview3DAdvancedNode({ widgets, properties })
 
     const load3d = makeLoad3dMock()
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
@@ -875,6 +883,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
       recording: '',
       model_3d_info: []
     })
+    expect(node.properties).toEqual(propertiesBeforeSerialization)
   })
 
   it('serializeValue wraps a present getModelInfo result in a single-element list', async () => {
@@ -1165,6 +1174,8 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
     await load3DExt.nodeCreated(node)
     const serialize = widgets[3].serializeValue! as () => Promise<{
       image: string
+      camera_info: unknown
+      model_3d_info: unknown[]
     } | null>
 
     return { node, serialize, uploadTempImage, useLoad3dModule }
@@ -1195,6 +1206,24 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
     const refreshed = await serialize()
     expect(uploadTempImage).toHaveBeenCalledTimes(6)
     expect(refreshed?.image).toBe('threed/scene-4.png [temp]')
+  })
+
+  it('does not mutate Camera Config after the workflow snapshot is captured', async () => {
+    const { node, serialize } = await setup()
+    node.properties = {
+      'Camera Config': {
+        cameraType: 'orthographic',
+        state: { position: { x: 9, y: 8, z: 7 } }
+      },
+      'Node name for S&R': 'Load3D'
+    }
+    const workflowProperties = structuredClone(node.properties)
+
+    const payload = await serialize()
+
+    expect(payload?.camera_info).toEqual({ position: { x: 0, y: 0, z: 0 } })
+    expect(payload?.model_3d_info).toEqual([])
+    expect(node.properties).toEqual(workflowProperties)
   })
 
   it('returns null when no load3d instance is registered for the node', async () => {

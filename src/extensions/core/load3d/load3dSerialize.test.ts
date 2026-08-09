@@ -3,11 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import type { CameraState } from '@/extensions/core/load3d/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-
-function makeNode(props: Record<string, unknown> = {}): LGraphNode {
-  return { properties: { ...props } } as unknown as LGraphNode
-}
 
 const baseCameraState: CameraState = {
   position: { x: 1, y: 2, z: 3 },
@@ -17,18 +12,14 @@ const baseCameraState: CameraState = {
 } as unknown as CameraState
 
 function makeLoad3d({
-  cameraType = 'perspective',
-  fov = 35,
+  cameraState = baseCameraState,
   modelInfo = { transform: { position: [0, 0, 0] } } as unknown
 }: {
-  cameraType?: string
-  fov?: number
+  cameraState?: CameraState
   modelInfo?: unknown
 } = {}) {
   return {
-    getCurrentCameraType: vi.fn(() => cameraType),
-    cameraManager: { perspectiveCamera: { fov } },
-    getCameraState: vi.fn(() => baseCameraState),
+    getCameraState: vi.fn(() => cameraState),
     stopRecording: vi.fn(),
     getModelInfo: vi.fn(() => modelInfo)
   } as unknown as Load3d
@@ -36,52 +27,34 @@ function makeLoad3d({
 
 describe('snapshotLoad3dState', () => {
   it('returns only camera_info and model_3d_info', () => {
-    const result = snapshotLoad3dState(makeNode(), makeLoad3d())
+    const result = snapshotLoad3dState(makeLoad3d())
     expect(Object.keys(result).sort()).toEqual(['camera_info', 'model_3d_info'])
   })
 
-  it('writes the camera state into properties["Camera Config"]', () => {
-    const node = makeNode()
-    snapshotLoad3dState(node, makeLoad3d({ fov: 42 }))
-    const cfg = node.properties['Camera Config'] as Record<string, unknown>
-    expect(cfg).toMatchObject({
-      cameraType: 'perspective',
-      fov: 42,
-      state: baseCameraState
-    })
-  })
+  it('returns the current camera state as camera_info', () => {
+    const cameraState = {
+      ...baseCameraState,
+      position: { x: 4, y: 5, z: 6 }
+    } as unknown as CameraState
+    const result = snapshotLoad3dState(makeLoad3d({ cameraState }))
 
-  it('preserves an existing Camera Config object instead of replacing it', () => {
-    const existing = { cameraType: 'orthographic', fov: 99 }
-    const node = makeNode({ 'Camera Config': existing })
-    snapshotLoad3dState(node, makeLoad3d())
-    // Same object reference (mutated in place), with state attached.
-    expect(node.properties['Camera Config']).toBe(existing)
-    expect(
-      (node.properties['Camera Config'] as Record<string, unknown>).state
-    ).toBe(baseCameraState)
+    expect(result.camera_info).toBe(cameraState)
   })
 
   it('stops in-progress recording as a side effect', () => {
     const load3d = makeLoad3d()
-    snapshotLoad3dState(makeNode(), load3d)
+    snapshotLoad3dState(load3d)
     expect(load3d.stopRecording).toHaveBeenCalledOnce()
   })
 
   it('returns model_3d_info as a single-element list when a model is loaded', () => {
     const info = { transform: { position: [1, 2, 3] } }
-    const result = snapshotLoad3dState(
-      makeNode(),
-      makeLoad3d({ modelInfo: info })
-    )
+    const result = snapshotLoad3dState(makeLoad3d({ modelInfo: info }))
     expect(result.model_3d_info).toEqual([info])
   })
 
   it('returns an empty model_3d_info list when no model is loaded', () => {
-    const result = snapshotLoad3dState(
-      makeNode(),
-      makeLoad3d({ modelInfo: null })
-    )
+    const result = snapshotLoad3dState(makeLoad3d({ modelInfo: null }))
     expect(result.model_3d_info).toEqual([])
   })
 })
