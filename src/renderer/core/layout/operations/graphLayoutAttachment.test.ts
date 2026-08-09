@@ -15,15 +15,15 @@ import {
   moveLayout,
   resizeLayout,
   setBoundsLayout,
-  transferLayoutRegistration,
-  unregisterAllGraphLayout
-} from '@/renderer/core/layout/operations/graphLayoutRegistration'
+  detachAllGraphLayout,
+  transferLayoutAttachment
+} from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LayoutChange } from '@/renderer/core/layout/types'
 import { toRerouteId } from '@/types/rerouteId'
 
-describe('graph layout registration contract', () => {
+describe('graph layout attachment contract', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -97,7 +97,7 @@ describe('graph layout registration contract', () => {
     expect(detachLayout(graph, 'reroute', reroute).result).toBe('no-op')
   })
 
-  it('mutations without local registration are silent no-ops', () => {
+  it('mutations without local attachment are silent no-ops', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')
     const group = new LGraphGroup('group')
@@ -205,15 +205,15 @@ describe('graph layout registration contract', () => {
     const replacement = new LGraphNode('replacement')
     replacement.id = node.id
 
-    expect(transferLayoutRegistration(unowned, replacement)).toBe('no-op')
-    expect(transferLayoutRegistration(node, node)).toBe('rejected')
-    expect(transferLayoutRegistration(node, replacement)).toBe('applied')
+    expect(transferLayoutAttachment(unowned, replacement)).toBe('no-op')
+    expect(transferLayoutAttachment(node, node)).toBe('rejected')
+    expect(transferLayoutAttachment(node, replacement)).toBe('applied')
     expect(node._layoutRegistered).toBe(false)
     expect(replacement._layoutRegistered).toBe(true)
     expect(replacement._geometryVersion).toBe(layoutStore.geometryVersion)
   })
 
-  it('batches bulk unregister into one operation batch and one notification per entity', async () => {
+  it('batches bulk detach into one operation batch and one notification per entity', async () => {
     const graph = new LGraph()
     addedNode(graph)
     addedGroup(graph)
@@ -224,7 +224,7 @@ describe('graph layout registration contract', () => {
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
     const applyOperations = vi.spyOn(layoutStore, 'applyOperations')
 
-    expect(unregisterAllGraphLayout(graph)).toBe('applied')
+    expect(detachAllGraphLayout(graph)).toBe('applied')
     await Promise.resolve()
 
     expect(applyOperation).not.toHaveBeenCalled()
@@ -315,9 +315,9 @@ describe('graph layout registration contract', () => {
     const node = addedNode(graph)
     const replacement = new LGraphNode('replacement')
     replacement.id = node.id
-    let reentrant: ReturnType<typeof transferLayoutRegistration> | undefined
+    let reentrant: ReturnType<typeof transferLayoutAttachment> | undefined
     const stop = layoutStore.onNodeChange(graph.id, node.id, () => {
-      reentrant ??= transferLayoutRegistration(node, replacement)
+      reentrant ??= transferLayoutAttachment(node, replacement)
     })
     onTestFinished(stop)
 

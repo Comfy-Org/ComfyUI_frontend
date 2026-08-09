@@ -8,7 +8,7 @@ import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotC
 import {
   moveLayout,
   resizeLayout
-} from '@/renderer/core/layout/operations/graphLayoutRegistration'
+} from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
 import { mintLinkId } from '@/types/idAllocation'

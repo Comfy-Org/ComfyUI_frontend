@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 
 function addedNode(graph: LGraph) {
   const node = new LGraphNode('widgets')

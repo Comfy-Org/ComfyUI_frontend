@@ -18,7 +18,7 @@ import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import {
   attachLayout,
   detachLayout
-} from '@/renderer/core/layout/operations/graphLayoutRegistration'
+} from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
@@ -341,7 +341,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
     expect(second.parentId).toBeUndefined()
   })
 
-  it('convertToSubgraph hands reroute registrations to the subgraph', () => {
+  it('convertToSubgraph hands reroute attachments to the subgraph', () => {
     const { graph, a, b, link } = connectedGraph()
     const store = useRerouteStore()
     const reroute = graph.createReroute([10, 10], link)!
@@ -513,7 +513,7 @@ describe('Reroute position lives only in layoutStore', () => {
       )
     onTestFinished(() => applyOperation.mockRestore())
 
-    expect(() => graph.configure(data, true)).toThrow(/registration rejected/)
+    expect(() => graph.configure(data, true)).toThrow(/attachment rejected/)
 
     expect(graph.reroutes.get(reroute.id)).toBeUndefined()
     expect(
@@ -521,7 +521,7 @@ describe('Reroute position lives only in layoutStore', () => {
     ).toBeUndefined()
   })
 
-  it('keeps constructor geometry transient until registration', () => {
+  it('keeps constructor geometry transient until attachment', () => {
     const graph = new LGraph()
     const reroute = new Reroute(toRerouteId(12), graph, [37, 41])
 
@@ -592,7 +592,7 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(firstGraph.reroutes.get(reroute.id)).toBe(reroute)
   })
 
-  it('rolls back chain ownership when layout registration fails', () => {
+  it('rolls back chain ownership when layout attachment fails', () => {
     const graph = new LGraph()
     const reroute = new Reroute(toRerouteId(16), graph, [10, 20])
     const applyOperation = vi
@@ -615,7 +615,7 @@ describe('Reroute position lives only in layoutStore', () => {
   })
 
   it.for(['rejected', 'no-op'] as const)(
-    'rejects ordinary attachment when layout registration is %s',
+    'rejects ordinary attachment when layout attachment is %s',
     (result) => {
       const graph = new LGraph()
       const reroute = new Reroute(toRerouteId(16), graph, [10, 20])
@@ -624,7 +624,7 @@ describe('Reroute position lives only in layoutStore', () => {
         .mockReturnValueOnce(result)
       onTestFinished(() => applyOperation.mockRestore())
 
-      expect(() => graph._addReroute(reroute)).toThrow(/registration/)
+      expect(() => graph._addReroute(reroute)).toThrow(/attachment/)
       expect(graph.reroutes.has(reroute.id)).toBe(false)
       expect(
         useRerouteStore().getReroute(graphScopeOf(graph), reroute.id)
@@ -1149,7 +1149,7 @@ describe('Reroute position lives only in layoutStore', () => {
     ).toEqual({ x: 30, y: 40 })
   })
 
-  it('clears subgraph reroute registrations when the root clears', () => {
+  it('clears subgraph reroute attachments when the root clears', () => {
     const root = new LGraph()
     const subgraph = createTestSubgraph({ rootGraph: root })
     root.subgraphs.set(subgraph.id, subgraph)

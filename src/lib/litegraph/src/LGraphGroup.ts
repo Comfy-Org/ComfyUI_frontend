@@ -1,5 +1,5 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
-import { setBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import { setBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toGroupId } from '@/types/groupId'
 import type { GroupId } from '@/types/groupId'

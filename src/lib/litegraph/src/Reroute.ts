@@ -1,7 +1,7 @@
 import {
-  isLayoutRegistered,
+  hasLayoutAttachment,
   moveLayout
-} from '@/renderer/core/layout/operations/graphLayoutRegistration'
+} from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
@@ -139,7 +139,7 @@ export class Reroute
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
 
-    if (!this._graphScope || !isLayoutRegistered(this)) {
+    if (!this._graphScope || !hasLayoutAttachment(this)) {
       this.position[0] = value[0]
       this.position[1] = value[1]
       return
@@ -169,7 +169,7 @@ export class Reroute
   }
 
   private get storedPosition(): Readonly<LayoutPoint> {
-    if (!isLayoutRegistered(this)) {
+    if (!hasLayoutAttachment(this)) {
       return { x: this.position[0], y: this.position[1] }
     }
     return (

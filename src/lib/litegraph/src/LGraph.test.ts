@@ -19,7 +19,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
-import { transferLayoutRegistration } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import { transferLayoutAttachment } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import {
   adoptNodeReplacement,
   LGraph,
@@ -573,7 +573,7 @@ describe('node:before-removed event', () => {
     ])
   })
 
-  it('fires node:added once the node is attached and registered', () => {
+  it('fires node:added once the node has a layout attachment', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
 
@@ -1787,7 +1787,7 @@ describe('Subgraph configure events', () => {
   })
 })
 
-describe('node layout registration', () => {
+describe('node layout attachment', () => {
   beforeEach(() => {
     layoutStore.resetForTests()
   })
@@ -1861,7 +1861,7 @@ describe('node layout registration', () => {
     ).toEqual({ x: 20, y: 30 })
   })
 
-  it('does not publish a node when layout registration is rejected', () => {
+  it('does not publish a node when layout attachment is rejected', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     const added = vi.fn()
@@ -1900,7 +1900,7 @@ describe('node layout registration', () => {
     ).not.toBeNull()
   })
 
-  it('transfers layout registration to a replacement node', () => {
+  it('transfers layout attachment to a replacement node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('old')
     node.pos = [120, 340]
@@ -1909,7 +1909,7 @@ describe('node layout registration', () => {
     replacement.id = node.id
     replacement.graph = graph
 
-    expect(transferLayoutRegistration(node, replacement)).toBe('applied')
+    expect(transferLayoutAttachment(node, replacement)).toBe('applied')
 
     replacement.pos = [220, 440]
     expect(
@@ -1933,9 +1933,9 @@ describe('node layout registration', () => {
     const nodes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('nodes')
     nodes.delete(`${graph.rootGraph.id}:${node.id}`)
 
-    expect(transferLayoutRegistration(node, replacement)).toBe('rejected')
+    expect(transferLayoutAttachment(node, replacement)).toBe('rejected')
     expect(() => adoptNodeReplacement(graph, node, replacement, 0)).toThrow(
-      'Node layout registration transfer rejected'
+      'Node layout attachment transfer rejected'
     )
     expect(graph.nodes).toEqual([node])
     expect(graph.getNodeById(node.id)).toBe(node)
@@ -1946,7 +1946,7 @@ describe('node layout registration', () => {
     ).toBeNull()
   })
 
-  it('restores layout registration when replacement removal lifecycle throws', () => {
+  it('restores layout attachment when replacement removal lifecycle throws', () => {
     const graph = new LGraph()
     const node = new LGraphNode('old')
     graph.add(node)

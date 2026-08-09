@@ -1,5 +1,5 @@
 /**
- * Layout registration for litegraph entities.
+ * Layout attachment for litegraph entities.
  *
  * Geometry joins and leaves the layout store with the entity that owns it, so
  * every attach/detach path — including bulk teardown — goes through these
@@ -30,49 +30,49 @@ type GraphLayoutOwner = Pick<
 >
 type LayoutGraph = { rootGraph: { id: UUID } }
 
-interface LayoutRegistration<TId> {
+interface LayoutAttachment<TId> {
   graphId: UUID
   id: TId
 }
 
-const nodeRegistrations = new WeakMap<
+const nodeAttachments = new WeakMap<
   LGraphNode,
-  LayoutRegistration<LGraphNode['id']>
+  LayoutAttachment<LGraphNode['id']>
 >()
-const groupRegistrations = new WeakMap<
+const groupAttachments = new WeakMap<
   LGraphGroup,
-  LayoutRegistration<LGraphGroup['id']>
+  LayoutAttachment<LGraphGroup['id']>
 >()
-const rerouteRegistrations = new WeakMap<
+const rerouteAttachments = new WeakMap<
   Reroute,
-  LayoutRegistration<Reroute['id']>
+  LayoutAttachment<Reroute['id']>
 >()
 
-interface TrackedNodeLayoutRegistration {
+interface TrackedNodeLayoutAttachment {
   entity: 'node'
   instance: LGraphNode
-  registration: LayoutRegistration<LGraphNode['id']>
+  attachment: LayoutAttachment<LGraphNode['id']>
   layout?: NonNullable<ReturnType<typeof layoutStore.getNodeLayoutRef>['value']>
 }
 
-interface TrackedGroupLayoutRegistration {
+interface TrackedGroupLayoutAttachment {
   entity: 'group'
   instance: LGraphGroup
-  registration: LayoutRegistration<LGraphGroup['id']>
+  attachment: LayoutAttachment<LGraphGroup['id']>
   layout?: NonNullable<ReturnType<typeof layoutStore.getGroupLayout>>
 }
 
-interface TrackedRerouteLayoutRegistration {
+interface TrackedRerouteLayoutAttachment {
   entity: 'reroute'
   instance: Reroute
-  registration: LayoutRegistration<Reroute['id']>
+  attachment: LayoutAttachment<Reroute['id']>
   layout?: NonNullable<ReturnType<typeof layoutStore.getRerouteLayout>>
 }
 
-type TrackedLayoutRegistration =
-  | TrackedNodeLayoutRegistration
-  | TrackedGroupLayoutRegistration
-  | TrackedRerouteLayoutRegistration
+type TrackedLayoutAttachment =
+  | TrackedNodeLayoutAttachment
+  | TrackedGroupLayoutAttachment
+  | TrackedRerouteLayoutAttachment
 
 /** Layout mutations attributed to the canvas, for direct delete calls. */
 export function canvasLayoutMutations() {
@@ -90,116 +90,112 @@ function canvasOperationMeta() {
   }
 }
 
-function trackNodeLayoutRegistration(
+function trackNodeLayoutAttachment(
   node: LGraphNode
-): TrackedNodeLayoutRegistration | undefined {
-  const registration = nodeRegistrations.get(node)
-  if (!registration) return
+): TrackedNodeLayoutAttachment | undefined {
+  const attachment = nodeAttachments.get(node)
+  if (!attachment) return
   const storedLayout = layoutStore.getNodeLayoutRef(
-    registration.graphId,
-    registration.id
+    attachment.graphId,
+    attachment.id
   ).value
   return {
     entity: 'node',
     instance: node,
     layout: storedLayout ?? undefined,
-    registration
+    attachment
   }
 }
 
-function trackGroupLayoutRegistration(
+function trackGroupLayoutAttachment(
   group: LGraphGroup
-): TrackedGroupLayoutRegistration | undefined {
-  const registration = groupRegistrations.get(group)
-  if (!registration) return
+): TrackedGroupLayoutAttachment | undefined {
+  const attachment = groupAttachments.get(group)
+  if (!attachment) return
   const storedLayout = layoutStore.getGroupLayout(
-    registration.graphId,
-    registration.id
+    attachment.graphId,
+    attachment.id
   )
   return {
     entity: 'group',
     instance: group,
     layout: storedLayout ?? undefined,
-    registration
+    attachment
   }
 }
 
-function trackRerouteLayoutRegistration(
+function trackRerouteLayoutAttachment(
   reroute: Reroute
-): TrackedRerouteLayoutRegistration | undefined {
-  const registration = rerouteRegistrations.get(reroute)
-  if (!registration) return
+): TrackedRerouteLayoutAttachment | undefined {
+  const attachment = rerouteAttachments.get(reroute)
+  if (!attachment) return
   const storedLayout = layoutStore.getRerouteLayout(
-    registration.graphId,
-    registration.id
+    attachment.graphId,
+    attachment.id
   )
   return {
     entity: 'reroute',
     instance: reroute,
     layout: storedLayout ?? undefined,
-    registration
+    attachment
   }
 }
 
-function trackAllGraphLayoutRegistrations(
+function trackAllGraphLayoutAttachments(
   graph: GraphLayoutOwner
-): TrackedLayoutRegistration[] {
-  const registrations: TrackedLayoutRegistration[] = []
+): TrackedLayoutAttachment[] {
+  const attachments: TrackedLayoutAttachment[] = []
   const visited = new Set<GraphLayoutOwner>()
   function track(owner: GraphLayoutOwner): void {
     if (visited.has(owner)) return
     visited.add(owner)
     for (const node of owner._nodes) {
-      const registration = trackNodeLayoutRegistration(node)
-      if (registration) registrations.push(registration)
+      const attachment = trackNodeLayoutAttachment(node)
+      if (attachment) attachments.push(attachment)
     }
     for (const group of owner._groups) {
-      const registration = trackGroupLayoutRegistration(group)
-      if (registration) registrations.push(registration)
+      const attachment = trackGroupLayoutAttachment(group)
+      if (attachment) attachments.push(attachment)
     }
     for (const reroute of owner.reroutes.values()) {
-      const registration = trackRerouteLayoutRegistration(reroute)
-      if (registration) registrations.push(registration)
+      const attachment = trackRerouteLayoutAttachment(reroute)
+      if (attachment) attachments.push(attachment)
     }
     for (const subgraph of owner._subgraphs.values()) track(subgraph)
   }
   track(graph)
-  return registrations
+  return attachments
 }
 
-function restoreLocalLayoutRegistration(
-  tracked: TrackedLayoutRegistration
-): void {
+function restoreLocalLayoutAttachment(tracked: TrackedLayoutAttachment): void {
   if (tracked.entity === 'node') {
-    nodeRegistrations.set(tracked.instance, tracked.registration)
+    nodeAttachments.set(tracked.instance, tracked.attachment)
     tracked.instance._layoutRegistered = true
     tracked.instance._geometryVersion = layoutStore.geometryVersion
   } else if (tracked.entity === 'group') {
-    groupRegistrations.set(tracked.instance, tracked.registration)
+    groupAttachments.set(tracked.instance, tracked.attachment)
   } else {
-    rerouteRegistrations.set(tracked.instance, tracked.registration)
+    rerouteAttachments.set(tracked.instance, tracked.attachment)
   }
 }
 
-function clearLocalLayoutRegistration(
-  tracked: TrackedLayoutRegistration
-): void {
+function clearLocalLayoutAttachment(tracked: TrackedLayoutAttachment): void {
   if (tracked.entity === 'node') {
-    nodeRegistrations.delete(tracked.instance)
+    nodeAttachments.delete(tracked.instance)
     tracked.instance._layoutRegistered = false
   } else if (tracked.entity === 'group') {
-    groupRegistrations.delete(tracked.instance)
+    groupAttachments.delete(tracked.instance)
   } else {
-    rerouteRegistrations.delete(tracked.instance)
+    rerouteAttachments.delete(tracked.instance)
   }
 }
 
 function createDeleteLayoutOperation(
-  tracked: TrackedLayoutRegistration,
+  tracked: TrackedLayoutAttachment,
   meta = canvasOperationMeta()
 ): LayoutOperation {
   if (tracked.entity === 'node') {
-    const { graphId, id } = tracked.registration
+    const { graphId, id } = tracked.attachment
     return {
       ...meta,
       entity: 'node',
@@ -209,7 +205,7 @@ function createDeleteLayoutOperation(
     }
   }
   if (tracked.entity === 'group') {
-    const { graphId, id } = tracked.registration
+    const { graphId, id } = tracked.attachment
     return {
       ...meta,
       entity: 'group',
@@ -218,7 +214,7 @@ function createDeleteLayoutOperation(
       type: 'deleteGroup'
     }
   }
-  const { graphId, id } = tracked.registration
+  const { graphId, id } = tracked.attachment
   return {
     ...meta,
     entity: 'reroute',
@@ -229,12 +225,12 @@ function createDeleteLayoutOperation(
 }
 
 function createRestoreLayoutOperation(
-  tracked: TrackedLayoutRegistration,
+  tracked: TrackedLayoutAttachment,
   meta = canvasOperationMeta()
 ): LayoutOperation | undefined {
   if (!tracked.layout) return
   if (tracked.entity === 'node') {
-    const { graphId, id } = tracked.registration
+    const { graphId, id } = tracked.attachment
     return {
       ...meta,
       entity: 'node',
@@ -245,7 +241,7 @@ function createRestoreLayoutOperation(
     }
   }
   if (tracked.entity === 'group') {
-    const { graphId, id } = tracked.registration
+    const { graphId, id } = tracked.attachment
     return {
       ...meta,
       entity: 'group',
@@ -255,7 +251,7 @@ function createRestoreLayoutOperation(
       type: 'createGroup'
     }
   }
-  const { graphId, id } = tracked.registration
+  const { graphId, id } = tracked.attachment
   return {
     ...meta,
     entity: 'reroute',
@@ -266,16 +262,14 @@ function createRestoreLayoutOperation(
   }
 }
 
-function restoreGraphLayoutRegistration(
-  tracked: TrackedLayoutRegistration
-): void {
+function restoreGraphLayoutAttachment(tracked: TrackedLayoutAttachment): void {
   const operation = createRestoreLayoutOperation(tracked)
   if (!operation) return
   try {
     if (layoutStore.applyOperation(operation) === 'applied')
-      restoreLocalLayoutRegistration(tracked)
+      restoreLocalLayoutAttachment(tracked)
   } catch (error) {
-    console.error('Failed to restore layout registration', error)
+    console.error('Failed to restore layout attachment', error)
   }
 }
 
@@ -285,28 +279,28 @@ export interface GraphLayoutDetach {
 }
 
 function createGraphLayoutDetach(
-  registration: TrackedLayoutRegistration | undefined,
-  unregister: () => LayoutOperationResult
+  attachment: TrackedLayoutAttachment | undefined,
+  detach: () => LayoutOperationResult
 ): GraphLayoutDetach {
-  const result = unregister()
+  const result = detach()
   return {
     result,
     restore() {
-      if (result === 'applied' && registration?.layout)
-        restoreGraphLayoutRegistration(registration)
+      if (result === 'applied' && attachment?.layout)
+        restoreGraphLayoutAttachment(attachment)
     }
   }
 }
 
-/** A newly attached node stacks above those already registered. */
-function registerNodeLayout(
+/** A newly attached node stacks above those already attached. */
+function attachNodeLayout(
   graph: LayoutGraph,
   node: LGraphNode
 ): LayoutOperationResult {
   const graphId = graph.rootGraph.id
-  const retained = nodeRegistrations.get(node)
+  const retained = nodeAttachments.get(node)
   if (retained) {
-    nodeRegistrations.delete(node)
+    nodeAttachments.delete(node)
     const cleanupResult = layoutStore.applyOperation({
       ...canvasOperationMeta(),
       entity: 'node',
@@ -315,14 +309,14 @@ function registerNodeLayout(
       type: 'deleteNode'
     })
     if (cleanupResult === 'rejected') {
-      nodeRegistrations.set(node, retained)
+      nodeAttachments.set(node, retained)
       return cleanupResult
     }
   }
 
   const position = { x: node._pos[0], y: node._pos[1] }
   const size = { width: node._size[0], height: node._size[1] }
-  nodeRegistrations.set(node, { graphId, id: node.id })
+  nodeAttachments.set(node, { graphId, id: node.id })
   let result: LayoutOperationResult
   try {
     result = layoutStore.applyOperation({
@@ -341,44 +335,44 @@ function registerNodeLayout(
       type: 'createNode'
     })
   } catch (error) {
-    nodeRegistrations.delete(node)
+    nodeAttachments.delete(node)
     throw error
   }
   if (result === 'applied') {
     node._layoutRegistered = true
     node._geometryVersion = layoutStore.geometryVersion
   } else {
-    nodeRegistrations.delete(node)
+    nodeAttachments.delete(node)
   }
   return result
 }
 
 function adoptExistingLayout(
   graphId: UUID,
-  registration:
+  attachment:
     | { entity: 'node'; id: LGraphNode['id']; instance: LGraphNode }
     | { entity: 'group'; id: LGraphGroup['id']; instance: LGraphGroup }
     | { entity: 'reroute'; id: Reroute['id']; instance: Reroute }
 ): LayoutOperationResult {
   const storedLayout =
-    registration.entity === 'node'
-      ? layoutStore.getNodeLayout(graphId, registration.id)
-      : registration.entity === 'group'
-        ? layoutStore.getGroupLayout(graphId, registration.id)
-        : layoutStore.getRerouteLayout(graphId, registration.id)
+    attachment.entity === 'node'
+      ? layoutStore.getNodeLayout(graphId, attachment.id)
+      : attachment.entity === 'group'
+        ? layoutStore.getGroupLayout(graphId, attachment.id)
+        : layoutStore.getRerouteLayout(graphId, attachment.id)
   if (!storedLayout) return 'no-op'
 
-  if (registration.entity === 'node') {
-    const { id, instance } = registration
-    nodeRegistrations.set(instance, { graphId, id })
+  if (attachment.entity === 'node') {
+    const { id, instance } = attachment
+    nodeAttachments.set(instance, { graphId, id })
     instance._layoutRegistered = true
     instance._geometryVersion = layoutStore.geometryVersion
-  } else if (registration.entity === 'group') {
-    const { id, instance } = registration
-    groupRegistrations.set(instance, { graphId, id })
+  } else if (attachment.entity === 'group') {
+    const { id, instance } = attachment
+    groupAttachments.set(instance, { graphId, id })
   } else {
-    const { id, instance } = registration
-    rerouteRegistrations.set(instance, { graphId, id })
+    const { id, instance } = attachment
+    rerouteAttachments.set(instance, { graphId, id })
   }
   return 'applied'
 }
@@ -407,7 +401,7 @@ export function attachLayout(
   ...[graph, entity, instance, options = {}]: AttachLayoutArgs
 ): LayoutOperationResult {
   if (entity === 'node' && '_layoutRegistered' in instance) {
-    const result = registerNodeLayout(graph, instance)
+    const result = attachNodeLayout(graph, instance)
     return result === 'no-op' &&
       'adoptExisting' in options &&
       options.adoptExisting
@@ -419,7 +413,7 @@ export function attachLayout(
       : result
   }
   if (entity === 'group' && '_nodes' in instance) {
-    const result = registerGroupLayout(graph, instance)
+    const result = attachGroupLayout(graph, instance)
     return result === 'no-op' &&
       'adoptExisting' in options &&
       options.adoptExisting
@@ -431,7 +425,7 @@ export function attachLayout(
       : result
   }
   if (entity === 'reroute' && 'position' in options && 'network' in instance) {
-    return registerRerouteLayout(graph, instance, options.position)
+    return attachRerouteLayout(graph, instance, options.position)
   }
   return 'rejected'
 }
@@ -445,40 +439,39 @@ export function detachLayout(
   ...[graph, entity, instance]: DetachLayoutArgs
 ): GraphLayoutDetach {
   if (entity === 'node' && '_layoutRegistered' in instance) {
-    return createGraphLayoutDetach(trackNodeLayoutRegistration(instance), () =>
-      unregisterNodeLayout(graph, instance)
+    return createGraphLayoutDetach(trackNodeLayoutAttachment(instance), () =>
+      detachNodeLayout(graph, instance)
     )
   }
   if (entity === 'group' && '_nodes' in instance) {
-    return createGraphLayoutDetach(trackGroupLayoutRegistration(instance), () =>
-      unregisterGroupLayout(graph, instance)
+    return createGraphLayoutDetach(trackGroupLayoutAttachment(instance), () =>
+      detachGroupLayout(graph, instance)
     )
   }
   if (entity === 'reroute' && 'network' in instance) {
-    return createGraphLayoutDetach(
-      trackRerouteLayoutRegistration(instance),
-      () => unregisterRerouteLayout(graph, instance)
+    return createGraphLayoutDetach(trackRerouteLayoutAttachment(instance), () =>
+      detachRerouteLayout(graph, instance)
     )
   }
   return createGraphLayoutDetach(undefined, () => 'rejected')
 }
 
-export function transferLayoutRegistration(
+export function transferLayoutAttachment(
   node: LGraphNode,
   replacement: LGraphNode
 ): LayoutOperationResult {
-  const registration = nodeRegistrations.get(node)
-  if (!registration) return 'no-op'
+  const attachment = nodeAttachments.get(node)
+  if (!attachment) return 'no-op'
   if (
-    nodeRegistrations.has(replacement) ||
-    registration.id !== replacement.id ||
-    !layoutStore.getNodeLayout(registration.graphId, registration.id)
+    nodeAttachments.has(replacement) ||
+    attachment.id !== replacement.id ||
+    !layoutStore.getNodeLayout(attachment.graphId, attachment.id)
   )
     return 'rejected'
 
-  nodeRegistrations.delete(node)
+  nodeAttachments.delete(node)
   node._layoutRegistered = false
-  nodeRegistrations.set(replacement, registration)
+  nodeAttachments.set(replacement, attachment)
   replacement._layoutRegistered = true
   replacement._geometryVersion = layoutStore.geometryVersion
   return 'applied'
@@ -495,47 +488,47 @@ export function materializeRerouteLayout(
   })
   if (adopted === 'applied') return adopted
 
-  return registerRerouteLayout(graph, reroute, {
+  return attachRerouteLayout(graph, reroute, {
     x: reroute.pos[0],
     y: reroute.pos[1]
   })
 }
 
 function moveNodeLayout(node: LGraphNode, position: Point): void {
-  const registration = nodeRegistrations.get(node)
-  if (!registration) return
+  const attachment = nodeAttachments.get(node)
+  if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'node',
-    graphId: registration.graphId,
-    nodeId: registration.id,
+    graphId: attachment.graphId,
+    nodeId: attachment.id,
     position,
     type: 'moveNode'
   })
 }
 
 export function resizeLayout(node: LGraphNode, size: Size): void {
-  const registration = nodeRegistrations.get(node)
-  if (!registration) return
+  const attachment = nodeAttachments.get(node)
+  if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'node',
-    graphId: registration.graphId,
-    nodeId: registration.id,
+    graphId: attachment.graphId,
+    nodeId: attachment.id,
     size,
     type: 'resizeNode'
   })
 }
 
-function unregisterNodeLayout(
+function detachNodeLayout(
   _graph: LayoutGraph,
   node: LGraphNode
 ): LayoutOperationResult {
-  const retainedRegistration = nodeRegistrations.get(node)
-  if (!retainedRegistration) return 'no-op'
-  const { graphId, id: nodeId } = retainedRegistration
+  const retainedAttachment = nodeAttachments.get(node)
+  if (!retainedAttachment) return 'no-op'
+  const { graphId, id: nodeId } = retainedAttachment
   layoutStore.readNodeRect(graphId, nodeId, node._posSize)
-  nodeRegistrations.delete(node)
+  nodeAttachments.delete(node)
   node._layoutRegistered = false
   const result = layoutStore.applyOperation({
     ...canvasOperationMeta(),
@@ -545,13 +538,13 @@ function unregisterNodeLayout(
     type: 'deleteNode'
   })
   if (result === 'rejected') {
-    nodeRegistrations.set(node, retainedRegistration)
+    nodeAttachments.set(node, retainedAttachment)
     node._layoutRegistered = true
   }
   return result
 }
 
-function registerGroupLayout(
+function attachGroupLayout(
   graph: LayoutGraph,
   group: LGraphGroup
 ): LayoutOperationResult {
@@ -564,21 +557,21 @@ function registerGroupLayout(
     }
   )
   if (result === 'applied')
-    groupRegistrations.set(group, {
+    groupAttachments.set(group, {
       graphId: graph.rootGraph.id,
       id: group.id
     })
   return result
 }
 
-function unregisterGroupLayout(
+function detachGroupLayout(
   _graph: LayoutGraph,
   group: LGraphGroup
 ): LayoutOperationResult {
-  const retainedRegistration = groupRegistrations.get(group)
-  if (!retainedRegistration) return 'no-op'
-  const { graphId, id: groupId } = retainedRegistration
-  groupRegistrations.delete(group)
+  const retainedAttachment = groupAttachments.get(group)
+  if (!retainedAttachment) return 'no-op'
+  const { graphId, id: groupId } = retainedAttachment
+  groupAttachments.delete(group)
   const result = layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'group',
@@ -586,7 +579,7 @@ function unregisterGroupLayout(
     groupId,
     type: 'deleteGroup'
   })
-  if (result === 'rejected') groupRegistrations.set(group, retainedRegistration)
+  if (result === 'rejected') groupAttachments.set(group, retainedAttachment)
   return result
 }
 
@@ -596,28 +589,28 @@ export function setBoundsLayout(
   position: Point,
   size: Size
 ): void {
-  const registration = groupRegistrations.get(group)
-  if (!registration) return
+  const attachment = groupAttachments.get(group)
+  if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'group',
-    graphId: registration.graphId,
-    groupId: registration.id,
+    graphId: attachment.graphId,
+    groupId: attachment.id,
     position,
     size,
     type: 'setGroupBounds'
   })
 }
 
-function unregisterRerouteLayout(
+function detachRerouteLayout(
   _graph: LayoutGraph,
   reroute: Reroute
 ): LayoutOperationResult {
-  const retainedRegistration = rerouteRegistrations.get(reroute)
-  if (!retainedRegistration) return 'no-op'
-  const { graphId, id: rerouteId } = retainedRegistration
+  const retainedAttachment = rerouteAttachments.get(reroute)
+  if (!retainedAttachment) return 'no-op'
+  const { graphId, id: rerouteId } = retainedAttachment
   syncReroutePositionFromLayout(reroute)
-  rerouteRegistrations.delete(reroute)
+  rerouteAttachments.delete(reroute)
   const result = layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'reroute',
@@ -625,12 +618,11 @@ function unregisterRerouteLayout(
     rerouteId,
     type: 'deleteReroute'
   })
-  if (result === 'rejected')
-    rerouteRegistrations.set(reroute, retainedRegistration)
+  if (result === 'rejected') rerouteAttachments.set(reroute, retainedAttachment)
   return result
 }
 
-function registerRerouteLayout(
+function attachRerouteLayout(
   graph: LayoutGraph,
   reroute: Reroute,
   position: Point
@@ -641,7 +633,7 @@ function registerRerouteLayout(
     position
   )
   if (result === 'applied')
-    rerouteRegistrations.set(reroute, {
+    rerouteAttachments.set(reroute, {
       graphId: graph.rootGraph.id,
       id: reroute.id
     })
@@ -653,14 +645,14 @@ function moveRerouteLayout(
   reroute: Reroute,
   position: Point
 ): void {
-  const registration = rerouteRegistrations.get(reroute)
-  if (!registration) return
+  const attachment = rerouteAttachments.get(reroute)
+  if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
     entity: 'reroute',
-    graphId: registration.graphId,
+    graphId: attachment.graphId,
     position,
-    rerouteId: registration.id,
+    rerouteId: attachment.id,
     type: 'moveReroute'
   })
 }
@@ -679,8 +671,8 @@ export function moveLayout(
   }
 }
 
-export function isLayoutRegistered(reroute: Reroute): boolean {
-  return rerouteRegistrations.has(reroute)
+export function hasLayoutAttachment(reroute: Reroute): boolean {
+  return rerouteAttachments.has(reroute)
 }
 
 function syncReroutePositionFromLayout(reroute: Reroute): void {
@@ -692,25 +684,24 @@ function syncReroutePositionFromLayout(reroute: Reroute): void {
  * definitions it holds. Mirrors `unregisterAllNodeStates`; call it from the
  * same places, before the entity containers are emptied.
  */
-export function unregisterAllGraphLayout(
+export function detachAllGraphLayout(
   graph: GraphLayoutOwner
 ): LayoutOperationResult {
-  const registrations = trackAllGraphLayoutRegistrations(graph)
+  const attachments = trackAllGraphLayoutAttachments(graph)
   const meta = canvasOperationMeta()
-  for (const registration of registrations) {
-    if (registration.entity === 'reroute' && registration.layout) {
-      syncReroutePositionFromLayout(registration.instance)
+  for (const attachment of attachments) {
+    if (attachment.entity === 'reroute' && attachment.layout) {
+      syncReroutePositionFromLayout(attachment.instance)
     }
   }
-  const operations = registrations.map((registration) =>
-    createDeleteLayoutOperation(registration, meta)
+  const operations = attachments.map((attachment) =>
+    createDeleteLayoutOperation(attachment, meta)
   )
-  for (const registration of registrations)
-    clearLocalLayoutRegistration(registration)
+  for (const attachment of attachments) clearLocalLayoutAttachment(attachment)
   const result = layoutStore.applyOperations(operations)
   if (result === 'rejected') {
-    for (const registration of registrations)
-      restoreLocalLayoutRegistration(registration)
+    for (const attachment of attachments)
+      restoreLocalLayoutAttachment(attachment)
   }
   return result
 }

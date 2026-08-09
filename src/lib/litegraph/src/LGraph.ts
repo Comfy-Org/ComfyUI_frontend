@@ -12,9 +12,9 @@ import {
   attachLayout,
   detachLayout,
   materializeRerouteLayout,
-  transferLayoutRegistration,
-  unregisterAllGraphLayout
-} from '@/renderer/core/layout/operations/graphLayoutRegistration'
+  detachAllGraphLayout,
+  transferLayoutAttachment
+} from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutOperationResult } from '@/renderer/core/layout/types'
 import {
@@ -234,19 +234,19 @@ export function adoptNodeReplacement(
   replacement: LGraphNode,
   index: number
 ): void {
-  const transferResult = transferLayoutRegistration(node, replacement)
+  const transferResult = transferLayoutAttachment(node, replacement)
   if (transferResult !== 'applied') {
-    throw new Error(`Node layout registration transfer ${transferResult}`)
+    throw new Error(`Node layout attachment transfer ${transferResult}`)
   }
 
   try {
     node.onRemoved?.()
   } catch (error) {
-    const rollbackResult = transferLayoutRegistration(replacement, node)
+    const rollbackResult = transferLayoutAttachment(replacement, node)
     if (rollbackResult !== 'applied') {
       throw new AggregateError(
         [error],
-        `Node layout registration rollback ${rollbackResult}`,
+        `Node layout attachment rollback ${rollbackResult}`,
         { cause: error }
       )
     }
@@ -585,7 +585,7 @@ export class LGraph
       scope === 'root-partition' && this.isRootGraph && graphId !== zeroUuid
     const layoutResult = clearsRootPartition
       ? layoutStore.clearGraph(graphId)
-      : unregisterAllGraphLayout(this)
+      : detachAllGraphLayout(this)
     if (layoutResult === 'rejected') return 'rejected'
     this.stop()
     this.status = LGraph.STATUS_STOPPED
@@ -1191,7 +1191,7 @@ export class LGraph
       if (registrationResult !== 'applied') {
         node.id = originalId
         restoreIdState(state, idStateSnapshot)
-        console.warn('[LGraph] Group layout registration not applied', {
+        console.warn('[LGraph] Group layout attachment not applied', {
           graphId: this.rootGraph.id,
           groupId: attemptedGroupId,
           groupTitle: node.title,
@@ -1236,7 +1236,7 @@ export class LGraph
       observeNodeId(state, node.id)
     }
 
-    // Set ghost flag before registration so the node state carries it
+    // Set ghost flag before attachment so the node state carries it
     if (opts.ghost) {
       node.flags.ghost = true
     }
@@ -1285,7 +1285,7 @@ export class LGraph
     }
     if (registrationResult !== 'applied') {
       restoreNodeIdentity()
-      console.warn('[LGraph] Node layout registration not applied', {
+      console.warn('[LGraph] Node layout attachment not applied', {
         graphId: this.rootGraph.id,
         nodeId: attemptedNodeId,
         nodeTitle: node.title,
@@ -1410,7 +1410,7 @@ export class LGraph
         }
 
         for (const subgraph of releasedSubgraphs) {
-          unregisterAllGraphLayout(subgraph)
+          detachAllGraphLayout(subgraph)
           for (const link of subgraph._links.values()) {
             layoutStore.deleteLinkLayout(link.id)
           }
@@ -1798,7 +1798,7 @@ export class LGraph
       if (adoptLayout) {
         const result = materializeRerouteLayout(this, reroute)
         if (result !== 'applied') {
-          throw new Error(`Reroute layout registration ${result}`)
+          throw new Error(`Reroute layout attachment ${result}`)
         }
       }
       return
@@ -1818,7 +1818,7 @@ export class LGraph
     }
     if (registrationResult !== 'applied') {
       unregisterRerouteChain(reroute)
-      throw new Error(`Reroute layout registration ${registrationResult}`)
+      throw new Error(`Reroute layout attachment ${registrationResult}`)
     }
     this.reroutesInternal.set(reroute.id, reroute)
   }
@@ -2858,7 +2858,7 @@ export class LGraph
         ? this.clearWithResult(
             replacesRootPartition ? 'root-partition' : 'owned-entities'
           )
-        : unregisterAllGraphLayout(this)
+        : detachAllGraphLayout(this)
       if (layoutResult === 'rejected') {
         console.warn('[LGraph] Configuration teardown rejected', {
           graphId: this.rootGraph.id,

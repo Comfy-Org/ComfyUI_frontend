@@ -11,7 +11,7 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import {
   attachLayout,
   detachLayout
-} from '@/renderer/core/layout/operations/graphLayoutRegistration'
+} from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
@@ -247,7 +247,7 @@ describe('group layout in layoutStore', () => {
     })
   })
 
-  test('keeps node layout registration when reentrant clear is rejected', () => {
+  test('keeps node layout attachment when reentrant clear is rejected', () => {
     vi.useFakeTimers()
     const graph = new LGraph()
     class StoppableNode extends LGraphNode {
@@ -356,7 +356,7 @@ describe('group layout in layoutStore', () => {
     expect(secondGraph.nodes).toHaveLength(0)
   })
 
-  test('rolls back node add when reentrant registration is rejected', () => {
+  test('rolls back node add when reentrant attachment is rejected', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(811))
     const node = new LGraphNode('node')
@@ -388,7 +388,7 @@ describe('group layout in layoutStore', () => {
     expect(node.graph).toBeNull()
     expect(graph.nodes).not.toContain(node)
     expect(warn).toHaveBeenCalledWith(
-      '[LGraph] Node layout registration not applied',
+      '[LGraph] Node layout attachment not applied',
       {
         graphId: graph.id,
         nodeId: toNodeId(812),
@@ -501,7 +501,7 @@ describe('group layout in layoutStore', () => {
     })
   })
 
-  test('rolls back group add when layout registration fails', () => {
+  test('rolls back group add when layout attachment fails', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group')
     const originalId = group.id
@@ -548,7 +548,7 @@ describe('group layout in layoutStore', () => {
     expect(firstGraph.state.lastGroupId).toBe(firstLastGroupId)
     expect(secondGraph.state.lastGroupId).toBe(secondLastGroupId)
     expect(warn).toHaveBeenCalledWith(
-      '[LGraph] Group layout registration not applied',
+      '[LGraph] Group layout attachment not applied',
       {
         graphId: firstGraph.id,
         groupId: first.id,
@@ -856,7 +856,7 @@ describe('group layout in layoutStore', () => {
     expect(groups.value.get(group.id)?.position).toEqual({ x: 75, y: 80 })
   })
 
-  test('registered group writes update a replacement layout at the same key', () => {
+  test('attached group writes update a replacement layout at the same key', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group')
     graph.add(group)
