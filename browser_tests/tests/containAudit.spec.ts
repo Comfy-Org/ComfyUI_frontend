@@ -118,8 +118,6 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
         return `${el.tagName.toLowerCase()}:nth-child(${index})`
       }
 
-      const results: ContainCandidate[] = []
-
       const graphContainer =
         document.querySelector('.graph-canvas-container') ??
         document.querySelector('[class*="comfy-vue-node"]')?.parentElement ??
@@ -128,40 +126,39 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
       const root = graphContainer ?? document.body
       const allElements = root.querySelectorAll('*')
 
-      allElements.forEach((el) => {
-        if (!(el instanceof HTMLElement)) return
+      const results: ContainCandidate[] = Array.from(allElements)
+        .filter((el): el is HTMLElement => el instanceof HTMLElement)
+        .map((el) => ({ el, subtreeSize: el.querySelectorAll('*').length }))
+        .filter(({ subtreeSize }) => subtreeSize >= 5)
+        .map(({ el, subtreeSize }) => {
+          const computed = getComputedStyle(el)
+          const {
+            alreadyContained,
+            hasExplicitDimensions,
+            hasFixedWidth,
+            isFlexChild
+          } = computeContainmentFlags(el, computed)
+          const score = computeCandidateScore(subtreeSize, {
+            alreadyContained,
+            hasExplicitDimensions,
+            hasFixedWidth,
+            isFlexChild
+          })
 
-        const subtreeSize = el.querySelectorAll('*').length
-        if (subtreeSize < 5) return
-
-        const computed = getComputedStyle(el)
-        const {
-          alreadyContained,
-          hasExplicitDimensions,
-          hasFixedWidth,
-          isFlexChild
-        } = computeContainmentFlags(el, computed)
-        const score = computeCandidateScore(subtreeSize, {
-          alreadyContained,
-          hasExplicitDimensions,
-          hasFixedWidth,
-          isFlexChild
+          return {
+            selector: computeSelector(el),
+            testId: el.getAttribute('data-testid'),
+            tagName: el.tagName.toLowerCase(),
+            className:
+              typeof el.className === 'string' ? el.className.slice(0, 80) : '',
+            subtreeSize,
+            hasFixedWidth,
+            isFlexChild,
+            hasExplicitDimensions,
+            alreadyContained,
+            score
+          }
         })
-
-        results.push({
-          selector: computeSelector(el),
-          testId: el.getAttribute('data-testid'),
-          tagName: el.tagName.toLowerCase(),
-          className:
-            typeof el.className === 'string' ? el.className.slice(0, 80) : '',
-          subtreeSize,
-          hasFixedWidth,
-          isFlexChild,
-          hasExplicitDimensions,
-          alreadyContained,
-          score
-        })
-      })
 
       results.sort((a, b) => b.score - a.score)
       return results.slice(0, 20)
