@@ -52,6 +52,7 @@ describe('parseLcovContent', () => {
     ).toBeNull()
 
     expect(parseLcovContent(lcov(sourceEntries(99, 10, 10)))).toBeNull()
+    expect(parseLcovContent(lcov(sourceEntries(100, 10, 10)))).not.toBeNull()
   })
 
   it('returns null for an empty tracefile', () => {

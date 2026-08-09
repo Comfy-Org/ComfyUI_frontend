@@ -7,11 +7,7 @@ const BAR_WIDTH = 20
 
 /** Repo-relative prefixes of the files whose coverage this report is about. */
 const PROJECT_SOURCE = /^(src|packages)\//
-/**
- * Below this, the tracefile is degenerate rather than sparse — e.g. E2E coverage
- * that failed to map back to source leaves only third-party scripts behind, and
- * a handful of fully-covered ones reads as 100%.
- */
+/** Below this the tracefile is degenerate, not sparse, and its ratio is noise. */
 const MIN_SOURCE_FILES = 100
 
 interface CoverageData {
