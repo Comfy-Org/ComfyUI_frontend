@@ -94,6 +94,15 @@ pnpm test:browser:local widget.spec.ts      # Run a specific file
 pnpm test:browser:local --ui                # Interactive UI mode (use for development)
 ```
 
+The maintained billing checkout regression suite uses server-controlled
+responses and a development-only Stripe.js boundary. Run it against the local
+Vite app; every test attaches `billing-network-evidence.json` with sanitized
+request and response bodies for failure triage:
+
+```bash
+pnpm test:browser:local browser_tests/tests/billing/billingCheckoutStateMachine.spec.ts --project=cloud
+```
+
 **Use UI mode while developing.** It provides:
 
 - **Locator picker** — click an element to get its exact locator code

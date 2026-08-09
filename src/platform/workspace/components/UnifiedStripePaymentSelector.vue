@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-col gap-6 xl:flex-1">
+  <form class="flex min-h-0 flex-col gap-6 xl:flex-1" @submit.prevent="submit">
     <div class="flex items-start justify-between gap-4">
       <div>
         <h3 class="m-0 text-base font-semibold text-base-foreground">
@@ -35,16 +35,16 @@
       </div>
     </div>
     <Button
+      type="submit"
       :variant="verificationPending ? 'tertiary' : 'inverted'"
       size="lg"
       class="w-full rounded-lg"
       :disabled="!stripeElements || !canSubmit || verificationPending"
       :loading="isLoading || isSubmitting"
-      @click="submit"
     >
       {{ $t('subscription.preview.payAndSubscribe') }}
     </Button>
-  </div>
+  </form>
 </template>
 
 <script setup lang="ts">
@@ -82,6 +82,7 @@ const {
 
 const emit = defineEmits<{
   confirm: [confirmationToken: string]
+  submittingChange: [submitting: boolean]
 }>()
 
 const { t } = useI18n()
@@ -95,7 +96,11 @@ let paymentElement: StripePaymentElement | undefined
 let isUnmounted = false
 
 onMounted(async () => {
-  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  const publishableKey =
+    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
+    (import.meta.env.DEV
+      ? window.__COMFY_E2E_STRIPE_PUBLISHABLE_KEY__
+      : undefined)
   if (!publishableKey) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
     return
@@ -194,8 +199,17 @@ onBeforeUnmount(() => {
 })
 
 async function submit() {
-  if (!stripeElements.value || !stripe) return
+  if (
+    isSubmitting.value ||
+    isLoading ||
+    verificationPending ||
+    !canSubmit ||
+    !stripeElements.value ||
+    !stripe
+  )
+    return
   isSubmitting.value = true
+  emit('submittingChange', true)
   configurationError.value = ''
   try {
     const submitResult = await stripeElements.value.submit()
@@ -215,6 +229,7 @@ async function submit() {
     configurationError.value = t('g.error')
   } finally {
     isSubmitting.value = false
+    emit('submittingChange', false)
   }
 }
 

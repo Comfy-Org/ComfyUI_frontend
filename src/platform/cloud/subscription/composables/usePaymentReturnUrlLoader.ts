@@ -1,6 +1,7 @@
 import { useRoute, useRouter } from 'vue-router'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 const STRIPE_RETURN_PARAMS = [
   'payment_intent',
@@ -21,6 +22,7 @@ export function usePaymentReturnUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const billingContext = useBillingContext()
+  const billingOperationStore = useBillingOperationStore()
 
   async function loadPaymentReturnFromUrl() {
     const present = STRIPE_RETURN_PARAMS.filter(
@@ -30,14 +32,17 @@ export function usePaymentReturnUrlLoader() {
 
     const cleanQuery = { ...route.query }
     for (const param of present) delete cleanQuery[param]
-    router.replace({ query: cleanQuery }).catch((error) => {
+    try {
+      await router.replace({ query: cleanQuery })
+    } catch (error) {
       console.warn(
         '[usePaymentReturnUrlLoader] Failed to clean URL params:',
         error
       )
-    })
+    }
 
     await billingContext.fetchStatus()
+    billingOperationStore.pollPendingOperations()
   }
 
   return {

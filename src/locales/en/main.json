@@ -2566,7 +2566,7 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
-      "chargedImmediatelyNote": "Your saved card is charged immediately.",
+      "chargedImmediatelyNote": "Your saved payment method is charged immediately.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2620,6 +2620,9 @@
     }
   },
   "billingOperation": {
+    "pollFailed": "We couldn't confirm your payment status",
+    "pollFailedDetail": "Check your connection and try checking the payment status again.",
+    "retryStatusCheck": "Check payment status again",
     "subscriptionProcessing": "Processing payment — setting up your workspace...",
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",

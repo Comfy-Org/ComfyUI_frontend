@@ -9,7 +9,9 @@
           variant="muted-textonly"
           class="shrink-0 rounded-full"
           :aria-label="$t('g.back')"
-          :disabled="isLoading"
+          :disabled="
+            isLoading || isApplyingPromotionCode || pollRecoveryRequired
+          "
           @click="$emit('back')"
         >
           <i class="pi pi-arrow-left text-base" />
@@ -235,6 +237,22 @@
       </div>
 
       <div
+        v-if="pollRecoveryRequired"
+        role="alert"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+      >
+        <p class="m-0">{{ $t('billingOperation.pollFailedDetail') }}</p>
+        <Button
+          variant="secondary"
+          size="lg"
+          class="mt-3 w-full rounded-lg"
+          @click="$emit('retryPolling')"
+        >
+          {{ $t('billingOperation.retryStatusCheck') }}
+        </Button>
+      </div>
+
+      <div
         v-if="authenticationState === 'failed_retryable'"
         role="alert"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
@@ -269,7 +287,7 @@
       </Button>
 
       <Button
-        v-if="actionUrl"
+        v-if="actionUrl && !canRetryAuthentication"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -284,7 +302,10 @@
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="
-          confirmDisabled || !quoteIsCurrent || verificationRecoveryActive
+          confirmDisabled ||
+          !quoteIsCurrent ||
+          verificationRecoveryActive ||
+          pollRecoveryRequired
         "
         @click="$emit('confirm', confirmReactivation)"
       >
@@ -327,7 +348,9 @@ const {
   canRetryAuthentication = false,
   isAuthenticating = false,
   reconciliationOperationId = null,
-  quoteIsCurrent = false
+  quoteIsCurrent = false,
+  isApplyingPromotionCode = false,
+  pollRecoveryRequired = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -344,6 +367,8 @@ const {
   isAuthenticating?: boolean
   reconciliationOperationId?: string | null
   quoteIsCurrent?: boolean
+  isApplyingPromotionCode?: boolean
+  pollRecoveryRequired?: boolean
 }>()
 
 defineEmits<{
@@ -354,6 +379,7 @@ defineEmits<{
   applyPromotionCode: [code: string]
   invalidateQuote: []
   retryAuthentication: []
+  retryPolling: []
 }>()
 
 const { t, n } = useI18n()

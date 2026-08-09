@@ -14,6 +14,7 @@ declare module '~icons/*' {
 
 declare global {
   interface Window {
+    __COMFY_E2E_STRIPE_PUBLISHABLE_KEY__?: string
     __COMFYUI_FRONTEND_VERSION__: string
   }
 

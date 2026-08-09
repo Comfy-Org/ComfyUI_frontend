@@ -32,7 +32,7 @@
           variant="muted-textonly"
           class="shrink-0 rounded-full"
           :aria-label="$t('g.back')"
-          :disabled="isLoading"
+          :disabled="interactionLocked"
           @click="$emit('back')"
         >
           <i class="pi pi-arrow-left text-base" />
@@ -226,6 +226,22 @@
       </div>
 
       <div
+        v-if="pollRecoveryRequired"
+        role="alert"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+      >
+        <p class="m-0">{{ $t('billingOperation.pollFailedDetail') }}</p>
+        <Button
+          variant="secondary"
+          size="lg"
+          class="mt-3 w-full rounded-lg"
+          @click="$emit('retryPolling')"
+        >
+          {{ $t('billingOperation.retryStatusCheck') }}
+        </Button>
+      </div>
+
+      <div
         v-if="authenticationState === 'failed_retryable'"
         role="alert"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
@@ -260,7 +276,7 @@
       </Button>
 
       <Button
-        v-if="actionUrl"
+        v-if="actionUrl && !canRetryAuthentication"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -277,8 +293,13 @@
           previewData?.payment_method_configuration_id ?? ''
         "
         :is-loading
-        :verification-pending="Boolean(actionUrl) || verificationRecoveryActive"
+        :verification-pending="
+          Boolean(actionUrl) ||
+          verificationRecoveryActive ||
+          pollRecoveryRequired
+        "
         :can-submit="quoteIsCurrent"
+        @submitting-change="stripeSubmissionPending = $event"
         @confirm="confirmPayment"
       />
 
@@ -288,7 +309,9 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="!quoteIsCurrent || verificationRecoveryActive"
+        :disabled="
+          interactionLocked || !quoteIsCurrent || verificationRecoveryActive
+        "
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.payAndSubscribe') }}
@@ -300,7 +323,9 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="!quoteIsCurrent || verificationRecoveryActive"
+        :disabled="
+          interactionLocked || !quoteIsCurrent || verificationRecoveryActive
+        "
         @click="$emit('addCreditCard')"
       >
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
@@ -359,6 +384,8 @@ interface Props {
   savedMethods?: SavedPaymentMethod[] | null
   selectedSavedMethodId?: string | null
   quoteIsCurrent?: boolean
+  isApplyingPromotionCode?: boolean
+  pollRecoveryRequired?: boolean
 }
 
 const {
@@ -376,7 +403,9 @@ const {
   usePaymentElement = false,
   savedMethods = null,
   selectedSavedMethodId = null,
-  quoteIsCurrent = false
+  quoteIsCurrent = false,
+  isApplyingPromotionCode = false,
+  pollRecoveryRequired = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -388,6 +417,7 @@ const emit = defineEmits<{
   applyPromotionCode: [code: string]
   invalidateQuote: []
   retryAuthentication: []
+  retryPolling: []
 }>()
 
 const { t, n } = useI18n()
@@ -438,6 +468,14 @@ const selectedMethod = computed({
 })
 
 const promotionCode = ref(previewData?.promotion_code ?? '')
+const stripeSubmissionPending = ref(false)
+const interactionLocked = computed(
+  () =>
+    isLoading ||
+    isApplyingPromotionCode ||
+    pollRecoveryRequired ||
+    stripeSubmissionPending.value
+)
 watch(
   () => previewData?.promotion_code,
   (code) => {
