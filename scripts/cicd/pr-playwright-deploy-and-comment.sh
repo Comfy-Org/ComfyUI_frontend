@@ -255,9 +255,32 @@ else
     # Reuses the chromium project on its own branch so it doesn't clobber the
     # main chromium report deployed above.
     new_tests_url=""
+    new_tests_counts="{}"
     if [ -d "reports/playwright-report-new-tests" ]; then
         echo "Found new-tests report, deploying..."
         new_tests_url=$(deploy_report "reports/playwright-report-new-tests" "chromium" "${cloudflare_branch}-new-tests")
+
+        # Extract pass/fail counts the same way as the main browser reports so
+        # a failing new-test run (e.g. a genuine test failure caught by the
+        # video job) is reflected in the overall status/total instead of
+        # silently showing up as a bare link with no result.
+        EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
+        REPORT_DIR="$BASE_DIR/reports/playwright-report-new-tests"
+        if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
+            echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
+            new_tests_counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$new_tests_url" 2>&1 || echo '{}')
+            echo "Extracted counts for new-tests: $new_tests_counts" >&2
+        else
+            echo "Script not found or tsx not available: $EXTRACT_SCRIPT" >&2
+        fi
+    fi
+
+    # Counts used for the overall total/status and the "Failed Tests" list
+    # include the new-tests report; counts_array (browsers only) is kept
+    # separate below since it drives the per-browser report listing.
+    agg_all_counts="$all_counts"
+    if [ -n "$new_tests_counts" ] && [ "$new_tests_counts" != "{}" ]; then
+        agg_all_counts="$agg_all_counts|$new_tests_counts"
     fi
 
     # Calculate total test counts across all browsers
@@ -266,10 +289,10 @@ else
     total_flaky=0
     total_skipped=0
     total_tests=0
-    
+
     # Parse counts and calculate totals
-    IFS='|' read -r -a counts_array <<< "$all_counts"
-    for counts_json in "${counts_array[@]}"; do
+    IFS='|' read -r -a agg_counts_array <<< "$agg_all_counts"
+    for counts_json in "${agg_counts_array[@]}"; do
         [ -z "$counts_json" ] && continue
         if [ "$counts_json" != "{}" ] && [ -n "$counts_json" ]; then
             # Parse JSON counts using simple grep/sed if jq is not available
@@ -327,8 +350,8 @@ else
 
 ### ❌ Failed Tests"
         
-        # Process each browser's failures
-        for counts_json in "${counts_array[@]}"; do
+        # Process each report's failures (browsers + new-tests video run)
+        for counts_json in "${agg_counts_array[@]}"; do
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
             
             if command -v jq > /dev/null 2>&1; then
@@ -369,6 +392,7 @@ $test_line"
     i=0
     IFS=' ' read -r -a browser_array <<< "$BROWSERS"
     IFS=' ' read -r -a url_array <<< "$urls"
+    IFS='|' read -r -a counts_array <<< "$all_counts"
     for counts_json in "${counts_array[@]}"; do
         [ -z "$counts_json" ] && { i=$((i + 1)); continue; }
         browser="${browser_array[$i]:-}"
@@ -411,8 +435,28 @@ $test_line"
     unset IFS
 
     if [ -n "$new_tests_url" ] && [ "$new_tests_url" != "failed" ]; then
+        new_tests_counts_str=""
+        if [ -n "$new_tests_counts" ] && [ "$new_tests_counts" != "{}" ]; then
+            if command -v jq > /dev/null 2>&1; then
+                nt_passed=$(echo "$new_tests_counts" | jq -r '.passed // 0')
+                nt_failed=$(echo "$new_tests_counts" | jq -r '.failed // 0')
+                nt_flaky=$(echo "$new_tests_counts" | jq -r '.flaky // 0')
+                nt_skipped=$(echo "$new_tests_counts" | jq -r '.skipped // 0')
+                nt_total=$(echo "$new_tests_counts" | jq -r '.total // 0')
+            else
+                nt_passed=$(echo "$new_tests_counts" | sed -n 's/.*"passed":\([0-9]*\).*/\1/p')
+                nt_failed=$(echo "$new_tests_counts" | sed -n 's/.*"failed":\([0-9]*\).*/\1/p')
+                nt_flaky=$(echo "$new_tests_counts" | sed -n 's/.*"flaky":\([0-9]*\).*/\1/p')
+                nt_skipped=$(echo "$new_tests_counts" | sed -n 's/.*"skipped":\([0-9]*\).*/\1/p')
+                nt_total=$(echo "$new_tests_counts" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')
+            fi
+            if [ -n "$nt_total" ] && [ "$nt_total" != "0" ]; then
+                new_tests_counts_str=" (✅ ${nt_passed:-0} / ❌ ${nt_failed:-0} / ⚠️ ${nt_flaky:-0} / ⏭️ ${nt_skipped:-0})"
+            fi
+        fi
+
         comment="$comment
-- **New-test walkthrough** (chromium, recorded video): [View Report](${new_tests_url})"
+- **New-test walkthrough** (chromium, recorded video): [View Report](${new_tests_url})${new_tests_counts_str}"
     fi
 
     comment="$comment
