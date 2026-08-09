@@ -97,7 +97,6 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
         return {
           cfg85Linked,
           cfg86Linked,
-          // Verify the surviving links exist in the subgraph link map
           cfg85LinkValid: isLinkValid(subgraph.links, cfgInput85?.link),
           cfg86LinkValid: isLinkValid(subgraph.links, cfgInput86?.link),
           cfg85LinkId: cfgInput85?.link ?? null,
