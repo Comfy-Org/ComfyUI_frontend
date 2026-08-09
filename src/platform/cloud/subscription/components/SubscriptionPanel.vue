@@ -4,7 +4,7 @@
       <div class="flex items-center gap-2">
         <span class="font-inter text-2xl/tight font-semibold">
           {{
-            isActiveSubscription
+            canAccessSubscriptionFeatures
               ? $t('subscription.title')
               : $t('subscription.titleUnsubscribed')
           }}
@@ -44,5 +44,5 @@ const SubscriptionPanelContentWorkspace = defineAsyncComponent(
 
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 
-const { isActiveSubscription } = useBillingContext()
+const { canAccessSubscriptionFeatures } = useBillingContext()
 </script>

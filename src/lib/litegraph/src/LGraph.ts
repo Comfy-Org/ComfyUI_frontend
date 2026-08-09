@@ -23,6 +23,10 @@ import {
   repairInputLinks,
   selectSurvivorLink
 } from './linkDeduplication'
+import {
+  beginNamedValuesShadowDiffLoad,
+  endNamedValuesShadowDiffLoad
+} from './utils/namedValuesShadowDiffTelemetry'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -2479,6 +2483,7 @@ export class LGraph
     const mayContinue = this.events.dispatch('configuring', options)
     if (!mayContinue) return
 
+    beginNamedValuesShadowDiffLoad()
     try {
       // TODO: Finish typing configure()
       if (!data) return
@@ -2727,6 +2732,7 @@ export class LGraph
       this.setDirtyCanvas(true, true)
       return error
     } finally {
+      endNamedValuesShadowDiffLoad()
       this.events.dispatch('configured')
     }
   }

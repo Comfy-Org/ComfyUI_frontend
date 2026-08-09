@@ -104,10 +104,6 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuth', () => ({
-  useFirebaseAuth: vi.fn(() => null)
-}))
-
 vi.mock('firebase/auth', () => ({
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -150,10 +146,6 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
 
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn(() => ({}))
-}))
-
-vi.mock('@/stores/toastStore', () => ({
-  useToastStore: vi.fn(() => ({}))
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
@@ -209,14 +201,14 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    isActiveSubscription: vi.fn().mockReturnValue(true),
+    canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
     showSubscriptionDialog: vi.fn()
   }))
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: { value: true },
+    canAccessSubscriptionFeatures: { value: true },
     showSubscriptionDialog: vi.fn()
   }))
 }))
