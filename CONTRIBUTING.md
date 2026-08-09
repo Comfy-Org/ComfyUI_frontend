@@ -299,7 +299,7 @@ If a comment's blocking status is unclear, respond asking for clarification.
 
 If you want to defer non-critical feedback to a follow-up PR, use:
 
-```
+```text
 @coderabbitai please make a tracking issue for this and assign me
 ```
 
@@ -317,7 +317,7 @@ Deferred work must have a tracking issue — implicit deferrals are not allowed.
 
 ### Reviewer Decision Guide
 
-```
+```text
 Starting PR Review
 ├── Changes needed → Request Changes
 │   ├── All comments required → No prefix (blocking by default)
