@@ -239,6 +239,57 @@ describe('ChangeTracker', () => {
     vi.useRealTimers()
   })
 
+  describe('updateModified', () => {
+    it('reuses a current-state projection as the next previous-state projection', () => {
+      const initial = createState(1)
+      initial.nodes[0].widgets_values = [1]
+      const first = structuredClone(initial)
+      first.nodes[0].widgets_values = [2]
+      const second = structuredClone(first)
+      second.nodes[0].widgets_values = [3]
+      const firstProjectionTraversals = vi.fn()
+      const trackedFirst = new Proxy(first, {
+        ownKeys(target) {
+          firstProjectionTraversals()
+          return Reflect.ownKeys(target)
+        }
+      })
+      const tracker = createTracker(initial)
+
+      tracker.activeState = trackedFirst
+      tracker.updateModified(initial)
+      tracker.activeState = second
+      tracker.updateModified(trackedFirst)
+
+      expect(firstProjectionTraversals).toHaveBeenCalledOnce()
+    })
+
+    it('recomputes the projection for a different but equivalent state object', () => {
+      const initial = createState(1)
+      initial.nodes[0].widgets_values = [1]
+      const first = structuredClone(initial)
+      first.nodes[0].widgets_values = [2]
+      const equivalent = structuredClone(first)
+      const equivalentProjectionTraversals = vi.fn()
+      const trackedEquivalent = new Proxy(equivalent, {
+        ownKeys(target) {
+          equivalentProjectionTraversals()
+          return Reflect.ownKeys(target)
+        }
+      })
+      const tracker = createTracker(initial)
+
+      tracker.activeState = first
+      tracker.updateModified(initial)
+      vi.mocked(api.dispatchCustomEvent).mockClear()
+      tracker.activeState = trackedEquivalent
+      tracker.updateModified(first)
+
+      expect(equivalentProjectionTraversals).toHaveBeenCalledOnce()
+      expectAutoQueueGraphChangedNotDispatched()
+    })
+  })
+
   describe('captureCanvasState', () => {
     describe('guards', () => {
       it('is a no-op when app.graph is falsy', () => {
