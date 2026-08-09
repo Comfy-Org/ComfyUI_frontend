@@ -365,6 +365,7 @@ export interface IWidgetLocator {
 export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
   widget?: IWidgetLocator
+  /** Host-owned promoted widget identity for a subgraph input (ADR 0009). */
   widgetId?: WidgetId
   alwaysVisible?: boolean
 

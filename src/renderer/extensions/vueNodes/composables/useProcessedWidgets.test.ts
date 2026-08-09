@@ -432,6 +432,9 @@ describe('computeProcessedWidgets visibility', () => {
 
     expect(promotedWidget).toBeDefined()
     expect(promotedWidget?.visible).toBe(true)
+    expect(promotedWidget?.simplified.borderStyle).toBe(
+      'ring ring-component-node-widget-advanced'
+    )
   })
 })
 
