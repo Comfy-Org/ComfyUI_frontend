@@ -14,6 +14,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { isPresentationOnlyNodeType } from '@/services/presentationOnlyNodeTypeRegistry'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
@@ -44,7 +45,7 @@ function findWidgetByEntityId(
 }
 
 export function nodeTypeValidForApp(type: string) {
-  return !['Note', 'MarkdownNote'].includes(type)
+  return !isPresentationOnlyNodeType(type)
 }
 
 export const useAppModeStore = defineStore('appMode', () => {

@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { isPresentationOnlyNodeType } from '@/services/presentationOnlyNodeTypeRegistry'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 describe('extensionStore', () => {
@@ -45,6 +46,23 @@ describe('extensionStore', () => {
       } finally {
         warnSpy.mockRestore()
       }
+    })
+
+    it('activates presentation-only node types only for enabled extensions', () => {
+      const store = useExtensionStore()
+      store.loadDisabledExtensionNames(['disabled.presentation'])
+
+      store.registerExtension({
+        name: 'enabled.presentation',
+        presentationOnlyNodeTypes: ['EnabledPresentationNode']
+      })
+      store.registerExtension({
+        name: 'disabled.presentation',
+        presentationOnlyNodeTypes: ['DisabledPresentationNode']
+      })
+
+      expect(isPresentationOnlyNodeType('EnabledPresentationNode')).toBe(true)
+      expect(isPresentationOnlyNodeType('DisabledPresentationNode')).toBe(false)
     })
   })
 

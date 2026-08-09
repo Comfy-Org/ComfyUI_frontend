@@ -109,6 +109,15 @@ export interface ComfyExtension {
    */
   name: string
   /**
+   * Node types that never affect workflow execution. These types are excluded
+   * from Run on Change detection and App Mode input/output selection.
+   *
+   * Declare the complete list in the extension's initial registration during
+   * app startup. Changing it requires an app reload; late registration after
+   * workflow tracking starts is unsupported.
+   */
+  presentationOnlyNodeTypes?: readonly string[]
+  /**
    * The commands defined by the extension
    */
   commands?: ComfyCommand[]

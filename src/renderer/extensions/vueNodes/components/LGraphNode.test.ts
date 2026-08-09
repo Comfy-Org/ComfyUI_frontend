@@ -15,10 +15,19 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { registerPresentationOnlyNodeTypes } from '@/services/presentationOnlyNodeTypeRegistry'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
-  mockLgraphNode: null as Record<string, unknown> | null
+  mockLgraphNode: null as Record<string, unknown> | null,
+  selectOutputs: false
+}))
+
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => ({
+    isSelectMode: computed(() => mockData.selectOutputs),
+    isSelectOutputsMode: computed(() => mockData.selectOutputs)
+  })
 }))
 
 vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
@@ -148,7 +157,8 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
         NodeSlots: true,
         NodeWidgets: true,
         NodeContent: true,
-        SlotConnectionDot: true
+        SlotConnectionDot: true,
+        AppOutput: { template: '<div data-testid="app-output" />' }
       }
     }
   })
@@ -178,6 +188,8 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockData.mockExecuting = false
+    mockData.mockLgraphNode = null
+    mockData.selectOutputs = false
 
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
@@ -245,6 +257,24 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-node-stroke-executing')
+  })
+
+  it('renders AppOutput only for execution-relevant output nodes', async () => {
+    registerPresentationOnlyNodeTypes(['VuePresentationOutputNode'])
+    mockData.mockLgraphNode = {
+      constructor: { nodeData: { output_node: true } },
+      isSubgraphNode: () => false
+    }
+    mockData.selectOutputs = true
+    const { rerender } = renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(screen.getByTestId('app-output')).toBeInTheDocument()
+
+    await rerender({
+      nodeData: { ...mockNodeData, type: 'VuePresentationOutputNode' }
+    })
+
+    expect(screen.queryByTestId('app-output')).not.toBeInTheDocument()
   })
 
   it('should initialize height CSS vars for collapsed nodes', () => {

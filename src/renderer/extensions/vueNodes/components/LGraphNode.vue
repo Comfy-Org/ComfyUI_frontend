@@ -47,6 +47,7 @@
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
+        nodeTypeValidForApp(nodeData.type) &&
         isSelectOutputsMode &&
         nodeData.mode === LGraphEventMode.ALWAYS &&
         !nodeData.hasErrors
@@ -296,6 +297,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'

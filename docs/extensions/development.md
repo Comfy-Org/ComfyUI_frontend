@@ -139,6 +139,27 @@ DEV_SERVER_COMFYUI_URL=https://stagingcloud.comfy.org/
 - Core extensions provide built-in functionality - see [Core Extensions Documentation](./core.md) for the complete list
 - The `ComfyExtension` interface defines all available hooks for extending the frontend
 
+### Declaring Presentation-Only Node Types
+
+An enabled extension can declare node types that never affect workflow
+execution:
+
+```javascript
+app.registerExtension({
+  name: 'example.annotation-nodes',
+  presentationOnlyNodeTypes: ['StickyNote']
+})
+```
+
+Declared types are excluded from Run on Change detection and from App Mode
+input/output selection. Only use this field for whole node types that never
+affect execution. Disabled extensions do not activate their declarations, and
+unknown node types remain execution-relevant by default.
+
+Declare the complete list in the extension's initial `app.registerExtension()`
+call during app startup. Changing the declaration requires an app reload. Late
+registration after workflow tracking starts is unsupported.
+
 ## Further Reading
 
 - [Core Extensions Architecture](./core.md) - Complete list of core extensions and development guidelines

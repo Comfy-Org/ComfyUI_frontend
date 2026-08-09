@@ -154,7 +154,7 @@ interface FrontendApiCalls {
    * edits, position, size, title, collapse, group, viewport, and slot-label
    * changes do not trigger this signal.
    * Server-pushed `graphChanged` messages are forwarded unfiltered.
-   * Third-party presentation-only nodes are treated as prompt-relevant.
+   * Node types declared presentation-only by enabled extensions are excluded.
    */
   autoQueueGraphChanged: never
   promptQueueing: { requestId: number; batchCount: number; number?: number }

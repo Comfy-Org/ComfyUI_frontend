@@ -164,6 +164,7 @@ const renderedOutputs = computed(() => {
     .graph!.nodes.filter(
       (n) =>
         n.constructor.nodeData?.output_node &&
+        nodeTypeValidForApp(n.type) &&
         n.mode === LGraphEventMode.ALWAYS &&
         !n.has_errors
     )
@@ -335,6 +336,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           <div
             v-for="[key, style, isSelected] in renderedOutputs"
             :key
+            :data-testid="`builder-output-overlay-${key}`"
             :style="toValue(style)"
             :class="
               cn(

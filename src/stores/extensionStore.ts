@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 
+import { registerPresentationOnlyNodeTypes } from '@/services/presentationOnlyNodeTypeRegistry'
 import type { ComfyExtension } from '@/types/comfy'
 
 /**
@@ -69,6 +70,11 @@ export const useExtensionStore = defineStore('extension', () => {
     }
 
     extensionByName.value[extension.name] = markRaw(extension)
+    if (isExtensionEnabled(extension.name)) {
+      registerPresentationOnlyNodeTypes(
+        extension.presentationOnlyNodeTypes ?? []
+      )
+    }
   }
 
   function loadDisabledExtensionNames(names: string[]) {

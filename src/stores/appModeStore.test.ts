@@ -27,6 +27,7 @@ import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/managem
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { WidgetId } from '@/types/widgetId'
 
@@ -84,7 +85,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettings
 }))
 
-import { useAppModeStore } from './appModeStore'
+import { nodeTypeValidForApp, useAppModeStore } from './appModeStore'
 
 function createBuilderWorkflow(
   activeMode: string = 'builder:inputs'
@@ -170,6 +171,17 @@ describe('appModeStore', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('excludes built-in and extension-declared presentation-only types', () => {
+    useExtensionStore().registerExtension({
+      name: 'app-mode.presentation',
+      presentationOnlyNodeTypes: ['AppModePresentationNode']
+    })
+
+    expect(nodeTypeValidForApp('Note')).toBe(false)
+    expect(nodeTypeValidForApp('MarkdownNote')).toBe(false)
+    expect(nodeTypeValidForApp('AppModePresentationNode')).toBe(false)
   })
 
   describe('enterBuilder', () => {

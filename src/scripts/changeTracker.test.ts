@@ -13,6 +13,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 const mockAssert = vi.hoisted(() => vi.fn())
@@ -1126,6 +1127,44 @@ describe('ChangeTracker', () => {
           expectAutoQueueGraphChangedNotDispatched()
         }
       )
+
+      it('ignores content changes to a declared presentation-only node', () => {
+        useExtensionStore().registerExtension({
+          name: 'third-party.presentation',
+          presentationOnlyNodeTypes: ['ThirdPartyPresentationNode']
+        })
+        const initial = createState(1)
+        initial.nodes[0].type = 'ThirdPartyPresentationNode'
+        initial.nodes[0].widgets_values = ['Initial content']
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = ['Updated content']
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('detects content changes to an unregistered presentation lookalike', () => {
+        const initial = createState(1)
+        initial.nodes[0].type = 'UnregisteredPresentationNode'
+        initial.nodes[0].widgets_values = ['Initial content']
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = ['Updated content']
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
+      })
 
       it('clears redoQueue on new change', () => {
         const tracker = createTracker(createState(1))
