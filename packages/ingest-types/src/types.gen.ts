@@ -2103,6 +2103,10 @@ export type JobEntry = {
     [key: string]: unknown
   }
   /**
+   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
+   */
+  previewable_outputs_count?: number
+  /**
    * User-friendly job status
    */
   status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
@@ -2277,6 +2281,10 @@ export type JobDetailResponse = {
   preview_output?: {
     [key: string]: unknown
   }
+  /**
+   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
+   */
+  previewable_outputs_count?: number
   /**
    * User-friendly job status
    */
@@ -9977,7 +9985,12 @@ export type CreateWorkflowUploadUrlResponse =
 export type ListWorkspaceApiKeysData = {
   body?: never
   path?: never
-  query?: never
+  query?: {
+    /**
+     * Include revoked API keys in the response
+     */
+    include_revoked?: boolean
+  }
   url: '/api/workspace/api-keys'
 }
 
