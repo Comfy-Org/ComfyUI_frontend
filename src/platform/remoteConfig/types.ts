@@ -103,13 +103,14 @@ export type RemoteConfig = {
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
+  onboarding_tour_enabled?: boolean
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
-  team_workspaces_enabled?: boolean
   partner_node_governance_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
+  supports_model_type_tags?: boolean
   free_tier_credits?: number
   free_tier_balance?: {
     allowance: number
@@ -123,6 +124,8 @@ export type RemoteConfig = {
   unified_cloud_auth?: boolean
   consolidated_billing_enabled?: boolean
   billing_control_enabled?: boolean
+  v1_payment_recovery?: boolean
+  churnkey_app_id?: string
   sentry_dsn?: string
   turnstile_sitekey?: string
   // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).
