@@ -57,11 +57,14 @@ describe('ISOBMFF (MP4) metadata', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderError('readAsArrayBuffer')
       expect(await getFromIsobmffFile(file)).toEqual({})
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('resolves empty when the FileReader fires abort', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderAbort('readAsArrayBuffer')
       expect(await getFromIsobmffFile(file)).toEqual({})
+      expect(console.error).not.toHaveBeenCalled()
     })
   })
 })
