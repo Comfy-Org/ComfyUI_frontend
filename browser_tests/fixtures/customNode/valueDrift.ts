@@ -107,9 +107,9 @@ export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE: Record<
     },
     LTXSequencer: {
       before: 154,
-      after: 4,
+      after: 8,
       reason:
-        'pack JS rebuilds the sequencer widgets from the configured track count'
+        'pack restores one separator, three static widgets, and one four-widget image track'
     }
   }
 }

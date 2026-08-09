@@ -4,6 +4,7 @@ interface AllowlistRule {
   pattern: RegExp
   reason: string
   requiredRoundtripId?: string
+  validate?: (error: string) => boolean
 }
 
 interface ConnectivityRule extends AllowlistRule {
@@ -97,6 +98,45 @@ const CLOUD_PACK_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
   ]
 }
 
+function hasSingleDecodedQueryKeys(
+  error: string,
+  endpoint: RegExp,
+  keys: readonly string[],
+  atMostOne: readonly string[] = [],
+  emptyIfPresent: readonly string[] = [],
+  allowedKeys?: readonly string[],
+  values: Readonly<Record<string, string | RegExp>> = {},
+  allowedKeySets?: readonly (readonly string[])[]
+): boolean {
+  const query = error.match(endpoint)?.[1]
+  if (!query) return false
+  const params = new URLSearchParams(query)
+  return (
+    keys.every((key) => params.getAll(key).length === 1) &&
+    atMostOne.every((key) => params.getAll(key).length <= 1) &&
+    emptyIfPresent.every((key) =>
+      params.getAll(key).every((value) => value === '')
+    ) &&
+    Object.entries(values).every(([key, expected]) =>
+      params
+        .getAll(key)
+        .every((value) =>
+          typeof expected === 'string'
+            ? value === expected
+            : expected.test(value)
+        )
+    ) &&
+    (!allowedKeys ||
+      [...params.keys()].every((key) => allowedKeys.includes(key))) &&
+    (!allowedKeySets ||
+      allowedKeySets.some(
+        (allowed) =>
+          params.size === allowed.length &&
+          [...params.keys()].every((key) => allowed.includes(key))
+      ))
+  )
+}
+
 // Noise owned by the target deployment rather than by any pack, so it applies
 // to every pack's collector on that environment.
 const ENV_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
@@ -108,24 +148,130 @@ const ENV_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
       // 404s - across packs, which is why it is env-scoped and not pack
       // -attributed. Backend-side finding, tracked for escalation; console
       // -only, no visible error surface.
-      pattern: /Failed to load resource.*404.*\/api\/view\?.*type=input/,
+      pattern:
+        /Failed to load resource.*404.*\/api\/view\?(?!(?:[^&\s\]]*&)*filename=[^&\s\]]*(?:&[^&\s\]]*)*&filename=)(?!(?:[^&\s\]]*&)*subfolder=[^&\s\]]*(?:&[^&\s\]]*)*&subfolder=)(?!(?:[^&\s\]]*&)*type=[^&\s\]]*(?:&[^&\s\]]*)*&type=)(?=(?:[^&\s\]]*&)*filename=(?:beach\.jpg|bedroom\.mp4|eth3d\.png)(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*subfolder=(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*type=input(?:&|[\s\]]|$))/,
       reason:
-        'cloud advertises input files /api/view will not serve the smoke account'
+        'cloud advertises beach.jpg, bedroom.mp4, and eth3d.png but /api/view will not serve them to the smoke account',
+      validate: (error) =>
+        hasSingleDecodedQueryKeys(
+          error,
+          /^Failed to load resource: the server responded with a status of 404 \(Not Found\) \[https?:\/\/[^\s/?#\]]+\/api\/view\?([^\s#\]]+)\]$/,
+          ['filename', 'subfolder', 'type'],
+          [],
+          [],
+          ['filename', 'subfolder', 'type']
+        )
     },
     {
       // VHS creates an audio preview from its empty/default selection. The
       // endpoint rejects the zero-length preview request on Cloud.
       pattern:
-        /Failed to load resource.*400.*\/api\/vhs\/viewaudio\?(?!(?:[^&\s\]]*&)*filename=[^&\s\]]+(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*start_time=0(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*duration=0(?:&|[\s\]]|$))/,
-      reason: 'VHS empty/default audio preview is rejected by Cloud'
+        /Failed to load resource.*400.*\/api\/vhs\/viewaudio\?(?!(?:[^&\s\]]*&)*filename=[^&\s\]]+(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*start_time=0(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*duration=0(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*timestamp=\d+(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*deadline=realtime(?:&|[\s\]]|$))/,
+      reason: 'VHS empty/default audio preview is rejected by Cloud',
+      validate: (error) =>
+        hasSingleDecodedQueryKeys(
+          error,
+          /^Failed to load resource: the server responded with a status of 400 \(Bad Request\) \[https?:\/\/[^\s/?#\]]+\/api\/vhs\/viewaudio\?([^\s#\]]+)\]$/,
+          ['start_time', 'duration', 'timestamp', 'deadline'],
+          ['filename'],
+          ['filename'],
+          ['filename', 'start_time', 'duration', 'timestamp', 'deadline'],
+          {
+            filename: '',
+            start_time: '0',
+            duration: '0',
+            timestamp: /^\d+$/,
+            deadline: 'realtime'
+          }
+        )
     },
     {
       // VHS creates video previews from the default input-dir combo value,
       // which Cloud advertises but does not serve to the smoke account.
       pattern:
-        /Failed to load resource.*404.*\/api\/vhs\/viewvideo\?(?=(?:[^&\s\]]*&)*filename=[^&\s\]]+(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*type=input(?:&|[\s\]]|$))/,
+        /Failed to load resource.*404.*\/api\/vhs\/viewvideo\?(?!(?:[^&\s\]]*&)*filename=[^&\s\]]*(?:&[^&\s\]]*)*&filename=)(?!(?:[^&\s\]]*&)*type=[^&\s\]]*(?:&[^&\s\]]*)*&type=)(?=(?:[^&\s\]]*&)*filename=bedroom\.mp4(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*type=input(?:&|[\s\]]|$))/,
       reason:
-        'VHS previews a Cloud-advertised default video the smoke account cannot retrieve'
+        'VHS previews the Cloud-advertised bedroom.mp4 default the smoke account cannot retrieve',
+      validate: (error) =>
+        hasSingleDecodedQueryKeys(
+          error,
+          /^Failed to load resource: the server responded with a status of 404 \(Not Found\) \[https?:\/\/[^\s/?#\]]+\/api\/vhs\/viewvideo\?([^\s#\]]+)\]$/,
+          ['filename', 'type'],
+          [
+            'format',
+            'force_rate',
+            'custom_width',
+            'custom_height',
+            'frame_load_cap',
+            'skip_first_frames',
+            'select_every_nth',
+            'start_time',
+            'timestamp',
+            'force_size',
+            'deadline'
+          ],
+          [],
+          [
+            'filename',
+            'type',
+            'format',
+            'force_rate',
+            'custom_width',
+            'custom_height',
+            'frame_load_cap',
+            'skip_first_frames',
+            'select_every_nth',
+            'start_time',
+            'timestamp',
+            'force_size',
+            'deadline'
+          ],
+          {
+            filename: 'bedroom.mp4',
+            type: 'input',
+            format: 'video/mp4',
+            force_rate: '0',
+            custom_width: '0',
+            custom_height: '0',
+            frame_load_cap: '0',
+            skip_first_frames: '0',
+            select_every_nth: '1',
+            start_time: '0',
+            timestamp: /^\d+$/,
+            force_size: /^(?:478|594)x\?$/,
+            deadline: 'realtime'
+          },
+          [
+            ['filename', 'type'],
+            [
+              'filename',
+              'type',
+              'format',
+              'force_rate',
+              'custom_width',
+              'custom_height',
+              'frame_load_cap',
+              'skip_first_frames',
+              'select_every_nth',
+              'timestamp',
+              'force_size',
+              'deadline'
+            ],
+            [
+              'filename',
+              'type',
+              'format',
+              'force_rate',
+              'custom_width',
+              'custom_height',
+              'frame_load_cap',
+              'start_time',
+              'timestamp',
+              'force_size',
+              'deadline'
+            ]
+          ]
+        )
     },
     {
       // Cloudflare fronts the cloud origin and injects its bot-challenge
@@ -204,14 +350,6 @@ const ENV_CONNECTIVITY_ERROR_ALLOWLIST: Record<
           'repeated Radiance node creation exhausts a page WebGL context and the pack enters its recovery path',
         requiredConnectivityId: 'cloud-radiance-webgl-recovery'
       }
-    ],
-    'comfyui-videohelpersuite': [
-      {
-        pattern:
-          /Failed to load resource.*502.*\/api\/vhs\/queryvideo\?(?=(?:[^&\s\]]*&)*filename=bedroom\.mp4(?:&|[\s\]]|$))(?=(?:[^&\s\]]*&)*type=input(?:&|[\s\]]|$))/,
-        reason:
-          'Cloud conditionally returns Bad Gateway while VHS probes the advertised default input video'
-      }
     ]
   }
 }
@@ -243,16 +381,23 @@ export function allowlistRulesFor(pack: string): AllowlistRule[] {
 
 function connectivityRulesForPacks(packs: string[]): ConnectivityRule[] {
   const environmentRules = ENV_CONNECTIVITY_ERROR_ALLOWLIST[customNodesEnv()]
-  return packs.flatMap((pack) => [
-    ...foldedRulesFor(CONNECTIVITY_ERROR_ALLOWLIST, pack),
-    ...foldedRulesFor(environmentRules, pack)
-  ])
+  return [
+    ...(ENV_ERROR_ALLOWLIST[customNodesEnv()] ?? []),
+    ...packs.flatMap((pack) => [
+      ...foldedRulesFor(CONNECTIVITY_ERROR_ALLOWLIST, pack),
+      ...foldedRulesFor(environmentRules, pack)
+    ])
+  ]
 }
 
 function withoutMatches(rules: AllowlistRule[], errors: string[]): string[] {
   return errors.filter(
-    (error) => !rules.some((rule) => rule.pattern.test(error))
+    (error) => !rules.some((rule) => ruleMatches(rule, error))
   )
+}
+
+function ruleMatches(rule: AllowlistRule, error: string): boolean {
+  return rule.pattern.test(error) && (rule.validate?.(error) ?? true)
 }
 
 export function unallowlistedErrors(pack: string, errors: string[]): string[] {
@@ -267,7 +412,7 @@ export function staleRequiredRoundtripErrorRules(
     .filter(
       (rule) =>
         rule.requiredRoundtripId !== undefined &&
-        !errors.some((error) => rule.pattern.test(error))
+        !errors.some((error) => ruleMatches(rule, error))
     )
     .map((rule) => rule.requiredRoundtripId!)
 }
@@ -304,7 +449,7 @@ export function staleRequiredConnectivityErrorRulesForPacks(
     .filter(
       (rule) =>
         rule.requiredConnectivityId !== undefined &&
-        !errors.some((error) => rule.pattern.test(error))
+        !errors.some((error) => ruleMatches(rule, error))
     )
     .map((rule) => rule.requiredConnectivityId!)
 }

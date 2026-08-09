@@ -17,7 +17,7 @@ jobs:
       app-frontend-changes: ${{ steps.changes.outputs.app-frontend-changes }}
       packages-changes: ${{ steps.changes.outputs.packages-changes }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -35,7 +35,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Upsert storybook starting section into unified report
         uses: ./.github/actions/upsert-comment-section
@@ -60,7 +60,7 @@ jobs:
       workflow-url: ${{ steps.workflow-url.outputs.url }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -107,7 +107,7 @@ jobs:
       chromatic-storybook-url: ${{ steps.chromatic.outputs.storybookUrl }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Required for Chromatic baseline
 
@@ -152,7 +152,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download Storybook build
         if: needs.storybook-build.outputs.conclusion == 'success'
@@ -202,7 +202,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -228,7 +228,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Upsert Chromatic section into unified report
         uses: ./.github/actions/upsert-comment-section

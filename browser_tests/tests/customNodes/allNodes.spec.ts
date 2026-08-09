@@ -26,7 +26,8 @@ import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   allowlistRulesFor,
   isForeignExecutionNoise,
-  staleRequiredRoundtripErrorRules
+  staleRequiredRoundtripErrorRules,
+  unallowlistedErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import type {
@@ -35,7 +36,6 @@ import type {
   VueNodeGeometry
 } from '@e2e/fixtures/customNode/geometry'
 import {
-  anyPackGeometryRecorded,
   diffGeometry,
   GEOMETRY_UNSTABLE_NODES,
   GEOMETRY_UNSTABLE_PATHS,
@@ -70,7 +70,10 @@ import {
   ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE,
   staleValueDriftIndices
 } from '@e2e/fixtures/customNode/valueDrift'
-import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
+import {
+  attachPageDiagnosticEvidence,
+  collectConsoleErrors
+} from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
@@ -708,23 +711,33 @@ for (const entry of loadManifest()) {
           keys.map((key) => [key, declaredShape(defs[key])])
         )
         const ledger = entry.vueIncompatibleNodes ?? {}
-        // S14: geometry accumulates across both renderer passes (LiteGraph
-        // first, Vue second per rendererPassesFor), then records or compares
-        // once at the end of the test.
+        // S14 is a separately activated tier. Its record workflow sets
+        // CN_GEOMETRY=record; its compare proof sets CN_ENABLE_S14=1. The
+        // Cloud S1-S12 sets CN_ENABLE_S14=0 while Core keeps its proven S14
+        // comparison active with CN_ENABLE_S14=1.
         const geometryRecordMode = process.env.CN_GEOMETRY === 'record'
         if (process.env.CN_GEOMETRY && !geometryRecordMode)
           throw new Error(
             `unrecognized CN_GEOMETRY value "${process.env.CN_GEOMETRY}" - the only mode is "record"`
           )
+        const geometryCompareMode = process.env.CN_ENABLE_S14
+        if (
+          geometryCompareMode !== undefined &&
+          geometryCompareMode !== '0' &&
+          geometryCompareMode !== '1'
+        )
+          throw new Error(
+            `unrecognized CN_ENABLE_S14 value "${geometryCompareMode}" - expected "0" or "1"`
+          )
+        const geometryEnabled =
+          geometryRecordMode || geometryCompareMode === '1'
         const measuredGeometry: Record<string, NodeGeometry> = {}
-        const geometryUnstable = packLedgerFor(
-          GEOMETRY_UNSTABLE_NODES,
-          entry.pack
-        )
-        const geometryUnstablePaths = packLedgerFor(
-          GEOMETRY_UNSTABLE_PATHS,
-          entry.pack
-        )
+        const geometryUnstable = geometryEnabled
+          ? packLedgerFor(GEOMETRY_UNSTABLE_NODES, entry.pack)
+          : {}
+        const geometryUnstablePaths = geometryEnabled
+          ? packLedgerFor(GEOMETRY_UNSTABLE_PATHS, entry.pack)
+          : {}
         for (const ledgered of stalenessCheckedKeys(entry, geometryUnstable))
           expect(
             keys,
@@ -791,20 +804,22 @@ for (const entry of loadManifest()) {
             // Geometry rides the same mounted chunk. A null measurement means
             // the node never materialized - already red via the mount checks,
             // so geometry stays silent rather than double-reporting.
-            const chunkGeometry = await measureChunkGeometry(
-              comfyPage.page,
-              shapes.map((shape) => shape?.id ?? null),
-              vueNodesEnabled
-            )
-            for (const [index, measured] of chunkGeometry.entries()) {
-              const key = chunk[index]
-              if (measured === null || key in geometryUnstable) continue
-              if (!vueNodesEnabled)
-                measuredGeometry[key] = {
-                  litegraph: measured as LitegraphNodeGeometry
-                }
-              else if (measuredGeometry[key] && !(key in ledger))
-                measuredGeometry[key].vue = measured as VueNodeGeometry
+            if (geometryEnabled) {
+              const chunkGeometry = await measureChunkGeometry(
+                comfyPage.page,
+                shapes.map((shape) => shape?.id ?? null),
+                vueNodesEnabled
+              )
+              for (const [index, measured] of chunkGeometry.entries()) {
+                const key = chunk[index]
+                if (measured === null || key in geometryUnstable) continue
+                if (!vueNodesEnabled)
+                  measuredGeometry[key] = {
+                    litegraph: measured as LitegraphNodeGeometry
+                  }
+                else if (measuredGeometry[key] && !(key in ledger))
+                  measuredGeometry[key].vue = measured as VueNodeGeometry
+              }
             }
             for (const [index, shape] of shapes.entries()) {
               const key = chunk[index]
@@ -943,19 +958,19 @@ for (const entry of loadManifest()) {
               `stale OUTPUT_TOPOLOGY_EXPECTATIONS entry: ${ledgered} no longer has its exact declared-to-instance output topology with VueNodes=${vueNodesEnabled}`
             ).toContain(ledgered)
           const allowlist = allowlistRulesFor(entry.pack)
-          const allowed = consoleErrors.errors.filter((error) =>
-            allowlist.some((rule) => rule.pattern.test(error))
+          const unallowlisted = unallowlistedErrors(
+            entry.pack,
+            consoleErrors.errors
+          )
+          const allowed = consoleErrors.errors.filter(
+            (error) => !unallowlisted.includes(error)
           )
           if (allowed.length > 0)
             console.log(
               `${entry.pack}: ${allowed.length} console error(s) matched the pack's allowlist (${allowlist.map((rule) => rule.reason).join('; ')})`
             )
           expect(
-            consoleErrors.errors.filter(
-              (error) =>
-                !allowlist.some((rule) => rule.pattern.test(error)) &&
-                !isForeignExecutionNoise(error)
-            ),
+            unallowlisted.filter((error) => !isForeignExecutionNoise(error)),
             `console errors with VueNodes=${vueNodesEnabled}`
           ).toEqual([])
           await expectNoVisibleErrors(
@@ -963,65 +978,46 @@ for (const entry of loadManifest()) {
             `after all-nodes VueNodes=${vueNodesEnabled} pass`
           )
         }
-        // S14 epilogue. The exclusion is announced like every other escape
-        // hatch, record fails loudly (never a green run that rewrote its own
-        // expectations), and compare runs in CI ONLY: the baselines encode
-        // pack-JS-built layout and CI font metrics, so a dev-server run (no
-        // pack JS) reds structurally and a non-Linux machine reds on fonts -
-        // neither is signal. The skip is loud and provably inert in CI.
-        if (Object.keys(geometryUnstable).length > 0)
-          console.log(
-            `${entry.pack}: ${Object.keys(geometryUnstable).length} node(s) ledgered geometry-unstable; geometry not asserted for them`
-          )
-        if (Object.keys(geometryUnstablePaths).length > 0)
-          console.log(
-            `${entry.pack}: ${Object.values(geometryUnstablePaths).reduce((count, paths) => count + Object.keys(paths).length, 0)} exact geometry path(s) ledgered unstable; all other geometry remains asserted`
-          )
-        if (geometryRecordMode) {
-          savePackGeometry(entry.pack, {
-            recordedAt: {
-              core: process.env.CN_GEOMETRY_CORE ?? 'unrecorded',
-              pin: 'pin' in entry ? entry.pin : entry.deployRef
-            },
-            schema: 1,
-            nodes: measuredGeometry
-          })
-          throw new Error(
-            `geometry baselines recorded for ${entry.pack} - commit ${packGeometryRelativePath(entry.pack)} and re-run without CN_GEOMETRY`
-          )
-        } else if (!process.env.CI) {
-          console.log(
-            `${entry.pack}: geometry compare skipped off-CI (baselines encode CI fonts and pack-JS layout); CI enforces`
-          )
-        } else {
-          const geometryBaseline = loadPackGeometry(entry.pack)
-          // S14 is deferred on cloud until its baselines are recorded (none
-          // exist; the record workflow was auth-blocked). Self-expiring: the
-          // first recorded cloud batch makes anyPackGeometryRecorded() true
-          // and cloud flips back to fail-closed for every pack. Core keeps
-          // the fail-closed gate throughout.
-          if (
-            geometryBaseline === null &&
-            customNodesEnv() === 'cloud' &&
-            !anyPackGeometryRecorded()
-          ) {
+        if (geometryEnabled) {
+          if (Object.keys(geometryUnstable).length > 0)
             console.log(
-              `${entry.pack}: geometry compare skipped - S14 deferred on cloud until baselines are recorded (record workflow, docs/custom-node-regression-suite.md Step 5b)`
+              `${entry.pack}: ${Object.keys(geometryUnstable).length} node(s) ledgered geometry-unstable; geometry not asserted for them`
             )
-            return
+          if (Object.keys(geometryUnstablePaths).length > 0)
+            console.log(
+              `${entry.pack}: ${Object.values(geometryUnstablePaths).reduce((count, paths) => count + Object.keys(paths).length, 0)} exact geometry path(s) ledgered unstable; all other geometry remains asserted`
+            )
+          if (geometryRecordMode) {
+            savePackGeometry(entry.pack, {
+              recordedAt: {
+                core: process.env.CN_GEOMETRY_CORE ?? 'unrecorded',
+                pin: 'pin' in entry ? entry.pin : entry.deployRef
+              },
+              schema: 1,
+              nodes: measuredGeometry
+            })
+            throw new Error(
+              `geometry baselines recorded for ${entry.pack} - commit ${packGeometryRelativePath(entry.pack)} and re-run without CN_GEOMETRY`
+            )
+          } else if (!process.env.CI) {
+            console.log(
+              `${entry.pack}: geometry compare skipped off-CI (baselines encode CI fonts and pack-JS layout); CI enforces`
+            )
+          } else {
+            const geometryBaseline = loadPackGeometry(entry.pack)
+            expect(
+              geometryBaseline,
+              `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (docs/custom-node-regression-suite.md Step 5b)`
+            ).not.toBeNull()
+            expect(
+              diffGeometry(
+                geometryBaseline!.nodes,
+                measuredGeometry,
+                geometryUnstablePaths
+              ),
+              'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per docs/custom-node-regression-suite.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger the exact mechanism in GEOMETRY_UNSTABLE_NODES or GEOMETRY_UNSTABLE_PATHS'
+            ).toEqual([])
           }
-          expect(
-            geometryBaseline,
-            `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (docs/custom-node-regression-suite.md Step 5b)`
-          ).not.toBeNull()
-          expect(
-            diffGeometry(
-              geometryBaseline!.nodes,
-              measuredGeometry,
-              geometryUnstablePaths
-            ),
-            'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per docs/custom-node-regression-suite.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger the exact mechanism in GEOMETRY_UNSTABLE_NODES or GEOMETRY_UNSTABLE_PATHS'
-          ).toEqual([])
         }
       })
 
@@ -1485,12 +1481,9 @@ for (const entry of loadManifest()) {
               .toEqual([])
           consoleErrors.stop()
           roundtripConsoleErrors.push(...consoleErrors.errors)
-          const allowlist = allowlistRulesFor(entry.pack)
           expect(
-            consoleErrors.errors.filter(
-              (error) =>
-                !allowlist.some((rule) => rule.pattern.test(error)) &&
-                !isForeignExecutionNoise(error)
+            unallowlistedErrors(entry.pack, consoleErrors.errors).filter(
+              (error) => !isForeignExecutionNoise(error)
             ),
             `console errors during save/reload with VueNodes=${vueNodesEnabled}`
           ).toEqual([])
@@ -1671,10 +1664,12 @@ for (const entry of loadManifest()) {
           `${entry.pack} auto-ran ${ranClean.size} node(s) clean; ${cannotRun.size} cannot run alone (baseline ${baseline.size})`
         )
         if (hardFailures.length > 0)
-          await test.info().attach('auto-run-failures.json', {
-            body: JSON.stringify(hardFailures, null, 2),
-            contentType: 'application/json'
-          })
+          await attachPageDiagnosticEvidence(
+            comfyPage.page,
+            test.info(),
+            'auto-run-failures.json',
+            hardFailures
+          )
         expect(
           hardFailures.length === 0,
           failureSummary(
@@ -1692,10 +1687,12 @@ for (const entry of loadManifest()) {
       // as an infrastructure outage. The full list still ships, as an
       // attachment.
       if (tierFailures.length > 0)
-        await test.info().attach('tier-failures.json', {
-          body: JSON.stringify(tierFailures, null, 2),
-          contentType: 'application/json'
-        })
+        await attachPageDiagnosticEvidence(
+          comfyPage.page,
+          test.info(),
+          'tier-failures.json',
+          tierFailures
+        )
       expect(
         tierFailures.length === 0,
         failureSummary(

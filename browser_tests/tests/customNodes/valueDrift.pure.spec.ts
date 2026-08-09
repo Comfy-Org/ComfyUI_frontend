@@ -125,10 +125,10 @@ test.describe('matchesTopologyExpectation', () => {
       matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 4)
     ).toBe(false)
     expect(
-      matchesTopologyExpectation(vueExpectations.LTXSequencer, 154, 4)
+      matchesTopologyExpectation(vueExpectations.LTXSequencer, 154, 8)
     ).toBe(true)
     expect(
-      matchesTopologyExpectation(vueExpectations.LTXSequencer, 154, 3)
+      matchesTopologyExpectation(vueExpectations.LTXSequencer, 154, 7)
     ).toBe(false)
     expect(
       matchesTopologyExpectation(
@@ -136,7 +136,7 @@ test.describe('matchesTopologyExpectation', () => {
           'WhatDreamsCost-ComfyUI'
         ].LTXSequencer,
         154,
-        4
+        8
       )
     ).toBe(false)
   })

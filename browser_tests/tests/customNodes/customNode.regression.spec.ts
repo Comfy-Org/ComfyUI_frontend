@@ -28,10 +28,12 @@ import {
   unallowlistedErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
+  AUTOGROW_CASES,
   customNodesEnv,
   loadAllManifestPackNames,
   loadManifest,
-  rendererPassesFor
+  rendererPassesFor,
+  staleAutogrowApplicabilityIssues
 } from '@e2e/fixtures/customNode/manifest'
 import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
 import {
@@ -44,19 +46,6 @@ import {
   expectNoVisibleErrors
 } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-
-// Hashes are environment-scoped for the same reason geometry baselines are:
-// a cloud deployment's sinks are not the pinned local backend's. Comparing
-// cloud outputs against the core file would red every run for the wrong
-// reason, so a missing cloud file stays null and the compare says so.
-const outputHashesPath = resolve(
-  `browser_tests/fixtures/data/curatedOutputHashes.${customNodesEnv() === 'cloud' ? 'cloud' : 'core'}.json`
-)
-const curatedOutputHashes: CuratedOutputHashes | null = existsSync(
-  outputHashesPath
-)
-  ? (JSON.parse(readFileSync(outputHashesPath, 'utf-8')) as CuratedOutputHashes)
-  : null
 
 const target = new LocalDesktopTarget()
 const OBJECT_INFO_SANITY_FLOOR = 50
@@ -147,13 +136,23 @@ for (const entry of loadManifest()) {
       // (and this suite would then be testing vanilla nodes). Assert the
       // pack's boot-registered extensions actually arrived in the browser.
       const knownBroken = packLedgerFor(KNOWN_BROKEN_EXTENSIONS, entry.pack)
+      const ownedAutogrowCases = AUTOGROW_CASES.filter(
+        ({ pack }) => pack.toLowerCase() === entry.pack.toLowerCase()
+      )
       if (
         entry.expectedExtensions.length > 0 ||
-        Object.keys(knownBroken).length > 0
+        Object.keys(knownBroken).length > 0 ||
+        ownedAutogrowCases.length > 0
       ) {
         const registered = await comfyPage.page.evaluate(() =>
           window.app!.extensions.map((extension) => extension.name)
         )
+        const servedExtensionPaths = ownedAutogrowCases.some(
+          ({ extensionName }) =>
+            !entry.expectedExtensions.includes(extensionName)
+        )
+          ? await comfyPage.page.evaluate(() => window.app!.api.getExtensions())
+          : []
         for (const name of entry.expectedExtensions)
           expect(
             registered,
@@ -164,6 +163,15 @@ for (const entry of loadManifest()) {
             registered,
             `${entry.pack}: known-broken frontend extension "${name}" registered despite its ledgered mechanism (${reason}) - remove the stale entry and restore it to expectedExtensions`
           ).not.toContain(name)
+        const staleAutogrowApplicability = staleAutogrowApplicabilityIssues(
+          entry,
+          registered,
+          servedExtensionPaths
+        )
+        expect(
+          staleAutogrowApplicability,
+          `${entry.pack}: ${staleAutogrowApplicability.join('; ')}`
+        ).toEqual([])
       }
 
       // vueNodesCompatible: false = canvas-only assertions; still runs, no skip.
@@ -286,12 +294,35 @@ for (const entry of loadManifest()) {
             `sink node ${sinkId} produced no ui payload`
           ).toBeTruthy()
 
-        // S15 output regression: the sinks proved data ARRIVED; the hashes
-        // prove it is the SAME data. The download runs IN THE PAGE so it
-        // carries the signed-in session - a node-side fetch reaches cloud
-        // with no credentials (the run-30309274120 lesson), which is what
-        // kept this tier core-only.
-        {
+        // S15 is separately activated. Its recorder sets
+        // RECORD_OUTPUT_HASHES=1; its compare proof sets CN_ENABLE_S15=1.
+        // Cloud S1-S12 sets CN_ENABLE_S15=0 while Core keeps its proven S15
+        // comparison active with CN_ENABLE_S15=1.
+        const recordMode = process.env.RECORD_OUTPUT_HASHES
+        if (recordMode !== undefined && recordMode !== '1')
+          throw new Error(
+            `unrecognized RECORD_OUTPUT_HASHES value '${recordMode}' - the only mode is '1'`
+          )
+        const compareMode = process.env.CN_ENABLE_S15
+        if (
+          compareMode !== undefined &&
+          compareMode !== '0' &&
+          compareMode !== '1'
+        )
+          throw new Error(
+            `unrecognized CN_ENABLE_S15 value '${compareMode}' - expected '0' or '1'`
+          )
+        if (recordMode === '1' || compareMode === '1') {
+          const outputHashesPath = resolve(
+            `browser_tests/fixtures/data/curatedOutputHashes.${customNodesEnv() === 'cloud' ? 'cloud' : 'core'}.json`
+          )
+          const curatedOutputHashes: CuratedOutputHashes | null = existsSync(
+            outputHashesPath
+          )
+            ? (JSON.parse(
+                readFileSync(outputHashesPath, 'utf-8')
+              ) as CuratedOutputHashes)
+            : null
           const observed = await hashSinkPayloads(
             result.outputsByNode as Record<string, unknown>,
             async (ref) => {
@@ -313,11 +344,6 @@ for (const entry of loadManifest()) {
             }
           )
           const workflowKey = `${entry.pack}/${basename(entry.workflow)}`
-          const recordMode = process.env.RECORD_OUTPUT_HASHES
-          if (recordMode !== undefined && recordMode !== '1')
-            throw new Error(
-              `unrecognized RECORD_OUTPUT_HASHES value '${recordMode}' - the only mode is '1'`
-            )
           if (recordMode === '1') {
             recordObservedHashes(
               'test-results/curatedOutputHashes.recorded.json',
@@ -336,17 +362,6 @@ for (const entry of loadManifest()) {
             // unpinned backend would red with a misattributed message.
             console.log(
               `S15 compare skipped off-CI for ${workflowKey} - baselines encode the CI recording environment; CI enforces`
-            )
-          } else if (
-            curatedOutputHashes === null &&
-            customNodesEnv() === 'cloud'
-          ) {
-            // S15 is deferred on cloud until its baselines are recorded (none
-            // exist yet). Self-expiring, like the S14 geometry defer: the first
-            // committed cloud hashes file makes this non-null and cloud flips
-            // back to fail-closed. Core keeps the fail-closed gate throughout.
-            console.log(
-              `S15 compare skipped for ${workflowKey} - deferred on cloud until baselines are recorded (record run, docs/custom-node-regression-suite.md Step 5c)`
             )
           } else {
             expect(
@@ -383,9 +398,8 @@ test('harness self-check: captures a real execution error @custom-nodes', async 
     'object_info sanity floor'
   ).toBeGreaterThan(OBJECT_INFO_SANITY_FLOOR)
   // Deferred, not skipped: the gating job forbids skips outright, and Cloud
-  // does not install the harness pack. Self-expiring, like the S14/S15
-  // baseline defers - the backend that ships the node runs the real check,
-  // which is where this positive control has to hold.
+  // does not install the harness pack. The backend that ships the node runs
+  // the real check, which is where this positive control has to hold.
   if (!('DevToolsErrorRaiseNode' in objectInfo)) {
     console.log(
       'harness self-check deferred: ComfyUI_devtools not installed on this backend'

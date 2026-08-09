@@ -11,7 +11,7 @@ import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidat
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   customNodesEnv,
-  loadManifest,
+  loadApplicableAutogrowCases,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
 import { customNodeSuiteSettings } from '@e2e/fixtures/utils/customNodeSuite'
@@ -40,15 +40,7 @@ import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
 // pack contract under test fires on the disconnect EVENT regardless of how
 // the link was severed, and the suite has no generic drag-detach vocabulary
 // (drag-detach pointer mechanics are core-interaction territory).
-const AUTOGROW_CASES = [
-  {
-    pack: 'ComfyUI-Impact-Pack',
-    extensionName: 'Comfy.Impack',
-    consumerType: 'ImpactMakeImageList',
-    producerType: 'EmptyImage',
-    producerSlot: 'IMAGE'
-  }
-]
+const applicableAutogrowCases = loadApplicableAutogrowCases()
 
 const target = new LocalDesktopTarget()
 
@@ -72,7 +64,7 @@ async function consumerShape(
   }, consumerId)
 }
 
-for (const autogrowCase of AUTOGROW_CASES) {
+for (const { autogrowCase, manifestEntry } of applicableAutogrowCases) {
   test.describe(`dynamic inputs: ${autogrowCase.pack} @custom-nodes`, () => {
     test(`${autogrowCase.consumerType} grows on connect and shrinks on disconnect (drag + programmatic, both renderers)`, async ({
       comfyPage
@@ -93,21 +85,7 @@ for (const autogrowCase of AUTOGROW_CASES) {
       )
       // The pack row owns renderer compatibility (vueNodesCompatible), so a
       // pack that ever declares itself Vue-incompatible keeps its canvas
-      // coverage here instead of failing the Vue pass. Also validates the
-      // curated pack label against the manifest.
-      // Case-insensitive: the core manifest names this pack
-      // ComfyUI-Impact-Pack, the cloud manifest comfyui-impact-pack.
-      const manifestEntry = loadManifest().find(
-        (entry) => entry.pack.toLowerCase() === autogrowCase.pack.toLowerCase()
-      )
-      expect(
-        manifestEntry,
-        `${autogrowCase.pack} is not a manifest pack - fix AUTOGROW_CASES`
-      ).toBeDefined()
-      expect(
-        manifestEntry!.expectedExtensions,
-        `${autogrowCase.pack} autogrow requires its frontend extension sentinel`
-      ).toContain(autogrowCase.extensionName)
+      // coverage here instead of failing the Vue pass.
       expect(
         await comfyPage.page.evaluate(
           (extensionName) =>
@@ -119,7 +97,7 @@ for (const autogrowCase of AUTOGROW_CASES) {
         `${autogrowCase.pack} autogrow extension ${autogrowCase.extensionName} is registered before S12`
       ).toBe(true)
 
-      for (const vueNodesEnabled of rendererPassesFor(manifestEntry!)) {
+      for (const vueNodesEnabled of rendererPassesFor(manifestEntry)) {
         const consoleErrors = collectConsoleErrors(comfyPage.page)
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',

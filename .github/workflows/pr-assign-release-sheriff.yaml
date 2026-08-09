@@ -40,7 +40,7 @@ jobs:
     steps:
       # pull_request_target checks out the base branch, never PR head code.
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend

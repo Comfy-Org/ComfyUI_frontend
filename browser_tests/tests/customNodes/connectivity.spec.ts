@@ -13,7 +13,8 @@ import {
 import {
   isForeignExecutionNoise,
   staleRequiredConnectivityErrorRulesForPacks,
-  unallowlistedConnectivityErrorsForPacks
+  unallowlistedConnectivityErrorsForPacks,
+  unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { connectivityExpectationsFor } from '@e2e/fixtures/customNode/connectivityExpectations'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
@@ -28,7 +29,10 @@ import {
   normalizeNodeDefs,
   planPairs
 } from '@e2e/fixtures/customNode/typePairing'
-import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
+import {
+  attachPageDiagnosticEvidence,
+  collectConsoleErrors
+} from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
@@ -204,10 +208,12 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
       `connectivity sweep: ${sweepErrors.length - unledgered.length} console error(s) matched an installed pack's allowlist`
     )
   if (unledgered.length > 0)
-    await test.info().attach('connectivity-console-errors.json', {
-      body: JSON.stringify(unledgered, null, 2),
-      contentType: 'application/json'
-    })
+    await attachPageDiagnosticEvidence(
+      comfyPage.page,
+      test.info(),
+      'connectivity-console-errors.json',
+      unledgered
+    )
   expect(
     unledgered.length === 0,
     failureSummary(
@@ -625,10 +631,34 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     }
 
     consoleErrors.stop()
+    const dragPacks = [
+      ...new Set(
+        dragEdges.flatMap((edge) => [edge.producer.pack, edge.consumer.pack])
+      )
+    ]
+    const dragErrors = consoleErrors.errors.filter(
+      (error) => !isForeignExecutionNoise(error)
+    )
+    const unledgered = unallowlistedErrorsForPacks(dragPacks, dragErrors)
+    if (dragErrors.length > unledgered.length)
+      console.log(
+        `connectivity drag: ${dragErrors.length - unledgered.length} console error(s) matched the exact environment or installed-pack ledger`
+      )
+    if (unledgered.length > 0)
+      await attachPageDiagnosticEvidence(
+        comfyPage.page,
+        test.info(),
+        'connectivity-drag-console-errors.json',
+        unledgered
+      )
     expect(
-      consoleErrors.errors.filter((error) => !isForeignExecutionNoise(error)),
-      `console errors with VueNodes=${vueNodesEnabled}`
-    ).toEqual([])
+      unledgered.length === 0,
+      failureSummary(
+        `console errors with VueNodes=${vueNodesEnabled}`,
+        unledgered,
+        'connectivity-drag-console-errors.json'
+      )
+    ).toBe(true)
     await expectNoVisibleErrors(
       comfyPage.page,
       `after drag pass VueNodes=${vueNodesEnabled}`

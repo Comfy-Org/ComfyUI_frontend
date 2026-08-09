@@ -32,7 +32,7 @@ jobs:
           echo "Is forked: ${{ github.event.workflow_run.head_repository.full_name != github.event.workflow_run.repository.full_name }}"
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Resolve PR from workflow_run context
         id: pr

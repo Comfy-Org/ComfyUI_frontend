@@ -70,7 +70,7 @@ jobs:
       issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -136,7 +136,7 @@ jobs:
         run: |
           set -o pipefail
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=list,json,html --workers=1 \
+            --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
             2>&1 | tee custom-nodes-canary.log
 
       - name: Forbid failed, skipped, or flaky tests
@@ -227,7 +227,7 @@ jobs:
       issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -291,7 +291,7 @@ jobs:
         run: |
           set -o pipefail
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=list,json,html --workers=1 \
+            --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
             2>&1 | tee custom-nodes-canary-packs.log
 
       - name: Forbid failed, skipped, or flaky tests
@@ -392,7 +392,7 @@ jobs:
       issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # Defense-in-depth mirror of the Cloud gate: fail closed when credentials
       # or the committed manifest are absent. A green drift canary must carry a

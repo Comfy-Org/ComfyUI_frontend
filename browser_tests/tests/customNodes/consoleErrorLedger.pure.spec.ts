@@ -55,10 +55,18 @@ test.describe('consoleErrorLedger', () => {
   test('cloud environment noise is ledgered for every pack, and only on cloud', () => {
     const viewError =
       'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:4173/api/view?type=input&filename=beach.jpg&subfolder=]'
+    const otherAdvertisedViewErrors = ['bedroom.mp4', 'eth3d.png'].map(
+      (filename) => viewError.replace('beach.jpg', filename)
+    )
     const challengeError =
       'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:4173/cdn-cgi/challenge-platform/scripts/jsd/main.js]'
     const real = 'TypeError: something real broke'
-    const errors = [viewError, challengeError, real]
+    const errors = [
+      viewError,
+      ...otherAdvertisedViewErrors,
+      challengeError,
+      real
+    ]
     expect(unallowlistedErrors('radiance', errors)).toEqual(errors)
     const previous = process.env.CUSTOM_NODES_ENV
     process.env.CUSTOM_NODES_ENV = 'cloud'
@@ -79,6 +87,30 @@ test.describe('consoleErrorLedger', () => {
       expect(
         unallowlistedErrors('any-pack', [viewError.replace('404', '500')])
       ).toHaveLength(1)
+      expect(
+        unallowlistedErrors('any-pack', [
+          viewError.replace('beach.jpg', 'unknown.png'),
+          viewError.replace('/api/view?', '/api/other?'),
+          viewError.replace('type=input', 'type=output'),
+          viewError.replace('subfolder=', 'subfolder=nested'),
+          viewError.replace('filename=beach.jpg', 'notfilename=beach.jpg'),
+          viewError.replace('type=input', 'prototype=input'),
+          viewError.replace(
+            'filename=beach.jpg',
+            'filename=unknown.png&filename=beach.jpg'
+          ),
+          viewError.replace(
+            'filename=beach.jpg',
+            'filename=beach.jpg&file%6Eame=unknown.png'
+          ),
+          viewError.replace('type=input', 'type=output&type=input'),
+          viewError.replace('type=input', 'type=input&t%79pe=output'),
+          viewError.replace('subfolder=', 'subfolder=nested&subfolder='),
+          viewError.replace('subfolder=', 'subfolder=&subf%6Flder=nested'),
+          viewError.replace('subfolder=', 'subfolder=&token=secret'),
+          viewError.replace('/api/view?', '/foo/api/view?')
+        ])
+      ).toHaveLength(14)
 
       const vhsAudio =
         'Failed to load resource: the server responded with a status of 400 (Bad Request) [http://localhost:4173/api/vhs/viewaudio?start_time=0&duration=0&timestamp=1785975998595&deadline=realtime]'
@@ -87,6 +119,8 @@ test.describe('consoleErrorLedger', () => {
       expect(
         unallowlistedErrors('any-pack', [
           vhsAudio,
+          vhsAudio.replace('start_time=0', 'filename=&start_time=0'),
+          vhsAudio.replace('start_time=0', '%66ilename=&start_time=0'),
           vhsVideo,
           vhsVideo.replace(
             'filename=bedroom.mp4&type=input',
@@ -110,9 +144,42 @@ test.describe('consoleErrorLedger', () => {
           vhsAudio.replace(
             'start_time=0&duration=0',
             'filename=song.wav&duration=0&start_time=0'
-          )
+          ),
+          vhsAudio.replace('start_time=0', '%66ilename=song.wav&start_time=0'),
+          vhsAudio.replace('start_time=0', 'start_time=99&start_time=0'),
+          vhsAudio.replace('start_time=0', 'start_t%69me=99&start_time=0'),
+          vhsAudio.replace('duration=0', 'duration=99&duration=0'),
+          vhsAudio.replace('duration=0', 'durat%69on=99&duration=0'),
+          vhsAudio.replace(
+            'start_time=0',
+            'filename=&file%6Eame=&start_time=0'
+          ),
+          vhsVideo.replace(
+            'filename=bedroom.mp4',
+            'filename=unknown.mp4&filename=bedroom.mp4'
+          ),
+          vhsVideo.replace(
+            'filename=bedroom.mp4',
+            'filename=bedroom.mp4&file%6Eame=unknown.mp4'
+          ),
+          vhsVideo.replace('type=input', 'type=output&type=input'),
+          vhsVideo.replace('type=input', 'type=input&t%79pe=output'),
+          vhsVideo.replace('/api/vhs/viewvideo?', '/prefix/api/vhs/viewvideo?'),
+          vhsVideo.replace('type=input', 'type=input&token=secret'),
+          vhsAudio.replace('/api/vhs/viewaudio?', '/prefix/api/vhs/viewaudio?'),
+          vhsAudio.replace(
+            'deadline=realtime',
+            'deadline=realtime&token=secret'
+          ),
+          vhsAudio.replace('timestamp=1785975998595', 'timestamp=not-a-number'),
+          vhsAudio.replace('deadline=realtime', 'deadline=eventual'),
+          ...[viewError, vhsAudio, vhsVideo].flatMap((error) => [
+            `prefix TypeError: real regression ${error}`,
+            `${error} TypeError: real regression`,
+            `${error} [https://evil.example/api?token=secret]`
+          ])
         ])
-      ).toHaveLength(9)
+      ).toHaveLength(34)
     } finally {
       if (previous === undefined) delete process.env.CUSTOM_NODES_ENV
       else process.env.CUSTOM_NODES_ENV = previous
@@ -136,6 +203,24 @@ test.describe('consoleErrorLedger', () => {
     expect(
       unallowlistedErrorsForPacks(['ComfyUI-Impact-Pack'], kjErrors)
     ).toEqual(kjErrors)
+  })
+
+  test('all-nodes enforcement rejects percent-encoded semantic duplicates', () => {
+    const valid =
+      'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:4173/api/view?filename=beach.jpg&subfolder=&type=input]'
+    const duplicate = valid.replace(
+      'filename=beach.jpg',
+      'filename=beach.jpg&file%6Eame=unknown.png'
+    )
+    const previous = process.env.CUSTOM_NODES_ENV
+    process.env.CUSTOM_NODES_ENV = 'cloud'
+    try {
+      expect(unallowlistedErrors('any-pack', [valid])).toEqual([])
+      expect(unallowlistedErrors('any-pack', [duplicate])).toEqual([duplicate])
+    } finally {
+      if (previous === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = previous
+    }
   })
 
   test('VHS getpath failures require Cloud, the owning pack, and the exact endpoint or source stack', () => {
@@ -249,6 +334,12 @@ test.describe('consoleErrorLedger', () => {
         'radiance',
         'comfyui-videohelpersuite'
       ]
+      const dragVideo404 =
+        'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:4173/api/vhs/viewvideo?filename=bedroom.mp4&type=input&format=video%2Fmp4&force_rate=0&custom_width=0&custom_height=0&frame_load_cap=0&skip_first_frames=0&select_every_nth=1&timestamp=1786152413548&force_size=478x%3F&deadline=realtime]'
+      const dragVideo404WithStartTime =
+        'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:4173/api/vhs/viewvideo?filename=bedroom.mp4&type=input&format=video%2Fmp4&force_rate=0&custom_width=0&custom_height=0&frame_load_cap=0&start_time=0&timestamp=1786152413548&force_size=594x%3F&deadline=realtime]'
+      const dragAudio400 =
+        'Failed to load resource: the server responded with a status of 400 (Bad Request) [http://localhost:4173/api/vhs/viewaudio?start_time=0&duration=0&timestamp=1786152413543&deadline=realtime]'
       expect(
         unallowlistedConnectivityErrorsForPacks(packs, [
           points,
@@ -258,7 +349,46 @@ test.describe('consoleErrorLedger', () => {
           queryVideo,
           vhs
         ])
-      ).toEqual([vhs])
+      ).toEqual([queryVideo, vhs])
+      expect(
+        unallowlistedConnectivityErrorsForPacks(packs, [
+          dragVideo404,
+          dragVideo404WithStartTime,
+          dragAudio400
+        ])
+      ).toEqual([])
+      expect(
+        unallowlistedErrorsForPacks(packs, [
+          dragVideo404,
+          dragAudio400,
+          queryVideo
+        ])
+      ).toEqual([queryVideo])
+      expect(
+        unallowlistedConnectivityErrorsForPacks(packs, [
+          dragVideo404.replace('404', '500'),
+          dragVideo404.replace('type=input', 'type=output'),
+          dragVideo404.replace('filename=bedroom.mp4', 'filename='),
+          dragVideo404.replace(
+            'filename=bedroom.mp4',
+            'filename=totally-unobserved.mp4'
+          ),
+          dragVideo404WithStartTime.replace(
+            'deadline=realtime',
+            'deadline=realtime&token=secret'
+          ),
+          dragVideo404WithStartTime.replace(
+            '/api/vhs/viewvideo?',
+            '/prefix/api/vhs/viewvideo?'
+          ),
+          dragAudio400.replace('400', '500'),
+          dragAudio400.replace('duration=0', 'duration=0.5'),
+          dragAudio400.replace(
+            'start_time=0&duration=0',
+            'filename=song.wav&start_time=0&duration=0'
+          )
+        ])
+      ).toHaveLength(9)
       expect(
         staleRequiredConnectivityErrorRulesForPacks(packs, [
           points,
@@ -277,12 +407,13 @@ test.describe('consoleErrorLedger', () => {
         unallowlistedConnectivityErrorsForPacks(
           ['comfyui-videohelpersuite'],
           [
+            queryVideo,
             queryVideo.replace('502', '500'),
             queryVideo.replace('type=input', 'type=output'),
             queryVideo.replace('filename=bedroom.mp4', 'filename=other.mp4')
           ]
         )
-      ).toHaveLength(3)
+      ).toHaveLength(4)
       expect(
         unallowlistedConnectivityErrorsForPacks(['radiance'], [points])
       ).toEqual([points])

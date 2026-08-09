@@ -39,7 +39,7 @@ jobs:
     outputs:
       should-run: ${{ steps.changes.outputs.should-run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -62,7 +62,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -153,6 +153,8 @@ jobs:
       - name: Run custom-node suite
         id: suite
         env:
+          CN_ENABLE_S14: '1'
+          CN_ENABLE_S15: '1'
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
         run: |
           set -o pipefail
@@ -160,11 +162,16 @@ jobs:
           # parallel workers interrupt each other's executions.
           # --project=custom-nodes: the `@custom-nodes`-tagged specs, which the
           # main e2e job's `chromium` project excludes (see playwright.config).
-          # list,json,html: json feeds the skip gate below; html writes
+          # The first reporter sanitizes a 502 test result before list/json/html
+          # consume it. Json feeds the skip gate below; html writes
           # playwright-report/ (the upload step's target) and folds in the
-          # retain-on-failure traces, which a bare list,json would discard.
+          # retain-on-failure traces.
+          # --quiet stops list from forwarding worker output before that
+          # completed-result sanitization runs.
+          # Core keeps its already-proven S13-S15 coverage active. The
+          # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=list,json,html --workers=1 \
+            --project=custom-nodes --reporter=./browser_tests/fixtures/customNode/cloudTraceReporter.ts,list,json,html --quiet --workers=1 --retries=0 \
             2>&1 | tee custom-nodes.log
 
       # A skip here means a pack or devtools did not load: on this backend every
@@ -174,12 +181,19 @@ jobs:
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
+          EXPECTED_TESTS: 34
         run: |
           set -euo pipefail
           # The JSON result is mandatory even when the suite step failed: the
           # gate must independently prove the failed, skipped, and flaky totals.
           if [ ! -f custom-nodes-results.json ]; then
             echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
+            exit 1
+          fi
+          collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
+          echo "collected tests: $collected"
+          if [ "$collected" != "$EXPECTED_TESTS" ]; then
+            echo "::error::collected $collected tests; expected exactly $EXPECTED_TESTS active Core custom-node tests"
             exit 1
           fi
           unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-results.json)

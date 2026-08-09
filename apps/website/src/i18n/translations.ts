@@ -5162,6 +5162,57 @@ const translations = {
       '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
   'seedance.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  // Wan Animate 2 model page (/wan-animate-2) — announcement until the model ships
+  'wanAnimate2.meta.title': {
+    en: 'Wan Animate 2 on Comfy — Coming Soon',
+    'zh-CN': 'Comfy 上的 Wan Animate 2 — 即将推出'
+  },
+  'wanAnimate2.meta.description': {
+    en: 'Wan Animate 2 is coming to Comfy. Run it on Comfy Cloud the day it lands, or start building workflows for free now with every other model Comfy supports.',
+    'zh-CN':
+      'Wan Animate 2 即将登陆 Comfy。上线当天即可在 Comfy Cloud 上运行；现在就可以用 Comfy 支持的其他模型免费开始搭建工作流。'
+  },
+  'wanAnimate2.breadcrumb.model': {
+    en: 'Wan Animate 2',
+    'zh-CN': 'Wan Animate 2'
+  },
+  'wanAnimate2.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'wanAnimate2.hero.eyebrow': { en: 'Coming soon', 'zh-CN': '即将推出' },
+  'wanAnimate2.hero.title': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
+  'wanAnimate2.hero.primaryCta': {
+    en: 'RUN COMFY FOR FREE',
+    'zh-CN': '免费使用 Comfy'
+  },
+  'wanAnimate2.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'wanAnimate2.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中搭建工作流。用 API 批量制作，或部署到自有环境。'
+  },
+  'wanAnimate2.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'wanAnimate2.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'wanAnimate2.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'wanAnimate2.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'wanAnimate2.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': '开始使用'
+  },
+  'footer.wanAnimate2': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'

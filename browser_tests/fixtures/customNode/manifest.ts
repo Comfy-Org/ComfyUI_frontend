@@ -79,6 +79,68 @@ export interface CloudManifest {
   unjoinedYamlPacks: string[]
 }
 
+export const AUTOGROW_CASES = [
+  {
+    pack: 'ComfyUI-Impact-Pack',
+    extensionName: 'Comfy.Impack',
+    extensionPathPack: 'comfyui-impact-pack',
+    consumerType: 'ImpactMakeImageList',
+    producerType: 'EmptyImage',
+    producerSlot: 'IMAGE'
+  }
+] as const
+
+export function staleAutogrowApplicabilityIssues(
+  entry: { pack: string; expectedExtensions: readonly string[] },
+  registeredExtensions: readonly string[],
+  servedExtensionPaths: readonly string[]
+): string[] {
+  return AUTOGROW_CASES.flatMap((autogrowCase) => {
+    if (
+      autogrowCase.pack.toLowerCase() !== entry.pack.toLowerCase() ||
+      entry.expectedExtensions.includes(autogrowCase.extensionName)
+    )
+      return []
+
+    const served = servedExtensionPaths.some((value) => {
+      try {
+        const segments = new URL(value, 'http://comfy.invalid').pathname
+          .split('/')
+          .filter(Boolean)
+          .flatMap((segment) => {
+            try {
+              return decodeURIComponent(segment).split('/').filter(Boolean)
+            } catch {
+              return [segment]
+            }
+          })
+        const extensionsIndex = segments.findIndex(
+          (segment) => segment.toLowerCase() === 'extensions'
+        )
+        return (
+          extensionsIndex >= 0 &&
+          segments[extensionsIndex + 1]?.toLowerCase() ===
+            autogrowCase.extensionPathPack.toLowerCase()
+        )
+      } catch {
+        return false
+      }
+    })
+    return [
+      ...(served
+        ? [
+            `frontend assets for "${autogrowCase.extensionName}" are now served - restore expectedExtensions and autogrow coverage`
+          ]
+        : []),
+      ...(registeredExtensions.includes(autogrowCase.extensionName)
+        ? [
+            `frontend extension "${autogrowCase.extensionName}" is now registered - restore expectedExtensions and autogrow coverage`
+          ]
+        : [])
+    ]
+  })
+}
+
 function sharedIssues(entry: SharedNodeExpectations): string[] {
   const missing: string[] = []
   // CI installs the pack into custom_nodes/<pack>, and node attribution keys
@@ -333,4 +395,20 @@ export function loadCloudUnjoinedYamlPacks(): string[] {
 export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {
   if (customNodesEnv() === 'cloud') return readCloudManifest().packs
   return readCoreManifest()
+}
+
+export function loadApplicableAutogrowCases() {
+  const manifest = loadManifest()
+  return AUTOGROW_CASES.flatMap((autogrowCase) => {
+    const manifestEntry = manifest.find(
+      (entry) => entry.pack.toLowerCase() === autogrowCase.pack.toLowerCase()
+    )
+    if (!manifestEntry)
+      throw new Error(
+        `${autogrowCase.pack} is not a manifest pack - fix AUTOGROW_CASES`
+      )
+    return manifestEntry.expectedExtensions.includes(autogrowCase.extensionName)
+      ? [{ autogrowCase, manifestEntry }]
+      : []
+  })
 }

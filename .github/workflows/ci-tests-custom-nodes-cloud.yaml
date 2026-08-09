@@ -82,7 +82,7 @@ jobs:
     outputs:
       should-run: ${{ steps.changes.outputs.should-run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -107,28 +107,39 @@ jobs:
       # Unconditional: the gate step below tests for the generated manifest
       # in the checkout, so the checkout must precede it. Cheap either way.
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      # Fail closed on the two activation preconditions. Secrets are unavailable
+      # Fail closed on every activation precondition. Secrets are unavailable
       # to `if:` expressions, so this run step checks them and the committed
-      # manifest before any setup cost. A same-repository gate without either
+      # manifest before any setup cost. A same-repository gate without any
       # prerequisite has no S1-S12 evidence and must be red.
       - name: Gate on cloud secrets and manifest
         id: gate
         env:
+          CLOUD_HTTP_502_EVIDENCE_KEY: ${{ secrets.CLOUD_HTTP_502_EVIDENCE_KEY }}
           SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
           SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
           missing=()
+          [ -n "${CLOUD_HTTP_502_EVIDENCE_KEY:-}" ] || missing+=(CLOUD_HTTP_502_EVIDENCE_KEY)
           [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
           [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::custom-nodes-e2e-cloud cannot prove S1-S12: smoke user credentials are missing (${missing[*]})."
+            echo "::error::custom-nodes-e2e-cloud cannot prove S1-S12: required secret(s) are missing (${missing[*]})."
             exit 1
           elif [ ! -f browser_tests/fixtures/data/customNodeManifest.cloud.json ]; then
             echo "::error::custom-nodes-e2e-cloud cannot prove S1-S12: browser_tests/fixtures/data/customNodeManifest.cloud.json is missing."
+            exit 1
+          elif ! node - <<'NODE'
+          const value = process.env.CLOUD_HTTP_502_EVIDENCE_KEY
+          const key = Buffer.from(value, 'base64')
+          if (key.length !== 32 || key.toString('base64') !== value)
+            process.exit(1)
+          NODE
+          then
+            echo "::error::custom-nodes-e2e-cloud cannot prove S1-S12: CLOUD_HTTP_502_EVIDENCE_KEY must be canonical base64 for exactly 32 bytes."
             exit 1
           else
             echo "run-cloud=true" >> "$GITHUB_OUTPUT"
@@ -183,7 +194,8 @@ jobs:
           exit 1
 
       # Same suite invocation as the core gate (--project=custom-nodes,
-      # list,json,html, one worker) with the backend swapped by env:
+      # sanitizer/list/json/html, quiet worker stdio, one worker) with the
+      # backend swapped by env:
       # CUSTOM_NODES_ENV=cloud selects the cloud manifest/baselines and triggers
       # the real smoke sign-in; PLAYWRIGHT_TEST_URL points at the preview server
       # (its /api proxies to Cloud, so setup + in-page API calls are same-origin
@@ -194,6 +206,9 @@ jobs:
         id: suite
         if: steps.gate.outputs.run-cloud == 'true'
         env:
+          CN_ENABLE_S14: '0'
+          CN_ENABLE_S15: '0'
+          CLOUD_HTTP_502_EVIDENCE_KEY: ${{ secrets.CLOUD_HTTP_502_EVIDENCE_KEY }}
           CUSTOM_NODES_ENV: cloud
           PLAYWRIGHT_TEST_URL: http://localhost:4173
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-cloud-results.json
@@ -201,12 +216,14 @@ jobs:
           SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         run: |
           set -o pipefail
-          # S13 (interaction profiles) is deferred on cloud until every other
-          # tier passes: no interactionProfiles/cloud/ baselines exist yet, so
-          # its fail-closed compare would red all packs. Drop the exclusion
-          # when S13 is un-deferred and its cloud baselines are recorded.
+          # S13 is excluded by title. CN_ENABLE_S14=0 and CN_ENABLE_S15=0 are
+          # the explicit ceiling for the embedded later-tier evidence paths.
+          # Activate each only in its dedicated proof phase after S1-S12 is
+          # green on both environments.
+          # --quiet stops list from forwarding worker output before the first
+          # reporter sanitizes the completed result for list/json/html.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=list,json,html --workers=1 \
+            --project=custom-nodes --reporter=./browser_tests/fixtures/customNode/cloudTraceReporter.ts,list,json,html --quiet --workers=1 --retries=0 \
             --grep-invert "interaction profiles:" 2>&1 | tee custom-nodes-cloud.log
 
       # A skip means a cloud pack, devtools, or an under-enrolled cloud manifest
@@ -220,12 +237,19 @@ jobs:
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
+          EXPECTED_TESTS: 185
         run: |
           set -euo pipefail
           # The JSON result is mandatory even when the suite step failed: the
           # gate must independently prove the failed, skipped, and flaky totals.
           if [ ! -f custom-nodes-cloud-results.json ]; then
             echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
+            exit 1
+          fi
+          collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-cloud-results.json)
+          echo "collected tests: $collected"
+          if [ "$collected" != "$EXPECTED_TESTS" ]; then
+            echo "::error::collected $collected tests; expected exactly $EXPECTED_TESTS S1-S12 tests"
             exit 1
           fi
           unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-cloud-results.json)

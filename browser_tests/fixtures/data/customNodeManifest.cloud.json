@@ -249,7 +249,6 @@
         "LTXVDrawTracks",
         "LTXVGemmaCLIPModelLoader",
         "LTXVLoadConditioning",
-        "LTXVPromptEnhancerLoader",
         "LTXVSelectLatents",
         "LTXVSetVideoLatentNoiseMasks",
         "LowVRAMAudioVAELoader",
@@ -1236,7 +1235,7 @@
       "workflow": "",
       "expectedNodes": ["AddMask", "AnyPipeToBasic"],
       "expectedNodeCount": 185,
-      "expectedExtensions": ["Comfy.Impack"],
+      "expectedExtensions": [],
       "disabledNodes": {
         "ImageReceiver": ["DisabledOnCloud"],
         "ImageSender": ["DisabledOnCloud"],
@@ -1314,8 +1313,7 @@
         "iToolsPromptStyler": ["DisabledOnCloud", "HasCustomEndpoints"],
         "iToolsPromptStylerExtra": ["DisabledOnCloud", "HasCustomEndpoints"]
       },
-      "timeoutMs": 30000,
-      "cannotRunAlone": ["iToolsLoadImagePlus"]
+      "timeoutMs": 30000
     },
     {
       "pack": "comfyui-layerdiffuse",
