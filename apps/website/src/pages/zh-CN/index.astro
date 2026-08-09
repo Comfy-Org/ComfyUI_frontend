@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../components/home/ProductCardsSection.vue'
 import HeroSection from '../../components/home/HeroSection.vue'
+import ModelReleaseSection from '../../components/home/ModelReleaseSection.vue'
 import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
 import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
 import UseCaseSection from '../../components/home/UseCaseSection.vue'
@@ -32,6 +33,7 @@ const { siteUrl } = pageContext(
 >
   <HeroSection locale="zh-CN" client:load />
   <SocialProofBarSection />
+  <ModelReleaseSection locale="zh-CN" client:visible />
   <ProductShowcaseSection locale="zh-CN" client:load />
   <UseCaseSection locale="zh-CN" client:load />
   <GetStartedSection locale="zh-CN" />
