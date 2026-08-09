@@ -24,6 +24,25 @@ afterEach(() => {
 })
 
 describe('DatadogRumTelemetryProvider', () => {
+  it('records terminal unified auth retry outcomes without request data', () => {
+    new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
+      transport: 'axios',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+      {
+        transport: 'axios',
+        outcome: 'failed',
+        final_status: 401,
+        failure_reason: 'retry_rejected'
+      }
+    )
+  })
+
   it('records the same canonical billing name and context as PostHog', () => {
     const event: BillingTelemetryEvent = {
       operation: 'operation',
@@ -35,7 +54,8 @@ describe('DatadogRumTelemetryProvider', () => {
       cycle: 'monthly',
       checkout_type: 'new',
       payment_intent_source: 'subscribe_to_run',
-      failure_category: 'provider_decline'
+      failure_category: 'provider_decline',
+      duration_ms: 4200
     }
 
     new DatadogRumTelemetryProvider().trackBillingEvent(event)

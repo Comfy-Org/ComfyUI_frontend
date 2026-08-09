@@ -41,12 +41,9 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 const SELF_EMAIL = 'e2e@test.comfy.org'
 
-// consolidated_billing_enabled routes personal workspaces to the unified
-// pricing table asserted here; without it they fall back to the legacy table.
 const BOOT_FEATURES = {
-  team_workspaces_enabled: true,
-  consolidated_billing_enabled: true,
-  billing_control_enabled: true
+  billing_control_enabled: true,
+  consolidated_billing_enabled: true
 } satisfies RemoteConfig
 // Disable the experimental Asset API: with it on (cloud default) the unmocked
 // asset endpoints 403 and workflow restore throws uncaught, aborting the
@@ -99,7 +96,9 @@ const ACTIVE_TEAM_STATUS = {
     id: 'team_700',
     credits_monthly: 147_700,
     stop_usd: 700
-  }
+  },
+  max_seats: 5,
+  occupied_seats: 1
 } satisfies BillingStatusResponse
 
 const ACTIVE_STANDARD_STATUS = {
@@ -111,7 +110,9 @@ const ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
-  team_credit_stop: null
+  team_credit_stop: null,
+  max_seats: 1,
+  occupied_seats: 1
 } satisfies BillingStatusResponse
 
 const ACTIVE_CREATOR_STATUS = {
