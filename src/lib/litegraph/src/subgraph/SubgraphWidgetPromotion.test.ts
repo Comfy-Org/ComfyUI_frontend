@@ -1133,6 +1133,33 @@ describe('SubgraphWidgetPromotion', () => {
           'second host value'
         ])
       })
+
+      it('falls through to the interior widget value when a legacy host entry is null', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, NUMBER_PAIR)
+
+        const host = createTestSubgraphNode(subgraph, { id: 101 })
+        const serialized = host.serialize()
+
+        const widgetStore = useWidgetValueStore()
+        widgetStore.clearGraph(host.rootGraph.id)
+        const reloaded = createTestSubgraphNode(subgraph, { id: 101 })
+        reloaded.configure({
+          ...serialized,
+          widgets_values: fromAny([null, null])
+        })
+
+        expect(
+          widgetStore.getWidget(
+            widgetId(reloaded.rootGraph.id, reloaded.id, 'first')
+          )?.value
+        ).toBe(1)
+        expect(
+          widgetStore.getWidget(
+            widgetId(reloaded.rootGraph.id, reloaded.id, 'second')
+          )?.value
+        ).toBe(2)
+      })
     })
 
     describe('proxyWidgets is no longer re-emitted', () => {
