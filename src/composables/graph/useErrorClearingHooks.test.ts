@@ -14,6 +14,12 @@ import {
   LGraphEventMode,
   NodeSlotType
 } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  createMissingMediaCandidate,
+  createPromotedMediaRuntime,
+  createPromotedMissingMediaCandidate,
+  deferMediaVerification
+} from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import * as missingModelScan from '@/platform/missingModel/missingModelScan'
@@ -50,7 +56,62 @@ function createNestedSubgraphRuntime() {
   })
   rootGraph.add(outerSubgraphNode)
 
-  return { rootGraph, outerSubgraph, innerSubgraphNode, outerSubgraphNode }
+  return {
+    rootGraph,
+    outerSubgraph,
+    innerSubgraph,
+    leafNode,
+    innerSubgraphNode,
+    outerSubgraphNode
+  }
+}
+
+function setNodeMode(
+  graph: LGraph,
+  node: LGraphNode,
+  newMode: LGraphEventMode
+): void {
+  const oldMode = node.mode
+  node.mode = newMode
+  graph.onTrigger?.({
+    type: 'node:property:changed',
+    nodeId: node.id,
+    property: 'mode',
+    oldValue: oldMode,
+    newValue: newMode
+  })
+}
+
+async function startPendingPromotedMediaVerification() {
+  const {
+    rootGraph,
+    hosts: [outerHost],
+    sourceNodes: [leafNode]
+  } = createPromotedMediaRuntime({ depth: 2, hostValue: 'pending.png' })
+  outerHost.mode = LGraphEventMode.BYPASS
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+
+  const pendingCandidate = {
+    ...createPromotedMissingMediaCandidate(outerHost),
+    isMissing: undefined
+  }
+  vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+  vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockImplementation(
+    (_rootGraph, node) => (node === outerHost ? [pendingCandidate] : [])
+  )
+  const { verifySpy, resolveVerification } = deferMediaVerification()
+
+  installErrorClearingHooks(rootGraph)
+  setNodeMode(rootGraph, outerHost, LGraphEventMode.ALWAYS)
+  await vi.waitFor(() => expect(verifySpy).toHaveBeenCalled())
+
+  return {
+    rootGraph,
+    outerHost,
+    leafNode,
+    pendingCandidate,
+    resolveVerification
+  }
 }
 
 describe('Connection error clearing via onConnectionsChange', () => {
@@ -595,6 +656,53 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(mediaStore.missingMediaCandidates).toBeNull()
     expect(nodesStore.missingNodesError).toBeNull()
   })
+
+  it('removes host-keyed missing media when its sole promoted consumer is deleted', () => {
+    const {
+      rootGraph,
+      subgraph,
+      hosts: [host],
+      sourceNodes
+    } = createPromotedMediaRuntime()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    installErrorClearingHooks(subgraph)
+
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([createPromotedMissingMediaCandidate(host)])
+
+    expect(host.widgets).toHaveLength(1)
+    subgraph.remove(sourceNodes[0])
+
+    expect(host.widgets).toHaveLength(0)
+    expect(mediaStore.missingMediaCandidates).toBeNull()
+  })
+
+  it('keeps promoted missing media until the last fanout consumer is deleted', () => {
+    const {
+      rootGraph,
+      subgraph,
+      hosts: [host],
+      sourceNodes
+    } = createPromotedMediaRuntime({ sourceIds: [42, 43, 44] })
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    installErrorClearingHooks(subgraph)
+
+    const candidate = createPromotedMissingMediaCandidate(host)
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([candidate])
+
+    subgraph.remove(sourceNodes[0])
+    expect(host.widgets).toHaveLength(1)
+    expect(mediaStore.missingMediaCandidates).toEqual([candidate])
+
+    subgraph.remove(sourceNodes[2])
+    expect(host.widgets).toHaveLength(1)
+    expect(mediaStore.missingMediaCandidates).toEqual([candidate])
+
+    subgraph.remove(sourceNodes[1])
+    expect(host.widgets).toHaveLength(0)
+    expect(mediaStore.missingMediaCandidates).toBeNull()
+  })
 })
 
 describe('realtime scan verifies pending cloud candidates', () => {
@@ -655,6 +763,9 @@ describe('realtime scan verifies pending cloud candidates', () => {
   it('un-bypass path surfaces pending media candidates after verification', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('LoadImage')
+    node.addWidget('combo', 'image', 'cloud_image.png', () => undefined, {
+      values: []
+    })
     graph.add(node)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
@@ -835,6 +946,42 @@ describe('realtime verification staleness guards', () => {
 
     resolveVerify!()
     await new Promise((r) => setTimeout(r, 0))
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
+
+  it('surfaces verified media while its promoted consumer remains active', async () => {
+    const { pendingCandidate, resolveVerification } =
+      await startPendingPromotedMediaVerification()
+    resolveVerification()
+
+    await vi.waitFor(() => {
+      expect(useMissingMediaStore().missingMediaCandidates).toEqual([
+        pendingCandidate
+      ])
+    })
+  })
+
+  it('skips verified media whose host widget value changed while verification was pending', async () => {
+    const { outerHost, resolveVerification } =
+      await startPendingPromotedMediaVerification()
+    const hostWidget = outerHost.widgets?.[0]
+    if (!hostWidget) throw new Error('Expected promoted image host widget')
+
+    hostWidget.value = 'corrected.png'
+    resolveVerification()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
+
+  it('skips verified media when its sole promoted consumer becomes bypassed', async () => {
+    const { leafNode, resolveVerification } =
+      await startPendingPromotedMediaVerification()
+
+    leafNode.mode = LGraphEventMode.BYPASS
+    resolveVerification()
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
   })
@@ -1033,6 +1180,79 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     })
 
     expect(modelStore.missingModelCandidates).toBeNull()
+  })
+
+  it('keeps only unaffected missing media after its sole promoted consumer is bypassed', () => {
+    const {
+      rootGraph,
+      hosts: [outerHost],
+      sourceGraphs: [innerSubgraph],
+      sourceNodes: [leafNode]
+    } = createPromotedMediaRuntime({ depth: 2 })
+    const unaffectedNode = new LGraphNode('LoadImage')
+    unaffectedNode.id = toNodeId(80)
+    unaffectedNode.type = 'LoadImage'
+    unaffectedNode.addWidget('combo', 'image', 'other.png', () => undefined, {
+      values: []
+    })
+    rootGraph.add(unaffectedNode)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    installErrorClearingHooks(innerSubgraph)
+
+    const mediaStore = useMissingMediaStore()
+    const affectedCandidate = createPromotedMissingMediaCandidate(outerHost)
+    const unaffectedCandidate = createMissingMediaCandidate(
+      [unaffectedNode.id],
+      { name: 'other.png' }
+    )
+    mediaStore.setMissingMedia([affectedCandidate, unaffectedCandidate])
+
+    setNodeMode(innerSubgraph, leafNode, LGraphEventMode.BYPASS)
+
+    expect(mediaStore.missingMediaCandidates).toEqual([unaffectedCandidate])
+  })
+
+  it('keeps promoted missing media until the last fanout consumer is bypassed', () => {
+    const {
+      rootGraph,
+      subgraph,
+      hosts: [host],
+      sourceNodes
+    } = createPromotedMediaRuntime({ sourceIds: [42, 43, 44] })
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    installErrorClearingHooks(subgraph)
+
+    const candidate = createPromotedMissingMediaCandidate(host)
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([candidate])
+
+    setNodeMode(subgraph, sourceNodes[0], LGraphEventMode.BYPASS)
+    expect(mediaStore.missingMediaCandidates).toEqual([candidate])
+
+    setNodeMode(subgraph, sourceNodes[2], LGraphEventMode.BYPASS)
+    expect(mediaStore.missingMediaCandidates).toEqual([candidate])
+
+    setNodeMode(subgraph, sourceNodes[1], LGraphEventMode.BYPASS)
+    expect(mediaStore.missingMediaCandidates).toBeNull()
+  })
+
+  it('removes promoted missing media when an intermediate host is bypassed', () => {
+    const {
+      rootGraph,
+      subgraph: outerSubgraph,
+      hosts: [outerHost],
+      intermediateHosts: [innerHost]
+    } = createPromotedMediaRuntime({ depth: 2 })
+    if (!innerHost) throw new Error('Expected nested promoted image host')
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    installErrorClearingHooks(outerSubgraph)
+
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([createPromotedMissingMediaCandidate(outerHost)])
+
+    setNodeMode(outerSubgraph, innerHost, LGraphEventMode.BYPASS)
+
+    expect(mediaStore.missingMediaCandidates).toBeNull()
   })
 
   it('rescans ancestor hosts when a promoted source ancestor is un-bypassed', () => {
