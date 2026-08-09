@@ -13,7 +13,8 @@ const {
   mockLocalStorage
 } = vi.hoisted(() => ({
   mockTelemetry: {
-    trackBeginCheckout: vi.fn()
+    trackBeginCheckout: vi.fn(),
+    trackBillingEvent: vi.fn()
   },
   mockGetAuthHeader: vi.fn(() =>
     Promise.resolve({ Authorization: 'Bearer test-token' })
@@ -76,7 +77,13 @@ vi.mock('@/stores/authStore', () => ({
       userId: computed(() => mockUserId.value)
     })
   ),
-  AuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {
+    readonly status: number | undefined
+    constructor(message: string, status?: number) {
+      super(message)
+      this.status = status
+    }
+  }
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -305,5 +312,32 @@ describe('performSubscriptionCheckout', () => {
         checkout_attempt_id: expect.any(String)
       })
     )
+  })
+
+  it('reports checkout-initiation failure via trackBillingEvent, so the marketing deep link inherits it too', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 400,
+      statusText: 'Bad Request',
+      json: async () => ({ message: 'declined for person@example.com' }),
+      text: async () => ''
+    } as Response)
+
+    await expect(
+      performSubscriptionCheckout('pro', 'yearly', {
+        paymentIntentSource: 'deep_link'
+      })
+    ).rejects.toThrow()
+
+    expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: 'pro',
+      cycle: 'yearly',
+      checkout_type: 'new',
+      payment_intent_source: 'deep_link',
+      failure_category: 'api_rejected'
+    })
   })
 })
