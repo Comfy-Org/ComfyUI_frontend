@@ -553,6 +553,39 @@ describe('useConflictDetection', () => {
       expect(peakInFlightRequests).toBeLessThanOrEqual(4)
     })
 
+    it('stops dispatching queued chunks once the run is cancelled', async () => {
+      installPacks(500)
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const releaseRequest: (() => void)[] = []
+      let holdRequests = true
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mockImplementation(
+        async (nodeVersions) => {
+          if (holdRequests) {
+            await new Promise<void>((resolve) => releaseRequest.push(resolve))
+          }
+          return bannedResponse(nodeVersions)
+        }
+      )
+
+      const { runFullConflictAnalysis, cancelRequests } = useConflictDetection()
+      const analysis = runFullConflictAnalysis()
+      await vi.waitFor(() => expect(releaseRequest.length).toBeGreaterThan(0))
+      const dispatchedBeforeCancel = bulkCalls().length
+
+      cancelRequests()
+      holdRequests = false
+      releaseRequest.forEach((release) => release())
+      await analysis
+
+      expect(bulkCalls()).toHaveLength(dispatchedBeforeCancel)
+      expect(dispatchedBeforeCancel).toBeLessThan(5)
+      expect(
+        warn.mock.calls.filter(([message]) =>
+          String(message).includes('Failed to fetch bulk version data')
+        )
+      ).toEqual([])
+    })
+
     it('sends a single request when the install fits in one chunk', async () => {
       installPacks(50)
 
