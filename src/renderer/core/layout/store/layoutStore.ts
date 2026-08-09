@@ -84,18 +84,6 @@ function makeScopedLayoutKey(
   return toScopedLayoutKey(graphId + ':' + localId)
 }
 
-/** Ownership tokens are non-empty strings; `undefined` marks legacy layouts. */
-function isRegistrationId(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0
-}
-
-function hasInvalidRegistrationId(operation: LayoutOperation): boolean {
-  if ('registrationId' in operation) return operation.registrationId === ''
-  if ('registrationIds' in operation && operation.registrationIds)
-    return Object.values(operation.registrationIds).includes('')
-  return false
-}
-
 /** A UUID never contains `:`, so the first one always ends the graph id. */
 function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
   const separatorIndex = key.indexOf(':')
@@ -108,7 +96,6 @@ function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
 interface RerouteData {
   id: RerouteId
   position: Point
-  registrationId?: string
 }
 
 type RerouteLayoutMap = Y.Map<RerouteData[keyof RerouteData]>
@@ -340,7 +327,6 @@ class LayoutStore {
                   graphId: rootGraphId,
                   nodeId,
                   position: newLayout.position,
-                  registrationId: this.getNodeRegistrationId(existing),
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor
@@ -355,7 +341,6 @@ class LayoutStore {
                   entity: 'node',
                   graphId: rootGraphId,
                   nodeId,
-                  registrationId: this.getNodeRegistrationId(existing),
                   size: newLayout.size,
                   timestamp: Date.now(),
                   source: this.currentSource,
@@ -368,7 +353,6 @@ class LayoutStore {
                   entity: 'node',
                   graphId: rootGraphId,
                   nodeId,
-                  registrationId: this.getNodeRegistrationId(existing),
                   zIndex: newLayout.zIndex,
                   timestamp: Date.now(),
                   source: this.currentSource,
@@ -816,14 +800,12 @@ class LayoutStore {
    */
   applyOperation(operation: LayoutOperation): LayoutOperationResult {
     if (this.isApplyingOperation) return 'rejected'
-    if (hasInvalidRegistrationId(operation)) return 'rejected'
     return this.applySnapshots([structuredClone(operation)])
   }
 
   applyOperations(operations: LayoutOperation[]): LayoutOperationResult {
     if (this.isApplyingOperation) return 'rejected'
     if (operations.length === 0) return 'no-op'
-    if (operations.some(hasInvalidRegistrationId)) return 'rejected'
 
     const snapshots = operations.map((operation) => structuredClone(operation))
     return this.applySnapshots(snapshots)
@@ -953,7 +935,7 @@ class LayoutStore {
         const layout = { ...operation.layout, id: operation.groupId }
         change.operation = { ...operation, layout }
         change.type = 'create'
-        this.ygroups.set(key, layoutToYGroup(layout, operation.registrationId))
+        this.ygroups.set(key, layoutToYGroup(layout))
         return true
       }
       case 'setGroupBounds':
@@ -961,12 +943,7 @@ class LayoutStore {
       case 'deleteGroup': {
         const key = makeScopedLayoutKey(operation.graphId, operation.groupId)
         const existing = this.ygroups.get(key)
-        if (
-          !existing ||
-          !this.hasLayoutOwnership(existing, operation.registrationId)
-        ) {
-          return false
-        }
+        if (!existing) return false
         change.type = 'delete'
         this.ygroups.delete(key)
         return true
@@ -1150,21 +1127,6 @@ class LayoutStore {
   }
 
   // Operation handlers
-  private getNodeRegistrationId(node: NodeLayoutMap): string | undefined {
-    const registrationId = node.get('registrationId')
-    return isRegistrationId(registrationId) ? registrationId : undefined
-  }
-
-  private hasLayoutOwnership(
-    layout: { get(key: string): unknown },
-    registrationId: string | undefined
-  ): boolean {
-    const storedRegistrationId = layout.get('registrationId')
-    return registrationId === undefined
-      ? storedRegistrationId === undefined
-      : storedRegistrationId === registrationId
-  }
-
   private handleMoveNode(
     operation: MoveNodeOperation,
     change: LayoutChange
@@ -1172,9 +1134,7 @@ class LayoutStore {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
     const ynode = this.ynodes.get(nodeKey)
-    if (!ynode || !this.hasLayoutOwnership(ynode, operation.registrationId)) {
-      return false
-    }
+    if (!ynode) return false
     if (isPointEqual(yNodeGeometry(ynode).position, operation.position)) {
       return false
     }
@@ -1190,8 +1150,7 @@ class LayoutStore {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
     const ynode = this.ynodes.get(nodeKey)
-    if (!ynode || !this.hasLayoutOwnership(ynode, operation.registrationId))
-      return false
+    if (!ynode) return false
     const { size } = yNodeGeometry(ynode)
     if (
       size.width === operation.size.width &&
@@ -1208,8 +1167,7 @@ class LayoutStore {
   private handleSetGroupBounds(operation: SetGroupBoundsOperation): boolean {
     const key = makeScopedLayoutKey(operation.graphId, operation.groupId)
     const ygroup = this.ygroups.get(key)
-    if (!ygroup || !this.hasLayoutOwnership(ygroup, operation.registrationId))
-      return false
+    if (!ygroup) return false
     const current = yGroupToLayout(ygroup, operation.groupId)
     if (
       isPointEqual(current.position, operation.position) &&
@@ -1229,12 +1187,7 @@ class LayoutStore {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
     const ynode = this.ynodes.get(nodeKey)
-    if (
-      !ynode ||
-      !this.hasLayoutOwnership(ynode, operation.registrationId) ||
-      ynode.get('zIndex') === operation.zIndex
-    )
-      return false
+    if (!ynode || ynode.get('zIndex') === operation.zIndex) return false
     change.nodeIds.push(nodeId)
     ynode.set('zIndex', operation.zIndex)
     this.highestZIndex = Math.max(this.highestZIndex, operation.zIndex)
@@ -1248,12 +1201,7 @@ class LayoutStore {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
     const ynode = this.ynodes.get(nodeKey)
-    if (
-      !ynode ||
-      !this.hasLayoutOwnership(ynode, operation.registrationId) ||
-      ynode.get('visible') === operation.visible
-    )
-      return false
+    if (!ynode || ynode.get('visible') === operation.visible) return false
     change.nodeIds.push(nodeId)
     ynode.set('visible', operation.visible)
     return true
@@ -1270,7 +1218,7 @@ class LayoutStore {
     change.operation = { ...operation, layout }
     change.type = 'create'
     change.nodeIds.push(nodeId)
-    this.ynodes.set(nodeKey, layoutToYNode(layout, operation.registrationId))
+    this.ynodes.set(nodeKey, layoutToYNode(layout))
     this.highestZIndex = Math.max(this.highestZIndex, layout.zIndex)
     return true
   }
@@ -1282,11 +1230,7 @@ class LayoutStore {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
     const existing = this.ynodes.get(nodeKey)
-    if (
-      !existing ||
-      !this.hasLayoutOwnership(existing, operation.registrationId)
-    )
-      return false
+    if (!existing) return false
     // nodeRefs, nodeTriggers and slot layouts outlive the delete: undo/redo
     // re-creates the node against the refs components already hold. Link
     // geometry leaves per-link through LLink.disconnect.
@@ -1305,12 +1249,7 @@ class LayoutStore {
       const ynode = this.ynodes.get(
         makeScopedLayoutKey(operation.graphId, nodeId)
       )
-      if (
-        !bounds ||
-        !ynode ||
-        !this.hasLayoutOwnership(ynode, operation.registrationIds?.[nodeId])
-      )
-        continue
+      if (!bounds || !ynode) continue
       const current = yNodeToLayout(ynode).bounds
       if (isBoundsEqual(current, bounds)) continue
       if (current.width !== bounds.width || current.height !== bounds.height) {
@@ -1336,9 +1275,6 @@ class LayoutStore {
     const rerouteData = new Y.Map<RerouteData[keyof RerouteData]>()
     rerouteData.set('id', operation.rerouteId)
     rerouteData.set('position', { ...operation.position })
-    if (operation.registrationId !== undefined) {
-      rerouteData.set('registrationId', operation.registrationId)
-    }
     this.yreroutes.set(rerouteKey, rerouteData)
     return true
   }
@@ -1352,12 +1288,7 @@ class LayoutStore {
       operation.rerouteId
     )
     const existing = this.yreroutes.get(rerouteKey)
-    if (
-      !existing ||
-      !this.hasLayoutOwnership(existing, operation.registrationId)
-    ) {
-      return false
-    }
+    if (!existing) return false
     change.type = 'delete'
     this.yreroutes.delete(rerouteKey)
     return true
@@ -1372,11 +1303,7 @@ class LayoutStore {
       operation.rerouteId
     )
     const yreroute = this.yreroutes.get(rerouteKey)
-    if (
-      !yreroute ||
-      !this.hasLayoutOwnership(yreroute, operation.registrationId)
-    )
-      return false
+    if (!yreroute) return false
     if (
       isPointEqual(
         this.getRerouteField(yreroute, 'position'),
@@ -1523,42 +1450,6 @@ class LayoutStore {
     this.notifyGeometryChange(graphIds)
   }
 
-  getRegistrationId(
-    entity: 'node',
-    rootGraphId: UUID,
-    id: NodeId
-  ): string | undefined
-  getRegistrationId(
-    entity: 'group',
-    rootGraphId: UUID,
-    id: GroupId
-  ): string | undefined
-  getRegistrationId(
-    entity: 'reroute',
-    rootGraphId: UUID,
-    id: RerouteId
-  ): string | undefined
-  getRegistrationId(
-    entity: 'node' | 'group' | 'reroute',
-    rootGraphId: UUID,
-    id: NodeId | GroupId | RerouteId
-  ): string | undefined
-  getRegistrationId(
-    entity: 'node' | 'group' | 'reroute',
-    rootGraphId: UUID,
-    id: NodeId | GroupId | RerouteId
-  ): string | undefined {
-    const key = makeScopedLayoutKey(rootGraphId, id)
-    const registrationId = {
-      node: this.ynodes,
-      group: this.ygroups,
-      reroute: this.yreroutes
-    }[entity]
-      .get(key)
-      ?.get('registrationId')
-    return isRegistrationId(registrationId) ? registrationId : undefined
-  }
-
   /**
    * Batch update node bounds using Yjs transaction for atomicity.
    */
@@ -1571,9 +1462,6 @@ class LayoutStore {
     try {
       const nodeIds: NodeId[] = []
       const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
-      const registrationIds: NonNullable<
-        BatchUpdateBoundsOperation['registrationIds']
-      > = {}
 
       for (const { nodeId, bounds } of updates) {
         const ynode = this.ynodes.get(makeScopedLayoutKey(rootGraphId, nodeId))
@@ -1582,9 +1470,6 @@ class LayoutStore {
         boundsRecord[nodeId] = shouldNormalizeHeights
           ? { ...bounds, height: removeNodeTitleHeight(bounds.height) }
           : bounds
-        const resolvedRegistrationId = ynode.get('registrationId')
-        if (isRegistrationId(resolvedRegistrationId))
-          registrationIds[nodeId] = resolvedRegistrationId
         nodeIds.push(nodeId)
       }
 
@@ -1595,7 +1480,6 @@ class LayoutStore {
         entity: 'node',
         graphId: rootGraphId,
         nodeIds,
-        registrationIds,
         bounds: boundsRecord,
         timestamp: Date.now(),
         source: this.currentSource,

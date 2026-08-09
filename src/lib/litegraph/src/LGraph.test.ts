@@ -1900,7 +1900,7 @@ describe('node layout registration', () => {
     ).not.toBeNull()
   })
 
-  it('transfers layout ownership to a replacement node', () => {
+  it('transfers layout registration to a replacement node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('old')
     node.pos = [120, 340]
@@ -1922,7 +1922,7 @@ describe('node layout registration', () => {
     ).toEqual({ x: 220, y: 440 })
   })
 
-  it('rejects transfer after layout ownership changes', () => {
+  it('rejects transfer when the backing layout is missing', () => {
     const graph = new LGraph()
     const node = new LGraphNode('old')
     node.pos = [120, 340]
@@ -1931,9 +1931,7 @@ describe('node layout registration', () => {
     replacement.id = node.id
     replacement.graph = graph
     const nodes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('nodes')
-    const storedNode = nodes.get(`${graph.rootGraph.id}:${node.id}`)
-    if (!storedNode) throw new Error('Expected stored node layout')
-    storedNode.set('registrationId', 'foreign')
+    nodes.delete(`${graph.rootGraph.id}:${node.id}`)
 
     expect(transferLayoutRegistration(node, replacement)).toBe('rejected')
     expect(() => adoptNodeReplacement(graph, node, replacement, 0)).toThrow(
@@ -1944,11 +1942,11 @@ describe('node layout registration', () => {
 
     replacement.pos = [220, 440]
     expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
-    ).toEqual({ x: 120, y: 340 })
+      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
+    ).toBeNull()
   })
 
-  it('restores layout ownership when replacement removal lifecycle throws', () => {
+  it('restores layout registration when replacement removal lifecycle throws', () => {
     const graph = new LGraph()
     const node = new LGraphNode('old')
     graph.add(node)
@@ -2012,16 +2010,11 @@ describe('node layout registration', () => {
     ).toBeNull()
   })
 
-  it('restores node ownership when canvas deselect throws after detachment', () => {
+  it('restores node layout when canvas deselect throws after detachment', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.pos = [120, 340]
     graph.add(node)
-    const registrationId = layoutStore.getRegistrationId(
-      'node',
-      graph.rootGraph.id,
-      node.id
-    )
     const canvas = fromAny<LGraphCanvas, unknown>({
       checkPanels: vi.fn(),
       selected_nodes: { [node.id]: node },
@@ -2037,9 +2030,6 @@ describe('node layout registration', () => {
     expect(graph.nodes).toContain(node)
     expect(graph.getNodeById(node.id)).toBe(node)
     expect(node.graph).toBe(graph)
-    expect(
-      layoutStore.getRegistrationId('node', graph.rootGraph.id, node.id)
-    ).toBe(registrationId)
     expect(
       layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
     ).toEqual({

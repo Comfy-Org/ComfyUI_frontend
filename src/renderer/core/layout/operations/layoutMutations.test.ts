@@ -1,10 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
-import type * as Y from 'yjs'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { toGroupId } from '@/types/groupId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
@@ -52,13 +50,9 @@ describe('moveNode', () => {
     )
   })
 
-  it('forwards current registration ownership', () => {
+  it('updates a newly created node', () => {
     const { createNode, moveNode } = useLayoutMutations()
     createNode(GRAPH, NEW_NODE, { position: { x: 10, y: 20 } })
-    getLayoutStoreYDoc()
-      .getMap<Y.Map<unknown>>('nodes')
-      .get(`${GRAPH}:${NEW_NODE}`)
-      ?.set('registrationId', 'owner')
 
     moveNode(GRAPH, NEW_NODE, { x: 100, y: 200 })
 

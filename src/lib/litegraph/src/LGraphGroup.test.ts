@@ -150,70 +150,31 @@ describe('group layout in layoutStore', () => {
       (graph: LGraph, group: LGraphGroup) =>
         detachLayout(graph, 'group', group).result
     ]
-  ] as const)('%s preserves a foreign layout', ([, attached, release]) => {
-    const graph = new LGraph()
-    const group = attached
-      ? addedGroup(graph, toGroupId(803))
-      : new LGraphGroup('unowned', 803)
-    const groups = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('groups')
-    const key = `${graph.rootGraph.id}:${group.id}`
-    const foreignGroup = new Y.Map<unknown>()
-    foreignGroup.set('id', group.id)
-    foreignGroup.set('rect', [20, 30, 40, 50])
-    foreignGroup.set('registrationId', 'foreign-group')
-    groups.set(key, foreignGroup)
+  ] as const)(
+    '%s handles an existing layout by attachment',
+    ([, attached, release]) => {
+      const graph = new LGraph()
+      const group = attached
+        ? addedGroup(graph, toGroupId(803))
+        : new LGraphGroup('unowned', 803)
+      const groups = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('groups')
+      const key = `${graph.rootGraph.id}:${group.id}`
+      const foreignGroup = new Y.Map<unknown>()
+      foreignGroup.set('id', group.id)
+      foreignGroup.set('rect', [20, 30, 40, 50])
+      groups.set(key, foreignGroup)
 
-    release(graph, group)
+      release(graph, group)
 
-    expect(groups.get(key)).toBe(foreignGroup)
-  })
-
-  test('keeps retained node ownership after a foreign explicit unregister', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    detachLayout(graph, 'node', node)
-    attachLayout(graph, 'node', node, {
-      adoptExisting: false,
-      registrationId: 'A'
-    })
-
-    expect(detachLayout(graph, 'node', node, 'B').result).toBe('no-op')
-    node.pos = [220, 440]
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
-    ).toEqual({
-      x: 220,
-      y: 440
-    })
-
-    expect(detachLayout(graph, 'node', node, 'A').result).toBe('applied')
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
-    ).toBeNull()
-  })
-
-  test('keeps retained ownership after a foreign explicit unregister', () => {
-    const graph = new LGraph()
-    const group = addedGroup(graph, toGroupId(817))
-    detachLayout(graph, 'group', group)
-    attachLayout(graph, 'group', group, { registrationId: 'A' })
-
-    expect(detachLayout(graph, 'group', group, 'B').result).toBe('no-op')
-    group.pos = [200, 250]
-    expect(
-      layoutStore.getGroupLayout(graph.rootGraph.id, group.id)?.position
-    ).toEqual({ x: 200, y: 250 })
-
-    expect(detachLayout(graph, 'group', group, 'A').result).toBe('applied')
-    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
-  })
+      expect(groups.get(key)).toBe(attached ? undefined : foreignGroup)
+    }
+  )
 
   test('restores an attached group layout when canvas deselect throws', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(809))
     detachLayout(graph, 'group', group)
-    attachLayout(graph, 'group', group, { registrationId: 'owner' })
+    attachLayout(graph, 'group', group)
     const canvasAction = vi
       .spyOn(graph, 'canvasAction')
       .mockImplementation(() => {
@@ -241,7 +202,7 @@ describe('group layout in layoutStore', () => {
     expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toBeNull()
   })
 
-  test('drops stale group ownership when restore preserves a foreign layout', () => {
+  test('drops stale group attachment when restore preserves an existing layout', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(819))
     const groups = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('groups')
@@ -249,7 +210,6 @@ describe('group layout in layoutStore', () => {
     const foreign = new Y.Map<unknown>()
     foreign.set('id', group.id)
     foreign.set('rect', [20, 30, 40, 50])
-    foreign.set('registrationId', 'foreign')
     vi.spyOn(graph, 'canvasAction').mockImplementation(() => {
       groups.set(key, foreign)
       throw new Error('group deselect failed')
@@ -266,7 +226,7 @@ describe('group layout in layoutStore', () => {
     expect(groups.get(key)).toBe(foreign)
   })
 
-  test('keeps group ownership when reentrant unregister is rejected', () => {
+  test('keeps group attachment when reentrant unregister is rejected', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(807))
     const ydoc = getLayoutStoreYDoc()
@@ -323,7 +283,7 @@ describe('group layout in layoutStore', () => {
     ).toEqual({ x: 20, y: 30 })
   })
 
-  test('keeps node ownership when reentrant removal is rejected', () => {
+  test('keeps node attachment when reentrant removal is rejected', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')
     graph.add(node)
@@ -345,7 +305,7 @@ describe('group layout in layoutStore', () => {
     ).toEqual({ x: 20, y: 30 })
   })
 
-  test('preserves a foreign layout that replaced an attached node', () => {
+  test('updates and removes a replacement layout at the attached key', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')
     graph.add(node)
@@ -357,17 +317,16 @@ describe('group layout in layoutStore', () => {
     foreignNode.set('size', { width: 40, height: 50 })
     foreignNode.set('visible', true)
     foreignNode.set('zIndex', 0)
-    foreignNode.set('registrationId', 'foreign-node')
     nodes.set(key, foreignNode)
 
     node.pos = [200, 300]
     node.size = [400, 500]
 
-    expect([...node.pos]).toEqual([20, 30])
-    expect([...node.size]).toEqual([40, 50])
+    expect([...node.pos]).toEqual([200, 300])
+    expect([...node.size]).toEqual([400, 500])
     graph.remove(node)
 
-    expect(nodes.get(key)).toBe(foreignNode)
+    expect(nodes.get(key)).toBeUndefined()
   })
 
   test('adding the same node instance twice is idempotent', () => {
@@ -461,7 +420,7 @@ describe('group layout in layoutStore', () => {
     expect(group.graph).toBe(graph)
   })
 
-  test('adopts stored group ownership when configured from serialized data', () => {
+  test('adopts stored group layout when configured from serialized data', () => {
     const graph = new LGraph()
     const groupId = toGroupId(811)
     layoutStore.applyOperation({
@@ -474,7 +433,6 @@ describe('group layout in layoutStore', () => {
         position: { x: 500, y: 300 },
         size: { width: 400, height: 200 }
       },
-      registrationId: 'remote-peer',
       source: LayoutSource.External,
       timestamp: Date.now(),
       type: 'createGroup'
@@ -502,9 +460,7 @@ describe('group layout in layoutStore', () => {
       x: 600,
       y: 300
     })
-    expect(layoutStore.getRegistrationId('group', graph.id, groupId)).toBe(
-      'remote-peer'
-    )
+    expect(layoutStore.getGroupLayout(graph.id, groupId)).not.toBeNull()
   })
 
   test('clear detaches groups so another graph can adopt them', () => {
@@ -900,7 +856,7 @@ describe('group layout in layoutStore', () => {
     expect(groups.value.get(group.id)?.position).toEqual({ x: 75, y: 80 })
   })
 
-  test('stale registered group writes preserve a foreign replacement', () => {
+  test('registered group writes update a replacement layout at the same key', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group')
     graph.add(group)
@@ -909,12 +865,11 @@ describe('group layout in layoutStore', () => {
     const foreign = new Y.Map<unknown>()
     foreign.set('id', group.id)
     foreign.set('rect', [20, 30, 40, 50])
-    foreign.set('registrationId', 'foreign')
     groups.set(key, foreign)
 
     group.pos = [200, 300]
 
     expect(groups.get(key)).toBe(foreign)
-    expect([...group.pos]).toEqual([20, 30])
+    expect([...group.pos]).toEqual([200, 300])
   })
 })

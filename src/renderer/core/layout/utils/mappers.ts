@@ -13,7 +13,6 @@ type StoredNode = {
   size: NodeLayout['size']
   visible: boolean
   zIndex: number
-  registrationId?: string
 }
 
 export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
@@ -21,19 +20,13 @@ export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
 const DEFAULT_NODE_POSITION: NodeLayout['position'] = { x: 0, y: 0 }
 const DEFAULT_NODE_SIZE: NodeLayout['size'] = { width: 100, height: 50 }
 
-export function layoutToYNode(
-  layout: NodeLayout,
-  registrationId?: string
-): NodeLayoutMap {
+export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
   const ynode = new Y.Map<StoredNode[keyof StoredNode]>() as NodeLayoutMap
   ynode.set('id', layout.id)
   ynode.set('position', { ...layout.position })
   ynode.set('size', { ...layout.size })
   ynode.set('zIndex', layout.zIndex)
   ynode.set('visible', layout.visible)
-  if (registrationId !== undefined) {
-    ynode.set('registrationId', registrationId)
-  }
   return ynode
 }
 
@@ -66,17 +59,13 @@ export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
 type StoredGroup = {
   id: GroupId
   rect: StoredRect
-  registrationId?: string
 }
 
 export type GroupLayoutMap = Y.Map<StoredGroup[keyof StoredGroup]>
 
 const DEFAULT_GROUP_RECT: StoredRect = [0, 0, 140, 80]
 
-export function layoutToYGroup(
-  layout: GroupLayout,
-  registrationId?: string
-): GroupLayoutMap {
+export function layoutToYGroup(layout: GroupLayout): GroupLayoutMap {
   const ygroup = new Y.Map<StoredGroup[keyof StoredGroup]>() as GroupLayoutMap
   ygroup.set('id', layout.id)
   ygroup.set('rect', [
@@ -85,7 +74,6 @@ export function layoutToYGroup(
     layout.size.width,
     layout.size.height
   ])
-  if (registrationId !== undefined) ygroup.set('registrationId', registrationId)
   return ygroup
 }
 

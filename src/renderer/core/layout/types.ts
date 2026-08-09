@@ -129,12 +129,10 @@ export type LayoutOperationResult = 'applied' | 'no-op' | 'rejected'
 type NodeOpBase = OperationMeta & {
   entity: 'node'
   nodeId: NodeId
-  registrationId?: string
 }
 type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
   rerouteId: RerouteId
-  registrationId?: string
 }
 
 /**
@@ -211,7 +209,6 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
   entity: 'node'
   nodeIds: NodeId[]
   type: 'batchUpdateBounds'
-  registrationIds?: Partial<Record<NodeId, string>>
 }
 
 /**
@@ -240,7 +237,6 @@ export interface MoveRerouteOperation extends RerouteOpBase {
 type GroupOpBase = OperationMeta & {
   entity: 'group'
   groupId: GroupId
-  registrationId?: string
 }
 
 interface CreateGroupOperation extends GroupOpBase {

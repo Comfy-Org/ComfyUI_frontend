@@ -147,7 +147,6 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const graphId = graph.id
     const scope = graphScopeOf(graph)
     const rerouteId = toRerouteId(99)
-    const registrationId = createUuidv4()
     const store = useRerouteStore()
     store.registerReroute(scope, { id: rerouteId })
     layoutStore.applyOperation({
@@ -155,7 +154,6 @@ describe('Reroute ↔ rerouteStore integration', () => {
       entity: 'reroute',
       graphId,
       position: { x: 10, y: 20 },
-      registrationId,
       rerouteId,
       source: LayoutSource.External,
       timestamp: Date.now(),
@@ -180,7 +178,6 @@ describe('Reroute ↔ rerouteStore integration', () => {
       entity: 'reroute',
       graphId,
       position: { x: 10, y: 20 },
-      registrationId: createUuidv4(),
       rerouteId,
       source: LayoutSource.External,
       timestamp: Date.now(),
@@ -386,7 +383,7 @@ describe('Reroute position lives only in layoutStore', () => {
     layoutStore.resetForTests()
   })
 
-  it('adopts stored ownership when materialized from serialized data', () => {
+  it('adopts stored layout when materialized from serialized data', () => {
     const { graph, link } = connectedGraph()
     const rerouteId = toRerouteId(37)
     layoutStore.applyOperation({
@@ -394,7 +391,6 @@ describe('Reroute position lives only in layoutStore', () => {
       entity: 'reroute',
       graphId: graph.rootGraph.id,
       position: { x: 500, y: 300 },
-      registrationId: 'remote-peer',
       rerouteId,
       source: LayoutSource.External,
       timestamp: Date.now(),
@@ -418,8 +414,8 @@ describe('Reroute position lives only in layoutStore', () => {
       layoutStore.getRerouteLayout(graph.rootGraph.id, rerouteId)?.position
     ).toEqual({ x: 600, y: 300 })
     expect(
-      layoutStore.getRegistrationId('reroute', graph.rootGraph.id, rerouteId)
-    ).toBe('remote-peer')
+      layoutStore.getRerouteLayout(graph.rootGraph.id, rerouteId)
+    ).not.toBeNull()
   })
 
   it('limits configure adoption to the exact serialized reroute input', () => {
@@ -432,7 +428,6 @@ describe('Reroute position lives only in layoutStore', () => {
         entity: 'reroute',
         graphId: graph.id,
         position: { x: 50, y: 60 },
-        registrationId: `remote-${rerouteId}`,
         rerouteId,
         source: LayoutSource.External,
         timestamp: Date.now(),
@@ -1020,11 +1015,6 @@ describe('Reroute position lives only in layoutStore', () => {
       entity: 'reroute',
       graphId: graph.id,
       position: { x: 25, y: 35 },
-      registrationId: layoutStore.getRegistrationId(
-        'reroute',
-        graph.id,
-        reroute.id
-      ),
       rerouteId: reroute.id,
       source: LayoutSource.External,
       timestamp: Date.now(),
@@ -1046,11 +1036,6 @@ describe('Reroute position lives only in layoutStore', () => {
       entity: 'reroute',
       graphId: graph.id,
       position: { x: 30, y: 40 },
-      registrationId: layoutStore.getRegistrationId(
-        'reroute',
-        graph.id,
-        reroute.id
-      ),
       rerouteId: reroute.id,
       source: LayoutSource.External,
       timestamp: Date.now(),
@@ -1062,7 +1047,7 @@ describe('Reroute position lives only in layoutStore', () => {
     expect([...reroute.pos]).toEqual([30, 40])
   })
 
-  it('stale attached reroute writes preserve a foreign replacement', () => {
+  it('attached reroute writes update a replacement layout at the same key', () => {
     const graph = new LGraph()
     const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
     const reroutes = getLayoutStoreYDoc().getMap<Y.Map<unknown>>('reroutes')
@@ -1070,13 +1055,12 @@ describe('Reroute position lives only in layoutStore', () => {
     const foreign = new Y.Map<unknown>()
     foreign.set('id', reroute.id)
     foreign.set('position', { x: 70, y: 80 })
-    foreign.set('registrationId', 'foreign')
     reroutes.set(key, foreign)
 
     reroute.pos = [30, 40]
 
     expect(reroutes.get(key)).toBe(foreign)
-    expect([...reroute.pos]).toEqual([70, 80])
+    expect([...reroute.pos]).toEqual([30, 40])
   })
 
   it.for([
@@ -1092,7 +1076,7 @@ describe('Reroute position lives only in layoutStore', () => {
         detachLayout(graph, 'reroute', reroute)
     ]
   ] as const)(
-    '%s preserves a foreign reroute layout',
+    '%s handles an existing reroute layout by attachment',
     ([, attached, release]) => {
       const graph = new LGraph()
       const reroute = attached
@@ -1103,51 +1087,21 @@ describe('Reroute position lives only in layoutStore', () => {
       const foreignReroute = new Y.Map<unknown>()
       foreignReroute.set('id', reroute.id)
       foreignReroute.set('position', { x: 70, y: 80 })
-      foreignReroute.set('registrationId', 'foreign-reroute')
       reroutes.set(key, foreignReroute)
 
       release(graph, reroute)
 
-      expect(reroutes.get(key)).toBe(foreignReroute)
-      if (attached) expect([...reroute.pos]).toEqual([10, 20])
+      expect(reroutes.get(key)).toBe(attached ? undefined : foreignReroute)
+      if (attached) expect([...reroute.pos]).toEqual([70, 80])
     }
   )
-
-  it('keeps retained ownership after a foreign explicit unregister', () => {
-    const graph = new LGraph()
-    const reroute = graph.setReroute({ pos: [10, 20], linkIds: [] })
-    detachLayout(graph, 'reroute', reroute)
-    attachLayout(graph, 'reroute', reroute, {
-      position: { x: 10, y: 20 },
-      registrationId: 'A'
-    })
-
-    expect(detachLayout(graph, 'reroute', reroute, 'B').result).toBe('no-op')
-    reroute.pos = [30, 40]
-    expect(
-      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
-    ).toEqual({ x: 30, y: 40 })
-
-    expect(detachLayout(graph, 'reroute', reroute, 'A').result).toBe('applied')
-    expect(
-      layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)
-    ).toBeNull()
-
-    reroute.pos = [50, 60]
-
-    expect([...reroute.pos]).toEqual([50, 60])
-    expect(useRerouteStore().getReroute(graphScopeOf(graph), reroute.id)).toBe(
-      reroute._chain
-    )
-  })
 
   it('restores an attached reroute layout when canvas deselect throws', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 20], link)!
     detachLayout(graph, 'reroute', reroute)
     attachLayout(graph, 'reroute', reroute, {
-      position: { x: 10, y: 20 },
-      registrationId: 'owner'
+      position: { x: 10, y: 20 }
     })
     const canvasAction = vi
       .spyOn(graph, 'canvasAction')
@@ -1176,7 +1130,7 @@ describe('Reroute position lives only in layoutStore', () => {
     ).toBeNull()
   })
 
-  it('keeps reroute ownership when reentrant unregister is rejected', () => {
+  it('keeps reroute attachment when reentrant unregister is rejected', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([10, 20], link)!
     const ydoc = getLayoutStoreYDoc()

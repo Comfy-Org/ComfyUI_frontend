@@ -22,14 +22,6 @@ import type {
 
 const logger = log.getLogger('LayoutMutations')
 
-/** ID-based mutations intentionally target the entity currently owning this ID. */
-function getNodeRegistrationId(
-  rootGraphId: UUID,
-  nodeId: NodeId
-): string | undefined {
-  return layoutStore.getRegistrationId('node', rootGraphId, nodeId)
-}
-
 interface LayoutMutations {
   batchMoveNodes(
     rootGraphId: UUID,
@@ -39,8 +31,7 @@ interface LayoutMutations {
   createGroup(
     rootGraphId: UUID,
     groupId: GroupId,
-    layout: Omit<GroupLayout, 'id'>,
-    registrationId?: string
+    layout: Omit<GroupLayout, 'id'>
   ): LayoutOperationResult
   createNode(
     rootGraphId: UUID,
@@ -50,19 +41,10 @@ interface LayoutMutations {
   createReroute(
     rootGraphId: UUID,
     rerouteId: RerouteId,
-    position: Point,
-    registrationId?: string
+    position: Point
   ): LayoutOperationResult
-  deleteGroup(
-    rootGraphId: UUID,
-    groupId: GroupId,
-    registrationId?: string
-  ): LayoutOperationResult
-  deleteReroute(
-    rootGraphId: UUID,
-    rerouteId: RerouteId,
-    registrationId?: string
-  ): LayoutOperationResult
+  deleteGroup(rootGraphId: UUID, groupId: GroupId): LayoutOperationResult
+  deleteReroute(rootGraphId: UUID, rerouteId: RerouteId): LayoutOperationResult
   moveNode(rootGraphId: UUID, nodeId: NodeId, position: Point): void
   resizeNode(rootGraphId: UUID, nodeId: NodeId, size: Size): void
   setActor(actor: string): void
@@ -105,7 +87,6 @@ export function useLayoutMutations(): LayoutMutations {
       graphId: rootGraphId,
       nodeId,
       position,
-      registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -151,7 +132,6 @@ export function useLayoutMutations(): LayoutMutations {
       entity: 'node',
       graphId: rootGraphId,
       nodeId,
-      registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       size,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -175,7 +155,6 @@ export function useLayoutMutations(): LayoutMutations {
       entity: 'node',
       graphId: rootGraphId,
       nodeId,
-      registrationId: getNodeRegistrationId(rootGraphId, nodeId),
       zIndex,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -230,8 +209,7 @@ export function useLayoutMutations(): LayoutMutations {
   const createReroute = (
     rootGraphId: UUID,
     rerouteId: RerouteId,
-    position: Point,
-    registrationId?: string
+    position: Point
   ): LayoutOperationResult => {
     logger.debug('Creating reroute:', { rerouteId, position })
     return layoutStore.applyOperation({
@@ -240,7 +218,6 @@ export function useLayoutMutations(): LayoutMutations {
       graphId: rootGraphId,
       rerouteId,
       position,
-      registrationId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -250,8 +227,7 @@ export function useLayoutMutations(): LayoutMutations {
   const createGroup = (
     rootGraphId: UUID,
     groupId: GroupId,
-    layout: Omit<GroupLayout, 'id'>,
-    registrationId?: string
+    layout: Omit<GroupLayout, 'id'>
   ): LayoutOperationResult => {
     return layoutStore.applyOperation({
       type: 'createGroup',
@@ -259,7 +235,6 @@ export function useLayoutMutations(): LayoutMutations {
       graphId: rootGraphId,
       groupId,
       layout: { id: groupId, ...layout },
-      registrationId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -268,8 +243,7 @@ export function useLayoutMutations(): LayoutMutations {
 
   const deleteGroup = (
     rootGraphId: UUID,
-    groupId: GroupId,
-    registrationId?: string
+    groupId: GroupId
   ): LayoutOperationResult => {
     if (!layoutStore.getGroupLayout(rootGraphId, groupId)) return 'no-op'
 
@@ -278,7 +252,6 @@ export function useLayoutMutations(): LayoutMutations {
       entity: 'group',
       graphId: rootGraphId,
       groupId,
-      registrationId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -290,8 +263,7 @@ export function useLayoutMutations(): LayoutMutations {
    */
   const deleteReroute = (
     rootGraphId: UUID,
-    rerouteId: RerouteId,
-    registrationId?: string
+    rerouteId: RerouteId
   ): LayoutOperationResult => {
     if (!layoutStore.getRerouteLayout(rootGraphId, rerouteId)) return 'no-op'
 
@@ -301,7 +273,6 @@ export function useLayoutMutations(): LayoutMutations {
       entity: 'reroute',
       graphId: rootGraphId,
       rerouteId,
-      registrationId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()

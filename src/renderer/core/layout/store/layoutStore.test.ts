@@ -100,21 +100,17 @@ describe('layoutStore CRDT operations', () => {
       timestamp: 1
     } as const
 
-    function createNode(
-      layout = createTestNode(nodeId),
-      registrationId?: string
-    ) {
+    function createNode(layout = createTestNode(nodeId)) {
       return layoutStore.applyOperation({
         ...metadata,
         entity: 'node',
         layout,
         nodeId: layout.id,
-        registrationId,
         type: 'createNode'
       })
     }
 
-    function createGroup(position = { x: 10, y: 20 }, registrationId?: string) {
+    function createGroup(position = { x: 10, y: 20 }) {
       return layoutStore.applyOperation({
         ...metadata,
         entity: 'group',
@@ -125,21 +121,16 @@ describe('layoutStore CRDT operations', () => {
           position,
           size: { width: 30, height: 40 }
         },
-        registrationId,
         type: 'createGroup'
       })
     }
 
-    function createReroute(
-      position = { x: 10, y: 20 },
-      registrationId?: string
-    ) {
+    function createReroute(position = { x: 10, y: 20 }) {
       return layoutStore.applyOperation({
         ...metadata,
         entity: 'reroute',
         graphId,
         position,
-        registrationId,
         rerouteId,
         type: 'createReroute'
       })
@@ -197,8 +188,8 @@ describe('layoutStore CRDT operations', () => {
       ).toEqual(initialPosition)
     })
 
-    it('rejects tokenless updates to a registered node', () => {
-      createNode(createTestNode(nodeId), 'owner')
+    it('applies updates to an existing node', () => {
+      createNode()
       const operations: LayoutOperation[] = [
         {
           ...metadata,
@@ -239,16 +230,21 @@ describe('layoutStore CRDT operations', () => {
         }
       ]
 
-      expect(layoutStore.applyOperations(operations)).toBe('no-op')
-      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value).toEqual(
-        createTestNode(nodeId)
+      expect(layoutStore.applyOperations(operations)).toBe('applied')
+      expect(layoutStore.getNodeLayoutRef(graphId, nodeId).value).toMatchObject(
+        {
+          bounds: { x: 1, y: 2, width: 3, height: 4 },
+          position: { x: 1, y: 2 },
+          size: { width: 3, height: 4 },
+          visible: false,
+          zIndex: 10
+        }
       )
     })
 
-    it('requires exact group and reroute ownership while preserving legacy updates', () => {
-      createGroup(undefined, 'group-owner')
-      expect(createReroute(undefined, '')).toBe('rejected')
-      expect(createReroute()).toBe('applied')
+    it('applies changed group and reroute updates by key', () => {
+      createGroup()
+      createReroute()
 
       expect(
         layoutStore.applyOperation({
@@ -260,18 +256,7 @@ describe('layoutStore CRDT operations', () => {
           size: { width: 300, height: 400 },
           type: 'setGroupBounds'
         })
-      ).toBe('no-op')
-      expect(
-        layoutStore.applyOperation({
-          ...metadata,
-          entity: 'reroute',
-          graphId,
-          position: { x: 100, y: 200 },
-          registrationId: '',
-          rerouteId,
-          type: 'moveReroute'
-        })
-      ).toBe('rejected')
+      ).toBe('applied')
       expect(
         layoutStore.applyOperation({
           ...metadata,
@@ -282,6 +267,16 @@ describe('layoutStore CRDT operations', () => {
           type: 'moveReroute'
         })
       ).toBe('applied')
+      expect(
+        layoutStore.applyOperation({
+          ...metadata,
+          entity: 'reroute',
+          graphId,
+          position: { x: 100, y: 200 },
+          rerouteId,
+          type: 'moveReroute'
+        })
+      ).toBe('no-op')
 
       layoutStore.resetForTests()
       createGroup()

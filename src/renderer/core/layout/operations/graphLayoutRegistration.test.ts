@@ -81,13 +81,12 @@ describe('graph layout registration contract', () => {
     )
     expect(
       attachLayout(graph, 'reroute', reroute, {
-        position: { x: 50, y: 60 },
-        registrationId: 'replacement'
+        position: { x: 50, y: 60 }
       })
     ).toBe('no-op')
   })
 
-  it('freezes missing and mismatched detach results for each entity kind', () => {
+  it('returns no-op when detaching instances that were never attached', () => {
     const graph = new LGraph()
     const node = new LGraphNode('node')
     const group = new LGraphGroup('group')
@@ -96,11 +95,6 @@ describe('graph layout registration contract', () => {
     expect(detachLayout(graph, 'node', node).result).toBe('no-op')
     expect(detachLayout(graph, 'group', group).result).toBe('no-op')
     expect(detachLayout(graph, 'reroute', reroute).result).toBe('no-op')
-    expect(detachLayout(graph, 'node', node, 'mismatch').result).toBe('no-op')
-    expect(detachLayout(graph, 'group', group, 'mismatch').result).toBe('no-op')
-    expect(detachLayout(graph, 'reroute', reroute, 'mismatch').result).toBe(
-      'no-op'
-    )
   })
 
   it('mutations without local registration are silent no-ops', () => {
@@ -140,7 +134,7 @@ describe('graph layout registration contract', () => {
     expect([...reroute.pos]).toEqual([70, 80])
   })
 
-  it('detach restore envelopes reinstate geometry and ownership', () => {
+  it('detach restore envelopes reinstate geometry and attachment', () => {
     const graph = new LGraph()
     const node = addedNode(graph)
     const group = addedGroup(graph)
@@ -182,15 +176,14 @@ describe('graph layout registration contract', () => {
     ).toEqual(['setGroupBounds', 'moveNode', 'resizeNode'])
   })
 
-  it('materializes reroutes by adopting existing ownership or creating geometry', () => {
+  it('materializes reroutes by adopting existing layout or creating geometry', () => {
     const graph = new LGraph()
     const owned = new Reroute(toRerouteId(10), graph, [1, 2])
     const replacement = new Reroute(owned.id, graph, [3, 4])
     const created = new Reroute(toRerouteId(11), graph, [5, 6])
     expect(
       attachLayout(graph, 'reroute', owned, {
-        position: { x: 1, y: 2 },
-        registrationId: 'owner'
+        position: { x: 1, y: 2 }
       })
     ).toBe('applied')
 
@@ -270,7 +263,7 @@ describe('graph layout registration contract', () => {
     )
   })
 
-  it('returns rejected when attaching an already-attached node cannot release ownership', () => {
+  it('returns rejected when an already-attached node cannot detach', () => {
     const graph = new LGraph()
     const node = addedNode(graph)
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
@@ -278,27 +271,24 @@ describe('graph layout registration contract', () => {
 
     expect(
       attachLayout(graph, 'node', node, {
-        adoptExisting: false,
-        registrationId: 'new-owner'
+        adoptExisting: false
       })
     ).toBe('rejected')
     expect(node._layoutRegistered).toBe(true)
   })
 
-  it('preserves local ownership after mismatched explicit unregisters', () => {
+  it('returns no-op when detaching already-detached instances', () => {
     const graph = new LGraph()
     const node = addedNode(graph)
     const group = addedGroup(graph)
     const reroute = addedReroute(graph)
 
-    expect(detachLayout(graph, 'node', node, 'foreign').result).toBe('no-op')
-    expect(detachLayout(graph, 'group', group, 'foreign').result).toBe('no-op')
-    expect(detachLayout(graph, 'reroute', reroute, 'foreign').result).toBe(
-      'no-op'
-    )
     expect(detachLayout(graph, 'node', node).result).toBe('applied')
     expect(detachLayout(graph, 'group', group).result).toBe('applied')
     expect(detachLayout(graph, 'reroute', reroute).result).toBe('applied')
+    expect(detachLayout(graph, 'node', node).result).toBe('no-op')
+    expect(detachLayout(graph, 'group', group).result).toBe('no-op')
+    expect(detachLayout(graph, 'reroute', reroute).result).toBe('no-op')
   })
 
   it('restores local attachment when a reentrant detach is rejected', () => {
@@ -337,31 +327,19 @@ describe('graph layout registration contract', () => {
     expect(layoutStore.getNodeLayoutRef(graph.id, node.id).value).toBeNull()
   })
 
-  it('does not restore a detach with a mismatched token', () => {
+  it('does not restore a detach that was already detached', () => {
     const graph = new LGraph()
     const node = addedNode(graph)
-    const layout = structuredClone(
-      layoutStore.getNodeLayoutRef(graph.id, node.id).value
-    )
-    const registrationId = layoutStore.getRegistrationId(
-      'node',
-      graph.id,
-      node.id
-    )
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
 
-    const detach = detachLayout(graph, 'node', node, 'foreign')
+    expect(detachLayout(graph, 'node', node).result).toBe('applied')
+    const detach = detachLayout(graph, 'node', node)
     expect(detach.result).toBe('no-op')
     applyOperation.mockClear()
 
     detach.restore()
 
     expect(applyOperation).not.toHaveBeenCalled()
-    expect(layoutStore.getNodeLayoutRef(graph.id, node.id).value).toEqual(
-      layout
-    )
-    expect(layoutStore.getRegistrationId('node', graph.id, node.id)).toBe(
-      registrationId
-    )
+    expect(layoutStore.getNodeLayoutRef(graph.id, node.id).value).toBeNull()
   })
 })
