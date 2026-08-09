@@ -13,6 +13,8 @@ import {
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
+import { readFileAsArrayBuffer } from './readFile'
+
 const WEBM_SIGNATURE = [0x1a, 0x45, 0xdf, 0xa3]
 const MAX_READ_BYTES = 2 * 1024 * 1024
 const EBML_ID = {
@@ -125,7 +127,7 @@ const findElementsInTag = (
   end: number,
   id: Uint8Array
 ): EbmlElementRange | null => {
-  for (let pos = start; pos < end - 1; ) {
+  for (let pos = start; pos < end - 1;) {
     if (matchesId(data, pos, id)) {
       const size = readVint(data, pos + 2)
       if (size && size.value > 0) {
@@ -308,7 +310,7 @@ const ebmlToString = (
 const parseMetadata = (data: Uint8Array): ComfyMetadata => {
   const meta: ComfyMetadata = {}
 
-  for (let pos = 0; pos < data.length - 2; ) {
+  for (let pos = 0; pos < data.length - 2;) {
     const tagInfo = findNextTag(data, pos)
     if (!tagInfo) {
       pos++

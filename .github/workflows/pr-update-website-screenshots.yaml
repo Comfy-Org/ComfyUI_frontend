@@ -14,7 +14,7 @@ jobs:
   update-screenshots:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-noble
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
     timeout-minutes: 15
     permissions:
       contents: write
@@ -75,7 +75,7 @@ jobs:
             core.setOutput('pr-number', prNumber)
             core.setOutput('branch', pr.head.ref)
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ steps.pr-info.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
@@ -128,6 +128,9 @@ jobs:
 
       - name: Remove label
         if: always() && github.event_name == 'pull_request'
+        # Label cleanup is best-effort; the restricted pull_request token may
+        # lack permission to remove labels and must not fail the run.
+        continue-on-error: true
         uses: actions/github-script@v8
         env:
           PR_NUMBER: ${{ steps.pr-info.outputs.pr-number }}
@@ -174,7 +177,7 @@ jobs:
       group: website-pr-comment-${{ github.event.number || github.event.issue.number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ github.event.number || github.event.issue.number }}
@@ -198,7 +201,7 @@ jobs:
       group: website-pr-comment-${{ needs.update-screenshots.outputs.pr-number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Build screenshot-update section content
         id: content

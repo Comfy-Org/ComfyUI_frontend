@@ -6,6 +6,7 @@ import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type * as FormatUtil from '@/utils/formatUtil'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -21,12 +22,9 @@ vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
   supportsWorkflowMetadata: () => true
 }))
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock('@/utils/formatUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof FormatUtil>()),
   isPreviewableMediaType: () => true
-}))
-
-vi.mock('@/utils/loaderNodeUtil', () => ({
-  detectNodeTypeFromFilename: () => ({ nodeType: 'LoadImage' })
 }))
 
 const mediaAssetActions = {
@@ -105,7 +103,7 @@ interface MediaAssetContextMenuExposed {
 
 let capturedRef: MediaAssetContextMenuExposed | null = null
 
-function mountComponent() {
+function mountComponent(targetAsset: AssetItem = asset) {
   const onHide = vi.fn()
   const { container, unmount } = render(
     defineComponent({
@@ -115,7 +113,7 @@ function mountComponent() {
         onMounted(() => {
           capturedRef = menuRef.value
         })
-        return { menuRef, asset, onHide }
+        return { menuRef, asset: targetAsset, onHide }
       },
       template:
         '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" file-kind="image" @hide="onHide" />'
@@ -151,10 +149,12 @@ type MenuItemWithCommand = MenuItem & {
   command: NonNullable<MenuItem['command']>
 }
 
+function findMenuItem(label: string): MenuItem | undefined {
+  return capturedMenu.model.find((item) => item.label === label)
+}
+
 function findDownloadMenuItem(): MenuItemWithCommand {
-  const downloadItem = capturedMenu.model.find(
-    (item) => item.label === 'mediaAsset.actions.download'
-  )
+  const downloadItem = findMenuItem('mediaAsset.actions.download')
   if (!downloadItem?.command) {
     throw new Error('Download menu item or command was not registered')
   }
@@ -180,6 +180,31 @@ describe('MediaAssetContextMenu', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.context-menu-stub')).toBeNull()
     expect(onHide).toHaveBeenCalledOnce()
+
+    unmount()
+  })
+
+  it('shows insert-as-node for assets with a loader node', async () => {
+    const { container, unmount } = mountComponent()
+    await showMenu(container)
+
+    expect(
+      findMenuItem('mediaAsset.actions.insertAsNodeInWorkflow')
+    ).toBeDefined()
+
+    unmount()
+  })
+
+  it('hides insert-as-node for text assets without a loader node', async () => {
+    const { container, unmount } = mountComponent({
+      ...asset,
+      name: 'result.txt'
+    })
+    await showMenu(container)
+
+    expect(
+      findMenuItem('mediaAsset.actions.insertAsNodeInWorkflow')
+    ).toBeUndefined()
 
     unmount()
   })

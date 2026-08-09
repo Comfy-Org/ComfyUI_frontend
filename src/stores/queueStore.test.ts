@@ -190,6 +190,29 @@ describe('TaskItemImpl', () => {
     })
   })
 
+  it('should recognize text files saved under the files output key', () => {
+    const job = createHistoryJob(0, 'job-id')
+    const taskItem = new TaskItemImpl(job, {
+      'node-1': {
+        files: [
+          {
+            filename: 'result.txt',
+            type: 'output',
+            subfolder: ''
+          }
+        ]
+      }
+    })
+
+    const output = taskItem.flatOutputs[0]
+
+    expect(output.isText).toBe(true)
+    expect(output.isImage).toBe(false)
+    expect(output.isVideo).toBe(false)
+    expect(output.isAudio).toBe(false)
+    expect(output.supportsPreview).toBe(true)
+  })
+
   it.skip('should parse text outputs', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'text-job'),

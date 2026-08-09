@@ -128,9 +128,9 @@ function renderLoad3D(options: RenderOptions = {}) {
             name: 'AnimationControls',
             template: '<div data-testid="animation-controls" />'
           },
-          RecordingControls: {
-            name: 'RecordingControls',
-            template: '<div data-testid="recording-controls" />'
+          RecordMenuControl: {
+            name: 'RecordMenuControl',
+            template: '<div data-testid="record-menu-control" />'
           },
           ViewerControls: {
             name: 'ViewerControls',
@@ -232,14 +232,16 @@ describe('Load3D', () => {
   })
 
   describe('recording controls', () => {
-    it('renders RecordingControls in regular (non-preview) mode', () => {
+    it('renders the record control in regular (non-preview) mode', () => {
       renderLoad3D({ stateOverrides: { isPreview: ref(false) } })
-      expect(screen.getByTestId('recording-controls')).toBeInTheDocument()
+      expect(screen.getByTestId('record-menu-control')).toBeInTheDocument()
     })
 
-    it('hides RecordingControls in preview mode', () => {
+    it('hides the record control in preview mode', () => {
       renderLoad3D({ stateOverrides: { isPreview: ref(true) } })
-      expect(screen.queryByTestId('recording-controls')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('record-menu-control')
+      ).not.toBeInTheDocument()
     })
   })
 

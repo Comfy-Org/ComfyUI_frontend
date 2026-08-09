@@ -7,9 +7,16 @@ import {
   fetchWithUnifiedRemint
 } from '@/platform/auth/unified/remintRetry'
 
-const { mockRemint, flagState } = vi.hoisted(() => ({
+const { mockRemint, mockTrackUnifiedAuthRetry, flagState } = vi.hoisted(() => ({
   mockRemint: vi.fn(),
+  mockTrackUnifiedAuthRetry: vi.fn(),
   flagState: { unifiedCloudAuthEnabled: true }
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackUnifiedAuthRetry: mockTrackUnifiedAuthRetry
+  })
 }))
 
 vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
@@ -37,6 +44,7 @@ describe('fetchWithUnifiedRemint', () => {
 
   beforeEach(() => {
     mockRemint.mockReset()
+    mockTrackUnifiedAuthRetry.mockReset()
     flagState.unifiedCloudAuthEnabled = true
     mockFetch = vi.fn()
     vi.stubGlobal('fetch', mockFetch)
@@ -59,10 +67,16 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(ok)
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+    expect(mockRemint).toHaveBeenCalledWith('tokenA')
 
     const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
     expect(retryHeaders.get('Comfy-User')).toBe('u1')
+    expect(mockTrackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'succeeded',
+      final_status: 200
+    })
   })
 
   it('surfaces a persistent 401 after exactly one retry (AC2)', async () => {
@@ -81,6 +95,12 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(secondUnauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+    expect(mockTrackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
   })
 
   it('does not re-mint or retry when the caller gate is false (AC3)', async () => {
@@ -95,6 +115,7 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
+    expect(mockTrackUnifiedAuthRetry).not.toHaveBeenCalled()
   })
 
   it('does not retry a non-401 response', async () => {
@@ -125,6 +146,70 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+    expect(mockTrackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'remint_failed'
+    })
+  })
+
+  it('uses the bearer from a Request when init does not override headers', async () => {
+    mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
+    mockRemint.mockResolvedValue('tokenB')
+    const request = new Request('https://cloud/x', {
+      headers: { Authorization: 'Bearer tokenA' }
+    })
+
+    const result = await fetchWithUnifiedRemint(request, {}, true)
+
+    expect(result).toBe(ok)
+    expect(mockRemint).toHaveBeenCalledWith('tokenA')
+    const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
+    expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
+  })
+
+  it('preserves a Request body for the retry', async () => {
+    const body = JSON.stringify({ amount: 5 })
+    const request = new Request('https://cloud/x', {
+      method: 'POST',
+      body,
+      headers: { Authorization: 'Bearer tokenA' }
+    })
+    mockFetch
+      .mockImplementationOnce(async (input: Request) => {
+        expect(await input.text()).toBe(body)
+        return unauthorized
+      })
+      .mockImplementationOnce(async (input: Request) => {
+        expect(input).not.toBe(request)
+        expect(await input.text()).toBe(body)
+        return ok
+      })
+    mockRemint.mockResolvedValue('tokenB')
+
+    const result = await fetchWithUnifiedRemint(request, {}, true)
+
+    expect(result).toBe(ok)
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
+    expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
+  })
+
+  it('surfaces the original 401 when the original bearer is unavailable', async () => {
+    mockFetch.mockResolvedValueOnce(unauthorized)
+
+    const result = await fetchWithUnifiedRemint('https://cloud/x', {}, true)
+
+    expect(result).toBe(unauthorized)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockRemint).not.toHaveBeenCalled()
+    expect(mockTrackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'missing_bearer'
+    })
   })
 
   it('surfaces the original 401 when the re-mint throws a permanent auth error', async () => {
@@ -159,6 +244,12 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
+    expect(mockTrackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'non_replayable_body'
+    })
   })
 
   it.for([
@@ -206,6 +297,7 @@ describe('fetchWithUnifiedRemint', () => {
 describe('attachUnifiedRemintInterceptor', () => {
   beforeEach(() => {
     mockRemint.mockReset()
+    mockTrackUnifiedAuthRetry.mockReset()
     flagState.unifiedCloudAuthEnabled = true
   })
 
@@ -255,9 +347,15 @@ describe('attachUnifiedRemintInterceptor', () => {
     expect(res.status).toBe(200)
     expect(adapter).toHaveBeenCalledTimes(2)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+    expect(mockRemint).toHaveBeenCalledWith('tokenA')
     expect(String(adapter.mock.calls[1][0].headers.Authorization)).toBe(
       'Bearer tokenB'
     )
+    expect(mockTrackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+      transport: 'axios',
+      outcome: 'succeeded',
+      final_status: 200
+    })
   })
 
   it('retries once then surfaces a persistent 401 (AC2)', async () => {
@@ -272,6 +370,12 @@ describe('attachUnifiedRemintInterceptor', () => {
 
     expect(adapter).toHaveBeenCalledTimes(2)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+    expect(mockTrackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+      transport: 'axios',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
   })
 
   it('does not re-mint when the flag is OFF (AC3)', async () => {
@@ -286,6 +390,7 @@ describe('attachUnifiedRemintInterceptor', () => {
 
     expect(adapter).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
+    expect(mockTrackUnifiedAuthRetry).not.toHaveBeenCalled()
   })
 
   it('does not re-mint a request flagged __skipUnifiedRemint (acceptInvite)', async () => {
@@ -298,6 +403,17 @@ describe('attachUnifiedRemintInterceptor', () => {
         __skipUnifiedRemint: true
       })
     ).rejects.toMatchObject({ response: { status: 401 } })
+
+    expect(adapter).toHaveBeenCalledTimes(1)
+    expect(mockRemint).not.toHaveBeenCalled()
+  })
+
+  it('does not re-mint when the original bearer is unavailable', async () => {
+    const { client, adapter } = makeClient([401])
+
+    await expect(client.get('https://cloud/x')).rejects.toMatchObject({
+      response: { status: 401 }
+    })
 
     expect(adapter).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()

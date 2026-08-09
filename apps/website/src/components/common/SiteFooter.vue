@@ -38,7 +38,11 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('nav.comfyCloud', locale), href: routes.cloud },
       { label: t('nav.comfyApi', locale), href: routes.api },
       { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise },
-      { label: t('nav.mcpServer', locale), href: routes.mcp }
+      { label: t('nav.mcpServer', locale), href: routes.mcp },
+      { label: t('nav.supportedModels', locale), href: routes.models },
+      { label: t('footer.minimaxH3', locale), href: routes.minimax },
+      { label: t('footer.seedance', locale), href: routes.seedance },
+      { label: t('footer.wanAnimate2', locale), href: routes.wanAnimate2 }
     ]
   },
   {
@@ -72,6 +76,16 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         external: true
       },
       {
+        label: t('nav.instagram', locale),
+        href: externalLinks.instagram,
+        external: true
+      },
+      {
+        label: t('nav.x', locale),
+        href: externalLinks.x,
+        external: true
+      },
+      {
         label: t('footer.affiliateProgram', locale),
         href: routes.affiliates
       }
@@ -84,8 +98,15 @@ const companyColumn: { title: string; links: FooterLink[] } = {
   links: [
     { label: t('footer.about', locale), href: routes.about },
     { label: t('nav.careers', locale), href: routes.careers },
+    { label: t('nav.brand', locale), href: routes.brand },
     { label: t('footer.termsOfService', locale), href: routes.termsOfService },
-    { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy }
+    { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
+    { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy },
+    {
+      label: t('footer.trustSafety', locale),
+      href: externalLinks.trustCenter,
+      external: true
+    }
   ]
 }
 
@@ -114,7 +135,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div
-      class="border-primary-warm-gray grid gap-12 border-t pt-16 lg:grid-cols-2 lg:gap-4"
+      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-2 lg:gap-4"
     >
       <!-- Tagline -->
       <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
@@ -173,10 +194,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
       </div>
 
       <!-- Logo -->
-      <canvas
-        ref="canvasRef"
-        class="pointer-events-none size-52 opacity-80 lg:mt-28"
-      />
+      <canvas ref="canvasRef" class="pointer-events-none size-52 lg:mt-28" />
     </div>
   </footer>
 </template>

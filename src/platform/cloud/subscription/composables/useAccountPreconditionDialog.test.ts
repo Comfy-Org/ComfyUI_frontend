@@ -8,8 +8,17 @@ const mockDialogService = {
   showTopUpCreditsDialog: vi.fn()
 }
 
+const mockBilling = {
+  fetchStatus: vi.fn(),
+  fetchBalance: vi.fn()
+}
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: vi.fn(() => mockDialogService)
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: vi.fn(() => mockBilling)
 }))
 
 describe('useAccountPreconditionDialog', () => {
@@ -54,5 +63,19 @@ describe('useAccountPreconditionDialog', () => {
     expect(
       mockDialogService.showSubscriptionRequiredDialog
     ).not.toHaveBeenCalled()
+  })
+
+  it('refreshes the billing snapshot on a credit precondition so exhausted-state surfaces converge', () => {
+    useAccountPreconditionDialog().open('credits')
+
+    expect(mockBilling.fetchStatus).toHaveBeenCalledTimes(1)
+    expect(mockBilling.fetchBalance).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not touch billing state for non-credit preconditions', () => {
+    useAccountPreconditionDialog().open('subscription')
+
+    expect(mockBilling.fetchStatus).not.toHaveBeenCalled()
+    expect(mockBilling.fetchBalance).not.toHaveBeenCalled()
   })
 })

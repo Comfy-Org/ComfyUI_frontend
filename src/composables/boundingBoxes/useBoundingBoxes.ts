@@ -1,4 +1,5 @@
 import { useElementSize } from '@vueuse/core'
+import { cloneDeep, isEqual } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import type { Ref, ShallowRef } from 'vue'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
@@ -15,6 +16,7 @@ import type {
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeOutputWith } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
@@ -25,6 +27,10 @@ const HANDLE_PX = 8
 const DIMENSION_STEP = 16
 const BG_DIM = 0.75
 const MAX_ELEMENT_COLORS = 5
+const GRID_PX = 32
+const MAX_GRID_CELLS = 64
+const DOT_ALPHA = 0.18
+const DOT_RADIUS = 1
 
 interface InlineEditorState {
   value: string
@@ -57,6 +63,7 @@ export function useBoundingBoxes(
   const hoverTagIndex = ref<number | null>(null)
   const bgImage = ref<HTMLImageElement | null>(null)
   const inlineEditor = ref<InlineEditorState | null>(null)
+  const grid = ref(true)
 
   const { width: containerWidth } = useElementSize(canvasContainer)
 
@@ -94,6 +101,89 @@ export function useBoundingBoxes(
 
   function clampToCanvas(n: number) {
     return Math.max(0, Math.min(1, n))
+  }
+
+  function gridSpec() {
+    const axisFraction = (size: number) =>
+      Math.max(GRID_PX, Math.ceil(size / MAX_GRID_CELLS)) / size
+    return {
+      fx: axisFraction(widthValue.value),
+      fy: axisFraction(heightValue.value)
+    }
+  }
+
+  function snapFraction(value: number, step: number) {
+    return step > 0 ? clampToCanvas(Math.round(value / step) * step) : value
+  }
+
+  function snapRegion(region: Region, mode: HitMode): Region {
+    if (!grid.value) return region
+    const { fx, fy } = gridSpec()
+    if (mode === 'move') {
+      return {
+        ...region,
+        x: Math.min(snapFraction(region.x, fx), 1 - region.w),
+        y: Math.min(snapFraction(region.y, fy), 1 - region.h)
+      }
+    }
+    const snapLeft =
+      mode === 'draw' ||
+      mode === 'resize-l' ||
+      mode === 'resize-tl' ||
+      mode === 'resize-bl'
+    const snapRight =
+      mode === 'draw' ||
+      mode === 'resize-r' ||
+      mode === 'resize-tr' ||
+      mode === 'resize-br'
+    const snapTop =
+      mode === 'draw' ||
+      mode === 'resize-t' ||
+      mode === 'resize-tl' ||
+      mode === 'resize-tr'
+    const snapBottom =
+      mode === 'draw' ||
+      mode === 'resize-b' ||
+      mode === 'resize-bl' ||
+      mode === 'resize-br'
+    const x1 = snapLeft ? snapFraction(region.x, fx) : region.x
+    const y1 = snapTop ? snapFraction(region.y, fy) : region.y
+    const x2 = snapRight
+      ? snapFraction(region.x + region.w, fx)
+      : region.x + region.w
+    const y2 = snapBottom
+      ? snapFraction(region.y + region.h, fy)
+      : region.y + region.h
+    return {
+      ...region,
+      x: x1,
+      y: y1,
+      w: Math.max(0, x2 - x1),
+      h: Math.max(0, y2 - y1)
+    }
+  }
+
+  function drawDots(ctx: CanvasRenderingContext2D, W: number, H: number) {
+    const el = canvasEl.value
+    if (!el) return
+    const { fx, fy } = gridSpec()
+    if (fx <= 0 || fy <= 0) return
+    const cols = Math.round(1 / fx)
+    const rows = Math.round(1 / fy)
+    ctx.save()
+    ctx.globalAlpha = DOT_ALPHA
+    ctx.fillStyle = getComputedStyle(el).color
+    ctx.beginPath()
+    for (let i = 0; i <= cols; i++) {
+      const cx = Math.min(1, i * fx) * W
+      for (let j = 0; j <= rows; j++) {
+        const cy = Math.min(1, j * fy) * H
+        ctx.moveTo(cx + DOT_RADIUS, cy)
+        ctx.arc(cx, cy, DOT_RADIUS, 0, Math.PI * 2)
+      }
+    }
+    ctx.fill()
+    ctx.restore()
   }
 
   function logicalSize() {
@@ -145,6 +235,8 @@ export function useBoundingBoxes(
       ctx.fillStyle = `rgba(0,0,0,${BG_DIM})`
       ctx.fillRect(0, 0, W, H)
     }
+
+    if (grid.value) drawDots(ctx, W, H)
 
     const showActive = focused.value || isNodeSelected.value
     const aIdx = showActive ? activeIndex.value : -1
@@ -366,7 +458,7 @@ export function useBoundingBoxes(
     const dx = mN.x - dragStartNorm.value.x
     const dy = mN.y - dragStartNorm.value.y
     const nb = applyDrag(dragMode.value, boxAtStart.value, dx, dy)
-    state.value.regions[activeIndex.value] = nb
+    state.value.regions[activeIndex.value] = snapRegion(nb, dragMode.value)
     requestDraw()
   }
 
@@ -375,7 +467,7 @@ export function useBoundingBoxes(
     drawing.value = false
     canvasEl.value?.releasePointerCapture?.(e.pointerId)
     const b = state.value.regions[activeIndex.value]
-    if (b && (b.w < 0.005 || b.h < 0.005) && dragMode.value === 'draw') {
+    if (b && (b.w < 0.005 || b.h < 0.005)) {
       removeRegion(activeIndex.value)
     }
     syncState()
@@ -510,6 +602,7 @@ export function useBoundingBoxes(
   function clearAll() {
     state.value.regions = []
     activeIndex.value = -1
+    setLastIncoming([])
     syncState()
   }
 
@@ -529,6 +622,23 @@ export function useBoundingBoxes(
   )
   watch(isNodeSelected, () => requestDraw())
   watch([widthValue, heightValue], () => syncState())
+
+  watch(
+    litegraphNode,
+    (node) => {
+      const props = node?.properties as { bboxGrid?: unknown } | undefined
+      if (props && typeof props.bboxGrid === 'boolean')
+        grid.value = props.bboxGrid
+    },
+    { immediate: true }
+  )
+  watch(grid, (enabled) => {
+    const props = litegraphNode.value?.properties as
+      | Record<string, unknown>
+      | undefined
+    if (props) props.bboxGrid = enabled
+    requestDraw()
+  })
 
   const nodeOutputStore = useNodeOutputStore()
   function applyImageDimensions(naturalWidth: number, naturalHeight: number) {
@@ -580,10 +690,63 @@ export function useBoundingBoxes(
     }
     img.src = url
   }
-  watch(() => nodeOutputStore.nodeOutputs, updateBgImage, { deep: true })
+  function lastIncomingWidget() {
+    return litegraphNode.value?.widgets?.find((w) => w.name === 'last_incoming')
+  }
+
+  function lastIncomingValue(): BoundingBox[] {
+    const value = lastIncomingWidget()?.value
+    return Array.isArray(value) ? (value as BoundingBox[]) : []
+  }
+
+  function setLastIncoming(boxes: BoundingBox[]) {
+    const widget = lastIncomingWidget()
+    if (!widget) return
+    const next = cloneDeep(boxes)
+    widget.value = next
+    widget.callback?.(next)
+  }
+
+  function applyIncomingBoxes(apply = true) {
+    if (drawing.value) return
+    const node = litegraphNode.value
+    if (!node) return
+    const slot = node.findInputSlot('bboxes')
+    if (slot < 0 || !node.isInputConnected(slot)) return
+    const outputs = nodeOutputStore.getNodeOutputs(node) as
+      | NodeOutputWith<{ input_bboxes?: BoundingBox[] }>
+      | undefined
+    const incoming = outputs?.input_bboxes
+    if (!incoming?.length) return
+    const applied = lastIncomingValue()
+    if (isEqual(incoming, applied)) return
+    if (!apply) {
+      if (!applied.length && state.value.regions.length)
+        setLastIncoming(incoming)
+      return
+    }
+    state.value.regions = fromBoundingBoxes(
+      incoming,
+      widthValue.value,
+      heightValue.value
+    )
+    activeIndex.value = state.value.regions.length ? 0 : -1
+    setLastIncoming(incoming)
+    syncState()
+  }
+
+  watch(
+    () => nodeOutputStore.nodeOutputs,
+    () => {
+      updateBgImage()
+      applyIncomingBoxes()
+    },
+    { deep: true }
+  )
   watch(() => nodeOutputStore.nodePreviewImages, updateBgImage, { deep: true })
 
   updateBgImage()
+  applyIncomingBoxes(false)
   void nextTick(() => requestDraw())
 
   onBeforeUnmount(() => {
@@ -608,6 +771,7 @@ export function useBoundingBoxes(
     commitInlineEditor,
     setActiveType,
     clearAll,
-    syncState
+    syncState,
+    grid
   }
 }

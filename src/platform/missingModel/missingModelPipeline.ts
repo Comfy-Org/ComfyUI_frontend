@@ -33,6 +33,7 @@ interface MissingModelPipelineStore {
   createVerificationAbortController: () => AbortController
   setFolderPaths: (paths: Record<string, string[]>) => void
   setFileSize: (url: string, size: number) => void
+  setGatedRepoUrl: (url: string, repoUrl: string) => void
 }
 
 interface RunMissingModelPipelineOptions {
@@ -45,7 +46,7 @@ interface RunMissingModelPipelineOptions {
 
 interface RefreshMissingModelPipelineOptions {
   graph: LGraph
-  reloadNodeDefs: () => Promise<void>
+  reloadNodeDefs?: () => Promise<void>
   missingModelStore: MissingModelPipelineStore
   silent?: boolean
 }
@@ -212,6 +213,9 @@ export async function runMissingModelPipeline({
           if (!controller.signal.aborted && metadata.fileSize !== null) {
             missingModelStore.setFileSize(c.url, metadata.fileSize)
           }
+          if (!controller.signal.aborted && metadata.gatedRepoUrl) {
+            missingModelStore.setGatedRepoUrl(c.url, metadata.gatedRepoUrl)
+          }
         })
       )
     }
@@ -228,7 +232,7 @@ export async function refreshMissingModelPipeline({
   missingModelStore,
   silent = true
 }: RefreshMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
-  await reloadNodeDefs()
+  await reloadNodeDefs?.()
   const graphData: MissingModelWorkflowData = graph.serialize()
   const activeWorkflowState =
     useWorkspaceStore().workflow.activeWorkflow?.activeState

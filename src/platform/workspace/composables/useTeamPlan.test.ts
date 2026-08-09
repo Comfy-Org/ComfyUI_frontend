@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
-  mockIsInPersonalWorkspace,
-  mockIsWorkspaceSubscribed,
+  mockIsActiveSubscription,
+  mockIsInitialized,
+  mockIsTeamPlan,
+  mockMaxSeats,
   mockSubscription,
   mockSubscriptionStatus
 } = vi.hoisted(() => {
@@ -10,8 +12,10 @@ const {
   const { ref } = require('vue') as typeof import('vue')
 
   return {
-    mockIsInPersonalWorkspace: ref(false),
-    mockIsWorkspaceSubscribed: ref(true),
+    mockIsActiveSubscription: ref(true),
+    mockIsInitialized: ref(true),
+    mockIsTeamPlan: ref(true),
+    mockMaxSeats: ref<number | null>(30),
     mockSubscription: ref<{ isCancelled?: boolean } | null>({
       isCancelled: false
     }),
@@ -19,23 +23,12 @@ const {
   }
 })
 
-vi.mock('pinia', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
-  }
-})
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    isWorkspaceSubscribed: mockIsWorkspaceSubscribed
-  })
-}))
-
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    isActiveSubscription: mockIsActiveSubscription,
+    isInitialized: mockIsInitialized,
+    isTeamPlan: mockIsTeamPlan,
+    maxSeats: mockMaxSeats,
     subscription: mockSubscription,
     subscriptionStatus: mockSubscriptionStatus
   })
@@ -49,25 +42,42 @@ async function setup() {
 describe('useTeamPlan', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockIsInPersonalWorkspace.value = false
-    mockIsWorkspaceSubscribed.value = true
+    mockIsActiveSubscription.value = true
+    mockIsInitialized.value = true
+    mockIsTeamPlan.value = true
+    mockMaxSeats.value = 30
     mockSubscription.value = { isCancelled: false }
     mockSubscriptionStatus.value = 'active'
   })
 
-  it('is on the team plan for a subscribed team workspace', async () => {
+  it('enables Team features from the active plan identity', async () => {
     const plan = await setup()
+    expect(plan.hasTeamPlan.value).toBe(true)
     expect(plan.isOnTeamPlan.value).toBe(true)
   })
 
-  it('is off the team plan in a personal workspace', async () => {
-    mockIsInPersonalWorkspace.value = true
+  it('does not enable Team features for a personal plan', async () => {
+    mockIsTeamPlan.value = false
     const plan = await setup()
+    expect(plan.hasTeamPlan.value).toBe(false)
     expect(plan.isOnTeamPlan.value).toBe(false)
   })
 
-  it('is off the team plan when the team workspace is not subscribed', async () => {
-    mockIsWorkspaceSubscribed.value = false
+  it('enables member seats from backend capacity for a personal plan', async () => {
+    mockIsTeamPlan.value = false
+    mockMaxSeats.value = 4
+    const plan = await setup()
+    expect(plan.hasMemberSeats.value).toBe(true)
+  })
+
+  it('does not enable member seats for a single-seat plan', async () => {
+    mockMaxSeats.value = 1
+    const plan = await setup()
+    expect(plan.hasMemberSeats.value).toBe(false)
+  })
+
+  it('does not enable Team features for an inactive subscription', async () => {
+    mockIsActiveSubscription.value = false
     const plan = await setup()
     expect(plan.isOnTeamPlan.value).toBe(false)
   })
@@ -77,6 +87,7 @@ describe('useTeamPlan', () => {
     expect(plan.isCancelled.value).toBe(false)
     mockSubscription.value = { isCancelled: true }
     expect(plan.isCancelled.value).toBe(true)
+    expect(plan.isOnTeamPlan.value).toBe(false)
   })
 
   it('treats a missing subscription as not cancelled', async () => {
@@ -85,12 +96,7 @@ describe('useTeamPlan', () => {
     expect(plan.isCancelled.value).toBe(false)
   })
 
-  it('does not flag a lapsed plan while the team subscription is active', async () => {
-    const plan = await setup()
-    expect(plan.hasLapsedTeamPlan.value).toBe(false)
-  })
-
-  it('flags a lapsed plan when the team subscription is cancelled or ended', async () => {
+  it('flags a cancelled or ended Team plan as lapsed', async () => {
     const plan = await setup()
     mockSubscriptionStatus.value = 'canceled'
     expect(plan.hasLapsedTeamPlan.value).toBe(true)
@@ -98,10 +104,18 @@ describe('useTeamPlan', () => {
     expect(plan.hasLapsedTeamPlan.value).toBe(true)
   })
 
-  it('does not flag a lapsed plan in a personal workspace', async () => {
-    mockIsInPersonalWorkspace.value = true
-    mockSubscriptionStatus.value = 'canceled'
+  it('does not flag a personal plan as a lapsed Team plan', async () => {
+    mockIsTeamPlan.value = false
+    mockSubscriptionStatus.value = 'ended'
     const plan = await setup()
     expect(plan.hasLapsedTeamPlan.value).toBe(false)
+  })
+
+  it('reports loading until billing initialization completes', async () => {
+    mockIsInitialized.value = false
+    const plan = await setup()
+    expect(plan.isPlanLoading.value).toBe(true)
+    mockIsInitialized.value = true
+    expect(plan.isPlanLoading.value).toBe(false)
   })
 })

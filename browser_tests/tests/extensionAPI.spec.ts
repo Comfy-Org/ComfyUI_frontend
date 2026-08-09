@@ -172,7 +172,7 @@ test.describe('Topbar commands', () => {
             type: 'boolean',
             defaultValue: true
           },
-          selector: '.p-toggleswitch.p-component'
+          selector: 'button[role="switch"]'
         },
         {
           config: {

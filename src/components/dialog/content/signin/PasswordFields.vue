@@ -17,9 +17,9 @@
       :feedback="false"
       toggle-mask
       :placeholder="t('auth.signup.passwordPlaceholder')"
+      :pt:pc-input-text:root:class="fieldClass"
       :class="{ 'p-invalid': $field.invalid }"
       fluid
-      class="h-10"
     />
     <div class="flex flex-col gap-1">
       <small v-if="$field.dirty || $field.invalid" class="text-sm">
@@ -80,9 +80,9 @@
       :feedback="false"
       toggle-mask
       :placeholder="t('auth.login.confirmPasswordPlaceholder')"
+      :pt:pc-input-text:root:class="fieldClass"
       :class="{ 'p-invalid': $field.invalid }"
       fluid
-      class="h-10"
     />
     <small v-if="$field.error" class="text-red-500">{{
       $field.error.message
@@ -94,7 +94,12 @@
 import { FormField } from '@primevue/forms'
 import Password from 'primevue/password'
 import { computed, ref } from 'vue'
+import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+const { fieldClass = 'h-10' } = defineProps<{
+  fieldClass?: HTMLAttributes['class']
+}>()
 
 const { t } = useI18n()
 const password = ref('')

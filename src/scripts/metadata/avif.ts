@@ -13,6 +13,8 @@ import {
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
+import { readFileAsArrayBuffer } from './readFile'
+
 const readNullTerminatedString = (
   dataView: DataView,
   start: number,
