@@ -10,8 +10,8 @@ const FF_PREFIX = 'ff:'
  * "override explicitly set to null".
  *
  * Usage in browser console:
- *   localStorage.setItem('ff:team_workspaces_enabled', 'true')
- *   localStorage.removeItem('ff:team_workspaces_enabled')
+ *   localStorage.setItem('ff:example_enabled', 'true')
+ *   localStorage.removeItem('ff:example_enabled')
  */
 export function getDevOverride<T>(flagKey: string): T | undefined {
   if (!import.meta.env.DEV) return undefined

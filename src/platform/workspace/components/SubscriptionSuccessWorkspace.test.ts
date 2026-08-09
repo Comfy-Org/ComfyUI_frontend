@@ -3,8 +3,6 @@ import { cleanup, render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
-import { MAX_WORKSPACE_MEMBERS } from '@/platform/workspace/stores/teamWorkspaceStore'
-
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 
 vi.mock('vue-i18n', () => ({
@@ -14,27 +12,26 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const { mockMembers, mockPendingInvites } = vi.hoisted(() => ({
-  mockMembers: [] as unknown[],
-  mockPendingInvites: [] as unknown[]
+const { mockMembers, mockPendingInvites, mockMaxSeats, mockOccupiedSeats } =
+  vi.hoisted(() => ({
+    mockMembers: [] as unknown[],
+    mockPendingInvites: [] as unknown[],
+    mockMaxSeats: { value: 73 as number | null },
+    mockOccupiedSeats: { value: 1 as number | null }
+  }))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    maxSeats: mockMaxSeats,
+    occupiedSeats: mockOccupiedSeats
+  })
 }))
 
-// Provide just the seat cap + member/invite slots so the component import doesn't
-// drag the team store's i18n/app chain into this unit test.
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  MAX_WORKSPACE_MEMBERS: 30,
   useTeamWorkspaceStore: () => ({
     members: mockMembers,
     pendingInvites: mockPendingInvites
   })
-}))
-
-const { mockFlags } = vi.hoisted(() => ({
-  mockFlags: { teamWorkspacesEnabled: true }
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
 }))
 
 vi.mock('./InviteMembersForm.vue', () => ({
@@ -106,7 +103,7 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
   return renderCard({
     tierKey: null,
     teamPlan: TEAM_STOP,
-    isTeam: true,
+    previewData: null,
     ...props
   })
 }
@@ -114,9 +111,10 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
 describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockFlags.teamWorkspacesEnabled = true
     mockMembers.length = 0
     mockPendingInvites.length = 0
+    mockMaxSeats.value = 73
+    mockOccupiedSeats.value = 1
   })
 
   afterEach(() => {
@@ -136,7 +134,7 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(screen.getByText(/147700/)).toBeTruthy()
   })
 
-  it('shows the monthly-equivalent price for an annual personal plan', () => {
+  it('shows the annual total (not a monthly-equivalent) for an annual personal plan', () => {
     render(SubscriptionSuccessWorkspace, {
       props: {
         tierKey: 'creator',
@@ -151,23 +149,60 @@ describe('SubscriptionSuccessWorkspace', () => {
         }
       }
     })
-    expect(screen.getByText('$28')).toBeTruthy()
-    expect(screen.queryByText('$336')).toBeNull()
+    expect(screen.getByText('$336')).toBeTruthy()
+    expect(screen.queryByText('$28')).toBeNull()
+    expect(screen.getByText('subscription.usdPerYear')).toBeTruthy()
+    expect(screen.getByText(/88800 subscription\.perYear/)).toBeTruthy()
+  })
+
+  it('shows the monthly price and monthly credits for a monthly personal plan', () => {
+    render(SubscriptionSuccessWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: makePreviewData(3_500, 'MONTHLY')
+      },
+      global: {
+        mocks: { $t: (key: string) => key },
+        stubs: {
+          Button: {
+            template: '<button @click="$emit(\'click\')"><slot /></button>'
+          }
+        }
+      }
+    })
+    expect(screen.getByText('$35')).toBeTruthy()
+    expect(screen.getByText('subscription.usdPerMonth')).toBeTruthy()
+    expect(screen.getByText(/7400 subscription\.perMonth/)).toBeTruthy()
+  })
+
+  it('shows the annual total price and annual credit total for a yearly team plan', () => {
+    renderTeamCard({ billingCycle: 'yearly' })
+    expect(screen.getByText('$7560')).toBeTruthy()
+    expect(screen.queryByText('$630')).toBeNull()
+    expect(screen.getByText('subscription.usdPerYear')).toBeTruthy()
+    expect(screen.getByText(/1772400 subscription\.perYear/)).toBeTruthy()
+  })
+
+  it('prefers the fetched preview price over the client-computed team total for a team plan change', () => {
+    renderTeamCard({
+      billingCycle: 'yearly',
+      previewData: makePreviewData(7_580 * 100, 'ANNUAL')
+    })
+    expect(screen.getByText('$7580')).toBeTruthy()
+    expect(screen.queryByText('$7560')).toBeNull()
   })
 
   it('emits close when the close button is clicked', async () => {
-    const { emitted } = renderCard({ isTeam: false })
-    await userEvent.click(screen.getByRole('button'))
+    mockMaxSeats.value = 1
+    const { emitted } = renderCard()
+    await userEvent.click(screen.getByRole('button', { name: 'g.close' }))
     expect(emitted().close).toBeTruthy()
   })
 
   it('renders the invite block capped at the workspace member limit', () => {
     renderTeamCard()
     expect(screen.getByText('subscription.success.inviteTitle')).toBeTruthy()
-    // The buyer holds one of the flat team-member seats, so the rest are invitable.
-    expect(screen.getByTestId('invite-form')).toHaveTextContent(
-      `seats:${MAX_WORKSPACE_MEMBERS - 1}`
-    )
+    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:72')
   })
 
   it('places the Send invites action in the footer for a team upgrade', () => {
@@ -176,29 +211,30 @@ describe('SubscriptionSuccessWorkspace', () => {
   })
 
   it('shows no Send invites action for a personal upgrade', () => {
-    renderCard({ isTeam: false })
+    mockMaxSeats.value = 1
+    renderCard()
     expect(screen.queryByText('subscription.success.sendInvites')).toBeNull()
   })
 
   it('does not render the invite block for a personal upgrade', () => {
-    renderCard({ isTeam: false })
+    mockMaxSeats.value = 1
+    renderCard()
     expect(screen.queryByText('subscription.success.inviteTitle')).toBeNull()
-    expect(screen.queryByTestId('invite-form')).toBeNull()
+    expect(screen.queryByText(/^seats:/)).toBeNull()
   })
 
-  it('hides the invite block when team workspaces are disabled', () => {
-    mockFlags.teamWorkspacesEnabled = false
-    renderTeamCard()
-    expect(screen.queryByTestId('invite-form')).toBeNull()
+  it('renders the invite block for a multi-seat personal upgrade', () => {
+    mockMaxSeats.value = 5
+    renderCard()
+    expect(screen.getByText('seats:4', { exact: false })).toBeTruthy()
   })
 
   it('subtracts existing members and pending invites from invitable seats', () => {
     mockMembers.push({}, {})
     mockPendingInvites.push({})
+    mockOccupiedSeats.value = 10
     renderTeamCard()
-    expect(screen.getByTestId('invite-form')).toHaveTextContent(
-      `seats:${MAX_WORKSPACE_MEMBERS - 3}`
-    )
+    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:63')
   })
 
   it('swaps the form for the success message once invites are submitted', async () => {

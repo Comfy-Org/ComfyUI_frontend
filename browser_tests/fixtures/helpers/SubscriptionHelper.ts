@@ -132,6 +132,18 @@ export class SubscriptionHelper {
       handler: checkoutHandler
     })
     await this.page.route(checkoutPattern, checkoutHandler)
+
+    const billingPortalPattern = '**/customers/billing'
+    const billingPortalHandler = async (route: Route) => {
+      await route.fulfill({
+        json: { billing_portal_url: 'https://billing.example/portal' }
+      })
+    }
+    this.routeHandlers.push({
+      pattern: billingPortalPattern,
+      handler: billingPortalHandler
+    })
+    await this.page.route(billingPortalPattern, billingPortalHandler)
   }
 
   configure(...operators: SubscriptionOperator[]): void {
