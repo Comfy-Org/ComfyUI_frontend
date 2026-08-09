@@ -1,5 +1,7 @@
 import { FirebaseError } from 'firebase/app'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
+import type { EffectScope } from 'vue'
 
 const mocks = vi.hoisted(() => ({
   authStore: { currentUser: null as unknown },
@@ -27,7 +29,6 @@ vi.mock('@/platform/distribution/types', () => ({
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => mocks.toast
 }))
-vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 vi.mock('firebase/auth', () => ({
   sendEmailVerification: mocks.sendEmailVerification
 }))
@@ -49,10 +50,13 @@ function makeUser(overrides: Partial<FakeUser> = {}): FakeUser {
   }
 }
 
+let scope: EffectScope | undefined
+
 async function loadComposable() {
   vi.resetModules()
+  scope = effectScope()
   const mod = await import('./useEmailVerification')
-  return mod.useEmailVerification()
+  return scope.run(() => mod.useEmailVerification())!
 }
 
 beforeEach(() => {
@@ -66,6 +70,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  scope?.stop()
+  scope = undefined
+  vi.clearAllTimers()
   vi.useRealTimers()
 })
 
@@ -177,6 +184,10 @@ describe('useEmailVerification', () => {
   })
 
   describe('resend', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
     it('sends a verification email with a continue URL and toasts success', async () => {
       mocks.authStore.currentUser = makeUser()
       mocks.sendEmailVerification.mockResolvedValue(undefined)
@@ -206,7 +217,7 @@ describe('useEmailVerification', () => {
       expect(mocks.toast.add).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
-          detail: 'auth.emailVerification.cooldownMessage'
+          detail: 'Too many requests. Please wait a moment before trying again.'
         })
       )
     })
@@ -221,7 +232,7 @@ describe('useEmailVerification', () => {
       expect(mocks.toast.add).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
-          detail: 'auth.emailVerification.resendFailedDetail'
+          detail: 'Something went wrong. Please try again in a moment.'
         })
       )
     })
@@ -264,7 +275,6 @@ describe('useEmailVerification', () => {
     })
 
     it('re-enables the button after the cooldown elapses', async () => {
-      vi.useFakeTimers()
       mocks.authStore.currentUser = makeUser()
       mocks.sendEmailVerification.mockResolvedValue(undefined)
       const { resend, canResend } = await loadComposable()
@@ -293,6 +303,43 @@ describe('useEmailVerification', () => {
       expect(user.reload).toHaveBeenCalled()
       expect(user.getIdToken).toHaveBeenCalledWith(true)
       expect(needsEmailVerification.value).toBe(false)
+    })
+
+    it('picks up a verification done in another tab on window focus, even after dismissal', async () => {
+      const user = makeUser({
+        reload: vi.fn().mockImplementation(() => {
+          user.emailVerified = true
+        })
+      })
+      mocks.authStore.currentUser = user
+      const { needsEmailVerification, dismiss } = await loadComposable()
+      dismiss()
+
+      window.dispatchEvent(new Event('focus'))
+
+      await vi.waitFor(() => expect(needsEmailVerification.value).toBe(false))
+      expect(user.getIdToken).toHaveBeenCalledWith(true)
+    })
+
+    it('collapses overlapping refreshes into a single reload', async () => {
+      let finishReload = () => {}
+      const user = makeUser({
+        reload: vi.fn(
+          () =>
+            new Promise<void>((resolve) => {
+              finishReload = resolve
+            })
+        )
+      })
+      mocks.authStore.currentUser = user
+      const { refresh } = await loadComposable()
+
+      const first = refresh()
+      const second = refresh()
+      finishReload()
+      await Promise.all([first, second])
+
+      expect(user.reload).toHaveBeenCalledOnce()
     })
   })
 })

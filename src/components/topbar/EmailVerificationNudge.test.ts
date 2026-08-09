@@ -47,25 +47,27 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
+const resendButton = () =>
+  screen.getByRole('button', { name: 'Resend verification email' })
+
 describe('EmailVerificationNudge', () => {
   it('renders nothing when there is no active nudge', () => {
     renderNudge()
-    expect(screen.queryByTestId('email-verification-nudge')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('renders the generic nudge with resend and dismiss controls', async () => {
     h.composable!.nudgeVariant.value = 'generic'
     renderNudge()
 
-    expect(screen.getByTestId('email-verification-nudge')).toBeTruthy()
-    expect(
-      screen.getByText('Verify your email to unlock account benefits')
-    ).toBeTruthy()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Verify your email to unlock account benefits'
+    )
 
-    await userEvent.click(screen.getByTestId('email-verification-resend'))
+    await userEvent.click(resendButton())
     expect(h.composable!.resend).toHaveBeenCalledOnce()
 
-    await userEvent.click(screen.getByTestId('email-verification-dismiss'))
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
     expect(h.composable!.dismiss).toHaveBeenCalledOnce()
   })
 
@@ -73,10 +75,10 @@ describe('EmailVerificationNudge', () => {
     h.composable!.nudgeVariant.value = 'credits'
     renderNudge()
 
-    expect(
-      screen.getByText('Verify your email to receive free credits')
-    ).toBeTruthy()
-    expect(screen.queryByTestId('email-verification-dismiss')).toBeNull()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Verify your email to receive free credits'
+    )
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
   })
 
   it('disables resend while on cooldown', () => {
@@ -84,8 +86,6 @@ describe('EmailVerificationNudge', () => {
     h.composable!.canResend.value = false
     renderNudge()
 
-    expect(
-      screen.getByTestId('email-verification-resend').hasAttribute('disabled')
-    ).toBe(true)
+    expect(resendButton()).toBeDisabled()
   })
 })
