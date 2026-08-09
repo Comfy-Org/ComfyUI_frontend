@@ -2,17 +2,20 @@ import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
+import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { serializeNodeId } from '@/types/nodeId'
+import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
 import type { ComfyApp } from './app'
@@ -515,6 +518,7 @@ export class ChangeTracker {
     const getCurrentChangeTracker = () =>
       useWorkflowStore().activeWorkflow?.changeTracker
     const captureState = () => getCurrentChangeTracker()?.captureCanvasState()
+    const dialogStore = useDialogStore()
 
     let keyIgnored = false
     window.addEventListener(
@@ -527,6 +531,10 @@ export class ChangeTracker {
         // If the mask editor is opened, we don't want to trigger on key events
         const comfyApp = app.constructor as typeof ComfyApp
         if (comfyApp.maskeditor_is_opended?.()) return
+        if (isModalOpen(dialogStore.dialogStack.length)) return
+
+        // The layer editor has its own session-local undo history
+        if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {
