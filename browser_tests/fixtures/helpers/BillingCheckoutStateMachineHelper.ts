@@ -4,6 +4,7 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
+  CreateTopupResponse,
   Plan,
   SubscribeResponse
 } from '@comfyorg/ingest-types'
@@ -11,6 +12,7 @@ import type {
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
+import { gotoCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -65,6 +67,7 @@ const QUOTE = {
 } satisfies PreviewSubscribeResponse
 
 const STATUS = {
+  billing_rail: 'metronome',
   is_active: false,
   max_seats: 1,
   occupied_seats: 1,
@@ -73,6 +76,13 @@ const STATUS = {
   subscription_status: 'ended',
   team_credit_stop: null
 } satisfies BillingStatusResponse
+
+const TOPUP = {
+  billing_op_id: 'topup-server-routed',
+  topup_id: 'topup-server-routed',
+  status: 'completed',
+  amount_cents: 5_000
+} satisfies CreateTopupResponse
 
 const BALANCE = {
   amount_micros: 0,
@@ -90,6 +100,8 @@ export class BillingCheckoutStateMachineHelper {
   private subscribeResponses: SubscribeResponse[] = []
   private operationResponses = new Map<string, OperationResponse[]>()
   private previewResponses: PreviewSubscribeResponse[] = []
+  private previewCount = 0
+  private shouldFailNextStripeAction = false
 
   constructor(
     private readonly page: Page,
@@ -124,8 +136,8 @@ export class BillingCheckoutStateMachineHelper {
           return {
             handleNextAction: async function () {
               window.__billingE2eActionCalls = (window.__billingE2eActionCalls || 0) + 1;
-              if (window.__billingE2eFailNextAction) {
-                window.__billingE2eFailNextAction = false;
+              if (sessionStorage.getItem('billingE2eFailNextAction')) {
+                sessionStorage.removeItem('billingE2eFailNextAction');
                 return { error: { message: 'Verification was interrupted' } };
               }
               return {};
@@ -161,11 +173,7 @@ export class BillingCheckoutStateMachineHelper {
   }
 
   async openCheckout() {
-    const authReady = this.page.waitForResponse((response) =>
-      response.url().includes('identitytoolkit.googleapis.com')
-    )
-    await this.page.goto(APP_URL)
-    await authReady
+    await gotoCloudApp(this.page, APP_URL)
     await this.page.evaluate(async () => {
       const authStorePath = '/src/stores/authStore.ts'
       const workspaceStorePath =
@@ -186,12 +194,16 @@ export class BillingCheckoutStateMachineHelper {
       .getByRole('button', { name: 'Subscribe to Creator Yearly' })
       .click()
     await this.confirmHeading.waitFor({ state: 'visible' })
+    if (this.shouldFailNextStripeAction) {
+      await this.page.evaluate(() => {
+        sessionStorage.setItem('billingE2eFailNextAction', '1')
+      })
+      this.shouldFailNextStripeAction = false
+    }
   }
 
-  async failNextStripeAction() {
-    await this.page.evaluate(() => {
-      window.__billingE2eFailNextAction = true
-    })
+  failNextStripeAction() {
+    this.shouldFailNextStripeAction = true
   }
 
   operationPollCount(opId: string) {
@@ -204,6 +216,50 @@ export class BillingCheckoutStateMachineHelper {
     return this.requests.filter(
       (request) => request.path === '/api/billing/subscribe'
     ).length
+  }
+
+  requestCount(path: string) {
+    return this.requests.filter((request) => request.path === path).length
+  }
+
+  async topupAfterStaleRail() {
+    await this.openCheckout()
+    return this.page.evaluate(async () => {
+      const authStorePath = '/src/stores/authStore.ts'
+      const billingContextPath = '/src/composables/billing/useBillingContext.ts'
+      const workspaceBillingPath =
+        '/src/platform/workspace/composables/useWorkspaceBilling.ts'
+      const workspaceStorePath =
+        '/src/platform/workspace/stores/teamWorkspaceStore.ts'
+      const [
+        { useAuthStore },
+        { useBillingContext },
+        { useWorkspaceBilling },
+        { useTeamWorkspaceStore }
+      ] = await Promise.all([
+        import(authStorePath),
+        import(billingContextPath),
+        import(workspaceBillingPath),
+        import(workspaceStorePath)
+      ])
+      useAuthStore().getAuthHeaderOrThrow = async () => ({
+        Authorization: 'Bearer billing-e2e-token'
+      })
+      const workspaceStore = useTeamWorkspaceStore()
+      const workspaceId = workspaceStore.activeWorkspace?.id
+      if (!workspaceId) throw new Error('No active workspace')
+
+      workspaceStore.setWorkspaceBillingRail(workspaceId, 'legacy_stripe')
+      await useWorkspaceBilling().fetchStatus()
+      const billing = useBillingContext()
+      const response = await billing.topup(5_000)
+
+      return {
+        billingRail: workspaceStore.activeWorkspaceBillingRail,
+        billingType: billing.type.value,
+        response
+      }
+    })
   }
 
   async attachEvidence() {
@@ -280,7 +336,10 @@ export class BillingCheckoutStateMachineHelper {
       ])
     )
     await this.page.route('**/api/billing/preview-subscribe', (route) => {
-      const response = this.previewResponses.shift() ?? QUOTE
+      const response =
+        this.previewCount++ === 0
+          ? QUOTE
+          : (this.previewResponses.shift() ?? QUOTE)
       return this.fulfill(route.request(), route.fulfill.bind(route), response)
     })
     await this.page.route('**/api/billing/subscribe', (route) => {
@@ -288,21 +347,55 @@ export class BillingCheckoutStateMachineHelper {
       if (!response) throw new Error('No queued subscribe response')
       return this.fulfill(route.request(), route.fulfill.bind(route), response)
     })
+    await this.page.route('**/api/billing/topup', (route) =>
+      this.fulfill(route.request(), route.fulfill.bind(route), TOPUP)
+    )
+    await this.page.route('**/customers/credit', (route) =>
+      this.fulfill(
+        route.request(),
+        route.fulfill.bind(route),
+        { message: 'legacy top-up must not be called' },
+        409
+      )
+    )
     await this.page.route('**/api/billing/ops/*', (route) => {
       const opId = route.request().url().split('/').at(-1) ?? ''
       const queue = this.operationResponses.get(opId)
-      const response = queue?.length === 1 ? queue[0] : queue?.shift()
-      if (!response) throw new Error(`No queued status for ${opId}`)
-      if ('status' in response && typeof response.status === 'number') {
+      return this.operationResponse(queue).then((response) => {
+        if (!response) throw new Error(`No queued status for ${opId}`)
+        if ('status' in response && typeof response.status === 'number') {
+          return this.fulfill(
+            route.request(),
+            route.fulfill.bind(route),
+            { message: 'temporary poll failure' },
+            response.status
+          )
+        }
         return this.fulfill(
           route.request(),
           route.fulfill.bind(route),
-          { message: 'temporary poll failure' },
-          response.status
+          response
         )
-      }
-      return this.fulfill(route.request(), route.fulfill.bind(route), response)
+      })
     })
+  }
+
+  private async operationResponse(queue: OperationResponse[] | undefined) {
+    const first = queue?.[0]
+    if (
+      queue?.length === 2 &&
+      first &&
+      'authentication_state' in first &&
+      first.authentication_state === 'requires_action'
+    ) {
+      const actionCalls = await this.page.evaluate(
+        () => window.__billingE2eActionCalls ?? 0
+      )
+      return actionCalls < 2 ? first : queue[1]
+    }
+
+    const response = queue?.length === 1 ? queue[0] : queue?.shift()
+    return response
   }
 
   private async fulfill(
@@ -325,6 +418,5 @@ export class BillingCheckoutStateMachineHelper {
 declare global {
   interface Window {
     __billingE2eActionCalls?: number
-    __billingE2eFailNextAction?: boolean
   }
 }

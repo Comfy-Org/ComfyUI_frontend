@@ -1,4 +1,4 @@
-import { cloudAppFixture } from '@e2e/fixtures/cloudAppFixture'
+import { cloudAppExpect, cloudAppFixture } from '@e2e/fixtures/cloudAppFixture'
 import { BillingCheckoutStateMachineHelper } from '@e2e/fixtures/helpers/BillingCheckoutStateMachineHelper'
 
 export const test = cloudAppFixture.extend<{
@@ -12,4 +12,4 @@ export const test = cloudAppFixture.extend<{
   }
 })
 
-export { expect } from '@playwright/test'
+export { cloudAppExpect as expect }

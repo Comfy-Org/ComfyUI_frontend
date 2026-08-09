@@ -1,4 +1,5 @@
 import { expect, test } from '@e2e/fixtures/billingCheckoutStateMachineFixture'
+import { gotoCloudApp } from '@e2e/fixtures/cloudAppFixture'
 
 test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
   test('submits one successful subscription for rapid click and Enter input', async ({
@@ -63,15 +64,9 @@ test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
     await billingCheckout.openCheckout()
     await billingCheckout.promoInput.fill('SAVE10')
 
-    await page.evaluate(() => {
-      const apply = [...document.querySelectorAll('button')].find(
-        (button) => button.textContent?.trim() === 'Apply'
-      )
-      apply?.click()
-      apply?.click()
-    })
+    await billingCheckout.applyPromoButton.click({ clickCount: 2 })
 
-    await expect(page.getByText('SAVE10', { exact: true })).toBeVisible()
+    await expect(page.locator('body')).toContainText(/Promo code\s*SAVE10/)
     expect(
       billingCheckout.requests.filter(
         (request) => request.path === '/api/billing/preview-subscribe'
@@ -103,11 +98,11 @@ test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
         started_at: new Date().toISOString()
       }
     )
-    await billingCheckout.failNextStripeAction()
+    billingCheckout.failNextStripeAction()
     await billingCheckout.openCheckout()
     await billingCheckout.payButton.click()
 
-    const retry = page.getByRole('button', { name: 'Try verification again' })
+    const retry = page.getByRole('button', { name: 'Retry verification' })
     await expect(retry).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'Complete verification' })
@@ -171,7 +166,7 @@ test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
       page.getByRole('button', { name: 'Complete verification' })
     ).toHaveCount(0)
     await expect(
-      page.getByRole('button', { name: 'Try verification again' })
+      page.getByRole('button', { name: 'Retry verification' })
     ).toHaveCount(0)
     await expect(billingCheckout.payButton).toBeEnabled()
   })
@@ -203,7 +198,8 @@ test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
       })
     )
 
-    await page.goto(
+    await gotoCloudApp(
+      page,
       `${process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'}/?payment_intent=pi_return&payment_intent_client_secret=pi_return_secret&redirect_status=succeeded`
     )
 
@@ -211,5 +207,24 @@ test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
       .poll(() => billingCheckout.operationPollCount('op-return'))
       .toBeGreaterThan(0)
     await expect(page).not.toHaveURL(/payment_intent/)
+  })
+
+  test('follows the server billing rail for top-up after a stale client rail', async ({
+    billingCheckout
+  }) => {
+    const outcome = await billingCheckout.topupAfterStaleRail()
+
+    expect(outcome).toEqual({
+      billingRail: 'metronome',
+      billingType: 'workspace',
+      response: {
+        billing_op_id: 'topup-server-routed',
+        topup_id: 'topup-server-routed',
+        status: 'completed',
+        amount_cents: 5_000
+      }
+    })
+    expect(billingCheckout.requestCount('/api/billing/topup')).toBe(1)
+    expect(billingCheckout.requestCount('/customers/credit')).toBe(0)
   })
 })

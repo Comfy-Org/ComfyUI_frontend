@@ -22,6 +22,7 @@ import type {
 import {
   cloudAppExpect,
   cloudAppFixture as test,
+  gotoCloudApp,
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -592,7 +593,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
   test('opens the pricing table for a personal owner', async ({ page }) => {
     await setupCloudApp(page, workspace('personal', 'owner'), [])
 
-    await page.goto(`${APP_URL}/?pricing=1`)
+    await gotoCloudApp(page, `${APP_URL}/?pricing=1`)
 
     await cloudAppExpect(pricingHeading(page)).toBeVisible()
     await expect(page).not.toHaveURL(/[?&]pricing=/)
