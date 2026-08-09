@@ -33,12 +33,6 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
-vi.mock('@/stores/settingStore', () => ({
-  useSettingStore: () => ({
-    get: vi.fn(() => true)
-  })
-}))
-
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn(() => true)

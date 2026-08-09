@@ -24,12 +24,10 @@ const dotColor = computed(() => {
   ]
 })
 const label = computed(() =>
-  available.value === 0
-    ? t('actionbar.freeTierRunsExhausted')
-    : t('actionbar.freeTierRuns', {
-        available: available.value,
-        MAX_AVAILABLE: maxAvailable.value
-      })
+  t('actionbar.freeTierRuns', {
+    available: available.value,
+    MAX_AVAILABLE: maxAvailable.value
+  })
 )
 </script>
 <template>

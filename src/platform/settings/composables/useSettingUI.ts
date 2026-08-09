@@ -3,7 +3,6 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
@@ -14,6 +13,7 @@ import {
 } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -35,7 +35,9 @@ const CATEGORY_ICONS: Record<string, string> = {
   'server-config': 'icon-[lucide--server]',
   subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
-  workspace: 'icon-[lucide--building-2]'
+  workspace: 'icon-[lucide--building-2]',
+  'workspace-allowlist': 'icon-[lucide--list-checks]',
+  'workspace-members': 'icon-[lucide--users]'
 }
 
 interface SettingPanelItem {
@@ -55,11 +57,7 @@ export function useSettingUI(
 
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const { isActiveSubscription, type: billingType } = useBillingContext()
-
-  const teamWorkspacesEnabled = computed(
-    () => isCloud && flags.teamWorkspacesEnabled
-  )
+  const { workspaceRole } = useWorkspaceUI()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -139,33 +137,6 @@ export function useSettingUI(
     )
   }
 
-  const subscriptionPanel: SettingPanelItem | null =
-    !isCloud || !window.__CONFIG__?.subscription_required
-      ? null
-      : {
-          node: {
-            key: 'subscription',
-            label: 'PlanCredits',
-            children: []
-          },
-          component: defineAsyncComponent(
-            () =>
-              import('@/platform/cloud/subscription/components/SubscriptionPanel.vue')
-          )
-        }
-
-  const shouldShowPlanCreditsPanel = computed(() => {
-    if (!subscriptionPanel) return false
-    return isActiveSubscription.value
-  })
-
-  const shouldShowLegacyPlanCreditsPanel = computed(
-    () =>
-      isLoggedIn.value &&
-      billingType.value === 'legacy' &&
-      shouldShowPlanCreditsPanel.value
-  )
-
   const userPanel: SettingPanelItem = {
     node: {
       key: 'user',
@@ -214,8 +185,22 @@ export function useSettingUI(
     props: { section: 'members' }
   }
 
-  const shouldShowWorkspacePanel = computed(
-    () => teamWorkspacesEnabled.value && isLoggedIn.value
+  const allowlistPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-allowlist',
+      label: 'Allowlist',
+      children: []
+    },
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'allowlist' }
+  }
+
+  const shouldShowWorkspacePanel = computed(() => isCloud && isLoggedIn.value)
+  const shouldShowWorkspaceAllowlist = computed(
+    () =>
+      shouldShowWorkspacePanel.value &&
+      flags.partnerNodeGovernanceEnabled &&
+      workspaceRole.value === 'owner'
   )
 
   const billingControlsEnabled = computed(
@@ -224,9 +209,12 @@ export function useSettingUI(
 
   const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
     if (!shouldShowWorkspacePanel.value) return []
-    return billingControlsEnabled.value
+    const workspacePanels = billingControlsEnabled.value
       ? [planCreditsPanel, membersPanel]
       : [workspacePanel]
+    return shouldShowWorkspaceAllowlist.value
+      ? [...workspacePanels, allowlistPanel]
+      : workspacePanels
   })
 
   const secretsPanel: SettingPanelItem = {
@@ -286,9 +274,6 @@ export function useSettingUI(
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
-      ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
-        ? [subscriptionPanel]
-        : []),
       ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
     ].filter((panel) => panel !== null && panel.component)
   )
@@ -325,7 +310,7 @@ export function useSettingUI(
     )
   })
 
-  // Sidebar structure when team workspaces is enabled
+  // Cloud workspace sidebar structure
   const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [
     // Workspace settings
     translateCategory({
@@ -371,7 +356,7 @@ export function useSettingUI(
       : [])
   ])
 
-  // Sidebar structure when team workspaces is disabled (legacy)
+  // OSS legacy sidebar structure
   const legacyMenuTreeNodes = computed<SettingTreeNode[]>(() => [
     // Account settings - show different panels based on distribution and auth state
     {
@@ -379,9 +364,6 @@ export function useSettingUI(
       label: 'Account',
       children: [
         userPanel.node,
-        ...(shouldShowLegacyPlanCreditsPanel.value && subscriptionPanel
-          ? [subscriptionPanel.node]
-          : []),
         ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
@@ -409,29 +391,29 @@ export function useSettingUI(
   ])
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() =>
-    teamWorkspacesEnabled.value
-      ? workspaceMenuTreeNodes.value
-      : legacyMenuTreeNodes.value
+    isCloud ? workspaceMenuTreeNodes.value : legacyMenuTreeNodes.value
   )
 
   const navGroups = computed<NavGroupData[]>(() =>
-    groupedMenuTreeNodes.value.map((group) => ({
-      title:
-        (group as SettingTreeNode & { translatedLabel?: string })
-          .translatedLabel ?? group.label,
-      items: (group.children ?? []).map((child) => ({
-        id: child.key,
-        label:
-          (child as SettingTreeNode & { translatedLabel?: string })
-            .translatedLabel ?? child.label,
-        icon:
-          child.key === 'workspace' && billingControlsEnabled.value
-            ? CATEGORY_ICONS.PlanCredits
-            : (CATEGORY_ICONS[child.key] ??
-              CATEGORY_ICONS[child.label] ??
-              'icon-[lucide--plug]')
+    groupedMenuTreeNodes.value
+      .filter((group) => group.children?.length)
+      .map((group) => ({
+        title:
+          (group as SettingTreeNode & { translatedLabel?: string })
+            .translatedLabel ?? group.label,
+        items: (group.children ?? []).map((child) => ({
+          id: child.key,
+          label:
+            (child as SettingTreeNode & { translatedLabel?: string })
+              .translatedLabel ?? child.label,
+          icon:
+            child.key === 'workspace' && billingControlsEnabled.value
+              ? CATEGORY_ICONS.PlanCredits
+              : (CATEGORY_ICONS[child.key] ??
+                CATEGORY_ICONS[child.label] ??
+                'icon-[lucide--plug]')
+        }))
       }))
-    }))
   )
 
   function findCategoryByKey(key: string): SettingTreeNode | null {
@@ -457,7 +439,6 @@ export function useSettingUI(
     groupedMenuTreeNodes,
     settingCategories,
     navGroups,
-    teamWorkspacesEnabled,
     findCategoryByKey,
     findPanelByKey
   }

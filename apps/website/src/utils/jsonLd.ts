@@ -144,6 +144,21 @@ export function itemListNode(
   }
 }
 
+export function faqPageNode(
+  pageUrl: string,
+  items: readonly { question: string; answer: string }[]
+): JsonLdNode {
+  return {
+    '@type': 'FAQPage',
+    '@id': jsonLdId(pageUrl, 'faq'),
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer }
+    }))
+  }
+}
+
 interface ArticleInput {
   siteUrl: string
   pageUrl: string
@@ -352,6 +367,41 @@ export function productNode(input: ProductInput): JsonLdNode {
         unitText: 'MONTH'
       }
     }))
+  }
+}
+
+export interface EventNodeInput {
+  siteUrl: string
+  /** Fragment @id, typically jsonLdId(pageUrl, `event-${event.id}`). */
+  id: string
+  name: string
+  description?: string
+  /** ISO 8601 date or datetime with timezone offset. */
+  startDate: string
+  /** Online events: URL of the stream or registration page. */
+  virtualUrl?: string
+  /** Physical events: venue name; used when virtualUrl is absent. */
+  placeName?: string
+  locale: Locale
+}
+
+export function eventNode(input: EventNodeInput): JsonLdNode {
+  const online = Boolean(input.virtualUrl)
+  return {
+    '@type': 'Event',
+    '@id': input.id,
+    name: input.name,
+    description: input.description,
+    startDate: input.startDate,
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: online
+      ? 'https://schema.org/OnlineEventAttendanceMode'
+      : 'https://schema.org/OfflineEventAttendanceMode',
+    location: online
+      ? { '@type': 'VirtualLocation', url: input.virtualUrl }
+      : { '@type': 'Place', name: input.placeName },
+    organizer: { '@id': organizationId(input.siteUrl) },
+    inLanguage: input.locale
   }
 }
 

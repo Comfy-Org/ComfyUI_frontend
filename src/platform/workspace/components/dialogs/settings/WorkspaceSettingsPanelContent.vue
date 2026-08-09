@@ -13,7 +13,8 @@
     <BillingStatusBanner class="mb-4" />
 
     <PlanCreditsPanelContent v-if="section === 'planCredits'" />
-    <WorkspaceMembersPanelContent v-else />
+    <WorkspaceMembersPanelContent v-else-if="section === 'members'" />
+    <PartnerNodeAccessPanel v-else />
   </div>
 </template>
 
@@ -22,12 +23,13 @@ import { storeToRefs } from 'pinia'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
+import PartnerNodeAccessPanel from '@/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue'
 import PlanCreditsPanelContent from '@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue'
 import WorkspaceMembersPanelContent from '@/platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const { section } = defineProps<{
-  section: 'planCredits' | 'members'
+  section: 'planCredits' | 'members' | 'allowlist'
 }>()
 
 const { workspaceName } = storeToRefs(useTeamWorkspaceStore())

@@ -1,6 +1,8 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import userEvent from '@testing-library/user-event'
+import { FocusScope } from 'reka-ui'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -30,7 +32,7 @@ const options = [
 ]
 
 function renderInParent(
-  multiSelectProps: Record<string, unknown> = {},
+  multiSelectProps: Partial<ComponentProps<typeof MultiSelect>> = {},
   modelValue: { name: string; value: string }[] = []
 ) {
   const parentEscapeCount = { value: 0 }
@@ -89,6 +91,23 @@ describe('MultiSelect', () => {
     const dialogZIndex = Number(openModal.style.zIndex)
     const user = userEvent.setup()
     const { unmount } = renderInParent()
+
+    await user.click(screen.getByRole('button'))
+    await nextTick()
+
+    const content = findContentElement()
+    expect(content).not.toBeNull()
+    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+
+    unmount()
+  })
+
+  it('opens above a dialog even when the caller passes its own contentStyle z-index', async () => {
+    openModal = document.createElement('div')
+    ZIndex.set('modal', openModal, 3702)
+    const dialogZIndex = Number(openModal.style.zIndex)
+    const user = userEvent.setup()
+    const { unmount } = renderInParent({ contentStyle: { zIndex: 3000 } })
 
     await user.click(screen.getByRole('button'))
     await nextTick()
@@ -178,5 +197,37 @@ describe('MultiSelect', () => {
 
       unmount()
     })
+  })
+
+  it('lets the user type in the search box when nested in a trapped focus scope', async () => {
+    const user = userEvent.setup()
+    const InTrap = {
+      components: { FocusScope, MultiSelect },
+      template: `
+        <FocusScope trapped as-child>
+          <div>
+            <MultiSelect v-model="sel" :options="options" :show-search-box="true" />
+          </div>
+        </FocusScope>`,
+      setup: () => ({ sel: ref([]), options })
+    }
+
+    const { unmount } = render(InTrap, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: { plugins: [i18n] }
+    })
+
+    await user.click(screen.getByRole('button'))
+    await nextTick()
+
+    const searchBox = screen.getByPlaceholderText('Search')
+    await user.click(searchBox)
+    await user.type(searchBox, 'query')
+    await nextTick()
+
+    expect(searchBox).toHaveFocus()
+    expect(searchBox).toHaveValue('query')
+
+    unmount()
   })
 })

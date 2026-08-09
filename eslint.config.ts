@@ -341,6 +341,15 @@ export default defineConfig([
     }
   },
   {
+    // Devtools extension scripts are loaded by ComfyUI in the browser.
+    files: ['tools/devtools/web/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
+    }
+  },
+  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {
@@ -363,7 +372,6 @@ export default defineConfig([
       'import-x/no-relative-packages': 'off'
     }
   },
-  // Dev-only extensions loaded by the ComfyUI backend in a browser page
   {
     files: ['tools/devtools/web/**/*.js'],
     languageOptions: {

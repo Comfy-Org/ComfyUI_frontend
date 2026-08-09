@@ -50,6 +50,14 @@ let retriggerRequested = false
 
 let authWatcherInstalled = false
 
+let activeRouter: Router | null = null
+
+function onAuthHandoffRoute(): boolean {
+  return (
+    activeRouter?.currentRoute.value.meta.defersDesktopLoginRedemption === true
+  )
+}
+
 function getCodeState(code: string): CodeRedemptionState {
   const existing = codeStates.get(code)
   if (existing) return existing
@@ -129,6 +137,10 @@ async function redeemCode(code: string): Promise<void> {
   // let a post-login trigger redeem it.
   const user = useAuthStore().currentUser
   if (!user) return
+
+  // Mid-handoff the imminent hard reload would destroy an open dialog; keep
+  // the stash and let the reloaded app prompt on a stable route.
+  if (onAuthHandoffRoute()) return
 
   if (!(await confirmRedemption(state, user.uid))) {
     // Declined/dismissed: drop the code without an error.
@@ -252,10 +264,14 @@ function installAuthWatcherOnce(): void {
  * the cloud backend; redeeming the code from a signed-in browser session,
  * with the user's approval, releases a one-time custom token to that poll
  * and signs the desktop app in. The preserved-query tracker (configured in
- * router.ts) strips the code from the URL at capture time, so the stash is
- * the only place it lives.
+ * router.ts) strips the code from the URL at capture time, so the
+ * sessionStorage-backed stash is the only place it lives.
+ *
+ * Routes flagged `meta.defersDesktopLoginRedemption` suppress the prompt:
+ * the auth handoff ends in a hard reload that only the stash survives.
  */
 export function installDesktopLoginRedemption(router: Router): void {
+  activeRouter = router
   router.afterEach(() => {
     installAuthWatcherOnce()
     void redeemPendingDesktopLoginCode()

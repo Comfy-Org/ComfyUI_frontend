@@ -8,10 +8,10 @@ export function isAppTemplate(template: TemplateInfo): boolean {
   return template.name.endsWith('.app')
 }
 
-export function filterTemplatesByType(
-  templates: TemplateInfo[],
+export function filterTemplatesByType<T extends TemplateInfo>(
+  templates: T[],
   type: TemplateTypeFilter
-): TemplateInfo[] {
+): T[] {
   if (type === 'all') return templates
   const wantApp = type === 'apps'
   return templates.filter((template) => isAppTemplate(template) === wantApp)

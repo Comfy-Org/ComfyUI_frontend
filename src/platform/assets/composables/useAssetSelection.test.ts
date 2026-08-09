@@ -132,6 +132,35 @@ describe('useAssetSelection', () => {
       expect(isSelected('asset-1')).toBe(true)
       expect(selectedCount.value).toBe(1)
     })
+
+    it('keeps the only selected asset selected when clicked again', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+      handleAssetClick(assets[0], 0, assets)
+
+      expect(isSelected('asset-0')).toBe(true)
+      expect(selectedCount.value).toBe(1)
+    })
+
+    it('collapses a multi-selection to the clicked asset', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+      mockCtrlKey.value = true
+      handleAssetClick(assets[1], 1, assets)
+      mockCtrlKey.value = false
+
+      handleAssetClick(assets[0], 0, assets)
+
+      expect(isSelected('asset-0')).toBe(true)
+      expect(isSelected('asset-1')).toBe(false)
+      expect(selectedCount.value).toBe(1)
+    })
   })
 
   describe('handleAssetClick - shift+click', () => {
@@ -235,6 +264,33 @@ describe('useAssetSelection', () => {
       expect(isSelected('asset-0')).toBe(true)
       expect(isSelected('asset-2')).toBe(true)
       expect(selectedCount.value).toBe(2)
+    })
+  })
+
+  describe('toggleAssetSelection', () => {
+    it('removes one asset without clearing the rest of the selection', () => {
+      const selection = useAssetSelection()
+      const assets = createMockAssets(3)
+
+      selection.selectAll(assets)
+      selection.toggleAssetSelection(assets[1], 1, assets)
+
+      expect(selection.isSelected('asset-0')).toBe(true)
+      expect(selection.isSelected('asset-1')).toBe(false)
+      expect(selection.isSelected('asset-2')).toBe(true)
+      expect(selection.selectedCount.value).toBe(2)
+    })
+
+    it('adds one asset without clearing the rest of the selection', () => {
+      const selection = useAssetSelection()
+      const assets = createMockAssets(3)
+
+      selection.handleAssetClick(assets[0], 0, assets)
+      selection.toggleAssetSelection(assets[1], 1, assets)
+
+      expect(selection.isSelected('asset-0')).toBe(true)
+      expect(selection.isSelected('asset-1')).toBe(true)
+      expect(selection.selectedCount.value).toBe(2)
     })
   })
 

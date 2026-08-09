@@ -1,59 +1,77 @@
 import path from 'node:path'
 
-export default {
-  'tests-ui/**': () =>
-    'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1',
+export default function lintStaged(stagedFiles: string[]) {
+  const relativePaths = stagedFiles.map(toRelativePath)
 
-  './**/*.{css,vue}': (stagedFiles: string[]) => {
-    const joinedPaths = quote(toRelativePaths(stagedFiles))
-    return [`pnpm exec stylelint --allow-empty-input ${joinedPaths}`]
-  },
-
-  './**/*.js': (stagedFiles: string[]) => formatAndEslint(stagedFiles),
-
-  './**/*.{ts,tsx,vue,mts,json,yaml,md}': (stagedFiles: string[]) => {
-    // oxfmt ignores the lockfile and errors when left with zero targets
-    const formattable = stagedFiles.filter((f) => !f.endsWith('pnpm-lock.yaml'))
-    if (formattable.length === 0) return []
-
-    const commands = [...formatAndEslint(formattable), 'pnpm typecheck']
-
-    const relativePaths = toRelativePaths(stagedFiles)
-
-    if (relativePaths.some((f) => f.startsWith('browser_tests/'))) {
-      commands.push('pnpm typecheck:browser')
-    }
-
-    if (relativePaths.some((f) => f.startsWith('apps/website/'))) {
-      commands.push('pnpm typecheck:website')
-    }
-
-    return commands
+  if (relativePaths.some((fileName) => fileName.startsWith('tests-ui/'))) {
+    return 'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1'
   }
+
+  const formattableFiles = relativePaths.filter(
+    (fileName) =>
+      /\.(js|ts|tsx|vue|mts|json|yaml|md)$/.test(fileName) &&
+      !fileName.endsWith('pnpm-lock.yaml')
+  )
+  const codeFiles = relativePaths.filter((fileName) =>
+    /\.(js|ts|tsx|vue|mts)$/.test(fileName)
+  )
+  const styleFiles = relativePaths.filter((fileName) =>
+    /\.(css|vue)$/.test(fileName)
+  )
+  const typecheckFiles = formattableFiles.filter((fileName) =>
+    /\.(ts|tsx|vue|mts)$/.test(fileName)
+  )
+
+  return [
+    ...commandsWithFiles(formattableFiles, 'pnpm exec oxfmt --write'),
+    ...lintCommands(codeFiles, styleFiles),
+    ...typecheckCommands(typecheckFiles)
+  ]
 }
 
-function formatAndEslint(fileNames: string[]) {
-  const relativePaths = toRelativePaths(fileNames)
-  const commands = [`pnpm exec oxfmt --write ${quote(relativePaths)}`]
+function lintCommands(codeFiles: string[], styleFiles: string[]) {
+  if (new Set([...codeFiles, ...styleFiles]).size > 10) {
+    return ['pnpm lint']
+  }
 
   // apps/* have their own lint configs; the root lint scripts skip them too
-  const lintable = relativePaths.filter((f) => !f.startsWith('apps/'))
-  if (lintable.length > 0) {
-    commands.push(
-      `pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix ${quote(lintable)}`,
-      `pnpm exec eslint --cache --fix --no-warn-ignored ${quote(lintable)}`
+  const lintableCodeFiles = codeFiles.filter((f) => !f.startsWith('apps/'))
+
+  return [
+    ...commandsWithFiles(styleFiles, 'pnpm exec stylelint --allow-empty-input'),
+    ...commandsWithFiles(
+      lintableCodeFiles,
+      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix',
+      'pnpm exec eslint --cache --fix --no-warn-ignored'
     )
+  ]
+}
+
+function typecheckCommands(fileNames: string[]) {
+  if (fileNames.length === 0) {
+    return []
   }
 
-  return commands
+  return [
+    'pnpm typecheck',
+    ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
+      ? ['pnpm typecheck:browser']
+      : []),
+    ...(fileNames.some((fileName) => fileName.startsWith('apps/website/'))
+      ? ['pnpm typecheck:website']
+      : [])
+  ]
 }
 
-function toRelativePaths(fileNames: string[]) {
-  return fileNames.map((f) =>
-    path.relative(process.cwd(), f).replace(/\\/g, '/')
-  )
+function commandsWithFiles(fileNames: string[], ...commands: string[]) {
+  if (fileNames.length === 0) {
+    return []
+  }
+
+  const joinedPaths = fileNames.map((fileName) => `"${fileName}"`).join(' ')
+  return commands.map((command) => `${command} ${joinedPaths}`)
 }
 
-function quote(relativePaths: string[]) {
-  return relativePaths.map((p) => `"${p}"`).join(' ')
+function toRelativePath(fileName: string) {
+  return path.relative(process.cwd(), fileName).replace(/\\/g, '/')
 }
