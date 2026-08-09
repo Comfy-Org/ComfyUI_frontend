@@ -49,8 +49,6 @@ describe('legacy MiniMax H3 redirects', () => {
       }
 
       expect(redirect.destination).toBe(destination)
-      // Temporary on purpose: /minimax will be reclaimed as an all-models hub,
-      // so the legacy redirect must not permanently consolidate onto /minimax-h3.
       expect(redirect.permanent, `${source} must be a temporary redirect`).toBe(
         false
       )
