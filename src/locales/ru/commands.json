@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Прервать"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Открыть редактор слоёв для выбранного узла"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Загрузить стандартный рабочий процесс"
   },

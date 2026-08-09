@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
@@ -152,15 +152,13 @@ export const isReroute = (item: unknown): item is Reroute => {
  * @returns The color option of the item.
  */
 export const getItemsColorOption = (items: unknown[]): ColorOption | null => {
-  const validItems = _.filter(items, isColorable)
-  if (_.isEmpty(validItems)) return null
+  const validItems = filter(items, isColorable)
+  if (isEmpty(validItems)) return null
 
-  const colorOptions = _.map(validItems, (item) => item.getColorOption())
+  const colorOptions = map(validItems, (item) => item.getColorOption())
 
-  return _.every(colorOptions, (option) =>
-    _.isEqual(option, _.head(colorOptions))
-  )
-    ? _.head(colorOptions)!
+  return every(colorOptions, (option) => isEqual(option, head(colorOptions)))
+    ? head(colorOptions)!
     : null
 }
 
