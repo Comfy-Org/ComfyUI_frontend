@@ -94,7 +94,7 @@ async function startPendingPromotedMediaVerification() {
     sourceNodes: [leafNode]
   } = createPromotedMediaRuntime({ depth: 2, hostValue: 'pending.png' })
   outerHost.mode = LGraphEventMode.BYPASS
-  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+  stubRootGraph(rootGraph)
 
   const pendingCandidate = {
     ...createPromotedMissingMediaCandidate(outerHost),
@@ -667,7 +667,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       hosts: [host],
       sourceNodes
     } = createPromotedMediaRuntime()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     installErrorClearingHooks(subgraph)
 
     const mediaStore = useMissingMediaStore()
@@ -687,7 +687,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       hosts: [host],
       sourceNodes
     } = createPromotedMediaRuntime({ sourceIds: [42, 43, 44] })
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     installErrorClearingHooks(subgraph)
 
     const candidate = createPromotedMissingMediaCandidate(host)
@@ -1199,7 +1199,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       values: []
     })
     rootGraph.add(unaffectedNode)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     installErrorClearingHooks(innerSubgraph)
 
     const mediaStore = useMissingMediaStore()
@@ -1222,7 +1222,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       hosts: [host],
       sourceNodes
     } = createPromotedMediaRuntime({ sourceIds: [42, 43, 44] })
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     installErrorClearingHooks(subgraph)
 
     const candidate = createPromotedMissingMediaCandidate(host)
@@ -1247,7 +1247,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       intermediateHosts: [innerHost]
     } = createPromotedMediaRuntime({ depth: 2 })
     if (!innerHost) throw new Error('Expected nested promoted image host')
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     installErrorClearingHooks(outerSubgraph)
 
     const mediaStore = useMissingMediaStore()
