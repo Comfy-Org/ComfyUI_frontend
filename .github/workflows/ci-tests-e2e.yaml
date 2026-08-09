@@ -36,8 +36,6 @@ jobs:
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
-        # The build must emit `//# sourceMappingURL=` comments or monocart cannot
-        # map the sharded job's V8 coverage back to src/**. See vite.config.mts.
         env:
           COLLECT_COVERAGE: 'true'
 

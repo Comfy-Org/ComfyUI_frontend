@@ -549,11 +549,7 @@ export default defineConfig({
     // (the .map files aren't served) without losing Sentry symbolication. See FE-1405.
     // A coverage build serves its own .map files and needs the comment back:
     // monocart maps V8 coverage to src/** only by following it.
-    sourcemap: GENERATE_SOURCEMAP
-      ? COLLECT_COVERAGE
-        ? true
-        : 'hidden'
-      : false,
+    sourcemap: GENERATE_SOURCEMAP && (COLLECT_COVERAGE || 'hidden'),
     // Exclude heavy optional vendor chunks from initial module preload
     // These chunks are only needed when their features are used (3D, terminal, etc.)
     modulePreload: {
