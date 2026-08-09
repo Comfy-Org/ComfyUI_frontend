@@ -10,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import { completeFloatingLink } from '@/lib/litegraph/src/linkReplacement'
 import type {
   ConnectingLink,
   INodeInputSlot,
@@ -876,6 +877,34 @@ export class LinkConnector {
           reroute
         )
     )
+
+    if (renderLink instanceof FloatingRenderLink) {
+      const { link: floatingLink, outputNode, outputSlot } = renderLink
+      if (!outputNode || !outputSlot) return
+
+      const replacements = filtered.flatMap(({ node, input, link }) => {
+        const replacement = outputNode.connectSlots(
+          outputSlot,
+          node,
+          input,
+          link.parentId
+        )
+        return replacement ? [replacement] : []
+      })
+      if (replacements.length) {
+        for (const replacement of replacements) {
+          replacement.data = floatingLink.data
+          replacement._data = floatingLink._data
+          if (floatingLink.color) replacement.color = floatingLink.color
+        }
+        renderLink.link = completeFloatingLink(
+          renderLink.network,
+          floatingLink,
+          replacements[0]
+        )
+      }
+      return
+    }
 
     for (const result of filtered) {
       renderLink.connectToRerouteInput(

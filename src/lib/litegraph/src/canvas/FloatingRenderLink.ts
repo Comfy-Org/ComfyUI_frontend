@@ -3,12 +3,12 @@ import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import {
+  completeFloatingLink,
+  replaceFloatingLink
+} from '@/lib/litegraph/src/linkReplacement'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -53,7 +53,7 @@ export class FloatingRenderLink implements RenderLink {
 
   constructor(
     readonly network: LinkNetwork,
-    readonly link: LLink,
+    public link: LLink,
     readonly toType: 'input' | 'output',
     readonly fromReroute: Reroute,
     readonly dragDirection: LinkDirection = LinkDirection.CENTER
@@ -151,9 +151,12 @@ export class FloatingRenderLink implements RenderLink {
     // caught (and removed) by the target slot's floating-link cleanup.
     node.disconnectInput(node.inputs.indexOf(input))
 
-    const floatingLink = this.link
-    floatingLink.target_id = node.id
-    floatingLink.target_slot = node.inputs.indexOf(input)
+    this.link = replaceFloatingLink(this.network, this.link, {
+      originId: this.link.origin_id,
+      originSlot: this.link.origin_slot,
+      targetId: node.id,
+      targetSlot: node.inputs.indexOf(input)
+    })
   }
 
   connectToOutput(
@@ -161,27 +164,40 @@ export class FloatingRenderLink implements RenderLink {
     output: INodeOutputSlot,
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
-    const floatingLink = this.link
-    floatingLink.origin_id = node.id
-    floatingLink.origin_slot = node.outputs.indexOf(output)
+    this.link = replaceFloatingLink(this.network, this.link, {
+      originId: node.id,
+      originSlot: node.outputs.indexOf(output),
+      targetId: this.link.target_id,
+      targetSlot: this.link.target_slot
+    })
   }
 
   connectToSubgraphInput(
     input: SubgraphInput,
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
-    const floatingLink = this.link
-    floatingLink.origin_id = SUBGRAPH_INPUT_ID
-    floatingLink.origin_slot = input.parent.slots.indexOf(input)
+    if (!this.inputNode || !this.inputSlot) return
+    const replacement = input.connect(
+      this.inputSlot,
+      this.inputNode,
+      this.link.parentId
+    )
+    if (replacement)
+      this.link = completeFloatingLink(this.network, this.link, replacement)
   }
 
   connectToSubgraphOutput(
     output: SubgraphOutput,
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
-    const floatingLink = this.link
-    floatingLink.target_id = SUBGRAPH_OUTPUT_ID
-    floatingLink.target_slot = output.parent.slots.indexOf(output)
+    if (!this.outputNode || !this.outputSlot) return
+    const replacement = output.connect(
+      this.outputSlot,
+      this.outputNode,
+      this.link.parentId
+    )
+    if (replacement)
+      this.link = completeFloatingLink(this.network, this.link, replacement)
   }
 
   connectToRerouteInput(
@@ -190,9 +206,12 @@ export class FloatingRenderLink implements RenderLink {
     { node: inputNode, input }: { node: LGraphNode; input: INodeInputSlot },
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
-    const floatingLink = this.link
-    floatingLink.target_id = inputNode.id
-    floatingLink.target_slot = inputNode.inputs.indexOf(input)
+    this.link = replaceFloatingLink(this.network, this.link, {
+      originId: this.link.origin_id,
+      originSlot: this.link.origin_slot,
+      targetId: inputNode.id,
+      targetSlot: inputNode.inputs.indexOf(input)
+    })
 
     events.dispatch('input-moved', this)
   }
@@ -204,9 +223,12 @@ export class FloatingRenderLink implements RenderLink {
     output: INodeOutputSlot,
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
-    const floatingLink = this.link
-    floatingLink.origin_id = outputNode.id
-    floatingLink.origin_slot = outputNode.outputs.indexOf(output)
+    this.link = replaceFloatingLink(this.network, this.link, {
+      originId: outputNode.id,
+      originSlot: outputNode.outputs.indexOf(output),
+      targetId: this.link.target_id,
+      targetSlot: this.link.target_slot
+    })
 
     events.dispatch('output-moved', this)
   }

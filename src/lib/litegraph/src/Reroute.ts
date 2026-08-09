@@ -19,6 +19,7 @@ import { LGraphBadge } from './LGraphBadge'
 import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import { LLink } from './LLink'
+import { replaceFloatingLink } from './linkReplacement'
 import type { LinkId } from './LLink'
 import { createGeometryView } from './infrastructure/createGeometryView'
 import type {
@@ -446,13 +447,19 @@ export class Reroute
    * @param index The slot index of the new origin output
    */
   setFloatingLinkOrigin(node: LGraphNode, index: number) {
+    const network = this.network.deref()
+    if (!network) throw new Error('[setFloatingLinkOrigin]: Invalid network.')
     const floatingOutLinks = this.getFloatingLinks('output')
     if (!floatingOutLinks)
       throw new Error('[setFloatingLinkOrigin]: Invalid network.')
 
     for (const link of floatingOutLinks) {
-      link.origin_id = node.id
-      link.origin_slot = index
+      replaceFloatingLink(network, link, {
+        originId: node.id,
+        originSlot: index,
+        targetId: link.target_id,
+        targetSlot: link.target_slot
+      })
     }
   }
 
