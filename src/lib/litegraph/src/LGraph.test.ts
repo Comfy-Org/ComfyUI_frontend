@@ -38,6 +38,7 @@ import type {
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -782,10 +783,14 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(parentInstance)
 
     expect(
-      useLinkStore().isInputSlotConnected(rootGraph.id, consumer.id, 0)
+      useLinkStore().isInputSlotConnected(
+        graphScopeOf(nestedDef),
+        consumer.id,
+        0
+      )
     ).toBe(true)
     expect(
-      useRerouteStore().getReroute(rootGraph.id, innerReroute.id)?.id
+      useRerouteStore().getReroute(graphScopeOf(nestedDef), innerReroute.id)?.id
     ).toBe(innerReroute.id)
     expect(rootGraph.subgraphs.has(nestedDef.id)).toBe(true)
     for (const spy of removalSpies) expect(spy).not.toHaveBeenCalled()
@@ -798,10 +803,14 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(parentInstance)
 
     expect(
-      useLinkStore().isInputSlotConnected(rootGraph.id, consumer.id, 0)
+      useLinkStore().isInputSlotConnected(
+        graphScopeOf(nestedDef),
+        consumer.id,
+        0
+      )
     ).toBe(false)
     expect(
-      useRerouteStore().getReroute(rootGraph.id, innerReroute.id)
+      useRerouteStore().getReroute(graphScopeOf(nestedDef), innerReroute.id)
     ).toBeUndefined()
     expect(rootGraph.subgraphs.has(nestedDef.id)).toBe(false)
   })
@@ -973,7 +982,7 @@ describe('_removeDuplicateLinks', () => {
 
     expect(graph._links.size).toBe(1)
     expect(source.outputs[0].links).toHaveLength(1)
-    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 0)?.id).toBe(
+    expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 0)?.id).toBe(
       source.outputs[0].links![0]
     )
   })
@@ -981,7 +990,7 @@ describe('_removeDuplicateLinks', () => {
   it('keeps the link registered to the target input', () => {
     const { graph, source, target } = createConnectedGraph()
     const store = useLinkStore()
-    const graphId = graph.rootGraph.id
+    const graphId = graphScopeOf(graph)
     const keptLinkId = store.getInputSlotLink(graphId, target.id, 0)!.id
 
     const dupLink = injectDuplicateLink(graph, source, target)
@@ -997,14 +1006,14 @@ describe('_removeDuplicateLinks', () => {
   it('drops purged duplicates from the link store and keeps the survivor indexed', () => {
     const { graph, source, target } = createConnectedGraph()
     const store = useLinkStore()
-    const graphId = graph.rootGraph.id
+    const graphId = graphScopeOf(graph)
     const keptLinkId = store.getInputSlotLink(graphId, target.id, 0)!.id
 
     const dup = injectDuplicateLink(graph, source, target)
 
     graph._removeDuplicateLinks()
 
-    expect(dup._graphId).toBeUndefined()
+    expect(dup._graphScope).toBeUndefined()
     expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
   })
 
@@ -1012,7 +1021,7 @@ describe('_removeDuplicateLinks', () => {
     const { graph, source, target } = createConnectedGraph()
     const store = useLinkStore()
     const validLinkId = store.getInputSlotLink(
-      graph.rootGraph.id,
+      graphScopeOf(graph),
       target.id,
       0
     )!.id
@@ -1033,7 +1042,7 @@ describe('_removeDuplicateLinks', () => {
     expect(graph._links.size).toBe(1)
     expect(graph._links.has(validLinkId)).toBe(true)
     expect(graph._links.has(dupLink.id)).toBe(false)
-    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 0)?.id).toBe(
+    expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 0)?.id).toBe(
       validLinkId
     )
   })
@@ -1050,7 +1059,7 @@ describe('_removeDuplicateLinks', () => {
     expect(graph._links.has(dupLink.id)).toBe(false)
     const survivingId = graph._links.keys().next().value!
     const registeredLink = store.getInputSlotLink(
-      graph.rootGraph.id,
+      graphScopeOf(graph),
       target.id,
       0
     )
@@ -1940,8 +1949,18 @@ describe('node layout registration', () => {
     expect(subgraph._links.get(link.id)).toBe(link)
     expect(subgraph.reroutes.get(reroute.id)).toBe(reroute)
     expect(link.parentId).toBe(reroute.id)
-    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(3)
-    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeDefined()
+    expect(
+      useLinkStore().getLink(graphScopeOf(graph), inputLink.id)
+    ).toBeDefined()
+    expect(
+      useLinkStore().getLink(graphScopeOf(graph), outputLink.id)
+    ).toBeDefined()
+    expect(
+      useLinkStore().getLink(graphScopeOf(subgraph), link.id)
+    ).toBeDefined()
+    expect(
+      useRerouteStore().getReroute(graphScopeOf(subgraph), reroute.id)
+    ).toBeDefined()
     expect(
       useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)
     ).not.toHaveLength(0)
@@ -1991,8 +2010,18 @@ describe('node layout registration', () => {
     expect(onNodeRemoved).toHaveBeenCalledOnce()
     expect(subgraphNode.graph).toBe(graph)
     expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
-    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(3)
-    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeDefined()
+    expect(
+      useLinkStore().getLink(graphScopeOf(graph), inputLink.id)
+    ).toBeDefined()
+    expect(
+      useLinkStore().getLink(graphScopeOf(graph), outputLink.id)
+    ).toBeDefined()
+    expect(
+      useLinkStore().getLink(graphScopeOf(subgraph), link.id)
+    ).toBeDefined()
+    expect(
+      useRerouteStore().getReroute(graphScopeOf(subgraph), reroute.id)
+    ).toBeDefined()
     expect(
       useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)
     ).not.toHaveLength(0)
@@ -2002,8 +2031,15 @@ describe('node layout registration', () => {
     expect(graph.nodes).not.toContain(subgraphNode)
     expect(graph.subgraphs.has(subgraph.id)).toBe(false)
     expect(graph.subgraphs.has(nested.id)).toBe(false)
-    expect([...useLinkStore().graphTopologies(graph.id)]).toHaveLength(0)
-    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBeUndefined()
+    expect([
+      ...useLinkStore().graphTopologies(graphScopeOf(graph))
+    ]).toHaveLength(0)
+    expect([
+      ...useLinkStore().graphTopologies(graphScopeOf(subgraph))
+    ]).toHaveLength(0)
+    expect(
+      useRerouteStore().getReroute(graphScopeOf(subgraph), reroute.id)
+    ).toBeUndefined()
     expect(
       useNodeDataStore().getGraphNodesFor(graph.id, subgraph.id)
     ).toHaveLength(0)
@@ -2136,7 +2172,9 @@ describe('graph teardown drops layout entries', () => {
     expect(root.graph).toBe(graph)
     expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
     expect(survivingEntries(populated)).toBe(4)
-    expect(useRerouteStore().getReroute(graphId, REROUTE)).toBeDefined()
+    expect(
+      useRerouteStore().getReroute(graphScopeOf(graph), REROUTE)
+    ).toBeDefined()
     expect(
       useNodeDataStore().getGraphNodesFor(graphId, subgraph.id)
     ).not.toHaveLength(0)

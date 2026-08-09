@@ -23,6 +23,11 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { getLayoutStoreYDoc } from '@/renderer/core/layout/store/layoutStoreTestUtils'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import {
+  graphScopeOf,
+  toOwningGraphId,
+  toRootGraphId
+} from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 
@@ -52,12 +57,12 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const store = useRerouteStore()
 
     const reroute = graph.createReroute([10, 10], link)!
-    expect(store.getReroute(graph.rootGraph.id, reroute.id)?.id).toBe(
+    expect(store.getReroute(graphScopeOf(graph), reroute.id)?.id).toBe(
       reroute.id
     )
 
     graph.removeReroute(reroute.id)
-    expect(store.getReroute(graph.rootGraph.id, reroute.id)).toBeUndefined()
+    expect(store.getReroute(graphScopeOf(graph), reroute.id)).toBeUndefined()
   })
 
   it('setReroute creates and updates stored geometry', () => {
@@ -71,7 +76,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
       linkIds: []
     })
 
-    expect(store.getReroute(graph.rootGraph.id, reroute.id)?.id).toBe(3)
+    expect(store.getReroute(graphScopeOf(graph), reroute.id)?.id).toBe(3)
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
     ).toEqual({ x: 5, y: 5 })
@@ -98,7 +103,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const second = graph.createReroute([20, 20], first)!
 
     const parentId = computed(
-      () => store.getReroute(graph.rootGraph.id, first.id)?.parentId
+      () => store.getReroute(graphScopeOf(graph), first.id)?.parentId
     )
     expect(parentId.value).toBe(second.id)
 
@@ -121,7 +126,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
     link.disconnect(graph)
 
     expect(graph.reroutes.size).toBe(0)
-    expect(store.getReroute(graph.rootGraph.id, reroute.id)).toBeUndefined()
+    expect(store.getReroute(graphScopeOf(graph), reroute.id)).toBeUndefined()
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)
     ).toBeNull()
@@ -131,20 +136,20 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const { graph, link } = connectedGraph()
     const store = useRerouteStore()
     const reroute = graph.createReroute([10, 10], link)!
-    const graphId = graph.rootGraph.id
-
+    const scope = graphScopeOf(graph)
     graph.clear()
 
-    expect(store.getReroute(graphId, reroute.id)).toBeUndefined()
+    expect(store.getReroute(scope, reroute.id)).toBeUndefined()
   })
 
   it('clear() removes stale components without an entity shell', () => {
     const graph = new LGraph()
     const graphId = graph.id
+    const scope = graphScopeOf(graph)
     const rerouteId = toRerouteId(99)
     const registrationId = createUuidv4()
     const store = useRerouteStore()
-    store.registerReroute(graphId, { id: rerouteId })
+    store.registerReroute(scope, { id: rerouteId })
     layoutStore.applyOperation({
       actor: 'remote',
       entity: 'reroute',
@@ -159,16 +164,17 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     graph.clear()
 
-    expect(store.getReroute(graphId, rerouteId)).toBeUndefined()
+    expect(store.getReroute(scope, rerouteId)).toBeUndefined()
     expect(layoutStore.getRerouteLayout(graphId, rerouteId)).toBeNull()
   })
 
   it('replacement configure clears stale components from the old root', () => {
     const graph = new LGraph()
     const graphId = graph.id
+    const scope = graphScopeOf(graph)
     const rerouteId = toRerouteId(99)
     const store = useRerouteStore()
-    store.registerReroute(graphId, { id: rerouteId })
+    store.registerReroute(scope, { id: rerouteId })
     layoutStore.applyOperation({
       actor: 'remote',
       entity: 'reroute',
@@ -185,7 +191,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     graph.configure(data)
 
-    expect(store.getReroute(graphId, rerouteId)).toBeUndefined()
+    expect(store.getReroute(scope, rerouteId)).toBeUndefined()
     expect(layoutStore.getRerouteLayout(graphId, rerouteId)).toBeNull()
   })
 
@@ -209,7 +215,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     for (const sg of subgraphs) {
       const [reroute] = [...sg.reroutes.values()]
-      expect(store.getReroute(graph.rootGraph.id, reroute.id)?.id).toBe(
+      expect(store.getReroute(graphScopeOf(sg), reroute.id)?.id).toBe(
         reroute.id
       )
       const [link] = [...sg._links.values()]
@@ -342,8 +348,6 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const { graph, a, b, link } = connectedGraph()
     const store = useRerouteStore()
     const reroute = graph.createReroute([10, 10], link)!
-    const graphId = graph.rootGraph.id
-
     onTestFinished(enableSubgraphNodeCreation(graph))
 
     const { subgraph } = graph.convertToSubgraph(new Set([a, b, reroute]))
@@ -354,10 +358,10 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     const [innerLink] = [...subgraph._links.values()]
     expect(innerLink.parentId).toBe(reroute.id)
-    expect(store.getReroute(graphId, reroute.id)).toBeDefined()
+    expect(store.getReroute(graphScopeOf(subgraph), reroute.id)).toBeDefined()
 
     subgraph.removeReroute(reroute.id)
-    expect(store.getReroute(graphId, reroute.id)).toBeUndefined()
+    expect(store.getReroute(graphScopeOf(subgraph), reroute.id)).toBeUndefined()
   })
 
   it('floating marker survives through the store state', () => {
@@ -368,9 +372,11 @@ describe('Reroute ↔ rerouteStore integration', () => {
     a.disconnectOutput(0)
 
     expect(reroute.floating).toEqual({ slotType: 'input' })
-    expect(store.getReroute(graph.rootGraph.id, reroute.id)?.floating).toEqual({
-      slotType: 'input'
-    })
+    expect(store.getReroute(graphScopeOf(graph), reroute.id)?.floating).toEqual(
+      {
+        slotType: 'input'
+      }
+    )
   })
 })
 
@@ -514,7 +520,7 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(() => graph.configure(data, true)).toThrow(/registration rejected/)
 
     expect(graph.reroutes.get(reroute.id)).toBe(reroute)
-    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBe(
+    expect(useRerouteStore().getReroute(graphScopeOf(graph), reroute.id)).toBe(
       reroute._chain
     )
     expect(reroute.parentId).toBeUndefined()
@@ -550,7 +556,7 @@ describe('Reroute position lives only in layoutStore', () => {
 
     expect(() => graph._addReroute(duplicate)).toThrow(/already owned/)
     expect(graph.reroutes.get(id)).toBe(owner)
-    expect(useRerouteStore().getReroute(graph.rootGraph.id, id)).toBe(
+    expect(useRerouteStore().getReroute(graphScopeOf(graph), id)).toBe(
       owner._chain
     )
     expect(
@@ -607,12 +613,12 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(() => graph._addReroute(reroute)).toThrow('layout failed')
     expect(graph.reroutes.has(reroute.id)).toBe(false)
     expect(
-      useRerouteStore().getReroute(graph.rootGraph.id, reroute.id)
+      useRerouteStore().getReroute(graphScopeOf(graph), reroute.id)
     ).toBeUndefined()
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)
     ).toBeNull()
-    expect(reroute._graphId).toBeUndefined()
+    expect(reroute._graphScope).toBeUndefined()
   })
 
   it.for(['rejected', 'no-op'] as const)(
@@ -628,7 +634,7 @@ describe('Reroute position lives only in layoutStore', () => {
       expect(() => graph._addReroute(reroute)).toThrow(/registration/)
       expect(graph.reroutes.has(reroute.id)).toBe(false)
       expect(
-        useRerouteStore().getReroute(graph.rootGraph.id, reroute.id)
+        useRerouteStore().getReroute(graphScopeOf(graph), reroute.id)
       ).toBeUndefined()
     }
   )
@@ -661,10 +667,12 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(events).toEqual(['configuring', 'configured'])
     expect(inputEvents).toBe(0)
     expect(subgraph.asSerialisable()).toEqual(original)
-    expect(useRerouteStore().getReroute(root.id, existing.id)).toBe(
-      existing._chain
+    expect(
+      useRerouteStore().getReroute(graphScopeOf(subgraph), existing.id)
+    ).toBe(existing._chain)
+    expect(useRerouteStore().getReroute(graphScopeOf(sibling), owner.id)).toBe(
+      owner._chain
     )
-    expect(useRerouteStore().getReroute(root.id, owner.id)).toBe(owner._chain)
     expect(
       layoutStore.getRerouteLayout(root.id, existing.id)?.position
     ).toEqual({ x: 70, y: 80 })
@@ -710,7 +718,13 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(graph.id).toBe(replacementId)
     expect(graph.reroutes.has(existing.id)).toBe(false)
     expect(
-      useRerouteStore().getReroute(originalId, existing.id)
+      useRerouteStore().getReroute(
+        {
+          rootGraphId: toRootGraphId(originalId),
+          owningGraphId: toOwningGraphId(originalId)
+        },
+        existing.id
+      )
     ).toBeUndefined()
   })
 
@@ -731,11 +745,23 @@ describe('Reroute position lives only in layoutStore', () => {
 
     expect(graph.id).toBe(originalId)
     expect(graph.reroutes.get(existing.id)).toBe(existing)
-    expect(useRerouteStore().getReroute(originalId, existing.id)).toBe(
-      existing._chain
-    )
     expect(
-      useRerouteStore().getReroute(replacementId, existing.id)
+      useRerouteStore().getReroute(
+        {
+          rootGraphId: toRootGraphId(originalId),
+          owningGraphId: toOwningGraphId(originalId)
+        },
+        existing.id
+      )
+    ).toBe(existing._chain)
+    expect(
+      useRerouteStore().getReroute(
+        {
+          rootGraphId: toRootGraphId(replacementId),
+          owningGraphId: toOwningGraphId(replacementId)
+        },
+        existing.id
+      )
     ).toBeUndefined()
     expect(warn).toHaveBeenCalledWith(
       '[LGraph] Keeping current root identity during configuration',
@@ -765,7 +791,7 @@ describe('Reroute position lives only in layoutStore', () => {
 
     expect(graph.subgraphs.has(subgraph.id)).toBe(false)
     expect([...graph.reroutes.keys()]).toEqual([rerouteId])
-    expect(useRerouteStore().getReroute(graph.id, rerouteId)).toBe(
+    expect(useRerouteStore().getReroute(graphScopeOf(graph), rerouteId)).toBe(
       graph.reroutes.get(rerouteId)?._chain
     )
     expect(layoutStore.getRerouteLayout(graph.id, rerouteId)?.position).toEqual(
@@ -901,9 +927,15 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(() => graph.configure(data, true)).toThrow(/already owned/)
     expect(graph.id).toBe(originalId)
     expect(graph.reroutes.get(existing.id)).toBe(existing)
-    expect(useRerouteStore().getReroute(originalId, existing.id)).toBe(
-      existing._chain
-    )
+    expect(
+      useRerouteStore().getReroute(
+        {
+          rootGraphId: toRootGraphId(originalId),
+          owningGraphId: toOwningGraphId(originalId)
+        },
+        existing.id
+      )
+    ).toBe(existing._chain)
     expect(
       layoutStore.getRerouteLayout(originalId, existing.id)?.position
     ).toEqual({ x: 70, y: 80 })
@@ -932,14 +964,32 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(graph.id).toBe(originalId)
     expect(graph.reroutes.get(reroute.id)).toBe(reroute)
     expect(graph.reroutes.get(toRerouteId(30))?.pos).toEqual([30, 40])
-    expect(useRerouteStore().getReroute(originalId, reroute.id)).toBe(
-      reroute._chain
-    )
     expect(
-      useRerouteStore().getReroute(originalId, toRerouteId(30))
+      useRerouteStore().getReroute(
+        {
+          rootGraphId: toRootGraphId(originalId),
+          owningGraphId: toOwningGraphId(originalId)
+        },
+        reroute.id
+      )
+    ).toBe(reroute._chain)
+    expect(
+      useRerouteStore().getReroute(
+        {
+          rootGraphId: toRootGraphId(originalId),
+          owningGraphId: toOwningGraphId(originalId)
+        },
+        toRerouteId(30)
+      )
     ).toBeDefined()
     expect(
-      useRerouteStore().getReroute(replacementId, reroute.id)
+      useRerouteStore().getReroute(
+        {
+          rootGraphId: toRootGraphId(replacementId),
+          owningGraphId: toOwningGraphId(replacementId)
+        },
+        reroute.id
+      )
     ).toBeUndefined()
     expect(
       layoutStore.getRerouteLayout(originalId, reroute.id)?.position
@@ -962,7 +1012,7 @@ describe('Reroute position lives only in layoutStore', () => {
     graph.subgraphs.set(subgraph.id, subgraph)
     const reroute = new Reroute(toRerouteId(30), subgraph, [10, 20])
     subgraph._addReroute(reroute)
-    const clearedGraphId = graph.id
+    const clearedScope = graphScopeOf(subgraph)
 
     layoutStore.applyOperation({
       actor: 'remote',
@@ -982,7 +1032,7 @@ describe('Reroute position lives only in layoutStore', () => {
     graph.clear()
 
     expect(
-      useRerouteStore().getReroute(clearedGraphId, reroute.id)
+      useRerouteStore().getReroute(clearedScope, reroute.id)
     ).toBeUndefined()
     expect(layoutStore.getRerouteLayout(graph.id, reroute.id)).toBeNull()
   })
@@ -1082,7 +1132,7 @@ describe('Reroute position lives only in layoutStore', () => {
     reroute.pos = [50, 60]
 
     expect([...reroute.pos]).toEqual([50, 60])
-    expect(useRerouteStore().getReroute(graph.id, reroute.id)).toBe(
+    expect(useRerouteStore().getReroute(graphScopeOf(graph), reroute.id)).toBe(
       reroute._chain
     )
   })
@@ -1144,14 +1194,12 @@ describe('Reroute position lives only in layoutStore', () => {
     root.subgraphs.set(subgraph.id, subgraph)
     const reroute = new Reroute(toRerouteId(32), subgraph, [10, 20])
     subgraph._addReroute(reroute)
-    const rootId = root.id
-    expect(useRerouteStore().getReroute(rootId, reroute.id)).toBe(
-      reroute._chain
-    )
+    const scope = graphScopeOf(subgraph)
+    expect(useRerouteStore().getReroute(scope, reroute.id)).toBe(reroute._chain)
 
     root.clear()
 
-    expect(useRerouteStore().getReroute(rootId, reroute.id)).toBeUndefined()
+    expect(useRerouteStore().getReroute(scope, reroute.id)).toBeUndefined()
   })
 
   it('isolates colliding reroute IDs across live root graphs', () => {
@@ -1197,7 +1245,7 @@ describe('Reroute position lives only in layoutStore', () => {
     graph._addReroute(reroute)
     reroute.pos = [30, 40]
 
-    expect(useRerouteStore().getReroute(configuredId, reroute.id)).toBe(
+    expect(useRerouteStore().getReroute(graphScopeOf(graph), reroute.id)).toBe(
       reroute._chain
     )
     expect(

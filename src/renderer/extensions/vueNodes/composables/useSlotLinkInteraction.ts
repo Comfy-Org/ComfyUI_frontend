@@ -35,6 +35,7 @@ import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/util
 import { app } from '@/scripts/app'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
@@ -650,7 +651,7 @@ export function useSlotLinkInteraction({
     const hasExistingOutputLink =
       isOutputSlot &&
       (useLinkStore().isOutputSlotConnected(
-        graph.rootGraph.id,
+        graphScopeOf(graph),
         localNodeId,
         index
       ) ||

@@ -19,6 +19,7 @@ import {
 import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
 import { useLinkStore } from '@/stores/linkStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -54,6 +55,10 @@ vi.mock('@/stores/executionStore', () => ({
 }))
 
 const GRAPH_ID: UUID = 'minimap-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 
 function createMockGraph(
   nodes: LGraphNode[] = [],
@@ -250,7 +255,7 @@ describe('MinimapDataSource', () => {
 
   describe('Link extraction', () => {
     it('derives links between visible nodes from the link store', () => {
-      useLinkStore().registerLink(GRAPH_ID, {
+      useLinkStore().registerLink(GRAPH_SCOPE, {
         id: toLinkId(1),
         originNodeId: toNodeId('node1'),
         originSlot: 0,
@@ -274,7 +279,7 @@ describe('MinimapDataSource', () => {
     })
 
     it('omits links whose target is not in the viewed nodes', () => {
-      useLinkStore().registerLink(GRAPH_ID, {
+      useLinkStore().registerLink(GRAPH_SCOPE, {
         id: toLinkId(1),
         originNodeId: toNodeId('node1'),
         originSlot: 0,

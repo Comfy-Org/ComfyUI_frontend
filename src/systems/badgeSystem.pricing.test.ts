@@ -4,6 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
+import {
+  graphScopeOf,
+  toOwningGraphId,
+  toRootGraphId
+} from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -11,12 +16,12 @@ import type { UUID } from '@/utils/uuid'
 import { nodeBadges } from './badgeSystem'
 
 const getNodeDisplayPrice = vi.fn((node: LGraphNode) => {
-  const currentGraphId = node.graph?.rootGraph.id
-  if (currentGraphId === undefined) return '$disconnected'
+  if (!node.graph) return '$disconnected'
+  const graph = node.graph
   const connected = node.inputs.some(
     (input, index) =>
       (input.name === 'image' || input.name?.startsWith('ref_images.')) &&
-      useLinkStore().isInputSlotConnected(currentGraphId, node.id, index)
+      useLinkStore().isInputSlotConnected(graphScopeOf(graph), node.id, index)
   )
   return connected ? '$connected' : '$disconnected'
 })
@@ -64,14 +69,20 @@ describe('badge derivation pricing input connectivity', () => {
   }
 
   function connect(slot: number, linkId: number, targetGraphId = graphId) {
-    useLinkStore().registerLink(targetGraphId, {
-      id: toLinkId(linkId),
-      originNodeId: toNodeId(99),
-      originSlot: 0,
-      targetNodeId: toNodeId(5),
-      targetSlot: slot,
-      type: 'IMAGE'
-    })
+    useLinkStore().registerLink(
+      {
+        rootGraphId: toRootGraphId(targetGraphId),
+        owningGraphId: toOwningGraphId(targetGraphId)
+      },
+      {
+        id: toLinkId(linkId),
+        originNodeId: toNodeId(99),
+        originSlot: 0,
+        targetNodeId: toNodeId(5),
+        targetSlot: slot,
+        type: 'IMAGE'
+      }
+    )
   }
 
   it('recomputes when a pricing-relevant input connects and disconnects', () => {
@@ -82,8 +93,9 @@ describe('badge derivation pricing input connectivity', () => {
     expect(nodeBadges(node).at(-1)?.text).toBe('$connected')
 
     const linkStore = useLinkStore()
-    const topology = linkStore.getInputSlotLink(graphId, toNodeId(5), 0)!
-    linkStore.deleteLink(graphId, topology)
+    const scope = graphScopeOf(node.graph!)
+    const topology = linkStore.getInputSlotLink(scope, toNodeId(5), 0)!
+    linkStore.deleteLink(scope, topology)
     expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
   })
 

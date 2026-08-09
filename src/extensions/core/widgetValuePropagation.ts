@@ -4,6 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
@@ -23,7 +24,7 @@ export function applyFirstWidgetValueToGraph(
   if (!graph) return
 
   const linked = [
-    ...useLinkStore().getOutputSlotLinks(graph.rootGraph.id, node.id, 0)
+    ...useLinkStore().getOutputSlotLinks(graphScopeOf(graph), node.id, 0)
   ]
   if (!linked.length) return
 

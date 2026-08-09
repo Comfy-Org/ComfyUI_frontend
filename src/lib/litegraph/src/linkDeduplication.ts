@@ -1,4 +1,5 @@
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -133,7 +134,7 @@ export function realignInputLinkSlots(
       patch: { targetSlot: slot }
     })
   }
-  const result = useLinkStore().updateEndpoints(graph.rootGraph.id, updates)
+  const result = useLinkStore().updateEndpoints(graphScopeOf(graph), updates)
   if (!result.ok) {
     console.error('Failed to realign input link slots', result.error)
   }

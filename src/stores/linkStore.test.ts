@@ -4,17 +4,23 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { UUID } from '@/utils/uuid'
 
 import { useLinkStore } from './linkStore'
 
-const graphA: UUID = 'graph-a'
-const graphB: UUID = 'graph-b'
+const graphA = {
+  rootGraphId: toRootGraphId('graph-a'),
+  owningGraphId: toOwningGraphId('graph-a')
+}
+const graphB = {
+  rootGraphId: toRootGraphId('graph-b'),
+  owningGraphId: toOwningGraphId('graph-b')
+}
 
 function link(
   id: number,
@@ -281,7 +287,7 @@ describe('useLinkStore', () => {
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
     store.registerLink(graphB, link(1, 5, 0, 9, 2))
 
-    store.clearGraph(graphB)
+    store.clearGraph(graphB.rootGraphId)
 
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
     expect(store.isInputSlotConnected(graphB, toNodeId(9), 2)).toBe(false)
@@ -385,7 +391,7 @@ describe('useLinkStore', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
 
-    store.clearGraph(graphA)
+    store.clearGraph(graphA.rootGraphId)
 
     expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
     expect(store.getOutputSlotLinks(graphA, toNodeId(5), 0).size).toBe(0)

@@ -5,6 +5,7 @@ import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -29,10 +30,10 @@ describe('LLink ↔ linkStore integration', () => {
 
     const link = a.connect(0, b, 0)!
     const store = useLinkStore()
-    expect(store.isInputSlotConnected(graph.rootGraph.id, b.id, 0)).toBe(true)
+    expect(store.isInputSlotConnected(graphScopeOf(graph), b.id, 0)).toBe(true)
 
     graph.removeLink(link.id)
-    expect(store.isInputSlotConnected(graph.rootGraph.id, b.id, 0)).toBe(false)
+    expect(store.isInputSlotConnected(graphScopeOf(graph), b.id, 0)).toBe(false)
   })
 
   it('link.parentId writes are observable through the store query', () => {
@@ -47,7 +48,7 @@ describe('LLink ↔ linkStore integration', () => {
     const link = a.connect(0, b, 0)!
     const store = useLinkStore()
     const parentId = computed(
-      () => store.getInputSlotLink(graph.rootGraph.id, b.id, 0)?.parentId
+      () => store.getInputSlotLink(graphScopeOf(graph), b.id, 0)?.parentId
     )
     expect(parentId.value).toBeUndefined()
 
@@ -91,7 +92,7 @@ describe('LLink ↔ linkStore integration', () => {
     loser.disconnect(graph)
 
     const store = useLinkStore()
-    const graphId = graph.rootGraph.id
+    const graphId = graphScopeOf(graph)
     expect(store.getInputSlotLink(graphId, b.id, 0)?.id).toBe(winner.id)
     expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
   })
@@ -110,9 +111,9 @@ describe('LLink ↔ linkStore integration', () => {
     registerLinkTopology(graph, materialized, true)
     materialized.parentId = toRerouteId(7)
 
-    expect(useLinkStore().getInputSlotLink(graph.id, b.id, 0)?.parentId).toBe(
-      toRerouteId(7)
-    )
+    expect(
+      useLinkStore().getInputSlotLink(graphScopeOf(graph), b.id, 0)?.parentId
+    ).toBe(toRerouteId(7))
   })
 
   it('unregisters a subgraph definition’s links when its last instance is removed', () => {
@@ -124,13 +125,15 @@ describe('LLink ↔ linkStore integration', () => {
     rootGraph.add(subgraphNode)
 
     const store = useLinkStore()
-    expect(store.getInputSlotLink(rootGraph.id, second.id, 0)?.id).toBe(
-      innerLink.id
-    )
+    expect(
+      store.getInputSlotLink(graphScopeOf(subgraph), second.id, 0)?.id
+    ).toBe(innerLink.id)
 
     rootGraph.remove(subgraphNode)
 
-    expect(store.isInputSlotConnected(rootGraph.id, second.id, 0)).toBe(false)
+    expect(
+      store.isInputSlotConnected(graphScopeOf(subgraph), second.id, 0)
+    ).toBe(false)
   })
 
   it('keeps a subgraph definition’s links registered while other instances remain', () => {
@@ -146,9 +149,9 @@ describe('LLink ↔ linkStore integration', () => {
     rootGraph.remove(removedInstance)
 
     const store = useLinkStore()
-    expect(store.getInputSlotLink(rootGraph.id, second.id, 0)?.id).toBe(
-      innerLink.id
-    )
+    expect(
+      store.getInputSlotLink(graphScopeOf(subgraph), second.id, 0)?.id
+    ).toBe(innerLink.id)
   })
 
   it('clearing a subgraph unregisters its links but keeps root links', () => {
@@ -168,8 +171,12 @@ describe('LLink ↔ linkStore integration', () => {
     subgraph.clear()
 
     const store = useLinkStore()
-    expect(store.isInputSlotConnected(rootGraph.id, second.id, 0)).toBe(false)
-    expect(store.getInputSlotLink(rootGraph.id, b.id, 0)?.id).toBe(rootLink.id)
+    expect(
+      store.isInputSlotConnected(graphScopeOf(subgraph), second.id, 0)
+    ).toBe(false)
+    expect(store.getInputSlotLink(graphScopeOf(rootGraph), b.id, 0)?.id).toBe(
+      rootLink.id
+    )
   })
 
   it('clear() unregisters an unconfigured graph’s links from the store', () => {
@@ -181,7 +188,7 @@ describe('LLink ↔ linkStore integration', () => {
     graph.add(a)
     graph.add(b)
     const link = a.connect(0, b, 0)!
-    const graphId = graph.rootGraph.id
+    const graphId = graphScopeOf(graph)
     const store = useLinkStore()
     expect(store.getInputSlotLink(graphId, b.id, 0)?.id).toBe(link.id)
 
@@ -205,12 +212,11 @@ describe('LLink ↔ linkStore integration', () => {
       -1
     )
     graph.addFloatingLink(floating)
-    const graphId = graph.rootGraph.id
-    expect(floating._graphId).toBe(graphId)
+    expect(floating._graphScope).toEqual(graphScopeOf(graph))
 
     graph.removeFloatingLink(floating)
 
-    expect(floating._graphId).toBeUndefined()
+    expect(floating._graphScope).toBeUndefined()
     floating.origin_slot = 5
     expect(floating.origin_slot).toBe(5)
   })
@@ -229,12 +235,12 @@ describe('LLink ↔ linkStore integration', () => {
     const second = a.connect(0, b, 1)!
 
     const store = useLinkStore()
-    store.updateEndpoints(graph.rootGraph.id, [
+    store.updateEndpoints(graphScopeOf(graph), [
       { topology: first._state, patch: { targetSlot: 1 } },
       { topology: second._state, patch: { targetSlot: 0 } }
     ])
 
-    const graphId = graph.rootGraph.id
+    const graphId = graphScopeOf(graph)
     expect(b.isInputConnected(0)).toBe(true)
     expect(b.isInputConnected(1)).toBe(true)
     expect(store.getInputSlotLink(graphId, b.id, 0)?.id).toBe(second.id)
@@ -254,13 +260,17 @@ describe('LLink ↔ linkStore integration', () => {
     const link = a.connect(0, b, 0)!
     const store = useLinkStore()
     const nodeId = b.id
-    expect(store.isInputSlotConnected(graph.rootGraph.id, nodeId, 0)).toBe(true)
+    expect(store.isInputSlotConnected(graphScopeOf(graph), nodeId, 0)).toBe(
+      true
+    )
 
     link.target_slot = 1
 
-    expect(store.isInputSlotConnected(graph.rootGraph.id, nodeId, 0)).toBe(
+    expect(store.isInputSlotConnected(graphScopeOf(graph), nodeId, 0)).toBe(
       false
     )
-    expect(store.isInputSlotConnected(graph.rootGraph.id, nodeId, 1)).toBe(true)
+    expect(store.isInputSlotConnected(graphScopeOf(graph), nodeId, 1)).toBe(
+      true
+    )
   })
 })

@@ -7,6 +7,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { useLinkStore } from '@/stores/linkStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { adjustColor } from '@/utils/colorUtil'
 import {
   createMockLGraph,
@@ -33,6 +34,10 @@ vi.mock('@/stores/executionStore', () => ({
 }))
 
 const GRAPH_ID: UUID = 'renderer-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 
 describe('minimapCanvasRenderer', () => {
   let mockCanvas: HTMLCanvasElement
@@ -266,7 +271,7 @@ describe('minimapCanvasRenderer', () => {
       })
     ]
 
-    useLinkStore().registerLink(GRAPH_ID, {
+    useLinkStore().registerLink(GRAPH_SCOPE, {
       id: toLinkId(1),
       originNodeId: mockGraph._nodes[0].id,
       originSlot: 0,

@@ -34,6 +34,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -542,11 +543,13 @@ describe('clipboard reroute id integrity', () => {
     const terminal = subgraph.reroutes.get(toRerouteId(2))!
     terminal.parentId = undefined
     expect(
-      store.getReroute(rootGraph.id, toRerouteId(2))?.parentId
+      store.getReroute(graphScopeOf(subgraph), toRerouteId(2))?.parentId
     ).toBeUndefined()
 
     subgraph.removeReroute(toRerouteId(1))
-    expect(store.getReroute(rootGraph.id, toRerouteId(1))).toBeUndefined()
+    expect(
+      store.getReroute(graphScopeOf(subgraph), toRerouteId(1))
+    ).toBeUndefined()
   })
 
   it('pasting a subgraph node remaps colliding reroute ids instead of hijacking live registrations', () => {
@@ -581,10 +584,12 @@ describe('clipboard reroute id integrity', () => {
     const terminal = liveSubgraph.reroutes.get(toRerouteId(2))!
     terminal.parentId = undefined
     expect(
-      store.getReroute(rootGraph.id, toRerouteId(2))?.parentId
+      store.getReroute(graphScopeOf(liveSubgraph), toRerouteId(2))?.parentId
     ).toBeUndefined()
 
     liveSubgraph.removeReroute(toRerouteId(1))
-    expect(store.getReroute(rootGraph.id, toRerouteId(1))).toBeUndefined()
+    expect(
+      store.getReroute(graphScopeOf(liveSubgraph), toRerouteId(1))
+    ).toBeUndefined()
   })
 })

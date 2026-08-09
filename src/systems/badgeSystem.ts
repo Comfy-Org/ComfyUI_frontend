@@ -11,6 +11,7 @@ import type {
 import { registerBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -134,7 +135,13 @@ function touchPricingSources(graphId: UUID, node: LGraphNode): void {
     const relevant =
       (input.name && inputNames.includes(input.name)) ||
       groupPrefixes.some((prefix) => input.name?.startsWith(prefix + '.'))
-    if (relevant) void linkStore.isInputSlotConnected(graphId, nodeId, index)
+    if (relevant && node.graph) {
+      void linkStore.isInputSlotConnected(
+        graphScopeOf(node.graph),
+        nodeId,
+        index
+      )
+    }
   })
 }
 

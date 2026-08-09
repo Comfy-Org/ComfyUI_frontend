@@ -6,6 +6,8 @@ import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -14,7 +16,6 @@ import type { EndpointPatch } from '@/stores/linkStore'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
-import type { UUID } from '@/utils/uuid'
 import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -97,9 +98,9 @@ type BasicReadonlyNetwork = Pick<
 
 /** Routes an endpoint patch through {@link useLinkStore} if the link is registered, otherwise writes {@link LLink._state} directly. */
 function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
-  if (link._graphId) {
+  if (link._graphScope) {
     const result = useLinkStore().updateEndpoint(
-      link._graphId,
+      link._graphScope,
       link._state,
       patch
     )
@@ -122,7 +123,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   _state: LinkTopology
 
   /** The graph this link is registered with in {@link useLinkStore}, if any. */
-  _graphId?: UUID
+  _graphScope?: GraphScope
 
   /** Link ID */
   get id() {
@@ -627,7 +628,7 @@ function hasSameEndpoints(a: LinkTopology, b: LinkTopology): boolean {
  * always agree and field writes are tracked.  Call this at every site that
  * adds a link to a graph's link map (or floating link map).
  *
- * {@link LLink._graphId} is only set when the store keeps this link's state:
+ * {@link LLink._graphScope} is only set when the store keeps this link's state:
  * a link that loses a first-wins id collision stays detached, so its writes
  * and removal cannot corrupt the winner's registration.
  * @param graph The graph (or subgraph) the link belongs to
@@ -637,34 +638,34 @@ function hasSameEndpoints(a: LinkTopology, b: LinkTopology): boolean {
  * configuration re-materializes links whose state the store retained.
  */
 export function registerLinkTopology(
-  graph: Pick<LGraph, 'rootGraph'>,
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
   link: LLink,
   adoptExisting = false
 ): void {
   if (link.id === toLinkId(-1)) return // transient toFloating clone
-  const graphId = graph.rootGraph.id
+  const scope = graphScopeOf(graph)
   const store = useLinkStore()
-  const persisted = adoptExisting ? store.getLink(graphId, link.id) : undefined
+  const persisted = adoptExisting ? store.getLink(scope, link.id) : undefined
   const registered =
     (persisted && hasSameEndpoints(persisted, link._state)
       ? persisted
-      : undefined) ?? store.registerLink(graphId, link._state)
+      : undefined) ?? store.registerLink(scope, link._state)
   if (registered) {
     link._state = registered
-    link._graphId = graphId
+    link._graphScope = scope
   }
 }
 
 /**
  * Removes a link's topology from {@link useLinkStore} and detaches the link.
- * No-op for links that never won registration ({@link LLink._graphId} unset),
+ * No-op for links that never won registration ({@link LLink._graphScope} unset),
  * so a first-wins collision loser cannot remove the winner's entry.
  * @param link The link to unregister
  */
 export function unregisterLinkTopology(link: LLink): void {
-  if (!link._graphId) return
-  useLinkStore().deleteLink(link._graphId, link._state)
-  link._graphId = undefined
+  if (!link._graphScope) return
+  useLinkStore().deleteLink(link._graphScope, link._state)
+  link._graphScope = undefined
 }
 
 /**

@@ -32,7 +32,11 @@ import { registerLinkTopology } from '../LLink'
 import { registerRerouteChain } from '../Reroute'
 
 interface TestContext {
-  network: LinkNetwork & { add(node: LGraphNode): void; rootGraph: LGraph }
+  network: LinkNetwork & {
+    id: LGraph['id']
+    add(node: LGraphNode): void
+    rootGraph: LGraph
+  }
   connector: LinkConnector
   setConnectingLinks: (value: ConnectingLink[]) => void
   createTestNode: (id: number, slotType?: ISlotType) => LGraphNode
@@ -67,6 +71,7 @@ const test = baseTest.extend<TestContext>({
         id == null ? undefined : reroutes.get(id)) as LinkNetwork['getReroute'],
       removeReroute: (id: RerouteId) => reroutes.delete(id),
       _removeReroute: (id: RerouteId) => void reroutes.delete(id),
+      id: graph.id,
       add: (node: LGraphNode) => graph.add(node),
       rootGraph: graph
     })

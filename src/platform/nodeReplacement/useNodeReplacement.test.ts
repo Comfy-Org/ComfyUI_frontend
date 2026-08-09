@@ -12,6 +12,7 @@ import {
   unregisterNodeState
 } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { MissingNodeType } from '@/types/comfy'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -90,6 +91,10 @@ function createMockLink(
 }
 
 const GRAPH_ID: UUID = 'node-replacement-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 
 function createMockGraph(
   nodes: LGraphNode[],
@@ -97,7 +102,7 @@ function createMockGraph(
 ): LGraph {
   const linksMap = new Map(links.map((l) => [l.id, l]))
   for (const l of links) {
-    useLinkStore().registerLink(GRAPH_ID, {
+    useLinkStore().registerLink(GRAPH_SCOPE, {
       id: toLinkId(l.id),
       originNodeId: toNodeId(l.origin_id),
       originSlot: l.origin_slot,

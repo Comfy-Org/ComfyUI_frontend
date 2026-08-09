@@ -5,11 +5,12 @@ import {
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
-import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { toRaw } from 'vue'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
@@ -64,7 +65,11 @@ export class Reroute
   /** The network this reroute belongs to.  Contains all valid links and reroutes. */
   readonly network: WeakRef<LinkNetwork>
   private get rootGraphId() {
-    return this.network.deref()?.rootGraph.id ?? this._graphId ?? zeroUuid
+    return (
+      this.network.deref()?.rootGraph.id ??
+      this._graphScope?.rootGraphId ??
+      zeroUuid
+    )
   }
   private readonly position: Point = [0, 0]
   private readonly positionView = createGeometryView(this.position, {
@@ -79,7 +84,7 @@ export class Reroute
   _chain: RerouteChain
 
   /** The graph this reroute is registered with in {@link useRerouteStore}, if any. */
-  _graphId?: UUID
+  _graphScope?: GraphScope
 
   public get parentId(): RerouteId | undefined {
     return this._chain.parentId
@@ -133,7 +138,7 @@ export class Reroute
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
 
-    if (!this._graphId || !hasRerouteLayoutRegistration(this)) {
+    if (!this._graphScope || !hasRerouteLayoutRegistration(this)) {
       this.position[0] = value[0]
       this.position[1] = value[1]
       return
@@ -202,8 +207,8 @@ export class Reroute
   selected?: boolean
 
   private get membership(): RerouteMembership {
-    return this._graphId
-      ? useRerouteStore().getMembership(this._graphId, this.id)
+    return this._graphScope
+      ? useRerouteStore().getMembership(this._graphScope, this.id)
       : EMPTY_MEMBERSHIP
   }
 
@@ -855,19 +860,19 @@ export function anchorRerouteChain(network: LinkNetwork, link: LLink): void {
  * @param reroute The reroute to register
  */
 export function registerRerouteChain(
-  graph: Pick<LGraph, 'rootGraph'>,
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
   reroute: Reroute,
   adoptExisting = false
 ): void {
-  const graphId = graph.rootGraph.id
-  const registered = useRerouteStore().registerReroute(graphId, reroute._chain)
+  const scope = graphScopeOf(graph)
+  const registered = useRerouteStore().registerReroute(scope, reroute._chain)
   if (!adoptExisting && toRaw(registered) !== toRaw(reroute._chain)) {
     throw new Error(
-      `Reroute ${reroute.id} is already owned in root graph ${graphId}`
+      `Reroute ${reroute.id} is already owned in root graph ${scope.rootGraphId}`
     )
   }
   reroute._chain = registered
-  reroute._graphId = graphId
+  reroute._graphScope = scope
 }
 
 /**
@@ -876,9 +881,9 @@ export function registerRerouteChain(
  * @param reroute The reroute to unregister
  */
 export function unregisterRerouteChain(reroute: Reroute): void {
-  if (!reroute._graphId) return
-  useRerouteStore().deleteReroute(reroute._graphId, reroute._chain)
-  reroute._graphId = undefined
+  if (!reroute._graphScope) return
+  useRerouteStore().deleteReroute(reroute._graphScope, reroute._chain)
+  reroute._graphScope = undefined
 }
 
 /**

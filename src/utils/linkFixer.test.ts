@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type {
   ISerialisedGraph,
@@ -341,15 +342,14 @@ describe('fixBadLinks ↔ linkStore integration', () => {
     graph._addLink(link)
 
     const store = useLinkStore()
-    const graphId = graph.rootGraph.id
-    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
+    expect(store.isInputSlotConnected(graphScopeOf(graph), b.id, 0)).toBe(true)
     expect(b.inputs[0].link).toBe(link.id)
 
     const result = fixBadLinks(graph, { fix: true, silent: true })
 
     expect(result).toMatchObject({ hasBadLinks: false, deleted: 0 })
     expect(graph._links.has(link.id)).toBe(true)
-    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
+    expect(store.isInputSlotConnected(graphScopeOf(graph), b.id, 0)).toBe(true)
   })
 
   it('inspects live output slots without touching the deprecated links getter', () => {

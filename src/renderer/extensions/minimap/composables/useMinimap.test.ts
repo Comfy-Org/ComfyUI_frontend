@@ -7,6 +7,7 @@ import { nextTick, shallowRef } from 'vue'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { useLinkStore } from '@/stores/linkStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import {
@@ -37,9 +38,13 @@ interface MockGraph {
 }
 
 const GRAPH_ID: UUID = 'minimap-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 
 function registerMockLink(id: number, targetNodeId: string) {
-  useLinkStore().registerLink(GRAPH_ID, {
+  useLinkStore().registerLink(GRAPH_SCOPE, {
     id: toLinkId(id),
     originNodeId: toNodeId('node1'),
     originSlot: 0,

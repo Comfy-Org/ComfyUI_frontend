@@ -9,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { linkedWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
@@ -122,7 +123,7 @@ describe('Widget input link reactivity', () => {
 
     expect(node.inputs?.[0]?.link).not.toBeNull()
     expect(
-      linkedWidgetedInputs(node.id, node.inputs, subgraph.rootGraph.id).map(
+      linkedWidgetedInputs(node.id, node.inputs, graphScopeOf(subgraph)).map(
         (s) => s.name
       )
     ).toEqual(['prompt'])

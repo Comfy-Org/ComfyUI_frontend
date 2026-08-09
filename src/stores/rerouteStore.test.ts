@@ -3,18 +3,24 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { RerouteChain } from '@/types/rerouteChain'
 import { toRerouteId } from '@/types/rerouteId'
-import type { UUID } from '@/utils/uuid'
 
 import { useLinkStore } from './linkStore'
 import { useRerouteStore } from './rerouteStore'
 
-const graphA: UUID = 'graph-a'
-const graphB: UUID = 'graph-b'
+const graphA = {
+  rootGraphId: toRootGraphId('graph-a'),
+  owningGraphId: toOwningGraphId('graph-a')
+}
+const graphB = {
+  rootGraphId: toRootGraphId('graph-b'),
+  owningGraphId: toOwningGraphId('graph-b')
+}
 
 function chain(id: number, parentId?: number): RerouteChain {
   return {
@@ -184,7 +190,7 @@ describe('useRerouteStore', () => {
     expect(store.getReroute(graphA, toRerouteId(1))?.parentId).toBeUndefined()
     expect(store.getReroute(graphB, toRerouteId(1))?.parentId).toBe(7)
 
-    store.clearGraph(graphB)
+    store.clearGraph(graphB.rootGraphId)
 
     expect(store.getReroute(graphA, toRerouteId(1))).toBeDefined()
     expect(store.getReroute(graphB, toRerouteId(1))).toBeUndefined()

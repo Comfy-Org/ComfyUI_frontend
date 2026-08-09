@@ -28,6 +28,7 @@ import {
 } from '@/lib/litegraph/src/node/slotLinks'
 import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
@@ -267,7 +268,7 @@ function changeOutputType(
   //check and potentially remove links
   if (!node.graph) return
   const topologies = useLinkStore().getOutputSlotLinks(
-    node.graph.rootGraph.id,
+    graphScopeOf(node.graph),
     node.id,
     slot
   )

@@ -38,6 +38,7 @@ import type { LGraphState } from '@/types/idAllocation'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
+import { toRootGraphId } from '@/types/graphScopeId'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import {
@@ -599,9 +600,9 @@ export class LGraph
     if (clearsRootPartition) {
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
-      useLinkStore().clearGraph(graphId)
+      useLinkStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
-      useRerouteStore().clearGraph(graphId)
+      useRerouteStore().clearGraph(toRootGraphId(graphId))
     }
     for (const graph of graphsToClear) {
       unregisterAllLinkTopologies(graph)

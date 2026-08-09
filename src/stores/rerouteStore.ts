@@ -3,11 +3,11 @@ import { computed, reactive, ref, toRaw } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import { useLinkStore } from '@/stores/linkStore'
+import type { GraphScope, RootGraphId } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import type { RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
-import type { UUID } from '@/utils/uuid'
 
 /** The links whose chains pass through a reroute, split by link liveness. */
 export interface RerouteMembership {
@@ -27,13 +27,13 @@ export const EMPTY_MEMBERSHIP: Readonly<RerouteMembership> = {
  * parentId chains. See docs/architecture/reroute-chain-store.md.
  */
 export const useRerouteStore = defineStore('reroute', () => {
-  const chains = ref(new Map<UUID, Map<RerouteId, RerouteChain>>())
+  const chains = ref(new Map<RootGraphId, Map<RerouteId, RerouteChain>>())
   const membershipIndexes = new Map<
-    UUID,
+    RootGraphId,
     ComputedRef<Map<RerouteId, RerouteMembership>>
   >()
 
-  function graphChains(graphId: UUID): Map<RerouteId, RerouteChain> {
+  function graphChains(graphId: RootGraphId): Map<RerouteId, RerouteChain> {
     const existing = chains.value.get(graphId)
     if (existing) return existing
     const next = reactive(new Map<RerouteId, RerouteChain>())
@@ -47,14 +47,15 @@ export const useRerouteStore = defineStore('reroute', () => {
    * reroute upstream. A link with an unassigned endpoint is floating.
    */
   function buildMembershipIndex(
-    graphId: UUID
+    scope: GraphScope
   ): Map<RerouteId, RerouteMembership> {
+    const graphId = scope.rootGraphId
     const bucket = chains.value.get(graphId)
     const index = new Map<
       RerouteId,
       { linkIds: Set<LinkId>; floatingLinkIds: Set<LinkId> }
     >()
-    for (const topology of useLinkStore().graphTopologies(graphId)) {
+    for (const topology of useLinkStore().graphTopologies(scope)) {
       const floating = isFloatingTopology(topology)
       const visited = new Set<RerouteId>()
       let rerouteId = topology.parentId
@@ -74,20 +75,21 @@ export const useRerouteStore = defineStore('reroute', () => {
   }
 
   function graphMembership(
-    graphId: UUID
+    scope: GraphScope
   ): ComputedRef<Map<RerouteId, RerouteMembership>> {
+    const graphId = scope.rootGraphId
     const existing = membershipIndexes.get(graphId)
     if (existing) return existing
-    const next = computed(() => buildMembershipIndex(graphId))
+    const next = computed(() => buildMembershipIndex(scope))
     membershipIndexes.set(graphId, next)
     return next
   }
 
   function getMembership(
-    graphId: UUID,
+    scope: GraphScope,
     rerouteId: RerouteId
   ): RerouteMembership {
-    return graphMembership(graphId).value.get(rerouteId) ?? EMPTY_MEMBERSHIP
+    return graphMembership(scope).value.get(rerouteId) ?? EMPTY_MEMBERSHIP
   }
 
   /**
@@ -95,7 +97,11 @@ export const useRerouteStore = defineStore('reroute', () => {
    * @returns The store-held reactive state — callers keep it as their live
    * state object so later field writes are tracked.
    */
-  function registerReroute(graphId: UUID, chain: RerouteChain): RerouteChain {
+  function registerReroute(
+    scope: GraphScope,
+    chain: RerouteChain
+  ): RerouteChain {
+    const graphId = scope.rootGraphId
     const bucket = graphChains(graphId)
     const existing = bucket.get(chain.id)
     if (existing && toRaw(existing) !== toRaw(chain)) {
@@ -109,21 +115,22 @@ export const useRerouteStore = defineStore('reroute', () => {
   }
 
   function getReroute(
-    graphId: UUID,
+    scope: GraphScope,
     rerouteId: RerouteId
   ): RerouteChain | undefined {
-    return chains.value.get(graphId)?.get(rerouteId)
+    return chains.value.get(scope.rootGraphId)?.get(rerouteId)
   }
 
   /** Removes a chain's registration; only the registered state may vacate it. */
-  function deleteReroute(graphId: UUID, chain: RerouteChain): boolean {
+  function deleteReroute(scope: GraphScope, chain: RerouteChain): boolean {
+    const graphId = scope.rootGraphId
     const bucket = chains.value.get(graphId)
     if (!bucket) return false
     if (toRaw(bucket.get(chain.id)) !== toRaw(chain)) return false
     return bucket.delete(chain.id)
   }
 
-  function clearGraph(graphId: UUID): void {
+  function clearGraph(graphId: RootGraphId): void {
     chains.value.delete(graphId)
     membershipIndexes.delete(graphId)
   }

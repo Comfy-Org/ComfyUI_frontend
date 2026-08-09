@@ -13,9 +13,14 @@ import {
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useLinkStore } from '@/stores/linkStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { beforeEach, describe, it } from 'vitest'
 
 const GRAPH_ID = 'graph-test'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 const NODE_ID = toNodeId(1)
 
 function makeFakeInputSlot(
@@ -34,7 +39,7 @@ function makeFakeInputSlot(
 }
 
 function connectInputSlot(slot: number, linkId = slot + 1) {
-  useLinkStore().registerLink(GRAPH_ID, {
+  useLinkStore().registerLink(GRAPH_SCOPE, {
     id: toLinkId(linkId),
     originNodeId: toNodeId(99),
     originSlot: 0,
@@ -98,7 +103,7 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('third', true),
         makeFakeInputSlot('fourth', true)
       ]
-      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_ID)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_SCOPE)
 
       expect(actual.length).toBe(0)
     })
@@ -114,7 +119,7 @@ describe('nodeDataUtils', () => {
       connectInputSlot(3)
       connectInputSlot(4)
 
-      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_ID)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_SCOPE)
 
       expect(actual.map((slot) => slot.name)).toEqual(['fourth', 'fifth'])
     })
@@ -126,7 +131,7 @@ describe('nodeDataUtils', () => {
       ]
       connectInputSlot(0)
 
-      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_ID)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_SCOPE)
 
       expect(actual.length).toBe(0)
     })
@@ -138,7 +143,7 @@ describe('nodeDataUtils', () => {
       ]
       connectInputSlot(1)
 
-      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_ID)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_SCOPE)
 
       expect(actual.map((slot) => slot.name)).toEqual(['second'])
     })

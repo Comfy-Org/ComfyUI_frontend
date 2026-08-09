@@ -10,6 +10,7 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 import WidgetItem from './WidgetItem.vue'
@@ -238,14 +239,20 @@ describe('WidgetItem', () => {
       const { container } = renderWidgetItem(widget, node)
       expect(getStubWidget(container).options.disabled).toBeUndefined()
 
-      useLinkStore().registerLink('test-graph-id', {
-        id: toLinkId(1),
-        originNodeId: toNodeId(2),
-        originSlot: 0,
-        targetNodeId: node.id,
-        targetSlot: 0,
-        type: 'INT'
-      })
+      useLinkStore().registerLink(
+        {
+          rootGraphId: toRootGraphId('test-graph-id'),
+          owningGraphId: toOwningGraphId('test-graph-id')
+        },
+        {
+          id: toLinkId(1),
+          originNodeId: toNodeId(2),
+          originSlot: 0,
+          targetNodeId: node.id,
+          targetSlot: 0,
+          type: 'INT'
+        }
+      )
       await nextTick()
 
       expect(getStubWidget(container).options.disabled).toBe(true)
