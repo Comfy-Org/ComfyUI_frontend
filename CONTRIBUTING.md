@@ -297,7 +297,8 @@ If a comment's blocking status is unclear, respond asking for clarification.
 
 ### Deferring Work
 
-If you want to defer non-critical feedback to a follow-up PR, use:
+As a PR author, if you want to defer non-critical feedback to a follow-up
+PR, use:
 
 ```text
 @coderabbitai please make a tracking issue for this and assign me
