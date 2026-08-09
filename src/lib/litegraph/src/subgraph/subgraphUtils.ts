@@ -601,7 +601,7 @@ export function reorderSubgraphInputs(
   subgraphNode.invalidatePromotedViews()
 
   function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
-    for (const id of input.linkIds) yield subgraph.getLink(id)
+    for (const id of input.linkIds) yield subgraph.links.get(id)
   }
   replaceLinkEndpoints(
     subgraph,

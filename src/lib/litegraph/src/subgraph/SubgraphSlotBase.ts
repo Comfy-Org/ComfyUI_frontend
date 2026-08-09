@@ -117,7 +117,7 @@ export abstract class SubgraphSlot
     const { subgraph } = this.parent
 
     for (const id of this.linkIds) {
-      const link = subgraph.getLink(id)
+      const link = subgraph.links.get(id)
       if (link) links.push(link)
     }
     return links
