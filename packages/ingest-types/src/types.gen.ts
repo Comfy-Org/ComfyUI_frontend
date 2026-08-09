@@ -1092,6 +1092,62 @@ export type PublishHubWorkflowRequest = {
 }
 
 /**
+ * One provider's policy state.
+ */
+export type ProviderPolicyEntry = {
+  /**
+   * true = allowlisted. false and absent evaluate identically when enforcing; explicit false is UI review state.
+   */
+  enabled: boolean
+  /**
+   * Catalog provider identifier.
+   */
+  provider_id: string
+}
+
+/**
+ * A workspace's partner-provider governance policy document — the exact shape PUT accepts (round-trips; entries come back sorted by provider_id, write order is not significant). Effective rule: enabled(P) = !enforcement_enabled || (the entry for P has enabled=true); absent from the array = unset (deny when enforcing).
+ */
+export type ProviderPolicy = {
+  /**
+   * The arming switch. While false the policy is editable but nothing blocks (preview mode).
+   */
+  enforcement_enabled: boolean
+  /**
+   * One entry per reviewed provider. A duplicate provider_id in a write is rejected with 400. Unknown provider_ids are rejected with 422.
+   */
+  providers: Array<ProviderPolicyEntry>
+}
+
+/**
+ * The partner-provider governance catalog: every governable provider, identical for all workspaces. A projection of the curated catalog minus the internal api_names.
+ */
+export type ProviderCatalogResponse = {
+  /**
+   * Sorted by provider_id.
+   */
+  providers: Array<CatalogProvider>
+}
+
+/**
+ * Display data for one governable partner provider.
+ */
+export type CatalogProvider = {
+  /**
+   * Panel display label (e.g. "OpenAI (inc. Sora)"). Changeable freely, unlike the provider_id.
+   */
+  display_name: string
+  /**
+   * The provider's owned /object_info category segments (partner/<modality>/<Segment>), e.g. openai -> ["OpenAI", "Sora"]. The panel uses them to group nodes under providers (including merged vendors) and preview which nodes a toggle disables. Empty for route-only vendors (callable and governed; the panel hides their toggles).
+   */
+  node_categories: Array<string>
+  /**
+   * Permanent policy identifier (e.g. "kling", "openai"). Not client-derivable (merged vendors such as OpenAI+Sora).
+   */
+  provider_id: string
+}
+
+/**
  * Response returned after successfully queuing a workflow prompt.
  */
 export type PromptResponse = {
@@ -1874,6 +1930,10 @@ export type Asset = {
    */
   last_access_time?: string
   /**
+   * The bare value a loader widget consumes for this asset. For models it is the path inside the category folder (e.g. "flux.safetensors" for "models/checkpoints/flux.safetensors"), which is what the model resolver matches. For input/output/temp it is the content hash, because those assets are fetched by hash rather than staged by name — that is the value LoadImage-style widgets must carry. Clients add the "[output]"/"[temp]" annotation from the asset's own type, so it is never included here. Null when no such value can be derived.
+   */
+  loader_path?: string | null
+  /**
    * System-managed metadata from download sources (HuggingFace, CivitAI, etc.) - read-only, not user-modifiable
    */
   readonly metadata?: {
@@ -2116,6 +2176,56 @@ export type JobStatusResponse = {
 }
 
 /**
+ * An asset produced by a job, enriched with the per-output node context
+ * (`node_id`, `output_key`, `output_index`) correlated from the job's
+ * execution outputs by content hash. The node-context fields are null
+ * when the asset cannot be matched to an output entry.
+ *
+ */
+export type JobOutputAsset = {
+  /**
+   * Timestamp when the asset was created
+   */
+  created_at: string
+  /**
+   * Blake3 hash of the asset content.
+   */
+  hash?: string
+  /**
+   * Unique identifier for the asset
+   */
+  id: string
+  /**
+   * MIME type of the asset
+   */
+  mime_type?: string
+  /**
+   * Name of the asset file
+   */
+  name: string
+  /**
+   * ID of the workflow node that produced this asset, if known
+   */
+  node_id?: string | null
+  /**
+   * Zero-based index of this asset within the node's output slot, if known
+   */
+  output_index?: number | null
+  /**
+   * Output slot key under the producing node (e.g. "images"), if known
+   */
+  output_key?: string | null
+  /**
+   * Relative URL for asset preview/thumbnail
+   */
+  preview_url?: string
+  /**
+   * Size of the asset in bytes
+   */
+  size?: number
+}
+
+/**
  * Full job details including workflow and outputs
  */
 export type JobDetailResponse = {
@@ -2224,6 +2334,21 @@ export type JobCancelResponse = {
    *
    */
   cancelled: boolean
+}
+
+/**
+ * Paginated list of the assets produced by a single job.
+ */
+export type JobAssetsResponse = {
+  /**
+   * The job's output assets for the requested page (empty when the job produced none)
+   */
+  assets: Array<JobOutputAsset>
+  /**
+   * ID of the job these assets belong to
+   */
+  job_id: string
+  pagination: PaginationInfo
 }
 
 /**
@@ -3243,7 +3368,7 @@ export type CancelSubscriptionResponse = {
    */
   billing_op_id: string
   /**
-   * The date when the subscription will end (end of current billing period)
+   * The terminal cancellation time for a delinquent Stripe subscription, otherwise the end of the current billing period
    */
   cancel_at: string
 }
@@ -3276,8 +3401,8 @@ export type BulkRevokeApiKeysResponse = {
 export type BillingStatusResponse = {
   /**
    * Present when the pending operation cannot proceed without the
-   * customer. Today this is a Stripe-hosted payment page for a
-   * subscription whose first invoice needs authentication (SCA/3DS);
+   * customer. Today this is a Stripe-hosted payment page for an invoice
+   * needing authentication (SCA/3DS);
    * send the customer there to complete payment. Mirrors the field of
    * the same name on BillingOpStatusResponse.
    *
@@ -3301,14 +3426,33 @@ export type BillingStatusResponse = {
    */
   is_active: boolean
   /**
+   * Effective active workspace seat limit after applying any workspace override. 0 means unlimited (billing-disabled/no-op).
+   */
+  max_seats: number
+  /**
+   * Current workspace members plus non-expired pending invites, used against max_seats. 0 when billing is disabled.
+   */
+  occupied_seats: number
+  /**
    * The workspace's in-flight billing operation, when one exists. Lets a
    * client recover a payment it has lost the local reference to — a
    * cleared browser, or simply a different device from the one that
    * started it — by polling /billing/ops/{id} without having stored the
-   * id. Absent when no operation is pending.
+   * id. Absent when no operation is pending, and for non-owners, who
+   * cannot act on one.
    *
    */
   pending_billing_op_id?: string
+  /**
+   * How the client should resume `pending_billing_op_id`, not the
+   * internal operation type: a plan change reports `subscription`,
+   * because it resumes exactly like one. A top-up resumes with a
+   * different timeout and completion path, so the two cannot be
+   * told apart by the client. Present whenever
+   * `pending_billing_op_id` is.
+   *
+   */
+  pending_billing_op_type?: 'subscription' | 'topup'
   /**
    * Plan identifier (e.g., standard-monthly, team-pro-annual)
    */
@@ -3487,6 +3631,10 @@ export type AssetUpdated = {
    * ID of the job that created this asset, if available
    */
   job_id?: string | null
+  /**
+   * The bare value a loader widget consumes for this asset. For models it is the path inside the category folder (e.g. "flux.safetensors" for "models/checkpoints/flux.safetensors"), which is what the model resolver matches. For input/output/temp it is the content hash, because those assets are fetched by hash rather than staged by name — that is the value LoadImage-style widgets must carry. Clients add the "[output]"/"[temp]" annotation from the asset's own type, so it is never included here. Null when no such value can be derived.
+   */
+  loader_path?: string | null
   /**
    * Updated MIME type of the asset
    */
@@ -3875,6 +4023,10 @@ export type AssetWritable = {
    * Timestamp when the asset was last accessed
    */
   last_access_time?: string
+  /**
+   * The bare value a loader widget consumes for this asset. For models it is the path inside the category folder (e.g. "flux.safetensors" for "models/checkpoints/flux.safetensors"), which is what the model resolver matches. For input/output/temp it is the content hash, because those assets are fetched by hash rather than staged by name — that is the value LoadImage-style widgets must carry. Clients add the "[output]"/"[temp]" annotation from the asset's own type, so it is never included here. Null when no such value can be derived.
+   */
+  loader_path?: string | null
   /**
    * MIME type of the asset
    */
@@ -6022,7 +6174,7 @@ export type CancelSubscriptionData = {
 
 export type CancelSubscriptionErrors = {
   /**
-   * Invalid request (e.g., no active subscription)
+   * Invalid request (for example, no active subscription). Ambiguous legacy Stripe state uses code BILLING_RECONCILIATION_REQUIRED.
    */
   400: ErrorResponse
   /**
@@ -7502,6 +7654,58 @@ export type GetJobDetailResponses = {
 export type GetJobDetailResponse =
   GetJobDetailResponses[keyof GetJobDetailResponses]
 
+export type GetJobAssetsData = {
+  body?: never
+  path: {
+    /**
+     * Job identifier (UUID)
+     */
+    job_id: string
+  }
+  query?: {
+    /**
+     * Maximum number of assets to return (1-500)
+     */
+    limit?: number
+    /**
+     * Number of assets to skip for pagination
+     */
+    offset?: number
+  }
+  url: '/api/jobs/{job_id}/assets'
+}
+
+export type GetJobAssetsErrors = {
+  /**
+   * Invalid request parameters
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Job not found or does not belong to the user
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetJobAssetsError = GetJobAssetsErrors[keyof GetJobAssetsErrors]
+
+export type GetJobAssetsResponses = {
+  /**
+   * Success - Job assets returned
+   */
+  200: JobAssetsResponse
+}
+
+export type GetJobAssetsResponse =
+  GetJobAssetsResponses[keyof GetJobAssetsResponses]
+
 export type CancelJobData = {
   body?: never
   path: {
@@ -7722,6 +7926,10 @@ export type ExecutePromptErrors = {
    */
   402: PromptErrorResponse
   /**
+   * Workspace governance policy blocks one or more partner providers (error.type PARTNER_NODE_DISABLED; error.class_types lists the offending nodes, error.providers the disabled providers)
+   */
+  403: PromptErrorResponse
+  /**
    * Workflow JSON too large
    */
   413: PromptErrorResponse
@@ -7766,6 +7974,40 @@ export type GetLegacyPromptByIdErrors = {
    */
   404: unknown
 }
+
+export type GetProvidersData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/providers'
+}
+
+export type GetProvidersErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Governance not available (personal workspace or ineligible team)
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetProvidersError = GetProvidersErrors[keyof GetProvidersErrors]
+
+export type GetProvidersResponses = {
+  /**
+   * The provider catalog
+   */
+  200: ProviderCatalogResponse
+}
+
+export type GetProvidersResponse =
+  GetProvidersResponses[keyof GetProvidersResponses]
 
 export type GetQueueInfoData = {
   body?: never
@@ -10259,6 +10501,92 @@ export type UpdateWorkspaceMemberRoleResponses = {
 export type UpdateWorkspaceMemberRoleResponse =
   UpdateWorkspaceMemberRoleResponses[keyof UpdateWorkspaceMemberRoleResponses]
 
+export type GetProviderPolicyData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/workspace/provider-policy'
+}
+
+export type GetProviderPolicyErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Governance not available (personal workspace or ineligible team)
+   */
+  403: ErrorResponse
+  /**
+   * Eligible workspace with no policy document yet
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetProviderPolicyError =
+  GetProviderPolicyErrors[keyof GetProviderPolicyErrors]
+
+export type GetProviderPolicyResponses = {
+  /**
+   * The policy document
+   */
+  200: ProviderPolicy
+}
+
+export type GetProviderPolicyResponse =
+  GetProviderPolicyResponses[keyof GetProviderPolicyResponses]
+
+export type PutProviderPolicyData = {
+  body: ProviderPolicy
+  path?: never
+  query?: never
+  url: '/api/workspace/provider-policy'
+}
+
+export type PutProviderPolicyErrors = {
+  /**
+   * Malformed document (wrong shape, missing fields, or duplicate provider_id entries)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not a workspace owner, or governance not available (personal workspace or ineligible team creating a new document)
+   */
+  403: ErrorResponse
+  /**
+   * Unknown provider slugs (code UNKNOWN_PROVIDERS; details.unknown_providers enumerates them so the client can prune and retry)
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type PutProviderPolicyError =
+  PutProviderPolicyErrors[keyof PutProviderPolicyErrors]
+
+export type PutProviderPolicyResponses = {
+  /**
+   * Policy replaced
+   */
+  200: ProviderPolicy
+  /**
+   * Policy created
+   */
+  201: ProviderPolicy
+}
+
+export type PutProviderPolicyResponse =
+  PutProviderPolicyResponses[keyof PutProviderPolicyResponses]
+
 export type ListWorkspacesData = {
   body?: never
   path?: never
@@ -10490,6 +10818,44 @@ export type GetStaticExtensionsResponses = {
   200: unknown
 }
 
+export type RedirectExtensionScriptsData = {
+  body?: never
+  path: {
+    /**
+     * Core script filename (e.g. `app.js`, `widgets.js`).
+     */
+    file: string
+  }
+  query?: never
+  url: '/extensions/scripts/{file}'
+}
+
+export type RedirectExtensionScriptsErrors = {
+  /**
+   * The `file` param is not a valid plain basename. The redirect target
+   * is derived from an untrusted path param, so values that are not a
+   * single, traversal-free filename (e.g. `..`, `%2e%2e`, embedded
+   * separators, backslashes, or control characters) are rejected instead
+   * of being redirected, keeping the 302 a same-origin `/scripts/<file>`.
+   *
+   */
+  404: {
+    error: {
+      /**
+       * Human-readable rejection reason.
+       */
+      message: string
+      /**
+       * Machine-readable error code (e.g. `not_found`).
+       */
+      type: string
+    }
+  }
+}
+
+export type RedirectExtensionScriptsError =
+  RedirectExtensionScriptsErrors[keyof RedirectExtensionScriptsErrors]
+
 export type GetHealthData = {
   body?: never
   path?: never
@@ -10602,6 +10968,32 @@ export type SubscribeToLogsData = {
 export type SubscribeToLogsResponses = {
   /**
    * Subscription updated
+   */
+  200: unknown
+}
+
+export type GetStaticKjwebAsyncData = {
+  body?: never
+  path: {
+    /**
+     * Asset file path relative to /static/kjweb_async on disk.
+     */
+    path: string
+  }
+  query?: never
+  url: '/kjweb_async/{path}'
+}
+
+export type GetStaticKjwebAsyncErrors = {
+  /**
+   * File not found
+   */
+  404: unknown
+}
+
+export type GetStaticKjwebAsyncResponses = {
+  /**
+   * Static file
    */
   200: unknown
 }

@@ -23,7 +23,7 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
-import { isCloud } from '@/platform/distribution/types'
+import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
@@ -37,6 +37,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 type CreditPurchaseResponse =
@@ -45,20 +46,9 @@ type CreditPurchasePayload =
   operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
-
-/**
- * Request body for createCustomer. The Cloudflare Turnstile token captured at
- * signup is forwarded to the backend as `turnstile_token` (snake_case), which
- * reads this field on the CreateCustomer request; it is omitted for non-signup
- * flows and on OSS / localhost where Turnstile is not rendered.
- *
- * TODO: replace with the generated `operations['createCustomer']` request-body
- * type once the backend OpenAPI spec includes `turnstile_token`, so the field
- * name/optionality drift-checks against the backend at compile time.
- */
-type CreateCustomerPayload = {
-  turnstile_token?: string
-}
+type CreateCustomerPayload = NonNullable<
+  operations['createCustomer']['requestBody']
+>['content']['application/json']
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
 type AccessBillingPortalResponse =
@@ -89,6 +79,14 @@ export const useAuthStore = defineStore('auth', () => {
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
   const customerCreated = ref(false)
+  /**
+   * Memoizes the in-flight or successful customer provisioning attempt for
+   * the current account (see recoverMissingCustomer). Declared here so the
+   * auth-state listener below can reset it before its initializer would
+   * otherwise run.
+   */
+  let customerRecovery: Promise<void> | null = null
+  let customerRecoveryUid: string | undefined
   const isFetchingBalance = ref(false)
 
   // Balance state
@@ -172,6 +170,13 @@ export const useAuthStore = defineStore('auth', () => {
     // Reset balance when auth state changes
     balance.value = null
     lastBalanceUpdateTime.value = null
+
+    // Customer provisioning state is per-account: without this reset, a
+    // second account in the same browser session would be short-circuited by
+    // the previous account's memoized recovery and stay stuck on 409s.
+    customerCreated.value = false
+    customerRecovery = null
+    customerRecoveryUid = undefined
   })
 
   // Listen for token refresh events
@@ -233,7 +238,7 @@ export const useAuthStore = defineStore('auth', () => {
    * When unified_cloud_auth is enabled, returns the single Cloud JWT for every
    * cloud request (no Firebase/API-key fallback) so one token is used end to end.
    * Otherwise checks for authentication in the following order:
-   * 1. Workspace token (if team_workspaces_enabled and user has active workspace context)
+   * 1. Workspace token on Cloud when the user has active workspace context
    * 2. Firebase authentication token (if user is logged in)
    * 3. API key (if stored in the browser's credential manager)
    *
@@ -248,7 +253,7 @@ export const useAuthStore = defineStore('auth', () => {
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
-    if (flags.teamWorkspacesEnabled) {
+    if (isCloud) {
       const workspaceAuth = useWorkspaceAuthStore()
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 
@@ -292,7 +297,7 @@ export const useAuthStore = defineStore('auth', () => {
       return useWorkspaceAuthStore().getUnifiedToken()
     }
 
-    if (flags.teamWorkspacesEnabled) {
+    if (isCloud) {
       const workspaceAuth = useWorkspaceAuthStore()
       const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 
@@ -336,15 +341,14 @@ export const useAuthStore = defineStore('auth', () => {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
 
-      const response = await fetchWithUnifiedRemint(
+      const response = await fetchWithCustomerRecovery(
         buildApiUrl('/customers/balance'),
         {
           headers: {
             ...authHeader,
             'Content-Type': 'application/json'
           }
-        },
-        isCloud && flags.unifiedCloudAuthEnabled
+        }
       )
 
       if (!response.ok) {
@@ -352,10 +356,10 @@ export const useAuthStore = defineStore('auth', () => {
           // Customer not found is expected for new users
           return null
         }
-        const errorData = await response.json()
+        const { message } = await parseErrorResponse(response)
         throw new AuthStoreError(
           t('toastMessages.failedToFetchBalance', {
-            error: errorData.message
+            error: message
           })
         )
       }
@@ -376,11 +380,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const createCustomer = async (
-    payload?: CreateCustomerPayload
+    payload?: Omit<CreateCustomerPayload, 'signup_source'>
   ): Promise<CreateCustomerResponse> => {
+    const sessionUserId = currentUser.value?.uid
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+
+    const body: CreateCustomerPayload = {
+      ...payload,
+      signup_source: DISTRIBUTION
     }
 
     const createCustomerRes = await fetchWithUnifiedRemint(
@@ -391,8 +401,7 @@ export const useAuthStore = defineStore('auth', () => {
           ...authHeader,
           'Content-Type': 'application/json'
         },
-        ...(payload &&
-          Object.keys(payload).length > 0 && { body: JSON.stringify(payload) })
+        body: JSON.stringify(body)
       },
       isCloud && flags.unifiedCloudAuthEnabled
     )
@@ -415,14 +424,131 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
+    if (currentUser.value?.uid === sessionUserId) {
+      customerCreated.value = true
+    }
     return createCustomerResJson
+  }
+
+  /**
+   * Memoizes the customer provisioning attempt so concurrent or repeated 409
+   * responses from /customers/* endpoints trigger at most one successful
+   * POST /customers per account. A failed attempt is cleared so a later
+   * request can retry, e.g. after a transient network failure.
+   */
+  const recoverMissingCustomer = (): Promise<void> => {
+    const sessionUserId = currentUser.value?.uid
+    if (customerRecovery === null || customerRecoveryUid !== sessionUserId) {
+      const thisRecovery: Promise<void> = createCustomer()
+        .then(() => undefined)
+        .catch((error: unknown) => {
+          if (customerRecovery === thisRecovery) {
+            customerRecovery = null
+            customerRecoveryUid = undefined
+          }
+          throw error
+        })
+      customerRecovery = thisRecovery
+      customerRecoveryUid = sessionUserId
+    }
+    return customerRecovery
+  }
+
+  /**
+   * Fetch wrapper for /customers/* endpoints that self-heals accounts whose
+   * customer record was never provisioned.
+   *
+   * Customer creation runs after the Firebase session is established during
+   * sign-in/sign-up, so an interruption (navigation, closed window, network
+   * failure) can leave a permanently signed-in user without a customer
+   * record. Sessions restored from persisted credentials never re-run the
+   * sign-in flow, so every /customers/* request fails with 409 and nothing
+   * ever retries the creation.
+   *
+   * On a 409 response this provisions the customer record (deduplicated
+   * across concurrent callers) and retries the original request a single
+   * time. If recovery fails, the original 409 response is returned so
+   * callers surface their normal error handling.
+   */
+  /**
+   * The auth middleware rejects requests for accounts without a customer
+   * record using this exact message. Business-level 409s from /customers/*
+   * endpoints (e.g. conflicting subscription state) must NOT trigger
+   * provisioning or a blind retry of a payment request.
+   */
+  const MISSING_CUSTOMER_MESSAGE = 'Failed to find customer'
+
+  const isMissingCustomerResponse = async (
+    response: Response
+  ): Promise<boolean> => {
+    if (response.status !== 409) return false
+    try {
+      const body: unknown = await response.clone().json()
+      return (
+        typeof body === 'object' &&
+        body !== null &&
+        'message' in body &&
+        (body as { message: unknown }).message === MISSING_CUSTOMER_MESSAGE
+      )
+    } catch {
+      return false
+    }
+  }
+
+  const isCustomerEndpoint = (input: string): boolean => {
+    try {
+      const { pathname } = new URL(input, window.location.href)
+      return pathname === '/customers' || pathname.startsWith('/customers/')
+    } catch {
+      return false
+    }
+  }
+
+  const fetchWithCustomerRecovery = async (
+    input: string,
+    init?: RequestInit
+  ): Promise<Response> => {
+    const remintFetch = (): Promise<Response> =>
+      fetchWithUnifiedRemint(
+        input,
+        init ?? {},
+        isCloud && flags.unifiedCloudAuthEnabled
+      )
+
+    const response = await remintFetch()
+    if (
+      !isCustomerEndpoint(input) ||
+      !(await isMissingCustomerResponse(response))
+    ) {
+      return response
+    }
+
+    try {
+      await recoverMissingCustomer()
+    } catch (error) {
+      console.warn(
+        'Customer provisioning during 409 recovery failed; returning original response',
+        error
+      )
+      return response
+    }
+
+    try {
+      return await remintFetch()
+    } catch (error) {
+      console.warn(
+        'Retry after customer provisioning failed; returning original 409 response',
+        error
+      )
+      return response
+    }
   }
 
   const executeAuthAction = async <T>(
     action: (auth: Auth) => Promise<T>,
     options: {
       createCustomer?: boolean
-      customerPayload?: CreateCustomerPayload
+      customerPayload?: Omit<CreateCustomerPayload, 'signup_source'>
     } = {}
   ): Promise<T> => {
     loading.value = true
@@ -579,13 +705,14 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    // Ensure customer was created during login/registration
+    // Ensure customer was created during login/registration. Routed through
+    // recoverMissingCustomer so a concurrent 409-triggered recovery and this
+    // pre-flight share one POST /customers instead of racing.
     if (!customerCreated.value) {
-      await createCustomer()
-      customerCreated.value = true
+      await recoverMissingCustomer()
     }
 
-    const response = await fetchWithUnifiedRemint(
+    const response = await fetchWithCustomerRecovery(
       buildApiUrl('/customers/credit'),
       {
         method: 'POST',
@@ -594,16 +721,16 @@ export const useAuthStore = defineStore('auth', () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBodyContent)
-      },
-      isCloud && flags.unifiedCloudAuthEnabled
+      }
     )
 
     if (!response.ok) {
-      const errorData = await response.json()
+      const { message } = await parseErrorResponse(response)
       throw new AuthStoreError(
         t('toastMessages.failedToInitiateCreditPurchase', {
-          error: errorData.message
-        })
+          error: message
+        }),
+        response.status
       )
     }
 
@@ -623,7 +750,7 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const response = await fetchWithUnifiedRemint(
+    const response = await fetchWithCustomerRecovery(
       buildApiUrl('/customers/billing'),
       {
         method: 'POST',
@@ -634,15 +761,14 @@ export const useAuthStore = defineStore('auth', () => {
         ...(targetTier && {
           body: JSON.stringify({ target_tier: targetTier })
         })
-      },
-      isCloud && flags.unifiedCloudAuthEnabled
+      }
     )
 
     if (!response.ok) {
-      const errorData = await response.json()
+      const { message } = await parseErrorResponse(response)
       throw new AuthStoreError(
         t('toastMessages.failedToAccessBillingPortal', {
-          error: errorData.message
+          error: message
         })
       )
     }
@@ -670,6 +796,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     createCustomer,
+    fetchWithCustomerRecovery,
     getIdToken,
     loginWithGoogle,
     loginWithGithub,
