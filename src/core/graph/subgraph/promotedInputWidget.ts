@@ -1,10 +1,15 @@
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot, Point } from '@/lib/litegraph/src/interfaces'
+import type {
+  CanvasPointerEvent,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
 
+import { resolveConcretePromotedWidget } from './resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
 
 /**
@@ -55,6 +60,35 @@ export function widgetPromotedSource(
 }
 
 /**
+ * Forwards a promoted widget's value change to the interior source widget's
+ * callback. The store-backed projected widget only carries the value in
+ * {@link useWidgetValueStore}, so without this the interior widget.callback
+ * set by custom node extensions never fires when the host edits the promoted
+ * value — this is the bridge that keeps that contract intact.
+ */
+export function invokePromotedWidgetSourceCallback(
+  node: LGraphNode,
+  input: INodeInputSlot,
+  value: unknown,
+  canvas?: LGraphCanvas,
+  pos?: Point,
+  e?: CanvasPointerEvent
+): void {
+  const source = promotedInputSource(node, input)
+  if (!source) return
+
+  const resolution = resolveConcretePromotedWidget(
+    node,
+    source.nodeId,
+    source.widgetName
+  )
+  if (resolution.status !== 'resolved') return
+
+  const { node: sourceNode, widget: sourceWidget } = resolution.resolved
+  sourceWidget.callback?.(value, canvas, sourceNode, pos, e)
+}
+
+/**
  * Projects a promoted subgraph input into an ordinary widget descriptor. The
  * descriptor is store-backed: type/value/options read live from
  * {@link useWidgetValueStore} by widgetId (mirroring BaseWidget), so the row
@@ -64,7 +98,10 @@ export function widgetPromotedSource(
  * `label` is the mutable display label. Returns null when the input is not a
  * promoted widget input.
  */
-export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
+export function promotedInputWidget(
+  node: LGraphNode,
+  input: INodeInputSlot
+): IBaseWidget | null {
   const id = input.widgetId
   if (!id) return null
   const store = useWidgetValueStore()
@@ -104,15 +141,16 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
     // so the value setter above is never invoked; BaseWidget.setValue writes its
     // own local state and then calls this callback, which is the only bridge
     // back to the store.
-    callback(next) {
+    callback(next, canvas, _node, pos, e) {
       store.setValue(id, next)
+      invokePromotedWidgetSourceCallback(node, input, next, canvas, pos, e)
     }
   }
 }
 
 export function promotedInputWidgets(node: LGraphNode): IBaseWidget[] {
   return node.inputs.flatMap((input) => {
-    const widget = promotedInputWidget(input)
+    const widget = promotedInputWidget(node, input)
     return widget ? [widget] : []
   })
 }

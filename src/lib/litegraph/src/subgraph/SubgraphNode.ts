@@ -35,6 +35,7 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
+import { invokePromotedWidgetSourceCallback } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
@@ -264,6 +265,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const id = input.widgetId
     if (!id) return
 
+    const node: LGraphNode = this
     const store = useWidgetValueStore()
     const widget: IBaseWidget = {
       get name() {
@@ -300,8 +302,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // so the value setter above is never invoked; BaseWidget.setValue writes
       // its own local state and then calls this callback, which is the only
       // bridge back to the store.
-      callback(next) {
+      callback(next, canvas, _node, pos, e) {
         store.setValue(id, next)
+        invokePromotedWidgetSourceCallback(node, input, next, canvas, pos, e)
       }
     }
     Object.defineProperty(widget, 'widgetId', {

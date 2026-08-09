@@ -4,6 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type {
+  CanvasPointerEvent,
   ISlotType,
   LGraphCanvas,
   Subgraph,
@@ -422,6 +423,26 @@ describe('SubgraphWidgetPromotion', () => {
       concrete.setValue(99, { e: fromAny({}), node: subgraphNode, canvas })
 
       expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(99)
+    })
+
+    it('invokes the interior widget callback when a promoted widget is edited', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+
+      const { node, widget } = createNodeWithWidget('Test Node')
+      const callback = vi.fn()
+      widget.callback = callback
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+
+      const hostWidget = subgraphNode.widgets[0]
+      const concrete = new NumberWidget(fromAny(hostWidget), subgraphNode)
+      const canvas = fromAny<LGraphCanvas, unknown>({ graph_mouse: [0, 0] })
+      const e = fromAny<CanvasPointerEvent, unknown>({})
+      concrete.setValue(99, { e, node: subgraphNode, canvas })
+
+      expect(callback).toHaveBeenCalledTimes(1)
+      expect(callback).toHaveBeenCalledWith(99, canvas, node, [0, 0], e)
     })
   })
 
