@@ -89,17 +89,29 @@ export class SubgraphHelper {
           | { success: true; slotName: string; x: number; y: number }
           | { success: false }
 
+        const createCanvasPointerEvent = (
+          canvasX: number,
+          canvasY: number,
+          button: number
+        ): CanvasPointerEvent =>
+          Object.assign(new PointerEvent('pointerdown', { button }), {
+            canvasX,
+            canvasY,
+            deltaX: 0,
+            deltaY: 0,
+            safeOffsetX: 0,
+            safeOffsetY: 0
+          })
+
         const tryRightClick = (): SlotInteractionResult => {
           for (const slot of slotsToTry) {
             if (!slot.pos || !node.onPointerDown) continue
 
-            const event = {
-              canvasX: slot.pos[0],
-              canvasY: slot.pos[1],
-              button: 2, // Right mouse button
-              preventDefault: () => {},
-              stopPropagation: () => {}
-            } as unknown as CanvasPointerEvent
+            const event = createCanvasPointerEvent(
+              slot.pos[0],
+              slot.pos[1],
+              2 // Right mouse button
+            )
 
             node.onPointerDown(
               event,
@@ -127,25 +139,21 @@ export class SubgraphHelper {
           const testX = rect[0] + rect[2] / 2 // x + width/2
           const testY = rect[1] + rect[3] / 2 // y + height/2
 
-          const event = {
-            canvasX: testX,
-            canvasY: testY,
-            button: 0, // Left mouse button
-            preventDefault: () => {},
-            stopPropagation: () => {}
-          }
+          const event = createCanvasPointerEvent(
+            testX,
+            testY,
+            0 // Left mouse button
+          )
 
           node.onPointerDown(
-            event as unknown as CanvasPointerEvent,
+            event,
             app.canvas.pointer,
             app.canvas.linkConnector
           )
 
           // Trigger double-click
           if (app.canvas.pointer.onDoubleClick) {
-            app.canvas.pointer.onDoubleClick(
-              event as unknown as CanvasPointerEvent
-            )
+            app.canvas.pointer.onDoubleClick(event)
           }
 
           return { success: true, slotName: slot.name, x: testX, y: testY }
