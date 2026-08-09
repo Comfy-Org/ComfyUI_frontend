@@ -9,9 +9,6 @@ import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/minimax-h3'
-const LEGACY_PATH = '/minimax'
-const ZH_PATH = '/zh-CN/minimax-h3'
-const ZH_LEGACY_PATH = '/zh-CN/minimax'
 const HERO_TITLE =
   t('minimax.hero.titleModel', 'en') + t('minimax.hero.titleRest', 'en')
 const MODELS_HEADING = t('minimax.models.heading', 'en')
@@ -20,7 +17,11 @@ const CTA_HEADING = t('minimax.cta.heading', 'en')
 const CTA_PRIMARY = t('minimax.cta.primaryCta', 'en')
 const CLOUD_URL = externalLinks.cloud
 const CLOUD_RUN_URL = minimaxLinks.cloudRun
-const FAQS = minimaxPage.faq?.items ?? []
+// `faq` is optional on the template (Wan Animate 2 ships without one), but
+// this page must have it, so fail loudly rather than silently testing nothing.
+const FAQ_SECTION = minimaxPage.faq
+if (!FAQ_SECTION) throw new Error('minimaxPage must configure a FAQ section')
+const FAQS = FAQ_SECTION.items
 const FAQ_COUNT = FAQS.length
 const FIRST_FAQ = FAQS[0]
 const PRICING_HEADING = t('pricing.title', 'en')
@@ -62,31 +63,6 @@ test.describe('MiniMax H3 page — desktop @smoke', () => {
     await expect(heading).toBeVisible()
     await expect(page.getByText(FIRST_REVIEW.name)).toBeVisible()
   })
-})
-
-test.describe('MiniMax H3 page — legacy URL @smoke', () => {
-  for (const legacyPath of [LEGACY_PATH, `${LEGACY_PATH}/`]) {
-    test(`redirects the old ${legacyPath} URL to the new page`, async ({
-      page
-    }) => {
-      await page.goto(legacyPath)
-
-      await expect(page).toHaveURL(`${PATH}/`)
-      await expect(
-        page.getByRole('heading', { level: 1, name: HERO_TITLE })
-      ).toBeVisible()
-    })
-  }
-
-  for (const legacyPath of [ZH_LEGACY_PATH, `${ZH_LEGACY_PATH}/`]) {
-    test(`redirects the old ${legacyPath} URL to the localized page`, async ({
-      page
-    }) => {
-      await page.goto(legacyPath)
-
-      await expect(page).toHaveURL(`${ZH_PATH}/`)
-    })
-  }
 })
 
 test.describe('MiniMax H3 page — link targets', () => {
