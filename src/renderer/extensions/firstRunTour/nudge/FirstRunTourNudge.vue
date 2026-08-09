@@ -64,7 +64,12 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 
-const NUDGE_IMAGE = '/assets/images/og-image.png'
+/**
+ * Owned by this surface, not shared with the social preview. Pointing at
+ * `og-image.png` meant whoever rotated the site's Open Graph card silently
+ * restyled onboarding, with nothing to tell them they had.
+ */
+const NUDGE_IMAGE = '/assets/images/first-run-nudge.png'
 
 /** Delayed, so the finished workflow is seen before this fades in over it. */
 const APPEAR_DELAY_MS = 1500
