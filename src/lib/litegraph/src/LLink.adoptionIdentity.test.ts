@@ -7,6 +7,9 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import type { ExportedSubgraph, LGraph } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
+import { useRerouteStore } from '@/stores/rerouteStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 
@@ -45,7 +48,7 @@ function configureBoundaryLink(
   subgraph.configure(data, keepOld)
 }
 
-describe('LLink topology adoption identity reproduction', () => {
+describe('LLink configure topology rebuild', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
   it('two subgraph definitions with identical input-to-output links keep independent reroute chains', () => {
@@ -66,7 +69,7 @@ describe('LLink topology adoption identity reproduction', () => {
     expect(second._links.get(toLinkId(1))?.parentId).toBe(toRerouteId(202))
   })
 
-  it.fails('reloading a workflow with keep_old preserves the serialized reroute chain', () => {
+  it('reloading a workflow with keep_old preserves the serialized reroute chain', () => {
     const subgraph = createTestSubgraph({ inputCount: 1, outputCount: 1 })
     subgraph.rootGraph.add(createTestSubgraphNode(subgraph))
     configureBoundaryLink(subgraph, 101)
@@ -74,5 +77,37 @@ describe('LLink topology adoption identity reproduction', () => {
     configureBoundaryLink(subgraph, 202, true)
 
     expect(subgraph._links.get(toLinkId(1))?.parentId).toBe(toRerouteId(202))
+  })
+
+  it('removes stale owner topology omitted by a keep_old payload', () => {
+    const subgraph = createTestSubgraph({ inputCount: 1, outputCount: 1 })
+    subgraph.rootGraph.add(createTestSubgraphNode(subgraph))
+    configureBoundaryLink(subgraph, 101)
+    const data = subgraph.asSerialisable() as ExportedSubgraph
+    data.links = []
+    data.reroutes = []
+
+    subgraph.configure(data, true)
+
+    const scope = graphScopeOf(subgraph)
+    expect([...useLinkStore().graphTopologies(scope)]).toHaveLength(0)
+    expect(
+      useRerouteStore().getReroute(scope, toRerouteId(101))
+    ).toBeUndefined()
+    expect(subgraph.links.size).toBe(0)
+    expect(subgraph.reroutes.size).toBe(0)
+  })
+
+  it('repeatedly rebuilds the same serialized topology deterministically', () => {
+    const subgraph = createTestSubgraph({ inputCount: 1, outputCount: 1 })
+    subgraph.rootGraph.add(createTestSubgraphNode(subgraph))
+    configureBoundaryLink(subgraph, 101)
+    const data = structuredClone(subgraph.asSerialisable()) as ExportedSubgraph
+
+    subgraph.configure(data, true)
+    const first = subgraph.asSerialisable()
+    subgraph.configure(data, true)
+
+    expect(subgraph.asSerialisable()).toEqual(first)
   })
 })

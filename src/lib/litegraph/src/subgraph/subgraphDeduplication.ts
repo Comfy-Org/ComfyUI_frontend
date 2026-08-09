@@ -1,4 +1,5 @@
 import type { LGraph } from '../LGraph'
+import type { UUID } from '@/utils/uuid'
 import { toGroupId } from '@/types/groupId'
 import {
   mintGroupId,
@@ -207,23 +208,25 @@ export function deduplicateSubgraphGroupIds(
 }
 
 export function collectReservedRerouteIds(
-  graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
+  graph: Pick<LGraph, 'id' | 'reroutes' | 'subgraphs'>,
+  excludedGraphIds: ReadonlySet<UUID> = new Set()
 ): Set<number> {
   return new Set<number>(
-    [graph, ...graph.subgraphs.values()].flatMap((g) =>
-      [...g.reroutes.values()].map((reroute) => reroute.id)
-    )
+    [graph, ...graph.subgraphs.values()]
+      .filter((candidate) => !excludedGraphIds.has(candidate.id))
+      .flatMap((candidate) =>
+        [...candidate.reroutes.values()].map((reroute) => reroute.id)
+      )
   )
 }
 
 /**
  * Dedupes reroute IDs across serialized subgraph definitions. Reroute IDs
- * must be unique within a root graph: the reroute store keys every reroute
- * in a root graph (its subgraphs' included) in one bucket, but subgraph
- * definitions from older frontends or external tools may number their
- * reroutes from scratch. Remaps colliding IDs in place and patches every
- * reference within the subgraph (`reroute.parentId`, `link.parentId`),
- * advancing `state.lastRerouteId`.
+ * must be unique within a root graph because reroute and layout identity is
+ * root-wide, but subgraph definitions from older frontends or external tools
+ * may number their reroutes from scratch. Remaps colliding IDs in place and
+ * patches every reference within the subgraph (`reroute.parentId`,
+ * `link.parentId`), advancing `state.lastRerouteId`.
  */
 export function deduplicateSubgraphRerouteIds(
   subgraphs: ExportedSubgraph[],

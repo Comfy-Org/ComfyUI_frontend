@@ -861,12 +861,11 @@ export function anchorRerouteChain(network: LinkNetwork, link: LLink): void {
  */
 export function registerRerouteChain(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
-  reroute: Reroute,
-  adoptExisting = false
+  reroute: Reroute
 ): void {
   const scope = graphScopeOf(graph)
   const registered = useRerouteStore().registerReroute(scope, reroute._chain)
-  if (!adoptExisting && toRaw(registered) !== toRaw(reroute._chain)) {
+  if (toRaw(registered) !== toRaw(reroute._chain)) {
     throw new Error(
       `Reroute ${reroute.id} is already owned in root graph ${scope.rootGraphId}`
     )

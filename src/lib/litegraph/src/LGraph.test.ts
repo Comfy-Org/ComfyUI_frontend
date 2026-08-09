@@ -1541,6 +1541,58 @@ describe('keep-old root identity', () => {
       }
     )
   })
+
+  it('remaps incoming reroutes that collide with retained definitions', () => {
+    const graph = new LGraph()
+    const incoming = graph.createSubgraph(createTestSubgraphData())
+    const retained = graph.createSubgraph(createTestSubgraphData())
+    incoming._addReroute(new Reroute(toRerouteId(1), incoming, [10, 20]))
+    const retainedReroute = new Reroute(toRerouteId(2), retained, [30, 40])
+    retained._addReroute(retainedReroute)
+    const data = graph.asSerialisable()
+    const definitions = [incoming.asSerialisable(), retained.asSerialisable()]
+    data.definitions = {
+      subgraphs: definitions.filter(({ id }) => id !== retained.id)
+    }
+    const incomingData = data.definitions.subgraphs?.find(
+      ({ id }) => id === incoming.id
+    )
+    if (!incomingData?.reroutes) {
+      throw new Error('Expected serialized incoming reroute')
+    }
+    incomingData.reroutes[0].id = retainedReroute.id
+
+    expect(() => graph.configure(data, true)).not.toThrow()
+
+    expect(retained.reroutes.get(retainedReroute.id)).toBe(retainedReroute)
+    expect(
+      graph.subgraphs.get(incoming.id)?.reroutes.has(retainedReroute.id)
+    ).toBe(false)
+  })
+})
+
+describe('configure link identity', () => {
+  it('keeps the first serialized link when IDs are duplicated', () => {
+    const source = new LGraphNode('source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('target')
+    target.addInput('in', 'number')
+    const graph = createGraph(source, target)
+    source.connect(0, target, 0)
+    const data = graph.asSerialisable()
+    const links = data.links
+    if (!links) throw new Error('Expected serialized link')
+    const first = links[0]
+    links.push({ ...first, type: 'duplicate' })
+
+    graph.configure(data)
+
+    const configured = graph._links.get(toLinkId(first.id))
+    expect(configured?.type).toBe(first.type)
+    expect(
+      useLinkStore().getLink(graphScopeOf(graph), toLinkId(first.id))
+    ).toBe(configured?._state)
+  })
 })
 
 describe('floating link ID allocation', () => {

@@ -97,7 +97,7 @@ describe('LLink ↔ linkStore integration', () => {
     expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
   })
 
-  it('adopts persisted topology during configuration', () => {
+  it('registers fresh topology after its owner is cleared', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')
     const b = new LGraphNode('B')
@@ -108,7 +108,8 @@ describe('LLink ↔ linkStore integration', () => {
     const persisted = a.connect(0, b, 0)!
     const materialized = new LLink(persisted.id, 'INT', a.id, 0, b.id, 0)
 
-    registerLinkTopology(graph, materialized, true)
+    useLinkStore().clearOwner(graphScopeOf(graph))
+    registerLinkTopology(graph, materialized)
     materialized.parentId = toRerouteId(7)
 
     expect(

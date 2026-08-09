@@ -607,24 +607,8 @@ export function slotFloatingLinks(
 }
 
 /**
- * A re-materialized link may only adopt a persisted topology that describes
- * the same connection. Link ids alone are not unique across the subgraphs
- * sharing a root graph's store bucket (e.g. a pasted subgraph reuses ids the
- * live subgraph already registered), so an id match with different endpoints
- * is a foreign link, not this link's persisted state.
- */
-function hasSameEndpoints(a: LinkTopology, b: LinkTopology): boolean {
-  return (
-    a.originNodeId === b.originNodeId &&
-    a.originSlot === b.originSlot &&
-    a.targetNodeId === b.targetNodeId &&
-    a.targetSlot === b.targetSlot
-  )
-}
-
-/**
- * Registers a link's topology into {@link useLinkStore} and adopts the
- * store's reactive proxy as {@link LLink._state}, so the store and the link
+ * Registers a link's topology into {@link useLinkStore} and uses the store's
+ * reactive proxy as {@link LLink._state}, so the store and the link
  * always agree and field writes are tracked.  Call this at every site that
  * adds a link to a graph's link map (or floating link map).
  *
@@ -633,23 +617,15 @@ function hasSameEndpoints(a: LinkTopology, b: LinkTopology): boolean {
  * and removal cannot corrupt the winner's registration.
  * @param graph The graph (or subgraph) the link belongs to
  * @param link The link to register
- * @param adoptExisting Adopt an already-registered topology with this link's
- * id and endpoints instead of requiring a fresh registration; used when
- * configuration re-materializes links whose state the store retained.
  */
 export function registerLinkTopology(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
-  link: LLink,
-  adoptExisting = false
+  link: LLink
 ): void {
   if (link.id === toLinkId(-1)) return // transient toFloating clone
   const scope = graphScopeOf(graph)
   const store = useLinkStore()
-  const persisted = adoptExisting ? store.getLink(scope, link.id) : undefined
-  const registered =
-    (persisted && hasSameEndpoints(persisted, link._state)
-      ? persisted
-      : undefined) ?? store.registerLink(scope, link._state)
+  const registered = store.registerLink(scope, link._state)
   if (registered) {
     link._state = registered
     link._graphScope = scope

@@ -474,26 +474,27 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(adoptedReroute).toBeDefined()
   })
 
-  it('re-registers a retained reroute during keep_old configure', () => {
+  it('rebuilds a reroute during keep_old configure', () => {
     const { graph, link } = connectedGraph()
     const reroute = graph.createReroute([100, 100], link)!
     const data = graph.asSerialisable()
 
     graph.configure(data, true)
 
-    expect(graph.reroutes.get(reroute.id)).toBe(reroute)
+    const rebuilt = graph.reroutes.get(reroute.id)!
+    expect(rebuilt).not.toBe(reroute)
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
     ).toEqual({ x: 100, y: 100 })
 
-    reroute.pos = [200, 300]
+    rebuilt.pos = [200, 300]
 
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
     ).toEqual({ x: 200, y: 300 })
   })
 
-  it('leaves an existing reroute unchanged when adoption is rejected', () => {
+  it('does not restore stale topology when rebuild is rejected', () => {
     const graph = new LGraph()
     const parent = graph.setReroute({ pos: [5, 6], linkIds: [] })
     const reroute = graph.setReroute({
@@ -519,13 +520,10 @@ describe('Reroute position lives only in layoutStore', () => {
 
     expect(() => graph.configure(data, true)).toThrow(/registration rejected/)
 
-    expect(graph.reroutes.get(reroute.id)).toBe(reroute)
-    expect(useRerouteStore().getReroute(graphScopeOf(graph), reroute.id)).toBe(
-      reroute._chain
-    )
-    expect(reroute.parentId).toBeUndefined()
-    expect([...reroute.pos]).toEqual([10, 20])
-    expect(reroute.floating).toEqual({ slotType: 'input' })
+    expect(graph.reroutes.get(reroute.id)).toBeUndefined()
+    expect(
+      useRerouteStore().getReroute(graphScopeOf(graph), reroute.id)
+    ).toBeUndefined()
   })
 
   it('keeps constructor geometry transient until registration', () => {
@@ -744,7 +742,8 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(() => graph.configure(data)).not.toThrow()
 
     expect(graph.id).toBe(originalId)
-    expect(graph.reroutes.get(existing.id)).toBe(existing)
+    const rebuilt = graph.reroutes.get(existing.id)!
+    expect(rebuilt).not.toBe(existing)
     expect(
       useRerouteStore().getReroute(
         {
@@ -753,7 +752,7 @@ describe('Reroute position lives only in layoutStore', () => {
         },
         existing.id
       )
-    ).toBe(existing._chain)
+    ).toBe(rebuilt._chain)
     expect(
       useRerouteStore().getReroute(
         {
@@ -962,7 +961,9 @@ describe('Reroute position lives only in layoutStore', () => {
     expect(() => graph.configure(data, true)).not.toThrow()
 
     expect(graph.id).toBe(originalId)
-    expect(graph.reroutes.get(reroute.id)).toBe(reroute)
+    const rebuilt = graph.reroutes.get(reroute.id)!
+    expect(rebuilt).not.toBe(reroute)
+    expect(rebuilt.parentId).toBe(toRerouteId(30))
     expect(graph.reroutes.get(toRerouteId(30))?.pos).toEqual([30, 40])
     expect(
       useRerouteStore().getReroute(
@@ -972,7 +973,7 @@ describe('Reroute position lives only in layoutStore', () => {
         },
         reroute.id
       )
-    ).toBe(reroute._chain)
+    ).toBe(rebuilt._chain)
     expect(
       useRerouteStore().getReroute(
         {
