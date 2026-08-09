@@ -225,6 +225,8 @@ describe('WidgetTextarea Value Binding', () => {
   })
 
   describe('Locked Field Hover Styling', () => {
+    // Tests assert on the Tailwind class name directly because that's the
+    // mechanism being guarded — a rename would need a baseline update anyway.
     const HOVER_CLASS = 'hover:bg-component-node-widget-background-hovered'
 
     it('omits the generic hover background class from the wrapper when read-only', () => {
@@ -233,6 +235,17 @@ describe('WidgetTextarea Value Binding', () => {
       })
       const { container } = renderComponent(widget, 'locked value')
 
+      // hover class lives on wrapper <div>, not the <textarea>
+      // eslint-disable-next-line testing-library/no-node-access
+      const wrapper = container.firstElementChild
+      expect(wrapper?.className).not.toContain(HOVER_CLASS)
+    })
+
+    it('omits the generic hover background class from the wrapper when disabled', () => {
+      const widget = createTextareaWidget('linked value', { disabled: true })
+      const { container } = renderComponent(widget, 'linked value')
+
+      // hover class lives on wrapper <div>, not the <textarea>
       // eslint-disable-next-line testing-library/no-node-access
       const wrapper = container.firstElementChild
       expect(wrapper?.className).not.toContain(HOVER_CLASS)
@@ -242,6 +255,7 @@ describe('WidgetTextarea Value Binding', () => {
       const widget = createTextareaWidget('editable value')
       const { container } = renderComponent(widget, 'editable value')
 
+      // hover class lives on wrapper <div>, not the <textarea>
       // eslint-disable-next-line testing-library/no-node-access
       const wrapper = container.firstElementChild
       expect(wrapper?.className).toContain(HOVER_CLASS)
