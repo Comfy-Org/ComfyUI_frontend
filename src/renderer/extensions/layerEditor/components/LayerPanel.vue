@@ -8,7 +8,7 @@
       </span>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div class="min-h-0 flex-1 overflow-y-auto" @dragleave="onListDragLeave">
       <div
         v-for="node in rows"
         :key="node.id"
@@ -177,7 +177,7 @@ function isRowSelected(id: string): boolean {
 
 function rowClass(selected: boolean, extra?: string): string {
   return cn(
-    'group flex cursor-pointer items-center gap-2 border-border-default px-2 py-1.5 select-none',
+    'group relative flex cursor-pointer items-center gap-2 border-border-default px-2 py-1.5 select-none',
     'hover:bg-secondary-background-hover',
     selected && 'bg-secondary-background-selected',
     extra
@@ -208,20 +208,19 @@ function endDrag(): void {
 
 function dropHintClass(id: string): string {
   const hint = dropHint.value
-  if (hint?.id !== id) return 'relative'
-  return cn(
-    'relative',
-    hint.pos === 'above'
-      ? "before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-base-foreground before:content-['']"
-      : "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-base-foreground after:content-['']"
-  )
+  if (hint?.id !== id) return ''
+  return hint.pos === 'above'
+    ? "before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-base-foreground before:content-['']"
+    : "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-base-foreground after:content-['']"
 }
 
 function onRowDragStart(id: string, e: DragEvent): void {
   dragId.value = id
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', id)
+    // Firefox refuses to start the drag without data; empty keeps text
+    // inputs from receiving the layer id on a stray drop.
+    e.dataTransfer.setData('text/plain', '')
   }
 }
 
@@ -237,19 +236,26 @@ function onRowDragOver(id: string, e: DragEvent): void {
 }
 
 function onRowDrop(id: string, e: DragEvent): void {
-  e.preventDefault()
   const dragged = dragId.value
   const hint = dropHint.value
-  if (dragged && hint?.id === id) {
-    const toIndex = reorderDropIndex(
-      imageLayers.value.map((n) => n.id),
-      id,
-      hint.pos,
-      backgroundLayer.value ? 1 : 0
-    )
-    if (toIndex !== null) session.moveLayerTo(dragged, toIndex)
+  if (!dragged || hint?.id !== id) {
+    endDrag()
+    return
   }
+  e.preventDefault()
+  const toIndex = reorderDropIndex(
+    imageLayers.value.map((n) => n.id),
+    id,
+    hint.pos,
+    backgroundLayer.value ? 1 : 0
+  )
+  if (toIndex !== null) session.moveLayerTo(dragged, toIndex)
   endDrag()
+}
+
+function onListDragLeave(e: DragEvent): void {
+  const container = e.currentTarget as HTMLElement
+  if (!container.contains(e.relatedTarget as Node | null)) dropHint.value = null
 }
 
 function onRowClick(id: string, e: MouseEvent): void {

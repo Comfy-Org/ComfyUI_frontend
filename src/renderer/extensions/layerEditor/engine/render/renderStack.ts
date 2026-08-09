@@ -1,4 +1,9 @@
-import type { Compositor, CompositeInput, NodeTexture } from '../compositor'
+import type {
+  Compositor,
+  CompositeInput,
+  FBOHandle,
+  NodeTexture
+} from '../compositor'
 import type { ContentStore } from '../content'
 import type { Document } from '../document'
 import { resolveMode } from '../mode'
@@ -239,7 +244,13 @@ function buildInputs(
           cleanups.push(sub.cleanup)
           continue
         }
-        const handle = deps.compositor.allocTarget(doc.width, doc.height)
+        let handle: FBOHandle
+        try {
+          handle = deps.compositor.allocTarget(doc.width, doc.height)
+        } catch (err) {
+          sub.cleanup()
+          throw err
+        }
         try {
           deps.compositor.composite(sub.inputs, handle)
         } catch (err) {

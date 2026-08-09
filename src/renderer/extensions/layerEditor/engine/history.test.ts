@@ -173,6 +173,18 @@ describe('History — merging', () => {
     expect(h.dirty()).toBe(false)
   })
 
+  it('redo after undoing a post-save merge reads dirty again', () => {
+    const h = new History()
+    h.push(new MergingCommand('opacity'))
+    h.push(new MergingCommand('opacity'))
+    h.markSaved()
+    h.push(new MergingCommand('opacity'))
+    h.undo()
+    expect(h.dirty()).toBe(false)
+    h.redo()
+    expect(h.dirty()).toBe(true)
+  })
+
   it('never merges across a save point, so the new edit stays undoable to clean', () => {
     const h = new History()
     const first = new MergingCommand('opacity')

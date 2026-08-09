@@ -105,6 +105,7 @@ export class History {
     ) {
       this.undoBytes += top.sizeBytes() - (this.sizes.get(top) ?? 0)
       this.sizes.set(top, top.sizeBytes())
+      // Merged edits share the first commit's dirty step - no bumpDirty() here.
       this.emit(cmd.dirtyMask)
       return
     }
@@ -194,6 +195,7 @@ export class History {
     ) {
       const dropped = this.undoStack.shift()
       if (!dropped) break
+      if (dropped === this.mergeBarrier) this.mergeBarrier = null
       this.undoBytes -= this.sizes.get(dropped) ?? 0
       this.cleanReachable = false
     }

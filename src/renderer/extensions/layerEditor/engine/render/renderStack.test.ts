@@ -191,6 +191,24 @@ describe('renderDocument', () => {
     expect([...c.freed].sort()).toEqual(c.allocated.map((h) => h.id).sort())
   })
 
+  it('frees nested targets when a later allocTarget throws', () => {
+    class RationedCompositor extends FakeCompositor {
+      allocs = 0
+      override allocTarget(width: number, height: number): FBOHandle {
+        if (++this.allocs === 2) throw new Error('out of targets')
+        return super.allocTarget(width, height)
+      }
+    }
+    const c = new RationedCompositor()
+    const inner = group([leaf(1)], { id: 'inner' })
+    const outer = group([inner], { id: 'outer' })
+    expect(() => renderDocument(doc([outer]), deps(c))).toThrow(
+      'out of targets'
+    )
+    expect(c.allocated).toHaveLength(1)
+    expect(c.freed).toEqual([c.allocated[0].id])
+  })
+
   it('splices a pass-through group directly into the parent stack (no isolation target)', () => {
     const c = new FakeCompositor()
     const g = group([leaf(1), leaf(1)], { passThrough: true })
