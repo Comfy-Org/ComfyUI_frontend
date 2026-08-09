@@ -52,18 +52,19 @@ function resolveChoiceValue(
   comboWidget: IBaseWidget,
   resolverNode: LGraphNode = interiorNode
 ) {
-  const choiceInputIndex = interiorNode.inputs?.findIndex(
+  const choiceInputIndex = interiorNode.inputs.findIndex(
     (input) => input.widget?.name === comboWidget.name
   )
-  if (
-    choiceInputIndex === undefined ||
-    choiceInputIndex < 0 ||
-    !hasLinkedInputResolver(resolverNode)
-  ) {
+  if (choiceInputIndex < 0 || !hasLinkedInputResolver(resolverNode)) {
     return comboWidget.value
   }
 
   const resolved = resolverNode.resolveInput(choiceInputIndex)
+  // `resolved.widgetInfo` is only set when the link resolves back to a
+  // promoted widget. When `choice` is linked to a real node's output
+  // instead, there is no widget to read a value from here -- resolving that
+  // upstream execution-time value is out of scope for this fix, so this
+  // falls back to the (possibly stale) interior widget value.
   return resolved?.widgetInfo ? resolved.widgetInfo.value : comboWidget.value
 }
 
@@ -143,7 +144,7 @@ function onCustomComboCreated(this: LGraphNode) {
     computeSize: () => [0, -4],
     options: { hidden: true },
     y: 0,
-    serializeValue: (resolverNode: LGraphNode) =>
+    serializeValue: (resolverNode: LGraphNode, _index: number) =>
       widgets
         .slice(2)
         .findIndex(

@@ -22,6 +22,8 @@ import { graphToPrompt } from '@/utils/executionUtil'
 // widget must resolve the current *host* value, not the frozen interior
 // widget value.
 const TEST_CUSTOM_COMBO_TYPE = 'test/CustomComboSubgraphPromotion'
+const TEST_CUSTOM_COMBO_UNCONVERTED_TYPE =
+  'test/CustomComboUnconvertedSubgraphPromotion'
 
 class TestCustomComboNode extends LGraphNode {
   static override title = 'CustomCombo'
@@ -38,6 +40,25 @@ class TestCustomComboNode extends LGraphNode {
       values: [] as string[]
     })
     input.widget = { name: 'choice' }
+  }
+}
+
+// Unlike `TestCustomComboNode`, `choice` here has no backing input -- the
+// widget-to-input conversion this extension relies on to resolve a
+// promoted value never happened, matching a fresh, never-promoted node.
+class TestCustomComboNodeWithoutInput extends LGraphNode {
+  static override title = 'CustomCombo'
+
+  constructor() {
+    super('CustomCombo')
+    this.comfyClass = 'CustomCombo'
+    this.serialize_widgets = true
+    this.addOutput('STRING', 'STRING')
+    this.addOutput('INDEX', 'INT')
+
+    this.addWidget('combo', 'choice', '', () => {}, {
+      values: [] as string[]
+    })
   }
 }
 
@@ -66,16 +87,32 @@ describe('CustomCombo index widget after subgraph promotion', () => {
       { name: 'CustomCombo' } as ComfyNodeDef,
       app
     )
+    await extension.beforeRegisterNodeDef?.(
+      TestCustomComboNodeWithoutInput,
+      { name: 'CustomCombo' } as ComfyNodeDef,
+      app
+    )
 
     if (LiteGraph.registered_node_types[TEST_CUSTOM_COMBO_TYPE]) {
       LiteGraph.unregisterNodeType(TEST_CUSTOM_COMBO_TYPE)
     }
     LiteGraph.registerNodeType(TEST_CUSTOM_COMBO_TYPE, TestCustomComboNode)
+
+    if (LiteGraph.registered_node_types[TEST_CUSTOM_COMBO_UNCONVERTED_TYPE]) {
+      LiteGraph.unregisterNodeType(TEST_CUSTOM_COMBO_UNCONVERTED_TYPE)
+    }
+    LiteGraph.registerNodeType(
+      TEST_CUSTOM_COMBO_UNCONVERTED_TYPE,
+      TestCustomComboNodeWithoutInput
+    )
   })
 
   afterAll(() => {
     if (LiteGraph.registered_node_types[TEST_CUSTOM_COMBO_TYPE]) {
       LiteGraph.unregisterNodeType(TEST_CUSTOM_COMBO_TYPE)
+    }
+    if (LiteGraph.registered_node_types[TEST_CUSTOM_COMBO_UNCONVERTED_TYPE]) {
+      LiteGraph.unregisterNodeType(TEST_CUSTOM_COMBO_UNCONVERTED_TYPE)
     }
   })
 
@@ -129,6 +166,34 @@ describe('CustomCombo index widget after subgraph promotion', () => {
 
       // "four" is index 3 of ["one", "two", "three", "four"].
       expect(promptInputs.index).toBe(3)
+    } finally {
+      appWithRootGraph.rootGraphInternal = previousRootGraph
+    }
+  })
+
+  it('resolves INDEX from the interior widget when choice was never promoted', async () => {
+    const rootGraph = new LGraph()
+    type AppWithRootGraph = { rootGraphInternal?: LGraph }
+    const appWithRootGraph = app as unknown as AppWithRootGraph
+    const previousRootGraph = appWithRootGraph.rootGraphInternal
+    appWithRootGraph.rootGraphInternal = rootGraph
+
+    try {
+      const comboNode = LiteGraph.createNode(
+        TEST_CUSTOM_COMBO_UNCONVERTED_TYPE
+      )!
+      rootGraph.add(comboNode)
+
+      findWidget(comboNode, 'option1')!.value = 'one'
+      findWidget(comboNode, 'option2')!.value = 'two'
+      findWidget(comboNode, 'option3')!.value = 'three'
+      findWidget(comboNode, 'choice')!.value = 'two'
+
+      const { output } = await graphToPrompt(rootGraph)
+      const promptInputs = output[`${comboNode.id}`].inputs
+
+      // "two" is index 1 of ["one", "two", "three"].
+      expect(promptInputs.index).toBe(1)
     } finally {
       appWithRootGraph.rootGraphInternal = previousRootGraph
     }
