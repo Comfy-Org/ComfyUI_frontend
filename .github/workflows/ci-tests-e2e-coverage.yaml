@@ -85,6 +85,16 @@ jobs:
             fi
           done
 
+      - name: Assert coverage was mapped back to source
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        run: |
+          MAPPED_SF=$(grep -cE '^SF:(src|packages)/' coverage/playwright/coverage.lcov || true)
+          echo "Source-mapped files: $MAPPED_SF" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${MAPPED_SF:-0}" -lt 100 ]; then
+            echo "::error::Only $MAPPED_SF files under src/ or packages/ in the merged tracefile. Observed paths: $(grep -m 5 '^SF:' coverage/playwright/coverage.lcov | tr '\n' ' '). Served bundle paths mean the E2E build dropped its '//# sourceMappingURL=' comment — check it ran with COLLECT_COVERAGE=true (vite.config.mts build.sourcemap)."
+            exit 1
+          fi
+
       - name: Strip non-source entries from coverage
         if: steps.coverage-shards.outputs.has-coverage == 'true'
         run: |

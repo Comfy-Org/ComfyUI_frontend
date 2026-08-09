@@ -848,9 +848,9 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
       await expect(
         successView.getByText('Creator', { exact: true })
       ).toBeVisible()
-      await expect(successView.getByText('$28', { exact: true })).toBeVisible()
+      await expect(successView.getByText('$336', { exact: true })).toBeVisible()
       await expect(
-        successView.getByText('7,400 / month', { exact: true })
+        successView.getByText('88,800 / year', { exact: true })
       ).toBeVisible()
       await expect(
         successView.getByRole('button', { name: 'Close' })
