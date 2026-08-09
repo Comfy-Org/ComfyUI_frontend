@@ -8,7 +8,7 @@
       "id": 1,
       "type": "DevToolsNodeWithOnlyOptionalInput",
       "pos": [400, 100],
-      "size": [270, 160],
+      "size": [400, 200],
       "flags": {},
       "order": 1,
       "mode": 0,
