@@ -10,5 +10,5 @@ contact_links:
     url: https://github.com/Comfy-Org/ComfyUI-Manager/issues
     about: If the problem only happens with a specific custom node installed, report it to that node's repository or to ComfyUI-Manager.
   - name: Backend, sampling, or model issues
-    url: https://github.com/comfyanonymous/ComfyUI/issues
+    url: https://github.com/Comfy-Org/ComfyUI/issues
     about: For errors during generation, VRAM problems, model loading, or samplers — those live in the core ComfyUI repository.
