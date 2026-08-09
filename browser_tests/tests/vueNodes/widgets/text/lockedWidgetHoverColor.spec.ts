@@ -27,13 +27,14 @@ test.describe(
         'Locked Widget Target',
         'filename_prefix'
       )
+      // proxy check: covers both link-locked and hardcoded read_only cases
       await expect(lockedInput).toHaveAttribute('readonly', '')
 
       // Hovering the locked field must not replace its (node-color-tinted)
       // background with the app's opaque generic hover gray, so the node's
       // custom color should still show through in the screenshot.
       await lockedInput.hover()
-      await expect(targetNode).toHaveScreenshot('locked-widget-hover-color.png')
+      await comfyPage.expectScreenshot(targetNode, 'locked-widget-hover-color.png')
     })
 
     test('editable field on the same node still shows the generic hover background', async ({
@@ -45,10 +46,9 @@ test.describe(
         'value'
       )
 
+      await expect(editableInput).toBeVisible()
       await editableInput.hover()
-      await expect(sourceNode).toHaveScreenshot(
-        'editable-widget-hover-color.png'
-      )
+      await comfyPage.expectScreenshot(sourceNode, 'editable-widget-hover-color.png')
     })
   }
 )
