@@ -301,6 +301,42 @@ describe('graph layout registration contract', () => {
     expect(detachLayout(graph, 'reroute', reroute).result).toBe('applied')
   })
 
+  it('restores local attachment when a reentrant detach is rejected', () => {
+    const graph = new LGraph()
+    const node = addedNode(graph)
+    const other = addedNode(graph)
+    let reentrant: ReturnType<typeof detachLayout>['result'] | undefined
+    const stop = layoutStore.onNodeChange(graph.id, node.id, () => {
+      reentrant ??= detachLayout(graph, 'node', other).result
+    })
+    onTestFinished(stop)
+
+    expect(detachLayout(graph, 'node', node).result).toBe('applied')
+    expect(reentrant).toBe('rejected')
+    expect(other._layoutRegistered).toBe(true)
+    expect(
+      layoutStore.getNodeLayoutRef(graph.id, other.id).value
+    ).not.toBeNull()
+    expect(detachLayout(graph, 'node', other).result).toBe('applied')
+  })
+
+  it('blocks reentrant replacement adoption while a detach is in flight', () => {
+    const graph = new LGraph()
+    const node = addedNode(graph)
+    const replacement = new LGraphNode('replacement')
+    replacement.id = node.id
+    let reentrant: ReturnType<typeof transferLayoutRegistration> | undefined
+    const stop = layoutStore.onNodeChange(graph.id, node.id, () => {
+      reentrant ??= transferLayoutRegistration(node, replacement)
+    })
+    onTestFinished(stop)
+
+    expect(detachLayout(graph, 'node', node).result).toBe('applied')
+    expect(reentrant).toBe('no-op')
+    expect(replacement._layoutRegistered).toBe(false)
+    expect(layoutStore.getNodeLayoutRef(graph.id, node.id).value).toBeNull()
+  })
+
   it('does not restore a detach with a mismatched token', () => {
     const graph = new LGraph()
     const node = addedNode(graph)
