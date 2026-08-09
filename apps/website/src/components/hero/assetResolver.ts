@@ -26,36 +26,63 @@ export interface AngleAsset {
 interface RingSpec {
   elevation: ElevationLabel
   distance: DistanceLabel
-  stepDegrees: number
+  azimuths: readonly number[]
   width: number
   height: number
 }
 
-/** Shipped turntable rings: 16-frame eye-level orbits and 10-frame elevated
- * (30°) orbits, one per distance. Further elevation bands (top/bottom views)
- * are just more files plus an entry here. */
+const EYE_LEVEL_AZIMUTHS = Array.from({ length: 16 }, (_, i) => i * 22.5)
+
+/** Shipped turntable rings: three uniform 16-frame eye-level orbits plus
+ * three 17-frame elevated (30°) orbits, one per distance. The elevated
+ * orbits come from eased, deduplicated video extractions, so their frames
+ * sit at measured rather than uniform azimuths; each ring is phased so
+ * azimuth 0 is the input image's viewpoint and all rings orbit the same
+ * direction. Further elevation bands are more files plus an entry here. */
 const RINGS: RingSpec[] = [
   ...DISTANCE_LABELS.map((distance) => ({
     elevation: 'eye-level shot' as const,
     distance,
-    stepDegrees: 22.5,
+    azimuths: EYE_LEVEL_AZIMUTHS,
     width: 1280,
     height: 960
   })),
-  ...DISTANCE_LABELS.map((distance) => ({
-    elevation: 'elevated shot' as const,
-    distance,
-    stepDegrees: 36,
+  {
+    elevation: 'elevated shot',
+    distance: 'wide shot',
+    azimuths: [
+      14.5, 70, 98.5, 124, 125, 127, 132, 140, 150, 161, 196.5, 233, 248.5, 273,
+      305, 327.5, 347
+    ],
     width: 1112,
     height: 834
-  }))
+  },
+  {
+    elevation: 'elevated shot',
+    distance: 'medium shot',
+    azimuths: [
+      0, 22, 64, 78, 90, 102, 113.5, 124, 125, 134, 159.5, 196.5, 246.5, 259.5,
+      280, 302.5, 340.5
+    ],
+    width: 1112,
+    height: 834
+  },
+  {
+    elevation: 'elevated shot',
+    distance: 'close-up',
+    azimuths: [
+      9, 21.5, 53.5, 74, 114, 132.5, 133.5, 168, 184.5, 203.5, 219, 244, 265,
+      293.5, 321.5, 340, 350
+    ],
+    width: 1112,
+    height: 834
+  }
 ]
 
 const slugify = (label: string) => label.replaceAll(' ', '-')
 
 function ringAssets(ring: RingSpec): AngleAsset[] {
-  return Array.from({ length: 360 / ring.stepDegrees }, (_, index) => {
-    const azimuthDegrees = index * ring.stepDegrees
+  return ring.azimuths.map((azimuthDegrees) => {
     const whole = String(Math.floor(azimuthDegrees)).padStart(3, '0')
     const slug = `az${whole}-${azimuthDegrees % 1 ? '5' : '0'}`
     return {
