@@ -18,7 +18,7 @@ const {
     class="max-w-9xl mx-auto flex items-center justify-between gap-4 px-6 py-3 lg:px-20"
   >
     <ol
-      class="text-primary-warm-gray flex flex-wrap items-center gap-2 text-xs tracking-wide uppercase"
+      class="flex flex-wrap items-center gap-2 text-xs tracking-wide text-primary-warm-gray uppercase"
     >
       <li
         v-for="(crumb, i) in crumbs"
@@ -43,7 +43,7 @@ const {
 
     <p
       v-if="updated"
-      class="text-primary-warm-gray shrink-0 text-xs tracking-wide uppercase"
+      class="shrink-0 text-xs tracking-wide text-primary-warm-gray uppercase"
     >
       {{ updated }}
     </p>

@@ -18,7 +18,11 @@ const SEEDANCE_RUN = seedancePage.hero.primaryCta.href
 const CLOUD_WORKFLOWS_HUB = externalLinks.workflows
 const PROMPT_CTA = t('seedance.hero.promptCta', 'en')
 const COPY_PROMPT = t('modelLaunch.copyPrompt', 'en')
-const FAQS = seedancePage.faq?.items ?? []
+// `faq` is optional on the template (Wan Animate 2 ships without one), but
+// this page must have it, so fail loudly rather than silently testing nothing.
+const FAQ_SECTION = seedancePage.faq
+if (!FAQ_SECTION) throw new Error('seedancePage must configure a FAQ section')
+const FAQS = FAQ_SECTION.items
 const FAQ_COUNT = FAQS.length
 const FIRST_FAQ = FAQS[0]
 const REVIEWS_HEADING = t('seedance.reviews.heading', 'en')
@@ -129,9 +133,9 @@ test.describe('Seedance 2.5 page — link targets', () => {
   })
 
   test('cards with a prompt offer a copy button', async ({ page }) => {
-    const withPrompt = (seedancePage.gallery?.cards ?? []).filter(
-      (card) => card.prompt
-    )
+    const gallery = seedancePage.gallery
+    if (!gallery) throw new Error('seedancePage must configure a gallery')
+    const withPrompt = gallery.cards.filter((card) => card.prompt)
     const buttons = page.getByRole('button', { name: COPY_PROMPT })
     await buttons.first().scrollIntoViewIfNeeded()
     await expect(buttons).toHaveCount(withPrompt.length)

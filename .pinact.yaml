@@ -21,6 +21,6 @@ ignore_actions:
   - name: actions/upload-artifact
     ref: v6
   - name: actions/download-artifact
-    ref: v7
+    ref: v8
   - name: actions/github-script
     ref: v8

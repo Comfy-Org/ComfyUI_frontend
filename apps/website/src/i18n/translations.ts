@@ -2137,6 +2137,22 @@ const translations = {
     'zh-CN':
       '两种接入方式：自行添加服务器，或让你的智能体自动安装。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
   },
+  'mcp.setup.requirementPrefix': {
+    en: 'To use Comfy Cloud via MCP, you need a ',
+    'zh-CN': '如需通过 MCP 使用 Comfy Cloud，你需要'
+  },
+  'mcp.setup.requirementLinkLabel': {
+    en: 'subscription of any tier',
+    'zh-CN': '任意套餐的订阅'
+  },
+  'mcp.setup.requirementSuffix': {
+    en: '.',
+    'zh-CN': '。'
+  },
+  'mcp.setup.requirementFootnote': {
+    en: " A credit top-up alone isn't enough to run generations.",
+    'zh-CN': '仅充值积分不足以运行生成任务。'
+  },
   'mcp.setup.manual.title': {
     en: 'Install manually',
     'zh-CN': '手动安装'
@@ -2423,9 +2439,9 @@ const translations = {
     'zh-CN': '需要付费吗？'
   },
   'mcp.faq.4.a': {
-    en: "Connecting is free with a Comfy account, and searching models, nodes, and templates doesn't cost credits. Running a generation uses Comfy Cloud credits and needs a subscription or credit balance. Your agent confirms with you before it spends.",
+    en: "Connecting is free with a Comfy account, and searching models, nodes, and templates doesn't cost credits. Running a generation uses Comfy Cloud credits. To use Comfy Cloud via MCP, you need a [subscription of any tier](https://comfy.org/cloud/pricing) — a credit top-up alone isn't enough. Your agent confirms with you before it spends.",
     'zh-CN':
-      '使用 Comfy 账户连接是免费的，搜索模型、节点和模板也不消耗积分。运行生成会使用 Comfy Cloud 积分，需要订阅或积分余额。智能体在消费前会先与你确认。'
+      '使用 Comfy 账户连接是免费的，搜索模型、节点和模板也不消耗积分。运行生成会使用 Comfy Cloud 积分。如需通过 MCP 使用 Comfy Cloud，你需要[任意套餐的订阅](https://comfy.org/cloud/pricing)——仅充值积分是不够的。智能体在消费前会先与你确认。'
   },
   'mcp.faq.5.q': {
     en: 'Can I use it with my local ComfyUI?',
@@ -4798,9 +4814,9 @@ const translations = {
     'zh-CN': 'Comfy 上的 Seedance 2.5 — 电影级 AI 视频模型'
   },
   'seedance.meta.description': {
-    en: 'Run ByteDance Seedance 2.5 on Comfy: multi-shot cinematic video from text or image, 1080p to 4K. Draft free on Wan 2.2 and spend credits only on the final render.',
+    en: 'Run ByteDance Seedance 2.5 on Comfy: multi-shot cinematic video with native audio, from text or image. Draft free on Wan 2.2 and spend credits only on the final render.',
     'zh-CN':
-      '在 Comfy 上运行字节跳动 Seedance 2.5：从文本或图像生成多镜头电影级视频，支持 1080p 至 4K。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
+      '在 Comfy 上运行字节跳动 Seedance 2.5：从文本或图像生成带原生音频的多镜头电影级视频。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
   },
   'seedance.breadcrumb.model': { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
   'seedance.breadcrumb.updated': {
@@ -4812,9 +4828,9 @@ const translations = {
     'zh-CN': 'Seedance 2.5 已上线'
   },
   'seedance.hero.description': {
-    en: "ByteDance's cinematic video model — multi-shot sequences, 1080p to 4K, text or image in. You direct on the canvas; Seedance renders the cut.",
+    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut.",
     'zh-CN':
-      '字节跳动的电影级视频模型：多镜头序列，1080p 至 4K，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。'
+      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。'
   },
   'seedance.hero.primaryCta': {
     en: 'RUN SEEDANCE 2.5',
@@ -5222,15 +5238,15 @@ const translations = {
       '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
   'flux3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
-  // Wan Animate 2 model page (/wan-animate-2) — announcement until the model ships
+  // Wan Animate 2 model page (/wan-animate-2)
   'wanAnimate2.meta.title': {
-    en: 'Wan Animate 2 on Comfy — Coming Soon',
-    'zh-CN': 'Comfy 上的 Wan Animate 2 — 即将推出'
+    en: 'Wan Animate 2 on Comfy — Open-Source Character Animation',
+    'zh-CN': 'Comfy 上的 Wan Animate 2 — 开源角色动画模型'
   },
   'wanAnimate2.meta.description': {
-    en: 'Wan Animate 2 is coming to Comfy. Run it on Comfy Cloud the day it lands, or start building workflows for free now with every other model Comfy supports.',
+    en: 'Run Wan Animate 2 on Comfy: upload a reference image of your character plus a driving video, and it transfers that motion onto your character. Open source, on Comfy Cloud or your own hardware.',
     'zh-CN':
-      'Wan Animate 2 即将登陆 Comfy。上线当天即可在 Comfy Cloud 上运行；现在就可以用 Comfy 支持的其他模型免费开始搭建工作流。'
+      '在 Comfy 上运行 Wan Animate 2：上传角色参考图和一段驱动视频，即可把动作迁移到你的角色上。开源模型，可在 Comfy Cloud 或自有硬件上运行。'
   },
   'wanAnimate2.breadcrumb.model': {
     en: 'Wan Animate 2',
@@ -5240,11 +5256,48 @@ const translations = {
     en: 'Updated August 2026',
     'zh-CN': '更新于 2026 年 8 月'
   },
-  'wanAnimate2.hero.eyebrow': { en: 'Coming soon', 'zh-CN': '即将推出' },
-  'wanAnimate2.hero.title': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
+  'wanAnimate2.hero.title': {
+    en: 'Wan Animate 2 is here',
+    'zh-CN': 'Wan Animate 2 已上线'
+  },
+  'wanAnimate2.hero.description': {
+    en: 'Introducing Wan Animate 2, the new state of the art model for character animation: upload a reference image of your character plus a video of the motion you want, and it transfers that motion onto your character.',
+    'zh-CN':
+      '隆重推出 Wan Animate 2，业界领先的角色动画模型：上传一张角色参考图，再加上一段你想要的动作视频，它就会把该动作迁移到你的角色上。'
+  },
   'wanAnimate2.hero.primaryCta': {
-    en: 'RUN COMFY FOR FREE',
-    'zh-CN': '免费使用 Comfy'
+    en: 'RUN WAN ANIMATE 2',
+    'zh-CN': '运行 Wan Animate 2'
+  },
+  'wanAnimate2.hero.footnote': {
+    en: 'Open source · Free to try on Comfy Cloud · Pay-as-you-go after that',
+    'zh-CN': '开源 · 可在 Comfy Cloud 免费试用 · 之后按量付费'
+  },
+  'wanAnimate2.hero.tagOpenSource': {
+    en: 'Open Source',
+    'zh-CN': '开源'
+  },
+  'wanAnimate2.hero.tagReferenceToVideo': {
+    en: 'Reference to Video',
+    'zh-CN': '参考图生成视频'
+  },
+  'wanAnimate2.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'wanAnimate2.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'wanAnimate2.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'wanAnimate2.steps.heading': {
+    en: 'How to direct your first shot',
+    'zh-CN': '如何执导你的第一个镜头'
+  },
+  'wanAnimate2.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'wanAnimate2.steps.primaryCta': {
+    en: 'RUN WAN ANIMATE 2',
+    'zh-CN': '运行 Wan Animate 2'
   },
   'wanAnimate2.runOptions.heading': {
     en: 'One engine, every way to run it',
@@ -5252,12 +5305,15 @@ const translations = {
   },
   'wanAnimate2.runOptions.subtitle': {
     en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
-    'zh-CN': '今天就在浏览器中搭建工作流。用 API 批量制作，或部署到自有环境。'
+    'zh-CN': '今天就在浏览器中构建工作流。用 API 批量制作，或部署到自有环境。'
   },
-  'wanAnimate2.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'wanAnimate2.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
   'wanAnimate2.reviews.heading': {
     en: '4+ million Comfy creators say',
-    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+    'zh-CN': '400 万+ Comfy 创作者这样说'
   },
   'wanAnimate2.reviews.highlightTitle': {
     en: 'Comfy MCP: now turn your agent into a creative technologist.',

@@ -8,7 +8,7 @@ import { faqAnswerPlainText } from '../src/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
-const PATH = '/minimax'
+const PATH = '/minimax-h3'
 const HERO_TITLE =
   t('minimax.hero.titleModel', 'en') + t('minimax.hero.titleRest', 'en')
 const MODELS_HEADING = t('minimax.models.heading', 'en')

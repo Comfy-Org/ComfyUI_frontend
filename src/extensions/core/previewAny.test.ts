@@ -45,13 +45,18 @@ async function setupNode() {
   return { node, proto }
 }
 
+// Registering the extension is a module side effect, so importing once at
+// module scope is enough. Re-importing it per test behind `vi.resetModules()`
+// re-evaluated the whole graph every time - ~8s against the 10s `hookTimeout`
+// once the suite is competing for the transform pipeline. Collection is
+// untimed, so the cost belongs here. Each test still builds its own nodeType,
+// so they stay independent.
+await import('./previewAny')
+
 describe('PreviewAny extension', () => {
-  beforeEach(async () => {
-    capturedExtensions.length = 0
+  beforeEach(() => {
     addTextPreviewWidgets.mockClear()
     updateTextPreviewWidgets.mockClear()
-    vi.resetModules()
-    await import('./previewAny')
   })
 
   it('adds the shared text preview widgets on node creation', async () => {

@@ -32,7 +32,7 @@
       },
       "blend_mode": {
         "name": "blend_mode",
-        "tooltip": "Initial blend mode."
+        "tooltip": "Initial blend mode, applied against the layers below. On the bottom layer over the default transparent background, non-normal modes produce transparency."
       },
       "rotation": {
         "name": "rotation",

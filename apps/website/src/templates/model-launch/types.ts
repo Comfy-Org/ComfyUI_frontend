@@ -13,7 +13,7 @@ import type { LocalizedText, TranslationKey } from '../../i18n/translations'
 // An announcement page for a model that has not shipped is the same config with
 // less in it: give the hero `layout: 'overlay'` and a `placeholderImageSrc`,
 // omit gallery/pricing/faq/closingCta, and swap in the full config on launch
-// day. `src/data/wanAnimate2.ts` is the worked example.
+// day.
 
 interface ModelLaunchCta {
   labelKey: TranslationKey
