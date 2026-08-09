@@ -33,7 +33,13 @@ test.describe(
       // Hovering the locked field must not replace its (node-color-tinted)
       // background with the app's opaque generic hover gray, so the node's
       // custom color should still show through in the screenshot.
-      await lockedInput.hover()
+      //
+      // The native `disabled` attribute on the locked textarea makes it
+      // `pointer-events: none` (see Textarea.vue's `disabled:pointer-events-none`
+      // class), so the browser never delivers pointer events to it directly —
+      // hovering must instead target its parent, which is the actual element
+      // carrying the hover background class this test is verifying.
+      await lockedInput.locator('..').hover()
       await comfyPage.expectScreenshot(
         targetNode,
         'locked-widget-hover-color.png'
