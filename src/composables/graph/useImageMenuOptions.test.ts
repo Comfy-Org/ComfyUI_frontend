@@ -118,6 +118,30 @@ describe('useImageMenuOptions', () => {
 
       expect(options.every((o) => !!o.icon)).toBe(true)
     })
+
+    it('keeps output preview actions when the local image input is unavailable', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const labels = getImageMenuOptions(node, {
+        input: false,
+        preview: true
+      }).map((option) => option.label)
+
+      expect(labels).toContain('Open Image')
+      expect(labels).toContain('Save Image')
+      expect(labels).not.toContain('Paste Image')
+    })
+
+    it('keeps only the local paste action when preview actions are unavailable', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const labels = getImageMenuOptions(node, {
+        input: true,
+        preview: false
+      }).map((option) => option.label)
+
+      expect(labels).toEqual(['Paste Image'])
+    })
   })
 
   describe('pasteImage action', () => {

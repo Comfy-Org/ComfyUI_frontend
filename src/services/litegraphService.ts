@@ -41,6 +41,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { markCoreMediaMenuCallback } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { useDialogService } from '@/services/dialogService'
 import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
@@ -620,7 +621,7 @@ export const useLitegraphService = () => {
       return [
         {
           content: 'Copy Image',
-          callback: async () => {
+          callback: markCoreMediaMenuCallback(async () => {
             const url = new URL(img.src)
             url.searchParams.delete('preview')
 
@@ -654,7 +655,7 @@ export const useLitegraphService = () => {
                 })
               )
             }
-          }
+          }, 'preview')
         }
       ]
     }
@@ -674,21 +675,21 @@ export const useLitegraphService = () => {
           options.unshift(
             {
               content: 'Open Image',
-              callback: () => {
+              callback: markCoreMediaMenuCallback(() => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
                 void openFileInNewTab(url.toString())
-              }
+              }, 'preview')
             },
             ...getCopyImageOption(img),
             {
               content: 'Save Image',
-              callback: () => {
+              callback: markCoreMediaMenuCallback(() => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
                 const filename = new URLSearchParams(url.search).get('filename')
                 downloadFile(url.toString(), filename ?? undefined)
-              }
+              }, 'preview')
             }
           )
         }
@@ -714,18 +715,18 @@ export const useLitegraphService = () => {
         if (ComfyApp.clipspace != null) {
           options.push({
             content: 'Paste (Clipspace)',
-            callback: () => {
+            callback: markCoreMediaMenuCallback(() => {
               ComfyApp.pasteFromClipspace(this)
-            }
+            }, 'input')
           })
         }
 
         if (isImageNode(this)) {
           options.push({
             content: 'Open in MaskEditor | Image Canvas',
-            callback: () => {
+            callback: markCoreMediaMenuCallback(() => {
               useMaskEditor().openMaskEditor(this)
-            }
+            }, 'preview')
           })
         }
       }

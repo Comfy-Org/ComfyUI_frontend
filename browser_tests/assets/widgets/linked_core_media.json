@@ -1,0 +1,192 @@
+{
+  "id": "6db64321-d1c9-4bb5-b6d4-e08b60531fc6",
+  "revision": 0,
+  "last_node_id": 6,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "PrimitiveNode",
+      "pos": [20, 20],
+      "size": [250, 82],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "COMBO",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "links": [1]
+        }
+      ],
+      "title": "image",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": ["linked-image.webp", "fixed"]
+    },
+    {
+      "id": 2,
+      "type": "PrimitiveNode",
+      "pos": [20, 380],
+      "size": [250, 82],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "COMBO",
+          "type": "COMBO",
+          "widget": {
+            "name": "file"
+          },
+          "links": [2]
+        }
+      ],
+      "title": "file",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": ["linked-video.mp4", "fixed"]
+    },
+    {
+      "id": 3,
+      "type": "PrimitiveNode",
+      "pos": [20, 740],
+      "size": [250, 82],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "COMBO",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio"
+          },
+          "links": [3]
+        }
+      ],
+      "title": "audio",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": ["linked-audio.wav", "fixed"]
+    },
+    {
+      "id": 4,
+      "type": "LoadImage",
+      "pos": [360, 20],
+      "size": [315, 314],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["linked-image.webp", "image"]
+    },
+    {
+      "id": 5,
+      "type": "LoadVideo",
+      "pos": [360, 380],
+      "size": [315, 314],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "file",
+          "type": "COMBO",
+          "widget": {
+            "name": "file"
+          },
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": ["linked-video.mp4", "image"]
+    },
+    {
+      "id": 6,
+      "type": "LoadAudio",
+      "pos": [360, 740],
+      "size": [315, 125],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio"
+          },
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": ["linked-audio.wav", null, ""]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 4, 0, "COMBO"],
+    [2, 2, 0, 5, 0, "COMBO"],
+    [3, 3, 0, 6, 0, "COMBO"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [0, 0]
+    }
+  },
+  "version": 0.4
+}

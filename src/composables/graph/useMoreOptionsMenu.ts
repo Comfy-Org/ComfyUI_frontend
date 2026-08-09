@@ -3,7 +3,14 @@ import type { Ref } from 'vue'
 
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  filterUnavailableCoreMediaMenuActions,
+  getLinkedCoreMediaNodeClass,
+  shouldHideCoreInputMediaPreview
+} from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
+import type { CoreMediaMenuActionKind } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
@@ -48,12 +55,14 @@ export enum BadgeVariant {
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
 const hoveredWidget = ref<[string, SerializedNodeId | undefined]>()
+const nodeMenuVersion = ref(0)
 
 /**
  * Toggle the node options popover
  * @param event - The trigger event
  */
 export function toggleNodeOptions(event: Event) {
+  nodeMenuVersion.value++
   if (nodeOptionsInstance?.toggle) {
     nodeOptionsInstance.toggle(event)
   }
@@ -70,6 +79,7 @@ export function showNodeOptions(
   nodeId?: SerializedNodeId
 ) {
   hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
+  nodeMenuVersion.value++
   if (nodeOptionsInstance?.show) {
     nodeOptionsInstance.show(event)
   }
@@ -130,6 +140,7 @@ export function useMoreOptionsMenu() {
   } = useSelectionState()
 
   const canvasStore = useCanvasStore()
+  const nodeOutputStore = useNodeOutputStore()
 
   const { getImageMenuOptions } = useImageMenuOptions()
   const {
@@ -162,6 +173,7 @@ export function useMoreOptionsMenu() {
   const menuOptions = computed((): MenuOption[] => {
     // Reference selection flags to ensure re-computation when they change
     void optionsVersion.value
+    void nodeMenuVersion.value
     const states = computeSelectionFlags()
 
     // Detect single group selection context (and no nodes explicitly selected)
@@ -177,6 +189,23 @@ export function useMoreOptionsMenu() {
     // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
     const node: LGraphNode | undefined = selectedNodes.value[0]
+    const linkedCoreMediaNodeClass = node
+      ? getLinkedCoreMediaNodeClass(node)
+      : undefined
+    const inputMediaPreviewUnavailable = node
+      ? shouldHideCoreInputMediaPreview(
+          node,
+          nodeOutputStore.getNodeOutputs(node)
+        )
+      : false
+    const unavailableCoreMediaActionKinds = new Set<CoreMediaMenuActionKind>()
+    if (
+      linkedCoreMediaNodeClass === 'LoadImage' ||
+      linkedCoreMediaNodeClass === 'LoadVideo'
+    )
+      unavailableCoreMediaActionKinds.add('input')
+    if (inputMediaPreviewUnavailable)
+      unavailableCoreMediaActionKinds.add('preview')
     if (
       selectedNodes.value.length === 1 &&
       !groupContext &&
@@ -186,7 +215,14 @@ export function useMoreOptionsMenu() {
         const rawItems = canvasStore.canvas.getNodeMenuOptions(node)
         // Don't apply structuring yet - we'll do it after merging with Vue options
         litegraphOptions.push(
-          ...convertContextMenuToOptions(rawItems, node, false)
+          ...convertContextMenuToOptions(
+            filterUnavailableCoreMediaMenuActions(
+              rawItems,
+              unavailableCoreMediaActionKinds
+            ),
+            node,
+            false
+          )
         )
       } catch (error) {
         console.error('Error getting LiteGraph menu items:', error)
@@ -258,7 +294,14 @@ export function useMoreOptionsMenu() {
 
     // Section 5: Image operations (if image node)
     if (hasImageNode.value && selectedNodes.value.length > 0) {
-      options.push(...getImageMenuOptions(selectedNodes.value[0]))
+      options.push(
+        ...getImageMenuOptions(selectedNodes.value[0], {
+          input:
+            linkedCoreMediaNodeClass !== 'LoadImage' &&
+            linkedCoreMediaNodeClass !== 'LoadVideo',
+          preview: !inputMediaPreviewUnavailable
+        })
+      )
       options.push({ type: 'divider' })
     }
     const [widgetName] = hoveredWidget.value ?? []
