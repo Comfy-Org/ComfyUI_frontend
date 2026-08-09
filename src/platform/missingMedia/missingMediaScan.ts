@@ -176,7 +176,7 @@ export function isMissingMediaCandidateScopeActive(
   // Removed or renamed while verification was pending: nothing owns the value.
   if (!widget) return false
 
-  return isEditableValueOwner(node, widget)
+  return widget.value === candidate.name && isEditableValueOwner(node, widget)
 }
 
 export function isMissingMediaCandidateActive(
