@@ -103,6 +103,7 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
   return renderCard({
     tierKey: null,
     teamPlan: TEAM_STOP,
+    previewData: null,
     ...props
   })
 }
@@ -133,7 +134,7 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(screen.getByText(/147700/)).toBeTruthy()
   })
 
-  it('shows the monthly-equivalent price for an annual personal plan', () => {
+  it('shows the annual total (not a monthly-equivalent) for an annual personal plan', () => {
     render(SubscriptionSuccessWorkspace, {
       props: {
         tierKey: 'creator',
@@ -148,8 +149,47 @@ describe('SubscriptionSuccessWorkspace', () => {
         }
       }
     })
-    expect(screen.getByText('$28')).toBeTruthy()
-    expect(screen.queryByText('$336')).toBeNull()
+    expect(screen.getByText('$336')).toBeTruthy()
+    expect(screen.queryByText('$28')).toBeNull()
+    expect(screen.getByText('subscription.usdPerYear')).toBeTruthy()
+    expect(screen.getByText(/88800 subscription\.perYear/)).toBeTruthy()
+  })
+
+  it('shows the monthly price and monthly credits for a monthly personal plan', () => {
+    render(SubscriptionSuccessWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: makePreviewData(3_500, 'MONTHLY')
+      },
+      global: {
+        mocks: { $t: (key: string) => key },
+        stubs: {
+          Button: {
+            template: '<button @click="$emit(\'click\')"><slot /></button>'
+          }
+        }
+      }
+    })
+    expect(screen.getByText('$35')).toBeTruthy()
+    expect(screen.getByText('subscription.usdPerMonth')).toBeTruthy()
+    expect(screen.getByText(/7400 subscription\.perMonth/)).toBeTruthy()
+  })
+
+  it('shows the annual total price and annual credit total for a yearly team plan', () => {
+    renderTeamCard({ billingCycle: 'yearly' })
+    expect(screen.getByText('$7560')).toBeTruthy()
+    expect(screen.queryByText('$630')).toBeNull()
+    expect(screen.getByText('subscription.usdPerYear')).toBeTruthy()
+    expect(screen.getByText(/1772400 subscription\.perYear/)).toBeTruthy()
+  })
+
+  it('prefers the fetched preview price over the client-computed team total for a team plan change', () => {
+    renderTeamCard({
+      billingCycle: 'yearly',
+      previewData: makePreviewData(7_580 * 100, 'ANNUAL')
+    })
+    expect(screen.getByText('$7580')).toBeTruthy()
+    expect(screen.queryByText('$7560')).toBeNull()
   })
 
   it('emits close when the close button is clicked', async () => {
