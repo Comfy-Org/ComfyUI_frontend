@@ -748,6 +748,8 @@ export default defineConfig({
     unstubGlobals: true,
     fakeTimers: { now: TEST_SYSTEM_TIME, shouldAdvanceTime: true },
     globals: true,
+    unstubGlobals: true,
+    restoreMocks: true,
     environment: 'happy-dom',
     environmentOptions: {
       happyDOM: {
