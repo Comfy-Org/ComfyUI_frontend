@@ -711,26 +711,28 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       return
     }
 
-    // A subscription checkout shows its own success step in the pricing dialog,
-    // so leave it open. Top-ups have no such step: close and surface settings.
-    if (operation.type === 'topup') {
-      useDialogStore().closeDialog({ key: 'top-up-credits' })
-      useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
+    try {
+      // A subscription checkout shows its own success step in the pricing dialog,
+      // so leave it open. Top-ups have no such step: close and surface settings.
+      if (operation.type === 'topup') {
+        useDialogStore().closeDialog({ key: 'top-up-credits' })
+        useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
+      }
+
+      const toastStore = useToastStore()
+      const messageKey =
+        operation.type === 'subscription'
+          ? 'billingOperation.subscriptionSuccess'
+          : 'billingOperation.topupSuccess'
+
+      toastStore.add({
+        severity: 'success',
+        summary: t(messageKey),
+        life: 5000
+      })
+    } finally {
+      resolveTerminal(opId)
     }
-
-    const toastStore = useToastStore()
-    const messageKey =
-      operation.type === 'subscription'
-        ? 'billingOperation.subscriptionSuccess'
-        : 'billingOperation.topupSuccess'
-
-    toastStore.add({
-      severity: 'success',
-      summary: t(messageKey),
-      life: 5000
-    })
-
-    resolveTerminal(opId)
   }
 
   function handleFailure(opId: string, errorMessage: string | null) {
