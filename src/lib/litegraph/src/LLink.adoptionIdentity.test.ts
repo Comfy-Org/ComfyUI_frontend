@@ -48,7 +48,7 @@ function configureBoundaryLink(
 describe('LLink topology adoption identity reproduction', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
-  it.fails('two subgraph definitions with identical input-to-output links keep independent reroute chains', () => {
+  it('two subgraph definitions with identical input-to-output links keep independent reroute chains', () => {
     const first = createTestSubgraph({ inputCount: 1, outputCount: 1 })
     const rootGraph = first.rootGraph
     rootGraph.add(createTestSubgraphNode(first))

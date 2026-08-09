@@ -8,7 +8,6 @@ test.describe('Subgraph link topology identity', { tag: ['@subgraph'] }, () => {
   test('different definitions keep their own reroute chains when link IDs and endpoints collide', async ({
     comfyPage
   }) => {
-    test.fail()
     await comfyPage.workflow.loadWorkflow(
       'subgraphs/subgraph-link-identity-collision'
     )

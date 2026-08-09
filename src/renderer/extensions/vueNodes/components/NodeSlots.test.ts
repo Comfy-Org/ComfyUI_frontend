@@ -167,7 +167,7 @@ function createConnectedGraph() {
   node.inputs[1].widget = { name: 'w' }
   graph.add(node)
 
-  return { pinia, upstream, node }
+  return { pinia, graph, upstream, node }
 }
 
 function renderSlotsWithTracking(
@@ -338,12 +338,13 @@ describe('NodeSlots.vue', () => {
   })
 
   it('marks an output connected only while a link leaves it', async () => {
-    const { pinia, upstream, node } = createConnectedGraph()
+    const { pinia, graph, upstream, node } = createConnectedGraph()
     upstream.addOutput('spare', 'FAKE')
     upstream.connect(0, node, 0)
 
     const nodeData = makeNodeData({
       id: toVueNodeId(upstream.id),
+      graphId: graph.id,
       outputs: upstream.outputs
     })
     const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
@@ -367,11 +368,12 @@ describe('NodeSlots.vue', () => {
   })
 
   it('marks an input connected from the link store', async () => {
-    const { pinia, upstream, node } = createConnectedGraph()
+    const { pinia, graph, upstream, node } = createConnectedGraph()
     upstream.connect(0, node, 0)
 
     const nodeData = makeNodeData({
       id: toVueNodeId(node.id),
+      graphId: graph.id,
       inputs: node.inputs
     })
     const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
@@ -556,9 +558,10 @@ describe('NodeSlots.vue', () => {
     }
 
     it('reacts to connect and disconnect without a reprojection event', async () => {
-      const { pinia, upstream, node } = createConnectedGraph()
+      const { pinia, graph, upstream, node } = createConnectedGraph()
       const nodeData = makeNodeData({
         id: toVueNodeId(node.id),
+        graphId: graph.id,
         inputs: node.inputs
       })
       const { container } = renderUnified(nodeData, pinia)

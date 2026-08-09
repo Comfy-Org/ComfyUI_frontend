@@ -1543,6 +1543,120 @@ describe('keep-old root identity', () => {
   })
 })
 
+describe('floating link ID allocation', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  function createConnectedPair(graph: LGraph) {
+    const source = new LGraphNode('source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('target')
+    target.addInput('in', 'number')
+    graph.add(source)
+    graph.add(target)
+    return source.connect(0, target, 0)!
+  }
+
+  it('advances shared link ID state when minting floating link IDs', () => {
+    const graph = new LGraph()
+    const liveLink = createConnectedPair(graph)
+
+    const floatingLink = graph.addFloatingLink(
+      new LLink(
+        toLinkId(-1),
+        '*',
+        UNASSIGNED_NODE_ID,
+        -1,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+    )
+    const secondLiveLink = createConnectedPair(graph)
+
+    const allIds = new Set([liveLink.id, floatingLink.id, secondLiveLink.id])
+    expect(allIds.size).toBe(3)
+    expect(graph.links.get(liveLink.id)).toBe(liveLink)
+    expect(graph.links.get(secondLiveLink.id)).toBe(secondLiveLink)
+    expect(graph.floatingLinks.get(floatingLink.id)).toBe(floatingLink)
+  })
+
+  it('advances shared link ID state past explicit floating link IDs', () => {
+    const graph = new LGraph()
+    const floatingLink = graph.addFloatingLink(
+      new LLink(
+        toLinkId(7),
+        '*',
+        UNASSIGNED_NODE_ID,
+        -1,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+    )
+
+    const liveLink = createConnectedPair(graph)
+
+    expect(liveLink.id).toBeGreaterThan(floatingLink.id)
+    expect(graph.floatingLinks.get(floatingLink.id)).toBe(floatingLink)
+    expect(graph.links.get(liveLink.id)).toBe(liveLink)
+  })
+
+  it('remints an explicit floating link ID that collides with a live link', () => {
+    const graph = new LGraph()
+    const liveLink = createConnectedPair(graph)
+    const floatingLink = graph.addFloatingLink(
+      new LLink(
+        liveLink.id,
+        '*',
+        UNASSIGNED_NODE_ID,
+        -1,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+    )
+
+    expect(floatingLink.id).not.toBe(liveLink.id)
+    expect(graph.links.get(liveLink.id)).toBe(liveLink)
+    expect(graph.floatingLinks.get(floatingLink.id)).toBe(floatingLink)
+  })
+
+  it('remints colliding floating link IDs while configuring reroutes', () => {
+    const source = new DummyNode()
+    source.addOutput('out', 'number')
+    const target = new DummyNode()
+    target.addInput('in', 'number')
+    LiteGraph.registerNodeType('dummy', DummyNode)
+    onTestFinished(() => LiteGraph.unregisterNodeType('dummy'))
+
+    const original = createGraph(source, target)
+    const liveLink = source.connect(0, target, 0)!
+    const reroute = original.createReroute([10, 10], liveLink)!
+    const data = original.asSerialisable()
+    data.floatingLinks = [
+      new LLink(
+        liveLink.id,
+        '*',
+        UNASSIGNED_NODE_ID,
+        -1,
+        UNASSIGNED_NODE_ID,
+        -1,
+        reroute.id
+      ).asSerialisable()
+    ]
+    original.clear()
+
+    const graph = new LGraph()
+    graph.configure(data)
+
+    const configuredLiveLink = graph.links.get(liveLink.id)
+    const [floatingLink] = graph.floatingLinks.values()
+    expect(configuredLiveLink?.parentId).toBe(reroute.id)
+    expect(floatingLink.id).not.toBe(liveLink.id)
+    expect(graph.floatingLinks.get(floatingLink.id)).toBe(floatingLink)
+    expect(graph.reroutes.get(reroute.id)?.totalLinks).toBe(2)
+  })
+})
+
 describe('Subgraph configure events', () => {
   it('does not apply subgraph data when configuration is canceled', () => {
     const root = new LGraph()

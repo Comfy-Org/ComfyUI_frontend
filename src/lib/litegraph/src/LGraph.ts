@@ -1700,9 +1700,20 @@ export class LGraph
   }
 
   addFloatingLink(link: LLink, adoptExisting = false): LLink {
-    if (link.id === -1) {
-      link.id = toLinkId(++this._lastFloatingLinkId)
+    const needsId =
+      link.id === -1 ||
+      this._links.has(link.id) ||
+      this.floatingLinksInternal.has(link.id)
+
+    if (needsId) {
+      do {
+        link.id = toLinkId(++this._lastFloatingLinkId)
+      } while (
+        this._links.has(link.id) ||
+        this.floatingLinksInternal.has(link.id)
+      )
     }
+    observeLinkId(this.state, link.id)
     this.floatingLinksInternal.set(link.id, link)
     registerLinkTopology(this, link, adoptExisting)
     return link

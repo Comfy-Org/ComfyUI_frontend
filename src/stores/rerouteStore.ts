@@ -3,7 +3,11 @@ import { computed, reactive, ref, toRaw } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import { useLinkStore } from '@/stores/linkStore'
-import type { GraphScope, RootGraphId } from '@/types/graphScopeId'
+import type {
+  GraphScope,
+  OwningGraphId,
+  RootGraphId
+} from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import type { RerouteChain } from '@/types/rerouteChain'
@@ -22,23 +26,49 @@ export const EMPTY_MEMBERSHIP: Readonly<RerouteMembership> = {
 
 /**
  * Reroute chain store, holding each reroute's chain state (parent pointer
- * and floating slot marker) in root-graph-scoped buckets keyed by
+ * and floating slot marker) in root-and-owner-scoped buckets keyed by
  * `RerouteId`. Link membership is not stored; it is derived from the links'
  * parentId chains. See docs/architecture/reroute-chain-store.md.
  */
 export const useRerouteStore = defineStore('reroute', () => {
-  const chains = ref(new Map<RootGraphId, Map<RerouteId, RerouteChain>>())
-  const membershipIndexes = new Map<
-    RootGraphId,
-    ComputedRef<Map<RerouteId, RerouteMembership>>
-  >()
+  interface RerouteBucket {
+    chains: Map<RerouteId, RerouteChain>
+    membership?: () => ComputedRef<Map<RerouteId, RerouteMembership>>
+  }
 
-  function graphChains(graphId: RootGraphId): Map<RerouteId, RerouteChain> {
-    const existing = chains.value.get(graphId)
+  const buckets = ref(new Map<RootGraphId, Map<OwningGraphId, RerouteBucket>>())
+
+  function getBucket(scope: GraphScope): RerouteBucket | undefined {
+    return buckets.value.get(scope.rootGraphId)?.get(scope.owningGraphId)
+  }
+
+  function graphBucket(scope: GraphScope): RerouteBucket {
+    let owners = buckets.value.get(scope.rootGraphId)
+    if (!owners) {
+      owners = reactive(new Map<OwningGraphId, RerouteBucket>())
+      buckets.value.set(scope.rootGraphId, owners)
+    }
+    const existing = owners.get(scope.owningGraphId)
     if (existing) return existing
-    const next = reactive(new Map<RerouteId, RerouteChain>())
-    chains.value.set(graphId, next)
+    const next: RerouteBucket = {
+      chains: reactive(new Map<RerouteId, RerouteChain>())
+    }
+    owners.set(scope.owningGraphId, next)
     return next
+  }
+
+  function pruneBucket(scope: GraphScope, bucket: RerouteBucket): void {
+    if (bucket.chains.size) return
+    const owners = buckets.value.get(scope.rootGraphId)
+    if (owners?.get(scope.owningGraphId) !== bucket) return
+    owners.delete(scope.owningGraphId)
+    if (!owners.size && buckets.value.get(scope.rootGraphId) === owners) {
+      buckets.value.delete(scope.rootGraphId)
+    }
+  }
+
+  function graphChains(scope: GraphScope): Map<RerouteId, RerouteChain> {
+    return graphBucket(scope).chains
   }
 
   /**
@@ -49,8 +79,7 @@ export const useRerouteStore = defineStore('reroute', () => {
   function buildMembershipIndex(
     scope: GraphScope
   ): Map<RerouteId, RerouteMembership> {
-    const graphId = scope.rootGraphId
-    const bucket = chains.value.get(graphId)
+    const chains = getBucket(scope)?.chains
     const index = new Map<
       RerouteId,
       { linkIds: Set<LinkId>; floatingLinkIds: Set<LinkId> }
@@ -68,20 +97,19 @@ export const useRerouteStore = defineStore('reroute', () => {
         }
         const members = floating ? entry.floatingLinkIds : entry.linkIds
         members.add(topology.id)
-        rerouteId = bucket?.get(rerouteId)?.parentId
+        rerouteId = chains?.get(rerouteId)?.parentId
       }
     }
     return index
   }
 
   function graphMembership(
-    scope: GraphScope
+    scope: GraphScope,
+    bucket: RerouteBucket
   ): ComputedRef<Map<RerouteId, RerouteMembership>> {
-    const graphId = scope.rootGraphId
-    const existing = membershipIndexes.get(graphId)
-    if (existing) return existing
+    if (bucket.membership) return bucket.membership()
     const next = computed(() => buildMembershipIndex(scope))
-    membershipIndexes.set(graphId, next)
+    bucket.membership = () => next
     return next
   }
 
@@ -89,7 +117,11 @@ export const useRerouteStore = defineStore('reroute', () => {
     scope: GraphScope,
     rerouteId: RerouteId
   ): RerouteMembership {
-    return graphMembership(scope).value.get(rerouteId) ?? EMPTY_MEMBERSHIP
+    const bucket = getBucket(scope)
+    if (!bucket) return EMPTY_MEMBERSHIP
+    return (
+      graphMembership(scope, bucket).value.get(rerouteId) ?? EMPTY_MEMBERSHIP
+    )
   }
 
   /**
@@ -101,12 +133,11 @@ export const useRerouteStore = defineStore('reroute', () => {
     scope: GraphScope,
     chain: RerouteChain
   ): RerouteChain {
-    const graphId = scope.rootGraphId
-    const bucket = graphChains(graphId)
+    const bucket = graphChains(scope)
     const existing = bucket.get(chain.id)
     if (existing && toRaw(existing) !== toRaw(chain)) {
       console.warn(
-        `[rerouteStore] Reroute ${chain.id} is already registered in graph ${graphId}; refusing to overwrite the live registration.`
+        `[rerouteStore] Reroute ${chain.id} is already registered in graph ${scope.owningGraphId}; refusing to overwrite the live registration.`
       )
       return existing
     }
@@ -118,21 +149,28 @@ export const useRerouteStore = defineStore('reroute', () => {
     scope: GraphScope,
     rerouteId: RerouteId
   ): RerouteChain | undefined {
-    return chains.value.get(scope.rootGraphId)?.get(rerouteId)
+    return getBucket(scope)?.chains.get(rerouteId)
   }
 
   /** Removes a chain's registration; only the registered state may vacate it. */
   function deleteReroute(scope: GraphScope, chain: RerouteChain): boolean {
-    const graphId = scope.rootGraphId
-    const bucket = chains.value.get(graphId)
+    const bucket = getBucket(scope)
     if (!bucket) return false
-    if (toRaw(bucket.get(chain.id)) !== toRaw(chain)) return false
-    return bucket.delete(chain.id)
+    if (toRaw(bucket.chains.get(chain.id)) !== toRaw(chain)) return false
+    if (!bucket.chains.delete(chain.id)) return false
+    pruneBucket(scope, bucket)
+    return true
   }
 
   function clearGraph(graphId: RootGraphId): void {
-    chains.value.delete(graphId)
-    membershipIndexes.delete(graphId)
+    buckets.value.delete(graphId)
+  }
+
+  function clearOwner(scope: GraphScope): void {
+    const owners = buckets.value.get(scope.rootGraphId)
+    if (!owners) return
+    owners.delete(scope.owningGraphId)
+    if (!owners.size) buckets.value.delete(scope.rootGraphId)
   }
 
   return {
@@ -140,6 +178,7 @@ export const useRerouteStore = defineStore('reroute', () => {
     getReroute,
     deleteReroute,
     getMembership,
+    clearOwner,
     clearGraph
   }
 })

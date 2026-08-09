@@ -11,7 +11,7 @@ import type { RerouteChain } from '@/types/rerouteChain'
 import { toRerouteId } from '@/types/rerouteId'
 
 import { useLinkStore } from './linkStore'
-import { useRerouteStore } from './rerouteStore'
+import { EMPTY_MEMBERSHIP, useRerouteStore } from './rerouteStore'
 
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),
@@ -20,6 +20,10 @@ const graphA = {
 const graphB = {
   rootGraphId: toRootGraphId('graph-b'),
   owningGraphId: toOwningGraphId('graph-b')
+}
+const graphASibling = {
+  rootGraphId: graphA.rootGraphId,
+  owningGraphId: toOwningGraphId('graph-a-sibling')
 }
 
 function chain(id: number, parentId?: number): RerouteChain {
@@ -101,6 +105,33 @@ describe('useRerouteStore', () => {
     expect(store.deleteReroute(graphA, registered)).toBe(true)
     expect(store.getReroute(graphA, toRerouteId(1))).toBeUndefined()
     expect(store.deleteReroute(graphA, registered)).toBe(false)
+  })
+
+  it('re-registers a chain after deleting its owner bucket', () => {
+    const store = useRerouteStore()
+    const registered = store.registerReroute(graphA, chain(1))
+    const current = computed(() => store.getReroute(graphA, registered.id))
+    expect(current.value).toBe(registered)
+
+    store.deleteReroute(graphA, registered)
+    expect(current.value).toBeUndefined()
+
+    const replacement = chain(1, 2)
+    const reRegistered = store.registerReroute(graphA, replacement)
+    expect(current.value).toBe(reRegistered)
+  })
+
+  it('tracks registration after reading membership from a missing scope', () => {
+    const store = useRerouteStore()
+    const membership = computed(() =>
+      store.getMembership(graphA, toRerouteId(1))
+    )
+    expect(membership.value).toBe(EMPTY_MEMBERSHIP)
+
+    store.registerReroute(graphA, chain(1))
+    useLinkStore().registerLink(graphA, link(10, 0, 1))
+
+    expect([...membership.value.linkIds]).toEqual([10])
   })
 
   it('derives membership from the links’ parentId chains', () => {
@@ -194,5 +225,65 @@ describe('useRerouteStore', () => {
 
     expect(store.getReroute(graphA, toRerouteId(1))).toBeDefined()
     expect(store.getReroute(graphB, toRerouteId(1))).toBeUndefined()
+  })
+
+  it('isolates chains and memberships by owner', () => {
+    const store = useRerouteStore()
+    const linkStore = useLinkStore()
+    store.registerReroute(graphA, chain(1))
+    store.registerReroute(graphASibling, chain(1, 7))
+    linkStore.registerLink(graphA, link(10, 0, 1))
+    linkStore.registerLink(graphASibling, link(20, 0, 1))
+
+    expect([...store.getMembership(graphA, toRerouteId(1)).linkIds]).toEqual([
+      10
+    ])
+    expect([
+      ...store.getMembership(graphASibling, toRerouteId(1)).linkIds
+    ]).toEqual([20])
+
+    store.clearOwner(graphA)
+
+    expect(store.getReroute(graphA, toRerouteId(1))).toBeUndefined()
+    expect(store.getReroute(graphASibling, toRerouteId(1))?.parentId).toBe(7)
+
+    store.clearGraph(graphA.rootGraphId)
+
+    expect(store.getReroute(graphASibling, toRerouteId(1))).toBeUndefined()
+  })
+
+  it('re-evaluates membership when the owner is cleared', () => {
+    const store = useRerouteStore()
+    const linkStore = useLinkStore()
+    store.registerReroute(graphA, chain(1))
+    store.registerReroute(graphA, chain(2, 1))
+    linkStore.registerLink(graphA, link(10, 0, 2))
+    const membership = computed(() =>
+      store.getMembership(graphA, toRerouteId(1))
+    )
+    expect([...membership.value.linkIds]).toEqual([10])
+
+    store.clearOwner(graphA)
+
+    expect(membership.value.linkIds.size).toBe(0)
+  })
+
+  it('re-evaluates membership when a cleared owner is recreated', () => {
+    const store = useRerouteStore()
+    const linkStore = useLinkStore()
+    store.registerReroute(graphA, chain(1))
+    store.registerReroute(graphA, chain(2, 1))
+    linkStore.registerLink(graphA, link(10, 0, 2))
+    const membership = computed(() =>
+      store.getMembership(graphA, toRerouteId(1))
+    )
+    expect([...membership.value.linkIds]).toEqual([10])
+
+    store.clearOwner(graphA)
+    expect(membership.value.linkIds.size).toBe(0)
+
+    store.registerReroute(graphA, chain(2, 1))
+
+    expect([...membership.value.linkIds]).toEqual([10])
   })
 })

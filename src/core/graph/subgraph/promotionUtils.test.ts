@@ -763,12 +763,12 @@ describe('reorderSubgraphInputsByName', () => {
     const store = useLinkStore()
     expect(host.isInputConnected(0)).toBe(true)
     expect(host.isInputConnected(1)).toBe(true)
-    expect(store.getInputSlotLink(graphScopeOf(subgraph), host.id, 0)?.id).toBe(
-      secondLink?.id
-    )
-    expect(store.getInputSlotLink(graphScopeOf(subgraph), host.id, 1)?.id).toBe(
-      firstLink?.id
-    )
+    expect(
+      store.getInputSlotLink(graphScopeOf(subgraph.rootGraph), host.id, 0)?.id
+    ).toBe(secondLink?.id)
+    expect(
+      store.getInputSlotLink(graphScopeOf(subgraph.rootGraph), host.id, 1)?.id
+    ).toBe(firstLink?.id)
   })
 })
 
