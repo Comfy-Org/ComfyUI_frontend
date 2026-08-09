@@ -109,6 +109,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _eventAbortController = new AbortController()
 
+  /** True for the duration of {@link configure}; suppresses promoted-widget interior write-back. */
+  private _configuring = false
+
   constructor(
     graph: GraphOrSubgraph,
     readonly subgraph: Subgraph,
@@ -286,6 +289,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // edit. See #14495.
     const writeBack = (next: unknown) => {
       store.setValue(id, next)
+      // super.configure()'s legacy widgets_values loop also assigns through
+      // this setter; _configuring keeps that deserialization from reaching
+      // interiorWidget.
+      if (this._configuring) return
       if (interiorWidget && isWidgetValue(next)) interiorWidget.value = next
     }
     const widget: IBaseWidget = {
@@ -504,9 +511,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
     )
 
-    super.configure(info)
-    if (!info.widgets_values_named || !LiteGraph.namedValuesRestore)
-      this._applyPromotedWidgetValues(info.widgets_values)
+    this._configuring = true
+    try {
+      super.configure(info)
+      if (!info.widgets_values_named || !LiteGraph.namedValuesRestore)
+        this._applyPromotedWidgetValues(info.widgets_values)
+    } finally {
+      this._configuring = false
+    }
   }
 
   private _applyPromotedWidgetValues(

@@ -792,6 +792,27 @@ describe('SubgraphWidgetPromotion', () => {
       expect(interiorWidget.value).toBe(42)
     })
 
+    it('does not mutate interior widget values when configuring the host from serialized widgets_values', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node: interiorNode, widget: interiorWidget } =
+        createNodeWithWidget('Interior')
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const hostNode = createTestSubgraphNode(subgraph)
+      writePromotedWidgetValue(hostNode, 0, 99)
+      const serialized = hostNode.serialize()
+
+      interiorWidget.value = 7
+
+      hostNode.configure(serialized)
+
+      expect(interiorWidget.value).toBe(7)
+      expect(promotedWidgetStateByName(hostNode, 'value').value).toBe(99)
+    })
+
     describe('host widget values', () => {
       type SourceSpec = {
         inputName: string

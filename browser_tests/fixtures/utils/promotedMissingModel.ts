@@ -206,13 +206,46 @@ export async function selectLegacyPromotedAssetModel(
   await expect(modal).toBeHidden()
 }
 
+export interface StaleInteriorWidgetStep {
+  subgraphNodeIdToEnter: string
+  nodeTitle: string
+}
+
+/**
+ * Enters one level of a promoted-widget chain and asserts the interior
+ * widget it lands on is disabled and still shows `staleModelName` — i.e. a
+ * host-level resolution did not write through to this interior widget.
+ */
+export async function expectStaleInteriorWidget(
+  comfyPage: ComfyPage,
+  step: StaleInteriorWidgetStep,
+  staleModelName: string
+) {
+  await comfyPage.subgraph.enterSubgraphWithFallback(step.subgraphNodeIdToEnter)
+  await comfyPage.nextFrame()
+
+  const node = comfyPage.vueNodes.getNodeByTitle(step.nodeTitle)
+  await expect(node).toBeVisible()
+
+  const staleCombo = node.getByRole('combobox', {
+    name: PROMOTED_MODEL_WIDGET_NAME,
+    exact: true
+  })
+  await expect(
+    staleCombo,
+    `${step.nodeTitle} should expose the stale linked interior widget`
+  ).toBeDisabled()
+  await expect(
+    staleCombo,
+    `${step.nodeTitle} should keep the stale interior value`
+  ).toContainText(staleModelName)
+  await expectNoMissingModelUi(comfyPage)
+}
+
 export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow,
-  expectedStaleInteriorWidgets: Array<{
-    subgraphNodeIdToEnter: string
-    nodeTitle: string
-  }>,
+  expectedStaleInteriorWidgets: StaleInteriorWidgetStep[],
   resolvedModelName: string,
   staleModelName: string
 ) {
@@ -227,27 +260,7 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
   await expectNoMissingModelUi(comfyPage)
 
   for (const step of expectedStaleInteriorWidgets) {
-    await comfyPage.subgraph.enterSubgraphWithFallback(
-      step.subgraphNodeIdToEnter
-    )
-    await comfyPage.nextFrame()
-
-    const node = comfyPage.vueNodes.getNodeByTitle(step.nodeTitle)
-    await expect(node).toBeVisible()
-
-    const staleCombo = node.getByRole('combobox', {
-      name: PROMOTED_MODEL_WIDGET_NAME,
-      exact: true
-    })
-    await expect(
-      staleCombo,
-      `${step.nodeTitle} should expose the stale linked interior widget`
-    ).toBeDisabled()
-    await expect(
-      staleCombo,
-      `${step.nodeTitle} should keep the stale interior value`
-    ).toContainText(staleModelName)
-    await expectNoMissingModelUi(comfyPage)
+    await expectStaleInteriorWidget(comfyPage, step, staleModelName)
   }
 }
 
@@ -263,7 +276,7 @@ async function openHostNodeParametersPanel(
   return panel
 }
 
-async function loadPromotedMissingModelWithHostValues(
+export async function loadPromotedMissingModelWithHostValues(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow,
   hostValues: Record<number, string>
