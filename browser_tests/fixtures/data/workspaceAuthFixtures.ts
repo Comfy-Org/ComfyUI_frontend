@@ -2,6 +2,9 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
+// `/api/features` is mocked with no overrides. `team_workspaces_enabled` was
+// set here but is not a key of `RemoteConfig`, and nothing in `src/` reads it —
+// team workspaces are gated on the workspace's own `type`, not a remote flag.
 export const mockWorkspacesRemoteConfig: RemoteConfig = {}
 
 export const mockPersonalWorkspace: WorkspaceWithRole = {
