@@ -5,13 +5,6 @@ inputs:
     description: 'Include the build step to build the frontend. Set to true for workflows that need a built frontend'
     required: false
     default: 'false'
-  expose_sourcemap_url:
-    description: >
-      Emit the browser-facing `//# sourceMappingURL=` comment in the built
-      bundles. Required by the E2E coverage build: monocart only finds source
-      maps through that comment. Leave false for anything that ships to users.
-    required: false
-    default: 'false'
 runs:
   using: 'composite'
   steps:
@@ -38,4 +31,3 @@ runs:
       run: pnpm build
       env:
         VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
-        EXPOSE_SOURCEMAP_URL: ${{ inputs.expose_sourcemap_url }}

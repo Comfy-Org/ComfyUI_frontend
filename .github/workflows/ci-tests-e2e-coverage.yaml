@@ -91,7 +91,7 @@ jobs:
           MAPPED_SF=$(grep -cE '^SF:(src|packages)/' coverage/playwright/coverage.lcov || true)
           echo "Source-mapped files: $MAPPED_SF" >> "$GITHUB_STEP_SUMMARY"
           if [ "${MAPPED_SF:-0}" -lt 100 ]; then
-            echo "::error::Only $MAPPED_SF source-mapped files in the merged tracefile. The E2E bundles are missing their '//# sourceMappingURL=' comment, so monocart reported raw bundle paths instead of src/**. Check EXPOSE_SOURCEMAP_URL in the E2E build (vite.config.mts build.sourcemap)."
+            echo "::error::Only $MAPPED_SF source-mapped files in the merged tracefile. The E2E bundles are missing their '//# sourceMappingURL=' comment, so monocart reported raw bundle paths instead of src/**. Check that the E2E build ran with COLLECT_COVERAGE=true (vite.config.mts build.sourcemap)."
             exit 1
           fi
 

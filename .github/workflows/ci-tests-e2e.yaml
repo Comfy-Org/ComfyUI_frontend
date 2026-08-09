@@ -29,6 +29,10 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
+    # The build must emit `//# sourceMappingURL=` comments or monocart cannot map
+    # the sharded job's V8 coverage back to src/**. See vite.config.mts.
+    env:
+      COLLECT_COVERAGE: 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -36,9 +40,6 @@ jobs:
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
-          # The sharded chromium job collects V8 coverage; monocart can only map
-          # it back to src/** if the bundles carry a sourceMappingURL comment.
-          expose_sourcemap_url: true
 
       # Upload only built dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
