@@ -12,11 +12,29 @@ const paletteCss = readFileSync(
 )
 
 function token(name: string): string {
-  const match = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`).exec(
-    paletteCss
-  )
-  if (!match) throw new Error(`token --${name} not found in the design system`)
-  return match[1].toLowerCase()
+  const seen = new Set<string>()
+  let current = name
+
+  while (!seen.has(current)) {
+    seen.add(current)
+    const declaration = new RegExp(`--${current}:\\s*([^;]+);`).exec(paletteCss)
+    if (!declaration) {
+      throw new Error(`token --${current} not found in the design system`)
+    }
+
+    const value = declaration[1].trim()
+    const alias = /^var\(\s*--([\w-]+)\s*\)$/.exec(value)
+    if (alias) {
+      current = alias[1]
+      continue
+    }
+    if (!/^#[0-9a-fA-F]{6}$/.test(value)) {
+      throw new Error(`token --${current} is not a six-digit hex: ${value}`)
+    }
+    return value.toLowerCase()
+  }
+
+  throw new Error(`token --${name} resolves through a cycle`)
 }
 
 const websiteRoot = join(import.meta.dirname, '..', '..')
@@ -109,7 +127,7 @@ function unreadableColorsIn(svg: string): string[] {
 describe('brand colors that cannot reference a token', () => {
   it('the /brand palette table matches the design system', () => {
     const expected: Record<string, string> = {
-      'Comfy Yellow': token('color-electric-400'),
+      'Comfy Yellow': token('color-brand-yellow'),
       'Comfy Ink': token('color-primary-comfy-ink'),
       'Comfy Canvas': token('color-primary-comfy-canvas'),
       'Comfy Plum': token('color-plum-600')
@@ -139,7 +157,7 @@ describe('brand colors that cannot reference a token', () => {
   })
 
   it('standalone brand SVGs use the brand yellow', () => {
-    const yellow = token('color-electric-400')
+    const yellow = token('color-brand-yellow')
 
     for (const file of yellowSvgs) {
       expect(yellowsIn(readRepo(file)), `${file} yellows`).toEqual([yellow])
@@ -166,7 +184,7 @@ describe('brand colors that cannot reference a token', () => {
 })
 
 describe('yellowsIn', () => {
-  const yellow = token('color-electric-400')
+  const yellow = token('color-brand-yellow')
   const ink = token('color-primary-comfy-ink')
   const retiredYellow = '#f0ff41'
   const someOtherYellow = '#ffff00'
