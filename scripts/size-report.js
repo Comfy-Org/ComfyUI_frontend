@@ -69,7 +69,7 @@ const prevDir = path.resolve('temp/size-prev')
 
 run().catch((err) => {
   console.error('Error generating bundle size report:', err)
-  process.exit(1)
+  process.exitCode = 1
 })
 
 /**
