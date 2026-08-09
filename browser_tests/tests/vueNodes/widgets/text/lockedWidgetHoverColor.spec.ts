@@ -25,7 +25,7 @@ test.describe(
       )
       const lockedInput = comfyPage.vueNodes.getWidgetByName(
         'Locked Widget Target',
-        'filename_prefix'
+        'text'
       )
       // proxy check: covers both link-locked and hardcoded read_only cases
       await expect(lockedInput).toHaveAttribute('readonly', '')
