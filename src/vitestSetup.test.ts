@@ -43,8 +43,8 @@ describe('unit test network guard', () => {
       Response
     )
 
-    // unstubGlobals: true restores the guard after every test automatically,
-    // but verify it here to keep the contract explicit and red-green provable.
+    // A test that stubs fetch owns restoring it. Unstubbing here proves the
+    // guard is what sits underneath, rather than having been overwritten.
     vi.unstubAllGlobals()
     await expect(fetch('https://example.com/thing')).rejects.toThrow(
       /Blocked a real network request/
