@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -97,5 +98,41 @@ describe('LLink immutable registered identity', () => {
     expect(graph.links.has(link.id)).toBe(false)
     expect(useLinkStore().getLink(scope, link.id)).toBeUndefined()
     expect(reroute.linkIds.has(link.id)).toBe(false)
+  })
+
+  it('given connected later outputs, when an output is removed, then shifted links receive new identities', () => {
+    const graph = new LGraph()
+    const source = createTestNode(graph, [], ['number', 'number', 'number'])
+    const firstTarget = createTestNode(graph, ['number'], [])
+    const secondTarget = createTestNode(graph, ['number'], [])
+    const first = source.connect(1, firstTarget, 0)!
+    const second = source.connect(2, secondTarget, 0)!
+    layoutStore.updateLinkLayout(first.id, {
+      id: first.id,
+      path: fromPartial<Path2D>({}),
+      bounds: { x: 0, y: 0, width: 1, height: 1 },
+      centerPos: { x: 0, y: 0 },
+      sourceNodeId: source.id,
+      targetNodeId: firstTarget.id,
+      sourceSlot: 1,
+      targetSlot: 0
+    })
+
+    source.removeOutput(0)
+
+    const shiftedFirst = firstTarget.getInputLink(0)!
+    const shiftedSecond = secondTarget.getInputLink(0)!
+    const store = useLinkStore()
+    const scope = graphScopeOf(graph)
+    expect([shiftedFirst.origin_slot, shiftedSecond.origin_slot]).toEqual([
+      0, 1
+    ])
+    expect(shiftedFirst.id).not.toBe(first.id)
+    expect(shiftedSecond.id).not.toBe(second.id)
+    expect(graph.links.has(first.id)).toBe(false)
+    expect(graph.links.has(second.id)).toBe(false)
+    expect(store.getLink(scope, first.id)).toBeUndefined()
+    expect(store.getLink(scope, second.id)).toBeUndefined()
+    expect(layoutStore.getLinkLayout(first.id)).toBeNull()
   })
 })

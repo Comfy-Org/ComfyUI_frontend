@@ -1,9 +1,7 @@
-import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { EndpointUpdate } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { registerLinkTopology } from './LLink'
+import { replaceLinkEndpoints } from './linkReplacement'
 import { inputLinkId } from './node/slotLinks'
 
 import type { LGraph } from './LGraph'
@@ -125,17 +123,19 @@ export function realignInputLinkSlots(
     }
   }
 
-  const updates: EndpointUpdate[] = []
+  const replacements = []
   for (const [link, slots] of referencedSlots) {
     const slot = slots.includes(link.target_slot) ? link.target_slot : slots[0]
     if (link.target_slot === slot) continue
-    updates.push({
-      topology: link._state,
-      patch: { targetSlot: slot }
+    replacements.push({
+      link,
+      endpoints: {
+        originId: link.origin_id,
+        originSlot: link.origin_slot,
+        targetId: link.target_id,
+        targetSlot: slot
+      }
     })
   }
-  const result = useLinkStore().updateEndpoints(graphScopeOf(graph), updates)
-  if (!result.ok) {
-    console.error('Failed to realign input link slots', result.error)
-  }
+  replaceLinkEndpoints(graph, replacements)
 }

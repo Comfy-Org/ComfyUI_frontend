@@ -15,6 +15,7 @@ import type {
   Size
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { replaceLinkEndpoints } from '@/lib/litegraph/src/linkReplacement'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
@@ -123,15 +124,19 @@ export abstract class SubgraphSlot
   }
 
   decrementSlots(inputsOrOutputs: 'inputs' | 'outputs'): void {
-    const { links } = this.parent.subgraph
-    const linkProperty =
-      inputsOrOutputs === 'inputs' ? 'origin_slot' : 'target_slot'
-
-    for (const linkId of this.linkIds) {
-      const link = links.get(linkId)
-      if (link) link[linkProperty]--
-      else console.warn('decrementSlots: link ID not found', linkId)
-    }
+    const { subgraph } = this.parent
+    replaceLinkEndpoints(
+      subgraph,
+      this.getLinks().map((link) => ({
+        link,
+        endpoints: {
+          originId: link.origin_id,
+          originSlot: link.origin_slot - (inputsOrOutputs === 'inputs' ? 1 : 0),
+          targetId: link.target_id,
+          targetSlot: link.target_slot - (inputsOrOutputs === 'outputs' ? 1 : 0)
+        }
+      }))
+    )
   }
 
   measure(): Readonly<Size> {

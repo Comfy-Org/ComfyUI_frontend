@@ -4,6 +4,7 @@ import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { replaceLinkEndpoints } from '@/lib/litegraph/src/linkReplacement'
 import {
   captureInputLayout,
   inputLinkId,
@@ -602,9 +603,20 @@ export function reorderSubgraphInputs(
   function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
     for (const id of input.linkIds) yield subgraph.getLink(id)
   }
-  for (const [slot, link] of indexedLinks(subgraph.inputs, innerLinks)) {
-    link.origin_slot = slot
-  }
+  replaceLinkEndpoints(
+    subgraph,
+    [...indexedLinks(subgraph.inputs, innerLinks)]
+      .filter(([slot, link]) => link.origin_slot !== slot)
+      .map(([slot, link]) => ({
+        link,
+        endpoints: {
+          originId: link.origin_id,
+          originSlot: slot,
+          targetId: link.target_id,
+          targetSlot: link.target_slot
+        }
+      }))
+  )
 
   const newOrder = subgraph.inputs.map((i) => i.id)
   if (!isEqual(oldOrder, newOrder)) {

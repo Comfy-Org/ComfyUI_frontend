@@ -40,6 +40,7 @@ import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LLink, slotFloatingLinks } from './LLink'
+import { replaceLinkEndpoints } from './linkReplacement'
 import {
   inputHasLink,
   inputLink,
@@ -1826,22 +1827,37 @@ export class LGraphNode
     outputs.splice(slot, 1)
 
     // Only update link indices if node is part of a graph. Ascending order:
-    // each decrement re-keys the link to an already-processed slot index.
     if (this.graph) {
+      const replacements = []
       for (let oldSlot = slot + 1; oldSlot <= outputs.length; ++oldSlot) {
         for (const link of outputLinks(this.graph, this.id, oldSlot)) {
-          link.origin_slot--
+          replacements.push({
+            link,
+            endpoints: {
+              originId: link.origin_id,
+              originSlot: oldSlot - 1,
+              targetId: link.target_id,
+              targetSlot: link.target_slot
+            }
+          })
         }
       }
-    }
-    if (this.graph) {
       for (const floatingLink of this.graph.floatingLinks.values()) {
         if (
           floatingLink.origin_id === this.id &&
           floatingLink.origin_slot > slot
         )
-          floatingLink.origin_slot--
+          replacements.push({
+            link: floatingLink,
+            endpoints: {
+              originId: floatingLink.origin_id,
+              originSlot: floatingLink.origin_slot - 1,
+              targetId: floatingLink.target_id,
+              targetSlot: floatingLink.target_slot
+            }
+          })
       }
+      replaceLinkEndpoints(this.graph, replacements)
     }
 
     this.onOutputRemoved?.(slot)
@@ -1897,13 +1913,22 @@ export class LGraphNode
         true
       )
       if (this.inputs.includes(slotInfo)) return
-      for (const floatingLink of graph.floatingLinks.values()) {
-        if (
-          floatingLink.target_id === this.id &&
-          floatingLink.target_slot > slot
-        )
-          floatingLink.target_slot--
-      }
+      replaceLinkEndpoints(
+        graph,
+        [...graph.floatingLinks.values()]
+          .filter(
+            (link) => link.target_id === this.id && link.target_slot > slot
+          )
+          .map((link) => ({
+            link,
+            endpoints: {
+              originId: link.origin_id,
+              originSlot: link.origin_slot,
+              targetId: link.target_id,
+              targetSlot: link.target_slot - 1
+            }
+          }))
+      )
     } else {
       inputs.splice(slot, 1)
     }

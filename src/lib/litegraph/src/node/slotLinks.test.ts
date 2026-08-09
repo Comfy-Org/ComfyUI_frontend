@@ -159,8 +159,16 @@ describe('slotLinks', () => {
     replaceNodeInputs(target, previous, target.inputs.toReversed())
 
     expect(target.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
-    expect(target.getInputLink(0)).toBe(second)
-    expect(target.getInputLink(1)).toBe(first)
+    expect(target.getInputLink(0)).toMatchObject({
+      origin_id: second.origin_id,
+      target_slot: 0
+    })
+    expect(target.getInputLink(1)).toMatchObject({
+      origin_id: first.origin_id,
+      target_slot: 1
+    })
+    expect(graph.getLink(first.id)).toBeUndefined()
+    expect(graph.getLink(second.id)).toBeUndefined()
   })
 
   it('exposes the committed layout to reentrant disconnect callbacks', () => {
@@ -180,7 +188,7 @@ describe('slotLinks', () => {
     target.onConnectionsChange = (type, _slot, connected, link) => {
       if (type !== NodeSlotType.INPUT || connected || link !== removed) return
       expect(target.inputs.map(({ name }) => name)).toEqual(['keep'])
-      expect(target.getInputLink(0)).toBe(kept)
+      expect(target.getInputLink(0)?.id).not.toBe(kept.id)
       reconnect()
     }
 
@@ -272,10 +280,10 @@ describe('slotLinks', () => {
     expect(
       replaceNodeInputs(target, previous, [target.inputs[0]], assignments)
     ).toEqual([])
-    expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
-      code: 'unowned-topology',
-      message: `Link ${stale.id} does not own its current placement`
-    })
+    expect(consoleError).toHaveBeenCalledWith(
+      'Failed to replace node inputs',
+      new Error(`Link ${stale.id} is not registered in this graph`)
+    )
 
     expect(target.getInputLink(0)).toBe(kept)
     expect(target.getInputLink(1)).toBe(removed)

@@ -230,19 +230,12 @@ function savedWorkflow({
   }
 }
 
-const LINK_BY_INPUT_NAME: Record<string, number> = {
-  in_a: 3,
-  in_b: 1,
-  in_c: 2
-}
-
 function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
   const target = graph.getNodeById(targetNodeId)!
   const linkStore = useLinkStore()
 
   for (const [slot, input] of target.inputs.entries()) {
-    const expectedLinkId = toLinkId(LINK_BY_INPUT_NAME[input.name])
-    const link = graph.links.get(expectedLinkId)!
+    const link = target.getInputLink(slot)!
 
     expect(link.target_slot, `link.target_slot for input ${input.name}`).toBe(
       slot
@@ -250,7 +243,7 @@ function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
     expect(
       linkStore.getInputSlotLink(graphScopeOf(graph), target.id, slot)?.id,
       `store registration for input ${input.name} at slot ${slot}`
-    ).toBe(expectedLinkId)
+    ).toBe(link.id)
   }
 }
 
@@ -295,10 +288,8 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
     const graph = new LGraph()
     graph.configure(repeatedReferenceWorkflow(2, [0, 1]))
 
-    expect(graph.getLink(toLinkId(1))?.target_slot).toBe(0)
-    expect(graph.getNodeById(toNodeId(2))?.getInputLink(0)?.id).toBe(
-      toLinkId(1)
-    )
+    expect(graph.getLink(toLinkId(1))).toBeUndefined()
+    expect(graph.getNodeById(toNodeId(2))?.getInputLink(0)?.target_slot).toBe(0)
   })
 
   it('preserves the current slot when it is one of multiple references', () => {
@@ -344,12 +335,14 @@ describe('realignInputLinkSlots', () => {
     realignInputLinkSlots(graph, [nodeData], survivorByPurged)
 
     const store = useLinkStore()
-    expect(link.target_slot).toBe(1)
+    const replacement = target.getInputLink(1)!
+    expect(replacement.id).not.toBe(link.id)
+    expect(graph.getLink(link.id)).toBeUndefined()
     expect(
       store.getInputSlotLink(graphScopeOf(graph), target.id, 0)
     ).toBeUndefined()
     expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 1)?.id).toBe(
-      link.id
+      replacement.id
     )
   })
 })

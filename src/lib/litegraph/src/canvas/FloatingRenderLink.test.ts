@@ -189,7 +189,10 @@ describe('slot removal renumbers floating link attachments', () => {
     node.removeInput(0)
 
     expect(slotFloatingLinks(graph, 'input', node.id, 0)).toHaveLength(1)
-    expect(floatingLink.target_slot).toBe(0)
+    expect(graph.floatingLinks.has(floatingLink.id)).toBe(false)
+    expect(slotFloatingLinks(graph, 'input', node.id, 0)[0].id).not.toBe(
+      floatingLink.id
+    )
   })
 
   it('removeOutput shifts floating links on later outputs', () => {
@@ -211,6 +214,9 @@ describe('slot removal renumbers floating link attachments', () => {
     node.removeOutput(0)
 
     expect(slotFloatingLinks(graph, 'output', node.id, 0)).toHaveLength(1)
-    expect(floatingLink.origin_slot).toBe(0)
+    expect(graph.floatingLinks.has(floatingLink.id)).toBe(false)
+    expect(slotFloatingLinks(graph, 'output', node.id, 0)[0].id).not.toBe(
+      floatingLink.id
+    )
   })
 })

@@ -6,6 +6,7 @@ import type { NodeId } from '@/types/nodeId'
 import type { LGraph } from '../LGraph'
 import type { LGraphNode } from '../LGraphNode'
 import type { INodeInputSlot } from '../interfaces'
+import { replaceLinkEndpoints } from '../linkReplacement'
 import { slotFloatingLinks } from '../LLink'
 import type { LLink } from '../LLink'
 import { NodeSlotType } from '../types/globalEnums'
@@ -176,19 +177,34 @@ export function replaceNodeInputs(
   })
 
   if (node.graph) {
-    const store = useLinkStore()
-    const updates = finalAssignments.map(({ link, slot }) => ({
-      topology: link._state,
-      patch: { targetNodeId: node.id, targetSlot: slot }
-    }))
-    const result = store.updateEndpoints(
-      graphScopeOf(node.graph),
-      updates,
-      removals.map(({ link }) => link._state)
+    const movedAssignments = finalAssignments.filter(
+      ({ link, slot }) =>
+        link.target_id !== node.id || link.target_slot !== slot
     )
-    if (!result.ok) {
-      console.error('Failed to replace node inputs', result.error)
+    let replacements: LLink[]
+    try {
+      replacements = replaceLinkEndpoints(
+        node.graph,
+        movedAssignments.map(({ link, slot }) => ({
+          link,
+          endpoints: {
+            originId: link.origin_id,
+            originSlot: link.origin_slot,
+            targetId: node.id,
+            targetSlot: slot
+          }
+        })),
+        removals.map(({ link }) => link)
+      )
+    } catch (error) {
+      console.error('Failed to replace node inputs', error)
       return []
+    }
+    const replacementByOld = new Map(
+      movedAssignments.map(({ link }, index) => [link, replacements[index]])
+    )
+    for (const assignment of finalAssignments) {
+      assignment.link = replacementByOld.get(assignment.link) ?? assignment.link
     }
     node.inputs.splice(0, node.inputs.length, ...finalInputs)
     for (const { link, slot } of removals.toReversed()) {
