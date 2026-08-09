@@ -851,8 +851,6 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
       await expect(
         successView.getByText('Creator', { exact: true })
       ).toBeVisible()
-      // creator-annual bills yearly, so the success screen shows the annual
-      // total/credit grant (FE-1448), not a monthly-equivalent figure.
       await expect(successView.getByText('$336', { exact: true })).toBeVisible()
       await expect(
         successView.getByText('88,800 / year', { exact: true })

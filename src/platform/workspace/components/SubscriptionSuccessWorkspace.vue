@@ -118,9 +118,6 @@ const {
   tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
   teamPlan?: TeamPlanSelection | null
-  /** Cycle the purchase was made under. Drives whether the price/credit line
-   *  below reads as a monthly or yearly total (falls back to the resolved
-   *  preview's plan duration when one is present). */
   billingCycle?: BillingCycle
 }>()
 
@@ -138,32 +135,27 @@ const tierName = computed(() =>
     : t(`subscription.tiers.${tierKey}.name`)
 )
 
-// The preview's resolved plan duration wins when present (it reflects what was
-// actually purchased); otherwise fall back to the selected billing cycle
-// (the team-plan path has no preview duration to consult).
 const isYearly = computed(() =>
   isYearlyCheckout(previewData?.new_plan?.duration, billingCycle)
 )
 
-// The actual total charged for the purchased cycle — the annual price when
-// billed yearly, not a monthly-equivalent figure mislabeled as such.
 const displayPrice = computed(() => {
+  if (previewData?.new_plan) {
+    return (previewData.new_plan.price_cents / 100).toFixed(0)
+  }
   if (teamPlan) {
     const usd = isYearly.value
       ? teamPlan.discountedUsd * 12
       : teamPlan.discountedUsd
     return String(usd)
   }
-  if (!previewData?.new_plan) return '0'
-  return (previewData.new_plan.price_cents / 100).toFixed(0)
+  return '0'
 })
 
 const priceUnitLabel = computed(() =>
   isYearly.value ? t('subscription.usdPerYear') : t('subscription.usdPerMonth')
 )
 
-// The credit grant's own monthly figure, annualized (×12) to match the
-// yearly total price shown above when the purchase is billed yearly.
 const displayCredits = computed(() => {
   const monthlyCredits = teamPlan
     ? teamPlan.credits
