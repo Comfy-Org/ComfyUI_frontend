@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "Katman Ekle",
+    "inputs": {
+      "blend_mode": {
+        "name": "karışım_modu",
+        "tooltip": "İlk karışım modu."
+      },
+      "flip_h": {
+        "name": "yatay_çevir",
+        "tooltip": "Katmanı yatay olarak çevir."
+      },
+      "flip_v": {
+        "name": "dikey_çevir",
+        "tooltip": "Katmanı dikey olarak çevir."
+      },
+      "height": {
+        "name": "yükseklik",
+        "tooltip": "İlk görüntüleme yüksekliği. 0, görüntünün orijinal yüksekliğini korur."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Katman içeriği kendi orijinal boyutunda. Bir toplu işlem, ardışık katmanlara genişler."
+      },
+      "layers": {
+        "name": "katmanlar",
+        "tooltip": "Eklemek için katman yığını. Yeni bir yığın başlatmak için bağlantısız bırakın."
+      },
+      "mask": {
+        "name": "maske",
+        "tooltip": "Bu katman için şeffaflık maskesi. Maskelenmiş alanlar (değer 1) şeffaf olur ve görüntünün mevcut alfa kanalıyla çarpılır."
+      },
+      "name": {
+        "name": "isim",
+        "tooltip": "Katman adının kompozitör düzenleyicisinde gösterimi."
+      },
+      "opacity": {
+        "name": "opaklık",
+        "tooltip": "İlk katman opaklığı."
+      },
+      "rotation": {
+        "name": "dönüş",
+        "tooltip": "Saat yönünde derece cinsinden ilk dönüş."
+      },
+      "width": {
+        "name": "genişlik",
+        "tooltip": "İlk görüntüleme genişliği. 0, görüntünün orijinal genişliğini korur."
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "Kanvas üzerindeki ilk yatay yerleşim."
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "Kanvas üzerindeki ilk dikey yerleşim."
+      },
+      "z_index": {
+        "name": "z_indeksi",
+        "tooltip": "Yığın geçersiz kılma. Katmanlar z_indeksi ile kararlı şekilde sıralanır; eşit değerler liste sırasını korur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Bu katman eklenmiş katman yığını."
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "Gürültü Ekle",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "ses oluştur"
       },
+      "model_output_format": {
+        "name": "çıktı_formatı"
+      },
       "model_prompt": {
         "name": "istem"
-      },
-      "model_ratio": {
-        "name": "oran"
       },
       "model_resolution": {
         "name": "çözünürlük"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "ses oluştur"
       },
+      "model_output_format": {
+        "name": "çıktı_formatı"
+      },
       "model_prompt": {
         "name": "istem"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "çözünürlük"
+      },
+      "model_video_editing": {
+        "name": "video_düzenleme"
       },
       "seed": {
         "name": "seed",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "ses oluştur"
+      },
+      "model_output_format": {
+        "name": "çıktı_formatı"
       },
       "model_prompt": {
         "name": "istem"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "Bir görüntüyü, arka plan plakası ve her biri yığılma sırası, sınırlayıcı kutusu, adı ve açıklaması olan, yeniden konumlandırılabilir en fazla 16 şeffaf katmana ayırır.",
+    "display_name": "ByteDance Seedream 5.0 Pro Katman Ayrıştırma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "crop_layers": {
+        "name": "katmanları_kırp",
+        "tooltip": "Katmanlar/maskeler toplu çıktılarının geometrisi (layer_stack her zaman sıkı ve etkilenmez). Tam tuval: her katman, sınırlayıcı kutusundaki konumda taban boyutunda bir tuvalde - doğrudan ImageCompositeMasked ile yeniden birleştirilebilir. Minimal boyut: her katman, sınırlayıcı kutusuna kırpılır (toplu işleme için en büyük katmana kadar doldurulur) - çok daha küçük tensörler; yerleşimi yeniden oluşturmak için bboxes çıktısı ile Layers From Bounding Boxes kullanılır."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Ayrıştırılacak görüntü. Tam olarak bir görüntü, en az 512x512 piksel, en-boy oranı 1:16 ile 16:1 arasında olmalıdır. Yaklaşık 4MP'den büyük girişler yüklemeden önce yeniden boyutlandırılır."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görüntünün nasıl ayrıştırılacağı. Otomatik algılama ve tüm ana öğeleri ayırmak için boş bırakın. Ayrıştırmayı kontrol etmek için öğeleri doğal dilde tanımlayın veya <bbox>sol üst sağ alt</bbox> etiketleriyle (0-1000 binde koordinatlar) tam bölgeleri hedefleyin."
+      },
+      "prompt_optimization": {
+        "name": "istem_optimizasyonu",
+        "tooltip": "İstem optimizasyon modu: 'standart' daha yüksek kalite, 'hızlı' daha kısa oluşturma süresi sağlar."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "size": {
+        "name": "boyut",
+        "tooltip": "Çıktı çözünürlük seviyesi. 'auto', giriş görüntü boyutunu takip eder (1K-2K aralığında sınırlandırılır)."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Görüntülere \"Yapay Zeka ile oluşturuldu\" filigranı eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "taban_görüntü",
+        "tooltip": "Katmanların üst üste yığıldığı taban görüntü (arka plan plakası)."
+      },
+      "1": {
+        "name": "taban_maske",
+        "tooltip": "Taban görüntünün şeffaflığı (1 = şeffaf, LoadImage standardı); şu anda her zaman tamamen opak."
+      },
+      "2": {
+        "name": "katmanlar",
+        "tooltip": "Alttan üste sıralanmış şeffaf katmanlar. Tam tuval modu: her biri, sınırlayıcı kutusundaki konumda siyah taban boyutunda bir tuvalde. Minimal boyut modu: her biri, sınırlayıcı kutusuna kırpılmış, sol üstte sabitlenmiş, en büyük katmana kadar doldurulmuş."
+      },
+      "3": {
+        "name": "maskeler",
+        "tooltip": "Katman başına şeffaflık, katmanlar toplu verisiyle indeks uyumlu (1 = şeffaf, LoadImage standardı). ImageCompositeMasked tarzı birleştirme için önce InvertMask ekleyin."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Her katman için bir yerleşim kutusu, katmanlar toplu verisiyle indeks uyumlu (her ikisini ve maskeleri Layers From Bounding Boxes ile besleyerek katman başına yerleşimi yeniden oluşturun): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [sol, üst, genişlik, yükseklik], katmanın kendi çerçevesindeki içerik bölgesidir; tuvalde kutu konumu artı bu ofset ile yerleşir."
+      },
+      "5": {
+        "name": "katman_yığını",
+        "tooltip": "Katmanlı Görüntü Oluştur için düzenlemeye hazır katman belgesi: taban plaka ve her bir öğe, kendi adıyla, sıkı kırpılmış katman olarak gerçek konumunda ve yığılma sırasıyla. Doğrudan bağlayın veya Katman Ekle ile genişletin."
       }
     }
   },
@@ -4098,6 +4236,27 @@
       }
     }
   },
+  "EmptyMiniMaxH3LatentAV": {
+    "description": "MiniMax H3 için birleşik video+ses latent. Süre, modelin 17k+5 kare ızgarasına 24 fps'de yuvarlanır.",
+    "display_name": "Empty MiniMax H3 AV Latent",
+    "inputs": {
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "24 fps'de kare sayısı, modelin 17k+5 ızgarasına yukarı yuvarlanır (124 = ~5sn; eğitilmiş aralık ~124-362, daha uzun test edilmemiştir)"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "BoşMochiGizliVideo",
     "inputs": {
@@ -4389,6 +4548,144 @@
       },
       "width": {
         "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageToVideoNode": {
+    "description": "1 ila 10 görseli FLUX 3 ile canlandırır. Her görsel, clip'in bir karesi olur: bir görsel açılışı yapar, iki görsel ilkinden ikincisine geçiş yapar, daha fazlası ise clip boyunca yayılır veya seçtiğiniz zamanlara sabitlenir.",
+    "display_name": "Flux 3 Görselden Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Çıktı en-boy oranı. 'auto', prompt ve girdilerden birini seçer."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Clip uzunluğu (saniye cinsinden). 'auto', içeriğe göre uzunluğu ayarlar."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Senkronize ses üret (ambiyans, konuşma, efektler). Kapalıysa ses parçası olmayan bir video oluşturur."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "1 ila 10 görsel, oynatma sırasına göre. Her biri en az 256x256 piksel."
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "'clip boyunca yay' seçeneği FLUX 3'ün görselleri yerleştirmesine izin verir (biri clip'i açar, iki tanesi başlangıç ve bitiş olur); 'belirli zamanlarda' ise her görseli seçtiğiniz bir saniyeye sabitler."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Sahnenin nasıl hareket edeceği ve ses çıkaracağı; prompt oluşturulmadan önce yorumlanır ve genişletilir."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Çıktı çözünürlüğü."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderasyon toleransı, 0 en sıkı olandır. Görsel veya video gönderen istekler, burada ne ayarlarsanız ayarlayın en fazla 2 ile sınırlandırılır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; FLUX 3 kendi tohumunu seçer, bu nedenle gerçek sonuçlar bu değerden bağımsız olarak belirlenemez."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3TextToVideoNode": {
+    "description": "FLUX 3 üzerinden bir metin promptundan senkronize sesli video üretir.",
+    "display_name": "Flux 3 Metinden Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Çıktı en-boy oranı. 'auto', prompt ve girdilerden birini seçer."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Clip uzunluğu (saniye cinsinden). 'auto', içeriğe göre uzunluğu ayarlar."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Senkronize ses üret (ambiyans, konuşma, efektler). Kapalıysa ses parçası olmayan bir video oluşturur."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Ne istediğinizi sade bir dille yazın; prompt oluşturulmadan önce yorumlanır ve genişletilir. Katmanlı ses için ambiyans, müzik ve konuşmayı ayrı ayrı tanımlayın."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Çıktı çözünürlüğü."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderasyon toleransı, 0 en sıkı olandır. Görsel veya video gönderen istekler, burada ne ayarlarsanız ayarlayın en fazla 2 ile sınırlandırılır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; FLUX 3 kendi tohumunu seçer, bu nedenle gerçek sonuçlar bu değerden bağımsız olarak belirlenemez."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3VideoContinuationNode": {
+    "description": "FLUX 3 ile bir videoyu devam ettirir: yeni klip, sağladığınız klibin son karelerinden devam eder.",
+    "display_name": "Flux 3 Video Devamı",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Çıktı en-boy oranı. 'auto', prompt ve girdilerden birini seçer."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Klip uzunluğu (saniye). 'auto', içeriğe göre uzunluğu ayarlar."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Senkronize ses üret (ambiyans, konuşma, efektler). Kapalıysa ses parçası olmayan bir video üretilir."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Devamda ne gösterileceği; prompt oluşturulmadan önce yorumlanır ve genişletilir."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Çıktı çözünürlüğü."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderasyon toleransı, 0 en sıkı olandır. Görüntü veya video gönderen istekler burada ne ayarlarsanız ayarlayın en fazla 2 ile sınırlandırılır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; FLUX 3 kendi tohumunu seçer, bu nedenle gerçek sonuçlar bu değerden bağımsız olarak belirlenemez."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Devam ettirilecek klip."
       }
     },
     "outputs": {
@@ -5704,6 +6001,15 @@
       "model_resolution": {
         "name": "çözünürlük"
       },
+      "model_voice_1": {
+        "name": "voice_1"
+      },
+      "model_voice_2": {
+        "name": "voice_2"
+      },
+      "model_voice_3": {
+        "name": "voice_3"
+      },
       "prompt": {
         "name": "istem",
         "tooltip": "İstenen videonun metin açıklaması."
@@ -6760,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "Katmanlı Görsel Oluştur",
+    "inputs": {
+      "compositor": {
+        "name": "kompozitör",
+        "tooltip": "Kompozitör düzenleyicisi tarafından kaydedilen katmanlı kompozisyon."
+      },
+      "layers": {
+        "name": "katmanlar",
+        "tooltip": "Birleştirilecek katman yığını; bunu Katman Ekle ile oluşturun. Öğeler z_index'e göre üst üste dizilir, bir öğedeki toplu kareler ardışık katmanlara genişler ve öğenin konumu, opaklığı ve karışım modu ilk kompozisyonu belirler. Açıkça belirtilmiş bir belge tuvali yoksa, boyut yerleştirilen katmanların en büyük kapsamı olarak en iyi şekilde tahmin edilir. Mevcut girdilerle eşleşen kayıtlı bir kompozisyon önceliklidir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Birleştirilmiş görsel. Kompozisyonda şeffaf alanlar varsa (ör. gizli arka plan), alfa kanalı taşır; aksi halde düz RGB'dir."
+      },
+      "1": {
+        "tooltip": "Kompozisyonun şeffaflığı (1 = tamamen şeffaf). Kompozisyon opaksa tüm değerler sıfırdır."
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "Görüntü Kırp",
     "inputs": {
@@ -7580,158 +7907,6 @@
       }
     }
   },
-  "KlingCameraControlI2VNode": {
-    "description": "Gerçek dünya sinematografisini simüle eden profesyonel kamera hareketleriyle durağan görüntüleri sinematik videolara dönüştürün. Orijinal görüntünüze odaklanırken yakınlaştırma, döndürme, kaydırma, eğme ve birinci şahıs görünümü dahil olmak üzere sanal kamera eylemlerini kontrol edin.",
-    "display_name": "Kling Görüntüden Videoya (Kamera Kontrolü)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "en_boy_oranı"
-      },
-      "camera_control": {
-        "name": "kamera_kontrolü",
-        "tooltip": "Kling Kamera Kontrolleri düğümü kullanılarak oluşturulabilir. Video oluşturma sırasında kamera hareketini ve devinimini kontrol eder."
-      },
-      "cfg_scale": {
-        "name": "cfg_ölçeği"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem",
-        "tooltip": "Negatif metin istemi"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Pozitif metin istemi"
-      },
-      "start_frame": {
-        "name": "başlangıç_karesi",
-        "tooltip": "Referans Görüntü - URL veya Base64 kodlu dize, 10 MB'ı geçemez, çözünürlük 300*300 pikselden az olamaz, en boy oranı 1:2.5 ~ 2.5:1 arasındadır. Base64, data:image önekini içermemelidir."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_kimliği",
-        "tooltip": null
-      },
-      "2": {
-        "name": "süre",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControlT2VNode": {
-    "description": "Gerçek dünya sinematografisini simüle eden profesyonel kamera hareketleriyle metni sinematik videolara dönüştürün. Orijinal metninize odaklanırken yakınlaştırma, döndürme, kaydırma, eğme ve birinci şahıs görünümü dahil olmak üzere sanal kamera eylemlerini kontrol edin.",
-    "display_name": "Kling Metinden Videoya (Kamera Kontrolü)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "en_boy_oranı"
-      },
-      "camera_control": {
-        "name": "kamera_kontrolü",
-        "tooltip": "Kling Kamera Kontrolleri düğümü kullanılarak oluşturulabilir. Video oluşturma sırasında kamera hareketini ve devinimini kontrol eder."
-      },
-      "cfg_scale": {
-        "name": "cfg_ölçeği"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem",
-        "tooltip": "Negatif metin istemi"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Pozitif metin istemi"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_kimliği",
-        "tooltip": null
-      },
-      "2": {
-        "name": "süre",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControls": {
-    "description": "Kling Kamera Kontrolleri ve hareket kontrolü efektleri için yapılandırma seçeneklerini belirtmeye olanak tanır.",
-    "display_name": "Kling Kamera Kontrolleri",
-    "inputs": {
-      "camera_control_type": {
-        "name": "kamera_kontrol_türü"
-      },
-      "horizontal_movement": {
-        "name": "yatay_hareket",
-        "tooltip": "Kameranın yatay eksen (x ekseni) boyunca hareketini kontrol eder. Negatif sola, pozitif sağa gösterir"
-      },
-      "pan": {
-        "name": "kaydırma",
-        "tooltip": "Kameranın dikey düzlemde (x ekseni) dönüşünü kontrol eder. Negatif aşağı dönüşü, pozitif yukarı dönüşü gösterir."
-      },
-      "roll": {
-        "name": "yuvarlanma",
-        "tooltip": "Kameranın yuvarlanma miktarını (z ekseni) kontrol eder. Negatif saat yönünün tersini, pozitif saat yönünü gösterir."
-      },
-      "tilt": {
-        "name": "eğme",
-        "tooltip": "Kameranın yatay düzlemde (y ekseni) dönüşünü kontrol eder. Negatif sola dönüşü, pozitif sağa dönüşü gösterir."
-      },
-      "vertical_movement": {
-        "name": "dikey_hareket",
-        "tooltip": "Kameranın dikey eksen (y ekseni) boyunca hareketini kontrol eder. Negatif aşağı, pozitif yukarı gösterir."
-      },
-      "zoom": {
-        "name": "yakınlaştırma",
-        "tooltip": "Kameranın odak uzaklığındaki değişikliği kontrol eder. Negatif daha dar bir görüş alanını, pozitif daha geniş bir görüş alanını gösterir."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "kamera_kontrolü",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingDualCharacterVideoEffectNode": {
-    "description": "Efekt_sahnesine dayalı bir video oluştururken farklı özel efektler elde edin. İlk görüntü sol tarafa, ikinci görüntü ise birleşimin sağ tarafına konumlandırılacaktır.",
-    "display_name": "Kling İkili Karakter Video Efektleri",
-    "inputs": {
-      "duration": {
-        "name": "süre"
-      },
-      "effect_scene": {
-        "name": "efekt_sahnesi"
-      },
-      "image_left": {
-        "name": "sol_görüntü",
-        "tooltip": "Sol taraf görüntüsü"
-      },
-      "image_right": {
-        "name": "sağ_görüntü",
-        "tooltip": "Sağ taraf görüntüsü"
-      },
-      "mode": {
-        "name": "mod"
-      },
-      "model_name": {
-        "name": "model_adı"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "süre",
-        "tooltip": null
-      }
-    }
-  },
   "KlingFirstLastFrameNode": {
     "description": "Kling V3 ile ilk ve son kareleri kullanarak video oluşturun.",
     "display_name": "Kling 3.0 İlk-Son-Kareden Videoya",
@@ -8250,38 +8425,6 @@
       }
     }
   },
-  "KlingSingleImageVideoEffectNode": {
-    "description": "Efekt_sahnesine dayalı bir video oluştururken farklı özel efektler elde edin.",
-    "display_name": "Kling Video Efektleri",
-    "inputs": {
-      "duration": {
-        "name": "süre"
-      },
-      "effect_scene": {
-        "name": "efekt_sahnesi"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": " Referans Görüntü. URL veya Base64 kodlu dize (data:image öneki olmadan). Dosya boyutu 10 MB'ı geçemez, çözünürlük 300*300 pikselden az olamaz, en boy oranı 1:2.5 ~ 2.5:1 arasındadır"
-      },
-      "model_name": {
-        "name": "model_adı"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_kimliği",
-        "tooltip": null
-      },
-      "2": {
-        "name": "süre",
-        "tooltip": null
-      }
-    }
-  },
   "KlingStartEndFrameNode": {
     "description": "Sağladığınız başlangıç ve bitiş görüntüleri arasında geçiş yapan bir video dizisi oluşturun. Düğüm, aradaki tüm kareleri oluşturarak ilk kareden son kareye pürüzsüz bir dönüşüm üretir.",
     "display_name": "Kling Başlangıç-Bitiş Karesinden Videoya",
@@ -8468,26 +8611,6 @@
       "start_frame": {
         "name": "başlangıç karesi",
         "tooltip": "İsteğe bağlı başlangıç kare görüntüsü. Bağlandığında, görüntüden videoya moduna geçer."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingVirtualTryOnNode": {
-    "description": "Kling Sanal Deneme Düğümü. İnsan üzerine kıyafet denemek için bir insan resmi ve bir kıyafet resmi girin.",
-    "display_name": "Kling Sanal Deneme",
-    "inputs": {
-      "cloth_image": {
-        "name": "kıyafet_görüntüsü"
-      },
-      "human_image": {
-        "name": "insan_görüntüsü"
-      },
-      "model_name": {
-        "name": "model_adı"
       }
     },
     "outputs": {
@@ -8685,6 +8808,7 @@
     }
   },
   "LTXVConcatAVLatent": {
+    "description": "Bir video latent ve bir ses latentini birleşik bir AV latentine birleştirir (herhangi bir AV modeli, örn. LTXV veya MiniMax H3).",
     "display_name": "LTXVConcatAVLatent",
     "inputs": {
       "audio_latent": {
@@ -9448,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "Bir görsel toplu işlemini ve ona ait sınırlayıcı kutuları, her kare için bir katman olacak şekilde bir katman yığınına dönüştürür; her biri kendi kutusuna yerleştirilir. Bir düğüm katmanları toplu olarak yayıyorsa bunu kullanın - bir toplu işlemde her kare için tek bir yerleşim bulunur, bu nedenle bireysel konumlar aksi halde kaybolur.",
+    "display_name": "Sınırlayıcı Kutulardan Katmanlar",
+    "inputs": {
+      "bboxes": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Yerleşim kutuları, görsel toplu işlemiyle indeks uyumlu. Sınırlayıcı kutuları (x, y, genişlik, yükseklik), normalleştirilmiş öğeler (bir 'bbox' ile - bunların piksele dönüştürülmesi için canvas_width/canvas_height gerekir) veya bunların JSON dizgesini kabul eder. Eşleşen kutusu olmayan kareler orijine yerleştirilir. Bir kutunun genişliği/yüksekliği katmanı ona sığacak şekilde ölçeklendirir. metadata.name (veya desc) ve metadata.z_index mevcutsa kullanılır, metadata.content_rect (kareye göre) ise kareyi gerçek içeriğine kırpar."
+      },
+      "canvas_height": {
+        "name": "tuval_yüksekliği",
+        "tooltip": "Belge tuvali yüksekliği. 0, yerleştirilen katmanlardan türetilir."
+      },
+      "canvas_width": {
+        "name": "tuval_genişliği",
+        "tooltip": "Belge tuvali genişliği. 0, yerleştirilen katmanlardan türetilir."
+      },
+      "crop_to_content": {
+        "name": "içeriğe_kırp",
+        "tooltip": "Her kareyi metadata.content_rect varsa ona kırpar ve içeriği kutu konumuna artı dikdörtgen ofsetine yerleştirir. Kareleri dolgulu olan toplu işlemler için açık bırakın - yalnızca gerçek içeriği gerçek yerine yerleştirir."
+      },
+      "image": {
+        "name": "görsel",
+        "tooltip": "Görsel toplu işlemi; her kare bir katman olur."
+      },
+      "layers": {
+        "name": "katmanlar",
+        "tooltip": "Eklemek için katman yığını. Yeni bir yığın başlatmak için bağlı bırakmayın."
+      },
+      "mask": {
+        "name": "maske",
+        "tooltip": "Kare başına şeffaflık, görsel toplu işlemiyle indeks uyumlu (1 = şeffaf, LoadImage standardı)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Katman yığını, Katmanlı Görsel Oluştur için hazır."
       }
     }
   },
@@ -11370,6 +11533,118 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ImageToVideo": {
+    "display_name": "MiniMax H3 Görüntüden Videoya",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "first_frame": {
+        "name": "ilk_kare"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "last_frame": {
+        "name": "son_kare"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "24 fps'de kare sayısı, modelin 17k+5 ızgarasına yukarı yuvarlanır (124 = ~5sn; eğitilmiş aralık ~124-362, daha uzun test edilmemiştir)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3ReferenceToVideo": {
+    "description": "<Picture i> / <Video k> / <Audio j> referans koşullandırması MiniMax H3 için. Prompt verirken aynı etiketleri kullanın.",
+    "display_name": "MiniMax H3 Referanstan Videoya",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "24 fps'de kare sayısı (124 = ~5sn, eğitilmiş aralık ~124-362)"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "ref_audios": {
+        "name": "ref_sesler"
+      },
+      "ref_image_size": {
+        "name": "ref_görüntü_boyutu",
+        "tooltip": "Referans görüntü boyutlandırması. 'match', her referansı (sadece küçültülerek, oranı koruyarak) oluşturulan piksel alanına ölçekler; 'max', referans hattının 2048px kısa kenarını en iyi kimlik benzerliği için kullanır. Referans tokenları her örnekleme adımında kalır, bu yüzden 'max' birkaç kat daha yavaş olabilir."
+      },
+      "ref_images": {
+        "name": "ref_görüntüler"
+      },
+      "ref_video_audios": {
+        "name": "ref_video_sesleri"
+      },
+      "ref_videos": {
+        "name": "ref_videolar"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3SigmaShift": {
+    "description": "Video/ses akış kaymalarını ayarlayın.",
+    "display_name": "MiniMax H3 Sigma Shift",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift_audio": {
+        "name": "ses_kaydır"
+      },
+      "shift_video": {
+        "name": "video_kaydır"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -20570,6 +20845,58 @@
       }
     }
   },
+  "TopazImageEnhanceV2": {
+    "description": "Endüstri standardı büyütme ve görüntü iyileştirme.",
+    "display_name": "Topaz Görüntü İyileştirme",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_color_preservation": {
+        "name": "color_preservation"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_crop_to_fill": {
+        "name": "crop_to_fill"
+      },
+      "model_face_enhancement": {
+        "name": "face_enhancement"
+      },
+      "model_face_enhancement_creativity": {
+        "name": "face_enhancement_creativity"
+      },
+      "model_face_enhancement_strength": {
+        "name": "face_enhancement_strength"
+      },
+      "model_face_preservation": {
+        "name": "face_preservation"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_subject_detection": {
+        "name": "subject_detection"
+      },
+      "output_height": {
+        "name": "output_height",
+        "tooltip": "Sıfır değeri, orijinal yükseklikle aynı veya output_width belirtilmişse orantılı olarak ölçeklenmiş çıktı anlamına gelir. Wonder 3.5 yalnızca 1x ila 6x büyütme faktörlerini destekler. Bloom 2 ve Wonder 3.5 giriş en-boy oranını korur ve istenen boyutu hedef olarak alır."
+      },
+      "output_width": {
+        "name": "output_width",
+        "tooltip": "Sıfır değeri otomatik hesaplama anlamına gelir (genellikle orijinal boyut veya output_height belirtilmişse orantılı olarak ölçeklenir). Wonder 3.5 yalnızca 1x ila 6x büyütme faktörlerini destekler. Bloom 2 ve Wonder 3.5 giriş en-boy oranını korur ve istenen boyutu hedef olarak alır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TopazVideoEnhance": {
     "description": "Güçlü ölçek büyütme ve iyileştirme teknolojisiyle videolara yeniden hayat verin.",
     "display_name": "Topaz Video Enhance",
@@ -23176,6 +23503,129 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2Cache": {
+    "description": "Poz-video'nun blok başına aktivasyonlarını önbelleğe alır, böylece her örnekleme adımında değil, yalnızca bir kez çalışır. Üretim süresini yaklaşık yarıya indirir. Takas olarak, bf16 modunda 480x832/81 karede yaklaşık 12,5 GB sistem RAM'i kullanır (çözünürlük ve uzunluk ile orantılı olarak artar). Bağlam pencereleriyle, her pencere ayrı ayrı önbelleğe alınır, bu nedenle RAM kullanımı pencere sayısıyla artar; static_standard zamanlamasını kullanın, çünkü uniform zamanlamalar pencereleri her adımda kaydırır ve hiçbir şey önbelleğe tekrar erişemez.",
+    "display_name": "WanAnimate2Cache",
+    "inputs": {
+      "device": {
+        "name": "cihaz",
+        "tooltip": "Önbelleğin nerede tutulacağı. cpu (RAM) güvenli tercihtir, önbellek tipik boyutlarda modelle birlikte VRAM'e sığmaz. gpu (VRAM) sığarsa daha hızlı olabilir."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Depolama hassasiyeti. default, aktivasyonları modelin hesaplama dtype'ında saklar. int8 önbelleği yarıya indirir, int4 dörtte bire indirir, convrot ise doğruluğu korumak için kullanılır."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2ToVideo": {
+    "description": "Bir referans görseldeki bir karakteri bir video kullanarak canlandırır; videodaki yüz animasyonu, vücut hareketi ve el jestlerini etkili bir şekilde kopyalar.",
+    "display_name": "WanAnimate2ToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Aynı anda üretilecek video sayısı."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "Referans görselin CLIP vision çıktısı."
+      },
+      "clip_vision_output_pose": {
+        "name": "clip_vision_output_pose",
+        "tooltip": "Poz videosunun ilk karesinin CLIP vision çıktısı. Varsayılan olarak clip_vision_output kullanılır."
+      },
+      "continue_motion": {
+        "name": "continue_motion",
+        "tooltip": "Zamansal tutarlılık için devam edilecek önceki hareket dizisi."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Çıktı videonun piksel cinsinden yüksekliği."
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Oluşturulacak kare sayısı."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end_percent": {
+        "name": "pose_end_percent",
+        "tooltip": "Poz etkisinin sona erdiği örnekleme yüzdesi. Hareket çoğunlukla erken belirlenir, bu yüzden örn. 0.7, koreografiyi korurken ince detayları gevşetebilir."
+      },
+      "pose_start_percent": {
+        "name": "pose_start_percent",
+        "tooltip": "Poz etkisinin başladığı örnekleme yüzdesi. Bu pencerenin dışında poz dalı tamamen atlanır ve bu adımlar hızlanır."
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "Poz videosunun hareket üzerindeki etkisini ölçeklendirir. 1.0 eğitimli davranıştır; daha düşük değerler uyumu zayıflatır, daha yüksek değerler artırır. 0.0 tamamen kaldırmaz ama etkisini kapatır."
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "Hareketinin referans karaktere aktarılacağı video."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "positive_pose": {
+        "name": "positive_pose",
+        "tooltip": "Poz-video dalı için prompt; hareketi tanımlar, karakteri değil. Varsayılan olarak positive kullanılır. Hem cond hem de uncond geçişlerinde kullanılır."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Canlandırılacak karakter."
+      },
+      "reference_image_strength": {
+        "name": "reference_image_strength",
+        "tooltip": "Oluşturulan karelerin referans görselin latent karesine ne kadar sıkı bağlı kalacağını ölçeklendirir. 1.0'ın altı kimlik/görünüm uyumunu gevşetir (ör. prompt ile yeniden stillendirme için), üstü ise sapmaya karşı sıkılaştırır."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Poz videosunda kaç kare ileri gidileceği. Uzatırken önceki düğümün video_frame_offset çıkışına bağlayın."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Çıktı videonun piksel cinsinden genişliği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "3": {
+        "name": "trim_latent",
+        "tooltip": "Kodlamadan önce kırpılması gereken latent kare sayısı."
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": "Bir video uzatılırken üst üste gelen görsel kare sayısı."
+      },
+      "5": {
+        "name": "video_frame_offset",
+        "tooltip": "Poz videosunda kaç kare ileri gidileceği."
       }
     }
   },

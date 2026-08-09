@@ -17,7 +17,8 @@ inputs:
     required: true
   comment-marker:
     description: Top-level HTML comment marker shared by all sections in this comment
-    required: true
+    required: false
+    default: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
   token:
     description: GitHub token with pull-requests write permission
     required: true

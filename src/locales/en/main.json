@@ -13,6 +13,7 @@
     "downloadAudio": "Download audio",
     "editOrMaskImage": "Edit or mask image",
     "editImage": "Edit image",
+    "openLayerEditor": "Open layer editor",
     "decrement": "Decrement",
     "deleteImage": "Delete image",
     "deleteAudioFile": "Delete audio file",
@@ -140,6 +141,7 @@
     "disconnectedFromBackend": "Disconnected from backend. Check if the server is running.",
     "delete": "Delete",
     "rename": "Rename",
+    "restore": "Restore",
     "save": "Save",
     "saveAnyway": "Save Anyway",
     "saving": "Saving",
@@ -905,6 +907,8 @@
       "filterMediaType": "Media type",
       "filterDate": "Date",
       "filterGroupAttribute": "Attribute",
+      "filterBy": "Filter by...",
+      "filterNoMatches": "No matches",
       "dateAll": "All time",
       "dateToday": "Today",
       "datePastWeek": "Past 7 days",
@@ -1067,6 +1071,7 @@
     "docs": "Docs",
     "github": "Github",
     "help": "Help & Support",
+    "systemStatus": "System Status",
     "managerExtension": "Manager Extension",
     "more": "More...",
     "whatsNew": "What's New?",
@@ -1281,6 +1286,78 @@
     "cancel": "Cancel Download",
     "cancelled": "Cancelled"
   },
+  "layerEditor": {
+    "title": "Compositor",
+    "webglUnavailable": "WebGL is unavailable - the canvas cannot render",
+    "loadFailed": "Failed to load layers",
+    "layersFailedToLoad": "One layer failed to load | {count} layers failed to load",
+    "selectTool": "Select",
+    "handTool": "Hand",
+    "zoom": "Zoom",
+    "undo": "Undo",
+    "redo": "Redo",
+    "fitView": "Fit",
+    "exportPsd": "Export PSD",
+    "exportPsdFailed": "Failed to export PSD",
+    "layers": "Layers",
+    "background": "Background",
+    "backgroundColor": "Background color",
+    "fill": "Fill",
+    "position": "Position",
+    "dimensions": "Dimensions",
+    "alignment": "Alignment",
+    "rotation": "Rotation",
+    "flip": "Flip",
+    "flipHorizontal": "Flip horizontal",
+    "flipVertical": "Flip vertical",
+    "alignLeft": "Align left",
+    "alignCenterHorizontal": "Align horizontal center",
+    "alignRight": "Align right",
+    "alignTop": "Align top",
+    "alignCenterVertical": "Align vertical center",
+    "alignBottom": "Align bottom",
+    "opacity": "Opacity",
+    "blendMode": "Blend mode",
+    "toggleVisibility": "Toggle visibility",
+    "moveUp": "Move layer up",
+    "moveDown": "Move layer down",
+    "layerN": "Layer {n}",
+    "blend": {
+      "normal": "Normal",
+      "multiply": "Multiply",
+      "screen": "Screen",
+      "overlay": "Overlay",
+      "darken": "Darken",
+      "lighten": "Lighten",
+      "colorDodge": "Color Dodge",
+      "colorBurn": "Color Burn",
+      "hardLight": "Hard Light",
+      "softLight": "Soft Light",
+      "difference": "Difference",
+      "exclusion": "Exclusion",
+      "linearDodge": "Linear Dodge",
+      "linearBurn": "Linear Burn",
+      "vividLight": "Vivid Light",
+      "pinLight": "Pin Light",
+      "linearLight": "Linear Light",
+      "hardMix": "Hard Mix",
+      "subtract": "Subtract",
+      "divide": "Divide",
+      "grainExtract": "Grain Extract",
+      "grainMerge": "Grain Merge",
+      "hue": "Hue",
+      "saturation": "Saturation",
+      "color": "Color",
+      "luminosity": "Luminosity"
+    }
+  },
+  "compositor": {
+    "open": "Open Compositor",
+    "empty": "Run the workflow to generate a composite",
+    "runWorkflowFirst": "Run the workflow once to load input images",
+    "saveFailed": "Failed to save composite",
+    "downloadPsd": "Download PSD"
+  },
   "maskEditor": {
     "title": "Mask Editor",
     "openMaskEditor": "Open in Mask Editor",
@@ -1461,6 +1538,7 @@
     "ComfyUI Forum": "ComfyUI Forum",
     "ComfyUI Issues": "ComfyUI Issues",
     "Interrupt": "Interrupt",
+    "Open Layer Editor for Selected Node": "Open Layer Editor for Selected Node",
     "Load Default Workflow": "Load Default Workflow",
     "Custom Nodes Manager": "Custom Nodes Manager",
     "Custom Nodes (Legacy)": "Custom Nodes (Legacy)",
@@ -1784,6 +1862,7 @@
     "hunyhuan video": "hunyhuan video",
     "mochi": "mochi",
     "ltxv": "ltxv",
+    "minimax": "minimax",
     "preprocessors": "preprocessors",
     "hooks": "hooks",
     "create": "create",
@@ -1886,7 +1965,6 @@
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "BOUNDING_BOXES",
-    "CAMERA_CONTROL": "CAMERA_CONTROL",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
@@ -1896,6 +1974,7 @@
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
+    "COMPOSITOR": "COMPOSITOR",
     "CONDITIONING": "CONDITIONING",
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "CURVE",
@@ -1935,6 +2014,7 @@
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
+    "LAYERS": "LAYERS",
     "LOAD_3D": "LOAD_3D",
     "LOAD3D_CAMERA": "LOAD3D_CAMERA",
     "LOAD3D_MODEL_INFO": "LOAD3D_MODEL_INFO",
@@ -2274,7 +2354,9 @@
     "failedToExportModel": "Failed to export model as {format}",
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
+    "a1111CoreNodesUnavailable": "Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.",
     "dropFileError": "Unable to process dropped item: {error}",
+    "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Errors tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
     "interrupted": "Execution has been interrupted",
     "pendingTasksDeleted": "Pending tasks deleted",
@@ -2405,6 +2487,9 @@
       "newUser": "New here?",
       "userAvatar": "User Avatar",
       "signUp": "Sign up",
+      "cloudNewUser": "New to Comfy?",
+      "cloudSignUp": "Sign up here",
+      "freeRunsSuffix": "to get {count} free run. | to get {count} free runs.",
       "signUpFreeTierPromo": "New here? {signUp} with Google to get {credits} free credits every month.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
@@ -2558,6 +2643,9 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
+      "chargedImmediatelyNote": "Your saved card is charged immediately.",
+      "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
+      "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
       "usdAmount": "${amount}",
       "videosEstimate": "~{count} videos*",
@@ -2566,7 +2654,10 @@
       "purchaseSuccess": "Credits added successfully!",
       "purchaseError": "Purchase Failed",
       "purchaseErrorDetail": "Failed to purchase credits: {error}",
+      "payAmount": "Pay {amount}",
       "unknownError": "An unknown error occurred",
+      "verifyBody": "Your bank requires additional verification to complete this payment.",
+      "verifyTitle": "Verify your payment",
       "viewPricing": "View pricing details",
       "youPay": "Amount (USD)",
       "youGet": "Credits",
@@ -2607,11 +2698,13 @@
   },
   "billingOperation": {
     "subscriptionProcessing": "Processing payment — setting up your workspace...",
+    "subscriptionActionRequired": "Verify your payment to finish setting up your workspace",
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",
     "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
     "subscriptionTimeout": "Subscription verification timed out",
     "topupProcessing": "Processing payment — adding credits...",
+    "topupActionRequired": "Verify your payment to add your credits",
     "topupSuccess": "Credits added successfully",
     "topupFailed": "Top-up failed",
     "topupTimeout": "Top-up verification timed out",
@@ -2792,6 +2885,17 @@
       "memberCta": "Ok, got it",
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
       "runLabel": "Run"
+    },
+    "paymentRecovery": {
+      "title": "Subscription paused",
+      "ownerDescription": "Update your payment method to restore the workspace's subscription and run workflows.",
+      "memberDescription": "Ask your workspace owner to restore the workspace's subscription.",
+      "ownerCta": "Update payment",
+      "memberCta": "Ok, got it",
+      "ownerRunLabel": "Update payment to run",
+      "memberRunLabel": "Run",
+      "ownerRunTooltip": "Update payment to restore this subscription",
+      "memberRunTooltip": "Ask your workspace owner to restore this subscription"
     },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
@@ -2983,14 +3087,13 @@
     },
     "billingStatus": {
       "warning": {
-        "title": "Payment declined",
-        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
-        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause."
+        "title": "Payment failed",
+        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause."
       },
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+        "memberBody": "Ask your workspace owner to restore the workspace's subscription."
       },
       "outOfCredits": {
         "title": "Out of credits",
@@ -3445,30 +3548,13 @@
   "cloudStart_desc": "Zero setup required. Works on any device.",
   "cloudStart_explain": "Generate multiple outputs at once. Share workflows with ease.",
   "cloudStart_learnAboutButton": "Learn about Cloud",
-  "cloudStart_wantToRun": "Want to run ComfyUI locally instead?",
-  "cloudStart_download": "Download ComfyUI",
   "cloudHero": {
     "previousSlide": "Previous slide",
     "nextSlide": "Next slide",
-    "slidePagerLabel": "Go to slide {index}",
-    "slides": {
-      "cloud": {
-        "title": "Cloud",
-        "description": "Best for most users who want to work from anywhere with models verified for commercial license."
-      },
-      "workflows": {
-        "title": "Workflows",
-        "description": "From idea to output in minutes. Generate multiple variations side by side."
-      },
-      "team": {
-        "title": "Team",
-        "description": "Onboard your team today. Share workflows and assets across your organization."
-      },
-      "models": {
-        "title": "Models",
-        "description": "Curated, commercially licensed models ready to run with zero setup."
-      }
-    }
+    "slideRoleDescription": "slide",
+    "carouselRoleDescription": "carousel",
+    "carouselLabel": "Featured models",
+    "slideStatus": "{title}, slide {current} of {total}"
   },
   "cloudWaitlist_questionsText": "Questions? Contact us",
   "cloudWaitlist_contactLink": "here",
@@ -4606,6 +4692,10 @@
     "switchFailed": "Failed to switch workspace. Please try again."
   },
   "workspaceAuth": {
+    "initializationFailed": "Couldn't load your workspace",
+    "initializationFailedDetail": "Check your connection and try again.",
+    "initializationFailedSignOutDetail": "Sign out and log in again to continue.",
+    "retry": "Try again",
     "errors": {
       "notAuthenticated": "You must be logged in to access workspaces",
       "invalidFirebaseToken": "Authentication failed. Please try logging in again.",
@@ -4755,6 +4845,26 @@
     "processingVideo": "Processing video…",
     "running": "Running…"
   },
+  "gettingStarted": {
+    "title": "Let's make something",
+    "subtitle": "Pick a ready-made workflow to start from, or begin with a blank canvas.",
+    "tabsLabel": "Getting started options",
+    "startBlank": "Start with a blank canvas",
+    "retry": "Try again",
+    "loadFailed": "We couldn't load the templates.",
+    "templateFailed": "We couldn't open this template.",
+    "retryTemplate": "Retry {title}",
+    "tabs": {
+      "templates": "Templates",
+      "tutorials": "Tutorials"
+    },
+    "tutorials": {
+      "interfaceOverview": "Interface overview",
+      "textToImage": "Text to image",
+      "imageToImage": "Image to image",
+      "inpaint": "Inpainting"
+    }
+  },
   "onboardingCoachmarks": {
     "stepLabel": "Step {current} of {total}",
     "skip": "Skip",
@@ -4784,6 +4894,74 @@
       "assets": {
         "title": "Find all your assets",
         "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
+      }
+    },
+    "firstRun": {
+      "upload": {
+        "i2v": {
+          "title": "Start with an image",
+          "body": "This picture is your first frame. Swap in your own whenever you like."
+        },
+        "image-edit": {
+          "title": "Start with an image",
+          "body": "This is the picture you'll edit. Swap in your own whenever you like."
+        },
+        "other": {
+          "title": "Start with an image",
+          "body": "This image feeds the workflow. Swap in your own whenever you like."
+        }
+      },
+      "prompt": {
+        "t2i": {
+          "title": "Describe what you want",
+          "body": "Your image gets built from this description. Try anything you like."
+        },
+        "i2v": {
+          "title": "Describe how it should move",
+          "body": "The image sets the scene. This tells it what happens next."
+        },
+        "image-edit": {
+          "title": "Say what to change",
+          "body": "Your image stays as it is. Describe what you want different."
+        },
+        "other": {
+          "title": "Tell it what to make",
+          "body": "This is your prompt. Change it to change your result."
+        }
+      },
+      "run": {
+        "title": "Run your workflow",
+        "body": "Press Run to start generating your result."
+      },
+      "result": {
+        "generating": {
+          "title": "Hang tight",
+          "body": "Your result lands right here the moment it's ready."
+        },
+        "failed": {
+          "title": "That run didn't finish",
+          "body": "Nothing landed here. Close the tour and try running again."
+        },
+        "image": {
+          "title": "And there it is",
+          "body": "Your new image lands right here — ready to download or share."
+        },
+        "video": {
+          "title": "And there it is",
+          "body": "Your new video lands right here — ready to download or share."
+        }
+      },
+      "nudge": {
+        "ran": {
+          "title": "That was one of hundreds",
+          "body": "You just made your first. Explore what else you can build."
+        },
+        "noTour": {
+          "title": "Hundreds more where that came from",
+          "body": "Browse the templates and pick something to build."
+        },
+        "dismiss": "Not now",
+        "explore": "Explore templates"
       }
     }
   }
