@@ -37,21 +37,23 @@ return an empty state — see `assetResolver.ts` and its tests.
 
 ## Adding angle assets
 
-The shipped set is three uniform 16-frame 360° turntables (22.5° steps)
-rendered at eye level — one per distance (wide shot, medium shot, close-up),
-each extracted from a single orbit video of the same scene. Zooming the camera
-swaps between the rings. Frames are named by turntable azimuth plus the label
-vocabulary from `cameraVocabulary.ts`: `az{degrees}__{elevation}__{distance}.webp`,
-e.g. `az022-5__eye-level-shot__medium-shot.webp` (degrees use `-5` for half
-steps). The source frames are 4:3; each WebP is composed onto the cards'
-1392×752 canvas by mirror-extending and blurring the frame's own background,
-with the sharp centre feathered over it.
+The shipped set is six 360° turntable rings, each extracted from a single
+orbit video of the same scene and encoded as native-4:3 WebPs: three 16-frame
+eye-level orbits (22.5° steps) and three 10-frame elevated orbits (36° steps),
+one per distance (wide shot, medium shot, close-up). Zooming the camera swaps
+distance rings; raising it swaps elevation bands. Frames are named by
+turntable azimuth plus the label vocabulary from `cameraVocabulary.ts`:
+`az{degrees}__{elevation}__{distance}.webp`, e.g.
+`az022-5__eye-level-shot__medium-shot.webp` (degrees use `-5` for half steps).
+Each ring is phased so azimuth 0 reproduces the input image's viewpoint, and
+all rings orbit the same direction.
 
-To add elevation variants (top/bottom views) later: convert to WebP under
-`public/hero/angles/` at the matching slug and add the pose to `ANGLE_ASSETS`
-in `assetResolver.ts`. The resolver scores azimuth first (circular, in
-degrees), then elevation, then distance, so new variants slot in with no other
-change; poses without an exact asset snap to the nearest shipped frame.
+To add further elevation bands (top/bottom views): convert the frames to WebP
+under `public/hero/angles/` at the matching slugs and add a `RingSpec` to
+`RINGS` in `assetResolver.ts`. The resolver matches the pose's elevation band
+first, then its distance band, then snaps azimuth circularly — so scrubbing
+azimuth never hops between rings, and bands without a shipped ring degrade to
+the nearest one.
 
 ## Vendored code
 
