@@ -17,7 +17,11 @@ const CTA_HEADING = t('minimax.cta.heading', 'en')
 const CTA_PRIMARY = t('minimax.cta.primaryCta', 'en')
 const CLOUD_URL = externalLinks.cloud
 const CLOUD_RUN_URL = minimaxLinks.cloudRun
-const FAQS = minimaxPage.faq.items
+// `faq` is optional on the template (Wan Animate 2 ships without one), but
+// this page must have it, so fail loudly rather than silently testing nothing.
+const FAQ_SECTION = minimaxPage.faq
+if (!FAQ_SECTION) throw new Error('minimaxPage must configure a FAQ section')
+const FAQS = FAQ_SECTION.items
 const FAQ_COUNT = FAQS.length
 const FIRST_FAQ = FAQS[0]
 const PRICING_HEADING = t('pricing.title', 'en')

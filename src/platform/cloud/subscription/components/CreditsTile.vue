@@ -188,7 +188,7 @@
 
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
-        v-if="isCloud && isFreeTier"
+        v-if="billingPolicyCapabilities.showsSubscribeUpsellUI"
         variant="subscribe"
         size="lg"
         class="w-full font-normal"
@@ -228,13 +228,13 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -252,12 +252,12 @@ const {
   subscription,
   balance,
   canAccessSubscriptionFeatures,
-  isFreeTier,
   currentTeamCreditStop,
   fetchBalance,
   fetchStatus,
   type
 } = useBillingContext()
+const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
 const {
   monthlyBonusCredits,
   prepaidCredits,

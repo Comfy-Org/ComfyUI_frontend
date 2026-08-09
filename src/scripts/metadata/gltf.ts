@@ -13,6 +13,8 @@ import {
 } from '@/types/metadataTypes'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
+import { readFileAsArrayBuffer } from './readFile'
+
 const MAX_READ_BYTES = 1 << 20
 
 const isJsonChunk = (chunk: GltfChunkHeader | null): boolean =>
@@ -141,27 +143,15 @@ const processGltfFileBuffer = (buffer: ArrayBuffer): ComfyMetadata => {
 /**
  * Extract ComfyUI metadata from a GLTF binary file (GLB)
  */
-export function getGltfBinaryMetadata(file: File): Promise<ComfyMetadata> {
-  return new Promise<ComfyMetadata>((resolve) => {
-    if (!file) return Promise.resolve({})
+export async function getGltfBinaryMetadata(
+  file: File
+): Promise<ComfyMetadata> {
+  const buffer = await readFileAsArrayBuffer(file, MAX_READ_BYTES)
+  if (!buffer) return {}
 
-    const bytesToRead = Math.min(file.size, MAX_READ_BYTES)
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      try {
-        if (!event.target?.result) {
-          resolve({})
-          return
-        }
-
-        resolve(processGltfFileBuffer(event.target.result as ArrayBuffer))
-      } catch {
-        resolve({})
-      }
-    }
-    reader.onerror = () => resolve({})
-    reader.onabort = () => resolve({})
-    reader.readAsArrayBuffer(file.slice(0, bytesToRead))
-  })
+  try {
+    return processGltfFileBuffer(buffer)
+  } catch {
+    return {}
+  }
 }

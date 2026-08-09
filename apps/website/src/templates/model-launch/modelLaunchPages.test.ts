@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { flux3Page } from '../../data/flux3'
 import { minimaxPage } from '../../data/minimax'
+import { seedancePage } from '../../data/seedance'
+import { wanAnimate2Page } from '../../data/wanAnimate2'
 import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { ModelLaunchPage } from './types'
@@ -9,10 +11,15 @@ import type { ModelLaunchPage } from './types'
 // Add every new launch-page config here so it inherits these checks.
 const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimax', page: minimaxPage },
-  { name: 'flux3', page: flux3Page }
+  { name: 'flux3', page: flux3Page },
+  { name: 'seedance', page: seedancePage },
+  { name: 'wanAnimate2', page: wanAnimate2Page }
 ]
 
-describe.each(pages)('$name launch page config', ({ page }) => {
+const VIDEO_URL = /^https:\/\/media\.comfy\.org\/.+\.(webm|mp4)$/
+const IMAGE_URL = /^https:\/\/media\.comfy\.org\/.+\.(webp|png|jpg)$/
+
+describe.for(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {
     const ids = page.gallery?.cards.map((card) => card.id) ?? []
     expect(new Set(ids).size).toBe(ids.length)
@@ -25,11 +32,14 @@ describe.each(pages)('$name launch page config', ({ page }) => {
       page.metaDescriptionKey,
       page.breadcrumbLabelKey,
       page.breadcrumbUpdatedKey,
+      page.hero.eyebrowKey,
       page.hero.titleKey,
       page.hero.titleRestKey,
       page.hero.descriptionKey,
       page.hero.primaryCta.labelKey,
       page.hero.secondaryCta?.labelKey,
+      page.hero.promptBar?.sampleKey,
+      page.hero.promptBar?.cta.labelKey,
       ...(page.hero.badgeKeys ?? []),
       page.hero.footnoteKey,
       page.gallery?.headingKey,
@@ -37,6 +47,10 @@ describe.each(pages)('$name launch page config', ({ page }) => {
       page.pricing?.banner?.subtitleKey,
       page.pricing?.banner?.cta.labelKey,
       page.faq?.headingKey,
+      page.steps?.headingKey,
+      page.steps?.stepLabelKey,
+      page.steps?.primaryCta?.labelKey,
+      page.steps?.secondaryCta?.labelKey,
       page.closingCta?.headingKey,
       page.closingCta?.primaryCta.labelKey,
       page.closingCta?.secondaryCta?.labelKey,
@@ -77,20 +91,33 @@ describe.each(pages)('$name launch page config', ({ page }) => {
       page.hero.secondaryCta?.href,
       page.closingCta?.primaryCta.href,
       page.closingCta?.secondaryCta?.href,
+      page.steps?.primaryCta?.href,
+      page.steps?.secondaryCta?.href,
+      page.hero.promptBar?.cta.href,
       page.pricing?.banner?.cta.href,
       ...(page.gallery?.cards.map((card) => card.href) ?? [])
     ].filter((href): href is string => href !== undefined)
 
-    for (const href of hrefs) {
-      expect(href, href).toMatch(/^https:\/\//)
-    }
+    expect(hrefs.filter((href) => !href.startsWith('https://'))).toEqual([])
   })
 
-  it('serves gallery media that the card can actually render', () => {
-    for (const card of page.gallery?.cards ?? []) {
-      expect(card.mediaSrc, card.id).toMatch(
-        /^https:\/\/media\.comfy\.org\/.+\.(webm|webp|png|jpg)$/
-      )
+  it('serves media matching its declared kind', () => {
+    if (page.hero.videoSrc !== undefined) {
+      expect(page.hero.videoSrc).toMatch(VIDEO_URL)
     }
+    if (page.hero.posterSrc !== undefined) {
+      expect(page.hero.posterSrc).toMatch(IMAGE_URL)
+    }
+
+    // Collected rather than asserted per card so a failure names the offenders.
+    const offenders = (page.gallery?.cards ?? []).filter((card) =>
+      card.media.kind === 'video'
+        ? !VIDEO_URL.test(card.media.src) ||
+          (card.media.posterSrc !== undefined &&
+            !IMAGE_URL.test(card.media.posterSrc))
+        : !IMAGE_URL.test(card.media.src)
+    )
+
+    expect(offenders.map((card) => card.id)).toEqual([])
   })
 })
