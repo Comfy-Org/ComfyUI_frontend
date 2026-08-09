@@ -24,12 +24,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-declare global {
-  interface Window {
-    __recordBillingConfirmationToken(): Promise<number>
-  }
-}
-
 const PLAN = {
   slug: 'creator-annual',
   tier: 'CREATOR',
@@ -121,7 +115,6 @@ export class BillingCheckoutStateMachineHelper {
   readonly subscribeButton: Locator
   readonly verificationButton: Locator
   readonly successHeading: Locator
-  private confirmationTokensCreated = 0
 
   constructor(readonly page: Page) {
     this.subscribeButton = page.getByRole('button', {
@@ -234,41 +227,6 @@ export class BillingCheckoutStateMachineHelper {
     })
   }
 
-  async installStripeBoundary() {
-    await this.page.route('**/api/billing/payment-methods**', (route) =>
-      route.fulfill(jsonRoute([] satisfies SavedPaymentMethod[]))
-    )
-    await this.page.exposeFunction('__recordBillingConfirmationToken', () => {
-      this.confirmationTokensCreated += 1
-      return this.confirmationTokensCreated
-    })
-    await this.page.addInitScript(() => {
-      Object.defineProperty(window, 'Stripe', {
-        configurable: true,
-        value: () => ({
-          elements: () => ({
-            create: () => ({
-              mount: () => undefined,
-              on: () => undefined,
-              destroy: () => undefined
-            }),
-            submit: async () => ({})
-          }),
-          createConfirmationToken: async () => {
-            const count = await window.__recordBillingConfirmationToken()
-            return { confirmationToken: { id: `ct_mock_${count}` } }
-          },
-          handleNextAction: async () => ({
-            paymentIntent: { status: 'succeeded' }
-          })
-        })
-      })
-    })
-    await this.page.route('https://js.stripe.com/v3/**', (route) =>
-      route.fulfill({ contentType: 'application/javascript', body: '' })
-    )
-  }
-
   async installHostedActionBoundary() {
     await this.page.addInitScript(() => {
       window.open = () => {
@@ -287,10 +245,6 @@ export class BillingCheckoutStateMachineHelper {
         .locator('html')
         .getAttribute('data-hosted-action-count')) ?? '0'
     )
-  }
-
-  async confirmationTokenCount() {
-    return this.confirmationTokensCreated
   }
 
   subscribeBody(index = 0): SubscribeRequest {

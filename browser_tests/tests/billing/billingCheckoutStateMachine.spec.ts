@@ -6,11 +6,10 @@ import { BillingCheckoutStateMachineHelper as Checkout } from '@e2e/fixtures/hel
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
-  test('rapid payment submit/Enter exact one subscribe and one Stripe confirmation-token action where embedded is available', async ({
+  test('rapid saved-payment submit/Enter sends exactly one subscribe request', async ({
     billingCheckout,
     page
   }) => {
-    await billingCheckout.installStripeBoundary()
     await billingCheckout.mockDefaultPreview()
     await billingCheckout.mockSubscribe(
       Checkout.subscribeResponse('rapid-submit', 'subscribed')
@@ -21,8 +20,10 @@ test.describe('Billing checkout state machine', { tag: '@cloud' }, () => {
     await page.keyboard.press('Enter')
 
     await expect.poll(() => billingCheckout.subscribeRequests.length).toBe(1)
-    await expect.poll(() => billingCheckout.confirmationTokenCount()).toBe(1)
-    expect(billingCheckout.subscribeBody().confirmation_token).toBe('ct_mock_1')
+    expect(billingCheckout.subscribeBody()).toMatchObject({
+      saved_payment_method_id: 'pm_saved_1'
+    })
+    expect(billingCheckout.subscribeBody().confirmation_token).toBeUndefined()
   })
 
   test('promo quote race stale/out-of-order cannot win with exact preview counts', async ({
