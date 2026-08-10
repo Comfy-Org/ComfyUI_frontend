@@ -337,7 +337,7 @@ export default defineConfig([
     }
   },
   {
-    files: ['scripts/**/*.js'],
+    files: ['scripts/**/*.{js,mjs,cjs,ts,mts}'],
     languageOptions: {
       globals: {
         ...globals.node
