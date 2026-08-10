@@ -7,7 +7,8 @@ cd "$repo_root"
 if [[ "${AMP_ORB:-}" == 1 ]]; then
   gh auth setup-git
 
-  if ! command -v docker >/dev/null 2>&1; then
+  if ! command -v docker >/dev/null 2>&1 ||
+    ! command -v dockerd >/dev/null 2>&1; then
     echo "Installing Docker"
     sudo install -m 0755 -d /etc/apt/keyrings
     sudo curl -fsSL https://download.docker.com/linux/debian/gpg \

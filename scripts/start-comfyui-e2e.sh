@@ -5,14 +5,21 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 image=ghcr.io/comfy-org/comfyui-ci-container:0.0.21
 version="${image##*:}"
 port="${COMFYUI_PORT:-8188}"
-container=comfyui-e2e
+container="comfyui-e2e-$$"
 docker=(docker)
 
 if [[ "${AMP_ORB:-}" == 1 ]]; then
   docker=(sudo docker)
-  until "${docker[@]}" info >/dev/null 2>&1; do sleep 1; done
+  for _ in {1..60}; do
+    timeout 5 "${docker[@]}" info >/dev/null 2>&1 && break
+    sleep 1
+  done
+  if ! timeout 5 "${docker[@]}" info >/dev/null 2>&1; then
+    echo 'Docker did not become ready within 60 seconds.' >&2
+    exit 1
+  fi
 elif ! docker info >/dev/null 2>&1; then
-  if sudo docker info >/dev/null 2>&1; then
+  if [[ "$(uname -s)" == Linux ]] && sudo -n docker info >/dev/null 2>&1; then
     docker=(sudo docker)
   else
     echo 'Docker is not running. Start Docker and try again.' >&2
@@ -40,8 +47,10 @@ if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1 &&
   fi
 
   if [[ -n "$token" && -n "$username" ]]; then
-    printf '%s' "$token" | "${docker[@]}" --config "$docker_config" \
-      login ghcr.io --username "$username" --password-stdin
+    if ! printf '%s' "$token" | "${docker[@]}" --config "$docker_config" \
+      login ghcr.io --username "$username" --password-stdin; then
+      echo 'GHCR login failed; building from public source.' >&2
+    fi
   fi
 
   if ! "${docker[@]}" --config "$docker_config" pull "$image"; then
@@ -50,7 +59,6 @@ if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1 &&
   fi
 fi
 
-"${docker[@]}" rm -f "$container" >/dev/null 2>&1 || true
 "${docker[@]}" run --rm --name "$container" \
   --publish "127.0.0.1:$port:8188" \
   --mount \

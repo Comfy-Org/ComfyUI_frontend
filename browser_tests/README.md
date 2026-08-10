@@ -55,6 +55,11 @@ The first run pulls the CI image when your GitHub credentials can read it, or
 builds the pinned public source if they cannot. Leave it running while using
 `pnpm dev` and `pnpm test:browser:local` in separate terminals.
 
+The source build can take several minutes and uses about 10 GB for the image,
+plus Docker build cache. Set `COMFY_CI_CONTAINER_TOKEN` and
+`COMFY_CI_CONTAINER_USER` to credentials with `read:packages` access to pull
+the private image instead.
+
 ### Node.js & Playwright
 
 Install the Node version in `.nvmrc`, then the workspace dependencies and the
