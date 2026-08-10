@@ -69,8 +69,20 @@ describe('Composer', () => {
     mount()
     const send = screen.getByRole('button', { name: 'Send' })
     expect(send).toBeDisabled()
+
+    await userEvent.hover(send)
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Add a prompt to send')
+    await userEvent.unhover(send)
+
     await userEvent.type(screen.getByRole('textbox'), 'hello')
     expect(send).toBeEnabled()
+
+    await userEvent.hover(send)
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Send')
   })
 
   it('renders without vue-i18n message compilation errors', async () => {

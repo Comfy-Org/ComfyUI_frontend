@@ -5040,6 +5040,7 @@
     "runModeLimitDescription": "Comfy will only confirm when a workflow run exceeds your credit limit",
     "credits": "credits",
     "saveChanges": "Save changes",
+    "addPromptToSend": "Add a prompt to send",
     "send": "Send",
     "stop": "Stop",
     "thinking": "Thinking...",
