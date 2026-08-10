@@ -30,13 +30,15 @@
         :options="options"
         option-label="label"
         data-key="value"
-        @update:model-value="onWorkflowChange"
+        :allow-empty="false"
+        @click="onWorkflowClick"
       >
         <template #option="{ option, index }">
           <WorkflowTab
             :workflow-option="option"
             :is-first="index === 0"
             :is-last="index === options.length - 1"
+            :data-workflow-path="option.value"
             @click.middle="onCloseWorkflow(option)"
             @close-to-left="closeWorkflows(options.slice(0, index))"
             @close-to-right="closeWorkflows(options.slice(index + 1))"
@@ -238,17 +240,18 @@ const selectedWorkflow = computed<WorkflowOption | null>(() =>
     : null
 )
 
-const onWorkflowChange = async (option: WorkflowOption) => {
-  // Prevent unselecting the current workflow
-  if (!option) {
-    return
-  }
-  // Prevent reloading the current workflow
-  if (selectedWorkflow.value?.value === option.value) {
-    return
-  }
+const onWorkflowClick = async (event: MouseEvent) => {
+  const target = event.target
+  if (!(target instanceof HTMLElement)) return
 
-  await workflowService.openWorkflow(option.workflow)
+  const workflowElement =
+    target.closest<HTMLElement>('[data-workflow-path]') ??
+    target
+      .closest<HTMLButtonElement>('button')
+      ?.querySelector<HTMLElement>('[data-workflow-path]')
+  const path = workflowElement?.dataset.workflowPath
+  const option = options.value.find(({ value }) => value === path)
+  if (option) await workflowService.openWorkflow(option.workflow)
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
