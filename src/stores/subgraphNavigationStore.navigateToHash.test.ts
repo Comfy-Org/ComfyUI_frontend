@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { disposePinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, shallowRef } from 'vue'
 
 import type * as VueRouter from 'vue-router'
 
@@ -29,7 +29,7 @@ const routerMocks = vi.hoisted(() => ({
 }))
 
 const routeHashRef = ref('')
-const currentGraphRef = ref<LGraph | null>(null)
+const currentGraphRef = shallowRef<LGraph | null>(null)
 
 vi.mock('vue-router', async (importOriginal) => {
   const actual = await importOriginal<typeof VueRouter>()
@@ -500,6 +500,20 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(workflowStoreState.activeSubgraph).toBe(subgraph)
   })
 
+  it('uses the emitted graph during a synchronous graph-change event', async () => {
+    const subgraph = makeSubgraph(ids.validSubgraph)
+    const navigationStore = useSubgraphNavigationStore()
+    await navigationStore.updateHash()
+
+    currentGraphRef.value = subgraph
+    app.canvas.graph = subgraph
+    await flushHashWatcher()
+
+    expect(routerMocks.push).toHaveBeenCalledWith(
+      expect.objectContaining({ hash: `#${subgraph.id}` })
+    )
+  })
+
   it('preserves a cross-workflow subgraph route through the final load sync', async () => {
     const targetRootId = ids.deletedSubgraph
     const targetSubgraph = makeSubgraph(ids.validSubgraph)
@@ -829,10 +843,9 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     // navigateToHash for the deleted id ran once and produced exactly one
     // redirect. The watcher must NOT have fired again for the rewritten
     // (root) hash and produced a second redirect.
-    await vi.waitFor(() => {
-      expect(routerMocks.replace).toHaveBeenCalledTimes(1)
-      expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
-    })
+    await flushHashWatcher()
+    expect(routerMocks.replace).toHaveBeenCalledTimes(1)
+    expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
     warnSpy.mockRestore()
   })
 })

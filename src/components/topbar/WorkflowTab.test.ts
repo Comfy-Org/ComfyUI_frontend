@@ -129,11 +129,11 @@ function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
 function renderTab({
   workflowOption = makeWorkflowOption(),
   activeWorkflowKey = 'other-key',
-  activeWorkflowPath
+  workflowPath
 }: {
   workflowOption?: WorkflowOption
   activeWorkflowKey?: string
-  activeWorkflowPath?: string
+  workflowPath?: string
 } = {}) {
   const resolvedActiveWorkflowPath =
     activeWorkflowPath ??
@@ -170,9 +170,21 @@ function renderTab({
       workflowOption,
       isFirst: false,
       isLast: false
-    }
+    },
+    attrs: workflowPath
+      ? { 'data-testid': 'workflow-tab', 'data-workflow-path': workflowPath }
+      : undefined
   })
 }
+
+it('binds workflow selection metadata to the tab element', () => {
+  renderTab({ workflowPath: '/workflows/test.json' })
+
+  expect(screen.getByTestId('workflow-tab')).toHaveAttribute(
+    'data-workflow-path',
+    '/workflows/test.json'
+  )
+})
 
 describe('WorkflowTab - workflow status indicator', () => {
   beforeEach(() => {
