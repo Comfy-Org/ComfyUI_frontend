@@ -152,10 +152,14 @@ test.describe(
 
           await openSubgraphById(comfyPage, '11')
 
-          const interiorTextareas = comfyPage.page
-            .locator('[data-node-id]')
-            .getByRole('textbox')
-          await expect(interiorTextareas).toHaveCount(2)
+          const interiorNodes = comfyPage.page.locator('[data-node-id]')
+          await expect(interiorNodes.getByRole('textbox')).toHaveCount(0)
+          await expect(
+            interiorNodes.getByRole('status', {
+              name: 'text: Linked input',
+              exact: true
+            })
+          ).toHaveCount(2)
 
           await comfyPage.subgraph.exitViaBreadcrumb()
 

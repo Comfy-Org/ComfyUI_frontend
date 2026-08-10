@@ -948,7 +948,7 @@ describe('computeProcessedWidgets linked presentation', () => {
     })
   })
 
-  it('opens only node actions for a hidden linked widget', () => {
+  it('retains widget actions for a hidden linked widget', () => {
     const handleNodeRightClick = vi.fn()
     const event = fromAny<PointerEvent, unknown>({
       preventDefault: vi.fn(),
@@ -956,6 +956,7 @@ describe('computeProcessedWidgets linked presentation', () => {
     })
     const widget = createMockWidget({
       name: 'prompt',
+      nodeId: NODE_ID,
       type: 'text',
       slotMetadata: linkedSlot
     })
@@ -966,7 +967,7 @@ describe('computeProcessedWidgets linked presentation', () => {
     })[0].handleContextMenu(event)
 
     expect(handleNodeRightClick).toHaveBeenCalledWith(event, NODE_ID)
-    expect(showNodeOptions).toHaveBeenCalledWith(event)
+    expect(showNodeOptions).toHaveBeenCalledWith(event, 'prompt', NODE_ID)
   })
 
   it('retains widget actions when the widget is unlinked', () => {

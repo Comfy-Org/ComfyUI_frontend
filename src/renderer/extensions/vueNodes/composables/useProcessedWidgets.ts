@@ -404,10 +404,6 @@ export function computeProcessedWidgets({
       e.preventDefault()
       e.stopPropagation()
       if (nodeId !== undefined) ui.handleNodeRightClick(e, nodeId)
-      if (linkedDisplay) {
-        showNodeOptions(e)
-        return
-      }
       showNodeOptions(
         e,
         widget.name,

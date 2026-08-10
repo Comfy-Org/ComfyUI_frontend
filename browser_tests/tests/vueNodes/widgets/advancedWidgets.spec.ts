@@ -124,7 +124,10 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
 
     await node.getByText(HIDE_ADVANCED_INPUTS).click()
 
-    await expect(maxShiftWidget).toBeVisible()
+    await expect(
+      node.getByRole('status', { name: 'max_shift: Linked input' })
+    ).toBeVisible()
+    await expect(maxShiftWidget).toBeHidden()
     await expect(baseShiftWidget).toBeHidden()
   })
 
