@@ -20,41 +20,59 @@ const WIDGET_NAMES = [
 
 test.describe(
   'Linked standard Vue widgets',
-  { tag: ['@vue-nodes', '@widget', '@node', '@screenshot'] },
+  { tag: ['@vue-nodes', '@widget', '@node'] },
   () => {
-    test('preserves each control surface while making stale values inert', async ({
-      comfyPage
-    }) => {
+    test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.page.setViewportSize({ width: 1280, height: 900 })
       await comfyPage.workflow.loadWorkflow('vueNodes/linked-standard-widgets')
+    })
 
-      const [targetNodeRef] =
-        await comfyPage.nodeOps.getNodeRefsByType(TARGET_NODE_TYPE)
-      if (!targetNodeRef) throw new Error('Target DevTools node was not loaded')
-      await targetNodeRef.centerOnNode()
+    test(
+      'renders each linked control surface',
+      { tag: '@screenshot' },
+      async ({ comfyPage }) => {
+        const [targetNodeRef] =
+          await comfyPage.nodeOps.getNodeRefsByType(TARGET_NODE_TYPE)
+        if (!targetNodeRef)
+          throw new Error('Target DevTools node was not loaded')
+        await targetNodeRef.centerOnNode()
 
+        const targetNode = comfyPage.vueNodes
+          .getNodeByTitle(TARGET_NODE_TITLE)
+          .first()
+        await expect(targetNode).toBeVisible()
+
+        const statuses = targetNode.getByTestId(
+          TestIds.widgets.linkedPlaceholder
+        )
+        await expect(statuses).toHaveCount(WIDGET_NAMES.length)
+
+        for (const name of WIDGET_NAMES) {
+          await expect(
+            targetNode.getByRole('status', {
+              name: `${name}: Linked input`
+            })
+          ).toBeVisible()
+        }
+
+        await comfyPage.nextFrame()
+        await comfyPage.nextFrame()
+        await expect(targetNode).toHaveScreenshot('linked-standard-widgets.png')
+      }
+    )
+
+    test('keeps linked controls inaccessible to focus', async ({
+      comfyPage
+    }) => {
       const targetNode = comfyPage.vueNodes
         .getNodeByTitle(TARGET_NODE_TITLE)
         .first()
       await expect(targetNode).toBeVisible()
 
-      const statuses = targetNode.getByTestId(TestIds.widgets.linkedPlaceholder)
       const linkedContent = targetNode.getByTestId(
         TestIds.widgets.linkedContent
       )
-      const focusedLinkedContent = targetNode.locator(
-        `[data-testid="${TestIds.widgets.linkedContent}"]:focus-within`
-      )
-      await expect(statuses).toHaveCount(WIDGET_NAMES.length)
       await expect(linkedContent).toHaveCount(WIDGET_NAMES.length)
-
-      for (const name of WIDGET_NAMES) {
-        await expect(
-          targetNode.getByRole('status', {
-            name: `${name}: Linked input`
-          })
-        ).toBeVisible()
-      }
 
       for (let index = 0; index < WIDGET_NAMES.length; index++) {
         await expect(linkedContent.nth(index)).toHaveAttribute('inert', '')
@@ -71,35 +89,47 @@ test.describe(
       const interactiveCount = await interactive.count()
       expect(interactiveCount).toBeGreaterThan(WIDGET_NAMES.length)
 
-      const disabled = await interactive.evaluateAll((elements) =>
+      const controlStates = await interactive.evaluateAll((elements) =>
         elements.map((element) => {
-          if (
+          const disabled =
             element instanceof HTMLButtonElement ||
             element instanceof HTMLInputElement ||
             element instanceof HTMLTextAreaElement
-          ) {
-            return element.disabled
+              ? element.disabled
+              : element.getAttribute('aria-disabled') === 'true' ||
+                element.hasAttribute('data-disabled')
+
+          if (element instanceof HTMLElement) element.focus()
+
+          return {
+            disabled,
+            focused: document.activeElement === element
           }
-          return (
-            element.getAttribute('aria-disabled') === 'true' ||
-            element.hasAttribute('data-disabled')
-          )
         })
       )
-      expect(disabled.every(Boolean)).toBe(true)
+      expect(controlStates.every(({ disabled }) => disabled)).toBe(true)
+      expect(controlStates.every(({ focused }) => !focused)).toBe(true)
 
       for (let index = 0; index < interactiveCount; index++) {
-        const control = interactive.nth(index)
-        await expect(control).toBeHidden()
-        await control.evaluate((element) => {
-          if (element instanceof HTMLElement) element.focus()
-        })
-        expect(
-          await control.evaluate(
-            (element) => document.activeElement === element
-          )
-        ).toBe(false)
+        await expect(interactive.nth(index)).toBeHidden()
       }
+    })
+
+    test('ignores pointer and keyboard input on linked controls', async ({
+      comfyPage
+    }) => {
+      const [targetNodeRef] =
+        await comfyPage.nodeOps.getNodeRefsByType(TARGET_NODE_TYPE)
+      if (!targetNodeRef) throw new Error('Target DevTools node was not loaded')
+
+      const targetNode = comfyPage.vueNodes
+        .getNodeByTitle(TARGET_NODE_TITLE)
+        .first()
+      await expect(targetNode).toBeVisible()
+
+      const focusedLinkedContent = targetNode.locator(
+        `[data-testid="${TestIds.widgets.linkedContent}"]:focus-within`
+      )
 
       for (const text of [
         'STALE SELECT VALUE',
@@ -119,25 +149,26 @@ test.describe(
         widgetRefs.map((widget) => widget.getValue())
       )
 
-      for (let index = 0; index < WIDGET_NAMES.length; index++) {
-        await statuses.nth(index).click()
-      }
+      await targetNode
+        .getByRole('status', { name: 'switch: Linked input' })
+        .click()
       await comfyPage.page.keyboard.press('Space')
+
+      await targetNode
+        .getByRole('status', { name: 'select: Linked input' })
+        .click()
       await comfyPage.page.keyboard.press('ArrowUp')
       await comfyPage.page.keyboard.press('Enter')
 
-      for (let index = 0; index < WIDGET_NAMES.length + 2; index++) {
-        await comfyPage.page.keyboard.press('Tab')
-        await expect(focusedLinkedContent).toHaveCount(0)
-      }
+      await targetNode
+        .getByRole('status', { name: 'textarea: Linked input' })
+        .click()
+      await comfyPage.page.keyboard.type('ignored input')
+      await expect(focusedLinkedContent).toHaveCount(0)
 
       await expect
         .poll(() => Promise.all(widgetRefs.map((widget) => widget.getValue())))
         .toStrictEqual(valuesBefore)
-
-      await comfyPage.nextFrame()
-      await comfyPage.nextFrame()
-      await expect(targetNode).toHaveScreenshot('linked-standard-widgets.png')
     })
   }
 )
