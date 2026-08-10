@@ -729,7 +729,8 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(
         t('toastMessages.failedToInitiateCreditPurchase', {
           error: message
-        })
+        }),
+        response.status
       )
     }
 
