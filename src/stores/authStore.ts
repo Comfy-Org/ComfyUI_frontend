@@ -208,11 +208,14 @@ export const useAuthStore = defineStore('auth', () => {
     tokenRefreshTrigger.value++
   }
 
-  // A fresh sign-in or token refresh can resolve a permanent auth failure
-  // (email verified, workspace membership granted, JWT rotated). Clear the jobs
-  // poller's auth backoff so the next poll probes immediately instead of
-  // waiting out the suppression window.
-  watch([isAuthenticated, tokenRefreshTrigger], () => {
+  // A user identity change (sign-in, sign-out, or a direct account switch) or a
+  // token refresh can resolve a permanent auth failure (email verified,
+  // workspace membership granted, JWT rotated). Clear the jobs poller's auth
+  // backoff so the next poll probes immediately instead of waiting out the
+  // suppression window. Watch currentUser rather than isAuthenticated so an
+  // A→B account switch — where isAuthenticated stays true and the new user's
+  // first token event doesn't bump tokenRefreshTrigger — still clears it.
+  watch([currentUser, tokenRefreshTrigger], () => {
     clearJobsAuthBackoff()
   })
 

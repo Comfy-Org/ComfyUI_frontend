@@ -323,6 +323,18 @@ describe('useAuthStore', () => {
 
       expect(clearJobsAuthBackoff).toHaveBeenCalled()
     })
+
+    it('clears the jobs poller backoff on a direct account switch', async () => {
+      // A→B switch keeps isAuthenticated true and does not bump the token
+      // trigger, so the reset must key off the user identity itself.
+      vi.mocked(clearJobsAuthBackoff).mockClear()
+
+      const otherUser = { uid: 'other-user-id' } as Partial<User> as User
+      authStateCallback?.(otherUser)
+      await nextTick()
+
+      expect(clearJobsAuthBackoff).toHaveBeenCalled()
+    })
   })
 
   it('should initialize with the current user', () => {
