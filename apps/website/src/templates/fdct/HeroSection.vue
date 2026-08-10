@@ -31,9 +31,9 @@ const collageImages: CollageMedia[] = [
     parallaxY: 160
   },
   {
-    src: 'https://media.comfy.org/website/fdct/bb2df162-f851-4acb-b098-83026c1c0d1c.mp4',
+    src: 'https://media.comfy.org/website/fdct/d13c25f5-c92a-4486-a300-87e1a4b965dd.mp4',
     poster:
-      'https://media.comfy.org/website/fdct/bb2df162-f851-4acb-b098-83026c1c_thumb.jpg',
+      'https://media.comfy.org/website/fdct/d13c25f5-c92a-4486-a300-87e1a4b965dd_thumb.jpeg',
     video: true,
     class:
       'left-[1.75%] top-[290px] aspect-video w-[min(334px,calc(50vw-450px))]',
@@ -69,9 +69,9 @@ const mobileCollageImages: CollageMedia[] = [
     class: 'left-[-7%] top-6 aspect-[7/4] w-[44%]'
   },
   {
-    src: 'https://media.comfy.org/website/fdct/bb2df162-f851-4acb-b098-83026c1c0d1c.mp4',
+    src: 'https://media.comfy.org/website/fdct/d13c25f5-c92a-4486-a300-87e1a4b965dd.mp4',
     poster:
-      'https://media.comfy.org/website/fdct/bb2df162-f851-4acb-b098-83026c1c_thumb.jpg',
+      'https://media.comfy.org/website/fdct/d13c25f5-c92a-4486-a300-87e1a4b965dd_thumb.jpeg',
     video: true,
     class: 'left-[21%] top-[150px] aspect-video w-[62%]'
   }
