@@ -16,15 +16,19 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-const { mockStartDrag, mockHandleNativeDrop } = vi.hoisted(() => ({
-  mockStartDrag: vi.fn(),
-  mockHandleNativeDrop: vi.fn()
-}))
+const { mockStartDrag, mockHandleNativeDrop, mockIsPlacingNode } = vi.hoisted(
+  () => ({
+    mockStartDrag: vi.fn(),
+    mockHandleNativeDrop: vi.fn(),
+    mockIsPlacingNode: { value: false }
+  })
+)
 
 vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   useNodeDragToCanvas: () => ({
     startDrag: mockStartDrag,
-    handleNativeDrop: mockHandleNativeDrop
+    handleNativeDrop: mockHandleNativeDrop,
+    isDragging: mockIsPlacingNode
   })
 }))
 
