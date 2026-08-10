@@ -143,6 +143,21 @@ describe('useWorkflowTemplateSelectorDialog', () => {
         source: 'sidebar'
       })
     })
+
+    it('allows focus in portalled template filters', () => {
+      mockNewUserService.isNewUser.mockReturnValue(false)
+
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show()
+
+      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dialogComponentProps: expect.objectContaining({
+            modal: false
+          })
+        })
+      )
+    })
   })
 
   describe('hide', () => {
