@@ -528,6 +528,45 @@ describe('downloadModel', () => {
     expect(anchorClick).not.toHaveBeenCalled()
   })
 
+  it('does not dispatch blocked localhost URLs through Desktop2', () => {
+    const desktopDownloadModel =
+      vi.fn<
+        (url: string, filename: string, directory: string) => Promise<boolean>
+      >()
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: desktopDownloadModel
+    }
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'http://localhost:6379/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(desktopDownloadModel).not.toHaveBeenCalled()
+  })
+
+  it('does not dispatch blocked localhost URLs through Electron', () => {
+    mockIsDesktop.value = true
+    mockSidebarTabStore.activeSidebarTabId = 'node-library'
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'http://localhost:6379/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(mockStartDownload).not.toHaveBeenCalled()
+    expect(mockSidebarTabStore.activeSidebarTabId).toBe('node-library')
+  })
+
   it('uses the Desktop2 bridge directly instead of the browser fallback', () => {
     const anchorClick = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')
