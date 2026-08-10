@@ -5576,6 +5576,8 @@ const translations = {
     'zh-CN': '角色参考'
   },
   'fdct.tags.video': { en: 'Video', 'zh-CN': '视频' },
+  'fdct.tags.virtualTryOn': { en: 'Virtual Try On', 'zh-CN': '虚拟试穿' },
+  'fdct.tags.fashion': { en: 'Fashion', 'zh-CN': '时尚' },
   'fdct.projects.title': { en: 'Past projects', 'zh-CN': '过往项目' },
   'fdct.projects.category.advertisement': {
     en: 'Advertisement',
@@ -5615,6 +5617,21 @@ const translations = {
   'fdct.projects.faceSwapWorkflow.description': {
     en: 'Swap a face across a full video while preserving the original performance and lighting.',
     'zh-CN': '在整段视频中替换人脸，同时保留原有表演与光影效果。'
+  },
+  // en copy for Chris's highlights comes from the workflows hub pages.
+  'fdct.projects.virtualTryOn4In1.description': {
+    en: "Create virtual try-ons with your character and outfit images using ComfyUI's Nano Banana Pro model. Generate 4 variations in one prompt.",
+    'zh-CN':
+      '使用 ComfyUI 的 Nano Banana Pro 模型，用你的角色与服装图像生成虚拟试穿效果，一条提示词即可生成 4 个变体。'
+  },
+  'fdct.projects.characterOutfitFashionVideo.description': {
+    en: 'Transform character and outfit images into dynamic fashion videos.',
+    'zh-CN': '将角色与服装图像转化为动感的时尚视频。'
+  },
+  'fdct.projects.talentCasting.description': {
+    en: 'Turn a headshot into a branded still and a quick motion test for casting previs, using Gemini image-to-image and Kling image-to-video.',
+    'zh-CN':
+      '通过 Gemini 图生图与 Kling 图生视频，将头像照片转化为品牌风格静帧与快速动态测试，用于选角预览。'
   },
   'fdct.faq.title': { en: 'Q&A', 'zh-CN': '问答' },
   'fdct.faq.q1': {

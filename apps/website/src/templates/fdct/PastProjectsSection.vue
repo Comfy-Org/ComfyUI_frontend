@@ -11,18 +11,20 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const items = computed<CardArticleGalleryItem[]>(() =>
-  projects(locale).map((project) => ({
-    id: project.id,
-    category: t(`fdct.projects.category.${project.category}`, locale),
-    title: project.title,
-    media: { ...project.media, alt: project.title },
-    author: project.author,
-    cta: {
-      label: t('fdct.projects.cta', locale),
-      href: project.href,
-      newTab: true
-    }
-  }))
+  projects(locale)
+    .filter((project) => !project.dialogOnly)
+    .map((project) => ({
+      id: project.id,
+      category: t(`fdct.projects.category.${project.category}`, locale),
+      title: project.title,
+      media: { ...project.media, alt: project.title },
+      author: project.author,
+      cta: {
+        label: t('fdct.projects.cta', locale),
+        href: project.href,
+        newTab: true
+      }
+    }))
 )
 </script>
 

@@ -85,6 +85,9 @@ export interface FdctProject {
   // descriptions land (the design mock uses lorem ipsum here).
   description?: string
   tags: readonly string[]
+  // Dialog highlights that are not past projects; the past-projects grid
+  // filters these out.
+  dialogOnly?: boolean
 }
 
 // Top workflows from each technologist's hub page (most-popular order);
@@ -187,6 +190,63 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
       href: 'https://comfy.org/workflows/93f286fbc2c8-93f286fbc2c8/',
       description: t('fdct.projects.faceSwapWorkflow.description', locale),
       tags: [t('fdct.tags.vfx', locale)]
+    },
+    // Chris's highlighted hub picks (2026-08-10). The hub lists other
+    // creators on these workflows; author here only routes them into his
+    // dialog, which no longer displays a creator.
+    {
+      id: 'virtual-try-on-4-in-1',
+      title: 'Virtual Try On with Character - 4 in 1',
+      category: 'ecommerce',
+      media: {
+        type: 'image',
+        src: 'https://comfy-hub-assets.comfy.org/templates/d667542c-fa26-4fb7-bbdd-1bf85738f518.png'
+      },
+      author: technologistIdentities['chris-v'],
+      href: 'https://comfy.org/workflows/templates_rob_fashion_shoot_vton-4in1.app-d7677ac50371/',
+      description: t('fdct.projects.virtualTryOn4In1.description', locale),
+      tags: [
+        t('fdct.tags.imageGeneration', locale),
+        t('fdct.tags.virtualTryOn', locale)
+      ],
+      dialogOnly: true
+    },
+    {
+      id: 'character-outfit-fashion-video',
+      title: 'Character & Outfit to Fashion Video',
+      category: 'ecommerce',
+      media: {
+        type: 'video',
+        src: 'https://comfy-hub-assets.comfy.org/templates/f022c5ad-2888-483c-bace-96f8a1d71f88.mp4'
+      },
+      author: technologistIdentities['chris-v'],
+      href: 'https://comfy.org/workflows/templates-stitched_vid_contact_sheet-2cf9f9f6d205/',
+      description: t(
+        'fdct.projects.characterOutfitFashionVideo.description',
+        locale
+      ),
+      tags: [
+        t('fdct.tags.fashion', locale),
+        t('fdct.tags.imageToVideo', locale)
+      ],
+      dialogOnly: true
+    },
+    {
+      id: 'talent-casting',
+      title: 'Talent Casting',
+      category: 'advertisement',
+      media: {
+        type: 'video',
+        src: 'https://comfy-hub-assets.comfy.org/uploads/12b14df7-4838-49a0-95df-54371cdaa9ae.mp4'
+      },
+      author: technologistIdentities['chris-v'],
+      href: 'https://comfy.org/workflows/ff88e6723334-ff88e6723334/',
+      description: t('fdct.projects.talentCasting.description', locale),
+      tags: [
+        t('fdct.tags.imageToVideo', locale),
+        t('fdct.tags.characterReference', locale)
+      ],
+      dialogOnly: true
     }
   ]
 }

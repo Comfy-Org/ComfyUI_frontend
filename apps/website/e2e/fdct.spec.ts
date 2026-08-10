@@ -10,7 +10,8 @@ import { test } from './fixtures/blockExternalMedia'
 
 // The spec only asserts locale-independent fields (names, titles, counts,
 // category slugs), so one locale's snapshot serves both language suites.
-const projects = projectsOf('en')
+// Dialog-only highlights are excluded to mirror the past-projects grid.
+const projects = projectsOf('en').filter((project) => !project.dialogOnly)
 const technologists = technologistsOf('en')
 
 const builderReasonKeys = [
