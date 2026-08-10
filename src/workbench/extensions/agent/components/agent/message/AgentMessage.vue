@@ -73,7 +73,6 @@ const hasTools = computed(() =>
         v-else-if="group.kind === 'activity'"
         :parts="group.parts"
         :streaming="message.streaming"
-        :active="message.streaming"
       />
       <div v-else-if="group.kind === 'tabLinks'" class="flex flex-col gap-1">
         <TabLinkCard
