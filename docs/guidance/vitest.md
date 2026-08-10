@@ -44,8 +44,10 @@ error - `Closing rpc while "onUserConsoleLog" was pending` - against whichever
 file happened to be running, and fails the run with every test passing.
 
 If you hit the guard, mock the module that issues the request. Stubbing `fetch`
-in your own test (`vi.stubGlobal('fetch', ...)`) also works and replaces the
-guard for that test.
+also works and replaces the guard for that test, but do it in a `beforeEach` or
+inside the test body - a `vi.stubGlobal` at module scope is not durable, since
+`vi.unstubAllGlobals` (and the `unstubGlobals` config option) removes it before
+the test runs, putting the real `fetch` back without failing anything.
 
 ## Component Testing
 
