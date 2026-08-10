@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "レイヤーを追加",
+    "inputs": {
+      "blend_mode": {
+        "name": "ブレンドモード",
+        "tooltip": "初期ブレンドモード。"
+      },
+      "flip_h": {
+        "name": "水平反転",
+        "tooltip": "レイヤーを水平方向に反転します。"
+      },
+      "flip_v": {
+        "name": "垂直反転",
+        "tooltip": "レイヤーを垂直方向に反転します。"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "初期表示高さ。0の場合は画像の元の高さを維持します。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "レイヤーの内容（元のサイズ）。バッチの場合は連続したレイヤーに展開されます。"
+      },
+      "layers": {
+        "name": "レイヤースタック",
+        "tooltip": "追加先のレイヤースタック。未接続の場合は新しいスタックを開始します。"
+      },
+      "mask": {
+        "name": "マスク",
+        "tooltip": "このレイヤーの透明度マスク。マスク値が1の領域は透明になり、画像が持つアルファチャンネルと乗算されます。"
+      },
+      "name": {
+        "name": "名前",
+        "tooltip": "コンポジターエディタに表示されるレイヤー名。"
+      },
+      "opacity": {
+        "name": "不透明度",
+        "tooltip": "初期レイヤーの不透明度。"
+      },
+      "rotation": {
+        "name": "回転",
+        "tooltip": "初期回転角度（度・時計回り）。"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "初期表示幅。0の場合は画像の元の幅を維持します。"
+      },
+      "x": {
+        "name": "X座標",
+        "tooltip": "キャンバス上での初期水平位置。"
+      },
+      "y": {
+        "name": "Y座標",
+        "tooltip": "キャンバス上での初期垂直位置。"
+      },
+      "z_index": {
+        "name": "Zインデックス",
+        "tooltip": "スタッキングの上書き。レイヤーはz_indexで安定ソートされ、同じ値の場合はリスト順を維持します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "このレイヤーが追加されたレイヤースタック。"
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "ノイズを追加",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "オーディオ生成"
       },
+      "model_output_format": {
+        "name": "出力フォーマット"
+      },
       "model_prompt": {
         "name": "プロンプト"
-      },
-      "model_ratio": {
-        "name": "アスペクト比"
       },
       "model_resolution": {
         "name": "解像度"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "オーディオ生成"
       },
+      "model_output_format": {
+        "name": "出力フォーマット"
+      },
       "model_prompt": {
         "name": "プロンプト"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "解像度"
+      },
+      "model_video_editing": {
+        "name": "ビデオ編集"
       },
       "seed": {
         "name": "シード",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "オーディオ生成"
+      },
+      "model_output_format": {
+        "name": "出力フォーマット"
       },
       "model_prompt": {
         "name": "プロンプト"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "画像を背景プレートと、最大16個までの再配置可能な透明レイヤーに分解します。各レイヤーには積み重ね順、バウンディングボックス、名前、説明が含まれます。",
+    "display_name": "ByteDance Seedream 5.0 Pro レイヤー分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "crop_layers": {
+        "name": "crop_layers",
+        "tooltip": "レイヤー／マスクのバッチ出力のジオメトリ（layer_stackには影響せず、常にタイトです）。フルキャンバス：各レイヤーをバウンディングボックス位置のベースサイズキャンバスに配置—ImageCompositeMaskedで直接再合成可能。最小サイズ：各レイヤーをバウンディングボックスで切り抜き（バッチ処理のため最大レイヤーにパディング）—テンソルが大幅に小さくなります。配置の再構築はbboxes出力をLayers From Bounding Boxesに入力してください。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "分離する画像。画像は1枚のみ、最低512x512ピクセル、アスペクト比は1:16から16:1の範囲。約4MPを超える入力はアップロード前に縮小されます。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "画像をどのように分離するか。空欄の場合は自動検出し、主要な要素をすべて分離します。自然言語で要素を記述して分離を制御したり、<bbox>left top right bottom</bbox>タグ（0-1000のパーミル座標）で正確な領域を指定できます。"
+      },
+      "prompt_optimization": {
+        "name": "prompt_optimization",
+        "tooltip": "プロンプト最適化モード：「standard」は高品質、「fast」は生成時間が短縮されます。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "出力解像度レベル。「auto」は入力画像サイズに従います（1K～2K範囲に制限）。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "画像に「AI生成」のウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "レイヤーが積み重なるベース画像（背景プレート）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "ベース画像の透明度（1 = 透明、LoadImageの規則）。現在は常に完全不透明です。"
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "下から上に順に並んだ透明レイヤー。フルキャンバスモード：バウンディングボックス位置の黒いベースサイズキャンバスに配置。最小サイズモード：バウンディングボックスで切り抜き、左上に固定、最大レイヤーにパディング。"
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "各レイヤーの透明度。layersバッチとインデックスが一致（1 = 透明、LoadImageの規則）。ImageCompositeMasked型の合成にはInvertMaskを先に追加してください。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "各レイヤーごとの配置ボックス。layersバッチとインデックスが一致（両方とmasksをLayers From Bounding Boxesに入力してレイヤーごとの配置を再構築）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height]はレイヤー自身のフレーム内のコンテンツ領域で、キャンバス上ではボックス位置＋そのオフセットに配置されます。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image用の編集可能なレイヤードキュメント：ベースプレートと、各要素が本来の位置と積み重ね順で名前付き・タイトに切り抜かれたレイヤーとして含まれます。直接接続するか、Add Layerで拡張可能です。"
       }
     }
   },
@@ -4418,6 +4556,144 @@
       }
     }
   },
+  "Flux3ImageToVideoNode": {
+    "description": "1枚から10枚の画像をFLUX 3でアニメーション化します。各画像がclipのフレームになります：1枚ならオープニング、2枚なら最初から最後へモーフィング、3枚以上はclip全体に分散または指定したタイミングに固定されます。",
+    "display_name": "Flux 3 画像から動画へ",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力アスペクト比。「auto」はプロンプトや入力から自動選択。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "clipの長さ（秒）。「auto」は内容に合わせて自動調整。"
+      },
+      "generate_audio": {
+        "name": "音声生成",
+        "tooltip": "同期した音声（環境音、音声、効果音）を生成。オフの場合は音声トラックなしの動画になります。"
+      },
+      "keyframes": {
+        "name": "キーフレーム",
+        "tooltip": "1～10枚の画像を再生順に指定。各画像は最低256x256ピクセル。"
+      },
+      "placement": {
+        "name": "配置",
+        "tooltip": "「clip全体に分散」はFLUX 3が画像を配置します（1枚はオープニング、2枚は開始と終了）。「指定時間」は各画像を選んだ秒数に固定します。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "シーンの動きや音の指示。プロンプトは生成前に解釈・拡張されます。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力解像度。"
+      },
+      "safety_tolerance": {
+        "name": "安全許容度",
+        "tooltip": "モデレーションの厳しさ。0が最も厳格。画像や動画を送信するリクエストは、ここで設定しても最大2件に制限されます。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。FLUX 3は独自のシードを選ぶため、この値に関わらず実際の結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3TextToVideoNode": {
+    "description": "テキストプロンプトからFLUX 3経由で同期音声付き動画を生成します。",
+    "display_name": "Flux 3 テキストから動画へ",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力アスペクト比。「auto」はプロンプトや入力から自動選択。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "clipの長さ（秒）。「auto」は内容に合わせて自動調整。"
+      },
+      "generate_audio": {
+        "name": "音声生成",
+        "tooltip": "同期した音声（環境音、音声、効果音）を生成。オフの場合は音声トラックなしの動画になります。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望内容を自然言語で記述。プロンプトは生成前に解釈・拡張されます。環境音・音楽・音声はレイヤーごとに分けて記述してください。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力解像度。"
+      },
+      "safety_tolerance": {
+        "name": "安全許容度",
+        "tooltip": "モデレーションの厳しさ。0が最も厳格。画像や動画を送信するリクエストは、ここで設定しても最大2件に制限されます。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。FLUX 3は独自のシードを選ぶため、この値に関わらず実際の結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3VideoContinuationNode": {
+    "description": "FLUX 3 でビデオを継続します：新しいクリップは、指定したクリップの最後のフレームから続きます。",
+    "display_name": "Flux 3 ビデオ継続",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力アスペクト比。「auto」はプロンプトや入力から自動選択します。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "クリップの長さ（秒）。「auto」は内容に合わせて長さを調整します。"
+      },
+      "generate_audio": {
+        "name": "音声生成",
+        "tooltip": "同期された音声（環境音、音声、効果音）を生成します。オフの場合は音声トラックなしのビデオになります。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "継続部分に表示する内容。プロンプトは生成前に解釈・拡張されます。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力解像度。"
+      },
+      "safety_tolerance": {
+        "name": "安全許容度",
+        "tooltip": "モデレーションの許容度。0が最も厳格です。画像やビデオを送信するリクエストは、ここで設定した値に関わらず最大2に制限されます。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。FLUX 3 は独自のシードを選択するため、この値に関わらず実際の結果は非決定的です。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "継続するクリップ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxDisableGuidance": {
     "description": "このノードはFluxおよびFluxのようなモデルのガイダンス埋め込みを完全に無効にします",
     "display_name": "FluxDisableGuidance",
@@ -6790,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "レイヤー画像の作成",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "compositorエディタで保存されたレイヤー合成。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "合成するレイヤースタック。Add Layerで構築します。アイテムはz_indexで積み重ねられ、バッチ内のフレームは連続したレイヤーに展開されます。アイテムの配置、不透明度、ブレンドモードが初期合成を定義します。明示的なドキュメントキャンバスがない場合、サイズは配置されたレイヤーの最大範囲を推定します。現在の入力と一致する保存済みの合成が優先されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "合成画像。合成に透明部分がある場合（例：非表示の背景）、アルファチャンネルを持ちます。そうでなければ通常のRGBです。"
+      },
+      "1": {
+        "tooltip": "合成画像の透明度（1 = 完全に透明）。合成が不透明な場合はすべてゼロです。"
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "画像トリミング",
     "inputs": {
@@ -7610,158 +7907,6 @@
       }
     }
   },
-  "KlingCameraControlI2VNode": {
-    "description": "静止画像を、実際の映画撮影のようなプロフェッショナルなカメラ動作でシネマティックな動画に変換します。ズーム、回転、パン、チルト、一人称視点などのバーチャルカメラ操作を制御し、元画像へのフォーカスを維持します。",
-    "display_name": "Kling 画像から動画へ（カメラコントロール）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "Kling Camera Controlsノードで作成できます。動画生成時のカメラの動きやモーションを制御します。"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "ネガティブテキストプロンプト"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "ポジティブテキストプロンプト"
-      },
-      "start_frame": {
-        "name": "start_frame",
-        "tooltip": "参照画像 - URLまたはBase64エンコード文字列。10MBを超えず、解像度は300×300px以上、アスペクト比は1:2.5〜2.5:1の範囲。Base64の場合、data:imageプレフィックスは含めないでください。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControlT2VNode": {
-    "description": "テキストを本格的なカメラワークで映画のようなビデオに変換します。ズーム、回転、パン、チルト、一人称視点など、実際の映画撮影を模したバーチャルカメラの動きを制御し、元のテキストの内容に焦点を当てたまま映像を生成します。",
-    "display_name": "Kling テキストからビデオへ（カメラコントロール）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "camera_control": {
-        "name": "camera_control",
-        "tooltip": "Kling Camera Controlsノードで作成できます。ビデオ生成中のカメラの動きやモーションを制御します。"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "ネガティブなテキストプロンプト"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "ポジティブなテキストプロンプト"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingCameraControls": {
-    "description": "Klingカメラコントロールおよびモーションコントロール効果の設定オプションを指定できます。",
-    "display_name": "Klingカメラコントロール",
-    "inputs": {
-      "camera_control_type": {
-        "name": "camera_control_type"
-      },
-      "horizontal_movement": {
-        "name": "horizontal_movement",
-        "tooltip": "カメラの水平方向（x軸）の動きを制御します。負の値は左、正の値は右を示します。"
-      },
-      "pan": {
-        "name": "pan",
-        "tooltip": "カメラの垂直面（x軸）での回転を制御します。負の値は下方向への回転、正の値は上方向への回転を示します。"
-      },
-      "roll": {
-        "name": "roll",
-        "tooltip": "カメラの回転量（z軸）を制御します。負の値は反時計回り、正の値は時計回りを示します。"
-      },
-      "tilt": {
-        "name": "tilt",
-        "tooltip": "カメラの水平面（y軸）での回転を制御します。負の値は左回転、正の値は右回転を示します。"
-      },
-      "vertical_movement": {
-        "name": "vertical_movement",
-        "tooltip": "カメラの垂直方向（y軸）の動きを制御します。負の値は下方向、正の値は上方向を示します。"
-      },
-      "zoom": {
-        "name": "zoom",
-        "tooltip": "カメラの焦点距離の変化を制御します。負の値は視野が狭くなり、正の値は視野が広くなります。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "camera_control",
-        "tooltip": null
-      }
-    }
-  },
-  "KlingDualCharacterVideoEffectNode": {
-    "description": "effect_scene に基づいて動画生成時に様々な特殊効果を実現します。最初の画像は合成画像の左側に、2番目の画像は右側に配置されます。",
-    "display_name": "Kling デュアルキャラクター動画エフェクト",
-    "inputs": {
-      "duration": {
-        "name": "duration"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "image_left": {
-        "name": "image_left",
-        "tooltip": "左側の画像"
-      },
-      "image_right": {
-        "name": "image_right",
-        "tooltip": "右側の画像"
-      },
-      "mode": {
-        "name": "mode"
-      },
-      "model_name": {
-        "name": "model_name"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingFirstLastFrameNode": {
     "description": "Kling V3 を使用して最初と最後のフレームからビデオを生成します。",
     "display_name": "Kling 3.0 ファースト・ラストフレームからビデオ生成",
@@ -8280,38 +8425,6 @@
       }
     }
   },
-  "KlingSingleImageVideoEffectNode": {
-    "description": "effect_scene に基づいてビデオを生成する際に、さまざまな特殊効果を実現します。",
-    "display_name": "Kling ビデオエフェクト",
-    "inputs": {
-      "duration": {
-        "name": "duration"
-      },
-      "effect_scene": {
-        "name": "effect_scene"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "参照画像。URL または Base64 エンコード文字列（data:image プレフィックスなし）。ファイルサイズは10MB以下、解像度は300×300px以上、アスペクト比は1:2.5～2.5:1の範囲である必要があります。"
-      },
-      "model_name": {
-        "name": "model_name"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingStartEndFrameNode": {
     "description": "指定した開始画像と終了画像の間を遷移する動画シーケンスを生成します。このノードは中間のすべてのフレームを作成し、最初のフレームから最後のフレームまで滑らかな変化を実現します。",
     "display_name": "Kling 開始-終了フレームから動画生成",
@@ -8498,26 +8611,6 @@
       "start_frame": {
         "name": "開始フレーム",
         "tooltip": "オプションの開始フレーム画像。接続すると画像からビデオモードに切り替わります。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingVirtualTryOnNode": {
-    "description": "Klingバーチャル試着ノード。人物画像と服画像を入力して、人物に服を試着させます。",
-    "display_name": "Klingバーチャル試着",
-    "inputs": {
-      "cloth_image": {
-        "name": "服画像"
-      },
-      "human_image": {
-        "name": "人物画像"
-      },
-      "model_name": {
-        "name": "モデル名"
       }
     },
     "outputs": {
@@ -9479,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "画像バッチとそのバウンディングボックスからレイヤースタックを作成します。各フレームごとに1つのレイヤーが作られ、それぞれ自身のボックスで配置されます。ノードがレイヤーをバッチとして出力する場合に使用します。バッチは各フレームごとに1つの配置しか持たないため、個別の位置情報は通常失われます。",
+    "display_name": "バウンディングボックスからレイヤー作成",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "配置ボックス。画像バッチとインデックスが揃っています。バウンディングボックス（x, y, width, height）、正規化要素（'bbox'を持つもの。これらはcanvas_width/canvas_heightでピクセルに変換）、またはそのいずれかのJSON文字列を受け付けます。対応するボックスがないフレームは原点に配置されます。ボックスのwidth/heightでレイヤーがスケーリングされます。metadata.name（またはdesc）とmetadata.z_indexがあれば使用され、metadata.content_rect（フレーム相対）はフレームを実際の内容で切り抜きます。"
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "ドキュメントキャンバスの高さ。0の場合は配置されたレイヤーから推定します。"
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "ドキュメントキャンバスの幅。0の場合は配置されたレイヤーから推定します。"
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "metadata.content_rectがある場合は各フレームをその範囲で切り抜き、ボックス位置＋rectオフセットに内容を配置します。フレームがパディングされているバッチの場合はオンにしてください。本来の内容だけを正しい位置に残します。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "画像バッチ。各フレームが1つのレイヤーになります。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "追加するレイヤースタック。未接続の場合は新しいスタックを開始します。"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "フレームごとの透明度。画像バッチとインデックスが揃っています（1 = 透明、LoadImageの規則）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Create Layered Image用のレイヤースタック。"
       }
     }
   },
@@ -20713,6 +20845,58 @@
       }
     }
   },
+  "TopazImageEnhanceV2": {
+    "description": "業界標準のアップスケーリングと画像強化。",
+    "display_name": "Topaz 画像強化",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_color_preservation": {
+        "name": "色保持"
+      },
+      "model_creativity": {
+        "name": "創造性"
+      },
+      "model_crop_to_fill": {
+        "name": "切り抜き調整"
+      },
+      "model_face_enhancement": {
+        "name": "顔強調"
+      },
+      "model_face_enhancement_creativity": {
+        "name": "顔強調の創造性"
+      },
+      "model_face_enhancement_strength": {
+        "name": "顔強調の強度"
+      },
+      "model_face_preservation": {
+        "name": "顔保持"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_subject_detection": {
+        "name": "被写体検出"
+      },
+      "output_height": {
+        "name": "出力高さ",
+        "tooltip": "0の場合は元の高さ、またはoutput_widthが指定されていれば比例拡大。Wonder 3.5は1x～6xの拡大率のみ対応。Bloom 2とWonder 3.5は入力アスペクト比を維持し、指定サイズを目標とします。"
+      },
+      "output_width": {
+        "name": "出力幅",
+        "tooltip": "0の場合は自動計算（通常は元のサイズ、またはoutput_heightが指定されていれば比例拡大）。Wonder 3.5は1x～6xの拡大率のみ対応。Bloom 2とWonder 3.5は入力アスペクト比を維持し、指定サイズを目標とします。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TopazVideoEnhance": {
     "description": "強力なアップスケーリングと復元技術で動画に新たな命を吹き込む。",
     "display_name": "Topaz Video Enhance",
@@ -23319,6 +23503,129 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2Cache": {
+    "description": "ポーズビデオの各ブロックのアクティベーションをキャッシュし、サンプリングステップごとではなく一度だけ実行します。生成時間を約半分に短縮しますが、トレードオフとして480x832/81フレーム・bf16の場合、約12.5GBのシステムRAMが必要です（解像度や長さに応じて増減します）。コンテキストウィンドウを使用する場合、各ウィンドウが個別にキャッシュされるため、RAMの使用量はウィンドウ数に比例します。static_standardスケジュールを使用してください。uniformスケジュールでは毎ステップごとにウィンドウが移動し、キャッシュが再利用されません。",
+    "display_name": "WanAnimate2Cache",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "キャッシュの保存先。cpu（RAM）は安全な選択肢で、通常のサイズではモデルと一緒にVRAMに収まりません。gpu（VRAM）は収まる場合はより高速です。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "保存精度。defaultはモデルの計算dtypeでアクティベーションを保存します。int8はキャッシュサイズを半分に、int4は4分の1に削減します。convrotは精度を維持するために使用されます。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanAnimate2ToVideo": {
+    "description": "参照画像のキャラクターを動画でアニメーション化し、動画から顔のアニメーション、体の動き、手のジェスチャーを効果的に再現します。",
+    "display_name": "WanAnimate2ToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "同時に生成する動画の数。"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "参照画像のCLIP vision。"
+      },
+      "clip_vision_output_pose": {
+        "name": "clip_vision_output_pose",
+        "tooltip": "ポーズ動画の最初のフレームのCLIP vision。デフォルトはclip_vision_output。"
+      },
+      "continue_motion": {
+        "name": "continue_motion",
+        "tooltip": "時間的一貫性のために継続する前の動きのシーケンス。"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "出力動画の高さ（ピクセル単位）。"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "生成するフレーム数。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "pose_end_percent": {
+        "name": "pose_end_percent",
+        "tooltip": "ポーズの影響が終了するサンプリングのパーセンテージ。動きは主に初期に決まるため、例：0.7に設定すると細部の自由度が増しつつ振付は維持されます。"
+      },
+      "pose_start_percent": {
+        "name": "pose_start_percent",
+        "tooltip": "ポーズの影響が開始するサンプリングのパーセンテージ。ウィンドウ外ではポーズ分岐が完全にスキップされ、その分処理が高速化されます。"
+      },
+      "pose_strength": {
+        "name": "pose_strength",
+        "tooltip": "動きに対するポーズ動画の影響度を調整します。1.0が学習済みの挙動で、1.0未満は影響を弱め、1.0超は強めます。0.0は影響をミュートしますが完全には除去しません。"
+      },
+      "pose_video": {
+        "name": "pose_video",
+        "tooltip": "動きを参照キャラクターに転送する元の動画。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "positive_pose": {
+        "name": "positive_pose",
+        "tooltip": "ポーズ動画分岐用のプロンプト。キャラクターではなく動きを記述します。デフォルトはpositive。condとuncond両方で使用されます。"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "アニメーション化するキャラクター。"
+      },
+      "reference_image_strength": {
+        "name": "reference_image_strength",
+        "tooltip": "生成フレームが参照画像のlatentフレームにどれだけ強く従うかを調整します。1.0未満でアイデンティティや外観の拘束が緩み（例：プロンプトでスタイル変更）、1.0超でドリフトを防ぎます。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "ポーズ動画の何フレーム目から開始するか。拡張時は前のノードのvideo_frame_offset出力に接続してください。"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "出力動画の幅（ピクセル単位）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "3": {
+        "name": "trim_latent",
+        "tooltip": "デコード前にトリミングすべきlatentフレーム数。"
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": "動画拡張時に重複する画像フレーム数。"
+      },
+      "5": {
+        "name": "video_frame_offset",
+        "tooltip": "ポーズ動画の何フレーム目から開始するか。"
       }
     }
   },

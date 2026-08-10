@@ -1,6 +1,8 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -248,11 +250,16 @@ describe('format-specific metadata wrappers', () => {
 describe('importA1111', () => {
   const parameters =
     'positive\nNegative prompt: negative\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
+  const parametersWithoutNegativePrompt =
+    'positive\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
 
   it.each([
     ['has no steps', 'positive'],
-    ['has no options', 'positive\nNegative prompt: negative\nSteps:'],
-    ['has no negative prompt', 'positive\nSteps: 20']
+    ['has no options', 'positive\nNegative prompt: negative\nSteps:']
   ])('returns not-a1111 when parameters %s', async (_case, input) => {
     const graph = new LGraph()
     const beforeGraphClear = vi.fn()
@@ -278,7 +285,10 @@ describe('importA1111', () => {
     expect(clear).not.toHaveBeenCalled()
   })
 
-  it('runs the lifecycle callback immediately before clearing the graph', async () => {
+  it.each([
+    ['with a negative prompt', parameters, 'negative'],
+    ['without a negative prompt', parametersWithoutNegativePrompt, '']
+  ])('imports parameters %s', async (_case, input, expectedNegativePrompt) => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
@@ -288,16 +298,26 @@ describe('importA1111', () => {
     vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
       const node = new LGraphNode(type)
       node.type = type
+      if (type === 'CLIPTextEncode') {
+        node.addWidget('text', 'text', '', () => {})
+      }
       vi.spyOn(node, 'connect').mockReturnValue(null)
       return node
     })
 
-    const imported = await importA1111(graph, parameters, beforeGraphClear)
+    const imported = await importA1111(graph, input, beforeGraphClear)
 
     expect(imported).toBe('imported')
     expect(beforeGraphClear).toHaveBeenCalledOnce()
     expect(beforeGraphClear.mock.invocationCallOrder[0]).toBeLessThan(
       clear.mock.invocationCallOrder[0]
     )
+    expect(
+      vi
+        .mocked(LiteGraph.createNode)
+        .mock.results.map(({ value }) => value)
+        .filter((node) => node?.type === 'CLIPTextEncode')
+        .map((node) => node?.widgets?.[0].value)
+    ).toEqual(['positive', expectedNegativePrompt])
   })
 })

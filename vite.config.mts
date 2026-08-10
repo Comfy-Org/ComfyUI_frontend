@@ -28,6 +28,7 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
+const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
 const CRITICAL_COVERAGE_DIRS = [
@@ -80,6 +81,12 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   functions: 67,
   lines: 70
 }
+
+// WebGL2 / pixel-processing passes that need a real rendering context,
+// which happy-dom does not provide. TODO: cover via browser tests.
+const LAYER_EDITOR_GPU_COVERAGE_EXCLUDE = [
+  'src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts'
+]
 
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
   'src/lib/litegraph/imgs/**',
@@ -540,7 +547,9 @@ export default defineConfig({
     // browser-facing `//# sourceMappingURL=` comment is NOT injected into the JS
     // bundles. This kills the ~57k/3d `/assets/*.js.map` 404 noise in prod
     // (the .map files aren't served) without losing Sentry symbolication. See FE-1405.
-    sourcemap: GENERATE_SOURCEMAP ? 'hidden' : false,
+    // A coverage build serves its own .map files and needs the comment back:
+    // monocart maps V8 coverage to src/** only by following it.
+    sourcemap: GENERATE_SOURCEMAP && (COLLECT_COVERAGE || 'hidden'),
     // Exclude heavy optional vendor chunks from initial module preload
     // These chunks are only needed when their features are used (3D, terminal, etc.)
     modulePreload: {
@@ -654,6 +663,11 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/](yjs|lib0)[\\/]/,
               priority: 15
             },
+            {
+              name: 'vendor-ag-psd',
+              test: /[\\/]node_modules[\\/]ag-psd[\\/]/,
+              priority: 15
+            },
 
             // Utilities and validation
             {
@@ -750,6 +764,7 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/locales/**',
         'src/assets/**',
+        ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
       thresholds: {

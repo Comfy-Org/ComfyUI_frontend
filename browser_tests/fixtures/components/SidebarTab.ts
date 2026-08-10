@@ -12,9 +12,9 @@ export class SidebarTab {
     public readonly page: Page,
     public readonly tabId: string
   ) {
-    this.tabButton = page.locator(`.${tabId}-tab-button`)
-    this.selectedTabButton = page.locator(
-      `.${tabId}-tab-button.side-bar-button-selected`
+    this.tabButton = page.getByTestId(TestIds.sidebar.tabButton(tabId))
+    this.selectedTabButton = this.tabButton.and(
+      page.locator('.side-bar-button-selected')
     )
   }
 

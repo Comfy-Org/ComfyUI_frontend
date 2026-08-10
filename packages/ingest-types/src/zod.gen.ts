@@ -1254,6 +1254,7 @@ export const zJobEntry = z.object({
   id: z.string().uuid(),
   outputs_count: z.number().int().optional(),
   preview_output: z.record(z.unknown()).optional(),
+  previewable_outputs_count: z.number().int().optional(),
   status: z.enum([
     'pending',
     'in_progress',
@@ -1374,6 +1375,7 @@ export const zJobDetailResponse = z.object({
   outputs: z.record(z.unknown()).optional(),
   outputs_count: z.number().int().optional(),
   preview_output: z.record(z.unknown()).optional(),
+  previewable_outputs_count: z.number().int().optional(),
   status: z.enum([
     'pending',
     'in_progress',
@@ -2057,6 +2059,7 @@ export const zBillingStatusResponse = z.object({
   max_seats: z.number().int(),
   occupied_seats: z.number().int(),
   pending_billing_op_id: z.string().optional(),
+  pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
   subscription_duration: zSubscriptionDuration.optional(),
@@ -4309,7 +4312,11 @@ export const zCreateWorkflowUploadUrlResponse = zUploadGrantResponse
 export const zListWorkspaceApiKeysData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
-  query: z.never().optional()
+  query: z
+    .object({
+      include_revoked: z.boolean().optional().default(false)
+    })
+    .optional()
 })
 
 /**

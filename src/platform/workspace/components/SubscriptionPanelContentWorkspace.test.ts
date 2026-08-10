@@ -5,15 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
-  CurrentTeamCreditStop,
   Plan,
-  TeamCreditStops
+  TeamCreditStops,
+  TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
@@ -22,6 +22,13 @@ const { mockIsSettingUp, mockSubscriptionActionOperation } = vi.hoisted(() => ({
   mockIsSettingUp: { value: false },
   mockSubscriptionActionOperation: {
     value: undefined as { actionUrl: string } | undefined
+  }
+}))
+const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockDistributionState.isCloud
   }
 }))
 
@@ -58,6 +65,7 @@ const teamCreditStops: TeamCreditStops = {
 
 const mockSubscriptionStatus = ref<BillingSubscriptionStatus>('active')
 const mockBillingStatus = ref<BillingStatus>('paid')
+const mockBillingType = ref<BillingType>('workspace')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockRenewalDate = ref<string | null>(RENEWAL_DATE_ISO)
 const mockEndDate = ref<string | null>(END_DATE_ISO)
@@ -71,7 +79,7 @@ const mockCanManageSubscription = ref(true)
 const mockCanManageSubscriptionLifecycle = ref(true)
 const mockCanLeaveWorkspace = ref(true)
 const mockTeamCreditStops = ref<TeamCreditStops | null>(teamCreditStops)
-const mockCurrentTeamCreditStop = ref<CurrentTeamCreditStop | null>({
+const mockCurrentTeamCreditStop = ref<TeamCreditStopSummary | null>({
   id: 'team_700',
   credits_monthly: 147700,
   stop_usd: 700
@@ -155,10 +163,11 @@ const mockError = ref<string | null>(null)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
+    type: mockBillingType,
     canAccessSubscriptionFeatures: computed(
       () => mockIsActiveSubscription.value
     ),
-    isFreeTier: computed(() => false),
+    isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
     billingStatus: mockBillingStatus,
     subscriptionStatus: mockSubscriptionStatus,
     isTeamPlan: mockIsTeamPlan,
@@ -279,7 +288,7 @@ const DropdownMenuStub = {
     '<div data-testid="plan-menu"><slot name="button" /><button v-for="item in (entries || []).filter((e) => !e.separator)" :key="item.label" type="button" :disabled="item.disabled" @click="item.command?.({})">{{ item.label }}</button></div>'
 }
 
-function renderComponent() {
+function renderComponent({ stubFooter = true } = {}) {
   return render(SubscriptionPanelContentWorkspace, {
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
@@ -287,7 +296,9 @@ function renderComponent() {
       stubs: {
         CreditsTile: CreditsTileStub,
         Button: ButtonStub,
-        SubscriptionFooterLinks: SubscriptionFooterLinksStub,
+        ...(stubFooter
+          ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
+          : {}),
         StatusBadge: true,
         DropdownMenu: DropdownMenuStub
       }
@@ -302,8 +313,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'
+    mockBillingType.value = 'workspace'
     mockRenewalDate.value = RENEWAL_DATE_ISO
     mockEndDate.value = END_DATE_ISO
     mockScheduledPlanSlug.value = null
@@ -469,15 +482,29 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.getByText('$665.50')).toBeInTheDocument()
   })
 
-  it('wires Manage billing and Change plan actions for subscription managers', async () => {
+  it('wires Billing & invoices and Change plan actions for subscription managers', async () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Manage billing' }))
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Change plan' }))
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+  })
+
+  it('preserves local Manage billing and Invoice history actions', async () => {
+    const user = userEvent.setup()
+    mockDistributionState.isCloud = false
+    renderComponent({ stubFooter: false })
+
+    expect(
+      screen.queryByRole('button', { name: 'Billing & invoices' })
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Manage billing' }))
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    await user.click(screen.getByRole('button', { name: 'Invoice history' }))
+    expect(mockManageSubscription).toHaveBeenCalledTimes(2)
   })
 
   it('keeps a Personal workspace Team-plan member view read-only', () => {
@@ -491,7 +518,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Manage billing' })
+      screen.queryByRole('button', { name: 'Billing & invoices' })
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Change plan' })
@@ -521,7 +548,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows ended state for an inactive paid Personal workspace despite active status', () => {
+  it('keeps billing access in the ended state for an inactive paid Personal workspace', async () => {
+    const user = userEvent.setup()
+    mockBillingType.value = 'legacy'
     mockIsInPersonalWorkspace.value = true
     mockIsActiveSubscription.value = false
     mockBillingStatus.value = 'inactive'
@@ -529,6 +558,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
     expect(
       screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
@@ -596,7 +627,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Changes to/i)).not.toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Manage billing' })
+      screen.getByRole('button', { name: 'Billing & invoices' })
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Change plan' })
@@ -625,6 +656,23 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
+  })
+
+  it('preserves local inactive Team billing and invoice actions', async () => {
+    const user = userEvent.setup()
+    mockDistributionState.isCloud = false
+    mockSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    renderComponent({ stubFooter: false })
+
+    expect(
+      screen.getByRole('heading', { name: 'Inactive team subscription' })
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    await user.click(screen.getByRole('button', { name: 'Invoice history' }))
+    expect(mockManageSubscription).toHaveBeenCalledTimes(2)
   })
 
   it('renders an ended Team plan for its owner and routes reactivation to checkout', async () => {
@@ -722,7 +770,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows the zero-state subscribe prompt to unsubscribed team owners', () => {
+  it('keeps Billing & invoices available to unsubscribed team owners', async () => {
+    const user = userEvent.setup()
     mockIsActiveSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
     mockHasSubscription.value = false
@@ -734,13 +783,13 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe Now' })
     ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Billing & invoices' })
-    ).not.toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
       'true'
     )
+
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
   })
 
   it('shows a loading indicator instead of a false Free plan while billing loads', () => {
@@ -811,9 +860,39 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'false'
     )
 
+    await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
+
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
   })
+
+  it.for([
+    { state: 'never-subscribed', hasSubscription: false, tier: 'PRO' },
+    { state: 'Free', hasSubscription: true, tier: 'FREE' }
+  ] as const)(
+    'hides legacy billing access from $state personal workspaces',
+    ({ hasSubscription, tier }) => {
+      mockBillingType.value = 'legacy'
+      mockBillingStatus.value = 'inactive'
+      mockSubscriptionTier.value = tier
+      mockIsInPersonalWorkspace.value = true
+      mockIsActiveSubscription.value = false
+      mockHasSubscription.value = hasSubscription
+      mockIsWorkspaceSubscribed.value = false
+      mockUiConfig.value = personalUiConfig
+      mockCanLeaveWorkspace.value = false
+      renderComponent()
+
+      expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Billing & invoices' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Subscribe' })
+      ).toBeInTheDocument()
+    }
+  )
 
   it('lets a Free personal workspace only rename itself (no Cancel or Delete)', async () => {
     const user = userEvent.setup()
