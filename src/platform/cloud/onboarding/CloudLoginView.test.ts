@@ -27,14 +27,17 @@ const FREE_RUN_MESSAGES = {
     login: {
       cloudNewUser: 'New to Comfy?',
       cloudSignUp: 'Sign up here',
-      freeRunsSuffix: 'to get {count} free run. | to get {count} free runs.'
+      freeRunsSuffix: 'to get {count} free run. | to get {count} free runs.',
+      insecureContextWarning: 'This connection is insecure'
     }
   }
 }
 
 async function renderLoginView(
   url = '/cloud/login',
-  messages: Partial<typeof FREE_RUN_MESSAGES> = {}
+  messages: {
+    auth?: { login?: Partial<typeof FREE_RUN_MESSAGES.auth.login> }
+  } = {}
 ) {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -115,7 +118,7 @@ describe('CloudLoginView', () => {
         auth: {
           login: { insecureContextWarning: 'This connection is insecure' }
         }
-      } as never)
+      })
 
       const warning = screen.queryByText('This connection is insecure')
       if (secure) {
