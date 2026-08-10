@@ -5671,10 +5671,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         node.arrange()
       }
       // Skip all node body/widget/title rendering. Vue overlay handles visuals.
-      // Except when zoomed out past the point of legibility: a node is then
-      // just a filled rectangle, which is far cheaper to draw here than to
-      // mount an element per node, so fall through and draw it as normal.
-      if (!this.low_quality) return
+      return
     }
 
     const color = node.renderingColor
