@@ -185,6 +185,18 @@ describe('WorkflowSelectorChip', () => {
     expect(screen.queryByTestId('unsaved-dot')).toBeNull()
   })
 
+  it('shows an unsaved dot for an inactive unpersisted workflow', async () => {
+    const unsavedTab = { ...tabs[1], isPersisted: false }
+    const { user } = renderChip({ tabs: [tabs[0], unsavedTab] })
+
+    expect(screen.queryByTestId('unsaved-dot')).toBeNull()
+
+    await user.click(trigger())
+    const row = await screen.findByRole('menuitemradio', { name: /upscale/ })
+    expect(within(row).getByTestId('unsaved-dot')).toBeInTheDocument()
+    expect(row).not.toBeChecked()
+  })
+
   it('filters the tab list as the search input is typed into', async () => {
     const { user } = renderChip()
     await user.click(trigger())
