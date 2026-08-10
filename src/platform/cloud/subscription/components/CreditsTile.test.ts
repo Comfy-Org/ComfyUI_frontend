@@ -16,6 +16,7 @@ type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
 }
 type TeamStop = TeamCreditStopSummary
+type CustomerEventsResult = { events: { event_type: string }[] } | null
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
@@ -34,7 +35,9 @@ const state = vi.hoisted(() => ({
   showTopUpCreditsDialog: vi.fn(),
   trackAddApiCreditButtonClicked: vi.fn(),
   checkForCompletedTopup: vi.fn(),
-  getMyEvents: vi.fn(async () => ({ events: [] })),
+  getMyEvents: vi.fn(
+    async (): Promise<CustomerEventsResult> => ({ events: [] })
+  ),
   customerEventsError: null as string | null,
   toastErrorHandler: vi.fn()
 }))
