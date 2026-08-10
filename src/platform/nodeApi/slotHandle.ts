@@ -42,10 +42,33 @@ export interface LinkInfo {
  *
  * @knipIgnoreUnusedButUsedByCustomNodes
  */
+/**
+ * A slot's type, which may be a union.
+ *
+ * An array spells "this slot accepts any of these" — rgthree's
+ * `addInput('input', ['IMAGE', 'LATENT', 'MASK'])` is the shipped example, so
+ * packs do write it even though litegraph's own `ISlotType` says
+ * `number | string`.
+ *
+ * Both forms are accepted and stored as the comma string, because that is what
+ * litegraph compares against: it normalises with `String(type).split(',')`, so
+ * `['IMAGE','LATENT','MASK']` and `'IMAGE,LATENT,MASK'` are the same slot to
+ * every connection check. The saved workflow therefore holds the string where
+ * the original held an array — a byte difference with no behavioural one, and
+ * the same call already taken for slot `shape`.
+ *
+ * Reads stay `string` for the same reason.
+ */
+export type SlotType = string | string[]
+
+/** Both spellings mean one thing to litegraph; store the one it compares. */
+const normaliseType = (type: SlotType) =>
+  Array.isArray(type) ? type.join(',') : type
+
 export interface SlotPatch {
   name?: string
   label?: string | undefined
-  type?: string
+  type?: SlotType
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -119,7 +142,7 @@ export interface SlotCollection<THandle> {
    * Adds a slot. 18 packs grow their inputs as the last one fills — the
    * "Multi" combiner pattern — which needed `node.addInput` until now.
    */
-  add(name: string, type: string): THandle
+  add(name: string, type: SlotType): THandle
   /**
    * Removes a slot by reference. Any link into it is dropped, as it would be
    * on the legacy path.
@@ -167,7 +190,7 @@ function applyPatch(
   if (!slot) return
   if (patch.name !== undefined) slot.name = patch.name
   if ('label' in patch) slot.label = patch.label
-  if (patch.type !== undefined) slot.type = patch.type
+  if (patch.type !== undefined) slot.type = normaliseType(patch.type)
 }
 
 function snapshotSlot(
@@ -408,7 +431,7 @@ function createCollection<THandle>(
   getSlots: () => readonly (INodeInputSlot | INodeOutputSlot)[],
   makeHandle: (slotId: SlotId) => THandle,
   mutate: {
-    add: (name: string, type: string) => void
+    add: (name: string, type: SlotType) => void
     remove: (index: number) => void
   }
 ): SlotCollection<THandle> {
@@ -470,7 +493,7 @@ export function createInputCollection(
     () => getNode()?.inputs ?? [],
     (slotId) => createInputHandle(getGraph, getNode, slotId),
     {
-      add: (name, type) => getNode()?.addInput(name, type),
+      add: (name, type) => getNode()?.addInput(name, normaliseType(type)),
       remove: (index) => getNode()?.removeInput(index)
     }
   )
@@ -484,7 +507,7 @@ export function createOutputCollection(
     () => getNode()?.outputs ?? [],
     (slotId) => createOutputHandle(getGraph, getNode, slotId),
     {
-      add: (name, type) => getNode()?.addOutput(name, type),
+      add: (name, type) => getNode()?.addOutput(name, normaliseType(type)),
       remove: (index) => getNode()?.removeOutput(index)
     }
   )

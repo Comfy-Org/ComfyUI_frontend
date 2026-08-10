@@ -2,8 +2,9 @@
 >
 > Companion to `magic_patch_WIP.md`, `node_api_WIP.md` and
 > `magic_patch_test_plan_WIP.md`.
+> Notion copy for review: **API Decisions for Review** in the Documents Hub.
 
-# Implementation questions — node API / Magic Patch
+# API decisions for review — node API / Magic Patch
 
 **The design is settled. Everything here is an implementation issue.** Each
 entry surfaced from converting real packs onto the published node API
@@ -11,11 +12,30 @@ entry surfaced from converting real packs onto the published node API
 mismatches, and places where the implementation does not yet reach what the
 design already calls for.
 
-**Christian makes the final call on all of it.** The choices recorded below were
-taken to unblock a proof of concept and get it to a go/no-go, not to settle
-policy. Where one was made to keep moving, it is marked _provisional_ and the
-reasoning is written out so it can be overturned cheaply. Several have blast
-radius well beyond this programme, and are flagged as such.
+**Who signs off what.**
+
+| Area                                                               | Owner                              |
+| ------------------------------------------------------------------ | ---------------------------------- |
+| API surface shape, widgets, node definitions, Nodes 2.0 theming    | **Christian**                      |
+| Graph model, resolution/supply, ECS-side invariants, slot identity | **Alex**                           |
+| Scope, sequencing, what we decline to support                      | **Ben** (owner), escalate to Miles |
+
+The choices recorded below were taken to unblock a proof of concept and get it
+to a go/no-go, not to settle policy. Where one was made to keep moving, it is
+marked _provisional_ and the reasoning is written out so it can be overturned
+cheaply. Several have blast radius well beyond this programme, and are flagged
+as such.
+
+**This file is one half of the review.** The other half lives in
+`node_api_WIP.md`:
+
+- **§4f Contested additions** — surface we _added_ that is arguable, each with
+  the alternative rejected and the cost of reversing it.
+- **§7 Deliberately excluded** — asks we are refusing.
+- **§8 Open questions** — Q1–Q9, including the Nodes 2.0 re-theming question.
+
+The split: _"we added this to the API, argue with it"_ → `node_api_WIP.md` §4f.
+_"this is broken or undecided, someone must rule"_ → here.
 
 **Status key:** ✅ fixed · 🟡 provisional, not yet built · ❓ needs a call before
 it can be built.
@@ -74,7 +94,7 @@ takes no position on that.
 
 ---
 
-## 2. What "byte-identical wire format" means for mounted widgets 🟡
+## 2. What "byte-identical wire format" means for mounted widgets ✅
 
 The verification gate rests on the invariant that a conversion must not change
 the saved workflow or the queued prompt. **The code and the invariant currently
@@ -99,9 +119,27 @@ workflow persistence, `widget.options.serialize` gates the API prompt.
 `MountDef` collapses them into one boolean, so the "persist but do not send"
 and "send but do not persist" quadrants are inexpressible.
 
-**Provisional:** make the serialization match the legacy behaviour, and
-maintain compatibility — `MountDef` should expose both flags rather than
-conflating them, defaulting to what `addDOMWidget` did.
+**Provisional — now implemented.** `MountDef` gained `sendToPrompt`, which
+defaults to `serialize` and overrides only the prompt half. The two states that
+one boolean could not say are now sayable, and "saved but not sent" — exactly
+what legacy `addDOMWidget(…, { serialize: false })` did — is the one packs
+actually need.
+
+The case that forced it: bjornulf's `show_text` creates one readout widget per
+line of its result, and the original named **every one of them `text`**. Widget
+identity is now the name, so the conversion had to rename them `text`, `text_1`,
+`text_2` — and since `graphToPrompt` writes `inputs[widget.name]`, each rename
+became a **new key in the queued prompt** that the original never sent. The
+renamed duplicates are now `sendToPrompt: false`, so the prompt keeps exactly
+one `text` key.
+
+One residual delta, stated rather than buried: same-named widgets overwrite in
+order, so the original sent the _last_ line under `text` and the conversion
+sends the _first_. Matching that exactly is not expressible while the prompt key
+is the widget name. For a readout the node fills in from its own execution
+result the echoed value is inert, so this was judged acceptable — but it is a
+real difference, and it is the same duplicate-name root cause that blocked
+pysssss' `betterCombos` and easy-use's `showAnything`.
 
 **Question.** Should a _newly mounted_ widget (one with no
 legacy counterpart — e.g. a pack adding a canvas preview to a node that had no
@@ -417,6 +455,31 @@ converted with a warning.
 - **Prompt-time widget values** (gap 6) — still the most-cited functional loss:
   `screencap_stream` is inert, Impact Pack no longer embeds images, and
   prompt-reader's seed control would queue `-1`.
+- **Prompt post-processing / node expansion** (new). `resolve` maps one output
+  to one existing source or a literal; it cannot _add_ nodes to the prompt.
+  Custom-Scripts' `repeater.js` patched `app.graphToPrompt` and cloned the
+  upstream node once per repeat, so its `multi` and `create` modes are now
+  inert — the largest single behaviour loss in that pack. Distinct from gap 6:
+  that one wants a different _value_, this one wants a different _graph_.
+- **A mounted widget cannot declare a fixed height** (new). Found independently
+  by two agents on different packs, which is why it sits here rather than in a
+  single report. `_arrangeWidgets` treats a widget with `computeSize` as fixed
+  and one with only `computeLayoutSize` as growable; a `mount` is always the
+  latter, and `MountDef.height` only sets `container.style.height` — an inline
+  style _inside_ an allocation the renderer sized independently. So `height`
+  pins content within a larger box, and a node with several fixed strips has
+  its free space divided between them. Packs said this with
+  `widget.computeSize = () => [w, h]`, which is unpublished. Corollary worth
+  stating: for a panel meant to fill the node, passing `height` is actively
+  wrong and omitting it is correct — the opposite of what the name suggests.
+- **No pack-internal channel between files** (new, small but sharp). Packs
+  publish helpers on the node class for their _own_ other files to call —
+  `nodeType.prototype["pysssss.updateExamples"]`, called from two sibling
+  files. Handles hold no arbitrary properties, so there is no destination. Both
+  call sites were optional-chained, so the failure is silent degradation rather
+  than a crash, which is worse. Note this is a pack talking to itself, not
+  cross-pack coupling, so it does not raise the sandbox question the way a
+  general extension registry would.
 
 ## 7a. Conversion keeps finding packs that were already broken
 
@@ -448,18 +511,139 @@ pre-date the conversion, or the conversion gets blamed for them.
 All found by converting real packs or loading them in a browser; **none** was
 caught by the 255 unit tests covering this layer.
 
-| bug                                                                 | effect                                                                                                                                                        | status |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| `NodeHandle.comfyClass` registered as a method, declared a property | read back as a bound function, so every `switch (node.comfyClass)` fell through silently — including the reference conversion given to every conversion agent | fixed  |
-| `widgets.mount()` assigned `widget.onRemove`                        | shadowed the `DOMWidgetImpl` method that unregisters from the store; every mounted widget leaked for the page's lifetime                                      | fixed  |
-| `installNodeMoveBridge()` ran after `loadExtensions()`              | any pack subscribing to `comfy.onNodeMoved` at module scope threw                                                                                             | fixed  |
-| `setSizeConstraints` chained a new `onResize` per call              | handler list grew without bound; re-declaring added a competing clamp instead of replacing it                                                                 | fixed  |
-| `/comfy/api/v1.js` served by nothing                                | every converted pack failed at its first import; the harness masked it via its own loader hook                                                                | fixed  |
-| Frontend-node resolution never ran in `graphToPrompt`               | the resolution system was dead code in production                                                                                                             | fixed  |
+| bug                                                                 | effect                                                                                                                                                                                                        | status |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `NodeHandle.comfyClass` registered as a method, declared a property | read back as a bound function, so every `switch (node.comfyClass)` fell through silently — including the reference conversion given to every conversion agent                                                 | fixed  |
+| `widgets.mount()` assigned `widget.onRemove`                        | shadowed the `DOMWidgetImpl` method that unregisters from the store; every mounted widget leaked for the page's lifetime                                                                                      | fixed  |
+| `installNodeMoveBridge()` ran after `loadExtensions()`              | any pack subscribing to `comfy.onNodeMoved` at module scope threw                                                                                                                                             | fixed  |
+| `setSizeConstraints` chained a new `onResize` per call              | handler list grew without bound; re-declaring added a competing clamp instead of replacing it                                                                                                                 | fixed  |
+| `/comfy/api/v1.js` served by nothing                                | every converted pack failed at its first import; the harness masked it via its own loader hook                                                                                                                | fixed  |
+| Frontend-node resolution never ran in `graphToPrompt`               | the resolution system was dead code in production                                                                                                                                                             | fixed  |
+| `defs.define`'s generated class never set `serialize_widgets`       | the host's own node class sets it and `LGraphNode.serialize` gates `widgets_values` on it, so every defined node's widget values were dropped from the saved workflow — no error, visible only after a reload | fixed  |
+| `NodeDef.inputs` discarded each input's declaration dict            | a pack declares bespoke keys on its own Python input spec and reads them back to drive the frontend; dropping them broke the pack against its own data, and blocked pysssss `binding.js` outright             | fixed  |
 
 The pattern is consistent: this layer was a well-tested island that almost
 nothing called. The check that finds these is _"which production code path calls
 this, and what test covers that path"_ — not more unit tests.
+
+---
+
+## 8a. Decided this session: asks we are NOT building (cosmetic)
+
+Ben's standing rule is that _all gaps that are not cosmetic, and do not violate
+the sandbox around our internal graph state, must be implemented_. These three
+landed on the cosmetic side and were closed rather than built. Provisional —
+Christian's call, as with everything here.
+
+| ask                                                                             | decision                                                       | reasoning                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A pack rebuilding the host UI, or injecting global CSS that restyles our chrome | **Not supported** — "we will not support a parallel front end" | Selector-coupled to markup we change freely; the same objection that excluded canvas painting                                                                                                             |
+| A sanctioned way to re-theme Nodes 2.0                                          | **Should exist, not built** — Q9 in the API doc                | Distinct from the row above. A named CSS-variable contract is reviewable, versionable, and survives markup changes. Worth settling _before_ packs re-establish selector coupling against Nodes 2.0 markup |
+| Slot `shape` on `SlotPatch`                                                     | **Not supported**                                              | Cosmetic, and exactly one call site in the whole corpus. Consequence: the saved `shape` byte is dropped — an accepted wire delta, recorded here so it is not discovered later as a surprise               |
+
+The distinction that made the CSS question tractable: a pack styling **its own**
+mounted widget DOM is legitimate and needs no API at all — it owns those
+elements. Only a pack reaching **our** chrome is the parallel front end.
+
+One correction belongs here too, because it was my error rather than a pack's:
+conversion guidance told agents to route a pack's own asset paths through
+`comfy.backend.assetUrl('/extensions/<pack>/…')`. That is wrong. ComfyUI serves
+those files from the **install directory name**, which is chosen at install time
+and can be renamed, so it cannot be written in source — `new URL(path,
+import.meta.url)` is correct and always was. One pack ships two spellings of its
+own directory with an `onerror` fallback between them, which is what guessing
+costs. An agent pushed back on this guidance and was right; two call sites had
+already been converted the wrong way and are fixed.
+
+---
+
+## 8b. The ceiling: packs that ship built output cannot be converted at all
+
+This is structural, not a gap, and it belongs in the go/no-go rather than the
+backlog. Magic Patch rewrites the JavaScript ComfyUI serves. Where that
+JavaScript is **minified build output**, there is nothing to rewrite — the fix
+has to happen upstream in a source repo we do not process.
+
+`comfyui-easy-use` (#3, 3.3M downloads) is the confirmed case, and it is worth
+reading closely because it is the worst shape this can take. Its `__init__.py`
+sets `web_default_version = 'v2'`, so an install with no `config.yaml` — the
+default — is served `web_version/v2`. That directory is the built artifact of a
+**separate repository** (`yolain/ComfyUI-Easy-Use-Frontend`), wired in as a git
+submodule, with no source in the distribution. It is also thoroughly coupled to
+the old surface: one bundle alone carries 16 `registerExtension`, 93
+`LiteGraph`, 46 `LGraphCanvas`, 7 `comfyAPI`. The `web_version/v1` tree we
+converted is served only to users who explicitly opt in.
+
+Measured across the top 135 packs (85.2M downloads, ≈80% of all):
+
+| pack ships              | packs | downloads  | share     |
+| ----------------------- | ----- | ---------- | --------- |
+| no JavaScript at all    | 71    | 35,097,791 | **41.2%** |
+| readable source         | 57    | 45,179,249 | **53.0%** |
+| majority built/minified | 7     | 4,968,438  | **5.8%**  |
+
+So ≈94% of downloads are reachable: 41% need nothing, 53% are convertible. The
+ceiling is **5.8%**, and two packs are most of it — easy-use (3.3M) and
+comfy-mtb (0.9M).
+
+Two honest caveats. Only easy-use is _confirmed_ by reading its loader; the rest
+are classified by a heuristic (majority of non-vendored JS bytes in files with
+
+> 400-char mean line length, `.min.js`, or hashed bundle names). And the
+> byte-majority test mis-reads packs that ship one large vendored bundle beside
+> real source — `ComfyUI_LayerStyle_Advance` shows 8.2MB built against 1KB source,
+> which is far more likely a vendored asset than a built frontend. **5.8% is
+> therefore an upper bound.** An earlier, cruder version of this measurement said
+> 14.7% by flagging a pack on any single built-looking file; that version wrongly
+> condemned kjnodes and Impact Pack, both of which we have in fact converted.
+
+What it means for the programme: artifact-level conversion cannot be the whole
+answer, and should not be sold as one. For these packs the deliverable is an
+upstream PR against the source repo, which is a different workflow with a
+different cost — worth deciding before the go/no-go, not after.
+
+---
+
+## 8c. A class of conversion failure that no check could see
+
+Worth recording because it changes what "verified" means, and because it was
+found late.
+
+A conversion that drops `import { app } from '.../scripts/app.js'` but leaves
+`app.graph` in the body is **perfectly valid JavaScript**. It parses, so every
+syntax check passes it. It throws `ReferenceError` at load and takes the whole
+file with it. The conformance checker missed it too, because
+`retires-the-legacy-global` looks for `app.registerExtension`, not a bare
+`app.`.
+
+Two ways it arose:
+
+- **A dangling registration tail.** `crt-nodes/WAN_Compare.js` ended with
+  `app.registerExtension(WANCompareExtension)` where _neither_ name was still
+  defined — the body had already moved to `comfy.defs.extend`. One leftover
+  line.
+- **A body that was never finished.** Three files kept `app.graph`,
+  `app.queuePrompt` and `api.fetchApi` throughout while their headers had been
+  converted.
+
+The fix is scope analysis, not pattern matching: `scripts/magic-patch/verify/undef.sh` runs
+ESLint's `no-undef` over every converted file. Two details make it usable.
+It compares against the **original**, because every pack has pre-existing
+undefined names — script-tag globals like `marked`, `Sortable`, `ace` — and
+without that subtraction the noise buries the signal (18 files flagged, 3 real).
+And it deliberately is _not_ a `\bapp\.` regex, which false-positives on packs
+that legitimately declare their own local named `api`.
+
+Result across 453 converted files: **3 genuine breakages, all introduced by the
+conversion**, in `prompt-assistant/captionFrame.js`,
+`comfyui-enricos-nodes/compositor4.js` and `alekpet/painternode/helpers.js`.
+All three were reverted to source, so those packs now honestly report the work
+as outstanding rather than shipping a file that dies on load. Two of them sat in
+packs previously reported as **complete**.
+
+The lesson for the programme: "the conformance checker passes" is not the same
+as "the file runs". The runtime load check in the harness is what closes this,
+and it should be treated as load-bearing rather than optional.
 
 ---
 
@@ -480,8 +664,20 @@ Not blocking: §3 and §5 are cheap and reversible either way.
 
 ## 10. Status
 
-Six packs converted, independently verified with the repo's own conformance
-checker: **42 pass, 4 fail, 24 correctly unchanged, 3 deleted.**
+**139 pass, 3 sanctioned hold-outs, 0 genuine failures** across every converted
+file, run by the repo's own conformance checker.
+
+Scope, measured honestly: a file counts only if it actually touches the old
+surface (`scripts/app.js`, `registerExtension`, `window.comfyAPI`). Vendored
+libraries, test suites, build tooling and packs' own standalone web apps are
+excluded — which changes the picture enough to be worth stating, because the raw
+file counts are badly misleading. `comfy-mtb` looked like 112 files of work and
+is 2. `comfyui-lora-manager` looked like 180 and is 28; the other ~150 are its
+separate model-manager web app and its test suite, neither of which ComfyUI ever
+loads. On that basis: **131 files converted, 356 remaining, across 27 packs.**
+
+The early sample below is kept because the per-pack results are still the most
+concrete evidence of what conversion actually costs:
 
 | pack              | rank | downloads | result                                                |
 | ----------------- | ---- | --------- | ----------------------------------------------------- |
@@ -492,10 +688,11 @@ checker: **42 pass, 4 fail, 24 correctly unchanged, 3 deleted.**
 | LayerStyle        | #12  | 2.0M      | 3/3, 1 correctly untouched                            |
 | cg-use-everywhere | #13  | 1.9M      | 2/20 — blocked on §4                                  |
 
-≈11.4% of all downloads converted. A further **6.9%** ships no JavaScript at
-all (`comfyui_controlnet_aux`, `ComfyUI-GGUF`, `comfyui-impact-subpack`) and
-needs no work — worth measuring across the whole top 135 before sizing the
-remaining effort.
+That measurement has since been taken across the whole top 135 packs (together
+≈80% of all downloads), and it is the single most encouraging number here:
+**71 of the 135 ship no JavaScript at all** — 33% of packs, needing no work of
+any kind. Only about 55 packs genuinely need converting. Counting those, roughly
+**61% of downloads** are now either converted or provably need nothing.
 
 Nothing is validated yet. `compile_db` ships only entries marked `validated`,
 which requires a human to confirm the pack works.

@@ -36,7 +36,19 @@ export interface NodeDef {
   readonly title: string
   readonly category: string
   readonly description: string
-  readonly inputs: readonly Readonly<{ name: string; type: string }>[]
+  readonly inputs: readonly Readonly<{
+    name: string
+    type: string
+    /**
+     * The input's declaration dict, verbatim from the backend.
+     *
+     * Same passthrough reasoning as `ExecutionResult.raw`: a pack declares its
+     * own keys on its own Python input spec and reads them back here to drive
+     * frontend behaviour, so discarding unrecognised keys breaks the pack
+     * against its own data. Carries `default`, `min`, `max` and the like too.
+     */
+    options: Readonly<Record<string, unknown>>
+  }>[]
   readonly outputs: readonly Readonly<{ name: string; type: string }>[]
   readonly isOutputNode: boolean
   /** Which pack supplied it, when the backend reports one. */
@@ -324,10 +336,18 @@ function toNodeDef(raw: RawNodeDef): NodeDef {
     return Array.isArray(first) ? 'COMBO' : String(first ?? '*')
   }
 
+  const slotOptions = (spec: unknown) => {
+    const declared = Array.isArray(spec) ? spec[1] : undefined
+    if (!declared || typeof declared !== 'object') return Object.freeze({})
+    return Object.freeze({ ...(declared as Record<string, unknown>) })
+  }
+
   const inputs = Object.entries({
     ...(raw.input?.required ?? {}),
     ...(raw.input?.optional ?? {})
-  }).map(([name, spec]) => Object.freeze({ name, type: slotType(spec) }))
+  }).map(([name, spec]) =>
+    Object.freeze({ name, type: slotType(spec), options: slotOptions(spec) })
+  )
 
   const outputs = (raw.output ?? []).map((type, index) =>
     Object.freeze({
@@ -468,6 +488,11 @@ export function createDefRegistry(): {
     class Defined extends LGraphNode {
       constructor() {
         super(definition.title ?? type)
+        // Matches what the host's own node class does. `LGraphNode.serialize`
+        // gates `widgets_values` on this, and it defaults to off, so a defined
+        // node's widget values were dropped from the saved workflow — silently,
+        // and only visible after a reload.
+        this.serialize_widgets = true
         for (const input of definition.inputs ?? []) {
           this.addInput(input.name, input.type)
         }

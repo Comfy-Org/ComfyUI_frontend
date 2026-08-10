@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 
 import { createComfyApi } from './comfyApi'
@@ -58,11 +59,35 @@ describe('defs.extend', () => {
       expect(def.title).toBe('K Sampler')
       expect(def.source).toBe('custom_nodes.demo')
       expect(def.inputs).toEqual([
-        { name: 'seed', type: 'INT' },
-        { name: 'mode', type: 'COMBO' },
-        { name: 'model', type: 'MODEL' }
+        { name: 'seed', type: 'INT', options: {} },
+        { name: 'mode', type: 'COMBO', options: {} },
+        { name: 'model', type: 'MODEL', options: {} }
       ])
       expect(def.outputs).toEqual([{ name: 'LATENT', type: 'LATENT' }])
+    })
+
+    it("carries an input's declaration dict, including the pack's own keys", () => {
+      // A pack declares bespoke keys on its own Python input spec and reads
+      // them back to drive frontend behaviour. Dropping unrecognised keys
+      // broke the pack against its own data.
+      const registry = createDefRegistry()
+      const seen = vi.fn()
+      registry.forMajor(() => comfy.graph.node('1')!).extend('Loader', seen)
+      registry.applyTo(nodeClass('Loader'), {
+        name: 'Loader',
+        input: {
+          required: {
+            file: [['a.txt'], { 'pysssss.binding': [{ source: 'root_dir' }] }],
+            count: ['INT', { default: 4, min: 1 }]
+          }
+        }
+      })
+
+      const { def } = seen.mock.calls[0][0]
+      expect(def.inputs[0].options['pysssss.binding']).toEqual([
+        { source: 'root_dir' }
+      ])
+      expect(def.inputs[1].options).toEqual({ default: 4, min: 1 })
     })
 
     it('is frozen, so an extension cannot mutate what the next one sees', () => {
@@ -337,6 +362,38 @@ describe('defs.extend', () => {
     expect(comfy.supports('widgets.create')).toBe(true)
     expect(comfy.supports('serialization.control')).toBe(true)
     expect(() => comfy.require('defs.extend')).not.toThrow()
+  })
+})
+
+describe('a defined node type', () => {
+  let graph: LGraph
+  let comfy: Comfy
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    graph = new LGraph()
+    comfy = createComfyApi(() => graph)
+  })
+
+  it('saves its widget values, as the host-generated class does', () => {
+    // `LGraphNode.serialize` gates `widgets_values` on `serialize_widgets`,
+    // which is off unless something sets it. The host's own node class does;
+    // a defined one did not, so every value vanished from the saved workflow
+    // with no error — visible only after a reload.
+    const defs = createDefRegistry().forMajor((id) => comfy.graph.node(id)!)
+    const stop = defs.define({
+      type: 'DefinedSampler',
+      widgets: [{ type: 'string', name: 'key', value: 'kept' }]
+    })
+
+    try {
+      const node = LiteGraph.createNode('DefinedSampler')!
+      graph.add(node)
+
+      expect(node.serialize().widgets_values).toEqual(['kept'])
+    } finally {
+      stop()
+    }
   })
 })
 
