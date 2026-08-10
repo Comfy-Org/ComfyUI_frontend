@@ -271,7 +271,9 @@ function onEnter(event: KeyboardEvent): void {
 
 const running = computed(() => streaming || submitting)
 const primaryActionTooltip = computed(() =>
-  composer.canSend.value ? t('agent.send') : t('agent.addPromptToSend')
+  composer.canSend.value
+    ? t('agent.send')
+    : t('agent.addPromptToSend', 'Add a prompt to send')
 )
 
 function onPrimaryAction(): void {
