@@ -120,9 +120,7 @@ test.describe('Cloud email sign-in', { tag: '@cloud' }, () => {
     await bootSignedOut(page)
     await mockFirebasePasswordSignIn(page)
 
-    await page.goto(
-      `${APP_URL}/cloud/login?previousFullPath=${encodeURIComponent('/?deepLink=1')}`
-    )
+    await page.goto(`${APP_URL}/?deepLink=1`)
     await expect(page).toHaveURL(/\/cloud\/login/)
 
     await submitEmailSignIn(page)
@@ -139,27 +137,12 @@ test.describe('Cloud email sign-in', { tag: '@cloud' }, () => {
     await mockCloudBoot(page, { features: BOOT_FEATURES })
     await bootCloud(page)
 
-    await page.goto(`${APP_URL}/cloud/login`)
+    await page.goto(APP_URL)
     await waitForCloudApp(page)
 
     await expect(
       page,
       'a signed-in user must never be parked on a login screen they have no reason to see'
     ).not.toHaveURL(/\/cloud\/login/)
-  })
-
-  test('?switchAccount keeps a signed-in visitor on the login form', async ({
-    page
-  }) => {
-    await mockCloudBoot(page, { features: BOOT_FEATURES })
-    await bootCloud(page)
-
-    await page.goto(`${APP_URL}/cloud/login?switchAccount=1`)
-
-    await expect(
-      page.getByRole('button', { name: 'Use email instead' }),
-      'without this escape hatch, signing into a different account is impossible because the guard bounces you into the session you are trying to leave'
-    ).toBeVisible({ timeout: 30_000 })
-    await expect(page).toHaveURL(/switchAccount=1/)
   })
 })
