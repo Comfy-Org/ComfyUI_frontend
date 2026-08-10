@@ -62,7 +62,7 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
     await loadImageNode.centerOnNode()
-    await loadImage.header.click({ button: 'right' })
+    await comfyPage.contextMenu.openForVueNode(loadImage.header)
     await expect(contextMenu).toBeVisible()
     await expect(
       contextMenu.getByText('Open Image', { exact: true })
@@ -100,7 +100,7 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
     }
 
     await loadImageNode.centerOnNode()
-    await loadImage.header.click({ button: 'right' })
+    await comfyPage.contextMenu.openForVueNode(loadImage.header)
     await expect(contextMenu).toBeVisible()
     await expect(
       contextMenu.getByText('Open Image', { exact: true })
