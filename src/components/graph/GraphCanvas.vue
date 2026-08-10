@@ -71,21 +71,28 @@
     @pointerup.capture="forwardPointerUpPanEvent"
     @pointermove.capture="forwardPointerMovePanEvent"
   >
-    <!-- Vue nodes rendered based on graph nodes -->
-    <template v-for="nodeData in allNodes" :key="nodeData.id">
-      <LGraphNodeLOD v-if="isLowQuality" :node-data="nodeData" />
-      <LGraphNode
-        v-else
-        :node-data="nodeData"
-        :error="
-          executionErrorStore.lastExecutionErrorNodeId === nodeData.id
-            ? 'Execution error'
-            : null
-        "
-        :data-node-id="nodeData.id"
-      />
-    </template>
+    <!--
+      Vue nodes rendered based on graph nodes. While zoomed out past
+      legibility they are replaced wholesale by NodeBoxOverlay, which draws the
+      same rectangles onto a canvas for a fraction of the cost.
+    -->
+    <LGraphNode
+      v-for="nodeData in isLowQuality ? [] : allNodes"
+      :key="nodeData.id"
+      :node-data="nodeData"
+      :error="
+        executionErrorStore.lastExecutionErrorNodeId === nodeData.id
+          ? 'Execution error'
+          : null
+      "
+      :data-node-id="nodeData.id"
+    />
   </TransformPane>
+
+  <NodeBoxOverlay
+    v-if="shouldRenderVueNodes && comfyAppReady && isLowQuality"
+    :get-boxes="getNodeBoxes"
+  />
 
   <LinkOverlayCanvas
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
@@ -161,6 +168,7 @@ import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useViewportCulling } from '@/composables/graph/useViewportCulling'
+import type { NodeId } from '@/renderer/core/layout/types'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -187,7 +195,7 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import LGraphNodeLOD from '@/renderer/extensions/vueNodes/components/LGraphNodeLOD.vue'
+import NodeBoxOverlay from '@/renderer/extensions/vueNodes/components/NodeBoxOverlay.vue'
 import { useLowQualityRendering } from '@/renderer/extensions/vueNodes/composables/useLowQualityRendering'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { UnauthorizedError } from '@/scripts/api'
@@ -297,6 +305,21 @@ watch(
     await handleVueNodeLifecycleReset()
   }
 )
+
+// Colour per node, rebuilt only when the node list changes rather than per
+// frame; the overlay redraws every frame.
+const nodeColors = computed(() => {
+  const colors = new Map<NodeId, string | undefined>()
+  for (const node of rawNodes.value) colors.set(node.id, node.bgcolor)
+  return colors
+})
+
+function getNodeBoxes() {
+  const colors = nodeColors.value
+  return cullingIndex
+    .entries()
+    .map((entry) => ({ bounds: entry.bounds!, color: colors.get(entry.id) }))
+}
 
 const { isLowQuality } = useLowQualityRendering(
   computed(() => canvasStore.canvas ?? undefined)

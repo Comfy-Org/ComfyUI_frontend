@@ -44,6 +44,9 @@ export function createNodeCullingIndex({
   /** Nodes with no bounds yet; they cannot be indexed, so always report them. */
   let unpositioned: NodeId[] = []
 
+  /** Retained so callers can iterate bounds without rebuilding them. */
+  let positionedEntries: CullingIndexEntry[] = []
+
   function rebuild(): void {
     const positioned: CullingIndexEntry[] = []
     const pending: NodeId[] = []
@@ -67,6 +70,7 @@ export function createNodeCullingIndex({
     }
 
     unpositioned = pending
+    positionedEntries = positioned
 
     if (positioned.length === 0) {
       tree = null
@@ -102,6 +106,16 @@ export function createNodeCullingIndex({
       ensureFresh()
       const matches = tree ? tree.query(bounds) : []
       return unpositioned.length ? matches.concat(unpositioned) : matches
+    },
+
+    /**
+     * Every node that has bounds, for callers that iterate the whole set
+     * rather than query a region. Shares the version-keyed cache, so reading
+     * it each frame does not rebuild anything.
+     */
+    entries(): readonly CullingIndexEntry[] {
+      ensureFresh()
+      return positionedEntries
     },
 
     /** Forces a rebuild on next query, for changes the version does not cover. */
