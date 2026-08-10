@@ -111,6 +111,7 @@ describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {
     pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
+    vi.resetAllMocks()
     app.rootGraph.subgraphs.clear()
     app.rootGraph.id = 'current-root'
     app.canvas.graph = app.rootGraph

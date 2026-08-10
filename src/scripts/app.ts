@@ -1593,6 +1593,10 @@ export class ComfyApp {
         })
       }
 
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })

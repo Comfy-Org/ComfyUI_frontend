@@ -216,8 +216,6 @@ export const useSubgraphNavigationStore = defineStore(
       | { id: number; source: 'workflow' }
     const routeWriteStateKey = 'comfySubgraphNavigationWrite'
     const pendingRouteWrites = new Map<number, string>()
-    // D14: the reset-suppression flag dies with shared-graph loading at
-    // ECS per-document scoping; the intent ids guard the router and survive.
     let deferredNavigationIntent: GraphNavigationIntent | undefined
     let latestNavigationIntent: NavigationIntent | undefined
     let navigationIntentId = 0
@@ -225,10 +223,10 @@ export const useSubgraphNavigationStore = defineStore(
     let blockedRouteHash: string | undefined
     let pendingWorkflowResetGraph: typeof app.rootGraph | undefined
 
-    function createNavigationIntent(
+    const createNavigationIntent = (
       hash: string,
       source: GraphNavigationIntent['source']
-    ): GraphNavigationIntent {
+    ): GraphNavigationIntent => {
       const intent = { id: ++navigationIntentId, hash, source }
       latestNavigationIntent = intent
       return intent
@@ -240,28 +238,12 @@ export const useSubgraphNavigationStore = defineStore(
       return intent.id
     }
 
-    /**
-     * Releases a workflow-load intent whose load FAILED: while it stays the
-     * newest intent it suppresses the surviving graph's hash forever, so
-     * clear it and republish the live graph.
-     */
-    function endWorkflowNavigation(navigationId: number): void {
-      if (
-        latestNavigationIntent?.source !== 'workflow' ||
-        latestNavigationIntent.id !== navigationId
-      ) {
-        return
-      }
-      latestNavigationIntent = undefined
-      void updateHash('graph')
-    }
-
     async function withNavBlocked<T>(
       op: () => Promise<T>,
-      blockedHash: string
+      routeHash: string
     ): Promise<T> {
       const previousBlockedRouteHash = blockedRouteHash
-      blockedRouteHash = blockedHash
+      blockedRouteHash = routeHash
       blockNavDepth++
       try {
         return await op()
@@ -333,7 +315,6 @@ export const useSubgraphNavigationStore = defineStore(
               '[subgraphNavigation] openWorkflow rejected during recovery',
               err
             )
-            reportError(err, { errorType: 'workflow_navigation_failure' })
             return redirectToRoot('workflow load failed', navigationId)
           }
           if (navigationId !== navigationIntentId) return
@@ -421,12 +402,11 @@ export const useSubgraphNavigationStore = defineStore(
       }
     }
 
-    async function updateHash(
+    function updateHash(
       source: 'graph' | 'workflow-load' = 'graph',
-      workflowNavigationId?: number,
-      currentGraph?: LGraph | null
+      workflowNavigationId?: number
     ): Promise<void> {
-      const graph = currentGraph ?? canvasStore.getCanvas().graph
+      const graph = canvasStore.getCanvas().graph
       if (source === 'workflow-load') {
         pendingWorkflowResetGraph = undefined
         if (
@@ -488,8 +468,10 @@ export const useSubgraphNavigationStore = defineStore(
     }
     watch(
       () => canvasStore.currentGraph,
-      (graph) => void updateHash('graph', undefined, graph),
-      { flush: 'sync' }
+      () => void updateHash(),
+      {
+        flush: 'sync'
+      }
     )
     watch(
       routeHash,
@@ -538,7 +520,6 @@ export const useSubgraphNavigationStore = defineStore(
       restoreViewport,
       saveCurrentViewport,
       beginWorkflowNavigation,
-      endWorkflowNavigation,
       updateHash,
       /** @internal Exposed for test assertions only. */
       viewportCache
