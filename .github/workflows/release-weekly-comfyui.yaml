@@ -32,8 +32,16 @@ on:
         required: false
         type: string
 
+# One release at a time. The daily stranded-commits check dispatches this
+# workflow, so a dispatch and the Monday schedule can otherwise overlap and
+# resolve the same line twice, cutting two bumps for one release.
+concurrency:
+  group: release-weekly-comfyui
+  cancel-in-progress: false
+
 jobs:
   check-release-week:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     outputs:
       is_release_week: ${{ steps.check.outputs.is_release_week }}
@@ -60,7 +68,10 @@ jobs:
 
   resolve-version:
     needs: check-release-week
-    if: needs.check-release-week.outputs.is_release_week == 'true' || github.event_name == 'workflow_dispatch'
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (needs.check-release-week.outputs.is_release_week == 'true' ||
+       github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     outputs:
       current_version: ${{ steps.resolve.outputs.current_version }}
@@ -130,8 +141,29 @@ jobs:
           echo "target_minor=$(echo "$RESULT" | jq -r '.target_minor')" >> $GITHUB_OUTPUT
           echo "target_branch=$(echo "$RESULT" | jq -r '.target_branch')" >> $GITHUB_OUTPUT
           echo "needs_release=$(echo "$RESULT" | jq -r '.needs_release')" >> $GITHUB_OUTPUT
+          echo "pending_bump=$(echo "$RESULT" | jq -r '.pending_bump')" >> $GITHUB_OUTPUT
           echo "diff_url=$(echo "$RESULT" | jq -r '.diff_url')" >> $GITHUB_OUTPUT
           echo "latest_patch_tag=$(echo "$RESULT" | jq -r '.latest_patch_tag')" >> $GITHUB_OUTPUT
+
+      - name: Stop if the previous bump was never released
+        if: steps.resolve.outputs.pending_bump == 'true'
+        env:
+          TARGET_BRANCH: ${{ steps.resolve.outputs.target_branch }}
+          TARGET_VERSION: ${{ steps.resolve.outputs.target_version }}
+          LATEST_TAG: ${{ steps.resolve.outputs.latest_patch_tag }}
+        run: |
+          set -euo pipefail
+          echo "::error title=Release already in flight::${TARGET_BRANCH} is at ${TARGET_VERSION} but its newest tag is ${LATEST_TAG}. Tag ${TARGET_VERSION} to finish that release; cutting another bump only burns a version."
+          {
+            echo "## Release already in flight"
+            echo
+            echo "\`${TARGET_BRANCH}\` is at \`${TARGET_VERSION}\`, its newest tag is \`${LATEST_TAG}\`."
+            echo "A bump landed without being released, so this run stops rather than stacking a second bump on it."
+            echo
+            echo "Finish the in-flight release by tagging \`v${TARGET_VERSION}\`, then re-run this workflow."
+            echo "Check the \`release-draft-create\` run on the merged bump PR for why the tag is missing."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
 
       - name: Summary
         run: |
@@ -159,7 +191,7 @@ jobs:
 
           # Trigger the release-version-bump workflow
           if ! gh workflow run release-version-bump.yaml \
-            --repo Comfy-Org/ComfyUI_frontend \
+            --repo "$GITHUB_REPOSITORY" \
             --ref main \
             --field version_type=patch \
             --field branch=${{ needs.resolve-version.outputs.target_branch }}; then
