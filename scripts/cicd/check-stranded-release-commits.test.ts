@@ -5,6 +5,7 @@ import {
   evaluateLine,
   minorLineOf,
   evaluatePin,
+  hasPendingBump,
   newestStableVersion,
   parsePinnedVersion,
   releaseBranchFor
@@ -188,5 +189,27 @@ describe('evaluatePin', () => {
     expect(
       evaluatePin({ pinned: '1.47.11', newestOnPinnedLine: '1.47.11' })
     ).toBeNull()
+  })
+})
+
+describe('hasPendingBump', () => {
+  it('detects a bump that landed but was never tagged', () => {
+    // core/1.48 on 2026-08-10: #14973 merged the 1.48.8 bump, but draft_release
+    // 403'd so v1.48.8 never existed. Dispatching again just burns 1.48.9.
+    expect(
+      hasPendingBump({ branchVersion: '1.48.8', latestTag: 'v1.48.7' })
+    ).toBe(true)
+  })
+
+  it('is false when the branch matches its latest tag', () => {
+    expect(
+      hasPendingBump({ branchVersion: '1.48.7', latestTag: 'v1.48.7' })
+    ).toBe(false)
+  })
+
+  it('tolerates a tag without the v prefix', () => {
+    expect(
+      hasPendingBump({ branchVersion: '1.48.7', latestTag: '1.48.7' })
+    ).toBe(false)
   })
 })
