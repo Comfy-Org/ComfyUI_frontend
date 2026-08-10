@@ -107,8 +107,8 @@ catalog:
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
   oxfmt: ^0.59.0
-  oxlint: ^1.74.0
-  oxlint-tsgolint: ^0.24.0
+  oxlint: ^1.77.0
+  oxlint-tsgolint: ^7.0.2001
   picocolors: ^1.1.1
   pinia: ^4.0.2
   postcss-html: ^1.8.0
