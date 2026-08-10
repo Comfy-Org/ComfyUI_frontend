@@ -22,9 +22,7 @@ describe('isElectron', () => {
   })
 
   it('returns false when window.electronAPI is absent', () => {
-    const copy = windowWith({})
-    delete copy['electronAPI']
-    vi.stubGlobal('window', copy)
+    vi.stubGlobal('window', windowWith({}))
     expect(isElectron()).toBe(false)
   })
 })
@@ -44,9 +42,7 @@ describe('isNativeWindow', () => {
   })
 
   it('returns false when not in Electron', () => {
-    const copy = windowWith({})
-    delete copy['electronAPI']
-    vi.stubGlobal('window', copy)
+    vi.stubGlobal('window', windowWith({}))
     expect(isNativeWindow()).toBe(false)
   })
 
