@@ -69,7 +69,7 @@ To use the same pinned ComfyUI environment as the Playwright CI jobs, start its
 container in one terminal:
 
 ```bash
-pnpm dev:comfyui
+pnpm start:comfyui
 ```
 
 The command mounts `tools/devtools` automatically and exposes ComfyUI at
