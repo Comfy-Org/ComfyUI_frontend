@@ -34,29 +34,32 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1 &&
-  ! "${docker[@]}" pull "$image"; then
+if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then
   token="${COMFY_CI_CONTAINER_TOKEN:-}"
-  if [[ -z "$token" ]] && command -v gh >/dev/null 2>&1; then
-    token="$(gh auth token 2>/dev/null || true)"
-  fi
-
   username="${COMFY_CI_CONTAINER_USER:-}"
-  if [[ -z "$username" ]] && command -v gh >/dev/null 2>&1; then
-    username="$(gh api user --jq .login 2>/dev/null || true)"
-  fi
 
   if [[ -n "$token" && -n "$username" ]]; then
-    if ! printf '%s' "$token" | "${docker[@]}" --config "$docker_config" \
+    echo "Pulling $image with configured GHCR credentials"
+    if printf '%s' "$token" | "${docker[@]}" --config "$docker_config" \
       login ghcr.io --username "$username" --password-stdin; then
-      echo 'GHCR login failed; building from public source.' >&2
+      if ! "${docker[@]}" --config "$docker_config" pull "$image"; then
+        echo 'The private image pull failed; falling back to a source build.' >&2
+      fi
+    else
+      echo 'GHCR rejected the configured credentials; falling back to a source build.' >&2
     fi
+  else
+    echo 'GHCR credentials are not configured; skipping the private image pull.'
+    echo 'Set COMFY_CI_CONTAINER_USER and COMFY_CI_CONTAINER_TOKEN to enable it.'
   fi
 
-  if ! "${docker[@]}" --config "$docker_config" pull "$image"; then
+  if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then
+    echo "Building $image from public source"
     "${docker[@]}" build --tag "$image" \
       "https://github.com/Comfy-Org/comfyui-ci-container.git#v$version"
   fi
+else
+  echo "Using cached image $image"
 fi
 
 "${docker[@]}" run --rm --name "$container" \

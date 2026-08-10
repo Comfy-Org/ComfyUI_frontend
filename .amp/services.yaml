@@ -1,34 +1,68 @@
 services:
   docker-daemon:
-    command: sudo dockerd
+    command: |
+      case "${COMFYUI_FRONTEND_MODE:-local}" in
+        local)
+          echo 'Starting Docker for local ComfyUI mode'
+          exec sudo dockerd
+          ;;
+        cloud)
+          echo 'Cloud mode selected; Docker is not needed'
+          exec sleep infinity
+          ;;
+        *)
+          echo 'COMFYUI_FRONTEND_MODE must be local or cloud' >&2
+          exit 1
+          ;;
+      esac
 
   comfyui:
     port: 8188
-    command: COMFYUI_PORT="$PORT" scripts/start-comfyui-e2e.sh
+    command: |
+      case "${COMFYUI_FRONTEND_MODE:-local}" in
+        local)
+          echo 'Starting the containerized ComfyUI backend'
+          exec env COMFYUI_PORT="$PORT" scripts/start-comfyui-e2e.sh
+          ;;
+        cloud)
+          echo 'Cloud mode selected; the local ComfyUI backend is not needed'
+          exec sleep infinity
+          ;;
+        *)
+          echo 'COMFYUI_FRONTEND_MODE must be local or cloud' >&2
+          exit 1
+          ;;
+      esac
 
   frontend:
-    port: 5174
-    command: pnpm dev:cloud --host 0.0.0.0 --port "$PORT"
-    portal:
-      title: ComfyUI Frontend (Cloud)
-      description: Frontend dev server connected to the Comfy test cloud backend.
-
-  frontend-local:
     port: 5173
     command: |
       set -euo pipefail
-      for attempt in $(seq 1 600); do
-        curl -fsS --connect-timeout 1 --max-time 2 \
-          http://127.0.0.1:8188/system_stats >/dev/null 2>&1 && break
-        sleep 1
-      done
-      if ! curl -fsS --connect-timeout 1 --max-time 2 \
-        http://127.0.0.1:8188/system_stats >/dev/null 2>&1; then
-        echo 'ComfyUI did not become ready within 10 minutes.' >&2
-        exit 1
-      fi
-      exec env VITE_REMOTE_DEV=true DISABLE_VUE_PLUGINS=true \
-        pnpm dev --host 0.0.0.0 --port "$PORT"
+      case "${COMFYUI_FRONTEND_MODE:-local}" in
+        local)
+          echo 'Starting the frontend in local ComfyUI mode'
+          for attempt in $(seq 1 600); do
+            curl -fsS --connect-timeout 1 --max-time 2 \
+              http://127.0.0.1:8188/system_stats >/dev/null 2>&1 && break
+            sleep 1
+          done
+          if ! curl -fsS --connect-timeout 1 --max-time 2 \
+            http://127.0.0.1:8188/system_stats >/dev/null 2>&1; then
+            echo 'ComfyUI did not become ready within 10 minutes.' >&2
+            exit 1
+          fi
+          exec env VITE_REMOTE_DEV=true DISABLE_VUE_PLUGINS=true \
+            pnpm dev --host 0.0.0.0 --port "$PORT"
+          ;;
+        cloud)
+          echo 'Starting the frontend in Comfy test cloud mode'
+          exec pnpm dev:cloud --host 0.0.0.0 --port "$PORT"
+          ;;
+        *)
+          echo 'COMFYUI_FRONTEND_MODE must be local or cloud' >&2
+          exit 1
+          ;;
+      esac
     portal:
-      title: ComfyUI Frontend (Local)
-      description: Frontend dev server connected to the local containerized ComfyUI backend.
+      title: ComfyUI Frontend
+      description: Frontend dev server in the configured local or cloud mode.

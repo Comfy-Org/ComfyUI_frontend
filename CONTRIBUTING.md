@@ -81,7 +81,8 @@ pnpm test:browser:local
 ```
 
 See [the browser test setup](browser_tests/README.md#setup) for image access and
-Playwright prerequisites.
+Playwright prerequisites, including private GHCR credentials and local/cloud
+mode selection for Amp orbs.
 
 #### Testing with Cloud & Staging Environments
 

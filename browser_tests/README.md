@@ -51,14 +51,41 @@ mounts `tools/devtools` automatically:
 pnpm container:start
 ```
 
-The first run pulls the CI image when your GitHub credentials can read it, or
-builds the pinned public source if they cannot. Leave it running while using
-`pnpm dev` and `pnpm test:browser:local` in separate terminals.
+The first run pulls the CI image only when `COMFY_CI_CONTAINER_TOKEN` and
+`COMFY_CI_CONTAINER_USER` are configured. Otherwise, it tells you that the
+private pull was skipped and builds the pinned public source. Leave it running
+while using `pnpm dev` and `pnpm test:browser:local` in separate terminals.
 
 The source build can take several minutes and uses about 10 GB for the image,
 plus Docker build cache. Set `COMFY_CI_CONTAINER_TOKEN` and
 `COMFY_CI_CONTAINER_USER` to credentials with `read:packages` access to pull
 the private image instead.
+
+### Amp orb configuration
+
+Amp orbs default to the local containerized backend. Set the project environment
+variable `COMFYUI_FRONTEND_MODE` to `cloud` to run only the cloud frontend, or
+to `local` to run only the local backend and frontend. Start a fresh orb after
+changing project-level values so its environment contains the new settings.
+
+The CI image is a private GitHub package. Create a GitHub token with
+`read:packages` access, then store the username as a project environment
+variable and the token as a project secret. Values configured at the project
+level are injected into new orbs:
+
+```bash
+printf '%s' 'local' |
+  amp secrets set COMFYUI_FRONTEND_MODE --project --env --data-file -
+printf '%s' 'YOUR_GITHUB_USERNAME' |
+  amp secrets set COMFY_CI_CONTAINER_USER --project --env --data-file -
+read -rsp 'GitHub package token: ' token && echo
+printf '%s' "$token" |
+  amp secrets set COMFY_CI_CONTAINER_TOKEN --project --secret --data-file -
+unset token
+```
+
+You can configure the same values in the Amp project settings instead of using
+the CLI. Amp never returns secret values from `amp secrets get` or history.
 
 ### Node.js & Playwright
 
