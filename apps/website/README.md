@@ -2,6 +2,16 @@
 
 Marketing/brand website built with Astro + Vue.
 
+## Build-time data sources
+
+External data used during static generation shares the fetch, memoization,
+snapshot fallback, and CI reporting lifecycle in
+`src/utils/buildDataSource.ts` and `src/utils/buildDataReporter.ts`. Each
+source owns its API calls, validation, and domain mapping.
+
+The `Release: Website` workflow refreshes all committed website snapshots and
+opens a PR containing their latest values.
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board
@@ -157,6 +167,24 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
+## GitHub stars integration
+
+The navigation star badge reads the ComfyUI repository's star count from the
+GitHub API at build time. The fetch runs once per build process and falls back
+to `src/data/github-stars.snapshot.json` when GitHub is unavailable or rate
+limited. `src/utils/github.ci.ts` reports fallback use in GitHub Actions.
+
+`WEBSITE_GITHUB_STARS_OVERRIDE` remains available for deterministic visual
+tests and local builds. It must be a non-negative integer and is build-time
+only.
+
+To refresh the fallback manually:
+
+```bash
+pnpm --filter @comfyorg/website github-stars:refresh-snapshot
+git commit apps/website/src/data/github-stars.snapshot.json
+```
+
 ## HubSpot contact form
 
 The contact page uses HubSpot's hosted form embed for the interest form:
@@ -191,3 +219,4 @@ renders the documented embed container.
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot
+- `pnpm github-stars:refresh-snapshot` — refresh the committed GitHub stars snapshot

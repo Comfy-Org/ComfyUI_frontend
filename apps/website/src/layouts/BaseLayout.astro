@@ -14,7 +14,8 @@ import {
   createBannerVersion,
   evaluateBannerVisibility
 } from '../utils/banner'
-import { fetchGitHubStars, formatStarCount } from '../utils/github'
+import { fetchGitHubStarsForBuild, formatStarCount } from '../utils/github'
+import { reportGitHubStarsOutcome } from '../utils/github.ci'
 import { buildPageGraph, pageContext } from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
 import JsonLdGraph from '../components/common/JsonLdGraph.astro'
@@ -52,8 +53,17 @@ const { siteUrl, locale, url } = pageContext(
 )
 const canonicalURL = new URL(url)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
-const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
-const githubStars = rawStars ? formatStarCount(rawStars) : ''
+const githubStarsOutcome = await fetchGitHubStarsForBuild()
+reportGitHubStarsOutcome(githubStarsOutcome)
+
+if (githubStarsOutcome.status === 'failed') {
+  throw new Error(
+    `GitHub stars fetch failed and no snapshot is available. Reason: ${githubStarsOutcome.reason}. ` +
+      'Run `pnpm --filter @comfyorg/website github-stars:refresh-snapshot` and commit the snapshot.'
+  )
+}
+
+const githubStars = formatStarCount(githubStarsOutcome.snapshot.stargazersCount)
 
 // Announcement banner — build-time visibility gate + content-hash version key.
 // A promo never advertises the page you are already on, so the banner is
