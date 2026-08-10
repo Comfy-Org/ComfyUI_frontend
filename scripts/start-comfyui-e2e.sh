@@ -3,6 +3,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 image=ghcr.io/comfy-org/comfyui-ci-container:0.0.21
+version="${image##*:}"
 port="${COMFYUI_PORT:-8188}"
 container=comfyui-e2e
 docker=(docker)
@@ -45,7 +46,7 @@ if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1 &&
 
   if ! "${docker[@]}" --config "$docker_config" pull "$image"; then
     "${docker[@]}" build --tag "$image" \
-      'https://github.com/Comfy-Org/comfyui-ci-container.git#v0.0.21'
+      "https://github.com/Comfy-Org/comfyui-ci-container.git#v$version"
   fi
 fi
 
