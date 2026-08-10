@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
+import AgentTooltip from '../AgentTooltip.vue'
 
 const {
   text,
@@ -67,21 +68,23 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
       v-if="text"
       class="text-agent-fg-subtle flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
     >
-      <button
-        type="button"
-        :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-        class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-        @click="copy(text)"
-      >
-        <span
-          :class="
-            cn(
-              'size-4',
-              copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-            )
-          "
-        />
-      </button>
+      <AgentTooltip :label="copied ? t('agent.copied') : t('agent.copy')">
+        <button
+          type="button"
+          :aria-label="copied ? t('agent.copied') : t('agent.copy')"
+          class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
+          @click="copy(text)"
+        >
+          <span
+            :class="
+              cn(
+                'size-4',
+                copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+              )
+            "
+          />
+        </button>
+      </AgentTooltip>
     </div>
   </div>
 </template>

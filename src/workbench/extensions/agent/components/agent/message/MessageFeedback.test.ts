@@ -68,6 +68,20 @@ describe('MessageFeedback', () => {
     )
   })
 
+  it.for(['Helpful', 'Not helpful', 'Copy'])(
+    'shows a tooltip for the %s action',
+    async (label) => {
+      const { user } = renderFeedback()
+      const action = screen.getByRole('button', { name: label })
+
+      await user.hover(action)
+
+      expect(
+        await screen.findByRole('tooltip', { hidden: true })
+      ).toHaveTextContent(label)
+    }
+  )
+
   it('the primary Copy action copies rendered plain text without opening a menu', async () => {
     const { user } = renderFeedback()
 
