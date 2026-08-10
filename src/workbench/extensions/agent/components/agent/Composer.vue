@@ -444,7 +444,7 @@ defineExpose({
               @click="emit('selectNodes')"
             >
               <span
-                class="icon-[lucide--square-mouse-pointer] size-[14px] shrink-0"
+                class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
               />
               <span>{{ placeholderHint.addNodes }},</span>
             </button>

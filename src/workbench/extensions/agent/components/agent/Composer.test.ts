@@ -31,9 +31,13 @@ describe('Composer', () => {
     mount()
 
     expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
-    expect(
-      screen.getByRole('button', { name: 'add nodes from graph,' })
-    ).toBeVisible()
+    const addNodes = screen.getByRole('button', {
+      name: 'add nodes from graph,'
+    })
+    expect(addNodes).toBeVisible()
+    expect(addNodes).toContainHTML(
+      '<span class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"></span>'
+    )
     expect(screen.getByText('or drag in assets')).toBeVisible()
   })
 
