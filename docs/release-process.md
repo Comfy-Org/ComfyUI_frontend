@@ -131,6 +131,14 @@ the `pull_request_target` gate skips most other runs, so they are the ones
 dense in runs that decided anything. If the check itself cannot run it fails
 open and alerts, since a duplicate beats a silence.
 
+Only scheduled runs **alert**, for the same reason: a run can recognise a
+duplicate only within the history it reads, so the runs that post have to be
+the runs that get read back. While the two sets differed, every PR-triggered
+failure was invisible to every other one — five posts in nine minutes when a
+rotation member turned up without a `github:` tag. PR-triggered runs still go
+red on the PR itself; the alert rides the hourly sweep instead, so a new
+breakage is announced within the hour rather than on the spot.
+
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,
