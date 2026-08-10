@@ -295,6 +295,9 @@ jobs:
             12)
               grep_args=(--grep 'dynamic inputs: ComfyUI-Impact-Pack @custom-nodes.*ImpactMakeImageList grows on connect and shrinks on disconnect \(drag \+ programmatic, both renderers\)$')
               ;;
+            13)
+              grep_args=(--grep 'interaction profiles: ComfyUI-Impact-Pack @custom-nodes$')
+              ;;
           esac
           # workers=1: the auto-run tier needs exclusive backend-queue access;
           # parallel workers interrupt each other's executions.
@@ -330,7 +333,7 @@ jobs:
             exit 1
           fi
           expected_tests=34
-          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" || "$ROW" = "6" || "$ROW" = "7" || "$ROW" = "8" || "$ROW" = "9" || "$ROW" = "10" || "$ROW" = "11" || "$ROW" = "12" ]]; then
+          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" || "$ROW" = "6" || "$ROW" = "7" || "$ROW" = "8" || "$ROW" = "9" || "$ROW" = "10" || "$ROW" = "11" || "$ROW" = "12" || "$ROW" = "13" ]]; then
             expected_tests=1
           fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
@@ -426,8 +429,7 @@ jobs:
             9) pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
             11) pat='ComfyUI-KJNodes: frontend extension "KJNodes\.appearance" not registered - pack JS did not load' ;;
             12) pat='ImpactMakeImageList via drag with VueNodes=false: input count grows by one on connect' ;;
-            # S13: pack JS reaction to unplug vanishes - only the deltas see it.
-            13) pat='interaction delta drifted' ;;
+            13) pat='ComfyUI-Impact-Pack/ImpactMakeImageList: interaction delta drifted - disconnect:' ;;
             # S14: layout drifts with no error - only geometry baselines see it.
             14) pat='widgets\[[0-9]+\]\.y: expected' ;;
             # S15: execution succeeds, values differ - only the hash sees it.
