@@ -164,7 +164,7 @@ describe('general conversion conformance', () => {
         context({
           original: 'const { app } = window.comfyAPI.app; app.foo()',
           converted:
-            "import { comfy } from '/comfy/api/v1.js';\n" +
+            "import { comfy } from '/comfy/api/v2.js';\n" +
             'const { app } = window.comfyAPI.app;\n' +
             'comfy.defs.extend("A", (b) => b.onCreated(() => app.foo()))',
           edits: []
