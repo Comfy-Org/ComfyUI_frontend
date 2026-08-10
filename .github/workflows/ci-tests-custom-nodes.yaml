@@ -246,8 +246,13 @@ jobs:
           CN_ENABLE_S14: '1'
           CN_ENABLE_S15: '1'
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
+          ROW: ${{ matrix.row }}
         run: |
           set -o pipefail
+          grep_args=()
+          if [ "$ROW" = "4" ]; then
+            grep_args=(--grep 'connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes$')
+          fi
           # workers=1: the auto-run tier needs exclusive backend-queue access;
           # parallel workers interrupt each other's executions.
           # --project=custom-nodes: the `@custom-nodes`-tagged specs, which the
@@ -259,6 +264,7 @@ jobs:
           # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
+            "${grep_args[@]}" \
             2>&1 | tee custom-nodes.log
 
       # A skip here means a pack or devtools did not load. On this branch the
@@ -271,7 +277,7 @@ jobs:
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-          EXPECTED_TESTS: 34
+          ROW: ${{ matrix.row }}
         run: |
           set -euo pipefail
           # The JSON result is mandatory even when the suite step failed: the
@@ -280,10 +286,14 @@ jobs:
             echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
             exit 1
           fi
+          expected_tests=34
+          if [ "$ROW" = "4" ]; then
+            expected_tests=1
+          fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
           echo "collected tests: $collected"
-          if [ "$collected" != "$EXPECTED_TESTS" ]; then
-            echo "::error::collected $collected tests; expected exactly $EXPECTED_TESTS active Core custom-node tests"
+          if [ "$collected" != "$expected_tests" ]; then
+            echo "::error::collected $collected tests; expected exactly $expected_tests active Core custom-node tests for row $ROW"
             exit 1
           fi
           unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-results.json)
