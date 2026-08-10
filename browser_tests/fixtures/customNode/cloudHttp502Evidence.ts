@@ -1,6 +1,6 @@
 import { createDecipheriv, createHmac, timingSafeEqual } from 'node:crypto'
 
-export const CLOUD_HTTP_502_EVIDENCE_KEY_ENV = 'CLOUD_HTTP_502_EVIDENCE_KEY'
+const CLOUD_HTTP_502_EVIDENCE_KEY_ENV = 'CLOUD_HTTP_502_EVIDENCE_KEY'
 
 const PUBLIC_EVIDENCE_AUTH_CONTEXT = 'comfy-cloud-http-502-public-evidence-v1'
 const ENCRYPTED_EVIDENCE_AUTH_CONTEXT =
