@@ -30,7 +30,6 @@ test.describe('Template search sort', () => {
       ])
     )
     await templateApi.mock()
-    await comfyPage.setup()
 
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()

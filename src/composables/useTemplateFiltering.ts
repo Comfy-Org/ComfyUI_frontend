@@ -26,8 +26,6 @@ type TemplateBrowseSort =
 
 export type TemplateSortMode = TemplateBrowseSort | 'relevance'
 
-// Sort applied when a query becomes active, before the user picks one. Flip to
-// 'relevance' to rank by text match instead of raw usage.
 const SEARCH_DEFAULT_SORT: TemplateSortMode = 'popular'
 
 /** The title shown on the card, trimmed for stable sorting. */
