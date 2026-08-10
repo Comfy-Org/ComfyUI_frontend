@@ -2,7 +2,7 @@
  * Runs the conformance checker over every converted pack in `db/`.
  *
  * A destination file counts as converted when it differs from its source —
- * NOT by the presence of a `/comfy/api/v1.js` import. A correct conversion
+ * NOT by the presence of a `/comfy/api/v2.js` import. A correct conversion
  * that needs nothing from `comfy` legitimately has no import, and using the
  * marker as the test mis-reported three whole packs as outstanding.
  *
@@ -63,11 +63,11 @@ for (const pack of directories(DB)) {
   // The snapshot dir is usually xHEAD, but not always — kjnodes is xe97a7b.
   for (const snap of directories(join(DB, pack))) {
     const head = join(DB, pack, snap)
-    const v1 = join(head, 'v1')
-    if (!existsSync(v1)) continue
+    const v2 = join(head, 'v2')
+    if (!existsSync(v2)) continue
 
-    for (const converted of walk(v1)) {
-      const rel = relative(v1, converted)
+    for (const converted of walk(v2)) {
+      const rel = relative(v2, converted)
       const original = join(head, rel)
       if (!existsSync(original)) continue
 

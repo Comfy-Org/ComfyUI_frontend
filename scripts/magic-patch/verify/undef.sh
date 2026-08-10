@@ -20,8 +20,8 @@ mkdir -p scripts/magic-patch/verify/.undefchk scripts/magic-patch/verify/.undefo
 : > scripts/magic-patch/verify/.undefmap.txt
 
 i=0
-for d in $(find db/*/xHEAD/v1 -name '*.js' 2>/dev/null); do
-  s=$(echo "$d" | sed 's|/xHEAD/v1/|/xHEAD/|')
+for d in $(find db/*/xHEAD/v2 -name '*.js' 2>/dev/null); do
+  s=$(echo "$d" | sed 's|/xHEAD/v2/|/xHEAD/|')
   [ -f "$s" ] || continue
   cmp -s "$s" "$d" && continue
   i=$((i + 1))

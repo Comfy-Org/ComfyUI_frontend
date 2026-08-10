@@ -1,7 +1,7 @@
 /**
  * Builds the published API's type surface as a single `.d.ts`.
  *
- * Dropped into every working copy as `v1/comfy-api.d.ts`, so an agent reads the
+ * Dropped into every working copy as `v2/comfy-api.d.ts`, so an agent reads the
  * contract it is coding against instead of a prose list of capability names.
  * The prose list drifted — the doc said eleven capabilities while the code had
  * eighteen, and twelve files were punted against API that already existed.
@@ -56,7 +56,7 @@ export function buildApiDts() {
     ` * exist: do not call it, and punt as api-gap naming what is missing.\n` +
     ` * Reached from a converted pack as:\n` +
     ` *\n` +
-    ` *   import { comfy } from '/comfy/api/v1.js'\n` +
+    ` *   import { comfy } from '/comfy/api/v2.js'\n` +
     ` */\n\n` +
     sections.join('\n\n')
   )

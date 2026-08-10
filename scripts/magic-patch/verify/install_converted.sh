@@ -27,8 +27,8 @@ for r in json.load(open('$REG')):
 
   # the snapshot dir is usually xHEAD but not always (kjnodes is xe97a7b)
   snap=$(ls "db/$pack" 2>/dev/null | head -1)
-  v1root="db/$pack/$snap/v1"
-  [ -d "$v1root" ] || { echo "  no converted tree at $v1root, skipping"; continue; }
+  v2root="db/$pack/$snap/v2"
+  [ -d "$v2root" ] || { echo "  no converted tree at $v2root, skipping"; continue; }
 
   dest="$COMFY/custom_nodes/$(basename "$url" .git)"
   if [ -d "$dest" ]; then
@@ -40,7 +40,7 @@ for r in json.load(open('$REG')):
 
   # Verify every converted file parses as ESM before it goes anywhere near the app.
   bad=0
-  for f in $(find "$v1root" -name '*.js' | grep -v '\.min\.js$'); do
+  for f in $(find "$v2root" -name '*.js' | grep -v '\.min\.js$'); do
     cp "$f" /tmp/_inst_chk.mjs
     node --check /tmp/_inst_chk.mjs >/dev/null 2>&1 || { echo "  SYNTAX FAIL: $f"; bad=1; }
   done
@@ -48,8 +48,8 @@ for r in json.load(open('$REG')):
 
   # Overlay: for each converted file, find the matching path under the clone.
   copied=0
-  for f in $(find "$v1root" -name '*.js'); do
-    rel=${f#"$v1root"/}                 # e.g. ComfyUI-Custom-Scripts-HEAD/web/js/x.js
+  for f in $(find "$v2root" -name '*.js'); do
+    rel=${f#"$v2root"/}                 # e.g. ComfyUI-Custom-Scripts-HEAD/web/js/x.js
     sub=${rel#*/}                        # strip the pack-root dir -> web/js/x.js
     target="$dest/$sub"
     [ -f "$target" ] || continue         # only overwrite files the pack actually ships

@@ -3,7 +3,7 @@
  *
  * Packs import four host modules by relative path (`../../scripts/app.js` and
  * friends, 8,600 sites across the corpus) and converted packs import
- * `/comfy/api/v1.js` by absolute path. Neither resolves on disk here, so
+ * `/comfy/api/v2.js` by absolute path. Neither resolves on disk here, so
  * without this the pack cannot be loaded at all — which is why the `loads`,
  * `registers-no-fewer-types` and wire checks have been skipping.
  *
@@ -12,7 +12,7 @@
  * the *same* module instances the harness inspects afterwards.
  */
 const HOST_MODULES = {
-  '/comfy/api/v1.js': 'comfyApi',
+  '/comfy/api/v2.js': 'comfyApi',
   // Not a pack import: litegraph reaches i18n via BaseWidget, and `src/i18n.ts`
   // uses Vite's `import.meta.glob`, which throws under plain Node.
   '@/i18n': 'i18n',
