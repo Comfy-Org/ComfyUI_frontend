@@ -63,9 +63,11 @@ import {
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
   partitionValueDriftNodes,
+  pendingWidgetInitializations,
   rendererLedgerFor,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
+  ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
   ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE,
   staleValueDriftIndices
@@ -334,6 +336,7 @@ const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
   ROUNDTRIP_VALUE_ALLOWLIST,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
+  ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
   ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE,
   WIDGET_SET_ALLOWLIST
@@ -373,6 +376,7 @@ declare global {
     // run as separate evaluates with frame yields between them.
     __cnRt?: {
       problems: string[]
+      captureInitialWidgetCounts: () => void
       snapshotAndConfigure: () => void
       currentWidgetCounts: (types: string[]) => Record<string, number | null>
       compare: (label: string, strict: boolean) => void
@@ -1088,6 +1092,15 @@ for (const entry of loadManifest()) {
             ])
           )
           const observedTopologyDrift = new Set<string>()
+          const initializationSignals = Object.fromEntries(
+            stalenessCheckedKeys(
+              entry,
+              packLedgerFor(ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS, entry.pack)
+            ).map((node) => [
+              node,
+              ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS[entry.pack][node]
+            ])
+          )
           for (const ledgered of Object.keys(topologyExpectations))
             expect(
               keys,
@@ -1114,7 +1127,7 @@ for (const entry of loadManifest()) {
                 window.app!.graph.last_node_id = window.__cnIdBase ?? 0
                 const created = new Map<
                   string,
-                  { type: string; widgetCount: number }
+                  { type: string; widgetCount: number | null }
                 >()
                 for (const type of types) {
                   const node = window.LiteGraph!.createNode(type)
@@ -1122,7 +1135,7 @@ for (const entry of loadManifest()) {
                   window.app!.graph.add(node)
                   created.set(String(node.id), {
                     type,
-                    widgetCount: (node.widgets ?? []).length
+                    widgetCount: null
                   })
                 }
                 window.__cnIdBase = window.app!.graph.last_node_id
@@ -1189,6 +1202,13 @@ for (const entry of loadManifest()) {
                 > | null = null
                 window.__cnRt = {
                   problems,
+                  captureInitialWidgetCounts() {
+                    for (const node of window.app!.graph.nodes) {
+                      const expected = created.get(String(node.id))
+                      if (expected)
+                        expected.widgetCount = (node.widgets ?? []).length
+                    }
+                  },
                   snapshotAndConfigure() {
                     namesBefore = widgetNamesById()
                     firstPass = window.app!.graph.serialize()
@@ -1240,6 +1260,12 @@ for (const entry of loadManifest()) {
                           `${expected.type}: type became ${String(after.type)} on ${label} reload`
                         )
                       const widgets = (restored.widgets ?? []).length
+                      if (expected.widgetCount === null) {
+                        problems.push(
+                          `${expected.type}: initial widget topology was not captured`
+                        )
+                        continue
+                      }
                       const topologyShrank = widgets < expected.widgetCount
                       if (strict && topologyShrank)
                         topologyDrifts.push({
@@ -1386,11 +1412,43 @@ for (const entry of loadManifest()) {
               ] as const
             )
             await comfyPage.nextFrame()
+            const waitForWidgetInitialization = async () => {
+              if (Object.keys(initializationSignals).length === 0) return
+              await expect
+                .poll(
+                  async () => {
+                    const values = await comfyPage.page.evaluate((signals) => {
+                      const values: Record<string, unknown> = {}
+                      for (const [type, signal] of Object.entries(signals)) {
+                        const node = window.app!.graph.nodes.find(
+                          (candidate) => candidate.type === type
+                        ) as unknown as Record<string, unknown> | undefined
+                        values[type] = node?.[signal]
+                      }
+                      return values
+                    }, initializationSignals)
+                    return pendingWidgetInitializations(
+                      initializationSignals,
+                      values
+                    )
+                  },
+                  {
+                    message:
+                      'pack-owned dynamic widget initialization completes before the roundtrip baseline'
+                  }
+                )
+                .toEqual([])
+            }
+            await waitForWidgetInitialization()
+            await comfyPage.page.evaluate(() =>
+              window.__cnRt!.captureInitialWidgetCounts()
+            )
             // Stage 2 - pristine snapshot + reload.
             await comfyPage.page.evaluate(() =>
               window.__cnRt!.snapshotAndConfigure()
             )
             await comfyPage.nextFrame()
+            await waitForWidgetInitialization()
             const settledTopology = Object.fromEntries(
               Object.entries(topologyExpectations)
                 .filter(([node]) => chunk.includes(node))
@@ -1438,6 +1496,7 @@ for (const entry of loadManifest()) {
               window.__cnRt!.snapshotAndConfigure()
             )
             await comfyPage.nextFrame()
+            await waitForWidgetInitialization()
             await waitForSettledTopology()
             // Stage 5 - set-values verdict; collect and reset.
             const result = await comfyPage.page.evaluate(() => {

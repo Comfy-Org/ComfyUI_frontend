@@ -52,6 +52,26 @@ export interface RoundtripWidgetTopologyExpectation {
   reason: string
 }
 
+export const ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS: Record<
+  string,
+  Record<string, string>
+> = {
+  'WhatDreamsCost-ComfyUI': {
+    LTXKeyframer: '_currentImageCount',
+    LTXSequencer: '_currentImageCount'
+  }
+}
+
+export function pendingWidgetInitializations(
+  signals: Record<string, string>,
+  values: Record<string, unknown>
+): string[] {
+  return Object.keys(signals).filter((node) => {
+    const value = values[node]
+    return typeof value !== 'number' || value < 0
+  })
+}
+
 export const OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
   string,
   Record<string, TopologyExpectation>
@@ -83,36 +103,12 @@ export const OUTPUT_TOPOLOGY_EXPECTATIONS_VUE: Record<
 export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH: Record<
   string,
   Record<string, RoundtripWidgetTopologyExpectation>
-> = {
-  'WhatDreamsCost-ComfyUI': {
-    LTXKeyframer: {
-      before: 102,
-      after: [2, 5] as const,
-      reason:
-        'pack JS restores either its two static widgets or one image header/frame/strength set according to restored num_images state'
-    }
-  }
-}
+> = {}
 
 export const ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE: Record<
   string,
   Record<string, RoundtripWidgetTopologyExpectation>
-> = {
-  'WhatDreamsCost-ComfyUI': {
-    LTXKeyframer: {
-      before: 102,
-      after: [2, 5] as const,
-      reason:
-        'pack JS restores either its two static widgets or one image header/frame/strength set according to restored num_images state'
-    },
-    LTXSequencer: {
-      before: 154,
-      after: 8,
-      reason:
-        'pack restores one separator, three static widgets, and one four-widget image track'
-    }
-  }
-}
+> = {}
 
 export function matchesTopologyExpectation(
   expectation:

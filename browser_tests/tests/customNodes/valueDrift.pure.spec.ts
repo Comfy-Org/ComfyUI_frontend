@@ -7,9 +7,11 @@ import {
   OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
   partitionValueDriftNodes,
+  pendingWidgetInitializations,
   rendererLedgerFor,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
   ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
+  ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
   ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
   ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE,
   staleValueDriftIndices
@@ -62,13 +64,18 @@ test.describe('rendererLedgerFor', () => {
       ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH['WhatDreamsCost-ComfyUI']
         .LoadAudioUI
     ).toBe('5')
-    expect(nodes(ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH)).toEqual([
-      'LTXKeyframer'
-    ])
-    expect(nodes(ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE)).toEqual([
+    expect(nodes(ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS)).toEqual([
       'LTXKeyframer',
       'LTXSequencer'
     ])
+    expect(
+      ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS['WhatDreamsCost-ComfyUI']
+    ).toEqual({
+      LTXKeyframer: '_currentImageCount',
+      LTXSequencer: '_currentImageCount'
+    })
+    expect(nodes(ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH)).toEqual([])
+    expect(nodes(ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE)).toEqual([])
     expect(nodes(OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH)).toEqual([
       'FL_VideoBatchSplitter'
     ])
@@ -78,7 +85,25 @@ test.describe('rendererLedgerFor', () => {
   })
 })
 
-test.describe('matchesTopologyExpectation', () => {
+test.describe('widget topology', () => {
+  test('waits for each pack-owned initialization signal', () => {
+    const signals =
+      ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS['WhatDreamsCost-ComfyUI']
+
+    expect(
+      pendingWidgetInitializations(signals, {
+        LTXKeyframer: -1,
+        LTXSequencer: undefined
+      })
+    ).toEqual(['LTXKeyframer', 'LTXSequencer'])
+    expect(
+      pendingWidgetInitializations(signals, {
+        LTXKeyframer: 0,
+        LTXSequencer: 1
+      })
+    ).toEqual([])
+  })
+
   test('accepts only the exact artifact-proven output transition', () => {
     const expectation =
       OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH['ComfyUI_Fill-Nodes']
@@ -94,49 +119,22 @@ test.describe('matchesTopologyExpectation', () => {
     expect(matchesTopologyExpectation(vueExpectation, 20, 3)).toBe(false)
   })
 
-  test('accepts only the exact artifact-proven widget transition', () => {
-    const expectation =
-      ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH['WhatDreamsCost-ComfyUI']
-        .LTXKeyframer
-
-    expect(matchesTopologyExpectation(expectation, 102, 2)).toBe(true)
-    expect(matchesTopologyExpectation(expectation, 102, 5)).toBe(true)
-    expect(matchesTopologyExpectation(expectation, 102, 0)).toBe(false)
-    expect(matchesTopologyExpectation(expectation, 102, 3)).toBe(false)
-    expect(matchesTopologyExpectation(expectation, 102, 4)).toBe(false)
-    expect(matchesTopologyExpectation(expectation, 101, 5)).toBe(false)
-    const vueExpectations =
-      ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE['WhatDreamsCost-ComfyUI']
-    for (const exactExpectation of [expectation, vueExpectations.LTXKeyframer])
-      expect(exactExpectation).toMatchObject({ before: 102, after: [2, 5] })
-    expect(
-      matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 5)
-    ).toBe(true)
-    expect(
-      matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 2)
-    ).toBe(true)
-    expect(
-      matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 0)
-    ).toBe(false)
-    expect(
-      matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 3)
-    ).toBe(false)
-    expect(
-      matchesTopologyExpectation(vueExpectations.LTXKeyframer, 102, 4)
-    ).toBe(false)
-    expect(
-      matchesTopologyExpectation(vueExpectations.LTXSequencer, 154, 8)
-    ).toBe(true)
-    expect(
-      matchesTopologyExpectation(vueExpectations.LTXSequencer, 154, 7)
-    ).toBe(false)
+  test('rejects initialization transitions as roundtrip exceptions', () => {
     expect(
       matchesTopologyExpectation(
         ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH[
           'WhatDreamsCost-ComfyUI'
-        ].LTXSequencer,
+        ]?.LTXSequencer,
         154,
         8
+      )
+    ).toBe(false)
+    expect(
+      matchesTopologyExpectation(
+        ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE['WhatDreamsCost-ComfyUI']
+          ?.LTXKeyframer,
+        102,
+        5
       )
     ).toBe(false)
   })
