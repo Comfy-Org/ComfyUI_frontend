@@ -482,6 +482,23 @@ describe('FormDropdown', () => {
     expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
   })
 
+  it('stays open when disabled without closeOnDisable', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const items = [createItem('1', 'alpha')]
+    const { rerender, user } = mountDropdown(items, { onUpdateIsOpen })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    await rerender({
+      items,
+      disabled: true,
+      'onUpdate:isOpen': onUpdateIsOpen
+    })
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+  })
+
   it('stays open on a pointerdown inside the menu', async () => {
     const onUpdateIsOpen = vi.fn()
     const { user } = mountDropdown([createItem('1', 'alpha')], {

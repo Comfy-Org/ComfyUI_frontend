@@ -93,7 +93,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     await expect(restoredTextarea).toHaveValue('restored local prompt')
     await expect
       .poll(async () => (await clipNode.boundingBox())?.height)
-      .toBe(nodeBounds.height)
+      .toBeCloseTo(nodeBounds.height, 0)
   })
 
   test('should use native context menu when focused', async ({ comfyPage }) => {

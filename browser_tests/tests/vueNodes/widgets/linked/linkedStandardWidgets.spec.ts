@@ -98,18 +98,16 @@ test.describe(
         ).toBe(false)
       }
 
-      await expect(
-        targetNode.getByText('STALE SELECT VALUE', { exact: true })
-      ).toBeHidden()
-      await expect(
-        targetNode.getByText('STALE ON', { exact: true })
-      ).toBeHidden()
-      await expect(
-        targetNode.getByText('STALE OFF', { exact: true })
-      ).toBeHidden()
-      await expect(
-        targetNode.getByText('#22c55d', { exact: true })
-      ).toBeHidden()
+      for (const text of [
+        'STALE SELECT VALUE',
+        'STALE ON',
+        'STALE OFF',
+        '#22c55d'
+      ]) {
+        const staleValue = targetNode.getByText(text, { exact: true })
+        await expect(staleValue).toBeAttached()
+        await expect(staleValue).toBeHidden()
+      }
 
       const widgetRefs = await Promise.all(
         WIDGET_NAMES.map((name) => targetNodeRef.getWidgetByName(name))
@@ -127,14 +125,7 @@ test.describe(
 
       for (let index = 0; index < WIDGET_NAMES.length + 2; index++) {
         await comfyPage.page.keyboard.press('Tab')
-        expect(
-          await targetNode.evaluate(
-            (node) =>
-              node.querySelector(
-                '[data-testid="linked-widget-content"]:focus-within'
-              ) !== null
-          )
-        ).toBe(false)
+        await expect(linkedContent.locator(':focus-within')).toHaveCount(0)
       }
 
       await expect

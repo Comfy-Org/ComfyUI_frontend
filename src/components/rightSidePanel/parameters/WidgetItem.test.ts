@@ -99,7 +99,9 @@ const i18n = createI18n({
   }
 })
 
-function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
+function createMockNode(
+  overrides: Partial<Record<keyof LGraphNode, unknown>> = {}
+): LGraphNode {
   return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'TestNode',
@@ -156,6 +158,7 @@ describe('WidgetItem', () => {
     mockIsAssetAPIEnabled.mockReturnValue(false)
     mockShouldUseAssetBrowser.mockReturnValue(false)
     mockFromLGraphNode.mockReturnValue(null)
+    mockGetInputSpecForWidget.mockReset()
   })
 
   describe('widget state rendering', () => {

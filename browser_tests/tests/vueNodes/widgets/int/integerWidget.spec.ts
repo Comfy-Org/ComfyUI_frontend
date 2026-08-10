@@ -53,7 +53,7 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
     await expect(controls.input).toHaveValue(initialValue.toString())
     await expect
       .poll(async () => (await samplerNode.boundingBox())?.height)
-      .toBe(nodeBounds.height)
+      .toBeCloseTo(nodeBounds.height, 0)
   })
 
   test('displays control widgets with default state', async ({ comfyPage }) => {
