@@ -163,11 +163,18 @@ export class LocalDesktopTarget {
     // names nothing. Snapshot the failing node/input so the outcome is
     // actionable instead of an empty object.
     let capturedValidationError: string | undefined
-    const { detach: stopCapture } = onPromptIdResponse(
+    let capturedResponseSequence = 0
+    const { detach: stopCapture, settled: captureSettled } = onPromptIdResponse(
       page,
-      (promptId, body, status) => {
-        if (promptId !== undefined) capturedPromptId = promptId
-        if (status >= 400) capturedValidationError = summarizePromptError(body)
+      (promptId, body, status, sequence) => {
+        if (sequence < capturedResponseSequence) return
+        capturedResponseSequence = sequence
+        capturedPromptId = promptId
+        capturedValidationError =
+          status >= 400
+            ? (summarizePromptError(body) ??
+              `HTTP ${status} prompt submission failed`)
+            : undefined
       }
     )
 
@@ -197,6 +204,7 @@ export class LocalDesktopTarget {
       await new Promise((resolve) => setTimeout(resolve, 250))
       queued = await queueOnce()
       if (refused(queued)) {
+        await captureSettled()
         stopCapture()
         return {
           outcome: 'VALIDATION_FAIL',
@@ -213,9 +221,25 @@ export class LocalDesktopTarget {
 
     // The submission resolved, so the /prompt response is in flight or done;
     // give its body-parse a bounded beat before snapshotting the id.
+    await captureSettled()
     const captureDeadline = Date.now() + 2_000
-    while (capturedPromptId === undefined && Date.now() < captureDeadline)
+    while (
+      capturedPromptId === undefined &&
+      capturedValidationError === undefined &&
+      Date.now() < captureDeadline
+    ) {
       await new Promise((resolve) => setTimeout(resolve, 50))
+      await captureSettled()
+    }
+    if (capturedValidationError !== undefined) {
+      stopCapture()
+      return {
+        outcome: 'VALIDATION_FAIL',
+        executedNodes: [],
+        outputsByNode: {},
+        clientError: capturedValidationError
+      }
+    }
     // A silent permanent miss would degrade every run to the legacy filters
     // with no signal - make the fallback observable in the runner output.
     if (capturedPromptId === undefined)

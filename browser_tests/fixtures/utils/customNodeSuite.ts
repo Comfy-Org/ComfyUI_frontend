@@ -304,12 +304,19 @@ export const customNodeSuiteSettings =
  */
 export function onPromptIdResponse(
   page: Page,
-  handle: (promptId: string | undefined, body: unknown, status: number) => void
+  handle: (
+    promptId: string | undefined,
+    body: unknown,
+    status: number,
+    sequence: number
+  ) => void
 ): { detach: () => void; settled: () => Promise<void> } {
   const parsing = new Set<Promise<void>>()
+  let sequence = 0
   const listener = (response: Response) => {
     if (response.request().method() !== 'POST') return
     if (!new URL(response.url()).pathname.endsWith('/prompt')) return
+    const responseSequence = ++sequence
     parsing.add(
       response
         .json()
@@ -318,12 +325,13 @@ export function onPromptIdResponse(
           handle(
             typeof id === 'string' ? id : undefined,
             body,
-            response.status()
+            response.status(),
+            responseSequence
           )
         })
         .catch(() => {
-          // a rejection carries no prompt_id, and an empty or proxy-HTML body
-          // fails to parse; neither reached the queue
+          if (response.status() >= 400)
+            handle(undefined, undefined, response.status(), responseSequence)
         })
     )
   }
