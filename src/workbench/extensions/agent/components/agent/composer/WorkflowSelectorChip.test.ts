@@ -69,7 +69,7 @@ describe('WorkflowSelectorChip', () => {
       await screen.findByRole('tooltip', { hidden: true })
     ).toHaveTextContent(enMessages.agent.changeWorkflowForChat)
     await user.unhover(trigger())
-    expect(screen.queryByRole('tooltip', { hidden: true })).toBeNull()
+    expect(screen.queryByRole('tooltip')).toBeNull()
 
     await user.hover(trigger())
     await user.click(trigger())
@@ -144,6 +144,24 @@ describe('WorkflowSelectorChip', () => {
     await user.click(clear)
 
     expect(emitted('clear')).toHaveLength(1)
+  })
+
+  it('delays each tooltip when moving between selector controls', async () => {
+    const { user } = renderChip()
+    const selector = trigger()
+    const clear = screen.getByRole('button', {
+      name: enMessages.agent.dontWorkInWorkflow
+    })
+
+    await user.hover(selector)
+    await screen.findByRole('tooltip', { hidden: true })
+    await user.unhover(selector)
+    await user.hover(clear)
+
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent(enMessages.agent.dontWorkInWorkflow)
   })
 
   it('shows unsaved dots on a modified active workflow trigger and row', async () => {
