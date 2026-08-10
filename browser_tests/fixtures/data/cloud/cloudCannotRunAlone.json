@@ -11,6 +11,7 @@
     "DynamiCrafterModelLoader"
   ],
   "ComfyUI-FlashVSR_Ultra_Fast": ["FlashVSRInitPipe", "FlashVSRNode"],
+  "ComfyUI-GIMM-VFI": ["DownloadAndLoadGIMMVFIModel"],
   "ComfyUI-Image-Filters": [
     "AlphaMatte",
     "BatchAverageUnJittered",
