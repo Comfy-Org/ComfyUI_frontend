@@ -116,14 +116,12 @@ jobs:
       - name: Gate on cloud secrets and manifest
         id: gate
         env:
-          CLOUD_HTTP_502_EVIDENCE_KEY: ${{ secrets.CLOUD_HTTP_502_EVIDENCE_KEY }}
           SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
           SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
           missing=()
-          [ -n "${CLOUD_HTTP_502_EVIDENCE_KEY:-}" ] || missing+=(CLOUD_HTTP_502_EVIDENCE_KEY)
           [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
           [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
           if [ ${#missing[@]} -gt 0 ]; then
@@ -131,15 +129,6 @@ jobs:
             exit 1
           elif [ ! -f browser_tests/fixtures/data/customNodeManifest.cloud.json ]; then
             echo "::error::custom-nodes-e2e-cloud cannot prove S1-S12: browser_tests/fixtures/data/customNodeManifest.cloud.json is missing."
-            exit 1
-          elif ! node - <<'NODE'
-          const value = process.env.CLOUD_HTTP_502_EVIDENCE_KEY
-          const key = Buffer.from(value, 'base64')
-          if (key.length !== 32 || key.toString('base64') !== value)
-            process.exit(1)
-          NODE
-          then
-            echo "::error::custom-nodes-e2e-cloud cannot prove S1-S12: CLOUD_HTTP_502_EVIDENCE_KEY must be canonical base64 for exactly 32 bytes."
             exit 1
           else
             echo "run-cloud=true" >> "$GITHUB_OUTPUT"
@@ -194,8 +183,7 @@ jobs:
           exit 1
 
       # Same suite invocation as the core gate (--project=custom-nodes,
-      # sanitizer/list/json/html, quiet worker stdio, one worker) with the
-      # backend swapped by env:
+      # list/json/html, one worker) with the backend swapped by env:
       # CUSTOM_NODES_ENV=cloud selects the cloud manifest/baselines and triggers
       # the real smoke sign-in; PLAYWRIGHT_TEST_URL points at the preview server
       # (its /api proxies to Cloud, so setup + in-page API calls are same-origin
@@ -208,7 +196,6 @@ jobs:
         env:
           CN_ENABLE_S14: '0'
           CN_ENABLE_S15: '0'
-          CLOUD_HTTP_502_EVIDENCE_KEY: ${{ secrets.CLOUD_HTTP_502_EVIDENCE_KEY }}
           CUSTOM_NODES_ENV: cloud
           PLAYWRIGHT_TEST_URL: http://localhost:4173
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-cloud-results.json
@@ -220,10 +207,10 @@ jobs:
           # the explicit ceiling for the embedded later-tier evidence paths.
           # Activate each only in its dedicated proof phase after S1-S12 is
           # green on both environments.
-          # --quiet stops list from forwarding worker output before the first
-          # reporter sanitizes the completed result for list/json/html.
+          # List keeps live diagnostics visible while JSON and HTML retain the
+          # machine-readable gate and failure artifacts.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=./browser_tests/fixtures/customNode/cloudTraceReporter.ts,list,json,html --quiet --workers=1 --retries=0 \
+            --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
             --grep-invert "interaction profiles:" 2>&1 | tee custom-nodes-cloud.log
 
       # A skip means a cloud pack, devtools, or an under-enrolled cloud manifest

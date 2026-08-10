@@ -1,11 +1,12 @@
 import type {
   APIRequestContext,
+  ConsoleMessage,
+  Frame,
   Locator,
   Page,
-  Response,
-  TestInfo
+  Request,
+  Response
 } from '@playwright/test'
-import { createCipheriv, randomBytes } from 'node:crypto'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
@@ -38,10 +39,6 @@ import {
   readCloudCustomNodeBootGuard,
   runWithCollectedCleanup
 } from '@e2e/fixtures/utils/customNodeSuite'
-import {
-  setPageDiagnosticAttachmentSink,
-  setPageDiagnosticSanitizer
-} from '@e2e/fixtures/utils/consoleErrorCollector'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -66,18 +63,6 @@ import {
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
-import {
-  armCloudHttp502ReporterBoundary,
-  CLOUD_HTTP_502_PUBLIC_ATTACHMENT_TYPES
-} from '@e2e/fixtures/customNode/cloudTraceReporter'
-import {
-  cloudHttp502EvidenceAdditionalAuthenticatedData,
-  cloudHttp502EvidenceBinding,
-  cloudHttp502EvidenceKey,
-  CloudHttp502EvidenceError,
-  serializeCloudHttp502PublicEvidence
-} from '@e2e/fixtures/customNode/cloudHttp502Evidence'
-import type { CloudHttp502EvidenceBinding } from '@e2e/fixtures/customNode/cloudHttp502Evidence'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
@@ -211,70 +196,10 @@ const TRACE_TELEMETRY =
 // and buries the distinct problems. Every unique line still shows once; exact
 // repeats are collapsed and a count is emitted at teardown, so a
 // high-frequency error stays visible as such without the churn.
-interface CloudHttp502 {
-  status: 502
-  method: string
-  url: string
-  rawUrl: string
-  headers: Record<string, string>
-  body: string | null
-  bodyCapture: 'captured' | 'pending' | 'unavailable'
-}
-
-type CloudHttp502EncryptedEvidence = Omit<CloudHttp502, 'rawUrl'>
-
 interface CloudPageTrace {
   run: <T>(operation: () => Promise<T>) => Promise<T>
-  finalize: (
-    testInfo: Pick<TestInfo, 'attach'> &
-      Partial<Pick<TestInfo, 'annotations' | 'errors'>>
-  ) => Promise<void>
+  finalize: () => Promise<void>
   sanitize: (error: unknown, redactFreeform?: boolean) => Error
-}
-
-const CLOUD_ROUTING_HEADERS = ['cf-ray', 'server', 'via'] as const
-const CLOUD_HTTP_502_EVIDENCE_PLAINTEXT_BYTES = 1024 * 1024
-const CLOUD_HTTP_502_EVIDENCE_LENGTH_BYTES = 4
-
-function encryptCloudHttp502Evidence(
-  evidence: readonly CloudHttp502EncryptedEvidence[],
-  binding: CloudHttp502EvidenceBinding
-): string {
-  const key = cloudHttp502EvidenceKey()
-
-  const payload = Buffer.from(JSON.stringify(evidence), 'utf8')
-  if (
-    payload.length >
-    CLOUD_HTTP_502_EVIDENCE_PLAINTEXT_BYTES -
-      CLOUD_HTTP_502_EVIDENCE_LENGTH_BYTES
-  )
-    throw new CloudHttp502EvidenceError(
-      'Cloud HTTP 502 encrypted evidence could not be retained'
-    )
-
-  const plaintext = Buffer.allocUnsafe(CLOUD_HTTP_502_EVIDENCE_PLAINTEXT_BYTES)
-  plaintext.writeUInt32BE(payload.length)
-  payload.copy(plaintext, CLOUD_HTTP_502_EVIDENCE_LENGTH_BYTES)
-  randomBytes(
-    CLOUD_HTTP_502_EVIDENCE_PLAINTEXT_BYTES -
-      CLOUD_HTTP_502_EVIDENCE_LENGTH_BYTES -
-      payload.length
-  ).copy(plaintext, CLOUD_HTTP_502_EVIDENCE_LENGTH_BYTES + payload.length)
-
-  const iv = randomBytes(12)
-  const cipher = createCipheriv('aes-256-gcm', key, iv)
-  cipher.setAAD(cloudHttp502EvidenceAdditionalAuthenticatedData(binding))
-  const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()])
-  return JSON.stringify(
-    {
-      algorithm: 'aes-256-gcm',
-      iv: iv.toString('base64'),
-      authTag: cipher.getAuthTag().toString('base64'),
-      ciphertext: ciphertext.toString('base64')
-    },
-    null,
-    2
-  )
 }
 
 function safeNetworkUrl(value: string): string {
@@ -282,18 +207,8 @@ function safeNetworkUrl(value: string): string {
   return `${url.origin}${url.pathname}`
 }
 
-function sanitizeTraceText(
-  value: string,
-  redactions: readonly string[] = []
-): string {
-  let sanitized = value
-  for (const redaction of redactions)
-    if (redaction)
-      sanitized = sanitized.replaceAll(
-        redaction,
-        '[redacted Cloud 502 response body]'
-      )
-  return sanitized
+function sanitizeTraceText(value: string): string {
+  return value
     .split('\n')
     .map((line) => {
       const marker = line.search(/[?#]/)
@@ -304,9 +219,7 @@ function sanitizeTraceText(
 
 function sanitizeTraceError(
   error: unknown,
-  redactions: readonly string[] = [],
   redactFreeform = false,
-  publicErrors = new WeakSet<Error>(),
   seen = new WeakSet<object>()
 ): Error {
   if (!(error instanceof Error)) {
@@ -314,7 +227,7 @@ function sanitizeTraceError(
       redactFreeform
         ? 'Fixture operation failed with redacted free-form text at strict Cloud trace boundary'
         : typeof error === 'string'
-          ? sanitizeTraceText(error, redactions)
+          ? sanitizeTraceText(error)
           : 'Fixture operation failed with a non-Error rejection'
     )
   }
@@ -324,384 +237,91 @@ function sanitizeTraceError(
   const options =
     'cause' in error
       ? {
-          cause: sanitizeTraceError(
-            error.cause,
-            redactions,
-            redactFreeform,
-            publicErrors,
-            seen
-          )
+          cause: sanitizeTraceError(error.cause, redactFreeform, seen)
         }
       : undefined
-  const preserveMessage =
-    !redactFreeform ||
-    error instanceof CloudHttp502EvidenceError ||
-    publicErrors.has(error)
+  const preserveMessage = !redactFreeform
   const message = preserveMessage
-    ? sanitizeTraceText(error.message, redactions)
+    ? sanitizeTraceText(error.message)
     : `Free-form ${error.name} message redacted at strict Cloud trace boundary`
   const sanitized =
     error instanceof AggregateError
       ? new AggregateError(
           [...error.errors].map((nested) =>
-            sanitizeTraceError(
-              nested,
-              redactions,
-              redactFreeform,
-              publicErrors,
-              seen
-            )
+            sanitizeTraceError(nested, redactFreeform, seen)
           ),
           message,
           options
         )
       : new Error(message, options)
   sanitized.name = preserveMessage
-    ? sanitizeTraceText(error.name, redactions)
+    ? sanitizeTraceText(error.name)
     : error instanceof AggregateError
       ? 'AggregateError'
       : 'Error'
   if (error.stack && preserveMessage)
-    sanitized.stack = sanitizeTraceText(error.stack, redactions)
+    sanitized.stack = sanitizeTraceText(error.stack)
   return sanitized
 }
 
-function redactedTraceDiagnostic(line: string): string {
-  const channel =
-    line.match(
-      /^\[trace\] (console\.(?:error|warning)|page error|navigated|request FAILED)/
-    )?.[1] ?? 'diagnostic'
-  return `[trace] ${channel}: [free-form text redacted at strict Cloud trace boundary]`
-}
-
-export function traceCloudPage(
-  page: Page,
-  failOn502 = false,
-  evidenceBinding: CloudHttp502EvidenceBinding = cloudHttp502EvidenceBinding({
-    testId: 'local-trace',
-    retry: 0
-  })
-): CloudPageTrace {
+export function traceCloudPage(page: Page): CloudPageTrace {
   const counts = new Map<string, number>()
-  const bufferedDiagnostics: string[] = []
-  const freeformDiagnostics = new Set<string>()
-  const http502s: CloudHttp502[] = []
-  const bodyCaptures: Promise<void>[] = []
-  const lifecycleErrors: unknown[] = []
-  const diagnosticAttachments: {
-    name: string
-    values: readonly string[]
-  }[] = []
-  const publicErrors = new WeakSet<Error>()
-  const sanitizeError = (
-    error: unknown,
-    redactFreeform = http502s.length > 0
-  ) =>
-    sanitizeTraceError(
-      error,
-      http502s.flatMap(({ body }) => (body ? [body] : [])),
-      redactFreeform,
-      publicErrors
-    )
-  const sanitizeDiagnostic = (value: string) =>
-    sanitizeTraceText(
-      value,
-      http502s.flatMap(({ body }) => (body ? [body] : []))
-    )
-  let endBodyCaptures: () => void = () => {}
-  const bodyCapturesEnded = new Promise<void>((resolve) => {
-    endBodyCaptures = resolve
-  })
-  let lifecycle: Promise<void> | undefined
-  let rejectOn502: (error: Error) => void = () => {}
-  let failFastError: Error | undefined
-  let failFastObserved = false
-  const failFast = new Promise<never>((_, reject) => {
-    rejectOn502 = reject
-  })
-  void failFast.catch(() => {})
-  const publicDiagnostic = (line: string) =>
-    (http502s.length > 0 || lifecycleErrors.length > 0) &&
-    freeformDiagnostics.has(line)
-      ? redactedTraceDiagnostic(line)
-      : sanitizeDiagnostic(line)
-  setPageDiagnosticSanitizer(page, (value, channel) =>
-    !failOn502
-      ? value
-      : http502s.length > 0
-        ? `[${channel} redacted after Cloud returned HTTP 502]`
-        : sanitizeTraceText(value)
-  )
-  if (failOn502)
-    setPageDiagnosticAttachmentSink(page, async (name, values) => {
-      diagnosticAttachments.push({ name, values })
-    })
-  const once = (line: string, freeform = false) => {
+  let finalized = false
+  const once = (line: string) => {
     if (TRACE_TELEMETRY.test(line)) return
-    if (freeform) freeformDiagnostics.add(line)
     const seen = counts.get(line) ?? 0
     counts.set(line, seen + 1)
-    if (seen !== 0) return
-    if (failOn502) bufferedDiagnostics.push(line)
-    else console.warn(publicDiagnostic(line))
+    if (seen === 0) console.warn(line)
   }
-  const flushDiagnostics = () => {
-    for (const line of bufferedDiagnostics) console.warn(publicDiagnostic(line))
-    for (const [line, n] of counts)
-      if (n > 1) console.warn(`[trace] (x${n}) ${publicDiagnostic(line)}`)
-    bufferedDiagnostics.length = 0
-  }
-  page.on('framenavigated', (frame) => {
+  const onFrameNavigated = (frame: Frame) => {
     if (frame === page.mainFrame())
-      once(`[trace] navigated -> ${sanitizeTraceText(frame.url())}`, true)
-  })
-  page.on('pageerror', (error) =>
-    once(`[trace] page error: ${sanitizeTraceText(error.message)}`, true)
-  )
-  page.on('console', (message) => {
-    if (message.type() !== 'error' && message.type() !== 'warning') return
+      once(`[trace] navigated -> ${sanitizeTraceText(frame.url())}`)
+  }
+  const onPageError = (error: Error) =>
+    once(`[trace] page error: ${sanitizeTraceText(error.message)}`)
+  const onConsole = (message: ConsoleMessage) => {
+    const type = message.type()
+    if (type !== 'error' && type !== 'warning') return
+    once(`[trace] console.${type}: ${sanitizeTraceText(message.text())}`)
+  }
+  const onRequestFailed = (request: Request) => {
+    const error = request.failure()?.errorText ?? 'unknown'
+    if (error.includes('ERR_ABORTED')) return
     once(
-      `[trace] console.${message.type()}: ${sanitizeTraceText(message.text())}`,
-      true
+      `[trace] request FAILED ${request.method()} ${safeNetworkUrl(request.url())} - ${sanitizeTraceText(error)}`
     )
-  })
-  page.on('requestfailed', (request) => {
-    const err = request.failure()?.errorText ?? 'unknown'
-    // net::ERR_ABORTED is the page navigating away mid-request - benign.
-    if (err.includes('ERR_ABORTED')) return
-    once(
-      `[trace] request FAILED ${request.method()} ${safeNetworkUrl(request.url())} - ${sanitizeTraceText(err)}`,
-      true
-    )
-  })
+  }
   const onResponse = (response: Response) => {
-    const rawUrl = response.url()
-    const url = safeNetworkUrl(rawUrl)
+    const url = safeNetworkUrl(response.url())
     const status = response.status()
-    if (status === 502) {
-      const responseHeaders = response.headers()
-      const record: CloudHttp502 = {
-        status: 502,
-        method: response.request().method(),
-        url,
-        rawUrl,
-        headers: Object.fromEntries(
-          CLOUD_ROUTING_HEADERS.flatMap((name) => {
-            const value = responseHeaders[name]
-            return value === undefined ? [] : [[name, value]]
-          })
-        ),
-        body: null,
-        bodyCapture: 'pending'
-      }
-      http502s.push(record)
-      if (failOn502 && !failFastError) {
-        failFastError = new Error(
-          `Cloud returned an HTTP 502 response; any 502 fails S1-S12 even if the request later recovers. ` +
-            `See cloud-http-502-responses.json. First: ${record.method} ${record.url} ` +
-            `headers=${JSON.stringify(record.headers)}`
-        )
-        publicErrors.add(failFastError)
-        rejectOn502(failFastError)
-      }
-      const bodyCapture = Promise.race([
-        response.text().then(
-          (body) => ({ body, captured: true as const }),
-          () => ({ body: null, captured: false as const })
-        ),
-        bodyCapturesEnded.then(() => ({ body: null, captured: false as const }))
-      ]).then(({ body, captured }) => {
-        if (captured) {
-          record.body = body
-          record.bodyCapture = 'captured'
-        } else {
-          record.bodyCapture = 'unavailable'
-        }
-        once(
-          `[trace] HTTP 502 detail ${JSON.stringify({
-            status: record.status,
-            method: record.method,
-            url: record.url,
-            headers: record.headers,
-            bodyCapture: record.bodyCapture
-          })}`,
-          true
-        )
-      })
-      bodyCaptures.push(bodyCapture)
-    }
     if (status >= 400)
       once(`[trace] HTTP ${status} ${response.request().method()} ${url}`)
     else if (/\/api\/(features|users|object_info)/.test(url))
       once(`[trace] HTTP ${status} ${url}`)
   }
-  page.on('response', onResponse)
-  page.on('close', () => {
-    if (!failOn502) flushDiagnostics()
-  })
-  const finishLifecycle = () => {
-    lifecycle ??= (async () => {
-      if (failOn502 && !page.isClosed()) {
-        try {
-          await page.close()
-        } catch (error) {
-          lifecycleErrors.push(error)
-        }
-      }
-      page.off('response', onResponse)
-      endBodyCaptures()
-      await Promise.allSettled(bodyCaptures)
-      if (failOn502) flushDiagnostics()
-    })()
-    return lifecycle
+  const flushCounts = () => {
+    for (const [line, count] of counts)
+      if (count > 1) console.warn(`[trace] (x${count}) ${line}`)
   }
+  page.on('framenavigated', onFrameNavigated)
+  page.on('pageerror', onPageError)
+  page.on('console', onConsole)
+  page.on('requestfailed', onRequestFailed)
+  page.on('response', onResponse)
   return {
-    run: async <T>(operation: () => Promise<T>) => {
-      if (!failOn502) return operation()
-      const running = operation()
-      let operationError: unknown
-      let operationRejected = false
-      void running.then(
-        () => {},
-        (error) => {
-          operationError = error
-          operationRejected = true
-        }
-      )
-      try {
-        return await Promise.race([running, failFast])
-      } catch (error) {
-        const gateError = failFastError
-        if (gateError) {
-          failFastObserved = true
-          await finishLifecycle()
-          if (error !== gateError || operationRejected) {
-            const sanitizedOperationError = sanitizeError(
-              error === gateError ? operationError : error
-            )
-            // The caught error may contain URL secrets; preserve only its sanitized clone.
-            const aggregate = new AggregateError(
-              [gateError, sanitizedOperationError],
-              `${gateError.message}; fixture operation also failed while closing`,
-              { cause: sanitizedOperationError }
-            )
-            publicErrors.add(aggregate)
-            throw aggregate
-          }
-          throw gateError
-        }
-        throw sanitizeError(error)
-      }
+    run: (operation) => operation(),
+    finalize: async () => {
+      if (finalized) return
+      finalized = true
+      page.off('framenavigated', onFrameNavigated)
+      page.off('pageerror', onPageError)
+      page.off('console', onConsole)
+      page.off('requestfailed', onRequestFailed)
+      page.off('response', onResponse)
+      flushCounts()
     },
-    finalize: async (testInfo) => {
-      try {
-        await finishLifecycle()
-        const errors: unknown[] = lifecycleErrors.map((error) =>
-          sanitizeError(error, true)
-        )
-        const redactDiagnostics =
-          http502s.length > 0 || lifecycleErrors.length > 0
-        for (const { name, values } of diagnosticAttachments) {
-          try {
-            await testInfo.attach(name, {
-              body: JSON.stringify(
-                values.map((value) =>
-                  redactDiagnostics
-                    ? '[console.error redacted at strict Cloud trace boundary]'
-                    : sanitizeTraceText(value)
-                ),
-                null,
-                2
-              ),
-              contentType: 'application/json'
-            })
-          } catch (error) {
-            errors.push(sanitizeError(error, true))
-          }
-        }
-        diagnosticAttachments.length = 0
-        if (!failOn502 || http502s.length === 0) {
-          if (errors.length === 1) throw errors[0]
-          if (errors.length > 1)
-            throw new AggregateError(
-              errors,
-              'Cloud trace finalization or diagnostic attachment failed'
-            )
-          return
-        }
-        const publicEvidence = http502s.map(
-          ({ status, method, url, headers, bodyCapture }) => ({
-            status,
-            method,
-            url,
-            headers: { ...headers },
-            bodyCapture
-          })
-        )
-        const rawEvidence = http502s.map(({ rawUrl, ...record }) => ({
-          ...record,
-          url: rawUrl,
-          headers: { ...record.headers }
-        }))
-        const first = http502s[0]
-        const gateError =
-          failFastError ??
-          new Error(
-            `Cloud returned ${http502s.length} HTTP 502 response(s); any 502 fails S1-S12 even if the request later recovers. ` +
-              `See cloud-http-502-responses.json. First: ${first.method} ${first.url} ` +
-              `headers=${JSON.stringify(first.headers)}`
-          )
-        publicErrors.add(gateError)
-        const incompleteBodies = publicEvidence.filter(
-          ({ bodyCapture }) => bodyCapture !== 'captured'
-        )
-        if (!failFastObserved) errors.push(gateError)
-        if (incompleteBodies.length > 0) {
-          const error = new Error(
-            `Cloud HTTP 502 response-body capture was incomplete for ${incompleteBodies.length} response(s); see cloud-http-502-responses.json`
-          )
-          publicErrors.add(error)
-          errors.push(error)
-        }
-        try {
-          await testInfo.attach('cloud-http-502-responses.json', {
-            body: serializeCloudHttp502PublicEvidence(
-              publicEvidence,
-              evidenceBinding
-            ),
-            contentType: CLOUD_HTTP_502_PUBLIC_ATTACHMENT_TYPES.get(
-              'cloud-http-502-responses.json'
-            )
-          })
-        } catch (error) {
-          errors.push(sanitizeError(error, true))
-        }
-        if (rawEvidence.some(({ bodyCapture }) => bodyCapture === 'captured')) {
-          try {
-            await testInfo.attach('cloud-http-502-response-bodies.enc.json', {
-              body: encryptCloudHttp502Evidence(rawEvidence, evidenceBinding),
-              contentType: CLOUD_HTTP_502_PUBLIC_ATTACHMENT_TYPES.get(
-                'cloud-http-502-response-bodies.enc.json'
-              )
-            })
-          } catch (error) {
-            errors.push(sanitizeError(error, true))
-          }
-        }
-        if (errors.length === 1) throw errors[0]
-        if (errors.length > 1) {
-          const aggregate = new AggregateError(
-            errors,
-            'Cloud HTTP 502 gate or evidence capture failed'
-          )
-          publicErrors.add(aggregate)
-          throw aggregate
-        }
-      } finally {
-        if (http502s.length > 0) armCloudHttp502ReporterBoundary(testInfo)
-      }
-    },
-    sanitize: sanitizeError
+    sanitize: (error, redactFreeform) =>
+      sanitizeTraceError(error, redactFreeform)
   }
 }
 
@@ -1183,13 +803,7 @@ export const comfyPageFixture = base.extend<{
     const isCloudEnv = customNodesEnv() === 'cloud'
     const isCustomNodes = testInfo.project.name === 'custom-nodes'
     const isCloudCustomNodes = isCloudEnv && isCustomNodes
-    const cloudPageTrace = isCloudEnv
-      ? traceCloudPage(
-          page,
-          isCloudCustomNodes,
-          cloudHttp502EvidenceBinding(testInfo)
-        )
-      : undefined
+    const cloudPageTrace = isCloudEnv ? traceCloudPage(page) : undefined
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
     let bootGuardInstalled = false
@@ -1213,7 +827,7 @@ export const comfyPageFixture = base.extend<{
             }
           ]
         : []),
-      ...(cloudPageTrace ? [() => cloudPageTrace.finalize(testInfo)] : [])
+      ...(cloudPageTrace ? [() => cloudPageTrace.finalize()] : [])
     ]
 
     const run = async () => {

@@ -162,16 +162,13 @@ jobs:
           # parallel workers interrupt each other's executions.
           # --project=custom-nodes: the `@custom-nodes`-tagged specs, which the
           # main e2e job's `chromium` project excludes (see playwright.config).
-          # The first reporter sanitizes a 502 test result before list/json/html
-          # consume it. Json feeds the skip gate below; html writes
-          # playwright-report/ (the upload step's target) and folds in the
-          # retain-on-failure traces.
-          # --quiet stops list from forwarding worker output before that
-          # completed-result sanitization runs.
+          # Json feeds the skip gate below; html writes playwright-report/
+          # (the upload step's target) and folds in the retain-on-failure
+          # traces. List keeps live diagnostics visible.
           # Core keeps its already-proven S13-S15 coverage active. The
           # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=./browser_tests/fixtures/customNode/cloudTraceReporter.ts,list,json,html --quiet --workers=1 --retries=0 \
+            --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
             2>&1 | tee custom-nodes.log
 
       # A skip here means a pack or devtools did not load: on this backend every
