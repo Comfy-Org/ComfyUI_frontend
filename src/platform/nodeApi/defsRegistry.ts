@@ -93,7 +93,6 @@ export interface ConnectionChangeEvent {
   readonly connected: boolean
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface NodeDefBuilder {
   /** Current state of the definition, after any earlier extensions ran. */
   readonly def: NodeDef

@@ -15,8 +15,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { ComfyApiError } from './errors'
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type SettingValue = string | number | boolean | readonly string[]
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface SettingDef {
   /**
    * Namespaced, by convention `<Pack>.<name>` — it shares one space with core

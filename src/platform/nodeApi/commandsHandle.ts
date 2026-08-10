@@ -18,6 +18,7 @@ import { useCommandStore } from '@/stores/commandStore'
 
 import { ComfyApiError } from './errors'
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface CommandDef {
   /** Namespaced, e.g. `MyPack.doTheThing`. Shared with core and every pack. */
   readonly id: string
@@ -27,6 +28,7 @@ export interface CommandDef {
   readonly keybinding?: KeyCombo
 }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface NotifyDef {
   readonly severity?: 'success' | 'info' | 'warn' | 'error'
   readonly summary: string
