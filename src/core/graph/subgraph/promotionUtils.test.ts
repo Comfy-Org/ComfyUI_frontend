@@ -14,6 +14,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { WidgetId } from '@/types/widgetId'
 
 function promotedInputNames(host: {
@@ -760,11 +761,15 @@ describe('reorderSubgraphInputsByName', () => {
     expect(secondLink?.target_slot).toBe(0)
 
     const store = useLinkStore()
-    const rootId = subgraph.rootGraph.id
+    const rootScope = graphScopeOf(subgraph.rootGraph)
     expect(host.isInputConnected(0)).toBe(true)
     expect(host.isInputConnected(1)).toBe(true)
-    expect(store.getInputSlotLink(rootId, host.id, 0)?.id).toBe(secondLink?.id)
-    expect(store.getInputSlotLink(rootId, host.id, 1)?.id).toBe(firstLink?.id)
+    expect(store.getInputSlotLink(rootScope, host.id, 0)?.id).toBe(
+      secondLink?.id
+    )
+    expect(store.getInputSlotLink(rootScope, host.id, 1)?.id).toBe(
+      firstLink?.id
+    )
   })
 })
 

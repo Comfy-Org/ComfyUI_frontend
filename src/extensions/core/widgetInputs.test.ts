@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -21,7 +22,7 @@ describe('PrimitiveNode', () => {
     const graph = new LGraph()
     const node = new PrimitiveNode('Primitive')
     graph.add(node)
-    useLinkStore().registerLink(graph.rootGraph.id, {
+    useLinkStore().registerLink(graphScopeOf(graph), {
       id: toLinkId(999),
       originNodeId: node.id,
       originSlot: 0,

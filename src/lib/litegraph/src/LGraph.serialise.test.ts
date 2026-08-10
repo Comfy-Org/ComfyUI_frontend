@@ -10,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -66,7 +67,7 @@ describe('LGraph Serialisation', () => {
 
     const copied = new LGraph(JSON.parse(serialised) as ISerialisedGraph)
     const copiedLink = useLinkStore().getInputSlotLink(
-      copied.rootGraph.id,
+      graphScopeOf(copied),
       expectedLink.targetNodeId,
       expectedLink.targetSlot
     )

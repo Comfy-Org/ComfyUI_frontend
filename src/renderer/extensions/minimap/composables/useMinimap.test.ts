@@ -8,6 +8,7 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import {
   createMockCanvas2DContext,
@@ -27,6 +28,7 @@ interface MockNode {
 interface MockGraph {
   _nodes: MockNode[]
   events: CustomEventTarget<LGraphEventMap>
+  id: UUID
   rootGraph: { id: UUID }
   links: Record<string, { id: string; target_id: string }>
   getNodeById: Mock
@@ -37,9 +39,13 @@ interface MockGraph {
 }
 
 const GRAPH_ID: UUID = 'minimap-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 
 function registerMockLink(id: number, targetNodeId: string) {
-  useLinkStore().registerLink(GRAPH_ID, {
+  useLinkStore().registerLink(GRAPH_SCOPE, {
     id: toLinkId(id),
     originNodeId: toNodeId('node1'),
     originSlot: 0,
@@ -141,6 +147,7 @@ const setupMocks = () => {
 
   moduleMockGraph = {
     _nodes: mockNodes,
+    id: GRAPH_ID,
     rootGraph: { id: GRAPH_ID },
     links: {
       link1: {
@@ -309,6 +316,7 @@ describe('useMinimap', () => {
 
     moduleMockGraph = {
       _nodes: mockNodes,
+      id: GRAPH_ID,
       rootGraph: { id: GRAPH_ID },
       links: {
         link1: {

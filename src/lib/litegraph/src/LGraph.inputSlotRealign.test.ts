@@ -14,6 +14,7 @@ import type {
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -247,7 +248,7 @@ function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
       slot
     )
     expect(
-      linkStore.getInputSlotLink(graph.rootGraph.id, target.id, slot)?.id,
+      linkStore.getInputSlotLink(graphScopeOf(graph), target.id, slot)?.id,
       `store registration for input ${input.name} at slot ${slot}`
     ).toBe(expectedLinkId)
   }
@@ -345,9 +346,9 @@ describe('realignInputLinkSlots', () => {
     const store = useLinkStore()
     expect(link.target_slot).toBe(1)
     expect(
-      store.getInputSlotLink(graph.rootGraph.id, target.id, 0)
+      store.getInputSlotLink(graphScopeOf(graph), target.id, 0)
     ).toBeUndefined()
-    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 1)?.id).toBe(
+    expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 1)?.id).toBe(
       link.id
     )
   })

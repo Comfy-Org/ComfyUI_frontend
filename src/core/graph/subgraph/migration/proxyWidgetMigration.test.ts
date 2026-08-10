@@ -22,6 +22,7 @@ import {
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -394,7 +395,7 @@ describe('flushProxyWidgetMigration', () => {
 
       const danglingLinkId = toLinkId(999_999)
       expect(host.subgraph.links.has(danglingLinkId)).toBe(false)
-      useLinkStore().registerLink(host.subgraph.rootGraph.id, {
+      useLinkStore().registerLink(graphScopeOf(host.subgraph), {
         id: danglingLinkId,
         originNodeId: primitive.id,
         originSlot: 0,

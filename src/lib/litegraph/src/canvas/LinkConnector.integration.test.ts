@@ -16,6 +16,7 @@ import { slotFloatingLinks } from '../LLink'
 import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -113,7 +114,7 @@ const test = baseTest.extend<TestContext>({
   validateLinkIntegrity: async ({ graph }, use) => {
     await use(() => {
       const linkStore = useLinkStore()
-      const graphId = graph.rootGraph.id
+      const graphId = graphScopeOf(graph)
 
       for (const reroute of graph.reroutes.values()) {
         if (reroute.origin_id === undefined) {
@@ -355,7 +356,7 @@ describe('LinkConnector Integration', () => {
 
         expect(
           useLinkStore().getInputSlotLink(
-            graph.rootGraph.id,
+            graphScopeOf(graph),
             toNodeId(nodeId),
             0
           )
@@ -569,7 +570,7 @@ describe('LinkConnector Integration', () => {
 
         expect(
           useLinkStore().getInputSlotLink(
-            graph.rootGraph.id,
+            graphScopeOf(graph),
             toNodeId(nodeId),
             0
           )
@@ -922,7 +923,11 @@ describe('LinkConnector Integration', () => {
       } = graph.getNodeById(toNodeId(nodeId))!
 
       expect(
-        useLinkStore().getInputSlotLink(graph.rootGraph.id, toNodeId(nodeId), 0)
+        useLinkStore().getInputSlotLink(
+          graphScopeOf(graph),
+          toNodeId(nodeId),
+          0
+        )
       ).toBeUndefined()
 
       expect([0, undefined]).toContain(output.links?.length)

@@ -13,6 +13,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 import WidgetItem from './WidgetItem.vue'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -77,7 +78,7 @@ function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
     id: 1,
     type: 'TestNode',
     isSubgraphNode: () => false,
-    graph: { rootGraph: { id: 'test-graph-id' } },
+    graph: { id: 'test-graph-id', rootGraph: { id: 'test-graph-id' } },
     ...overrides
   })
 }
@@ -238,14 +239,20 @@ describe('WidgetItem', () => {
       const { container } = renderWidgetItem(widget, node)
       expect(getStubWidget(container).options.disabled).toBeUndefined()
 
-      useLinkStore().registerLink('test-graph-id', {
-        id: toLinkId(1),
-        originNodeId: toNodeId(2),
-        originSlot: 0,
-        targetNodeId: node.id,
-        targetSlot: 0,
-        type: 'INT'
-      })
+      useLinkStore().registerLink(
+        {
+          rootGraphId: toRootGraphId('test-graph-id'),
+          owningGraphId: toOwningGraphId('test-graph-id')
+        },
+        {
+          id: toLinkId(1),
+          originNodeId: toNodeId(2),
+          originSlot: 0,
+          targetNodeId: node.id,
+          targetSlot: 0,
+          type: 'INT'
+        }
+      )
       await nextTick()
 
       expect(getStubWidget(container).options.disabled).toBe(true)

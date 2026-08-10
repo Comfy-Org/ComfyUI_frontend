@@ -4,11 +4,15 @@ import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
 import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
+
+import { toRaw } from 'vue'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraph } from './LGraph'
@@ -78,7 +82,7 @@ export class Reroute
   _chain: RerouteChain
 
   /** The graph this reroute is registered with in {@link useRerouteStore}, if any. */
-  _graphId?: UUID
+  _graphScope?: GraphScope
 
   public get parentId(): RerouteId | undefined {
     return this._chain.parentId
@@ -189,8 +193,8 @@ export class Reroute
   selected?: boolean
 
   private get membership(): RerouteMembership {
-    return this._graphId
-      ? useRerouteStore().getMembership(this._graphId, this.id)
+    return this._graphScope
+      ? useRerouteStore().getMembership(this._graphScope, this.id)
       : EMPTY_MEMBERSHIP
   }
 
@@ -847,12 +851,14 @@ export function anchorRerouteChain(network: LinkNetwork, link: LLink): void {
  * @param reroute The reroute to register
  */
 export function registerRerouteChain(
-  graph: Pick<LGraph, 'rootGraph'>,
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
   reroute: Reroute
 ): void {
-  const graphId = graph.rootGraph.id
-  reroute._chain = useRerouteStore().registerReroute(graphId, reroute._chain)
-  reroute._graphId = graphId
+  const scope = graphScopeOf(graph)
+  const registered = useRerouteStore().registerReroute(scope, reroute._chain)
+  if (toRaw(registered) !== toRaw(reroute._chain)) return
+  reroute._chain = registered
+  reroute._graphScope = scope
 }
 
 /**
@@ -861,9 +867,9 @@ export function registerRerouteChain(
  * @param reroute The reroute to unregister
  */
 export function unregisterRerouteChain(reroute: Reroute): void {
-  if (!reroute._graphId) return
-  useRerouteStore().deleteReroute(reroute._graphId, reroute._chain)
-  reroute._graphId = undefined
+  if (!reroute._graphScope) return
+  useRerouteStore().deleteReroute(reroute._graphScope, reroute._chain)
+  reroute._graphScope = undefined
 }
 
 /**

@@ -1,4 +1,5 @@
 import { toGroupId } from '@/types/groupId'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -759,10 +760,14 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(parentInstance)
 
     expect(
-      useLinkStore().isInputSlotConnected(rootGraph.id, consumer.id, 0)
+      useLinkStore().isInputSlotConnected(
+        graphScopeOf(nestedDef),
+        consumer.id,
+        0
+      )
     ).toBe(true)
     expect(
-      useRerouteStore().getReroute(rootGraph.id, innerReroute.id)?.id
+      useRerouteStore().getReroute(graphScopeOf(nestedDef), innerReroute.id)?.id
     ).toBe(innerReroute.id)
     expect(rootGraph.subgraphs.has(nestedDef.id)).toBe(true)
     for (const spy of removalSpies) expect(spy).not.toHaveBeenCalled()
@@ -775,10 +780,14 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(parentInstance)
 
     expect(
-      useLinkStore().isInputSlotConnected(rootGraph.id, consumer.id, 0)
+      useLinkStore().isInputSlotConnected(
+        graphScopeOf(nestedDef),
+        consumer.id,
+        0
+      )
     ).toBe(false)
     expect(
-      useRerouteStore().getReroute(rootGraph.id, innerReroute.id)
+      useRerouteStore().getReroute(graphScopeOf(nestedDef), innerReroute.id)
     ).toBeUndefined()
     expect(rootGraph.subgraphs.has(nestedDef.id)).toBe(false)
   })
@@ -950,7 +959,7 @@ describe('_removeDuplicateLinks', () => {
 
     expect(graph._links.size).toBe(1)
     expect(source.outputs[0].links).toHaveLength(1)
-    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 0)?.id).toBe(
+    expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 0)?.id).toBe(
       source.outputs[0].links![0]
     )
   })
@@ -958,7 +967,7 @@ describe('_removeDuplicateLinks', () => {
   it('keeps the link registered to the target input', () => {
     const { graph, source, target } = createConnectedGraph()
     const store = useLinkStore()
-    const graphId = graph.rootGraph.id
+    const graphId = graphScopeOf(graph)
     const keptLinkId = store.getInputSlotLink(graphId, target.id, 0)!.id
 
     const dupLink = injectDuplicateLink(graph, source, target)
@@ -974,14 +983,14 @@ describe('_removeDuplicateLinks', () => {
   it('drops purged duplicates from the link store and keeps the survivor indexed', () => {
     const { graph, source, target } = createConnectedGraph()
     const store = useLinkStore()
-    const graphId = graph.rootGraph.id
+    const graphId = graphScopeOf(graph)
     const keptLinkId = store.getInputSlotLink(graphId, target.id, 0)!.id
 
     const dup = injectDuplicateLink(graph, source, target)
 
     graph._removeDuplicateLinks()
 
-    expect(dup._graphId).toBeUndefined()
+    expect(dup._graphScope).toBeUndefined()
     expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
   })
 
@@ -989,7 +998,7 @@ describe('_removeDuplicateLinks', () => {
     const { graph, source, target } = createConnectedGraph()
     const store = useLinkStore()
     const validLinkId = store.getInputSlotLink(
-      graph.rootGraph.id,
+      graphScopeOf(graph),
       target.id,
       0
     )!.id
@@ -1010,7 +1019,7 @@ describe('_removeDuplicateLinks', () => {
     expect(graph._links.size).toBe(1)
     expect(graph._links.has(validLinkId)).toBe(true)
     expect(graph._links.has(dupLink.id)).toBe(false)
-    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 0)?.id).toBe(
+    expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 0)?.id).toBe(
       validLinkId
     )
   })
@@ -1027,7 +1036,7 @@ describe('_removeDuplicateLinks', () => {
     expect(graph._links.has(dupLink.id)).toBe(false)
     const survivingId = graph._links.keys().next().value!
     const registeredLink = store.getInputSlotLink(
-      graph.rootGraph.id,
+      graphScopeOf(graph),
       target.id,
       0
     )

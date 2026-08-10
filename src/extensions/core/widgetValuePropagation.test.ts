@@ -7,6 +7,7 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -25,6 +26,10 @@ type SourceNode = Pick<LGraphNode, 'id' | 'graph' | 'widgets'>
 type TargetNode = Pick<LGraphNode, 'id' | 'inputs' | 'widgets'>
 
 const GRAPH_ID: UUID = 'graph-test'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 const SOURCE_NODE_ID = toNodeId(1)
 
 function createWidget(
@@ -55,7 +60,7 @@ function createSourceNode(options: {
   targetNode: TargetNode
   widgets?: IBaseWidget[]
 }): SourceNode {
-  useLinkStore().registerLink(GRAPH_ID, {
+  useLinkStore().registerLink(GRAPH_SCOPE, {
     id: toLinkId(1),
     originNodeId: SOURCE_NODE_ID,
     originSlot: 0,
@@ -66,6 +71,7 @@ function createSourceNode(options: {
   return {
     id: SOURCE_NODE_ID,
     graph: {
+      id: GRAPH_ID,
       rootGraph: { id: GRAPH_ID },
       getNodeById: vi.fn((id: TargetNode['id']) =>
         id === options.targetNode.id ? options.targetNode : null

@@ -14,6 +14,7 @@ import {
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
@@ -71,10 +72,10 @@ const widgetComponent = computed(() => {
 })
 
 const isLinked = computed(() => {
-  const graphId = node.graph?.rootGraph.id
+  const graph = node.graph
   const slot = node.inputs?.findIndex((i) => i.widget?.name === widget.name)
-  if (!graphId || slot === undefined || slot < 0) return false
-  return linkStore.isInputSlotConnected(graphId, node.id, slot)
+  if (!graph || slot === undefined || slot < 0) return false
+  return linkStore.isInputSlotConnected(graphScopeOf(graph), node.id, slot)
 })
 
 const simplifiedWidget = computed((): SimplifiedWidget => {

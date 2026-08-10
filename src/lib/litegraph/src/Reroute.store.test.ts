@@ -14,6 +14,7 @@ import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 
@@ -39,12 +40,12 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const store = useRerouteStore()
 
     const reroute = graph.createReroute([10, 10], link)!
-    expect(store.getReroute(graph.rootGraph.id, reroute.id)?.id).toBe(
+    expect(store.getReroute(graphScopeOf(graph), reroute.id)?.id).toBe(
       reroute.id
     )
 
     graph.removeReroute(reroute.id)
-    expect(store.getReroute(graph.rootGraph.id, reroute.id)).toBeUndefined()
+    expect(store.getReroute(graphScopeOf(graph), reroute.id)).toBeUndefined()
   })
 
   it('setReroute creates and updates geometry in one layout write', () => {
@@ -60,7 +61,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
       linkIds: []
     })
 
-    expect(store.getReroute(graph.rootGraph.id, reroute.id)?.id).toBe(3)
+    expect(store.getReroute(graphScopeOf(graph), reroute.id)?.id).toBe(3)
     const creationOperations = applyOperation.mock.calls.filter(
       ([operation]) => operation.entity === 'reroute'
     )
@@ -100,7 +101,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const second = graph.createReroute([20, 20], first)!
 
     const parentId = computed(
-      () => store.getReroute(graph.rootGraph.id, first.id)?.parentId
+      () => store.getReroute(graphScopeOf(graph), first.id)?.parentId
     )
     expect(parentId.value).toBe(second.id)
 
@@ -123,18 +124,18 @@ describe('Reroute ↔ rerouteStore integration', () => {
     link.disconnect(graph)
 
     expect(graph.reroutes.size).toBe(0)
-    expect(store.getReroute(graph.rootGraph.id, reroute.id)).toBeUndefined()
+    expect(store.getReroute(graphScopeOf(graph), reroute.id)).toBeUndefined()
   })
 
   it('clear() removes the graph’s chains from the store', () => {
     const { graph, link } = connectedGraph()
     const store = useRerouteStore()
     const reroute = graph.createReroute([10, 10], link)!
-    const graphId = graph.rootGraph.id
+    const graphScope = graphScopeOf(graph)
 
     graph.clear()
 
-    expect(store.getReroute(graphId, reroute.id)).toBeUndefined()
+    expect(store.getReroute(graphScope, reroute.id)).toBeUndefined()
   })
 
   it('deduplicates colliding subgraph reroute ids into one root bucket', () => {
@@ -157,7 +158,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     for (const sg of subgraphs) {
       const [reroute] = [...sg.reroutes.values()]
-      expect(store.getReroute(graph.rootGraph.id, reroute.id)?.id).toBe(
+      expect(store.getReroute(graphScopeOf(sg), reroute.id)?.id).toBe(
         reroute.id
       )
       const [link] = [...sg._links.values()]
@@ -278,7 +279,6 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const { graph, a, b, link } = connectedGraph()
     const store = useRerouteStore()
     const reroute = graph.createReroute([10, 10], link)!
-    const graphId = graph.rootGraph.id
 
     onTestFinished(enableSubgraphNodeCreation(graph))
 
@@ -290,10 +290,10 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     const [innerLink] = [...subgraph._links.values()]
     expect(innerLink.parentId).toBe(reroute.id)
-    expect(store.getReroute(graphId, reroute.id)).toBeDefined()
+    expect(store.getReroute(graphScopeOf(subgraph), reroute.id)).toBeDefined()
 
     subgraph.removeReroute(reroute.id)
-    expect(store.getReroute(graphId, reroute.id)).toBeUndefined()
+    expect(store.getReroute(graphScopeOf(subgraph), reroute.id)).toBeUndefined()
   })
 
   it('floating marker survives through the store state', () => {
@@ -304,9 +304,11 @@ describe('Reroute ↔ rerouteStore integration', () => {
     a.disconnectOutput(0)
 
     expect(reroute.floating).toEqual({ slotType: 'input' })
-    expect(store.getReroute(graph.rootGraph.id, reroute.id)?.floating).toEqual({
-      slotType: 'input'
-    })
+    expect(store.getReroute(graphScopeOf(graph), reroute.id)?.floating).toEqual(
+      {
+        slotType: 'input'
+      }
+    )
   })
 })
 

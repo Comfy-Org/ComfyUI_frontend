@@ -18,12 +18,14 @@ import {
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
+import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
   createLGraphState,
   mintGroupId,
   mintNodeId,
   mintRerouteId,
   observeGroupId,
+  observeLinkId,
   observeNodeId,
   observeRerouteId
 } from './idAllocation'
@@ -487,8 +489,8 @@ export class LGraph
     if (this.isRootGraph && graphId !== zeroUuid) {
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
-      useLinkStore().clearGraph(graphId)
-      useRerouteStore().clearGraph(graphId)
+      useLinkStore().clearGraph(toRootGraphId(graphId))
+      useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
       layoutStore.clearGraph(graphId)
     } else {
@@ -1504,9 +1506,20 @@ export class LGraph
   }
 
   addFloatingLink(link: LLink): LLink {
-    if (link.id === -1) {
-      link.id = toLinkId(++this._lastFloatingLinkId)
+    const needsId =
+      link.id === -1 ||
+      this._links.has(link.id) ||
+      this.floatingLinksInternal.has(link.id)
+
+    if (needsId) {
+      do {
+        link.id = toLinkId(++this._lastFloatingLinkId)
+      } while (
+        this._links.has(link.id) ||
+        this.floatingLinksInternal.has(link.id)
+      )
     }
+    observeLinkId(this.state, link.id)
     this.floatingLinksInternal.set(link.id, link)
     registerLinkTopology(this, link)
     return link
@@ -1532,6 +1545,13 @@ export class LGraph
    * routing every add through here keeps the store from silently desyncing.
    */
   _addLink(link: LLink): void {
+    const existing = this._links.get(link.id)
+    if (existing) {
+      if (existing !== link) {
+        console.warn(`LiteGraph: refusing to add duplicate link id ${link.id}`)
+      }
+      return
+    }
     this._links.set(link.id, link)
     registerLinkTopology(this, link)
   }
@@ -2510,6 +2530,14 @@ export class LGraph
       else unregisterAllGraphLayout(this)
 
       this._configureBase(data)
+
+      if (options.clearGraph) {
+        // The payload is authoritative for this owner's topology: drop any
+        // stale bucket left by a graph that previously held this id.
+        const topologyScope = graphScopeOf(this)
+        useLinkStore().clearOwner(topologyScope)
+        useRerouteStore().clearOwner(topologyScope)
+      }
 
       let reroutes: SerialisableReroute[] | undefined
 
