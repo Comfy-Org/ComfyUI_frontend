@@ -159,6 +159,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -179,6 +180,7 @@ import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/w
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { createNodeCullingIndex } from '@/renderer/core/spatial/nodeCullingIndex'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
@@ -293,8 +295,52 @@ watch(
   }
 )
 
-const allNodes = computed((): VueNodeData[] =>
+const rawNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
+)
+
+// Bounds come from layoutStore rather than the litegraph nodes so they share a
+// source with layoutVersion; keying the cache on one and reading the other
+// would let it hold stale bounds indefinitely.
+const cullingIndex = createNodeCullingIndex({
+  getVersion: () => layoutStore.layoutVersion,
+  getEntries: () => {
+    const layouts = layoutStore.getAllNodes().value
+    return rawNodes.value.map((node) => {
+      const layout = layouts.get(node.id)
+      if (!layout) return { id: node.id, bounds: null }
+
+      // Vue nodes render their title above the stored position.
+      return {
+        id: node.id,
+        bounds: {
+          x: layout.position.x,
+          y: layout.position.y - LiteGraph.NODE_TITLE_HEIGHT,
+          width: layout.size.width,
+          height: layout.size.height + LiteGraph.NODE_TITLE_HEIGHT
+        }
+      }
+    })
+  }
+})
+
+watch(rawNodes, () => cullingIndex.invalidate())
+
+const { mountedNodeIds } = useViewportCulling({
+  nodes: rawNodes,
+  queryNodesInBounds: (bounds) => cullingIndex.query(bounds),
+  getViewportSize: () => {
+    const element = comfyApp.canvas?.canvas
+    return {
+      width: element?.clientWidth ?? 0,
+      height: element?.clientHeight ?? 0
+    }
+  },
+  isPinned: (id) => canvasStore.selectedNodeIds.has(id)
+})
+
+const allNodes = computed((): VueNodeData[] =>
+  rawNodes.value.filter((node) => mountedNodeIds.value.has(node.id))
 )
 watch(
   () => linearMode.value,
