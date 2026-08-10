@@ -119,6 +119,10 @@ describe('SignInContent', () => {
 
     expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
     expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Sign up with Google/ }),
+      'only email sign-up is gated on region; third-party auth never waits on the probe'
+    ).toBeInTheDocument()
 
     settle(false)
 

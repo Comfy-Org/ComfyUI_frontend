@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 
 import { useRegionGate } from '@/composables/auth/useRegionGate'
@@ -22,6 +22,10 @@ const currentStatus = () => screen.getByRole('status').textContent
 
 beforeEach(() => {
   detection.outcome = Promise.resolve(false)
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('useRegionGate', () => {

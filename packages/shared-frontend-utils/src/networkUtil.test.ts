@@ -45,6 +45,11 @@ describe('getClientCountry', () => {
       () => Promise.resolve(traceResponse('h=x\nts=1'))
     ],
     ['an empty loc value', () => Promise.resolve(traceResponse('loc=\n'))],
+    [
+      'an unknown-country sentinel',
+      () => Promise.resolve(traceResponse(TRACE_BODY('XX')))
+    ],
+    ['a Tor sentinel', () => Promise.resolve(traceResponse(TRACE_BODY('T1')))],
     ['a network error', () => Promise.reject(new Error('offline'))]
   ] as const)('returns undefined for %s', async ([, respond]) => {
     fetchMock.mockImplementation(respond)
@@ -91,6 +96,23 @@ describe('isInChina', () => {
       'a China-routed client on a non-zh locale is only detectable by Baidu latency'
     ).resolves.toBe(true)
   })
+
+  it.for(['XX', 'T1'] as const)(
+    'falls back to the heuristic when the edge answers %s',
+    async (sentinel) => {
+      vi.stubGlobal('navigator', { language: 'zh-CN' })
+      fetchMock.mockImplementation((url: string) =>
+        url.includes('cdn-cgi')
+          ? Promise.resolve(traceResponse(TRACE_BODY(sentinel)))
+          : Promise.reject(new Error('blocked'))
+      )
+
+      await expect(
+        isInChina(),
+        'a sentinel names no country, so treating it as "not China" would wave through Tor and unknown-IP clients'
+      ).resolves.toBe(true)
+    }
+  )
 
   it('reports outside China when the edge is down but Google answers', async () => {
     fetchMock.mockImplementation((url: string) =>

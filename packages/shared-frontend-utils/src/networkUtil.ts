@@ -22,13 +22,20 @@ const PROBE_TIMEOUT_MS = 2000
 /** Baidu answering this fast implies a China route. */
 const CHINA_LATENCY_MS = 150
 
-const parseTraceCountry = (body: string): string | undefined =>
-  body
-    .split('\n')
-    .find((line) => line.startsWith('loc='))
-    ?.slice('loc='.length)
-    .trim()
-    .toUpperCase() || undefined
+/** `XX` is an unknown country and `T1` is Tor: neither names where the client is. */
+const UNRESOLVED_COUNTRIES = new Set(['XX', 'T1'])
+
+const parseTraceCountry = (body: string): string | undefined => {
+  const country =
+    body
+      .split('\n')
+      .find((line) => line.startsWith('loc='))
+      ?.slice('loc='.length)
+      .trim()
+      .toUpperCase() || undefined
+
+  return country && UNRESOLVED_COUNTRIES.has(country) ? undefined : country
+}
 
 /**
  * The abort signal alone is not enough: a request the browser never resolves
