@@ -324,7 +324,7 @@ export function useTemplateFiltering<T extends TemplateInfo>(
     selectedUseCases.value = []
     selectedRunsOn.value = []
     sortBy.value = 'default'
-    searchSort.value = 'relevance'
+    searchSort.value = SEARCH_DEFAULT_SORT
   }
 
   const removeModelFilter = (model: string) => {
