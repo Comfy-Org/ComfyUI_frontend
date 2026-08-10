@@ -16,7 +16,6 @@ const env = vi.hoisted(() => {
     isCloud: false,
     isDesktop: false,
     isLoggedIn: false,
-    teamWorkspacesEnabled: false,
     billingControlEnabled: false,
     authenticatedConfigLoaded: false,
     partnerNodeGovernanceEnabled: false,
@@ -43,7 +42,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: env.fakeRef('isActiveSubscription'),
+    canAccessSubscriptionFeatures: env.fakeRef('isActiveSubscription'),
     type: env.fakeRef('billingType')
   })
 }))
@@ -51,9 +50,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
     flags: {
-      get teamWorkspacesEnabled() {
-        return env.state.teamWorkspacesEnabled
-      },
       get billingControlEnabled() {
         return env.state.billingControlEnabled
       },
@@ -133,7 +129,6 @@ describe('useSettingUI', () => {
       isCloud: false,
       isDesktop: false,
       isLoggedIn: false,
-      teamWorkspacesEnabled: false,
       billingControlEnabled: false,
       authenticatedConfigLoaded: false,
       partnerNodeGovernanceEnabled: false,
@@ -199,6 +194,15 @@ describe('useSettingUI', () => {
     expect(defaultCategory.value).toBe(settingCategories.value[0])
   })
 
+  it('hides the empty Workspace navigation group for logged-out Cloud users', () => {
+    env.state.isCloud = true
+    env.state.isLoggedIn = false
+
+    const { navGroups } = useSettingUI()
+
+    expect(navGroups.value.map(({ title }) => title)).not.toContain('Workspace')
+  })
+
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
     expect(defaultCategory.value.key).toBe('about')
@@ -209,7 +213,6 @@ describe('useSettingUI', () => {
       Object.assign(env.state, {
         isCloud: true,
         isLoggedIn: true,
-        teamWorkspacesEnabled: true,
         authenticatedConfigLoaded: true,
         isActiveSubscription: true,
         billingType: 'workspace'
@@ -287,7 +290,6 @@ describe('useSettingUI', () => {
       Object.assign(env.state, {
         isCloud: true,
         isLoggedIn: true,
-        teamWorkspacesEnabled: true,
         billingControlEnabled: true,
         authenticatedConfigLoaded: true,
         partnerNodeGovernanceEnabled: true,
@@ -338,11 +340,11 @@ describe('useSettingUI', () => {
       expect(navKeys(navGroups.value)).not.toContain('workspace-allowlist')
     })
 
-    it('keeps the legacy plan panel in the legacy layout', () => {
-      env.state.teamWorkspacesEnabled = false
+    it('keeps OSS account navigation on the legacy layout', () => {
+      env.state.isCloud = false
       const { navGroups } = useSettingUI()
 
-      expect(navKeys(navGroups.value)).toContain('subscription')
+      expect(navKeys(navGroups.value)).toContain('credits')
       expect(navKeys(navGroups.value)).not.toContain('workspace')
     })
   })

@@ -1,8 +1,13 @@
 @theme {
   /* Font Families */
   --font-inter: 'Inter', sans-serif;
+  --font-formula: 'PP Formula', 'Inter', sans-serif;
 
   /* Palette Colors */
+  --color-transparency-white-t8: rgb(255 255 255 / 0.08);
+  --color-transparency-white-t20: rgb(255 255 255 / 0.2);
+  --color-transparency-white-t40: rgb(255 255 255 / 0.4);
+
   --color-charcoal-100: #55565e;
   --color-charcoal-200: #494a50;
   --color-charcoal-300: #3c3d42;

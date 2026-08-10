@@ -64,7 +64,7 @@ function makeSubscription(
 
 const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
 const mockFetchBalance = vi.fn().mockResolvedValue(undefined)
-const mockIsActiveSubscription = ref(true)
+const mockCanAccessSubscriptionFeatures = ref(true)
 const mockIsFreeTier = ref(false)
 const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
@@ -73,7 +73,7 @@ const mockIsLoading = ref(false)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: mockIsActiveSubscription,
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     isFreeTier: mockIsFreeTier,
     tier: mockTier,
     subscription: mockSubscription,
@@ -153,7 +153,7 @@ describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsCloud.value = true
-    mockIsActiveSubscription.value = true
+    mockCanAccessSubscriptionFeatures.value = true
     mockIsFreeTier.value = false
     mockTier.value = 'CREATOR'
     mockSubscription.value = makeSubscription()
@@ -203,7 +203,7 @@ describe('CurrentUserPopoverLegacy', () => {
   })
 
   it('refreshes subscription status through the billing facade after subscribing', async () => {
-    mockIsActiveSubscription.value = false
+    mockCanAccessSubscriptionFeatures.value = false
     const { user } = renderComponent()
 
     await user.click(screen.getByTestId('subscribe-button-mock'))
@@ -335,6 +335,18 @@ describe('CurrentUserPopoverLegacy', () => {
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
     expect(mockShowPricingTable).toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers plan management on cloud', async () => {
+    const { user, onClose } = renderComponent()
+
+    const menuItem = screen.getByTestId('manage-plan-menu-item')
+    expect(menuItem).toHaveTextContent(enMessages.subscription.managePlan)
+
+    await user.click(menuItem)
+
+    expect(mockShowSettingsDialog).toHaveBeenCalledWith('subscription')
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -478,7 +490,7 @@ describe('CurrentUserPopoverLegacy', () => {
     })
 
     it('hides subscribe button', () => {
-      mockIsActiveSubscription.value = false
+      mockCanAccessSubscriptionFeatures.value = false
       renderComponent()
       expect(
         screen.queryByTestId('subscribe-button-mock')
@@ -497,9 +509,17 @@ describe('CurrentUserPopoverLegacy', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('still shows manage plan menu item', () => {
-      renderComponent()
-      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+    it('offers credits and opens the credits panel', async () => {
+      const { user, onClose } = renderComponent()
+
+      const menuItem = screen.getByTestId('manage-plan-menu-item')
+      expect(menuItem).toHaveTextContent(enMessages.credits.credits)
+      expect(menuItem).not.toHaveTextContent(enMessages.subscription.managePlan)
+
+      await user.click(menuItem)
+
+      expect(mockShowSettingsDialog).toHaveBeenCalledWith('credits')
+      expect(onClose).toHaveBeenCalledTimes(1)
     })
 
     it('still shows user settings menu item', () => {

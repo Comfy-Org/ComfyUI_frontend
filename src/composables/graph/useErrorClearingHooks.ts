@@ -7,7 +7,8 @@
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createPromotionErrorReconciler } from '@/core/graph/subgraph/createPromotionErrorReconciler'
+import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
@@ -25,6 +26,8 @@ import {
 } from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import {
+  isMissingMediaCandidateActive,
+  isMissingMediaCandidateScopeActive,
   scanNodeMediaCandidates,
   verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
@@ -76,13 +79,26 @@ function installNodeHooks(node: LGraphNode): void {
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
     function (type, slotIndex, isConnected) {
-      if (type !== NodeSlotType.INPUT || !isConnected) return
+      if (type !== NodeSlotType.INPUT) return
       if (!app.rootGraph) return
       const slotName = node.inputs?.[slotIndex]?.name
       if (!slotName) return
       const execId = getExecutionIdByNode(app.rootGraph, node)
       if (!execId) return
-      useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
+      if (isConnected) {
+        useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
+      }
+      // Linking hands value ownership to the upstream node and unlinking hands
+      // it back, so the media error surface follows the same way it follows
+      // promotion.
+      queueMicrotask(() => {
+        // LGraphNode.configure fires this for every input slot while a
+        // workflow loads, so a load would prune candidates against a graph
+        // that is still being wired.
+        if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+        dropOutOfScopeMissingMedia()
+        if (!isConnected) scanSingleNodeMedia(node)
+      })
     }
   )
 
@@ -265,14 +281,6 @@ function isModelCandidateStillActive(
   return isMissingCandidateActive(app.rootGraph, candidate)
 }
 
-function isNodeCandidateStillActive(nodeId: unknown): boolean {
-  return (
-    app.rootGraph != null &&
-    nodeId != null &&
-    isExecutionPathActive(app.rootGraph, String(nodeId))
-  )
-}
-
 async function verifyAndAddPendingModels(
   pending: MissingModelCandidate[]
 ): Promise<void> {
@@ -299,8 +307,8 @@ async function verifyAndAddPendingMedia(
   try {
     await verifyMediaCandidates(pending, { isCloud })
     if (app.rootGraph !== rootGraphAtScan) return
-    const verified = pending.filter(
-      (c) => c.isMissing === true && isNodeCandidateStillActive(c.nodeId)
+    const verified = pending.filter((candidate) =>
+      isMissingMediaCandidateActive(rootGraphAtScan, candidate)
     )
     if (verified.length) useMissingMediaStore().addMissingMedia(verified)
   } catch (error: unknown) {
@@ -393,16 +401,48 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
     mediaStore.removeMissingMediaByPrefix(prefix)
     nodesStore.removeMissingNodesByPrefix(prefix)
   }
+
+  dropOutOfScopeMissingMedia()
+}
+
+function dropOutOfScopeMissingMedia(): void {
+  // No root graph means every candidate reads out of scope, which would empty
+  // the store rather than no-op.
+  if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+
+  const mediaStore = useMissingMediaStore()
+  const candidates = mediaStore.missingMediaCandidates
+  if (!candidates) return
+  const inScope = candidates.filter((candidate) =>
+    isMissingMediaCandidateScopeActive(app.rootGraph, candidate)
+  )
+  if (inScope.length === candidates.length) return
+  mediaStore.setMissingMedia(inScope)
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {
+  const promotionErrors = createPromotionErrorReconciler({
+    pruneOutOfScope: dropOutOfScopeMissingMedia,
+    rescanHost: (subgraphNode) =>
+      scanNodeErrorTargets(subgraphNode, scanSingleNodeMedia),
+    removeHostWidgetCandidate: (subgraphNode, widgetName) => {
+      if (!app.rootGraph) return
+      const executionId = getExecutionIdByNode(app.rootGraph, subgraphNode)
+      if (!executionId) return
+      useMissingMediaStore().removeMissingMediaByWidget(executionId, widgetName)
+    }
+  })
+
+  if (graph instanceof Subgraph) promotionErrors.attach(graph)
   for (const node of graph._nodes ?? []) {
     installNodeHooksRecursive(node)
+    promotionErrors.attachNode(node)
   }
 
   const originalOnNodeAdded = graph.onNodeAdded
   graph.onNodeAdded = function (node: LGraphNode) {
     installNodeHooksRecursive(node)
+    promotionErrors.attachNode(node)
 
     // Scan pasted/duplicated nodes for missing models/media.
     // Skip during loadGraphData (undo/redo/tab switch) — those are
@@ -429,6 +469,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     const execId = getRemovedNodeExecutionId(graph, node.id)
     removeNodeErrors(node, execId)
     restoreNodeHooksRecursive(node)
+    promotionErrors.detachNode(node)
     originalOnNodeRemoved?.call(this, node)
   }
 
@@ -452,5 +493,6 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     graph.onNodeAdded = originalOnNodeAdded || undefined
     graph.onNodeRemoved = originalOnNodeRemoved || undefined
     graph.onTrigger = originalOnTrigger || undefined
+    promotionErrors.dispose()
   }
 }

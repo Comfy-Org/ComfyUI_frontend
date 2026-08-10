@@ -5,7 +5,7 @@ import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
   cachedConsolidatedBillingEnabled,
-  cachedTeamWorkspacesEnabled,
+  cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
@@ -24,7 +24,6 @@ export enum ServerFeatureFlag {
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
-  TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
   PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
@@ -36,10 +35,12 @@ export enum ServerFeatureFlag {
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
-  SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags'
+  SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
 }
 
 /**
@@ -126,19 +127,6 @@ export function useFeatureFlags() {
         false
       )
     },
-    /**
-     * Whether team workspaces feature is enabled.
-     * IMPORTANT: Returns false until authenticated remote config is loaded.
-     * This ensures we never use workspace tokens when the feature is disabled,
-     * and prevents race conditions during initialization.
-     */
-    get teamWorkspacesEnabled() {
-      return resolveAuthGatedFlag(
-        ServerFeatureFlag.TEAM_WORKSPACES_ENABLED,
-        remoteConfig.value.team_workspaces_enabled,
-        cachedTeamWorkspacesEnabled
-      )
-    },
     get partnerNodeGovernanceEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
@@ -203,11 +191,6 @@ export function useFeatureFlags() {
         false
       )
     },
-    /**
-     * Whether personal workspaces use the consolidated (workspace-scoped)
-     * billing flow. While false (default), personal workspaces stay on the
-     * legacy per-user billing flow; team workspaces are unaffected.
-     */
     get consolidatedBillingEnabled() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
@@ -220,6 +203,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
         cachedBillingControlEnabled
+      )
+    },
+    get v1PaymentRecovery() {
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.V1_PAYMENT_RECOVERY,
+        remoteConfig.value.v1_payment_recovery,
+        cachedV1PaymentRecovery
       )
     },
     get freeTierJobAllowanceEnabled() {
@@ -248,8 +238,16 @@ export function useFeatureFlags() {
       )
     },
     get supportsModelTypeTags() {
-      return api.getServerFeature(
+      return resolveFlag(
         ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+        remoteConfig.value.supports_model_type_tags,
+        false
+      )
+    },
+    get onboardingTourEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.ONBOARDING_TOUR_ENABLED,
+        remoteConfig.value.onboarding_tour_enabled,
         false
       )
     }
