@@ -208,6 +208,34 @@ describe('MediaAssetCard', () => {
     )
   })
 
+  it('keeps card actions visible while keyboard focus is within the card', async () => {
+    const user = userEvent.setup()
+    renderCard({ loading: false })
+
+    expect(
+      screen.queryByRole('button', { name: 'mediaAsset.actions.download' })
+    ).not.toBeInTheDocument()
+
+    const selectionControl = screen.getByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    await user.tab()
+
+    expect(selectionControl).toHaveFocus()
+
+    const downloadButton = screen.getByRole('button', {
+      name: 'mediaAsset.actions.download'
+    })
+    expect(downloadButton).toBeInTheDocument()
+
+    await user.tab()
+
+    expect(downloadButton).toHaveFocus()
+    expect(
+      screen.getByRole('button', { name: 'mediaAsset.actions.moreOptions' })
+    ).toBeInTheDocument()
+  })
+
   it('shows image format and dimensions without file size', () => {
     renderCard({
       loading: false,
