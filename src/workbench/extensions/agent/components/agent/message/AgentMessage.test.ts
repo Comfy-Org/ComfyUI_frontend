@@ -74,11 +74,16 @@ describe('AgentMessage thinking narration', () => {
     })
     await rerender({ message })
 
-    expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
-    expect(screen.getByText('Thinking...')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /ran 1 tool call/i })
-    ).toHaveAttribute('aria-expanded', 'true')
+      screen
+        .getAllByText('Thinking...')
+        .some((el) => el.classList.contains('agent-shimmer-text'))
+    ).toBe(true)
+    expect(screen.queryByText('Ran 1 tool call')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /thinking/i })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
 
     transport.ingest({
       type: 'agent_message_done',
@@ -115,22 +120,25 @@ describe('AgentMessage thinking narration', () => {
       global: { plugins: [i18n] }
     })
 
-    const summary = screen.getByText('Ran 1 tool call')
+    const summary = screen.getByText('Thinking...')
     const thinking = screen.getByText('Planning the next step')
 
     expect(summary).toBeInTheDocument()
     expect(screen.getByText('The first edit is complete.')).toBeInTheDocument()
     expect(thinking).not.toHaveClass('agent-shimmer-text')
     expect(summary).toHaveClass('agent-shimmer-text')
-    expect(
-      screen.getByRole('button', { name: /ran 1 tool call/i })
-    ).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.queryByText('Ran 1 tool call')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /thinking/i })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
     expect(screen.getByText('Set widget')).toBeInTheDocument()
   })
 
-  it('folds text-separated tool runs into one turn summary', () => {
+  it('folds text-separated tool runs into one turn summary', async () => {
     const message = thinkingMessage()
     message.thinking = false
+    message.streaming = false
     message.parts = [
       { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
       { type: 'text', text: 'Between calls', state: 'done' },
@@ -147,6 +155,7 @@ describe('AgentMessage thinking narration', () => {
     const narration = screen.getByText('Between calls')
 
     expect(summary).toBeInTheDocument()
+    await userEvent.click(summary)
     expect(screen.getByText('Set widget')).toBeInTheDocument()
     expect(screen.getByText('Add node')).toBeInTheDocument()
     expect(

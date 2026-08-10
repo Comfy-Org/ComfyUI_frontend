@@ -54,7 +54,8 @@ describe('ToolCallGroup', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
+    expect(screen.getByText('Thinking...')).toHaveClass('agent-shimmer-text')
+    expect(screen.queryByText('Ran 1 tool call')).not.toBeInTheDocument()
     expect(screen.getByText('Add node')).toBeInTheDocument()
   })
 
@@ -69,20 +70,20 @@ describe('ToolCallGroup', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('Ran 2 tool calls')).toBeInTheDocument()
+    expect(screen.getByText('Thinking...')).toHaveClass('agent-shimmer-text')
+    expect(screen.queryByText('Ran 2 tool calls')).not.toBeInTheDocument()
     expect(screen.getAllByText('Add node')).toHaveLength(1)
     expect(screen.getByText('×2')).toBeInTheDocument()
   })
 
-  it('shows per-row and total durations from the wire timings', () => {
+  it('shows per-row and total durations from the wire timings', async () => {
     render(ToolCallGroup, {
       props: {
         parts: [
           tool('c1', 'add_node', 'done', true, 1300),
           tool('c2', 'add_node', 'done', true, 200),
           tool('c3', 'switch_tab', 'done', true, 500)
-        ],
-        streaming: true
+        ]
       },
       global: { plugins: [i18n] }
     })
@@ -90,6 +91,11 @@ describe('ToolCallGroup', () => {
     expect(
       screen.getByText('Ran 3 tool calls for 2.0 seconds')
     ).toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: /ran 3 tool calls for 2.0 seconds/i
+      })
+    )
     expect(screen.getByText('1.5s')).toBeInTheDocument()
     expect(screen.getByText('0.5s')).toBeInTheDocument()
   })
@@ -112,7 +118,7 @@ describe('ToolCallGroup', () => {
       global: { plugins: [i18n] }
     })
 
-    const trigger = screen.getByRole('button', { name: /ran 1 tool call/i })
+    const trigger = screen.getByRole('button', { name: /thinking/i })
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('Add node')).toBeInTheDocument()
 
@@ -121,7 +127,9 @@ describe('ToolCallGroup', () => {
       streaming: false
     })
 
-    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      screen.getByRole('button', { name: /ran 1 tool call/i })
+    ).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('reopens on a failure and folds it into the counted row', async () => {
@@ -168,7 +176,7 @@ describe('ToolCallGroup', () => {
 })
 
 describe('AgentMessage tool grouping', () => {
-  it('keeps the tool list expanded while the message is streaming', () => {
+  it('keeps one shimmering activity row expanded while streaming', () => {
     const message: AssistantMessage = {
       id: 'msg-0' as TurnId,
       role: 'assistant',
@@ -178,6 +186,8 @@ describe('AgentMessage tool grouping', () => {
     }
     render(AgentMessage, { props: { message }, global: { plugins: [i18n] } })
 
+    expect(screen.getByText('Thinking...')).toHaveClass('agent-shimmer-text')
+    expect(screen.queryByText('Ran 1 tool call')).not.toBeInTheDocument()
     expect(screen.getByText('Add node')).toBeInTheDocument()
   })
 

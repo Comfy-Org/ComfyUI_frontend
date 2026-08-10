@@ -16,14 +16,9 @@ import type {
 
 import ToolCallCard from './ToolCallCard.vue'
 
-const {
-  parts,
-  streaming = false,
-  active = false
-} = defineProps<{
+const { parts, streaming = false } = defineProps<{
   parts: ActivityPart[]
   streaming?: boolean
-  active?: boolean
 }>()
 
 const { t } = useI18n()
@@ -81,13 +76,22 @@ const running = computed(() =>
 const failed = computed(() =>
   tools.value.some((tool) => tool.state === 'done' && tool.ok === false)
 )
+const active = computed(() => streaming || running.value)
+const statusLabel = computed(() => {
+  if (active.value) return t('agent.thinking')
 
-// Live tool events arrive only on completion, so per-tool streaming never
-// occurs on real turns; the turn's own streaming flag keeps the list open
-// while the agent works and collapses it when the turn settles.
+  return totalSeconds.value === null
+    ? t('agent.ranToolCalls', tools.value.length)
+    : t(
+        'agent.ranToolCallsTimed',
+        { seconds: totalSeconds.value },
+        tools.value.length
+      )
+})
+
 const open = ref(true)
 watch(
-  () => streaming || running.value || failed.value,
+  () => active.value || failed.value,
   (stayOpen) => {
     open.value = stayOpen
   },
@@ -108,19 +112,11 @@ watch(
         v-else-if="failed"
         class="text-agent-fg-subtle icon-[lucide--circle-x] size-4 shrink-0"
       />
+      <span v-else-if="active" class="icon-[lucide--brain] size-4 shrink-0" />
       <span v-else class="icon-[lucide--wrench] size-4 shrink-0" />
-      <span
-        :class="cn('text-left', (active || running) && 'agent-shimmer-text')"
-        >{{
-          totalSeconds === null
-            ? t('agent.ranToolCalls', tools.length)
-            : t(
-                'agent.ranToolCallsTimed',
-                { seconds: totalSeconds },
-                tools.length
-              )
-        }}</span
-      >
+      <span :class="cn('text-left', active && 'agent-shimmer-text')">{{
+        statusLabel
+      }}</span>
       <span
         class="icon-[lucide--chevron-down] size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
       />
