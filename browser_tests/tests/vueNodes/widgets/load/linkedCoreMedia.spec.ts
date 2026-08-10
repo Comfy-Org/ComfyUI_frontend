@@ -89,7 +89,7 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
     await expect(loadImage.imagePreview.locator('img')).toBeVisible()
     await expect(videoPreview.preview).toBeVisible()
     await expect(videoPreview.video).toBeVisible()
-    await expect(audioPreview.audio).toBeAttached()
+    await expect(audioPreview.play).toBeVisible()
 
     for (const [index, node] of mediaNodes.entries()) {
       await expect
