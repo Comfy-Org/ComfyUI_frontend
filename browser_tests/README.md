@@ -44,6 +44,17 @@ mkdir -p /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools
 cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 ```
 
+Alternatively, start the same container used by CI. It includes ComfyUI and
+mounts `tools/devtools` automatically:
+
+```bash
+pnpm dev:comfyui
+```
+
+The first run pulls the CI image when your GitHub credentials can read it, or
+builds the pinned public source if they cannot. Leave it running while using
+`pnpm dev` and `pnpm test:browser:local` in separate terminals.
+
 ### Node.js & Playwright
 
 Install the Node version in `.nvmrc`, then the workspace dependencies and the

@@ -1,6 +1,20 @@
 services:
+  docker-daemon:
+    command: sudo dockerd
+
+  comfyui:
+    port: 8188
+    command: COMFYUI_PORT="$PORT" scripts/start-comfyui-e2e.sh
+
   frontend:
-    command: pnpm dev:cloud --host 0.0.0.0 --port "$PORT"
+    port: 5173
+    command: |
+      set -euo pipefail
+      until curl -fsS http://127.0.0.1:8188/system_stats >/dev/null 2>&1; do
+        sleep 1
+      done
+      exec env VITE_REMOTE_DEV=true DISABLE_VUE_PLUGINS=true \
+        pnpm dev --host 0.0.0.0 --port "$PORT"
     portal:
       title: ComfyUI Frontend
-      description: Frontend dev server connected to the Comfy test cloud backend.
+      description: Frontend dev server connected to the local containerized ComfyUI backend.

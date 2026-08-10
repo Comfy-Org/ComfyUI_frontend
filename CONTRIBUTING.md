@@ -20,6 +20,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
   - Node.js (see `.nvmrc` for the required version) and pnpm
   - Git for version control
   - A running ComfyUI backend instance (otherwise, you can use `pnpm dev:cloud`)
+  - Docker, if you want to use the containerized test backend
 
 ### Initial Setup
 
@@ -61,6 +62,26 @@ python main.py --port 8188 --cpu
 - Run `pnpm dev` to start the dev server
 - Run `pnpm dev:electron` to start the dev server with electron API mocked
 - Run `pnpm dev:cloud` to start the dev server against the cloud backend (instead of local ComfyUI server)
+
+#### Containerized Test Backend
+
+To use the same pinned ComfyUI environment as the Playwright CI jobs, start its
+container in one terminal:
+
+```bash
+pnpm dev:comfyui
+```
+
+The command mounts `tools/devtools` automatically and exposes ComfyUI at
+`localhost:8188`. In separate terminals, start the frontend and run tests:
+
+```bash
+pnpm dev
+pnpm test:browser:local
+```
+
+See [the browser test setup](browser_tests/README.md#setup) for image access and
+Playwright prerequisites.
 
 #### Testing with Cloud & Staging Environments
 
