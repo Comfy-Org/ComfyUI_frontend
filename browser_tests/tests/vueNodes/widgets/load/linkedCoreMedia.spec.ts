@@ -5,37 +5,23 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
 test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.route('**/api/view?**', async (route) => {
-      const filename = new URL(route.request().url()).searchParams.get(
-        'filename'
-      )
-
-      if (filename === 'linked-image.webp') {
-        await route.fulfill({
-          contentType: 'image/webp',
-          path: assetPath('image64x64.webp')
-        })
-        return
+    await mockViewFiles(comfyPage.page, {
+      'linked-image.webp': {
+        contentType: 'image/webp',
+        path: assetPath('image64x64.webp')
+      },
+      'linked-video.mp4': {
+        contentType: 'video/mp4',
+        path: assetPath('plain_video.mp4')
+      },
+      'linked-audio.wav': {
+        body: getWav(),
+        contentType: 'audio/x-wav'
       }
-      if (filename === 'linked-video.mp4') {
-        await route.fulfill({
-          contentType: 'video/mp4',
-          path: assetPath('plain_video.mp4')
-        })
-        return
-      }
-      if (filename === 'linked-audio.wav') {
-        await route.fulfill({
-          body: getWav(),
-          contentType: 'audio/x-wav'
-        })
-        return
-      }
-
-      await route.fallback()
     })
 
     await comfyPage.workflow.loadWorkflow('widgets/linked_core_media')
@@ -56,57 +42,67 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
         )
       )
 
-    await expect(loadImage.imagePreview).toHaveCount(0)
-    await expect(videoPreview.preview).toHaveCount(0)
-    await expect(audioPreview.audio).toHaveCount(0)
-
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    await loadImageNode.centerOnNode()
-    await comfyPage.contextMenu.openForVueNode(loadImage.header)
-    await expect(contextMenu).toBeVisible()
-    await expect(
-      contextMenu.getByText('Open Image', { exact: true })
-    ).toHaveCount(0)
-    await expect(
-      contextMenu.getByText('Paste Image', { exact: true })
-    ).toHaveCount(0)
-    await comfyPage.page.keyboard.press('Escape')
-
     const mediaNodes = [loadImage.root, loadVideo, loadAudio]
-    const linkedHeights = await Promise.all(
-      mediaNodes.map(async (node) => (await node.boundingBox())?.height ?? 0)
-    )
-    expect(
-      linkedHeights,
-      'Linked media nodes should have measurable fitted heights'
-    ).not.toContain(0)
+    let linkedHeights: number[] = []
 
-    for (const node of [loadImageNode, loadVideoNode, loadAudioNode]) {
-      await (await node.getInput(0)).removeLinks()
-    }
+    await test.step('hide local media for all linked core loaders', async () => {
+      await expect(loadImage.imagePreview).toHaveCount(0)
+      await expect(videoPreview.preview).toHaveCount(0)
+      await expect(audioPreview.audio).toHaveCount(0)
 
-    await expect(loadImage.imagePreview).toBeVisible()
-    await expect(loadImage.imagePreview.locator('img')).toBeVisible()
-    await expect(videoPreview.preview).toBeVisible()
-    await expect(videoPreview.video).toBeVisible()
-    await expect(audioPreview.play).toBeVisible()
+      linkedHeights = await Promise.all(
+        mediaNodes.map(async (node) => (await node.boundingBox())?.height ?? 0)
+      )
+      expect(
+        linkedHeights,
+        'Linked media nodes should have measurable fitted heights'
+      ).not.toContain(0)
+    })
 
-    for (const [index, node] of mediaNodes.entries()) {
-      await expect
-        .poll(() => node.boundingBox().then((box) => box?.height ?? 0), {
-          message: 'Restored local media should grow the fitted node'
-        })
-        .toBeGreaterThan(linkedHeights[index])
-    }
+    await test.step('hide linked Load Image actions', async () => {
+      await loadImageNode.centerOnNode()
+      await comfyPage.contextMenu.openForVueNode(loadImage.header)
+      await expect(contextMenu).toBeVisible()
+      await expect(
+        contextMenu.getByText('Open Image', { exact: true })
+      ).toHaveCount(0)
+      await expect(
+        contextMenu.getByText('Paste Image', { exact: true })
+      ).toHaveCount(0)
+      await comfyPage.page.keyboard.press('Escape')
+    })
 
-    await loadImageNode.centerOnNode()
-    await comfyPage.contextMenu.openForVueNode(loadImage.header)
-    await expect(contextMenu).toBeVisible()
-    await expect(
-      contextMenu.getByText('Open Image', { exact: true })
-    ).toBeVisible()
-    await expect(
-      contextMenu.getByText('Paste Image', { exact: true })
-    ).toBeVisible()
+    await test.step('restore local media for all disconnected core loaders', async () => {
+      for (const node of [loadImageNode, loadVideoNode, loadAudioNode]) {
+        await (await node.getInput(0)).removeLinks()
+      }
+
+      await expect(loadImage.imagePreview).toBeVisible()
+      await expect(loadImage.imagePreview.locator('img')).toBeVisible()
+      await expect(videoPreview.preview).toBeVisible()
+      await expect(videoPreview.video).toBeVisible()
+      await expect(audioPreview.play).toBeVisible()
+
+      for (const [index, node] of mediaNodes.entries()) {
+        await expect
+          .poll(() => node.boundingBox().then((box) => box?.height ?? 0), {
+            message: 'Restored local media should grow the fitted node'
+          })
+          .toBeGreaterThan(linkedHeights[index])
+      }
+    })
+
+    await test.step('restore disconnected Load Image actions', async () => {
+      await loadImageNode.centerOnNode()
+      await comfyPage.contextMenu.openForVueNode(loadImage.header)
+      await expect(contextMenu).toBeVisible()
+      await expect(
+        contextMenu.getByText('Open Image', { exact: true })
+      ).toBeVisible()
+      await expect(
+        contextMenu.getByText('Paste Image', { exact: true })
+      ).toBeVisible()
+    })
   })
 })

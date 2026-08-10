@@ -1,42 +1,37 @@
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import {
+  CORE_MEDIA_LOADER_WIDGET_NAMES,
+  isCoreMediaLoaderClass
+} from '@/utils/loaderNodeUtil'
+import type { CoreMediaLoaderClass } from '@/utils/loaderNodeUtil'
+import { isInputPreviewOutput } from '@/utils/nodeOutputUtil'
 
-const CORE_MEDIA_SELECTOR_NAMES = {
-  LoadAudio: 'audio',
-  LoadImage: 'image',
-  LoadVideo: 'file'
-} as const
+type MediaLoaderSelectorWidget = Pick<SafeWidgetData, 'name' | 'slotMetadata'>
 
-type CoreMediaNodeClass = keyof typeof CORE_MEDIA_SELECTOR_NAMES
-type MediaSelectorWidget = Pick<SafeWidgetData, 'name' | 'slotMetadata'>
-
-function isCoreMediaNodeClass(value: string): value is CoreMediaNodeClass {
-  return Object.hasOwn(CORE_MEDIA_SELECTOR_NAMES, value)
-}
-
-function getCoreMediaNodeClass(
+function getCoreMediaLoaderClass(
   node: LGraphNode
-): CoreMediaNodeClass | undefined {
+): CoreMediaLoaderClass | undefined {
   const nodeData = node.constructor.nodeData
   const nodeClass = node.constructor.comfyClass
   if (
     !nodeData ||
     !('isCoreNode' in nodeData) ||
     nodeData.isCoreNode !== true ||
-    !isCoreMediaNodeClass(nodeClass)
+    !isCoreMediaLoaderClass(nodeClass)
   )
     return undefined
 
   return nodeClass
 }
 
-function isMediaSelectorLinked(
+function isMediaLoaderSelectorLinked(
   node: LGraphNode,
-  nodeClass: CoreMediaNodeClass,
-  widgets?: readonly MediaSelectorWidget[]
+  nodeClass: CoreMediaLoaderClass,
+  widgets?: readonly MediaLoaderSelectorWidget[]
 ): boolean {
-  const selectorName = CORE_MEDIA_SELECTOR_NAMES[nodeClass]
+  const selectorName = CORE_MEDIA_LOADER_WIDGET_NAMES[nodeClass]
   if (widgets) {
     return widgets.some(
       (widget) =>
@@ -44,46 +39,42 @@ function isMediaSelectorLinked(
     )
   }
 
-  return node.inputs.some(
-    (input) => input.widget?.name === selectorName && input.link != null
+  const selectorWidget = node.widgets?.find(
+    (widget) => widget.name === selectorName
   )
+  const selectorSlot = node.getSlotFromWidget(selectorWidget)
+  if (!selectorSlot) return false
+
+  const selectorSlotIndex = node.inputs.indexOf(selectorSlot)
+  return selectorSlotIndex >= 0 && node.isInputConnected(selectorSlotIndex)
 }
 
-export function getLinkedCoreMediaNodeClass(
+export function getLinkedCoreMediaLoaderClass(
   node: LGraphNode,
-  widgets?: readonly MediaSelectorWidget[]
-): CoreMediaNodeClass | undefined {
-  const nodeClass = getCoreMediaNodeClass(node)
-  if (!nodeClass || !isMediaSelectorLinked(node, nodeClass, widgets))
+  widgets?: readonly MediaLoaderSelectorWidget[]
+): CoreMediaLoaderClass | undefined {
+  const nodeClass = getCoreMediaLoaderClass(node)
+  if (!nodeClass || !isMediaLoaderSelectorLinked(node, nodeClass, widgets))
     return undefined
 
   return nodeClass
 }
 
-export function isInputMediaPreview(
-  output: Pick<NodeExecutionOutput, 'images'> | undefined
-): boolean {
-  return Boolean(
-    output?.images?.length &&
-    output.images.every((image) => image?.type === 'input')
-  )
-}
-
-export function shouldHideCoreInputMediaPreview(
+export function shouldHideLinkedCoreMediaInputPreview(
   node: LGraphNode,
   output: Pick<NodeExecutionOutput, 'images'> | undefined,
-  widgets?: readonly MediaSelectorWidget[]
+  widgets?: readonly MediaLoaderSelectorWidget[]
 ): boolean {
-  const nodeClass = getLinkedCoreMediaNodeClass(node, widgets)
+  const nodeClass = getLinkedCoreMediaLoaderClass(node, widgets)
   return (
     (nodeClass === 'LoadImage' || nodeClass === 'LoadVideo') &&
-    isInputMediaPreview(output)
+    isInputPreviewOutput(output)
   )
 }
 
-export function shouldHideCoreLoadAudioPlayer(
+export function shouldHideLinkedCoreLoadAudioPlayer(
   node: LGraphNode,
-  widgets?: readonly MediaSelectorWidget[]
+  widgets?: readonly MediaLoaderSelectorWidget[]
 ): boolean {
-  return getLinkedCoreMediaNodeClass(node, widgets) === 'LoadAudio'
+  return getLinkedCoreMediaLoaderClass(node, widgets) === 'LoadAudio'
 }

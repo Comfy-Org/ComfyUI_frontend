@@ -3,13 +3,11 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCommandStore } from '@/stores/commandStore'
+import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 
-interface ImageMenuAvailability {
-  input: boolean
-  preview: boolean
-}
+type ImageMenuAvailability = Record<CoreMediaMenuActionKind, boolean>
 
 const DEFAULT_IMAGE_MENU_AVAILABILITY: ImageMenuAvailability = {
   input: true,

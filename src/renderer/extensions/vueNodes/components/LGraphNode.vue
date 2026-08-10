@@ -293,9 +293,9 @@ import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import {
-  getLinkedCoreMediaNodeClass,
-  shouldHideCoreInputMediaPreview,
-  shouldHideCoreLoadAudioPlayer
+  getLinkedCoreMediaLoaderClass,
+  shouldHideLinkedCoreLoadAudioPlayer,
+  shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
@@ -519,7 +519,7 @@ let unsubscribeLayoutChange: (() => void) | null = null
 
 onMounted(() => {
   initSizeStyles()
-  if (linkedCoreMediaNodeClass.value) void fitNodeToVisibleContent()
+  if (linkedCoreMediaLoaderClass.value) void fitNodeToVisibleContent()
   unsubscribeLayoutChange = layoutStore.onNodeChange(
     nodeData.id,
     handleLayoutChange
@@ -575,7 +575,7 @@ watch(isCollapsed, (collapsed) => {
   element.style.setProperty(`--node-height${to}`, currentHeight)
   element.style.setProperty(`--node-height${from}`, '')
 
-  if (!collapsed && linkedCoreMediaNodeClass.value)
+  if (!collapsed && linkedCoreMediaLoaderClass.value)
     void fitNodeToVisibleContent()
 })
 
@@ -734,21 +734,22 @@ const lgraphNode = computed(() => {
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
-const linkedCoreMediaNodeClass = computed(() => {
+const linkedCoreMediaLoaderClass = computed(() => {
   const node = lgraphNode.value
   return node
-    ? getLinkedCoreMediaNodeClass(node, nodeData.widgets ?? [])
+    ? getLinkedCoreMediaLoaderClass(node, nodeData.widgets ?? [])
     : undefined
 })
 
-watch(linkedCoreMediaNodeClass, (nodeClass) => {
+watch(linkedCoreMediaLoaderClass, (nodeClass) => {
   if (nodeClass) void fitNodeToVisibleContent()
 })
 
 const renderedNodeData = computed(() => {
   const node = lgraphNode.value
   const widgets = nodeData.widgets ?? []
-  if (!node || !shouldHideCoreLoadAudioPlayer(node, widgets)) return nodeData
+  if (!node || !shouldHideLinkedCoreLoadAudioPlayer(node, widgets))
+    return nodeData
 
   return {
     ...nodeData,
@@ -838,7 +839,7 @@ const nodeMedia = computed(() => {
     return undefined
 
   if (node instanceof SubgraphNode) return undefined
-  if (shouldHideCoreInputMediaPreview(node, newOutputs, nodeData.widgets))
+  if (shouldHideLinkedCoreMediaInputPreview(node, newOutputs, nodeData.widgets))
     return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)

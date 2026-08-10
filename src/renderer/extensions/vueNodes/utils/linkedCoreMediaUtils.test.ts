@@ -1,13 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import {
+  createMockLGraphNode,
+  createMockNodeInputSlot
+} from '@/utils/__tests__/litegraphTestUtils'
 
 import {
-  getLinkedCoreMediaNodeClass,
-  isInputMediaPreview,
-  shouldHideCoreInputMediaPreview,
-  shouldHideCoreLoadAudioPlayer
+  getLinkedCoreMediaLoaderClass,
+  shouldHideLinkedCoreLoadAudioPlayer,
+  shouldHideLinkedCoreMediaInputPreview
 } from './linkedCoreMediaUtils'
 
 interface MediaNodeOptions {
@@ -21,22 +23,34 @@ function mediaNode({
   linkedInputName,
   nodeClass
 }: MediaNodeOptions): LGraphNode {
-  return {
+  const selectorWidget = linkedInputName
+    ? { name: linkedInputName, options: {}, type: 'combo', y: 0 }
+    : undefined
+  const selectorInput = linkedInputName
+    ? createMockNodeInputSlot({
+        name: linkedInputName,
+        widget: { name: linkedInputName }
+      })
+    : undefined
+
+  return createMockLGraphNode({
     constructor: {
       comfyClass: nodeClass,
       nodeData: { isCoreNode }
     },
-    inputs: linkedInputName
-      ? [{ link: 1, widget: { name: linkedInputName } }]
-      : []
-  } as unknown as LGraphNode
+    getSlotFromWidget: (widget: unknown) =>
+      widget === selectorWidget ? selectorInput : undefined,
+    inputs: selectorInput ? [selectorInput] : [],
+    isInputConnected: vi.fn(() => linkedInputName !== undefined),
+    widgets: selectorWidget ? [selectorWidget] : []
+  })
 }
 
 function linkedWidget(name: string) {
   return { name, slotMetadata: { index: 0, linked: true, type: 'STRING' } }
 }
 
-describe(getLinkedCoreMediaNodeClass, () => {
+describe(getLinkedCoreMediaLoaderClass, () => {
   it.for([
     { nodeClass: 'LoadImage', selector: 'image' },
     { nodeClass: 'LoadVideo', selector: 'file' },
@@ -46,9 +60,9 @@ describe(getLinkedCoreMediaNodeClass, () => {
     ({ nodeClass, selector }) => {
       const node = mediaNode({ nodeClass })
 
-      expect(getLinkedCoreMediaNodeClass(node, [linkedWidget(selector)])).toBe(
-        nodeClass
-      )
+      expect(
+        getLinkedCoreMediaLoaderClass(node, [linkedWidget(selector)])
+      ).toBe(nodeClass)
     }
   )
 
@@ -59,7 +73,7 @@ describe(getLinkedCoreMediaNodeClass, () => {
       nodeClass: 'LoadImage'
     })
 
-    expect(getLinkedCoreMediaNodeClass(node)).toBeUndefined()
+    expect(getLinkedCoreMediaLoaderClass(node)).toBeUndefined()
   })
 
   it.for([
@@ -75,14 +89,14 @@ describe(getLinkedCoreMediaNodeClass, () => {
     ({ nodeClass, selector }) => {
       const node = mediaNode({ linkedInputName: selector, nodeClass })
 
-      expect(getLinkedCoreMediaNodeClass(node)).toBeUndefined()
+      expect(getLinkedCoreMediaLoaderClass(node)).toBeUndefined()
     }
   )
 
   it('ignores an unrelated linked widget', () => {
     const node = mediaNode({ linkedInputName: 'mask', nodeClass: 'LoadImage' })
 
-    expect(getLinkedCoreMediaNodeClass(node)).toBeUndefined()
+    expect(getLinkedCoreMediaLoaderClass(node)).toBeUndefined()
   })
 
   it('reads the live selector input and restores availability on disconnect', () => {
@@ -91,39 +105,16 @@ describe(getLinkedCoreMediaNodeClass, () => {
       nodeClass: 'LoadAudio'
     })
 
-    expect(shouldHideCoreLoadAudioPlayer(node)).toBe(true)
+    expect(shouldHideLinkedCoreLoadAudioPlayer(node)).toBe(true)
+    expect(node.isInputConnected).toHaveBeenCalledWith(0)
 
-    node.inputs[0].link = null
+    vi.mocked(node.isInputConnected).mockReturnValue(false)
 
-    expect(shouldHideCoreLoadAudioPlayer(node)).toBe(false)
+    expect(shouldHideLinkedCoreLoadAudioPlayer(node)).toBe(false)
   })
 })
 
-describe(isInputMediaPreview, () => {
-  const previewCases: {
-    expected: boolean
-    output: Pick<NodeExecutionOutput, 'images'> | undefined
-  }[] = [
-    {
-      expected: true,
-      output: { images: [{ type: 'input' }, { type: 'input' }] }
-    },
-    { expected: false, output: { images: [{ type: 'output' }] } },
-    {
-      expected: false,
-      output: { images: [{ type: 'input' }, { type: 'output' }] }
-    },
-    { expected: false, output: { images: [] } },
-    { expected: false, output: undefined }
-  ]
-
-  it.for(previewCases)(
-    'classifies preview provenance $expected',
-    ({ output, expected }) => {
-      expect(isInputMediaPreview(output)).toBe(expected)
-    }
-  )
-
+describe(shouldHideLinkedCoreMediaInputPreview, () => {
   it.for([
     { nodeClass: 'LoadImage', selector: 'image' },
     { nodeClass: 'LoadVideo', selector: 'file' }
@@ -133,17 +124,23 @@ describe(isInputMediaPreview, () => {
       const node = mediaNode({ linkedInputName: selector, nodeClass })
 
       expect(
-        shouldHideCoreInputMediaPreview(node, { images: [{ type: 'input' }] })
+        shouldHideLinkedCoreMediaInputPreview(node, {
+          images: [{ type: 'input' }]
+        })
       ).toBe(true)
       expect(
-        shouldHideCoreInputMediaPreview(node, { images: [{ type: 'output' }] })
+        shouldHideLinkedCoreMediaInputPreview(node, {
+          images: [{ type: 'output' }]
+        })
       ).toBe(false)
       expect(
-        shouldHideCoreInputMediaPreview(node, {
+        shouldHideLinkedCoreMediaInputPreview(node, {
           images: [{ type: 'input' }, { type: 'output' }]
         })
       ).toBe(false)
-      expect(shouldHideCoreInputMediaPreview(node, { images: [] })).toBe(false)
+      expect(shouldHideLinkedCoreMediaInputPreview(node, { images: [] })).toBe(
+        false
+      )
     }
   )
 })

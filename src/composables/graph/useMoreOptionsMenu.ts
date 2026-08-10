@@ -4,8 +4,8 @@ import type { Ref } from 'vue'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
-  getLinkedCoreMediaNodeClass,
-  shouldHideCoreInputMediaPreview
+  getLinkedCoreMediaLoaderClass,
+  shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -185,23 +185,22 @@ export function useMoreOptionsMenu() {
     // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
     const node: LGraphNode | undefined = selectedNodes.value[0]
-    const linkedCoreMediaNodeClass = node
-      ? getLinkedCoreMediaNodeClass(node)
+    const linkedCoreMediaLoaderClass = node
+      ? getLinkedCoreMediaLoaderClass(node)
       : undefined
-    const inputMediaPreviewUnavailable = node
-      ? shouldHideCoreInputMediaPreview(
+    const hideLinkedInputPreview = node
+      ? shouldHideLinkedCoreMediaInputPreview(
           node,
           nodeOutputStore.getNodeOutputs(node)
         )
       : false
     const unavailableCoreMediaActionKinds = new Set<CoreMediaMenuActionKind>()
     if (
-      linkedCoreMediaNodeClass === 'LoadImage' ||
-      linkedCoreMediaNodeClass === 'LoadVideo'
+      linkedCoreMediaLoaderClass === 'LoadImage' ||
+      linkedCoreMediaLoaderClass === 'LoadVideo'
     )
       unavailableCoreMediaActionKinds.add('input')
-    if (inputMediaPreviewUnavailable)
-      unavailableCoreMediaActionKinds.add('preview')
+    if (hideLinkedInputPreview) unavailableCoreMediaActionKinds.add('preview')
     if (
       selectedNodes.value.length === 1 &&
       !groupContext &&
@@ -293,9 +292,9 @@ export function useMoreOptionsMenu() {
       options.push(
         ...getImageMenuOptions(selectedNodes.value[0], {
           input:
-            linkedCoreMediaNodeClass !== 'LoadImage' &&
-            linkedCoreMediaNodeClass !== 'LoadVideo',
-          preview: !inputMediaPreviewUnavailable
+            linkedCoreMediaLoaderClass !== 'LoadImage' &&
+            linkedCoreMediaLoaderClass !== 'LoadVideo',
+          preview: !hideLinkedInputPreview
         })
       )
       options.push({ type: 'divider' })
