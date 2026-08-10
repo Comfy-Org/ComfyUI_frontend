@@ -286,6 +286,9 @@ jobs:
             9)
               grep_args=(--grep 'custom node: was-node-suite-comfyui @custom-nodes.*Curated workflow execution: completes without error$')
               ;;
+            10)
+              grep_args=(--grep 'custom node: ComfyUI-Impact-Pack @custom-nodes.*Pack startup/load: expected nodes register, render in both renderers, and frontend extensions load$')
+              ;;
           esac
           # workers=1: the auto-run tier needs exclusive backend-queue access;
           # parallel workers interrupt each other's executions.
@@ -321,7 +324,7 @@ jobs:
             exit 1
           fi
           expected_tests=34
-          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" || "$ROW" = "6" || "$ROW" = "7" || "$ROW" = "8" || "$ROW" = "9" ]]; then
+          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" || "$ROW" = "6" || "$ROW" = "7" || "$ROW" = "8" || "$ROW" = "9" || "$ROW" = "10" ]]; then
             expected_tests=1
           fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
@@ -398,15 +401,10 @@ jobs:
           jq -r '.. | objects | .attachments? // empty | .[]? | select(.body? != null) | .body | @base64d' custom-nodes-results.json >> /tmp/failure-evidence.txt
           skipped=$(jq '.stats.skipped' custom-nodes-results.json)
           if [ "$ROW" = "10" ]; then
-            # Row 10's red is the skip gate, not a test failure: the renamed
-            # node-class key makes its tests skip. skipped != 0 alone is
-            # flake-satisfiable (an install failure also skips), so ALSO
-            # require the renamed key itself in the results - the rename
-            # deterministically surfaces it (a never-before-seen node type
-            # fails the geometry-baseline check by name, run 30305166953).
-            [ "$skipped" != "0" ] || { echo "::error::row 10: no tests skipped - the registration break was NOT caught"; exit 1; }
-            grep -q 'ImpactIntDETECTIONPROOF' /tmp/failure-evidence.txt || { echo "::error::row 10: tests skipped but the renamed key never surfaced in failure evidence - the skips are not attributable to this break"; exit 1; }
-            echo "row 10 caught: $skipped test(s) skipped on the renamed node key"
+            jq -r '[.. | objects | .annotations? // empty | .[]? | .description? // empty | strings] | .[]' custom-nodes-results.json >> /tmp/failure-evidence.txt
+            [ "$skipped" = "1" ] || { echo "::error::row 10: expected exactly one skipped registration witness, got $skipped"; exit 1; }
+            grep -q 'ComfyUI-Impact-Pack not installed on this backend (missing: ImpactInt)' /tmp/failure-evidence.txt || { echo "::error::row 10: the isolated skip did not name the missing ImpactInt registration"; exit 1; }
+            echo "row 10 caught: one startup/registration witness skipped on missing ImpactInt"
             exit 0
           fi
           [ "$SUITE_OUTCOME" = "failure" ] || { echo "::error::row $ROW: suite outcome '$SUITE_OUTCOME' - the break did NOT red the suite"; exit 1; }
