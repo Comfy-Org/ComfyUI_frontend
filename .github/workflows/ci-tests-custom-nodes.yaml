@@ -283,6 +283,9 @@ jobs:
             8)
               grep_args=(--grep 'all nodes: ComfyUI-Custom-Scripts @custom-nodes.*every registered node mounts, survives save/reload, and executes$')
               ;;
+            9)
+              grep_args=(--grep 'custom node: was-node-suite-comfyui @custom-nodes.*Curated workflow execution: completes without error$')
+              ;;
           esac
           # workers=1: the auto-run tier needs exclusive backend-queue access;
           # parallel workers interrupt each other's executions.
@@ -318,7 +321,7 @@ jobs:
             exit 1
           fi
           expected_tests=34
-          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" || "$ROW" = "6" || "$ROW" = "7" || "$ROW" = "8" ]]; then
+          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" || "$ROW" = "6" || "$ROW" = "7" || "$ROW" = "8" || "$ROW" = "9" ]]; then
             expected_tests=1
           fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
@@ -416,12 +419,7 @@ jobs:
             6) pat='Prompt outputs failed validation; ImpactInt: value; ImpactFloat: value' ;;
             7) pat="Error calling extension 'Comfy\.NodeBadge' method 'afterConfigureGraph'.*DETECTION PROOF: afterConfigureGraph crash" ;;
             8) pat='DETECTION PROOF \(row 8\): pack showText\.js onConfigure failure' ;;
-            # Row 9 names its exact target: the injected raise MESSAGE does
-            # not propagate into the results json (only the exception class
-            # does, run 30305166953), and a bare EXECUTION_ERROR would match
-            # any node raising for any reason. The node and exception are
-            # ours by construction, so this stays stable.
-            9) pat='Constant Number: EXECUTION_ERROR \(Constant Number: ValueError\)' ;;
+            9) pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
             11) pat='not registered - pack JS did not load' ;;
             12) pat='input count grows by one on connect' ;;
             # S13: pack JS reaction to unplug vanishes - only the deltas see it.
