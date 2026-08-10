@@ -65,14 +65,16 @@ python main.py --port 8188 --cpu
 
 #### Containerized test backend
 
-Run the same ComfyUI backend used by Playwright CI:
+Start a containerized ComfyUI backend for Playwright:
 
 ```bash
 pnpm container:start
 ```
 
-This mounts `tools/devtools` and starts ComfyUI at `localhost:8188`. Use one
-terminal for the frontend and another for the tests:
+The launcher pulls the backend image used by CI when available. Otherwise, it
+builds a source fallback that may differ from the published CI image. It mounts
+`tools/devtools` and starts ComfyUI at `localhost:8188`. Use one terminal for
+the frontend and another for the tests:
 
 ```bash
 pnpm dev

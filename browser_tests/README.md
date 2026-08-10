@@ -46,8 +46,8 @@ cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 
 ### Containerized ComfyUI
 
-To use the same ComfyUI backend as CI instead of maintaining a separate install,
-install and start Docker, then run:
+To run a containerized ComfyUI backend instead of maintaining a separate
+install, install and start Docker, then run:
 
 ```bash
 pnpm container:start
@@ -64,8 +64,9 @@ If the image is not cached, the launcher tries to pull it from GHCR. It uses
 `GH_TOKEN` and gets the matching username from `gh api user`.
 `COMFY_CI_CONTAINER_TOKEN` and `COMFY_CI_CONTAINER_USER` take precedence when
 set. If credentials are missing or the pull fails, the launcher says why and
-builds the pinned public source instead. The source build can take several
-minutes and uses about 10 GB, plus Docker build cache.
+builds the matching release from source instead. This fallback may differ from
+the published CI image. The source build can take several minutes and uses about
+10 GB, plus Docker build cache.
 
 ### Remote agent containers
 
