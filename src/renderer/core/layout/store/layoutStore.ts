@@ -165,6 +165,27 @@ class LayoutStoreImpl implements LayoutStore {
     return this.slotLayouts.size > 0
   }
 
+  /**
+   * Number of tracked nodes, without materialising their layouts.
+   * Callers that only need a count or emptiness check should prefer this over
+   * `getAllNodes()`, which rebuilds the full layout map on every access.
+   */
+  get nodeCount(): number {
+    return this.ynodes.size
+  }
+
+  /**
+   * Counter bumped on every layout mutation, for use as a cache key.
+   *
+   * Deliberately a plain number rather than a ref: consumers poll it to decide
+   * whether a derived structure is stale, and must not re-run reactively on
+   * every mutation. Anything deriving node geometry from this should also read
+   * that geometry from this store, so key and data stay consistent.
+   */
+  get layoutVersion(): number {
+    return this.version
+  }
+
   setPendingSlotSync(value: boolean): void {
     this._pendingSlotSync = value
   }
