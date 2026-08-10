@@ -113,7 +113,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   current?.name ?? t('agent.chooseWorkflow')
                 }}</span>
                 <span
-                  v-if="current?.modified"
+                  v-if="current?.isPersisted === false || current?.modified"
                   data-testid="unsaved-dot"
                   class="flex size-3.5 shrink-0 items-center justify-center"
                 >
@@ -173,6 +173,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
               <span
                 v-if="
                   tabActivity.unseenModifiedPaths.has(tab.path) ||
+                  tab.isPersisted === false ||
                   tab.modified ||
                   tab.path === current?.path
                 "
@@ -187,7 +188,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   <span class="size-2 rounded-full bg-primary-background" />
                 </span>
                 <span
-                  v-else-if="tab.modified"
+                  v-else-if="tab.isPersisted === false || tab.modified"
                   data-testid="unsaved-dot"
                   class="flex size-4 shrink-0 items-center justify-center"
                 >

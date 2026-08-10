@@ -198,7 +198,12 @@ function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
 const activeTab = computed<ActiveTab | null>(() => {
   const active = workflowStore.activeWorkflow
   return active
-    ? { path: active.path, name: active.filename, modified: active.isModified }
+    ? {
+        path: active.path,
+        name: active.filename,
+        isPersisted: active.isPersisted,
+        modified: active.isModified
+      }
     : null
 })
 
@@ -206,6 +211,7 @@ const workflowTabs = computed<ActiveTab[]>(() =>
   workflowStore.openWorkflows.map((tab) => ({
     path: tab.path,
     name: tab.filename,
+    isPersisted: tab.isPersisted,
     modified: tab.isModified
   }))
 )
