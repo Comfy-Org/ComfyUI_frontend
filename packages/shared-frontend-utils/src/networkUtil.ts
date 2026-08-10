@@ -10,11 +10,25 @@ export const checkUrlReachable = async (url: string): Promise<boolean> => {
   }
 }
 
+/**
+ * A CDN implementation detail, not a contract we own. The durable form is a
+ * first-party endpoint echoing `CF-IPCountry`.
+ */
+const CLIENT_COUNTRY_URL = 'https://cloud.comfy.org/cdn-cgi/trace'
+
 /** Bounds every probe leg; two previously had none. */
 const PROBE_TIMEOUT_MS = 2000
 
 /** Baidu answering this fast implies a China route. */
 const CHINA_LATENCY_MS = 150
+
+const parseTraceCountry = (body: string): string | undefined =>
+  body
+    .split('\n')
+    .find((line) => line.startsWith('loc='))
+    ?.slice('loc='.length)
+    .trim()
+    .toUpperCase() || undefined
 
 /**
  * The abort signal alone is not enough: a request the browser never resolves
@@ -41,16 +55,29 @@ async function fetchWithin(url: string, init: RequestInit): Promise<Response> {
   }
 }
 
+/** ISO country from the CDN edge, or `undefined` when it cannot answer. */
+export async function getClientCountry(): Promise<string | undefined> {
+  try {
+    const response = await fetchWithin(CLIENT_COUNTRY_URL, {
+      cache: 'no-store'
+    })
+    if (!response.ok) return undefined
+
+    return parseTraceCountry(await response.text())
+  } catch {
+    return undefined
+  }
+}
+
 const probe = (url: string) =>
   fetchWithin(url, { mode: 'no-cors', cache: 'no-cache' })
 
 /**
- * A best-effort UX hint, unsound both ways: a VPN user in China reaches Google,
- * and a `zh-CN` user anywhere is blocked whenever Google is briefly
- * unreachable. Every leg is bounded, so this always settles — callers must not
- * add a timeout that could pre-empt a slow but real answer.
+ * Fallback for when the edge cannot answer. Unsound both ways: a VPN user in
+ * China reaches Google, and a `zh-CN` user anywhere is blocked whenever Google
+ * is briefly unreachable.
  */
-export async function isInChina(): Promise<boolean> {
+async function isInChinaByProbe(): Promise<boolean> {
   const isChineseLocale = navigator.language.toLowerCase().startsWith('zh-cn')
 
   try {
@@ -67,4 +94,15 @@ export async function isInChina(): Promise<boolean> {
       return isChineseLocale
     }
   }
+}
+
+/**
+ * Prefers the edge's geo-IP, falling back to the heuristic. Always settles, so
+ * callers must not add a timeout that could pre-empt a slow but real answer.
+ */
+export async function isInChina(): Promise<boolean> {
+  const country = await getClientCountry()
+  if (country !== undefined) return country === 'CN'
+
+  return isInChinaByProbe()
 }
