@@ -175,6 +175,25 @@ test.describe('Cloud email sign-in', { tag: '@cloud' }, () => {
     await cloudAppExpect(page).toHaveURL(/deepLink=1/)
   })
 
+  test('a wrong password surfaces a visible error and stays on the form', async ({
+    page
+  }) => {
+    await bootSignedOut(page)
+    await mockFirebasePasswordSignIn(page, 'wrong-password')
+
+    await page.goto(`${APP_URL}/cloud/login`)
+    await expect(page).toHaveURL(/\/cloud\/login/)
+
+    await submitEmailSignIn(page)
+
+    // Before the banner was wired, this failure was toast-only and the user was
+    // left staring at an unchanged form with no idea what went wrong.
+    await expect(
+      page.getByText(/invalid login credentials|password you entered/i)
+    ).toBeVisible()
+    await expect(page).toHaveURL(/\/cloud\/login/)
+  })
+
   test('an already-signed-in visitor to /cloud/login is passed through to the app', async ({
     page
   }) => {
