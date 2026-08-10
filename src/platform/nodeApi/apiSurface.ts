@@ -157,6 +157,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'selection',
   'selector',
   'self',
+  'sendToPrompt',
   'serialize',
   'set',
   'setBgColor',

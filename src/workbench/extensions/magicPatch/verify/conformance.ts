@@ -159,7 +159,32 @@ const isApiMutator = (name: string) =>
  * fabric.js, and flagging it failed a correct conversion.
  */
 const PROTOTYPE_PATCH =
-  /(?<![.\w$])[A-Za-z_$]\w*\.prototype\.([A-Za-z_]\w*)\s*=/g
+  /(?<![.\w$])([A-Za-z_$]\w*)\.prototype\.([A-Za-z_]\w*)\s*=/g
+
+/**
+ * Extending a JS built-in is the pack's own business, not the old surface.
+ * easy-use ships `Number.prototype.div`, which read as an unretired patch.
+ */
+const BUILTIN_PROTOTYPES = new Set([
+  'Array',
+  'Boolean',
+  'Date',
+  'Error',
+  'Function',
+  'Map',
+  'Number',
+  'Object',
+  'Promise',
+  'RegExp',
+  'Set',
+  'String',
+  'Symbol'
+])
+
+const patchedMembers = (source: string) =>
+  [...source.matchAll(PROTOTYPE_PATCH)]
+    .filter((m) => !BUILTIN_PROTOTYPES.has(m[1]))
+    .map((m) => m[2])
 
 /**
  * Source with comments removed, for the checks that scan text for API usage.
@@ -275,7 +300,12 @@ function withoutComments(source: string): string {
 const LEGACY_GLOBALS: readonly [string, RegExp][] = [
   ['window.comfyAPI', /\bwindow\s*\.\s*comfyAPI\b/],
   ['app.registerExtension', /\bapp\s*\.\s*registerExtension\s*\(/],
-  ['/scripts/ import', /\bfrom\s*['"](?:\.\.\/)*(?:\/)?scripts\//]
+  ['/scripts/ import', /\bfrom\s*['"](?:\.\.\/)*(?:\/)?scripts\//],
+  // The internal node array, excluded in favour of `graph.nodes()`. A
+  // conversion that keeps reaching it reads as converted and is not: on a
+  // handle `graph._nodes` is undefined, so the `.filter()` that always follows
+  // throws. Unambiguous enough to match by name.
+  ['graph._nodes', /\bgraph\s*\.\s*_nodes\b/]
 ]
 
 const CAPABILITY_PATTERNS: readonly [string, RegExp][] = [
@@ -371,9 +401,7 @@ const checks: readonly Check[] = [
       // The whole point is that the unpublished surface becomes deletable. A
       // conversion that rewrites a function body but leaves the prototype
       // assignment that reaches it has moved nothing.
-      const patched = [
-        ...withoutComments(ctx.converted).matchAll(PROTOTYPE_PATCH)
-      ].map((m) => m[1])
+      const patched = patchedMembers(withoutComments(ctx.converted))
       if (!patched.length) {
         return result(
           'retires-the-old-surface',
@@ -381,9 +409,7 @@ const checks: readonly Check[] = [
           'No prototype patching remains.'
         )
       }
-      const before = [
-        ...withoutComments(ctx.original).matchAll(PROTOTYPE_PATCH)
-      ].length
+      const before = patchedMembers(withoutComments(ctx.original)).length
       return result(
         'retires-the-old-surface',
         'failed',
@@ -451,9 +477,26 @@ const checks: readonly Check[] = [
       // handle has no such property — the write vanishes, or the whole pack
       // fails to register. kjnodes' appearance.js was converted this way and
       // took every type in the pack down with it.
-      const offenders = [
-        ...withoutComments(ctx.converted).matchAll(PROPERTY_WRITE)
-      ].map((m) => `${m[1]}.${m[2]}`)
+      // A pack may keep its own object under one of these names — lora-manager
+      // builds a `widget` facade with a `set value` that forwards into the
+      // mounted widget's accessor, which is correct and was flagged anyway.
+      // Something declared as a local object literal is the pack's, not ours.
+      // Strings are blanked as well as comments: this check scans for
+      // `x.value =`, which also matches inside a log message. crt-nodes'
+      // `Syncing ${p}: widget.value=${w.getValue()}` read as a property write
+      // while the code beside it correctly called the accessor.
+      const source = withoutComments(ctx.converted).replace(
+        /(['"`])(?:\\.|(?!\1)[\s\S])*?\1/g,
+        (m) => m[0] + m[0]
+      )
+      const ownObjects = new Set(
+        [...source.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*\{/g)].map(
+          (m) => m[1]
+        )
+      )
+      const offenders = [...source.matchAll(PROPERTY_WRITE)]
+        .filter((m) => !ownObjects.has(m[1]))
+        .map((m) => `${m[1]}.${m[2]}`)
       return offenders.length
         ? result(
             'handles-use-accessors',

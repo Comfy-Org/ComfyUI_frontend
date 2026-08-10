@@ -50,6 +50,17 @@ describe('slot handles', () => {
       expect(new Set(inputs.ids()).size).toBe(2)
     })
 
+    it('takes a union type and connects from a member of it', () => {
+      // rgthree ships `addInput('input', ['IMAGE','LATENT','MASK'])`. litegraph
+      // compares types with `String(type).split(',')`, so the array and the
+      // comma string are the same slot to every connection check.
+      const union = inputs.add('either', ['IMAGE', 'LATENT', 'MASK'])
+
+      expect(union.type).toBe('IMAGE,LATENT,MASK')
+      expect(source.connect(0, target, union.index)).toBeTruthy()
+      expect(inputs.byName('either')?.isConnected).toBe(true)
+    })
+
     it('looks up by name, id and explicit index', () => {
       expect(inputs.byName('mask')?.index).toBe(1)
       expect(inputs.at(0)?.name).toBe('image')

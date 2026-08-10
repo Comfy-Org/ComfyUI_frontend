@@ -26,10 +26,17 @@ export interface BackendHandle {
    * Absolute URL for a file the host serves, rather than an API route.
    *
    * Distinct from `url()` because that one addresses the API and prepends
-   * `/api`. A pack's own assets are static files under
-   * `/extensions/<pack>/…`, so building them through `url()` produced
-   * `/api/extensions/…`, which 404s. Every pack that ships an image, a font,
-   * an HTML page or a model needs this.
+   * `/api`, so a static path built through it produced `/api/extensions/…`,
+   * which 404s.
+   *
+   * This is for a path the caller already knows absolutely. It is *not* the
+   * way a pack should reach its own neighbouring files: the host serves those
+   * from `/extensions/<install-dir>/`, and that directory name is chosen when
+   * the pack is installed and can be renamed, so it is not knowable from
+   * source. `new URL('x.css', import.meta.url)` resolves against the module's
+   * real location and stays correct. One pack ships two spellings of its own
+   * directory with an `onerror` fallback between them, which is what guessing
+   * costs.
    */
   assetUrl(route: string): string
   /**

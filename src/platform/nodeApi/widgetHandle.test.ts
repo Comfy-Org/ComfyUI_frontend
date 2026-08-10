@@ -433,6 +433,24 @@ describe('mounted and canvas widgets', () => {
     expect(node.widgets![1].serialize).toBe(true)
   })
 
+  it('can be saved in the workflow without being sent in the prompt', () => {
+    // The two flags are distinct in litegraph and one boolean could not say
+    // this: a readout the node fills in from its own execution result belongs
+    // in the saved workflow, but has no business being an input on the next
+    // queue. It is what `addDOMWidget(…, { serialize: false })` did.
+    widgets.mount({
+      name: 'readout',
+      defaultValue: 'shown',
+      serialize: true,
+      sendToPrompt: false,
+      render: () => {}
+    })
+
+    const raw = node.widgets![0]
+    expect(raw.serialize).toBe(true)
+    expect(raw.options.serialize).toBe(false)
+  })
+
   it('tells a value-holding mount when the value changed elsewhere', () => {
     const seen = vi.fn()
     widgets.mount({
