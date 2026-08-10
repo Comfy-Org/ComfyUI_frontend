@@ -1,16 +1,12 @@
 import { useThrottleFn } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { api } from '@/scripts/api'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
 
-import { MinimapDataSourceFactory } from '../data/MinimapDataSourceFactory'
 import type { UpdateFlags } from '../types'
 
 interface GraphCallbacks {
@@ -19,22 +15,70 @@ interface GraphCallbacks {
   onConnectionChange?: (node: LGraphNode) => void
 }
 
+/**
+ * Rolling digest of every node's position, size and rendered state.
+ *
+ * Reads `graph._nodes` directly and allocates nothing, so it stays cheap on
+ * large graphs. Digests can in principle collide, which would drop a single
+ * minimap refresh — acceptable for an approximate overview, and the next
+ * change re-syncs it.
+ */
+function computeLayoutDigest(graph: LGraph): number {
+  let digest = graph._nodes.length
+  for (const node of graph._nodes) {
+    digest = (Math.imul(digest, 31) + node.pos[0]) | 0
+    digest = (Math.imul(digest, 31) + node.pos[1]) | 0
+    digest = (Math.imul(digest, 31) + node.size[0]) | 0
+    digest = (Math.imul(digest, 31) + node.size[1]) | 0
+    digest = (Math.imul(digest, 31) + (node.mode ?? 0)) | 0
+    digest = (Math.imul(digest, 31) + (node.has_errors ? 1 : 0)) | 0
+  }
+  return digest
+}
+
+/**
+ * Rolling digest of link endpoints. Counting links alone would miss a rewire
+ * that keeps the total unchanged.
+ */
+function computeLinkDigest(graph: LGraph): number {
+  // Declared as a Map, but plain objects reach this at runtime too.
+  const links: unknown = graph.links
+  if (!links || typeof links !== 'object') return 0
+
+  let digest = 0
+  const mix = (link: unknown) => {
+    if (!link || typeof link !== 'object') return
+    const { origin_id: origin, target_id: target } = link as {
+      origin_id?: unknown
+      target_id?: unknown
+    }
+    // Non-numeric ids coerce to 0 via `| 0`; those rewires are still caught by
+    // the onConnectionChange hook.
+    digest = (Math.imul(digest, 31) + Number(origin)) | 0
+    digest = (Math.imul(digest, 31) + Number(target)) | 0
+  }
+
+  if (links instanceof Map) {
+    for (const link of links.values()) mix(link)
+  } else {
+    for (const link of Object.values(links)) mix(link)
+  }
+
+  return digest
+}
+
 export function useMinimapGraph(
   graph: Ref<LGraph | null>,
   onGraphChanged: () => void
 ) {
-  const nodeStatesCache = new Map<NodeId, string>()
-  const linksCache = ref<string>('')
-  const lastNodeCount = ref(0)
+  let layoutDigest = 0
+  let linkDigest = -1
   const updateFlags = ref<UpdateFlags>({
     bounds: false,
     nodes: false,
     connections: false,
     viewport: false
   })
-
-  // Track LayoutStore version for change detection
-  const layoutStoreVersion = layoutStore.getVersion()
 
   // Cleanup restores originals only when our wrapper is still on top, and
   // marks any buried wrapper inert via `entry.live` so it can't fire dead work.
@@ -66,13 +110,12 @@ export function useMinimapGraph(
     const onPropertyChanged = (
       e: CustomEvent<LGraphEventMap['node:property:changed']>
     ) => {
-      const { property, nodeId } = e.detail
+      const { property } = e.detail
       if (
         property === 'mode' ||
         property === 'bgcolor' ||
         property === 'color'
       ) {
-        nodeStatesCache.delete(toNodeId(nodeId))
         void handleGraphChangedThrottled()
       }
     }
@@ -93,9 +136,8 @@ export function useMinimapGraph(
 
     wrappers.onNodeRemoved = useChainCallback(
       originals.onNodeRemoved,
-      function (node: LGraphNode) {
+      function () {
         if (!entry.live) return
-        nodeStatesCache.delete(node.id)
         void handleGraphChangedThrottled()
       }
     )
@@ -139,49 +181,16 @@ export function useMinimapGraph(
     const g = graph.value
     if (!g) return false
 
-    let structureChanged = false
-    let positionChanged = false
-    let connectionChanged = false
+    const layout = computeLayoutDigest(g)
+    const links = computeLinkDigest(g)
 
-    // Use unified data source for change detection
-    const dataSource = MinimapDataSourceFactory.create(g)
+    const layoutChanged = layout !== layoutDigest
+    const connectionChanged = links !== linkDigest
 
-    // Check for node count changes
-    const currentNodeCount = dataSource.getNodeCount()
-    if (currentNodeCount !== lastNodeCount.value) {
-      structureChanged = true
-      lastNodeCount.value = currentNodeCount
-    }
+    layoutDigest = layout
+    linkDigest = links
 
-    // Check for node position/size changes
-    const nodes = dataSource.getNodes()
-    for (const node of nodes) {
-      const nodeId = node.id
-      const currentState = `${node.x},${node.y},${node.width},${node.height}`
-
-      if (nodeStatesCache.get(nodeId) !== currentState) {
-        positionChanged = true
-        nodeStatesCache.set(nodeId, currentState)
-      }
-    }
-
-    // Clean up removed nodes from cache
-    const currentNodeIds = new Set(nodes.map((n) => n.id))
-    for (const [nodeId] of nodeStatesCache) {
-      if (!currentNodeIds.has(nodeId)) {
-        nodeStatesCache.delete(nodeId)
-        structureChanged = true
-      }
-    }
-
-    // TODO: update when Layoutstore tracks links
-    const currentLinks = JSON.stringify(g.links || {})
-    if (currentLinks !== linksCache.value) {
-      connectionChanged = true
-      linksCache.value = currentLinks
-    }
-
-    if (structureChanged || positionChanged) {
+    if (layoutChanged) {
       updateFlags.value.bounds = true
       updateFlags.value.nodes = true
     }
@@ -190,28 +199,23 @@ export function useMinimapGraph(
       updateFlags.value.connections = true
     }
 
-    return structureChanged || positionChanged || connectionChanged
+    return layoutChanged || connectionChanged
   }
 
   const init = () => {
     setupEventListeners()
     api.addEventListener('graphChanged', handleGraphChangedThrottled)
-
-    watch(layoutStoreVersion, () => {
-      void handleGraphChangedThrottled()
-    })
   }
 
   const destroy = () => {
     cleanupEventListeners()
     api.removeEventListener('graphChanged', handleGraphChangedThrottled)
-    nodeStatesCache.clear()
+    clearCache()
   }
 
   const clearCache = () => {
-    nodeStatesCache.clear()
-    linksCache.value = ''
-    lastNodeCount.value = 0
+    layoutDigest = 0
+    linkDigest = -1
   }
 
   return {

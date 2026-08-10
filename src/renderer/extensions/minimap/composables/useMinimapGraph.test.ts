@@ -7,6 +7,7 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
 import { api } from '@/scripts/api'
 import {
@@ -299,6 +300,34 @@ describe('useMinimapGraph', () => {
 
     const hasChanges = graphManager.checkForChanges()
     expect(hasChanges).toBe(true)
+    expect(graphManager.updateFlags.value.connections).toBe(true)
+  })
+
+  it('should detect a rewire that leaves the link count unchanged', () => {
+    mockGraph.links = createMockLinks([
+      createMockLLink({
+        id: toLinkId(1),
+        origin_id: toNodeId(1),
+        target_id: toNodeId(2)
+      })
+    ])
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    // Same number of links, different endpoints.
+    mockGraph.links = createMockLinks([
+      createMockLLink({
+        id: toLinkId(1),
+        origin_id: toNodeId(1),
+        target_id: toNodeId(3)
+      })
+    ])
+
+    expect(graphManager.checkForChanges()).toBe(true)
     expect(graphManager.updateFlags.value.connections).toBe(true)
   })
 
