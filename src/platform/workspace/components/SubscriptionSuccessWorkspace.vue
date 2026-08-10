@@ -24,12 +24,12 @@
             ${{ displayPrice }}
           </span>
           <span class="text-sm text-base-foreground">
-            {{ $t('subscription.usdPerMonth') }}
+            {{ priceUnitLabel }}
           </span>
         </div>
         <div class="flex items-center gap-1 text-sm text-muted-foreground">
           <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
-          <span>{{ displayCredits }} {{ $t('subscription.perMonth') }}</span>
+          <span>{{ displayCredits }} {{ creditsUnitLabel }}</span>
         </div>
       </div>
 
@@ -102,7 +102,8 @@ import Button from '@/components/ui/button/Button.vue'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
+import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
 import InviteMembersForm from './InviteMembersForm.vue'
@@ -110,11 +111,13 @@ import InviteMembersForm from './InviteMembersForm.vue'
 const {
   tierKey,
   previewData = null,
-  teamPlan = null
+  teamPlan = null,
+  billingCycle = 'monthly'
 } = defineProps<{
   tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
   teamPlan?: TeamPlanSelection | null
+  billingCycle?: BillingCycle
 }>()
 
 defineEmits<{
@@ -130,18 +133,38 @@ const tierName = computed(() =>
     : t(`subscription.tiers.${tierKey}.name`)
 )
 
+const isYearly = computed(() =>
+  isYearlyCheckout(previewData?.new_plan?.duration, billingCycle)
+)
+
 const displayPrice = computed(() => {
-  if (teamPlan) return String(teamPlan.discountedUsd)
-  if (!previewData?.new_plan) return '0'
-  const cents = previewData.new_plan.price_cents
-  const monthlyCents = isAnnualDuration(previewData.new_plan.duration)
-    ? cents / 12
-    : cents
-  return (monthlyCents / 100).toFixed(0)
+  if (previewData?.new_plan) {
+    return (previewData.new_plan.price_cents / 100).toFixed(0)
+  }
+  if (teamPlan) {
+    const usd = isYearly.value
+      ? teamPlan.discountedUsd * 12
+      : teamPlan.discountedUsd
+    return String(usd)
+  }
+  return '0'
 })
 
-const displayCredits = computed(() =>
-  n(teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0)
+const priceUnitLabel = computed(() =>
+  isYearly.value ? t('subscription.usdPerYear') : t('subscription.usdPerMonth')
+)
+
+const displayCredits = computed(() => {
+  const monthlyCredits = teamPlan
+    ? teamPlan.credits
+    : tierKey
+      ? (getTierCredits(tierKey) ?? 0)
+      : 0
+  return n(isYearly.value ? monthlyCredits * 12 : monthlyCredits)
+})
+
+const creditsUnitLabel = computed(() =>
+  isYearly.value ? t('subscription.perYear') : t('subscription.perMonth')
 )
 
 const invitableSeats = computed(() => {

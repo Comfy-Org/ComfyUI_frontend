@@ -38,6 +38,10 @@ import axios from 'axios'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  UNKNOWN_ERROR_CODE,
+  errorResponseFromBody
+} from '@/platform/remote/comfyui/errors'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -179,12 +183,17 @@ async function getAuthHeaderOrThrow() {
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
-    const message = err.response?.data?.message ?? err.message
-    // Response data is untyped: keep a non-string code out of the string
-    // contract, so callers comparing against it cannot match on a surprise.
-    const rawCode: unknown = err.response?.data?.code
-    const code = typeof rawCode === 'string' ? rawCode : undefined
-    throw new WorkspaceApiError(message, status, code)
+    const { code, message } = errorResponseFromBody(
+      err.response?.data,
+      err.message
+    )
+    // Callers compare `code` against server-defined values, so the parser's
+    // "no code reported" sentinel must stay out of that contract.
+    throw new WorkspaceApiError(
+      message,
+      status,
+      code === UNKNOWN_ERROR_CODE ? undefined : code
+    )
   }
   throw err
 }

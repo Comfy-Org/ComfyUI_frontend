@@ -288,7 +288,6 @@
       "sendResetLink": "发送重置链接",
       "signInOrSignUp": "登录 / 注册",
       "signUp": "注册",
-      "signUpFreeTierPromo": "新用户？使用 Google {signUp}，每月可获得 {credits} 免费积分。",
       "success": "登录成功",
       "termsLink": "使用条款",
       "termsText": "点击“下一步”或“注册”即表示您同意我们的",
@@ -4189,6 +4188,7 @@
       "title": "订阅已暂停"
     },
     "perMonth": "美元 / 月",
+    "perYear": "/ 年",
     "personalHeader": "个人方案仅限个人使用。{action}",
     "personalHeaderAction": "如需添加团队成员，请订阅团队方案。",
     "personalWorkspace": "个人工作区",
@@ -4366,6 +4366,7 @@
     "upgradeToAddCredits": "升级以添加积分",
     "usdPerMonth": "USD / mo",
     "usdPerMonthPerMember": "美元 / 月 / 每成员",
+    "usdPerYear": "美元 / 年",
     "usedAfterMonthly": "月度用完后使用",
     "videoEstimate": "可生成约 {count} 个 5 秒视频*",
     "videoEstimateExplanation": "这些预估基于 Wan Fun Control 生成 5 秒视频。",
