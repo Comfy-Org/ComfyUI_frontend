@@ -90,7 +90,6 @@ import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.
 import Button from '@/components/ui/button/Button.vue'
 import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { formatSize } from '@/utils/formatUtil'
 
 interface MissingModelRowEntry {
@@ -120,8 +119,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const gatedHintId = useId()
-const missingModelStore = useMissingModelStore()
-const { downloadMissingModel } = useMissingModelDownload()
+const { downloadMissingModel, fileSizeFor, gatedRepoUrlFor } =
+  useMissingModelDownload()
 
 const sortedModelRows = computed(() =>
   missingModelGroups
@@ -151,15 +150,13 @@ const downloadableModels = computed(() => {
 })
 
 const showGatedModelsHint = computed(() =>
-  downloadableModels.value.some(
-    (model) => !!missingModelStore.gatedRepoUrls[model.url]
-  )
+  downloadableModels.value.some((model) => !!gatedRepoUrlFor(model.url))
 )
 
 const downloadAllLabel = computed(() => {
   const base = t('rightSidePanel.missingModels.downloadAll')
   const total = downloadableModels.value.reduce(
-    (sum, model) => sum + (missingModelStore.fileSizes[model.url] ?? 0),
+    (sum, model) => sum + (fileSizeFor(model.url) ?? 0),
     0
   )
   return total > 0 ? `${base} (${formatSize(total)})` : base
