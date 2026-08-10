@@ -21,7 +21,6 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
 }
 
 const {
-  mockConsolidatedBillingEnabled,
   mockIsPersonal,
   mockBillingRail,
   mockPlans,
@@ -35,7 +34,6 @@ const {
   mockLegacyStatus,
   mockBillingStatus
 } = vi.hoisted(() => ({
-  mockConsolidatedBillingEnabled: { value: true },
   mockIsPersonal: { value: true },
   mockBillingRail: { value: undefined as BillingRail | undefined },
   mockPlans: { value: [] as Plan[] },
@@ -61,16 +59,6 @@ const {
       subscription_duration: 'MONTHLY'
     } as Partial<BillingStatusResponse>
   }
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get consolidatedBillingEnabled() {
-        return mockConsolidatedBillingEnabled.value
-      }
-    }
-  })
 }))
 
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -187,7 +175,6 @@ describe('useBillingContext', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    mockConsolidatedBillingEnabled.value = true
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
     mockSetWorkspaceBillingRail.mockImplementation(
@@ -209,14 +196,6 @@ describe('useBillingContext', () => {
 
     const { type } = useBillingContext()
     expect(type.value).toBe('workspace')
-  })
-
-  it('keeps a Cloud personal workspace on legacy while consolidation is off', () => {
-    mockConsolidatedBillingEnabled.value = false
-
-    const { type } = useBillingContext()
-
-    expect(type.value).toBe('legacy')
   })
 
   it('selects workspace type for a Cloud team workspace', () => {

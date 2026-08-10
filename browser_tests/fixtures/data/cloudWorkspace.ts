@@ -11,9 +11,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-export const CLOUD_REMOTE_CONFIG: RemoteConfig = {
-  consolidated_billing_enabled: true
-}
+export const CLOUD_REMOTE_CONFIG: RemoteConfig = {}
 
 export const LEGACY_PERSONAL_BILLING_STATUS = {
   billing_rail: 'legacy_stripe',
