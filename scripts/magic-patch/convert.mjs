@@ -355,9 +355,9 @@ ${references(work)}
 For each file you own:
 1. read_file it, and read_file any sibling whose contract it touches. You may
    read anything in the pack; you may only write your own files.
-2. Edit \`v1/<same path>\` with the Edit tool — your cwd is a copy of the pack,
-   and \`v1/\` inside it mirrors the original layout with a copy of every file
-   already in place. Edit \`v1/web/js/foo.js\`, not \`web/js/foo.js\`; the
+2. Edit \`v2/<same path>\` with the Edit tool — your cwd is a copy of the pack,
+   and \`v2/\` inside it mirrors the original layout with a copy of every file
+   already in place. Edit \`v2/web/js/foo.js\`, not \`web/js/foo.js\`; the
    original stays beside it to compare against. Change only what must change;
    never rewrite a file wholesale. Then record_test, run_checks, and fix
    whatever fails.
@@ -422,7 +422,7 @@ ${guidance}
 ${references(work)}
 
 The complete published API, as TypeScript declarations, is written into your
-working copy at \`v1/comfy-api.d.ts\`. It is generated from the implementation,
+working copy at \`v2/comfy-api.d.ts\`. It is generated from the implementation,
 so it is authoritative: if a member is not declared there it does not exist —
 do not call it, and punt as api-gap naming what is missing. Read it before
 concluding a capability is unavailable.
@@ -470,9 +470,9 @@ Workflow:
    other and share helpers — read the siblings a conversion's contract touches.
 2. Per file: decide whether it is convertible. Check whether each object is a
    live node or serialized workflow data before touching anything.
-3. Edit \`v1/<same path>\` with the Edit tool. Your cwd is a copy of the pack;
-   \`v1/\` sits inside it mirroring the original layout and already contains a
-   copy of every file. So \`web/js/foo.js\` is edited at \`v1/web/js/foo.js\`,
+3. Edit \`v2/<same path>\` with the Edit tool. Your cwd is a copy of the pack;
+   \`v2/\` sits inside it mirroring the original layout and already contains a
+   copy of every file. So \`web/js/foo.js\` is edited at \`v2/web/js/foo.js\`,
    with the original beside it to compare against. Change the lines that need
    changing and nothing else — never rewrite a file wholesale. Then
    record_test, run_checks, and fix whatever fails.
@@ -541,17 +541,17 @@ An accurate punt beats an attempted conversion. Name the specific construct in
 // ---------------------------------------------------------------------------
 
 /**
- * A writable copy of the pack, at `<db>/v1/<pack>/`.
+ * A writable copy of the pack, at `<db>/v2/<pack>/`.
  *
  * Agents edit this in place with Edit rather than retyping whole files through
- * a tool. The corpus stays pristine, so the diff is always v1 against it — and
+ * a tool. The corpus stays pristine, so the diff is always v2 against it — and
  * for kjnodes the difference is 16 changed lines versus 2,818 lines the model
  * would otherwise have to regenerate to change them.
  */
-/** The file as the agent has left it in the v1 tree. */
+/** The file as the agent has left it in the v2 tree. */
 function readWorkingCopy(work, name) {
   try {
-    return readFileSync(v1Path(work, name), 'utf8')
+    return readFileSync(v2Path(work, name), 'utf8')
   } catch {
     return undefined
   }
@@ -576,18 +576,18 @@ function editedFiles(work) {
  * The database entry for a pack at a commit, which is also where agents work.
  *
  *   db/<pack>/<commit7>/          the pack as shipped
- *   db/<pack>/<commit7>/v1/       the upgraded code, same layout
+ *   db/<pack>/<commit7>/v2/       the upgraded code, same layout
  *
- * `v1/` sits beside the originals because that is the shape the author
+ * `v2/` sits beside the originals because that is the shape the author
  * receives: a folder of upgraded code alongside the code they already have,
- * which the frontend loads in preference when it supports API v1. Nothing is
+ * which the frontend loads in preference when it supports API v2. Nothing is
  * deleted or overwritten, so one checkout works on both frontends.
  *
  * Agents edit here directly, so the artifact is the work rather than a copy of
  * it — no separate scratch area to lose, and a reviewer opens the same
  * directory the agent used.
  *
- * Agents edit `v1/...` with Edit, with the original beside it to refer to.
+ * Agents edit `v2/...` with Edit, with the original beside it to refer to.
  * Retyping whole files through a tool was the alternative: 2,818 lines
  * regenerated across four kjnodes files to produce 16 changed ones.
  */
@@ -597,11 +597,11 @@ function materialiseWorkingCopy(db, work, commit) {
   mkdirSync(dirname(root), { recursive: true })
   cpSync(work.root, root, { recursive: true })
 
-  // Seed v1 with a copy of every JS file, so an agent edits rather than
+  // Seed v2 with a copy of every JS file, so an agent edits rather than
   // authors, and an unconverted sibling still resolves for the ones that are.
   for (const path of work.readable) {
     const name = relative(work.root, path)
-    const target = join(root, 'v1', name)
+    const target = join(root, 'v2', name)
     mkdirSync(dirname(target), { recursive: true })
     cpSync(path, target)
   }
@@ -610,14 +610,14 @@ function materialiseWorkingCopy(db, work, commit) {
   // "does widgets.mount exist" reads the declaration rather than a prose list
   // of capability names — that list drifted and cost twelve files, punted
   // against API that was already there. Written after seeding, since that loop
-  // is what creates v1/.
-  mkdirSync(join(root, 'v1'), { recursive: true })
-  writeFileSync(join(root, 'v1', 'comfy-api.d.ts'), buildApiDts())
+  // is what creates v2/.
+  mkdirSync(join(root, 'v2'), { recursive: true })
+  writeFileSync(join(root, 'v2', 'comfy-api.d.ts'), buildApiDts())
   return root
 }
 
-/** Where a pack-relative file lives in the v1 tree. */
-const v1Path = (work, name) => join(work.workdir, 'v1', name)
+/** Where a pack-relative file lives in the v2 tree. */
+const v2Path = (work, name) => join(work.workdir, 'v2', name)
 
 function createSession(work, tracePath, db) {
   const state = {

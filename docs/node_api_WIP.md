@@ -153,7 +153,7 @@ to migrate because migration is hard — they refuse because migrating strands
 users on older frontends.** So the pattern must be first-class:
 
 ```js
-import { comfy } from '/comfy/api/v1.js'
+import { comfy } from '/comfy/api/v2.js'
 
 if (comfy.supports('widgets.reorder')) {
   node.widgets.reorder(['prompt', 'seed'])
@@ -179,7 +179,7 @@ mapping; it does not freeze internals, duplicate logic, or pin us to an old
 implementation.
 
 ```
-/comfy/api/v1.js   ┐
+/comfy/api/v2.js   ┐
 /comfy/api/v2.js   ├─ different specs, one engine, current internals
 /comfy/api/v3.js   ┘
 window.comfy       ← latest major, for the console

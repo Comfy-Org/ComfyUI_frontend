@@ -1,7 +1,7 @@
 /**
  * The published node API, as a converted pack imports it:
  *
- *   import { comfy } from '/comfy/api/v1.js'
+ *   import { comfy } from '/comfy/api/v2.js'
  *
  * Served from `public/`, so it exists at this path in dev and in `dist/`
  * alike. It re-exports the instance rather than constructing one: there must be
@@ -19,7 +19,7 @@
  */
 if (!globalThis.comfy) {
   throw new Error(
-    '[comfy] /comfy/api/v1.js was imported before the host installed the API. ' +
+    '[comfy] /comfy/api/v2.js was imported before the host installed the API. ' +
       'A pack must not be loaded before ComfyUI has started.'
   )
 }
