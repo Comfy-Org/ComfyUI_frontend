@@ -72,6 +72,15 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
     ).toHaveCount(0)
     await comfyPage.page.keyboard.press('Escape')
 
+    const mediaNodes = [loadImage.root, loadVideo, loadAudio]
+    const linkedHeights = await Promise.all(
+      mediaNodes.map(async (node) => (await node.boundingBox())?.height ?? 0)
+    )
+    expect(
+      linkedHeights,
+      'Linked media nodes should have measurable fitted heights'
+    ).not.toContain(0)
+
     for (const node of [loadImageNode, loadVideoNode, loadAudioNode]) {
       await (await node.getInput(0)).removeLinks()
     }
@@ -81,6 +90,14 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
     await expect(videoPreview.preview).toBeVisible()
     await expect(videoPreview.video).toBeVisible()
     await expect(audioPreview.audio).toBeAttached()
+
+    for (const [index, node] of mediaNodes.entries()) {
+      await expect
+        .poll(() => node.boundingBox().then((box) => box?.height ?? 0), {
+          message: 'Restored local media should grow the fitted node'
+        })
+        .toBeGreaterThan(linkedHeights[index])
+    }
 
     await loadImageNode.centerOnNode()
     await loadImage.header.click({ button: 'right' })
