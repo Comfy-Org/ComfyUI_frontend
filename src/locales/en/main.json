@@ -2130,7 +2130,7 @@
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",
-    "message": "This workflow contains API Nodes, which require you to be signed in to your account in order to run."
+    "message": "This workflow contains API Nodes, which run on paid third-party services. You need to be signed in to run them, and each run uses credits."
   },
   "apiNodesCostBreakdown": {
     "title": "API Node(s)",
