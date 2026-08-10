@@ -80,7 +80,7 @@ pnpm test:browser:local
 ```
 
 The [browser test setup](browser_tests/README.md#setup) covers Playwright,
-private GHCR access, and Amp orb modes.
+private GHCR access, and remote agent containers.
 
 #### Testing with Cloud & Staging Environments
 

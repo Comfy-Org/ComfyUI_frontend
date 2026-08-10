@@ -62,33 +62,19 @@ set. If credentials are missing or the pull fails, the launcher says why and
 builds the pinned public source instead. The source build can take several
 minutes and uses about 10 GB, plus Docker build cache.
 
-### Amp orb configuration
+### Remote agent containers
 
-Orbs use local mode by default. Local mode runs the containerized backend and
-one local frontend. Cloud mode skips Docker and the local backend, and runs one
-frontend against the Comfy test cloud. Set `COMFYUI_FRONTEND_MODE` to `cloud`
-to switch modes.
+Remote development containers used by coding agents default to local mode.
+Local mode runs the containerized backend and one local frontend. Cloud mode
+skips Docker and the local backend, and runs one frontend against the Comfy test
+cloud. Set `COMFYUI_FRONTEND_MODE=cloud` in the container environment to switch
+modes.
 
-```bash
-printf '%s' 'cloud' |
-  amp secrets set COMFYUI_FRONTEND_MODE --project --env --data-file -
-```
-
-If the orb's `GH_TOKEN` can read the private package, no other credentials are
-needed. If it cannot, create a GitHub token with `read:packages` access and save
-it in the Amp project settings. The dedicated values below override `GH_TOKEN`:
-
-```bash
-printf '%s' 'YOUR_GITHUB_USERNAME' |
-  amp secrets set COMFY_CI_CONTAINER_USER --project --env --data-file -
-read -rsp 'GitHub package token: ' token && echo
-printf '%s' "$token" |
-  amp secrets set COMFY_CI_CONTAINER_TOKEN --project --secret --data-file -
-unset token
-```
-
-You can enter the same values in the Amp project settings instead of using the
-CLI. Start a fresh orb after changing project settings.
+If the container's `GH_TOKEN` can read the private package, no other credentials
+are needed. Otherwise, add a GitHub token with `read:packages` access to the
+container's secret settings. You can use `COMFY_CI_CONTAINER_TOKEN` with
+`COMFY_CI_CONTAINER_USER` instead of `GH_TOKEN`; these dedicated values take
+precedence. Recreate the container after changing its environment or secrets.
 
 ### Node.js & Playwright
 
