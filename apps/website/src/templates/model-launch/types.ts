@@ -51,7 +51,6 @@ export interface ModelLaunchHero {
   primaryCta: ModelLaunchCta
   secondaryCta?: ModelLaunchCta
   badgeKeys?: readonly TranslationKey[]
-  footnoteKey?: TranslationKey
 }
 
 type ModelLaunchTier = 'free' | 'premium'

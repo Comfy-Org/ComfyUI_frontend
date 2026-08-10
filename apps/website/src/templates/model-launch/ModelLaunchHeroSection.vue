@@ -113,13 +113,6 @@ const isContentFirst = hero.layout === 'content-first'
             {{ t(badgeKey, locale) }}
           </Badge>
         </div>
-
-        <p
-          v-if="hero.footnoteKey"
-          class="mt-6 text-xs text-primary-warm-white/80"
-        >
-          {{ t(hero.footnoteKey, locale) }}
-        </p>
       </div>
     </div>
   </section>
@@ -204,12 +197,7 @@ const isContentFirst = hero.layout === 'content-first'
 
       <div
         v-if="hero.badgeKeys?.length"
-        :class="
-          cn(
-            'flex flex-wrap items-center justify-center gap-3',
-            isContentFirst ? 'order-first mb-6' : 'mt-6'
-          )
-        "
+        class="mt-6 flex flex-wrap items-center justify-center gap-3"
       >
         <Badge
           v-for="badgeKey in hero.badgeKeys"
@@ -219,10 +207,6 @@ const isContentFirst = hero.layout === 'content-first'
           {{ t(badgeKey, locale) }}
         </Badge>
       </div>
-
-      <p v-if="hero.footnoteKey" class="mt-6 text-xs text-primary-warm-gray">
-        {{ t(hero.footnoteKey, locale) }}
-      </p>
     </div>
 
     <a
