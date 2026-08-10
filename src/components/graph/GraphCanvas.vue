@@ -72,17 +72,19 @@
     @pointermove.capture="forwardPointerMovePanEvent"
   >
     <!-- Vue nodes rendered based on graph nodes -->
-    <LGraphNode
-      v-for="nodeData in allNodes"
-      :key="nodeData.id"
-      :node-data="nodeData"
-      :error="
-        executionErrorStore.lastExecutionErrorNodeId === nodeData.id
-          ? 'Execution error'
-          : null
-      "
-      :data-node-id="nodeData.id"
-    />
+    <template v-for="nodeData in allNodes" :key="nodeData.id">
+      <LGraphNodeLOD v-if="isLowQuality" :node-data="nodeData" />
+      <LGraphNode
+        v-else
+        :node-data="nodeData"
+        :error="
+          executionErrorStore.lastExecutionErrorNodeId === nodeData.id
+            ? 'Execution error'
+            : null
+        "
+        :data-node-id="nodeData.id"
+      />
+    </template>
   </TransformPane>
 
   <LinkOverlayCanvas
@@ -185,6 +187,8 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import LGraphNodeLOD from '@/renderer/extensions/vueNodes/components/LGraphNodeLOD.vue'
+import { useLowQualityRendering } from '@/renderer/extensions/vueNodes/composables/useLowQualityRendering'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -292,6 +296,10 @@ watch(
     }
     await handleVueNodeLifecycleReset()
   }
+)
+
+const { isLowQuality } = useLowQualityRendering(
+  computed(() => canvasStore.canvas ?? undefined)
 )
 
 const rawNodes = computed((): VueNodeData[] =>
