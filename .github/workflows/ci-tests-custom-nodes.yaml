@@ -274,6 +274,9 @@ jobs:
             5)
               grep_args=(--grep 'connectivity drags: curated slot-to-slot wires connect under both renderers @custom-nodes$')
               ;;
+            6)
+              grep_args=(--grep 'custom node: ComfyUI-Impact-Pack @custom-nodes.*Curated workflow execution: completes without error$')
+              ;;
           esac
           # workers=1: the auto-run tier needs exclusive backend-queue access;
           # parallel workers interrupt each other's executions.
@@ -309,7 +312,7 @@ jobs:
             exit 1
           fi
           expected_tests=34
-          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" ]]; then
+          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" || "$ROW" = "6" ]]; then
             expected_tests=1
           fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
@@ -404,7 +407,7 @@ jobs:
             3) pat='on (pristine|set-values) reload' ;;
             4) pat='CONNECT_REJECTED' ;;
             5) pat=' -> .* with VueNodes=' ;;
-            6) pat='VALIDATION_FAIL' ;;
+            6) pat='Prompt outputs failed validation; ImpactInt: value; ImpactFloat: value' ;;
             7) pat='Error calling extension' ;;
             8) pat='DETECTION PROOF \(row 8\)' ;;
             # Row 9 names its exact target: the injected raise MESSAGE does
