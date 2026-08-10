@@ -22,6 +22,17 @@ import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 /** Extra coverage beyond each viewport edge, as a fraction of viewport size. */
 const VIEWPORT_MARGIN_RATIO = 0.5
 
+/**
+ * Ceiling on the margin, in graph units.
+ *
+ * The ratio above is screen-relative, so dividing it by the zoom makes the
+ * margin cover more and more of the graph as the user zooms out - at minimum
+ * zoom it more than doubles the queried area, pulling in far more nodes than a
+ * pan could reach before the next recompute. Roughly five node widths is ample
+ * lead time at any zoom.
+ */
+const MAX_MARGIN_GRAPH_UNITS = 2000
+
 /** Grace period before unmounting nodes that left the viewport. */
 const UNMOUNT_DELAY_MS = 250
 
@@ -57,14 +68,20 @@ export function getCullingBounds(
   marginRatio = VIEWPORT_MARGIN_RATIO
 ): Bounds {
   const scale = camera.z || 1
-  const marginX = viewport.width * marginRatio
-  const marginY = viewport.height * marginRatio
+  const marginX = Math.min(
+    (viewport.width * marginRatio) / scale,
+    MAX_MARGIN_GRAPH_UNITS
+  )
+  const marginY = Math.min(
+    (viewport.height * marginRatio) / scale,
+    MAX_MARGIN_GRAPH_UNITS
+  )
 
   return {
-    x: -marginX / scale - camera.x,
-    y: -marginY / scale - camera.y,
-    width: (viewport.width + marginX * 2) / scale,
-    height: (viewport.height + marginY * 2) / scale
+    x: -marginX - camera.x,
+    y: -marginY - camera.y,
+    width: viewport.width / scale + marginX * 2,
+    height: viewport.height / scale + marginY * 2
   }
 }
 

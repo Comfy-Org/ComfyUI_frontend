@@ -73,6 +73,14 @@ describe('getCullingBounds', () => {
     })
   })
 
+  it('caps the margin in graph units when zoomed out', () => {
+    // At z=0.05 the ratio alone would add 10000 units of margin per edge.
+    const bounds = getCullingBounds({ x: 0, y: 0, z: 0.05 }, VIEWPORT, 0.5)
+
+    expect(bounds.x).toBe(-2000)
+    expect(bounds.width).toBe(VIEWPORT.width / 0.05 + 4000)
+  })
+
   it('accounts for pan offset and zoom', () => {
     // At z=2 the viewport covers half as much graph space.
     expect(getCullingBounds({ x: -100, y: -50, z: 2 }, VIEWPORT, 0)).toEqual({
