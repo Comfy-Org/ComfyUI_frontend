@@ -58,6 +58,13 @@ open PR that has no assignee and is either:
 It also requests their review, since backport merges are gated on an approval.
 Existing assignees and review requests are never overwritten.
 
+When the sheriff wrote the PR themselves, the review is requested from the
+**next person in the rotation** instead — GitHub rejects a self-review request,
+so previously those PRs were assigned to their own author with nobody asked to
+review, and then waited on an approval that had never been requested. The order
+comes from the Datadog layer's member list, so it needs no separate config. If
+nobody in the rotation can stand in, the run says so rather than staying quiet.
+
 Automation-authored PRs are included because nobody feels addressed by what a
 robot opens: they accumulated unassigned for weeks. Note these are matched by
 author rather than by content, so a dependency bump counts as sheriff work.
@@ -99,6 +106,12 @@ If the on-call user cannot be mapped — a missing tag, missing secrets, an
 unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
 never left unowned, but **exits non-zero** so the degradation is visible. A
 green run means a real sheriff was resolved from Datadog.
+
+Tag coverage is checked for the **whole rotation**, not just whoever is on call,
+and a member without one fails the run. Someone added to the layer without a tag
+otherwise works fine until their own shift begins — the breakage surfaces weeks
+after the cause, on whoever happens to be sheriff. This is a configuration
+check, so it fails even when today's assignment succeeded.
 
 A failed run also posts to **#frontend-releases** with the reason, because a
 failing scheduled workflow otherwise only notifies whoever last pushed to
