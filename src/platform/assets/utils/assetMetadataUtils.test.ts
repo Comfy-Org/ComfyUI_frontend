@@ -162,6 +162,17 @@ describe('assetMetadataUtils', () => {
       ).toBe('video')
     })
 
+    it('falls back to filename metadata', () => {
+      expect(
+        getAssetMediaKind({
+          ...mockAsset,
+          name: 'blake3:abc',
+          metadata: { filename: 'render.mp4' },
+          mime_type: 'application/octet-stream'
+        })
+      ).toBe('video')
+    })
+
     it('falls back to the asset name for generic MIME metadata', () => {
       expect(
         getAssetMediaKind({
