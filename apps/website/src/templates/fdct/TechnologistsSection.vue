@@ -20,17 +20,17 @@ function workflowsOf(
       title: project.title,
       href: project.href,
       media: { ...project.media, alt: project.title },
-      creator: {
-        name: person.name,
-        avatarSrc: person.avatarSrc,
-        href: person.workflowsHref
-      },
-      tags: [...project.tags]
+      description: project.description,
+      tags: project.tags
     }))
 }
 
 const people = technologists.map((person) => ({
   ...person,
+  ctaLabel: t('fdct.technologists.seeWork', locale).replace(
+    '{name}',
+    person.name.split(' ')[0]
+  ),
   workflows: workflowsOf(person)
 }))
 </script>
@@ -40,8 +40,6 @@ const people = technologists.map((person) => ({
     :heading="t('fdct.technologists.title', locale)"
     :lead="t('fdct.technologists.lead', locale)"
     :people="people"
-    :workflows-label="t('fdct.technologists.workflows', locale)"
-    :try-now-label="t('fdct.technologists.tryNow', locale)"
     :close-label="t('fdct.technologists.close', locale)"
   />
 </template>

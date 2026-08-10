@@ -5361,12 +5361,11 @@ const translations = {
     'zh-CN':
       'FDCT 来自真实制作一线：拥有电影长片、商业广告与体验项目背景，ComfyUI 支撑着已交付的作品。我们会根据项目内容、你的技术栈和时间表，为每次合作匹配合适的技术专家。'
   },
-  'fdct.technologists.workflows': {
-    en: 'See their work',
-    'zh-CN': '查看他们的作品'
+  'fdct.technologists.seeWork': {
+    en: 'See {name}’s work',
+    'zh-CN': '查看 {name} 的作品'
   },
   'fdct.technologists.close': { en: 'Close', 'zh-CN': '关闭' },
-  'fdct.technologists.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
   'fdct.projects.title': { en: 'Past projects', 'zh-CN': '过往项目' },
   'fdct.projects.category.advertisement': {
     en: 'Advertisement',

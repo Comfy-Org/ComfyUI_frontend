@@ -11,7 +11,8 @@ const people = [
     avatarSrc,
     description:
       'Feature film background with ComfyUI on the back end of shipped work. Built production pipelines for studios and creative teams, from pitch through final delivery.',
-    workflowsHref: '#'
+    ctaLabel: 'See Placeholder’s work',
+    tags: ['Entertainment', 'VFX']
   },
   {
     id: 'person-2',
@@ -19,7 +20,8 @@ const people = [
     avatarSrc,
     description:
       'Commercial and experiential work, from pitch to final delivery. Combines visual direction with the engineering required to deliver reliably on fixed deadlines.',
-    workflowsHref: '#'
+    ctaLabel: 'See Placeholder’s work',
+    tags: ['Generative AI', 'Production']
   },
   {
     id: 'person-3',
@@ -27,7 +29,8 @@ const people = [
     avatarSrc,
     description:
       'Production pipelines and creative tooling for in-house teams. Turns one-off experiments into workflows a team can run without help.',
-    workflowsHref: '#'
+    ctaLabel: 'See Placeholder’s work',
+    tags: ['Marketing', 'Advertising']
   }
 ]
 
@@ -39,8 +42,7 @@ const meta: Meta<typeof TeamGrid01> = {
     heading: 'Featured technologists',
     lead: 'FDCTs come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match technologists to each engagement based on the work, your stack, and the timeline.',
     people,
-    closeLabel: 'Close',
-    workflowsLabel: 'See their work'
+    closeLabel: 'Close'
   }
 }
 
@@ -51,10 +53,4 @@ export const Default: Story = {}
 
 export const CardsOnly: Story = {
   args: { heading: undefined, lead: undefined }
-}
-
-export const WithoutWorkflowsLink: Story = {
-  args: {
-    people: people.map((person) => ({ ...person, workflowsHref: undefined }))
-  }
 }

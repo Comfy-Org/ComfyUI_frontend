@@ -4,7 +4,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { CardWorkflowItem } from './CardWorkflow01.vue'
 import CardWorkflow01 from './CardWorkflow01.vue'
-import ButtonPill from '../ui/button-pill/ButtonPill.vue'
+import Badge from '../ui/badge/Badge.vue'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
@@ -15,10 +15,8 @@ const {
   name,
   avatarSrc,
   description,
+  tags = [],
   workflows = [],
-  workflowsHref,
-  workflowsLabel,
-  tryNowLabel,
   closeLabel,
   // Explicit undefined default keeps Vue from coercing the absent boolean to
   // false, which would lock the reka-ui DialogRoot into controlled-closed mode.
@@ -29,10 +27,8 @@ const {
   name: string
   avatarSrc: string
   description: string
+  tags?: readonly string[]
   workflows?: readonly CardWorkflowItem[]
-  workflowsHref?: string
-  workflowsLabel?: string
-  tryNowLabel?: string
   closeLabel: string
   open?: boolean
   defaultOpen?: boolean
@@ -54,31 +50,35 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
           alt=""
           class="size-36 shrink-0 rounded-full object-cover lg:size-47"
         />
-        <div class="flex flex-col items-start gap-5 sm:pr-16">
+        <div class="flex flex-col items-start gap-6 sm:pr-16">
           <DialogTitle>{{ name }}</DialogTitle>
-          <ButtonPill
-            v-if="workflowsHref && workflowsLabel"
-            as="a"
-            :href="workflowsHref"
-            variant="ghost"
-            icon-position="left"
+          <div
+            v-if="tags.length"
+            class="flex min-w-0 flex-wrap items-center gap-1.5"
           >
-            {{ workflowsLabel }}
-          </ButtonPill>
+            <Badge
+              v-for="tag in tags"
+              :key="tag"
+              variant="subtle"
+              size="md"
+              class="shrink-0 py-2 uppercase"
+            >
+              {{ tag }}
+            </Badge>
+          </div>
         </div>
       </div>
-      <DialogDescription class="mt-8">
+      <DialogDescription class="mt-8 font-semibold">
         {{ description }}
       </DialogDescription>
       <div
-        v-if="workflows.length && tryNowLabel"
+        v-if="workflows.length"
         class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3"
       >
         <CardWorkflow01
           v-for="workflow in workflows"
           :key="workflow.id"
           :item="workflow"
-          :try-now-label="tryNowLabel"
         />
       </div>
     </DialogContent>

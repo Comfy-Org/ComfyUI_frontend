@@ -15,12 +15,12 @@ export interface FdctTechnologist {
   name: string
   avatarSrc: string
   description: string
-  workflowsHref?: string
+  tags: readonly string[]
 }
 
 // Descriptions are user-provided copy (2026-08-07). Headshots live on the
-// media CDN. Chris has no workflowsHref until his hub page link is provided;
-// the dialog omits its CTA and workflow grid for profiles without one.
+// media CDN. Doug's dialog tags come from the design; Chris's and Rob's are
+// placeholders drawn from their bios until final copy lands.
 export const technologists: readonly FdctTechnologist[] = [
   {
     id: 'doug-hogan',
@@ -28,14 +28,15 @@ export const technologists: readonly FdctTechnologist[] = [
     avatarSrc: 'https://media.comfy.org/website/technologists/doug-hogan.png',
     description:
       "Doug's work spans Netflix, Universal Studios, Warner Bros., and Samsung, with deep expertise in VFX and studio production. As a Nuke compositor and Python tool builder, he teaches VFX, Nuke, and generative AI.",
-    workflowsHref: 'https://comfy.org/workflows/doughogan/'
+    tags: ['Entertainment', 'Nuke', 'VFX']
   },
   {
     id: 'chris-v',
     name: 'Chris V.',
     avatarSrc: 'https://media.comfy.org/website/technologists/chris-v.png',
     description:
-      "Chris's work spans global brands, artists, Fortune 500 keynote stages, and Art Basel Miami, with deep expertise in generative AI and production infrastructure. Sitting between artist and engineer, he architects custom VFX and AI pipelines."
+      "Chris's work spans global brands, artists, Fortune 500 keynote stages, and Art Basel Miami, with deep expertise in generative AI and production infrastructure. Sitting between artist and engineer, he architects custom VFX and AI pipelines.",
+    tags: ['Generative AI', 'Production']
   },
   {
     id: 'rob-losch',
@@ -43,7 +44,7 @@ export const technologists: readonly FdctTechnologist[] = [
     avatarSrc: 'https://media.comfy.org/website/technologists/rob-losch.png',
     description:
       "Rob has been in ComfyUI since day one. He has numerous workflows covering marketing and advertising, and he can pinpoint the exact workflow you're looking for.",
-    workflowsHref: 'https://comfy.org/workflows/hellorob/'
+    tags: ['Marketing', 'Advertising']
   }
 ]
 
@@ -56,6 +57,9 @@ export interface FdctProject {
   media: { type: 'image' | 'video'; src: string; poster?: string }
   author: { name: string; avatarSrc: string }
   href: string
+  // Shown on the technologist-dialog cards; placeholder copy until final
+  // descriptions land (the design mock uses lorem ipsum here).
+  description?: string
   tags: readonly string[]
 }
 
@@ -79,6 +83,8 @@ export const projects: readonly FdctProject[] = [
     },
     author: authorOf('rob-losch'),
     href: 'https://comfy.org/workflows/c98e5c457e1e-c98e5c457e1e/',
+    description:
+      'Turn product stills into a polished advertisement spot, from generated shots to final cut.',
     tags: ['Image Generation', 'Image to Video']
   },
   {
@@ -91,7 +97,9 @@ export const projects: readonly FdctProject[] = [
     },
     author: authorOf('doug-hogan'),
     href: 'https://comfy.org/workflows/8f2cf0df5da6-8f2cf0df5da6/',
-    tags: []
+    description:
+      'Generate clean plates for VFX compositing with LTX, removing subjects while keeping the shot intact.',
+    tags: ['VFX']
   },
   {
     id: 'lipdub-lora-voice-clone',
@@ -103,6 +111,8 @@ export const projects: readonly FdctProject[] = [
     },
     author: authorOf('rob-losch'),
     href: 'https://comfy.org/workflows/e4ab88456b9b-e4ab88456b9b/',
+    description:
+      'Lipdub a performance with LTX 2.3, pairing a LoRA-trained look with a cloned voice track.',
     tags: ['Image Generation', 'Audio Editing']
   },
   {
@@ -115,6 +125,8 @@ export const projects: readonly FdctProject[] = [
     },
     author: authorOf('doug-hogan'),
     href: 'https://comfy.org/workflows/be0889296f65-be0889296f65/',
+    description:
+      'A utility kit for VFX shots: passes, mattes, and helpers for image and video work.',
     tags: ['Image Generation', 'Video']
   },
   {
@@ -127,6 +139,8 @@ export const projects: readonly FdctProject[] = [
     },
     author: authorOf('rob-losch'),
     href: 'https://comfy.org/workflows/064da31db8f3-064da31db8f3/',
+    description:
+      'Swap characters into trending video formats with Seedance 2.0 while keeping motion intact.',
     tags: ['Image Generation', 'Character Reference']
   },
   {
@@ -139,7 +153,9 @@ export const projects: readonly FdctProject[] = [
     },
     author: authorOf('doug-hogan'),
     href: 'https://comfy.org/workflows/93f286fbc2c8-93f286fbc2c8/',
-    tags: []
+    description:
+      'Swap a face across a full video while preserving the original performance and lighting.',
+    tags: ['VFX']
   }
 ]
 

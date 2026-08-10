@@ -15,12 +15,9 @@ const workflows = [
       src: 'https://comfy-hub-assets.comfy.org/uploads/8a3a846f-5017-428e-b2a2-24025c55e884.mp4',
       alt: 'LTX Cleanplate for VFX'
     },
-    creator: {
-      name: 'Doug Hogan',
-      avatarSrc: '/assets/images/fallback-gradient-avatar.svg',
-      href: '#'
-    },
-    tags: ['Image Generation', 'Video']
+    description:
+      'Generate clean plates for VFX compositing with LTX, removing subjects while keeping the shot intact.',
+    tags: ['VFX']
   },
   {
     id: 'workflow-2',
@@ -31,11 +28,8 @@ const workflows = [
       src: 'https://comfy-hub-assets.comfy.org/uploads/fd38a7e9-0d2a-4d6a-9d6a-b04bbce294cc.mp4',
       alt: 'VFX Utilities'
     },
-    creator: {
-      name: 'Doug Hogan',
-      avatarSrc: '/assets/images/fallback-gradient-avatar.svg',
-      href: '#'
-    },
+    description:
+      'A utility kit for VFX shots: passes, mattes, and helpers for image and video work.',
     tags: ['Image Generation', 'Video']
   },
   {
@@ -46,11 +40,6 @@ const workflows = [
       type: 'video' as const,
       src: 'https://comfy-hub-assets.comfy.org/uploads/a643e6f2-f91e-450f-871c-4c99116193f0.mp4',
       alt: 'Adjustment Frame Workflow'
-    },
-    creator: {
-      name: 'Doug Hogan',
-      avatarSrc: '/assets/images/fallback-gradient-avatar.svg',
-      href: '#'
     },
     tags: []
   }
@@ -64,10 +53,8 @@ const meta: Meta<typeof TeamMemberDialog01> = {
     name: 'Doug Hogan',
     avatarSrc: '/assets/images/fallback-gradient-avatar.svg',
     description,
+    tags: ['Entertainment', 'Nuke', 'VFX'],
     workflows,
-    workflowsHref: '#',
-    workflowsLabel: 'See their work',
-    tryNowLabel: 'Try now',
     closeLabel: 'Close',
     defaultOpen: true
   },
@@ -93,8 +80,8 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-export const WithoutWorkflowsLink: Story = {
-  args: { workflowsHref: undefined, workflowsLabel: undefined }
+export const WithoutTags: Story = {
+  args: { tags: [] }
 }
 
 export const WithoutWorkflows: Story = {
