@@ -31,6 +31,12 @@ describe('unit test network guard', () => {
     ).rejects.toThrow(/Blocked a real network request/)
   })
 
+  it('rejects window.fetch, which code under test may reach for', async () => {
+    await expect(window.fetch('https://example.com/thing')).rejects.toThrow(
+      /Blocked a real network request/
+    )
+  })
+
   it('delegates non-http schemes to the real fetch', async () => {
     // The guard only blocks http(s). Anything else has to reach the original
     // fetch untouched - a `data:` URL round-tripping its body proves it did.
@@ -46,6 +52,9 @@ describe('unit test network guard', () => {
     await expect(fetch('https://example.com/thing')).resolves.toBeInstanceOf(
       Response
     )
+    await expect(
+      window.fetch('https://example.com/thing')
+    ).resolves.toBeInstanceOf(Response)
 
     // A test that stubs fetch owns restoring it. Unstubbing here proves the
     // guard is what sits underneath, rather than having been overwritten.
