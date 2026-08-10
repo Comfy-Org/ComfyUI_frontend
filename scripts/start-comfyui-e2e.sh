@@ -35,8 +35,11 @@ cleanup() {
 trap cleanup EXIT
 
 if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then
-  token="${COMFY_CI_CONTAINER_TOKEN:-}"
+  token="${COMFY_CI_CONTAINER_TOKEN:-${GH_TOKEN:-}}"
   username="${COMFY_CI_CONTAINER_USER:-}"
+  if [[ -n "$token" && -z "$username" ]] && command -v gh >/dev/null 2>&1; then
+    username="$(GH_TOKEN="$token" gh api user --jq .login 2>/dev/null || true)"
+  fi
 
   if [[ -n "$token" && -n "$username" ]]; then
     echo "Pulling $image with configured GHCR credentials"
@@ -48,9 +51,12 @@ if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then
     else
       echo 'GHCR rejected the configured credentials; falling back to a source build.' >&2
     fi
-  else
+  elif [[ -z "$token" ]]; then
     echo 'GHCR credentials are not configured; skipping the private image pull.'
-    echo 'Set COMFY_CI_CONTAINER_USER and COMFY_CI_CONTAINER_TOKEN to enable it.'
+    echo 'Set GH_TOKEN or COMFY_CI_CONTAINER_TOKEN to enable it.'
+  else
+    echo 'Could not derive the GitHub username; skipping the private image pull.'
+    echo 'Set COMFY_CI_CONTAINER_USER to enable it.'
   fi
 
   if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then

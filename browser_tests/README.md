@@ -51,10 +51,12 @@ mounts `tools/devtools` automatically:
 pnpm container:start
 ```
 
-The first run pulls the CI image only when `COMFY_CI_CONTAINER_TOKEN` and
-`COMFY_CI_CONTAINER_USER` are configured. Otherwise, it tells you that the
-private pull was skipped and builds the pinned public source. Leave it running
-while using `pnpm dev` and `pnpm test:browser:local` in separate terminals.
+The first run uses `GH_TOKEN` when available and asks `gh api user` for its
+GitHub username. `COMFY_CI_CONTAINER_TOKEN` and `COMFY_CI_CONTAINER_USER`
+override those derived credentials. Without usable credentials, the command
+tells you that the private pull was skipped and builds the pinned public source.
+Leave it running while using `pnpm dev` and `pnpm test:browser:local` in
+separate terminals.
 
 The source build can take several minutes and uses about 10 GB for the image,
 plus Docker build cache. Set `COMFY_CI_CONTAINER_TOKEN` and
@@ -68,10 +70,11 @@ variable `COMFYUI_FRONTEND_MODE` to `cloud` to run only the cloud frontend, or
 to `local` to run only the local backend and frontend. Start a fresh orb after
 changing project-level values so its environment contains the new settings.
 
-The CI image is a private GitHub package. Create a GitHub token with
-`read:packages` access, then store the username as a project environment
-variable and the token as a project secret. Values configured at the project
-level are injected into new orbs:
+The CI image is a private GitHub package. If the orb's existing `GH_TOKEN` has
+`read:packages` access, no additional package credentials are needed. Otherwise,
+create a GitHub token with `read:packages` access, then store the username as a
+project environment variable and the token as a project secret. Values
+configured at the project level are injected into new orbs:
 
 ```bash
 printf '%s' 'local' |
