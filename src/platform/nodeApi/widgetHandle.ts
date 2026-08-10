@@ -262,8 +262,11 @@ export function createWidgetHandles(
 /** Marks a widget whose callback has already been bridged to listeners. */
 const BRIDGED = Symbol('comfy.widget.bridged')
 
-/** A widget whose body the pack renders itself. */
-/** @knipIgnoreUnusedButUsedByCustomNodes */
+/**
+ * A widget whose body the pack renders itself.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
 export interface MountDef {
   readonly name: string
   /**
@@ -317,10 +320,15 @@ export interface MountDef {
  * Narrower than `WidgetValue` because a mounted widget is DOM-backed, and that
  * is what one carries — a colour string, a vector object. Saying so is better
  * than accepting a number and dropping it at the boundary.
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export type MountedData = string | object
 
-/** Reading and writing a mounted widget's value. */
+/**
+ * Reading and writing a mounted widget's value.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
 export interface MountedValue {
   get(): MountedData
   set(value: MountedData): void

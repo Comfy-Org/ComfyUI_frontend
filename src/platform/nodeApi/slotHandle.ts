@@ -58,6 +58,7 @@ export interface LinkInfo {
  * the same call already taken for slot `shape`.
  *
  * Reads stay `string` for the same reason.
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export type SlotType = string | string[]
 
@@ -65,6 +66,7 @@ export type SlotType = string | string[]
 const normaliseType = (type: SlotType) =>
   Array.isArray(type) ? type.join(',') : type
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface SlotPatch {
   name?: string
   label?: string | undefined
