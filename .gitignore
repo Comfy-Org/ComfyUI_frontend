@@ -118,3 +118,6 @@ matrix-proof/
 # Symlink to the conversion database, which lives in its own repo.
 # No trailing slash: git sees a symlink as a file, and `db/` would not match it.
 db
+
+# Scratch produced by scripts/magic-patch/verify/undef.sh
+scripts/magic-patch/verify/.undef*

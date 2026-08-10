@@ -1565,7 +1565,7 @@ unregistered" was never available.
 registering `COLOR` is silently ignored, which is how three packs' widgets were
 found already dead. The published API therefore has a mode where a correct call
 does nothing. Fixing that means either failing loudly on collision or letting
-packs override core — see §3 of `IMPL_QUESTIONS_FOR_CHRISTIAN.md`.
+packs override core — see §3 of `API_DECISIONS_FOR_REVIEW.md`.
 
 **Cost to reverse.** Very high. Six files across three packs, and no
 alternative expression.
@@ -1731,17 +1731,19 @@ Test requirements — these are the ones worth writing first, because they're wh
 > [§4f Contested additions](#4f-️-contested-additions--argue-with-these), with
 > the alternative that was rejected and the cost of reversing each one.
 
-| Not exposed                                              | Why                                        | If you need it                                                   |
-| -------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------- |
-| `app` / `ComfyApp`                                       | Reaches everything                         | Named capability on `comfy`                                      |
-| The node constructor                                     | Prototype patching is the coupling         | `defineNode()`                                                   |
-| `LGraphCanvas`                                           | Rendering internals, changes constantly    | `comfy.ui` for the sanctioned subset                             |
-| Pinia stores                                             | Internal state layout                      | Handles                                                          |
-| `LLink`                                                  | Live mutable link object                   | `LinkInfo` snapshots                                             |
-| `graph._nodes`                                           | Internal array                             | `graph.nodes()`                                                  |
-| `node.type` setter                                       | Type is identity                           | `graph.replaceNode()`                                            |
-| `widget.type` setter                                     | The hack's intent was hiding               | `widget.hidden`                                                  |
-| `onDrawForeground` / `onDrawBackground` / `onDrawTitle*` | Canvas-only; already no-op under Nodes 2.0 | `node.decorations` (§4a), or `widgets.register()` if interactive |
+| Not exposed                                              | Why                                         | If you need it                                                   |
+| -------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------- |
+| `app` / `ComfyApp`                                       | Reaches everything                          | Named capability on `comfy`                                      |
+| The node constructor                                     | Prototype patching is the coupling          | `defineNode()`                                                   |
+| `LGraphCanvas`                                           | Rendering internals, changes constantly     | `comfy.ui` for the sanctioned subset                             |
+| Pinia stores                                             | Internal state layout                       | Handles                                                          |
+| `LLink`                                                  | Live mutable link object                    | `LinkInfo` snapshots                                             |
+| `graph._nodes`                                           | Internal array                              | `graph.nodes()`                                                  |
+| `node.type` setter                                       | Type is identity                            | `graph.replaceNode()`                                            |
+| `widget.type` setter                                     | The hack's intent was hiding                | `widget.hidden`                                                  |
+| `onDrawForeground` / `onDrawBackground` / `onDrawTitle*` | Canvas-only; already no-op under Nodes 2.0  | `node.decorations` (§4a), or `widgets.register()` if interactive |
+| Global CSS reaching host markup                          | Selector-coupled to chrome we change freely | Q9 — a sanctioned theming surface                                |
+| Slot `shape` on `SlotPatch`                              | Cosmetic; one site in the whole corpus      | Nothing — the saved `shape` byte is dropped                      |
 
 No capability loss remains here — §4a covers it, and covers it in a form that renders
 in _both_ modes, which the raw callbacks never did.
@@ -1752,7 +1754,7 @@ in _both_ modes, which the raw callbacks never did.
 
 > See also [§4f](#4f-️-contested-additions--argue-with-these) for decisions
 > already taken that a reviewer may want to reverse, and
-> `IMPL_QUESTIONS_FOR_CHRISTIAN.md` for the ones blocking packs today.
+> `API_DECISIONS_FOR_REVIEW.md` for the ones blocking packs today.
 
 - **Q1.** `mount(el, ctx)` for custom widgets is framework-agnostic and dodges the
   dual-Vue problem — but it gives up Vue's reactivity and scoped styling for the
@@ -1781,6 +1783,17 @@ in _both_ modes, which the raw callbacks never did.
   visual language. Do they follow Comfy design standards strictly (consistent badges
   everywhere, packs lose fine-grained colour control), or do we accept arbitrary
   colours and lose visual coherence? Leaning strict, with a small named palette.
+- **Q9.** Packs inject a global `<link>` and restyle whatever a selector reaches.
+  Two different things hide in that. A pack styling **its own** mounted widget DOM
+  is legitimate — it owns those elements, and plain `new URL(…, import.meta.url)`
+  keeps resolving correctly no matter what the install directory is called. A pack
+  restyling **our** node chrome is a parallel front end: coupled to markup we
+  change freely, and the same objection that excluded canvas painting. We should
+  not support the second by selector, but Nodes 2.0 **should** have a sanctioned
+  way to be re-themed — most plausibly a named CSS-variable contract, which is
+  reviewable, versionable, and survives markup changes. Worth settling early:
+  once packs re-establish selector coupling against Nodes 2.0 markup, it is as
+  unshakeable as the coupling this whole migration exists to remove.
 - **Q6.** Where does this live — `packages/comfyui-node-api/` as a published types
   package, so pack authors can `npm i` the types and get autocomplete? That seems
   clearly right and cheap.
