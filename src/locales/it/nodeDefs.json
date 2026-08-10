@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "Aggiungi livello",
+    "inputs": {
+      "blend_mode": {
+        "name": "modalità di fusione",
+        "tooltip": "Modalità di fusione iniziale."
+      },
+      "flip_h": {
+        "name": "ribalta_orizzontale",
+        "tooltip": "Ribalta il livello orizzontalmente."
+      },
+      "flip_v": {
+        "name": "ribalta_verticale",
+        "tooltip": "Ribalta il livello verticalmente."
+      },
+      "height": {
+        "name": "altezza",
+        "tooltip": "Altezza di visualizzazione iniziale. 0 mantiene l'altezza originale dell'immagine."
+      },
+      "image": {
+        "name": "immagine",
+        "tooltip": "Contenuto del livello alla sua dimensione originale. Un batch si espande in livelli consecutivi."
+      },
+      "layers": {
+        "name": "livelli",
+        "tooltip": "Stack di livelli a cui aggiungere. Lasciare scollegato per iniziare un nuovo stack."
+      },
+      "mask": {
+        "name": "maschera",
+        "tooltip": "Maschera di trasparenza per questo livello. Le aree mascherate (valore 1) diventano trasparenti, moltiplicandosi con qualsiasi canale alfa già presente nell'immagine."
+      },
+      "name": {
+        "name": "nome",
+        "tooltip": "Nome del livello mostrato nell'editor del compositore."
+      },
+      "opacity": {
+        "name": "opacità",
+        "tooltip": "Opacità iniziale del livello."
+      },
+      "rotation": {
+        "name": "rotazione",
+        "tooltip": "Rotazione iniziale in gradi, in senso orario."
+      },
+      "width": {
+        "name": "larghezza",
+        "tooltip": "Larghezza di visualizzazione iniziale. 0 mantiene la larghezza originale dell'immagine."
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "Posizionamento orizzontale iniziale sulla tela."
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "Posizionamento verticale iniziale sulla tela."
+      },
+      "z_index": {
+        "name": "z_index",
+        "tooltip": "Sovrascrittura dello stacking. I livelli sono ordinati stabilmente per z_index; valori uguali mantengono l'ordine della lista."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Lo stack di livelli con questo livello aggiunto."
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AddNoise",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "genera audio"
       },
+      "model_output_format": {
+        "name": "formato_output"
+      },
       "model_prompt": {
         "name": "prompt"
-      },
-      "model_ratio": {
-        "name": "rapporto"
       },
       "model_resolution": {
         "name": "risoluzione"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "genera audio"
       },
+      "model_output_format": {
+        "name": "formato_output"
+      },
       "model_prompt": {
         "name": "prompt"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "risoluzione"
+      },
+      "model_video_editing": {
+        "name": "editing_video"
       },
       "seed": {
         "name": "seed",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "genera_audio"
+      },
+      "model_output_format": {
+        "name": "formato_output"
       },
       "model_prompt": {
         "name": "prompt"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "Scomponi un'immagine in una base di sfondo più fino a 16 livelli trasparenti riposizionabili, ciascuno con ordine di sovrapposizione, riquadro di delimitazione, nome e descrizione.",
+    "display_name": "ByteDance Seedream 5.0 Pro Separazione Livelli",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo generazione"
+      },
+      "crop_layers": {
+        "name": "ritaglia_livelli",
+        "tooltip": "Geometria dei batch di output dei livelli/maschere (layer_stack non è influenzato e resta sempre aderente). Canvas intero: ogni livello su una tela base alla posizione del suo riquadro di delimitazione - ricomponi direttamente con ImageCompositeMasked. Dimensione minima: ogni livello ritagliato al suo riquadro di delimitazione (padded al livello più grande per il batch) - tensori molto più piccoli; ricostruisci la posizione con Layers From Bounding Boxes usando l'output bboxes."
+      },
+      "image": {
+        "name": "immagine",
+        "tooltip": "L'immagine da separare. Esattamente una immagine, almeno 512x512 pixel, rapporto d'aspetto tra 1:16 e 16:1. Gli input superiori a circa 4MP vengono ridimensionati prima del caricamento."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Come separare l'immagine. Lascia vuoto per rilevare automaticamente e separare tutti gli elementi principali. Descrivi gli elementi in linguaggio naturale per controllare la separazione, oppure indica regioni esatte con i tag <bbox>left top right bottom</bbox> (coordinate per-mille da 0 a 1000)."
+      },
+      "prompt_optimization": {
+        "name": "ottimizzazione_prompt",
+        "tooltip": "Modalità di ottimizzazione del prompt: 'standard' offre qualità superiore, 'fast' tempi di generazione più brevi."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed da utilizzare per la generazione."
+      },
+      "size": {
+        "name": "dimensione",
+        "tooltip": "Livello di risoluzione in output. 'auto' segue la dimensione dell'immagine di input (limitata nell'intervallo 1K-2K)."
+      },
+      "watermark": {
+        "name": "filigrana",
+        "tooltip": "Se aggiungere una filigrana \"AI generated\" alle immagini."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "immagine_base",
+        "tooltip": "L'immagine di base (sfondo) su cui si sovrappongono i livelli."
+      },
+      "1": {
+        "name": "maschera_base",
+        "tooltip": "Trasparenza dell'immagine di base (1 = trasparente, convenzione LoadImage); attualmente sempre completamente opaca."
+      },
+      "2": {
+        "name": "livelli",
+        "tooltip": "Livelli trasparenti ordinati dal basso verso l'alto. Modalità canvas intero: posizionati su una tela base nera alla posizione del loro riquadro di delimitazione. Modalità dimensione minima: ritagliati al loro riquadro di delimitazione, ancorati in alto a sinistra, padded al livello più grande."
+      },
+      "3": {
+        "name": "maschere",
+        "tooltip": "Trasparenza per livello, indicizzata come il batch dei livelli (1 = trasparente, convenzione LoadImage). Per compositing in stile ImageCompositeMasked, aggiungi prima InvertMask."
+      },
+      "4": {
+        "name": "riquadri",
+        "tooltip": "Un riquadro di posizionamento per livello, indicizzato come il batch dei livelli (fornisci entrambi, più maschere, a Layers From Bounding Boxes per ricostruire il posizionamento per livello): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] è la regione di contenuto del livello all'interno del proprio frame; viene posizionato sulla tela alla posizione del riquadro più quell'offset."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Documento livelli pronto per la modifica per Create Layered Image: la base più ogni elemento come proprio livello nominato, ritagliato stretto, alla sua vera posizione e ordine di sovrapposizione. Collega direttamente, oppure estendi con Add Layer."
       }
     }
   },
@@ -6928,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "Crea Immagine a Livelli",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "Composizione a livelli salvata dall'editor del compositore."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "Stack di livelli da comporre; costruiscilo con Aggiungi Livello. Gli elementi sono impilati secondo z_index, i frame in batch all'interno di un elemento si espandono in livelli consecutivi, e la posizione, opacità e modalità di fusione dell'elemento definiscono la composizione iniziale. Senza una canvas del documento esplicita, la dimensione è la massima estensione possibile dei livelli posizionati. Una composizione salvata che corrisponde agli input attuali ha la priorità."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Immagine composta. Include un canale alfa quando la composizione ha aree trasparenti (ad es. sfondo nascosto), altrimenti solo RGB."
+      },
+      "1": {
+        "tooltip": "Trasparenza della composizione (1 = completamente trasparente). Tutti zeri quando la composizione è opaca."
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "Ritaglia Immagine (DEPRECATO)",
     "inputs": {
@@ -9413,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "Trasforma un batch di immagini e i suoi riquadri di selezione in uno stack di livelli, un livello per frame, ciascuno posizionato dal proprio riquadro. Usalo quando un nodo emette livelli come batch: un batch porta un solo posizionamento per ogni frame, quindi le posizioni individuali andrebbero perse altrimenti.",
+    "display_name": "Livelli da Riquadri di Selezione",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Riquadri di posizionamento, allineati per indice con il batch di immagini. Accetta riquadri (x, y, larghezza, altezza), elementi normalizzati (con un 'bbox' - questi richiedono canvas_width/canvas_height per essere convertiti in pixel), o una stringa JSON di uno dei due. I frame senza un riquadro corrispondente sono posizionati all'origine. La larghezza/altezza di un riquadro scala il livello per adattarsi. metadata.name (o desc) e metadata.z_index sono usati se presenti, e metadata.content_rect (relativo al frame) ritaglia il frame al suo vero contenuto."
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "Altezza della canvas del documento. 0 la deriva dai livelli posizionati."
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "Larghezza della canvas del documento. 0 la deriva dai livelli posizionati."
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "Ritaglia ogni frame su metadata.content_rect se presente e posiziona il contenuto alla posizione del riquadro più l'offset del rettangolo. Lascia attivo per batch i cui frame sono imbottiti: mantiene solo il vero contenuto nella sua posizione reale."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Batch di immagini; ogni frame diventa un livello."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "Stack di livelli a cui aggiungere. Lascia scollegato per iniziare un nuovo stack."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Trasparenza per frame, allineata per indice con il batch di immagini (1 = trasparente, convenzione LoadImage)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Lo stack di livelli, pronto per Crea Immagine a Livelli."
       }
     }
   },

@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Interrompi"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Apri l'Editor dei Livelli per il Nodo Selezionato"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Carica workflow predefinito"
   },

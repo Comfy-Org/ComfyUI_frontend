@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "Agregar capa",
+    "inputs": {
+      "blend_mode": {
+        "name": "modo de fusión",
+        "tooltip": "Modo de fusión inicial."
+      },
+      "flip_h": {
+        "name": "voltear_h",
+        "tooltip": "Voltear la capa horizontalmente."
+      },
+      "flip_v": {
+        "name": "voltear_v",
+        "tooltip": "Voltear la capa verticalmente."
+      },
+      "height": {
+        "name": "alto",
+        "tooltip": "Alto de visualización inicial. 0 mantiene el alto nativo de la imagen."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Contenido de la capa en su tamaño nativo. Un lote se expande a capas consecutivas."
+      },
+      "layers": {
+        "name": "capas",
+        "tooltip": "Pila de capas a la que se va a añadir. Déjelo sin conectar para iniciar una nueva pila."
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Máscara de transparencia para esta capa. Las áreas enmascaradas (valor 1) se vuelven transparentes, multiplicándose con cualquier canal alfa que la imagen ya tenga."
+      },
+      "name": {
+        "name": "nombre",
+        "tooltip": "Nombre de la capa mostrado en el editor de composición."
+      },
+      "opacity": {
+        "name": "opacidad",
+        "tooltip": "Opacidad inicial de la capa."
+      },
+      "rotation": {
+        "name": "rotación",
+        "tooltip": "Rotación inicial en grados, en sentido horario."
+      },
+      "width": {
+        "name": "ancho",
+        "tooltip": "Ancho de visualización inicial. 0 mantiene el ancho nativo de la imagen."
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "Ubicación horizontal inicial en el lienzo."
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "Ubicación vertical inicial en el lienzo."
+      },
+      "z_index": {
+        "name": "índice z",
+        "tooltip": "Anulación de apilamiento. Las capas se ordenan de forma estable por índice z; los valores iguales mantienen su orden en la lista."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "La pila de capas con esta capa añadida."
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AñadirRuido",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "generar_audio"
       },
+      "model_output_format": {
+        "name": "formato_de_salida"
+      },
       "model_prompt": {
         "name": "prompt"
-      },
-      "model_ratio": {
-        "name": "relación"
       },
       "model_resolution": {
         "name": "resolución"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "generar_audio"
       },
+      "model_output_format": {
+        "name": "formato_de_salida"
+      },
       "model_prompt": {
         "name": "prompt"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "resolución"
+      },
+      "model_video_editing": {
+        "name": "edición_de_video"
       },
       "seed": {
         "name": "semilla",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "generar_audio"
+      },
+      "model_output_format": {
+        "name": "formato_de_salida"
       },
       "model_prompt": {
         "name": "prompt"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "Descompone una imagen en una placa de fondo más hasta 16 capas transparentes reposicionables, cada una con orden de apilamiento, caja delimitadora, nombre y descripción.",
+    "display_name": "ByteDance Seedream 5.0 Pro Separación de Capas",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "crop_layers": {
+        "name": "recortar_capas",
+        "tooltip": "Geometría de las salidas por lote de capas/máscaras (layer_stack no se ve afectado y siempre es ajustado). Lienzo completo: cada capa en un lienzo del tamaño base en su posición de caja delimitadora - recomponer directamente con ImageCompositeMasked. Tamaño mínimo: cada capa recortada a su caja delimitadora (rellenada al tamaño de la capa más grande para el lote) - tensores mucho más pequeños; reconstruir la colocación con Layers From Bounding Boxes usando la salida bboxes."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "La imagen a separar. Exactamente una imagen, al menos 512x512 píxeles, relación de aspecto entre 1:16 y 16:1. Las entradas mayores a unos 4MP se reducen antes de subir."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Cómo separar la imagen. Déjalo vacío para detectar automáticamente y separar todos los elementos principales. Describe los elementos en lenguaje natural para controlar la separación, o apunta a regiones exactas con etiquetas <bbox>izquierda arriba derecha abajo</bbox> (coordenadas por mil de 0-1000)."
+      },
+      "prompt_optimization": {
+        "name": "optimización_prompt",
+        "tooltip": "Modo de optimización del prompt: 'standard' da mayor calidad, 'fast' menor tiempo de generación."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla a usar para la generación."
+      },
+      "size": {
+        "name": "tamaño",
+        "tooltip": "Nivel de resolución de salida. 'auto' sigue el tamaño de la imagen de entrada (limitado al rango 1K-2K)."
+      },
+      "watermark": {
+        "name": "marca_de_agua",
+        "tooltip": "Si se añade o no una marca de agua \"AI generated\" a las imágenes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagen_base",
+        "tooltip": "La imagen base (placa de fondo) sobre la que se apilan las capas."
+      },
+      "1": {
+        "name": "máscara_base",
+        "tooltip": "Transparencia de la imagen base (1 = transparente, convención LoadImage); actualmente siempre completamente opaca."
+      },
+      "2": {
+        "name": "capas",
+        "tooltip": "Capas transparentes ordenadas de abajo hacia arriba. Modo lienzo completo: colocadas en un lienzo negro del tamaño base en su posición de caja delimitadora. Modo tamaño mínimo: recortadas a su caja delimitadora, ancladas arriba a la izquierda, rellenadas al tamaño de la capa más grande."
+      },
+      "3": {
+        "name": "máscaras",
+        "tooltip": "Transparencia por capa, alineada por índice con el lote de capas (1 = transparente, convención LoadImage). Para composición estilo ImageCompositeMasked, añade primero InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Una caja de colocación por capa, alineada por índice con el lote de capas (alimenta ambos, más máscaras, a Layers From Bounding Boxes para reconstruir la colocación por capa): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [izquierda, arriba, ancho, alto] es la región de contenido de la capa dentro de su propio marco; se coloca en el lienzo en la posición de la caja más ese desplazamiento."
+      },
+      "5": {
+        "name": "pila_de_capas",
+        "tooltip": "Documento de capas listo para editar para Crear Imagen por Capas: la placa base más cada elemento como su propia capa nombrada, recortada y ajustada en su posición real y orden de apilamiento. Conecta directamente, o extiende con Añadir Capa."
       }
     }
   },
@@ -6928,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "Crear imagen por capas",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "Composición por capas guardada por el editor de compositor."
+      },
+      "layers": {
+        "name": "capas",
+        "tooltip": "Pila de capas para componer; constrúyela con Agregar capa. Los elementos se apilan por z_index, los fotogramas por lotes dentro de un elemento se expanden a capas consecutivas, y la colocación, opacidad y modo de fusión de cada elemento definen la composición inicial. Sin un lienzo de documento explícito, el tamaño es el máximo posible según la extensión de las capas colocadas. Una composición guardada que coincida con las entradas actuales tiene prioridad."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Imagen compuesta. Incluye canal alfa cuando la composición tiene áreas transparentes (por ejemplo, fondo oculto), de lo contrario es RGB normal."
+      },
+      "1": {
+        "tooltip": "Transparencia de la composición (1 = completamente transparente). Todo ceros cuando la composición es opaca."
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "Recorte de Imagen",
     "inputs": {
@@ -9413,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "Convierte un lote de imágenes y sus cajas delimitadoras en una pila de capas, una capa por fotograma, cada una colocada según su propia caja. Usa esto cuando un nodo emite capas como un lote: un lote lleva una sola colocación para cada fotograma, por lo que las posiciones individuales se pierden de otro modo.",
+    "display_name": "Capas desde cajas delimitadoras",
+    "inputs": {
+      "bboxes": {
+        "name": "cajas",
+        "tooltip": "Cajas de colocación, alineadas por índice con el lote de imágenes. Acepta cajas delimitadoras (x, y, ancho, alto), elementos normalizados (con un 'bbox', estos requieren canvas_width/canvas_height para resolverse a píxeles), o una cadena JSON de cualquiera de los dos. Los fotogramas sin caja correspondiente se colocan en el origen. El ancho/alto de una caja escala la capa para ajustarse. metadata.name (o desc) y metadata.z_index se usan si están presentes, y metadata.content_rect (relativo al fotograma) recorta el fotograma a su contenido real."
+      },
+      "canvas_height": {
+        "name": "alto_lienzo",
+        "tooltip": "Alto del lienzo del documento. 0 lo deriva de las capas colocadas."
+      },
+      "canvas_width": {
+        "name": "ancho_lienzo",
+        "tooltip": "Ancho del lienzo del documento. 0 lo deriva de las capas colocadas."
+      },
+      "crop_to_content": {
+        "name": "recortar_al_contenido",
+        "tooltip": "Recorta cada fotograma a metadata.content_rect si está presente y coloca el contenido en la posición de la caja más el desplazamiento del rectángulo. Déjalo activado para lotes cuyos fotogramas estén acolchados: mantiene solo el contenido real en su lugar correcto."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Lote de imágenes; cada fotograma se convierte en una capa."
+      },
+      "layers": {
+        "name": "capas",
+        "tooltip": "Pila de capas a la que añadir. Déjalo sin conectar para iniciar una nueva pila."
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Transparencia por fotograma, alineada por índice con el lote de imágenes (1 = transparente, convención de LoadImage)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "La pila de capas, lista para Crear imagen por capas."
       }
     }
   },

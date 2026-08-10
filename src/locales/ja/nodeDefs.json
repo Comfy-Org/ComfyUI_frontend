@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "レイヤーを追加",
+    "inputs": {
+      "blend_mode": {
+        "name": "ブレンドモード",
+        "tooltip": "初期ブレンドモード。"
+      },
+      "flip_h": {
+        "name": "水平反転",
+        "tooltip": "レイヤーを水平方向に反転します。"
+      },
+      "flip_v": {
+        "name": "垂直反転",
+        "tooltip": "レイヤーを垂直方向に反転します。"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "初期表示高さ。0の場合は画像の元の高さを維持します。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "レイヤーの内容（元のサイズ）。バッチの場合は連続したレイヤーに展開されます。"
+      },
+      "layers": {
+        "name": "レイヤースタック",
+        "tooltip": "追加先のレイヤースタック。未接続の場合は新しいスタックを開始します。"
+      },
+      "mask": {
+        "name": "マスク",
+        "tooltip": "このレイヤーの透明度マスク。マスク値が1の領域は透明になり、画像が持つアルファチャンネルと乗算されます。"
+      },
+      "name": {
+        "name": "名前",
+        "tooltip": "コンポジターエディタに表示されるレイヤー名。"
+      },
+      "opacity": {
+        "name": "不透明度",
+        "tooltip": "初期レイヤーの不透明度。"
+      },
+      "rotation": {
+        "name": "回転",
+        "tooltip": "初期回転角度（度・時計回り）。"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "初期表示幅。0の場合は画像の元の幅を維持します。"
+      },
+      "x": {
+        "name": "X座標",
+        "tooltip": "キャンバス上での初期水平位置。"
+      },
+      "y": {
+        "name": "Y座標",
+        "tooltip": "キャンバス上での初期垂直位置。"
+      },
+      "z_index": {
+        "name": "Zインデックス",
+        "tooltip": "スタッキングの上書き。レイヤーはz_indexで安定ソートされ、同じ値の場合はリスト順を維持します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "このレイヤーが追加されたレイヤースタック。"
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "ノイズを追加",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "オーディオ生成"
       },
+      "model_output_format": {
+        "name": "出力フォーマット"
+      },
       "model_prompt": {
         "name": "プロンプト"
-      },
-      "model_ratio": {
-        "name": "アスペクト比"
       },
       "model_resolution": {
         "name": "解像度"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "オーディオ生成"
       },
+      "model_output_format": {
+        "name": "出力フォーマット"
+      },
       "model_prompt": {
         "name": "プロンプト"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "解像度"
+      },
+      "model_video_editing": {
+        "name": "ビデオ編集"
       },
       "seed": {
         "name": "シード",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "オーディオ生成"
+      },
+      "model_output_format": {
+        "name": "出力フォーマット"
       },
       "model_prompt": {
         "name": "プロンプト"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "画像を背景プレートと、最大16個までの再配置可能な透明レイヤーに分解します。各レイヤーには積み重ね順、バウンディングボックス、名前、説明が含まれます。",
+    "display_name": "ByteDance Seedream 5.0 Pro レイヤー分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "crop_layers": {
+        "name": "crop_layers",
+        "tooltip": "レイヤー／マスクのバッチ出力のジオメトリ（layer_stackには影響せず、常にタイトです）。フルキャンバス：各レイヤーをバウンディングボックス位置のベースサイズキャンバスに配置—ImageCompositeMaskedで直接再合成可能。最小サイズ：各レイヤーをバウンディングボックスで切り抜き（バッチ処理のため最大レイヤーにパディング）—テンソルが大幅に小さくなります。配置の再構築はbboxes出力をLayers From Bounding Boxesに入力してください。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "分離する画像。画像は1枚のみ、最低512x512ピクセル、アスペクト比は1:16から16:1の範囲。約4MPを超える入力はアップロード前に縮小されます。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "画像をどのように分離するか。空欄の場合は自動検出し、主要な要素をすべて分離します。自然言語で要素を記述して分離を制御したり、<bbox>left top right bottom</bbox>タグ（0-1000のパーミル座標）で正確な領域を指定できます。"
+      },
+      "prompt_optimization": {
+        "name": "prompt_optimization",
+        "tooltip": "プロンプト最適化モード：「standard」は高品質、「fast」は生成時間が短縮されます。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "出力解像度レベル。「auto」は入力画像サイズに従います（1K～2K範囲に制限）。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "画像に「AI生成」のウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "レイヤーが積み重なるベース画像（背景プレート）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "ベース画像の透明度（1 = 透明、LoadImageの規則）。現在は常に完全不透明です。"
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "下から上に順に並んだ透明レイヤー。フルキャンバスモード：バウンディングボックス位置の黒いベースサイズキャンバスに配置。最小サイズモード：バウンディングボックスで切り抜き、左上に固定、最大レイヤーにパディング。"
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "各レイヤーの透明度。layersバッチとインデックスが一致（1 = 透明、LoadImageの規則）。ImageCompositeMasked型の合成にはInvertMaskを先に追加してください。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "各レイヤーごとの配置ボックス。layersバッチとインデックスが一致（両方とmasksをLayers From Bounding Boxesに入力してレイヤーごとの配置を再構築）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height]はレイヤー自身のフレーム内のコンテンツ領域で、キャンバス上ではボックス位置＋そのオフセットに配置されます。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image用の編集可能なレイヤードキュメント：ベースプレートと、各要素が本来の位置と積み重ね順で名前付き・タイトに切り抜かれたレイヤーとして含まれます。直接接続するか、Add Layerで拡張可能です。"
       }
     }
   },
@@ -6928,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "レイヤー画像の作成",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "compositorエディタで保存されたレイヤー合成。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "合成するレイヤースタック。Add Layerで構築します。アイテムはz_indexで積み重ねられ、バッチ内のフレームは連続したレイヤーに展開されます。アイテムの配置、不透明度、ブレンドモードが初期合成を定義します。明示的なドキュメントキャンバスがない場合、サイズは配置されたレイヤーの最大範囲を推定します。現在の入力と一致する保存済みの合成が優先されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "合成画像。合成に透明部分がある場合（例：非表示の背景）、アルファチャンネルを持ちます。そうでなければ通常のRGBです。"
+      },
+      "1": {
+        "tooltip": "合成画像の透明度（1 = 完全に透明）。合成が不透明な場合はすべてゼロです。"
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "画像トリミング",
     "inputs": {
@@ -9413,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "画像バッチとそのバウンディングボックスからレイヤースタックを作成します。各フレームごとに1つのレイヤーが作られ、それぞれ自身のボックスで配置されます。ノードがレイヤーをバッチとして出力する場合に使用します。バッチは各フレームごとに1つの配置しか持たないため、個別の位置情報は通常失われます。",
+    "display_name": "バウンディングボックスからレイヤー作成",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "配置ボックス。画像バッチとインデックスが揃っています。バウンディングボックス（x, y, width, height）、正規化要素（'bbox'を持つもの。これらはcanvas_width/canvas_heightでピクセルに変換）、またはそのいずれかのJSON文字列を受け付けます。対応するボックスがないフレームは原点に配置されます。ボックスのwidth/heightでレイヤーがスケーリングされます。metadata.name（またはdesc）とmetadata.z_indexがあれば使用され、metadata.content_rect（フレーム相対）はフレームを実際の内容で切り抜きます。"
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "ドキュメントキャンバスの高さ。0の場合は配置されたレイヤーから推定します。"
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "ドキュメントキャンバスの幅。0の場合は配置されたレイヤーから推定します。"
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "metadata.content_rectがある場合は各フレームをその範囲で切り抜き、ボックス位置＋rectオフセットに内容を配置します。フレームがパディングされているバッチの場合はオンにしてください。本来の内容だけを正しい位置に残します。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "画像バッチ。各フレームが1つのレイヤーになります。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "追加するレイヤースタック。未接続の場合は新しいスタックを開始します。"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "フレームごとの透明度。画像バッチとインデックスが揃っています（1 = 透明、LoadImageの規則）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Create Layered Image用のレイヤースタック。"
       }
     }
   },
