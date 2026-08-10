@@ -5314,8 +5314,8 @@ const translations = {
   },
   'fdct.howItWorks.step2.title': { en: 'Build', 'zh-CN': '构建' },
   'fdct.howItWorks.step2.description': {
-    en: 'inside your Comfy Enterprise environment',
-    'zh-CN': '在你的 Comfy Enterprise 环境中'
+    en: 'Inside your Comfy Enterprise environment.',
+    'zh-CN': '在你的 Comfy Enterprise 环境中。'
   },
   'fdct.howItWorks.step3.title': { en: 'Enable', 'zh-CN': '赋能' },
   'fdct.howItWorks.step3.description': {
@@ -5324,8 +5324,8 @@ const translations = {
   },
   'fdct.howItWorks.step4.title': { en: 'Own', 'zh-CN': '拥有' },
   'fdct.howItWorks.step4.description': {
-    en: 'what we build is yours, and you can change it without us',
-    'zh-CN': '我们构建的成果归你所有，你无需我们也能修改它'
+    en: 'What we build is yours, and you can change it without us.',
+    'zh-CN': '我们构建的成果归你所有，你无需我们也能修改它。'
   },
   'fdct.howItWorks.footnote': {
     en: "The direct line stays open. We're here when your team needs us.",

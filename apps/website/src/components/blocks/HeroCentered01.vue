@@ -46,7 +46,7 @@ const {
 
     <p
       v-if="subtitle"
-      class="mt-6 text-base font-light text-primary-comfy-canvas lg:text-lg"
+      class="mt-6 text-base font-light text-balance text-primary-comfy-canvas lg:text-lg"
     >
       {{ subtitle }}
     </p>
