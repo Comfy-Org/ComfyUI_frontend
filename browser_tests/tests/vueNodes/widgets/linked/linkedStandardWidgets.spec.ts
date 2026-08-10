@@ -42,6 +42,9 @@ test.describe(
       const linkedContent = targetNode.getByTestId(
         TestIds.widgets.linkedContent
       )
+      const focusedLinkedContent = targetNode.locator(
+        `[data-testid="${TestIds.widgets.linkedContent}"]:focus-within`
+      )
       await expect(statuses).toHaveCount(WIDGET_NAMES.length)
       await expect(linkedContent).toHaveCount(WIDGET_NAMES.length)
 
@@ -125,7 +128,7 @@ test.describe(
 
       for (let index = 0; index < WIDGET_NAMES.length + 2; index++) {
         await comfyPage.page.keyboard.press('Tab')
-        await expect(linkedContent.locator(':focus-within')).toHaveCount(0)
+        await expect(focusedLinkedContent).toHaveCount(0)
       }
 
       await expect
