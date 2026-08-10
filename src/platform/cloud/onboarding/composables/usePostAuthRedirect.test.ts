@@ -61,9 +61,10 @@ describe('usePostAuthRedirect', () => {
 
     await onAuthSuccess()
 
-    // `replace`, not `push`: the login page must not sit in the back stack,
-    // where Back would bounce the now-signed-in user into the guard again.
-    expect(replace).toHaveBeenCalledWith('/some/path?x=1')
+    expect(
+      replace,
+      'push would leave the login page in the back stack, where Back bounces the signed-in user into the guard again'
+    ).toHaveBeenCalledWith('/some/path?x=1')
     expect(push).not.toHaveBeenCalled()
   })
 
@@ -78,15 +79,16 @@ describe('usePostAuthRedirect', () => {
   })
 
   it('lets an OAuth resume outrank a deep link', async () => {
-    // Both signals present: the OAuth handshake owns the navigation, otherwise
-    // the client app that started it never gets its consent screen.
     query.value = { previousFullPath: encodeURIComponent('/some/path') }
     resumeOAuthIfNeeded.mockResolvedValue({ kind: 'resumed' })
     const { onAuthSuccess } = setup()
 
     await onAuthSuccess()
 
-    expect(replace).not.toHaveBeenCalled()
+    expect(
+      replace,
+      'the OAuth handshake owns the navigation, otherwise the client app that started it never gets its consent screen'
+    ).not.toHaveBeenCalled()
     expect(push).not.toHaveBeenCalled()
   })
 
@@ -106,8 +108,6 @@ describe('usePostAuthRedirect', () => {
   })
 
   it('also toasts an OAuth resume failure, for social sign-in', async () => {
-    // authError only renders in email-form mode, so a Google/GitHub user would
-    // otherwise see the failure nowhere at all.
     resumeOAuthIfNeeded.mockResolvedValue({
       kind: 'error',
       message: 'Session expired'
@@ -116,7 +116,10 @@ describe('usePostAuthRedirect', () => {
 
     await onAuthSuccess()
 
-    expect(toasts.add).toHaveBeenCalledWith(
+    expect(
+      toasts.add,
+      'authError only renders in email-form mode, so a Google/GitHub user would see the failure nowhere at all'
+    ).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error', detail: 'Session expired' })
     )
   })

@@ -80,8 +80,6 @@ describe('CloudSignInForm', () => {
 })
 
 describe('CloudSignInForm password manager support', () => {
-  // Password managers key off these attributes. They break silently on a
-  // refresh and nobody notices for weeks, so they are pinned explicitly.
   it('marks the email field for autofill with a stable id', () => {
     renderRealForm()
 
@@ -100,8 +98,6 @@ describe('CloudSignInForm password manager support', () => {
   it('binds both labels to their inputs', () => {
     renderRealForm()
 
-    // getByLabelText resolves through for/id, so it passing *is* the assertion
-    // that the association exists.
     expect(screen.getByLabelText(LOGIN_COPY.emailLabel)).toBe(emailField())
     expect(screen.getByLabelText(LOGIN_COPY.passwordLabel)).toBe(
       passwordField()
@@ -111,8 +107,7 @@ describe('CloudSignInForm password manager support', () => {
 
 describe('CloudSignInForm submit gating', () => {
   // PrimeVue leaves `$form.valid` undefined until a field is touched, so the
-  // pristine button is enabled and submitting it is what surfaces the errors.
-  // The gate that matters is the one below: an invalid form cannot emit.
+  // pristine button is enabled by design and is not asserted here.
   it('disables submit once a field is touched and invalid', async () => {
     const user = userEvent.setup()
     renderRealForm()
@@ -168,12 +163,13 @@ describe('CloudSignInForm submit gating', () => {
     const { emitted } = renderRealForm()
 
     await user.type(emailField(), 'user@example.com')
-    // Enter inside a field is how most people submit a login form; a handler
-    // wired only to the button's click would never fire here.
     await user.type(passwordField(), 'Password1!{Enter}')
 
     await waitFor(() => {
-      expect(emitted().submit).toBeTruthy()
+      expect(
+        emitted().submit,
+        'a handler wired only to the button click would never fire for the Enter key most people submit with'
+      ).toBeTruthy()
     })
     expect(emitted().submit[0]).toEqual([
       { email: 'user@example.com', password: 'Password1!' }
@@ -182,8 +178,6 @@ describe('CloudSignInForm submit gating', () => {
 })
 
 describe('CloudSignInForm in-flight state', () => {
-  // `loading` is store-global, so any auth action in flight disables this
-  // button — including one started elsewhere in the app.
   it('disables submit and marks it busy while an auth action runs', () => {
     loading.value = true
     renderRealForm()

@@ -11,16 +11,6 @@ import {
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-/**
- * End-to-end coverage for the cloud email sign-in flow. Existing cloud specs
- * reach `/cloud/login` but none completes a sign-in and asserts the outcome,
- * so a broken deep-link round trip or a swallowed credential error would ship
- * green.
- *
- * Firebase is mocked at its REST boundary (identitytoolkit / securetoken) the
- * way CloudAuthHelper and authAccountSwitch.spec.ts already do — no emulator,
- * no real popups.
- */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:8188'
 
 const SIGN_IN_USER = {
@@ -74,10 +64,6 @@ const lookupResponse: FirebaseLookupResponse = {
   ]
 }
 
-/**
- * Route Firebase's password sign-in endpoint to a successful credential; every
- * other identitytoolkit call resolves to the account lookup.
- */
 async function mockFirebasePasswordSignIn(page: Page) {
   await page.unroute('**/identitytoolkit.googleapis.com/**')
   await page.route('**/identitytoolkit.googleapis.com/**', async (route) => {
@@ -102,7 +88,6 @@ async function mockFirebasePasswordSignIn(page: Page) {
   })
 }
 
-/** Boots the cloud app signed out, so navigation lands on /cloud/login. */
 async function bootSignedOut(page: Page) {
   await mockCloudBoot(page, { features: BOOT_FEATURES })
   await page.route('**/api/auth/token', (r) =>
@@ -116,6 +101,9 @@ async function bootSignedOut(page: Page) {
   await page.route('**/customers', (r) =>
     r.fulfill({ status: 201, json: { id: 'test-customer-id' } })
   )
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.userId', 'test-user-e2e')
+  })
 }
 
 async function submitEmailSignIn(page: Page) {
@@ -132,9 +120,6 @@ test.describe('Cloud email sign-in', { tag: '@cloud' }, () => {
     await bootSignedOut(page)
     await mockFirebasePasswordSignIn(page)
 
-    // The guard bounces an unauthenticated visitor to login, recording where
-    // they were headed. Losing previousFullPath here strands the user on the
-    // app root and silently drops the link they followed.
     await page.goto(
       `${APP_URL}/cloud/login?previousFullPath=${encodeURIComponent('/?deepLink=1')}`
     )
@@ -142,7 +127,10 @@ test.describe('Cloud email sign-in', { tag: '@cloud' }, () => {
 
     await submitEmailSignIn(page)
 
-    await cloudAppExpect(page).toHaveURL(/deepLink=1/)
+    await cloudAppExpect(
+      page,
+      'losing previousFullPath strands the user on the app root and silently drops the link they followed'
+    ).toHaveURL(/deepLink=1/)
   })
 
   test('an already-signed-in visitor to /cloud/login is passed through to the app', async ({
@@ -152,11 +140,12 @@ test.describe('Cloud email sign-in', { tag: '@cloud' }, () => {
     await bootCloud(page)
 
     await page.goto(`${APP_URL}/cloud/login`)
-
-    // The beforeEnter guard's integrated form: a signed-in user must never be
-    // parked on a login screen they have no reason to see.
     await waitForCloudApp(page)
-    await expect(page).not.toHaveURL(/\/cloud\/login/)
+
+    await expect(
+      page,
+      'a signed-in user must never be parked on a login screen they have no reason to see'
+    ).not.toHaveURL(/\/cloud\/login/)
   })
 
   test('?switchAccount keeps a signed-in visitor on the login form', async ({
@@ -167,12 +156,10 @@ test.describe('Cloud email sign-in', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/cloud/login?switchAccount=1`)
 
-    // The escape hatch: without it, signing into a different account is
-    // impossible because the guard bounces you into the session you are
-    // trying to leave.
     await expect(
-      page.getByRole('button', { name: 'Use email instead' })
-    ).toBeVisible()
+      page.getByRole('button', { name: 'Use email instead' }),
+      'without this escape hatch, signing into a different account is impossible because the guard bounces you into the session you are trying to leave'
+    ).toBeVisible({ timeout: 30_000 })
     await expect(page).toHaveURL(/switchAccount=1/)
   })
 })

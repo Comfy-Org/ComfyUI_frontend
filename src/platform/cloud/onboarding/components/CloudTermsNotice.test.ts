@@ -6,12 +6,6 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CloudTermsNotice from './CloudTermsNotice.vue'
 
-/**
- * The notice is a single sentence assembled from four separate keys and laid
- * out with flex-wrap, so a locale with longer copy reflows it. These render it
- * with real message bundles to prove no fragment is hard-coded English and the
- * links survive translation.
- */
 function renderNotice(messages: Record<string, object | string>) {
   return render(CloudTermsNotice, {
     global: {
@@ -48,18 +42,20 @@ describe('CloudTermsNotice', () => {
     ).toHaveAttribute('href', 'https://www.comfy.org/privacy-policy')
   })
 
-  it('opens the policy links safely in a new tab', () => {
+  it('opens every outbound link safely in a new tab', () => {
     renderNotice(enMessages)
 
-    // target=_blank without noopener hands the opened page a handle on this
-    // one via window.opener — on a sign-in page that is worth pinning.
     for (const name of [
       enMessages.auth.login.termsLink,
-      enMessages.auth.login.privacyLink
+      enMessages.auth.login.privacyLink,
+      enMessages.cloudWaitlist_contactLink
     ]) {
       const link = screen.getByRole('link', { name })
       expect(link).toHaveAttribute('target', '_blank')
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+      expect(
+        link,
+        'target=_blank without noopener hands the opened page a window.opener handle on this sign-in page'
+      ).toHaveAttribute('rel', 'noopener noreferrer')
     }
   })
 
@@ -74,8 +70,6 @@ describe('CloudTermsNotice', () => {
   it('renders every fragment from the locale, not hard-coded copy', () => {
     renderNotice(LONG_LOCALE)
 
-    // A normalizer that ignores the whitespace flex-wrap introduces between
-    // the four fragments, so the assertion survives a reflow.
     const inSentence = (needle: string) =>
       screen.getByText((_, element) => {
         if (element?.tagName !== 'P') return false
@@ -88,6 +82,9 @@ describe('CloudTermsNotice', () => {
       screen.getByRole('link', { name: LONG_LOCALE.auth.login.termsLink })
     ).toBeInTheDocument()
     expect(
+      screen.getByRole('link', { name: LONG_LOCALE.auth.login.privacyLink })
+    ).toBeInTheDocument()
+    expect(
       screen.queryByRole('link', { name: 'Privacy Policy' })
     ).not.toBeInTheDocument()
   })
@@ -95,14 +92,13 @@ describe('CloudTermsNotice', () => {
   it('keeps the sentence punctuated once translated', () => {
     renderNotice(LONG_LOCALE)
 
-    // The trailing period lives in the template, outside the four keys, so a
-    // reflow that drops it would otherwise go unnoticed.
     expect(
       screen.getByText((_, element) => {
         if (element?.tagName !== 'P') return false
         const text = (element.textContent ?? '').replace(/\s+/g, ' ')
         return text.includes(`${LONG_LOCALE.auth.login.privacyLink}.`)
-      })
+      }),
+      'the trailing period lives in the template, outside the four keys, so a reflow can drop it unnoticed'
     ).toBeInTheDocument()
   })
 })

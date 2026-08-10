@@ -27,10 +27,9 @@ const errorAt = (
 
 describe('signInSchema', () => {
   it('accepts an email and any non-empty password', () => {
-    // Sign-in deliberately does not apply the sign-up complexity rules: an
-    // account created before those rules existed must still be able to log in.
     expect(
-      signInSchema.safeParse({ email: 'a@b.co', password: 'x' }).success
+      signInSchema.safeParse({ email: 'a@b.co', password: 'x' }).success,
+      'sign-in must not apply the sign-up complexity rules, or accounts created before those rules can never log in'
     ).toBe(true)
   })
 
@@ -52,8 +51,6 @@ describe('signInSchema', () => {
 })
 
 describe('signUpSchema password length boundaries', () => {
-  // 7/8 and 32/33 are the inclusive edges of the 8..32 rule. A regression that
-  // slips the bound by one shows up here and nowhere else.
   it.for([
     ['7 chars is too short', 'Pas1!aa', false],
     ['8 chars is the minimum', 'Pass1!aa', true],
@@ -64,13 +61,16 @@ describe('signUpSchema password length boundaries', () => {
       signUpValues({ password, confirmPassword: password })
     )
 
-    expect(result.success).toBe(expected)
+    expect(
+      result.success,
+      'these are the inclusive edges of the 8..32 rule, so a bound that slips by one shows up here and nowhere else'
+    ).toBe(expected)
   })
 })
 
 describe('signUpSchema character classes', () => {
-  // Each case is a password that satisfies every rule but the named one, so a
-  // dropped regex fails exactly one of these instead of all four.
+  // Each case satisfies every rule but the named one, so a dropped regex fails
+  // exactly one of these instead of all four.
   it.for([
     ['uppercase', 'password1!'],
     ['lowercase', 'PASSWORD1!'],
@@ -97,9 +97,10 @@ describe('signUpSchema confirmPassword', () => {
     )
 
     expect(result.success).toBe(false)
-    // The refine must target confirmPassword: an error pinned to `password`
-    // would render under the wrong input.
-    expect(errorAt(result, 'confirmPassword')).toBeDefined()
+    expect(
+      errorAt(result, 'confirmPassword'),
+      'the refine must target confirmPassword, or the error renders under the wrong input'
+    ).toBeDefined()
     expect(errorAt(result, 'password')).toBeUndefined()
   })
 
@@ -111,8 +112,6 @@ describe('signUpSchema confirmPassword', () => {
 })
 
 describe('updatePasswordSchema', () => {
-  // Shares `passwordSchema` with sign-up, and refines separately. The password
-  // reset flow is the one place these rules apply without an email field.
   it('accepts a valid matching pair', () => {
     expect(
       updatePasswordSchema.safeParse({

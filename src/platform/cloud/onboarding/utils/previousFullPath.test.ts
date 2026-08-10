@@ -30,16 +30,16 @@ describe('getSafePreviousFullPath', () => {
   })
 
   test('takes the first entry when the param is repeated', () => {
-    // vue-router yields an array for `?previousFullPath=a&previousFullPath=b`.
-    // Reading the last entry instead would let an attacker override a
-    // legitimate value by appending a second one.
     const query: LocationQuery = {
       previousFullPath: [
         encodeURIComponent('/first'),
         encodeURIComponent('//evil.com')
       ]
     }
-    expect(getSafePreviousFullPath(query)).toBe('/first')
+    expect(
+      getSafePreviousFullPath(query),
+      'reading the last entry would let an attacker override a legitimate value by appending a second one'
+    ).toBe('/first')
   })
 
   test('rejects a repeated param whose first entry is unsafe', () => {
