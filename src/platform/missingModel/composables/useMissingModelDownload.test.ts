@@ -42,26 +42,28 @@ describe('useMissingModelDownload', () => {
     vi.restoreAllMocks()
   })
 
-  it('stores fetched file metadata', async () => {
+  it('exposes fetched file metadata to components', async () => {
     mocks.fetchModelMetadata.mockResolvedValueOnce({
       fileSize: 1024,
       gatedRepoUrl: null
     })
 
-    await useMissingModelDownload().prefetchModelMetadata(downloadUrl)
+    const { fileSizeFor, prefetchModelMetadata } = useMissingModelDownload()
+    await prefetchModelMetadata(downloadUrl)
 
-    expect(useMissingModelStore().fileSizes[downloadUrl]).toBe(1024)
+    expect(fileSizeFor(downloadUrl)).toBe(1024)
   })
 
-  it('stores fetched gated repository metadata', async () => {
+  it('exposes fetched gated repository metadata to components', async () => {
     mocks.fetchModelMetadata.mockResolvedValueOnce({
       fileSize: null,
       gatedRepoUrl: repoUrl
     })
 
-    await useMissingModelDownload().prefetchModelMetadata(downloadUrl)
+    const { gatedRepoUrlFor, prefetchModelMetadata } = useMissingModelDownload()
+    await prefetchModelMetadata(downloadUrl)
 
-    expect(useMissingModelStore().gatedRepoUrls[downloadUrl]).toBe(repoUrl)
+    expect(gatedRepoUrlFor(downloadUrl)).toBe(repoUrl)
   })
 
   it('skips metadata already classified by the store', async () => {
