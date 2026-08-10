@@ -119,8 +119,6 @@ describe('SignUpForm', () => {
     return { ...utils, user }
   }
 
-  /** Renders through a host holding a ref, so the exposed `resetTurnstile()`
-   * can be invoked the way SignInContent does. */
   function renderWithRef() {
     const formRef = ref<{ resetTurnstile: () => void } | null>(null)
     const Host = defineComponent({

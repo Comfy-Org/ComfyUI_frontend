@@ -16,7 +16,6 @@ const signUpValues = (overrides: Partial<Record<string, string>> = {}) => ({
   ...overrides
 })
 
-/** The message a schema attached to `path`, or undefined if `path` passed. */
 const errorAt = (
   result: SafeParseReturnType<unknown, unknown>,
   path: string
@@ -69,8 +68,6 @@ describe('signUpSchema password length boundaries', () => {
 })
 
 describe('signUpSchema character classes', () => {
-  // Each case satisfies every rule but the named one, so a dropped regex fails
-  // exactly one of these instead of all four.
   it.for([
     ['uppercase', 'password1!'],
     ['lowercase', 'PASSWORD1!'],

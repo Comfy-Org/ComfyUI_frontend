@@ -141,10 +141,6 @@ const guardedRoutes = ['cloud-login', 'cloud-signup'].map((name) => {
 
 type GuardedRoute = (typeof guardedRoutes)[number]
 
-/**
- * Runs a guard the way vue-router does and reports what it passed to `next()`.
- * `undefined` means the guard let the navigation through untouched.
- */
 async function runGuard(
   [name, guard, path]: GuardedRoute,
   query: Record<string, string>
@@ -161,8 +157,6 @@ async function runGuard(
   return next.mock.calls[0]?.[0]
 }
 
-// `cloud-login` and `cloud-signup` carry byte-identical guards, so both are
-// driven here — covering one would leave the other free to regress.
 describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   beforeEach(() => {
     loggedIn.value = false

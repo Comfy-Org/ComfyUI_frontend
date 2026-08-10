@@ -46,7 +46,6 @@ function renderForm(
   })
 }
 
-/** Renders with real English copy, which the field-level queries need. */
 const renderRealForm = () => renderForm(undefined, enMessages)
 
 const emailField = () =>
