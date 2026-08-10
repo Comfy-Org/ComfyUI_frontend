@@ -1,5 +1,6 @@
-// Assigns the on-call release sheriff to backport and release version-bump
-// PRs. Run by pr-assign-release-sheriff.yaml; details in docs/release-process.md.
+// Assigns the on-call release sheriff to backport, release version-bump and
+// automation-authored PRs. Run by pr-assign-release-sheriff.yaml; details in
+// docs/release-process.md.
 import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -197,13 +198,23 @@ const VERSION_BUMP_BRANCH = /^version-bump-\d+\.\d+\.\d+/
 // matching would also catch PRs that are merely about backports.
 const BACKPORT_TITLE = '[backport'
 
+// Nobody owns what a robot opens: these sat unassigned for weeks, the oldest
+// weeks old, because no human felt addressed by them. The sheriff owns them.
+// gh reports GitHub Apps as "app/<slug>" and plain accounts by login.
+const AUTOMATION_AUTHORS = [
+  'app/dependabot',
+  'app/cloud-code-bot',
+  'comfy-pr-bot'
+]
+
 export function isSheriffPr(pr: PullRequestSummary): boolean {
   const labels = pr.labels.map((label) => label.name.toLowerCase())
   return (
     labels.includes('backport') ||
     pr.title.toLowerCase().startsWith(BACKPORT_TITLE) ||
     labels.includes('release') ||
-    VERSION_BUMP_BRANCH.test(pr.headRefName)
+    VERSION_BUMP_BRANCH.test(pr.headRefName) ||
+    AUTOMATION_AUTHORS.includes(pr.author?.login ?? '')
   )
 }
 
@@ -277,7 +288,10 @@ function collectCandidatePrs(): PullRequestSummary[] {
     ...ghPrList(['--label', 'backport']),
     ...ghPrList(['--label', 'Release']),
     ...ghPrList(['--search', 'backport in:title']),
-    ...ghPrList(['--search', 'head:version-bump-'])
+    ...ghPrList(['--search', 'head:version-bump-']),
+    ...AUTOMATION_AUTHORS.flatMap((author) =>
+      ghPrList(['--search', `author:${author}`])
+    )
   ]
   const byNumber = new Map(found.map((pr) => [pr.number, pr]))
   return [...byNumber.values()]
