@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "jsPlugins": ["./comfy.ts"],
+  "overrides": [
+    {
+      "files": ["**/*.test.{ts,tsx}"],
+      "rules": {
+        "comfy/no-module-scope-vitest-mocks": "warn",
+        "comfy/no-redundant-vitest-cleanup": "warn"
+      }
+    }
+  ]
+}
