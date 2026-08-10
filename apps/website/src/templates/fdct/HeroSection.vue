@@ -129,7 +129,6 @@ collageImages.forEach((image, index) => {
 
     <HeroCentered01
       :eyebrow="t('fdct.hero.eyebrow', locale)"
-      eyebrow-class="xl:hidden"
       :title="t('fdct.hero.title', locale)"
       :subtitle="t('fdct.hero.subtitle', locale)"
     >
