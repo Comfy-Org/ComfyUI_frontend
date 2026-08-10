@@ -320,8 +320,13 @@ const store = useMissingModelStore()
 const { selectedLibraryModel } = storeToRefs(store)
 const cloudProgress = useTemplateRef<HTMLElement>('cloudProgress')
 const modelLabelControl = useTemplateRef<HTMLButtonElement>('modelLabelControl')
-const { prefetchModelMetadata, downloadMissingModel, openModelAccessPage } =
-  useMissingModelDownload()
+const {
+  fileSizeFor,
+  gatedRepoUrlFor,
+  prefetchModelMetadata,
+  downloadMissingModel,
+  openModelAccessPage
+} = useMissingModelDownload()
 
 const expanded = computed(
   () =>
@@ -360,7 +365,7 @@ const downloadable = computed(() => {
 const showDownloadAction = computed(() => !isCloud && downloadable.value)
 const gatedRepoUrl = computed(() => {
   const url = model.representative.url
-  return url ? store.gatedRepoUrls[url] : undefined
+  return url ? gatedRepoUrlFor(url) : undefined
 })
 const showGatedRepoAction = computed(
   () => showDownloadAction.value && !!gatedRepoUrl.value
@@ -381,7 +386,7 @@ const downloadSizeLabel = computed(() => {
   if (!showDownloadAction.value) return undefined
 
   const url = model.representative.url
-  const size = url ? store.fileSizes[url] : undefined
+  const size = url ? fileSizeFor(url) : undefined
   return size ? formatSize(size) : undefined
 })
 const modelTypeLabel = computed(
