@@ -13,7 +13,7 @@ import type { LocalizedText, TranslationKey } from '../../i18n/translations'
 // An announcement page for a model that has not shipped is the same config with
 // less in it: give the hero `layout: 'overlay'` and a `placeholderImageSrc`,
 // omit gallery/pricing/faq/closingCta, and swap in the full config on launch
-// day. `src/data/seedance.ts` is the worked example.
+// day.
 
 interface ModelLaunchCta {
   labelKey: TranslationKey
@@ -21,16 +21,26 @@ interface ModelLaunchCta {
   target?: AnchorHTMLAttributes['target']
 }
 
+// The prompt bar above the hero video: a sample prompt and a link into the
+// workflow that produced it.
+interface ModelLaunchPromptBar {
+  sampleKey: TranslationKey
+  cta: ModelLaunchCta
+}
+
 export interface ModelLaunchHero {
   videoSrc?: string
+  posterSrc?: string
   // Still stand-in for the hero frame, for pages announcing a model whose
   // launch footage does not exist yet. Ignored once videoSrc is set.
   placeholderImageSrc?: string
+  // 'content-first' puts the badges, heading, CTAs and prompt bar above the
+  // video. 'media-first' leads with the video, which is how /minimax reads.
   // 'overlay' centres the eyebrow, heading and CTAs on top of the media behind
-  // a scrim, which is how the announcement pages are designed. Launch pages
-  // keep 'stacked', where the media sits above the text.
-  layout?: 'stacked' | 'overlay'
-  // Small label above the heading, e.g. NEW.
+  // a scrim, which is how the announcement pages are designed.
+  layout?: 'media-first' | 'content-first' | 'overlay'
+  promptBar?: ModelLaunchPromptBar
+  // Small label above the heading on announcement pages, e.g. COMING SOON.
   eyebrowKey?: TranslationKey
   // Brand mark drawn as a CSS mask over the top-right corner of the video.
   logoSrc?: string
@@ -46,18 +56,34 @@ export interface ModelLaunchHero {
 
 type ModelLaunchTier = 'free' | 'premium'
 
+// The gallery defers its videos until the section nears the viewport, so a
+// video card renders as an empty box until its file arrives. Give every video a
+// `posterSrc` to avoid that; only /flux-3 omits them, until its posters reach
+// the CDN.
+export type ModelLaunchMedia =
+  | { kind: 'video'; src: string; posterSrc?: string }
+  | { kind: 'image'; src: string }
+
 interface ModelLaunchGalleryCard {
   id: string
   name: LocalizedText
   tier: ModelLaunchTier
   note: LocalizedText
   description: LocalizedText
-  mediaSrc: string
+  // The prompt that produced the clip. Cards that have one also offer a copy
+  // button; cards still waiting on copy simply omit it.
+  prompt?: LocalizedText
+  media: ModelLaunchMedia
+  // Brand mark drawn over the card, for pages whose gallery mixes models.
+  logoSrc?: string
   href: string
 }
 
 export interface ModelLaunchGallery {
   headingKey: TranslationKey
+  // 'accent' paints the per-card link solid yellow. Defaults to the muted
+  // treatment /minimax ships, so opting in cannot restyle a live page.
+  ctaVariant?: 'muted' | 'accent'
   cards: readonly ModelLaunchGalleryCard[]
 }
 
@@ -85,7 +111,22 @@ export interface ModelLaunchFaqSection {
 
 export interface ModelLaunchClosingCta {
   headingKey: TranslationKey
+  subtitleKey?: TranslationKey
   primaryCta: ModelLaunchCta
+  secondaryCta?: ModelLaunchCta
+}
+
+interface ModelLaunchStep {
+  id: string
+  title: LocalizedText
+  description: LocalizedText
+}
+
+export interface ModelLaunchSteps {
+  headingKey: TranslationKey
+  stepLabelKey: TranslationKey
+  items: readonly ModelLaunchStep[]
+  primaryCta?: ModelLaunchCta
   secondaryCta?: ModelLaunchCta
 }
 
@@ -113,11 +154,13 @@ export interface ModelLaunchPage {
   breadcrumbLabelKey: TranslationKey
   breadcrumbUpdatedKey: TranslationKey
   hero: ModelLaunchHero
-  // Everything below the hero is optional: a page announcing a model that has
-  // not shipped yet has no gallery, pricing, FAQ or closing CTA to show.
+  // Absent on announcement pages, which render hero, run options and reviews
+  // only until the model ships.
   gallery?: ModelLaunchGallery
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
+  steps?: ModelLaunchSteps
+  // Pages that end on a steps CTA row do not need a separate closing CTA.
   closingCta?: ModelLaunchClosingCta
   runOptions: ModelLaunchRunOptions
   reviews: ModelLaunchReviews

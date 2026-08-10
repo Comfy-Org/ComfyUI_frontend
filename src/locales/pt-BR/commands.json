@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Interromper"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Abrir Editor de Camadas para o Nó Selecionado"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Carregar Fluxo de Trabalho Padrão"
   },

@@ -1,5 +1,6 @@
-// Assigns the on-call release sheriff to backport and release version-bump
-// PRs. Run by pr-assign-release-sheriff.yaml; details in docs/release-process.md.
+// Assigns the on-call release sheriff to backport, release version-bump and
+// automation-authored PRs. Run by pr-assign-release-sheriff.yaml; details in
+// docs/release-process.md.
 import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -197,13 +198,23 @@ const VERSION_BUMP_BRANCH = /^version-bump-\d+\.\d+\.\d+/
 // matching would also catch PRs that are merely about backports.
 const BACKPORT_TITLE = '[backport'
 
+// Nobody owns what a robot opens: these sat unassigned for weeks, the oldest
+// weeks old, because no human felt addressed by them. The sheriff owns them.
+// gh reports GitHub Apps as "app/<slug>" and plain accounts by login.
+const AUTOMATION_AUTHORS = [
+  'app/dependabot',
+  'app/cloud-code-bot',
+  'comfy-pr-bot'
+]
+
 export function isSheriffPr(pr: PullRequestSummary): boolean {
   const labels = pr.labels.map((label) => label.name.toLowerCase())
   return (
     labels.includes('backport') ||
     pr.title.toLowerCase().startsWith(BACKPORT_TITLE) ||
     labels.includes('release') ||
-    VERSION_BUMP_BRANCH.test(pr.headRefName)
+    VERSION_BUMP_BRANCH.test(pr.headRefName) ||
+    AUTOMATION_AUTHORS.includes(pr.author?.login ?? '')
   )
 }
 
@@ -277,7 +288,10 @@ function collectCandidatePrs(): PullRequestSummary[] {
     ...ghPrList(['--label', 'backport']),
     ...ghPrList(['--label', 'Release']),
     ...ghPrList(['--search', 'backport in:title']),
-    ...ghPrList(['--search', 'head:version-bump-'])
+    ...ghPrList(['--search', 'head:version-bump-']),
+    ...AUTOMATION_AUTHORS.flatMap((author) =>
+      ghPrList(['--search', `author:${author}`])
+    )
   ]
   const byNumber = new Map(found.map((pr) => [pr.number, pr]))
   return [...byNumber.values()]
@@ -286,6 +300,23 @@ function collectCandidatePrs(): PullRequestSummary[] {
 function summary(line: string) {
   const file = process.env.GITHUB_STEP_SUMMARY
   if (file) appendFileSync(file, `${line}\n`)
+}
+
+// A heredoc output ends at the first line equal to its delimiter, so a value
+// carrying that line would close the record early and let the rest parse as
+// further outputs. These messages are one line by construction; enforcing that
+// removes the possibility rather than picking a delimiter and hoping.
+export function singleLine(text: string): string {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+// Read by the workflow's failure step to say why in Slack, so the alert is
+// actionable without opening the run.
+function output(key: string, value: string) {
+  const file = process.env.GITHUB_OUTPUT
+  if (file) {
+    appendFileSync(file, `${key}<<__EOF__\n${singleLine(value)}\n__EOF__\n`)
+  }
 }
 
 function ghPost(path: string, field: string): boolean {
@@ -309,22 +340,29 @@ async function main() {
     fetchOnCallEmails(CONFIG, credentials),
     fetchGithubLogins(CONFIG, credentials)
   ])
-  for (const warning of [oncall.warning, directory.warning]) {
-    if (warning) warn(warning)
-  }
+  // Both lookups hit the same API, so a credentials or outage failure arrives
+  // twice; the Slack alert should say it once.
+  const problems = [
+    ...new Set([oncall.warning, directory.warning].filter((w) => w !== null))
+  ]
 
   const { login, source, unmappedEmails } = resolveSheriff(oncall.emails, {
     ...CONFIG,
     githubLoginByUser: directory.githubLoginByUser
   })
+  // Keyed, not the full address: this repo is public, so the warning lands in
+  // public Actions logs and in Slack. The key is what the tag needs anyway.
   for (const email of unmappedEmails) {
-    warn(
-      `Datadog on-call user ${email} has no GitHub login. Add the tag ` +
-        `"github:${emailKey(email)}:<github-login>" to the Datadog schedule.`
+    problems.push(
+      `Datadog on-call user "${emailKey(email)}" has no GitHub login. Add ` +
+        `the tag "github:${emailKey(email)}:<github-login>" to the schedule.`
     )
   }
+  for (const problem of problems) warn(problem)
   if (!login) {
-    warn('No release sheriff could be resolved — nothing will be assigned.')
+    const message = 'No release sheriff could be resolved — nothing assigned.'
+    warn(message)
+    output('degraded', [message, ...problems].join(' '))
     process.exitCode = 1
     return
   }
@@ -333,6 +371,11 @@ async function main() {
   // green: this job warned "No Datadog On-Call schedule configured" on every
   // run for weeks and nobody noticed, because a warning alone reports success.
   if (source !== 'datadog') {
+    output(
+      'degraded',
+      `Fell back to \`${login}\` instead of the Datadog on-call user. ` +
+        problems.join(' ')
+    )
     process.exitCode = 1
   }
 

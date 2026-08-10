@@ -7560,7 +7560,7 @@ export interface components {
             aigc_watermark?: boolean;
         };
         BytePlusVideoGenerationContent: {
-            /** @description Input audio object. Only Seedance 2.0 & 2.0 fast support audio input. Cannot be used alone - must include at least 1 image or video. */
+            /** @description Input audio object. Only Seedance 2.5, 2.0 & 2.0 fast support audio input. Seedance 2.0 & 2.0 fast cannot use audio alone - they must include at least 1 image or video; Seedance 2.5 supports audio-only input. */
             audio_url?: {
                 /**
                  * @description Audio URL, Base64 encoding, or Asset ID.
@@ -7582,8 +7582,8 @@ export interface components {
             /**
              * @description The role/position of the content item.
              *     For images: first_frame, last_frame, or reference_image.
-             *     For videos: reference_video (Seedance 2.0 & 2.0 fast only).
-             *     For audio: reference_audio (Seedance 2.0 & 2.0 fast only).
+             *     For videos: reference_video (Seedance 2.5, 2.0 & 2.0 fast only).
+             *     For audio: reference_audio (Seedance 2.5, 2.0 & 2.0 fast only).
              * @enum {string}
              */
             role?: "first_frame" | "last_frame" | "reference_image" | "reference_video" | "reference_audio";
@@ -7609,7 +7609,7 @@ export interface components {
              * @enum {string}
              */
             type: "text" | "image_url" | "video_url" | "audio_url";
-            /** @description Input video object. Only Seedance 2.0 & 2.0 fast support video input. */
+            /** @description Input video object. Only Seedance 2.5, 2.0 & 2.0 fast support video input. */
             video_url?: {
                 /**
                  * @description Video URL or Asset ID.
@@ -7622,6 +7622,8 @@ export interface components {
         BytePlusVideoGenerationQueryResponse: {
             /** @description The output after the video generation task is completed, which contains the download URL of the output video. */
             content?: {
+                /** @description Container format of the generated video (mp4 or mov). Returned only by Seedance 2.5. */
+                output_format?: string;
                 /** @description The URL of the output video. For security purposes, the output video is cleared after 24 hours. */
                 video_url?: string;
             };
@@ -7661,12 +7663,12 @@ export interface components {
             callback_url?: string;
             /** @description The input content for the model to generate a video */
             content: components["schemas"]["BytePlusVideoGenerationContent"][];
-            /** @description Video duration in seconds. Seedance 2.0 & 2.0 fast: [4,15] or -1 (auto). Seedance 1.5 pro: [4,12] or -1. Seedance 1.0: [2,12]. */
+            /** @description Video duration in seconds. Seedance 2.5: [4,30] or -1 (auto; video editing tasks support only -1). Seedance 2.0 & 2.0 fast: [4,15] or -1 (auto). Seedance 1.5 pro: [4,12] or -1. Seedance 1.0: [2,12]. */
             duration?: number;
             /** @description Task timeout threshold in seconds. Default 172800 (48h). Range: [3600, 259200]. */
             execution_expires_after?: number;
             /**
-             * @description Supported by Seedance 2.0, 2.0 fast, and 1.5 pro. Whether the generated video includes audio synchronized with the visuals.
+             * @description Supported by Seedance 2.5, 2.0, 2.0 fast, and 1.5 pro. Whether the generated video includes audio synchronized with the visuals.
              *     true: The model outputs a video with synchronized audio.
              *     false: The model outputs a silent video.
              * @default true
@@ -7676,15 +7678,22 @@ export interface components {
              * @description The ID of the model to call. Available models include seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
              * @enum {string}
              */
-            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128" | "dreamina-seedance-2-0-mini";
+            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128" | "dreamina-seedance-2-0-mini" | "dreamina-seedance-2-5-260628";
+            /**
+             * @description Seedance 2.5 only. Container format of the output video.
+             *     mp4: General-purpose container (H.264/AAC, yuv420p) with broad compatibility and smaller file size.
+             *     mov: Professional container (H.264 High 4:4:4 Predictive/PCM, yuv444p) with high color precision, suited for post-production; larger file size.
+             * @default mp4
+             */
+            output_format: string;
             /**
              * @description Aspect ratio of the generated video. Seedance 2.0 & 2.0 fast, 1.5 pro default: adaptive.
              * @enum {string}
              */
             ratio?: "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "21:9" | "adaptive";
             /**
-             * @description Video resolution. Seedance 2.0 & 2.0 fast, 1.5 pro, 1.0 lite default: 720p. Seedance 1.0 pro & pro-fast default: 1080p.
-             *     Note: Seedance 2.0 & 2.0 fast do not support 1080p.
+             * @description Video resolution. Seedance 2.5, 2.0 & 2.0 fast, 1.5 pro, 1.0 lite default: 720p. Seedance 1.0 pro & pro-fast default: 1080p.
+             *     Note: Seedance 2.0 & 2.0 fast do not support 1080p. Seedance 2.5 supports 480p and 720p only.
              * @enum {string}
              */
             resolution?: "480p" | "720p" | "1080p" | "4k";
@@ -7698,7 +7707,7 @@ export interface components {
             /** @description Seed integer for controlling randomness. Range: [-1, 2^32-1]. -1 uses a random seed. */
             seed?: number;
             /**
-             * @description Service tier for processing. Seedance 2.0 & 2.0 fast do not support flex (offline inference).
+             * @description Service tier for processing. Seedance 2.5, 2.0 & 2.0 fast do not support flex (offline inference).
              * @enum {string}
              */
             service_tier?: "default" | "flex";

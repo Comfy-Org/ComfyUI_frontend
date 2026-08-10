@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "添加图层",
+    "inputs": {
+      "blend_mode": {
+        "name": "混合模式",
+        "tooltip": "初始混合模式。"
+      },
+      "flip_h": {
+        "name": "水平翻转",
+        "tooltip": "水平翻转该图层。"
+      },
+      "flip_v": {
+        "name": "垂直翻转",
+        "tooltip": "垂直翻转该图层。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "初始显示高度。0 表示保持图像原始高度。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "以原始尺寸显示的图层内容。批量输入会扩展为连续的图层。"
+      },
+      "layers": {
+        "name": "图层组",
+        "tooltip": "要追加的图层堆栈。不连接则新建一个堆栈。"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "该图层的透明度遮罩。被遮罩的区域（值为1）变为透明，并与图像已有的 alpha 通道相乘。"
+      },
+      "name": {
+        "name": "名称",
+        "tooltip": "在合成器编辑器中显示的图层名称。"
+      },
+      "opacity": {
+        "name": "不透明度",
+        "tooltip": "初始图层不透明度。"
+      },
+      "rotation": {
+        "name": "旋转",
+        "tooltip": "初始顺时针旋转角度（度）。"
+      },
+      "width": {
+        "name": "宽度",
+        "tooltip": "初始显示宽度。0 表示保持图像原始宽度。"
+      },
+      "x": {
+        "name": "X",
+        "tooltip": "在画布上的初始水平位置。"
+      },
+      "y": {
+        "name": "Y",
+        "tooltip": "在画布上的初始垂直位置。"
+      },
+      "z_index": {
+        "name": "层级",
+        "tooltip": "堆叠顺序覆盖。图层按 z_index 稳定排序；相同值保持列表顺序。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "追加了该图层的图层堆栈。"
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "添加噪波",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "生成音频"
       },
+      "model_output_format": {
+        "name": "输出格式"
+      },
       "model_prompt": {
         "name": "提示词"
-      },
-      "model_ratio": {
-        "name": "比例"
       },
       "model_resolution": {
         "name": "分辨率"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "生成音频"
       },
+      "model_output_format": {
+        "name": "输出格式"
+      },
       "model_prompt": {
         "name": "提示词"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "分辨率"
+      },
+      "model_video_editing": {
+        "name": "视频编辑"
       },
       "seed": {
         "name": "种子",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "生成音频"
+      },
+      "model_output_format": {
+        "name": "输出格式"
       },
       "model_prompt": {
         "name": "提示词"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "将一张图像分解为一个背景底板和最多16个可重新定位的透明图层，每个图层具有堆叠顺序、边界框、名称和描述。",
+    "display_name": "ByteDance Seedream 5.0 Pro 图层分离",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "crop_layers": {
+        "name": "crop_layers",
+        "tooltip": "图层/蒙版批量输出的几何方式（layer_stack始终为紧凑）。全画布：每个图层在其边界框位置放置于基础尺寸画布上——可直接用ImageCompositeMasked重组。最小尺寸：每个图层裁剪到其边界框（为批量处理填充到最大图层）——张量更小；用Layers From Bounding Boxes和bboxes输出重建位置。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要分离的图像。仅支持一张图像，至少512x512像素，宽高比在1:16到16:1之间。大于约400万像素的输入会在上传前被缩小。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "如何分离图像。留空则自动检测并分离所有主要元素。用自然语言描述元素以控制分离，或用<bbox>left top right bottom</bbox>标签（0-1000千分比坐标）精确指定区域。"
+      },
+      "prompt_optimization": {
+        "name": "prompt_optimization",
+        "tooltip": "提示词优化模式：'standard' 提供更高质量，'fast' 生成速度更快。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "输出分辨率等级。'auto'将跟随输入图像大小（限制在1K-2K范围内）。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在图像上添加“AI生成”水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "图层堆叠的基础图像（背景底板）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "基础图像的透明度（1 = 透明，LoadImage 约定）；当前始终为完全不透明。"
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "自下而上排序的透明图层。全画布模式：放置于黑色基础尺寸画布上，位置为其边界框。最小尺寸模式：裁剪到边界框，左上角对齐，填充到最大图层。"
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "每个图层的透明度，与图层批次索引对齐（1 = 透明，LoadImage 约定）。用于ImageCompositeMasked风格合成时，需先添加InvertMask。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "每个图层一个放置框，与图层批次索引对齐（将两者及masks输入Layers From Bounding Boxes以重建每层位置）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] 表示图层在自身框架内的内容区域；最终落在画布上的位置为放置框位置加上该偏移。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "用于Create Layered Image的可编辑图层文档：基础底板加每个元素作为独立命名、紧凑裁剪的图层，保持真实位置和堆叠顺序。可直接连接，或用Add Layer扩展。"
       }
     }
   },
@@ -6928,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "创建分层图像",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "由合成器编辑器保存的分层合成。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "要合成的图层堆栈；使用添加图层构建。项目按 z_index 叠加，批处理帧在项目内扩展为连续图层，项目的位置、透明度和混合模式定义初始合成。没有明确的文档画布时，尺寸将尽量取放置图层的最大范围。已保存且与当前输入匹配的合成优先。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "合成后的图像。当合成包含透明区域（如隐藏背景）时带有 alpha 通道，否则为普通 RGB。"
+      },
+      "1": {
+        "tooltip": "合成图像的透明度（1 = 完全透明）。当合成图像不透明时全部为零。"
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "裁剪图像",
     "inputs": {
@@ -9413,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "将图像批次及其边界框转换为图层堆栈，每帧一个图层，每个图层按其对应的框放置。当某个节点以批处理形式输出图层时使用——批处理为每帧携带一个放置信息，否则单独位置会丢失。",
+    "display_name": "从边界框生成图层",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "放置框，与图像批次索引对齐。接受边界框（x, y, width, height）、归一化元素（带有 'bbox'——这些需要 canvas_width/canvas_height 转换为像素），或上述任一的 JSON 字符串。没有匹配框的帧将放置在原点。框的宽度/高度会缩放图层以适应。metadata.name（或 desc）和 metadata.z_index 在存在时会被使用，metadata.content_rect（帧相对）会将帧裁剪到实际内容。"
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "文档画布高度。为 0 时根据放置的图层自动推断。"
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "文档画布宽度。为 0 时根据放置的图层自动推断。"
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "如有 metadata.content_rect，则将每帧裁剪到该区域，并将内容放置在框位置加上该区域偏移。对于帧有填充的批次建议开启——只保留真实内容并放在正确位置。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "图像批次；每帧成为一个图层。"
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "要追加的图层堆栈。不连接则新建堆栈。"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "每帧透明度，与图像批次索引对齐（1 = 透明，LoadImage 约定）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "图层堆栈，可用于创建分层图像。"
       }
     }
   },

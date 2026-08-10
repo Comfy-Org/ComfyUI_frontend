@@ -9,7 +9,8 @@ import {
   parseGithubLogins,
   parseOnCallEmails,
   planActions,
-  resolveSheriff
+  resolveSheriff,
+  singleLine
 } from './release-sheriff'
 
 const config = {
@@ -87,6 +88,16 @@ describe('parseGithubLogins', () => {
     expect(parseGithubLogins({ data: { attributes: { tags: 'no' } } })).toEqual(
       {}
     )
+  })
+})
+
+describe('singleLine', () => {
+  it('cannot emit a line that closes a GITHUB_OUTPUT heredoc early', () => {
+    expect(singleLine('before\n__EOF__\nafter')).toBe('before __EOF__ after')
+  })
+
+  it('collapses incidental whitespace', () => {
+    expect(singleLine('  a\t\tb \n c  ')).toBe('a b c')
   })
 })
 
@@ -256,6 +267,20 @@ describe('isSheriffPr', () => {
     expect(isSheriffPr(pr({ headRefName: 'version-bump-1.46.0-beta.1' }))).toBe(
       true
     )
+  })
+
+  it('matches anything opened by automation, whatever it is about', () => {
+    for (const login of [
+      'app/dependabot',
+      'app/cloud-code-bot',
+      'comfy-pr-bot'
+    ])
+      expect(isSheriffPr(pr({ author: { login } }))).toBe(true)
+  })
+
+  it('ignores humans whose login merely resembles a bot', () => {
+    expect(isSheriffPr(pr({ author: { login: 'dependabot-fan' } }))).toBe(false)
+    expect(isSheriffPr(pr({ author: null }))).toBe(false)
   })
 
   it('ignores feature branches that merely start with version-bump-', () => {

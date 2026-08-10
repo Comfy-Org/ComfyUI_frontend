@@ -8,7 +8,6 @@ import {
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
-  cachedConsolidatedBillingEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigState
@@ -282,14 +281,6 @@ describe('useFeatureFlags', () => {
       expect(flags.v1PaymentRecovery).toBe(true)
     })
 
-    it('consolidatedBillingEnabled override bypasses isCloud and isAuthenticatedConfigLoaded guards', () => {
-      vi.mocked(distributionTypes).isCloud = false
-      localStorage.setItem('ff:consolidated_billing_enabled', 'true')
-
-      const { flags } = useFeatureFlags()
-      expect(flags.consolidatedBillingEnabled).toBe(true)
-    })
-
     it('billingControlEnabled is false off-cloud even without an override', () => {
       vi.mocked(distributionTypes).isCloud = false
 
@@ -303,7 +294,6 @@ describe('useFeatureFlags', () => {
       vi.mocked(distributionTypes).isCloud = true
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
-      cachedConsolidatedBillingEnabled.value = undefined
       cachedBillingControlEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
       localStorage.clear()
@@ -313,26 +303,22 @@ describe('useFeatureFlags', () => {
       vi.mocked(distributionTypes).isCloud = false
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
-      cachedConsolidatedBillingEnabled.value = undefined
       cachedBillingControlEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
       localStorage.clear()
     })
 
     it('returns the cached session value during the auth window', () => {
-      cachedConsolidatedBillingEnabled.value = true
       cachedBillingControlEnabled.value = true
       cachedV1PaymentRecovery.value = true
 
       const { flags } = useFeatureFlags()
-      expect(flags.consolidatedBillingEnabled).toBe(true)
       expect(flags.billingControlEnabled).toBe(true)
       expect(flags.v1PaymentRecovery).toBe(true)
     })
 
     it('defaults to false during the auth window when nothing is cached', () => {
       const { flags } = useFeatureFlags()
-      expect(flags.consolidatedBillingEnabled).toBe(false)
       expect(flags.billingControlEnabled).toBe(false)
       expect(flags.v1PaymentRecovery).toBe(false)
     })
@@ -340,14 +326,12 @@ describe('useFeatureFlags', () => {
     it('prefers authenticated remoteConfig over the server feature fallback', () => {
       remoteConfigState.value = 'authenticated'
       remoteConfig.value = {
-        consolidated_billing_enabled: true,
         billing_control_enabled: false,
         v1_payment_recovery: true
       }
       vi.mocked(api.getServerFeature).mockReturnValue(false)
 
       const { flags } = useFeatureFlags()
-      expect(flags.consolidatedBillingEnabled).toBe(true)
       expect(flags.billingControlEnabled).toBe(false)
       expect(flags.v1PaymentRecovery).toBe(true)
     })
@@ -357,8 +341,6 @@ describe('useFeatureFlags', () => {
       remoteConfig.value = {}
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED)
-            return true
           if (path === ServerFeatureFlag.BILLING_CONTROL_ENABLED) return true
           if (path === ServerFeatureFlag.V1_PAYMENT_RECOVERY) return true
           return defaultValue
@@ -366,7 +348,6 @@ describe('useFeatureFlags', () => {
       )
 
       const { flags } = useFeatureFlags()
-      expect(flags.consolidatedBillingEnabled).toBe(true)
       expect(flags.billingControlEnabled).toBe(true)
       expect(flags.v1PaymentRecovery).toBe(true)
     })
