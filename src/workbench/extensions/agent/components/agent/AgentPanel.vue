@@ -10,7 +10,7 @@ import {
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import type { ActiveTab } from '../../types/activeTab'
@@ -215,7 +215,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <template v-else>
           <button
             ref="titleButton"
-            v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
+            v-tooltip.bottom="
+              buildAgentTooltipConfig(t('agent.showChatHistory'))
+            "
             type="button"
             class="text-agent-fg-muted hover:bg-agent-surface-hover flex h-6 cursor-pointer items-center gap-2 rounded-sm px-2 py-1 text-xs transition-colors"
             @click="onOpenHistory"
@@ -227,7 +229,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           </button>
           <DropdownMenuRoot v-if="sessionId">
             <DropdownMenuTrigger
-              v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
+              v-tooltip.bottom="buildAgentTooltipConfig(t('agent.chatOptions'))"
               :aria-label="t('agent.chatOptions')"
               class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-sm transition-colors"
             >
