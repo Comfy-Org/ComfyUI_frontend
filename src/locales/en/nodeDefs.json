@@ -32,7 +32,7 @@
       },
       "blend_mode": {
         "name": "blend_mode",
-        "tooltip": "Initial blend mode."
+        "tooltip": "Initial blend mode, applied against the layers below. On the bottom layer over the default transparent background, non-normal modes produce transparency."
       },
       "rotation": {
         "name": "rotation",
@@ -17738,7 +17738,7 @@
       },
       "eta": {
         "name": "eta",
-        "tooltip": "Stochastic strength of reverse-time SDE.\nWhen eta=0, it reduces to deterministic ODE. This setting doesn't apply to ER-SDE solver type."
+        "tooltip": "Stochastic strength of SDEs.\nWhen eta=0, they reduce to deterministic ODE.\nLarge eta may cause invalid outputs. If this occurs, try decreasing this value."
       },
       "s_noise": {
         "name": "s_noise"
