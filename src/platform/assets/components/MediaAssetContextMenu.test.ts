@@ -10,6 +10,8 @@ import { api } from '@/scripts/api'
 import type * as FormatUtil from '@/utils/formatUtil'
 
 const mockGetServerFeature = vi.spyOn(api, 'getServerFeature')
+const mockIsLoopbackHost = vi.hoisted(() => vi.fn(() => true))
+const mockShouldSkipDeleteConfirmation = vi.hoisted(() => vi.fn(() => true))
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -30,6 +32,10 @@ vi.mock('@/utils/formatUtil', async (importOriginal) => ({
   isPreviewableMediaType: () => true
 }))
 
+vi.mock('@/utils/hostWhitelist', () => ({
+  isLoopbackHost: mockIsLoopbackHost
+}))
+
 const mediaAssetActions = {
   addWorkflow: vi.fn(),
   downloadAssets: vi.fn(),
@@ -41,6 +47,7 @@ const mediaAssetActions = {
 }
 
 vi.mock('../composables/useMediaAssetActions', () => ({
+  shouldSkipDeleteConfirmation: mockShouldSkipDeleteConfirmation,
   useMediaAssetActions: () => mediaAssetActions
 }))
 
@@ -109,7 +116,8 @@ let capturedRef: MediaAssetContextMenuExposed | null = null
 
 function mountComponent(
   targetAsset: AssetItem = asset,
-  assetType: 'input' | 'output' = 'output'
+  assetType: 'input' | 'output' = 'output',
+  showDeleteButton = true
 ) {
   const onHide = vi.fn()
   const { container, unmount } = render(
@@ -120,10 +128,16 @@ function mountComponent(
         onMounted(() => {
           capturedRef = menuRef.value
         })
-        return { menuRef, asset: targetAsset, assetType, onHide }
+        return {
+          menuRef,
+          asset: targetAsset,
+          assetType,
+          showDeleteButton,
+          onHide
+        }
       },
       template:
-        '<MediaAssetContextMenu ref="menuRef" :asset="asset" :asset-type="assetType" :show-delete-button="true" file-kind="image" @hide="onHide" />'
+        '<MediaAssetContextMenu ref="menuRef" :asset="asset" :asset-type="assetType" :show-delete-button="showDeleteButton" file-kind="image" @hide="onHide" />'
     }),
     {
       global: {
@@ -147,6 +161,8 @@ async function showMenu(container: Element): Promise<HTMLElement> {
 
 beforeEach(() => {
   mockGetServerFeature.mockReturnValue(true)
+  mockIsLoopbackHost.mockReturnValue(true)
+  mockShouldSkipDeleteConfirmation.mockReturnValue(true)
 })
 
 afterEach(() => {
@@ -282,6 +298,7 @@ describe('MediaAssetContextMenu', () => {
     expect(mediaAssetActions.deleteAssets).toHaveBeenCalledWith(asset, {
       skipConfirmation: true
     })
+    expect(mockShouldSkipDeleteConfirmation).toHaveBeenCalledWith(asset)
 
     unmount()
   })
@@ -296,7 +313,18 @@ describe('MediaAssetContextMenu', () => {
     unmount()
   })
 
+  it('hides delete actions when deletion is disabled by the caller', async () => {
+    const { container, unmount } = mountComponent(asset, 'output', false)
+    await showMenu(container)
+
+    expect(findMenuItem('mediaAsset.actions.delete')).toBeUndefined()
+    expect(findMenuItem('mediaAsset.actions.deleteSourceFile')).toBeUndefined()
+
+    unmount()
+  })
+
   it('orders local generated file actions after download', async () => {
+    mockIsLoopbackHost.mockReturnValue(true)
     const persistentOutput = {
       ...asset,
       tags: ['output'],
@@ -351,6 +379,21 @@ describe('MediaAssetContextMenu', () => {
       persistentOutput,
       { deleteContent: true }
     )
+
+    unmount()
+  })
+
+  it('hides open file location on non-loopback hosts', async () => {
+    mockIsLoopbackHost.mockReturnValue(false)
+    const persistentOutput = {
+      ...asset,
+      tags: ['output'],
+      loader_path: 'video/render.mp4'
+    }
+    const { container, unmount } = mountComponent(persistentOutput)
+    await showMenu(container)
+
+    expect(findMenuItem('mediaAsset.actions.openFileLocation')).toBeUndefined()
 
     unmount()
   })

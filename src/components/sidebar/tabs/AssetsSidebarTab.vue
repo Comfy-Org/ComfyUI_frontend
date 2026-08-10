@@ -163,7 +163,6 @@
     :asset="contextMenuAsset"
     :asset-type="contextMenuAssetType"
     :file-kind="contextMenuFileKind"
-    :show-delete-button="true"
     :selected-assets="selectedAssets"
     :is-bulk-mode="isBulkMode"
     @zoom="handleZoomClick(contextMenuAsset)"

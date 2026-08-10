@@ -45,7 +45,10 @@ import { isLoopbackHost } from '@/utils/hostWhitelist'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import {
+  shouldSkipDeleteConfirmation,
+  useMediaAssetActions
+} from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
 
@@ -253,10 +256,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       icon: 'icon-[lucide--trash-2]',
       command: async () => {
         const deleted = await actions.deleteAssets(asset, {
-          skipConfirmation:
-            !isCloud &&
-            (assetType === 'input' ||
-              (assetType === 'output' && Boolean(asset.loader_path)))
+          skipConfirmation: shouldSkipDeleteConfirmation(asset)
         })
         if (deleted) emit('asset-deleted')
       }

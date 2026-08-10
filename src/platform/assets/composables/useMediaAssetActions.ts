@@ -49,7 +49,15 @@ interface DeleteAssetsOptions {
 }
 
 function isPersistentLocalOutputAsset(asset: AssetItem): boolean {
-  return !isCloud && Boolean(asset.loader_path)
+  return (
+    !isCloud && getAssetType(asset) === 'output' && Boolean(asset.loader_path)
+  )
+}
+
+export function shouldSkipDeleteConfirmation(asset: AssetItem): boolean {
+  if (isCloud) return false
+  const assetType = getAssetType(asset)
+  return assetType === 'input' || isPersistentLocalOutputAsset(asset)
 }
 
 function createAssetWidgetPath(asset: AssetItem): string {
@@ -695,7 +703,7 @@ export function useMediaAssetActions() {
   const performDeleteAssets = async (
     assetArray: AssetItem[],
     { deleteContent = false }: Pick<DeleteAssetsOptions, 'deleteContent'> = {}
-  ) => {
+  ): Promise<boolean> => {
     const assetsStore = useAssetsStore()
     const isSingle = assetArray.length === 1
     const allPersistentLocalOutputs = assetArray.every(
@@ -739,9 +747,13 @@ export function useMediaAssetActions() {
         (asset) => getAssetType(asset) === 'input'
       )
 
-      if (hasPersistentOutputAssets) await assetsStore.updateFlatOutputs()
-      if (hasHistoryOutputAssets) await assetsStore.updateHistory()
-      if (hasInputAssets) await assetsStore.updateInputs()
+      try {
+        if (hasPersistentOutputAssets) await assetsStore.updateFlatOutputs()
+        if (hasHistoryOutputAssets) await assetsStore.updateHistory()
+        if (hasInputAssets) await assetsStore.updateInputs()
+      } catch (error) {
+        console.error('Failed to refresh asset stores after deletion:', error)
+      }
 
       const rootGraph = app.rootGraph
       if (rootGraph) {
@@ -783,9 +795,11 @@ export function useMediaAssetActions() {
             allPersistentLocalOutputs && !deleteContent
               ? isSingle
                 ? t('mediaAsset.generatedAssetRemovedSuccessfully')
-                : t('mediaAsset.selectedGeneratedAssetsRemovedSuccessfully', {
-                    count: succeeded
-                  })
+                : t(
+                    'mediaAsset.selectedGeneratedAssetsRemovedSuccessfully',
+                    { count: succeeded },
+                    succeeded
+                  )
               : isSingle
                 ? t('mediaAsset.assetDeletedSuccessfully')
                 : t(
@@ -813,6 +827,7 @@ export function useMediaAssetActions() {
           life: 3000
         })
       }
+      return failed.length === 0
     } catch (error) {
       console.error('Failed to delete assets:', error)
       toast.add({
@@ -822,6 +837,7 @@ export function useMediaAssetActions() {
           ? t('mediaAsset.failedToDeleteAsset')
           : t('mediaAsset.selection.failedToDeleteAssets')
       })
+      return false
     } finally {
       assetArray.forEach((asset) =>
         assetsStore.setAssetDeleting(asset.id, false)
@@ -840,8 +856,7 @@ export function useMediaAssetActions() {
     if (assetArray.length === 0) return false
 
     if (skipConfirmation) {
-      await performDeleteAssets(assetArray, { deleteContent })
-      return true
+      return await performDeleteAssets(assetArray, { deleteContent })
     }
 
     const isSingle = assetArray.length === 1
@@ -870,25 +885,30 @@ export function useMediaAssetActions() {
           message: deletingGeneratedSourceFiles
             ? isSingle
               ? t('mediaAsset.deleteGeneratedSourceFileDescription')
-              : t('mediaAsset.deleteSelectedGeneratedSourceFilesDescription', {
-                  count: assetArray.length
-                })
+              : t(
+                  'mediaAsset.deleteSelectedGeneratedSourceFilesDescription',
+                  { count: assetArray.length },
+                  assetArray.length
+                )
             : allPersistentLocalOutputs
               ? isSingle
                 ? t('mediaAsset.removeGeneratedAssetDescription')
-                : t('mediaAsset.removeSelectedGeneratedAssetsDescription', {
-                    count: assetArray.length
-                  })
+                : t(
+                    'mediaAsset.removeSelectedGeneratedAssetsDescription',
+                    { count: assetArray.length },
+                    assetArray.length
+                  )
               : isSingle
                 ? t('mediaAsset.deleteAssetDescription')
-                : t('mediaAsset.deleteSelectedDescription', {
-                    count: assetArray.length
-                  }),
+                : t(
+                    'mediaAsset.deleteSelectedDescription',
+                    { count: assetArray.length },
+                    assetArray.length
+                  ),
           type: 'delete',
           itemList: assetArray.map((asset) => getAssetDisplayName(asset)),
           onConfirm: async () => {
-            await performDeleteAssets(assetArray, { deleteContent })
-            resolve(true)
+            resolve(await performDeleteAssets(assetArray, { deleteContent }))
           },
           onCancel: () => {
             resolve(false)

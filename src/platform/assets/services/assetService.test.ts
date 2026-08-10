@@ -460,13 +460,55 @@ describe(assetService.deleteLocalInputAsset, () => {
     )
   })
 
-  it('rejects ambiguous or missing input paths', async () => {
+  it('rejects a missing input path', async () => {
     fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([]))
 
     await expect(
       assetService.deleteLocalInputAsset('missing.png')
     ).rejects.toThrow(/found 0 matching records/)
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects an ambiguous input path without deleting either record', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({ id: 'first', loader_path: 'folder/image.png' }),
+        validAsset({ id: 'second', loader_path: 'folder\\image.png' })
+      ])
+    )
+
+    await expect(
+      assetService.deleteLocalInputAsset('folder/image.png')
+    ).rejects.toThrow(/found 2 matching records/)
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.for(['', 'C:', 'C:file.png', 'C:/file.png'])(
+    'rejects invalid drive-qualified or empty path %j before loading assets',
+    async (loaderPath) => {
+      await expect(
+        assetService.deleteLocalInputAsset(loaderPath)
+      ).rejects.toThrow(/Invalid local input asset path/)
+      expect(fetchApiMock).not.toHaveBeenCalled()
+    }
+  )
+
+  it('skips malformed candidate paths while resolving a valid record', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildAssetListResponse([
+          validAsset({ id: 'stale', loader_path: '../stale.png' }),
+          validAsset({ id: 'valid', loader_path: 'folder/image.png' })
+        ])
+      )
+      .mockResolvedValueOnce(buildResponse(null))
+
+    await assetService.deleteLocalInputAsset('folder/image.png')
+
+    expect(fetchApiMock).toHaveBeenLastCalledWith(
+      '/assets/valid?delete_content=true',
+      expect.objectContaining({ method: 'DELETE' })
+    )
   })
 })
 

@@ -229,7 +229,7 @@ function normalizeLoaderPath(loaderPath: string): string {
   if (
     !normalized ||
     normalized.startsWith('/') ||
-    /^[a-z]:\//i.test(normalized) ||
+    /^[a-z]:/i.test(normalized) ||
     parts.includes('..')
   ) {
     throw new Error(`Invalid local input asset path: ${loaderPath}`)
@@ -903,11 +903,14 @@ function createAssetService() {
   async function deleteLocalInputAsset(loaderPath: string): Promise<void> {
     const normalizedPath = normalizeLoaderPath(loaderPath)
     const inputAssets = await getAllAssetsByTag(INPUT_TAG, false)
-    const matches = inputAssets.filter(
-      (asset) =>
-        asset.loader_path &&
-        normalizeLoaderPath(asset.loader_path) === normalizedPath
-    )
+    const matches = inputAssets.filter((asset) => {
+      if (!asset.loader_path) return false
+      try {
+        return normalizeLoaderPath(asset.loader_path) === normalizedPath
+      } catch {
+        return false
+      }
+    })
 
     if (matches.length !== 1) {
       throw new Error(
