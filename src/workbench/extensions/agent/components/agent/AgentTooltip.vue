@@ -14,10 +14,12 @@ import {
 
 const {
   label,
+  disabled = false,
   side = 'top',
   sideOffset = 6
 } = defineProps<{
   label: string
+  disabled?: boolean
   side?: 'top' | 'right' | 'bottom' | 'left'
   sideOffset?: number
 }>()
@@ -25,7 +27,7 @@ const {
 
 <template>
   <TooltipProvider v-bind="AGENT_REKA_TOOLTIP_PROVIDER_PROPS">
-    <TooltipRoot disable-closing-trigger>
+    <TooltipRoot :disabled disable-closing-trigger>
       <TooltipTrigger as-child>
         <slot />
       </TooltipTrigger>
