@@ -4161,6 +4161,7 @@
       "title": "Подписка приостановлена"
     },
     "perMonth": "USD / месяц",
+    "perYear": "/ год",
     "personalHeader": "Личные тарифы предназначены только для индивидуального использования. {action}",
     "personalHeaderAction": "Чтобы добавить участников, оформите командный тариф.",
     "personalWorkspace": "Личное рабочее пространство",
@@ -4338,6 +4339,7 @@
     "upgradeToAddCredits": "Обновите, чтобы добавить кредиты",
     "usdPerMonth": "USD / мес",
     "usdPerMonthPerMember": "USD / мес / участник",
+    "usdPerYear": "USD / год",
     "usedAfterMonthly": "Используются после окончания месячных",
     "videoEstimate": "Генерирует ~{count} 5-секундных видео*",
     "videoEstimateExplanation": "Эти оценки основаны на шаблоне Wan 2.2 Image-to-Video с настройками по умолчанию (5 секунд, 640x640, 16 кадров/с, 4 шага семплирования).",

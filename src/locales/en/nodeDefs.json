@@ -17738,7 +17738,7 @@
       },
       "eta": {
         "name": "eta",
-        "tooltip": "Stochastic strength of reverse-time SDE.\nWhen eta=0, it reduces to deterministic ODE. This setting doesn't apply to ER-SDE solver type."
+        "tooltip": "Stochastic strength of SDEs.\nWhen eta=0, they reduce to deterministic ODE.\nLarge eta may cause invalid outputs. If this occurs, try decreasing this value."
       },
       "s_noise": {
         "name": "s_noise"
