@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { useDialogStore } from '@/stores/dialogStore'
@@ -158,6 +158,23 @@ describe('dialogStore', () => {
       expect(store.isDialogOpen('test-dialog')).toBe(false)
     })
 
+    it('fires both onClose and onRemoved when a dialog is closed', () => {
+      const store = useDialogStore()
+      const onClose = vi.fn()
+      const onRemoved = vi.fn()
+
+      store.showDialog({
+        key: 'test-dialog',
+        component: MockComponent,
+        dialogComponentProps: { onClose, onRemoved }
+      })
+
+      store.closeDialog({ key: 'test-dialog' })
+
+      expect(onClose).toHaveBeenCalledTimes(1)
+      expect(onRemoved).toHaveBeenCalledTimes(1)
+    })
+
     it('should reuse existing dialog when showing with same key', () => {
       const store = useDialogStore()
 
@@ -182,6 +199,106 @@ describe('dialogStore', () => {
       expect(store.dialogStack).toHaveLength(1)
       expect(store.dialogStack[0].key).toBe('reusable-dialog')
       expect(store.dialogStack[0].title).toBe('Original Title')
+    })
+
+    it('fires the evicted dialog onRemoved, not onClose, when the stack exceeds the cap', () => {
+      const store = useDialogStore()
+      const onClose = vi.fn()
+      const onRemoved = vi.fn()
+
+      // priority: 10 pins this dialog at dialogStack[0], the slot the cap
+      // evicts from
+      store.showDialog({
+        key: 'evicted-dialog',
+        component: MockComponent,
+        priority: 10,
+        dialogComponentProps: { onClose, onRemoved }
+      })
+
+      for (let i = 0; i < 9; i++) {
+        store.showDialog({
+          key: `filler-${i}`,
+          component: MockComponent
+        })
+      }
+
+      expect(store.dialogStack[0].key).toBe('evicted-dialog')
+
+      store.showDialog({
+        key: 'overflow-dialog',
+        component: MockComponent
+      })
+
+      expect(onRemoved).toHaveBeenCalledTimes(1)
+      // Eviction is not a user close — onClose must not fire (it carries
+      // user-intent side effects like telemetry and "don't show again").
+      expect(onClose).not.toHaveBeenCalled()
+      expect(store.isDialogOpen('evicted-dialog')).toBe(false)
+      expect(store.dialogStack).toHaveLength(10)
+    })
+
+    it('keeps the stack capped when evicted onRemoved opens another dialog', () => {
+      const store = useDialogStore()
+      const onRemoved = vi.fn(() => {
+        store.showDialog({
+          key: 'reentrant-dialog',
+          component: MockComponent
+        })
+      })
+
+      store.showDialog({
+        key: 'evicted-dialog',
+        component: MockComponent,
+        priority: 10,
+        dialogComponentProps: { onRemoved }
+      })
+
+      for (let i = 0; i < 9; i++) {
+        store.showDialog({
+          key: `filler-${i}`,
+          component: MockComponent
+        })
+      }
+
+      store.showDialog({
+        key: 'overflow-dialog',
+        component: MockComponent
+      })
+
+      expect(onRemoved).toHaveBeenCalledTimes(1)
+      expect(store.isDialogOpen('evicted-dialog')).toBe(false)
+      expect(store.isDialogOpen('reentrant-dialog')).toBe(true)
+      expect(store.dialogStack).toHaveLength(10)
+    })
+
+    it('evicts the most recently shown dialog when priorities are equal', () => {
+      const store = useDialogStore()
+      const onRemoved = vi.fn()
+
+      for (let i = 0; i < 9; i++) {
+        store.showDialog({
+          key: `filler-${i}`,
+          component: MockComponent
+        })
+      }
+
+      store.showDialog({
+        key: 'front-most-dialog',
+        component: MockComponent,
+        dialogComponentProps: { onRemoved }
+      })
+
+      expect(store.dialogStack[0].key).toBe('front-most-dialog')
+
+      store.showDialog({
+        key: 'overflow-dialog',
+        component: MockComponent
+      })
+
+      expect(onRemoved).toHaveBeenCalledTimes(1)
+      expect(store.isDialogOpen('front-most-dialog')).toBe(false)
+      expect(store.isDialogOpen('overflow-dialog')).toBe(true)
+      expect(store.dialogStack).toHaveLength(10)
     })
 
     it('should update existing dialog props by key', () => {
