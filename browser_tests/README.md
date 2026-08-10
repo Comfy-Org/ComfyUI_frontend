@@ -44,41 +44,41 @@ mkdir -p /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools
 cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 ```
 
-Alternatively, start the same container used by CI. It includes ComfyUI and
-mounts `tools/devtools` automatically:
+To use the same ComfyUI backend as CI instead of maintaining a separate install,
+run:
 
 ```bash
 pnpm container:start
 ```
 
-The first run uses `GH_TOKEN` when available and asks `gh api user` for its
-GitHub username. `COMFY_CI_CONTAINER_TOKEN` and `COMFY_CI_CONTAINER_USER`
-override those derived credentials. Without usable credentials, the command
-tells you that the private pull was skipped and builds the pinned public source.
-Leave it running while using `pnpm dev` and `pnpm test:browser:local` in
-separate terminals.
+The command mounts `tools/devtools` and starts ComfyUI at `localhost:8188`.
+Leave it running. Use another terminal for `pnpm dev` and a third for
+`pnpm test:browser:local`.
 
-The source build can take several minutes and uses about 10 GB for the image,
-plus Docker build cache. Set `COMFY_CI_CONTAINER_TOKEN` and
-`COMFY_CI_CONTAINER_USER` to credentials with `read:packages` access to pull
-the private image instead.
+If the image is not cached, the launcher tries to pull it from GHCR. It uses
+`GH_TOKEN` and gets the matching username from `gh api user`.
+`COMFY_CI_CONTAINER_TOKEN` and `COMFY_CI_CONTAINER_USER` take precedence when
+set. If credentials are missing or the pull fails, the launcher says why and
+builds the pinned public source instead. The source build can take several
+minutes and uses about 10 GB, plus Docker build cache.
 
 ### Amp orb configuration
 
-Amp orbs default to the local containerized backend. Set the project environment
-variable `COMFYUI_FRONTEND_MODE` to `cloud` to run only the cloud frontend, or
-to `local` to run only the local backend and frontend. Start a fresh orb after
-changing project-level values so its environment contains the new settings.
-
-The CI image is a private GitHub package. If the orb's existing `GH_TOKEN` has
-`read:packages` access, no additional package credentials are needed. Otherwise,
-create a GitHub token with `read:packages` access, then store the username as a
-project environment variable and the token as a project secret. Values
-configured at the project level are injected into new orbs:
+Orbs use local mode by default. Local mode runs the containerized backend and
+one local frontend. Cloud mode skips Docker and the local backend, and runs one
+frontend against the Comfy test cloud. Set `COMFYUI_FRONTEND_MODE` to `cloud`
+to switch modes.
 
 ```bash
-printf '%s' 'local' |
+printf '%s' 'cloud' |
   amp secrets set COMFYUI_FRONTEND_MODE --project --env --data-file -
+```
+
+If the orb's `GH_TOKEN` can read the private package, no other credentials are
+needed. If it cannot, create a GitHub token with `read:packages` access and save
+it in the Amp project settings. The dedicated values below override `GH_TOKEN`:
+
+```bash
 printf '%s' 'YOUR_GITHUB_USERNAME' |
   amp secrets set COMFY_CI_CONTAINER_USER --project --env --data-file -
 read -rsp 'GitHub package token: ' token && echo
@@ -87,8 +87,8 @@ printf '%s' "$token" |
 unset token
 ```
 
-You can configure the same values in the Amp project settings instead of using
-the CLI. Amp never returns secret values from `amp secrets get` or history.
+You can enter the same values in the Amp project settings instead of using the
+CLI. Start a fresh orb after changing project settings.
 
 ### Node.js & Playwright
 
