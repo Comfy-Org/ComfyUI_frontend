@@ -44,8 +44,10 @@ mkdir -p /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools
 cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 ```
 
+### Containerized ComfyUI
+
 To use the same ComfyUI backend as CI instead of maintaining a separate install,
-run:
+install and start Docker, then run:
 
 ```bash
 pnpm container:start

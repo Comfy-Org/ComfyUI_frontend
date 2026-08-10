@@ -37,20 +37,9 @@ services:
   frontend:
     port: 5173
     command: |
-      set -euo pipefail
       case "${COMFYUI_FRONTEND_MODE:-local}" in
         local)
           echo 'Starting the frontend in local ComfyUI mode'
-          for attempt in $(seq 1 600); do
-            curl -fsS --connect-timeout 1 --max-time 2 \
-              http://127.0.0.1:8188/system_stats >/dev/null 2>&1 && break
-            sleep 1
-          done
-          if ! curl -fsS --connect-timeout 1 --max-time 2 \
-            http://127.0.0.1:8188/system_stats >/dev/null 2>&1; then
-            echo 'ComfyUI did not become ready within 10 minutes.' >&2
-            exit 1
-          fi
           exec env VITE_REMOTE_DEV=true DISABLE_VUE_PLUGINS=true \
             pnpm dev --host 0.0.0.0 --port "$PORT"
           ;;
@@ -65,4 +54,4 @@ services:
       esac
     portal:
       title: ComfyUI Frontend
-      description: Frontend dev server in the configured local or cloud mode.
+      description: ComfyUI frontend development server.
