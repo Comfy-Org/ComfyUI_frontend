@@ -17,6 +17,12 @@ export interface ToolPart {
   durationMs?: number
 }
 
+export interface ThinkingPart {
+  type: 'thinking'
+  text: string
+  state: PartState
+}
+
 export interface NoticePart {
   type: 'notice'
   level: 'info' | 'warning' | 'error'
@@ -29,7 +35,9 @@ export interface TabLinkPart {
   name?: string
 }
 
-type MessagePart = TextPart | ToolPart | NoticePart | TabLinkPart
+export type ActivityPart = ThinkingPart | ToolPart
+
+type MessagePart = TextPart | ThinkingPart | ToolPart | NoticePart | TabLinkPart
 
 export interface AssistantMessage {
   id: TurnId

@@ -26,7 +26,7 @@ describe('ToolCallGroup', () => {
   it('maps tab tools to friendly labels and humanizes unknown tool names', () => {
     render(ToolCallGroup, {
       props: {
-        tools: [
+        parts: [
           tool('c1', 'new_tab', 'done', true),
           tool('c2', 'switch_tab', 'done', true),
           tool('c3', 'add_node', 'streaming'),
@@ -50,7 +50,7 @@ describe('ToolCallGroup', () => {
 
   it('renders open with the row visible while a call streams', () => {
     render(ToolCallGroup, {
-      props: { tools: [tool('c1', 'add_node', 'streaming')] },
+      props: { parts: [tool('c1', 'add_node', 'streaming')] },
       global: { plugins: [i18n] }
     })
 
@@ -61,7 +61,7 @@ describe('ToolCallGroup', () => {
   it('stays open and folds a same-name re-run into the counted row', () => {
     render(ToolCallGroup, {
       props: {
-        tools: [
+        parts: [
           tool('c1', 'add_node', 'done', true),
           tool('c2', 'add_node', 'streaming')
         ]
@@ -77,7 +77,7 @@ describe('ToolCallGroup', () => {
   it('shows per-row and total durations from the wire timings', () => {
     render(ToolCallGroup, {
       props: {
-        tools: [
+        parts: [
           tool('c1', 'add_node', 'done', true, 1300),
           tool('c2', 'add_node', 'done', true, 200),
           tool('c3', 'switch_tab', 'done', true, 500)
@@ -96,7 +96,7 @@ describe('ToolCallGroup', () => {
 
   it('keeps the untimed label when no durations arrive', () => {
     render(ToolCallGroup, {
-      props: { tools: [tool('c1', 'add_node', 'done', true)] },
+      props: { parts: [tool('c1', 'add_node', 'done', true)] },
       global: { plugins: [i18n] }
     })
 
@@ -106,7 +106,7 @@ describe('ToolCallGroup', () => {
   it('stays open while the turn streams and collapses when it completes', async () => {
     const { rerender } = render(ToolCallGroup, {
       props: {
-        tools: [tool('c1', 'add_node', 'done', true)],
+        parts: [tool('c1', 'add_node', 'done', true)],
         streaming: true
       },
       global: { plugins: [i18n] }
@@ -117,7 +117,7 @@ describe('ToolCallGroup', () => {
     expect(screen.getByText('Add node')).toBeInTheDocument()
 
     await rerender({
-      tools: [tool('c1', 'add_node', 'done', true)],
+      parts: [tool('c1', 'add_node', 'done', true)],
       streaming: false
     })
 
@@ -126,14 +126,14 @@ describe('ToolCallGroup', () => {
 
   it('reopens on a failure and folds it into the counted row', async () => {
     const { rerender } = render(ToolCallGroup, {
-      props: { tools: [tool('c1', 'add_node', 'done', true)] },
+      props: { parts: [tool('c1', 'add_node', 'done', true)] },
       global: { plugins: [i18n] }
     })
 
     expect(screen.queryByText('Add node')).not.toBeInTheDocument()
 
     await rerender({
-      tools: [
+      parts: [
         tool('c1', 'add_node', 'done', true),
         tool('c2', 'add_node', 'done', false)
       ]
@@ -141,6 +141,29 @@ describe('ToolCallGroup', () => {
 
     expect(await screen.findByText('Add node')).toBeInTheDocument()
     expect(screen.getByText('×2')).toBeInTheDocument()
+  })
+
+  it('keeps reasoning and tool rows together in event order', () => {
+    render(ToolCallGroup, {
+      props: {
+        parts: [
+          { type: 'thinking', text: 'Inspecting the graph', state: 'done' },
+          tool('c1', 'list_slots', 'done', true),
+          { type: 'thinking', text: 'Applying the edit', state: 'done' },
+          tool('c2', 'set_widget', 'done', true)
+        ],
+        streaming: true
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const rows = screen.getAllByRole('listitem')
+    expect(rows.map((row) => row.textContent)).toEqual([
+      'Inspecting the graph',
+      'List slots',
+      'Applying the edit',
+      'Set widget'
+    ])
   })
 })
 

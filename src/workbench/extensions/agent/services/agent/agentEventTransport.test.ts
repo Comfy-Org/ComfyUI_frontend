@@ -5,7 +5,12 @@ import { zAgentWsEvent } from '../../schemas/agentApiSchema'
 
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
-import type { AssistantMessage, TextPart, ToolPart } from './agentMessageParts'
+import type {
+  AssistantMessage,
+  TextPart,
+  ThinkingPart,
+  ToolPart
+} from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
 const fixtureText = import.meta.glob(
@@ -91,6 +96,8 @@ const toolParts = (m: AssistantMessage): ToolPart[] =>
   m.parts.filter((p): p is ToolPart => p.type === 'tool')
 const textParts = (m: AssistantMessage): TextPart[] =>
   m.parts.filter((p): p is TextPart => p.type === 'text')
+const thinkingParts = (m: AssistantMessage): ThinkingPart[] =>
+  m.parts.filter((p): p is ThinkingPart => p.type === 'thinking')
 
 describe('agentEventTransport fixture replay', () => {
   it('ws-turn-edit: four settled tools then the reply text', () => {
@@ -144,10 +151,12 @@ describe('agentEventTransport fixture replay', () => {
 })
 
 describe('agentEventTransport thinking chip', () => {
-  it('thinking before any text flips the chip and creates no part', () => {
+  it('thinking before any text opens a retained activity part', () => {
     const message = drive([thinking('planning')])
     expect(message.thinking).toBe(true)
-    expect(message.parts).toHaveLength(0)
+    expect(thinkingParts(message)).toEqual([
+      { type: 'thinking', text: 'planning', state: 'streaming' }
+    ])
   })
 
   it('thinking after prior text and tools reopens the status', () => {
@@ -161,7 +170,8 @@ describe('agentEventTransport thinking chip', () => {
     expect(message.parts.map((part) => part.type)).toEqual([
       'text',
       'tool',
-      'text'
+      'text',
+      'thinking'
     ])
     expect(message.thinking).toBe(true)
     expect(message.thinkingText).toBe('Planning the next step')
@@ -172,14 +182,20 @@ describe('agentEventTransport thinking narration', () => {
   it('thinking deltas accumulate into thinkingText on the snapshot', () => {
     const message = drive([thinking('Reading '), thinking('the graph')])
     expect(message.thinkingText).toBe('Reading the graph')
+    expect(thinkingParts(message)).toEqual([
+      { type: 'thinking', text: 'Reading the graph', state: 'streaming' }
+    ])
   })
 
-  it('a tool call clears the narration', () => {
+  it('a tool call clears the live narration but retains the completed step', () => {
     const message = drive([
       thinking('Adding a node'),
       toolCall('add_node', 'ok')
     ])
     expect(message.thinkingText).toBeUndefined()
+    expect(thinkingParts(message)).toEqual([
+      { type: 'thinking', text: 'Adding a node', state: 'done' }
+    ])
   })
 
   it('a tool call after thinking clears the thinking status', () => {
@@ -190,12 +206,15 @@ describe('agentEventTransport thinking narration', () => {
     expect(message.thinking).toBe(false)
   })
 
-  it('the first text delta clears the narration', () => {
+  it('the first text delta clears the live narration but retains the step', () => {
     const message = drive([thinking('Writing a reply'), delta('Here')])
     expect(message.thinkingText).toBeUndefined()
+    expect(thinkingParts(message)).toEqual([
+      { type: 'thinking', text: 'Writing a reply', state: 'done' }
+    ])
   })
 
-  it('settle clears the narration', () => {
+  it('settle clears the live narration but retains the completed step', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit)
@@ -203,6 +222,29 @@ describe('agentEventTransport thinking narration', () => {
     transport.settle()
     const final = emit.mock.calls.at(-1)?.[0] ?? message
     expect(final.thinkingText).toBeUndefined()
+    expect(thinkingParts(final)).toEqual([
+      { type: 'thinking', text: 'Wrapping up', state: 'done' }
+    ])
+  })
+
+  it('retains alternating reasoning and tool events in transcript order', () => {
+    const message = drive([
+      thinking('Inspecting the graph'),
+      toolCall('list_slots', 'ok'),
+      thinking('Applying the edit'),
+      toolCall('set_widget', 'ok')
+    ])
+
+    expect(message.parts).toEqual([
+      {
+        type: 'thinking',
+        text: 'Inspecting the graph',
+        state: 'done'
+      },
+      expect.objectContaining({ type: 'tool', name: 'list_slots' }),
+      { type: 'thinking', text: 'Applying the edit', state: 'done' },
+      expect.objectContaining({ type: 'tool', name: 'set_widget' })
+    ])
   })
 })
 

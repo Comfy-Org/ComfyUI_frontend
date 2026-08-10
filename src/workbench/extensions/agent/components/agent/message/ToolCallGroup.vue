@@ -9,34 +9,48 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ToolPart } from '../../../services/agent/agentMessageParts'
+import type {
+  ActivityPart,
+  ToolPart
+} from '../../../services/agent/agentMessageParts'
 
 import ToolCallCard from './ToolCallCard.vue'
 
 const {
-  tools,
+  parts,
   streaming = false,
   active = false
 } = defineProps<{
-  tools: ToolPart[]
+  parts: ActivityPart[]
   streaming?: boolean
   active?: boolean
 }>()
 
 const { t } = useI18n()
 
-interface Row {
+interface ToolRow {
+  kind: 'tool'
   name: string
   state: ToolPart['state']
   ok?: boolean
   count: number
   durationMs?: number
 }
+type Row = ToolRow | { kind: 'thinking'; text: string }
+
+const tools = computed(() =>
+  parts.filter((part): part is ToolPart => part.type === 'tool')
+)
 const rows = computed<Row[]>(() => {
   const out: Row[] = []
-  for (const tool of tools) {
+  for (const part of parts) {
+    if (part.type === 'thinking') {
+      out.push({ kind: 'thinking', text: part.text })
+      continue
+    }
+    const tool = part
     const prev = out.at(-1)
-    if (prev && prev.name === tool.name) {
+    if (prev?.kind === 'tool' && prev.name === tool.name) {
       prev.count += 1
       if (tool.state === 'streaming') prev.state = 'streaming'
       if (tool.ok === false) prev.ok = false
@@ -44,6 +58,7 @@ const rows = computed<Row[]>(() => {
         prev.durationMs = (prev.durationMs ?? 0) + tool.durationMs
     } else {
       out.push({
+        kind: 'tool',
         name: tool.name,
         state: tool.state,
         ok: tool.ok,
@@ -56,13 +71,15 @@ const rows = computed<Row[]>(() => {
 })
 
 const totalSeconds = computed(() => {
-  const ms = tools.reduce((sum, tool) => sum + (tool.durationMs ?? 0), 0)
+  const ms = tools.value.reduce((sum, tool) => sum + (tool.durationMs ?? 0), 0)
   return ms > 0 ? (ms / 1000).toFixed(1) : null
 })
 
-const running = computed(() => tools.some((tool) => tool.state === 'streaming'))
+const running = computed(() =>
+  tools.value.some((tool) => tool.state === 'streaming')
+)
 const failed = computed(() =>
-  tools.some((tool) => tool.state === 'done' && tool.ok === false)
+  tools.value.some((tool) => tool.state === 'done' && tool.ok === false)
 )
 
 // Live tool events arrive only on completion, so per-tool streaming never
@@ -112,15 +129,24 @@ watch(
       class="data-[state=closed]:animate-agent-collapsible-up data-[state=open]:animate-agent-collapsible-down overflow-hidden"
     >
       <div role="list" class="border-agent-border ml-4 flex flex-col border-l">
-        <ToolCallCard
-          v-for="(row, index) in rows"
-          :key="index"
-          :name="row.name"
-          :state="row.state"
-          :ok="row.ok"
-          :count="row.count"
-          :duration-ms="row.durationMs"
-        />
+        <template v-for="(row, index) in rows" :key="index">
+          <div
+            v-if="row.kind === 'thinking'"
+            role="listitem"
+            class="text-agent-fg-muted ml-2 flex min-h-8 items-center gap-2 px-2 py-1 text-sm/5"
+          >
+            <span class="icon-[lucide--brain] size-4 shrink-0" />
+            <span>{{ row.text }}</span>
+          </div>
+          <ToolCallCard
+            v-else
+            :name="row.name"
+            :state="row.state"
+            :ok="row.ok"
+            :count="row.count"
+            :duration-ms="row.durationMs"
+          />
+        </template>
       </div>
     </CollapsibleContent>
   </CollapsibleRoot>

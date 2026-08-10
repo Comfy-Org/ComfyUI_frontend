@@ -1,6 +1,11 @@
 import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
-import type { AssistantMessage, TextPart, ToolPart } from './agentMessageParts'
+import type {
+  AssistantMessage,
+  TextPart,
+  ThinkingPart,
+  ToolPart
+} from './agentMessageParts'
 import { snapshotMessage } from './agentMessageParts'
 
 export type AgentChatEvent = Extract<
@@ -25,6 +30,7 @@ export function createAgentEventTransport(
   emit: (m: AssistantMessage) => void
 ): AgentEventTransport {
   let openText: TextPart | null = null
+  let openThinking: ThinkingPart | null = null
   let toolCount = 0
   let settled = false
   let lastTabWorkflowId: string | undefined
@@ -43,15 +49,36 @@ export function createAgentEventTransport(
     return part
   }
 
+  function closeOpenThinking(): void {
+    if (openThinking) {
+      openThinking.state = 'done'
+      openThinking = null
+    }
+  }
+
+  function openNewThinking(): ThinkingPart {
+    const part: ThinkingPart = {
+      type: 'thinking',
+      text: '',
+      state: 'streaming'
+    }
+    message.parts.push(part)
+    openThinking = part
+    return part
+  }
+
   function ingest(event: AgentChatEvent): void {
     if (settled) return
     switch (event.type) {
       case 'agent_thinking':
+        closeOpenText()
         message.thinking = true
-        message.thinkingText = (message.thinkingText ?? '') + event.data.delta
+        ;(openThinking ?? openNewThinking()).text += event.data.delta
+        message.thinkingText = openThinking?.text
         break
       case 'agent_tool_call': {
         closeOpenText()
+        closeOpenThinking()
         message.thinking = false
         message.thinkingText = undefined
         const part: ToolPart = {
@@ -80,6 +107,7 @@ export function createAgentEventTransport(
         break
       }
       case 'agent_message_delta':
+        closeOpenThinking()
         message.thinking = false
         message.thinkingText = undefined
         ;(openText ?? openNewText()).text += event.data.delta
@@ -95,6 +123,7 @@ export function createAgentEventTransport(
     if (settled) return
     settled = true
     closeOpenText()
+    closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
     message.streaming = false
