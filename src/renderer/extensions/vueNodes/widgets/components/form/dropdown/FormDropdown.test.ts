@@ -81,6 +81,8 @@ const MockPopover = {
 }
 
 interface MountDropdownOptions {
+  closeOnDisable?: boolean
+  disabled?: boolean
   searcher?: (
     query: string,
     items: FormDropdownItem[],
@@ -105,6 +107,8 @@ function mountDropdown(
   const result = render(FormDropdown, {
     props: {
       items,
+      closeOnDisable: options.closeOnDisable,
+      disabled: options.disabled,
       multiple: options.multiple,
       selected: options.selected,
       searcher: options.searcher,
@@ -453,6 +457,27 @@ describe('FormDropdown', () => {
 
     transformState.camera.x += 77
     await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+  })
+
+  it('closes when a linked display disables the dropdown', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const items = [createItem('1', 'alpha')]
+    const { rerender, user } = mountDropdown(items, {
+      closeOnDisable: true,
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    await rerender({
+      items,
+      closeOnDisable: true,
+      disabled: true,
+      'onUpdate:isOpen': onUpdateIsOpen
+    })
 
     expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
   })

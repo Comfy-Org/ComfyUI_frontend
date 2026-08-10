@@ -9,7 +9,7 @@ import WidgetLayoutField from './WidgetLayoutField.vue'
 
 type WidgetShape = Pick<
   SimplifiedWidget<string>,
-  'name' | 'label' | 'borderStyle'
+  'name' | 'label' | 'borderStyle' | 'linkedDisplay'
 >
 
 function renderField(
@@ -95,6 +95,33 @@ describe('WidgetLayoutField', () => {
       render(Harness)
       const el = screen.getByTestId('slot-border')
       expect(el.dataset.border).toContain('custom-border')
+    })
+
+    it('preserves linked content in place while exposing only its status', async () => {
+      const { rerender } = render(WidgetLayoutField, {
+        props: {
+          widget: { name: 'prompt', linkedDisplay: 'control' }
+        },
+        slots: {
+          default:
+            '<button data-testid="linked-control" disabled>stale prompt</button>'
+        }
+      })
+
+      const content = screen.getByTestId('linked-widget-content')
+      const control = screen.getByRole('button', { hidden: true })
+      expect(content).toHaveAttribute('inert')
+      expect(content).toHaveAttribute('aria-hidden', 'true')
+      expect(control).toBeDisabled()
+      expect(screen.queryByRole('button')).toBeNull()
+      expect(
+        screen.getByRole('status', { name: 'prompt: Linked input' })
+      ).toBeVisible()
+
+      await rerender({ widget: { name: 'prompt' } })
+
+      expect(screen.queryByRole('status')).toBeNull()
+      expect(screen.getByRole('button', { name: 'stale prompt' })).toBeVisible()
     })
   })
 

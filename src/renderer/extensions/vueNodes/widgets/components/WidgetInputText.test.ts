@@ -168,6 +168,34 @@ describe('WidgetInputText Value Binding', () => {
       const textarea = container.querySelector('textarea')
       expect(textarea).not.toBeInTheDocument()
     })
+
+    it('restores the same text control after a link is removed', async () => {
+      const widget = createInputTextWidget('stale prompt', {
+        disabled: true
+      })
+      widget.linkedDisplay = 'control'
+      const { rerender } = renderComponent(widget, 'stale prompt')
+
+      const linkedInput = screen.getByRole('textbox', { hidden: true })
+      expect(linkedInput).toBeDisabled()
+      expect(screen.queryByRole('textbox')).toBeNull()
+      expect(screen.getByTestId('linked-widget-content')).toHaveAttribute(
+        'inert'
+      )
+      expect(
+        screen.getByRole('status', { name: 'test_input: Linked input' })
+      ).toBeVisible()
+
+      await rerender({
+        widget: createInputTextWidget('stale prompt'),
+        modelValue: 'stale prompt'
+      })
+
+      expect(screen.queryByRole('status')).toBeNull()
+      expect(screen.getByRole('textbox')).toBeVisible()
+      expect(screen.getByRole('textbox')).toBeEnabled()
+      expect(screen.getByRole('textbox')).toHaveValue('stale prompt')
+    })
   })
 
   describe('Edge Cases', () => {

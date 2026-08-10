@@ -22,11 +22,10 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
-  getLinkedWidgetFamily,
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { resolveWidgetSelectMode } from '@/renderer/extensions/vueNodes/widgets/utils/widgetSelectMode'
+import { resolveLinkedWidgetDisplay } from '@/renderer/extensions/vueNodes/widgets/utils/linkedWidgetDisplay'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import {
   stripGraphPrefix,
@@ -35,6 +34,7 @@ import {
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -51,6 +51,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
+  LinkedWidgetDisplay,
   LinkedUpstreamInfo,
   SimplifiedWidget,
   WidgetValue
@@ -69,7 +70,7 @@ interface ProcessedWidget {
   hasError: boolean
   hidden: boolean
   id?: string
-  linkedDisplay?: 'control' | 'expanding' | 'switch'
+  linkedDisplay?: LinkedWidgetDisplay
   widgetId?: WidgetId
   name: string
   renderKey: string
@@ -83,33 +84,6 @@ interface ProcessedWidget {
   slotMetadata?: WidgetSlotMetadata
 }
 
-function getLinkedDisplay(
-  widget: SafeWidgetData,
-  options: IWidgetOptions,
-  nodeType: string
-): ProcessedWidget['linkedDisplay'] {
-  if (!widget.slotMetadata?.linked) return undefined
-
-  const family = getLinkedWidgetFamily(widget.type)
-  if (!family) return undefined
-
-  if (family === 'combo') {
-    const mode = resolveWidgetSelectMode(widget, {
-      assetApiEnabled: assetService.isAssetAPIEnabled(),
-      useAssetBrowser: assetService.shouldUseAssetBrowser(nodeType, widget.name)
-    })
-    if (mode.isDropdownUIWidget) return undefined
-  }
-
-  if (family === 'textarea') return 'expanding'
-
-  if (family === 'boolean' && options.on == null && options.off == null) {
-    return 'switch'
-  }
-
-  return 'control'
-}
-
 interface WidgetUiCallbacks {
   getTooltipConfig: (widget: SafeWidgetData, fullVal?: string) => TooltipOptions
   handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
@@ -117,6 +91,7 @@ interface WidgetUiCallbacks {
 
 interface ComputeProcessedWidgetsOptions {
   nodeData: VueNodeData | undefined
+  coreNodeType?: string
   graphId: string | undefined
   showAdvanced: boolean
   isGraphReady: boolean
@@ -253,6 +228,7 @@ export function isWidgetVisible(
 
 export function computeProcessedWidgets({
   nodeData,
+  coreNodeType,
   graphId,
   showAdvanced,
   isGraphReady,
@@ -361,7 +337,15 @@ export function computeProcessedWidgets({
 
     const value = widgetState?.value as WidgetValue
 
-    const linkedDisplay = getLinkedDisplay(widget, mergedOptions, nodeData.type)
+    const linkedDisplay = resolveLinkedWidgetDisplay(widget, mergedOptions, {
+      assetApiEnabled: assetService.isAssetAPIEnabled(),
+      coreNodeType,
+      linked: Boolean(widget.slotMetadata?.linked),
+      useAssetBrowser: assetService.shouldUseAssetBrowser(
+        nodeData.type,
+        widget.name
+      )
+    })
     const isDisabled = slotMetadata?.linked || widgetState?.disabled
     const widgetOptions = isDisabled
       ? { ...mergedOptions, disabled: true }
@@ -394,6 +378,7 @@ export function computeProcessedWidgets({
       callback: widget.callback,
       controlWidget: widget.controlWidget,
       label: widgetState?.label,
+      linkedDisplay,
       linkedUpstream,
       nodeLocatorId,
       options: widgetOptions,
@@ -469,6 +454,7 @@ export function useProcessedWidgets(
 ) {
   const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()
+  const nodeDefStore = useNodeDefStore()
   const { isSelectInputsMode } = useAppMode()
   const { handleNodeRightClick } = useNodeEventHandlers()
 
@@ -499,16 +485,21 @@ export function useProcessedWidgets(
     )
   })
 
-  const processedWidgets = computed((): ProcessedWidget[] =>
-    computeProcessedWidgets({
-      nodeData: nodeDataGetter(),
+  const processedWidgets = computed((): ProcessedWidget[] => {
+    const nodeData = nodeDataGetter()
+    const nodeDef = nodeData
+      ? nodeDefStore.nodeDefsByName[nodeData.type]
+      : undefined
+    return computeProcessedWidgets({
+      nodeData,
+      coreNodeType: nodeDef?.isCoreNode ? nodeDef.name : undefined,
       graphId: canvasStore.canvas?.graph?.rootGraph.id,
       showAdvanced: showAdvanced.value,
       isGraphReady: app.isGraphReady,
       rootGraph: app.isGraphReady ? app.rootGraph : null,
       ui
     })
-  )
+  })
 
   const visibleWidgets = computed(() =>
     processedWidgets.value.filter((w) => w.visible)

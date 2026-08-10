@@ -53,14 +53,7 @@
           />
         </div>
         <!-- Widget Component -->
-        <div
-          class="contents"
-          :aria-hidden="widget.linkedDisplay ? 'true' : undefined"
-          :inert="widget.linkedDisplay ? true : undefined"
-          :data-testid="
-            widget.linkedDisplay ? 'linked-widget-content' : undefined
-          "
-        >
+        <div class="contents" @contextmenu="widget.handleContextMenu">
           <AppInput
             :widget-id="widget.widgetId"
             :name="widget.name"
@@ -84,37 +77,8 @@
                 )
               "
               @update:model-value="widget.updateHandler"
-              @contextmenu="widget.handleContextMenu"
             />
           </AppInput>
-        </div>
-        <div
-          v-if="widget.linkedDisplay"
-          data-testid="linked-widget-placeholder"
-          :data-linked-display="widget.linkedDisplay"
-          role="img"
-          :aria-label="`${widget.simplified.label || widget.simplified.name}: ${st(
-            'widgets.linkedInput',
-            'Linked input'
-          )}`"
-          :title="st('widgets.linkedInput', 'Linked input')"
-          :class="
-            cn(
-              'pointer-events-auto z-20 row-start-1 flex cursor-default items-center justify-center overflow-hidden bg-component-node-widget-background text-component-node-foreground-secondary select-none',
-              widget.simplified.borderStyle,
-              widget.linkedDisplay === 'expanding'
-                ? 'col-span-2 col-start-2 size-full rounded-lg'
-                : widget.linkedDisplay === 'switch'
-                  ? 'col-start-3 h-6 w-10 self-center justify-self-end rounded-full'
-                  : 'col-start-3 rounded-md'
-            )
-          "
-          @pointerdown.stop
-          @pointermove.stop
-          @pointerup.stop
-          @contextmenu="widget.handleContextMenu"
-        >
-          <i class="icon-[lucide--link] size-4" aria-hidden="true" />
         </div>
       </div>
     </template>

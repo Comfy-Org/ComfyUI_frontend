@@ -7,7 +7,7 @@ import {
 } from '@vueuse/core'
 import Popover from 'primevue/popover'
 import type { ComponentPublicInstance } from 'vue'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -41,6 +41,7 @@ interface Props {
 
   uploadable?: boolean
   disabled?: boolean
+  closeOnDisable?: boolean
   accept?: string
   filterOptions?: FilterOption[]
   sortOptions?: SortOption[]
@@ -69,6 +70,7 @@ const {
   multiple = false,
   uploadable = false,
   disabled = false,
+  closeOnDisable = false,
   accept,
   filterOptions = [],
   sortOptions = getDefaultSortOptions(),
@@ -215,6 +217,10 @@ const closeDropdown = ({ restoreFocus = false } = {}) => {
 
   if (restoreFocus) focusTrigger()
 }
+
+watch([() => disabled, () => closeOnDisable], ([isDisabled, shouldClose]) => {
+  if (isDisabled && shouldClose) closeDropdown()
+})
 
 /**
  * Dismiss on `pointerdown` rather than PrimeVue's default `click` (mouseup) so

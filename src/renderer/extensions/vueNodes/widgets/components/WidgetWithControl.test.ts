@@ -1,7 +1,10 @@
-import { render, screen } from '@testing-library/vue'
+import { createTestingPinia } from '@pinia/testing'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type {
   SafeControlWidget,
@@ -10,6 +13,7 @@ import type {
 } from '@/types/simplifiedWidget'
 
 import WidgetWithControl from './WidgetWithControl.vue'
+import ValueControlPopover from './ValueControlPopover.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 const PopoverStub = defineComponent({
@@ -24,9 +28,12 @@ const PopoverStub = defineComponent({
 
 const ValueControlButtonStub = defineComponent({
   name: 'ValueControlButton',
-  props: { mode: { type: String, default: '' } },
+  props: {
+    disabled: { type: Boolean, default: false },
+    mode: { type: String, default: '' }
+  },
   template:
-    '<button data-testid="control-button" :data-mode="mode">{{ mode }}</button>'
+    '<button data-testid="control-button" :data-mode="mode" :disabled>{{ mode }}</button>'
 })
 
 const ValueControlPopoverStub = defineComponent({
@@ -43,6 +50,23 @@ const ValueControlPopoverStub = defineComponent({
   `
 })
 
+const PortaledPopoverStub = defineComponent({
+  name: 'Popover',
+  components: { ValueControlPopover },
+  setup() {
+    const open = ref(false)
+    return { open }
+  },
+  template: `
+    <span @click.capture="open = true">
+      <slot name="button" />
+    </span>
+    <Teleport v-if="open" to="body">
+      <ValueControlPopover model-value="randomize" />
+    </Teleport>
+  `
+})
+
 const RenderedComponent = defineComponent({
   name: 'RenderedComponent',
   props: {
@@ -56,6 +80,12 @@ const RenderedComponent = defineComponent({
       <slot />
     </div>
   `
+})
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
 })
 
 const makeControlWidget = (
@@ -83,6 +113,15 @@ const mount = (widget: SimplifiedControlWidget, modelValue = 0) =>
         ValueControlButton: ValueControlButtonStub,
         ValueControlPopover: ValueControlPopoverStub
       }
+    },
+    props: { widget, modelValue, component: RenderedComponent }
+  })
+
+const mountWithPortal = (widget: SimplifiedControlWidget, modelValue = 0) =>
+  render(WidgetWithControl, {
+    global: {
+      plugins: [createTestingPinia(), i18n, PrimeVue],
+      stubs: { Popover: PortaledPopoverStub }
     },
     props: { widget, modelValue, component: RenderedComponent }
   })
@@ -117,6 +156,46 @@ describe('WidgetWithControl', () => {
   it('does not call update on initial mount', () => {
     const update = vi.fn()
     mount(makeControlWidget(update, 'randomize'))
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('disables the value control with the wrapped widget', () => {
+    const widget = makeControlWidget()
+    widget.options = { disabled: true }
+    mount(widget)
+
+    expect(screen.getByTestId('control-button')).toBeDisabled()
+  })
+
+  it('unmounts an open value-control portal when linked', async () => {
+    const update = vi.fn<(value: WidgetValue) => void>()
+    const widget = makeControlWidget(update, 'randomize')
+    const { rerender } = mountWithPortal(widget)
+
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.click(await screen.findByTestId('value-control'))
+    expect(await screen.findAllByRole('radio')).toHaveLength(4)
+
+    const linkedWidget: SimplifiedControlWidget = {
+      ...widget,
+      linkedDisplay: 'control',
+      options: { ...widget.options, disabled: true }
+    }
+    update.mockClear()
+    await rerender({
+      widget: linkedWidget,
+      modelValue: 0,
+      component: RenderedComponent
+    })
+
+    await waitFor(() => expect(screen.queryAllByRole('radio')).toHaveLength(0))
+    const linkedButton = screen.getByTestId('value-control')
+    expect(linkedButton).toBeDisabled()
+    linkedButton.focus()
+    expect(linkedButton).not.toHaveFocus()
+    const user = userEvent.setup()
+    await user.click(linkedButton)
+    await user.keyboard('{Enter}')
     expect(update).not.toHaveBeenCalled()
   })
 })

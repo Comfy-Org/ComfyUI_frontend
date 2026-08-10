@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget="widget">
+  <WidgetLayoutField :widget="widget" linked-status-rounded="lg">
     <ColorPicker
       v-model="localValue"
       :disabled="Boolean(widget.options?.disabled)"

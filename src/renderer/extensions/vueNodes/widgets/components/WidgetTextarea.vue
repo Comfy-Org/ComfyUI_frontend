@@ -2,7 +2,8 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered',
+        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
+        !isLinked && 'hover:bg-component-node-widget-background-hovered',
         widget.borderStyle
       )
     "
@@ -24,12 +25,18 @@
           WidgetInputBaseClass,
           'size-full resize-none text-(length:--comfy-textarea-font-size) leading-normal',
           !hideLayoutField && 'pt-5',
+          isLinked && 'invisible',
           // Avoid overflow-auto when idle to prevent per-textarea compositing layers.
           'overflow-hidden hover:overflow-auto focus:overflow-auto'
         )
       "
       :placeholder
       :readonly="isReadOnly"
+      :disabled="Boolean(widget.options?.disabled)"
+      :aria-hidden="isLinked ? 'true' : undefined"
+      :inert="isLinked ? true : undefined"
+      :tabindex="isLinked ? -1 : undefined"
+      :data-testid="isLinked ? 'linked-widget-content' : undefined"
       data-capture-wheel="true"
       @pointerdown.capture.stop="trackFocus"
       @pointermove.capture.stop
@@ -37,7 +44,7 @@
       @contextmenu.capture="handleContextMenu"
     />
     <Button
-      v-if="isReadOnly"
+      v-if="isReadOnly && !isLinked"
       variant="textonly"
       size="icon"
       class="invisible absolute top-1.5 right-1.5 z-10 group-focus-within:visible group-hover:visible hover:bg-base-foreground/10"
@@ -48,6 +55,7 @@
     >
       <i class="icon-[lucide--copy] size-4 text-component-node-foreground" />
     </Button>
+    <LinkedWidgetStatus v-if="isLinked" display="expanding" :widget />
   </div>
 </template>
 
@@ -67,6 +75,7 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import { WidgetInputBaseClass } from './layout'
+import LinkedWidgetStatus from './LinkedWidgetStatus.vue'
 
 const { widget, placeholder = '' } = defineProps<{
   widget: SimplifiedWidget<string>
@@ -95,6 +104,7 @@ const id = useId()
 const isReadOnly = computed(() =>
   Boolean(widget.options?.read_only || widget.options?.disabled)
 )
+const isLinked = computed(() => widget.linkedDisplay === 'expanding')
 
 function handleContextMenu(e: MouseEvent) {
   if (isNodeOptionsOpen() || isFocused.value) {

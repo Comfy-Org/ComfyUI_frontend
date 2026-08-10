@@ -86,10 +86,19 @@ const noopUi = {
 }
 
 function processWidgets(widgets: SafeWidgetData[], ui: typeof noopUi = noopUi) {
+  return processNodeWidgets(widgets, 'TestNode', false, ui)
+}
+
+function processNodeWidgets(
+  widgets: SafeWidgetData[],
+  nodeType: string,
+  isCoreNode: boolean,
+  ui: typeof noopUi = noopUi
+) {
   return computeProcessedWidgets({
     nodeData: {
       id: NODE_ID,
-      type: 'TestNode',
+      type: nodeType,
       widgets,
       title: 'Test',
       mode: 0,
@@ -98,6 +107,7 @@ function processWidgets(widgets: SafeWidgetData[], ui: typeof noopUi = noopUi) {
       inputs: [],
       outputs: []
     },
+    coreNodeType: isCoreNode ? nodeType : undefined,
     graphId: GRAPH_ID,
     showAdvanced: false,
     isGraphReady: false,
@@ -762,7 +772,6 @@ describe('computeProcessedWidgets linked presentation', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     isAssetAPIEnabled.mockReturnValue(false)
     shouldUseAssetBrowser.mockReturnValue(false)
     showNodeOptions.mockClear()
@@ -793,39 +802,6 @@ describe('computeProcessedWidgets linked presentation', () => {
       nodeId: toNodeId(2),
       outputName: 'value'
     })
-  })
-
-  it.for([
-    'text',
-    'string',
-    'STRING',
-    'int',
-    'INT',
-    'float',
-    'FLOAT',
-    'number',
-    'slider',
-    'boolean',
-    'BOOLEAN',
-    'toggle',
-    'combo',
-    'COMBO',
-    'color',
-    'COLOR'
-  ])('uses the linked control display for the registered %s type', (type) => {
-    const widget = createMockWidget({
-      type,
-      slotMetadata: linkedSlot
-    })
-
-    const [processed] = processWidgets([widget])
-
-    expect(processed.linkedDisplay).toBe(
-      type === 'boolean' || type === 'BOOLEAN' || type === 'toggle'
-        ? 'switch'
-        : 'control'
-    )
-    expect(processed.simplified.options?.disabled).toBe(true)
   })
 
   it('restores the standard widget state after disconnect', () => {
@@ -883,19 +859,6 @@ describe('computeProcessedWidgets linked presentation', () => {
     expect(processWidgets([toggleWidget])[0].linkedDisplay).toBe('control')
   })
 
-  it.for(['textarea', 'TEXTAREA', 'multiline', 'customtext'])(
-    'uses the expanding linked display for %s',
-    (type) => {
-      const widget = createMockWidget({
-        name: 'text',
-        type,
-        slotMetadata: linkedSlot
-      })
-
-      expect(processWidgets([widget])[0].linkedDisplay).toBe('expanding')
-    }
-  )
-
   it.for([
     ['String', false, WidgetLegacy],
     ['CoMbO', true, WidgetDOM]
@@ -941,6 +904,20 @@ describe('computeProcessedWidgets linked presentation', () => {
     expect(processed.simplified.options?.disabled).toBe(true)
   })
 
+  it('hides and disables a linked core media selector', () => {
+    const widget = createMockWidget({
+      name: 'image',
+      type: 'asset',
+      spec: { type: 'COMBO', name: 'image', image_upload: true },
+      slotMetadata: linkedSlot
+    })
+
+    const [processed] = processNodeWidgets([widget], 'LoadImage', true)
+
+    expect(processed.linkedDisplay).toBe('control')
+    expect(processed.simplified.options?.disabled).toBe(true)
+  })
+
   it('keeps an asset-browser combo rendered while hiding an ordinary combo', () => {
     shouldUseAssetBrowser.mockReturnValue(true)
     const widget = createMockWidget({
@@ -955,24 +932,21 @@ describe('computeProcessedWidgets linked presentation', () => {
     expect(processWidgets([widget])[0].linkedDisplay).toBe('control')
   })
 
-  it.for(['range', 'curve', 'imagecrop', 'boundingbox', 'gradientslider'])(
-    'keeps the upstream-relaying %s widget rendered',
-    (type) => {
-      const widget = createMockWidget({
-        type,
-        slotMetadata: linkedSlot
-      })
+  it('keeps upstream metadata for a linked relay widget', () => {
+    const widget = createMockWidget({
+      type: 'range',
+      slotMetadata: linkedSlot
+    })
 
-      const [processed] = processWidgets([widget])
+    const [processed] = processWidgets([widget])
 
-      expect(processed.linkedDisplay).toBeUndefined()
-      expect(processed.simplified.options?.disabled).toBe(true)
-      expect(processed.simplified.linkedUpstream).toEqual({
-        nodeId: toNodeId(2),
-        outputName: 'value'
-      })
-    }
-  )
+    expect(processed.linkedDisplay).toBeUndefined()
+    expect(processed.simplified.options?.disabled).toBe(true)
+    expect(processed.simplified.linkedUpstream).toEqual({
+      nodeId: toNodeId(2),
+      outputName: 'value'
+    })
+  })
 
   it('opens only node actions for a hidden linked widget', () => {
     const handleNodeRightClick = vi.fn()

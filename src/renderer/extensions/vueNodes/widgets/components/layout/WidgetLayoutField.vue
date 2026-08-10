@@ -5,13 +5,22 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { widget, rootClass } = defineProps<{
+import LinkedWidgetStatus from '../LinkedWidgetStatus.vue'
+
+const {
+  widget,
+  rootClass,
+  linkedStatusRounded = 'md',
+  showLinkedStatus = true
+} = defineProps<{
   widget: Pick<
     SimplifiedWidget<string | number | undefined>,
-    'name' | 'label' | 'borderStyle'
+    'name' | 'label' | 'borderStyle' | 'linkedDisplay'
   >
   rootClass?: string
   noBorder?: boolean
+  linkedStatusRounded?: 'md' | 'lg'
+  showLinkedStatus?: boolean
 }>()
 
 const hideLayoutField = useHideLayoutField()
@@ -20,6 +29,11 @@ const borderStyle = computed(() =>
     'focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
     widget.borderStyle
   )
+)
+const linkedDisplay = computed(() =>
+  showLinkedStatus && widget.linkedDisplay === 'control'
+    ? widget.linkedDisplay
+    : undefined
 )
 </script>
 
@@ -46,7 +60,7 @@ const borderStyle = computed(() =>
       <div
         :class="
           cn(
-            'min-w-0 cursor-default rounded-md transition-all',
+            'relative min-w-0 cursor-default rounded-md transition-all',
             !noBorder && borderStyle
           )
         "
@@ -54,7 +68,21 @@ const borderStyle = computed(() =>
         @pointermove.stop
         @pointerup.stop
       >
-        <slot :border-style />
+        <div
+          class="contents"
+          :class="linkedDisplay && 'invisible'"
+          :aria-hidden="linkedDisplay ? 'true' : undefined"
+          :inert="linkedDisplay ? true : undefined"
+          :data-testid="linkedDisplay ? 'linked-widget-content' : undefined"
+        >
+          <slot :border-style />
+        </div>
+        <LinkedWidgetStatus
+          v-if="linkedDisplay"
+          :display="linkedDisplay"
+          :widget
+          :rounded="linkedStatusRounded"
+        />
       </div>
     </div>
   </div>

@@ -4,9 +4,14 @@ import { useI18n } from 'vue-i18n'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { mode, variant = 'badge' } = defineProps<{
+const {
+  mode,
+  variant = 'badge',
+  disabled = false
+} = defineProps<{
   mode: ControlOptions
   variant?: 'badge' | 'button'
+  disabled?: boolean
 }>()
 
 const { t } = useI18n()
@@ -30,10 +35,11 @@ const textMap: Record<ControlOptions, string | null> = {
   <button
     data-testid="value-control"
     type="button"
+    :disabled
     :aria-label="t('widgets.valueControl.' + mode)"
     :class="
       cn(
-        'flex shrink-0 cursor-pointer items-center justify-center border-none focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:ring-offset-1 focus-visible:outline-none',
+        'flex shrink-0 cursor-pointer items-center justify-center border-none focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:ring-offset-1 focus-visible:outline-none disabled:cursor-default disabled:opacity-50',
         variant === 'badge' ? 'h-4.5 w-8 rounded-full' : 'size-6 rounded-sm',
         mode !== 'fixed'
           ? 'bg-primary-background/30 hover:bg-primary-background-hover/30'
