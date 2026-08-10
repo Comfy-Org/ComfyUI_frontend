@@ -17,6 +17,10 @@ import {
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import {
+  AGENT_REKA_TOOLTIP_CONTENT_CLASS,
+  AGENT_REKA_TOOLTIP_PROVIDER_PROPS
+} from '@/composables/useTooltipConfig'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import type { ActiveTab } from '../../../types/activeTab'
@@ -43,15 +47,6 @@ const workflowTooltipText = computed(() =>
   current.value
     ? t('agent.changeWorkflowForChat')
     : t('agent.chooseWorkflowForChat')
-)
-const workflowTooltipOpen = ref(false)
-const workflowTrigger = ref<HTMLButtonElement>()
-const workflowTooltipClass = cn(
-  'z-1700 w-max rounded-lg bg-[#171717] px-3 py-1.5 whitespace-nowrap',
-  'font-inter text-xs/4 text-[#fafafa] shadow-none ring-1 ring-charcoal-200 will-change-[transform,opacity] ring-inset',
-  'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
-  'data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95',
-  'data-[state=instant-open]:animate-in data-[state=instant-open]:fade-in-0 data-[state=instant-open]:zoom-in-95'
 )
 
 const open = ref(false)
@@ -84,145 +79,135 @@ function onSearchKeydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <TooltipProvider :delay-duration="300">
-    <div
-      ref="selectorRoot"
-      class="flex w-full items-center justify-between gap-1.5"
-    >
-      <DropdownMenuRoot v-model:open="open">
-        <DropdownMenuTrigger as-child>
-          <button
-            ref="workflowTrigger"
-            type="button"
-            :aria-label="t('agent.switchWorkflow')"
-            :class="
-              cn(
-                'group text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-medium transition-colors',
-                !current && 'text-agent-fg-muted hover:text-agent-fg flex-1'
-              )
-            "
-            @pointerenter="workflowTooltipOpen = true"
-            @pointerleave="workflowTooltipOpen = false"
-            @focus="workflowTooltipOpen = true"
-            @blur="workflowTooltipOpen = false"
-            @click="workflowTooltipOpen = false"
-          >
-            <span
-              v-if="tabActivity.editingTabPath === current?.path"
-              role="img"
-              :aria-label="t('g.agentWorking')"
-              class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
-            />
-            <span
-              v-else
-              data-testid="workflow-selector-icon"
-              class="text-agent-fg-subtle group-hover:text-agent-fg icon-[comfy--workflow] size-3.5 shrink-0"
-            />
-            <span class="min-w-0 truncate">{{
-              current?.name ?? t('agent.chooseWorkflow')
-            }}</span>
-            <span
-              v-if="current?.modified"
-              data-testid="unsaved-dot"
-              class="flex size-3.5 shrink-0 items-center justify-center"
-            >
-              <span class="bg-agent-fg size-[7px] rounded-full" />
-            </span>
-          </button>
-        </DropdownMenuTrigger>
-        <TooltipRoot v-model:open="workflowTooltipOpen">
-          <TooltipTrigger
-            :reference="workflowTrigger"
-            as="span"
-            aria-hidden="true"
-            class="hidden"
-          />
-          <TooltipPortal>
-            <TooltipContent
-              side="top"
-              align="start"
-              :side-offset="6"
-              :collision-padding="8"
-              :class="workflowTooltipClass"
-            >
-              {{ workflowTooltipText }}
-            </TooltipContent>
-          </TooltipPortal>
-        </TooltipRoot>
-        <DropdownMenuPortal>
-          <DropdownMenuContent
-            side="top"
-            align="start"
-            :side-offset="8"
-            :reference="composerReference"
-            class="agent-scope bg-agent-surface-raised z-1100 box-border max-h-64 w-(--reka-dropdown-menu-trigger-width) overflow-y-auto rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
-          >
-            <input
-              ref="searchInput"
-              v-model="query"
-              type="text"
-              :placeholder="t('agent.searchWorkflows')"
-              class="text-agent-fg placeholder:text-agent-fg-muted mb-1 h-8 w-full rounded-[10px] border border-white/15 bg-transparent px-2.5 py-1 text-[14px]/5 outline-none"
-              @keydown="onSearchKeydown"
-            />
-            <DropdownMenuRadioGroup :model-value="current?.path ?? ''">
-              <DropdownMenuRadioItem
-                v-for="tab in filteredTabs"
-                :key="tab.path"
-                :value="tab.path"
-                class="text-agent-fg box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none data-highlighted:bg-[#404040]"
-                @select="emit('selectTab', tab.path)"
+  <div
+    ref="selectorRoot"
+    class="flex w-full items-center justify-between gap-1.5"
+  >
+    <DropdownMenuRoot v-model:open="open">
+      <TooltipProvider v-bind="AGENT_REKA_TOOLTIP_PROVIDER_PROPS">
+        <TooltipRoot>
+          <DropdownMenuTrigger as-child>
+            <TooltipTrigger as-child>
+              <button
+                type="button"
+                :aria-label="t('agent.switchWorkflow')"
+                :class="
+                  cn(
+                    'group text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-medium transition-colors',
+                    !current && 'text-agent-fg-muted hover:text-agent-fg flex-1'
+                  )
+                "
               >
                 <span
-                  v-if="tabActivity.editingTabPath === tab.path"
+                  v-if="tabActivity.editingTabPath === current?.path"
                   role="img"
                   :aria-label="t('g.agentWorking')"
                   class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
                 />
                 <span
                   v-else
-                  class="text-agent-fg-subtle icon-[comfy--workflow] size-4 shrink-0"
+                  data-testid="workflow-selector-icon"
+                  class="text-agent-fg-subtle group-hover:text-agent-fg icon-[comfy--workflow] size-3.5 shrink-0"
                 />
-                <span class="truncate">{{ tab.name }}</span>
+                <span class="min-w-0 truncate">{{
+                  current?.name ?? t('agent.chooseWorkflow')
+                }}</span>
                 <span
-                  v-if="
-                    tabActivity.unseenModifiedPaths.has(tab.path) ||
-                    tab.modified ||
-                    tab.path === current?.path
-                  "
-                  class="ml-auto flex shrink-0 items-center gap-1.5"
+                  v-if="current?.modified"
+                  data-testid="unsaved-dot"
+                  class="flex size-3.5 shrink-0 items-center justify-center"
                 >
-                  <span
-                    v-if="tabActivity.unseenModifiedPaths.has(tab.path)"
-                    role="img"
-                    :aria-label="t('g.agentModified')"
+                  <span class="bg-agent-fg size-[7px] rounded-full" />
+                </span>
+              </button>
+            </TooltipTrigger>
+          </DropdownMenuTrigger>
+          <TooltipPortal>
+            <TooltipContent
+              side="top"
+              align="start"
+              :side-offset="6"
+              :collision-padding="8"
+              :class="AGENT_REKA_TOOLTIP_CONTENT_CLASS"
+            >
+              {{ workflowTooltipText }}
+            </TooltipContent>
+          </TooltipPortal>
+        </TooltipRoot>
+      </TooltipProvider>
+      <DropdownMenuPortal>
+        <DropdownMenuContent
+          side="top"
+          align="start"
+          :side-offset="8"
+          :reference="composerReference"
+          class="agent-scope bg-agent-surface-raised z-1100 box-border max-h-64 w-(--reka-dropdown-menu-trigger-width) overflow-y-auto rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
+        >
+          <input
+            ref="searchInput"
+            v-model="query"
+            type="text"
+            :placeholder="t('agent.searchWorkflows')"
+            class="text-agent-fg placeholder:text-agent-fg-muted mb-1 h-8 w-full rounded-[10px] border border-white/15 bg-transparent px-2.5 py-1 text-[14px]/5 outline-none"
+            @keydown="onSearchKeydown"
+          />
+          <DropdownMenuRadioGroup :model-value="current?.path ?? ''">
+            <DropdownMenuRadioItem
+              v-for="tab in filteredTabs"
+              :key="tab.path"
+              :value="tab.path"
+              class="text-agent-fg box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none data-highlighted:bg-[#404040]"
+              @select="emit('selectTab', tab.path)"
+            >
+              <span
+                v-if="tabActivity.editingTabPath === tab.path"
+                role="img"
+                :aria-label="t('g.agentWorking')"
+                class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
+              />
+              <span
+                v-else
+                class="text-agent-fg-subtle icon-[comfy--workflow] size-4 shrink-0"
+              />
+              <span class="truncate">{{ tab.name }}</span>
+              <span
+                v-if="
+                  tabActivity.unseenModifiedPaths.has(tab.path) ||
+                  tab.modified ||
+                  tab.path === current?.path
+                "
+                class="ml-auto flex shrink-0 items-center gap-1.5"
+              >
+                <span
+                  v-if="tabActivity.unseenModifiedPaths.has(tab.path)"
+                  role="img"
+                  :aria-label="t('g.agentModified')"
+                  class="flex size-4 items-center justify-center"
+                >
+                  <span class="size-2 rounded-full bg-primary-background" />
+                </span>
+                <span
+                  v-else-if="tab.modified"
+                  data-testid="unsaved-dot"
+                  class="flex size-4 shrink-0 items-center justify-center"
+                >
+                  <span class="bg-agent-fg size-2 rounded-full" />
+                </span>
+                <span class="flex size-4 shrink-0 items-center justify-center">
+                  <DropdownMenuItemIndicator
                     class="flex size-4 items-center justify-center"
                   >
-                    <span class="size-2 rounded-full bg-primary-background" />
-                  </span>
-                  <span
-                    v-else-if="tab.modified"
-                    data-testid="unsaved-dot"
-                    class="flex size-4 shrink-0 items-center justify-center"
-                  >
-                    <span class="bg-agent-fg size-2 rounded-full" />
-                  </span>
-                  <span
-                    class="flex size-4 shrink-0 items-center justify-center"
-                  >
-                    <DropdownMenuItemIndicator
-                      class="flex size-4 items-center justify-center"
-                    >
-                      <span class="icon-[lucide--check] size-4" />
-                    </DropdownMenuItemIndicator>
-                  </span>
+                    <span class="icon-[lucide--check] size-4" />
+                  </DropdownMenuItemIndicator>
                 </span>
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenuPortal>
-      </DropdownMenuRoot>
-      <TooltipRoot v-if="current" disable-closing-trigger>
+              </span>
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenuPortal>
+    </DropdownMenuRoot>
+    <TooltipProvider v-if="current" v-bind="AGENT_REKA_TOOLTIP_PROVIDER_PROPS">
+      <TooltipRoot disable-closing-trigger>
         <TooltipTrigger as-child>
           <button
             type="button"
@@ -239,12 +224,12 @@ function onSearchKeydown(event: KeyboardEvent): void {
             align="end"
             :side-offset="6"
             :collision-padding="8"
-            :class="workflowTooltipClass"
+            :class="AGENT_REKA_TOOLTIP_CONTENT_CLASS"
           >
             {{ t('agent.dontWorkInWorkflow') }}
           </TooltipContent>
         </TooltipPortal>
       </TooltipRoot>
-    </div>
-  </TooltipProvider>
+    </TooltipProvider>
+  </div>
 </template>
