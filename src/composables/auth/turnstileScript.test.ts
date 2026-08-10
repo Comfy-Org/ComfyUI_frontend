@@ -138,13 +138,12 @@ describe('loadTurnstile', () => {
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
+    promise.catch(() => {})
     scriptEl()!.dispatchEvent(new Event('load'))
     // global never published; deadline elapses
-    // oxlint-disable-next-line vitest/valid-expect -- deliberately awaited after the timer advance below; awaiting here would deadlock fake timers
-    const assertion = expect(promise).rejects.toThrow(/timed out/i)
     await vi.advanceTimersByTimeAsync(10_000)
 
-    await assertion
+    await expect(promise).rejects.toThrow(/timed out/i)
     // dead tag is removed so a later retry starts clean
     expect(scriptEl()).toBeNull()
     // cache was reset → a later call starts a brand-new load
@@ -178,11 +177,9 @@ describe('loadTurnstile', () => {
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
-    // oxlint-disable-next-line vitest/valid-expect -- deliberately awaited after the timer advance below; awaiting here would deadlock fake timers
-    const assertion = expect(promise).rejects.toThrow(/timed out/i)
     vi.advanceTimersByTime(10_000)
 
-    await assertion
+    await expect(promise).rejects.toThrow(/timed out/i)
     expect(scriptEl()).toBeNull()
   })
 
@@ -218,11 +215,10 @@ describe('loadTurnstile', () => {
 
     const loadTurnstile = await freshLoadTurnstile()
     const promise = loadTurnstile()
-    // oxlint-disable-next-line vitest/valid-expect -- deliberately awaited after the timer advance below; awaiting here would deadlock fake timers
-    const assertion = expect(promise).rejects.toThrow(/timed out/i)
+    promise.catch(() => {})
     await vi.advanceTimersByTimeAsync(10_000)
 
-    await assertion
+    await expect(promise).rejects.toThrow(/timed out/i)
     // pre-existing tag is never removed by the loader
     expect(scriptEl()).not.toBeNull()
     // cache was reset → a later call starts a brand-new load

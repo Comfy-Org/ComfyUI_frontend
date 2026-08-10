@@ -9,6 +9,7 @@ type CustomNodeOutcome =
   | 'PASS'
 
 export interface ExecutionError {
+  exceptionMessage?: string
   exceptionType?: string
   nodeId?: string
   nodeType?: string
@@ -18,6 +19,7 @@ export interface ExecutionError {
 export type PromptEvent =
   | { type: 'execution_start' }
   | { type: 'executing'; node: string | null }
+  | { type: 'execution_cached'; nodes: string[] }
   | { type: 'executed'; node: string | null; output?: unknown }
   | { type: 'execution_success' }
   | { type: 'execution_error'; error: ExecutionError }
@@ -36,14 +38,31 @@ export interface RunResult {
   clientError?: string
 }
 
-// `executing` with a non-null node is the only cache-safe "this node actually ran"
-// signal: ComfyUI emits it solely for non-cached nodes (execution.py:493), while the
-// `executed` message and /history outputs are replayed for cached nodes too.
+export function describeRunOutcome(result: RunResult): string {
+  if (!result.error) return result.outcome
+  const identity = [result.error.nodeType, result.error.exceptionType]
+    .filter(Boolean)
+    .join(': ')
+  const detail = [identity, result.error.exceptionMessage]
+    .filter(Boolean)
+    .join(' - ')
+  return `${result.outcome} (${detail || 'error event carried no details'})`
+}
+
+// A node's output is present for this prompt via one of two disjoint signals:
+// `executing` fires solely for nodes that actually ran (execution.py:493), and
+// `execution_cached` names, once per prompt, every node the backend served from
+// cache instead. Counting only the first makes a verdict track the backend's
+// cache temperature - a node that PASSed on a cold cache reads PARTIAL on the
+// next run. The `executed` message stays excluded: it replays for cached nodes
+// without naming them, so it cannot distinguish the two.
 function executedNodesFrom(events: PromptEvent[]): string[] {
   const executed = new Set<string>()
   for (const event of events) {
     if (event.type === 'executing' && event.node !== null)
       executed.add(event.node)
+    if (event.type === 'execution_cached')
+      for (const node of event.nodes) executed.add(node)
   }
   return [...executed]
 }

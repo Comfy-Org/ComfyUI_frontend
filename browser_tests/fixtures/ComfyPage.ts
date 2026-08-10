@@ -1,18 +1,47 @@
-import type { APIRequestContext, Locator, Page } from '@playwright/test'
+import type {
+  APIRequestContext,
+  ConsoleMessage,
+  Frame,
+  Locator,
+  Page,
+  Request,
+  Response
+} from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
-import { TOURS, TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
+import {
+  ENTRY_PATHS,
+  TOUR_SEEN_SETTING
+} from '@/platform/onboarding/onboardingTours'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import {
+  EMPTY_BILLING_BALANCE,
+  EMPTY_BILLING_PLANS,
+  LEGACY_PERSONAL_BILLING_STATUS
+} from '@e2e/fixtures/data/cloudWorkspace'
+import {
+  UNSUBSCRIBED,
+  ZERO_BALANCE
+} from '@e2e/fixtures/data/subscriptionFixtures'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
+import {
+  assertCloudCustomNodeBootGuard,
+  finalizeCloudCustomNodeBootGuardAtTraceBoundary,
+  installCustomNodeBlankStartup,
+  installCloudCustomNodeBootGuard,
+  readCloudCustomNodeBootGuard,
+  runWithCollectedCleanup
+} from '@e2e/fixtures/utils/customNodeSuite'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
@@ -149,6 +178,166 @@ class ComfyMenu {
     return await this.page.evaluate(async () => {
       return await window.app!.ui.settings.getSettingValue('Comfy.ColorPalette')
     })
+  }
+}
+
+// Only DEFINITIVELY third-party analytics hosts. A failure to one of these is
+// external and never ours to fix. Everything ambiguous - a Three.js
+// double-instance, a double-registered extension, a bare ERR_FAILED, a CORS
+// error to any other host - is kept, because it can be a real bundling bug.
+// sentry\.io, not bare sentry: the app ships a same-origin vendor-sentry-*.js
+// chunk, and the bare word suppressed the trace line naming its load failure
+// (run 30855533100 - the filter hid the outage the telemetry blocker caused).
+const TRACE_TELEMETRY =
+  /mp\.comfy\.org|customer\.io|gist\.build|sy-d\.io|sentry\.io/
+
+// Dedupe over filter. The app boots against real Cloud, so the same error (a
+// per-node widget warning, a repeated failed poll) fires thousands of times
+// and buries the distinct problems. Every unique line still shows once; exact
+// repeats are collapsed and a count is emitted at teardown, so a
+// high-frequency error stays visible as such without the churn.
+interface CloudPageTrace {
+  run: <T>(operation: () => Promise<T>) => Promise<T>
+  finalize: () => Promise<void>
+  sanitize: (error: unknown, redactFreeform?: boolean) => Error
+}
+
+function safeNetworkUrl(value: string): string {
+  const url = new URL(value)
+  return `${url.origin}${url.pathname}`
+}
+
+export function requiredCloudBootFailure(
+  response: Response,
+  baseUrl: string
+): string | undefined {
+  if (response.status() < 500) return
+  const request = response.request()
+  if (request.method() !== 'GET') return
+  const resourceType = request.resourceType()
+  if (resourceType !== 'xhr' && resourceType !== 'fetch') return
+  const url = new URL(response.url())
+  if (url.origin !== new URL(baseUrl).origin) return
+  if (url.pathname !== '/api/extensions' && url.pathname !== '/api/object_info')
+    return
+  return `cloud required boot request failed: HTTP ${response.status()} GET ${safeNetworkUrl(response.url())}`
+}
+
+function sanitizeTraceText(value: string): string {
+  return value
+    .split('\n')
+    .map((line) => {
+      const marker = line.search(/[?#]/)
+      return marker === -1 ? line : line.slice(0, marker)
+    })
+    .join('\n')
+}
+
+function sanitizeTraceError(
+  error: unknown,
+  redactFreeform = false,
+  seen = new WeakSet<object>()
+): Error {
+  if (!(error instanceof Error)) {
+    return new Error(
+      redactFreeform
+        ? 'Fixture operation failed with redacted free-form text at strict Cloud trace boundary'
+        : typeof error === 'string'
+          ? sanitizeTraceText(error)
+          : 'Fixture operation failed with a non-Error rejection'
+    )
+  }
+  if (seen.has(error)) return new Error('Circular fixture error reference')
+  seen.add(error)
+
+  const options =
+    'cause' in error
+      ? {
+          cause: sanitizeTraceError(error.cause, redactFreeform, seen)
+        }
+      : undefined
+  const preserveMessage = !redactFreeform
+  const message = preserveMessage
+    ? sanitizeTraceText(error.message)
+    : `Free-form ${error.name} message redacted at strict Cloud trace boundary`
+  const sanitized =
+    error instanceof AggregateError
+      ? new AggregateError(
+          [...error.errors].map((nested) =>
+            sanitizeTraceError(nested, redactFreeform, seen)
+          ),
+          message,
+          options
+        )
+      : new Error(message, options)
+  sanitized.name = preserveMessage
+    ? sanitizeTraceText(error.name)
+    : error instanceof AggregateError
+      ? 'AggregateError'
+      : 'Error'
+  if (error.stack && preserveMessage)
+    sanitized.stack = sanitizeTraceText(error.stack)
+  return sanitized
+}
+
+export function traceCloudPage(page: Page): CloudPageTrace {
+  const counts = new Map<string, number>()
+  let finalized = false
+  const once = (line: string) => {
+    if (TRACE_TELEMETRY.test(line)) return
+    const seen = counts.get(line) ?? 0
+    counts.set(line, seen + 1)
+    if (seen === 0) console.warn(line)
+  }
+  const onFrameNavigated = (frame: Frame) => {
+    if (frame === page.mainFrame())
+      once(`[trace] navigated -> ${sanitizeTraceText(frame.url())}`)
+  }
+  const onPageError = (error: Error) =>
+    once(`[trace] page error: ${sanitizeTraceText(error.message)}`)
+  const onConsole = (message: ConsoleMessage) => {
+    const type = message.type()
+    if (type !== 'error' && type !== 'warning') return
+    once(`[trace] console.${type}: ${sanitizeTraceText(message.text())}`)
+  }
+  const onRequestFailed = (request: Request) => {
+    const error = request.failure()?.errorText ?? 'unknown'
+    if (error.includes('ERR_ABORTED')) return
+    once(
+      `[trace] request FAILED ${request.method()} ${safeNetworkUrl(request.url())} - ${sanitizeTraceText(error)}`
+    )
+  }
+  const onResponse = (response: Response) => {
+    const url = safeNetworkUrl(response.url())
+    const status = response.status()
+    if (status >= 400)
+      once(`[trace] HTTP ${status} ${response.request().method()} ${url}`)
+    else if (/\/api\/(features|users|object_info)/.test(url))
+      once(`[trace] HTTP ${status} ${url}`)
+  }
+  const flushCounts = () => {
+    for (const [line, count] of counts)
+      if (count > 1) console.warn(`[trace] (x${count}) ${line}`)
+  }
+  page.on('framenavigated', onFrameNavigated)
+  page.on('pageerror', onPageError)
+  page.on('console', onConsole)
+  page.on('requestfailed', onRequestFailed)
+  page.on('response', onResponse)
+  return {
+    run: (operation) => operation(),
+    finalize: async () => {
+      if (finalized) return
+      finalized = true
+      page.off('framenavigated', onFrameNavigated)
+      page.off('pageerror', onPageError)
+      page.off('console', onConsole)
+      page.off('requestfailed', onRequestFailed)
+      page.off('response', onResponse)
+      flushCounts()
+    },
+    sanitize: (error, redactFreeform) =>
+      sanitizeTraceError(error, redactFreeform)
   }
 }
 
@@ -333,7 +522,13 @@ export class ComfyPage {
       })
     }
 
-    if (clearStorage) {
+    // Skipped on cloud: a Playwright context starts with empty storage, so
+    // this only resets a REUSED context - but on cloud the smoke user has
+    // already signed in by now, and both the navigation and the wipe destroy
+    // that session. The app then boots signed out, so teamWorkspaceStore
+    // cannot init ("User not authenticated") and Cloud answers every
+    // workspace-scoped call with 403.
+    if (clearStorage && customNodesEnv() !== 'cloud') {
       // Navigate to a lightweight same-origin endpoint to obtain a page
       // context for clearing storage without loading the full frontend app.
       await this.page.goto(`${this.url}/api/users`)
@@ -357,13 +552,117 @@ export class ComfyPage {
    * `WorkflowHelper.reloadAndWaitForApp()`.
    */
   async waitForAppReady() {
-    await this.page.waitForFunction(
-      // window.app => GraphCanvas ready
-      // window.app.extensionManager => GraphView ready
-      () => window.app?.extensionManager
-    )
-    await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
+    const readyFuseMs = 300_000
+    // Fail fast on the first auth failure. A signed-out app answers every
+    // /api call 401/403 and never becomes ready, so without this the run
+    // burns the whole fuse before reporting. Only same-origin xhr/fetch
+    // counts - a bare document GET to /api/users legitimately 401s. Local
+    // ComfyUI has no auth, so on core these calls are 200 and this never
+    // fires; it needs no cloud guard.
+    let onAuthFail: ((response: Response) => void) | undefined
+    const authFailed = new Promise<never>((_, reject) => {
+      onAuthFail = (response) => {
+        const status = response.status()
+        if (status !== 401 && status !== 403) return
+        const type = response.request().resourceType()
+        if (type !== 'xhr' && type !== 'fetch') return
+        const url = response.url()
+        if (!url.includes('localhost') || !url.includes('/api/')) return
+        const method = response.request().method()
+        // testcloud started 403ing the Firebase-token settings write
+        // (~2026-08-03, probe run 30873678137: currentUser=true, firebase
+        // fallback taken, write still 403) while other endpoints may still
+        // accept the token. A boot-window settings-write rejection must not
+        // kill the test before that is observable.
+        const settingsWrite =
+          (method === 'POST' || method === 'PUT') &&
+          url.includes('/api/settings')
+        if (settingsWrite) return
+        reject(new Error(`cloud auth failed: HTTP ${status} ${method} ${url}`))
+      }
+      this.page.on('response', onAuthFail)
+    })
+    authFailed.catch(() => {})
+    let onRequiredBootFail: ((response: Response) => void) | undefined
+    const requiredBootFailed = new Promise<never>((_, reject) => {
+      if (customNodesEnv() !== 'cloud') return
+      onRequiredBootFail = (response) => {
+        const failure = requiredCloudBootFailure(response, this.url)
+        if (failure) reject(new Error(failure))
+      }
+      this.page.on('response', onRequiredBootFail)
+    })
+    requiredBootFailed.catch(() => {})
+    try {
+      const ready = (async () => {
+        await this.page.waitForFunction(
+          // window.app => GraphCanvas ready
+          // window.app.extensionManager => GraphView ready
+          () => window.app?.extensionManager,
+          null,
+          { timeout: readyFuseMs }
+        )
+        await this.page
+          .locator('.p-blockui-mask')
+          .waitFor({ state: 'hidden', timeout: readyFuseMs })
+      })()
+      await Promise.race([ready, authFailed, requiredBootFailed])
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('cloud auth')) {
+        console.warn(
+          `[cloud] ${error.message} - aborting, session not authorized`
+        )
+        throw error
+      }
+      if (
+        error instanceof Error &&
+        error.message.startsWith('cloud required boot request failed')
+      ) {
+        console.warn(`[cloud] ${error.message} - aborting app boot`)
+        throw error
+      }
+      const state = await this.describeUnreadyApp()
+      console.warn(`[cloud] app never became ready: ${state}`)
+      throw new Error(`app never became ready: ${state}`, { cause: error })
+    } finally {
+      if (onAuthFail) this.page.off('response', onAuthFail)
+      if (onRequiredBootFail) this.page.off('response', onRequiredBootFail)
+    }
     await this.nextFrame()
+  }
+
+  /**
+   * Why the app is not ready, in one line, for the failure message. A bare
+   * "timeout exceeded" cannot tell a stalled sign-in from a crashed boot from
+   * a backend that never answered, which is the difference between a
+   * five-minute fix and a day of guessing - so every unready-app failure
+   * carries this. Best-effort by construction: it runs on an already-failing
+   * page, so it reports what it could not read rather than throwing over it.
+   */
+  private async describeUnreadyApp(): Promise<string> {
+    try {
+      const state = await this.page.evaluate(() => ({
+        url: location.href,
+        title: document.title,
+        hasApp: !!window.app,
+        hasExtensionManager: !!window.app?.extensionManager,
+        blockUiVisible: !!document.querySelector('.p-blockui-mask'),
+        // A cloud session that failed to seed lands on a sign-in view, which
+        // looks identical to a slow boot from the outside.
+        signInVisible: !!document.querySelector(
+          '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
+        ),
+        bodyText: document.body?.innerText?.slice(0, 300) ?? ''
+      }))
+      return (
+        `url=${state.url} title=${JSON.stringify(state.title)} ` +
+        `window.app=${state.hasApp} extensionManager=${state.hasExtensionManager} ` +
+        `blockUiMask=${state.blockUiVisible} signInView=${state.signInVisible} ` +
+        `body=${JSON.stringify(state.bodyText)}`
+      )
+    } catch (probeError) {
+      return `page state unreadable (${probeError instanceof Error ? probeError.message : String(probeError)})`
+    }
   }
 
   /** @deprecated Use standalone `assetPath` from `browser_tests/fixtures/utils/assetPath` directly. */
@@ -533,101 +832,160 @@ export const comfyPageFixture = base.extend<{
     const { parallelIndex } = testInfo
     const username = `playwright-test-${parallelIndex}`
     // Cloud has no local multi-user registry: /api/users and the devtools
-    // settings endpoint sit behind the cloud session, which only the app
-    // holds - a node-side request context carries no bearer and gets a 401
-    // (proven on run 30309274120: all 359 failures were this one call).
-    // The smoke account IS the user; startup settings are applied in-app
-    // after boot instead.
+    // settings endpoint sit behind the cloud session. The smoke account IS
+    // the user, and its workspace JWT seeds startup settings before app boot.
     const isCloudEnv = customNodesEnv() === 'cloud'
-    const userId = isCloudEnv ? username : await comfyPage.setupUser(username)
-    comfyPage.userIds[parallelIndex] = userId
-
-    const isVueNodes = testInfo.tags.includes('@vue-nodes')
-    comfyPage.isVueNodes = isVueNodes
-
-    const startupSettings: Record<string, unknown> = {
-      'Comfy.UseNewMenu': 'Top',
-      // Hide canvas menu/info/selection toolbox by default.
-      'Comfy.Graph.CanvasInfo': false,
-      'Comfy.Graph.CanvasMenu': false,
-      'Comfy.Canvas.SelectionToolbox': false,
-      // Hide all badges by default.
-      'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
-      'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
-      // Disable tooltips by default to avoid flakiness.
-      'Comfy.EnableTooltips': false,
-      'Comfy.userId': userId,
-      // Set tutorial completed to true to avoid loading the tutorial workflow.
-      'Comfy.TutorialCompleted': true,
-      // An auto-opened tour's blocker would break unrelated tests.
-      [TOUR_SEEN_SETTING]: Object.keys(TOURS),
-      'Comfy.Queue.MaxHistoryItems': 64,
-      'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-      // Disable toast warning about version compatibility, as they may or
-      // may not appear - depending on upstream ComfyUI dependencies
-      'Comfy.VersionCompatibility.DisableWarnings': true,
-      // Disable errors tab to prevent missing model detection from
-      // rendering error indicators on nodes during unrelated tests.
-      'Comfy.RightSidePanel.ShowErrorsTab': false,
-      ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
-      ...initialSettings
-    }
-    if (!isCloudEnv) {
-      try {
-        await comfyPage.setupSettings(startupSettings)
-      } catch (e) {
-        console.error(e)
-      }
-    }
-
-    if (testInfo.tags.includes('@cloud')) {
-      await comfyPage.cloudAuth.mockAuth()
-    } else if (isCloudEnv) {
-      // A real smoke-user session (no route mocks), seeded before the app
-      // boots so the Firebase SDK restores it. Mutually exclusive with the
-      // @cloud mock above: its interceptions would corrupt a real session.
-      // Refuse to seed while tracing: the record rides page.evaluate
-      // arguments, which a trace records verbatim. Read the resolved option
-      // rather than the project's, so a --trace flag or a spec-level
-      // test.use({ trace }) cannot turn tracing on behind the guard.
-      const traceMode =
-        typeof trace === 'string' ? trace : (trace?.mode ?? 'off')
-      if (traceMode !== 'off')
-        throw new Error(
-          `cloud seeds a real refresh token via page.evaluate, but project ` +
-            `'${testInfo.project.name}' traces '${traceMode}' - run with ` +
-            `--project=custom-nodes and without --trace`
-        )
-      await seedSmokeAuth(page, comfyPage.url)
-    }
-
-    if (Object.keys(initialFeatureFlags).length > 0) {
-      await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
-    }
-
-    await comfyPage.setup()
-
-    if (isCloudEnv) {
-      // The devtools settings endpoint is unreachable node-side on cloud
-      // (401, see above), so apply the same startup settings through the
-      // booted app's own authenticated session. Boot-time-read settings
-      // land one boot late on a freshly reset smoke account only.
-      for (const [key, value] of Object.entries(startupSettings))
-        await comfyPage.settings.setSetting(key, value)
-      await comfyPage.nextFrame()
-    }
-
-    if (isVueNodes) {
-      await comfyPage.vueNodes.waitForNodes()
-    }
-
+    const isCustomNodes = testInfo.project.name === 'custom-nodes'
+    const isCloudCustomNodes = isCloudEnv && isCustomNodes
+    const cloudPageTrace = isCloudEnv ? traceCloudPage(page) : undefined
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
-    if (needsPerf) await comfyPage.perf.init()
+    let bootGuardInstalled = false
+    let perfStarted = false
+    const cleanups: (() => Promise<void>)[] = [
+      ...(needsPerf
+        ? [
+            async () => {
+              if (perfStarted) await comfyPage.perf.dispose()
+            }
+          ]
+        : []),
+      ...(isCloudCustomNodes
+        ? [
+            async () => {
+              if (!bootGuardInstalled) return
+              await finalizeCloudCustomNodeBootGuardAtTraceBoundary(
+                page,
+                cloudPageTrace!.sanitize
+              )
+            }
+          ]
+        : []),
+      ...(cloudPageTrace ? [() => cloudPageTrace.finalize()] : [])
+    ]
 
-    await use(comfyPage)
+    const run = async () => {
+      const userId = isCloudEnv ? username : await comfyPage.setupUser(username)
+      comfyPage.userIds[parallelIndex] = userId
 
-    if (needsPerf) await comfyPage.perf.dispose()
+      const isVueNodes = testInfo.tags.includes('@vue-nodes')
+      comfyPage.isVueNodes = isVueNodes
+
+      const startupSettings: Record<string, unknown> = {
+        'Comfy.UseNewMenu': 'Top',
+        // Hide canvas menu/info/selection toolbox by default.
+        'Comfy.Graph.CanvasInfo': false,
+        'Comfy.Graph.CanvasMenu': false,
+        'Comfy.Canvas.SelectionToolbox': false,
+        // Hide all badges by default.
+        'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
+        'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
+        // Disable tooltips by default to avoid flakiness.
+        'Comfy.EnableTooltips': false,
+        'Comfy.userId': userId,
+        // Set tutorial completed to true to avoid loading the tutorial workflow.
+        'Comfy.TutorialCompleted': true,
+        // An auto-opened tour's blocker would break unrelated tests.
+        [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
+        'Comfy.Queue.MaxHistoryItems': 64,
+        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
+        // Disable toast warning about version compatibility, as they may or
+        // may not appear - depending on upstream ComfyUI dependencies
+        'Comfy.VersionCompatibility.DisableWarnings': true,
+        // Disable errors tab to prevent missing model detection from
+        // rendering error indicators on nodes during unrelated tests.
+        'Comfy.RightSidePanel.ShowErrorsTab': false,
+        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
+        ...initialSettings
+      }
+      if (!isCloudEnv) {
+        try {
+          await comfyPage.setupSettings(startupSettings)
+        } catch (e) {
+          console.error(e)
+        }
+      }
+      if (testInfo.tags.includes('@cloud')) {
+        const context = page.context()
+        await context.route('**/api/auth/session', (route) =>
+          route.fulfill({ status: 204 })
+        )
+        await context.route('**/api/billing/status', (route) =>
+          route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+        )
+        await context.route('**/api/billing/balance', (route) =>
+          route.fulfill({ json: EMPTY_BILLING_BALANCE })
+        )
+        await context.route('**/api/billing/plans', (route) =>
+          route.fulfill({ json: EMPTY_BILLING_PLANS })
+        )
+        await context.route('**/customers/cloud-subscription-status', (route) =>
+          route.fulfill({ json: UNSUBSCRIBED })
+        )
+        await context.route('**/customers/balance', (route) =>
+          route.fulfill({ json: ZERO_BALANCE })
+        )
+        await mockWorkspace(context, workspace('personal', 'owner'), [])
+        await comfyPage.cloudAuth.mockAuth()
+      } else if (isCloudEnv) {
+        const traceMode =
+          typeof trace === 'string' ? trace : (trace?.mode ?? 'off')
+        if (traceMode !== 'off')
+          throw new Error(
+            `cloud seeds a real refresh token via page.evaluate, but project ` +
+              `'${testInfo.project.name}' traces '${traceMode}' - run with ` +
+              `--project=custom-nodes and without --trace`
+          )
+        const authStartedAt = Date.now()
+        await seedSmokeAuth(page, comfyPage.url, startupSettings)
+        console.warn(
+          `[cloud] smoke sign-in took ${Date.now() - authStartedAt}ms`
+        )
+        if (isCloudCustomNodes) {
+          await installCloudCustomNodeBootGuard(page)
+          bootGuardInstalled = true
+        }
+      }
+
+      if (isCustomNodes) await installCustomNodeBlankStartup(page)
+
+      if (Object.keys(initialFeatureFlags).length > 0) {
+        await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
+      }
+
+      const setupStartedAt = Date.now()
+      await comfyPage.setup()
+      if (isCloudEnv)
+        console.warn(`[cloud] app boot took ${Date.now() - setupStartedAt}ms`)
+
+      if (isCloudCustomNodes) {
+        assertCloudCustomNodeBootGuard(await readCloudCustomNodeBootGuard(page))
+      }
+      if (isCustomNodes) {
+        await comfyExpect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBe(0)
+      }
+
+      if (isVueNodes) {
+        await comfyPage.vueNodes.waitForNodes()
+      }
+
+      if (needsPerf) {
+        await comfyPage.perf.init()
+        perfStarted = true
+      }
+
+      await use(comfyPage)
+    }
+    try {
+      await runWithCollectedCleanup(
+        () => (cloudPageTrace ? cloudPageTrace.run(run) : run()),
+        cleanups
+      )
+    } catch (error) {
+      throw cloudPageTrace?.sanitize(error) ?? error
+    }
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)

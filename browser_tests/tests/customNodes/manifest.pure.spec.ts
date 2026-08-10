@@ -10,10 +10,15 @@ import {
   assertCloudEntry,
   assertCloudManifestShape,
   assertCoreEntry,
+  loadApplicableAutogrowCases,
+  loadAllManifestPackNames,
   loadCloudCoreDisabledNodes,
   loadManifest,
-  rendererPassesFor
+  rendererPassesFor,
+  staleAutogrowApplicabilityIssues
 } from '@e2e/fixtures/customNode/manifest'
+import cloudCannotRunAlone from '@e2e/fixtures/data/cloud/cloudCannotRunAlone.json' with { type: 'json' }
+import cloudExtensionSentinels from '@e2e/fixtures/data/cloud/cloudExtensionSentinels.json' with { type: 'json' }
 
 function validEntry(): CoreManifestEntry {
   return {
@@ -54,6 +59,12 @@ test.describe('customNode manifest', () => {
       expect(entry.expectedNodes.length).toBeGreaterThan(0)
       expect(entry.tiers.length).toBeGreaterThan(0)
     }
+  })
+
+  test('loads pack names from both manifests for shared-ledger validation', () => {
+    const packs = loadAllManifestPackNames()
+    expect(packs).toContain('ComfyUI-VideoHelperSuite')
+    expect(packs).toContain('comfyui-videohelpersuite')
   })
 
   test('rendererPassesFor drops only the Vue pass, only on an explicit false', () => {
@@ -105,7 +116,7 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('expectedExtensions is required; empty only as an explicit no-frontend-JS declaration', () => {
+  test('expectedExtensions is required; empty explicitly expects no healthy registration', () => {
     // Omission must fail (a new pack row cannot silently opt out of the
     // extension-loaded assert); an explicit [] is the deliberate opt-out.
     const { expectedExtensions: _omitted, ...withoutField } = validEntry()
@@ -173,6 +184,141 @@ test.describe('customNode manifest', () => {
       )
       process.env.CUSTOM_NODES_ENV = 'clod'
       expect(() => loadManifest()).toThrow(/CUSTOM_NODES_ENV/)
+    } finally {
+      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = prior
+    }
+  })
+
+  test('matches Impact frontend applicability to what each target serves', () => {
+    const prior = process.env.CUSTOM_NODES_ENV
+    const impactExtensions = () =>
+      loadManifest().find(
+        (entry) => entry.pack.toLowerCase() === 'comfyui-impact-pack'
+      )?.expectedExtensions
+    try {
+      process.env.CUSTOM_NODES_ENV = 'core'
+      expect(impactExtensions()).toContain('Comfy.Impack')
+      expect(
+        loadApplicableAutogrowCases().map(({ autogrowCase }) => autogrowCase)
+      ).toEqual([
+        {
+          pack: 'ComfyUI-Impact-Pack',
+          extensionName: 'Comfy.Impack',
+          extensionPathPack: 'comfyui-impact-pack',
+          consumerType: 'ImpactMakeImageList',
+          producerType: 'EmptyImage',
+          producerSlot: 'IMAGE'
+        }
+      ])
+      process.env.CUSTOM_NODES_ENV = 'cloud'
+      expect(impactExtensions()).toEqual([])
+      expect(loadApplicableAutogrowCases()).toEqual([])
+      const cloudImpact = loadManifest().find(
+        (entry) => entry.pack.toLowerCase() === 'comfyui-impact-pack'
+      )!
+      expect(
+        staleAutogrowApplicabilityIssues(
+          cloudImpact,
+          [],
+          [
+            '/extensions/comfyui-impact-pack/js/impact-pack.js',
+            '/extensions/comfyui-impact-pack/%'
+          ]
+        )
+      ).toEqual([
+        'frontend assets for "Comfy.Impack" are now served - restore expectedExtensions and autogrow coverage'
+      ])
+      expect(
+        staleAutogrowApplicabilityIssues(
+          cloudImpact,
+          [],
+          ['/extensions%2Fcomfyui-impact-pack%2Fjs%2Fimpact-pack.js']
+        )
+      ).toEqual([
+        'frontend assets for "Comfy.Impack" are now served - restore expectedExtensions and autogrow coverage'
+      ])
+      expect(
+        staleAutogrowApplicabilityIssues(
+          cloudImpact,
+          [],
+          [
+            '/extensions/unrelated-pack/comfyui-impact-pack.js',
+            'comfyui-impact-pack'
+          ]
+        )
+      ).toEqual([])
+    } finally {
+      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = prior
+    }
+  })
+
+  test('keeps Cloud extension expectations byte-for-byte sourced from the served inventory sidecar', () => {
+    const prior = process.env.CUSTOM_NODES_ENV
+    try {
+      process.env.CUSTOM_NODES_ENV = 'cloud'
+      const manifestByPack = new Map(
+        loadManifest().map((entry) => [entry.pack, entry.expectedExtensions])
+      )
+      const manifestSentinels = Object.fromEntries(
+        [...manifestByPack].filter(([, extensions]) => extensions.length > 0)
+      )
+      const sidecarSentinels = Object.fromEntries(
+        Object.entries(cloudExtensionSentinels).filter(
+          ([, extensions]) => extensions.length > 0
+        )
+      )
+      const unknownSidecarPacks = Object.keys(cloudExtensionSentinels).filter(
+        (pack) => !manifestByPack.has(pack)
+      )
+
+      expect(cloudExtensionSentinels).toHaveProperty('comfyui-impact-pack', [])
+      expect(unknownSidecarPacks).toEqual([])
+      expect(manifestSentinels).toEqual(sidecarSentinels)
+    } finally {
+      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = prior
+    }
+  })
+
+  test('does not retain artifact-proven runnable nodes in cannotRunAlone', () => {
+    const prior = process.env.CUSTOM_NODES_ENV
+    try {
+      process.env.CUSTOM_NODES_ENV = 'cloud'
+      const manifest = loadManifest()
+      const cannotRunAlone = (pack: string) =>
+        manifest.find((entry) => entry.pack === pack)?.cannotRunAlone ?? []
+
+      expect(
+        manifest.find((entry) => entry.pack === 'ComfyUI-Upscaler-Tensorrt')
+      ).toBeDefined()
+      expect(cannotRunAlone('ComfyUI-Upscaler-Tensorrt')).not.toContain(
+        'LoadUpscalerTensorrtModel'
+      )
+      expect(cannotRunAlone('ComfyUI-LTXVideo')).not.toContain(
+        'LTXVPromptEnhancerLoader'
+      )
+      expect(
+        manifest.find((entry) => entry.pack === 'comfyui-itools')
+      ).not.toHaveProperty('cannotRunAlone')
+    } finally {
+      if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
+      else process.env.CUSTOM_NODES_ENV = prior
+    }
+  })
+
+  test('keeps generated cannotRunAlone fields byte-for-byte sourced from the sidecar', () => {
+    const prior = process.env.CUSTOM_NODES_ENV
+    try {
+      process.env.CUSTOM_NODES_ENV = 'cloud'
+      const generatedCannotRunAlone = Object.fromEntries(
+        loadManifest()
+          .filter((entry) => entry.cannotRunAlone !== undefined)
+          .map((entry) => [entry.pack, entry.cannotRunAlone])
+      )
+
+      expect(generatedCannotRunAlone).toEqual(cloudCannotRunAlone)
     } finally {
       if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
       else process.env.CUSTOM_NODES_ENV = prior

@@ -65,12 +65,39 @@ reviews:
           When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.
 
   path_instructions:
+    - path: '**/*.ts'
+      instructions: |
+        Treat `docs/guidance/typescript.md` as required review context.
+    - path: '**/*.vue'
+      instructions: |
+        Treat `docs/guidance/typescript.md` and
+        `docs/guidance/vue-components.md` as required review context. For
+        changed components or views under `src/components/` or `src/views/`,
+        also apply `docs/guidance/design-standards.md` and assess accessibility.
+    - path: '**/*.stories.ts'
+      instructions: |
+        Treat `docs/guidance/storybook.md` as required review context.
+    - path: 'src/lib/litegraph/**'
+      instructions: |
+        Treat `docs/adr/README.md` as required review context. For widget
+        serialization changes, also read
+        `docs/WIDGET_SERIALIZATION.md`.
     - path: '**/*.test.ts'
       instructions: |
-        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed Vitest test file.
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
+        `docs/guidance/vitest.md`, and `docs/testing/vitest-patterns.md` as
+        required review context for every changed Vitest test file.
     - path: 'src/lib/litegraph/**/*.test.ts'
       instructions: |
-        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, `docs/guidance/vitest.md`, and `docs/testing/litegraph-testing.md` as required review context for every changed litegraph Vitest test file.
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
+        `docs/guidance/vitest.md`, `docs/testing/vitest-patterns.md`, and
+        `docs/testing/litegraph-testing.md` as required review context for
+        every changed LiteGraph Vitest test file.
     - path: '{browser_tests,apps/website/e2e}/**/*.spec.ts'
       instructions: |
-        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/playwright.md` as required review context for every changed Playwright test file.
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
+        and `docs/guidance/playwright.md` as required review context for every
+        changed Playwright test file. For
+        `browser_tests/`, also read `browser_tests/README.md` and
+        `browser_tests/AGENTS.md`, and apply
+        `.agents/checks/playwright-e2e.md`.

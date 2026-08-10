@@ -43,7 +43,8 @@ export interface CoreManifestEntry extends SharedNodeExpectations {
   // register while the pack's frontend JS silently fails to load (wrong
   // web dir, a loadExtensions regression), and every JS-dependent
   // assertion in this suite would then quietly test vanilla nodes.
-  // Empty array = the pinned pack ships no boot-registered extension.
+  // Empty array = no healthy boot registration is expected. Source-proven
+  // broken registrations are tracked by the explicit broken-extension ledger.
   expectedExtensions: string[]
   // Exact number of nodes the pack registers at its pin, calibrated from the
   // gating CI's object_info. The all-nodes tiers derive their corpus from the
@@ -76,6 +77,68 @@ export interface CloudManifest {
   // mapping broke", so the list is a reviewed record - a pack appearing here
   // has no cloud coverage, and the list growing is the signal to look.
   unjoinedYamlPacks: string[]
+}
+
+export const AUTOGROW_CASES = [
+  {
+    pack: 'ComfyUI-Impact-Pack',
+    extensionName: 'Comfy.Impack',
+    extensionPathPack: 'comfyui-impact-pack',
+    consumerType: 'ImpactMakeImageList',
+    producerType: 'EmptyImage',
+    producerSlot: 'IMAGE'
+  }
+] as const
+
+export function staleAutogrowApplicabilityIssues(
+  entry: { pack: string; expectedExtensions: readonly string[] },
+  registeredExtensions: readonly string[],
+  servedExtensionPaths: readonly string[]
+): string[] {
+  return AUTOGROW_CASES.flatMap((autogrowCase) => {
+    if (
+      autogrowCase.pack.toLowerCase() !== entry.pack.toLowerCase() ||
+      entry.expectedExtensions.includes(autogrowCase.extensionName)
+    )
+      return []
+
+    const served = servedExtensionPaths.some((value) => {
+      try {
+        const segments = new URL(value, 'http://comfy.invalid').pathname
+          .split('/')
+          .filter(Boolean)
+          .flatMap((segment) => {
+            try {
+              return decodeURIComponent(segment).split('/').filter(Boolean)
+            } catch {
+              return [segment]
+            }
+          })
+        const extensionsIndex = segments.findIndex(
+          (segment) => segment.toLowerCase() === 'extensions'
+        )
+        return (
+          extensionsIndex >= 0 &&
+          segments[extensionsIndex + 1]?.toLowerCase() ===
+            autogrowCase.extensionPathPack.toLowerCase()
+        )
+      } catch {
+        return false
+      }
+    })
+    return [
+      ...(served
+        ? [
+            `frontend assets for "${autogrowCase.extensionName}" are now served - restore expectedExtensions and autogrow coverage`
+          ]
+        : []),
+      ...(registeredExtensions.includes(autogrowCase.extensionName)
+        ? [
+            `frontend extension "${autogrowCase.extensionName}" is now registered - restore expectedExtensions and autogrow coverage`
+          ]
+        : [])
+    ]
+  })
 }
 
 function sharedIssues(entry: SharedNodeExpectations): string[] {
@@ -153,9 +216,9 @@ function calibrationIssues(
   >
 ): string[] {
   const missing: string[] = []
-  // Explicitly required (an empty array is a deliberate "no frontend JS"
-  // declaration) so a new pack row cannot silently opt out of the
-  // extension-loaded assert by omission.
+  // Explicitly required (an empty array deliberately expects no healthy boot
+  // registration; known-broken registrations use their separate ledger) so a
+  // new pack row cannot silently opt out of the extension-loaded assert.
   if (
     !Array.isArray(entry.expectedExtensions) ||
     !entry.expectedExtensions.every(isNonEmptyString) ||
@@ -299,6 +362,21 @@ function readCloudManifest(): CloudManifest {
   )
 }
 
+function readCoreManifest(): CoreManifestEntry[] {
+  const entries = JSON.parse(
+    readFileSync(dataPath('customNodeManifest.core.json'), 'utf-8')
+  ) as CoreManifestEntry[]
+  entries.forEach(assertCoreEntry)
+  return entries
+}
+
+export function loadAllManifestPackNames(): string[] {
+  return [
+    ...readCoreManifest().map((entry) => entry.pack),
+    ...readCloudManifest().packs.map((entry) => entry.pack)
+  ]
+}
+
 export function loadCloudCoreDisabledNodes(): Record<string, string[]> {
   return customNodesEnv() === 'cloud'
     ? readCloudManifest().coreDisabledNodes
@@ -316,9 +394,21 @@ export function loadCloudUnjoinedYamlPacks(): string[] {
 
 export function loadManifest(): (CoreManifestEntry | CloudManifestEntry)[] {
   if (customNodesEnv() === 'cloud') return readCloudManifest().packs
-  const entries = JSON.parse(
-    readFileSync(dataPath('customNodeManifest.core.json'), 'utf-8')
-  ) as CoreManifestEntry[]
-  entries.forEach(assertCoreEntry)
-  return entries
+  return readCoreManifest()
+}
+
+export function loadApplicableAutogrowCases() {
+  const manifest = loadManifest()
+  return AUTOGROW_CASES.flatMap((autogrowCase) => {
+    const manifestEntry = manifest.find(
+      (entry) => entry.pack.toLowerCase() === autogrowCase.pack.toLowerCase()
+    )
+    if (!manifestEntry)
+      throw new Error(
+        `${autogrowCase.pack} is not a manifest pack - fix AUTOGROW_CASES`
+      )
+    return manifestEntry.expectedExtensions.includes(autogrowCase.extensionName)
+      ? [{ autogrowCase, manifestEntry }]
+      : []
+  })
 }

@@ -13,6 +13,7 @@ import {
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
+const GATED_MODEL_REPO_URL = 'https://huggingface.co/comfy-e2e/gated-test'
 
 function getModelLabel(group: Locator, modelName: string = FAKE_MODEL_NAME) {
   return group.getByRole('button', { name: modelName, exact: true })
@@ -159,6 +160,72 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
       ).toBeHidden()
+    })
+
+    test.describe('Gated Hugging Face model', { tag: '@ui' }, () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.page
+          .context()
+          .route('https://huggingface.co/**', async (route) => {
+            if (route.request().method() === 'HEAD') {
+              return route.fulfill({
+                status: 403,
+                headers: {
+                  'Access-Control-Allow-Origin': '*',
+                  'Access-Control-Expose-Headers': 'X-Error-Code',
+                  'X-Error-Code': 'GatedRepo'
+                }
+              })
+            }
+
+            return route.fulfill({
+              status: 200,
+              contentType: 'text/html',
+              body: '<html><body>stub repo page</body></html>'
+            })
+          })
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_models_gated'
+        )
+      })
+
+      test('Should classify a 403 model as gated', async ({ comfyPage }) => {
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedAccess)
+        ).toBeVisible()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedHint)
+        ).toBeVisible()
+      })
+
+      test('Should keep Download available for a gated model', async ({
+        comfyPage
+      }) => {
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedAccess)
+        ).toBeVisible()
+
+        const downloadButton = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingModelDownload
+        )
+
+        await expect(downloadButton).toBeVisible()
+        await expect(downloadButton).toBeEnabled()
+        await expect(downloadButton).toHaveText('Download')
+      })
+
+      test('Should open the gated repository with the browser fallback', async ({
+        comfyPage
+      }) => {
+        const pagePromise = comfyPage.page.context().waitForEvent('page')
+        await comfyPage.page
+          .getByTestId(TestIds.dialogs.missingModelGatedAccess)
+          .click()
+        const accessPage = await pagePromise
+
+        await expect(accessPage).toHaveURL(GATED_MODEL_REPO_URL)
+      })
     })
   })
 })

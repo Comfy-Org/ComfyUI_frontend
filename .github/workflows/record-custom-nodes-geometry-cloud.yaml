@@ -56,7 +56,16 @@ jobs:
   record-geometry-cloud:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 60 was inherited from the core record job and is far too small for
+    # cloud: run 30445909728 was killed at exactly 60.25 minutes, mid
+    # geometry record, and a job-level timeout CANCELS - which reads as a
+    # queue eviction and sent four attempts chasing the wrong cause. Cloud
+    # pays per-test app load over the network (the cloud gate needs 287+
+    # minutes for the same corpus), so this sits just under GitHub's 360
+    # hard wall. The two record steps carry their own lower ceilings so an
+    # overrun FAILS the step - keeping the upload steps reachable - instead
+    # of cancelling the job and losing the partial artifact.
+    timeout-minutes: 350
     permissions:
       contents: read
     steps:
@@ -78,7 +87,7 @@ jobs:
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -126,6 +135,7 @@ jobs:
       # is recorded as the pin.
       - name: Record cloud geometry baselines
         continue-on-error: true
+        timeout-minutes: 160
         env:
           CUSTOM_NODES_ENV: cloud
           CN_GEOMETRY: record
@@ -141,6 +151,7 @@ jobs:
       # routes writes into interactionProfiles/cloud/.
       - name: Record cloud interaction profiles (S13)
         continue-on-error: true
+        timeout-minutes: 160
         env:
           CUSTOM_NODES_ENV: cloud
           CN_INTERACTION: record
@@ -150,6 +161,31 @@ jobs:
         run: |
           pnpm exec playwright test browser_tests/tests/customNodes/interactionProfiles.spec.ts \
             --project=custom-nodes --reporter=list --workers=1 --retries=0
+
+      # S15 cloud hashes: the download now runs in-page so it carries the
+      # signed-in session, which is what kept this tier core-only. Writes
+      # test-results/curatedOutputHashes.recorded.json; commit it as
+      # browser_tests/fixtures/data/curatedOutputHashes.cloud.json.
+      - name: Record cloud output hashes (S15)
+        continue-on-error: true
+        timeout-minutes: 60
+        env:
+          CUSTOM_NODES_ENV: cloud
+          RECORD_OUTPUT_HASHES: '1'
+          PLAYWRIGHT_TEST_URL: http://localhost:4173
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/customNode.regression.spec.ts \
+            --project=custom-nodes --reporter=list --workers=1 --retries=0
+
+      - name: Upload recorded cloud output hashes
+        uses: actions/upload-artifact@v6
+        with:
+          name: custom-nodes-output-hashes-cloud
+          path: test-results/curatedOutputHashes.recorded.json
+          retention-days: 7
+          if-no-files-found: warn
 
       - name: Upload recorded cloud interaction profiles
         uses: actions/upload-artifact@v6

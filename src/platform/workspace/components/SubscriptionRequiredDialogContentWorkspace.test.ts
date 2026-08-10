@@ -120,6 +120,7 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
       previewData: mockPreviewData,
       selectedTierKey: ref('standard'),
       selectedBillingCycle: ref('yearly'),
+      activeCheckoutActionUrl: ref(null),
       isPolling: ref(false),
       handleSubscribeClick: mockHandleSubscribeClick,
       handleBackToPricing: mockHandleBackToPricing,

@@ -11,11 +11,15 @@ import type {
 import { classifyRun } from '@e2e/fixtures/customNode/runResult'
 import { onPromptIdResponse } from '@e2e/fixtures/utils/customNodeSuite'
 
-interface RawEvent {
+export interface RawEvent {
   type: string
   node?: string | null
+  // execution_cached carries every cache-served node id (apiSchema
+  // zExecutionCachedWsMessage); NodeId is number | string on the wire.
+  nodes?: (string | number)[]
   prompt_id?: string
   output?: unknown
+  exception_message?: string
   exception_type?: string
   node_id?: string
   node_type?: string
@@ -53,13 +57,16 @@ export function summarizePromptError(body: unknown): string | undefined {
   return parts.length > 0 ? parts.join('; ') : undefined
 }
 
-function toPromptEvent(raw: RawEvent): PromptEvent {
+export function toPromptEvent(raw: RawEvent): PromptEvent {
   if (raw.type === 'executing')
     return { type: 'executing', node: raw.node ?? null }
   if (raw.type === 'executed')
     return { type: 'executed', node: raw.node ?? null, output: raw.output }
+  if (raw.type === 'execution_cached')
+    return { type: 'execution_cached', nodes: (raw.nodes ?? []).map(String) }
   if (raw.type === 'execution_error' || raw.type === 'execution_interrupted') {
     const error: ExecutionError = {
+      exceptionMessage: raw.exception_message?.trimEnd(),
       exceptionType: raw.exception_type,
       nodeId: raw.node_id,
       nodeType: raw.node_type,
@@ -135,7 +142,13 @@ export class LocalDesktopTarget {
           )
         return sink.__cnSeenPromptIds
       },
-      ['execution_start', ...TERMINAL, 'executing', 'executed']
+      [
+        'execution_start',
+        ...TERMINAL,
+        'executing',
+        'execution_cached',
+        'executed'
+      ]
     )
 
     // Positively identify THIS attempt: the /prompt POST response body
@@ -150,11 +163,18 @@ export class LocalDesktopTarget {
     // names nothing. Snapshot the failing node/input so the outcome is
     // actionable instead of an empty object.
     let capturedValidationError: string | undefined
-    const { detach: stopCapture } = onPromptIdResponse(
+    let capturedResponseSequence = 0
+    const { detach: stopCapture, settled: captureSettled } = onPromptIdResponse(
       page,
-      (promptId, body, status) => {
-        if (promptId !== undefined) capturedPromptId = promptId
-        if (status >= 400) capturedValidationError = summarizePromptError(body)
+      (promptId, body, status, sequence) => {
+        if (sequence < capturedResponseSequence) return
+        capturedResponseSequence = sequence
+        capturedPromptId = promptId
+        capturedValidationError =
+          status >= 400
+            ? (summarizePromptError(body) ??
+              `HTTP ${status} prompt submission failed`)
+            : undefined
       }
     )
 
@@ -184,6 +204,7 @@ export class LocalDesktopTarget {
       await new Promise((resolve) => setTimeout(resolve, 250))
       queued = await queueOnce()
       if (refused(queued)) {
+        await captureSettled()
         stopCapture()
         return {
           outcome: 'VALIDATION_FAIL',
@@ -200,9 +221,25 @@ export class LocalDesktopTarget {
 
     // The submission resolved, so the /prompt response is in flight or done;
     // give its body-parse a bounded beat before snapshotting the id.
+    await captureSettled()
     const captureDeadline = Date.now() + 2_000
-    while (capturedPromptId === undefined && Date.now() < captureDeadline)
+    while (
+      capturedPromptId === undefined &&
+      capturedValidationError === undefined &&
+      Date.now() < captureDeadline
+    ) {
       await new Promise((resolve) => setTimeout(resolve, 50))
+      await captureSettled()
+    }
+    if (capturedValidationError !== undefined) {
+      stopCapture()
+      return {
+        outcome: 'VALIDATION_FAIL',
+        executedNodes: [],
+        outputsByNode: {},
+        clientError: capturedValidationError
+      }
+    }
     // A silent permanent miss would degrade every run to the legacy filters
     // with no signal - make the fallback observable in the runner output.
     if (capturedPromptId === undefined)

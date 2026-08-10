@@ -138,9 +138,17 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.currentTeamCreditStop)
   )
 
-  const isActiveSubscription = computed(() =>
-    toValue(activeContext.value.isActiveSubscription)
+  const maxSeats = computed(() => toValue(activeContext.value.maxSeats))
+  const occupiedSeats = computed(() =>
+    toValue(activeContext.value.occupiedSeats)
   )
+
+  const canAccessSubscriptionFeatures = computed(() =>
+    toValue(activeContext.value.canAccessSubscriptionFeatures)
+  )
+
+  // Alias kept for backward compatibility; equals canAccessSubscriptionFeatures.
+  const isActiveSubscription = canAccessSubscriptionFeatures
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
 
@@ -157,7 +165,7 @@ function useBillingContextInternal(): BillingContext {
   const isLegacyTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
-      isActiveSubscription.value &&
+      canAccessSubscriptionFeatures.value &&
       !isFreeTier.value &&
       currentTeamCreditStop.value === null &&
       (currentPlanSlug.value
@@ -228,9 +236,7 @@ function useBillingContextInternal(): BillingContext {
     error.value = null
   }
 
-  // type flips when the team-workspaces or consolidated-billing flag resolves
-  // from authenticated config, swapping the active backend. Reset then reinit
-  // on every workspace-id or type change.
+  // Reset and reinitialize when the active workspace or billing backend changes.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
     async ([newWorkspaceId]) => {
@@ -302,8 +308,10 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.cancelSubscription()
   }
 
-  async function resubscribe() {
-    return activeContext.value.resubscribe()
+  async function resubscribe(
+    options?: Parameters<BillingActions['resubscribe']>[0]
+  ) {
+    return activeContext.value.resubscribe(options)
   }
 
   async function topup(amountCents: number) {
@@ -340,10 +348,13 @@ function useBillingContextInternal(): BillingContext {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    maxSeats,
+    occupiedSeats,
     isLoading,
     error,
     isActiveSubscription,
     canRunWorkflows,
+    canAccessSubscriptionFeatures,
     isFreeTier,
     isLegacyTeamPlan,
     isTeamPlan,

@@ -280,6 +280,9 @@ describe('missingModelStore', () => {
       ])
       store.modelExpandState['test-key'] = true
       store.selectedLibraryModel['test-key'] = 'some-model'
+      store.gatedRepoUrls[
+        'https://huggingface.co/org/model/resolve/main/a.safetensors'
+      ] = 'https://huggingface.co/org/model'
       expect(store.missingModelCandidates).not.toBeNull()
 
       store.clearMissingModels()
@@ -288,6 +291,7 @@ describe('missingModelStore', () => {
       expect(store.hasMissingModels).toBe(false)
       expect(store.modelExpandState).toEqual({})
       expect(store.selectedLibraryModel).toEqual({})
+      expect(store.gatedRepoUrls).toEqual({})
     })
   })
 

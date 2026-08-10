@@ -495,7 +495,7 @@ export function useGPUResources() {
 
     renderer.renderStrokeToAccumulator(strokePoints, {
       size: effectiveSize,
-      opacity: 0.5,
+      coverage: 1,
       hardness: effectiveHardness,
       color,
       width: store.maskCanvas!.width,
@@ -559,7 +559,7 @@ export function useGPUResources() {
       [{ x: point.x, y: point.y, pressure: opacity }],
       {
         size: effectiveSize,
-        opacity: 0.5,
+        coverage: 1,
         hardness: effectiveHardness,
         color: [1, 1, 1],
         width,

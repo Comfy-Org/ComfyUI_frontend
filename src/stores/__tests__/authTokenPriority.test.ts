@@ -10,7 +10,6 @@ import { createTestingPinia } from '@pinia/testing'
 
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {
-    teamWorkspacesEnabled: false,
     unifiedCloudAuthEnabled: false
   }
 }))
@@ -130,7 +129,7 @@ describe('auth token priority chain', () => {
   beforeEach(() => {
     vi.resetAllMocks()
 
-    mockFeatureFlags.teamWorkspacesEnabled = false
+    mockDistributionTypes.isCloud = true
     mockFeatureFlags.unifiedCloudAuthEnabled = false
     mockUnifiedToken = null
     mockActiveWorkspaceId = null
@@ -157,8 +156,7 @@ describe('auth token priority chain', () => {
   })
 
   describe('getAuthHeader priority', () => {
-    it('returns workspace auth header when workspace is active and feature enabled', async () => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
+    it('returns workspace auth header when workspace is active', async () => {
       mockWorkspaceAuthHeader.mockReturnValue({
         Authorization: 'Bearer workspace-token'
       })
@@ -171,8 +169,20 @@ describe('auth token priority chain', () => {
     })
 
     it('returns Firebase token when workspace is not active but user is authenticated', async () => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
       mockWorkspaceAuthHeader.mockReturnValue(null)
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({
+        Authorization: 'Bearer firebase-token'
+      })
+    })
+
+    it('ignores workspace auth header outside Cloud', async () => {
+      mockDistributionTypes.isCloud = false
+      mockWorkspaceAuthHeader.mockReturnValue({
+        Authorization: 'Bearer workspace-token'
+      })
 
       const header = await store.getAuthHeader()
 
@@ -197,24 +207,10 @@ describe('auth token priority chain', () => {
 
       expect(header).toBeNull()
     })
-
-    it('skips workspace header when team_workspaces feature is disabled', async () => {
-      mockFeatureFlags.teamWorkspacesEnabled = false
-      mockWorkspaceAuthHeader.mockReturnValue({
-        Authorization: 'Bearer workspace-token'
-      })
-
-      const header = await store.getAuthHeader()
-
-      expect(header).toEqual({
-        Authorization: 'Bearer firebase-token'
-      })
-    })
   })
 
   describe('getAuthToken priority', () => {
-    it('returns workspace token when workspace is active and feature enabled', async () => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
+    it('returns workspace token when workspace is active', async () => {
       mockGetWorkspaceToken.mockReturnValue('workspace-raw-token')
 
       const token = await store.getAuthToken()
@@ -223,12 +219,21 @@ describe('auth token priority chain', () => {
     })
 
     it('returns Firebase token when workspace token is not available', async () => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
       mockGetWorkspaceToken.mockReturnValue(undefined)
 
       const token = await store.getAuthToken()
 
       expect(token).toBe('firebase-token')
+    })
+
+    it('ignores workspace token outside Cloud', async () => {
+      mockDistributionTypes.isCloud = false
+      mockGetWorkspaceToken.mockReturnValue('workspace-raw-token')
+
+      const token = await store.getAuthToken()
+
+      expect(token).toBe('firebase-token')
+      expect(mockGetWorkspaceToken).not.toHaveBeenCalled()
     })
   })
 
@@ -284,7 +289,6 @@ describe('auth token priority chain', () => {
     it('getAuthHeader returns only the unified Cloud JWT, never Firebase or API key', async () => {
       mockUnifiedToken = 'unified-jwt'
       // Even with the legacy sources available, the unified branch wins.
-      mockFeatureFlags.teamWorkspacesEnabled = true
       mockWorkspaceAuthHeader.mockReturnValue({
         Authorization: 'Bearer workspace-token'
       })

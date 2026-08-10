@@ -18,6 +18,7 @@ import {
   normalizeNodeDefs
 } from '@e2e/fixtures/customNode/typePairing'
 import {
+  customNodeSuiteSettings,
   drainBackendToIdle,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
@@ -26,6 +27,8 @@ import {
 // Probes are pure browser-side graph interactions (no prompt is ever
 // queued), so this tier carries no backend-queue exclusivity constraint.
 const PROBE_CHUNK = 40
+
+test.use({ initialSettings: customNodeSuiteSettings })
 
 interface ProbePlan {
   type: string

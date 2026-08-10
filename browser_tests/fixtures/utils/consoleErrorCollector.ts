@@ -1,4 +1,16 @@
-import type { ConsoleMessage, Page } from '@playwright/test'
+import type { ConsoleMessage, Page, TestInfo } from '@playwright/test'
+
+export async function attachPageDiagnosticEvidence(
+  _page: Page,
+  testInfo: Pick<TestInfo, 'attach'>,
+  name: string,
+  values: readonly string[]
+): Promise<void> {
+  await testInfo.attach(name, {
+    body: JSON.stringify(values, null, 2),
+    contentType: 'application/json'
+  })
+}
 
 export function collectConsoleErrors(page: Page): {
   errors: string[]
@@ -14,12 +26,14 @@ export function collectConsoleErrors(page: Page): {
   // console.error; Chromium surfaces both through pageerror. Without this
   // listener a pack script crashing outside a console call passes silently.
   const pageErrorListener = (error: Error) => {
-    errors.push(`Uncaught page error: ${error.message}`)
+    errors.push(`Uncaught page error: ${error.stack ?? error.message}`)
   }
   page.on('console', listener)
   page.on('pageerror', pageErrorListener)
   return {
-    errors,
+    get errors() {
+      return errors
+    },
     stop: () => {
       page.off('console', listener)
       page.off('pageerror', pageErrorListener)

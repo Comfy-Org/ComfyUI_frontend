@@ -6,6 +6,11 @@ import type {
 import axios, { AxiosHeaders } from 'axios'
 
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
+import type {
+  UnifiedAuthRetryFailureReason,
+  UnifiedAuthRetryMetadata
+} from '@/platform/telemetry/types'
 
 let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }
@@ -45,6 +50,32 @@ async function tryRemintToken(expectedToken: string): Promise<string | null> {
     console.warn('Unified re-mint primitive threw unexpectedly:', err)
     return null
   }
+}
+
+function trackRetry(
+  transport: UnifiedAuthRetryMetadata['transport'],
+  outcome: UnifiedAuthRetryMetadata['outcome'],
+  finalStatus?: number,
+  failureReason?: UnifiedAuthRetryFailureReason
+): void {
+  useTelemetry()?.trackUnifiedAuthRetry({
+    transport,
+    outcome,
+    ...(finalStatus !== undefined && { final_status: finalStatus }),
+    ...(failureReason !== undefined && { failure_reason: failureReason })
+  })
+}
+
+function trackRetryResponse(
+  transport: UnifiedAuthRetryMetadata['transport'],
+  status: number
+): void {
+  trackRetry(
+    transport,
+    status < 400 ? 'succeeded' : 'failed',
+    status,
+    status < 400 ? undefined : 'retry_rejected'
+  )
 }
 
 function bearerToken(authorization: unknown): string | undefined {
@@ -92,21 +123,33 @@ export async function fetchWithUnifiedRemint(
     console.warn(
       'fetchWithUnifiedRemint: a ReadableStream body is not replayable; surfacing the original 401'
     )
+    trackRetry('fetch', 'failed', response.status, 'non_replayable_body')
     return response
   }
 
   const requestHeaders = fetchRequestHeaders(input, init)
   const expectedToken = bearerToken(requestHeaders.get('Authorization'))
-  if (!expectedToken) return response
+  if (!expectedToken) {
+    trackRetry('fetch', 'failed', response.status, 'missing_bearer')
+    return response
+  }
 
   const token = await tryRemintToken(expectedToken)
   if (!token) {
+    trackRetry('fetch', 'failed', response.status, 'remint_failed')
     return response
   }
 
   const headers = requestHeaders
   headers.set('Authorization', `Bearer ${token}`)
-  return fetch(retryInput, { ...init, headers })
+  try {
+    const retryResponse = await fetch(retryInput, { ...init, headers })
+    trackRetryResponse('fetch', retryResponse.status)
+    return retryResponse
+  } catch (error) {
+    trackRetry('fetch', 'failed', undefined, 'retry_request_failed')
+    throw error
+  }
 }
 
 function isRetriableUnauthorized(
@@ -142,11 +185,13 @@ export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
         new AxiosHeaders(error.config.headers).get('Authorization')
       )
       if (!expectedToken) {
+        trackRetry('axios', 'failed', 401, 'missing_bearer')
         throw error
       }
 
       const token = await tryRemintToken(expectedToken)
       if (!token) {
+        trackRetry('axios', 'failed', 401, 'remint_failed')
         throw error
       }
 
@@ -155,7 +200,26 @@ export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
       const { config } = error
       const headers = new AxiosHeaders(config.headers)
       headers.set('Authorization', `Bearer ${token}`)
-      return client.request({ ...config, headers, __unifiedRetried: true })
+      try {
+        const retryResponse = await client.request({
+          ...config,
+          headers,
+          __unifiedRetried: true
+        })
+        trackRetryResponse('axios', retryResponse.status)
+        return retryResponse
+      } catch (retryError) {
+        const finalStatus = axios.isAxiosError(retryError)
+          ? retryError.response?.status
+          : undefined
+        trackRetry(
+          'axios',
+          'failed',
+          finalStatus,
+          finalStatus !== undefined ? 'retry_rejected' : 'retry_request_failed'
+        )
+        throw retryError
+      }
     }
   )
 }

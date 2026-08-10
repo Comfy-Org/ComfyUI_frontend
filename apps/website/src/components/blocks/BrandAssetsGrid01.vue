@@ -1,15 +1,21 @@
 <script setup lang="ts">
+import Button from '../ui/button/Button.vue'
+
 type Asset = {
   id: string
   title: string
-  download: string
   preview: string
+}
+
+type Cta = {
+  label: string
+  href: string
 }
 
 defineProps<{
   heading: string
   subheading: string
-  downloadLabel: string
+  cta: Cta
   assets: readonly Asset[]
 }>()
 </script>
@@ -46,20 +52,18 @@ defineProps<{
             decoding="async"
           />
         </div>
-        <div class="flex flex-1 flex-col gap-2 p-5">
+        <div class="p-5">
           <h3 class="text-base font-light text-primary-comfy-canvas">
             {{ asset.title }}
           </h3>
-          <a
-            :href="asset.download"
-            :download="asset.download.split('/').pop()"
-            class="text-primary-comfy-yellow mt-auto inline-flex items-center gap-1 text-sm font-bold tracking-wider uppercase hover:underline"
-          >
-            {{ downloadLabel }}
-            <span aria-hidden="true">↓</span>
-          </a>
         </div>
       </li>
     </ul>
+
+    <div class="mt-12 flex justify-center">
+      <Button as="a" :href="cta.href" variant="outline" size="default">
+        {{ cta.label }}
+      </Button>
+    </div>
   </section>
 </template>

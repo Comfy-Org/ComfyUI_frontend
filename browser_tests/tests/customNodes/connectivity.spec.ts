@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { chunk } from 'es-toolkit'
 
 import {
   comfyExpect as expect,
@@ -6,15 +7,18 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   customNodeSuiteSettings,
-  dismissTemplatesDialog,
   drainBackendToIdle,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 import {
   isForeignExecutionNoise,
+  staleRequiredConnectivityErrorRulesForPacks,
+  unallowlistedConnectivityErrorsForPacks,
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
-import { loadManifest } from '@e2e/fixtures/customNode/manifest'
+import { connectivityExpectationsFor } from '@e2e/fixtures/customNode/connectivityExpectations'
+import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
+import { customNodesEnv, loadManifest } from '@e2e/fixtures/customNode/manifest'
 import type {
   ConnectivityOutcome,
   PlannedPair,
@@ -25,51 +29,39 @@ import {
   normalizeNodeDefs,
   planPairs
 } from '@e2e/fixtures/customNode/typePairing'
-import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
+import {
+  attachPageDiagnosticEvidence,
+  collectConsoleErrors
+} from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 const CORE_PROOF_NODE_COUNT = 16
-// A node may legitimately veto a wiring via onConnectInput; committed
-// entries here must name the veto. Green means actual rejections are a
-// subset of this list.
-const CONNECT_REJECTED_ALLOWLIST: string[] = [
-  // pysssss MathExpression only accepts INT/FLOAT-producing links into its
-  // expression variables; its JS vetoes text-list producers.
-  'AddTextPrefix.texts -> MathExpression|pysssss.expression'
-]
-// Pairs whose creation/wiring THROWS inside the pack's own JS. Registration-
-// guarded, firing-optional: the throw is a timing race (it fires when the
-// KJNodes editor_base creation crash lands before this node's instantiation,
-// and passes on runners where it doesn't - observed failing 2026-07-18,
-// passing 2026-07-20 at the IDENTICAL core SHA), so per ARCHITECTURE
-// section 10 an observed-FIRING demand would false-fail on fast runners.
-// Section 10's guard floor still applies: each key must at least name a
-// pair the sweep still PLANS (asserted below), so an entry whose node the
-// pack renames or removes reds as stale instead of rotting forever.
-const SLOT_CONTRACT_MISMATCH_ALLOWLIST: string[] = [
-  // TimerNodeKJ's widget JS throws `null.replace` when instantiated in the
-  // sweep after the editor_base crash contaminates shared state
-  // (single-creation mount stays clean). Part of the 2026-07-18 core-drift
-  // incident. Upstream-report candidate.
-  'TimerNodeKJ.timer -> TimerNodeKJ.timer',
-  'TimerNodeKJ.time -> AddLabel.text_x'
-]
-// A pack's own serialize/configure hooks may drop links it manages itself
-// (reproducible manually: wire, save, reload - link gone). Pack behavior on
-// record, not frontend regressions.
-const ROUNDTRIP_LOST_ALLOWLIST: string[] = [
-  // VHS_SelectLatest rebuilds its dynamic slots on configure, detaching
-  // links on both its inputs and outputs.
-  'AddTextPrefix.texts -> VHS_SelectLatest.filename_prefix',
-  'AddTextPrefix.texts -> VHS_SelectLatest.filename_postfix',
-  'VHS_SelectLatest.Filename -> AddLabel.font_color'
-]
+// Pairs per page.evaluate. The sweep's cost is one round of createNode,
+// connect, serialize/configure and graphToPrompt per pair, all on the page's
+// main thread; batching keeps any single evaluate short enough to stay
+// interruptible and to report progress rather than holding the renderer for
+// the whole corpus.
+const SWEEP_CHUNK = 1_000
+// Budget the sweep per pair instead of flat: the corpus grows with every pack
+// added, and a flat cap silently becomes a hang the day it stops fitting. Run
+// 30961895204 swept 16832 pairs and did not finish inside a flat 120s cap, so
+// the real rate is above 6.5ms/pair; the multiplier below carries margin over
+// that floor and the sweep logs its actual rate so it can be tightened.
+const SWEEP_SETUP_MS = 120_000
+const SWEEP_MS_PER_PAIR = 40
+const {
+  connectRejected,
+  conditionalSlotContractMismatch,
+  deterministicSlotContractMismatch,
+  roundtripLost,
+  zeroPairDragExpectedNodeCounts
+} = connectivityExpectationsFor(customNodesEnv())
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
   trackSubmittedPrompts(comfyPage.page)
-  await dismissTemplatesDialog(comfyPage)
 })
 
 // This spec queues no prompt of its own, so the drain returns without a
@@ -97,7 +89,7 @@ const connectivityEntries = loadManifest().filter((entry) =>
 test('connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(120_000)
+  if (customNodesEnv() !== 'cloud') test.setTimeout(120_000)
   const defs = (await comfyPage.page.evaluate(() =>
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
@@ -151,29 +143,15 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // values and links flow through the same stores in both renderers). The
   // curated drag test below covers real pointer wiring under BOTH renderers.
   const consoleErrors = collectConsoleErrors(comfyPage.page)
+  if (customNodesEnv() !== 'cloud')
+    test.setTimeout(SWEEP_SETUP_MS + plan.pairs.length * SWEEP_MS_PER_PAIR)
+  const sweepStart = Date.now()
   const results = await runPairsInPage(comfyPage.page, plan.pairs)
+  const sweepMs = Date.now() - sweepStart
   consoleErrors.stop()
-  // Routed through the pack console ledger scoped to the packs actually in
-  // the corpus (the escape hatch this assert always documented): a KJNodes
-  // SplineEditor creation crash fired on 2026-07-18 when core's new partner
-  // nodes reshuffled the pair plan, and the ledger row carries its mechanism
-  // and upstream-report status. Every non-ledgered error still fails. The
-  // wiring sweep queues no prompts, so a prompt-execution error here is a
-  // prior tier's async stray, not this test's (isForeignExecutionNoise;
-  // ARCHITECTURE section 9 principle).
-  const sweepErrors = consoleErrors.errors.filter(
-    (error) => !isForeignExecutionNoise(error)
+  console.log(
+    `connectivity sweep: ${plan.pairs.length} pairs in ${sweepMs}ms (${(sweepMs / plan.pairs.length).toFixed(1)}ms/pair)`
   )
-  const unledgered = unallowlistedErrorsForPacks(
-    [...installedPacks],
-    sweepErrors
-  )
-  if (sweepErrors.length > unledgered.length)
-    console.log(
-      `connectivity sweep: ${sweepErrors.length - unledgered.length} console error(s) matched an installed pack's allowlist`
-    )
-  expect(unledgered, 'console errors during breadth sweep').toEqual([])
-
   const widgetOnly = results.filter(
     (result) =>
       result.outcome ===
@@ -190,23 +168,69 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
         ('WIDGET_ONLY_ON_INSTANCE' satisfies ConnectivityOutcome) &&
       !(
         result.outcome === ('CONNECT_REJECTED' satisfies ConnectivityOutcome) &&
-        CONNECT_REJECTED_ALLOWLIST.includes(result.key)
+        connectRejected.includes(result.key)
       ) &&
       !(
         result.outcome === ('ROUNDTRIP_LOST' satisfies ConnectivityOutcome) &&
-        ROUNDTRIP_LOST_ALLOWLIST.includes(result.key)
+        roundtripLost.includes(result.key)
       ) &&
       !(
         result.outcome ===
           ('SLOT_CONTRACT_MISMATCH' satisfies ConnectivityOutcome) &&
-        SLOT_CONTRACT_MISMATCH_ALLOWLIST.includes(result.key)
+        (conditionalSlotContractMismatch.includes(result.key) ||
+          deterministicSlotContractMismatch.includes(result.key))
       )
   )
   const passed = results.filter((result) => result.outcome === 'PASS').length
   console.log(`connectivity sweep: ${passed}/${results.length} pairs PASS`)
+  // Ahead of the console gate below so the tier's own outcome signal is the
+  // failure message, not console noise a pack emitted alongside it.
   expect(failures, JSON.stringify(failures, null, 1)).toEqual([])
   expect(passed).toBeGreaterThan(0)
-  // Two-way guard, same discipline as cannotRunAlone, for the two allowlists
+
+  // Routed through the pack console ledger scoped to the packs actually in
+  // the corpus (the escape hatch this assert always documented): a KJNodes
+  // SplineEditor creation crash fired on 2026-07-18 when core's new partner
+  // nodes reshuffled the pair plan, and the ledger row carries its mechanism
+  // and upstream-report status. Every non-ledgered error still fails. The
+  // wiring sweep queues no prompts, so a prompt-execution error here is a
+  // prior tier's async stray, not this test's (isForeignExecutionNoise;
+  // ARCHITECTURE section 9 principle).
+  const sweepErrors = consoleErrors.errors.filter(
+    (error) => !isForeignExecutionNoise(error)
+  )
+  const unledgered = unallowlistedConnectivityErrorsForPacks(
+    [...installedPacks],
+    sweepErrors
+  )
+  if (sweepErrors.length > unledgered.length)
+    console.log(
+      `connectivity sweep: ${sweepErrors.length - unledgered.length} console error(s) matched an installed pack's allowlist`
+    )
+  if (unledgered.length > 0)
+    await attachPageDiagnosticEvidence(
+      comfyPage.page,
+      test.info(),
+      'connectivity-console-errors.json',
+      unledgered
+    )
+  expect(
+    unledgered.length === 0,
+    failureSummary(
+      'console errors during breadth sweep',
+      unledgered,
+      'connectivity-console-errors.json'
+    )
+  ).toBe(true)
+  expect(
+    staleRequiredConnectivityErrorRulesForPacks(
+      [...installedPacks],
+      sweepErrors
+    ),
+    'stale required connectivity console mechanisms'
+  ).toEqual([])
+
+  // Two-way guard, same discipline as cannotRunAlone, for these allowlists
   // in the loop below: every key must still be OBSERVED failing in its
   // recorded way. An entry whose pair now passes (or is no longer even
   // planned) is stale and would silently hide the fixed bug behind it. On a
@@ -218,12 +242,13 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const allPacksInstalled =
     installedEntries.length === connectivityEntries.length
   const staleEntries: string[] = []
-  // SLOT_CONTRACT_MISMATCH_ALLOWLIST is deliberately not in this loop: its
+  // conditionalSlotContractMismatch is deliberately not in this loop: its
   // failures are timing-conditional (see its comment), so demanding they
   // FIRE every run false-fails on fast runners.
   for (const [allowlist, expected] of [
-    [CONNECT_REJECTED_ALLOWLIST, 'CONNECT_REJECTED'],
-    [ROUNDTRIP_LOST_ALLOWLIST, 'ROUNDTRIP_LOST']
+    [connectRejected, 'CONNECT_REJECTED'],
+    [roundtripLost, 'ROUNDTRIP_LOST'],
+    [deterministicSlotContractMismatch, 'SLOT_CONTRACT_MISMATCH']
   ] as const)
     for (const key of allowlist) {
       const observed = outcomeByKey.get(key)
@@ -242,7 +267,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   // floor): the key's pair must still be PLANNED by the sweep - any outcome
   // is fine, absence means the pack renamed or removed the node and the
   // entry is stale. Deterministic given pinned defs, so no false-fail.
-  for (const key of SLOT_CONTRACT_MISMATCH_ALLOWLIST) {
+  for (const key of conditionalSlotContractMismatch) {
     if (!outcomeByKey.has(key)) {
       if (!allPacksInstalled) {
         console.log(
@@ -283,12 +308,27 @@ function firstMaterializedPair(
 
 // The self-check below runs THIS SAME executor on poisoned pairs; if it stops
 // being able to reject, every green sweep above is meaningless.
-function runPairsInPage(
+async function runPairsInPage(
+  page: Page,
+  pairs: PlannedPair[]
+): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
+  const report: Array<{ key: string; outcome: string; detail?: string }> = []
+  const batches =
+    process.env.CUSTOM_NODES_ENV === 'cloud'
+      ? chunk(pairs, SWEEP_CHUNK)
+      : [pairs]
+  for (const batch of batches)
+    report.push(...(await evaluatePairs(page, batch)))
+  return report
+}
+
+function evaluatePairs(
   page: Page,
   pairs: PlannedPair[]
 ): Promise<Array<{ key: string; outcome: string; detail?: string }>> {
   return page.evaluate(async (pairsInPage) => {
     const graph = window.app!.graph
+    const resetGraph = () => graph.clear()
     const report: Array<{
       key: string
       outcome: string
@@ -297,7 +337,7 @@ function runPairsInPage(
     for (const pair of pairsInPage) {
       const key = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
       try {
-        graph.clear()
+        resetGraph()
         const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
         const consumer = window.LiteGraph!.createNode(pair.consumer.nodeType)
         if (!producer || !consumer) {
@@ -310,6 +350,12 @@ function runPairsInPage(
         }
         graph.add(producer)
         graph.add(consumer)
+        // Pack nodeCreated hooks commonly defer widget/editor initialization
+        // with setTimeout(0). Let that required mount work finish before this
+        // sweep serializes the pair. Without the yield, a 1,000-pair browser
+        // task snapshots half-initialized nodes and accumulates their deferred
+        // WebGL/editor work until after the batch has already removed them.
+        await new Promise((resolve) => setTimeout(resolve, 0))
         const outIndex = producer.outputs.findIndex(
           (slot) => slot.name === pair.producer.slotName
         )
@@ -371,7 +417,7 @@ function runPairsInPage(
         })
       }
     }
-    graph.clear()
+    resetGraph()
     return report
   }, pairs)
 }
@@ -404,7 +450,7 @@ test('connectivity self-check: the executor rejects broken pairs @custom-nodes',
 test('connectivity drags: curated slot-to-slot wires connect under both renderers @custom-nodes', async ({
   comfyPage
 }) => {
-  test.setTimeout(120_000)
+  test.setTimeout(0)
   const defs = (await comfyPage.page.evaluate(() =>
     window.app!.api.getNodeDefs()
   )) as unknown as Record<string, RawNodeDef>
@@ -448,6 +494,7 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     }
   ]
   const nodeTypes = new Set(nodes.map((node) => node.type))
+  const observedZeroPairPacks = new Set<string>()
   for (const entry of connectivityEntries) {
     if (!isEntryInstalled(nodeTypes, entry)) {
       console.log(
@@ -458,14 +505,19 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     // Restrict the partner pool to the pack itself so the drag proves an
     // in-pack wiring; widget-backed primitive inputs render real slot dots
     // in Vue (verified empirically), so no slot type is excluded at plan time.
-    const packPlan = planPairs(
-      nodes.filter((node) => node.pack === entry.pack),
-      entry.expectedNodes
-    )
-    expect(
-      packPlan.pairs.length,
-      `${entry.pack} has no in-pack draggable pair - drag coverage lost`
-    ).toBeGreaterThan(0)
+    const packNodes = nodes.filter((node) => node.pack === entry.pack)
+    const packPlan = planPairs(packNodes, entry.expectedNodes)
+    if (packPlan.pairs.length === 0) {
+      expect(
+        zeroPairDragExpectedNodeCounts[entry.pack],
+        `${entry.pack} registers ${packNodes.length} nodes but contributes no in-pack draggable pair - drag coverage lost`
+      ).toBe(packNodes.length)
+      observedZeroPairPacks.add(entry.pack)
+      console.log(
+        `connectivity drag: ${entry.pack} is the verified ${packNodes.length}-node pack with no self-pair; S4 cross-pack coverage applies, S5 in-pack drag is not applicable`
+      )
+      continue
+    }
     // The plan comes from object_info, but a pack's own JS can rebuild a
     // declared input as widget-only on the instance (rgthree's Seed does).
     // Drag the first pair whose slots actually materialize; a pack whose
@@ -478,6 +530,18 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
       continue
     }
     dragEdges.push(inPack)
+  }
+  for (const pack of Object.keys(zeroPairDragExpectedNodeCounts)) {
+    const entry = connectivityEntries.find((entry) => entry.pack === pack)
+    expect(
+      entry,
+      `${pack} has a zero-pair expectation but is not a connectivity manifest entry`
+    ).toBeDefined()
+    if (!entry || !isEntryInstalled(nodeTypes, entry)) continue
+    expect(
+      observedZeroPairPacks.has(entry.pack),
+      `${pack} now contributes an in-pack draggable pair - remove the stale zero-pair expectation`
+    ).toBe(true)
   }
 
   const vueIncompatiblePacks = new Set(
@@ -505,12 +569,15 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
         undefined,
         { x: 150, y: 200 }
       )
+      await comfyPage.nextFrame()
+      const producerWidth = (await producer.getSize()).width
       const consumer = await comfyPage.nodeOps.addNode(
         edge.consumer.nodeType,
         undefined,
-        { x: 700, y: 200 }
+        { x: 150 + producerWidth + 150, y: 200 }
       )
       await comfyPage.nextFrame()
+      await fitToViewInstant(comfyPage)
 
       const [outIndex, inIndex] = await comfyPage.page.evaluate(
         ([producerId, consumerId, outName, inName]) => {
@@ -564,10 +631,34 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
     }
 
     consoleErrors.stop()
+    const dragPacks = [
+      ...new Set(
+        dragEdges.flatMap((edge) => [edge.producer.pack, edge.consumer.pack])
+      )
+    ]
+    const dragErrors = consoleErrors.errors.filter(
+      (error) => !isForeignExecutionNoise(error)
+    )
+    const unledgered = unallowlistedErrorsForPacks(dragPacks, dragErrors)
+    if (dragErrors.length > unledgered.length)
+      console.log(
+        `connectivity drag: ${dragErrors.length - unledgered.length} console error(s) matched the exact environment or installed-pack ledger`
+      )
+    if (unledgered.length > 0)
+      await attachPageDiagnosticEvidence(
+        comfyPage.page,
+        test.info(),
+        'connectivity-drag-console-errors.json',
+        unledgered
+      )
     expect(
-      consoleErrors.errors.filter((error) => !isForeignExecutionNoise(error)),
-      `console errors with VueNodes=${vueNodesEnabled}`
-    ).toEqual([])
+      unledgered.length === 0,
+      failureSummary(
+        `console errors with VueNodes=${vueNodesEnabled}`,
+        unledgered,
+        'connectivity-drag-console-errors.json'
+      )
+    ).toBe(true)
     await expectNoVisibleErrors(
       comfyPage.page,
       `after drag pass VueNodes=${vueNodesEnabled}`

@@ -1,5 +1,5 @@
 {
-  "ComfyUI-DepthAnythingV3": ["DepthAnythingV3.ToMesh.Download"],
+  "ComfyUI-DepthAnythingV3": [],
   "ComfyUI-KJNodes": ["KJNodes.GetNode"],
   "ComfyUI-LTXVideo": ["LTXVideo.SparseTrackEditor"],
   "ComfyUI-Upscaler-Tensorrt": ["UpscalerTensorrt.CustomResize"],
@@ -7,8 +7,8 @@
   "ComfyUI_Fill-Nodes": ["Fill-Nodes.TetrisGame"],
   "ControlAltAI-Nodes": ["ControlAltAI.IntegerSettingsAdvanced"],
   "RES4LYF": ["Comfy.RES4LYF.DisplayInfo"],
-  "WhatDreamsCost-ComfyUI": ["Comfy.LTXDirectorGuide"],
   "basic_data_handling": ["Basic data handling: dynamic input"],
+  "comfyui-impact-pack": [],
   "comfyui-PlyPreview": ["plypreview.gaussianpreview"],
   "comfyui-enricos-nodes": ["ComfyUI.Enrico.ColorPicker"],
   "comfyui-inpaint-cropandstitch": ["inpaint-cropandstitch.showcontrol"],

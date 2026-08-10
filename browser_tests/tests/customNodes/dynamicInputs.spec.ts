@@ -10,13 +10,11 @@ import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLe
 import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
-  loadManifest,
+  customNodesEnv,
+  loadApplicableAutogrowCases,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
-import {
-  customNodeSuiteSettings,
-  dismissTemplatesDialog
-} from '@e2e/fixtures/utils/customNodeSuite'
+import { customNodeSuiteSettings } from '@e2e/fixtures/utils/customNodeSuite'
 import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
 
 // Dynamic-input (autogrow) tier: packs whose JS adds an input slot when the
@@ -42,22 +40,11 @@ import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
 // pack contract under test fires on the disconnect EVENT regardless of how
 // the link was severed, and the suite has no generic drag-detach vocabulary
 // (drag-detach pointer mechanics are core-interaction territory).
-const AUTOGROW_CASES = [
-  {
-    pack: 'ComfyUI-Impact-Pack',
-    consumerType: 'ImpactMakeImageList',
-    producerType: 'EmptyImage',
-    producerSlot: 'IMAGE'
-  }
-]
+const applicableAutogrowCases = loadApplicableAutogrowCases()
 
 const target = new LocalDesktopTarget()
 
 test.use({ initialSettings: customNodeSuiteSettings })
-
-test.beforeEach(async ({ comfyPage }) => {
-  await dismissTemplatesDialog(comfyPage)
-})
 
 async function consumerShape(
   page: Page,
@@ -77,12 +64,12 @@ async function consumerShape(
   }, consumerId)
 }
 
-for (const autogrowCase of AUTOGROW_CASES) {
+for (const { autogrowCase, manifestEntry } of applicableAutogrowCases) {
   test.describe(`dynamic inputs: ${autogrowCase.pack} @custom-nodes`, () => {
     test(`${autogrowCase.consumerType} grows on connect and shrinks on disconnect (drag + programmatic, both renderers)`, async ({
       comfyPage
     }) => {
-      test.setTimeout(120_000)
+      if (customNodesEnv() !== 'cloud') test.setTimeout(120_000)
       const objectInfo = await target.getObjectInfo(comfyPage.page)
       expect(
         Object.keys(objectInfo).length,
@@ -98,17 +85,19 @@ for (const autogrowCase of AUTOGROW_CASES) {
       )
       // The pack row owns renderer compatibility (vueNodesCompatible), so a
       // pack that ever declares itself Vue-incompatible keeps its canvas
-      // coverage here instead of failing the Vue pass. Also validates the
-      // curated pack label against the manifest.
-      const manifestEntry = loadManifest().find(
-        (entry) => entry.pack === autogrowCase.pack
-      )
+      // coverage here instead of failing the Vue pass.
       expect(
-        manifestEntry,
-        `${autogrowCase.pack} is not a manifest pack - fix AUTOGROW_CASES`
-      ).toBeDefined()
+        await comfyPage.page.evaluate(
+          (extensionName) =>
+            window.app!.extensions.some(
+              (extension) => extension.name === extensionName
+            ),
+          autogrowCase.extensionName
+        ),
+        `${autogrowCase.pack} autogrow extension ${autogrowCase.extensionName} is registered before S12`
+      ).toBe(true)
 
-      for (const vueNodesEnabled of rendererPassesFor(manifestEntry!)) {
+      for (const vueNodesEnabled of rendererPassesFor(manifestEntry)) {
         const consoleErrors = collectConsoleErrors(comfyPage.page)
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',

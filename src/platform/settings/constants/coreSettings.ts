@@ -165,6 +165,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.Workflow.NamedValuesRestore',
+    name: 'Restore widget values by name',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true
+  },
+  {
     id: 'Comfy.Canvas.NavigationMode',
     category: ['LiteGraph', 'Canvas Navigation', 'NavigationMode'],
     name: 'Navigation Mode',
@@ -1220,6 +1227,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use Asset API for model library',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
+    defaultValue: isCloud ? true : false,
+    experimental: true
+  },
+  {
+    id: 'Comfy.ModelLibrary.UseAssetBrowser',
+    name: 'Use the asset browser for the model library',
+    type: 'hidden',
+    tooltip:
+      'When enabled alongside the asset API, the model library opens the asset browser. Otherwise it opens the sidebar tree.',
     defaultValue: isCloud ? true : false,
     experimental: true
   },

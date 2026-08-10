@@ -4,6 +4,7 @@ import { parse } from 'yaml'
 import {
   buildCloudManifest,
   renderCloudManifest,
+  validateCloudCannotRunAlone,
   validateCuratedCloudOverlay,
   validateObjectInfoSnapshot,
   validateSupportedNodesDoc
@@ -18,6 +19,8 @@ const CURATED_OVERLAY =
   'browser_tests/fixtures/data/cloud/curatedCloudWorkflows.json'
 const EXTENSION_SENTINELS =
   'browser_tests/fixtures/data/cloud/cloudExtensionSentinels.json'
+const CANNOT_RUN_ALONE =
+  'browser_tests/fixtures/data/cloud/cloudCannotRunAlone.json'
 
 const [snapshotPath, supportedNodesPath, outputPath] = process.argv.slice(2)
 if (!snapshotPath) {
@@ -46,7 +49,18 @@ const sentinels = existsSync(EXTENSION_SENTINELS)
       string[]
     >)
   : {}
-const manifest = buildCloudManifest(doc, snapshot, overlay, sentinels)
+const cannotRunAlone = existsSync(CANNOT_RUN_ALONE)
+  ? validateCloudCannotRunAlone(
+      JSON.parse(readFileSync(CANNOT_RUN_ALONE, 'utf-8'))
+    )
+  : {}
+const manifest = buildCloudManifest(
+  doc,
+  snapshot,
+  overlay,
+  sentinels,
+  cannotRunAlone
+)
 const target = outputPath ?? DEFAULT_OUTPUT
 writeFileSync(target, renderCloudManifest(manifest))
 const runEnrolled = manifest.packs.filter((row) =>

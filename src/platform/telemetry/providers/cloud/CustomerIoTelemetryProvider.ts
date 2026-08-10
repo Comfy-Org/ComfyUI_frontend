@@ -1,7 +1,9 @@
 import type { AnalyticsBrowser } from '@customerio/cdp-analytics-browser'
 import { omit, withTimeout } from 'es-toolkit'
+import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { i18n } from '@/i18n'
 import type { AuthUserInfo } from '@/types/authTypes'
 
 import { TelemetryEvents } from '../../types'
@@ -19,7 +21,7 @@ import type {
 
 export const EVENT_SOURCE = 'web-sdk'
 
-const SDK_OPERATION_TIMEOUT_MS = 10_000
+const RESET_TIMEOUT_MS = 10_000
 
 interface QueuedEvent {
   event: string
@@ -30,6 +32,7 @@ interface QueuedEvent {
 interface CustomerIoIdentity {
   userId: string
   email?: string
+  locale: string
 }
 
 /**
@@ -46,6 +49,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private eventQueue: QueuedEvent[] = []
   private pageViewQueued = false
   private identifiedUser: CustomerIoIdentity | null = null
+  private identityGeneration = 0
   private sessionIdentity: CustomerIoIdentity | null = null
   private operationQueue: Promise<void> = Promise.resolve()
 
@@ -55,7 +59,9 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       site_id: siteId,
       user_id: userIdOverride
     } = window.__CONFIG__?.customer_io ?? {}
-    this.sessionIdentity = userIdOverride ? { userId: userIdOverride } : null
+    this.sessionIdentity = userIdOverride
+      ? { userId: userIdOverride, locale: i18n.global.locale.value }
+      : null
     if (!writeKey || !siteId) {
       this.isEnabled = false
       return
@@ -80,16 +86,22 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         const identifyResolvedUser = (user: AuthUserInfo) => {
           const identity = {
             userId: userIdOverride || user.id,
-            email: currentUser.userEmail.value || undefined
+            email: currentUser.userEmail.value || undefined,
+            locale: i18n.global.locale.value
           }
           this.sessionIdentity = identity
           return this.enqueueOperation(() => this.identify(identity))
         }
 
         if (userIdOverride && !currentUser.resolvedUserInfo.value) {
-          void this.enqueueOperation(() =>
-            this.identify({ userId: userIdOverride })
-          )
+          void this.enqueueOperation(() => {
+            const identity = {
+              userId: userIdOverride,
+              locale: i18n.global.locale.value
+            }
+            this.sessionIdentity = identity
+            return this.identify(identity)
+          })
         }
         currentUser.onUserResolved((user) => {
           void identifyResolvedUser(user)
@@ -97,6 +109,12 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         currentUser.onUserLogout(() => {
           this.sessionIdentity = null
           void this.enqueueOperation(() => this.resetIdentity())
+        })
+        watch(i18n.global.locale, (locale) => {
+          if (!this.sessionIdentity) return
+          const identity = { ...this.sessionIdentity, locale }
+          this.sessionIdentity = identity
+          void this.enqueueOperation(() => this.identify(identity))
         })
 
         void this.flushQueue()
@@ -129,12 +147,13 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   private async resetIdentity(): Promise<void> {
+    this.identityGeneration++
     this.identifiedUser = null
     const analytics = this.analytics
     if (!analytics) return
     await withTimeout(async () => {
       await analytics.reset()
-    }, SDK_OPERATION_TIMEOUT_MS)
+    }, RESET_TIMEOUT_MS)
   }
 
   private async restoreSessionIdentity(): Promise<void> {
@@ -145,28 +164,40 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     }
   }
 
-  private async identify(identity: CustomerIoIdentity): Promise<void> {
+  private identify(identity: CustomerIoIdentity): void {
     const analytics = this.analytics
     if (!analytics) return
 
     if (
       this.identifiedUser?.userId === identity.userId &&
-      this.identifiedUser.email === identity.email
+      this.identifiedUser.email === identity.email &&
+      this.identifiedUser.locale === identity.locale
     ) {
       return
     }
 
     this.identifiedUser = identity
-    try {
-      await withTimeout(async () => {
-        await analytics.identify(
-          identity.userId,
-          identity.email ? { email: identity.email } : undefined
-        )
-      }, SDK_OPERATION_TIMEOUT_MS)
-    } catch (error) {
-      this.identifiedUser = null
+    const generation = ++this.identityGeneration
+    const reportFailure = (error: unknown) => {
+      if (
+        this.identityGeneration === generation &&
+        this.identifiedUser === identity
+      ) {
+        this.identifiedUser = null
+      }
       console.error('Failed to identify Customer.io user:', error)
+    }
+    try {
+      void analytics
+        .identify(
+          identity.userId,
+          identity.email
+            ? { email: identity.email, locale: identity.locale }
+            : { locale: identity.locale }
+        )
+        .catch(reportFailure)
+    } catch (error) {
+      reportFailure(error)
     }
   }
 
@@ -239,7 +270,8 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     const identity = metadata.user_id
       ? {
           userId: metadata.user_id,
-          email: metadata.email || undefined
+          email: metadata.email || undefined,
+          locale: i18n.global.locale.value
         }
       : undefined
     this.track(

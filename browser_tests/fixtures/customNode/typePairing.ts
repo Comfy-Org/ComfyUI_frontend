@@ -144,7 +144,12 @@ export function normalizeNodeDefs(
         // option array); the slot name must stay a string.
         const rawName = def.output_name?.[index]
         const slot: NormalizedSlot = {
-          name: typeof rawName === 'string' ? rawName : slotType,
+          name:
+            typeof rawName === 'string'
+              ? rawName || `output_${index}`
+              : rawName === undefined
+                ? `output_${index}`
+                : slotType,
           type: slotType
         }
         if (slotType === 'COMBO') slot.comboOptions = rawType as unknown[]

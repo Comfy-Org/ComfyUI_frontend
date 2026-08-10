@@ -112,13 +112,7 @@ describe('partnerNodeGovernanceStore', () => {
 
     expect(store.status).toBe('unconfigured')
     expect(store.isProviderEnabled('openai')).toBe(true)
-    expect(store.createInitialPolicy()).toEqual({
-      enforcementEnabled: false,
-      providers: [
-        { providerId: 'openai', enabled: true },
-        { providerId: 'route-only', enabled: true }
-      ]
-    })
+    expect(store.isProviderEnabled('route-only')).toBe(true)
   })
 
   it('hides governance when the backend reports an ineligible workspace', async () => {
@@ -132,10 +126,13 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.providers).toEqual([])
   })
 
-  it('saves the server-normalized policy', async () => {
+  it('keeps the server-normalized policy after a domain update', async () => {
     const requestedPolicy: PartnerNodePolicy = {
-      enforcementEnabled: false,
-      providers: [{ providerId: 'openai', enabled: false }]
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: true }
+      ]
     }
     const savedPolicy: PartnerNodePolicy = {
       enforcementEnabled: true,
@@ -144,7 +141,7 @@ describe('partnerNodeGovernanceStore', () => {
     mockUpdatePartnerNodePolicy.mockResolvedValue(savedPolicy)
     store = await createLoadedStore()
 
-    await store.savePolicy(requestedPolicy)
+    await store.setProviderEnabled('openai', false)
 
     expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith(requestedPolicy)
     expect(store.policy).toEqual(savedPolicy)
@@ -180,7 +177,7 @@ describe('partnerNodeGovernanceStore', () => {
       )
       store = await createLoadedStore()
 
-      const savePromise = store.savePolicy(store.createInitialPolicy())
+      const savePromise = store.setEnforcementEnabled(true)
       expect(store.isSaving).toBe(true)
 
       activateWorkspace(id, type)
@@ -209,7 +206,7 @@ describe('partnerNodeGovernanceStore', () => {
     )
     store = await createLoadedStore()
 
-    const savePromise = store.savePolicy(store.createInitialPolicy())
+    const savePromise = store.setEnforcementEnabled(true)
     activateWorkspace('workspace-two')
     await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
     activateWorkspace('workspace-one')
@@ -234,19 +231,22 @@ describe('partnerNodeGovernanceStore', () => {
         providers: [{ providerId: 'openai', enabled: false }]
       } satisfies PartnerNodePolicy)
     store = await createLoadedStore()
-    const acceptedPolicy = store.createInitialPolicy()
+    const acceptedPolicy: PartnerNodePolicy = {
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'route-only', enabled: true }
+      ]
+    }
 
-    const savePromise = store.savePolicy(acceptedPolicy)
+    const savePromise = store.setEnforcementEnabled(true)
     mockGetPartnerNodePolicy.mockResolvedValueOnce(acceptedPolicy)
     await store.loadPolicy()
 
     expect(store.isSaving).toBe(true)
-    await expect(
-      store.savePolicy({
-        enforcementEnabled: true,
-        providers: [{ providerId: 'openai', enabled: false }]
-      })
-    ).rejects.toThrow('Provider policy save already in progress')
+    await expect(store.setProviderEnabled('openai', false)).rejects.toThrow(
+      'Provider policy save already in progress'
+    )
     const saveCallCount = mockUpdatePartnerNodePolicy.mock.calls.length
 
     resolveSave(acceptedPolicy)
@@ -254,6 +254,41 @@ describe('partnerNodeGovernanceStore', () => {
 
     expect(saveCallCount).toBe(1)
     expect(store.policy).toEqual(acceptedPolicy)
+    expect(store.isSaving).toBe(false)
+  })
+
+  it('rejects an overlapping save after switching away and back', async () => {
+    let resolveSave!: (policy: PartnerNodePolicy) => void
+    const acceptedPolicy: PartnerNodePolicy = {
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'route-only', enabled: true }
+      ]
+    }
+    mockUpdatePartnerNodePolicy
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSave = resolve
+        })
+      )
+      .mockResolvedValueOnce(acceptedPolicy)
+    store = await createLoadedStore()
+
+    const savePromise = store.setEnforcementEnabled(true)
+    activateWorkspace('workspace-two')
+    await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
+    activateWorkspace('workspace-one')
+    await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
+
+    expect(store.isSaving).toBe(true)
+    await expect(store.setProviderEnabled('openai', false)).rejects.toThrow(
+      'Provider policy save already in progress'
+    )
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledOnce()
+
+    resolveSave(acceptedPolicy)
+    await savePromise
     expect(store.isSaving).toBe(false)
   })
 
@@ -273,7 +308,7 @@ describe('partnerNodeGovernanceStore', () => {
 
     const loadPromise = store.loadPolicy()
     await vi.waitFor(() => expect(store?.status).toBe('loading'))
-    await store.savePolicy(store.createInitialPolicy())
+    await store.setEnforcementEnabled(true)
     expect(store.policy).toEqual(savedPolicy)
     resolveLoad({
       enforcementEnabled: true,
@@ -284,6 +319,129 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.policy).toEqual(savedPolicy)
   })
 
+  it('creates the initial document when the first provider is changed', async () => {
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setProviderEnabled('openai', false)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: true }
+      ]
+    })
+  })
+
+  it('preserves existing policy entries when one provider is changed', async () => {
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'route-only', enabled: false }
+      ]
+    } satisfies PartnerNodePolicy)
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setProviderEnabled('openai', false)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: false }
+      ]
+    })
+  })
+
+  it('applies bulk changes to every catalog provider', async () => {
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setAllProvidersEnabled(false)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: false }
+      ]
+    })
+  })
+
+  it('changes enforcement without changing provider review state', async () => {
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: false,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: true }
+      ]
+    } satisfies PartnerNodePolicy)
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setEnforcementEnabled(true)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: true }
+      ]
+    })
+  })
+
+  it('enables every provider when enforcement is disabled', async () => {
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: true }
+      ]
+    } satisfies PartnerNodePolicy)
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setEnforcementEnabled(false)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: false,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'route-only', enabled: true }
+      ]
+    })
+  })
+
+  it('creates the initial policy when enforcement changes', async () => {
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setEnforcementEnabled(true)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'route-only', enabled: true }
+      ]
+    })
+  })
+
   it('reloads the catalog after an unknown-provider response', async () => {
     mockUpdatePartnerNodePolicy.mockRejectedValue(
       new PartnerNodePolicyApiError(422, 'Unprocessable Entity')
@@ -292,7 +450,7 @@ describe('partnerNodeGovernanceStore', () => {
     mockGetPartnerProviders.mockClear()
     mockGetPartnerNodePolicy.mockClear()
 
-    await expect(store.savePolicy(store.createInitialPolicy())).rejects.toEqual(
+    await expect(store.setEnforcementEnabled(true)).rejects.toEqual(
       new PartnerNodePolicyApiError(422, 'Unprocessable Entity')
     )
 

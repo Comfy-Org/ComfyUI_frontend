@@ -747,6 +747,19 @@ Cloudflare Pages project per browser configuration
 (`https://[branch].comfyui-playwright-[browser].pages.dev`). PR comments carry
 ✅/❌ status and direct report links per browser.
 
+## New-Test Video Walkthrough
+
+CI re-runs any Playwright spec file newly added in a PR (detected via
+`git diff --diff-filter=A` against the base branch) with video recording
+enabled and deploys the resulting HTML report — Playwright's report embeds
+the video inline per test — to the same `comfyui-playwright-chromium`
+Cloudflare Pages project, on its own branch. The link is posted alongside
+the other browser report links in the PR comment. It's scoped to added
+files only — the existing suite always runs without video — to keep CI cost
+and time bounded. Recording is opt-in via `RECORD_VIDEO=true` (set only by
+that CI job; see `playwright.config.ts`) and slowed down with `SLOW_MO` so
+the result is legible for reviewers.
+
 ## After Making Changes
 
 - `pnpm typecheck:browser` after modifying TypeScript in this directory.

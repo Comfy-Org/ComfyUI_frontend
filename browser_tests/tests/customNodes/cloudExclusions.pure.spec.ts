@@ -4,16 +4,17 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   cloudAutoRunExclusions,
-  disabledHarnessNodes
+  disabledHarnessNodes,
+  stalenessCheckedKeys
 } from '@e2e/fixtures/customNode/cloudExclusions'
 import type {
   CloudManifestEntry,
   CoreManifestEntry
 } from '@e2e/fixtures/customNode/manifest'
 
-function coreEntry(): CoreManifestEntry {
+function coreEntry(pack = 'Example-Pack'): CoreManifestEntry {
   return {
-    pack: 'Example-Pack',
+    pack,
     repo: 'https://github.com/example/Example-Pack',
     pin: 'a1'.repeat(20),
     tiers: ['load'],
@@ -28,10 +29,11 @@ function coreEntry(): CoreManifestEntry {
 }
 
 function cloudEntry(
-  disabledNodes: Record<string, string[]> = {}
+  disabledNodes: Record<string, string[]> = {},
+  pack = 'Example-Pack'
 ): CloudManifestEntry {
   return {
-    pack: 'Example-Pack',
+    pack,
     deployRef: 'example-pack@1.2.3',
     tiers: ['load'],
     workflow: '',
@@ -67,6 +69,63 @@ test.describe('cloudAutoRunExclusions', () => {
         'register-but-block'
       )
     ).toThrow(/not calibrated.*Phase-1 probe.*2.*label-disabled/s)
+  })
+})
+
+// The staleness guards read their keys through this filter, so a degradation
+// to "always empty" would silently retire every stale-ledger assert.
+test.describe('stalenessCheckedKeys', () => {
+  const ledger = { NodeA: 'why', NodeB: 'why' }
+
+  test('checks every ledgered key when the env disables none of them', () => {
+    expect(stalenessCheckedKeys(coreEntry(), ledger)).toEqual([
+      'NodeA',
+      'NodeB'
+    ])
+    expect(stalenessCheckedKeys(cloudEntry(), ledger)).toEqual([
+      'NodeA',
+      'NodeB'
+    ])
+  })
+
+  test('skips a key the env label-disables: it vanishes by design, it is not stale', () => {
+    expect(
+      stalenessCheckedKeys(cloudEntry({ NodeA: ['DisabledOnCloud'] }), ledger)
+    ).toEqual(['NodeB'])
+  })
+
+  test('skips widget-ledger keys owned by a disabled node', () => {
+    expect(
+      stalenessCheckedKeys(cloudEntry({ NodeA: ['DisabledOnCloud'] }), {
+        'NodeA.widget': 'pack-owned value',
+        'NodeAExtra.widget': 'different node'
+      })
+    ).toEqual(['NodeAExtra.widget'])
+  })
+
+  test('skips a ledgered node the env pin predates, and only for its own pack', () => {
+    const skewed = {
+      ContextWindowsVisualizerKJ: 'custom canvas overlay',
+      'ContextWindowsVisualizerKJ.widget': 'widget value',
+      'ContextWindowsVisualizerKJExtra.widget': 'different node'
+    }
+    expect(
+      stalenessCheckedKeys(cloudEntry({}, 'ComfyUI-KJNodes'), skewed)
+    ).toEqual(['ContextWindowsVisualizerKJExtra.widget'])
+    expect(stalenessCheckedKeys(cloudEntry(), skewed)).toEqual([
+      'ContextWindowsVisualizerKJ',
+      'ContextWindowsVisualizerKJ.widget',
+      'ContextWindowsVisualizerKJExtra.widget'
+    ])
+    expect(stalenessCheckedKeys(coreEntry('ComfyUI-KJNodes'), skewed)).toEqual([
+      'ContextWindowsVisualizerKJ',
+      'ContextWindowsVisualizerKJ.widget',
+      'ContextWindowsVisualizerKJExtra.widget'
+    ])
+  })
+
+  test('an empty ledger checks nothing', () => {
+    expect(stalenessCheckedKeys(cloudEntry(), {})).toEqual([])
   })
 })
 

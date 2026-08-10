@@ -14,6 +14,7 @@
       variant="muted-textonly"
       class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.back')"
+      :disabled="isPolling"
       @click="handleBackToPricing"
     >
       <i class="pi pi-arrow-left text-xl" />
@@ -63,7 +64,9 @@
         v-if="previewVariant === 'team-change'"
         :preview-data="previewData!"
         :team-plan="selectedTeamStop!"
-        :is-loading="isSubscribing || isPolling"
+        :is-loading="isLoadingPreview || isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
+        :force-reactivation="reactivationRequired"
         @confirm="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
@@ -72,7 +75,8 @@
         v-else-if="previewVariant === 'team-new'"
         :team-plan="selectedTeamStop!"
         :billing-cycle="selectedBillingCycle"
-        :is-loading="isSubscribing || isPolling"
+        :is-loading="isLoadingPreview || isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
         @add-credit-card="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
@@ -83,6 +87,7 @@
         :tier-key="selectedTierKey!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
         @add-credit-card="handleAddCreditCard"
         @back="handleBackToPricing"
       />
@@ -91,6 +96,8 @@
         v-else-if="previewVariant === 'personal-change'"
         :preview-data="previewData!"
         :is-loading="isSubscribing || isPolling"
+        :action-url="activeCheckoutActionUrl"
+        :force-reactivation="reactivationRequired"
         @confirm="handleConfirmTransition"
         @back="handleBackToPricing"
       />
@@ -102,7 +109,7 @@
       :tier-key="selectedTierKey"
       :team-plan="selectedTeamStop"
       :preview-data="previewData"
-      :is-team="isTeamCheckout"
+      :billing-cycle="selectedBillingCycle"
       @close="handleSuccessClose"
     />
   </div>
@@ -141,9 +148,11 @@ const {
   isSubscribing,
   isResubscribing,
   previewData,
+  reactivationRequired,
   selectedTierKey,
   selectedTeamStop,
   selectedBillingCycle,
+  activeCheckoutActionUrl,
   isPolling,
   isTeamCheckout,
   previewVariant,
@@ -169,7 +178,12 @@ onMounted(() => {
 // Backspace mirrors the back arrow on the confirm step, but never while an
 // editable element is focused (let it delete text there).
 useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-  if (event.key !== 'Backspace' || checkoutStep.value !== 'preview') return
+  if (
+    event.key !== 'Backspace' ||
+    checkoutStep.value !== 'preview' ||
+    isPolling.value
+  )
+    return
   const target = event.target
   if (
     target instanceof HTMLInputElement ||

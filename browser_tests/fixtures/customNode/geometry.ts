@@ -78,13 +78,50 @@ export const GEOMETRY_UNSTABLE_NODES: Record<string, Record<string, string>> = {
   }
 }
 
+// Exact fields whose values follow asynchronous environment content while
+// every other field on the same node remains deterministic and strict.
+export const GEOMETRY_UNSTABLE_PATHS: Record<
+  string,
+  Record<string, Record<string, string>>
+> = {
+  'ComfyUI-VideoHelperSuite': {
+    VHS_LoadImages: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[5].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    },
+    VHS_LoadVideo: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[9].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    },
+    VHS_LoadVideoFFmpeg: {
+      'vue.h':
+        'preview height follows the same asynchronous default-media aspect-ratio mechanism',
+      'vue.widgets[8].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    },
+    VHS_LoadVideoFFmpegPath: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[7].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    },
+    VHS_LoadVideoPath: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[8].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    }
+  }
+}
+
 function geometryPath(pack: string): string {
   return `${geometryDir()}${pack}.json`
 }
 
-// null = no baseline recorded yet; the caller decides whether that reds
-// (compare mode must - a silently uncovered pack is the failure mode this
-// suite bans everywhere) or is expected (record mode).
 export function loadPackGeometry(pack: string): PackGeometryFile | null {
   const path = geometryPath(pack)
   if (!existsSync(path)) return null
@@ -104,8 +141,10 @@ const GEOMETRY_EPSILON_PX = 0.01
 function firstDelta(
   expected: unknown,
   actual: unknown,
-  path: string
+  path: string,
+  ignoredPaths: ReadonlySet<string>
 ): string | null {
+  if (ignoredPaths.has(path)) return null
   if (typeof expected !== typeof actual)
     return `${path}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`
   if (
@@ -128,7 +167,12 @@ function firstDelta(
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length)
       return `${path}: expected length ${Array.isArray(a) ? a.length : '?'}, got ${Array.isArray(b) ? b.length : '?'}`
     for (const [index, item] of a.entries()) {
-      const delta = firstDelta(item, b[index], `${path}[${index}]`)
+      const delta = firstDelta(
+        item,
+        b[index],
+        `${path}[${index}]`,
+        ignoredPaths
+      )
       if (delta) return delta
     }
     return null
@@ -139,7 +183,12 @@ function firstDelta(
     ...Object.keys(aRecord),
     ...Object.keys(bRecord)
   ])) {
-    const delta = firstDelta(aRecord[key], bRecord[key], `${path}.${key}`)
+    const delta = firstDelta(
+      aRecord[key],
+      bRecord[key],
+      `${path}.${key}`,
+      ignoredPaths
+    )
     if (delta) return delta
   }
   return null
@@ -151,7 +200,8 @@ function firstDelta(
 // with the first differing field named.
 export function diffGeometry(
   baseline: Record<string, NodeGeometry>,
-  measured: Record<string, NodeGeometry>
+  measured: Record<string, NodeGeometry>,
+  ignoredPaths: Record<string, Record<string, string>> = {}
 ): string[] {
   const failures: string[] = []
   for (const key of Object.keys(measured))
@@ -167,7 +217,14 @@ export function diffGeometry(
       )
       continue
     }
-    const delta = firstDelta(expected, actual, key)
+    const delta = firstDelta(
+      expected,
+      actual,
+      key,
+      new Set(
+        Object.keys(ignoredPaths[key] ?? {}).map((path) => `${key}.${path}`)
+      )
+    )
     if (delta) failures.push(delta)
   }
   return failures

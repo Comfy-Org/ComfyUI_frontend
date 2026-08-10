@@ -1,41 +1,300 @@
 import type { Page, Response } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
+import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
+import type {
+  ActivePathPointer,
+  DraftIndexV2,
+  DraftPayloadV2,
+  OpenPathsPointer
+} from '@/platform/workflow/persistence/base/draftTypes'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-// Boot every session with a blank graph (loadBlankWorkflow) instead of the
-// bundled default template, whose model references error on a model-less
-// harness backend and would trip the zero-visible-errors invariant. The
-// backend must run --multi-user (the repo-wide prerequisite for browser
-// tests): the fixture then writes these settings to the same per-worker
-// user the session reads, on CI and locally alike.
+const CLOUD_CUSTOM_NODE_BOOT_COUNT = '__cloudCustomNodeBootCount'
+const CLOUD_CUSTOM_NODE_ONBOARDING = '__cloudCustomNodeOnboarding'
+const CLOUD_CUSTOM_NODE_OBSERVER = '__cloudCustomNodeObserver'
+const CLOUD_CUSTOM_NODE_BOOT_BINDING = '__cloudCustomNodeBootObserved'
+const ONBOARDING_SELECTOR =
+  '[data-testid="template-filter-bar"], [data-testid="getting-started-blank"]'
+const cloudCustomNodeBootGuards = new WeakMap<Page, { rootBootCount: number }>()
+let cloudCustomNodeBootGuardSequence = 0
+const CUSTOM_NODE_BLANK_WORKFLOW_PATH =
+  'workflows/Custom Nodes E2E Blank Workflow.json'
+// Importing blankGraph evaluates import.meta.env in Playwright's Node process.
+const CUSTOM_NODE_BLANK_GRAPH: ComfyWorkflowJSON = {
+  last_node_id: 0,
+  last_link_id: 0,
+  nodes: [],
+  links: [],
+  groups: [],
+  config: {},
+  extra: {},
+  version: 0.4
+}
+
+export async function installCustomNodeBlankStartup(page: Page): Promise<void> {
+  const workspaceId = 'personal'
+  const path = CUSTOM_NODE_BLANK_WORKFLOW_PATH
+  const draftKey = StorageKeys.draftKey(path)
+  const updatedAt = Date.now()
+  const index: DraftIndexV2 = {
+    v: 2,
+    updatedAt,
+    order: [draftKey],
+    entries: {
+      [draftKey]: {
+        path,
+        name: 'Custom Nodes E2E Blank Workflow.json',
+        isTemporary: true,
+        updatedAt
+      }
+    }
+  }
+  const payload: DraftPayloadV2 = {
+    data: JSON.stringify(CUSTOM_NODE_BLANK_GRAPH),
+    updatedAt
+  }
+  const active: ActivePathPointer = { workspaceId, path }
+  const open: OpenPathsPointer = {
+    workspaceId,
+    paths: [path],
+    activeIndex: 0
+  }
+  const entries = [
+    [StorageKeys.draftIndex(workspaceId), JSON.stringify(index)],
+    [StorageKeys.draftPayload(path, workspaceId), JSON.stringify(payload)],
+    [StorageKeys.lastActivePath(workspaceId), JSON.stringify(active)],
+    [StorageKeys.lastOpenPaths(workspaceId), JSON.stringify(open)]
+  ]
+  await page.addInitScript((entries) => {
+    for (const [key, value] of entries) localStorage.setItem(key, value)
+  }, entries)
+}
+
+export async function installCloudCustomNodeBootGuard(
+  page: Page
+): Promise<void> {
+  if (cloudCustomNodeBootGuards.has(page))
+    throw new Error('cloud custom-node boot guard already installed')
+  const state = { rootBootCount: 0 }
+  const bootBinding = `${CLOUD_CUSTOM_NODE_BOOT_BINDING}_${++cloudCustomNodeBootGuardSequence}`
+  cloudCustomNodeBootGuards.set(page, state)
+  try {
+    await page.exposeBinding(bootBinding, () => {
+      state.rootBootCount += 1
+      return state.rootBootCount
+    })
+    await page.addInitScript(
+      async ({
+        bootBinding,
+        bootCountKey,
+        onboardingKey,
+        observerKey,
+        onboardingSelector
+      }) => {
+        if (window !== window.top || location.pathname !== '/') return
+        const record = (node: Node | null) => {
+          if (!(node instanceof Element)) return
+          const surface = node.matches(onboardingSelector)
+            ? node
+            : node.querySelector(onboardingSelector)
+          const testId = surface?.getAttribute('data-testid')
+          if (testId !== null && testId !== undefined)
+            sessionStorage.setItem(onboardingKey, testId)
+        }
+        record(document.documentElement)
+        const observer = new MutationObserver((mutations) => {
+          for (const mutation of mutations) {
+            if (
+              mutation.type === 'attributes' &&
+              (mutation.oldValue === 'template-filter-bar' ||
+                mutation.oldValue === 'getting-started-blank')
+            )
+              sessionStorage.setItem(onboardingKey, mutation.oldValue)
+            record(mutation.target)
+            for (const node of mutation.addedNodes) record(node)
+          }
+        })
+        observer.observe(document, {
+          attributes: true,
+          attributeFilter: ['data-testid'],
+          attributeOldValue: true,
+          childList: true,
+          subtree: true
+        })
+        Reflect.set(window, observerKey, observer)
+
+        const rootBootCount = await (
+          Reflect.get(window, bootBinding) as () => Promise<number>
+        )()
+        sessionStorage.setItem(bootCountKey, String(rootBootCount))
+      },
+      {
+        bootBinding,
+        bootCountKey: CLOUD_CUSTOM_NODE_BOOT_COUNT,
+        onboardingKey: CLOUD_CUSTOM_NODE_ONBOARDING,
+        observerKey: CLOUD_CUSTOM_NODE_OBSERVER,
+        onboardingSelector: ONBOARDING_SELECTOR
+      }
+    )
+  } catch (error) {
+    cloudCustomNodeBootGuards.delete(page)
+    throw error
+  }
+}
+
+export function readCloudCustomNodeBootGuard(
+  page: Page
+): Promise<{ bootCount: number; onboarding: string | null }> {
+  return page.evaluate(
+    ({ bootCountKey, onboardingKey }) => ({
+      bootCount: Number(sessionStorage.getItem(bootCountKey) ?? '0'),
+      onboarding: sessionStorage.getItem(onboardingKey)
+    }),
+    {
+      bootCountKey: CLOUD_CUSTOM_NODE_BOOT_COUNT,
+      onboardingKey: CLOUD_CUSTOM_NODE_ONBOARDING
+    }
+  )
+}
+
+export function assertCloudCustomNodeBootGuard({
+  bootCount,
+  onboarding
+}: {
+  bootCount: number
+  onboarding: string | null
+}): void {
+  if (bootCount !== 1)
+    throw new Error(
+      `cloud custom-node setup booted the app ${bootCount} times; expected exactly one pre-seeded boot`
+    )
+  if (onboarding !== null)
+    throw new Error(
+      `cloud custom-node setup opened ${onboarding} despite pre-seeded startup settings`
+    )
+}
+
+async function stopCloudCustomNodeBootGuard(page: Page): Promise<void> {
+  cloudCustomNodeBootGuards.delete(page)
+  if (page.isClosed()) return
+  await page.evaluate((observerKey) => {
+    const observer = Reflect.get(window, observerKey)
+    if (observer instanceof MutationObserver) observer.disconnect()
+    Reflect.deleteProperty(window, observerKey)
+  }, CLOUD_CUSTOM_NODE_OBSERVER)
+}
+
+function readCloudCustomNodeRootBootCount(page: Page) {
+  const state = cloudCustomNodeBootGuards.get(page)
+  if (!state)
+    throw new Error('cloud custom-node boot guard unavailable: not installed')
+  return state.rootBootCount
+}
+
+export interface CloudCustomNodeBootGuardActions {
+  read: typeof readCloudCustomNodeBootGuard
+  assert: typeof assertCloudCustomNodeBootGuard
+  close: (page: Page) => Promise<void>
+  readRootBootCount: typeof readCloudCustomNodeRootBootCount
+  stop: typeof stopCloudCustomNodeBootGuard
+}
+
+const cloudCustomNodeBootGuardActions: CloudCustomNodeBootGuardActions = {
+  read: readCloudCustomNodeBootGuard,
+  assert: assertCloudCustomNodeBootGuard,
+  close: (page) => page.close(),
+  readRootBootCount: readCloudCustomNodeRootBootCount,
+  stop: stopCloudCustomNodeBootGuard
+}
+
+export async function finalizeCloudCustomNodeBootGuard(
+  page: Page,
+  actions: CloudCustomNodeBootGuardActions = cloudCustomNodeBootGuardActions
+): Promise<void> {
+  if (page.isClosed())
+    throw new Error('cloud custom-node boot guard unavailable: page closed')
+
+  const errors: unknown[] = []
+  try {
+    actions.assert(await actions.read(page))
+  } catch (error) {
+    errors.push(error)
+  }
+  try {
+    await actions.close(page)
+  } catch (error) {
+    errors.push(error)
+  }
+  try {
+    actions.assert({
+      bootCount: actions.readRootBootCount(page),
+      onboarding: null
+    })
+  } catch (error) {
+    errors.push(error)
+  }
+  try {
+    await actions.stop(page)
+  } catch (error) {
+    errors.push(error)
+  }
+  throwCollectedErrors(errors)
+}
+
+export async function finalizeCloudCustomNodeBootGuardAtTraceBoundary(
+  page: Page,
+  sanitize: (error: unknown, redactFreeform?: boolean) => unknown
+): Promise<void> {
+  try {
+    await finalizeCloudCustomNodeBootGuard(page)
+  } catch (error) {
+    throw sanitize(error, true)
+  }
+}
+
+function throwCollectedErrors(errors: readonly unknown[]): void {
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1)
+    throw new AggregateError(errors, 'test and fixture teardown failed')
+}
+
+export async function runWithCollectedCleanup(
+  run: () => Promise<void>,
+  cleanups: readonly (() => Promise<void>)[]
+): Promise<void> {
+  const errors: unknown[] = []
+  try {
+    await run()
+  } catch (error) {
+    errors.push(error)
+  }
+  for (const cleanup of cleanups) {
+    try {
+      await cleanup()
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+  throwCollectedErrors(errors)
+}
+
+// Both environments restore a pre-seeded blank draft instead of the bundled
+// default graph, whose model references error on the model-less Core backend.
+// The restored startup outcome also prevents onboarding without a reload.
 // The shared fixture disables the errors tab to hide missing-model
 // indicators in unrelated suites; this suite exists to SEE errors, so every
 // error surface stays live.
-export const customNodeSuiteSettings = {
-  'Comfy.TutorialCompleted': false,
-  'Comfy.RightSidePanel.ShowErrorsTab': true
+export function customNodeSuiteSettingsFor(_env: 'core' | 'cloud') {
+  return {
+    'Comfy.TutorialCompleted': true,
+    'Comfy.Workflow.Persist': true,
+    'Comfy.RightSidePanel.ShowErrorsTab': true
+  }
 }
 
-// The tutorial path (Comfy.TutorialCompleted:false) auto-opens the templates
-// browser over the blank graph on some ComfyUI backends, but WHETHER it opens
-// has drifted across backend versions - newer ComfyUI no longer auto-opens it.
-// Dismiss it if it appears; if it never shows within a short window there is
-// nothing to dismiss and the blank graph is already ready. Hard-waiting for
-// 'visible' (no timeout) hung every beforeEach for the full 15s test budget on
-// backends where it stopped auto-opening, failing the whole suite.
-export async function dismissTemplatesDialog(
-  comfyPage: ComfyPage
-): Promise<void> {
-  const templates = comfyPage.page.getByTestId(TestIds.templates.content)
-  try {
-    await templates.waitFor({ state: 'visible', timeout: 5000 })
-  } catch {
-    return
-  }
-  await comfyPage.page.keyboard.press('Escape')
-  await templates.waitFor({ state: 'hidden' })
-}
+export const customNodeSuiteSettings =
+  customNodeSuiteSettingsFor(customNodesEnv())
 
 /**
  * Watches this page's `/prompt` POSTs, handing each response's `prompt_id`
@@ -45,12 +304,19 @@ export async function dismissTemplatesDialog(
  */
 export function onPromptIdResponse(
   page: Page,
-  handle: (promptId: string | undefined, body: unknown, status: number) => void
+  handle: (
+    promptId: string | undefined,
+    body: unknown,
+    status: number,
+    sequence: number
+  ) => void
 ): { detach: () => void; settled: () => Promise<void> } {
   const parsing = new Set<Promise<void>>()
+  let sequence = 0
   const listener = (response: Response) => {
     if (response.request().method() !== 'POST') return
     if (!new URL(response.url()).pathname.endsWith('/prompt')) return
+    const responseSequence = ++sequence
     parsing.add(
       response
         .json()
@@ -59,12 +325,13 @@ export function onPromptIdResponse(
           handle(
             typeof id === 'string' ? id : undefined,
             body,
-            response.status()
+            response.status(),
+            responseSequence
           )
         })
         .catch(() => {
-          // a rejection carries no prompt_id, and an empty or proxy-HTML body
-          // fails to parse; neither reached the queue
+          if (response.status() >= 400)
+            handle(undefined, undefined, response.status(), responseSequence)
         })
     )
   }

@@ -1,6 +1,6 @@
-import { render, screen, within } from '@testing-library/vue'
+import { cleanup, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { computed, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -19,12 +19,16 @@ const mockShowTeamPlans = vi.fn()
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
 
+afterEach(cleanup)
+
 const {
   mockMembers,
   mockPendingInvites,
   mockOriginalOwnerId,
   mockFilteredMembers,
   mockFilteredPendingInvites,
+  mockMaxSeats,
+  mockIsInPersonalWorkspace,
   mockHasTeamPlan,
   mockHasLapsedTeamPlan,
   mockIsPlanLoading,
@@ -53,6 +57,8 @@ const {
     mockIsInviteDisabled: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
     mockFilteredPendingInvites: ref<PendingInvite[]>([]),
+    mockMaxSeats: ref<number | null>(20),
+    mockIsInPersonalWorkspace: ref(false),
     mockHasTeamPlan: ref(true),
     mockHasLapsedTeamPlan: ref(false),
     mockIsPlanLoading: ref(false),
@@ -89,8 +95,12 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
   useMembersPanel: () => ({
     searchQuery: mockSearchQuery,
     activeView: mockActiveView,
-    maxSeats: computed(() => 20),
+    maxSeats: mockMaxSeats,
+    isInPersonalWorkspace: mockIsInPersonalWorkspace,
     hasTeamPlan: mockHasTeamPlan,
+    hasMemberSeats: computed(
+      () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
+    ),
     isPlanLoading: mockIsPlanLoading,
     isOnTeamPlan: mockIsOnTeamPlan,
     hasLapsedTeamPlan: mockHasLapsedTeamPlan,
@@ -119,10 +129,12 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
             member.id,
             member.email.toLowerCase() === 'owner@example.com' ||
             member.id === mockOriginalOwnerId.value
-              ? [{ label: 'setCreditLimit' }]
+              ? []
               : [
                   { label: 'changeRole' },
-                  { label: 'setCreditLimit' },
+                  ...(member.role === 'member'
+                    ? [{ label: 'setCreditLimit' }]
+                    : []),
                   { label: 'removeMember' }
                 ]
           ])
@@ -221,6 +233,8 @@ describe('MembersPanelContent', () => {
     mockOriginalOwnerId.value = null
     mockFilteredMembers.value = []
     mockFilteredPendingInvites.value = []
+    mockMaxSeats.value = 20
+    mockIsInPersonalWorkspace.value = false
     mockHasTeamPlan.value = true
     mockHasLapsedTeamPlan.value = false
     mockIsPlanLoading.value = false
@@ -259,6 +273,8 @@ describe('MembersPanelContent', () => {
 
   describe('personal plan', () => {
     beforeEach(() => {
+      mockMaxSeats.value = 1
+      mockIsInPersonalWorkspace.value = true
       mockHasTeamPlan.value = false
       mockIsOnTeamPlan.value = false
       mockHasMultipleMembers.value = false
@@ -294,6 +310,18 @@ describe('MembersPanelContent', () => {
   })
 
   describe('Team plan member list', () => {
+    it('keeps rendering members while seat capacity is unresolved', () => {
+      mockMaxSeats.value = null
+      mockFilteredMembers.value = [createMember({ name: 'Alice' })]
+
+      renderComponent()
+
+      expect(screen.getByText('Alice')).toBeTruthy()
+      expect(
+        screen.queryByText('workspacePanel.members.upsellBanner')
+      ).toBeNull()
+    })
+
     it('shows the Role column header and member roles', () => {
       mockFilteredMembers.value = [
         createMember({ role: 'owner', email: 'boss@test.com' }),
@@ -334,17 +362,17 @@ describe('MembersPanelContent', () => {
       ).toHaveLength(1)
     })
 
-    it('shows a self-cap menu for the current user', () => {
+    it('hides the menu for the current user', () => {
       mockFilteredMembers.value = [
         createMember({ name: 'Owner User', email: 'owner@example.com' })
       ]
       renderComponent()
       expect(
         screen.queryAllByRole('button', { name: 'g.moreOptions' })
-      ).toHaveLength(1)
+      ).toHaveLength(0)
     })
 
-    it('shows a menu on both the creator and other rows', () => {
+    it('hides the creator menu and shows the member menu', () => {
       mockOriginalOwnerId.value = 'creator-1'
       mockFilteredMembers.value = [
         createMember({
@@ -360,8 +388,8 @@ describe('MembersPanelContent', () => {
       const creatorRow = screen.getByTestId('member-row-creator-1')
       const otherRow = screen.getByTestId('member-row-2')
       expect(
-        within(creatorRow).getByRole('button', { name: 'g.moreOptions' })
-      ).toBeInTheDocument()
+        within(creatorRow).queryByRole('button', { name: 'g.moreOptions' })
+      ).not.toBeInTheDocument()
       expect(
         within(otherRow).getByRole('button', { name: 'g.moreOptions' })
       ).toBeInTheDocument()
@@ -475,8 +503,21 @@ describe('MembersPanelContent', () => {
     })
   })
 
+  it('renders fetched personal members while seat capacity is unresolved', () => {
+    mockIsInPersonalWorkspace.value = true
+    mockMaxSeats.value = null
+    mockFilteredMembers.value = [createMember({ name: 'Alice' })]
+
+    renderComponent()
+
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.queryByText('workspacePanel.members.upsellBanner')).toBeNull()
+  })
+
   describe('not on team plan', () => {
     beforeEach(() => {
+      mockMaxSeats.value = 1
+      mockIsInPersonalWorkspace.value = true
       mockHasTeamPlan.value = false
       mockIsOnTeamPlan.value = false
       mockShowSearch.value = false
@@ -491,6 +532,8 @@ describe('MembersPanelContent', () => {
     })
 
     it('hides the upsell banner when on a team plan', () => {
+      mockMaxSeats.value = 20
+      mockIsInPersonalWorkspace.value = false
       mockHasTeamPlan.value = true
       mockIsOnTeamPlan.value = true
       renderComponent()
@@ -541,7 +584,7 @@ describe('MembersPanelContent', () => {
   })
 
   describe('contact us footer', () => {
-    it('opens discord in a new tab on a Team plan', async () => {
+    it('opens the Team plan request form in a new tab', async () => {
       const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
       renderComponent()
       expect(
@@ -551,7 +594,7 @@ describe('MembersPanelContent', () => {
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://discord.com/invite/comfyorg',
+        'https://comfy-org.portal.usepylon.com/forms/team-plan-requests',
         '_blank',
         'noopener,noreferrer'
       )

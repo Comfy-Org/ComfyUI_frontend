@@ -53,7 +53,8 @@
       "expectedNodeCount": 2,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["DownloadAndLoadDepthAnythingV2Model"]
     },
     {
       "pack": "ComfyUI-DepthAnythingV3",
@@ -62,7 +63,7 @@
       "workflow": "",
       "expectedNodes": ["DA3_CreateCameraParams", "DA3_EnableTiledProcessing"],
       "expectedNodeCount": 9,
-      "expectedExtensions": ["DepthAnythingV3.ToMesh.Download"],
+      "expectedExtensions": [],
       "disabledNodes": {
         "DA3_DownloadModel": ["NetworkAccess"],
         "DA3_FilterGaussians": ["WritesToDisk"],
@@ -71,7 +72,12 @@
         "DepthAnythingV3_Streaming": ["WritesToDisk"],
         "LoadSALADModel": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "DA3_MultiViewPointCloud",
+        "DA3_ToMesh",
+        "DA3_ToPointCloud"
+      ]
     },
     {
       "pack": "ComfyUI-DynamiCrafterWrapper",
@@ -87,7 +93,12 @@
       "disabledNodes": {
         "DownloadAndLoadCLIPModel": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "DownloadAndLoadDynamiCrafterModel",
+        "DynamiCrafterCNLoader",
+        "DynamiCrafterModelLoader"
+      ]
     },
     {
       "pack": "ComfyUI-EditUtils",
@@ -109,7 +120,8 @@
       "expectedNodeCount": 3,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["FlashVSRInitPipe", "FlashVSRNode"]
     },
     {
       "pack": "ComfyUI-Fluxtapoz",
@@ -131,7 +143,8 @@
       "expectedNodeCount": 2,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["DownloadAndLoadGIMMVFIModel"]
     },
     {
       "pack": "ComfyUI-Image-Filters",
@@ -144,7 +157,14 @@
       "disabledNodes": {
         "ModelTest": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "AlphaMatte",
+        "BatchAverageUnJittered",
+        "Hunyuan3Dv2LatentUpscaleBy",
+        "ImageMatting",
+        "UnJitterImage"
+      ]
     },
     {
       "pack": "ComfyUI-KJNodes",
@@ -169,7 +189,31 @@
         "VisualizeCUDAMemoryHistory": ["WritesToDisk"],
         "WebcamCaptureCV2": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "CheckpointLoaderKJ",
+        "CreateAudioMask",
+        "CreateGradientFromCoords",
+        "CreateInstanceDiffusionTracking",
+        "CreateShapeImageOnPath",
+        "CreateShapeMaskOnPath",
+        "CreateTextOnPath",
+        "CrossFadeImages",
+        "CrossFadeImagesMulti",
+        "CustomControlNetWeightsFluxFromList",
+        "CutAndDragOnPath",
+        "FloatToMask",
+        "GetImagesFromBatchIndexed",
+        "GetLatentsFromBatchIndexed",
+        "ImageAndMaskPreview",
+        "ImageGridtoBatch",
+        "ImagePadForOutpaintTargetSize",
+        "InterpolateCoords",
+        "PlotCoordinates",
+        "WeightScheduleConvert",
+        "WeightScheduleExtend",
+        "WidgetToString"
+      ]
     },
     {
       "pack": "ComfyUI-KwaiKolorsWrapper",
@@ -183,7 +227,8 @@
       "expectedNodeCount": 5,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["LoadChatGLM3"]
     },
     {
       "pack": "ComfyUI-LTXVideo",
@@ -191,14 +236,26 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["APGGuider", "AddLatentGuide"],
-      "expectedNodeCount": 73,
+      "expectedNodeCount": 74,
       "expectedExtensions": ["LTXVideo.SparseTrackEditor"],
       "disabledNodes": {
         "GemmaAPITextEncode": ["NetworkAccess", "RequiresExternalAPI"],
         "LTXVHDRDecodePostprocess": ["WritesToDisk"],
         "LTXVSaveConditioning": ["WritesToDisk"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "LTXAttentioOverride",
+        "LTXAttentionBank",
+        "LTXVDilateVideoMask",
+        "LTXVDrawTracks",
+        "LTXVGemmaCLIPModelLoader",
+        "LTXVLoadConditioning",
+        "LTXVSelectLatents",
+        "LTXVSetVideoLatentNoiseMasks",
+        "LowVRAMAudioVAELoader",
+        "LowVRAMCheckpointLoader"
+      ]
     },
     {
       "pack": "ComfyUI-Licon-MSR",
@@ -209,7 +266,8 @@
       "expectedNodeCount": 1,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["LiconMSR"]
     },
     {
       "pack": "ComfyUI-LivePortraitKJ",
@@ -223,7 +281,11 @@
       "expectedNodeCount": 9,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "LivePortraitLoadFaceAlignmentCropper",
+        "LivePortraitLoadMediaPipeCropper"
+      ]
     },
     {
       "pack": "ComfyUI-Lotus",
@@ -234,7 +296,8 @@
       "expectedNodeCount": 2,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["LoadLotusModel"]
     },
     {
       "pack": "ComfyUI-MelBandRoFormer",
@@ -245,7 +308,8 @@
       "expectedNodeCount": 2,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["MelBandRoFormerModelLoader"]
     },
     {
       "pack": "ComfyUI-MimicMotionWrapper",
@@ -259,7 +323,8 @@
       "expectedNodeCount": 5,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["MimicMotionGetPoses"]
     },
     {
       "pack": "ComfyUI-NormalCrafterWrapper",
@@ -300,7 +365,12 @@
         "FB_Qwen3TTSLoadSpeaker": ["DisabledOnCloud", "ReadsArbitraryFile"],
         "FB_Qwen3TTSSaveVoice": ["DisabledOnCloud", "WritesToDisk"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "FB_Qwen3TTSVoiceClone",
+        "FB_Qwen3TTSVoiceClonePrompt",
+        "FB_Qwen3TTSVoiceDesign"
+      ]
     },
     {
       "pack": "ComfyUI-QwenVL",
@@ -358,7 +428,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["UltraShapeConvertToGLB", "UltraShapeLoadCoarseMesh"],
-      "expectedNodeCount": 4,
+      "expectedNodeCount": 6,
       "expectedExtensions": [],
       "disabledNodes": {
         "UltraShapeMeshSelector": ["DisabledOnCloud"],
@@ -383,10 +453,11 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["DrawViTPose", "OnnxDetectionModelLoader"],
-      "expectedNodeCount": 4,
+      "expectedNodeCount": 5,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["OnnxDetectionModelLoader"]
     },
     {
       "pack": "ComfyUI-WanVideoWrapper",
@@ -406,7 +477,41 @@
         "WanVideoSetBlockSwap": ["DisabledOnCloud"],
         "WanVideoVRAMManagement": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "FantasyPortraitModelLoader",
+        "FantasyTalkingModelLoader",
+        "HuMoEmbeds",
+        "LoadLynxResampler",
+        "LoadVQVAE",
+        "LoadWanVideoClipTextEncoder",
+        "LoadWanVideoT5TextEncoder",
+        "LynxInsightFaceCrop",
+        "OviMMAudioVAELoader",
+        "QwenLoader",
+        "WanVideoATITracksVisualize",
+        "WanVideoControlEmbeds",
+        "WanVideoControlnetLoader",
+        "WanVideoFlashVSRDecoderLoader",
+        "WanVideoImageToVideoEncode",
+        "WanVideoLatentReScale",
+        "WanVideoModelLoader",
+        "WanVideoPassImagesFromSamples",
+        "WanVideoPhantomEmbeds",
+        "WanVideoPromptExtenderSelect",
+        "WanVideoReCamMasterDefaultCamera",
+        "WanVideoRealisDanceLatents",
+        "WanVideoSVIProEmbeds",
+        "WanVideoTextEncode",
+        "WanVideoTextEncodeCached",
+        "WanVideoTextEncodeSingle",
+        "WanVideoTinyVAELoader",
+        "WanVideoUni3C_ControlnetLoader",
+        "WanVideoUniAnimateDWPoseDetector",
+        "WanVideoVACEStartToEndFrame",
+        "WanVideoVAELoader",
+        "WhisperModelLoader"
+      ]
     },
     {
       "pack": "ComfyUI-test-framework",
@@ -414,10 +519,21 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["AssertContainsColor", "AssertEqual"],
-      "expectedNodeCount": 9,
+      "expectedNodeCount": 17,
       "expectedExtensions": ["comfyui.test.framework.auto.save.api"],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "AssertContainsColor",
+        "AssertImageMatch",
+        "AssertInRange",
+        "AssertNotEqual",
+        "AssertStringContains",
+        "AssertStringLength",
+        "AssertStringMatch",
+        "AssertStringNotContains",
+        "AssertTensorShape"
+      ]
     },
     {
       "pack": "ComfyUI_AudioTools",
@@ -431,7 +547,12 @@
         "AudioGetFromList": ["DisabledOnCloud"],
         "AudioLoadBatch": ["ReadsArbitraryFile"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "AudioBPMDetector",
+        "AudioReverb",
+        "AudioVocalCompressor"
+      ]
     },
     {
       "pack": "ComfyUI_Fill-ChatterBox",
@@ -445,7 +566,8 @@
       "expectedNodeCount": 5,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["FL_ChatterboxDialogTTS"]
     },
     {
       "pack": "ComfyUI_Fill-Nodes",
@@ -659,7 +781,16 @@
         "FL_ZipDirectory": ["ReadsArbitraryFile"],
         "FL_ZipSave": ["ReadsArbitraryFile", "WritesToDisk"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "FL_ImageNotes",
+        "FL_PasteOnCanvas",
+        "FL_Switch_Big",
+        "FL_VideoBatchSplitter",
+        "FL_WanVideoBlender",
+        "FL_WanVideoBlender3Way",
+        "FL_WanVideoContinuationBlender"
+      ]
     },
     {
       "pack": "ComfyUI_LayerStyle_Advance",
@@ -703,7 +834,23 @@
         "LayerUtility: ZhipuGLM4": ["RequiresExternalAPI"],
         "LayerUtility: ZhipuGLM4V": ["RequiresExternalAPI"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "LayerMask: BiRefNetUltra",
+        "LayerMask: EVFSAMUltra",
+        "LayerMask: LoadBenModel",
+        "LayerMask: LoadBiRefNetModel",
+        "LayerMask: LoadBiRefNetModelV2",
+        "LayerMask: ObjectDetectorYOLOWorld",
+        "LayerMask: PersonMaskUltra",
+        "LayerMask: SegmentAnythingUltra",
+        "LayerMask: TransparentBackgroundUltra",
+        "LayerUtility: DecodeQRCode",
+        "LayerUtility: ImageAutoCrop",
+        "LayerUtility: ImageAutoCrop V2",
+        "LayerUtility: LaMa",
+        "LayerUtility: QWenImage2Prompt"
+      ]
     },
     {
       "pack": "ComfyUI_SchemaNodes",
@@ -714,7 +861,12 @@
       "expectedNodeCount": 8,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "SchemaAudioParameter",
+        "SchemaImageParameter",
+        "SchemaVideoParameter"
+      ]
     },
     {
       "pack": "Comfyui-SecNodes",
@@ -725,7 +877,8 @@
       "expectedNodeCount": 3,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["SeCModelLoader"]
     },
     {
       "pack": "ControlAltAI-Nodes",
@@ -782,7 +935,47 @@
         "TextLoadFile": ["ReadsArbitraryFile"],
         "UNetSave": ["CreatesLargeOutputs", "WritesToDisk"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "ClownInpaint",
+        "ClownInpaintSimple",
+        "ClownModelLoader",
+        "ClownOptions_SDE_Mask_Beta",
+        "ClownOptions_SDE_Noise",
+        "ClownRegionalConditioning",
+        "ClownRegionalConditioning2",
+        "ClownRegionalConditioning3",
+        "ClownRegionalConditioning_AB",
+        "ClownRegionalConditioning_ABC",
+        "ClownRegionalConditionings",
+        "ClownScheduler",
+        "ClownsharKSampler_Beta",
+        "ClownsharkChainsampler_Beta",
+        "EmptyLatentImageCustom",
+        "FluxLoader",
+        "Frame Select Latent",
+        "Frame Select Latent Raw",
+        "Frames Concat Latent Raw",
+        "Frames Latent ReverseOrder",
+        "Frames Slice Latent",
+        "Frames Slice Latent Raw",
+        "Frequency Separation Hard Light",
+        "Frequency Separation Hard Light LAB",
+        "Frequency Separation Linear Light",
+        "Image Channels LAB",
+        "Image Pair Split",
+        "Latent Transfer State Info",
+        "LatentNoiseBatch_gaussian_channels",
+        "LatentPhaseMagnitude",
+        "Mask Bounding Box Aspect Ratio",
+        "Mask Sketch",
+        "SD35Loader",
+        "SharkChainsampler_Beta",
+        "SharkSampler_Beta",
+        "Sigmas RiemannianFlow",
+        "TextShuffleAndTruncate",
+        "TextTruncateTokens"
+      ]
     },
     {
       "pack": "Skimmed_CFG",
@@ -805,7 +998,7 @@
       "workflow": "",
       "expectedNodes": ["LTXDirector", "LTXDirectorGuide"],
       "expectedNodeCount": 6,
-      "expectedExtensions": ["Comfy.LTXDirectorGuide"],
+      "expectedExtensions": [],
       "disabledNodes": {
         "LoadVideoUI": ["HasCustomEndpoints", "ReadsArbitraryFile"],
         "MultiImageLoader": ["ReadsArbitraryFile"]
@@ -868,7 +1061,27 @@
         "Basic data handling: PathSplit": ["PathParsing"],
         "Basic data handling: PathSplitExt": ["PathParsing"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "Basic data handling: CastToDict",
+        "Basic data handling: DataListCreateFromFloat",
+        "Basic data handling: DataListCreateFromInt",
+        "Basic data handling: DictCreateFromFloat",
+        "Basic data handling: DictCreateFromInt",
+        "Basic data handling: DictCreateFromItemsDataList",
+        "Basic data handling: FlowSelect",
+        "Basic data handling: ListCreateFromFloat",
+        "Basic data handling: ListCreateFromInt",
+        "Basic data handling: MathLog",
+        "Basic data handling: MathLog10",
+        "Basic data handling: MathSqrt",
+        "Basic data handling: SetCreateFromFloat",
+        "Basic data handling: SetCreateFromInt",
+        "Basic data handling: TimeParse",
+        "TensorJoin",
+        "TensorPermute",
+        "TensorSlice"
+      ]
     },
     {
       "pack": "bfsnodes",
@@ -896,7 +1109,8 @@
         "PlyPreviewLoadGaussianPLYEnhance": ["ReadsArbitraryFile"],
         "PlyPreviewLoadGaussianPLYPathEnhance": ["ReadsArbitraryFile"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["PlyPreviewProcessGaussianPLYEnhance"]
     },
     {
       "pack": "comfyui-advanced-controlnet",
@@ -912,7 +1126,13 @@
       "disabledNodes": {
         "LoadImagesFromDirectory": ["ReadsArbitraryFile"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "ACN_ControlNet++LoaderSingle",
+        "ACN_CtrLoRALoader",
+        "ACN_SparseCtrlLoaderAdvanced",
+        "ACN_SparseCtrlMergedLoaderAdvanced"
+      ]
     },
     {
       "pack": "comfyui-animatediff-evolved",
@@ -925,7 +1145,15 @@
       "disabledNodes": {
         "ADE_LoadCameraPosesFromPath": ["ReadsArbitraryFile"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "ADE_LoadAnimateDiffModelWithCameraCtrl",
+        "ADE_LoadAnimateLCMI2VModel",
+        "ADE_NoisedImageInjectOptions",
+        "ADE_ValueScheduling",
+        "ADE_ValueSchedulingLatents",
+        "CheckpointLoaderSimpleWithNoiseSelect"
+      ]
     },
     {
       "pack": "comfyui-cogvideoxwrapper",
@@ -936,7 +1164,14 @@
       "expectedNodeCount": 24,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "CogVideoLatentPreview",
+        "CogVideoXModelLoader",
+        "CogVideoXVAELoader",
+        "DownloadAndLoadCogVideoControlNet",
+        "DownloadAndLoadToraModel"
+      ]
     },
     {
       "pack": "comfyui-enricos-nodes",
@@ -947,7 +1182,8 @@
       "expectedNodeCount": 7,
       "expectedExtensions": ["ComfyUI.Enrico.ColorPicker"],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["CompositorTools3", "CompositorTransformsOutV3"]
     },
     {
       "pack": "comfyui-florence2",
@@ -971,7 +1207,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["CAIN VFI", "FILM VFI"],
-      "expectedNodeCount": 9,
+      "expectedNodeCount": 11,
       "expectedExtensions": [],
       "disabledNodes": {
         "AMT VFI": ["NetworkAccess"],
@@ -980,7 +1216,8 @@
         "STMFNet VFI": ["NetworkAccess"],
         "Sepconv VFI": ["NetworkAccess"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["CAIN VFI", "FLAVR VFI", "IFRNet VFI", "IFUnet VFI"]
     },
     {
       "pack": "comfyui-ic-light-native",
@@ -1015,7 +1252,16 @@
         "PreviewBridge": ["DisabledOnCloud"],
         "PreviewBridgeLatent": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "AnyPipeToBasic",
+        "CLIPSegDetectorProvider",
+        "ImpactMakeImageBatch",
+        "ImpactMakeMaskBatch",
+        "LatentSender",
+        "MasksToMaskList",
+        "SAMLoader"
+      ]
     },
     {
       "pack": "comfyui-impact-subpack",
@@ -1048,7 +1294,8 @@
       "expectedNodeCount": 12,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["INPAINT_ColorMatch", "INPAINT_LoadFooocusInpaint"]
     },
     {
       "pack": "comfyui-itools",
@@ -1103,7 +1350,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["QwenMultiangleCameraNode"],
-      "expectedNodeCount": 1,
+      "expectedNodeCount": 2,
       "expectedExtensions": ["ComfyUI.QwenMultiangle"],
       "disabledNodes": {},
       "timeoutMs": 30000
@@ -1126,7 +1373,8 @@
         "Segment": ["DisabledOnCloud"],
         "SegmentV2": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["AILab_CropObject", "AILab_SDMatte"]
     },
     {
       "pack": "comfyui-sam3",
@@ -1159,7 +1407,8 @@
       "expectedNodeCount": 3,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["LoadSharpModel"]
     },
     {
       "pack": "comfyui-string-converter",
@@ -1170,7 +1419,8 @@
       "expectedNodeCount": 2,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["StringToFloat", "StringToInt"]
     },
     {
       "pack": "comfyui-supir",
@@ -1181,7 +1431,8 @@
       "expectedNodeCount": 10,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["SUPIR_Upscale", "SUPIR_model_loader"]
     },
     {
       "pack": "comfyui-systms-facecomposite",
@@ -1217,14 +1468,21 @@
         "JWSaveImageSequence": ["WritesToDisk"],
         "RAFTLoadFlowFromEXRChannels": ["ReadsArbitraryFile"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "JWAudioBlend",
+        "JWFloatDiv",
+        "JWIntegerDiv",
+        "JWMaskSequenceFromMask",
+        "JWStringGetLine"
+      ]
     },
     {
       "pack": "comfyui-videohelpersuite",
       "deployRef": "comfyui-videohelpersuite@1.7.9",
       "tiers": ["load", "connectivity", "run"],
       "workflow": "assets/customNodes/vhs_video_pipeline_cloud_run.json",
-      "expectedNodes": ["VHS_AudioToVHSAudio", "VHS_DuplicateImages"],
+      "expectedNodes": ["VHS_LoadVideo", "VHS_VideoInfo"],
       "expectedNodeCount": 32,
       "expectedExtensions": ["VideoHelperSuite.Core"],
       "disabledNodes": {
@@ -1259,7 +1517,8 @@
       "expectedNodeCount": 64,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["Unimatch_OptFlowPreprocessor"]
     },
     {
       "pack": "comfyui_essentials",
@@ -1270,7 +1529,13 @@
       "expectedNodeCount": 62,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "ImageUntile+",
+        "MaskFromList+",
+        "PixelOEPixelize+",
+        "SimpleMath+"
+      ]
     },
     {
       "pack": "comfyui_face_parsing",
@@ -1305,7 +1570,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["LayerColor: AutoAdjust", "LayerColor: AutoAdjustV2"],
-      "expectedNodeCount": 156,
+      "expectedNodeCount": 162,
       "expectedExtensions": [],
       "disabledNodes": {
         "LayerFilter: LightLeak": ["DisabledOnCloud"],
@@ -1318,7 +1583,17 @@
         "LayerUtility: PurgeVRAM V2": ["DisabledOnCloud", "Stateful"],
         "LayerUtility: QueueStop": ["DisabledOnCloud"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "LayerColor: AutoBrightness",
+        "LayerFilter: SkinBeauty",
+        "LayerFilter: SoftLight",
+        "LayerMask: MaskEdgeUltraDetail",
+        "LayerUtility: GrayValue",
+        "LayerUtility: ImageMaskScaleAs",
+        "LayerUtility: ImageMaskScaleAsV2",
+        "LayerUtility: Restore Pad Image Batch"
+      ]
     },
     {
       "pack": "comfyui_nvidia_rtx_nodes",
@@ -1406,7 +1681,13 @@
         "◎ RadianceNukeBridge": ["NetworkAccess", "WritesToDisk"],
         "◎ RadianceQCExport": ["WritesToDisk"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "HDRExposureBlend",
+        "RadianceMux",
+        "RadianceUnifiedLoader",
+        "◎ RadianceDigitalCinemaWrite"
+      ]
     },
     {
       "pack": "sd-dynamic-thresholding",
@@ -1494,7 +1775,18 @@
         "Write to GIF": ["WritesToDisk"],
         "Write to Video": ["WritesToDisk"]
       },
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": [
+        "Bus Node",
+        "Diffusers Model Loader",
+        "Image Aspect Ratio",
+        "Image Batch",
+        "Latent Batch",
+        "Mask Batch",
+        "Text Dictionary Convert",
+        "Text to Number",
+        "unCLIP Checkpoint Loader"
+      ]
     }
   ],
   "unjoinedYamlPacks": ["comfyui-fl-path-animator"]

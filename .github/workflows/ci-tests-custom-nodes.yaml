@@ -39,17 +39,12 @@ jobs:
     outputs:
       should-run: ${{ steps.changes.outputs.should-run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
-  # Deliberately NOT sharded yet: the suite is ~8 min but every shard would
-  # pay the full ~4.5 min setup (clone + pip-install every pack + boot the
-  # backend), so 2 shards buy ~4 min of wall time for double the runner cost,
-  # with diminishing returns beyond that. Sharding pays once test time dwarfs
-  # setup time -
-  # first cut setup with a prebuilt image of the pinned packs, then shard if
-  # the job exceeds ~12 minutes.
+  # This proof is intentionally serial and unsharded: its backend queue and
+  # cross-test state contracts require one worker for an accepted verdict.
   custom-nodes-e2e-core:
     needs: changes
     # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
@@ -80,7 +75,7 @@ jobs:
         row: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # src-mode rows patch application code, so the break must land BEFORE the
       # frontend build. Pack-mode rows (8-10) are a no-op here; they break their
@@ -248,45 +243,60 @@ jobs:
         id: suite
         continue-on-error: true
         env:
+          CN_ENABLE_S14: '1'
+          CN_ENABLE_S15: '1'
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
         run: |
+          set -o pipefail
           # workers=1: the auto-run tier needs exclusive backend-queue access;
           # parallel workers interrupt each other's executions.
           # --project=custom-nodes: the `@custom-nodes`-tagged specs, which the
           # main e2e job's `chromium` project excludes (see playwright.config).
-          # list,json,html: json feeds the skip gate below; html writes
-          # playwright-report/ (the upload step's target) and folds in the
-          # retain-on-failure traces, which a bare list,json would discard.
+          # Json feeds the skip gate below; html writes playwright-report/
+          # (the upload step's target) and folds in the retain-on-failure
+          # traces. List keeps live diagnostics visible.
+          # Core keeps its already-proven S13-S15 coverage active. The
+          # later-tier defer applies only to Cloud while Cloud S1-S12 is red.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=custom-nodes --reporter=list,json,html --workers=1
+            --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
+            2>&1 | tee custom-nodes.log
 
       # A skip here means a pack or devtools did not load. On this branch the
       # step is informational (continue-on-error): row 10's expected red IS a
       # skip, and the assert step below owns the per-row verdict.
-      - name: Forbid skipped tests
+      - name: Record failed, skipped, or flaky tests
         id: skipgate
         if: always()
         continue-on-error: true
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
+          EXPECTED_TESTS: 34
         run: |
           set -euo pipefail
-          # An earlier step (build, server boot, the suite itself) may have
-          # failed before Playwright wrote its json; the job is already red,
-          # so surface that rather than a confusing jq "no such file" error.
-          # A missing json after a SUCCESSFUL suite is different: the skip gate
-          # cannot run at all, so fail closed rather than pass a job whose
-          # zero-skip invariant went unchecked.
+          # The JSON result is mandatory even when the suite step failed: the
+          # gate must independently prove the failed, skipped, and flaky totals.
           if [ ! -f custom-nodes-results.json ]; then
-            if [ "${SUITE_OUTCOME:-}" = "success" ]; then
-              echo "::error::suite succeeded but wrote no results json - the skip gate could not run"
-              exit 1
-            fi
-            echo "no results json - the suite step already failed (${SUITE_OUTCOME:-unknown})"
-            exit 0
+            echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
+            exit 1
           fi
-          skipped=$(jq '.stats.skipped' custom-nodes-results.json)
+          collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
+          echo "collected tests: $collected"
+          if [ "$collected" != "$EXPECTED_TESTS" ]; then
+            echo "::error::collected $collected tests; expected exactly $EXPECTED_TESTS active Core custom-node tests"
+            exit 1
+          fi
+          unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-results.json)
+          echo "failed tests: $unexpected"
+          if [ "$unexpected" != "0" ]; then
+            echo "::error::$unexpected test(s) failed - failed results are not acceptable in the gating job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "unexpected"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
+          skipped=$(jq -er '.stats.skipped | numbers' custom-nodes-results.json)
           echo "skipped tests: $skipped"
           if [ "$skipped" != "0" ]; then
             echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load; skips are not acceptable in the gating job"
@@ -295,6 +305,16 @@ jobs:
             jq -r '.. | objects
                      | select(has("title") and has("tests"))
                      | select(any(.tests[]?; .status == "skipped"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
+          flaky=$(jq -er '.stats.flaky | numbers' custom-nodes-results.json)
+          echo "flaky tests: $flaky"
+          if [ "$flaky" != "0" ]; then
+            echo "::error::$flaky test(s) passed only after retry - flaky results are not acceptable in the gating job"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "flaky"))
                      | .title' custom-nodes-results.json | sort -u | head -40
             exit 1
           fi
@@ -360,11 +380,14 @@ jobs:
           grep -Eq -- "$pat" /tmp/failure-messages.txt || { echo "::error::row $ROW: suite redded but no FAILURE MESSAGE matches /$pat/ - the red is not attributable to this break"; exit 1; }
           echo "row $ROW caught: a failure message matched /$pat/"
 
-      - name: Upload Playwright report
+      - name: Upload Playwright report and raw diagnostics
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: playwright-report-custom-nodes-row${{ matrix.row }}
-          path: playwright-report/
+          path: |
+            playwright-report/
+            custom-nodes-results.json
+            custom-nodes.log
           retention-days: 7
           if-no-files-found: warn

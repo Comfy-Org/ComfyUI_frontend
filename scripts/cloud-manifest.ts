@@ -115,12 +115,13 @@ export function validateObjectInfoSnapshot(value: unknown): ObjectInfoSnapshot {
 interface CuratedCloudWorkflow {
   workflow: string
   tiers: CloudManifestEntry['tiers']
+  expectedNodes?: string[]
   timeoutMs?: number
 }
 
 export type CuratedCloudOverlay = Record<string, CuratedCloudWorkflow>
 
-const OVERLAY_KEYS = ['workflow', 'tiers', 'timeoutMs']
+const OVERLAY_KEYS = ['workflow', 'tiers', 'expectedNodes', 'timeoutMs']
 
 export function validateCuratedCloudOverlay(
   value: unknown
@@ -151,6 +152,15 @@ export function validateCuratedCloudOverlay(
     if (!entry.tiers.includes('run'))
       throw new Error(`curated overlay: ${pack} tiers must include 'run'`)
     if (
+      entry.expectedNodes !== undefined &&
+      (!isStringArray(entry.expectedNodes) ||
+        entry.expectedNodes.length === 0 ||
+        new Set(entry.expectedNodes).size !== entry.expectedNodes.length)
+    )
+      throw new Error(
+        `curated overlay: ${pack} expectedNodes must be a non-empty array of unique non-empty node keys`
+      )
+    if (
       entry.timeoutMs !== undefined &&
       (typeof entry.timeoutMs !== 'number' ||
         !Number.isFinite(entry.timeoutMs) ||
@@ -162,6 +172,9 @@ export function validateCuratedCloudOverlay(
     overlay[pack] = {
       workflow: entry.workflow,
       tiers: entry.tiers as CloudManifestEntry['tiers'],
+      ...(entry.expectedNodes !== undefined
+        ? { expectedNodes: entry.expectedNodes }
+        : {}),
       ...(entry.timeoutMs !== undefined ? { timeoutMs: entry.timeoutMs } : {})
     }
   }
@@ -210,11 +223,40 @@ function snapshotPacksOf(snapshot: ObjectInfoSnapshot): Map<string, string[]> {
 // red a healthy run.
 export type CloudExtensionSentinels = Record<string, string[]>
 
+// Per-pack auto-run calibration (nodes that cannot execute on pure defaults
+// against the cloud backend), carried as a sidecar so regeneration preserves
+// it. Calibrated from gate-run failure details, not authored by hand.
+export type CloudCannotRunAlone = Record<string, string[]>
+
+export function validateCloudCannotRunAlone(
+  value: unknown
+): CloudCannotRunAlone {
+  if (!isRecord(value))
+    throw new Error(
+      'cloudCannotRunAlone: expected { "<pack dirname>": ["<node key>", ...] }'
+    )
+  const sidecar: CloudCannotRunAlone = {}
+  for (const [pack, keys] of Object.entries(value)) {
+    if (
+      !isStringArray(keys) ||
+      keys.length === 0 ||
+      keys.some((key) => key === '') ||
+      new Set(keys).size !== keys.length
+    )
+      throw new Error(
+        `cloudCannotRunAlone: ${pack} must be a non-empty array of unique non-empty node keys`
+      )
+    sidecar[pack] = [...keys].sort()
+  }
+  return sidecar
+}
+
 export function buildCloudManifest(
   doc: SupportedNodesDoc,
   snapshot: ObjectInfoSnapshot,
   overlay: CuratedCloudOverlay = {},
-  sentinels: CloudExtensionSentinels = {}
+  sentinels: CloudExtensionSentinels = {},
+  cannotRunAlone: CloudCannotRunAlone = {}
 ): CloudManifest {
   const nodesByPack = snapshotPacksOf(snapshot)
   const dirnameByJoinKey = new Map<string, string>()
@@ -256,16 +298,32 @@ export function buildCloudManifest(
         `pack ${dirname}: every snapshot node is label-disabled - nothing left to expect`
       )
     const curated = overlay[dirname]
+    // The default two sentinels are alphabetical, so a run-tier pack's load
+    // tier can end up asserting nodes its curated workflow never opens. The
+    // overlay may name the workflow's own nodes instead; they must still be
+    // nodes this env registers.
+    const offEnabled = (curated?.expectedNodes ?? []).filter(
+      (node) => !enabled.includes(node)
+    )
+    if (offEnabled.length > 0)
+      throw new Error(
+        `curated overlay: ${dirname} expectedNodes ${offEnabled.sort().join(', ')} ` +
+          `are not enabled nodes of the pack - they must be snapshot nodes the ` +
+          `deployment leaves label-enabled`
+      )
     packs.push({
       pack: dirname,
       deployRef: deployRefOf(pack),
       tiers: curated?.tiers ?? ['load', 'connectivity'],
       workflow: curated?.workflow ?? '',
-      expectedNodes: enabled.slice(0, 2),
+      expectedNodes: curated?.expectedNodes ?? enabled.slice(0, 2),
       expectedNodeCount: enabled.length,
       expectedExtensions: sentinels[dirname] ?? [],
       disabledNodes: sortedRecordOf(pack.node_labels ?? {}),
-      timeoutMs: curated?.timeoutMs ?? 30_000
+      timeoutMs: curated?.timeoutMs ?? 30_000,
+      ...(cannotRunAlone[dirname]
+        ? { cannotRunAlone: cannotRunAlone[dirname] }
+        : {})
     })
   }
   // A yaml pack with no snapshot nodes gets recorded, not thrown on: it would
@@ -290,6 +348,14 @@ export function buildCloudManifest(
       `curated overlay pack(s) with no generated row to attach to: ` +
         `${orphaned.sort().join(', ')} - overlay keys must be snapshot pack ` +
         `dirnames; known packs: ${packs.map((row) => row.pack).join(', ')}`
+    )
+  const orphanedCalibration = Object.keys(cannotRunAlone).filter(
+    (pack) => !packs.some((row) => row.pack === pack)
+  )
+  if (orphanedCalibration.length > 0)
+    throw new Error(
+      `cloudCannotRunAlone pack(s) with no generated row to attach to: ` +
+        `${orphanedCalibration.sort().join(', ')} - keys must be snapshot pack dirnames`
     )
 
   packs.sort((a, b) => (a.pack < b.pack ? -1 : a.pack > b.pack ? 1 : 0))

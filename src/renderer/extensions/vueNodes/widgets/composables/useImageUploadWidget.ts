@@ -52,8 +52,11 @@ export const useImageUploadWidget = () => {
     if (!fileComboWidget) {
       throw new Error(`Widget "${imageInputName}" not found on node`)
     }
-    const formatPath = (value: string | ResultItem) =>
-      createAnnotatedPath(value, { rootFolder: image_folder })
+    function formatPath(value: string | ResultItem) {
+      return typeof value === 'string'
+        ? createAnnotatedPath(value, { rootFolder: image_folder })
+        : createAnnotatedPath(value)
+    }
 
     // Setup file upload handling
     let rollback: (() => void) | undefined
@@ -123,9 +126,10 @@ export const useImageUploadWidget = () => {
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
-        isAnimated
-      })
+      if (fileComboWidget.value != null)
+        nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
+          isAnimated
+        })
       showPreview({ block: false })
     })
 

@@ -11,19 +11,25 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { RequiredSocket } from '@e2e/fixtures/customNode/autoRun'
 import {
+  AUTO_RUN_ALLOWED_FAILURES,
   batchAutoRunnable,
+  matchesAllowedAutoRunOutcome,
   planAutoRuns,
   SYNTH_PRODUCERS
 } from '@e2e/fixtures/customNode/autoRun'
 import {
   cloudAutoRunExclusions,
-  disabledHarnessNodes
+  disabledHarnessNodes,
+  stalenessCheckedKeys
 } from '@e2e/fixtures/customNode/cloudExclusions'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
-  CONSOLE_ERROR_ALLOWLIST,
-  isForeignExecutionNoise
+  allowlistRulesFor,
+  isForeignExecutionNoise,
+  staleRequiredRoundtripErrorRules,
+  unallowlistedErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import type {
   LitegraphNodeGeometry,
   NodeGeometry,
@@ -32,22 +38,46 @@ import type {
 import {
   diffGeometry,
   GEOMETRY_UNSTABLE_NODES,
+  GEOMETRY_UNSTABLE_PATHS,
   loadPackGeometry,
   packGeometryRelativePath,
   savePackGeometry
 } from '@e2e/fixtures/customNode/geometry'
 import {
+  customNodesEnv,
+  loadAllManifestPackNames,
   loadCloudCoreDisabledNodes,
   loadCloudUnjoinedYamlPacks,
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
+import { describeRunOutcome } from '@e2e/fixtures/customNode/runResult'
+import {
+  assertPackLedgerKeys,
+  packLedgerFor
+} from '@e2e/fixtures/customNode/packLedger'
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
-import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
+import {
+  matchesTopologyExpectation,
+  OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
+  OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
+  partitionValueDriftNodes,
+  pendingWidgetInitializations,
+  rendererLedgerFor,
+  ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
+  ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
+  ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
+  ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
+  ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE,
+  staleValueDriftIndices
+} from '@e2e/fixtures/customNode/valueDrift'
+import {
+  attachPageDiagnosticEvidence,
+  collectConsoleErrors
+} from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   customNodeSuiteSettings,
-  dismissTemplatesDialog,
   drainBackendToIdle,
   trackSubmittedPrompts,
   waitForQueueQuiet
@@ -167,6 +197,26 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
   }
 }
 
+// Auto-run OUTCOME not asserted for these nodes; they still execute every
+// run, so crashes and console errors surface - only the PASS/PARTIAL verdict
+// is ledgered. Mechanism: list-expanded execution emits no per-node executing
+// event on some runs, so the executed-set signal flip-flops between PASS and
+// PARTIAL; pinning either outcome coin-flips the gate (the same nodes carry
+// this mechanism in AUTO_RUN_EXCLUDE under their core pack names). Un-ledger
+// when the executing signal covers list-expanded runs.
+const AUTO_RUN_UNSTABLE_NODES: Record<string, Record<string, string>> = {
+  'comfyui-videohelpersuite': {
+    VHS_AudioToVHSAudio:
+      'list-expanded execution; executed-set flip-flops PASS/PARTIAL (same class as essentials TransitionMask+)',
+    VHS_BatchManager:
+      'iteration coordinator; executing signal flip-flops PASS/PARTIAL run-to-run'
+  },
+  comfyui_essentials: {
+    'TransitionMask+':
+      'list-expanded execution; executed-set flip-flops PASS/PARTIAL'
+  }
+}
+
 // Plain-typed widgets whose value is owned by pack JS: a programmatic write
 // is legitimately rewritten, so set-and-stick does not apply. Keyed
 // `NodeType.widgetName`; every entry names the mechanism.
@@ -227,6 +277,30 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
   'ComfyUI-Custom-Scripts': {
     'LoadText|pysssss':
       'file combo re-resolves against backend contents on configure; state-dependent (same class as its auto-run exclusion)'
+  },
+  'ComfyUI_Fill-Nodes': {
+    FL_ColorPicker:
+      'pack JS canonicalizes invalid or near-red color values on configure',
+    FL_ReplaceColor:
+      'pack JS canonicalizes invalid or near-red color values on configure'
+  },
+  'ComfyUI-LTXVideo': {
+    LTXVSparseTrackEditor:
+      'pack JS serializes spline data and rounds interpolated coordinates on configure'
+  },
+  'comfyui-itools': {
+    iToolsRegexNode:
+      'pack JS maps the selected contains_hello preset to the canonical regex string hello'
+  },
+  'WhatDreamsCost-ComfyUI': {
+    LTXDirector:
+      'pack JS owns and canonicalizes the timeline widgets on configure',
+    LoadAudioUI:
+      'custom audio DOM widget serializes an empty placeholder before configure and null after pack JS rebuilds it'
+  },
+  radiance: {
+    RadianceSamplerPro:
+      'pack JS reapplies the selected preset to its controlled widgets on configure'
   }
 }
 
@@ -248,13 +322,34 @@ const MOUNT_WIDGET_ALLOWLIST: Record<string, Record<string, string>> = {
 
 // The pack-attributed console-noise ledger moved to a shared fixture module
 // (consoleErrorLedger.ts) so the curated run tier applies the same
-// exceptions; this spec imports CONSOLE_ERROR_ALLOWLIST above.
+// exceptions; this spec reads it through allowlistRulesFor above.
+
+const PACK_LEDGERS: Record<string, Record<string, Record<string, unknown>>> = {
+  AUTO_RUN_ALLOWED_FAILURES,
+  AUTO_RUN_EXCLUDE,
+  AUTO_RUN_UNSTABLE_NODES,
+  GEOMETRY_UNSTABLE_NODES,
+  GEOMETRY_UNSTABLE_PATHS,
+  MOUNT_WIDGET_ALLOWLIST,
+  OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
+  OUTPUT_TOPOLOGY_EXPECTATIONS_VUE,
+  ROUNDTRIP_VALUE_ALLOWLIST,
+  ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
+  ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE,
+  ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS,
+  ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
+  ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE,
+  WIDGET_SET_ALLOWLIST
+}
+
+const manifestPacks = loadAllManifestPackNames()
+for (const [name, ledger] of Object.entries(PACK_LEDGERS))
+  assertPackLedgerKeys(name, ledger, manifestPacks)
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
   trackSubmittedPrompts(comfyPage.page)
-  await dismissTemplatesDialog(comfyPage)
 })
 
 // Leave the shared backend idle after every test so the next test's fresh
@@ -281,10 +376,21 @@ declare global {
     // run as separate evaluates with frame yields between them.
     __cnRt?: {
       problems: string[]
+      captureInitialWidgetCounts: () => void
       snapshotAndConfigure: () => void
+      currentWidgetCounts: (types: string[]) => Record<string, number | null>
       compare: (label: string, strict: boolean) => void
       setAndStick: () => void
-      finish: () => string[]
+      finish: () => {
+        problems: string[]
+        topologyDrifts: Array<{
+          node: string
+          before: number
+          after: number
+          label: string
+        }>
+        valueDrifts: Record<string, number[]>
+      }
     }
   }
 }
@@ -570,7 +676,7 @@ for (const entry of loadManifest()) {
     test('every registered node mounts, survives save/reload, and executes', async ({
       comfyPage
     }) => {
-      test.setTimeout(1_620_000)
+      if (customNodesEnv() !== 'cloud') test.setTimeout(1_620_000)
       const { keys, defs } = await packNodeKeys(comfyPage.page, entry.pack)
       test.skip(
         keys.length === 0,
@@ -609,28 +715,54 @@ for (const entry of loadManifest()) {
           keys.map((key) => [key, declaredShape(defs[key])])
         )
         const ledger = entry.vueIncompatibleNodes ?? {}
-        // S14: geometry accumulates across both renderer passes (LiteGraph
-        // first, Vue second per rendererPassesFor), then records or compares
-        // once at the end of the test.
+        // S14 is a separately activated tier. Its record workflow sets
+        // CN_GEOMETRY=record; its compare proof sets CN_ENABLE_S14=1. The
+        // Cloud S1-S12 sets CN_ENABLE_S14=0 while Core keeps its proven S14
+        // comparison active with CN_ENABLE_S14=1.
         const geometryRecordMode = process.env.CN_GEOMETRY === 'record'
         if (process.env.CN_GEOMETRY && !geometryRecordMode)
           throw new Error(
             `unrecognized CN_GEOMETRY value "${process.env.CN_GEOMETRY}" - the only mode is "record"`
           )
+        const geometryCompareMode = process.env.CN_ENABLE_S14
+        if (
+          geometryCompareMode !== undefined &&
+          geometryCompareMode !== '0' &&
+          geometryCompareMode !== '1'
+        )
+          throw new Error(
+            `unrecognized CN_ENABLE_S14 value "${geometryCompareMode}" - expected "0" or "1"`
+          )
+        const geometryEnabled =
+          geometryRecordMode || geometryCompareMode === '1'
         const measuredGeometry: Record<string, NodeGeometry> = {}
-        const geometryUnstable = GEOMETRY_UNSTABLE_NODES[entry.pack] ?? {}
-        for (const ledgered of Object.keys(geometryUnstable))
+        const geometryUnstable = geometryEnabled
+          ? packLedgerFor(GEOMETRY_UNSTABLE_NODES, entry.pack)
+          : {}
+        const geometryUnstablePaths = geometryEnabled
+          ? packLedgerFor(GEOMETRY_UNSTABLE_PATHS, entry.pack)
+          : {}
+        for (const ledgered of stalenessCheckedKeys(entry, geometryUnstable))
           expect(
             keys,
             `stale GEOMETRY_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of Object.keys(ledger))
+        for (const ledgered of stalenessCheckedKeys(
+          entry,
+          geometryUnstablePaths
+        ))
+          expect(
+            keys,
+            `stale GEOMETRY_UNSTABLE_PATHS entry: ${ledgered} is not registered by ${entry.pack}`
+          ).toContain(ledgered)
+        for (const ledgered of stalenessCheckedKeys(entry, ledger))
           expect(
             keys,
             `stale ledger entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
-        for (const ledgered of Object.keys(
-          MOUNT_WIDGET_ALLOWLIST[entry.pack] ?? {}
+        for (const ledgered of stalenessCheckedKeys(
+          entry,
+          packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
         ))
           expect(
             keys,
@@ -638,6 +770,25 @@ for (const entry of loadManifest()) {
           ).toContain(ledgered)
 
         for (const vueNodesEnabled of rendererPassesFor(entry)) {
+          const rawOutputTopologyExpectations = packLedgerFor(
+            rendererLedgerFor(
+              vueNodesEnabled,
+              OUTPUT_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
+              OUTPUT_TOPOLOGY_EXPECTATIONS_VUE
+            ),
+            entry.pack
+          )
+          const outputTopologyExpectations = Object.fromEntries(
+            stalenessCheckedKeys(entry, rawOutputTopologyExpectations).map(
+              (node) => [node, rawOutputTopologyExpectations[node]]
+            )
+          )
+          const observedOutputTopologies = new Set<string>()
+          for (const ledgered of Object.keys(outputTopologyExpectations))
+            expect(
+              keys,
+              `stale OUTPUT_TOPOLOGY_EXPECTATIONS entry: ${ledgered} is not registered by ${entry.pack}`
+            ).toContain(ledgered)
           const consoleErrors = collectConsoleErrors(comfyPage.page)
           await comfyPage.settings.setSetting(
             'Comfy.VueNodes.Enabled',
@@ -657,20 +808,22 @@ for (const entry of loadManifest()) {
             // Geometry rides the same mounted chunk. A null measurement means
             // the node never materialized - already red via the mount checks,
             // so geometry stays silent rather than double-reporting.
-            const chunkGeometry = await measureChunkGeometry(
-              comfyPage.page,
-              shapes.map((shape) => shape?.id ?? null),
-              vueNodesEnabled
-            )
-            for (const [index, measured] of chunkGeometry.entries()) {
-              const key = chunk[index]
-              if (measured === null || key in geometryUnstable) continue
-              if (!vueNodesEnabled)
-                measuredGeometry[key] = {
-                  litegraph: measured as LitegraphNodeGeometry
-                }
-              else if (measuredGeometry[key] && !(key in ledger))
-                measuredGeometry[key].vue = measured as VueNodeGeometry
+            if (geometryEnabled) {
+              const chunkGeometry = await measureChunkGeometry(
+                comfyPage.page,
+                shapes.map((shape) => shape?.id ?? null),
+                vueNodesEnabled
+              )
+              for (const [index, measured] of chunkGeometry.entries()) {
+                const key = chunk[index]
+                if (measured === null || key in geometryUnstable) continue
+                if (!vueNodesEnabled)
+                  measuredGeometry[key] = {
+                    litegraph: measured as LitegraphNodeGeometry
+                  }
+                else if (measuredGeometry[key] && !(key in ledger))
+                  measuredGeometry[key].vue = measured as VueNodeGeometry
+              }
             }
             for (const [index, shape] of shapes.entries()) {
               const key = chunk[index]
@@ -699,10 +852,20 @@ for (const entry of loadManifest()) {
                   failures.push(
                     `${key}: autogrow input "${container}" materialized neither its container nor its first ${expansion.length} slot(s) (${renderer})`
                   )
-              if (shape.outputCount < declared.outputCount)
-                failures.push(
-                  `${key}: instance has ${shape.outputCount} of ${declared.outputCount} declared outputs (${renderer})`
+              if (shape.outputCount < declared.outputCount) {
+                if (
+                  matchesTopologyExpectation(
+                    outputTopologyExpectations[key],
+                    declared.outputCount,
+                    shape.outputCount
+                  )
                 )
+                  observedOutputTopologies.add(key)
+                else
+                  failures.push(
+                    `${key}: instance has ${shape.outputCount} of ${declared.outputCount} declared outputs (${renderer})`
+                  )
+              }
               if (!vueNodesEnabled) continue
               if (key in ledger) continue
               const visible = await comfyPage.page
@@ -731,15 +894,21 @@ for (const entry of loadManifest()) {
                       const widgets = (
                         (node.widgets ?? []) as Array<{
                           advanced?: boolean
-                          hidden?: boolean
                           name?: string
                           type?: string
+                          options?: {
+                            advanced?: boolean
+                            canvasOnly?: boolean
+                            hidden?: boolean
+                          }
                         }>
                       ).filter(
                         (widget) =>
-                          !widget.advanced &&
-                          !widget.hidden &&
+                          !!widget.type &&
                           widget.type !== 'converted-widget' &&
+                          !widget.options?.canvasOnly &&
+                          !(widget.options?.advanced ?? widget.advanced) &&
+                          !widget.options?.hidden &&
                           // Vue renders the seed-control combo inside its
                           // parent widget row, not as its own row.
                           widget.name !== 'control_after_generate'
@@ -771,7 +940,9 @@ for (const entry of loadManifest()) {
                   [
                     shapes.map((shape) => shape?.id ?? null),
                     Object.keys(ledger),
-                    Object.keys(MOUNT_WIDGET_ALLOWLIST[entry.pack] ?? {})
+                    Object.keys(
+                      packLedgerFor(MOUNT_WIDGET_ALLOWLIST, entry.pack)
+                    )
                   ] as const
                 ))
               )
@@ -785,20 +956,25 @@ for (const entry of loadManifest()) {
             failures,
             `VueNodes=${vueNodesEnabled}: ${JSON.stringify(failures, null, 1)}`
           ).toEqual([])
-          const allowlist = CONSOLE_ERROR_ALLOWLIST[entry.pack] ?? []
-          const allowed = consoleErrors.errors.filter((error) =>
-            allowlist.some((rule) => rule.pattern.test(error))
+          for (const ledgered of Object.keys(outputTopologyExpectations))
+            expect(
+              [...observedOutputTopologies],
+              `stale OUTPUT_TOPOLOGY_EXPECTATIONS entry: ${ledgered} no longer has its exact declared-to-instance output topology with VueNodes=${vueNodesEnabled}`
+            ).toContain(ledgered)
+          const allowlist = allowlistRulesFor(entry.pack)
+          const unallowlisted = unallowlistedErrors(
+            entry.pack,
+            consoleErrors.errors
+          )
+          const allowed = consoleErrors.errors.filter(
+            (error) => !unallowlisted.includes(error)
           )
           if (allowed.length > 0)
             console.log(
               `${entry.pack}: ${allowed.length} console error(s) matched the pack's allowlist (${allowlist.map((rule) => rule.reason).join('; ')})`
             )
           expect(
-            consoleErrors.errors.filter(
-              (error) =>
-                !allowlist.some((rule) => rule.pattern.test(error)) &&
-                !isForeignExecutionNoise(error)
-            ),
+            unallowlisted.filter((error) => !isForeignExecutionNoise(error)),
             `console errors with VueNodes=${vueNodesEnabled}`
           ).toEqual([])
           await expectNoVisibleErrors(
@@ -806,65 +982,130 @@ for (const entry of loadManifest()) {
             `after all-nodes VueNodes=${vueNodesEnabled} pass`
           )
         }
-        // S14 epilogue. The exclusion is announced like every other escape
-        // hatch, record fails loudly (never a green run that rewrote its own
-        // expectations), and compare runs in CI ONLY: the baselines encode
-        // pack-JS-built layout and CI font metrics, so a dev-server run (no
-        // pack JS) reds structurally and a non-Linux machine reds on fonts -
-        // neither is signal. The skip is loud and provably inert in CI.
-        if (Object.keys(geometryUnstable).length > 0)
-          console.log(
-            `${entry.pack}: ${Object.keys(geometryUnstable).length} node(s) ledgered geometry-unstable; geometry not asserted for them`
-          )
-        if (geometryRecordMode) {
-          savePackGeometry(entry.pack, {
-            recordedAt: {
-              core: process.env.CN_GEOMETRY_CORE ?? 'unrecorded',
-              pin: 'pin' in entry ? entry.pin : entry.deployRef
-            },
-            schema: 1,
-            nodes: measuredGeometry
-          })
-          throw new Error(
-            `geometry baselines recorded for ${entry.pack} - commit ${packGeometryRelativePath(entry.pack)} and re-run without CN_GEOMETRY`
-          )
-        } else if (!process.env.CI) {
-          console.log(
-            `${entry.pack}: geometry compare skipped off-CI (baselines encode CI fonts and pack-JS layout); CI enforces`
-          )
-        } else {
-          const geometryBaseline = loadPackGeometry(entry.pack)
-          expect(
-            geometryBaseline,
-            `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (docs/custom-node-regression-suite.md Step 5b)`
-          ).not.toBeNull()
-          expect(
-            diffGeometry(geometryBaseline!.nodes, measuredGeometry),
-            'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per docs/custom-node-regression-suite.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger by mechanism in GEOMETRY_UNSTABLE_NODES'
-          ).toEqual([])
+        if (geometryEnabled) {
+          if (Object.keys(geometryUnstable).length > 0)
+            console.log(
+              `${entry.pack}: ${Object.keys(geometryUnstable).length} node(s) ledgered geometry-unstable; geometry not asserted for them`
+            )
+          if (Object.keys(geometryUnstablePaths).length > 0)
+            console.log(
+              `${entry.pack}: ${Object.values(geometryUnstablePaths).reduce((count, paths) => count + Object.keys(paths).length, 0)} exact geometry path(s) ledgered unstable; all other geometry remains asserted`
+            )
+          if (geometryRecordMode) {
+            savePackGeometry(entry.pack, {
+              recordedAt: {
+                core: process.env.CN_GEOMETRY_CORE ?? 'unrecorded',
+                pin: 'pin' in entry ? entry.pin : entry.deployRef
+              },
+              schema: 1,
+              nodes: measuredGeometry
+            })
+            throw new Error(
+              `geometry baselines recorded for ${entry.pack} - commit ${packGeometryRelativePath(entry.pack)} and re-run without CN_GEOMETRY`
+            )
+          } else if (!process.env.CI) {
+            console.log(
+              `${entry.pack}: geometry compare skipped off-CI (baselines encode CI fonts and pack-JS layout); CI enforces`
+            )
+          } else {
+            const geometryBaseline = loadPackGeometry(entry.pack)
+            expect(
+              geometryBaseline,
+              `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (docs/custom-node-regression-suite.md Step 5b)`
+            ).not.toBeNull()
+            expect(
+              diffGeometry(
+                geometryBaseline!.nodes,
+                measuredGeometry,
+                geometryUnstablePaths
+              ),
+              'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per docs/custom-node-regression-suite.md Step 5b; delta flips between identical runs, or the layout follows environment content: ledger the exact mechanism in GEOMETRY_UNSTABLE_NODES or GEOMETRY_UNSTABLE_PATHS'
+            ).toEqual([])
+          }
         }
       })
 
       await runTier('save/reload', async () => {
-        const allowedWidgets = WIDGET_SET_ALLOWLIST[entry.pack] ?? {}
-        for (const ledgered of Object.keys(allowedWidgets))
+        const roundtripConsoleErrors: string[] = []
+        const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
+        for (const ledgered of stalenessCheckedKeys(entry, allowedWidgets))
           expect(
             keys,
             `stale WIDGET_SET_ALLOWLIST entry: ${ledgered} names a node not registered by ${entry.pack}`
           ).toContain(ledgered.slice(0, ledgered.indexOf('.')))
-        const allowedValueDrift = ROUNDTRIP_VALUE_ALLOWLIST[entry.pack] ?? {}
-        for (const ledgered of Object.keys(allowedValueDrift))
+        const allowedValueDrift = packLedgerFor(
+          ROUNDTRIP_VALUE_ALLOWLIST,
+          entry.pack
+        )
+        for (const ledgered of stalenessCheckedKeys(entry, allowedValueDrift))
           expect(
             keys,
             `stale ROUNDTRIP_VALUE_ALLOWLIST entry: ${ledgered} is not registered by ${entry.pack}`
           ).toContain(ledgered)
+        const valueDriftNodes = partitionValueDriftNodes(allowedValueDrift, [
+          packLedgerFor(ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH, entry.pack),
+          packLedgerFor(ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE, entry.pack)
+        ])
+        for (const ledgered of valueDriftNodes.exact)
+          expect(
+            allowedValueDrift,
+            `ROUNDTRIP_VALUE_ALLOWED_INDICES entry ${ledgered} has no matching mechanism in ROUNDTRIP_VALUE_ALLOWLIST`
+          ).toHaveProperty(ledgered)
         // Widget values flow through the same store in both renderers, but
         // only the Vue pass runs component mount/configure effects that can
         // write back into that store - so the round-trip must hold under
         // both. Each stage yields a frame so those effects actually flush
         // before the next serialize (a single evaluate would serialize before
         // any Vue component reacted).
-        for (const vueNodesEnabled of rendererPassesFor(entry)) {
+        const roundtripRenderers = rendererPassesFor(entry)
+        for (const [
+          rendererIndex,
+          vueNodesEnabled
+        ] of roundtripRenderers.entries()) {
+          const rawValueIndices = packLedgerFor(
+            rendererLedgerFor(
+              vueNodesEnabled,
+              ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH,
+              ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE
+            ),
+            entry.pack
+          )
+          const allowedValueIndices = Object.fromEntries(
+            stalenessCheckedKeys(entry, rawValueIndices).map((node) => [
+              node,
+              rawValueIndices[node].split(',').map(Number)
+            ])
+          )
+          const observedValueDrift = new Map<string, Set<number>>()
+          const rawTopologyExpectations = packLedgerFor(
+            rendererLedgerFor(
+              vueNodesEnabled,
+              ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_LITEGRAPH,
+              ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS_VUE
+            ),
+            entry.pack
+          )
+          const topologyExpectations = Object.fromEntries(
+            stalenessCheckedKeys(entry, rawTopologyExpectations).map((node) => [
+              node,
+              rawTopologyExpectations[node]
+            ])
+          )
+          const observedTopologyDrift = new Set<string>()
+          const initializationSignals = Object.fromEntries(
+            stalenessCheckedKeys(
+              entry,
+              packLedgerFor(ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS, entry.pack)
+            ).map((node) => [
+              node,
+              ROUNDTRIP_WIDGET_INITIALIZATION_SIGNALS[entry.pack][node]
+            ])
+          )
+          for (const ledgered of Object.keys(topologyExpectations))
+            expect(
+              keys,
+              `stale ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS entry: ${ledgered} is not registered by ${entry.pack}`
+            ).toContain(ledgered)
           await comfyPage.settings.setSetting(
             'Comfy.VueNodes.Enabled',
             vueNodesEnabled
@@ -876,12 +1117,17 @@ for (const entry of loadManifest()) {
             // Stage 1 - create the chunk and park the comparison rig on the
             // window; its closures carry state across the staged evaluates.
             await comfyPage.page.evaluate(
-              ([types, packManaged, valueDriftNodes]) => {
+              ([
+                types,
+                packManaged,
+                legacyValueDriftNodes,
+                exactValueDriftIndices
+              ]) => {
                 window.app!.graph.clear()
                 window.app!.graph.last_node_id = window.__cnIdBase ?? 0
                 const created = new Map<
                   string,
-                  { type: string; widgetCount: number }
+                  { type: string; widgetCount: number | null }
                 >()
                 for (const type of types) {
                   const node = window.LiteGraph!.createNode(type)
@@ -889,11 +1135,18 @@ for (const entry of loadManifest()) {
                   window.app!.graph.add(node)
                   created.set(String(node.id), {
                     type,
-                    widgetCount: (node.widgets ?? []).length
+                    widgetCount: null
                   })
                 }
                 window.__cnIdBase = window.app!.graph.last_node_id
                 const problems: string[] = []
+                const topologyDrifts: Array<{
+                  node: string
+                  before: number
+                  after: number
+                  label: string
+                }> = []
+                const valueDrifts = new Map<string, Set<number>>()
                 // Serialized widgets_values can be an array or a named object;
                 // reload may legitimately APPEND entries (control_after_generate
                 // materializes, packs add value-driven dynamic widgets) but must
@@ -949,10 +1202,28 @@ for (const entry of loadManifest()) {
                 > | null = null
                 window.__cnRt = {
                   problems,
+                  captureInitialWidgetCounts() {
+                    for (const node of window.app!.graph.nodes) {
+                      const expected = created.get(String(node.id))
+                      if (expected)
+                        expected.widgetCount = (node.widgets ?? []).length
+                    }
+                  },
                   snapshotAndConfigure() {
                     namesBefore = widgetNamesById()
                     firstPass = window.app!.graph.serialize()
                     window.app!.graph.configure(firstPass)
+                  },
+                  currentWidgetCounts(types: string[]) {
+                    const counts = Object.fromEntries(
+                      types.map((type) => [type, null])
+                    ) as Record<string, number | null>
+                    for (const node of window.app!.graph.nodes) {
+                      const type = created.get(String(node.id))?.type
+                      if (type && type in counts)
+                        counts[type] = (node.widgets ?? []).length
+                    }
+                    return counts
                   },
                   // strict = pristine pass: reload may add dynamic widgets but
                   // must never shrink a node (the "widgets disappear after
@@ -989,13 +1260,55 @@ for (const entry of loadManifest()) {
                           `${expected.type}: type became ${String(after.type)} on ${label} reload`
                         )
                       const widgets = (restored.widgets ?? []).length
-                      if (strict && widgets < expected.widgetCount)
+                      if (expected.widgetCount === null) {
                         problems.push(
-                          `${expected.type}: widgets ${expected.widgetCount} -> ${widgets} on ${label} reload`
+                          `${expected.type}: initial widget topology was not captured`
                         )
+                        continue
+                      }
+                      const topologyShrank = widgets < expected.widgetCount
+                      if (strict && topologyShrank)
+                        topologyDrifts.push({
+                          node: expected.type,
+                          before: expected.widgetCount,
+                          after: widgets,
+                          label
+                        })
                       if (!strict && namesBefore.get(id) !== namesAfter.get(id))
                         continue
-                      if (valueDriftNodes.includes(expected.type)) continue
+                      const allowedIndices =
+                        exactValueDriftIndices[expected.type]
+                      if (
+                        allowedIndices &&
+                        Array.isArray(before.widgets_values) &&
+                        Array.isArray(after.widgets_values) &&
+                        after.widgets_values.length >=
+                          before.widgets_values.length
+                      ) {
+                        const changed = before.widgets_values.flatMap(
+                          (value, index) =>
+                            JSON.stringify(value) ===
+                            JSON.stringify(after.widgets_values?.[index])
+                              ? []
+                              : [index]
+                        )
+                        for (const index of changed)
+                          if (allowedIndices.includes(index)) {
+                            const observed =
+                              valueDrifts.get(expected.type) ??
+                              new Set<number>()
+                            observed.add(index)
+                            valueDrifts.set(expected.type, observed)
+                          }
+                        if (
+                          changed.every((index) =>
+                            allowedIndices.includes(index)
+                          )
+                        )
+                          continue
+                      }
+                      if (legacyValueDriftNodes.includes(expected.type))
+                        continue
                       if (
                         !preserves(before.widgets_values, after.widgets_values)
                       )
@@ -1024,7 +1337,7 @@ for (const entry of loadManifest()) {
                       // Value-drift-ledgered nodes own their values wholesale;
                       // writing probe values into them just makes pack JS choke
                       // on our markers (e.g. editors parsing `..._cn` as JSON).
-                      if (valueDriftNodes.includes(nodeType)) continue
+                      if (legacyValueDriftNodes.includes(nodeType)) continue
                       for (const widget of node.widgets ?? []) {
                         if (!SETTABLE.has(String(widget.type))) continue
                         if (`${nodeType}.${widget.name}` in packManaged)
@@ -1076,20 +1389,102 @@ for (const entry of loadManifest()) {
                     }
                   },
                   finish() {
-                    const out = [...problems]
+                    const out = {
+                      problems: [...problems],
+                      topologyDrifts,
+                      valueDrifts: Object.fromEntries(
+                        [...valueDrifts].map(([node, indices]) => [
+                          node,
+                          [...indices]
+                        ])
+                      )
+                    }
                     window.app!.graph.clear()
                     return out
                   }
                 }
               },
-              [chunk, allowedWidgets, Object.keys(allowedValueDrift)] as const
+              [
+                chunk,
+                allowedWidgets,
+                valueDriftNodes.legacy,
+                allowedValueIndices
+              ] as const
             )
             await comfyPage.nextFrame()
+            const waitForWidgetInitialization = async () => {
+              if (Object.keys(initializationSignals).length === 0) return
+              await expect
+                .poll(
+                  async () => {
+                    const values = await comfyPage.page.evaluate((signals) => {
+                      const values: Record<string, unknown> = {}
+                      for (const [type, signal] of Object.entries(signals)) {
+                        const node = window.app!.graph.nodes.find(
+                          (candidate) => candidate.type === type
+                        ) as unknown as Record<string, unknown> | undefined
+                        values[type] = node?.[signal]
+                      }
+                      return values
+                    }, initializationSignals)
+                    return pendingWidgetInitializations(
+                      initializationSignals,
+                      values
+                    )
+                  },
+                  {
+                    message:
+                      'pack-owned dynamic widget initialization completes before the roundtrip baseline'
+                  }
+                )
+                .toEqual([])
+            }
+            await waitForWidgetInitialization()
+            await comfyPage.page.evaluate(() =>
+              window.__cnRt!.captureInitialWidgetCounts()
+            )
             // Stage 2 - pristine snapshot + reload.
             await comfyPage.page.evaluate(() =>
               window.__cnRt!.snapshotAndConfigure()
             )
             await comfyPage.nextFrame()
+            await waitForWidgetInitialization()
+            const settledTopology = Object.fromEntries(
+              Object.entries(topologyExpectations)
+                .filter(([node]) => chunk.includes(node))
+                .map(([node, topology]) => [node, topology.after])
+            )
+            const waitForSettledTopology = async () => {
+              if (Object.keys(settledTopology).length === 0) return
+              await expect
+                .poll(
+                  async () => {
+                    const current = await comfyPage.page.evaluate(
+                      (types) => window.__cnRt!.currentWidgetCounts(types),
+                      Object.keys(settledTopology)
+                    )
+                    return Object.entries(settledTopology).flatMap(
+                      ([node, expected]) => {
+                        const actual = current[node]
+                        const allowed = Array.isArray(expected)
+                          ? expected
+                          : [expected]
+                        return actual !== null && allowed.includes(actual)
+                          ? []
+                          : [
+                              `${node}: expected ${allowed.join(' or ')}, got ${String(actual)}`
+                            ]
+                      }
+                    )
+                  },
+                  {
+                    message:
+                      'ledgered dynamic widgets reach their source-defined restored topology'
+                  }
+                )
+                .toEqual([])
+            }
+            await waitForSettledTopology()
             // Stage 3 - pristine verdict, then write non-default values.
             await comfyPage.page.evaluate(() => {
               window.__cnRt!.compare('pristine', true)
@@ -1101,21 +1496,53 @@ for (const entry of loadManifest()) {
               window.__cnRt!.snapshotAndConfigure()
             )
             await comfyPage.nextFrame()
+            await waitForWidgetInitialization()
+            await waitForSettledTopology()
             // Stage 5 - set-values verdict; collect and reset.
-            mismatches.push(
-              ...(await comfyPage.page.evaluate(() => {
-                window.__cnRt!.compare('set-values', false)
-                return window.__cnRt!.finish()
-              }))
-            )
+            const result = await comfyPage.page.evaluate(() => {
+              window.__cnRt!.compare('set-values', false)
+              return window.__cnRt!.finish()
+            })
+            mismatches.push(...result.problems)
+            for (const drift of result.topologyDrifts) {
+              if (
+                matchesTopologyExpectation(
+                  topologyExpectations[drift.node],
+                  drift.before,
+                  drift.after
+                )
+              )
+                observedTopologyDrift.add(drift.node)
+              else
+                mismatches.push(
+                  `${drift.node}: widgets ${drift.before} -> ${drift.after} on ${drift.label} reload`
+                )
+            }
+            for (const [node, indices] of Object.entries(result.valueDrifts)) {
+              const observed = observedValueDrift.get(node) ?? new Set<number>()
+              for (const index of indices) observed.add(index)
+              observedValueDrift.set(node, observed)
+            }
           }
+          if (rendererIndex === roundtripRenderers.length - 1)
+            await expect
+              .poll(
+                () =>
+                  staleRequiredRoundtripErrorRules(entry.pack, [
+                    ...roundtripConsoleErrors,
+                    ...consoleErrors.errors
+                  ]),
+                {
+                  message:
+                    'required save/reload console errors arrive before the collector stops'
+                }
+              )
+              .toEqual([])
           consoleErrors.stop()
-          const allowlist = CONSOLE_ERROR_ALLOWLIST[entry.pack] ?? []
+          roundtripConsoleErrors.push(...consoleErrors.errors)
           expect(
-            consoleErrors.errors.filter(
-              (error) =>
-                !allowlist.some((rule) => rule.pattern.test(error)) &&
-                !isForeignExecutionNoise(error)
+            unallowlistedErrors(entry.pack, consoleErrors.errors).filter(
+              (error) => !isForeignExecutionNoise(error)
             ),
             `console errors during save/reload with VueNodes=${vueNodesEnabled}`
           ).toEqual([])
@@ -1123,7 +1550,33 @@ for (const entry of loadManifest()) {
             mismatches,
             `VueNodes=${vueNodesEnabled}: ${JSON.stringify(mismatches, null, 1)}`
           ).toEqual([])
+          for (const ledgered of Object.keys(topologyExpectations))
+            expect(
+              [...observedTopologyDrift],
+              `stale ROUNDTRIP_WIDGET_TOPOLOGY_EXPECTATIONS entry: ${ledgered} no longer has its exact before-to-after widget topology with VueNodes=${vueNodesEnabled}`
+            ).toContain(ledgered)
+          const staleValueIndices = staleValueDriftIndices(
+            allowedValueIndices,
+            Object.fromEntries(
+              [...observedValueDrift].map(([node, indices]) => [
+                node,
+                [...indices]
+              ])
+            )
+          )
+          expect(
+            staleValueIndices,
+            `stale ROUNDTRIP_VALUE_ALLOWED_INDICES entries with VueNodes=${vueNodesEnabled}: ${staleValueIndices.join(', ')}`
+          ).toEqual([])
         }
+        const staleConsoleRules = staleRequiredRoundtripErrorRules(
+          entry.pack,
+          roundtripConsoleErrors
+        )
+        expect(
+          staleConsoleRules,
+          `stale required save/reload console-error rules: ${staleConsoleRules.join(', ')}`
+        ).toEqual([])
         await expectNoVisibleErrors(comfyPage.page, 'after save/reload sweep')
       })
 
@@ -1149,18 +1602,18 @@ for (const entry of loadManifest()) {
           'Cloud label-disables auto-run harness node(s); synthesized chains cannot run without them'
         ).toEqual([])
         const excluded = {
-          ...(AUTO_RUN_EXCLUDE[entry.pack] ?? {}),
+          ...packLedgerFor(AUTO_RUN_EXCLUDE, entry.pack),
           ...cloudAutoRunExclusions(entry)
         }
-        for (const [key, reason] of Object.entries(excluded)) {
+        for (const key of stalenessCheckedKeys(entry, excluded))
           expect(
             keys,
             `stale AUTO_RUN_EXCLUDE entry: ${key} is not registered by ${entry.pack}`
           ).toContain(key)
+        for (const [key, reason] of Object.entries(excluded))
           console.log(
             `${entry.pack}: ${key} excluded from auto-run (${reason})`
           )
-        }
         const verdicts = planAutoRuns(
           defs,
           keys.filter((key) => !(key in excluded))
@@ -1210,19 +1663,56 @@ for (const entry of loadManifest()) {
         }
         // Two-way reconciliation: unlisted failure = regression; listed node
         // that runs clean (or is not auto-runnable) = stale entry.
-        const baseline = new Set(entry.cannotRunAlone ?? [])
+        const baseline = new Set(
+          stalenessCheckedKeys(
+            entry,
+            Object.fromEntries(
+              (entry.cannotRunAlone ?? []).map((key) => [key, true])
+            )
+          )
+        )
+        const unstable = packLedgerFor(AUTO_RUN_UNSTABLE_NODES, entry.pack)
+        for (const ledgered of stalenessCheckedKeys(entry, unstable))
+          expect(
+            keys,
+            `stale AUTO_RUN_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
+          ).toContain(ledgered)
+        const allowedFailures = packLedgerFor(
+          AUTO_RUN_ALLOWED_FAILURES,
+          entry.pack
+        )
+        const allowedFailureKeys = stalenessCheckedKeys(entry, allowedFailures)
+        for (const ledgered of allowedFailureKeys)
+          expect(
+            keys,
+            `stale AUTO_RUN_ALLOWED_FAILURES entry: ${ledgered} is not registered by ${entry.pack}`
+          ).toContain(ledgered)
         const runnable = new Set(
           batches.flatMap((batch) => batch.map((verdict) => verdict.key))
         )
-        for (const [key, detail] of cannotRun)
-          if (!baseline.has(key))
+        for (const ledgered of allowedFailureKeys)
+          expect(
+            [...runnable],
+            `stale AUTO_RUN_ALLOWED_FAILURES entry: ${ledgered} is no longer auto-runnable for ${entry.pack}`
+          ).toContain(ledgered)
+        for (const [key, detail] of cannotRun) {
+          const allowedFailure = allowedFailures[key]
+          const allowedOutcome =
+            allowedFailure !== undefined &&
+            matchesAllowedAutoRunOutcome(detail, allowedFailure.outcomes)
+          if (!baseline.has(key) && !(key in unstable) && !allowedOutcome)
             hardFailures.push(
               `${key}: ${detail} - not in cannotRunAlone; a regression, or a new baseline entry (attach the run log)`
             )
+          else if (allowedOutcome)
+            console.log(
+              `${entry.pack}: ${key} produced allowed ${detail} (${allowedFailure.reason})`
+            )
+        }
         for (const key of baseline) {
           if (ranClean.has(key))
             hardFailures.push(
-              `${key}: ran clean but is listed in cannotRunAlone - remove the stale entry`
+              `${key}: ran clean but is listed in cannotRunAlone - remove the stale entry, or re-derive the baseline if it predates execution_cached accounting (a PARTIAL from a warm backend cache used to read as cannot-run)`
             )
           else if (!runnable.has(key))
             hardFailures.push(
@@ -1232,10 +1722,44 @@ for (const entry of loadManifest()) {
         console.log(
           `${entry.pack} auto-ran ${ranClean.size} node(s) clean; ${cannotRun.size} cannot run alone (baseline ${baseline.size})`
         )
-        expect(hardFailures, JSON.stringify(hardFailures, null, 1)).toEqual([])
+        const autoRunFailureSummary = failureSummary(
+          `${entry.pack} auto-run failures`,
+          hardFailures,
+          'auto-run-failures.json'
+        )
+        if (hardFailures.length > 0) {
+          console.log(autoRunFailureSummary)
+          await attachPageDiagnosticEvidence(
+            comfyPage.page,
+            test.info(),
+            'auto-run-failures.json',
+            hardFailures
+          )
+        }
+        expect(hardFailures.length === 0, autoRunFailureSummary).toBe(true)
       })
 
-      expect(tierFailures, 'tier failures').toEqual([])
+      // Assert on the COUNT, not the array. `toEqual([])` renders every
+      // collected failure as a deep-equality diff, and each entry is itself a
+      // nested assertion dump - gate run 30973706693 turned 38 failed tests
+      // into ~17k log lines, unreadable enough that it was twice misdiagnosed
+      // as an infrastructure outage. The full list still ships, as an
+      // attachment.
+      if (tierFailures.length > 0)
+        await attachPageDiagnosticEvidence(
+          comfyPage.page,
+          test.info(),
+          'tier-failures.json',
+          tierFailures
+        )
+      expect(
+        tierFailures.length === 0,
+        failureSummary(
+          `${entry.pack} tier failures`,
+          tierFailures,
+          'tier-failures.json'
+        )
+      ).toBe(true)
     })
   })
 }
@@ -1329,5 +1853,5 @@ async function runBatch(
   }
   if (result.outcome === 'VALIDATION_FAIL' && result.clientError)
     return `VALIDATION_FAIL (client threw: ${result.clientError.slice(0, 200)})`
-  return `${result.outcome}${result.error?.nodeType ? ` (${result.error.nodeType}: ${result.error.exceptionType ?? ''})` : ''}`
+  return describeRunOutcome(result)
 }
