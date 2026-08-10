@@ -47,10 +47,6 @@ vi.mock('@/platform/support/feedbackDialog', () => ({
   openFeedbackDialog
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ flags: { showSignInButton: false } })
-}))
-
 vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { HubWorkflowDetail } from '@comfyorg/ingest-types'
+
 import type { AssetInfo } from '@/schemas/apiSchema'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 
@@ -175,15 +177,24 @@ describe(useWorkflowShareService, () => {
       }
 
       if (path === '/hub/workflows/wf-prefill') {
-        return mockJsonResponse({
+        const detail = {
+          share_id: 'wf-prefill',
+          workflow_id: 'wf-prefill',
+          name: 'Published title',
+          status: 'approved',
           description: 'A cool workflow',
           tags: [
             { name: 'art', display_name: 'Art' },
             { name: 'upscale', display_name: 'Upscale' }
           ],
           thumbnail_type: 'image_comparison',
-          sample_image_urls: ['https://example.com/img1.png']
-        })
+          sample_image_urls: ['https://example.com/img1.png'],
+          workflow_json: {},
+          assets: [],
+          profile: { username: 'builder' }
+        } satisfies HubWorkflowDetail
+
+        return mockJsonResponse(detail)
       }
 
       return mockJsonResponse({}, false, 404)
@@ -194,12 +205,36 @@ describe(useWorkflowShareService, () => {
 
     expect(status.isPublished).toBe(true)
     expect(status.prefill).toEqual({
+      name: 'Published title',
       description: 'A cool workflow',
       tags: ['Art', 'Upscale'],
       thumbnailType: 'imageComparison',
       sampleImageUrls: ['https://example.com/img1.png']
     })
     expect(mockFetchApi).toHaveBeenNthCalledWith(2, '/hub/workflows/wf-prefill')
+  })
+
+  it('rejects hub workflow details that violate the generated contract', async () => {
+    mockFetchApi
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          workflow_id: 'wf-invalid',
+          share_id: 'wf-invalid',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          name: 'Incomplete response'
+        })
+      )
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-invalid')
+
+    expect(status.isPublished).toBe(true)
+    expect(status.prefill).toBeNull()
   })
 
   it('returns null prefill when hub workflow details are unavailable', async () => {

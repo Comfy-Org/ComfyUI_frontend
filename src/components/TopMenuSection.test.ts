@@ -23,7 +23,6 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const mockData = vi.hoisted(() => ({
   isLoggedIn: false,
-  isDesktop: false,
   setShowConflictRedDot: (_value: boolean) => {}
 }))
 
@@ -37,10 +36,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false,
-  isNightly: false,
-  get isDesktop() {
-    return mockData.isDesktop
-  }
+  isNightly: false
 }))
 
 vi.mock('@/platform/updates/common/releaseStore', () => ({
@@ -202,7 +198,6 @@ describe('TopMenuSection', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     localStorage.clear()
-    mockData.isDesktop = false
     mockData.isLoggedIn = false
     mockData.setShowConflictRedDot(false)
   })
@@ -236,21 +231,10 @@ describe('TopMenuSection', () => {
         mockData.isLoggedIn = false
       })
 
-      describe('on desktop platform', () => {
-        it('should display LoginButton and not display CurrentUserButton', () => {
-          mockData.isDesktop = true
-          const { container } = createLegacyTabBarWrapper()
-          expect(container.querySelector('login-button-stub')).not.toBeNull()
-          expect(container.querySelector('current-user-button-stub')).toBeNull()
-        })
-      })
-
-      describe('on web platform', () => {
-        it('should not display CurrentUserButton and not display LoginButton', () => {
-          const { container } = createLegacyTabBarWrapper()
-          expect(container.querySelector('current-user-button-stub')).toBeNull()
-          expect(container.querySelector('login-button-stub')).toBeNull()
-        })
+      it('should display LoginButton and not display CurrentUserButton', () => {
+        const { container } = createLegacyTabBarWrapper()
+        expect(container.querySelector('login-button-stub')).not.toBeNull()
+        expect(container.querySelector('current-user-button-stub')).toBeNull()
       })
     })
   })

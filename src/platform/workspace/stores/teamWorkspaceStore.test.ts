@@ -31,6 +31,14 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => mockWorkspaceAuthStore
 }))
 
+const mockClearWorkflowRestoreState = vi.hoisted(() => vi.fn())
+const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
+  clearWorkflowRestoreState: mockClearWorkflowRestoreState,
+  prepareWorkflowWorkspaceTransition: mockPrepareWorkflowWorkspaceTransition
+}))
+
 const mockEnsureSessionCookie = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/auth/session/useSessionCookie', () => ({
@@ -137,6 +145,18 @@ const mockMemberWorkspace = {
   joined_at: '2026-03-01T00:00:00Z'
 }
 
+function expectCleanupBeforeContextAndReload(): void {
+  expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledOnce()
+  expect(
+    mockPrepareWorkflowWorkspaceTransition.mock.invocationCallOrder[0]
+  ).toBeLessThan(
+    mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+  )
+  expect(
+    mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+  ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
+}
+
 describe('useTeamWorkspaceStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -220,6 +240,27 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceAuthStore.switchWorkspace).not.toHaveBeenCalled()
     })
 
+    it('clears transient restore state before falling back from a missing session workspace', async () => {
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = {
+        ...mockTeamWorkspace,
+        id: 'missing-workspace'
+      }
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(mockClearWorkflowRestoreState).toHaveBeenCalledExactlyOnceWith()
+      expect(
+        mockClearWorkflowRestoreState.mock.invocationCallOrder[0]
+      ).toBeLessThan(
+        mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+      )
+      expect(mockWorkspaceAuthStore.switchWorkspace).toHaveBeenCalledWith(
+        mockPersonalWorkspace.id
+      )
+    })
+
     it('falls back to localStorage if no session', async () => {
       mockLocalStorage.getItem.mockReturnValue(mockTeamWorkspace.id)
 
@@ -274,6 +315,20 @@ describe('useTeamWorkspaceStore', () => {
       await store.initialize()
 
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
+    })
+
+    it('can retry after initialization fails', async () => {
+      mockWorkspaceApi.list.mockResolvedValueOnce({ workspaces: [] })
+      const store = useTeamWorkspaceStore()
+
+      await expect(store.initialize()).rejects.toThrow(
+        'No workspaces available'
+      )
+      await store.initialize()
+
+      expect(store.initState).toBe('ready')
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
     })
 
     it('can initialize the next user after identity state is reset', async () => {
@@ -344,16 +399,24 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.initState).toBe('error')
     })
 
-    it('continues initialization even if token exchange fails', async () => {
+    it('does not activate a workspace when token exchange fails', async () => {
+      vi.useFakeTimers()
       mockWorkspaceAuthStore.switchWorkspace.mockRejectedValue(
         new Error('Token exchange failed')
       )
 
       const store = useTeamWorkspaceStore()
-      await store.initialize()
+      const initialization = store.initialize()
 
-      expect(store.initState).toBe('ready')
-      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(2000)
+      await vi.advanceTimersByTimeAsync(4000)
+      await expect(initialization).rejects.toThrow('Token exchange failed')
+
+      expect(store.initState).toBe('error')
+      expect(store.activeWorkspaceId).toBeNull()
+      expect(store.error).toEqual(new Error('Token exchange failed'))
+      vi.useRealTimers()
     })
   })
 
@@ -368,14 +431,23 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockReload).not.toHaveBeenCalled()
     })
 
-    it('clears context and reloads for valid workspace', async () => {
+    it('clears workflow restore state before switching workspaces', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()
 
       await store.switchWorkspace(mockTeamWorkspace.id)
 
+      expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledOnce()
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
       expect(mockReload).toHaveBeenCalled()
+      expect(
+        mockPrepareWorkflowWorkspaceTransition.mock.invocationCallOrder[0]
+      ).toBeLessThan(
+        mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+      )
+      expect(
+        mockWorkspaceAuthStore.clearWorkspaceContext.mock.invocationCallOrder[0]
+      ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
     })
 
     it('sets isSwitching flag during operation', async () => {
@@ -474,10 +546,19 @@ describe('useTeamWorkspaceStore', () => {
         await store.initialize()
         store.activeWorkspaceId = workspace.id
 
-        store.forgetRevokedActiveWorkspace(workspace.id)
+        const handled = store.forgetRevokedActiveWorkspace(workspace.id)
 
+        expect(handled).toBe(true)
         expect(mockLocalStorage.removeItem).toHaveBeenCalledTimes(reloads)
+        expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledTimes(
+          reloads
+        )
         expect(mockReload).toHaveBeenCalledTimes(reloads)
+        if (reloads === 1) {
+          expect(
+            mockPrepareWorkflowWorkspaceTransition.mock.invocationCallOrder[0]
+          ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
+        }
       }
     )
 
@@ -486,8 +567,9 @@ describe('useTeamWorkspaceStore', () => {
       await store.initialize()
       store.activeWorkspaceId = mockTeamWorkspace.id
 
-      store.forgetRevokedActiveWorkspace('some-other-workspace')
+      const handled = store.forgetRevokedActiveWorkspace('some-other-workspace')
 
+      expect(handled).toBe(false)
       expect(mockReload).not.toHaveBeenCalled()
     })
   })
@@ -518,6 +600,7 @@ describe('useTeamWorkspaceStore', () => {
       )
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
       expect(mockReload).toHaveBeenCalled()
+      expectCleanupBeforeContextAndReload()
     })
 
     it('sets isCreating flag during operation', async () => {
@@ -589,6 +672,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceApi.delete).toHaveBeenCalledWith(mockTeamWorkspace.id)
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
       expect(mockReload).toHaveBeenCalled()
+      expectCleanupBeforeContextAndReload()
     })
 
     it('throws when trying to delete personal workspace', async () => {
@@ -655,6 +739,7 @@ describe('useTeamWorkspaceStore', () => {
         mockPersonalWorkspace.id
       )
       expect(mockReload).toHaveBeenCalled()
+      expectCleanupBeforeContextAndReload()
     })
 
     it('forwards personal workspace leave and clears its persisted ID', async () => {
@@ -773,13 +858,17 @@ describe('useTeamWorkspaceStore', () => {
           id: 'user-1',
           name: 'User One',
           email: 'one@test.com',
-          joined_at: '2024-01-01T00:00:00Z'
+          joined_at: '2024-01-01T00:00:00Z',
+          role: 'member' as const,
+          credits_used_this_month: 0,
+          monthly_credit_limit: null
         },
         {
           id: 'user-2',
           name: 'User Two',
           email: 'two@test.com',
-          joined_at: '2024-01-02T00:00:00Z'
+          joined_at: '2024-01-02T00:00:00Z',
+          role: 'member' as const
         }
       ]
       mockWorkspaceApi.listMembers.mockResolvedValue({
@@ -797,6 +886,10 @@ describe('useTeamWorkspaceStore', () => {
       expect(result).toHaveLength(2)
       expect(store.members).toHaveLength(2)
       expect(store.members[0].name).toBe('User One')
+      expect(store.members[0].creditsUsedThisMonth).toBe(0)
+      expect(store.members[0].monthlyCreditLimit).toBeNull()
+      expect(store.members[1].creditsUsedThisMonth).toBeUndefined()
+      expect(store.members[1].monthlyCreditLimit).toBeUndefined()
     })
 
     it('fetchMembers supports a personal workspace with Team entitlement', async () => {
@@ -1616,90 +1709,6 @@ describe('useTeamWorkspaceStore', () => {
       store.destroy()
 
       expect(mockWorkspaceAuthStore.destroy).toHaveBeenCalled()
-    })
-  })
-
-  describe('totalMemberSlots and isInviteLimitReached', () => {
-    it('calculates total slots from members and invites', async () => {
-      const mockMembers = [
-        {
-          id: 'user-1',
-          name: 'User One',
-          email: 'one@test.com',
-          joined_at: '2024-01-01T00:00:00Z'
-        }
-      ]
-      const mockInvites = [
-        {
-          id: 'inv-1',
-          email: 'invite@test.com',
-          token: 'token-1',
-          invited_at: '2024-01-01T00:00:00Z',
-          expires_at: '2024-01-08T00:00:00Z'
-        },
-        {
-          id: 'inv-2',
-          email: 'invite2@test.com',
-          token: 'token-2',
-          invited_at: '2024-01-01T00:00:00Z',
-          expires_at: '2024-01-08T00:00:00Z'
-        }
-      ]
-      mockWorkspaceApi.listMembers.mockResolvedValue({
-        members: mockMembers,
-        pagination: { offset: 0, limit: 50, total: 1 }
-      })
-      mockWorkspaceApi.listInvites.mockResolvedValue({ invites: mockInvites })
-      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
-      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-      await store.fetchMembers()
-      await store.fetchPendingInvites()
-
-      expect(store.totalMemberSlots).toBe(3)
-      expect(store.isInviteLimitReached).toBe(false)
-    })
-
-    it('isInviteLimitReached enforces the flat 30-member backend cap, independent of plan seats', async () => {
-      const mockMembers = Array.from({ length: 28 }, (_, i) => ({
-        id: `user-${i}`,
-        name: `User ${i}`,
-        email: `user${i}@test.com`,
-        joined_at: '2024-01-01T00:00:00Z'
-      }))
-      const mockInvites = [
-        {
-          id: 'inv-1',
-          email: 'invite1@test.com',
-          token: 'token-1',
-          invited_at: '2024-01-01T00:00:00Z',
-          expires_at: '2024-01-08T00:00:00Z'
-        },
-        {
-          id: 'inv-2',
-          email: 'invite2@test.com',
-          token: 'token-2',
-          invited_at: '2024-01-01T00:00:00Z',
-          expires_at: '2024-01-08T00:00:00Z'
-        }
-      ]
-      mockWorkspaceApi.listMembers.mockResolvedValue({
-        members: mockMembers,
-        pagination: { offset: 0, limit: 50, total: 28 }
-      })
-      mockWorkspaceApi.listInvites.mockResolvedValue({ invites: mockInvites })
-      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
-      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-      await store.fetchMembers()
-      await store.fetchPendingInvites()
-
-      expect(store.totalMemberSlots).toBe(30)
-      expect(store.isInviteLimitReached).toBe(true)
     })
   })
 })

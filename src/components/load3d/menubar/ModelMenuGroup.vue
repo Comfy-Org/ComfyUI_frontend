@@ -1,5 +1,5 @@
 <template>
-  <Popover>
+  <Popover v-model:open="upDirectionOpen">
     <PopoverTrigger as-child>
       <button
         v-tooltip.bottom="tip(t('load3d.menuBar.upDirection'))"
@@ -29,7 +29,7 @@
     </PopoverContent>
   </Popover>
 
-  <Popover v-if="materialModes.length">
+  <Popover v-if="materialModes.length" v-model:open="materialOpen">
     <PopoverTrigger as-child>
       <button
         v-tooltip.bottom="tip(t('load3d.menuBar.material'))"
@@ -83,6 +83,7 @@ import {
   rowClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
+import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import type {
@@ -110,6 +111,10 @@ const { t } = useI18n()
 const upDirection = computed(() => config.value?.upDirection)
 const materialMode = computed(() => config.value?.materialMode)
 const showSkeleton = computed(() => config.value?.showSkeleton ?? false)
+
+const exclusivePopover = usePopoverExclusivity()
+const upDirectionOpen = exclusivePopover('model-up-direction')
+const materialOpen = exclusivePopover('model-material')
 
 const upDirections: UpDirection[] = [
   'original',

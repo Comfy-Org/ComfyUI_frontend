@@ -34,7 +34,6 @@
 
     <template #contentFilter>
       <div
-        :ref="primeVueOverlay.overlayScopeRef"
         :class="
           cn(
             '@container/filters relative px-6',
@@ -302,8 +301,12 @@
                     </span>
                   </div>
                 </template>
-                <template v-if="template.tutorialUrl" #top-right>
+                <template
+                  v-if="template.isPartnerNode || template.tutorialUrl"
+                  #top-right
+                >
                   <Button
+                    v-if="template.tutorialUrl"
                     v-tooltip.bottom="$t('g.seeTutorial')"
                     :aria-label="$t('g.seeTutorial')"
                     variant="inverted"
@@ -313,6 +316,7 @@
                   >
                     <i class="icon-[lucide--info] size-4" />
                   </Button>
+                  <PaidTemplateBadge v-if="template.isPartnerNode" />
                 </template>
               </CardTop>
             </template>
@@ -429,6 +433,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
+import PaidTemplateBadge from '@/components/custom/widget/PaidTemplateBadge.vue'
 import TemplateFilterControls from '@/components/custom/widget/TemplateFilterControls.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
@@ -444,7 +449,6 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
@@ -708,8 +712,6 @@ const mobileFiltersOpen = ref(false)
 const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
-const selectContentStyle = primeVueOverlay.contentStyle
 
 // Force re-render key for templates when sorting changes
 const templateListKey = ref(0)
@@ -838,8 +840,7 @@ const filterControlBindings = computed(() => ({
   sortOptions: sortOptions.value,
   modelFilterLabel: modelFilterLabel.value,
   useCaseFilterLabel: useCaseFilterLabel.value,
-  runsOnFilterLabel: runsOnFilterLabel.value,
-  contentStyle: selectContentStyle.value
+  runsOnFilterLabel: runsOnFilterLabel.value
 }))
 
 // Lazy pagination setup

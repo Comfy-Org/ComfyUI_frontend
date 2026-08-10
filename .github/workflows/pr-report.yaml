@@ -25,7 +25,7 @@ jobs:
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       github.event.workflow_run.event == 'pull_request'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -59,6 +59,7 @@ jobs:
           name: size-data
           run_id: ${{ steps.find-size.outputs.run-id }}
           path: temp/size
+          if_no_artifact_found: warn
 
       - name: Download size baseline
         if: steps.pr-meta.outputs.skip != 'true' && steps.find-size.outputs.status == 'ready'

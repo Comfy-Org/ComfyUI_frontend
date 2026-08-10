@@ -5,7 +5,7 @@
       class="pointer-events-auto flex h-10 items-center gap-1 bg-interface-menu-surface px-2"
       @wheel.stop
     >
-      <Popover v-model:open="catMenuOpen">
+      <Popover v-model:open="categoryMenuOpen">
         <PopoverTrigger as-child>
           <button
             :class="chipClass"
@@ -186,6 +186,7 @@ import {
 import ModelMenuGroup from '@/components/load3d/menubar/ModelMenuGroup.vue'
 import RecordMenuControl from '@/components/load3d/menubar/RecordMenuControl.vue'
 import SceneMenuGroup from '@/components/load3d/menubar/SceneMenuGroup.vue'
+import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
@@ -294,8 +295,9 @@ watch(categoryDefs, (defs) => {
   }
 })
 
-const catMenuOpen = ref(false)
-const exportOpen = ref(false)
+const exclusivePopover = usePopoverExclusivity()
+const categoryMenuOpen = exclusivePopover('category-menu')
+const exportOpen = exclusivePopover('export')
 
 const sceneHasImage = computed(
   () =>
@@ -327,7 +329,7 @@ const compact = computed(
 
 function selectCategory(key: string) {
   activeCategory.value = key
-  catMenuOpen.value = false
+  categoryMenuOpen.value = false
 }
 
 function onExport(format: string) {

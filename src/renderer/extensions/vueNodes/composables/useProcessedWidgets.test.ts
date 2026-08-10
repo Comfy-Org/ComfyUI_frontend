@@ -1,9 +1,21 @@
 import type { TooltipOptions } from 'primevue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import {
@@ -12,17 +24,22 @@ import {
   hasWidgetError,
   isWidgetVisible
 } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import {
-  createNodeExecutionId,
-  createNodeLocatorId
-} from '@/types/nodeIdentification'
-import { widgetId } from '@/types/widgetId'
 import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 const GRAPH_ID = 'graph-test'
+const NODE_ID = toNodeId(1)
+
+const { executionIdToNodeLocatorId } = vi.hoisted(() => ({
+  executionIdToNodeLocatorId: vi.fn()
+}))
+
+vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
+  const actual = await importActual<typeof GraphTraversalUtil>()
+  return {
+    ...actual,
+    executionIdToNodeLocatorId
+  }
+})
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -49,6 +66,32 @@ const createMockWidget = (
   slotMetadata: undefined,
   ...overrides
 })
+
+const noopUi = {
+  getTooltipConfig: () => ({}) as TooltipOptions,
+  handleNodeRightClick: () => {}
+}
+
+function processWidgets(widgets: SafeWidgetData[]) {
+  return computeProcessedWidgets({
+    nodeData: {
+      id: NODE_ID,
+      type: 'TestNode',
+      widgets,
+      title: 'Test',
+      mode: 0,
+      selected: false,
+      executing: false,
+      inputs: [],
+      outputs: []
+    },
+    graphId: GRAPH_ID,
+    showAdvanced: false,
+    isGraphReady: false,
+    rootGraph: null,
+    ui: noopUi
+  })
+}
 
 describe('getWidgetIdentity', () => {
   it('keys dedupeIdentity by widgetId and widget type', () => {
@@ -134,11 +177,13 @@ describe('isWidgetVisible', () => {
 describe('hasWidgetError', () => {
   let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
   let missingModelStore: ReturnType<typeof useMissingModelStore>
+  let missingMediaStore: ReturnType<typeof useMissingMediaStore>
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     executionErrorStore = useExecutionErrorStore()
     missingModelStore = useMissingModelStore()
+    missingMediaStore = useMissingMediaStore()
   })
 
   it('returns false when no errors', () => {
@@ -149,7 +194,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         undefined,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(false)
   })
@@ -165,7 +211,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         nodeErrors,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
   })
@@ -195,7 +242,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         undefined,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
   })
@@ -209,7 +257,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         undefined,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
   })
@@ -228,7 +277,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         nodeErrors,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
   })
@@ -248,7 +298,8 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         undefined,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
     expect(spy).toHaveBeenCalledWith('1', 'display_slot')
@@ -284,16 +335,78 @@ describe('hasWidgetError', () => {
         createNodeExecutionId([toNodeId(1)]),
         undefined,
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
   })
 })
 
-const noopUi = {
-  getTooltipConfig: () => ({}) as TooltipOptions,
-  handleNodeRightClick: () => {}
-}
+describe('computeProcessedWidgets missing media', () => {
+  let missingMediaStore: ReturnType<typeof useMissingMediaStore>
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    missingMediaStore = useMissingMediaStore()
+  })
+
+  it('marks a matching regular widget for missing media', () => {
+    const widget = createMockWidget({ name: 'image', nodeId: NODE_ID })
+
+    missingMediaStore.setMissingMedia([
+      {
+        nodeId: createNodeExecutionId([NODE_ID]),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      }
+    ])
+
+    expect(processWidgets([widget])[0].hasError).toBe(true)
+  })
+
+  it('marks only the matching promoted host widget for missing media', () => {
+    const matchingWidget = createMockWidget({
+      name: 'outer_image',
+      nodeId: NODE_ID,
+      sourceExecutionId: createNodeExecutionId([NODE_ID, toNodeId(42)]),
+      sourceWidgetName: 'image'
+    })
+    const otherWidget = createMockWidget({
+      name: 'outer_mask',
+      nodeId: NODE_ID,
+      sourceExecutionId: createNodeExecutionId([NODE_ID, toNodeId(43)]),
+      sourceWidgetName: 'image'
+    })
+
+    missingMediaStore.setMissingMedia([
+      {
+        nodeId: createNodeExecutionId([NODE_ID]),
+        nodeType: 'LoadImage',
+        widgetName: 'outer_image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      }
+    ])
+    expect(processWidgets([matchingWidget])[0].hasError).toBe(true)
+    expect(processWidgets([otherWidget])[0].hasError).toBe(false)
+
+    missingMediaStore.setMissingMedia([
+      {
+        nodeId: createNodeExecutionId([toNodeId(2)]),
+        nodeType: 'LoadImage',
+        widgetName: 'outer_image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      }
+    ])
+    expect(processWidgets([matchingWidget])[0].hasError).toBe(false)
+  })
+})
 
 describe('computeProcessedWidgets borderStyle', () => {
   beforeEach(() => {
@@ -481,6 +594,49 @@ describe('computeProcessedWidgets borderStyle', () => {
       createNodeLocatorId(subgraphId, toNodeId('inner-node'))
     )
   })
+
+  it('resolves a promoted widget locator from its source execution id', () => {
+    const sourceExecutionId = createNodeExecutionId([
+      toNodeId('host-node'),
+      toNodeId('inner-node')
+    ])
+    executionIdToNodeLocatorId.mockImplementationOnce((_graph, executionId) =>
+      executionId === sourceExecutionId ? 'source:inner-node' : undefined
+    )
+    const widget = createMockWidget({
+      name: 'curve',
+      type: 'curve',
+      nodeId: toNodeId('host-node'),
+      sourceExecutionId
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: toNodeId('host-node'),
+        type: 'SubgraphNode',
+        widgets: [widget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: [],
+        subgraphId: null
+      },
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: fromAny<LGraph, unknown>({}),
+      ui: noopUi
+    })
+
+    expect(result[0].simplified.nodeLocatorId).toBe('source:inner-node')
+    expect(executionIdToNodeLocatorId).toHaveBeenCalledWith(
+      expect.anything(),
+      sourceExecutionId
+    )
+  })
+
   it('deduplication keeps visible widget over hidden duplicate', () => {
     const sharedWidgetId = widgetId(GRAPH_ID, toNodeId('1'), 'text')
     const hiddenWidget = createMockWidget({
@@ -590,33 +746,9 @@ describe('computeProcessedWidgets borderStyle', () => {
 })
 
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
-  const GRAPH_ID = 'graph-test'
-  const NODE_ID = toNodeId(1)
-
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
-
-  function processWidgets(widgets: SafeWidgetData[]) {
-    return computeProcessedWidgets({
-      nodeData: {
-        id: NODE_ID,
-        type: 'TestNode',
-        widgets,
-        title: 'Test',
-        mode: 0,
-        selected: false,
-        executing: false,
-        inputs: [],
-        outputs: []
-      },
-      graphId: GRAPH_ID,
-      showAdvanced: false,
-      isGraphReady: false,
-      rootGraph: null,
-      ui: noopUi
-    })
-  }
 
   it('calls widget.callback with the new value when widgetState exists', () => {
     const callback = vi.fn()
@@ -741,6 +873,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
 
     const executionErrorStore = useExecutionErrorStore()
     const missingModelStore = useMissingModelStore()
+    const missingMediaStore = useMissingMediaStore()
 
     executionErrorStore.recordNodeErrors({
       [NODE_ID]: {
@@ -765,7 +898,8 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
         createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors?.[NODE_ID],
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(true)
 
@@ -777,7 +911,8 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
         createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors?.[NODE_ID],
         executionErrorStore,
-        missingModelStore
+        missingModelStore,
+        missingMediaStore
       )
     ).toBe(false)
   })

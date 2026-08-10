@@ -268,6 +268,64 @@ describe('SubgraphEditor', () => {
     expect(host.inputs.filter((input) => input.widgetId)).toHaveLength(0)
   })
 
+  it('does not shrink a user-resized subgraph node merely by mounting the panel (FE-853)', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph, { size: [640, 480] })
+    const sourceNode = new LGraphNode('SourceNode')
+    subgraph.add(sourceNode)
+    const sourceInput = sourceNode.addInput('first', 'STRING')
+    const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
+    sourceInput.widget = { name: sourceWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget)
+    useCanvasStore().selectedItems = [host]
+
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: {
+        plugins: [i18n],
+        stubs: {
+          DraggableList: {
+            template:
+              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
+          }
+        }
+      }
+    })
+
+    expect(Array.from(host.size)).toEqual([640, 480])
+  })
+
+  it('does not shrink a user-resized subgraph node when promoting from the hidden section', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph, { size: [640, 480] })
+    const sourceNode = new LGraphNode('SourceNode')
+    subgraph.add(sourceNode)
+
+    const sourceInput = sourceNode.addInput('first', 'STRING')
+    const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
+    sourceInput.widget = { name: sourceWidget.name }
+    useCanvasStore().selectedItems = [host]
+
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: {
+        plugins: [i18n],
+        stubs: {
+          DraggableList: {
+            template:
+              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
+          }
+        }
+      }
+    })
+
+    const hidden = screen.getByTestId('subgraph-editor-hidden-section')
+    await userEvent.click(within(hidden).getByTestId('subgraph-widget-toggle'))
+    await nextTick()
+
+    expect(Array.from(host.size)).toEqual([640, 480])
+  })
+
   it('removes the exposure when a preview row without a real source widget is demoted', async () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)

@@ -12,7 +12,8 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
-const { useComfyHubPublishWizard } = await import('./useComfyHubPublishWizard')
+const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
+  await import('./useComfyHubPublishWizard')
 
 describe('useComfyHubPublishWizard', () => {
   beforeEach(() => {
@@ -144,6 +145,23 @@ describe('useComfyHubPublishWizard', () => {
   })
 
   describe('applyPrefill', () => {
+    it('restores the published Hub title instead of the workflow filename', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+
+      applyPrefill({ name: 'Published title' })
+
+      expect(formData.value.name).toBe('Published title')
+    })
+
+    it('does not overwrite a Hub title edited before prefill resolves', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      formData.value.name = 'New title'
+
+      applyPrefill({ name: 'Published title' })
+
+      expect(formData.value.name).toBe('New title')
+    })
+
     it('restores the existing thumbnail URL into the form', () => {
       const { applyPrefill, formData } = useComfyHubPublishWizard()
       applyPrefill({ thumbnailUrl: 'https://cdn.example.com/thumb.png' })
@@ -197,5 +215,16 @@ describe('useComfyHubPublishWizard', () => {
         'https://cdn.example.com/sample.png'
       )
     })
+  })
+
+  it('caches the published Hub title by workflow path', () => {
+    const { formData } = useComfyHubPublishWizard()
+    formData.value.name = 'Published title'
+
+    cachePublishPrefill('workflows/cache-title.json', formData.value)
+
+    expect(getCachedPrefill('workflows/cache-title.json')).toEqual(
+      expect.objectContaining({ name: 'Published title' })
+    )
   })
 })

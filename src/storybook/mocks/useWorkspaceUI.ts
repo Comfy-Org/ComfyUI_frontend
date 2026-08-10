@@ -1,10 +1,14 @@
 import { computed, ref } from 'vue'
 
-import type { WorkspaceType } from '@/platform/workspace/api/workspaceApi'
+import type {
+  WorkspaceRole,
+  WorkspaceType
+} from '@/platform/workspace/api/workspaceApi'
 
 /** The workspace role/permission state a story wants the stub to report. */
 export interface WorkspaceUIMockState {
   workspaceType: WorkspaceType
+  workspaceRole: WorkspaceRole
   canManageSubscription: boolean
   canManageSubscriptionLifecycle: boolean
   canDowngradeToPersonal: boolean
@@ -14,6 +18,7 @@ export interface WorkspaceUIMockState {
 
 const defaultState: WorkspaceUIMockState = {
   workspaceType: 'team',
+  workspaceRole: 'owner',
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canDowngradeToPersonal: true,
@@ -32,6 +37,7 @@ export function setWorkspaceUIMock(next: Partial<WorkspaceUIMockState>) {
 export function useWorkspaceUI() {
   return {
     workspaceType: computed(() => state.value.workspaceType),
+    workspaceRole: computed(() => state.value.workspaceRole),
     permissions: computed(() => ({
       canManageSubscription: state.value.canManageSubscription,
       canManageSubscriptionLifecycle:

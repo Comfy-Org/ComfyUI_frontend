@@ -10,7 +10,7 @@
     <span v-if="!compact">{{ cameraTypeLabel }}</span>
   </button>
 
-  <Popover v-if="isPerspective">
+  <Popover v-if="isPerspective" v-model:open="fovOpen">
     <PopoverTrigger as-child>
       <button
         v-tooltip.bottom="tip(t('load3d.menuBar.fov'))"
@@ -52,6 +52,7 @@ import {
   panelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
+import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
@@ -66,6 +67,8 @@ const { compact = false } = defineProps<{
 const config = defineModel<CameraConfig>('config')
 
 const { t } = useI18n()
+
+const fovOpen = usePopoverExclusivity()('camera-fov')
 
 const cameraType = computed(() => config.value?.cameraType)
 const isPerspective = computed(() => cameraType.value === 'perspective')

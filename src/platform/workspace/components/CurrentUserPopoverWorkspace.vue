@@ -1,6 +1,7 @@
 <!-- A popover that shows current user information and actions -->
 <template>
   <div
+    data-testid="current-user-popover"
     class="current-user-popover -m-3 w-fit max-w-96 min-w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
@@ -24,7 +25,7 @@
     </div>
 
     <!-- Workspace Selector -->
-    <div class="relative">
+    <div v-if="!accountActionsOnly" class="relative">
       <div
         ref="workspaceSwitcherTrigger"
         v-tooltip="{ value: workspaceName, showDelay: 300 }"
@@ -59,7 +60,7 @@
 
     <!-- Credits Section -->
 
-    <div class="flex items-center gap-2 px-4 py-2">
+    <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--component] text-sm text-credit" />
       <Skeleton
         v-if="isLoadingBalance"
@@ -82,7 +83,9 @@
       </Button>
       <!-- Upgrade to add credits (free tier) -->
       <Button
-        v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
+        v-if="
+          canAccessSubscriptionFeatures && permissions.canTopUp && isFreeTier
+        "
         variant="subscribe"
         size="sm"
         data-testid="upgrade-to-add-credits-button"
@@ -91,7 +94,7 @@
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <Button
-        v-else-if="isActiveSubscription && permissions.canTopUp"
+        v-else-if="canAccessSubscriptionFeatures && permissions.canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -126,10 +129,10 @@
       </Button>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <div
-      v-if="showPlansAndPricing"
+      v-if="!accountActionsOnly && showPlansAndPricing"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
@@ -141,12 +144,12 @@
     </div>
 
     <div
-      v-if="showManagePlan"
+      v-if="!accountActionsOnly && showManagePlan"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
+      <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
       }}</span>
@@ -154,6 +157,7 @@
 
     <!-- Partner Nodes Pricing (always shown) -->
     <div
+      v-if="!accountActionsOnly"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
@@ -164,10 +168,11 @@
       }}</span>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <!-- Workspace Settings (always shown) -->
     <div
+      v-if="!accountActionsOnly"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="workspace-settings-menu-item"
       @click="handleOpenWorkspaceSettings"
@@ -255,6 +260,10 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const { accountActionsOnly = false } = defineProps<{
+  accountActionsOnly?: boolean
+}>()
+
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
@@ -262,7 +271,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   subscription,
   balance,
@@ -296,12 +305,15 @@ const showPlansAndPricing = computed(
   () => permissions.value.canManageSubscription
 )
 const showManagePlan = computed(
-  () => permissions.value.canManageSubscription && isActiveSubscription.value
+  () =>
+    permissions.value.canManageSubscription &&
+    canAccessSubscriptionFeatures.value
 )
 const showSubscribeAction = computed(
   () =>
     (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
-    (!isActiveSubscription.value && permissions.value.canManageSubscription)
+    (!canAccessSubscriptionFeatures.value &&
+      permissions.value.canManageSubscription)
 )
 
 const handleOpenUserSettings = () => {
@@ -364,7 +376,7 @@ const toggleWorkspaceSwitcher = () => {
 }
 
 const refreshBalance = () => {
-  void fetchBalance()
+  if (!accountActionsOnly) void fetchBalance()
 }
 
 defineExpose({ refreshBalance })
