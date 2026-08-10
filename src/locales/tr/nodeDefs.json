@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "Katman Ekle",
+    "inputs": {
+      "blend_mode": {
+        "name": "karışım_modu",
+        "tooltip": "İlk karışım modu."
+      },
+      "flip_h": {
+        "name": "yatay_çevir",
+        "tooltip": "Katmanı yatay olarak çevir."
+      },
+      "flip_v": {
+        "name": "dikey_çevir",
+        "tooltip": "Katmanı dikey olarak çevir."
+      },
+      "height": {
+        "name": "yükseklik",
+        "tooltip": "İlk görüntüleme yüksekliği. 0, görüntünün orijinal yüksekliğini korur."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Katman içeriği kendi orijinal boyutunda. Bir toplu işlem, ardışık katmanlara genişler."
+      },
+      "layers": {
+        "name": "katmanlar",
+        "tooltip": "Eklemek için katman yığını. Yeni bir yığın başlatmak için bağlantısız bırakın."
+      },
+      "mask": {
+        "name": "maske",
+        "tooltip": "Bu katman için şeffaflık maskesi. Maskelenmiş alanlar (değer 1) şeffaf olur ve görüntünün mevcut alfa kanalıyla çarpılır."
+      },
+      "name": {
+        "name": "isim",
+        "tooltip": "Katman adının kompozitör düzenleyicisinde gösterimi."
+      },
+      "opacity": {
+        "name": "opaklık",
+        "tooltip": "İlk katman opaklığı."
+      },
+      "rotation": {
+        "name": "dönüş",
+        "tooltip": "Saat yönünde derece cinsinden ilk dönüş."
+      },
+      "width": {
+        "name": "genişlik",
+        "tooltip": "İlk görüntüleme genişliği. 0, görüntünün orijinal genişliğini korur."
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "Kanvas üzerindeki ilk yatay yerleşim."
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "Kanvas üzerindeki ilk dikey yerleşim."
+      },
+      "z_index": {
+        "name": "z_indeksi",
+        "tooltip": "Yığın geçersiz kılma. Katmanlar z_indeksi ile kararlı şekilde sıralanır; eşit değerler liste sırasını korur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Bu katman eklenmiş katman yığını."
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "Gürültü Ekle",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "ses oluştur"
       },
+      "model_output_format": {
+        "name": "çıktı_formatı"
+      },
       "model_prompt": {
         "name": "istem"
-      },
-      "model_ratio": {
-        "name": "oran"
       },
       "model_resolution": {
         "name": "çözünürlük"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "ses oluştur"
       },
+      "model_output_format": {
+        "name": "çıktı_formatı"
+      },
       "model_prompt": {
         "name": "istem"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "çözünürlük"
+      },
+      "model_video_editing": {
+        "name": "video_düzenleme"
       },
       "seed": {
         "name": "seed",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "ses oluştur"
+      },
+      "model_output_format": {
+        "name": "çıktı_formatı"
       },
       "model_prompt": {
         "name": "istem"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "Bir görüntüyü, arka plan plakası ve her biri yığılma sırası, sınırlayıcı kutusu, adı ve açıklaması olan, yeniden konumlandırılabilir en fazla 16 şeffaf katmana ayırır.",
+    "display_name": "ByteDance Seedream 5.0 Pro Katman Ayrıştırma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "crop_layers": {
+        "name": "katmanları_kırp",
+        "tooltip": "Katmanlar/maskeler toplu çıktılarının geometrisi (layer_stack her zaman sıkı ve etkilenmez). Tam tuval: her katman, sınırlayıcı kutusundaki konumda taban boyutunda bir tuvalde - doğrudan ImageCompositeMasked ile yeniden birleştirilebilir. Minimal boyut: her katman, sınırlayıcı kutusuna kırpılır (toplu işleme için en büyük katmana kadar doldurulur) - çok daha küçük tensörler; yerleşimi yeniden oluşturmak için bboxes çıktısı ile Layers From Bounding Boxes kullanılır."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Ayrıştırılacak görüntü. Tam olarak bir görüntü, en az 512x512 piksel, en-boy oranı 1:16 ile 16:1 arasında olmalıdır. Yaklaşık 4MP'den büyük girişler yüklemeden önce yeniden boyutlandırılır."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görüntünün nasıl ayrıştırılacağı. Otomatik algılama ve tüm ana öğeleri ayırmak için boş bırakın. Ayrıştırmayı kontrol etmek için öğeleri doğal dilde tanımlayın veya <bbox>sol üst sağ alt</bbox> etiketleriyle (0-1000 binde koordinatlar) tam bölgeleri hedefleyin."
+      },
+      "prompt_optimization": {
+        "name": "istem_optimizasyonu",
+        "tooltip": "İstem optimizasyon modu: 'standart' daha yüksek kalite, 'hızlı' daha kısa oluşturma süresi sağlar."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "size": {
+        "name": "boyut",
+        "tooltip": "Çıktı çözünürlük seviyesi. 'auto', giriş görüntü boyutunu takip eder (1K-2K aralığında sınırlandırılır)."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Görüntülere \"Yapay Zeka ile oluşturuldu\" filigranı eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "taban_görüntü",
+        "tooltip": "Katmanların üst üste yığıldığı taban görüntü (arka plan plakası)."
+      },
+      "1": {
+        "name": "taban_maske",
+        "tooltip": "Taban görüntünün şeffaflığı (1 = şeffaf, LoadImage standardı); şu anda her zaman tamamen opak."
+      },
+      "2": {
+        "name": "katmanlar",
+        "tooltip": "Alttan üste sıralanmış şeffaf katmanlar. Tam tuval modu: her biri, sınırlayıcı kutusundaki konumda siyah taban boyutunda bir tuvalde. Minimal boyut modu: her biri, sınırlayıcı kutusuna kırpılmış, sol üstte sabitlenmiş, en büyük katmana kadar doldurulmuş."
+      },
+      "3": {
+        "name": "maskeler",
+        "tooltip": "Katman başına şeffaflık, katmanlar toplu verisiyle indeks uyumlu (1 = şeffaf, LoadImage standardı). ImageCompositeMasked tarzı birleştirme için önce InvertMask ekleyin."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Her katman için bir yerleşim kutusu, katmanlar toplu verisiyle indeks uyumlu (her ikisini ve maskeleri Layers From Bounding Boxes ile besleyerek katman başına yerleşimi yeniden oluşturun): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [sol, üst, genişlik, yükseklik], katmanın kendi çerçevesindeki içerik bölgesidir; tuvalde kutu konumu artı bu ofset ile yerleşir."
+      },
+      "5": {
+        "name": "katman_yığını",
+        "tooltip": "Katmanlı Görüntü Oluştur için düzenlemeye hazır katman belgesi: taban plaka ve her bir öğe, kendi adıyla, sıkı kırpılmış katman olarak gerçek konumunda ve yığılma sırasıyla. Doğrudan bağlayın veya Katman Ekle ile genişletin."
       }
     }
   },
@@ -6928,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "Katmanlı Görsel Oluştur",
+    "inputs": {
+      "compositor": {
+        "name": "kompozitör",
+        "tooltip": "Kompozitör düzenleyicisi tarafından kaydedilen katmanlı kompozisyon."
+      },
+      "layers": {
+        "name": "katmanlar",
+        "tooltip": "Birleştirilecek katman yığını; bunu Katman Ekle ile oluşturun. Öğeler z_index'e göre üst üste dizilir, bir öğedeki toplu kareler ardışık katmanlara genişler ve öğenin konumu, opaklığı ve karışım modu ilk kompozisyonu belirler. Açıkça belirtilmiş bir belge tuvali yoksa, boyut yerleştirilen katmanların en büyük kapsamı olarak en iyi şekilde tahmin edilir. Mevcut girdilerle eşleşen kayıtlı bir kompozisyon önceliklidir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Birleştirilmiş görsel. Kompozisyonda şeffaf alanlar varsa (ör. gizli arka plan), alfa kanalı taşır; aksi halde düz RGB'dir."
+      },
+      "1": {
+        "tooltip": "Kompozisyonun şeffaflığı (1 = tamamen şeffaf). Kompozisyon opaksa tüm değerler sıfırdır."
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "Görüntü Kırp",
     "inputs": {
@@ -9413,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "Bir görsel toplu işlemini ve ona ait sınırlayıcı kutuları, her kare için bir katman olacak şekilde bir katman yığınına dönüştürür; her biri kendi kutusuna yerleştirilir. Bir düğüm katmanları toplu olarak yayıyorsa bunu kullanın - bir toplu işlemde her kare için tek bir yerleşim bulunur, bu nedenle bireysel konumlar aksi halde kaybolur.",
+    "display_name": "Sınırlayıcı Kutulardan Katmanlar",
+    "inputs": {
+      "bboxes": {
+        "name": "sınırlayıcı_kutular",
+        "tooltip": "Yerleşim kutuları, görsel toplu işlemiyle indeks uyumlu. Sınırlayıcı kutuları (x, y, genişlik, yükseklik), normalleştirilmiş öğeler (bir 'bbox' ile - bunların piksele dönüştürülmesi için canvas_width/canvas_height gerekir) veya bunların JSON dizgesini kabul eder. Eşleşen kutusu olmayan kareler orijine yerleştirilir. Bir kutunun genişliği/yüksekliği katmanı ona sığacak şekilde ölçeklendirir. metadata.name (veya desc) ve metadata.z_index mevcutsa kullanılır, metadata.content_rect (kareye göre) ise kareyi gerçek içeriğine kırpar."
+      },
+      "canvas_height": {
+        "name": "tuval_yüksekliği",
+        "tooltip": "Belge tuvali yüksekliği. 0, yerleştirilen katmanlardan türetilir."
+      },
+      "canvas_width": {
+        "name": "tuval_genişliği",
+        "tooltip": "Belge tuvali genişliği. 0, yerleştirilen katmanlardan türetilir."
+      },
+      "crop_to_content": {
+        "name": "içeriğe_kırp",
+        "tooltip": "Her kareyi metadata.content_rect varsa ona kırpar ve içeriği kutu konumuna artı dikdörtgen ofsetine yerleştirir. Kareleri dolgulu olan toplu işlemler için açık bırakın - yalnızca gerçek içeriği gerçek yerine yerleştirir."
+      },
+      "image": {
+        "name": "görsel",
+        "tooltip": "Görsel toplu işlemi; her kare bir katman olur."
+      },
+      "layers": {
+        "name": "katmanlar",
+        "tooltip": "Eklemek için katman yığını. Yeni bir yığın başlatmak için bağlı bırakmayın."
+      },
+      "mask": {
+        "name": "maske",
+        "tooltip": "Kare başına şeffaflık, görsel toplu işlemiyle indeks uyumlu (1 = şeffaf, LoadImage standardı)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Katman yığını, Katmanlı Görsel Oluştur için hazır."
       }
     }
   },

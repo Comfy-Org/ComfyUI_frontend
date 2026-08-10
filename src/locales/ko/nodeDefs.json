@@ -58,6 +58,72 @@
       }
     }
   },
+  "AddLayer": {
+    "display_name": "레이어 추가",
+    "inputs": {
+      "blend_mode": {
+        "name": "blend_mode",
+        "tooltip": "초기 혼합 모드입니다."
+      },
+      "flip_h": {
+        "name": "flip_h",
+        "tooltip": "레이어를 좌우로 뒤집습니다."
+      },
+      "flip_v": {
+        "name": "flip_v",
+        "tooltip": "레이어를 상하로 뒤집습니다."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "초기 표시 높이입니다. 0이면 이미지의 원본 높이를 유지합니다."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "원본 크기의 레이어 콘텐츠입니다. 배치가 여러 개일 경우 연속된 레이어로 확장됩니다."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "추가할 레이어 스택입니다. 연결하지 않으면 새 스택이 시작됩니다."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "이 레이어의 투명도 mask입니다. mask 값이 1인 영역은 투명해지며, 이미지에 이미 존재하는 알파 채널과 곱해집니다."
+      },
+      "name": {
+        "name": "name",
+        "tooltip": "컴포지터 에디터에 표시되는 레이어 이름입니다."
+      },
+      "opacity": {
+        "name": "opacity",
+        "tooltip": "초기 레이어 불투명도입니다."
+      },
+      "rotation": {
+        "name": "rotation",
+        "tooltip": "시계 방향의 초기 회전 각도(도 단위)입니다."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "초기 표시 너비입니다. 0이면 이미지의 원본 너비를 유지합니다."
+      },
+      "x": {
+        "name": "x",
+        "tooltip": "캔버스에서의 초기 가로 위치입니다."
+      },
+      "y": {
+        "name": "y",
+        "tooltip": "캔버스에서의 초기 세로 위치입니다."
+      },
+      "z_index": {
+        "name": "z_index",
+        "tooltip": "스택 순서 재정의입니다. 레이어는 z_index로 안정적으로 정렬되며, 값이 같으면 리스트 순서를 유지합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "이 레이어가 추가된 레이어 스택입니다."
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "노이즈 추가",
     "inputs": {
@@ -832,11 +898,11 @@
       "model_generate_audio": {
         "name": "generate_audio"
       },
+      "model_output_format": {
+        "name": "output_format"
+      },
       "model_prompt": {
         "name": "prompt"
-      },
-      "model_ratio": {
-        "name": "ratio"
       },
       "model_resolution": {
         "name": "resolution"
@@ -879,6 +945,9 @@
       "model_generate_audio": {
         "name": "generate_audio"
       },
+      "model_output_format": {
+        "name": "output_format"
+      },
       "model_prompt": {
         "name": "prompt"
       },
@@ -887,6 +956,9 @@
       },
       "model_resolution": {
         "name": "resolution"
+      },
+      "model_video_editing": {
+        "name": "video_editing"
       },
       "seed": {
         "name": "seed",
@@ -919,6 +991,9 @@
       },
       "model_generate_audio": {
         "name": "generate_audio"
+      },
+      "model_output_format": {
+        "name": "output_format"
       },
       "model_prompt": {
         "name": "prompt"
@@ -1268,6 +1343,69 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNode": {
+    "description": "이미지를 배경 플레이트와 최대 16개의 재배치 가능한 투명 레이어로 분해합니다. 각 레이어는 쌓이는 순서, 바운딩 박스, 이름, 설명을 가집니다.",
+    "display_name": "ByteDance Seedream 5.0 Pro 레이어 분리",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "crop_layers": {
+        "name": "crop_layers",
+        "tooltip": "레이어/마스크 배치 출력의 기하학적 형태입니다(layer_stack에는 영향 없으며 항상 타이트함). 전체 캔버스: 각 레이어가 바운딩 박스 위치에 베이스 크기 캔버스에 배치됨 - ImageCompositeMasked로 바로 합성. 최소 크기: 각 레이어가 바운딩 박스에 맞게 잘림(배치 처리를 위해 가장 큰 레이어에 패딩) - 텐서 크기 대폭 감소; bboxes 출력을 사용해 Layers From Bounding Boxes로 위치 재구성."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "분리할 이미지입니다. 정확히 한 장의 이미지, 최소 512x512 픽셀, 가로세로 비율 1:16~16:1. 약 4MP를 초과하는 입력은 업로드 전에 축소됩니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "이미지를 어떻게 분리할지 지정합니다. 비워두면 자동으로 주요 요소를 감지하여 분리합니다. 자연어로 요소를 설명하여 분리를 제어하거나, <bbox>left top right bottom</bbox> 태그(0-1000 퍼밀 좌표)로 정확한 영역을 지정할 수 있습니다."
+      },
+      "prompt_optimization": {
+        "name": "prompt_optimization",
+        "tooltip": "프롬프트 최적화 모드: 'standard'는 더 높은 품질, 'fast'는 더 짧은 생성 시간을 제공합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드 값입니다."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "출력 해상도 레벨입니다. 'auto'는 입력 이미지 크기를 따르며(1K~2K 범위로 제한됨) 동작합니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "이미지에 \"AI 생성\" 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "레이어가 쌓이는 기본 이미지(배경 플레이트)입니다."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "기본 이미지의 투명도(1 = 투명, LoadImage 규칙); 현재는 항상 완전히 불투명합니다."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "아래에서 위로 정렬된 투명 레이어들입니다. 전체 캔버스 모드: 각 레이어가 바운딩 박스 위치에 검은색 베이스 크기 캔버스에 배치됨. 최소 크기 모드: 각 레이어가 바운딩 박스에 맞게 잘리고, 좌상단에 고정, 가장 큰 레이어에 맞게 패딩됨."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "레이어별 투명도, 레이어 배치와 인덱스 정렬(1 = 투명, LoadImage 규칙). ImageCompositeMasked 방식 합성을 위해서는 먼저 InvertMask를 추가하세요."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "레이어별 배치 박스, 레이어 배치와 인덱스 정렬(Layers From Bounding Boxes에 masks와 함께 입력하여 레이어별 배치 재구성): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height]는 해당 레이어의 프레임 내 콘텐츠 영역이며, 캔버스에서는 박스 위치에 이 오프셋이 더해져 배치됩니다."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image에서 편집 가능한 레이어 문서: 기본 플레이트와 각 요소가 이름이 지정된 타이트 크롭 레이어로, 실제 위치와 쌓이는 순서로 포함됩니다. 바로 연결하거나 Add Layer로 확장할 수 있습니다."
       }
     }
   },
@@ -6928,6 +7066,27 @@
       }
     }
   },
+  "ImageCompositor": {
+    "display_name": "레이어드 이미지 생성",
+    "inputs": {
+      "compositor": {
+        "name": "compositor",
+        "tooltip": "compositor 에디터에서 저장된 레이어 합성입니다."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "합성할 레이어 스택입니다. Add Layer로 빌드하세요. 항목들은 z_index 순서대로 쌓이며, 항목 내 배치 프레임들은 연속된 레이어로 확장됩니다. 항목의 위치, 불투명도, 블렌드 모드가 초기 합성을 정의합니다. 명시적인 문서 캔버스가 없으면, 크기는 배치된 레이어의 최대 범위로 추정됩니다. 현재 입력과 일치하는 저장된 합성이 우선 적용됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "합성된 이미지입니다. 합성에 투명 영역(예: 숨겨진 배경)이 있으면 알파 채널을 포함하고, 그렇지 않으면 일반 RGB입니다."
+      },
+      "1": {
+        "tooltip": "합성의 투명도 (1 = 완전히 투명). 합성이 불투명할 경우 모두 0입니다."
+      }
+    }
+  },
   "ImageCrop": {
     "display_name": "이미지 자르기",
     "inputs": {
@@ -9413,6 +9572,45 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LayersFromBoundingBoxes": {
+    "description": "이미지 배치와 해당 바운딩 박스를 레이어 스택으로 변환합니다. 프레임마다 하나의 레이어가 생성되며, 각 레이어는 자신의 박스 위치에 배치됩니다. 노드가 레이어를 배치로 출력할 때 사용하세요. 배치는 각 프레임마다 하나의 배치 위치만 가지므로, 개별 위치 정보가 없으면 손실됩니다.",
+    "display_name": "바운딩 박스에서 레이어 생성",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "배치된 이미지와 인덱스가 일치하는 배치 박스입니다. 바운딩 박스(x, y, width, height), 정규화된 요소('bbox' 포함, 이 경우 픽셀로 변환하려면 canvas_width/canvas_height 필요), 또는 이 둘의 JSON 문자열을 허용합니다. 일치하는 박스가 없는 프레임은 원점에 배치됩니다. 박스의 width/height는 레이어를 해당 크기에 맞게 스케일합니다. metadata.name(또는 desc) 및 metadata.z_index가 있으면 사용되고, metadata.content_rect(프레임 상대)는 프레임을 실제 콘텐츠로 자릅니다."
+      },
+      "canvas_height": {
+        "name": "canvas_height",
+        "tooltip": "문서 캔버스의 높이입니다. 0이면 배치된 레이어에서 유도합니다."
+      },
+      "canvas_width": {
+        "name": "canvas_width",
+        "tooltip": "문서 캔버스의 너비입니다. 0이면 배치된 레이어에서 유도합니다."
+      },
+      "crop_to_content": {
+        "name": "crop_to_content",
+        "tooltip": "metadata.content_rect가 있을 경우 각 프레임을 해당 영역으로 자르고, 콘텐츠를 박스 위치와 rect 오프셋에 배치합니다. 프레임이 패딩된 배치라면 켜두세요. 실제 콘텐츠만 올바른 위치에 유지합니다."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "이미지 배치; 각 프레임이 하나의 레이어가 됩니다."
+      },
+      "layers": {
+        "name": "layers",
+        "tooltip": "추가할 레이어 스택입니다. 연결하지 않으면 새 스택을 시작합니다."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "프레임별 투명도, 이미지 배치와 인덱스가 일치합니다 (1 = 투명, LoadImage 규칙)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Create Layered Image에 사용할 준비가 된 레이어 스택입니다."
       }
     }
   },
