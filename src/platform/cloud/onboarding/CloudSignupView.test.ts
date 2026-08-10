@@ -30,6 +30,13 @@ const inChina = vi.hoisted(() => ({
       settle = resolve
     })
     return settle
+  },
+  /** Detection that never settles, as on a network that blackholes. */
+  hang() {
+    this.pending = new Promise<boolean>(() => {})
+  },
+  reject(error: Error) {
+    this.pending = Promise.reject(error)
   }
 }))
 vi.mock('@/utils/networkUtil', () => ({
@@ -154,13 +161,27 @@ describe('CloudSignupView', () => {
     })
   })
 
-  it('releases the sign-up form when region detection never settles', async () => {
+  it('releases the sign-up form when region detection fails', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup()
+    inChina.reject(new Error('probe failed'))
+    await renderSignupView()
+
+    await user.click(screen.getByRole('button', { name: 'Use email instead' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-form')).toBeInTheDocument()
+    })
+  })
+
+  it('keeps the form withheld however long detection takes', async () => {
+    // Fake timers must predate mount, or a fallback scheduled during mount runs
+    // on the real clock and escapes the drain below.
     vi.useFakeTimers()
     try {
       const user = (await import('@testing-library/user-event')).default.setup({
         advanceTimers: vi.advanceTimersByTime
       })
-      inChina.defer()
+      inChina.hang()
       await renderSignupView()
 
       await user.click(
@@ -168,9 +189,13 @@ describe('CloudSignupView', () => {
       )
       expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
 
-      await vi.advanceTimersByTimeAsync(1500)
+      // Detection owns its own deadline. Draining every scheduled timer proves
+      // no caller-side fallback decides "not in China" on its behalf, which
+      // would resurrect the submit race this view exists to close.
+      await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(screen.getByTestId('signup-form')).toBeInTheDocument()
+      expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+      expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }

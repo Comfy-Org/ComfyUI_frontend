@@ -12,51 +12,106 @@ export const checkUrlReachable = async (url: string): Promise<boolean> => {
 }
 
 /**
- * Checks if the user is likely in mainland China by:
- * 1. Checking navigator.language
- * 2. Testing connectivity to commonly blocked services
- * 3. Testing latency to China-specific domains
+ * Cloudflare's edge echoes the request's geo-IP country here. It is an
+ * implementation detail of our CDN rather than a contract we own; the durable
+ * form is a first-party endpoint echoing the `CF-IPCountry` header.
  */
-export async function isInChina(): Promise<boolean> {
-  // Quick check based on language/locale
+const CLIENT_COUNTRY_URL = 'https://cloud.comfy.org/cdn-cgi/trace'
+
+/** Pre-existing bound on the Google reachability probe, reused for every leg. */
+const PROBE_TIMEOUT_MS = 2000
+
+/** Pre-existing threshold: Baidu answering this fast implies a China route. */
+const CHINA_LATENCY_MS = 150
+
+const parseTraceCountry = (body: string): string | undefined =>
+  body
+    .split('\n')
+    .find((line) => line.startsWith('loc='))
+    ?.slice('loc='.length)
+    .trim()
+    .toUpperCase() || undefined
+
+/**
+ * Fetches with a deadline the caller controls. The abort signal alone is not
+ * enough: a request the browser never resolves nor rejects would leave the
+ * promise pending forever, so the deadline also rejects on its own.
+ */
+async function fetchWithin(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  let expire: ReturnType<typeof setTimeout> | undefined
+
+  const deadline = new Promise<never>((_, reject) => {
+    expire = setTimeout(() => {
+      controller.abort()
+      reject(new Error(`Timed out after ${PROBE_TIMEOUT_MS}ms: ${url}`))
+    }, PROBE_TIMEOUT_MS)
+  })
+
+  try {
+    return await Promise.race([
+      fetch(url, { ...init, signal: controller.signal }),
+      deadline
+    ])
+  } finally {
+    clearTimeout(expire)
+  }
+}
+
+/**
+ * Resolves the client's ISO country code from the CDN edge, or `undefined` when
+ * the edge cannot answer. One bounded request, no third-party pings.
+ */
+export async function getClientCountry(): Promise<string | undefined> {
+  try {
+    const response = await fetchWithin(CLIENT_COUNTRY_URL, {
+      cache: 'no-store'
+    })
+    if (!response.ok) return undefined
+
+    return parseTraceCountry(await response.text())
+  } catch {
+    return undefined
+  }
+}
+
+const probe = (url: string) =>
+  fetchWithin(url, { mode: 'no-cors', cache: 'no-cache' })
+
+/**
+ * Reachability heuristic used only when the edge cannot name the country.
+ * Unsound in both directions — a VPN user in China reaches Google, and a
+ * `zh-CN` user anywhere is blocked whenever Google is briefly unreachable.
+ */
+async function isInChinaByProbe(): Promise<boolean> {
   const isChineseLocale = navigator.language.toLowerCase().startsWith('zh-cn')
 
   try {
-    // Test connectivity to Google - commonly blocked in China
-    const googleTest = await Promise.race([
-      fetch('https://www.google.com', {
-        mode: 'no-cors',
-        cache: 'no-cache'
-      }),
-      new Promise((_, reject) => setTimeout(() => reject(), 2000))
-    ])
-
-    // If Google is accessible, user is likely not in China
-    if (googleTest) {
-      return false
-    }
+    await probe('https://www.google.com')
+    return false
   } catch {
-    // Google is not accessible - potential indicator of being in China
-    if (isChineseLocale) {
-      return true
-    }
+    if (isChineseLocale) return true
 
-    // Additional check - test latency to a reliable Chinese domain
     try {
       const start = performance.now()
-      await fetch('https://www.baidu.com', {
-        mode: 'no-cors',
-        cache: 'no-cache'
-      })
-      const latency = performance.now() - start
-
-      // If Baidu responds quickly (<150ms), user is likely in China
-      return latency < 150
+      await probe('https://www.baidu.com')
+      return performance.now() - start < CHINA_LATENCY_MS
     } catch {
-      // If both tests fail, default to locale check
       return isChineseLocale
     }
   }
+}
 
-  return false
+/**
+ * Whether the client is in mainland China. Prefers the edge's geo-IP answer and
+ * falls back to the reachability heuristic when the edge is unreachable.
+ *
+ * Every leg is bounded, so this always settles — callers must not add a timeout
+ * of their own, which would pre-empt a slow but real answer.
+ */
+export async function isInChina(): Promise<boolean> {
+  const country = await getClientCountry()
+  if (country !== undefined) return country === 'CN'
+
+  return isInChinaByProbe()
 }
