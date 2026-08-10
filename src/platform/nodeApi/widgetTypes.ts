@@ -34,7 +34,11 @@ import type { Unsubscribe } from './widgetHandle'
  */
 export type WidgetTypeData = string | object
 
-/** Reading and writing the widget's value, for the renderer to bind to. */
+/**
+ * Reading and writing the widget's value, for the renderer to bind to.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
 export interface WidgetTypeValue {
   get(): WidgetTypeData
   set(value: WidgetTypeData): void
@@ -42,7 +46,6 @@ export interface WidgetTypeValue {
   onChange(listener: (value: WidgetTypeData) => void): Unsubscribe
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface WidgetTypeDef {
   /** Used when the definition supplies none. */
   readonly defaultValue?: WidgetTypeData
