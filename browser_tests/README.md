@@ -48,7 +48,7 @@ Alternatively, start the same container used by CI. It includes ComfyUI and
 mounts `tools/devtools` automatically:
 
 ```bash
-pnpm start:comfyui
+pnpm container:start
 ```
 
 The first run pulls the CI image when your GitHub credentials can read it, or
