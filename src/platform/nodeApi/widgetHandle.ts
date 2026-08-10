@@ -1,0 +1,684 @@
+/**
+ * Widget handles and the per-node widget collection.
+ *
+ * This is the surface that retires the largest cohort of breakage:
+ * `widgets.splice()` / `widgets = [...]` / `widgets.push()` reordering, and the
+ * `widget.widgetType = 'converted-widget'` hack whose real intent was always "hide
+ * this widget". Both now have first-class, order-safe replacements.
+ */
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
+import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+
+import { createHandleFactory } from './closedProxy'
+import type { HandleCommon } from './closedProxy'
+import { ComfyApiError } from './errors'
+
+// `null` is included because core's own `WidgetValue` has it and
+// `addWidget('button', name, null, cb)` produced exactly that. Omitting it made
+// a null value inexpressible through the published API, so a converted button's
+// `widgets_values` entry changed and the saved workflow differed.
+export type WidgetValue = string | number | boolean | object | undefined | null
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+/**
+ * Shapes follow `src/types/extensionV2.ts`, the agreed extension contract.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ * Accessor methods rather than properties, so a read can be a store query and
+ * a write can dispatch a command.
+ */
+export interface WidgetHandle extends HandleCommon {
+  readonly name: string
+  readonly widgetType: string
+
+  getValue<T = WidgetValue>(): T
+  setValue(value: WidgetValue): void
+
+  isHidden(): boolean
+  /** Replaces the `type = 'converted-widget'` hack. Value is retained. */
+  setHidden(hidden: boolean): void
+  getOptions(): Readonly<IWidgetOptions> | undefined
+  setOption(key: string, value: unknown): void
+  setLabel(label: string): void
+
+  isDisabled(): boolean
+  setDisabled(disabled: boolean): void
+  isSerialized(): boolean
+
+  /**
+   * Replaces capture-and-chain on `widget.callback`, which 1,000+ sites do and
+   * which silently drops an earlier pack's listener whenever one forgets to
+   * call through. Listeners here are additive and independent.
+   */
+  on(
+    event: 'change',
+    listener: (value: WidgetValue, oldValue: WidgetValue) => void
+  ): Unsubscribe
+  on(event: 'removed', listener: () => void): Unsubscribe
+  /**
+   * The widget was activated — a button click, or a value committed.
+   *
+   * Buttons carry no value, so `change` can never fire for one and a button
+   * created through this API would otherwise be inert. Prefer `change` when you
+   * care about the value; use this when you care that the user acted.
+   */
+  on(event: 'activate', listener: (value: WidgetValue) => void): Unsubscribe
+}
+
+export type Unsubscribe = () => void
+
+/** `nodeId` and widget name, joined by a character neither may contain. */
+const SEP = '\0'
+const compositeKey = (nodeId: string, name: string) => `${nodeId}${SEP}${name}`
+
+function findWidget(
+  node: LGraphNode | undefined,
+  name: string
+): IBaseWidget | undefined {
+  return node?.widgets?.find((w) => w.name === name)
+}
+
+export function createWidgetHandles(
+  getGraph: () => LGraph | null | undefined,
+  namespace = ''
+) {
+  const resolveNode = (nodeId: string) =>
+    getGraph()?.getNodeById(toNodeId(nodeId)) ?? undefined
+
+  const factory = createHandleFactory<IBaseWidget>(
+    {
+      kind: 'widget',
+      props: {
+        name: { get: (w) => w.name },
+        widgetType: {
+          get: (w) => w.type,
+          readonlyHint:
+            'Widget type is identity. To hide a widget, call setHidden(true).'
+        }
+      },
+      methods: {
+        getValue: (w) => w.value as WidgetValue,
+        setValue: (w, ...args) => {
+          const previous = w.value as WidgetValue
+          w.value = args[0] as IBaseWidget['value']
+          notify(w, w.value as WidgetValue, previous)
+        },
+        isHidden: (w) => w.hidden ?? false,
+        setHidden: (w, ...args) => {
+          w.hidden = Boolean(args[0])
+        },
+        isDisabled: (w) => w.disabled ?? false,
+        setDisabled: (w, ...args) => {
+          w.disabled = Boolean(args[0])
+        },
+        setLabel: (w, ...args) => {
+          w.label = args[0] === undefined ? undefined : String(args[0])
+        },
+        isSerialized: (w) => w.serialize ?? true,
+        on: (w, ...args) => {
+          const [event, listener] = args as unknown as [
+            'change' | 'removed' | 'activate',
+            (...a: unknown[]) => void
+          ]
+          if (event !== 'removed') ensureCallbackBridge(w)
+          const set =
+            event === 'change'
+              ? slots(w).change
+              : event === 'activate'
+                ? slots(w).activate
+                : slots(w).removed
+          ;(set as Set<unknown>).add(listener)
+          return () => (set as Set<unknown>).delete(listener)
+        },
+        // Reads snapshot accessor values by design — a frozen copy must be
+        // inert. Use `setOptions` to preserve live getters when writing.
+        getOptions: (w) => Object.freeze({ ...w.options }),
+        setOption: (w, ...args) => {
+          const [key, value] = args as unknown as [string, unknown]
+          const patch = { [key]: value } as Partial<IWidgetOptions>
+          // Descriptor-preserving merge. Spreading would invoke any accessor
+          // and freeze its result: packs commonly define `values` as a live
+          // getter for dynamic combos, and a spread silently pins it to a
+          // one-time snapshot.
+          w.options = Object.defineProperties(
+            {},
+            {
+              ...Object.getOwnPropertyDescriptors(w.options ?? {}),
+              ...Object.getOwnPropertyDescriptors(patch)
+            }
+          ) as IWidgetOptions
+        }
+        // Removal is resolved from the key, not from the widget: reaching
+        // through `w.node` would be exactly the internal coupling this layer
+        // exists to remove.
+      }
+    },
+    (key) => {
+      const [nodeId, name] = key.split(SEP)
+      return findWidget(resolveNode(nodeId), name)
+    },
+    namespace
+  )
+
+  /**
+   * Listeners, keyed by the widget object.
+   *
+   * Not by name: a widget removed and recreated under the same name is a
+   * different widget, and a listener left over from the old one would fire for
+   * a widget its owner never saw. A WeakMap also lets the entry go when the
+   * widget does.
+   */
+  const listeners = new WeakMap<
+    object,
+    {
+      change: Set<(v: WidgetValue, o: WidgetValue) => void>
+      removed: Set<() => void>
+      activate: Set<(v: WidgetValue) => void>
+    }
+  >()
+
+  const slots = (w: object) => {
+    let found = listeners.get(w)
+    if (!found) {
+      found = { change: new Set(), removed: new Set(), activate: new Set() }
+      listeners.set(w, found)
+    }
+    return found
+  }
+
+  const lastNotified = new WeakMap<object, WidgetValue>()
+
+  function notify(w: object, value: WidgetValue, previous: WidgetValue) {
+    if (value === previous) return
+    for (const listener of listeners.get(w)?.change ?? []) {
+      listener(value, previous)
+    }
+  }
+
+  /**
+   * Routes litegraph's own callback into the listener set.
+   *
+   * Wrapped once per widget, and the pack's existing callback is still called:
+   * during the migration a converted file and an unconverted one may share a
+   * widget.
+   */
+  function ensureCallbackBridge(w: IBaseWidget) {
+    const bridged = w as IBaseWidget & { [BRIDGED]?: boolean }
+    if (bridged[BRIDGED]) return
+    bridged[BRIDGED] = true
+    // Tracked here rather than read from the widget at call time. Litegraph
+    // assigns `this.value` *before* invoking the callback, so reading it back
+    // yields the new value as the old one and every notification is swallowed
+    // as a no-op change — which silently killed `on('change')` for real user
+    // edits under both renderers.
+    lastNotified.set(w, w.value as WidgetValue)
+    const original = w.callback
+    w.callback = function (this: unknown, value, ...rest) {
+      const previous = lastNotified.get(w) as WidgetValue
+      lastNotified.set(w, value as WidgetValue)
+      original?.apply(this as never, [value, ...rest] as never)
+      notify(w, value as WidgetValue, previous)
+      // Unconditional: a button's value never moves, so gating this on a
+      // change would make every button silently dead.
+      for (const listener of listeners.get(w)?.activate ?? []) {
+        listener(value as WidgetValue)
+      }
+    } as IBaseWidget['callback']
+  }
+
+  /** Removes a widget and keeps the store's render order in step. */
+  function removeWidget(nodeId: string, name: string): boolean {
+    const node = resolveNode(nodeId)
+    const widget = findWidget(node, name)
+    if (!node || !widget) return false
+    node.removeWidget(widget)
+    for (const listener of listeners.get(widget)?.removed ?? []) listener()
+    listeners.delete(widget)
+    return true
+  }
+
+  return {
+    removeWidget,
+    handleFor: (nodeId: string, name: string) =>
+      factory.handleFor(compositeKey(nodeId, name)) as WidgetHandle,
+    liveHandleFor: (nodeId: string, name: string) =>
+      factory.liveHandleFor(compositeKey(nodeId, name)) as
+        | WidgetHandle
+        | undefined,
+    prune: () => factory.prune(),
+    get cacheSize() {
+      return factory.cacheSize
+    }
+  }
+}
+
+/** Marks a widget whose callback has already been bridged to listeners. */
+const BRIDGED = Symbol('comfy.widget.bridged')
+
+/**
+ * A widget whose body the pack renders itself.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface MountDef {
+  readonly name: string
+  /**
+   * Fills the mounted container. Called once, with an element already attached
+   * to the node.
+   *
+   * `value` is present only when `defaultValue` was given — see below.
+   */
+  render(container: HTMLElement, value: MountedValue): void
+  /** Releases anything `render` retained — listeners, timers, observers. */
+  destroy?(): void
+  /** Reserved height in graph units. Omit to size to content. */
+  readonly height?: number
+  readonly hidden?: boolean
+  /**
+   * Whether the value is written into the saved workflow.
+   *
+   * Defaults to `false`, because most mounted things are decoration. Give
+   * `defaultValue` as well when the control genuinely holds one.
+   */
+  readonly serialize?: boolean
+  /**
+   * Whether the value is sent in the API prompt. Defaults to `serialize`.
+   *
+   * These are two different flags in litegraph — `widget.serialize` gates the
+   * saved workflow, `options.serialize` gates the prompt — and collapsing them
+   * into one boolean made two states unsayable. "Saved but not sent" is the
+   * one packs need: it is exactly what the legacy
+   * `addDOMWidget(…, { serialize: false })` did, and a readout that a node
+   * fills in from its own execution result belongs in the workflow but has no
+   * business appearing as an input on the next queue.
+   *
+   * Set it apart from `serialize` only when the two genuinely differ.
+   */
+  readonly sendToPrompt?: boolean
+  /**
+   * Makes this a value-holding widget rather than decoration.
+   *
+   * Without it a mount is a drawing: it can occupy a `widgets_values` slot but
+   * has nothing to put in it, so a colour picker or a text box converted onto
+   * `mount` kept its position and silently lost what the user typed. Supplying
+   * a default gives the widget a real cell, reachable through `render`'s second
+   * argument.
+   */
+  readonly defaultValue?: MountedData
+}
+
+/**
+ * What a mounted control can hold.
+ *
+ * Narrower than `WidgetValue` because a mounted widget is DOM-backed, and that
+ * is what one carries — a colour string, a vector object. Saying so is better
+ * than accepting a number and dropping it at the boundary.
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export type MountedData = string | object
+
+/**
+ * Reading and writing a mounted widget's value.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface MountedValue {
+  get(): MountedData
+  set(value: MountedData): void
+  /** Notified when the value changed elsewhere — a workflow load. */
+  onChange(listener: (value: MountedData) => void): Unsubscribe
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface CanvasDef {
+  readonly name: string
+  /** Reserved height in pixels. Omit to size to the node's width. */
+  readonly height?: number
+  draw(context: CanvasRenderingContext2D, size: readonly [number, number]): void
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface CanvasHandle {
+  readonly widget: WidgetHandle
+  /** Redraws now. Call when the data behind the drawing changed. */
+  redraw(): void
+}
+
+/** Everything needed to create a widget. */
+export interface WidgetDef {
+  readonly type: string
+  readonly name: string
+  readonly value?: WidgetValue
+  readonly options?: Partial<IWidgetOptions>
+  /** Display-only widgets — replaces the readOnly/opacity DOM fiddling. */
+  readonly disabled?: boolean
+  readonly hidden?: boolean
+  /**
+   * Whether the value is written into the saved workflow.
+   *
+   * Replaces `widget.serializeValue = async () => {}`, the idiom packs use to
+   * keep a derived readout out of `widgets_values`. Orthogonal to `hidden`.
+   */
+  readonly serialize?: boolean
+}
+
+export interface WidgetCollection {
+  readonly length: number
+  get(name: string): WidgetHandle | undefined
+  at(index: number): WidgetHandle | undefined
+  all(): readonly WidgetHandle[]
+  names(): readonly string[]
+  /**
+   * Replaces splice/assign reordering. `names` must be a permutation of the
+   * current names — a partial list throws rather than silently dropping
+   * widgets, which is how the array-splice idiom lost them.
+   */
+  reorder(names: readonly string[]): void
+  move(name: string, toIndex: number): void
+  /**
+   * Creates a widget on this node.
+   *
+   * The counterpart to `remove` — packs that rebuild a readout widget do
+   * remove-then-create, and without this only half the operation has a
+   * destination, which makes the conversion cosmetic.
+   */
+  add(def: WidgetDef): WidgetHandle
+  /**
+   * Mounts an element on the node and hands it to the pack to fill.
+   *
+   * The replacement for `addDOMWidget`, and the destination for hand-painted
+   * canvas controls. Across kjnodes' canvas editors the drawing is rectangles,
+   * images, straight lines and text — all DOM primitives — but a pack that
+   * wants to keep its existing `ctx` code can append a `<canvas>` to the
+   * container and carry it over unchanged.
+   *
+   * The gain is not the drawing, it is the input: these editors hand-roll
+   * hit-testing against bounding boxes because canvas gives them nothing to
+   * attach a listener to. Mounted in the DOM, pointer events land on the
+   * element and most of that code goes away.
+   */
+  mount(def: MountDef): WidgetHandle
+  /**
+   * A per-node drawing surface, and the destination for `onDrawForeground`.
+   *
+   * Works under both renderers without the pack knowing which it is on: the
+   * canvas is a DOM element, which the legacy renderer positions over the
+   * graph canvas and Nodes 2.0 renders directly. That is the whole reason it
+   * is a mounted element rather than a hook into the graph's own context —
+   * drawing into the shared context is what ties a pack to the old renderer.
+   *
+   * `draw` is called on mount, on resize, and whenever `redraw()` is called.
+   */
+  canvas(def: CanvasDef): CanvasHandle
+  remove(name: string): boolean
+  [Symbol.iterator](): Iterator<WidgetHandle>
+}
+
+/**
+ * Nodes 2.0 renders from the store's widget order, not the array, so a reorder
+ * that only touches the array is invisible there. `removeWidget` already syncs
+ * internally; reorder must do it explicitly.
+ */
+function syncWidgetOrder(node: LGraphNode): void {
+  const graphId = node.graph?.rootGraph.id
+  if (!graphId || !node.widgets) return
+  useWidgetValueStore().setNodeWidgetOrder(
+    graphId,
+    node.id,
+    getWidgetIds(node.widgets)
+  )
+}
+
+export function createWidgetCollection(
+  getNode: () => LGraphNode | undefined,
+  handles: ReturnType<typeof createWidgetHandles>,
+  nodeId: string
+): WidgetCollection {
+  const widgets = () => getNode()?.widgets ?? []
+  const handleAt = (index: number) => {
+    const w = widgets()[index]
+    return w ? handles.handleFor(nodeId, w.name) : undefined
+  }
+
+  const collection: WidgetCollection = {
+    get length() {
+      return widgets().length
+    },
+    get: (name) =>
+      widgets().some((w) => w.name === name)
+        ? handles.handleFor(nodeId, name)
+        : undefined,
+    at: handleAt,
+    all: () =>
+      Object.freeze(widgets().map((w) => handles.handleFor(nodeId, w.name))),
+    names: () => Object.freeze(widgets().map((w) => w.name)),
+
+    reorder(names) {
+      const node = getNode()
+      const current = node?.widgets
+      if (!current) return
+
+      const existing = current.map((w) => w.name)
+      const missing = existing.filter((n) => !names.includes(n))
+      const unknown = names.filter((n) => !existing.includes(n))
+      if (
+        missing.length ||
+        unknown.length ||
+        names.length !== existing.length
+      ) {
+        throw new ComfyApiError(
+          `reorder() needs every widget name exactly once. ` +
+            (missing.length ? `Missing: ${missing.join(', ')}. ` : '') +
+            (unknown.length ? `Unknown: ${unknown.join(', ')}.` : '')
+        )
+      }
+
+      const byName = new Map(current.map((w) => [w.name, w]))
+      // Mutate in place: assigning a new array drops the renderer's tracking.
+      current.splice(
+        0,
+        current.length,
+        ...names.map((n) => byName.get(n) as IBaseWidget)
+      )
+      syncWidgetOrder(node)
+    },
+
+    move(name, toIndex) {
+      const order = [...collection.names()]
+      const from = order.indexOf(name)
+      if (from === -1) {
+        throw new ComfyApiError(`No widget named '${name}' on this node.`)
+      }
+      const clamped = Math.max(0, Math.min(toIndex, order.length - 1))
+      order.splice(clamped, 0, ...order.splice(from, 1))
+      collection.reorder(order)
+    },
+
+    add(def) {
+      const node = getNode()
+      if (!node) {
+        throw new ComfyApiError(
+          `Cannot add widget '${def.name}': the node no longer exists.`
+        )
+      }
+      if (node.widgets?.some((w) => w.name === def.name)) {
+        throw new ComfyApiError(
+          `A widget named '${def.name}' already exists on this node. ` +
+            `Remove it first, or use setOptions to change it.`
+        )
+      }
+
+      const widget = node.addWidget(
+        def.type as never,
+        def.name,
+        // `'value' in def` rather than `??`: a widget whose value is genuinely
+        // null - which is what `addWidget('button', name, null, cb)` produced -
+        // must stay null, or its `widgets_values` entry changes and the saved
+        // workflow differs.
+        ('value' in def ? def.value : '') as never,
+        null,
+        (def.options ?? {}) as never
+      )
+      if (def.disabled !== undefined) widget.disabled = def.disabled
+      if (def.hidden !== undefined) widget.hidden = def.hidden
+      if (def.serialize !== undefined) widget.serialize = def.serialize
+
+      syncWidgetOrder(node)
+      return handles.handleFor(nodeId, def.name)
+    },
+
+    mount(def) {
+      const node = getNode()
+      if (!node) {
+        throw new ComfyApiError(
+          `Cannot mount '${def.name}': the node no longer exists.`
+        )
+      }
+      if (node.widgets?.some((w) => w.name === def.name)) {
+        throw new ComfyApiError(
+          `A widget named '${def.name}' already exists on this node.`
+        )
+      }
+
+      if (typeof node.addDOMWidget !== 'function') {
+        throw new ComfyApiError(
+          `Cannot mount '${def.name}': DOM widgets are unavailable in this ` +
+            `host. This needs a browser environment with the widget layer loaded.`
+        )
+      }
+
+      const container = document.createElement('div')
+      container.style.width = '100%'
+      if (def.height !== undefined) container.style.height = `${def.height}px`
+
+      // A cell only when the pack asked for one. Decoration stays valueless,
+      // which is what keeps a drawing out of the wire format; a control that
+      // declares a default gets somewhere to keep what the user enters.
+      const holdsValue = def.defaultValue !== undefined
+      // Copied, not shared: `mount` is called per node, but a pack commonly
+      // hoists one default object and passes it every time. A control that
+      // edits its value in place would then edit every node's at once.
+      let current: MountedData =
+        typeof def.defaultValue === 'object' && def.defaultValue !== null
+          ? structuredClone(def.defaultValue)
+          : (def.defaultValue ?? '')
+      const widget = node.addDOMWidget(def.name, 'custom', container, {
+        // Mounted widgets carry no value, so they stay out of widgets_values
+        // unless the pack says otherwise — the wire format must not change
+        // because a pack drew something.
+        // A control that holds a value is saved and sent by default; a
+        // drawing is not. Either way the pack's own choice wins.
+        serialize: def.sendToPrompt ?? def.serialize ?? holdsValue,
+        ...(holdsValue
+          ? {
+              getValue: () => current,
+              setValue: (value: unknown) => {
+                current = value as MountedData
+              }
+            }
+          : {})
+      })
+      // Also on the widget: `options.serialize` gates the API prompt, while
+      // the widget's own flag gates workflow persistence, and a drawing must
+      // stay out of both.
+      widget.serialize = def.serialize ?? holdsValue
+      // Teardown matters more here than for a plain widget: a mounted element
+      // owns listeners, timers and observers that the node's removal would
+      // otherwise leave running.
+      //
+      // Chained, never assigned: `onRemove` is a method on DOMWidgetImpl that
+      // unregisters the widget from the DOM widget store, and an own property
+      // shadows it — leaking every mounted widget for the life of the page.
+      if (def.destroy) {
+        const previous = widget.onRemove
+        widget.onRemove = function (this: unknown) {
+          previous?.call(this)
+          def.destroy?.()
+        }
+      }
+      if (def.hidden !== undefined) widget.hidden = def.hidden
+
+      const changeListeners = new Set<(value: MountedData) => void>()
+      if (holdsValue) {
+        const previousCallback = widget.callback
+        widget.callback = function (this: unknown, value, ...rest) {
+          previousCallback?.apply(this as never, [value, ...rest] as never)
+          for (const listener of changeListeners) listener(value as MountedData)
+        } as IBaseWidget['callback']
+      }
+
+      def.render(container, {
+        get: () => widget.value as MountedData,
+        // The widget's own setter stores through `setValue` and then fires the
+        // callback, so notifying here as well would report twice.
+        set: (value) => {
+          widget.value = value
+        },
+        onChange: (listener) => {
+          changeListeners.add(listener)
+          return () => changeListeners.delete(listener)
+        }
+      })
+      syncWidgetOrder(node)
+      return handles.handleFor(nodeId, def.name)
+    },
+
+    canvas(def) {
+      const element = document.createElement('canvas')
+      element.style.width = '100%'
+      element.style.display = 'block'
+
+      let observer: ResizeObserver | undefined
+      const redraw = () => {
+        const context = element.getContext('2d')
+        if (!context) return
+        // Match the backing store to the displayed size, or the drawing is
+        // blurry on a high-density display and misaligned after a resize.
+        const ratio = globalThis.devicePixelRatio ?? 1
+        const width = element.clientWidth || 1
+        const height = def.height ?? (element.clientHeight || 1)
+        element.width = Math.round(width * ratio)
+        element.height = Math.round(height * ratio)
+        context.setTransform(ratio, 0, 0, ratio, 0, 0)
+        context.clearRect(0, 0, width, height)
+        def.draw(context, Object.freeze([width, height] as const))
+      }
+
+      const widget = this.mount({
+        name: def.name,
+        height: def.height,
+        render: (container) => {
+          container.append(element)
+          redraw()
+          // Redraw on resize rather than per frame: these drawings change when
+          // the node changes, not sixty times a second.
+          observer = new ResizeObserver(redraw)
+          observer.observe(container)
+        },
+        destroy: () => {
+          observer?.disconnect()
+          observer = undefined
+        }
+      })
+      return { widget, redraw }
+    },
+
+    remove: (name) => handles.removeWidget(nodeId, name),
+
+    *[Symbol.iterator]() {
+      for (let i = 0; i < widgets().length; i++) {
+        const handle = handleAt(i)
+        if (handle) yield handle
+      }
+    }
+  }
+
+  return Object.freeze(collection)
+}

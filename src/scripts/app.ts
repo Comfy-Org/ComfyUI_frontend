@@ -23,6 +23,8 @@ import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { installComfyApi } from '@/platform/nodeApi/comfyApi'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -167,6 +169,8 @@ import {
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { deliverPreview } from '@/platform/nodeApi/defsRegistry'
+import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -861,6 +865,18 @@ export class ComfyApp {
       )) {
         setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
+
+      // Hand the frame to any pack that registered through `b.onPreview`.
+      // Delivered before the url is released, and synchronously, so a listener
+      // must consume it during the call rather than retaining it.
+      const previewNode = this.graph?.getNodeById(toNodeId(displayNodeId))
+      if (previewNode?.type) {
+        deliverPreview(String(previewNode.id), previewNode.type, {
+          blob,
+          url: blobUrl
+        })
+      }
+
       releaseSharedObjectUrl(blobUrl)
     })
 
@@ -929,6 +945,13 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
+
+    // Both before loadExtensions: extension modules run their top level during
+    // that call, so the API must already be reachable *and* fully sourced. The
+    // bridge used to be installed in addApiUpdateHandlers() below, four lines
+    // too late, so every pack subscribing to onNodeMoved at module scope threw.
+    installNodeMoveBridge()
+    installComfyApi(() => useCanvasStore().currentGraph)
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()

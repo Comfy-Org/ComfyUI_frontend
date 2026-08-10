@@ -1106,11 +1106,29 @@ export class LGraphNode
       }
 
       if (info.widgets_values) {
-        let i = 0
-        for (const widget of this.widgets ?? []) {
-          if (widget.serialize === false) continue
-          if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
+        const values = info.widgets_values
+        const serialisable = this.widgets.filter((w) => w.serialize !== false)
+        // `serialize()` writes each value at the widget's *own* index, leaving
+        // a hole wherever a non-serialising widget sits. Reading back compacted
+        // therefore shifted every value after such a widget — a saved seed came
+        // back as the hole's `null`. Only widgets added last were safe, which is
+        // why this survived: previews are appended.
+        //
+        // A saved array is longer than the serialisable count exactly when a
+        // hole precedes a value, so the two layouts are distinguishable, and
+        // where they are not they agree. Hand-written and older compacted data
+        // keeps loading.
+        if (values.length > serialisable.length) {
+          for (const [i, widget] of this.widgets.entries()) {
+            if (widget.serialize === false) continue
+            if (i >= values.length) break
+            widget.value = values[i]
+          }
+        } else {
+          for (const [i, widget] of serialisable.entries()) {
+            if (i >= values.length) break
+            widget.value = values[i]
+          }
         }
       }
     }
@@ -1164,7 +1182,12 @@ export class LGraphNode
     if (this.properties) o.properties = LiteGraph.cloneObject(this.properties)
 
     const { widgets } = this
-    if (widgets && this.serialize_widgets) {
+    // Only when something will actually be written. A node whose widgets all
+    // opt out of serialization used to emit an empty `widgets_values`, which
+    // load treats as a no-op but which still changes the saved bytes — and
+    // mounting a canvas widget was enough to make it appear on a node that
+    // previously had no widgets at all.
+    if (widgets?.some((w) => w.serialize !== false) && this.serialize_widgets) {
       o.widgets_values = []
       for (const [i, widget] of widgets.entries()) {
         if (widget.serialize === false) continue

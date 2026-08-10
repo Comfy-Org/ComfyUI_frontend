@@ -45,6 +45,10 @@ const config: KnipConfig = {
     '@primevue/icons'
   ],
   ignore: [
+    // Served to custom nodes at runtime as /comfy/api/v1.js. Nothing in the
+    // build imports it — that is the point; it is the published entry point
+    // packs import from, so knip cannot see a consumer.
+    'public/comfy/api/v1.js',
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
@@ -63,6 +67,10 @@ const config: KnipConfig = {
     'src/composables/billing/useNextInvoice.ts',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
+    // The extension API contract, taken verbatim from PR #11251 so the two
+    // efforts converge on one shape. It is the reference our handles conform
+    // to, not a module anything imports yet.
+    'src/types/extensionV2.ts',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**'
   ],
