@@ -11,7 +11,7 @@ import {
 import type { Page, Response } from '@playwright/test'
 
 // The curated-run happy path never executes summarizePromptError (it only
-// runs on a VALIDATION_FAIL), so these cases are what keep a T1 rejection
+// runs on a VALIDATION_FAIL), so these cases keep a curated workflow rejection
 // naming the node+input instead of rotting back to `{}`.
 test.describe('summarizePromptError', () => {
   test('names the node class and the failing input from node_errors', () => {

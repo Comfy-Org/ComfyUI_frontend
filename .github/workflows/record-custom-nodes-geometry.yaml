@@ -115,7 +115,7 @@ jobs:
             --project=custom-nodes --reporter=list --workers=1 --retries=0 \
             --grep "all nodes:"
 
-      # S15 output hashes ride the same backend boot: the T1 curated runs in
+      # S15 output hashes ride the same backend boot: curated workflows in
       # record mode write test-results/curatedOutputHashes.recorded.json and
       # deliberately fail each recording test (a record is not a pass).
       - name: Record output hashes (S15)
@@ -127,7 +127,7 @@ jobs:
         run: |
           pnpm exec playwright test browser_tests/tests/customNodes/customNode.regression.spec.ts \
             --project=custom-nodes --reporter=list --workers=1 --retries=0 \
-            --grep "T1 run"
+            --grep "Curated workflow execution: completes without error"
 
       - name: Upload recorded baselines
         uses: actions/upload-artifact@v6

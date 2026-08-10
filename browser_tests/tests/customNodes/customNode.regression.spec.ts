@@ -114,7 +114,7 @@ for (const entry of loadManifest()) {
   const workflowRelative = `browser_tests/${entry.workflow}`
 
   test.describe(`custom node: ${entry.pack} @custom-nodes`, () => {
-    test('T0 load: expected nodes register, render in both renderers, and frontend extensions load', async ({
+    test('Pack startup/load: expected nodes register, render in both renderers, and frontend extensions load', async ({
       comfyPage
     }) => {
       if (customNodesEnv() !== 'cloud') test.setTimeout(entry.timeoutMs)
@@ -205,10 +205,10 @@ for (const entry of loadManifest()) {
             await expect(comfyPage.vueNodes.getNodeLocator(id)).toBeVisible()
 
         consoleErrors.stop()
-        // T0 loads and renders nodes but queues no prompt; a prompt-execution
+        // Pack startup/load renders nodes but queues no prompt; a prompt-execution
         // error here is a prior tier's async stray (isForeignExecutionNoise).
         // Mounting a pack's nodes is one of the surfaces its ledgered noise
-        // emits on, so this tier reads the ledger like T1 and the all-nodes
+        // emits on, so this tier reads the ledger like curated workflow
         // tiers do - the environment rules in particular apply to every pack
         // and were never reaching this gate.
         expect(
@@ -228,13 +228,15 @@ for (const entry of loadManifest()) {
     })
 
     // Registration-gated, not runtime-skipped: a row not enrolled in the run
-    // tier generates no T1 at all, so the gates' zero-skip check keeps
+    // tier generates no curated workflow test, so the gates' zero-skip check keeps
     // meaning "every enrolled tier ran" even while generated cloud rows are
     // load+connectivity only. The runtime skip below covers only conditions
     // of the ENVIRONMENT an enrolled row meets (pack not installed on this
     // backend, GPU/models the runner lacks, workflow file absent locally).
     if (entry.tiers.includes('run'))
-      test('T1 run: workflow executes without error', async ({ comfyPage }) => {
+      test('Curated workflow execution: completes without error', async ({
+        comfyPage
+      }) => {
         if (customNodesEnv() !== 'cloud')
           test.setTimeout(entry.timeoutMs + 15_000)
         const objectInfo = await target.getObjectInfo(comfyPage.page)
