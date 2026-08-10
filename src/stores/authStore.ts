@@ -17,7 +17,9 @@ import {
 } from 'firebase/auth'
 import type { Auth, User, UserCredential } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+
+import { clearJobsAuthBackoff } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { useFirebaseAuth } from 'vuefire'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
@@ -205,6 +207,14 @@ export const useAuthStore = defineStore('auth', () => {
   const notifyTokenRefreshed = (): void => {
     tokenRefreshTrigger.value++
   }
+
+  // A fresh sign-in or token refresh can resolve a permanent auth failure
+  // (email verified, workspace membership granted, JWT rotated). Clear the jobs
+  // poller's auth backoff so the next poll probes immediately instead of
+  // waiting out the suppression window.
+  watch([isAuthenticated, tokenRefreshTrigger], () => {
+    clearJobsAuthBackoff()
+  })
 
   const getIdToken = async (): Promise<string | undefined> => {
     const user = currentUser.value

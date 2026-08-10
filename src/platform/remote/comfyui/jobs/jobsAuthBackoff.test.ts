@@ -36,6 +36,23 @@ describe('createJobsAuthBackoff', () => {
     ])
   })
 
+  it('caps the suppression window at 32 skips and does not widen further', () => {
+    const gate = createJobsAuthBackoff()
+    const skipsBeforeProbe = () => {
+      let skips = 0
+      while (gate.shouldSkip()) skips++
+      return skips
+    }
+
+    // Five failures widen the window to its 2^5 = 32 maximum.
+    for (let i = 0; i < 5; i++) gate.recordAuthFailure()
+    expect(skipsBeforeProbe()).toBe(32)
+
+    // A sixth failure must not widen the window past the cap.
+    gate.recordAuthFailure()
+    expect(skipsBeforeProbe()).toBe(32)
+  })
+
   it('clears backoff immediately on success', () => {
     const gate = createJobsAuthBackoff()
     gate.recordAuthFailure()
