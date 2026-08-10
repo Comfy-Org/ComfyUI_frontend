@@ -2,11 +2,11 @@
 import { computed } from 'vue'
 
 import type {
+  ActivityPart,
   AssistantMessage,
   NoticePart,
   TabLinkPart,
-  TextPart,
-  ToolPart
+  TextPart
 } from '../../../services/agent/agentMessageParts'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -21,16 +21,22 @@ const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
 type Group =
   | { kind: 'text'; part: TextPart }
   | { kind: 'notice'; part: NoticePart }
-  | { kind: 'tools'; parts: ToolPart[] }
+  | { kind: 'activity'; parts: ActivityPart[] }
   | { kind: 'tabLinks'; parts: TabLinkPart[] }
 
 const groups = computed<Group[]>(() => {
   const out: Group[] = []
+  let activity: Extract<Group, { kind: 'activity' }> | undefined
+  const hasTools = message.parts.some((part) => part.type === 'tool')
   for (const part of message.parts) {
     const prev = out.at(-1)
-    if (part.type === 'tool') {
-      if (prev?.kind === 'tools') prev.parts.push(part)
-      else out.push({ kind: 'tools', parts: [part] })
+    if (part.type === 'tool' || part.type === 'thinking') {
+      if (!hasTools) continue
+      if (!activity) {
+        activity = { kind: 'activity', parts: [] }
+        out.push(activity)
+      }
+      activity.parts.push(part)
     } else if (part.type === 'text') {
       out.push({ kind: 'text', part })
     } else if (part.type === 'tabLink') {
@@ -54,10 +60,8 @@ const showActions = computed(
   () => !message.streaming && markdown.value.length > 0
 )
 
-const activeToolGroupIndex = computed(() =>
-  message.streaming && !message.thinking
-    ? groups.value.findLastIndex((group) => group.kind === 'tools')
-    : -1
+const hasTools = computed(() =>
+  message.parts.some((part) => part.type === 'tool')
 )
 </script>
 
@@ -66,10 +70,10 @@ const activeToolGroupIndex = computed(() =>
     <template v-for="(group, index) in groups" :key="index">
       <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
       <ToolCallGroup
-        v-else-if="group.kind === 'tools'"
-        :tools="group.parts"
+        v-else-if="group.kind === 'activity'"
+        :parts="group.parts"
         :streaming="message.streaming"
-        :active="index === activeToolGroupIndex"
+        :active="message.streaming"
       />
       <div v-else-if="group.kind === 'tabLinks'" class="flex flex-col gap-1">
         <TabLinkCard
@@ -96,7 +100,10 @@ const activeToolGroupIndex = computed(() =>
     </template>
 
     <div
-      v-if="message.thinking || (message.streaming && !message.parts.length)"
+      v-if="
+        !hasTools &&
+        (message.thinking || (message.streaming && !message.parts.length))
+      "
       class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal"
     >
       <span class="icon-[lucide--brain] size-4 shrink-0" />

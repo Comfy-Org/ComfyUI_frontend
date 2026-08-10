@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -40,7 +41,7 @@ describe('AgentMessage thinking narration', () => {
     expect(screen.getByText('Thinking...')).toBeInTheDocument()
   })
 
-  it('replaces thinking with the active tool summary, then settles it', async () => {
+  it('folds retained thinking into the active tool summary, then settles it', async () => {
     let message = createAssistantMessage('msg-0' as TurnId)
     const transport = createAgentEventTransport(message, (next) => {
       message = next
@@ -74,7 +75,7 @@ describe('AgentMessage thinking narration', () => {
     await rerender({ message })
 
     expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
-    expect(screen.queryByText('Thinking...')).not.toBeInTheDocument()
+    expect(screen.getByText('Thinking...')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /ran 1 tool call/i })
     ).toHaveAttribute('aria-expanded', 'true')
@@ -86,17 +87,28 @@ describe('AgentMessage thinking narration', () => {
     await rerender({ message })
 
     expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
-    expect(screen.queryByText('Thinking...')).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /ran 1 tool call/i })
     ).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getAllByText('Thinking...')).toHaveLength(1)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /ran 1 tool call/i })
+    )
+    expect(screen.getByText('Thinking...')).toBeInTheDocument()
+    expect(screen.getByText('Set widget')).toBeInTheDocument()
   })
 
-  it('shows resumed thinking after a completed tool group', () => {
+  it('shows resumed thinking inside the active tool group', () => {
     const message = thinkingMessage('Planning the next step')
     message.parts = [
       { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
-      { type: 'text', text: 'The first edit is complete.', state: 'done' }
+      { type: 'text', text: 'The first edit is complete.', state: 'done' },
+      {
+        type: 'thinking',
+        text: 'Planning the next step',
+        state: 'streaming'
+      }
     ]
     render(AgentMessage, {
       props: { message },
@@ -108,15 +120,15 @@ describe('AgentMessage thinking narration', () => {
 
     expect(summary).toBeInTheDocument()
     expect(screen.getByText('The first edit is complete.')).toBeInTheDocument()
-    expect(thinking).toHaveClass('agent-shimmer-text')
-    expect(summary).not.toHaveClass('agent-shimmer-text')
+    expect(thinking).not.toHaveClass('agent-shimmer-text')
+    expect(summary).toHaveClass('agent-shimmer-text')
     expect(
       screen.getByRole('button', { name: /ran 1 tool call/i })
     ).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('Set widget')).toBeInTheDocument()
   })
 
-  it('keeps text-separated tool runs as distinct summaries', () => {
+  it('folds text-separated tool runs into one turn summary', () => {
     const message = thinkingMessage()
     message.thinking = false
     message.parts = [
@@ -129,20 +141,16 @@ describe('AgentMessage thinking narration', () => {
       global: { plugins: [i18n] }
     })
 
-    const summaries = screen.getAllByRole('button', {
-      name: /ran 1 tool call/i
+    const summary = screen.getByRole('button', {
+      name: /ran 2 tool calls/i
     })
     const narration = screen.getByText('Between calls')
 
-    expect(summaries).toHaveLength(2)
+    expect(summary).toBeInTheDocument()
     expect(screen.getByText('Set widget')).toBeInTheDocument()
     expect(screen.getByText('Add node')).toBeInTheDocument()
     expect(
-      summaries[0].compareDocumentPosition(narration) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy()
-    expect(
-      narration.compareDocumentPosition(summaries[1]) &
+      summary.compareDocumentPosition(narration) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
