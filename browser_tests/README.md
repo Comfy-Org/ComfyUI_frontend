@@ -57,6 +57,9 @@ The command mounts `tools/devtools` and starts ComfyUI at `localhost:8188`.
 Leave it running. Use another terminal for `pnpm dev` and a third for
 `pnpm test:browser:local`.
 
+Run browser tests against port 5173 when using this container. Port 8188 serves
+the frontend bundled into the container, not the current frontend checkout.
+
 If the image is not cached, the launcher tries to pull it from GHCR. It uses
 `GH_TOKEN` and gets the matching username from `gh api user`.
 `COMFY_CI_CONTAINER_TOKEN` and `COMFY_CI_CONTAINER_USER` take precedence when

@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 image=ghcr.io/comfy-org/comfyui-ci-container:0.0.21
 version="${image##*:}"
+fallback_image="comfyui-ci-container-local:$version"
 port="${COMFYUI_PORT:-8188}"
 container="comfyui-e2e-$$"
 docker=(docker)
@@ -60,9 +61,13 @@ if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then
   fi
 
   if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then
-    echo "Building $image from public source"
-    "${docker[@]}" build --tag "$image" \
-      "https://github.com/Comfy-Org/comfyui-ci-container.git#v$version"
+    if ! "${docker[@]}" image inspect "$fallback_image" >/dev/null 2>&1; then
+      echo "Building $fallback_image from public source"
+      "${docker[@]}" build --tag "$fallback_image" \
+        "https://github.com/Comfy-Org/comfyui-ci-container.git#v$version"
+    fi
+    echo "Using source-built fallback $fallback_image; it may differ from the published CI image." >&2
+    image="$fallback_image"
   fi
 else
   echo "Using cached image $image"
