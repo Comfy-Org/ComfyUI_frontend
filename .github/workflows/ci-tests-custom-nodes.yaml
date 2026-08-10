@@ -271,6 +271,9 @@ jobs:
             4)
               grep_args=(--grep 'connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes$')
               ;;
+            5)
+              grep_args=(--grep 'connectivity drags: curated slot-to-slot wires connect under both renderers @custom-nodes$')
+              ;;
           esac
           # workers=1: the auto-run tier needs exclusive backend-queue access;
           # parallel workers interrupt each other's executions.
@@ -306,7 +309,7 @@ jobs:
             exit 1
           fi
           expected_tests=34
-          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" ]]; then
+          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" ]]; then
             expected_tests=1
           fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
