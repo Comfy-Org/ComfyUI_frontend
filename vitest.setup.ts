@@ -56,11 +56,6 @@ const blockedNetworkFetch: typeof globalThis.fetch = (input, init) => {
 }
 
 globalThis.fetch = blockedNetworkFetch
-// vitest copies happy-dom's globals onto `globalThis` as bound functions, so
-// `window.fetch` is a separate reference that would otherwise stay unguarded.
-if (typeof window !== 'undefined' && window.fetch !== blockedNetworkFetch) {
-  window.fetch = blockedNetworkFetch
-}
 
 // Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
 vi.mock('@sparkjsdev/spark', async () => {
