@@ -30,6 +30,18 @@ describe('MarkdownStream', () => {
     )
   })
 
+  it('preserves the asset preview when the response uses markdown image syntax', () => {
+    const assetPath =
+      'view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output'
+    render(MarkdownStream, {
+      props: { text: `![Generated asset](${assetPath})` }
+    })
+
+    expect(
+      screen.getByRole('img', { name: 'Generated asset' })
+    ).toHaveAttribute('src', `/api/${assetPath}`)
+  })
+
   it('strips a script tag (XSS guard)', () => {
     const { html } = render(MarkdownStream, {
       props: { text: 'hi <script>alert(1)</script> there' }
