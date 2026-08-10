@@ -301,6 +301,9 @@ jobs:
             14)
               grep_args=(--grep 'all nodes: ComfyUI-VideoHelperSuite @custom-nodes.*every registered node mounts, survives save/reload, and executes$')
               ;;
+            15)
+              grep_args=(--grep 'custom node: ComfyUI-Impact-Pack @custom-nodes.*Curated workflow execution: completes without error$')
+              ;;
           esac
           # workers=1: the auto-run tier needs exclusive backend-queue access;
           # parallel workers interrupt each other's executions.
@@ -336,7 +339,7 @@ jobs:
             exit 1
           fi
           expected_tests=34
-          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" || "$ROW" = "6" || "$ROW" = "7" || "$ROW" = "8" || "$ROW" = "9" || "$ROW" = "10" || "$ROW" = "11" || "$ROW" = "12" || "$ROW" = "13" || "$ROW" = "14" ]]; then
+          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" || "$ROW" = "5" || "$ROW" = "6" || "$ROW" = "7" || "$ROW" = "8" || "$ROW" = "9" || "$ROW" = "10" || "$ROW" = "11" || "$ROW" = "12" || "$ROW" = "13" || "$ROW" = "14" || "$ROW" = "15" ]]; then
             expected_tests=1
           fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
@@ -435,7 +438,7 @@ jobs:
             13) pat='ComfyUI-Impact-Pack/ImpactMakeImageList: interaction delta drifted - disconnect:' ;;
             14) pat='VHS_BatchManager\.litegraph\.widgets\[0\]\.y: expected 26, got 28' ;;
             # S15: execution succeeds, values differ - only the hash sees it.
-            15) pat='output hash changed' ;;
+            15) pat='ComfyUI-Impact-Pack/impact_primitives_run\.json 2: output hash changed' ;;
             *) echo "::error::no expected pattern for row $ROW"; exit 1 ;;
           esac
           grep -Eq -- "$pat" /tmp/failure-evidence.txt || { echo "::error::row $ROW: suite redded but no failure evidence matches /$pat/ - the red is not attributable to this break"; exit 1; }
