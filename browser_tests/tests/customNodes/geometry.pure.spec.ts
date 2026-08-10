@@ -12,18 +12,69 @@ import {
 } from '@e2e/fixtures/customNode/geometry'
 import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 
-test('ledgers only the two source-driven VHS preview height paths', () => {
+test('ledgers only the source-driven VHS preview height paths', () => {
   expect(GEOMETRY_UNSTABLE_NODES['ComfyUI-VideoHelperSuite']).toBeUndefined()
   expect(GEOMETRY_UNSTABLE_PATHS['ComfyUI-VideoHelperSuite']).toEqual({
+    VHS_LoadImages: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[5].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    },
     VHS_LoadVideo: {
       'vue.h':
-        'preview height follows asynchronously loaded default-media aspect ratio'
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[9].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
     },
     VHS_LoadVideoFFmpeg: {
       'vue.h':
-        'preview height follows the same asynchronous default-media aspect-ratio mechanism'
+        'preview height follows the same asynchronous default-media aspect-ratio mechanism',
+      'vue.widgets[8].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    },
+    VHS_LoadVideoFFmpegPath: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[7].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    },
+    VHS_LoadVideoPath: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[8].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
     }
   })
+})
+
+test('VHS preview ledger ignores only the asynchronous height fields', () => {
+  const prior = process.env.CUSTOM_NODES_ENV
+  try {
+    delete process.env.CUSTOM_NODES_ENV
+    const baseline = loadPackGeometry('ComfyUI-VideoHelperSuite')!
+    const measured = structuredClone(baseline.nodes)
+    for (const [nodeName, widgetIndex] of [
+      ['VHS_LoadImages', 5],
+      ['VHS_LoadVideo', 9],
+      ['VHS_LoadVideoFFmpeg', 8],
+      ['VHS_LoadVideoFFmpegPath', 7],
+      ['VHS_LoadVideoPath', 8]
+    ] as const) {
+      measured[nodeName].vue!.h += 154
+      measured[nodeName].vue!.widgets[widgetIndex].h += 154
+    }
+    const ledger = GEOMETRY_UNSTABLE_PATHS['ComfyUI-VideoHelperSuite']
+    expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([])
+
+    measured.VHS_LoadImages.vue!.w += 1
+    expect(diffGeometry(baseline.nodes, measured, ledger)).toEqual([
+      `VHS_LoadImages.vue.w: expected ${baseline.nodes.VHS_LoadImages.vue!.w}, got ${measured.VHS_LoadImages.vue!.w}`
+    ])
+  } finally {
+    if (prior === undefined) delete process.env.CUSTOM_NODES_ENV
+    else process.env.CUSTOM_NODES_ENV = prior
+  }
 })
 
 // The differ is the geometry tier's entire failure-reporting contract:

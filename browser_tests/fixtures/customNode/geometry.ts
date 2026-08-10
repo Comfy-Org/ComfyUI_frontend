@@ -85,13 +85,35 @@ export const GEOMETRY_UNSTABLE_PATHS: Record<
   Record<string, Record<string, string>>
 > = {
   'ComfyUI-VideoHelperSuite': {
+    VHS_LoadImages: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[5].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    },
     VHS_LoadVideo: {
       'vue.h':
-        'preview height follows asynchronously loaded default-media aspect ratio'
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[9].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
     },
     VHS_LoadVideoFFmpeg: {
       'vue.h':
-        'preview height follows the same asynchronous default-media aspect-ratio mechanism'
+        'preview height follows the same asynchronous default-media aspect-ratio mechanism',
+      'vue.widgets[8].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    },
+    VHS_LoadVideoFFmpegPath: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[7].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
+    },
+    VHS_LoadVideoPath: {
+      'vue.h':
+        'preview height follows asynchronously loaded default-media aspect ratio',
+      'vue.widgets[8].h':
+        'preview widget height follows the same asynchronous default-media aspect-ratio mechanism'
     }
   }
 }
