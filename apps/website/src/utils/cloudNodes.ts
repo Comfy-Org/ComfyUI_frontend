@@ -10,10 +10,12 @@ import type {
   RegistryComfyNode,
   RegistryPackWithNodes
 } from './cloudNodes.registry'
+import type { BuildDataFetchResult, BuildDataOutcome } from './buildDataSource'
 import type { NodesSnapshot, Pack, PackNode } from '../data/cloudNodes'
 
 import bundledSnapshot from '../data/cloud-nodes.snapshot.json' with { type: 'json' }
 import { isNodesSnapshot } from '../data/cloudNodes'
+import { createBuildDataSource } from './buildDataSource'
 import { fetchRegistryPacksWithNodes } from './cloudNodes.registry'
 import { CloudNodesEnvelopeSchema } from './cloudNodes.schema'
 
@@ -26,15 +28,12 @@ interface DroppedNode {
   reason: string
 }
 
-export type FetchOutcome =
-  | {
-      status: 'fresh'
-      snapshot: NodesSnapshot
-      droppedCount: number
-      droppedNodes: DroppedNode[]
-    }
-  | { status: 'stale'; snapshot: NodesSnapshot; reason: string }
-  | { status: 'failed'; reason: string }
+interface FreshCloudNodesData {
+  droppedCount: number
+  droppedNodes: DroppedNode[]
+}
+
+export type FetchOutcome = BuildDataOutcome<NodesSnapshot, FreshCloudNodesData>
 
 interface FetchCloudNodesOptions {
   apiKey?: string
@@ -46,74 +45,46 @@ interface FetchCloudNodesOptions {
   sleep?: (ms: number) => Promise<void>
 }
 
-let inflight: Promise<FetchOutcome> | undefined
-let inflightOptions: FetchCloudNodesOptions | undefined
+const cloudNodesSource = createBuildDataSource<
+  FetchCloudNodesOptions,
+  NodesSnapshot,
+  FreshCloudNodesData
+>({
+  name: 'Cloud nodes',
+  fetchFresh: fetchFreshCloudNodes,
+  readSnapshot: (options) => readSnapshot(options.snapshotUrl),
+  getCacheKey: getCloudNodesCacheKey,
+  getDefaultOptions: () => ({})
+})
 
-export function resetCloudNodesFetcherForTests(): void {
-  inflight = undefined
-  inflightOptions = undefined
-}
+export const resetCloudNodesFetcherForTests = cloudNodesSource.resetForTests
+export const fetchCloudNodesForBuild = cloudNodesSource.fetchForBuild
 
-function optionsDifferMaterially(
-  a: FetchCloudNodesOptions,
-  b: FetchCloudNodesOptions
-): boolean {
-  return (
-    a.apiKey !== b.apiKey ||
-    a.baseUrl !== b.baseUrl ||
-    a.timeoutMs !== b.timeoutMs ||
-    a.snapshotUrl?.href !== b.snapshotUrl?.href
-  )
-}
-
-export function fetchCloudNodesForBuild(
-  options: FetchCloudNodesOptions = {}
-): Promise<FetchOutcome> {
-  if (inflight && inflightOptions) {
-    if (optionsDifferMaterially(inflightOptions, options)) {
-      throw new Error(
-        'fetchCloudNodesForBuild called twice with different options; call resetCloudNodesFetcherForTests() between distinct configurations'
-      )
-    }
-    return inflight
-  }
-  inflightOptions = options
-  inflight = doFetchCloudNodesForBuild(options)
-  return inflight
-}
-
-async function doFetchCloudNodesForBuild(
+async function fetchFreshCloudNodes(
   options: FetchCloudNodesOptions
-): Promise<FetchOutcome> {
+): Promise<BuildDataFetchResult<NodesSnapshot, FreshCloudNodesData>> {
   const apiKey = options.apiKey ?? process.env.WEBSITE_CLOUD_API_KEY
 
   if (!apiKey) {
-    return fallback('missing WEBSITE_CLOUD_API_KEY', options.snapshotUrl)
+    return { kind: 'err', reason: 'missing WEBSITE_CLOUD_API_KEY' }
   }
 
   const result = await tryFetchAndParse(apiKey, options)
   if (result.kind === 'ok') {
     return {
-      status: 'fresh',
+      kind: 'ok',
       snapshot: {
         fetchedAt: new Date().toISOString(),
         packs: result.packs
       },
-      droppedCount: result.droppedNodes.length,
-      droppedNodes: result.droppedNodes
+      data: {
+        droppedCount: result.droppedNodes.length,
+        droppedNodes: result.droppedNodes
+      }
     }
   }
 
-  return fallback(result.reason, options.snapshotUrl)
-}
-
-async function fallback(
-  reason: string,
-  snapshotUrl: URL | undefined
-): Promise<FetchOutcome> {
-  const snapshot = await readSnapshot(snapshotUrl)
-  if (snapshot) return { status: 'stale', snapshot, reason }
-  return { status: 'failed', reason }
+  return result
 }
 
 interface FetchOk {
@@ -378,4 +349,14 @@ async function readSnapshot(
 
 function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function getCloudNodesCacheKey(options: FetchCloudNodesOptions): string {
+  return JSON.stringify({
+    apiKey: options.apiKey ?? process.env.WEBSITE_CLOUD_API_KEY ?? '',
+    baseUrl: options.baseUrl ?? DEFAULT_BASE_URL,
+    timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    retryDelaysMs: options.retryDelaysMs ?? RETRY_DELAYS_MS,
+    snapshotUrl: options.snapshotUrl?.href ?? ''
+  })
 }

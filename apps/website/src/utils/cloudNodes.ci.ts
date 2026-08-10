@@ -1,32 +1,19 @@
-import { appendFileSync } from 'node:fs'
-
 import type { FetchOutcome } from './cloudNodes'
 
-let hasReported = false
+import {
+  createBuildDataReporter,
+  describeSnapshotAge,
+  escapeAnnotation
+} from './buildDataReporter'
 
-export function resetCloudNodesReporterForTests(): void {
-  hasReported = false
-}
+const cloudNodesReporter = createBuildDataReporter({
+  summaryHeading: '## ☁️ Cloud nodes\n',
+  buildAnnotations,
+  buildSummaryRows
+})
 
-export function reportCloudNodesOutcome(outcome: FetchOutcome): void {
-  if (hasReported) return
-  hasReported = true
-
-  const lines = buildAnnotations(outcome)
-  for (const line of lines) {
-    process.stdout.write(`${line}\n`)
-  }
-
-  const summaryPath = process.env.GITHUB_STEP_SUMMARY
-  if (summaryPath) {
-    try {
-      appendFileSync(summaryPath, buildStepSummary(outcome))
-    } catch {
-      // Writing the summary is best-effort; do not fail the build if the
-      // runner's summary file is unavailable (e.g. local dev).
-    }
-  }
-}
+export const resetCloudNodesReporterForTests = cloudNodesReporter.resetForTests
+export const reportCloudNodesOutcome = cloudNodesReporter.report
 
 function buildAnnotations(outcome: FetchOutcome): string[] {
   if (outcome.status === 'fresh') {
@@ -35,8 +22,7 @@ function buildAnnotations(outcome: FetchOutcome): string[] {
     const drops = outcome.droppedNodes
       .map((d) => {
         const name = escapeAnnotation(d.name ? `"${d.name}"` : '(unnamed)')
-        const reason = escapeAnnotation(d.reason)
-        return `  - ${name}: ${reason}`
+        return `  - ${name}: ${escapeAnnotation(d.reason)}`
       })
       .join('%0A')
     return [
@@ -67,12 +53,7 @@ function staleAnnotation(reason: string): string {
   return `::warning title=Cloud nodes API unavailable::${escaped}. Using last-known-good snapshot.%0A%0AAction items:%0A  1. Check cloud service health.%0A  2. Re-run this workflow once cloud.comfy.org is healthy.`
 }
 
-function escapeAnnotation(value: string): string {
-  return value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')
-}
-
-function buildStepSummary(outcome: FetchOutcome): string {
-  const header = '## ☁️ Cloud nodes\n'
+function buildSummaryRows(outcome: FetchOutcome): Array<[string, string]> {
   const rows: Array<[string, string]> = []
 
   if (outcome.status === 'fresh') {
@@ -97,19 +78,5 @@ function buildStepSummary(outcome: FetchOutcome): string {
     rows.push(['Reason', outcome.reason])
   }
 
-  const table =
-    '| | |\n|---|---|\n' +
-    rows.map(([k, v]) => `| **${k}** | ${v} |`).join('\n') +
-    '\n'
-
-  return `${header}${table}\n`
-}
-
-function describeSnapshotAge(fetchedAt: string): string {
-  const fetched = new Date(fetchedAt).getTime()
-  if (Number.isNaN(fetched)) return 'unknown'
-  const days = Math.floor((Date.now() - fetched) / 86_400_000)
-  if (days <= 0) return 'today'
-  if (days === 1) return '1 day'
-  return `${days} days`
+  return rows
 }
