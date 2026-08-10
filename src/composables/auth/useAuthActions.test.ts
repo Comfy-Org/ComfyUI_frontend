@@ -12,7 +12,12 @@ const mockAuthStore = vi.hoisted(() => ({
   loginWithGoogle: vi.fn(async () => undefined),
   loginWithGithub: vi.fn(async () => undefined),
   register: vi.fn(async () => undefined),
-  logout: vi.fn(async () => undefined)
+  logout: vi.fn(async () => undefined),
+  initiateCreditPurchase: vi.fn(
+    async (): Promise<{ checkout_url?: string }> => ({
+      checkout_url: 'https://checkout.stripe.test'
+    })
+  )
 }))
 
 const mockToastStore = vi.hoisted(() => ({
@@ -33,7 +38,11 @@ const mockDialogService = vi.hoisted(() => ({
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockTrackAuthFailed = vi.hoisted(() => vi.fn())
+const mockStartTopupTracking = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockBillingState = vi.hoisted(() => ({
+  canAccessSubscriptionFeatures: false
+}))
 const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
 
 const knownAuthErrorCodes = new Set([
@@ -59,7 +68,8 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackAuthFailed: mockTrackAuthFailed
+    trackAuthFailed: mockTrackAuthFailed,
+    startTopupTracking: mockStartTopupTracking
   }))
 }))
 
@@ -89,7 +99,9 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: { value: false },
+    canAccessSubscriptionFeatures: {
+      value: mockBillingState.canAccessSubscriptionFeatures
+    },
     isFreeTier: { value: true },
     type: { value: 'free' }
   }))
@@ -120,6 +132,51 @@ function makeWorkflow(path: string): ModifiedWorkflow {
 
 beforeEach(() => {
   mockDistributionState.isCloud = false
+  mockBillingState.canAccessSubscriptionFeatures = false
+})
+
+describe('useAuthActions.purchaseCreditsDirect', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockBillingState.canAccessSubscriptionFeatures = true
+  })
+
+  it('starts top-up tracking before opening Stripe checkout', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await purchaseCreditsDirect(25)
+
+    expect(mockStartTopupTracking).toHaveBeenCalledOnce()
+    expect(open).toHaveBeenCalledWith('https://checkout.stripe.test', '_blank')
+    expect(mockStartTopupTracking.mock.invocationCallOrder[0]).toBeLessThan(
+      open.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('does not start tracking or open checkout when no checkout URL is returned', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    mockAuthStore.initiateCreditPurchase.mockResolvedValueOnce({})
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await expect(purchaseCreditsDirect(25)).rejects.toThrow()
+
+    expect(mockStartTopupTracking).not.toHaveBeenCalled()
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('does not start tracking or open checkout when the purchase request rejects', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    mockAuthStore.initiateCreditPurchase.mockRejectedValueOnce(
+      new Error('network down')
+    )
+    const { purchaseCreditsDirect } = useAuthActions()
+
+    await expect(purchaseCreditsDirect(25)).rejects.toThrow('network down')
+
+    expect(mockStartTopupTracking).not.toHaveBeenCalled()
+    expect(open).not.toHaveBeenCalled()
+  })
 })
 
 describe('useAuthActions.logout', () => {
