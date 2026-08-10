@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import type * as ErrorHandlingModule from '@/composables/useErrorHandling'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
 type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
@@ -95,7 +96,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   }))
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock('@/composables/useErrorHandling', async (importOriginal) => ({
+  ...(await importOriginal<typeof ErrorHandlingModule>()),
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync:
       <TArgs extends unknown[], TReturn>(
@@ -434,5 +436,13 @@ describe('useAuthActions.reportError', () => {
 
     expect(mockToastErrorHandler).toHaveBeenCalledWith(networkError)
     expect(mockToastStore.add).not.toHaveBeenCalled()
+  })
+
+  it('records the same network copy the toast shows, not the raw browser text', () => {
+    const { reportError, lastAuthErrorMessage } = useAuthActions()
+
+    reportError(new TypeError('Failed to fetch'))
+
+    expect(lastAuthErrorMessage.value).toBe('g.disconnectedFromBackend')
   })
 })

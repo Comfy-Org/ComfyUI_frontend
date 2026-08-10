@@ -3,7 +3,10 @@ import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useErrorHandling } from '@/composables/useErrorHandling'
+import {
+  genericErrorMessage,
+  useErrorHandling
+} from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
@@ -38,7 +41,7 @@ const authErrorMessage = (error: unknown): string => {
     })
   }
   if (!(error instanceof FirebaseError)) {
-    return error instanceof Error ? error.message : t('g.unknownError')
+    return genericErrorMessage(error)
   }
   // Firebase `beforeUserCreated` rejections collapse the thrown code into a
   // generic `auth/internal-error`, so the message is the only reliable channel.

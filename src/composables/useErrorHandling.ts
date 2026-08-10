@@ -49,17 +49,23 @@ export interface ErrorRecoveryStrategy<
   ) => Promise<void>
 }
 
+/** A fetch that never reached the backend, across browser wordings. */
+export const isNetworkError = (error: unknown) =>
+  error instanceof TypeError &&
+  /failed to fetch|networkerror|load failed/i.test(error.message)
+
+/** The copy a raw (non-domain) error should surface, toast or inline. */
+export const genericErrorMessage = (error: unknown) =>
+  isNetworkError(error)
+    ? t('g.disconnectedFromBackend')
+    : error instanceof Error
+      ? error.message
+      : t('g.unknownError')
+
 export function useErrorHandling() {
   const toast = useToastStore()
   const toastErrorHandler = (error: unknown) => {
-    const isNetworkError =
-      error instanceof TypeError &&
-      /failed to fetch|networkerror|load failed/i.test(error.message)
-    const message = isNetworkError
-      ? t('g.disconnectedFromBackend')
-      : error instanceof Error
-        ? error.message
-        : t('g.unknownError')
+    const message = genericErrorMessage(error)
     toast.add({
       severity: 'error',
       summary: t('g.error'),
