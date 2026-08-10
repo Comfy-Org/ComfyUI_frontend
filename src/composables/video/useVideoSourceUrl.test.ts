@@ -84,6 +84,31 @@ describe('useVideoSourceUrl', () => {
     }
   })
 
+  it('recovers when the input link appears after mount', async () => {
+    mocks.getNodeImageUrls.mockReturnValue([
+      '/api/view?filename=out.mp4&type=temp&rand=0.5'
+    ])
+    mocks.getWidget.mockReturnValue(undefined)
+    const upstream = fakeNode({ id: 'upstream' })
+    let connected = false
+    const node = fakeNode({
+      inputs: [{ name: 'video' }],
+      getInputNode: () => (connected ? upstream : null)
+    })
+
+    const { videoUrl } = mountSource(node)
+    expect(videoUrl.value).toBeUndefined()
+
+    connected = true
+    mocks.nodeOutputs['upstream'] = { images: [{ filename: 'out.mp4' }] }
+    const fireConnectionsChange =
+      node.onConnectionsChange as unknown as () => void
+    fireConnectionsChange()
+    await nextTick()
+
+    expect(videoUrl.value).toBe('/api/view?filename=out.mp4&type=temp')
+  })
+
   it('switches from the file widget to the executed preview when outputs arrive', async () => {
     mocks.getNodeImageUrls.mockReturnValue(undefined)
     mocks.getWidget.mockReturnValue({ value: 'clip.mp4' })
