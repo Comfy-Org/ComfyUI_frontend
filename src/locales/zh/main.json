@@ -4189,6 +4189,7 @@
       "title": "订阅已暂停"
     },
     "perMonth": "美元 / 月",
+    "perYear": "/ 年",
     "personalHeader": "个人方案仅限个人使用。{action}",
     "personalHeaderAction": "如需添加团队成员，请订阅团队方案。",
     "personalWorkspace": "个人工作区",
@@ -4366,6 +4367,7 @@
     "upgradeToAddCredits": "升级以添加积分",
     "usdPerMonth": "USD / mo",
     "usdPerMonthPerMember": "美元 / 月 / 每成员",
+    "usdPerYear": "美元 / 年",
     "usedAfterMonthly": "月度用完后使用",
     "videoEstimate": "可生成约 {count} 个 5 秒视频*",
     "videoEstimateExplanation": "这些预估基于 Wan Fun Control 生成 5 秒视频。",

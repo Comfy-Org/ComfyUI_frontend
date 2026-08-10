@@ -4189,6 +4189,7 @@
       "title": "اشتراک متوقف شده است"
     },
     "perMonth": "/ ماه",
+    "perYear": "/ سال",
     "personalHeader": "پلن‌های شخصی فقط برای استفاده فردی هستند. {action}",
     "personalHeaderAction": "برای افزودن هم‌تیمی، به پلن تیمی ارتقا دهید.",
     "personalWorkspace": "فضای کاری شخصی",
@@ -4366,6 +4367,7 @@
     "upgradeToAddCredits": "برای افزودن اعتبار ارتقاء دهید",
     "usdPerMonth": "دلار آمریکا / ماه",
     "usdPerMonthPerMember": "دلار آمریکا / ماه / هر عضو",
+    "usdPerYear": "دلار آمریکا / سال",
     "usedAfterMonthly": "پس از اتمام اعتبار ماهانه مصرف می‌شود",
     "videoEstimate": "تولید حدود ~{count} ویدیو ۵ ثانیه‌ای*",
     "videoEstimateExplanation": "این تخمین‌ها بر اساس قالب Wan 2.2 Image-to-Video با تنظیمات پیش‌فرض (۵ ثانیه، ۶۴۰×۶۴۰، ۱۶ فریم بر ثانیه، ۴ مرحله نمونه‌گیری) است.",

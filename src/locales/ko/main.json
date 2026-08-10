@@ -4161,6 +4161,7 @@
       "title": "구독이 일시 중지됨"
     },
     "perMonth": "USD / 월",
+    "perYear": "/ 년",
     "personalHeader": "개인 플랜은 개인 사용만을 위한 것입니다. {action}",
     "personalHeaderAction": "팀원을 추가하려면 팀 플랜을 구독하세요.",
     "personalWorkspace": "개인 워크스페이스",
@@ -4338,6 +4339,7 @@
     "upgradeToAddCredits": "크레딧 추가를 위해 업그레이드하세요",
     "usdPerMonth": "USD / 월",
     "usdPerMonthPerMember": "USD / 월 / 멤버",
+    "usdPerYear": "USD / 년",
     "usedAfterMonthly": "월간 크레딧 소진 후 사용됨",
     "videoEstimate": "약 {count}개의 5초 영상 생성*",
     "videoEstimateExplanation": "이 추정치는 기본 설정(5초, 640x640, 16fps, 4단계 샘플링)을 사용한 Wan 2.2 이미지-투-비디오 템플릿을 기준으로 합니다.",

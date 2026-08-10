@@ -4189,6 +4189,7 @@
       "title": "Abbonamento in pausa"
     },
     "perMonth": "/ mese",
+    "perYear": "/ anno",
     "personalHeader": "I piani personali sono solo per uso individuale. {action}",
     "personalHeaderAction": "Per aggiungere membri, abbonati al piano team.",
     "personalWorkspace": "Workspace personale",
@@ -4366,6 +4367,7 @@
     "upgradeToAddCredits": "Aggiorna per aggiungere crediti",
     "usdPerMonth": "USD / mese",
     "usdPerMonthPerMember": "USD / mese / membro",
+    "usdPerYear": "USD / anno",
     "usedAfterMonthly": "Utilizzati dopo l'esaurimento dei crediti mensili",
     "videoEstimate": "Genera ~{count} video da 5s*",
     "videoEstimateExplanation": "Queste stime si basano sul template Wan 2.2 Image-to-Video con impostazioni predefinite (5 sec, 16fps, 640x640, 4-step sampling).",

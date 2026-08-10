@@ -4189,6 +4189,7 @@
       "title": "המנוי הושהה"
     },
     "perMonth": "/ חודש",
+    "perYear": "/ שנה",
     "personalHeader": "תוכניות אישיות מיועדות לשימוש אישי בלבד. {action}",
     "personalHeaderAction": "להוספת חברי צוות, הירשם לתוכנית הצוות.",
     "personalWorkspace": "סביבת עבודה אישית",
@@ -4366,6 +4367,7 @@
     "upgradeToAddCredits": "שדרג כדי להוסיף קרדיטים",
     "usdPerMonth": "USD / חודש",
     "usdPerMonthPerMember": "USD / חודש / חבר",
+    "usdPerYear": "USD / שנה",
     "usedAfterMonthly": "נוצל לאחר סיום החודשי",
     "videoEstimate": "יוצר כ~{count} סרטונים של 5 שניות*",
     "videoEstimateExplanation": "הערכות אלו מבוססות על תבנית Wan 2.2 Image-to-Video עם הגדרות ברירת המחדל (5 שניות, 16fps, 640x640, דגימה ב-4 צעדים).",
