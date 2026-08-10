@@ -24,6 +24,7 @@ import type {
   ChatSession,
   HistoryGroups
 } from '../../stores/agent/agentChatHistoryStore'
+import AgentTooltip from './AgentTooltip.vue'
 
 const { groups } = defineProps<{ groups: HistoryGroups }>()
 const emit = defineEmits<{
@@ -162,14 +163,16 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                 session.title || t('agent.untitledChat')
               }}</span>
             </button>
-            <button
-              type="button"
-              class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex shrink-0 cursor-pointer items-center justify-center rounded-sm p-0.5 transition-colors"
-              :aria-label="t('agent.copyMarkdown')"
-              @click="emit('copyMarkdown', session.id)"
-            >
-              <span class="icon-[lucide--copy] size-3.5" />
-            </button>
+            <AgentTooltip :label="t('agent.copyMarkdown')">
+              <button
+                type="button"
+                class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex shrink-0 cursor-pointer items-center justify-center rounded-sm p-0.5 transition-colors"
+                :aria-label="t('agent.copyMarkdown')"
+                @click="emit('copyMarkdown', session.id)"
+              >
+                <span class="icon-[lucide--copy] size-3.5" />
+              </button>
+            </AgentTooltip>
             <DropdownMenuRoot>
               <DropdownMenuTrigger
                 :aria-label="t('agent.chatOptions')"

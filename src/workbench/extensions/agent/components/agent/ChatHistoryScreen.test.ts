@@ -98,6 +98,17 @@ describe('ChatHistoryScreen', () => {
     expect(emitted().rename).toBeUndefined()
   })
 
+  it('shows the exact copy tooltip on a history row', async () => {
+    const user = userEvent.setup()
+    renderScreen(groupsWithTitle('Original title'))
+
+    await user.hover(screen.getByRole('button', { name: 'Copy as markdown' }))
+
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Copy as markdown')
+  })
+
   it('opens a selected inline edit from the history-row menu', async () => {
     const user = userEvent.setup()
     const { emitted } = renderScreen(groupsWithTitle('Original title'))

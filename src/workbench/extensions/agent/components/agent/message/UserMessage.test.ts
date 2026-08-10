@@ -59,7 +59,12 @@ describe('UserMessage', () => {
     renderMessage({ text: 'make it cinematic' })
 
     await user.hover(screen.getByText('make it cinematic'))
-    await user.click(screen.getByRole('button', { name: t('agent.copy') }))
+    const copyButton = screen.getByRole('button', { name: t('agent.copy') })
+    await user.hover(copyButton)
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent(t('agent.copy'))
+    await user.click(copyButton)
 
     expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
   })
