@@ -17,6 +17,7 @@ import {
   resetNodeMoveSource
 } from '@/platform/nodeApi/interaction'
 import type { NodeMoveEvent } from '@/platform/nodeApi/interaction'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { installNodeMoveBridge } from './nodeMoveBridge'
 import { layoutStore } from './store/layoutStore'
@@ -24,6 +25,8 @@ import { useLayoutMutations } from './operations/layoutMutations'
 
 /** The global listener fan-out is queued, not synchronous. */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+const GRAPH = createUuidv4()
 
 describe('node movement reaches the published API', () => {
   let graph: LGraph
@@ -52,7 +55,7 @@ describe('node movement reaches the published API', () => {
     mutations = useLayoutMutations()
     // `moveNode` early-returns unless the node already has a layout entry,
     // which the app creates as the node enters the graph.
-    mutations.createNode(node.id, { position: { x: 0, y: 0 } })
+    mutations.createNode(GRAPH, node.id, { position: { x: 0, y: 0 } })
     seen = []
   })
 
@@ -74,7 +77,7 @@ describe('node movement reaches the published API', () => {
     // and covering only the canvas path would miss half the contract.
     observe()
 
-    mutations.moveNode(node.id, { x: 33, y: 44 })
+    mutations.moveNode(GRAPH, node.id, { x: 33, y: 44 })
     await settle()
 
     expect(seen.map((e) => e.position)).toEqual([{ x: 33, y: 44 }])
@@ -89,8 +92,8 @@ describe('node movement reaches the published API', () => {
     stops.push(onDragEnd((nodes) => drags.push(nodes.map((n) => n.id))))
 
     layoutStore.isDraggingVueNodes.value = true
-    mutations.moveNode(node.id, { x: 10, y: 10 })
-    mutations.moveNode(node.id, { x: 20, y: 20 })
+    mutations.moveNode(GRAPH, node.id, { x: 10, y: 10 })
+    mutations.moveNode(GRAPH, node.id, { x: 20, y: 20 })
     await settle()
     layoutStore.isDraggingVueNodes.value = false
     await settle()
@@ -105,7 +108,7 @@ describe('node movement reaches the published API', () => {
     )
     stops.push(onDragEnd((nodes) => drags.push(nodes)))
 
-    mutations.moveNode(node.id, { x: 10, y: 10 })
+    mutations.moveNode(GRAPH, node.id, { x: 10, y: 10 })
     await settle()
     layoutStore.isDraggingVueNodes.value = true
     layoutStore.isDraggingVueNodes.value = false
@@ -117,7 +120,7 @@ describe('node movement reaches the published API', () => {
   it('ignores layout changes that are not moves', async () => {
     observe()
 
-    mutations.resizeNode(node.id, { width: 400, height: 300 })
+    mutations.resizeNode(GRAPH, node.id, { width: 400, height: 300 })
     await settle()
 
     expect(seen).toEqual([])
