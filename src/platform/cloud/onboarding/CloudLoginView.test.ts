@@ -56,7 +56,6 @@ async function renderLoginView(
         createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
       ],
       stubs: {
-        Message: true,
         CloudSignInForm: { template: '<form data-testid="signin-form" />' }
       }
     }
@@ -65,6 +64,7 @@ async function renderLoginView(
 
 afterEach(() => {
   isEmbeddedWebView.value = false
+  vi.unstubAllGlobals()
 })
 
 describe('CloudLoginView', () => {
@@ -106,6 +106,29 @@ describe('CloudLoginView', () => {
       screen.queryByRole('button', { name: 'auth.login.loginWithGoogle' })
     ).not.toBeInTheDocument()
   })
+
+  it.for([true, false])(
+    'renders the insecure-context warning only over plain HTTP (secure: %s)',
+    async (secure: boolean) => {
+      vi.stubGlobal('isSecureContext', secure)
+      const { unmount } = await renderLoginView('/cloud/login', {
+        auth: {
+          login: { insecureContextWarning: 'This connection is insecure' }
+        }
+      } as never)
+
+      const warning = screen.queryByText('This connection is insecure')
+      if (secure) {
+        expect(warning).not.toBeInTheDocument()
+      } else {
+        expect(
+          warning,
+          'a self-hosted HTTP origin can have credentials intercepted, so the warning must render'
+        ).toBeInTheDocument()
+      }
+      unmount()
+    }
+  )
 
   it('shows the in-app browser notice only inside an embedded webview', async () => {
     const { unmount } = await renderLoginView()
