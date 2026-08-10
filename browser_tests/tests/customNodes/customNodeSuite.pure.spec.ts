@@ -1,9 +1,10 @@
-import type { Page } from '@playwright/test'
+import type { Page, Response } from '@playwright/test'
 import { inspect } from 'node:util'
 
 import {
   comfyExpect as expect,
   comfyPageFixture as test,
+  requiredCloudBootFailure,
   traceCloudPage
 } from '@e2e/fixtures/ComfyPage'
 import {
@@ -79,6 +80,54 @@ function scriptedPage(reads: QueueSnapshot[]) {
 }
 
 const IDLE: QueueSnapshot = { Running: [], Pending: [] }
+
+function bootResponse({
+  status,
+  url = 'http://localhost:4173/api/extensions',
+  method = 'GET',
+  resourceType = 'fetch'
+}: {
+  status: number
+  url?: string
+  method?: string
+  resourceType?: string
+}): Response {
+  return {
+    status: () => status,
+    url: () => url,
+    request: () => ({
+      method: () => method,
+      resourceType: () => resourceType
+    })
+  } as unknown as Response
+}
+
+test('fails fast only when a required Cloud boot request fails', () => {
+  const baseUrl = 'http://localhost:4173/'
+  expect(requiredCloudBootFailure(bootResponse({ status: 502 }), baseUrl)).toBe(
+    'cloud required boot request failed: HTTP 502 GET http://localhost:4173/api/extensions'
+  )
+  expect(
+    requiredCloudBootFailure(
+      bootResponse({ status: 502, url: `${baseUrl}api/object_info` }),
+      baseUrl
+    )
+  ).toBe(
+    'cloud required boot request failed: HTTP 502 GET http://localhost:4173/api/object_info'
+  )
+
+  for (const response of [
+    bootResponse({ status: 502, url: `${baseUrl}api/settings` }),
+    bootResponse({ status: 404 }),
+    bootResponse({
+      status: 502,
+      url: 'https://foreign.example/api/extensions'
+    }),
+    bootResponse({ status: 502, method: 'POST' }),
+    bootResponse({ status: 502, resourceType: 'document' })
+  ])
+    expect(requiredCloudBootFailure(response, baseUrl)).toBeUndefined()
+})
 
 function tracedPage(closeError?: unknown) {
   const listeners = new Map<string, ((value: unknown) => void)[]>()

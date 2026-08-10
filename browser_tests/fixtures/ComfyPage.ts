@@ -207,6 +207,22 @@ function safeNetworkUrl(value: string): string {
   return `${url.origin}${url.pathname}`
 }
 
+export function requiredCloudBootFailure(
+  response: Response,
+  baseUrl: string
+): string | undefined {
+  if (response.status() < 500) return
+  const request = response.request()
+  if (request.method() !== 'GET') return
+  const resourceType = request.resourceType()
+  if (resourceType !== 'xhr' && resourceType !== 'fetch') return
+  const url = new URL(response.url())
+  if (url.origin !== new URL(baseUrl).origin) return
+  if (url.pathname !== '/api/extensions' && url.pathname !== '/api/object_info')
+    return
+  return `cloud required boot request failed: HTTP ${response.status()} GET ${safeNetworkUrl(response.url())}`
+}
+
 function sanitizeTraceText(value: string): string {
   return value
     .split('\n')
@@ -567,6 +583,16 @@ export class ComfyPage {
       this.page.on('response', onAuthFail)
     })
     authFailed.catch(() => {})
+    let onRequiredBootFail: ((response: Response) => void) | undefined
+    const requiredBootFailed = new Promise<never>((_, reject) => {
+      if (customNodesEnv() !== 'cloud') return
+      onRequiredBootFail = (response) => {
+        const failure = requiredCloudBootFailure(response, this.url)
+        if (failure) reject(new Error(failure))
+      }
+      this.page.on('response', onRequiredBootFail)
+    })
+    requiredBootFailed.catch(() => {})
     try {
       const ready = (async () => {
         await this.page.waitForFunction(
@@ -580,7 +606,7 @@ export class ComfyPage {
           .locator('.p-blockui-mask')
           .waitFor({ state: 'hidden', timeout: readyFuseMs })
       })()
-      await Promise.race([ready, authFailed])
+      await Promise.race([ready, authFailed, requiredBootFailed])
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('cloud auth')) {
         console.warn(
@@ -588,11 +614,19 @@ export class ComfyPage {
         )
         throw error
       }
+      if (
+        error instanceof Error &&
+        error.message.startsWith('cloud required boot request failed')
+      ) {
+        console.warn(`[cloud] ${error.message} - aborting app boot`)
+        throw error
+      }
       const state = await this.describeUnreadyApp()
       console.warn(`[cloud] app never became ready: ${state}`)
       throw new Error(`app never became ready: ${state}`, { cause: error })
     } finally {
       if (onAuthFail) this.page.off('response', onAuthFail)
+      if (onRequiredBootFail) this.page.off('response', onRequiredBootFail)
     }
     await this.nextFrame()
   }
