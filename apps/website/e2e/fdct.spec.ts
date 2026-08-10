@@ -1,8 +1,17 @@
 import { expect } from '@playwright/test'
 
-import { fdctFaqs, projects, technologists } from '../src/data/fdct'
+import {
+  fdctFaqs,
+  projects as projectsOf,
+  technologists as technologistsOf
+} from '../src/data/fdct'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
+
+// The spec only asserts locale-independent fields (names, titles, counts,
+// category slugs), so one locale's snapshot serves both language suites.
+const projects = projectsOf('en')
+const technologists = technologistsOf('en')
 
 const builderReasonKeys = [
   'fdct.builders.reason1',

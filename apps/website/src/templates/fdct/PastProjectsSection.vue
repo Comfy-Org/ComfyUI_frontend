@@ -11,7 +11,7 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const items = computed<CardArticleGalleryItem[]>(() =>
-  projects.map((project) => ({
+  projects(locale).map((project) => ({
     id: project.id,
     category: t(`fdct.projects.category.${project.category}`, locale),
     title: project.title,

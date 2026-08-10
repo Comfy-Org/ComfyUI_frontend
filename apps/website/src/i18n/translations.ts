@@ -5546,6 +5546,36 @@ const translations = {
     'zh-CN': '查看 {name} 的作品'
   },
   'fdct.technologists.close': { en: 'Close', 'zh-CN': '关闭' },
+  'fdct.technologists.dougHogan.description': {
+    en: "Doug's work spans Netflix, Universal Studios, Warner Bros., and Samsung, with deep expertise in VFX and studio production. As a Nuke compositor and Python tool builder, he teaches VFX, Nuke, and generative AI.",
+    'zh-CN':
+      'Doug 的作品遍及 Netflix、环球影业、华纳兄弟和三星，在视觉特效与影棚制作方面拥有深厚经验。作为 Nuke 合成师和 Python 工具开发者，他教授 VFX、Nuke 和生成式 AI。'
+  },
+  'fdct.technologists.chrisV.description': {
+    en: "Chris's work spans global brands, artists, Fortune 500 keynote stages, and Art Basel Miami, with deep expertise in generative AI and production infrastructure. Sitting between artist and engineer, he architects custom VFX and AI pipelines.",
+    'zh-CN':
+      'Chris 的作品覆盖全球品牌、艺术家、财富 500 强主题演讲舞台以及迈阿密巴塞尔艺术展，在生成式 AI 与制作基础设施方面拥有深厚经验。他游走于艺术家与工程师之间，构建定制的 VFX 与 AI 流水线。'
+  },
+  'fdct.technologists.robLosch.description': {
+    en: "Rob has been in ComfyUI since day one. He has numerous workflows covering marketing and advertising, and he can pinpoint the exact workflow you're looking for.",
+    'zh-CN':
+      'Rob 从第一天起就活跃在 ComfyUI。他拥有大量覆盖营销与广告场景的工作流，并能精准找到你正在寻找的那一个。'
+  },
+  'fdct.tags.entertainment': { en: 'Entertainment', 'zh-CN': '娱乐' },
+  'fdct.tags.nuke': { en: 'Nuke', 'zh-CN': 'Nuke' },
+  'fdct.tags.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
+  'fdct.tags.generativeAi': { en: 'Generative AI', 'zh-CN': '生成式 AI' },
+  'fdct.tags.production': { en: 'Production', 'zh-CN': '制作' },
+  'fdct.tags.marketing': { en: 'Marketing', 'zh-CN': '营销' },
+  'fdct.tags.advertising': { en: 'Advertising', 'zh-CN': '广告' },
+  'fdct.tags.imageGeneration': { en: 'Image Generation', 'zh-CN': '图像生成' },
+  'fdct.tags.imageToVideo': { en: 'Image to Video', 'zh-CN': '图生视频' },
+  'fdct.tags.audioEditing': { en: 'Audio Editing', 'zh-CN': '音频编辑' },
+  'fdct.tags.characterReference': {
+    en: 'Character Reference',
+    'zh-CN': '角色参考'
+  },
+  'fdct.tags.video': { en: 'Video', 'zh-CN': '视频' },
   'fdct.projects.title': { en: 'Past projects', 'zh-CN': '过往项目' },
   'fdct.projects.category.advertisement': {
     en: 'Advertisement',
@@ -5557,6 +5587,35 @@ const translations = {
   },
   'fdct.projects.category.ecommerce': { en: 'Ecommerce', 'zh-CN': '电商' },
   'fdct.projects.cta': { en: 'View project', 'zh-CN': '查看项目' },
+  // Workflow-card descriptions in the technologist dialog; en copy is
+  // placeholder until final descriptions land (the design mock is lorem).
+  'fdct.projects.productAdvertisementVideo.description': {
+    en: 'Turn product stills into a polished advertisement spot, from generated shots to final cut.',
+    'zh-CN': '将产品静态图转化为精良的广告片，从生成镜头到最终成片一气呵成。'
+  },
+  'fdct.projects.ltxCleanplateForVfx.description': {
+    en: 'Generate clean plates for VFX compositing with LTX, removing subjects while keeping the shot intact.',
+    'zh-CN':
+      '使用 LTX 为视觉特效合成生成空景板，在保留镜头原貌的同时移除拍摄主体。'
+  },
+  'fdct.projects.lipdubLoraVoiceClone.description': {
+    en: 'Lipdub a performance with LTX 2.3, pairing a LoRA-trained look with a cloned voice track.',
+    'zh-CN': '使用 LTX 2.3 为表演对口型，将 LoRA 训练的形象与克隆音轨相结合。'
+  },
+  'fdct.projects.vfxUtilities.description': {
+    en: 'A utility kit for VFX shots: passes, mattes, and helpers for image and video work.',
+    'zh-CN':
+      '面向视觉特效镜头的实用工具集：分层通道、遮罩以及图像和视频处理辅助工具。'
+  },
+  'fdct.projects.viralVideosCharacterSwap.description': {
+    en: 'Swap characters into trending video formats with Seedance 2.0 while keeping motion intact.',
+    'zh-CN':
+      '使用 Seedance 2.0 将角色替换进热门视频模板，同时完整保留原有动作。'
+  },
+  'fdct.projects.faceSwapWorkflow.description': {
+    en: 'Swap a face across a full video while preserving the original performance and lighting.',
+    'zh-CN': '在整段视频中替换人脸，同时保留原有表演与光影效果。'
+  },
   'fdct.faq.title': { en: 'Q&A', 'zh-CN': '问答' },
   'fdct.faq.q1': {
     en: 'Can this be a consulting or professional-services contract standalone?',

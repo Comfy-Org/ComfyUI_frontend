@@ -7,7 +7,6 @@ const meta: Meta<typeof CardWorkflow01> = {
   component: CardWorkflow01,
   tags: ['autodocs'],
   args: {
-    tryNowLabel: 'Try now',
     item: {
       id: 'product-advertisement-video',
       title: 'Product Advertisement Video',
@@ -17,12 +16,8 @@ const meta: Meta<typeof CardWorkflow01> = {
         src: 'https://comfy-hub-assets.comfy.org/uploads/a8c26beb-d463-40a0-8547-fa942e53ad70.mp4',
         alt: 'Product Advertisement Video'
       },
-      creator: {
-        name: 'Rob Losch',
-        avatarSrc:
-          'https://media.comfy.org/website/technologists/rob-losch.png',
-        href: 'https://comfy.org/workflows/hellorob/'
-      },
+      description:
+        'Turn product stills into a polished advertisement spot, from generated shots to final cut.',
       tags: ['Image Generation', 'Image to Video']
     }
   },
@@ -38,7 +33,25 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-export const NoTags: Story = {
+export const ImageMedia: Story = {
+  args: {
+    item: {
+      id: 'headphones-still',
+      title: 'Product Still Workflow',
+      href: 'https://comfy.org/workflows/c98e5c457e1e-c98e5c457e1e/',
+      media: {
+        type: 'image',
+        src: 'https://media.comfy.org/website/fdct/headphones.png',
+        alt: 'Product Still Workflow'
+      },
+      description:
+        'Render studio-grade product stills from a single reference image.',
+      tags: ['Image Generation']
+    }
+  }
+}
+
+export const TitleOnly: Story = {
   args: {
     item: {
       id: 'ltx-cleanplate-for-vfx',
@@ -48,12 +61,6 @@ export const NoTags: Story = {
         type: 'video',
         src: 'https://comfy-hub-assets.comfy.org/uploads/8a3a846f-5017-428e-b2a2-24025c55e884.mp4',
         alt: 'LTX Cleanplate for VFX'
-      },
-      creator: {
-        name: 'Doug Hogan',
-        avatarSrc:
-          'https://media.comfy.org/website/technologists/doug-hogan.png',
-        href: 'https://comfy.org/workflows/doughogan/'
       }
     }
   }

@@ -3,6 +3,7 @@ import type { Locale } from '../../i18n/translations'
 
 import type { CardWorkflowItem } from '../../components/blocks/CardWorkflow01.vue'
 import TeamGrid01 from '../../components/blocks/TeamGrid01.vue'
+import type { FdctTechnologist } from '../../data/fdct'
 import { projects, technologists } from '../../data/fdct'
 import { t } from '../../i18n/translations'
 
@@ -10,10 +11,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 // Each dialog shows its technologist's workflows from the shared past-projects
 // list (already in most-popular order); profiles without any get no grid.
-function workflowsOf(
-  person: (typeof technologists)[number]
-): CardWorkflowItem[] {
-  return projects
+function workflowsOf(person: FdctTechnologist): CardWorkflowItem[] {
+  return projects(locale)
     .filter((project) => project.author.name === person.name)
     .map((project) => ({
       id: project.id,
@@ -25,7 +24,7 @@ function workflowsOf(
     }))
 }
 
-const people = technologists.map((person) => ({
+const people = technologists(locale).map((person) => ({
   ...person,
   ctaLabel: t('fdct.technologists.seeWork', locale).replace(
     '{name}',
