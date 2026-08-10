@@ -11,7 +11,7 @@ import { computed, inject, nextTick, ref, useTemplateRef, watch } from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetDisplayName,
@@ -450,7 +450,7 @@ defineExpose({
       <div class="flex items-center justify-between px-3 py-2">
         <DropdownMenuRoot>
           <DropdownMenuTrigger
-            v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
+            v-tooltip.top="buildAgentTooltipConfig(t('agent.addToPrompt'))"
             :aria-label="t('agent.addToPrompt')"
             class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
           >

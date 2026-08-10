@@ -10,7 +10,7 @@ import {
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
 import type { AgentRunMode } from '../../../stores/agent/agentRunModeStore'
 import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
@@ -99,7 +99,7 @@ const options: {
 <template>
   <PopoverRoot :open @update:open="onOpenChange">
     <PopoverTrigger
-      v-tooltip.top="buildTooltipConfig(triggerTooltip)"
+      v-tooltip.top="buildAgentTooltipConfig(triggerTooltip)"
       :class="
         cn(
           'text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors',

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -43,7 +43,7 @@ const sizeToggleLabel = computed(() =>
 
     <div class="ml-auto flex items-center gap-2">
       <Button
-        v-tooltip.bottom="buildTooltipConfig(t('agent.newChat'))"
+        v-tooltip.bottom="buildAgentTooltipConfig(t('agent.newChat'))"
         variant="muted-textonly"
         size="icon"
         class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl focus-visible:ring-2"
@@ -53,7 +53,7 @@ const sizeToggleLabel = computed(() =>
         <span class="icon-[lucide--message-circle-plus] size-4" />
       </Button>
       <Button
-        v-tooltip.bottom="buildTooltipConfig(sizeToggleLabel)"
+        v-tooltip.bottom="buildAgentTooltipConfig(sizeToggleLabel)"
         variant="muted-textonly"
         size="icon"
         class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl focus-visible:ring-2"
@@ -63,7 +63,7 @@ const sizeToggleLabel = computed(() =>
         <span :class="cn(sizeToggleIcon, 'size-4')" />
       </Button>
       <Button
-        v-tooltip.bottom="buildTooltipConfig(t('agent.close'))"
+        v-tooltip.bottom="buildAgentTooltipConfig(t('agent.close'))"
         variant="muted-textonly"
         size="icon"
         class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl focus-visible:ring-2"

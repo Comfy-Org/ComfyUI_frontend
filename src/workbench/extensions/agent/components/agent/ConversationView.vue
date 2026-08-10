@@ -3,7 +3,7 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -91,7 +91,7 @@ watch(
 
     <button
       v-if="!atBottom"
-      v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
+      v-tooltip.top="buildAgentTooltipConfig(t('agent.latest'))"
       type="button"
       :aria-label="t('agent.latest')"
       class="text-secondary-foreground absolute bottom-2 left-1/2 flex size-8 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-secondary-background shadow-md ring-1 ring-muted-foreground transition-colors hover:bg-secondary-background-hover"
