@@ -265,6 +265,9 @@ jobs:
             2)
               grep_args=(--grep 'all nodes: ComfyUI-Custom-Scripts @custom-nodes.*every registered node mounts, survives save/reload, and executes$')
               ;;
+            3)
+              grep_args=(--grep 'all nodes: ComfyUI-Impact-Pack @custom-nodes.*every registered node mounts, survives save/reload, and executes$')
+              ;;
             4)
               grep_args=(--grep 'connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes$')
               ;;
@@ -303,7 +306,7 @@ jobs:
             exit 1
           fi
           expected_tests=34
-          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "4" ]]; then
+          if [[ "$ROW" = "1" || "$ROW" = "2" || "$ROW" = "3" || "$ROW" = "4" ]]; then
             expected_tests=1
           fi
           collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
