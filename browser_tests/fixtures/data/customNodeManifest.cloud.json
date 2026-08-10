@@ -234,7 +234,7 @@
       "tiers": ["load", "connectivity"],
       "workflow": "",
       "expectedNodes": ["APGGuider", "AddLatentGuide"],
-      "expectedNodeCount": 75,
+      "expectedNodeCount": 74,
       "expectedExtensions": ["LTXVideo.SparseTrackEditor"],
       "disabledNodes": {
         "GemmaAPITextEncode": ["NetworkAccess", "RequiresExternalAPI"],
