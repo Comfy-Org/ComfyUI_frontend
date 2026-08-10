@@ -1,5 +1,4 @@
 import { useEventListener } from '@vueuse/core'
-import { createPinia, setActivePinia } from 'pinia'
 import { effectScope, nextTick, watchEffect } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,7 +11,6 @@ describe('ComfyApp root graph readiness', () => {
   let previousRootGraph: LGraph | undefined
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.spyOn(console, 'error').mockImplementation(() => {})
     previousRootGraph = getRootGraph(app)
     setRootGraph(app, undefined)
