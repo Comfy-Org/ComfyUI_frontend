@@ -9,7 +9,7 @@ import {
 } from 'vue-router'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -410,9 +410,10 @@ export const useSubgraphNavigationStore = defineStore(
 
     function updateHash(
       source: 'graph' | 'workflow-load' = 'graph',
-      workflowNavigationId?: number
+      workflowNavigationId?: number,
+      currentGraph?: LGraph | null
     ): Promise<void> {
-      const graph = canvasStore.getCanvas().graph
+      const graph = currentGraph ?? canvasStore.getCanvas().graph
       if (source === 'workflow-load') {
         pendingWorkflowResetGraph = undefined
         if (
@@ -474,10 +475,8 @@ export const useSubgraphNavigationStore = defineStore(
     }
     watch(
       () => canvasStore.currentGraph,
-      () => void updateHash(),
-      {
-        flush: 'sync'
-      }
+      (graph) => void updateHash('graph', undefined, graph),
+      { flush: 'sync' }
     )
     watch(
       routeHash,
