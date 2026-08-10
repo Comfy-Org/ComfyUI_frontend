@@ -65,7 +65,7 @@ const OVERLAY_CELL = 'col-start-1 row-start-1'
       <div
         v-if="isOverlay"
         aria-hidden="true"
-        :class="cn(OVERLAY_CELL, 'bg-black/30')"
+        :class="cn(OVERLAY_CELL, 'bg-primary-comfy-ink/50')"
       />
 
       <div
@@ -132,7 +132,7 @@ const OVERLAY_CELL = 'col-start-1 row-start-1'
           <BrandButton
             :href="hero.primaryCta.href"
             :target="hero.primaryCta.target"
-            :variant="isOverlay ? 'canvas' : 'solid'"
+            :variant="isOverlay ? 'outline-light' : 'solid'"
             size="lg"
             class="w-full p-4 text-center lg:w-auto lg:min-w-52"
           >

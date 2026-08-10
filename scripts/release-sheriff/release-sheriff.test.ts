@@ -9,7 +9,8 @@ import {
   parseGithubLogins,
   parseOnCallEmails,
   planActions,
-  resolveSheriff
+  resolveSheriff,
+  singleLine
 } from './release-sheriff'
 
 const config = {
@@ -87,6 +88,16 @@ describe('parseGithubLogins', () => {
     expect(parseGithubLogins({ data: { attributes: { tags: 'no' } } })).toEqual(
       {}
     )
+  })
+})
+
+describe('singleLine', () => {
+  it('cannot emit a line that closes a GITHUB_OUTPUT heredoc early', () => {
+    expect(singleLine('before\n__EOF__\nafter')).toBe('before __EOF__ after')
+  })
+
+  it('collapses incidental whitespace', () => {
+    expect(singleLine('  a\t\tb \n c  ')).toBe('a b c')
   })
 })
 

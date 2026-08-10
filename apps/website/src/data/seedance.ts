@@ -1,15 +1,11 @@
 import type { ModelLaunchPage } from '../templates/model-launch/types'
 
 import { externalLinks } from '../config/routes'
+import { COMING_SOON_HERO } from './comingSoonHero'
 
 // Seedance 2.5 has not shipped yet, so this page announces it and holds the
 // URL. On launch day, replace this config with the full one the way /flux-3
 // did; the page stubs and the template stay as they are.
-const media = {
-  comingSoonHero:
-    'https://media.comfy.org/website/seedance-2.5/coming-soon-hero.webp'
-} as const
-
 export const seedancePage: ModelLaunchPage = {
   metaTitleKey: 'seedance.meta.title',
   metaDescriptionKey: 'seedance.meta.description',
@@ -17,7 +13,7 @@ export const seedancePage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'seedance.breadcrumb.updated',
   hero: {
     layout: 'overlay',
-    placeholderImageSrc: media.comingSoonHero,
+    placeholderImageSrc: COMING_SOON_HERO,
     eyebrowKey: 'seedance.hero.eyebrow',
     titleKey: 'seedance.hero.title',
     primaryCta: {
