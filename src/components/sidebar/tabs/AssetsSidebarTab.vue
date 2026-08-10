@@ -461,7 +461,7 @@ const showEmptyState = computed(
   () =>
     !loading.value &&
     !isFolderLoading.value &&
-    !outputAssets.isLoadingMore.value &&
+    !(activeTab.value === 'output' && outputAssets.isLoadingMore.value) &&
     displayAssets.value.length === 0
 )
 
