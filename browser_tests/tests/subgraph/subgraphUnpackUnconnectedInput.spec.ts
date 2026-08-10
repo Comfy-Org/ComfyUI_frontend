@@ -3,14 +3,15 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 
-const SUBGRAPH_NODE_TITLE = 'New Subgraph'
-const CLIP_TEXT_ENCODE_TITLE = 'CLIP Text Encode (Prompt)'
-const MISSING_LINK_ID_ERROR = 'Missing Link ID when unpacking'
-
 test.describe(
   'Subgraph unpack with unconnected input slots',
   { tag: ['@subgraph', '@vue-nodes'] },
   () => {
+    const SUBGRAPH_NODE_TITLE = 'New Subgraph'
+    const CLIP_TEXT_ENCODE_TITLE = 'CLIP Text Encode (Prompt)'
+    const MISSING_LINK_ID_ERROR = 'Missing Link ID when unpacking'
+    const PROMPT_TEXT = 'a painting of a hedgehog'
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
@@ -43,15 +44,15 @@ test.describe(
         SUBGRAPH_NODE_TITLE,
         'text'
       )
-      await promotedText.fill('a painting of a hedgehog')
+      await promotedText.fill(PROMPT_TEXT)
       await promotedText.blur()
-      await expect(promotedText).toHaveValue('a painting of a hedgehog')
+      await expect(promotedText).toHaveValue(PROMPT_TEXT)
 
       await comfyPage.subgraph.unpackViaContextMenu(SUBGRAPH_NODE_TITLE)
 
       await expect(
         comfyPage.vueNodes.getWidgetByName(CLIP_TEXT_ENCODE_TITLE, 'text')
-      ).toHaveValue('a painting of a hedgehog')
+      ).toHaveValue(PROMPT_TEXT)
     })
   }
 )
