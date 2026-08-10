@@ -15719,6 +15719,96 @@
       }
     }
   },
+  "QwenImageEditApi": {
+    "description": "Qwen-Image 3.0 モデルを使用して、テキストプロンプトに従い最大3つの参照画像を編集または合成します。",
+    "display_name": "Qwen Image 3 編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "使用するモデル。"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "生成する画像の枚数。バッチで返されます。"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "AIによるプロンプトの強化を行うかどうか。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "出力解像度。「match input」は最初の参照画像のサイズを再利用し、「auto」はモデルが同じアスペクト比でサイズを自動選択、「custom」は幅と高さを明示的に設定します。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "Qwen-Image 3.0 モデルを使用して、テキストプロンプトから画像を生成します。",
+    "display_name": "Qwen Image 3 テキストから画像生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "使用するモデル。"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "生成する画像の枚数。バッチで返されます。"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "AIによるプロンプトの強化を行うかどうか。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RTDETR_detect": {
     "display_name": "RT-DETR 検出",
     "inputs": {
