@@ -1663,21 +1663,21 @@ for (const entry of loadManifest()) {
         console.log(
           `${entry.pack} auto-ran ${ranClean.size} node(s) clean; ${cannotRun.size} cannot run alone (baseline ${baseline.size})`
         )
-        if (hardFailures.length > 0)
+        const autoRunFailureSummary = failureSummary(
+          `${entry.pack} auto-run failures`,
+          hardFailures,
+          'auto-run-failures.json'
+        )
+        if (hardFailures.length > 0) {
+          console.log(autoRunFailureSummary)
           await attachPageDiagnosticEvidence(
             comfyPage.page,
             test.info(),
             'auto-run-failures.json',
             hardFailures
           )
-        expect(
-          hardFailures.length === 0,
-          failureSummary(
-            `${entry.pack} auto-run failures`,
-            hardFailures,
-            'auto-run-failures.json'
-          )
-        ).toBe(true)
+        }
+        expect(hardFailures.length === 0, autoRunFailureSummary).toBe(true)
       })
 
       // Assert on the COUNT, not the array. `toEqual([])` renders every
