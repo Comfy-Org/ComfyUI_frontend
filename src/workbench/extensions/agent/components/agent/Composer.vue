@@ -26,6 +26,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
 import RunModePopover from './composer/RunModePopover.vue'
+import AgentTooltip from './AgentTooltip.vue'
 
 const {
   streaming = false,
@@ -269,6 +270,9 @@ function onEnter(event: KeyboardEvent): void {
 }
 
 const running = computed(() => streaming || submitting)
+const primaryActionTooltip = computed(() =>
+  composer.canSend.value ? t('agent.send') : t('agent.addPromptToSend')
+)
 
 function onPrimaryAction(): void {
   if (running.value) emit('stop')
@@ -504,29 +508,33 @@ defineExpose({
 
         <div class="flex items-center gap-1">
           <RunModePopover />
-          <button
-            type="button"
-            :aria-label="running ? t('agent.stop') : t('agent.send')"
-            :disabled="!running && !composer.canSend.value"
-            :class="
-              cn(
-                'flex size-8 items-center justify-center rounded-xl transition-colors',
-                running
-                  ? 'bg-agent-surface-hover text-agent-fg hover:bg-agent-border cursor-pointer'
-                  : 'bg-agent-fg text-agent-surface hover:bg-agent-fg/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
-              )
-            "
-            @click="onPrimaryAction"
-          >
-            <span
+          <AgentTooltip :label="primaryActionTooltip" :disabled="running">
+            <button
+              type="button"
+              :aria-label="running ? t('agent.stop') : t('agent.send')"
+              :disabled="!running && !composer.canSend.value"
               :class="
                 cn(
-                  'size-4',
-                  running ? 'icon-[lucide--square]' : 'icon-[lucide--arrow-up]'
+                  'flex size-8 items-center justify-center rounded-xl transition-colors',
+                  running
+                    ? 'bg-agent-surface-hover text-agent-fg hover:bg-agent-border cursor-pointer'
+                    : 'bg-agent-fg text-agent-surface hover:bg-agent-fg/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
                 )
               "
-            />
-          </button>
+              @click="onPrimaryAction"
+            >
+              <span
+                :class="
+                  cn(
+                    'size-4',
+                    running
+                      ? 'icon-[lucide--square]'
+                      : 'icon-[lucide--arrow-up]'
+                  )
+                "
+              />
+            </button>
+          </AgentTooltip>
         </div>
       </div>
     </div>
