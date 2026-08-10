@@ -4161,6 +4161,7 @@
       "title": "サブスクリプションが一時停止中"
     },
     "perMonth": "USD / 月",
+    "perYear": "／年",
     "personalHeader": "個人プランは個人利用専用です。{action}",
     "personalHeaderAction": "チームメンバーを追加するには、チームプランにご加入ください。",
     "personalWorkspace": "個人ワークスペース",
@@ -4338,6 +4339,7 @@
     "upgradeToAddCredits": "クレジット追加のためアップグレード",
     "usdPerMonth": "USD / 月",
     "usdPerMonthPerMember": "USD / 月 / メンバー",
+    "usdPerYear": "USD／年",
     "usedAfterMonthly": "月間クレジットがなくなった後に使用",
     "videoEstimate": "約{count}本の5秒動画を生成*",
     "videoEstimateExplanation": "これらの見積もりは、Wan 2.2 画像から動画テンプレートのデフォルト設定（5秒、640x640、16fps、4ステップサンプリング）に基づいています。",

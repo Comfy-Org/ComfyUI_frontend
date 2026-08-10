@@ -4189,6 +4189,7 @@
       "title": "Assinatura pausada"
     },
     "perMonth": "/ mês",
+    "perYear": "/ ano",
     "personalHeader": "Planos pessoais são apenas para uso individual. {action}",
     "personalHeaderAction": "Para adicionar colegas, assine o plano de equipe.",
     "personalWorkspace": "Espaço de Trabalho Pessoal",
@@ -4366,6 +4367,7 @@
     "upgradeToAddCredits": "Faça upgrade para adicionar créditos",
     "usdPerMonth": "USD / mês",
     "usdPerMonthPerMember": "USD / mês / membro",
+    "usdPerYear": "USD / ano",
     "usedAfterMonthly": "Usado após o término dos créditos mensais",
     "videoEstimate": "Gera aproximadamente {count} vídeos de 5s*",
     "videoEstimateExplanation": "Essas estimativas são baseadas no template Wan 2.2 Image-to-Video usando as configurações padrão (5 segundos, 640x640, 16fps, amostragem de 4 etapas).",

@@ -4161,6 +4161,7 @@
       "title": "Abonelik duraklatıldı"
     },
     "perMonth": "USD / ay",
+    "perYear": "/ yıl",
     "personalHeader": "Bireysel planlar yalnızca kişisel kullanım içindir. {action}",
     "personalHeaderAction": "Ekip arkadaşları eklemek için ekip planına abone olun.",
     "personalWorkspace": "Kişisel Çalışma Alanı",
@@ -4338,6 +4339,7 @@
     "upgradeToAddCredits": "Kredi eklemek için yükselt",
     "usdPerMonth": "USD / ay",
     "usdPerMonthPerMember": "USD / ay / üye",
+    "usdPerYear": "USD / yıl",
     "usedAfterMonthly": "Aylık krediler bittikten sonra kullanıldı",
     "videoEstimate": "Yaklaşık {count} adet 5 sn'lik video üretir*",
     "videoEstimateExplanation": "Bu tahminler, varsayılan ayarlarla (5 saniye, 640x640, 16fps, 4 adım örnekleme) Wan 2.2 Görselden Videoya şablonuna dayanmaktadır.",

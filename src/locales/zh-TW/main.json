@@ -4161,6 +4161,7 @@
       "title": "訂閱已暫停"
     },
     "perMonth": "美元 / 月",
+    "perYear": "/ 年",
     "personalHeader": "個人方案僅供個人使用。{action}",
     "personalHeaderAction": "如需新增團隊成員，請訂閱團隊方案。",
     "personalWorkspace": "個人工作區",
@@ -4338,6 +4339,7 @@
     "upgradeToAddCredits": "升級以增加點數",
     "usdPerMonth": "美元／月",
     "usdPerMonthPerMember": "美元／月／成員",
+    "usdPerYear": "USD / 年",
     "usedAfterMonthly": "月度點數用完後使用",
     "videoEstimate": "可產生約 {count} 個 5 秒影片*",
     "videoEstimateExplanation": "此估算以 Wan 2.2 圖轉影範本的預設設定（5 秒、640x640、16fps、4 步採樣）為基礎。",

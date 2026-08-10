@@ -4161,6 +4161,7 @@
       "title": "Abonnement en pause"
     },
     "perMonth": "USD / mois",
+    "perYear": "/ an",
     "personalHeader": "Les plans personnels sont réservés à un usage individuel. {action}",
     "personalHeaderAction": "Pour ajouter des coéquipiers, abonnez-vous au plan équipe.",
     "personalWorkspace": "Espace de travail personnel",
@@ -4338,6 +4339,7 @@
     "upgradeToAddCredits": "Mettre à niveau pour ajouter des crédits",
     "usdPerMonth": "USD / mois",
     "usdPerMonthPerMember": "USD / mois / membre",
+    "usdPerYear": "USD / an",
     "usedAfterMonthly": "Utilisé après l'épuisement du forfait mensuel",
     "videoEstimate": "Génère environ {count} vidéos de 5 s*",
     "videoEstimateExplanation": "Ces estimations sont basées sur le modèle Wan 2.2 Image-to-Video avec les paramètres par défaut (5 secondes, 640x640, 16fps, échantillonnage en 4 étapes).",
