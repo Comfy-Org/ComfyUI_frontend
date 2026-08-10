@@ -86,6 +86,28 @@ vi.mock('@vueuse/core', () => {
         resume: resumeFn
       }
     }),
+    // Change detection runs on an interval rather than every frame; register it
+    // alongside the RAF callbacks so triggerRAF() drives both loops.
+    useIntervalFn: vi.fn((callback, _interval, options) => {
+      const id = rafCallbackId++
+      rafCallbacks[id] = callback
+
+      if (options?.immediate !== false) {
+        void Promise.resolve().then(() => callback())
+      }
+
+      const resumeFn = vi.fn(() => {
+        mockResume()
+        if (rafCallbacks[id]) {
+          rafCallbacks[id]()
+        }
+      })
+
+      return {
+        pause: mockPause,
+        resume: resumeFn
+      }
+    }),
     useThrottleFn: vi.fn((callback) => {
       return (...args: unknown[]) => {
         return callback(...args)

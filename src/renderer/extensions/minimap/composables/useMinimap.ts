@@ -1,4 +1,4 @@
-import { useRafFn } from '@vueuse/core'
+import { useIntervalFn } from '@vueuse/core'
 import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ShallowRef } from 'vue'
 
@@ -14,6 +14,9 @@ import { useMinimapInteraction } from './useMinimapInteraction'
 import { useMinimapRenderer } from './useMinimapRenderer'
 import { useMinimapSettings } from './useMinimapSettings'
 import { useMinimapViewport } from './useMinimapViewport'
+
+/** How often to poll for node drags/resizes, which emit no graph event. */
+const CHANGE_DETECTION_INTERVAL_MS = 100
 
 export function useMinimap({
   canvasRefMaybe,
@@ -93,20 +96,19 @@ export function useMinimap({
     height
   )
 
-  // RAF loop for continuous updates
+  // Structural edits already force a redraw through useMinimapGraph's event
+  // hooks. This loop only exists to catch node drags and resizes, which emit
+  // no event, so it runs well below frame rate - the minimap is an approximate
+  // overview and does not need to track a drag frame by frame.
   const { pause: pauseChangeDetection, resume: resumeChangeDetection } =
-    useRafFn(
-      async () => {
-        if (visible.value) {
-          const hasChanges = await graphManager.checkForChanges()
-          if (hasChanges) {
-            renderer.updateMinimap(
-              viewport.updateBounds,
-              viewport.updateViewport
-            )
-          }
+    useIntervalFn(
+      () => {
+        if (!visible.value) return
+        if (graphManager.checkForChanges()) {
+          renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
         }
       },
+      CHANGE_DETECTION_INTERVAL_MS,
       { immediate: false }
     )
 
