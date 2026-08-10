@@ -17,10 +17,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
  * These tests pin the degradation as non-fatal.
  */
 
-/** Mirrors Node >= 25's unconfigured Web Storage stub: present but unusable. */
-function installDegradedLocalStorage() {
-  vi.stubGlobal('localStorage', {} as Storage)
-}
+// Node >= 25's unconfigured Web Storage stub, installed before the import below
+// so the module-scope `new ComfyApp()` restores against it.
+vi.stubGlobal('localStorage', {} as Storage)
+
+// Imported once here rather than per test behind `vi.resetModules()`, which
+// would pay this graph's transform cost again for every test.
+const { app } = await import('@/scripts/app')
+
+vi.unstubAllGlobals()
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 /** Mirrors a browser that throws on access (private mode / blocked cookies). */
 function installThrowingLocalStorage() {
@@ -34,39 +43,49 @@ function installThrowingLocalStorage() {
   } as unknown as Storage)
 }
 
-afterEach(() => {
-  vi.unstubAllGlobals()
-  vi.resetModules()
-})
-
 describe('menu position restore is resilient to unusable localStorage', () => {
-  it('imports @/scripts/app when localStorage is a non-functional stub', async () => {
-    installDegradedLocalStorage()
-    vi.resetModules()
-
-    const mod = await import('@/scripts/app')
-
-    expect(mod.app).toBeDefined()
+  it('finishes importing @/scripts/app when localStorage is a non-functional stub', () => {
+    // Assigned by the `dragElement()` call that reads storage, so its presence
+    // means the import-time restore ran instead of throwing.
+    expect(app.ui.restoreMenuPosition).toBeTypeOf('function')
   })
 
-  it('imports @/scripts/app when localStorage throws on access', async () => {
+  it('restores quietly when localStorage throws on access', () => {
     installThrowingLocalStorage()
-    vi.resetModules()
 
-    const mod = await import('@/scripts/app')
-
-    expect(mod.app).toBeDefined()
+    expect(() => app.ui.restoreMenuPosition()).not.toThrow()
   })
 
-  it('imports @/scripts/app when the stored position is corrupt JSON', async () => {
+  it('restores quietly when the stored position is corrupt JSON', () => {
     vi.stubGlobal('localStorage', {
       getItem: vi.fn(() => '{not valid json'),
       setItem: vi.fn()
     } as unknown as Storage)
-    vi.resetModules()
 
-    const mod = await import('@/scripts/app')
+    expect(() => app.ui.restoreMenuPosition()).not.toThrow()
+  })
 
-    expect(mod.app).toBeDefined()
+  it('restores quietly when persisting the restored position fails', () => {
+    // A valid stored position reaches `positionElement()`, which writes it back
+    // — the other guarded storage access.
+    const setItem = vi.fn(() => {
+      throw new Error('QuotaExceededError')
+    })
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(() => JSON.stringify({ x: 12, y: 34 })),
+      setItem
+    } as unknown as Storage)
+    // `positionElement()` bails out while the menu is hidden, and setup() hides
+    // it by default.
+    const { menuContainer } = app.ui
+    const display = menuContainer.style.display
+    menuContainer.style.display = 'block'
+
+    try {
+      expect(() => app.ui.restoreMenuPosition()).not.toThrow()
+      expect(setItem).toHaveBeenCalled()
+    } finally {
+      menuContainer.style.display = display
+    }
   })
 })
