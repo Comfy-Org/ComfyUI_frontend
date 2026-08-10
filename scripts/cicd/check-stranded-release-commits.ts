@@ -155,6 +155,22 @@ export function hasPendingBump({
   return branchVersion !== latestTag.replace(/^v/, '')
 }
 
+/**
+ * Whether to ask CI to cut a patch. Fails closed: if either the tag or the
+ * branch version is unreadable we cannot prove a bump is not already pending,
+ * and dispatching on that unproven assumption is what burned 1.48.8 and 1.48.9.
+ */
+export function shouldRequestDispatch({
+  latestTag,
+  branchVersion
+}: {
+  latestTag: string | null
+  branchVersion: string | null
+}): boolean {
+  if (!latestTag || !branchVersion) return false
+  return !hasPendingBump({ branchVersion, latestTag })
+}
+
 function git(...args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf-8' }).trim()
 }
@@ -295,21 +311,25 @@ async function main(): Promise<void> {
   )
   if (process.env.GITHUB_OUTPUT && strandedPinnedLine) {
     const { branch } = strandedPinnedLine
-    const tag = latestTagOn(branch)
+    const latestTag = latestTagOn(branch)
     const branchVersion = branchPackageVersion(branch)
-    const pending =
-      tag && branchVersion && hasPendingBump({ branchVersion, latestTag: tag })
 
-    if (pending) {
-      console.error(
-        `${branch} is at ${branchVersion} but its newest tag is ${tag}: a bump ` +
-          `already landed and was never released. Recover that release rather ` +
-          `than cutting another patch; not requesting a dispatch.`
-      )
-    } else {
+    if (shouldRequestDispatch({ latestTag, branchVersion })) {
       appendFileSync(
         process.env.GITHUB_OUTPUT,
         `needs_patch_branch=${branch}\n`
+      )
+    } else if (!latestTag || !branchVersion) {
+      console.error(
+        `Could not read ${!latestTag ? 'the newest tag' : 'package.json'} for ` +
+          `${branch}; cannot prove a bump is not already pending, so not ` +
+          `requesting a dispatch.`
+      )
+    } else {
+      console.error(
+        `${branch} is at ${branchVersion} but its newest tag is ${latestTag}: a ` +
+          `bump already landed and was never released. Recover that release ` +
+          `rather than cutting another patch; not requesting a dispatch.`
       )
     }
   }
