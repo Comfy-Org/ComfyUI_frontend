@@ -105,6 +105,8 @@ const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
 const telemetry = useTelemetry()
+const REGION_CHECK_TIMEOUT_MS = 1500
+
 /** `undefined` while detection is pending, so the email form cannot render early. */
 const userIsInChina = ref<boolean | undefined>(undefined)
 const { isFreeTierEnabled } = useFreeTierOnboarding()
@@ -147,6 +149,14 @@ const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
 onMounted(async () => {
   telemetry?.trackSignupOpened()
 
-  userIsInChina.value = await isInChina()
+  // Fail open. `isInChina` bounds only its Google leg; its Baidu fallback can
+  // hang on networks that blackhole rather than reset, and a probe that never
+  // settles must not be indistinguishable from a permanent block.
+  userIsInChina.value = await Promise.race([
+    isInChina().catch(() => false),
+    new Promise<boolean>((resolve) =>
+      setTimeout(() => resolve(false), REGION_CHECK_TIMEOUT_MS)
+    )
+  ])
 })
 </script>

@@ -154,6 +154,28 @@ describe('CloudSignupView', () => {
     })
   })
 
+  it('releases the sign-up form when region detection never settles', async () => {
+    vi.useFakeTimers()
+    try {
+      const user = (await import('@testing-library/user-event')).default.setup({
+        advanceTimers: vi.advanceTimersByTime
+      })
+      inChina.defer()
+      await renderSignupView()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Use email instead' })
+      )
+      expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(1500)
+
+      expect(screen.getByTestId('signup-form')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('never renders the sign-up form inside China, pending or settled', async () => {
     const user = (await import('@testing-library/user-event')).default.setup()
     const settle = inChina.defer()

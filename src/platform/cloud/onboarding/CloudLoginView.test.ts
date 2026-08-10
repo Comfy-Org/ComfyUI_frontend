@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import { readFile } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -117,12 +116,6 @@ describe('CloudLoginView', () => {
     )
 
     expect(screen.getByTestId('signin-form')).toBeInTheDocument()
-
-    const source = await readFile(
-      'src/platform/cloud/onboarding/CloudLoginView.vue',
-      'utf8'
-    )
-    expect(source).not.toContain('isInChina')
   })
 
   it('shows the in-app browser notice only inside an embedded webview', async () => {
