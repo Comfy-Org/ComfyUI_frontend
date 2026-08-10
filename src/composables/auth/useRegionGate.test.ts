@@ -28,7 +28,10 @@ describe('useRegionGate', () => {
   it('starts pending so callers cannot render before the region is known', () => {
     render(GateHost)
 
-    expect(currentStatus()).toBe('pending')
+    expect(
+      currentStatus(),
+      'detection bounds itself, so no deadline here may answer on its behalf'
+    ).toBe('pending')
   })
 
   it.for([
@@ -56,9 +59,6 @@ describe('useRegionGate', () => {
     })
     render(GateHost)
 
-    // Detection bounds itself, so no deadline here may answer on its behalf.
-    // Draining every scheduled timer kills any caller-side fallback, whatever
-    // duration it was given.
     await vi.advanceTimersByTimeAsync(60_000)
     expect(currentStatus()).toBe('pending')
 

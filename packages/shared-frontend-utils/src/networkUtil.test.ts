@@ -8,10 +8,7 @@ const traceResponse = (body: string, ok = true) =>
 const TRACE_BODY = (loc: string) =>
   `fl=1187f27\nh=cloud.comfy.org\nloc=${loc}\ntls=TLSv1.3\n`
 
-/**
- * A network that blackholes: never resolves, never rejects, and ignores the
- * abort signal entirely. Only a deadline of our own can escape it.
- */
+/** Blackholes: never settles and ignores the abort signal. */
 const neverSettles = () => new Promise<Response>(() => {})
 
 /** Resolves to the settled value, or to `PENDING` if the promise has not. */
@@ -98,7 +95,6 @@ describe('isInChina', () => {
     fetchMock.mockImplementation(neverSettles)
 
     const verdict = isInChina()
-    // Each leg only schedules its deadline once the previous one has expired.
     for (const _ of [0, 1, 2]) await vi.advanceTimersByTimeAsync(2000)
 
     expect(await settlementOf(verdict)).toBe(false)

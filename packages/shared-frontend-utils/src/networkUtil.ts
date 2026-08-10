@@ -4,7 +4,6 @@ const VALID_STATUS_CODES = [200, 201, 301, 302, 307, 308]
 export const checkUrlReachable = async (url: string): Promise<boolean> => {
   try {
     const response = await axios.head(url)
-    // Additional check for successful response
     return VALID_STATUS_CODES.includes(response.status)
   } catch {
     return false
@@ -12,16 +11,15 @@ export const checkUrlReachable = async (url: string): Promise<boolean> => {
 }
 
 /**
- * Cloudflare's edge echoes the request's geo-IP country here. It is an
- * implementation detail of our CDN rather than a contract we own; the durable
- * form is a first-party endpoint echoing the `CF-IPCountry` header.
+ * A CDN implementation detail, not a contract we own. The durable form is a
+ * first-party endpoint echoing `CF-IPCountry`.
  */
 const CLIENT_COUNTRY_URL = 'https://cloud.comfy.org/cdn-cgi/trace'
 
-/** Pre-existing bound on the Google reachability probe, reused for every leg. */
+/** Bounds every probe leg; two previously had none. */
 const PROBE_TIMEOUT_MS = 2000
 
-/** Pre-existing threshold: Baidu answering this fast implies a China route. */
+/** Baidu answering this fast implies a China route. */
 const CHINA_LATENCY_MS = 150
 
 const parseTraceCountry = (body: string): string | undefined =>
@@ -33,9 +31,8 @@ const parseTraceCountry = (body: string): string | undefined =>
     .toUpperCase() || undefined
 
 /**
- * Fetches with a deadline the caller controls. The abort signal alone is not
- * enough: a request the browser never resolves nor rejects would leave the
- * promise pending forever, so the deadline also rejects on its own.
+ * The abort signal alone is not enough: a request the browser never resolves
+ * nor rejects would hang forever, so the deadline rejects independently.
  */
 async function fetchWithin(url: string, init: RequestInit): Promise<Response> {
   const controller = new AbortController()
@@ -58,10 +55,7 @@ async function fetchWithin(url: string, init: RequestInit): Promise<Response> {
   }
 }
 
-/**
- * Resolves the client's ISO country code from the CDN edge, or `undefined` when
- * the edge cannot answer. One bounded request, no third-party pings.
- */
+/** ISO country from the CDN edge, or `undefined` when it cannot answer. */
 export async function getClientCountry(): Promise<string | undefined> {
   try {
     const response = await fetchWithin(CLIENT_COUNTRY_URL, {
@@ -79,9 +73,9 @@ const probe = (url: string) =>
   fetchWithin(url, { mode: 'no-cors', cache: 'no-cache' })
 
 /**
- * Reachability heuristic used only when the edge cannot name the country.
- * Unsound in both directions — a VPN user in China reaches Google, and a
- * `zh-CN` user anywhere is blocked whenever Google is briefly unreachable.
+ * Fallback for when the edge cannot answer. Unsound both ways: a VPN user in
+ * China reaches Google, and a `zh-CN` user anywhere is blocked whenever Google
+ * is briefly unreachable.
  */
 async function isInChinaByProbe(): Promise<boolean> {
   const isChineseLocale = navigator.language.toLowerCase().startsWith('zh-cn')
@@ -103,11 +97,8 @@ async function isInChinaByProbe(): Promise<boolean> {
 }
 
 /**
- * Whether the client is in mainland China. Prefers the edge's geo-IP answer and
- * falls back to the reachability heuristic when the edge is unreachable.
- *
- * Every leg is bounded, so this always settles — callers must not add a timeout
- * of their own, which would pre-empt a slow but real answer.
+ * Prefers the edge's geo-IP, falling back to the heuristic. Always settles, so
+ * callers must not add a timeout that could pre-empt a slow but real answer.
  */
 export async function isInChina(): Promise<boolean> {
   const country = await getClientCountry()

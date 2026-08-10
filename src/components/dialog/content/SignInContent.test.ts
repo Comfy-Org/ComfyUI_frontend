@@ -99,7 +99,6 @@ function renderSignInContent() {
   })
 }
 
-/** The dialog opens on sign-in; sign-up is the gated surface. */
 async function switchToSignUp(advanceTimers?: (ms: number) => void) {
   const user = (await import('@testing-library/user-event')).default.setup(
     advanceTimers ? { advanceTimers } : {}
@@ -135,7 +134,6 @@ describe('SignInContent', () => {
 
     expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
 
-    // A slow but real "in China" answer must win; no fallback may pre-empt it.
     settle(true)
 
     await waitFor(() => {
@@ -179,11 +177,12 @@ describe('SignInContent', () => {
 
       expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
 
-      // Draining every scheduled timer proves no caller-side fallback releases
-      // the form on detection's behalf.
       await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('signup-form'),
+        "no caller-side fallback may release the form on detection's behalf"
+      ).not.toBeInTheDocument()
       expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
     } finally {
       vi.useRealTimers()

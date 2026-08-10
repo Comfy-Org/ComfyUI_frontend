@@ -189,12 +189,12 @@ describe('CloudSignupView', () => {
       )
       expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
 
-      // Detection owns its own deadline. Draining every scheduled timer proves
-      // no caller-side fallback decides "not in China" on its behalf, which
-      // would resurrect the submit race this view exists to close.
       await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('signup-form'),
+        'a caller-side fallback deciding "not in China" on detection\'s behalf would resurrect the submit race this view exists to close'
+      ).not.toBeInTheDocument()
       expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
     } finally {
       vi.useRealTimers()
