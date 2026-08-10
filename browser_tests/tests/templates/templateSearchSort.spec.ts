@@ -20,7 +20,7 @@ test.describe('Template search sort', () => {
     await comfyPage.settings.setSetting('Comfy.Templates.SelectedModels', [])
     await comfyPage.settings.setSetting('Comfy.Templates.SelectedUseCases', [])
     await comfyPage.settings.setSetting('Comfy.Templates.SelectedRunsOn', [])
-    await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'default')
+    await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'newest')
 
     templateApi.configure(
       withTemplates([
@@ -40,7 +40,7 @@ test.describe('Template search sort', () => {
     comfyPage
   }) => {
     const dialog = comfyPage.templatesDialog
-    await expect(dialog.sortSelect).toHaveText('Default')
+    await expect(dialog.sortSelect).toHaveText('Newest')
 
     await dialog.searchInput.fill('wan')
     await expect(dialog.resultsCount).toHaveText(/Showing 2 of 3 templates/i)
@@ -79,7 +79,7 @@ test.describe('Template search sort', () => {
     await expect(dialog.sortSelect).toHaveText('Popular')
 
     await dialog.searchInput.fill('')
-    await expect(dialog.sortSelect).toHaveText('Default')
+    await expect(dialog.sortSelect).toHaveText('Newest')
     await expect(dialog.resultsCount).toHaveText(/Showing 3 of 3 templates/i)
   })
 })
