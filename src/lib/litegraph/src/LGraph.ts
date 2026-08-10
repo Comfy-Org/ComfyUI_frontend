@@ -9,12 +9,13 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import {
-  canvasLayoutMutations,
-  registerGroupLayout,
-  registerNodeLayout,
-  unregisterAllGraphLayout,
-  unregisterNodeLayout
-} from '@/renderer/core/layout/operations/graphLayoutRegistration'
+  attachGroupLayout,
+  attachNodeLayout,
+  detachAllGraphLayout,
+  detachGroupLayout,
+  detachNodeLayout,
+  detachRerouteLayout
+} from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -510,10 +511,12 @@ export class LGraph
       unregisterAllLinkTopologies(this)
       unregisterAllRerouteChains(this)
       unregisterAllNodeStates(this)
-      unregisterAllGraphLayout(this)
+      detachAllGraphLayout(this)
     }
 
-    this.id = zeroUuid
+    // Root graphs re-mint their id so a cleared graph never shares layout
+    // keys with entries a previous holder of the id left behind.
+    this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
     this.state = {
@@ -1086,7 +1089,7 @@ export class LGraph
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
-      registerGroupLayout(this, node)
+      attachGroupLayout(this, node, { adoptExisting: true })
       this.incrementVersion()
       return
     }
@@ -1149,7 +1152,7 @@ export class LGraph
 
     // Keep after onNodeAdded so its deferred hooks run before these writes
     // flush Vue.
-    registerNodeLayout(this, node)
+    attachNodeLayout(this, node, { adoptExisting: true })
     this.incrementVersion()
 
     this.setDirtyCanvas(true)
@@ -1183,7 +1186,7 @@ export class LGraph
       if (index != -1) {
         this._groups.splice(index, 1)
       }
-      canvasLayoutMutations().deleteGroup(this.rootGraph.id, node.id)
+      detachGroupLayout(node)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)
@@ -1239,7 +1242,7 @@ export class LGraph
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
         unregisterAllNodeStates(subgraph)
-        unregisterAllGraphLayout(subgraph)
+        detachAllGraphLayout(subgraph)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
     }
@@ -1248,7 +1251,7 @@ export class LGraph
     node.onRemoved?.()
 
     unregisterNodeState(node)
-    unregisterNodeLayout(this, node)
+    detachNodeLayout(node)
 
     node.graph = null
     this.incrementVersion()
@@ -1612,7 +1615,7 @@ export class LGraph
     if (!reroute) return
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
-    canvasLayoutMutations().deleteReroute(this.rootGraph.id, id)
+    detachRerouteLayout(reroute)
   }
 
   /**
@@ -2532,7 +2535,7 @@ export class LGraph
       // TODO: Finish typing configure()
       if (!data) return
       if (options.clearGraph) this.clear()
-      else unregisterAllGraphLayout(this)
+      else detachAllGraphLayout(this)
 
       this._configureBase(data)
 

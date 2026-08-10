@@ -15,7 +15,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutRegistration'
+import { canvasLayoutMutations } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import type {
   LayoutChange,
   LayoutOperation,

@@ -285,3 +285,10 @@ export interface LayoutChange {
   source: LayoutSource
   operation: LayoutOperation
 }
+
+/**
+ * Outcome of applying a layout operation: `applied` wrote state, `no-op`
+ * matched existing state or a missing target, `rejected` means the store
+ * refused a reentrant write and nothing changed.
+ */
+export type LayoutOperationResult = 'applied' | 'no-op' | 'rejected'
