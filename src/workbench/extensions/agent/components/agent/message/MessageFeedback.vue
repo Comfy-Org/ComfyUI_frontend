@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
+import AgentTooltip from '../AgentTooltip.vue'
 
 const { markdown } = defineProps<{ markdown: string }>()
 const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
@@ -37,57 +38,63 @@ function copyPlainText(): void {
 
 <template>
   <div class="text-agent-fg-muted flex w-full items-center justify-end gap-1">
-    <button
-      type="button"
-      :aria-label="t('agent.helpful')"
-      :aria-pressed="vote === 'up'"
-      :class="
-        cn(
-          'hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none',
-          vote === 'up' ? 'text-agent-fg' : 'text-agent-fg-muted'
-        )
-      "
-      @click="setVote('up')"
-    >
-      <span class="icon-[lucide--thumbs-up] size-4" />
-    </button>
-    <button
-      type="button"
-      :aria-label="t('agent.notHelpful')"
-      :aria-pressed="vote === 'down'"
-      :class="
-        cn(
-          'hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none',
-          vote === 'down' ? 'text-agent-fg' : 'text-agent-fg-muted'
-        )
-      "
-      @click="setVote('down')"
-    >
-      <span class="icon-[lucide--thumbs-down] size-4" />
-    </button>
+    <AgentTooltip :label="t('agent.helpful')">
+      <button
+        type="button"
+        :aria-label="t('agent.helpful')"
+        :aria-pressed="vote === 'up'"
+        :class="
+          cn(
+            'hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none',
+            vote === 'up' ? 'text-agent-fg' : 'text-agent-fg-muted'
+          )
+        "
+        @click="setVote('up')"
+      >
+        <span class="icon-[lucide--thumbs-up] size-4" />
+      </button>
+    </AgentTooltip>
+    <AgentTooltip :label="t('agent.notHelpful')">
+      <button
+        type="button"
+        :aria-label="t('agent.notHelpful')"
+        :aria-pressed="vote === 'down'"
+        :class="
+          cn(
+            'hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none',
+            vote === 'down' ? 'text-agent-fg' : 'text-agent-fg-muted'
+          )
+        "
+        @click="setVote('down')"
+      >
+        <span class="icon-[lucide--thumbs-down] size-4" />
+      </button>
+    </AgentTooltip>
     <div
       class="hover:bg-agent-surface-hover hover:text-agent-fg has-[[data-state=open]]:bg-agent-surface-hover has-[[data-state=open]]:text-agent-fg flex h-6 w-14 rounded-lg transition-colors"
     >
-      <button
-        type="button"
-        :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-        :class="
-          cn(
-            'focus-visible:ring-agent-accent flex h-6 w-8 cursor-pointer items-center justify-center rounded-l-lg focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none',
-            copied ? 'text-agent-fg' : 'text-inherit'
-          )
-        "
-        @click="copyPlainText()"
-      >
-        <span
+      <AgentTooltip :label="copied ? t('agent.copied') : t('agent.copy')">
+        <button
+          type="button"
+          :aria-label="copied ? t('agent.copied') : t('agent.copy')"
           :class="
             cn(
-              'size-4',
-              copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+              'focus-visible:ring-agent-accent flex h-6 w-8 cursor-pointer items-center justify-center rounded-l-lg focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none',
+              copied ? 'text-agent-fg' : 'text-inherit'
             )
           "
-        />
-      </button>
+          @click="copyPlainText()"
+        >
+          <span
+            :class="
+              cn(
+                'size-4',
+                copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+              )
+            "
+          />
+        </button>
+      </AgentTooltip>
       <DropdownMenuRoot>
         <DropdownMenuTrigger
           :aria-label="t('agent.copyMarkdown')"
