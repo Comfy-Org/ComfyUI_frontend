@@ -120,7 +120,8 @@
       "expectedNodeCount": 3,
       "expectedExtensions": [],
       "disabledNodes": {},
-      "timeoutMs": 30000
+      "timeoutMs": 30000,
+      "cannotRunAlone": ["FlashVSRInitPipe", "FlashVSRNode"]
     },
     {
       "pack": "ComfyUI-Fluxtapoz",

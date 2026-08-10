@@ -10,6 +10,7 @@
     "DynamiCrafterCNLoader",
     "DynamiCrafterModelLoader"
   ],
+  "ComfyUI-FlashVSR_Ultra_Fast": ["FlashVSRInitPipe", "FlashVSRNode"],
   "ComfyUI-Image-Filters": [
     "AlphaMatte",
     "BatchAverageUnJittered",
