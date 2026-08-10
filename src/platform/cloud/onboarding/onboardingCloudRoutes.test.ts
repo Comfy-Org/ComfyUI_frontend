@@ -17,6 +17,11 @@ vi.mock('@/platform/auth/session/useSessionCookie', () => ({
   useSessionCookie: () => ({ createSessionOrThrow })
 }))
 
+const loggedIn = vi.hoisted(() => ({ value: false }))
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({ isLoggedIn: { value: loggedIn.value } })
+}))
+
 const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
 const consentRoute = oauthLayout?.children?.find(
   (c) => c.name === 'cloud-oauth-consent'
@@ -129,5 +134,117 @@ describe('oauthConsentRedirect', () => {
     } finally {
       warn.mockRestore()
     }
+  })
+})
+
+const cloudLayout = cloudOnboardingRoutes.find((r) => r.path === '/cloud')
+
+const guardedRoutes = ['cloud-login', 'cloud-signup'].map((name) => {
+  const route = cloudLayout?.children?.find((c) => c.name === name)
+  if (typeof route?.beforeEnter !== 'function') {
+    throw new Error(`${name} has no beforeEnter guard`)
+  }
+  return [name, route.beforeEnter] as const
+})
+
+/**
+ * Runs a guard the way vue-router does and reports what it passed to `next()`.
+ * `undefined` means the guard let the navigation through untouched.
+ */
+async function runGuard(
+  guard: (typeof guardedRoutes)[number][1],
+  query: Record<string, string>
+) {
+  const next = vi.fn()
+  const to = { query, name: 'cloud-login', path: '/cloud/login' }
+  // The guard only reads `to`; `from` and the router instance are unused.
+  await (
+    guard as unknown as (
+      to: unknown,
+      from: unknown,
+      next: unknown
+    ) => Promise<void>
+  )(to, undefined, next)
+  return next.mock.calls[0]?.[0]
+}
+
+// `cloud-login` and `cloud-signup` carry byte-identical guards, so both are
+// driven here — covering one would leave the other free to regress.
+describe.for(guardedRoutes)('%s beforeEnter', ([, guard]) => {
+  beforeEach(() => {
+    loggedIn.value = false
+    clearOAuthRequestId()
+    createSessionOrThrow.mockReset().mockResolvedValue(undefined)
+  })
+
+  it('lets a signed-out visitor through to the form', async () => {
+    expect(await runGuard(guard, {})).toBeUndefined()
+  })
+
+  it('redirects a signed-in visitor away from the auth page', async () => {
+    loggedIn.value = true
+
+    expect(await runGuard(guard, {})).toEqual({ name: 'cloud-user-check' })
+  })
+
+  it('sends a signed-in visitor straight to consent mid-OAuth', async () => {
+    loggedIn.value = true
+    captureOAuthRequestId({ oauth_request_id: VALID_REQUEST_ID })
+
+    expect(await runGuard(guard, {})).toEqual({
+      name: 'cloud-oauth-consent',
+      query: { oauth_request_id: VALID_REQUEST_ID }
+    })
+  })
+
+  // The account-switch escape hatch. Without it a signed-in user asking to
+  // switch accounts is bounced straight back into the session they are trying
+  // to leave, and can never reach the form.
+  it('honours ?switchAccount for a signed-in visitor', async () => {
+    loggedIn.value = true
+
+    expect(await runGuard(guard, { switchAccount: '1' })).toBeUndefined()
+  })
+
+  it('does not mint a session cookie when it lets the visitor through', async () => {
+    loggedIn.value = true
+
+    await runGuard(guard, { switchAccount: '1' })
+
+    expect(createSessionOrThrow).not.toHaveBeenCalled()
+  })
+})
+
+describe('legacy /cloud/oauth/consent redirect', () => {
+  const legacyRoute = cloudOnboardingRoutes.find(
+    (r) => r.path === '/cloud/oauth/consent'
+  )
+
+  it('preserves the query the backend 302s with', () => {
+    // The backend still sends `?oauth_request_id=...` to the old path. Dropping
+    // the query here strands the consent view with no request to consent to.
+    const redirect = legacyRoute?.redirect
+    if (typeof redirect !== 'function') {
+      throw new Error('legacy consent route has no redirect function')
+    }
+
+    const to = {
+      name: undefined,
+      path: '/cloud/oauth/consent',
+      fullPath: `/cloud/oauth/consent?oauth_request_id=${VALID_REQUEST_ID}`,
+      query: { oauth_request_id: VALID_REQUEST_ID },
+      hash: '',
+      params: {},
+      matched: [],
+      meta: {},
+      redirectedFrom: undefined
+    }
+
+    const target = redirect(to, to)
+
+    expect(target).toEqual({
+      path: '/oauth/consent',
+      query: { oauth_request_id: VALID_REQUEST_ID }
+    })
   })
 })

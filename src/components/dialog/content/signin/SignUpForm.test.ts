@@ -302,4 +302,60 @@ describe('SignUpForm', () => {
       expect(onSubmit).toHaveBeenCalledWith(expectedValues, undefined)
     })
   })
+
+  // A disabled button with no explanation is a dead end for a screen-reader
+  // user: the hint is the only thing saying why submit is unavailable.
+  describe('Turnstile wait hint accessibility', () => {
+    it('announces the wait politely while the challenge is pending', async () => {
+      mockTurnstileEnabled.value = true
+      renderComponent()
+      await nextTick()
+
+      const hint = screen.getByRole('status')
+      expect(hint).toHaveTextContent(
+        enMessages.auth.turnstile.submitBlockedHint
+      )
+      expect(hint).toHaveAttribute('aria-live', 'polite')
+    })
+
+    it('points the disabled submit button at the hint', async () => {
+      mockTurnstileEnabled.value = true
+      renderComponent()
+      await nextTick()
+
+      expect(
+        screen.getByRole('button', { name: signUpButton })
+      ).toHaveAttribute('aria-describedby', screen.getByRole('status').id)
+    })
+
+    it('drops the description once the challenge resolves', async () => {
+      mockTurnstileEnabled.value = true
+      renderComponent()
+      await nextTick()
+
+      emitTurnstileToken!('token-xyz')
+      await nextTick()
+
+      expect(
+        screen.getByRole('button', { name: signUpButton })
+      ).not.toHaveAttribute('aria-describedby')
+    })
+  })
+
+  // onSubmit is wrapped in useThrottleFn at 1500 ms. Without it an impatient
+  // double-click creates the account twice, and the second call races the
+  // first through Firebase.
+  describe('double-submit throttling', () => {
+    it('emits once when the button is clicked twice in quick succession', async () => {
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
+      await fillValidSignup(user)
+      const submit = screen.getByRole('button', { name: signUpButton })
+
+      await user.click(submit)
+      await user.click(submit)
+
+      expect(onSubmit).toHaveBeenCalledOnce()
+    })
+  })
 })
