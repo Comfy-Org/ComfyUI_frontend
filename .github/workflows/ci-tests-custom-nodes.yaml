@@ -64,15 +64,16 @@ jobs:
     timeout-minutes: 90
     permissions:
       contents: read
-    # DETECTION PROOF (demo branch only): one leg per row of the Detection-proof section (docs/custom-node-regression-suite.md),
-    # each with exactly ONE break live. Stacking breaks in a single tree makes
+    # DETECTION PROOF (demo branch only): row 0 is the clean control; rows 1-15
+    # map one-to-one to S1-S15 with exactly ONE break live. Stacking breaks in
+    # a single tree makes
     # a red unattributable - two of them silently cannibalised each other, and
     # the fix was distorting the breaks to coexist rather than isolating them.
     # Leg N = story SN (1:1), all fifteen stories live.
     strategy:
       fail-fast: false
       matrix:
-        row: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        row: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -87,6 +88,10 @@ jobs:
         run: |
           set -euo pipefail
           case "$ROW" in
+            0)
+              echo "row 0 is the clean control; no src patch"
+              exit 0
+              ;;
             8|9|10)
               echo "row $ROW is pack-mode; no src patch"
               exit 0
@@ -191,6 +196,9 @@ jobs:
         run: |
           set -euo pipefail
           case "$ROW" in
+            0)
+              echo "row 0 is the clean control; no pack break"
+              ;;
             8)
               # Console/pageerror ledger (S8): an uncaught pack-JS error during
               # save/reload, the class the betterCombos.js `typeof null` bug hit.
@@ -343,6 +351,19 @@ jobs:
         run: |
           set -euo pipefail
           [ -f custom-nodes-results.json ] || { echo "::error::no results json - the suite never ran; that is a broken leg, not a caught break"; exit 1; }
+          if [ "$ROW" = "0" ]; then
+            [ "$SUITE_OUTCOME" = "success" ] || { echo "::error::clean control suite outcome '$SUITE_OUTCOME'"; exit 1; }
+            collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
+            unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-results.json)
+            skipped=$(jq -er '.stats.skipped | numbers' custom-nodes-results.json)
+            flaky=$(jq -er '.stats.flaky | numbers' custom-nodes-results.json)
+            [ "$collected" = "34" ] || { echo "::error::clean control collected $collected tests; expected 34"; exit 1; }
+            [ "$unexpected" = "0" ] || { echo "::error::clean control had $unexpected failed test(s)"; exit 1; }
+            [ "$skipped" = "0" ] || { echo "::error::clean control had $skipped skipped test(s)"; exit 1; }
+            [ "$flaky" = "0" ] || { echo "::error::clean control had $flaky flaky test(s)"; exit 1; }
+            echo "clean control passed: 34 tests, zero failed/skipped/flaky"
+            exit 0
+          fi
           # Failure MESSAGES only, extracted once for every row's match:
           # playwright results embed source snippets, and a raw grep of the
           # file can hit a pattern in spec SOURCE (leg 14 went green that way
