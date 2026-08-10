@@ -36,6 +36,19 @@ describe('isInChina', () => {
     await expect(isInChina()).resolves.toBe(true)
   })
 
+  it('reports inside China when only Baidu answers, and fast', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      url.includes('google')
+        ? Promise.reject(new Error('blocked'))
+        : Promise.resolve({ ok: true } as Response)
+    )
+
+    await expect(
+      isInChina(),
+      'a China-routed client on a non-zh locale is only detectable by Baidu latency'
+    ).resolves.toBe(true)
+  })
+
   it('falls back to the locale when neither probe answers', async () => {
     fetchMock.mockRejectedValue(new Error('blocked'))
 
