@@ -103,7 +103,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
               side="bottom"
               :side-offset="6"
               :collision-padding="8"
-              class="z-1700 w-max rounded-lg bg-[#171717] px-3 py-1.5 font-inter text-xs/4 whitespace-nowrap text-[#fafafa] shadow-none ring-1 ring-charcoal-200 ring-inset"
+              class="z-1700 w-max rounded-lg bg-[#171717] px-3 py-1.5 font-inter text-xs/4 whitespace-nowrap text-[#fafafa] shadow-none ring-1 ring-charcoal-200 will-change-[transform,opacity] ring-inset data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-[state=instant-open]:animate-in data-[state=instant-open]:fade-in-0 data-[state=instant-open]:zoom-in-95"
             >
               {{ t('agent.backToPreviousChat') }}
             </TooltipContent>

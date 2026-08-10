@@ -46,8 +46,13 @@ const workflowTooltipText = computed(() =>
 )
 const workflowTooltipOpen = ref(false)
 const workflowTrigger = ref<HTMLButtonElement>()
-const workflowTooltipClass =
-  'z-1700 w-max whitespace-nowrap rounded-lg bg-[#171717] px-3 py-1.5 font-inter text-xs leading-4 text-[#fafafa] shadow-none ring-1 ring-inset ring-charcoal-200'
+const workflowTooltipClass = cn(
+  'z-1700 w-max rounded-lg bg-[#171717] px-3 py-1.5 whitespace-nowrap',
+  'font-inter text-xs/4 text-[#fafafa] shadow-none ring-1 ring-charcoal-200 will-change-[transform,opacity] ring-inset',
+  'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+  'data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95',
+  'data-[state=instant-open]:animate-in data-[state=instant-open]:fade-in-0 data-[state=instant-open]:zoom-in-95'
+)
 
 const open = ref(false)
 const query = ref('')
