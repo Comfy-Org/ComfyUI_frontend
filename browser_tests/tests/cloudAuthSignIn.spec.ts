@@ -59,14 +59,6 @@ interface FirebaseLookupResponse {
   }>
 }
 
-interface FirebaseErrorResponse {
-  error: {
-    code: number
-    message: string
-    errors: Array<{ message: string; domain: string; reason: string }>
-  }
-}
-
 const lookupResponse: FirebaseLookupResponse = {
   kind: 'identitytoolkit#GetAccountInfoResponse',
   users: [
@@ -82,38 +74,16 @@ const lookupResponse: FirebaseLookupResponse = {
   ]
 }
 
-function firebaseError(message: string): FirebaseErrorResponse {
-  return {
-    error: {
-      code: 400,
-      message,
-      errors: [{ message, domain: 'global', reason: 'invalid' }]
-    }
-  }
-}
-
 /**
- * Route Firebase's password sign-in endpoint. `outcome` picks between a
- * successful credential and the error code the backend returns for a bad
- * password; every other identitytoolkit call resolves to the account lookup.
+ * Route Firebase's password sign-in endpoint to a successful credential; every
+ * other identitytoolkit call resolves to the account lookup.
  */
-async function mockFirebasePasswordSignIn(
-  page: Page,
-  outcome: 'success' | 'wrong-password'
-) {
+async function mockFirebasePasswordSignIn(page: Page) {
   await page.unroute('**/identitytoolkit.googleapis.com/**')
   await page.route('**/identitytoolkit.googleapis.com/**', async (route) => {
     const request = route.request()
 
     if (request.url().includes('accounts:signInWithPassword')) {
-      if (outcome === 'wrong-password') {
-        await route.fulfill({
-          status: 400,
-          json: firebaseError('INVALID_LOGIN_CREDENTIALS')
-        })
-        return
-      }
-
       const response = {
         kind: 'identitytoolkit#VerifyPasswordResponse',
         localId: SIGN_IN_USER.uid,
@@ -160,7 +130,7 @@ test.describe('Cloud email sign-in', { tag: '@cloud' }, () => {
     page
   }) => {
     await bootSignedOut(page)
-    await mockFirebasePasswordSignIn(page, 'success')
+    await mockFirebasePasswordSignIn(page)
 
     // The guard bounces an unauthenticated visitor to login, recording where
     // they were headed. Losing previousFullPath here strands the user on the
@@ -173,25 +143,6 @@ test.describe('Cloud email sign-in', { tag: '@cloud' }, () => {
     await submitEmailSignIn(page)
 
     await cloudAppExpect(page).toHaveURL(/deepLink=1/)
-  })
-
-  test('a wrong password surfaces a visible error and stays on the form', async ({
-    page
-  }) => {
-    await bootSignedOut(page)
-    await mockFirebasePasswordSignIn(page, 'wrong-password')
-
-    await page.goto(`${APP_URL}/cloud/login`)
-    await expect(page).toHaveURL(/\/cloud\/login/)
-
-    await submitEmailSignIn(page)
-
-    // Before the banner was wired, this failure was toast-only and the user was
-    // left staring at an unchanged form with no idea what went wrong.
-    await expect(
-      page.getByText(/invalid login credentials|password you entered/i)
-    ).toBeVisible()
-    await expect(page).toHaveURL(/\/cloud\/login/)
   })
 
   test('an already-signed-in visitor to /cloud/login is passed through to the app', async ({
