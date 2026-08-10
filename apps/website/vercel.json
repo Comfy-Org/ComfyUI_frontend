@@ -41,6 +41,26 @@
       "permanent": true
     },
     {
+      "source": "/minimax",
+      "destination": "/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/minimax/",
+      "destination": "/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/minimax",
+      "destination": "/zh-CN/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/minimax/",
+      "destination": "/zh-CN/minimax-h3/",
+      "permanent": false
+    },
+    {
       "source": "/enterprise",
       "destination": "/cloud/enterprise",
       "permanent": true

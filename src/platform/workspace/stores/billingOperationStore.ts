@@ -9,6 +9,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
+  BillingFailure,
   PaymentIntentSource,
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
@@ -42,7 +43,17 @@ export interface StartOperationMetadata {
     memberRemovalCount: number
     memberRemovalFailures: number
     targetTier?: TierKey
+    startedAt: number
   }
+  /**
+   * The timestamp the caller used for its own canonical `started` telemetry
+   * event (i.e. before the initiating subscribe/top-up/cancel API call), so
+   * `duration_ms` on the poller's terminal events spans the full emitted
+   * lifecycle instead of just the poll-observation window. Defaults to
+   * `Date.now()` (poll-start time) when the caller has no such timestamp,
+   * e.g. recovering a pending operation on page load.
+   */
+  attemptStartedAt?: number
 }
 
 interface BillingOperation {
@@ -51,6 +62,8 @@ interface BillingOperation {
   status: OperationStatus
   errorMessage: string | null
   startedAt: number
+  operationStartedAt: number
+  businessAttemptStartedAt?: number
   actionUrl: string | null
   authenticationRequiredSeen: boolean
   workspaceId: string | null
@@ -162,12 +175,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (existing) clearOperation(opId)
 
     const actionUrl = validateActionUrl(initialActionUrl)
+    const now = Date.now()
     const operation: BillingOperation = {
       opId,
       type,
       status: 'pending',
       errorMessage: null,
-      startedAt: Date.now(),
+      startedAt: now,
+      operationStartedAt: metadata?.attemptStartedAt ?? now,
+      businessAttemptStartedAt: metadata?.attemptStartedAt,
       actionUrl,
       authenticationRequiredSeen: actionUrl !== null,
       workspaceId: workspaceStore.activeWorkspaceId,
@@ -180,6 +196,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     operations.value = new Map(operations.value).set(opId, operation)
     intervals.set(opId, INITIAL_INTERVAL_MS)
+
+    if (metadata?.attemptStartedAt === undefined) {
+      useTelemetry()?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: type
+      })
+    }
 
     if (type !== 'cancel') {
       showProgressToast(opId, type, operation.actionUrl !== null)
@@ -307,6 +332,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
+    const now = Date.now()
+    const operationDurationMs = now - operation.operationStartedAt
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'succeeded',
@@ -316,10 +343,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       tier: operation.tier,
       cycle: operation.cycle,
       checkout_type: operation.checkoutType,
-      payment_intent_source: operation.paymentIntentSource
+      payment_intent_source: operation.paymentIntentSource,
+      duration_ms: operationDurationMs
     })
 
-    if (operation.type === 'subscription') {
+    if (
+      operation.type === 'subscription' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      const durationMs = now - operation.businessAttemptStartedAt
       telemetry?.trackBillingEvent({
         operation: 'subscription_checkout',
         stage: 'succeeded',
@@ -328,26 +360,46 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         cycle: operation.cycle,
         checkout_type: operation.checkoutType,
         payment_intent_source: operation.paymentIntentSource,
-        billing_op_id: opId
+        billing_op_id: opId,
+        duration_ms: durationMs
       })
-      if (operation.downgradeToPersonal) {
-        telemetry?.trackBillingEvent({
-          operation: 'downgrade_to_personal',
-          stage: 'succeeded',
-          outcome: 'success',
-          member_removal_count:
-            operation.downgradeToPersonal.memberRemovalCount,
-          member_removal_failures:
-            operation.downgradeToPersonal.memberRemovalFailures,
-          target_tier: operation.downgradeToPersonal.targetTier
+      // Also fires the legacy event for providers (Mixpanel, GTM) that don't
+      // implement trackBillingEvent. Gated to actual new/upgraded
+      // subscriptions — a downgrade-to-personal is churn, not a conversion,
+      // and this event drives a GA4 "subscription succeeded" conversion goal.
+      if (!operation.downgradeToPersonal) {
+        telemetry?.trackMonthlySubscriptionSucceeded({
+          tier: operation.tier,
+          cycle: operation.cycle,
+          checkout_type: operation.checkoutType,
+          payment_intent_source: operation.paymentIntentSource,
+          billing_op_id: opId
         })
       }
-    } else if (operation.type === 'topup') {
+    } else if (
+      operation.type === 'topup' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'succeeded',
         outcome: 'success',
-        billing_op_id: opId
+        billing_op_id: opId,
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    }
+    // Mirrors handleFailure's structure: not gated on businessAttemptStartedAt,
+    // since a downgrade always has its own startedAt for duration_ms below.
+    if (operation.downgradeToPersonal) {
+      telemetry?.trackBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'succeeded',
+        outcome: 'success',
+        member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
+        member_removal_failures:
+          operation.downgradeToPersonal.memberRemovalFailures,
+        target_tier: operation.downgradeToPersonal.targetTier,
+        duration_ms: now - operation.downgradeToPersonal.startedAt
       })
     }
 
@@ -394,7 +446,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (!operation) return
 
     const superseded = errorMessage === CHECKOUT_SUPERSEDED_REASON
-    const failureCategory = superseded ? 'stale_operation' : 'unknown'
     const defaultMessage = failureMessage(operation.type)
     const detail =
       operation.type === 'subscription'
@@ -405,6 +456,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
+    const now = Date.now()
+    const failureCategory = superseded
+      ? 'stale_operation'
+      : categorizePollFailure(
+          operation.type,
+          errorMessage,
+          Boolean(operation.downgradeToPersonal)
+        )
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
@@ -415,8 +474,38 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       cycle: operation.cycle,
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
-      failure_category: failureCategory
+      failure_category: failureCategory,
+      duration_ms: now - operation.operationStartedAt
     })
+    if (
+      operation.type === 'subscription' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: operation.tier,
+        cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
+        billing_op_id: opId,
+        failure_category: failureCategory,
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    } else if (
+      operation.type === 'topup' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: opId,
+        failure_category: failureCategory,
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    }
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
@@ -426,7 +515,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         member_removal_failures:
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
-        failure_category: failureCategory
+        failure_category: failureCategory,
+        duration_ms: now - operation.downgradeToPersonal.startedAt
       })
     }
 
@@ -451,6 +541,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     cleanup(opId)
 
     const telemetry = useTelemetry()
+    const now = Date.now()
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'timeout',
@@ -461,8 +552,38 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       cycle: operation.cycle,
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
-      failure_category: 'poll_timeout'
+      failure_category: 'poll_timeout',
+      duration_ms: now - operation.operationStartedAt
     })
+    if (
+      operation.type === 'subscription' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: operation.tier,
+        cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
+        billing_op_id: opId,
+        failure_category: 'poll_timeout',
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    } else if (
+      operation.type === 'topup' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: opId,
+        failure_category: 'poll_timeout',
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    }
     if (operation.downgradeToPersonal) {
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
@@ -472,7 +593,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         member_removal_failures:
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
-        failure_category: 'poll_timeout'
+        failure_category: 'poll_timeout',
+        duration_ms: now - operation.downgradeToPersonal.startedAt
       })
     }
 
@@ -484,6 +606,29 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     resolveTerminal(opId)
+  }
+
+  /**
+   * No caught JS error here — only the backend's free-form `error_message`, if
+   * any. `cancel` and zero-payment operations (e.g. downgrade-to-personal,
+   * which removes members / changes tier but never touches a card) can't be a
+   * provider decline, so they're always an api rejection. For payment-bearing
+   * `subscription`/`topup` polls, a message naming a connectivity/system
+   * failure isn't a decline either; only fall back to `provider_decline` when
+   * the backend gave no more specific signal.
+   */
+  function categorizePollFailure(
+    type: OperationType,
+    errorMessage: string | null,
+    isZeroPaymentOperation: boolean
+  ): BillingFailure['failure_category'] {
+    if (type === 'cancel' || isZeroPaymentOperation) return 'api_rejected'
+
+    if (errorMessage && /network|connection|unreachable/i.test(errorMessage)) {
+      return 'network'
+    }
+
+    return 'provider_decline'
   }
 
   function failureMessage(type: OperationType) {

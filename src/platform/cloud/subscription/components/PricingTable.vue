@@ -528,25 +528,10 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           }
         }
       } else {
-        try {
-          await performSubscriptionCheckout(
-            tierKey,
-            currentBillingCycle.value,
-            { paymentIntentSource: reason }
-          )
-        } catch (error) {
-          telemetry?.trackBillingEvent({
-            operation: 'subscription_checkout',
-            stage: 'failed',
-            outcome: 'failure',
-            tier: tierKey,
-            cycle: currentBillingCycle.value,
-            checkout_type: 'new',
-            payment_intent_source: reason,
-            failure_category: 'unknown'
-          })
-          throw error
-        }
+        // Failure telemetry now lives in performSubscriptionCheckout itself.
+        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
+          paymentIntentSource: reason
+        })
       }
     } finally {
       isLoading.value = false
