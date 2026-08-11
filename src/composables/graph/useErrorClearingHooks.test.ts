@@ -535,6 +535,137 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
     expect(mediaScan).toHaveBeenCalledOnce()
   })
+
+  it('keeps an added-node scan pending until async verification settles', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const candidate = fromAny<MissingModelCandidate, unknown>({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'pending.safetensors',
+      isMissing: undefined
+    })
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      candidate
+    ])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    let resolveVerification: () => void = () => undefined
+    vi.spyOn(
+      missingModelScan,
+      'verifyAssetSupportedCandidates'
+    ).mockImplementation(async () => {
+      await new Promise<void>((resolve) => {
+        resolveVerification = resolve
+      })
+      candidate.isMissing = true
+    })
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(1)
+    graph.add(node)
+
+    const store = useExecutionErrorStore()
+    const executionId = createNodeExecutionId([node.id])
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
+
+    await vi.waitFor(() =>
+      expect(
+        missingModelScan.verifyAssetSupportedCandidates
+      ).toHaveBeenCalledOnce()
+    )
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
+
+    resolveVerification()
+    await vi.waitFor(() =>
+      expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
+    )
+    expect(useMissingModelStore().missingModelCandidates).toEqual([candidate])
+  })
+
+  it('releases a pending added-node scan when hooks are disposed', () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const cleanup = installErrorClearingHooks(graph)
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    const store = useExecutionErrorStore()
+    const executionId = createNodeExecutionId([node.id])
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
+
+    cleanup()
+
+    expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
+  })
+
+  it('does not surface async verification after hooks are disposed', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const candidate = fromAny<MissingModelCandidate, unknown>({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'pending.safetensors',
+      isMissing: undefined
+    })
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      candidate
+    ])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+    let resolveVerification: () => void = () => undefined
+    vi.spyOn(
+      missingModelScan,
+      'verifyAssetSupportedCandidates'
+    ).mockImplementation(async () => {
+      await new Promise<void>((resolve) => {
+        resolveVerification = resolve
+      })
+      candidate.isMissing = true
+    })
+    const cleanup = installErrorClearingHooks(graph)
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(1)
+    graph.add(node)
+
+    await vi.waitFor(() =>
+      expect(
+        missingModelScan.verifyAssetSupportedCandidates
+      ).toHaveBeenCalledOnce()
+    )
+    cleanup()
+    resolveVerification()
+    await vi.waitFor(() => expect(candidate.isMissing).toBe(true))
+
+    expect(
+      useExecutionErrorStore().hasPendingAddedNodeErrorScan(
+        graph,
+        createNodeExecutionId([node.id])
+      )
+    ).toBe(false)
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
+
+  it('does not schedule scans through a retained disposed callback', () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const cleanup = installErrorClearingHooks(graph)
+    const disposedOnNodeAdded = graph.onNodeAdded
+    cleanup()
+
+    const node = new LGraphNode('test')
+    node.id = toNodeId(1)
+    graph.add(node, true)
+    disposedOnNodeAdded?.(node)
+
+    expect(
+      useExecutionErrorStore().hasPendingAddedNodeErrorScan(
+        graph,
+        createNodeExecutionId([node.id])
+      )
+    ).toBe(false)
+  })
 })
 
 describe('onNodeRemoved clears missing asset errors by execution ID', () => {

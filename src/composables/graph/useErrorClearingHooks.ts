@@ -205,7 +205,11 @@ function scanSingleNodeErrors(node: LGraphNode): void {
   scanSingleNodeMedia(node)
 }
 
-function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
+function scanSingleNodeModelsAndTypes(
+  node: LGraphNode,
+  pendingVerifications?: Promise<void>[],
+  signal?: AbortSignal
+): void {
   if (!app.rootGraph) return
   const execId = getActiveExecutionId(node)
   if (!execId) return
@@ -228,7 +232,9 @@ function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
   // add/un-bypass paths would silently drop those candidates.
   const pendingModels = modelCandidates.filter((c) => c.isMissing === undefined)
   if (pendingModels.length) {
-    void verifyAndAddPendingModels(pendingModels)
+    const verification = verifyAndAddPendingModels(pendingModels, signal)
+    if (pendingVerifications) pendingVerifications.push(verification)
+    else void verification
   }
 
   if (node.isSubgraphNode?.()) return
@@ -252,7 +258,11 @@ function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
   }
 }
 
-function scanSingleNodeMedia(node: LGraphNode): void {
+function scanSingleNodeMedia(
+  node: LGraphNode,
+  pendingVerifications?: Promise<void>[],
+  signal?: AbortSignal
+): void {
   if (!app.rootGraph) return
   if (!getActiveExecutionId(node)) return
 
@@ -265,7 +275,9 @@ function scanSingleNodeMedia(node: LGraphNode): void {
   // return pending for generated output media.
   const pendingMedia = mediaCandidates.filter((c) => c.isMissing === undefined)
   if (pendingMedia.length) {
-    void verifyAndAddPendingMedia(pendingMedia)
+    const verification = verifyAndAddPendingMedia(pendingMedia, signal)
+    if (pendingVerifications) pendingVerifications.push(verification)
+    else void verification
   }
 }
 
@@ -282,15 +294,16 @@ function isModelCandidateStillActive(
 }
 
 async function verifyAndAddPendingModels(
-  pending: MissingModelCandidate[]
+  pending: MissingModelCandidate[],
+  signal?: AbortSignal
 ): Promise<void> {
   // Capture rootGraph at scan time so a late verification for workflow
   // A cannot leak into workflow B after a switch — execution IDs (esp.
   // root-level like "1") collide across workflows.
   const rootGraphAtScan = app.rootGraph
   try {
-    await verifyAssetSupportedCandidates(pending)
-    if (app.rootGraph !== rootGraphAtScan) return
+    await verifyAssetSupportedCandidates(pending, signal)
+    if (signal?.aborted || app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
       (c) => c.isMissing === true && isModelCandidateStillActive(c)
     )
@@ -301,12 +314,13 @@ async function verifyAndAddPendingModels(
 }
 
 async function verifyAndAddPendingMedia(
-  pending: MissingMediaCandidate[]
+  pending: MissingMediaCandidate[],
+  signal?: AbortSignal
 ): Promise<void> {
   const rootGraphAtScan = app.rootGraph
   try {
-    await verifyMediaCandidates(pending, { isCloud })
-    if (app.rootGraph !== rootGraphAtScan) return
+    await verifyMediaCandidates(pending, { isCloud, signal })
+    if (signal?.aborted || app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter((candidate) =>
       isMissingMediaCandidateActive(rootGraphAtScan, candidate)
     )
@@ -325,14 +339,62 @@ function scanAddedNode(
   scanNodeErrorTargets(node, scanNode)
 }
 
-function scheduleAddedNodeScan(node: LGraphNode): void {
-  queueMicrotask(() => {
-    scanAddedNode(node, scanSingleNodeModelsAndTypes)
-    // Paste/drop upload handlers run immediately after graph.add and must set
-    // node.isUploading synchronously before their first await. This second
-    // microtask lets that upload state settle before media widgets are scanned.
-    queueMicrotask(() => scanAddedNode(node, scanSingleNodeMedia))
-  })
+async function runAddedNodeScan(
+  node: LGraphNode,
+  signal: AbortSignal
+): Promise<void> {
+  const pendingVerifications: Promise<void>[] = []
+
+  await Promise.resolve()
+  if (signal.aborted) return
+  scanAddedNode(node, (target) =>
+    scanSingleNodeModelsAndTypes(target, pendingVerifications, signal)
+  )
+
+  await Promise.resolve()
+  if (signal.aborted) return
+  scanAddedNode(node, (target) =>
+    scanSingleNodeMedia(target, pendingVerifications, signal)
+  )
+
+  await Promise.allSettled(pendingVerifications)
+}
+
+function scheduleAddedNodeScan(
+  node: LGraphNode,
+  pendingScanCancellations: Map<LGraphNode, Set<() => void>>
+): void {
+  if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+  if (isNodeInactive(node.mode)) return
+
+  const rootGraph = app.rootGraph
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) return
+
+  const finishPendingScan = useExecutionErrorStore().beginAddedNodeErrorScan(
+    rootGraph,
+    executionId
+  )
+  const abortController = new AbortController()
+  const existingCancellations = pendingScanCancellations.get(node)
+  const cancellationsForNode = existingCancellations ?? new Set<() => void>()
+  if (!existingCancellations) {
+    pendingScanCancellations.set(node, cancellationsForNode)
+  }
+
+  function finish() {
+    finishPendingScan()
+    cancellationsForNode.delete(cancel)
+    if (cancellationsForNode.size === 0) pendingScanCancellations.delete(node)
+  }
+
+  function cancel() {
+    abortController.abort()
+    finish()
+  }
+
+  cancellationsForNode.add(cancel)
+  void runAddedNodeScan(node, abortController.signal).finally(finish)
 }
 
 function handleNodeModeChange(
@@ -421,6 +483,8 @@ function dropOutOfScopeMissingMedia(): void {
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {
+  const pendingScanCancellations = new Map<LGraphNode, Set<() => void>>()
+  let disposed = false
   const promotionErrors = createPromotionErrorReconciler({
     pruneOutOfScope: dropOutOfScopeMissingMedia,
     rescanHost: (subgraphNode) =>
@@ -441,6 +505,10 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
 
   const originalOnNodeAdded = graph.onNodeAdded
   graph.onNodeAdded = function (node: LGraphNode) {
+    if (disposed) {
+      originalOnNodeAdded?.call(this, node)
+      return
+    }
     installNodeHooksRecursive(node)
     promotionErrors.attachNode(node)
 
@@ -452,7 +520,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // Media gets one extra microtask so drag/drop upload handlers can mark
     // transient upload state before media detection reads the widget value.
     if (!ChangeTracker.isLoadingGraph) {
-      scheduleAddedNodeScan(node)
+      scheduleAddedNodeScan(node, pendingScanCancellations)
     }
 
     originalOnNodeAdded?.call(this, node)
@@ -460,6 +528,11 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
 
   const originalOnNodeRemoved = graph.onNodeRemoved
   graph.onNodeRemoved = function (node: LGraphNode) {
+    if (disposed) {
+      originalOnNodeRemoved?.call(this, node)
+      return
+    }
+    for (const cancel of pendingScanCancellations.get(node) ?? []) cancel()
     // node.graph is already null by the time onNodeRemoved fires, so
     // derive the execution ID from the graph the hook is installed on
     // plus node.id. For subgraph interior nodes this yields the full
@@ -475,6 +548,10 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
 
   const originalOnTrigger = graph.onTrigger
   graph.onTrigger = (event: LGraphTriggerEvent) => {
+    if (disposed) {
+      originalOnTrigger?.(event)
+      return
+    }
     if (event.type === 'node:property:changed' && event.property === 'mode') {
       handleNodeModeChange(
         graph,
@@ -487,6 +564,11 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
   }
 
   return () => {
+    if (disposed) return
+    disposed = true
+    for (const cancellations of pendingScanCancellations.values()) {
+      for (const cancel of cancellations) cancel()
+    }
     for (const node of graph._nodes ?? []) {
       restoreNodeHooksRecursive(node)
     }
