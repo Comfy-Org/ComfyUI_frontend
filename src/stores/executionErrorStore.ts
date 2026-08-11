@@ -7,7 +7,7 @@ import {
   liftNodeErrorsToBoundary,
   resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
-import type { LGraphNode,LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
