@@ -35,7 +35,7 @@ const technologistIdentities = {
   },
   'rob-losch': {
     name: 'Rob Losch',
-    avatarSrc: 'https://media.comfy.org/website/technologists/rob-losch.png'
+    avatarSrc: 'https://media.comfy.org/website/technologists/rob-losch_v2.png'
   },
   'robert-paige': {
     name: 'Robert Paige',
