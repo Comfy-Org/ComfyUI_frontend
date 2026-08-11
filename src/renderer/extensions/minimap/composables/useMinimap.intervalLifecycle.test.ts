@@ -38,13 +38,6 @@ const mockCanvas = {
   setDirty: vi.fn()
 }
 
-// Only the RAF loop is mocked (happy-dom provides no real frame source); the
-// interval under test and the throttle are the real implementations.
-vi.mock('@vueuse/core', async (importOriginal) => ({
-  ...((await importOriginal()) as Record<string, unknown>),
-  useRafFn: vi.fn(() => ({ pause: vi.fn(), resume: vi.fn() }))
-}))
-
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => ({ canvas: mockCanvas }))
 }))
@@ -125,6 +118,8 @@ describe('useMinimap change-detection interval', () => {
   }
 
   beforeEach(() => {
+    // Fakes intervals and requestAnimationFrame alike, so the real vueuse
+    // timing primitives run under test control with nothing mocked.
     vi.useFakeTimers()
     context = createMockCanvas2DContext()
     mockNodes[0].pos = [0, 0]
@@ -166,12 +161,21 @@ describe('useMinimap change-detection interval', () => {
     await vi.advanceTimersByTimeAsync(POLL_MS * 5)
     expect(drawCalls()).toBe(hidden)
 
-    // Show again: the pending change is only observed on an interval tick,
-    // plus the explicit refresh the visibility watcher performs.
+    // Show again: the visibility watcher repaints the stale state immediately.
     await minimap.toggle()
     await nextTick()
-    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
-    expect(drawCalls()).toBeGreaterThan(hidden)
+    await vi.advanceTimersByTimeAsync(0)
+    const afterShow = drawCalls()
+    expect(afterShow).toBeGreaterThan(hidden)
+
+    // A change made after showing is only observed by polling: nothing before
+    // the interval elapses, a redraw after it does.
+    moveNode()
+    await vi.advanceTimersByTimeAsync(POLL_MS - 20)
+    expect(drawCalls()).toBe(afterShow)
+
+    await vi.advanceTimersByTimeAsync(40)
+    expect(drawCalls()).toBeGreaterThan(afterShow)
   })
 
   it('stops polling after destroy', async () => {
