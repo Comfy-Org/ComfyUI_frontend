@@ -87,18 +87,9 @@ const PanelStub = defineComponent({
     error: { type: String, required: false },
     startFrame: { type: Number, required: true },
     endFrame: { type: Number, required: true },
-    cropBounds: { type: Object as PropType<Bounds>, required: true },
-    trimEnabled: { type: Boolean, required: true },
-    cropEnabled: { type: Boolean, required: true }
+    cropBounds: { type: Object as PropType<Bounds>, required: true }
   },
-  emits: [
-    'update:startFrame',
-    'update:endFrame',
-    'update:cropBounds',
-    'update:trimEnabled',
-    'update:cropEnabled',
-    'retry'
-  ],
+  emits: ['update:startFrame', 'update:endFrame', 'update:cropBounds', 'retry'],
   setup(props, { emit }) {
     recorded.props = props
     return () => [

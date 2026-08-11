@@ -86,18 +86,17 @@
       </div>
 
       <div
-        v-if="trimEnabled && startNorm > 0"
+        v-if="startNorm > 0"
         class="pointer-events-none absolute inset-y-0 left-0 bg-black/50"
         :style="leftDimStyle"
       />
       <div
-        v-if="trimEnabled && endNorm < 1"
+        v-if="endNorm < 1"
         class="pointer-events-none absolute inset-y-0 right-0 bg-black/50"
         :style="rightDimStyle"
       />
 
       <div
-        v-if="trimEnabled"
         class="pointer-events-none absolute inset-y-0 flex"
         :style="selectionStyle"
       >
@@ -189,14 +188,12 @@ const {
   thumbnail,
   tileAspectRatio = DEFAULT_TILE_ASPECT_RATIO,
   disabled = false,
-  trimEnabled = true,
   loading = false
 } = defineProps<{
   totalFrames: number
   thumbnail: string
   tileAspectRatio?: number
   disabled?: boolean
-  trimEnabled?: boolean
   loading?: boolean
 }>()
 
@@ -236,10 +233,8 @@ const { startDrag, activeHandle } = useRangeEditor({
   handleCenterOffsetX: toRef(() => HANDLE_WIDTH_PX / 2)
 })
 
-const scrubMinFrame = computed(() => (trimEnabled ? startFrame.value : 0))
-const scrubMaxFrame = computed(() =>
-  trimEnabled ? endFrame.value : frameMax.value
-)
+const scrubMinFrame = computed(() => startFrame.value)
+const scrubMaxFrame = computed(() => endFrame.value)
 
 const { isScrubDragging, startScrubDrag, scrubToFrame } = useTimelineScrub(
   playheadFrame,

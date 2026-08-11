@@ -4,8 +4,6 @@
       v-model:start-frame="startFrame"
       v-model:end-frame="endFrame"
       v-model:crop-bounds="cropBounds"
-      v-model:trim-enabled="trimEnabled"
-      v-model:crop-enabled="cropEnabled"
       :features="features"
       :video-url="videoUrl"
       :thumbnail="thumbnail"
@@ -73,12 +71,11 @@ const {
   retry
 } = useVideoFilmstrip(videoUrl)
 
-const { startFrame, endFrame, cropBounds, trimEnabled, cropEnabled } =
-  useVideoEditModel(modelValue, {
-    duration,
-    totalFrames,
-    fps,
-    width,
-    height
-  })
+const { startFrame, endFrame, cropBounds } = useVideoEditModel(modelValue, {
+  duration,
+  totalFrames,
+  fps,
+  width,
+  height
+})
 </script>

@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { clamp } from 'es-toolkit'
@@ -177,46 +177,5 @@ export function useVideoEditModel(
     }
   })
 
-  const hasActiveTrim = () => {
-    const trim = trimSection.value
-    return trim.start_time > 0 || trim.duration > 0
-  }
-
-  const hasActiveCrop = () => {
-    const crop = sanitizeCrop(modelValue.value.crop)
-    return !!crop && crop.width > 0 && crop.height > 0
-  }
-
-  const trimEnabledState = ref(hasActiveTrim())
-  const cropEnabledState = ref(hasActiveCrop())
-
-  const trimEnabled = computed({
-    get: () => trimEnabledState.value,
-    set: (enabled) => {
-      trimEnabledState.value = enabled
-      if (!enabled) setTrim({ start_time: 0, duration: 0 })
-    }
-  })
-
-  const cropEnabled = computed({
-    get: () => cropEnabledState.value,
-    set: (enabled) => {
-      cropEnabledState.value = enabled
-      if (!enabled) {
-        modelValue.value = {
-          ...modelValue.value,
-          crop: { x: 0, y: 0, width: 0, height: 0 }
-        }
-      }
-    }
-  })
-
-  watch(hasActiveTrim, (active) => {
-    if (active) trimEnabledState.value = true
-  })
-  watch(hasActiveCrop, (active) => {
-    if (active) cropEnabledState.value = true
-  })
-
-  return { startFrame, endFrame, cropBounds, trimEnabled, cropEnabled }
+  return { startFrame, endFrame, cropBounds }
 }

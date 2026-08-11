@@ -491,48 +491,4 @@ describe('VideoFilmstripTrim', () => {
     expect(screen.queryByTestId('handle-start')).toBeNull()
     expect(screen.queryByTestId('handle-end')).toBeNull()
   })
-
-  it('hides trim selection UI when trim is toggled off', () => {
-    renderFilmstrip({
-      totalFrames: 100,
-      thumbnail: 'data:image/jpeg;base64,one',
-      startFrame: 10,
-      endFrame: 80,
-      playheadFrame: 10,
-      trimEnabled: false
-    })
-
-    expect(screen.getByTestId('playhead')).toBeTruthy()
-    expect(screen.getByTestId('filmstrip-track').style.left).toBe('16px')
-    expect(screen.getByTestId('filmstrip-track').style.right).toBe('16px')
-    expect(screen.queryByTestId('handle-start')).toBeNull()
-    expect(screen.queryByTestId('handle-end')).toBeNull()
-  })
-
-  it('scrubs across the full timeline when trim is toggled off', async () => {
-    const playheadFrame = ref(0)
-    const { emitted } = render(VideoFilmstripTrim, {
-      props: {
-        totalFrames: 101,
-        thumbnail: 'data:image/jpeg;base64,one',
-        startFrame: 10,
-        endFrame: 80,
-        playheadFrame: 0,
-        trimEnabled: false,
-        'onUpdate:playheadFrame': (value: number) => {
-          playheadFrame.value = value
-        }
-      },
-      global: {
-        plugins: [i18n]
-      }
-    })
-
-    const track = mockTrackRect()
-
-    await fireEvent.pointerDown(track, { clientX: 100, button: 0 })
-
-    expect(playheadFrame.value).toBe(expectedFrameAt(100))
-    expect(emitted().scrub).toEqual([[expectedFrameAt(100)]])
-  })
 })

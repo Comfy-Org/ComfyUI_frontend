@@ -71,21 +71,6 @@ const SliderStub = defineComponent({
   }
 })
 
-const ToggleStub = defineComponent({
-  props: {
-    widget: { type: Object, required: true },
-    modelValue: { type: Boolean, default: false }
-  },
-  emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    return () =>
-      h('button', {
-        'data-testid': `toggle-${props.widget.name}`,
-        onClick: () => emit('update:modelValue', !props.modelValue)
-      })
-  }
-})
-
 type PanelProps = ComponentProps<typeof VideoEditPanel>
 
 function renderPanel(props: Partial<PanelProps> = {}) {
@@ -111,7 +96,6 @@ function renderPanel(props: Partial<PanelProps> = {}) {
         VideoCropOverlay: stub('stub-crop-overlay'),
         WidgetInputNumberInput: stub('stub-number-input'),
         WidgetBoundingBox: stub('stub-bounding-box'),
-        WidgetToggleSwitch: ToggleStub,
         Loader: stub('stub-loader'),
         Slider: SliderStub,
         Select: stub('stub-select'),
@@ -131,38 +115,24 @@ describe('VideoEditPanel', () => {
 
     expect(screen.getByTestId('video-edit-empty')).toBeTruthy()
     expect(screen.queryByTestId('video-preview')).toBeNull()
-    expect(screen.queryByTestId('toggle-trim_enabled')).toBeNull()
-  })
-
-  it('renders only the toggles of the enabled features', () => {
-    renderPanel({ features: ['trim'] })
-
-    expect(screen.getByTestId('toggle-trim_enabled')).toBeTruthy()
-    expect(screen.queryByTestId('toggle-crop_enabled')).toBeNull()
-  })
-
-  it('hides the trim editor entirely until the trim toggle is enabled', async () => {
-    renderPanel({ features: ['trim'] })
-
     expect(screen.queryByTestId('stub-filmstrip')).toBeNull()
-    expect(screen.queryByTestId('stub-number-input')).toBeNull()
+  })
 
-    await userEvent.click(screen.getByTestId('toggle-trim_enabled'))
+  it('renders only the editors of the enabled features', () => {
+    renderPanel({ features: ['trim'] })
 
     expect(screen.getByTestId('stub-filmstrip')).toBeTruthy()
     expect(screen.getAllByTestId('stub-number-input')).toHaveLength(2)
-  })
-
-  it('expands the crop editor when the crop toggle is enabled', async () => {
-    renderPanel({ features: ['crop'] })
-
     expect(screen.queryByTestId('stub-crop-overlay')).toBeNull()
     expect(screen.queryByTestId('stub-bounding-box')).toBeNull()
+  })
 
-    await userEvent.click(screen.getByTestId('toggle-crop_enabled'))
+  it('shows the crop editor for crop-only nodes', () => {
+    renderPanel({ features: ['crop'] })
 
     expect(screen.getByTestId('stub-crop-overlay')).toBeTruthy()
     expect(screen.getByTestId('stub-bounding-box')).toBeTruthy()
+    expect(screen.queryByTestId('stub-filmstrip')).toBeNull()
   })
 
   it('shows a loading overlay while the filmstrip loads', () => {
@@ -244,7 +214,6 @@ describe('VideoEditPanel', () => {
       features: ['trim'],
       startFrame: 30,
       endFrame: 60,
-      trimEnabled: true,
       'onUpdate:playheadFrame': (value: number) => updates.push(value)
     } as Partial<PanelProps>)
 
@@ -254,10 +223,10 @@ describe('VideoEditPanel', () => {
     expect(updates).not.toContain(90)
   })
 
-  it('lets slider seeks reach the full range while trim is disabled', async () => {
+  it('lets slider seeks reach the full range on crop-only nodes', async () => {
     const updates: number[] = []
     renderPanel({
-      features: ['trim'],
+      features: ['crop'],
       'onUpdate:playheadFrame': (value: number) => updates.push(value)
     } as Partial<PanelProps>)
 

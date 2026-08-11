@@ -34,7 +34,7 @@
           @ended="isPlaying = false"
         />
         <VideoCropOverlay
-          v-if="hasCrop && cropEnabled && !loading && width > 0 && height > 0"
+          v-if="hasCrop && !loading && width > 0 && height > 0"
           v-model="cropBounds"
           :source-width="width"
           :source-height="height"
@@ -154,20 +154,12 @@
       v-if="videoUrl"
       class="grid grid-cols-[minmax(80px,min-content)_minmax(125px,1fr)] gap-1"
     >
-      <WidgetToggleSwitch
-        v-if="hasTrim"
-        v-model="trimEnabled"
-        class="col-span-full grid grid-cols-subgrid"
-        :widget="trimToggleWidget"
-      />
-
       <VideoFilmstripTrim
-        v-if="hasTrim && trimEnabled"
+        v-if="hasTrim"
         v-model:start-frame="startFrame"
         v-model:end-frame="endFrame"
         v-model:playhead-frame="playheadFrame"
         class="col-span-full"
-        :trim-enabled="trimEnabled"
         :total-frames="effectiveTotalFrames"
         :thumbnail="thumbnail"
         :tile-aspect-ratio="
@@ -178,28 +170,21 @@
       />
 
       <WidgetInputNumberInput
-        v-if="hasTrim && trimEnabled"
+        v-if="hasTrim"
         v-model="startFrame"
         root-class="col-span-full grid grid-cols-subgrid items-center"
         :widget="startFrameWidget"
       />
 
       <WidgetInputNumberInput
-        v-if="hasTrim && trimEnabled"
+        v-if="hasTrim"
         v-model="endFrame"
         root-class="col-span-full grid grid-cols-subgrid items-center"
         :widget="endFrameWidget"
       />
 
-      <WidgetToggleSwitch
-        v-if="hasCrop"
-        v-model="cropEnabled"
-        class="col-span-full grid grid-cols-subgrid"
-        :widget="cropToggleWidget"
-      />
-
       <div
-        v-if="hasCrop && cropEnabled"
+        v-if="hasCrop"
         class="col-span-full grid grid-cols-subgrid items-center"
       >
         <label class="truncate text-node-component-slot-text">
@@ -243,7 +228,7 @@
       </div>
 
       <WidgetBoundingBox
-        v-if="hasCrop && cropEnabled"
+        v-if="hasCrop"
         v-model="cropBounds"
         class="col-span-full"
         :disabled="loading || width <= 0"
@@ -295,7 +280,6 @@ import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type { VideoEditFeature } from '@/lib/litegraph/src/types/widgets'
 import type { Bounds } from '@/renderer/core/layout/types'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
-import WidgetToggleSwitch from '@/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -336,8 +320,6 @@ const playheadFrame = defineModel<number>('playheadFrame', { default: 0 })
 const cropBounds = defineModel<Bounds>('cropBounds', {
   default: () => ({ x: 0, y: 0, width: 0, height: 0 })
 })
-const trimEnabled = defineModel<boolean>('trimEnabled', { default: false })
-const cropEnabled = defineModel<boolean>('cropEnabled', { default: false })
 
 const { t } = useI18n()
 const { formatDuration, formatFileSize, formatTimecode } = useVideoEditFormats()
@@ -396,24 +378,6 @@ const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
     sourceHeight: toRef(() => height)
   })
 
-const trimToggleWidget = computed(
-  (): SimplifiedWidget<boolean> => ({
-    name: 'trim_enabled',
-    label: t('videoEdit.trimVideo'),
-    type: 'toggle',
-    value: trimEnabled.value
-  })
-)
-
-const cropToggleWidget = computed(
-  (): SimplifiedWidget<boolean> => ({
-    name: 'crop_enabled',
-    label: t('videoEdit.cropVideo'),
-    type: 'toggle',
-    value: cropEnabled.value
-  })
-)
-
 const startFrameWidget = computed(
   (): SimplifiedWidget<number> => ({
     name: 'start_frame',
@@ -468,9 +432,8 @@ const timecodeLabel = computed(() =>
 function handleSliderSeek(value: number[] | undefined) {
   const frame = value?.[0]
   if (typeof frame !== 'number') return
-  const trimActive = hasTrim.value && trimEnabled.value
-  const minFrame = trimActive ? startFrame.value : 0
-  const maxFrame = trimActive ? endFrame.value : frameMax.value
+  const minFrame = hasTrim.value ? startFrame.value : 0
+  const maxFrame = hasTrim.value ? endFrame.value : frameMax.value
   handleScrub(clamp(frame, minFrame, maxFrame))
 }
 

@@ -2316,8 +2316,6 @@
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
   "videoEdit": {
-    "trimVideo": "Trim Video",
-    "cropVideo": "Crop Video",
     "startFrame": "Start Frame",
     "endFrame": "End Frame",
     "duration": "Duration",
