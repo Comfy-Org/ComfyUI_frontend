@@ -1,4 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { usePreservedQueryDeepLink } from './usePreservedQueryDeepLink'
 
@@ -13,29 +16,36 @@ vi.mock(
   () => preservedQueryMocks
 )
 
-const mockRouteQuery = vi.hoisted(() => ({
-  value: {} as Record<string, string>
-}))
-const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
-
-vi.mock('vue-router', () => ({
-  useRoute: () => ({
-    query: mockRouteQuery.value
-  }),
-  useRouter: () => ({
-    replace: mockRouterReplace
+async function mountDeepLink(url: string) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
   })
-}))
+  await router.push(url)
+  await router.isReady()
+
+  let deepLink!: ReturnType<typeof usePreservedQueryDeepLink>
+  render(
+    defineComponent({
+      setup() {
+        deepLink = usePreservedQueryDeepLink('invite')
+        return () => null
+      }
+    }),
+    { global: { plugins: [router] } }
+  )
+
+  let navigations = 0
+  router.afterEach(() => {
+    navigations++
+  })
+
+  return { router, ...deepLink, navigationCount: () => navigations }
+}
 
 describe('usePreservedQueryDeepLink', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockRouteQuery.value = {}
-    preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
+    preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(undefined)
   })
 
   describe('hydrateAndRead', () => {
@@ -43,55 +53,56 @@ describe('usePreservedQueryDeepLink', () => {
       preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
         invite: 'preserved-token'
       })
+      const { router, hydrateAndRead } = await mountDeepLink('/')
 
-      const { hydrateAndRead } = usePreservedQueryDeepLink('invite')
       const value = await hydrateAndRead()
 
       expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
         'invite'
       )
-      expect(mockRouterReplace).toHaveBeenCalledWith({
-        query: { invite: 'preserved-token' }
-      })
+      expect(router.currentRoute.value.fullPath).toBe(
+        '/?invite=preserved-token'
+      )
       expect(value).toBe('preserved-token')
     })
 
-    it('returns the current route value without replacing when nothing is preserved', async () => {
-      mockRouteQuery.value = { invite: 'from-url' }
+    it('returns the current route value without navigating when nothing is preserved', async () => {
+      const { router, hydrateAndRead, navigationCount } =
+        await mountDeepLink('/?invite=from-url')
 
-      const { hydrateAndRead } = usePreservedQueryDeepLink('invite')
       const value = await hydrateAndRead()
 
       expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
         'invite'
       )
-      expect(mockRouterReplace).not.toHaveBeenCalled()
+      expect(navigationCount()).toBe(0)
+      expect(router.currentRoute.value.fullPath).toBe('/?invite=from-url')
       expect(value).toBe('from-url')
     })
   })
 
   describe('strip', () => {
-    it('removes the key from the URL and clears the preserved namespace', () => {
-      mockRouteQuery.value = { invite: 'from-url', other: 'keep' }
+    it('removes the key from the URL and clears the preserved namespace', async () => {
+      const { router, strip } = await mountDeepLink(
+        '/?invite=from-url&other=keep'
+      )
 
-      const { strip } = usePreservedQueryDeepLink('invite')
       strip()
 
-      expect(mockRouterReplace).toHaveBeenCalledWith({
-        query: { other: 'keep' }
-      })
+      await vi.waitFor(() =>
+        expect(router.currentRoute.value.fullPath).toBe('/?other=keep')
+      )
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
         'invite'
       )
     })
 
-    it('clears the preserved namespace without replacing when the key is absent', () => {
-      mockRouteQuery.value = { other: 'keep' }
+    it('clears the preserved namespace without navigating when the key is absent', async () => {
+      const { strip, navigationCount } = await mountDeepLink('/?other=keep')
 
-      const { strip } = usePreservedQueryDeepLink('invite')
       strip()
 
-      expect(mockRouterReplace).not.toHaveBeenCalled()
+      expect(navigationCount()).toBe(0)
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
         'invite'
       )
@@ -99,19 +110,21 @@ describe('usePreservedQueryDeepLink', () => {
 
     it('logs a warning when cleaning the URL param fails', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { router, strip } = await mountDeepLink('/?invite=from-url')
       const replaceError = new Error('navigation guard rejected')
-      mockRouterReplace.mockRejectedValueOnce(replaceError)
-      mockRouteQuery.value = { invite: 'from-url' }
+      router.beforeEach(() => {
+        throw replaceError
+      })
 
-      const { strip } = usePreservedQueryDeepLink('invite')
       strip()
+
       await vi.waitFor(() =>
         expect(warn).toHaveBeenCalledWith(
           expect.stringContaining('invite'),
           replaceError
         )
       )
-
+      expect(router.currentRoute.value.fullPath).toBe('/?invite=from-url')
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
         'invite'
       )
