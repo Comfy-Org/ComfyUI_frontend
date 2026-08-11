@@ -1284,7 +1284,8 @@
     "paused": "Paused",
     "resume": "Resume Download",
     "cancel": "Cancel Download",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "error": "Error"
   },
   "layerEditor": {
     "title": "Compositor",
