@@ -25,7 +25,7 @@ for r in json.load(open('$REG')):
 ")
   [ -n "$url" ] || { echo "  no repo in registry, skipping"; continue; }
 
-  # the snapshot dir is usually xHEAD but not always (kjnodes is xe97a7b)
+  # one dir per snapshot, named x<content-hash> of the pack's JS
   snap=$(ls "db/$pack" 2>/dev/null | head -1)
   v2root="db/$pack/$snap/v2"
   [ -d "$v2root" ] || { echo "  no converted tree at $v2root, skipping"; continue; }

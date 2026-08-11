@@ -60,7 +60,7 @@ const directories = (dir) =>
 
 for (const pack of directories(DB)) {
   if (only && !pack.includes(only)) continue
-  // The snapshot dir is usually xHEAD, but not always — kjnodes is xe97a7b.
+  // One dir per snapshot, named x<content-hash> of the pack's JS.
   for (const snap of directories(join(DB, pack))) {
     const head = join(DB, pack, snap)
     const v2 = join(head, 'v2')
