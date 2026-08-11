@@ -409,7 +409,6 @@ export function setupComplexPromotionFixture(): {
 
   const graph = createTestRootGraph()
   const subgraph = graph.createSubgraph(subgraphData as ExportedSubgraph)
-  subgraph.configure(subgraphData as ExportedSubgraph)
   const hostNode = new SubgraphNode(
     graph,
     subgraph,

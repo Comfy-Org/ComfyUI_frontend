@@ -100,15 +100,6 @@ import {
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
-import {
-  collectReservedGroupIds,
-  collectReservedLinkIds,
-  collectReservedRerouteIds,
-  deduplicateSubgraphGroupIds,
-  deduplicateSubgraphLinkIds,
-  deduplicateSubgraphRerouteIds,
-  topologicalSortSubgraphs
-} from './subgraph/subgraphDeduplication'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphNode } from './subgraph/SubgraphNode'
@@ -4218,30 +4209,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (nodeInfo.type in subgraphIdMap)
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
     remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
-    deduplicateSubgraphGroupIds(
-      parsed.subgraphs,
-      collectReservedGroupIds(graph.rootGraph),
-      graph.rootGraph.state
-    )
-    deduplicateSubgraphRerouteIds(
-      parsed.subgraphs,
-      collectReservedRerouteIds(graph.rootGraph),
-      graph.rootGraph.state
-    )
-    deduplicateSubgraphLinkIds(
-      parsed.subgraphs,
-      collectReservedLinkIds(graph.rootGraph),
-      graph.rootGraph.state
-    )
-
     // Subgraphs
-    for (const info of parsed.subgraphs) {
-      const subgraph = graph.createSubgraph(info)
-      results.subgraphs.set(info.id, subgraph)
-    }
-    const configureOrder = topologicalSortSubgraphs(parsed.subgraphs)
-    for (const info of configureOrder)
-      results.subgraphs.get(info.id)?.configure(info)
+    const subgraphs = graph.createSubgraphs(parsed.subgraphs)
+    for (const subgraph of subgraphs)
+      results.subgraphs.set(subgraph.id, subgraph)
 
     // Groups
     for (const info of parsed.groups) {

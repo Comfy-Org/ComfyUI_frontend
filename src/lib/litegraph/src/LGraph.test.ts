@@ -17,6 +17,7 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type {
+  ExportedSubgraph,
   SerialisableGraph,
   SerialisableLLink,
   SerialisableReroute
@@ -1009,8 +1010,7 @@ describe('Shared LGraphState', () => {
       lastGroupId: 0,
       lastRerouteId: 0
     }
-    const subgraph = rootGraph.createSubgraph(data)
-    subgraph.configure(data)
+    rootGraph.createSubgraph(data)
 
     expect(rootGraph.state.lastNodeId).toBe(10)
     expect(rootGraph.state.lastLinkId).toBe(20)
@@ -1233,6 +1233,110 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     }
   })
 
+  it('does not mutate workflow input while normalizing definitions', () => {
+    const graphData = loadFixture()
+    const original = structuredClone(graphData)
+
+    new LGraph().configure(graphData)
+
+    expect(graphData).toEqual(original)
+  })
+
+  it('normalizes direct creation collisions and patches references', () => {
+    const graph = new LGraph()
+    let normalized: ExportedSubgraph | undefined
+    graph.events.addEventListener('subgraph-created', (event) => {
+      normalized = event.detail.data
+    })
+    const firstRootNode = new DummyNode()
+    firstRootNode.id = toNodeId('1')
+    graph.add(firstRootNode)
+    const secondRootNode = new DummyNode()
+    secondRootNode.id = toNodeId('custom-id')
+    graph.add(secondRootNode)
+    graph.addFloatingLink(
+      new LLink(
+        toLinkId(1),
+        'INT',
+        UNASSIGNED_NODE_ID,
+        -1,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+    )
+    graph.setReroute({ id: 1, pos: [0, 0], linkIds: [] })
+    const definition = createTestSubgraphData({
+      nodes: [
+        {
+          id: 1,
+          type: 'dummy',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'out', type: 'INT', links: [1] }],
+          properties: {}
+        },
+        {
+          id: 'custom-id',
+          type: 'dummy',
+          pos: [200, 0],
+          size: [100, 100],
+          flags: {},
+          order: 1,
+          mode: 0,
+          inputs: [{ name: 'in', type: 'INT', link: 1 }],
+          outputs: [],
+          properties: {}
+        }
+      ],
+      links: [
+        {
+          id: toLinkId(1),
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 'custom-id',
+          target_slot: 0,
+          type: 'INT',
+          parentId: toRerouteId(1)
+        }
+      ],
+      reroutes: [{ id: 1, pos: [100, 0], linkIds: [1] }]
+    })
+
+    const created = graph.createSubgraph({
+      ...definition,
+      id: createUuidv4()
+    })
+    expect(normalized).toBeDefined()
+    if (!normalized) return
+    const link = normalized.links![0]
+    const reroute = normalized.reroutes![0]
+
+    expect(normalized.nodes!.map((node) => node.id)).not.toContain(toNodeId(1))
+    expect(normalized.nodes!.map((node) => node.id)).not.toContain('custom-id')
+    expect(link.id).not.toBe(toLinkId(1))
+    expect(reroute.id).not.toBe(toRerouteId(1))
+    expect(link.origin_id).toBe(normalized.nodes![0].id)
+    expect(link.target_id).toBe(normalized.nodes![1].id)
+    expect(link.parentId).toBe(reroute.id)
+    expect(reroute.linkIds).toContain(link.id)
+    expect(created.nodes.map((node) => node.id)).toEqual(
+      normalized.nodes!.map((node) => toNodeId(node.id))
+    )
+    expect(created.links.get(toLinkId(link.id))?.origin_id).toBe(
+      toNodeId(link.origin_id)
+    )
+    expect(created.links.get(toLinkId(link.id))?.target_id).toBe(
+      toNodeId(link.target_id)
+    )
+    expect(created.reroutes.get(toRerouteId(reroute.id))?.linkIds).toContain(
+      toLinkId(link.id)
+    )
+  })
+
   it('remaps duplicate link IDs across subgraph definitions', () => {
     const { graph } = configureFromFixture()
     const ids = [...graph.subgraphs.values()].flatMap((subgraph) => [
@@ -1387,7 +1491,6 @@ describe('Zero UUID handling in configure', () => {
     const graph = new LGraph()
     const subgraphData = { ...createTestSubgraphData(), id: zeroUuid }
     const subgraph = graph.createSubgraph(subgraphData)
-    subgraph.configure(subgraphData)
     expect(subgraph.id).toBe(zeroUuid)
   })
 })

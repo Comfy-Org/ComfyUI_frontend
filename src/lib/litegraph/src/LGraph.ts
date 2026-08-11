@@ -139,10 +139,7 @@ import {
   collectReservedGroupIds,
   collectReservedLinkIds,
   collectReservedRerouteIds,
-  deduplicateSubgraphGroupIds,
-  deduplicateSubgraphLinkIds,
-  deduplicateSubgraphNodeIds,
-  deduplicateSubgraphRerouteIds,
+  normalizeSubgraphDefinitions,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
 
@@ -155,11 +152,6 @@ const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
 function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
   return validTriggerActions.has(action as LGraphTriggerAction)
-}
-
-function numericNodeId(id: NodeId): number | null {
-  const numericId = Number(id)
-  return Number.isInteger(numericId) ? numericId : null
 }
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
@@ -1803,12 +1795,47 @@ export class LGraph
    * @returns The newly created subgraph definition.
    */
   createSubgraph(data: ExportedSubgraph): Subgraph {
-    const normalized = structuredClone(data)
-    deduplicateSubgraphLinkIds(
-      [normalized],
-      collectReservedLinkIds(this.rootGraph),
+    return this.createSubgraphs([data])[0]
+  }
+
+  createSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
+    const normalized = normalizeSubgraphDefinitions(
+      data,
+      {
+        nodeIds: this.collectReservedNodeIds(),
+        groupIds: collectReservedGroupIds(this.rootGraph),
+        linkIds: collectReservedLinkIds(this.rootGraph),
+        rerouteIds: collectReservedRerouteIds(this.rootGraph)
+      },
       this.state
+    ).subgraphs
+    return this.createNormalizedSubgraphs(normalized)
+  }
+
+  private collectReservedNodeIds(
+    rootNodes: ISerialisedNode[] = []
+  ): Set<NodeId> {
+    const reserved = new Set<NodeId>()
+    for (const owner of [
+      this.rootGraph,
+      ...this.rootGraph.subgraphs.values()
+    ]) {
+      for (const node of owner.nodes) reserved.add(node.id)
+    }
+    for (const node of rootNodes) reserved.add(toNodeId(node.id))
+    return reserved
+  }
+
+  private createNormalizedSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
+    const subgraphs = data.map((definition) =>
+      this.createNormalizedSubgraph(definition)
     )
+    for (const definition of topologicalSortSubgraphs(data))
+      this.subgraphs.get(definition.id)?.configure(definition)
+    return subgraphs
+  }
+
+  private createNormalizedSubgraph(normalized: ExportedSubgraph): Subgraph {
     const { id } = normalized
 
     const subgraph = new Subgraph(this.rootGraph, normalized)
@@ -1937,7 +1964,6 @@ export class LGraph
     for (const group of groups) this.remove(group)
 
     const subgraph = this.createSubgraph(data)
-    subgraph.configure(data)
     for (const node of subgraph.nodes) node.onGraphConfigured?.()
     for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
 
@@ -2657,65 +2683,28 @@ export class LGraph
         this[i] = data[i]
       }
 
-      // Subgraph definitions — deduplicate node IDs before configuring.
-      // deduplicateSubgraphNodeIds clones internally to avoid mutating
-      // the caller's data (e.g. reactive Pinia state).
+      // Normalize cloned subgraph definitions before configuring them.
       const subgraphs = data.definitions?.subgraphs
       let effectiveNodesData = nodesData
       if (subgraphs) {
-        const reservedNodeIds = new Set<number>()
-        for (const node of this._nodes) {
-          const id = numericNodeId(node.id)
-          if (id !== null) reservedNodeIds.add(id)
-        }
-        for (const sg of this.subgraphs.values()) {
-          for (const node of sg.nodes) {
-            const id = numericNodeId(node.id)
-            if (id !== null) reservedNodeIds.add(id)
-          }
-        }
-        for (const n of nodesData ?? []) {
-          if (typeof n.id === 'number') reservedNodeIds.add(n.id)
-        }
-
-        const deduplicated = this.isRootGraph
-          ? deduplicateSubgraphNodeIds(
+        const normalized = this.isRootGraph
+          ? normalizeSubgraphDefinitions(
               subgraphs,
-              reservedNodeIds,
+              {
+                nodeIds: this.collectReservedNodeIds(nodesData),
+                groupIds: collectReservedGroupIds(this, data.groups),
+                linkIds: collectReservedLinkIds(this, data.floatingLinks),
+                rerouteIds: collectReservedRerouteIds(this)
+              },
               this.state,
               nodesData
             )
           : undefined
 
-        if (deduplicated) {
-          deduplicateSubgraphGroupIds(
-            deduplicated.subgraphs,
-            collectReservedGroupIds(this, data.groups),
-            this.state
-          )
-          deduplicateSubgraphLinkIds(
-            deduplicated.subgraphs,
-            collectReservedLinkIds(this, data.floatingLinks),
-            this.state
-          )
-          deduplicateSubgraphRerouteIds(
-            deduplicated.subgraphs,
-            collectReservedRerouteIds(this),
-            this.state
-          )
-        }
+        const finalSubgraphs = normalized?.subgraphs ?? subgraphs
+        effectiveNodesData = normalized?.rootNodes ?? nodesData
 
-        const finalSubgraphs = deduplicated?.subgraphs ?? subgraphs
-        effectiveNodesData = deduplicated?.rootNodes ?? nodesData
-
-        for (const subgraph of finalSubgraphs) this.createSubgraph(subgraph)
-
-        // Configure in leaf-first order so that when a SubgraphNode is
-        // configured, its referenced subgraph definition already has its
-        // nodes/links/inputs populated.
-        const configureOrder = topologicalSortSubgraphs(finalSubgraphs)
-        for (const subgraph of configureOrder)
-          this.subgraphs.get(subgraph.id)?.configure(subgraph)
+        this.createNormalizedSubgraphs(finalSubgraphs)
       }
 
       let error = false

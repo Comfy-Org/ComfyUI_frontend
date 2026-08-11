@@ -20,6 +20,7 @@ import {
   deduplicateSubgraphLinkIds,
   deduplicateSubgraphNodeIds,
   deduplicateSubgraphRerouteIds,
+  normalizeSubgraphDefinitions,
   topologicalSortSubgraphs
 } from './subgraphDeduplication'
 
@@ -170,6 +171,32 @@ describe('deduplicateSubgraphLinkIds', () => {
 
     expect(subgraph.links.map((link) => link.id)).toEqual([toLinkId(1)])
     expect(subgraph.floatingLinks.map((link) => link.id)).toEqual([toLinkId(2)])
+  })
+})
+
+describe('normalizeSubgraphDefinitions', () => {
+  it('keeps the first same-owner link across regular and floating links', () => {
+    const subgraph = makeSubgraph('sg')
+    subgraph.links = [chainedLink(1)]
+    subgraph.floatingLinks = [chainedLink(1)]
+    subgraph.inputs = [{ id: 'input', name: 'in', type: 'INT', linkIds: [1] }]
+
+    const result = normalizeSubgraphDefinitions(
+      [subgraph],
+      {
+        nodeIds: new Set(),
+        groupIds: new Set(),
+        linkIds: new Set(),
+        rerouteIds: new Set()
+      },
+      freshState()
+    ).subgraphs[0]
+
+    expect(result.links).toHaveLength(1)
+    expect(result.floatingLinks).toHaveLength(0)
+    expect(result.links![0].id).toBe(toLinkId(1))
+    expect(result.inputs![0].linkIds).toEqual([toLinkId(1)])
+    expect(subgraph.floatingLinks).toHaveLength(1)
   })
 })
 

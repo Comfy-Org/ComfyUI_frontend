@@ -523,7 +523,6 @@ describe('clipboard reroute id integrity', () => {
     const subgraphId = createUuidv4()
     const exported = createRerouteSubgraph(subgraphId)
     const subgraph = rootGraph.createSubgraph(exported)
-    subgraph.configure(exported)
     const host = LiteGraph.createNode(subgraphId)
     if (!host) throw new Error('Expected subgraph node type to be registered')
     rootGraph.add(host)
