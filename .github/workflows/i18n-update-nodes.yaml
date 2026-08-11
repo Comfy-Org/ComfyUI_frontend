@@ -15,15 +15,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
       # Setup playwright environment
       - name: Setup ComfyUI Server (and start)
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: true
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
-        with:
-          include_build_step: true
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
