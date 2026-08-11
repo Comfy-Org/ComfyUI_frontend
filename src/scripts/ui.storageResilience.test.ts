@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 /**
  * `src/scripts/app.ts` ends with `export const app = new ComfyApp()`, so the
@@ -26,10 +26,6 @@ vi.stubGlobal('localStorage', {} as Storage)
 const { app } = await import('@/scripts/app')
 
 vi.unstubAllGlobals()
-
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
 
 /** Mirrors a browser that throws on access (private mode / blocked cookies). */
 function installThrowingLocalStorage() {

@@ -21,7 +21,6 @@ describe('topupTracker', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-07T12:00:00Z'))
-    vi.clearAllMocks()
     localStorage.clear()
   })
 

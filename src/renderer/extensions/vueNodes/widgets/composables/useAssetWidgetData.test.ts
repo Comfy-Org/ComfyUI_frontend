@@ -33,7 +33,6 @@ vi.mock('@/stores/modelToNodeStore', () => ({
 
 describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockAssetsByKey.clear()
     mockLoadingByKey.clear()
     mockErrorByKey.clear()

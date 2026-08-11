@@ -191,7 +191,6 @@ describe('useWorkflowPersistenceV2', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     sessionStorage.clear()
-    vi.clearAllMocks()
     settingMocks.persistRef!.value = true
     settingMocks.values = {}
     mocks.state.graphChangedHandler = null
