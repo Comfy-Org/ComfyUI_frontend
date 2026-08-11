@@ -163,15 +163,19 @@ test.describe('Queue notification banners', { tag: ['@ui'] }, () => {
       jobsRoutes
     }) => {
       const failedJobId = 'failed-job-1'
-      // The banner only reports jobs that finished after the queue last went
-      // active, and that moment is later than this mock is built.
-      await jobsRoutes.mockJobsHistory([
-        createRouteMockJob({
-          id: failedJobId,
-          status: 'failed',
-          execution_end_time: Date.now() + BANNER_MOCK_FINISH_SKEW_MS
-        })
-      ])
+      // mockJobsScenario matches queueStore's own maxHistoryItems (64); the bare
+      // mockJobsHistory default is 200 and never matches the request. The finish
+      // time has to beat the moment the queue goes active, which is later than
+      // this mock is built.
+      await jobsRoutes.mockJobsScenario({
+        history: [
+          createRouteMockJob({
+            id: failedJobId,
+            status: 'failed',
+            execution_end_time: Date.now() + BANNER_MOCK_FINISH_SKEW_MS
+          })
+        ]
+      })
 
       const exec = new ExecutionHelper(comfyPage, await getWebSocket())
       exec.executionStart(failedJobId)
