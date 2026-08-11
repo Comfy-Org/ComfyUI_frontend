@@ -108,8 +108,6 @@ export const useQueueNotificationBanners = () => {
   }
 
   const queueNotification = (notification: QueueNotificationBanner) => {
-    // An outcome banner reports history; a run acknowledgement reports the
-    // action the user just took and is the only one that can still inform them.
     if (isRunAcknowledgement(notification)) {
       const active = activeNotification.value
       if (active === null || isOutcome(active)) {
