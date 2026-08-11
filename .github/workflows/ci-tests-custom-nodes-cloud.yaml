@@ -352,7 +352,7 @@ jobs:
 
       - name: Bind proof identity
         env:
-          E2E_PARENT: 6217d848dc549a57f6f3fd93c3f807cfb80460ea
+          E2E_PARENT: 96c6809291a4447fd8b61978509aec78a809f804
           MUTATION_DIGEST: ${{ steps.mutation.outputs.digest }}
           MUTATION_PATH: ${{ steps.mutation.outputs.path }}
           PROOF_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}

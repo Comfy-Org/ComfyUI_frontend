@@ -57,6 +57,47 @@ export function summarizePromptError(body: unknown): string | undefined {
   return parts.length > 0 ? parts.join('; ') : undefined
 }
 
+// A non-2xx /prompt response, with attribution decided by its status: 400 is
+// the backend REJECTING this graph (pack-attributable validation), 5xx is the
+// backend FAILING (an environment fault that is never a per-node verdict).
+// errorType is the body's typed provenance when the backend supplies one
+// (Cloud infra faults carry e.g. DATABASE_ERROR; an OSS validation-time crash
+// or a proxy 5xx arrives untyped, which is itself diagnostic).
+interface PromptRejection {
+  status: number
+  summary?: string
+  errorType?: string
+}
+
+function extractPromptErrorType(body: unknown): string | undefined {
+  const error = (body as Partial<PromptResponse> | null)?.error
+  if (typeof error !== 'object' || error === null) return undefined
+  const type = (error as { type?: unknown }).type
+  return typeof type === 'string' && type ? type : undefined
+}
+
+const describeRejection = (rejection: PromptRejection): string =>
+  rejection.summary ?? `HTTP ${rejection.status} prompt submission failed`
+
+const SERVER_SIDE_FAULT_PREFIX = 'prompt submission failed server-side'
+
+// Callers that accumulate per-node verdicts use this to catch the fault,
+// record it, and still report the failures found before it - a late 5xx must
+// never mask real regressions from earlier batches.
+export function isServerSideFault(error: unknown): error is Error {
+  return (
+    error instanceof Error && error.message.startsWith(SERVER_SIDE_FAULT_PREFIX)
+  )
+}
+
+const serverSideFault = (rejection: PromptRejection): Error =>
+  new Error(
+    `${SERVER_SIDE_FAULT_PREFIX} (HTTP ${rejection.status} POST /prompt)` +
+      (rejection.summary ? ` - ${rejection.summary}` : '') +
+      (rejection.errorType ? ` [type: ${rejection.errorType}]` : '') +
+      ' - backend/environment fault, not a pack validation reject'
+  )
+
 export function toPromptEvent(raw: RawEvent): PromptEvent {
   if (raw.type === 'executing')
     return { type: 'executing', node: raw.node ?? null }
@@ -157,12 +198,12 @@ export class LocalDesktopTarget {
     // check below stay as defense in depth (capture can lose a race with a
     // transient refusal, and `executing` events carry no prompt id at all).
     let capturedPromptId: string | undefined
-    // A backend validation rejection answers /prompt with a non-2xx body
-    // carrying { error, node_errors }. app.queuePrompt swallows it and just
-    // returns false, so without capturing it here a VALIDATION_FAIL result
-    // names nothing. Snapshot the failing node/input so the outcome is
-    // actionable instead of an empty object.
-    let capturedValidationError: string | undefined
+    // A backend rejection answers /prompt with a non-2xx body carrying
+    // { error, node_errors }. app.queuePrompt swallows it and just returns
+    // false, so without capturing it here the verdict names nothing. The
+    // status is kept alongside the summarized body because it decides
+    // attribution (see PromptRejection).
+    let capturedRejection: PromptRejection | undefined
     let capturedResponseSequence = 0
     const { detach: stopCapture, settled: captureSettled } = onPromptIdResponse(
       page,
@@ -170,10 +211,13 @@ export class LocalDesktopTarget {
         if (sequence < capturedResponseSequence) return
         capturedResponseSequence = sequence
         capturedPromptId = promptId
-        capturedValidationError =
+        capturedRejection =
           status >= 400
-            ? (summarizePromptError(body) ??
-              `HTTP ${status} prompt submission failed`)
+            ? {
+                status,
+                summary: summarizePromptError(body),
+                errorType: extractPromptErrorType(body)
+              }
             : undefined
       }
     )
@@ -206,6 +250,10 @@ export class LocalDesktopTarget {
       if (refused(queued)) {
         await captureSettled()
         stopCapture()
+        // A captured 5xx outranks a client-side throw: the backend
+        // demonstrably failed this submission server-side.
+        if (capturedRejection !== undefined && capturedRejection.status >= 500)
+          throw serverSideFault(capturedRejection)
         return {
           outcome: 'VALIDATION_FAIL',
           executedNodes: [],
@@ -214,7 +262,7 @@ export class LocalDesktopTarget {
           // the backend's node_errors captured off the /prompt response.
           clientError:
             (typeof queued === 'object' ? queued.__cnThrew : undefined) ??
-            capturedValidationError
+            (capturedRejection && describeRejection(capturedRejection))
         }
       }
     }
@@ -225,19 +273,21 @@ export class LocalDesktopTarget {
     const captureDeadline = Date.now() + 2_000
     while (
       capturedPromptId === undefined &&
-      capturedValidationError === undefined &&
+      capturedRejection === undefined &&
       Date.now() < captureDeadline
     ) {
       await new Promise((resolve) => setTimeout(resolve, 50))
       await captureSettled()
     }
-    if (capturedValidationError !== undefined) {
+    if (capturedRejection !== undefined) {
       stopCapture()
+      if (capturedRejection.status >= 500)
+        throw serverSideFault(capturedRejection)
       return {
         outcome: 'VALIDATION_FAIL',
         executedNodes: [],
         outputsByNode: {},
-        clientError: capturedValidationError
+        clientError: describeRejection(capturedRejection)
       }
     }
     // A silent permanent miss would degrade every run to the legacy filters
