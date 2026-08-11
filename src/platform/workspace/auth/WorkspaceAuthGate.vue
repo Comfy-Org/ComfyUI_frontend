@@ -59,7 +59,14 @@
 import { captureException } from '@sentry/vue'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -261,5 +268,14 @@ async function initializeWorkspacesInBackground(): Promise<void> {
 onMounted(() => {
   void initialize()
 })
+
+// Non-cloud has no router-driven remount after login, so re-run the
+// background hydration when a user signs in mid-session.
+if (!isCloud) {
+  const { currentUser } = storeToRefs(useAuthStore())
+  watch(currentUser, (user) => {
+    if (user) void initializeWorkspacesInBackground()
+  })
+}
 onUnmounted(cancelInitialization)
 </script>
