@@ -159,13 +159,14 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(panel).toBeVisible()
 
     // Validate that French-localized category names from the templates index
-    // are rendered as chips in the filter sheet
+    // reach the filter sheet
     await comfyPage.templatesDialog.openFilters()
+    await comfyPage.templatesDialog.filterSheet
+      .getByRole('textbox')
+      .first()
+      .fill('Tous les modèles')
     await expect(
-      comfyPage.templatesDialog.filterSheet.getByRole('button', {
-        name: 'Tous les modèles',
-        exact: true
-      })
+      comfyPage.templatesDialog.filterOption('Tous les modèles')
     ).toBeVisible()
 
     // Ensure the English fallback copy is not shown anywhere
@@ -264,7 +265,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
       await comfyPage.templatesDialog.openFilters()
 
-      // Screenshot the flat filter sheet (category/model/task/runs-on chips)
+      // Screenshot the filter sheet (category/model/task/runs-on facets)
       const filterSheet = comfyPage.templatesDialog.filterSheet
       await expect(filterSheet).toBeVisible()
       await expect(filterSheet).toHaveScreenshot('template-filter-sheet.png', {

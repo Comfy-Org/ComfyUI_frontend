@@ -44,13 +44,31 @@ export class TemplatesDialog {
   }
 
   /**
-   * Toggle a chip (category, model, task or runs-on) inside the filter
-   * sheet, opening the sheet first when needed. The sheet stays open so
-   * several chips can be toggled in a row.
+   * A filter value inside the sheet, reached through its search box.
+   *
+   * Values otherwise live in per-facet submenus that portal outside the
+   * sheet; searching lists them flat inside it, which is also how the panel
+   * expects you to find one by name.
+   */
+  filterOption(name: string): Locator {
+    return this.filterSheet
+      .locator('[data-templates-filter-result]')
+      .filter({ has: this.page.getByText(name, { exact: true }) })
+      .first()
+  }
+
+  /**
+   * Toggle a filter value (category, model, task or runs-on), opening the
+   * sheet first when needed. The sheet stays open so several values can be
+   * toggled in a row.
    */
   async toggleFilterChip(name: string): Promise<void> {
     await this.openFilters()
-    await this.filterSheet.getByRole('button', { name, exact: true }).click()
+    const search = this.filterSheet.getByRole('textbox').first()
+    await search.fill(name)
+    await this.filterOption(name).click()
+    // Leave the sheet listing every facet again for the next toggle.
+    await search.fill('')
   }
 
   async selectModelOption(name: string): Promise<void> {

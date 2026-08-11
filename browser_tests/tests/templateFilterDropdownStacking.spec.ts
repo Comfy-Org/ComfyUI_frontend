@@ -40,11 +40,12 @@ test.describe('Template filter dropdown stacking', () => {
     await expect(comfyPage.templates.content).toBeVisible()
 
     await comfyPage.templatesDialog.openFilters()
+    await comfyPage.templatesDialog.filterSheet
+      .getByRole('textbox')
+      .first()
+      .fill('Wan 2.2')
 
-    const chip = comfyPage.templatesDialog.filterSheet.getByRole('button', {
-      name: 'Wan 2.2',
-      exact: true
-    })
+    const chip = comfyPage.templatesDialog.filterOption('Wan 2.2')
     await expect(chip).toBeVisible()
 
     // Visibility alone passes even when another surface covers the chip, so
