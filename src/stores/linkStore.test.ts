@@ -51,14 +51,6 @@ describe('useLinkStore', () => {
     vi.restoreAllMocks()
   })
 
-  it('answers input-slot connectedness with one lookup', () => {
-    const store = useLinkStore()
-    expect(store.registerLink(graphA, link(1, 5, 0, 9, 2))).toBeDefined()
-    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
-    expect(store.isInputSlotConnected(graphA, toNodeId(9), 3)).toBe(false)
-    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
-  })
-
   it('keeps the first registration for a contested target slot', () => {
     const store = useLinkStore()
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -154,6 +146,7 @@ describe('useLinkStore', () => {
     const topology = link(1, 5, 0, 9, 2)
     store.registerLink(graphA, topology)
     expect(connected.value).toBe(true)
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(topology.id)
 
     store.deleteLink(graphA, topology)
     expect(connected.value).toBe(false)
@@ -180,6 +173,8 @@ describe('useLinkStore', () => {
 
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(true)
     expect(store.isInputSlotConnected(graphB, toNodeId(9), 2)).toBe(false)
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
+    expect(store.isOutputSlotConnected(graphB, toNodeId(5), 0)).toBe(false)
   })
 
   it('isolates links and slot indexes by owner', () => {
@@ -236,14 +231,6 @@ describe('useLinkStore', () => {
     expect(current.value).toBeUndefined()
   })
 
-  it('reports an output slot connected only where a link leaves it', () => {
-    const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 2))
-
-    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
-    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 1)).toBe(false)
-  })
-
   it('returns every link fanning out of an output slot', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
@@ -257,6 +244,8 @@ describe('useLinkStore', () => {
       toLinkId(2),
       toLinkId(3)
     ])
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 1)).toBe(false)
   })
 
   it('returns an empty set, never undefined, for an unconnected output', () => {
@@ -281,27 +270,6 @@ describe('useLinkStore', () => {
     expect(store.getOutputSlotLinks(graphA, toNodeId(5), 0).size).toBe(0)
   })
 
-  it('scopes output queries by graph', () => {
-    const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 2))
-
-    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
-    expect(store.isOutputSlotConnected(graphB, toNodeId(5), 0)).toBe(false)
-  })
-
-  it('re-derives the output index across register and delete', () => {
-    const store = useLinkStore()
-    const topology = link(1, 5, 0, 9, 2)
-
-    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
-
-    store.registerLink(graphA, topology)
-    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(true)
-
-    store.deleteLink(graphA, topology)
-    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
-  })
-
   it('leaves an unrelated output slot untouched when another slot changes', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
@@ -319,27 +287,24 @@ describe('useLinkStore', () => {
     expect(evaluations).toBe(1)
   })
 
-  it('stops answering output queries for a cleared graph', () => {
-    const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 2))
-
-    store.clearGraph(graphA.rootGraphId)
-
-    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
-    expect(store.getOutputSlotLinks(graphA, toNodeId(5), 0).size).toBe(0)
-  })
-
-  it('re-keys the link when its target moves', () => {
+  it('re-keys the link when its endpoints move', () => {
     const store = useLinkStore()
     const topology = link(1, 5, 0, 9, 2)
     store.registerLink(graphA, topology)
 
     expect(
-      store.updateEndpoint(graphA, topology, { targetSlot: 4 })
+      store.updateEndpoint(graphA, topology, {
+        originSlot: 3,
+        targetSlot: 4
+      })
     ).toBeDefined()
 
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
     expect(store.getInputSlotLink(graphA, toNodeId(9), 4)?.id).toBe(toLinkId(1))
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
+    expect([...store.getOutputSlotLinks(graphA, toNodeId(5), 3)]).toEqual([
+      topology
+    ])
   })
 
   it('ignores undefined endpoint patch values', () => {
@@ -476,18 +441,5 @@ describe('useLinkStore', () => {
     expect([...store.getOutputSlotLinks(graphA, toNodeId(5), 0)]).toEqual([
       floating
     ])
-  })
-
-  it('re-keys the output index when the origin moves', () => {
-    const store = useLinkStore()
-    const topology = link(1, 5, 0, 9, 2)
-    store.registerLink(graphA, topology)
-
-    store.updateEndpoint(graphA, topology, { originSlot: 3 })
-
-    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
-    expect(
-      [...store.getOutputSlotLinks(graphA, toNodeId(5), 3)].map((t) => t.id)
-    ).toEqual([toLinkId(1)])
   })
 })

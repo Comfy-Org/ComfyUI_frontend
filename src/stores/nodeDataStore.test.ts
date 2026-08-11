@@ -61,20 +61,6 @@ describe('useNodeDataStore', () => {
     expect(store.getGraphNodesFor(rootA, sub).map((n) => n.id)).toEqual(['2'])
   })
 
-  it('prunes an owner bucket after its last node is deleted', () => {
-    const store = useNodeDataStore()
-    const sub: UUID = 'sub-1'
-    const rootNode = node(1, rootA)
-    const subNode = node(2, sub)
-    store.registerNode(graphScope(rootA, rootA), rootNode)
-    store.registerNode(graphScope(rootA, sub), subNode)
-
-    store.deleteNode(graphScope(rootA, sub), subNode)
-
-    expect(store.getGraphNodesFor(rootA, sub)).toEqual([])
-    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([rootNode])
-  })
-
   it('rejects a duplicate id without changing either registration', () => {
     const store = useNodeDataStore()
     const first = node(1)

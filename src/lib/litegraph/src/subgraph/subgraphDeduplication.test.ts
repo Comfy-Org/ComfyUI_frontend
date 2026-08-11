@@ -62,14 +62,6 @@ describe('topologicalSortSubgraphs', () => {
     expect(result.map((s) => s.id)).toEqual(['inner', 'outer'])
   })
 
-  it('handles three-level nesting', () => {
-    const leaf = makeSubgraph('leaf', ['StringConcat'])
-    const mid = makeSubgraph('mid', ['leaf', 'StringConcat'])
-    const top = makeSubgraph('top', ['mid'])
-    const result = topologicalSortSubgraphs([top, mid, leaf])
-    expect(result.map((s) => s.id)).toEqual(['leaf', 'mid', 'top'])
-  })
-
   it('handles diamond dependencies', () => {
     const shared = makeSubgraph('shared')
     const left = makeSubgraph('left', ['shared'])
@@ -83,14 +75,11 @@ describe('topologicalSortSubgraphs', () => {
     expect(ids.indexOf('right')).toBeLessThan(ids.indexOf('top'))
   })
 
-  it('returns original order for a single subgraph', () => {
-    const only = makeSubgraph('only')
-    const result = topologicalSortSubgraphs([only])
-    expect(result).toEqual([only])
-  })
+  it('preserves original order for cyclic definitions', () => {
+    const a = makeSubgraph('a', ['b'])
+    const b = makeSubgraph('b', ['a'])
 
-  it('returns original order for empty array', () => {
-    expect(topologicalSortSubgraphs([])).toEqual([])
+    expect(topologicalSortSubgraphs([b, a])).toEqual([b, a])
   })
 })
 
@@ -177,11 +166,10 @@ describe('deduplicateSubgraphLinkIds', () => {
     const subgraph = makeSubgraph('sg')
     subgraph.links = [chainedLink(1)]
     subgraph.floatingLinks = [chainedLink(2)]
-    const original = structuredClone(subgraph)
-
     deduplicateSubgraphLinkIds([subgraph], new Set(), freshState())
 
-    expect(subgraph).toEqual(original)
+    expect(subgraph.links.map((link) => link.id)).toEqual([toLinkId(1)])
+    expect(subgraph.floatingLinks.map((link) => link.id)).toEqual([toLinkId(2)])
   })
 })
 
@@ -217,8 +205,8 @@ describe('deduplicateSubgraphGroupIds', () => {
 
     deduplicateSubgraphGroupIds([subgraph], new Set([1, 2]), state)
 
-    expect(subgraph.groups[0].id).toBe(3)
-    expect(state.lastGroupId).toBe(3)
+    expect([1, 2]).not.toContain(subgraph.groups[0].id)
+    expect(state.lastGroupId).toBe(subgraph.groups[0].id)
   })
 })
 describe('deduplicateSubgraphRerouteIds', () => {

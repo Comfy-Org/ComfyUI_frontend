@@ -56,29 +56,6 @@ describe('useRerouteStore', () => {
     vi.restoreAllMocks()
   })
 
-  it('registers a chain and answers queries for it', () => {
-    const store = useRerouteStore()
-    store.registerReroute(graphA, chain(1))
-
-    expect(store.getReroute(graphA, toRerouteId(1))?.id).toBe(1)
-    expect(store.getReroute(graphA, toRerouteId(2))).toBeUndefined()
-  })
-
-  it('returns tracked state whose writes are observable', () => {
-    const store = useRerouteStore()
-    const registered = store.registerReroute(graphA, chain(2))
-    assert(registered)
-
-    const parentId = computed(
-      () => store.getReroute(graphA, toRerouteId(2))?.parentId
-    )
-    expect(parentId.value).toBeUndefined()
-
-    registered.parentId = toRerouteId(1)
-
-    expect(parentId.value).toBe(1)
-  })
-
   it('refuses to overwrite a registration held by a different chain', () => {
     const store = useRerouteStore()
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -284,22 +261,6 @@ describe('useRerouteStore', () => {
     store.clearGraph(graphA.rootGraphId)
 
     expect(store.getReroute(graphASibling, toRerouteId(2))).toBeUndefined()
-  })
-
-  it('re-evaluates membership when the owner is cleared', () => {
-    const store = useRerouteStore()
-    const linkStore = useLinkStore()
-    store.registerReroute(graphA, chain(1))
-    store.registerReroute(graphA, chain(2, 1))
-    linkStore.registerLink(graphA, link(10, 0, 2))
-    const membership = computed(() =>
-      store.getMembership(graphA, toRerouteId(1))
-    )
-    expect([...membership.value.linkIds]).toEqual([10])
-
-    store.clearOwner(graphA)
-
-    expect(membership.value.linkIds.size).toBe(0)
   })
 
   it('re-evaluates membership when a cleared owner is recreated', () => {

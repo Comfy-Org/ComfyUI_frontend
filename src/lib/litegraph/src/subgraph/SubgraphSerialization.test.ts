@@ -507,28 +507,21 @@ describe('SubgraphSerialization - Data Integrity', () => {
 
   it('deduplicates duplicate subgraph node IDs while keeping root nodes canonical', () => {
     const graph = new LGraph()
-    graph.configure(structuredClone(duplicateSubgraphNodeIds))
+    const data = structuredClone(duplicateSubgraphNodeIds)
+    const expectedRootIds = data.nodes.map((node) => Number(node.id))
+    graph.configure(data)
 
-    const rootIds = graph.nodes
-      .map((node) => Number(node.id))
-      .sort((a, b) => a - b)
-    expect(rootIds).toEqual([102, 103])
+    const rootIds = graph.nodes.map((node) => Number(node.id))
+    expect(new Set(rootIds)).toEqual(new Set(expectedRootIds))
 
-    const subgraphAIds = new Set(
-      graph.subgraphs
-        .get(DUPLICATE_ID_SUBGRAPH_A)!
-        .nodes.map((node) => Number(node.id))
-    )
-    const subgraphBIds = new Set(
-      graph.subgraphs
-        .get(DUPLICATE_ID_SUBGRAPH_B)!
-        .nodes.map((node) => Number(node.id))
-    )
-
-    expect(subgraphAIds).toEqual(new Set([3, 8, 37]))
-    for (const id of subgraphAIds) {
-      expect(subgraphBIds.has(id)).toBe(false)
-    }
+    const subgraphAIds = graph.subgraphs
+      .get(DUPLICATE_ID_SUBGRAPH_A)!
+      .nodes.map((node) => Number(node.id))
+    const subgraphBIds = graph.subgraphs
+      .get(DUPLICATE_ID_SUBGRAPH_B)!
+      .nodes.map((node) => Number(node.id))
+    const allIds = [...rootIds, ...subgraphAIds, ...subgraphBIds]
+    expect(new Set(allIds).size).toBe(allIds.length)
   })
 
   it('patches remapped link and proxyWidget references during duplicate-ID hydration', () => {

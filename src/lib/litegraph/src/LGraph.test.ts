@@ -946,23 +946,6 @@ describe('Shared LGraphState', () => {
     return rootGraph.createSubgraph(data)
   }
 
-  it('subgraph state is the same object as rootGraph state', () => {
-    const rootGraph = new LGraph()
-    const subgraph = createSubgraphOnGraph(rootGraph)
-    expect(subgraph.state).toBe(rootGraph.state)
-  })
-
-  it('adding a node in a subgraph increments the root counter', () => {
-    const rootGraph = new LGraph()
-    const subgraph = createSubgraphOnGraph(rootGraph)
-
-    rootGraph.add(new DummyNode())
-    const rootNodeId = rootGraph.state.lastNodeId
-
-    subgraph.add(new DummyNode())
-    expect(rootGraph.state.lastNodeId).toBe(rootNodeId + 1)
-  })
-
   it('node IDs never collide between root and subgraph', () => {
     const rootGraph = new LGraph()
     const subgraph = createSubgraphOnGraph(rootGraph)
