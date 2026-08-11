@@ -977,27 +977,27 @@ function createSession(work, tracePath, db) {
 // Database output
 // ---------------------------------------------------------------------------
 
+/**
+ * The snapshot's identity: a content hash of the pack's frontend JS.
+ *
+ * Deliberately not the upstream commit. The corpus is usually a tarball
+ * extract with no git at all, and where a clone did exist the SHA recorded
+ * was the clone's *current* HEAD rather than the revision the snapshot was
+ * taken from — `comfyui-kjnodes` is stored under one id while its clone sits
+ * on another, so the two disagreed and neither could be checked.
+ *
+ * Hashing file NAMES, as this did before, cannot detect staleness at all: a
+ * pack that rewrites a file without adding or removing one keeps the same id.
+ * Hashing contents means the id changes exactly when the pack does, which is
+ * the only property that makes a stored conversion verifiable.
+ */
 function packCommit(root) {
-  try {
-    const { execFileSync } = require('node:child_process')
-    const sha = execFileSync(
-      'git',
-      ['-C', root, 'rev-parse', '--short=7', 'HEAD'],
-      {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore']
-      }
-    ).trim()
-    if (sha) return sha
-  } catch {
-    // Corpus is a tarball extract rather than a clone. The directory still
-    // needs a stable name — "unknown" for every pack would collapse them.
+  const hash = createHash('sha256')
+  for (const file of jsFiles(root).sort()) {
+    hash.update(relative(root, file))
+    hash.update(createHash('sha256').update(readFileSync(file)).digest())
   }
-  const names = jsFiles(root)
-    .map((p) => relative(root, p))
-    .sort()
-    .join('\n')
-  return 'x' + createHash('sha256').update(names).digest('hex').slice(0, 6)
+  return 'x' + hash.digest('hex').slice(0, 7)
 }
 
 /** Every stored file for this pack/file, whatever commit directory it is under. */
