@@ -194,7 +194,7 @@ test.describe('FDCT page @smoke', () => {
     )
   })
 
-  test('CTA bands render both labels with the decided hrefs', async ({
+  test('CTA band renders the enterprise label with the decided href', async ({
     page
   }) => {
     await page.goto('/forward-deployed-creatives')
@@ -209,16 +209,11 @@ test.describe('FDCT page @smoke', () => {
       })
     ).toBeVisible()
     await expect(
-      section.getByRole('heading', {
-        name: t('fdct.bands.creators.label', 'en')
-      })
-    ).toBeVisible()
-    await expect(
       section.getByRole('link', { name: t('fdct.bands.enterprise.cta', 'en') })
     ).toHaveAttribute('href', '/contact')
     await expect(
-      section.getByRole('link', { name: t('fdct.bands.creators.cta', 'en') })
-    ).toHaveAttribute('href', '/careers')
+      section.getByRole('heading', { name: 'FOR CREATORS' })
+    ).toHaveCount(0)
   })
 })
 
@@ -375,7 +370,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     await expect(page.getByText(fourth.answer)).toBeVisible()
   })
 
-  test('CTA bands render localized labels with locale-prefixed hrefs', async ({
+  test('CTA band renders the localized label with a locale-prefixed href', async ({
     page
   }) => {
     await page.goto('/zh-CN/forward-deployed-creatives')
@@ -386,7 +381,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     })
     await expect(
       section.getByRole('heading', {
-        name: t('fdct.bands.creators.label', 'zh-CN')
+        name: t('fdct.bands.enterprise.label', 'zh-CN')
       })
     ).toBeVisible()
     await expect(
@@ -394,8 +389,5 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
         name: t('fdct.bands.enterprise.cta', 'zh-CN')
       })
     ).toHaveAttribute('href', '/zh-CN/contact')
-    await expect(
-      section.getByRole('link', { name: t('fdct.bands.creators.cta', 'zh-CN') })
-    ).toHaveAttribute('href', '/zh-CN/careers')
   })
 })

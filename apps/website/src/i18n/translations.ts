@@ -5710,15 +5710,6 @@ const translations = {
       '告诉我们你想做什么。前沿驻场创意人才可以验证它，并帮助你从此开始构建。'
   },
   'fdct.bands.enterprise.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
-  'fdct.bands.creators.label': {
-    en: 'FOR CREATORS',
-    'zh-CN': '面向创作者'
-  },
-  'fdct.bands.creators.text': {
-    en: "Building production-grade content with Comfy? We're hiring from the community.",
-    'zh-CN': '正在用 Comfy 制作生产级内容？我们正在从社区招募。'
-  },
-  'fdct.bands.creators.cta': { en: 'Apply now', 'zh-CN': '立即申请' },
   'fdct.closing.title': {
     en: 'Build your custom workflows with Comfy experts.',
     'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'

@@ -6,7 +6,6 @@ export interface FdctPageData {
     contact: string
     applyFdct: string
     enterpriseBand: string
-    creatorsBand: string
   }
 }
 
@@ -405,7 +404,6 @@ export const fdctPage: FdctPageData = {
     contact: '/contact',
     applyFdct:
       'https://jobs.ashbyhq.com/comfy-org/b8faf3c0-a21c-4bed-8651-93daa6bfe81c',
-    enterpriseBand: '/contact',
-    creatorsBand: '/careers'
+    enterpriseBand: '/contact'
   }
 }

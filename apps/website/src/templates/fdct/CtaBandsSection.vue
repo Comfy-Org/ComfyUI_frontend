@@ -17,15 +17,6 @@ const bands = [
       label: t('fdct.bands.enterprise.cta', locale),
       href: localizeHref(fdctPage.ctas.enterpriseBand, locale)
     }
-  },
-  {
-    id: 'creators',
-    label: t('fdct.bands.creators.label', locale),
-    text: t('fdct.bands.creators.text', locale),
-    cta: {
-      label: t('fdct.bands.creators.cta', locale),
-      href: localizeHref(fdctPage.ctas.creatorsBand, locale)
-    }
   }
 ]
 </script>
