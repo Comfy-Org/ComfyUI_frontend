@@ -34,6 +34,7 @@ import { toRerouteId } from '@/types/rerouteId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
+  createNestedSubgraphs,
   createTestSubgraph,
   createTestSubgraphData,
   createTestSubgraphNode
@@ -723,6 +724,70 @@ describe('node:before-removed event', () => {
 
     expect(node.onRemoved).toHaveBeenCalledOnce()
     expect(graph.floatingLinks.size).toBe(0)
+  })
+
+  it('runs nested node removal lifecycle exactly once', () => {
+    const { rootGraph, subgraphs } = createNestedSubgraphs({
+      depth: 2,
+      nodesPerLevel: 1
+    })
+    for (const subgraph of subgraphs) {
+      rootGraph.subgraphs.set(subgraph.id, subgraph)
+    }
+    const nodes = [
+      ...rootGraph.nodes,
+      ...subgraphs.flatMap((subgraph) => subgraph.nodes)
+    ]
+    const callbacks = nodes.map(() => vi.fn())
+    nodes.forEach((node, index) => (node.onRemoved = callbacks[index]))
+
+    rootGraph.clear()
+
+    callbacks.forEach((callback) => expect(callback).toHaveBeenCalledOnce())
+  })
+
+  it('detaches retained entities and remains idempotent after root clear', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    const target = new LGraphNode('target')
+    source.addOutput('out', '*')
+    target.addInput('in', '*')
+    graph.add(source)
+    graph.add(target)
+    const link = source.connect(0, target, 0)!
+    const reroute = graph.createReroute([10, 10], link)!
+    const removed = vi.fn()
+    source.onRemoved = removed
+
+    graph.clear()
+    graph.clear()
+
+    expect(source._graphScope).toBeUndefined()
+    expect(link._graphScope).toBeUndefined()
+    expect(reroute._graphScope).toBeUndefined()
+    expect(removed).toHaveBeenCalledOnce()
+  })
+
+  it('clears only the selected subgraph owner', () => {
+    const rootGraph = new LGraph()
+    rootGraph.id = createUuidv4()
+    const rootNode = new LGraphNode('root')
+    rootGraph.add(rootNode)
+    const cleared = createTestSubgraph({ rootGraph, nodeCount: 1 })
+    const sibling = createTestSubgraph({ rootGraph, nodeCount: 1 })
+    rootGraph.subgraphs.set(cleared.id, cleared)
+    rootGraph.subgraphs.set(sibling.id, sibling)
+    const clearedNode = cleared.nodes[0]
+    const siblingNode = sibling.nodes[0]
+
+    cleared.clear()
+
+    expect(clearedNode._graphScope).toBeUndefined()
+    expect(rootNode._graphScope).toBeDefined()
+    expect(siblingNode._graphScope).toBeDefined()
+    expect(rootGraph.nodes).toContain(rootNode)
+    expect(sibling.nodes).toContain(siblingNode)
+    expect(rootGraph.subgraphs.get(sibling.id)).toBe(sibling)
   })
 })
 

@@ -208,6 +208,22 @@ function fireNodeRemovalLifecycle(node: LGraphNode): void {
   graph?.onNodeRemoved?.(node)
 }
 
+function teardownOwnedGraphs(owner: LGraph): void {
+  const ownedGraphs = owner.isRootGraph
+    ? [owner, ...owner._subgraphs.values()]
+    : [owner]
+
+  for (const graph of ownedGraphs) {
+    for (const node of graph._nodes) fireNodeRemovalLifecycle(node)
+  }
+  for (const graph of ownedGraphs) {
+    unregisterAllLinkTopologies(graph)
+    unregisterAllRerouteChains(graph)
+  }
+  unregisterAllNodeStates(owner)
+  unregisterAllGraphLayout(owner)
+}
+
 /** A reroute chain segment, terminal-first. */
 interface ChainSegment {
   /** Emitted reroute ids, in walk order. */
@@ -543,28 +559,16 @@ export class LGraph
     this.stop()
     this.status = LGraph.STATUS_STOPPED
 
-    if (this._nodes) {
-      for (const node of this._nodes) fireNodeRemovalLifecycle(node)
-    }
+    teardownOwnedGraphs(this)
 
     const graphId = this.id
     if (this.isRootGraph && graphId !== zeroUuid) {
-      for (const graph of [this, ...this._subgraphs.values()]) {
-        unregisterAllLinkTopologies(graph)
-      }
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
       layoutStore.clearGraph(graphId)
-    } else {
-      // Subgraphs and unconfigured (zero-uuid) graphs share their store
-      // bucket with other graphs, so unregister each entity individually.
-      unregisterAllLinkTopologies(this)
-      unregisterAllRerouteChains(this)
-      unregisterAllNodeStates(this)
-      unregisterAllGraphLayout(this)
     }
 
     this.id = this.isRootGraph ? createUuidv4() : zeroUuid
