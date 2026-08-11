@@ -27,7 +27,8 @@ export function useAssetsQuery(
   let next_cursor: string | undefined
   let has_more = true
   const items = ref<AssetItem[]>([])
-  async function onLoadMore() {
+
+  async function doQuery(overrideParams: Record<string, unknown>) {
     const signal = options.requestOptions?.signal
       ? AbortSignal.any([
           pendingFetchController.signal,
@@ -35,25 +36,31 @@ export function useAssetsQuery(
         ])
       : pendingFetchController.signal
     const requestOptions = { ...options.requestOptions, signal }
-    const after = next_cursor ?? params.after
-    const query = encodeParams({ ...BASE_PARAMS, ...params, after })
+    const query = encodeParams({ ...BASE_PARAMS, ...params, ...overrideParams })
     const resp = await api.fetchApi(`/assets?${query}`, requestOptions)
 
-    if (!resp.ok) return onError('asset request failed', resp)
+    if (!resp.ok) {
+      onError('asset request failed', resp)
+      return
+    }
 
     const parseResult = assetResponseSchema.safeParse(await resp.json())
-    if (!parseResult.success)
-      return onError(
-        'Failed to parse asset response',
-        fromZodError(parseResult.error)
-      )
-
-    const parsed = parseResult.data
-    next_cursor = parsed.next_cursor
-    has_more = parsed.has_more
-    items.value.push(...parsed.assets)
+    if (!parseResult.success) {
+      onError('Failed to parse asset response', fromZodError(parseResult.error))
+      return
+    }
+    return parseResult.data
   }
-  async function loadNew() {
+
+  async function onLoadMore() {
+    const assetResponse = await doQuery({ after: next_cursor ?? params.after })
+    if (!assetResponse) return
+    next_cursor = assetResponse.next_cursor
+    has_more = assetResponse.has_more
+    items.value.push(...assetResponse.assets)
+  }
+
+  async function invalidate() {
     pendingFetchController.abort()
     pendingFetchController = new AbortController()
     has_more = true
@@ -61,8 +68,25 @@ export function useAssetsQuery(
     items.value = []
     await onLoadMore()
   }
+
+  async function loadNew() {
+    const knownIds = new Set(items.value.map((item) => item.id))
+    let headCursor: string | undefined
+    while (true) {
+      const assetResponse = await doQuery({ after: headCursor })
+      if (!assetResponse) return
+
+      const { assets, has_more, next_cursor } = assetResponse
+      headCursor = next_cursor
+      const newItems = assets.filter(({ id }) => !knownIds.has(id))
+      items.value.splice(0, 0, ...newItems)
+      if (newItems.length !== assets.length || !has_more) break
+    }
+  }
+
   return {
     canLoadMore: () => has_more,
+    invalidate,
     items: items.value,
     loadNew,
     onLoadMore

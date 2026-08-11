@@ -1,5 +1,6 @@
 export type LazyList<T> = {
   canLoadMore: () => boolean
+  invalidate: () => Promise<void>
   items: readonly T[]
   loadNew: () => Promise<void>
   onLoadMore: () => Promise<void>
