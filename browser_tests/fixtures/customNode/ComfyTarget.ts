@@ -69,7 +69,7 @@ interface PromptRejection {
   errorType?: string
 }
 
-export function extractPromptErrorType(body: unknown): string | undefined {
+function extractPromptErrorType(body: unknown): string | undefined {
   const error = (body as Partial<PromptResponse> | null)?.error
   if (typeof error !== 'object' || error === null) return undefined
   const type = (error as { type?: unknown }).type
@@ -79,9 +79,20 @@ export function extractPromptErrorType(body: unknown): string | undefined {
 const describeRejection = (rejection: PromptRejection): string =>
   rejection.summary ?? `HTTP ${rejection.status} prompt submission failed`
 
+const SERVER_SIDE_FAULT_PREFIX = 'prompt submission failed server-side'
+
+// Callers that accumulate per-node verdicts use this to catch the fault,
+// record it, and still report the failures found before it - a late 5xx must
+// never mask real regressions from earlier batches.
+export function isServerSideFault(error: unknown): error is Error {
+  return (
+    error instanceof Error && error.message.startsWith(SERVER_SIDE_FAULT_PREFIX)
+  )
+}
+
 const serverSideFault = (rejection: PromptRejection): Error =>
   new Error(
-    `prompt submission failed server-side (HTTP ${rejection.status} POST /prompt)` +
+    `${SERVER_SIDE_FAULT_PREFIX} (HTTP ${rejection.status} POST /prompt)` +
       (rejection.summary ? ` - ${rejection.summary}` : '') +
       (rejection.errorType ? ` [type: ${rejection.errorType}]` : '') +
       ' - backend/environment fault, not a pack validation reject'

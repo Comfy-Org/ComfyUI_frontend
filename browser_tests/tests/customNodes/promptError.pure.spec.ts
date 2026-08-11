@@ -4,6 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   LocalDesktopTarget,
+  isServerSideFault,
   summarizePromptError,
   toPromptEvent
 } from '@e2e/fixtures/customNode/ComfyTarget'
@@ -209,14 +210,25 @@ test('a backend 5xx during submission cannot be pinned on the node under test', 
     }
   } as unknown as Page
 
-  await expect(
-    new LocalDesktopTarget().runWorkflow(page, {
+  const failure = await new LocalDesktopTarget()
+    .runWorkflow(page, {
       expectedNodeIds: ['1'],
       timeoutMs: 60_000
     })
-  ).rejects.toThrow(
+    .then(
+      () => undefined,
+      (error: unknown) => error
+    )
+  // The batch driver catches THIS shape to stop submitting while still
+  // reporting every verdict collected before the fault - the predicate is
+  // part of the contract, not just the message text.
+  expect(isServerSideFault(failure)).toBe(true)
+  expect((failure as Error).message).toBe(
     'prompt submission failed server-side (HTTP 500 POST /prompt) - Failed to create job record [type: DATABASE_ERROR] - backend/environment fault, not a pack validation reject'
   )
+  expect(
+    isServerSideFault(new Error('VALIDATION_FAIL (client threw: boom)'))
+  ).toBe(false)
   expect(waitedForExecution).toBe(false)
   expect(listeners.size).toBe(0)
 })
