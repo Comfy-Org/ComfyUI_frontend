@@ -5458,7 +5458,6 @@ const translations = {
     'zh-CN': '前沿驻场创意服务'
   },
   'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
-  'fdct.hero.applyCta': { en: 'Apply as an FDCT', 'zh-CN': '申请成为 FDCT' },
   'fdct.builders.title': {
     en: 'Builders, not advisors',
     'zh-CN': '实干者，而非顾问'
@@ -5678,6 +5677,15 @@ const translations = {
     en: 'Production-credible creatives from feature film, commercial, and experiential backgrounds. Short intro bios/videos on the solution page let you see who you are getting before you sign.',
     'zh-CN':
       '来自电影长片、商业广告和体验项目背景、具备真实制作履历的创意人才。解决方案页面上的简短介绍和视频，让你在签约前就能了解将与谁合作。'
+  },
+  'fdct.faq.q6': {
+    en: 'How do I apply to be a forward deployed creative?',
+    'zh-CN': '如何申请成为前沿驻场创意技术专家？'
+  },
+  'fdct.faq.a6': {
+    en: 'We hire FDCTs from the Comfy community. If you build production-grade work in ComfyUI and want to embed with enterprise teams, [apply as an FDCT]({applyUrl}). We review every application.',
+    'zh-CN':
+      '我们从 Comfy 社区招募 FDCT。如果你在用 ComfyUI 制作生产级作品，并希望驻场加入企业团队，欢迎[申请成为 FDCT]({applyUrl})。我们会审阅每一份申请。'
   },
   'fdct.bands.enterprise.label': {
     en: 'FOR ENTERPRISE',
