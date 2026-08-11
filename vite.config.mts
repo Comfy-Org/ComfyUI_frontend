@@ -161,6 +161,25 @@ const DEV_SERVER_COMFYUI_URL =
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
+// Workspace/auth routes only exist on the cloud gateway. On non-cloud dev
+// against a local ComfyUI backend, set WORKSPACE_DEV_PROXY (e.g.
+// https://cloud.comfy.org) to route them there so the workspace switcher can
+// be exercised; everything else keeps hitting DEV_SERVER_COMFYUI_URL.
+const WORKSPACE_DEV_PROXY = process.env.WORKSPACE_DEV_PROXY
+const workspaceDevProxyConfig = WORKSPACE_DEV_PROXY
+  ? Object.fromEntries(
+      [
+        '/api/workspaces',
+        '/api/workspace',
+        '/api/auth/token',
+        '/api/auth/session'
+      ].map((route) => [
+        route,
+        { target: WORKSPACE_DEV_PROXY, secure: false, changeOrigin: true }
+      ])
+    )
+  : {}
+
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
   _req: IncomingMessage,
@@ -266,6 +285,8 @@ export default defineConfig({
             '/api/viewvideo': gcsRedirectProxyConfig
           }
         : {}),
+
+      ...workspaceDevProxyConfig,
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
