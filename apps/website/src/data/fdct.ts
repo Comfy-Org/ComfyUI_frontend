@@ -101,9 +101,6 @@ export interface FdctProject {
   // descriptions land (the design mock uses lorem ipsum here).
   description?: string
   tags: readonly string[]
-  // Dialog highlights that are not past projects; the past-projects grid
-  // filters these out.
-  dialogOnly?: boolean
 }
 
 // Top workflows from each technologist's hub page (most-popular order);
@@ -224,8 +221,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
       tags: [
         t('fdct.tags.imageGeneration', locale),
         t('fdct.tags.virtualTryOn', locale)
-      ],
-      dialogOnly: true
+      ]
     },
     {
       id: 'character-outfit-fashion-video',
@@ -244,8 +240,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
       tags: [
         t('fdct.tags.fashion', locale),
         t('fdct.tags.imageToVideo', locale)
-      ],
-      dialogOnly: true
+      ]
     },
     {
       id: 'talent-casting',
@@ -261,8 +256,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
       tags: [
         t('fdct.tags.imageToVideo', locale),
         t('fdct.tags.characterReference', locale)
-      ],
-      dialogOnly: true
+      ]
     },
     // Robert Paige's highlighted workflows from the Comfy workflows hub. The
     // hub lists other creators on these workflows; author here only routes
@@ -282,8 +276,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
         'fdct.projects.seedanceLlmPromptHelper.description',
         locale
       ),
-      tags: [t('fdct.tags.imageToVideo', locale), t('fdct.tags.video', locale)],
-      dialogOnly: true
+      tags: [t('fdct.tags.imageToVideo', locale), t('fdct.tags.video', locale)]
     },
     {
       id: 'nano-banana-2-lite-image-edit',
@@ -302,8 +295,7 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
       tags: [
         t('fdct.tags.imageGeneration', locale),
         t('fdct.tags.imageEdit', locale)
-      ],
-      dialogOnly: true
+      ]
     },
     {
       id: 'change-any-objects',
@@ -319,8 +311,79 @@ export function projects(locale: Locale = 'en'): readonly FdctProject[] {
       tags: [
         t('fdct.tags.imageGeneration', locale),
         t('fdct.tags.inpainting', locale)
-      ],
-      dialogOnly: true
+      ]
+    }
+  ]
+}
+
+export interface FdctFeaturedProject {
+  id: string
+  title: string
+  media: { type: 'image' | 'video'; src: string; poster?: string }
+  tags: readonly string[]
+}
+
+// The "Featured projects" grid is a standalone, curated set of workflows from
+// the Comfy hub, independent of the technologist dialogs. Titles and cover
+// assets come from each workflow's own hub page; order and tag labels match
+// the design (10331:36004). The cards deliberately carry no workflow links.
+export function featuredProjects(
+  locale: Locale = 'en'
+): readonly FdctFeaturedProject[] {
+  return [
+    {
+      id: 'product-advertisement-video',
+      title: 'Product Advertisement Video',
+      media: {
+        type: 'video',
+        src: 'https://comfy-hub-assets.comfy.org/uploads/a8c26beb-d463-40a0-8547-fa942e53ad70.mp4'
+      },
+      tags: [t('fdct.tags.advertising', locale)]
+    },
+    {
+      id: 'storyboard-to-video-seedance',
+      title: 'Storyboard To Video - Seedance 2.0',
+      media: {
+        type: 'video',
+        src: 'https://comfy-hub-assets.comfy.org/uploads/34ea9f1a-1aac-4c6f-af48-b88cf154ec9b.mp4'
+      },
+      tags: [t('fdct.tags.advertising', locale), t('fdct.tags.film', locale)]
+    },
+    {
+      id: 'ooh-visualization',
+      title: 'Comfy for Advertising - OOH Visualization',
+      media: {
+        type: 'image',
+        src: 'https://comfy-hub-assets.comfy.org/uploads/dbb9b751-2f86-49b6-a2e5-81c9afb1322e.png'
+      },
+      tags: [t('fdct.tags.advertising', locale)]
+    },
+    {
+      id: 'face-swap-workflow',
+      title: 'Face Swap Workflow',
+      media: {
+        type: 'video',
+        src: 'https://comfy-hub-assets.comfy.org/uploads/d0bc92f7-c5dc-4861-9588-5ae94b609c6d.mp4'
+      },
+      tags: [t('fdct.tags.vfx', locale)]
+    },
+    {
+      id: 'photo-to-blueprint-to-model',
+      title: 'Photo to Blueprint to Model',
+      media: {
+        type: 'image',
+        src: 'https://comfy-hub-assets.comfy.org/templates/a4700cc0-72ea-409e-9693-34a6d26a8c96.webp'
+      },
+      tags: [t('fdct.tags.architecture', locale)]
+    },
+    {
+      id: 'generate-realistic-variations',
+      title: 'Generate Realistic Variations',
+      media: {
+        type: 'video',
+        src: 'https://comfy-hub-assets.comfy.org/templates/e0802269-6a96-4309-83b9-3dff1dc59a10.mp4'
+      },
+      tags: [t('fdct.tags.advertising', locale)]
     }
   ]
 }

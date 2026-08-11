@@ -5591,17 +5591,9 @@ const translations = {
   'fdct.tags.fashion': { en: 'Fashion', 'zh-CN': '时尚' },
   'fdct.tags.imageEdit': { en: 'Image Edit', 'zh-CN': '图像编辑' },
   'fdct.tags.inpainting': { en: 'Inpainting', 'zh-CN': '局部重绘' },
+  'fdct.tags.film': { en: 'Film', 'zh-CN': '电影' },
+  'fdct.tags.architecture': { en: 'Architecture', 'zh-CN': '建筑' },
   'fdct.projects.title': { en: 'Featured projects', 'zh-CN': '精选项目' },
-  'fdct.projects.category.advertisement': {
-    en: 'Advertisement',
-    'zh-CN': '广告'
-  },
-  'fdct.projects.category.entertainment': {
-    en: 'Entertainment',
-    'zh-CN': '娱乐'
-  },
-  'fdct.projects.category.ecommerce': { en: 'Ecommerce', 'zh-CN': '电商' },
-  'fdct.projects.cta': { en: 'View project', 'zh-CN': '查看项目' },
   // Workflow-card descriptions in the technologist dialog; en copy is
   // placeholder until final descriptions land (the design mock is lorem).
   'fdct.projects.productAdvertisementVideo.description': {

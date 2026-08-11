@@ -51,6 +51,22 @@ export const ImageMedia: Story = {
   }
 }
 
+export const Compact: Story = {
+  args: {
+    variant: 'compact',
+    item: {
+      id: 'storyboard-to-video-seedance',
+      title: 'Storyboard To Video - Seedance 2.0',
+      media: {
+        type: 'video',
+        src: 'https://comfy-hub-assets.comfy.org/uploads/34ea9f1a-1aac-4c6f-af48-b88cf154ec9b.mp4',
+        alt: 'Storyboard To Video - Seedance 2.0'
+      },
+      tags: ['Advertising', 'Film']
+    }
+  }
+}
+
 export const TitleOnly: Story = {
   args: {
     item: {

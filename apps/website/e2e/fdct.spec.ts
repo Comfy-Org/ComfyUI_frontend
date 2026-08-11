@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import {
   fdctFaqs,
-  projects as projectsOf,
+  featuredProjects as featuredProjectsOf,
   technologists as technologistsOf
 } from '../src/data/fdct'
 import { t } from '../src/i18n/translations'
@@ -10,8 +10,9 @@ import { test } from './fixtures/blockExternalMedia'
 
 // The spec only asserts locale-independent fields (names, titles, counts,
 // category slugs), so one locale's snapshot serves both language suites.
-// Dialog-only highlights are excluded to mirror the past-projects grid.
-const projects = projectsOf('en').filter((project) => !project.dialogOnly)
+// The Featured projects grid is its own curated list, independent of the
+// technologist dialogs.
+const projects = featuredProjectsOf()
 const technologists = technologistsOf('en')
 
 const builderReasonKeys = [
@@ -62,7 +63,7 @@ test.describe('FDCT page @smoke', () => {
       'href',
       'https://jobs.ashbyhq.com/comfy-org/b8faf3c0-a21c-4bed-8651-93daa6bfe81c'
     )
-    await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeHidden()
+    await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeVisible()
   })
 
   test('builders section renders the node label, reasons, and marquee', async ({
@@ -127,33 +128,25 @@ test.describe('FDCT page @smoke', () => {
     }
   })
 
-  test('past projects renders six cards with author and category', async ({
+  test('past projects renders six unlinked cards with tags', async ({
     page
   }) => {
     await page.goto('/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: t('fdct.projects.title', 'en') })
     })
-    await expect(
-      section.locator(`a[aria-label$="${t('fdct.projects.cta', 'en')}"]`)
-    ).toHaveCount(projects.length)
     for (const project of projects) {
       await expect(
-        section.getByRole('link', {
-          name: `${project.title} — ${t('fdct.projects.cta', 'en')}`
-        })
+        section.getByText(project.title, { exact: true })
       ).toHaveCount(1)
     }
-    await expect(
-      section.getByText(projects[0].author.name).first()
-    ).toBeVisible()
-    await expect(
-      section
-        .getByText(t(`fdct.projects.category.${projects[0].category}`, 'en'), {
-          exact: true
-        })
-        .first()
-    ).toBeVisible()
+    for (const tag of projects[1].tags) {
+      await expect(
+        section.getByText(tag, { exact: true }).first()
+      ).toBeVisible()
+    }
+    // The featured cards deliberately carry no workflow links.
+    await expect(section.locator('a')).toHaveCount(0)
   })
 
   test('Q&A renders five questions and expands one to reveal its answer', async ({
@@ -235,8 +228,10 @@ test.describe('FDCT hero @mobile', () => {
   }) => {
     await page.goto('/forward-deployed-creatives')
     await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeVisible()
-    await expect(page.locator('img[src*="desert"]:visible')).toHaveCount(1)
-    await expect(page.locator('img[src*="dark-fluid"]:visible')).toHaveCount(1)
+    await expect(page.locator('img[src*="headphones"]:visible')).toHaveCount(1)
+    await expect(
+      page.locator('img[src*="abeautifulland"]:visible')
+    ).toHaveCount(1)
     const hero = page.locator('section', {
       has: page.getByRole('heading', { level: 1 })
     })
@@ -350,15 +345,14 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
         name: t('fdct.projects.title', 'zh-CN')
       })
     })
-    await expect(
-      section.locator(`a[aria-label$="${t('fdct.projects.cta', 'zh-CN')}"]`)
-    ).toHaveCount(projects.length)
+    for (const project of projects) {
+      await expect(
+        section.getByText(project.title, { exact: true })
+      ).toHaveCount(1)
+    }
     await expect(
       section
-        .getByText(
-          t(`fdct.projects.category.${projects[0].category}`, 'zh-CN'),
-          { exact: true }
-        )
+        .getByText(featuredProjectsOf('zh-CN')[0].tags[0], { exact: true })
         .first()
     ).toBeVisible()
   })
