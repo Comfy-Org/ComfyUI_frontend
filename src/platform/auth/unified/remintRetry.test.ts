@@ -1,6 +1,6 @@
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   attachUnifiedRemintInterceptor,
@@ -48,10 +48,6 @@ describe('fetchWithUnifiedRemint', () => {
     flagState.unifiedCloudAuthEnabled = true
     mockFetch = vi.fn()
     vi.stubGlobal('fetch', mockFetch)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('re-mints once and retries with the fresh token on a 401 (AC1)', async () => {

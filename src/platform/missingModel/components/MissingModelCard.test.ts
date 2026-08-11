@@ -146,7 +146,6 @@ function getRowsIn(testId: string) {
 
 describe('MissingModelCard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = true
   })
 
@@ -287,7 +286,6 @@ describe('MissingModelCard', () => {
 
 describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = false
   })
 

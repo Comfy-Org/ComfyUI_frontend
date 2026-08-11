@@ -15719,6 +15719,96 @@
       }
     }
   },
+  "QwenImageEditApi": {
+    "description": "Edita ou combina até 3 imagens de referência guiadas por um prompt de texto usando os modelos Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a ser utilizado."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Número de imagens a serem geradas, retornadas em lote."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Se o prompt deve ser aprimorado com assistência de IA."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed a ser utilizada para a geração."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Resolução de saída. 'match input' reutiliza o tamanho da primeira imagem de referência, 'auto' permite que o modelo escolha um tamanho com a mesma proporção, 'custom' define uma largura e altura explícitas."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se deve adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "Gera imagens a partir de um prompt de texto usando os modelos Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Text to Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a ser utilizado."
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Número de imagens a serem geradas, retornadas em lote."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Se o prompt deve ser aprimorado com assistência de IA."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed a ser utilizada para a geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se deve adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RTDETR_detect": {
     "display_name": "RT-DETR Detectar",
     "inputs": {

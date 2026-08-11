@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
@@ -21,7 +21,6 @@ describe('useCoachmarkTarget', () => {
   afterEach(() => {
     clearCoachmarks()
     document.body.replaceChildren()
-    vi.restoreAllMocks()
   })
 
   function setup(coachId: CoachId) {

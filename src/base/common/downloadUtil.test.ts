@@ -26,10 +26,10 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 // Global stubs
-const createObjectURLSpy = vi
+let createObjectURLSpy = vi
   .spyOn(URL, 'createObjectURL')
   .mockReturnValue('blob:mock-url')
-const revokeObjectURLSpy = vi
+let revokeObjectURLSpy = vi
   .spyOn(URL, 'revokeObjectURL')
   .mockImplementation(() => {})
 
@@ -38,6 +38,12 @@ describe('downloadUtil', () => {
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
+    createObjectURLSpy = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:mock-url')
+    revokeObjectURLSpy = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
     mockIsCloud.value = false
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
@@ -55,10 +61,6 @@ describe('downloadUtil', () => {
     vi.spyOn(document, 'createElement').mockReturnValue(mockLink)
     vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink)
     vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('downloadFile', () => {
