@@ -17,11 +17,13 @@ import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   LGraph,
   LGraphNode,
+  LLink,
   LiteGraph,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -503,6 +505,39 @@ describe('SubgraphSerialization - Data Integrity', () => {
     const second = restored.asSerialisable()
 
     expect(JSON.stringify(second.links)).toBe(JSON.stringify(first.links))
+  })
+
+  it('preserves owned topology through serialization and configure', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 0 })
+    const origin = createTestNode(subgraph, [], ['number'], 'Origin')
+    const target = createTestNode(subgraph, ['number'], [], 'Target')
+    const link = origin.connect(0, target, 0)!
+    const floatingLink = new LLink(
+      toLinkId(2),
+      'number',
+      origin.id,
+      0,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    subgraph.addFloatingLink(floatingLink)
+    subgraph.createReroute([10, 20], link)
+    subgraph.createReroute([30, 40], floatingLink)
+
+    const exported = structuredClone(subgraph.asSerialisable())
+    const rootGraph = subgraph.rootGraph
+    subgraph.clear()
+    const restored = createTestSubgraph({ rootGraph, nodeCount: 0 })
+    restored.configure(exported)
+
+    expect(restored.links.size).toBe(1)
+    expect(restored.floatingLinks.size).toBe(1)
+    expect(restored.reroutes.size).toBe(2)
+    expect(restored.asSerialisable()).toMatchObject({
+      links: exported.links,
+      floatingLinks: exported.floatingLinks,
+      reroutes: exported.reroutes
+    })
   })
 
   it('deduplicates duplicate subgraph node IDs while keeping root nodes canonical', () => {

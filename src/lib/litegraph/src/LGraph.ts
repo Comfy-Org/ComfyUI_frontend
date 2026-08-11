@@ -298,6 +298,20 @@ function registerConfiguredLink(
   }
 }
 
+function serialiseOwnedTopology(owner: LGraph) {
+  return {
+    links: owner.links.size
+      ? [...owner.links.values()].map((link) => link.asSerialisable())
+      : undefined,
+    floatingLinks: owner.floatingLinks.size
+      ? [...owner.floatingLinks.values()].map((link) => link.asSerialisable())
+      : undefined,
+    reroutes: owner.reroutes.size
+      ? [...owner.reroutes.values()].map((reroute) => reroute.asSerialisable())
+      : undefined
+  }
+}
+
 function remapConfiguredLinkAliases(
   data: (ISerialisedGraph | SerialisableGraph) &
     Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs'>>,
@@ -2513,16 +2527,7 @@ export class LGraph
 
     const nodes = nodeList.map((node) => node.serialize())
     const groups = this._groups.map((x) => x.serialize())
-
-    const links = this.links.size
-      ? [...this.links.values()].map((x) => x.asSerialisable())
-      : undefined
-    const floatingLinks = this.floatingLinks.size
-      ? [...this.floatingLinks.values()].map((x) => x.asSerialisable())
-      : undefined
-    const reroutes = this.reroutes.size
-      ? [...this.reroutes.values()].map((x) => x.asSerialisable())
-      : undefined
+    const topology = serialiseOwnedTopology(this)
 
     // Save scale and offset
     const extra = { ...this.extra }
@@ -2537,9 +2542,7 @@ export class LGraph
       state,
       groups,
       nodes,
-      links,
-      floatingLinks,
-      reroutes,
+      ...topology,
       extra
     }
 
@@ -3164,6 +3167,7 @@ export class Subgraph
 
   override asSerialisable(): ExportedSubgraph &
     Required<Pick<SerialisableGraph, 'nodes' | 'groups' | 'extra'>> {
+    const topology = serialiseOwnedTopology(this)
     return {
       id: this.id,
       version: LGraph.serialisedSchemaVersion,
@@ -3179,10 +3183,8 @@ export class Subgraph
       widgets: [...this.widgets],
       nodes: this.nodes.map((node) => node.serialize()),
       groups: this.groups.map((group) => group.serialize()),
-      links: [...this.links.values()].map((x) => x.asSerialisable()),
-      reroutes: this.reroutes.size
-        ? [...this.reroutes.values()].map((x) => x.asSerialisable())
-        : undefined,
+      ...topology,
+      links: topology.links ?? [],
       extra: this.extra
     }
   }
