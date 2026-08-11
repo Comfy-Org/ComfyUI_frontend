@@ -2,6 +2,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
+import type { RerouteId } from '@/types/rerouteId'
 
 import type { LGraph } from '../LGraph'
 import type { LGraphNode } from '../LGraphNode'
@@ -92,17 +93,19 @@ interface InputReplacement {
   slot: number
 }
 
-function finalizeInputLinkRemoval(
+export function finalizeInputLinkRemoval(
   node: LGraphNode,
   input: INodeInputSlot,
   slot: number,
   link: LLink,
-  keepReroutes: boolean
+  keepReroutes: boolean,
+  keepFloatingReroute?: RerouteId
 ): void {
   const graph = node.graph
   if (!graph) return
   const connection = link.resolve(graph)
   for (const floatingLink of slotFloatingLinks(graph, 'input', node.id, slot)) {
+    if (floatingLink.parentId === keepFloatingReroute) continue
     graph.removeFloatingLink(floatingLink)
   }
   if (connection.subgraphInput && 'inputNode' in graph) {

@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import { mintLinkId } from '../idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
@@ -56,8 +56,6 @@ export class SubgraphOutput extends SubgraphSlot {
     const existingLink = this.getLinks().at(0)
     if (existingLink != null) {
       subgraph.beforeChange()
-
-      existingLink.disconnect(subgraph, 'input')
     }
 
     const linkId = mintLinkId(subgraph.state)
@@ -72,11 +70,12 @@ export class SubgraphOutput extends SubgraphSlot {
       afterRerouteId
     )
 
-    // Add to graph links list
-    if (!subgraph._addLink(link)) {
+    if (!replaceLinkTopology(subgraph, existingLink, link)) {
       if (existingLink) subgraph.afterChange()
       return
     }
+
+    existingLink?.disconnect(subgraph, 'input')
 
     // Set link ID in each slot
     this.linkIds[0] = link.id
@@ -91,6 +90,10 @@ export class SubgraphOutput extends SubgraphSlot {
       link,
       slot
     )
+    if (subgraph.getLink(link.id) !== link) {
+      subgraph.afterChange()
+      return
+    }
 
     subgraph.afterChange()
 

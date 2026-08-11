@@ -38,12 +38,13 @@ import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
-import { LLink, slotFloatingLinks } from './LLink'
+import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
   inputLink,
   inputLinkId,
   captureInputLayout,
+  finalizeInputLinkRemoval,
   replaceNodeInputs,
   outputHasLinks,
   outputLinks
@@ -3121,11 +3122,9 @@ export class LGraphNode
     )
       return null
 
-    // if there is something already plugged there, disconnect
-    const replacingLink = inputHasLink(graph, inputNode.id, inputIndex)
+    const replacingLink = inputLink(graph, inputNode.id, inputIndex)
     if (replacingLink) {
       graph.beforeChange()
-      inputNode.disconnectInput(inputIndex, true, afterRerouteId)
     }
 
     const maybeCommonType =
@@ -3143,10 +3142,24 @@ export class LGraphNode
       afterRerouteId
     )
 
-    // add to graph links list
-    if (!graph._addLink(link)) {
+    if (!replaceLinkTopology(graph, replacingLink, link)) {
       if (replacingLink) graph.afterChange()
       return
+    }
+
+    if (replacingLink) {
+      finalizeInputLinkRemoval(
+        inputNode,
+        input,
+        inputIndex,
+        replacingLink,
+        true,
+        afterRerouteId
+      )
+      if (graph.getLink(link.id) !== link) {
+        graph.afterChange()
+        return
+      }
     }
 
     anchorRerouteChain(graph, link)
@@ -3160,6 +3173,10 @@ export class LGraphNode
       link,
       output
     )
+    if (graph.getLink(link.id) !== link) {
+      graph.afterChange()
+      return
+    }
 
     inputNode.onConnectionsChange?.(
       NodeSlotType.INPUT,
@@ -3168,6 +3185,10 @@ export class LGraphNode
       link,
       input
     )
+    if (graph.getLink(link.id) !== link) {
+      graph.afterChange()
+      return
+    }
 
     this.setDirtyCanvas(false, true)
     graph.afterChange()

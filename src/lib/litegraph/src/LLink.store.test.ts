@@ -5,10 +5,11 @@ import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
+import { NodeSlotType } from './types/globalEnums'
 
 import { registerLinkTopology } from './LLink'
 import {
@@ -99,7 +100,14 @@ describe('LLink ↔ linkStore integration', () => {
     graph.add(inputNode)
     outputNode.onConnectionsChange = vi.fn()
     inputNode.onConnectionsChange = vi.fn()
-    vi.spyOn(graph, '_addLink').mockReturnValue(false)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    useLinkStore().registerLink(
+      {
+        ...graphScopeOf(graph),
+        owningGraphId: toOwningGraphId('sibling')
+      },
+      new LLink(toLinkId(1), '*', toNodeId(10), 0, toNodeId(11), 0)._state
+    )
 
     expect(outputNode.connect(0, inputNode, 0)).toBeNull()
     expect(outputNode.onConnectionsChange).not.toHaveBeenCalled()
@@ -121,6 +129,69 @@ describe('LLink ↔ linkStore integration', () => {
 
     graph.removeLink(link.id)
     expect(store.isInputSlotConnected(graphScopeOf(graph), b.id, 0)).toBe(false)
+  })
+
+  it('commits a replacement before disconnect callbacks run', () => {
+    const graph = new LGraph()
+    const first = new LGraphNode('first')
+    const replacement = new LGraphNode('replacement')
+    const target = new LGraphNode('target')
+    first.addOutput('out', 'INT')
+    replacement.addOutput('out', 'INT')
+    target.addInput('in', 'INT')
+    graph.add(first)
+    graph.add(replacement)
+    graph.add(target)
+    first.connect(0, target, 0)
+    const observedOrigins: string[] = []
+    target.onConnectionsChange = (side, _slot, connected) => {
+      if (side !== NodeSlotType.INPUT || connected) return
+      const topology = useLinkStore().getInputSlotLink(
+        graphScopeOf(graph),
+        target.id,
+        0
+      )
+      if (topology) observedOrigins.push(String(topology.originNodeId))
+    }
+
+    const link = replacement.connect(0, target, 0)
+
+    expect(link?.origin_id).toBe(replacement.id)
+    expect(observedOrigins).toEqual([String(replacement.id)])
+  })
+
+  it('does not notify for a replacement displaced by a callback', () => {
+    const graph = new LGraph()
+    const first = new LGraphNode('first')
+    const outer = new LGraphNode('outer')
+    const nested = new LGraphNode('nested')
+    const target = new LGraphNode('target')
+    for (const node of [first, outer, nested]) node.addOutput('out', 'INT')
+    target.addInput('in', 'INT')
+    for (const node of [first, outer, nested, target]) graph.add(node)
+    first.connect(0, target, 0)
+    const outerConnectionChange = vi.fn()
+    outer.onConnectionsChange = outerConnectionChange
+    let replaced = false
+    target.onConnectionsChange = (side, _slot, connected) => {
+      if (side !== NodeSlotType.INPUT || connected || replaced) return
+      replaced = true
+      nested.connect(0, target, 0)
+    }
+
+    expect(outer.connect(0, target, 0)).toBeNull()
+
+    expect(
+      useLinkStore().getInputSlotLink(graphScopeOf(graph), target.id, 0)
+        ?.originNodeId
+    ).toBe(nested.id)
+    expect(outerConnectionChange).not.toHaveBeenCalledWith(
+      NodeSlotType.OUTPUT,
+      0,
+      true,
+      expect.anything(),
+      expect.anything()
+    )
   })
 
   it('allocates after an explicitly registered link id', () => {

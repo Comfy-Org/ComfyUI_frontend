@@ -641,10 +641,39 @@ export function registerLinkTopology(
   const scope = graphScopeOf(graph)
   const registered = useLinkStore().registerLink(scope, link._state)
   if (!registered) return false
+  adoptLinkTopology(link, scope, registered)
+  return true
+}
+
+export function replaceLinkTopology(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  incumbent: LLink | undefined,
+  replacement: LLink
+): boolean {
+  if (replacement.id === toLinkId(-1)) return false
+  const scope = graphScopeOf(graph)
+  const registered = useLinkStore().replaceLink(
+    scope,
+    incumbent?._state,
+    replacement._state
+  )
+  if (!registered) return false
+  if (incumbent) {
+    linkByTopology.delete(toRaw(incumbent._state))
+    incumbent._graphScope = undefined
+  }
+  adoptLinkTopology(replacement, scope, registered)
+  return true
+}
+
+function adoptLinkTopology(
+  link: LLink,
+  scope: GraphScope,
+  registered: LinkTopology
+): void {
   link._state = registered
   link._graphScope = scope
   linkByTopology.set(toRaw(registered), link)
-  return true
 }
 
 /**
