@@ -372,6 +372,43 @@ describe('WidgetSelectDefault', () => {
       expect(trigger).not.toHaveAttribute('aria-invalid')
     })
 
+    it('renders an empty trigger for a null value with no placeholder', () => {
+      renderComponent(createWidget(['a', 'b']), null)
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger.textContent?.trim()).toBe('')
+    })
+
+    it('selects the first option for undefined but leaves null empty', () => {
+      const { unmount } = renderComponent(createWidget(['a', 'b']))
+
+      expect(
+        screen.getByTestId('widget-select-default-trigger')
+      ).toHaveTextContent('a')
+      unmount()
+
+      renderComponent(createWidget(['a', 'b']), null)
+
+      expect(
+        screen.getByTestId('widget-select-default-trigger').textContent?.trim()
+      ).toBe('')
+    })
+
+    it('shows all options as unselected for a null value', async () => {
+      const { user } = renderComponent(createWidget(['a', 'b']), null)
+
+      await openDropdown(user)
+
+      const options = screen.getAllByRole('option')
+      expect(options.map((option) => option.textContent?.trim())).toEqual([
+        'a',
+        'b'
+      ])
+      for (const option of options) {
+        expect(option).not.toHaveAttribute('data-state', 'checked')
+      }
+    })
+
     it('shows invalid current values as the trigger label', () => {
       renderComponent(createWidget(['a', 'b']), 'missing')
 
