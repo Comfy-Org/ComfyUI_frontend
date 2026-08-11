@@ -19,7 +19,6 @@ vi.mock('@/platform/telemetry', () => ({
 
 describe('topupTracker', () => {
   beforeEach(() => {
-    vi.setSystemTime(new Date('2026-08-07T12:00:00Z'))
     localStorage.clear()
   })
 

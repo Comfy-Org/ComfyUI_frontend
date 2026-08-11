@@ -380,8 +380,7 @@ describe('useMediaAssetFiltering', () => {
     })
 
     it('combines media type and date before sorting', () => {
-      const now = new Date(2026, 6, 27, 12).getTime()
-      vi.setSystemTime(now)
+      const now = Date.now()
 
       const assets = ref<AssetItem[]>([
         makeAsset({
