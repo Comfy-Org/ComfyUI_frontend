@@ -43,7 +43,10 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
     <DialogTrigger v-if="$slots.trigger" as-child>
       <slot name="trigger" />
     </DialogTrigger>
-    <DialogContent :close-label :class="cn('sm:max-w-6xl', className)">
+    <DialogContent
+      :close-label
+      :class="cn('scrollbar-none sm:max-w-6xl', className)"
+    >
       <div class="flex flex-col gap-8 sm:flex-row sm:items-center sm:gap-11">
         <img
           :src="avatarSrc"
