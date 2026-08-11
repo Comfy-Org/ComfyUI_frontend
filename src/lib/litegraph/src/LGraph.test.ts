@@ -1700,13 +1700,14 @@ describe('graph teardown drops layout entries', () => {
     return { graph, subgraph, root, group, interior }
   }
 
-  function survivingEntries({
-    graph,
-    root,
-    group,
-    interior
-  }: ReturnType<typeof createGraphWithEveryLayoutEntryType>) {
-    const rootGraphId = graph.rootGraph.id
+  function survivingEntries(
+    rootGraphId: UUID,
+    {
+      root,
+      group,
+      interior
+    }: ReturnType<typeof createGraphWithEveryLayoutEntryType>
+  ) {
     return [
       layoutStore.getNodeLayoutRef(rootGraphId, root.id).value,
       layoutStore.getNodeLayoutRef(rootGraphId, interior.id).value,
@@ -1723,15 +1724,17 @@ describe('graph teardown drops layout entries', () => {
     ]
   ] as const)('drops every entry on %s', ([, teardown]) => {
     const populated = createGraphWithEveryLayoutEntryType()
-    expect(survivingEntries(populated)).toBe(4)
+    const rootGraphId = populated.graph.rootGraph.id
+    expect(survivingEntries(rootGraphId, populated)).toBe(4)
 
     teardown(populated.graph)
 
-    expect(survivingEntries(populated)).toBe(0)
+    expect(survivingEntries(rootGraphId, populated)).toBe(0)
   })
 
   it('drops nested definition entries during individual teardown', () => {
     const graph = new LGraph()
+    const rootGraphId = graph.id
     const parent = graph.createSubgraph(createTestSubgraphData())
     const nested = graph.createSubgraph(createTestSubgraphData())
     parent.add(createTestSubgraphNode(nested, { parentGraph: parent }))
@@ -1743,15 +1746,17 @@ describe('graph teardown drops layout entries', () => {
     nested.add(group)
     nested._addReroute(new Reroute(rerouteId, nested, [10, 10]))
 
-    expect(layoutStore.getNodeLayoutRef(graph.id, node.id).value).not.toBeNull()
-    expect(layoutStore.getGroupLayout(graph.id, group.id)).not.toBeNull()
-    expect(layoutStore.getRerouteLayout(graph.id, rerouteId)).not.toBeNull()
+    expect(
+      layoutStore.getNodeLayoutRef(rootGraphId, node.id).value
+    ).not.toBeNull()
+    expect(layoutStore.getGroupLayout(rootGraphId, group.id)).not.toBeNull()
+    expect(layoutStore.getRerouteLayout(rootGraphId, rerouteId)).not.toBeNull()
 
     graph.clear()
 
-    expect(layoutStore.getNodeLayoutRef(zeroUuid, node.id).value).toBeNull()
-    expect(layoutStore.getGroupLayout(zeroUuid, group.id)).toBeNull()
-    expect(layoutStore.getRerouteLayout(zeroUuid, rerouteId)).toBeNull()
+    expect(layoutStore.getNodeLayoutRef(rootGraphId, node.id).value).toBeNull()
+    expect(layoutStore.getGroupLayout(rootGraphId, group.id)).toBeNull()
+    expect(layoutStore.getRerouteLayout(rootGraphId, rerouteId)).toBeNull()
   })
 
   it('drops interior entries when the last SubgraphNode is removed', () => {

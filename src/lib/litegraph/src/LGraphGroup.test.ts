@@ -118,13 +118,12 @@ describe('group layout in layoutStore', () => {
 
   test('drops entries when the graph is cleared', () => {
     const graph = new LGraph()
+    const rootGraphId = graph.rootGraph.id
     addedGroup(graph, toGroupId(802))
 
     graph.clear()
 
-    expect(
-      layoutStore.getGroupLayout(graph.rootGraph.id, toGroupId(802))
-    ).toBeNull()
+    expect(layoutStore.getGroupLayout(rootGraphId, toGroupId(802))).toBeNull()
   })
 
   test('isolates colliding group IDs across live root graphs', () => {

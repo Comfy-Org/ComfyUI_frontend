@@ -65,6 +65,23 @@ describe('LLink ↔ linkStore integration', () => {
     expect(collision._graphScope).toBeUndefined()
   })
 
+  it('does not finish connecting when topology registration is rejected', () => {
+    const graph = new LGraph()
+    const outputNode = new LGraphNode('output')
+    const inputNode = new LGraphNode('input')
+    outputNode.addOutput('out', '*')
+    inputNode.addInput('in', '*')
+    graph.add(outputNode)
+    graph.add(inputNode)
+    outputNode.onConnectionsChange = vi.fn()
+    inputNode.onConnectionsChange = vi.fn()
+    vi.spyOn(graph, '_addLink').mockReturnValue(false)
+
+    expect(outputNode.connect(0, inputNode, 0)).toBeNull()
+    expect(outputNode.onConnectionsChange).not.toHaveBeenCalled()
+    expect(inputNode.onConnectionsChange).not.toHaveBeenCalled()
+  })
+
   it('connect registers, disconnect removes', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')

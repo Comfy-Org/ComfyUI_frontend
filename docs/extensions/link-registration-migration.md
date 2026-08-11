@@ -23,3 +23,7 @@ one.
 Persisted-id collision repair belongs to workflow import and
 deserialization. Extensions importing serialized topology should normalize
 conflicting ids at that boundary before using the runtime registration API.
+
+Constructing or configuring an `LGraph` from serialized data requires an
+active Pinia because graph entities register with their topology stores during
+deserialization.

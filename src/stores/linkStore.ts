@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
-import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   GraphScope,
   OwningGraphId,
@@ -86,15 +85,13 @@ const EMPTY_LINKS: ReadonlySet<LinkTopology> = new Set()
 
 /**
  * A link is keyed by its target input slot only when that slot uniquely
- * identifies it: floating links (either endpoint unassigned) can share an
- * input slot with a real link, and SUBGRAPH_OUTPUT_ID is a constant shared by
- * every subgraph definition. Neither is queried by target.
+ * identifies it. Floating links (either endpoint unassigned) can share an
+ * input slot with a real link and are not queried by target.
  */
 function hasUniqueTarget(topology: LinkTopology): boolean {
   return (
     topology.originNodeId !== UNASSIGNED_NODE_ID &&
-    topology.targetNodeId !== UNASSIGNED_NODE_ID &&
-    topology.targetNodeId !== SUBGRAPH_OUTPUT_ID
+    topology.targetNodeId !== UNASSIGNED_NODE_ID
   )
 }
 

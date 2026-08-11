@@ -55,10 +55,20 @@ describe('Reroute ↔ rerouteStore integration', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     useRerouteStore().registerReroute(graphScopeOf(graph), incumbent._chain)
 
-    graph._addReroute(collision)
+    const added = graph._addReroute(collision)
 
+    expect(added).toBe(false)
     expect(graph.reroutes.has(collision.id)).toBe(false)
     expect(collision._graphScope).toBeUndefined()
+  })
+
+  it('does not return or splice a reroute when registration is rejected', () => {
+    const { graph, link } = connectedGraph()
+    vi.spyOn(graph, '_addReroute').mockReturnValue(false)
+
+    expect(graph.setReroute({ pos: [5, 5], linkIds: [] })).toBeUndefined()
+    expect(graph.createReroute([10, 10], link)).toBeUndefined()
+    expect(link.parentId).toBeUndefined()
   })
 
   it('setReroute creates and updates geometry in one layout write', () => {
@@ -72,7 +82,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [5, 5],
       linkIds: []
-    })
+    })!
 
     expect(store.getReroute(graphScopeOf(graph), reroute.id)?.id).toBe(3)
     const creationOperations = applyOperation.mock.calls.filter(
@@ -91,7 +101,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [8, 9],
       linkIds: []
-    })
+    })!
 
     expect(existing).toBe(reroute)
     expect(existing.pos).toEqual([8, 9])
@@ -131,7 +141,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [10, 10],
       linkIds: [link.id]
-    })
+    })!
     link.parentId = reroute.id
 
     link.disconnect(graph)
@@ -186,7 +196,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [10, 10],
       linkIds: []
-    })
+    })!
 
     link.parentId = reroute.id
 
@@ -204,13 +214,13 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [10, 10],
       linkIds: []
-    })
+    })!
     const second = graph.setReroute({
       id: toRerouteId(2),
       parentId: undefined,
       pos: [20, 20],
       linkIds: []
-    })
+    })!
 
     first.parentId = second.id
     second.parentId = first.id
@@ -226,19 +236,19 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [0, 0],
       linkIds: []
-    })
+    })!
     const b = graph.setReroute({
       id: toRerouteId(2),
       parentId: a.id,
       pos: [0, 0],
       linkIds: []
-    })
+    })!
     const c = graph.setReroute({
       id: toRerouteId(3),
       parentId: b.id,
       pos: [0, 0],
       linkIds: []
-    })
+    })!
 
     a.parentId = c.id
 
@@ -351,12 +361,12 @@ describe('Reroute position lives only in layoutStore', () => {
       id: rerouteId,
       pos: [10, 20],
       linkIds: []
-    })
+    })!
     const second = secondGraph.setReroute({
       id: rerouteId,
       pos: [100, 200],
       linkIds: []
-    })
+    })!
 
     first.pos = [30, 40]
     expect(

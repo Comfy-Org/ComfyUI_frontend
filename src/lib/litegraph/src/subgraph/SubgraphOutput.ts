@@ -73,7 +73,10 @@ export class SubgraphOutput extends SubgraphSlot {
     )
 
     // Add to graph links list
-    subgraph._addLink(link)
+    if (!subgraph._addLink(link)) {
+      if (existingLink) subgraph.afterChange()
+      return
+    }
 
     // Set link ID in each slot
     this.linkIds[0] = link.id

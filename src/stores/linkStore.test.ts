@@ -70,6 +70,19 @@ describe('useLinkStore', () => {
     expect(consoleError).toHaveBeenCalledOnce()
   })
 
+  it('queries and protects a subgraph-output target slot', () => {
+    const store = useLinkStore()
+    const first = link(1, 5, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
+    const second = link(2, 7, 0, Number(SUBGRAPH_OUTPUT_ID), 0)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(store.registerLink(graphA, first)).toBeDefined()
+    expect(store.registerLink(graphA, second)).toBeUndefined()
+    expect(store.getInputSlotLink(graphA, SUBGRAPH_OUTPUT_ID, 0)?.id).toBe(
+      toLinkId(1)
+    )
+  })
+
   it('only the registered link can vacate its slot', () => {
     const store = useLinkStore()
     const registered = link(1, 5, 0, 9, 2)
@@ -460,7 +473,9 @@ describe('useLinkStore', () => {
       })
     ).toBeDefined()
 
-    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
+    expect([...store.getOutputSlotLinks(graphA, toNodeId(5), 0)]).toEqual([
+      floating
+    ])
   })
 
   it('re-keys the output index when the origin moves', () => {

@@ -144,6 +144,10 @@ export const useRerouteStore = defineStore('reroute', () => {
     return chain?.graphId === scope.owningGraphId ? chain : undefined
   }
 
+  function hasReroute(rootGraphId: RootGraphId, rerouteId: RerouteId): boolean {
+    return roots.get(rootGraphId)?.chains.has(rerouteId) ?? false
+  }
+
   /** Removes a chain's registration; only the registered state may vacate it. */
   function deleteReroute(scope: GraphScope, chain: RerouteChain): boolean {
     const bucket = roots.get(scope.rootGraphId)
@@ -178,6 +182,7 @@ export const useRerouteStore = defineStore('reroute', () => {
   return {
     registerReroute,
     getReroute,
+    hasReroute,
     deleteReroute,
     getMembership,
     clearOwner,

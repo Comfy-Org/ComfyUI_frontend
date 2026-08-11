@@ -76,30 +76,17 @@ export class SubgraphInput extends SubgraphSlot {
     //   )
     // }
 
+    const inputWidget = node.getWidgetFromSlot(slot)
+    if (inputWidget && !this.matchesWidget(inputWidget)) {
+      console.warn('Target input has invalid widget.', slot, node)
+      return
+    }
+
     // Disconnect target input, if it is already connected.
     const existingLink = inputLink(subgraph, node.id, node.inputs.indexOf(slot))
     if (existingLink) {
       subgraph.beforeChange()
       this.parent._disconnectNodeInput(node, slot, existingLink)
-    }
-
-    const inputWidget = node.getWidgetFromSlot(slot)
-    if (inputWidget) {
-      if (!this.matchesWidget(inputWidget)) {
-        console.warn('Target input has invalid widget.', slot, node)
-        return
-      }
-
-      // Keep the widget reference in sync with the active upstream widget.
-      // Stale references can appear across nested promotion rebinds.
-      this._widget = inputWidget
-      this.events.dispatch('input-connected', {
-        input: slot,
-        widget: inputWidget,
-        node
-      })
-    } else {
-      this.events.dispatch('input-connected', { input: slot })
     }
 
     const linkId = mintLinkId(subgraph.state)
@@ -115,7 +102,23 @@ export class SubgraphInput extends SubgraphSlot {
     )
 
     // Add to graph links list
-    subgraph._addLink(link)
+    if (!subgraph._addLink(link)) {
+      if (existingLink) subgraph.afterChange()
+      return
+    }
+
+    if (inputWidget) {
+      // Keep the widget reference in sync with the active upstream widget.
+      // Stale references can appear across nested promotion rebinds.
+      this._widget = inputWidget
+      this.events.dispatch('input-connected', {
+        input: slot,
+        widget: inputWidget,
+        node
+      })
+    } else {
+      this.events.dispatch('input-connected', { input: slot })
+    }
 
     // Set link ID in each slot
     this.linkIds.push(link.id)

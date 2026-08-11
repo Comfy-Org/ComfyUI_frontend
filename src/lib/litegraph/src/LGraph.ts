@@ -1650,11 +1650,12 @@ export class LGraph
    * populating {@link reroutes}; routing every add through here keeps the
    * store from silently desyncing.
    */
-  _addReroute(reroute: Reroute): void {
+  _addReroute(reroute: Reroute): boolean {
     const existing = this.reroutesInternal.get(reroute.id)
-    if (existing === reroute) return
-    if (existing || !registerRerouteChain(this, reroute)) return
+    if (existing) return existing === reroute
+    if (!registerRerouteChain(this, reroute)) return false
     this.reroutesInternal.set(reroute.id, reroute)
+    return true
   }
 
   /**
@@ -1680,18 +1681,24 @@ export class LGraph
     parentId,
     pos,
     floating
-  }: OptionalProps<SerialisableReroute, 'id'>): Reroute {
+  }: OptionalProps<SerialisableReroute, 'id'>): Reroute | undefined {
     const rerouteId =
       id === undefined ? mintRerouteId(this.state) : toRerouteId(id)
     observeRerouteId(this.state, rerouteId)
 
     const existingReroute = this.reroutes.get(rerouteId)
+    if (
+      !existingReroute &&
+      useRerouteStore().hasReroute(toRootGraphId(this.rootGraph.id), rerouteId)
+    ) {
+      return
+    }
     const reroute = existingReroute ?? new Reroute(rerouteId, this, pos)
     reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
     if (pos && existingReroute) reroute.pos = pos
     reroute.floating = floating
-    this._addReroute(reroute)
+    if (!this._addReroute(reroute)) return
     return reroute
   }
 
@@ -1716,8 +1723,13 @@ export class LGraph
             )
           ]
         : [before]
-    const reroute = new Reroute(rerouteId, this, pos, before.parentId)
-    this._addReroute(reroute)
+    const reroute = this.setReroute({
+      id: rerouteId,
+      parentId: before.parentId,
+      pos,
+      linkIds: []
+    })
+    if (!reroute) return
 
     // Splice the new reroute into every chain that contained `before`
     for (const link of chainLinks) {
@@ -2069,9 +2081,6 @@ export class LGraph
         const { input, inputNode, link, subgraphOutput } = connection
         // Special handling: Subgraph output node
         if (link.target_id === SUBGRAPH_OUTPUT_ID) {
-          link.origin_id = subgraphNode.id
-          link.origin_slot = i - 1
-          this._addLink(link)
           if (subgraphOutput instanceof SubgraphOutput) {
             subgraphOutput.connect(
               subgraphNode.findOutputSlotByType(link.type, true, true),
@@ -2351,12 +2360,13 @@ export class LGraph
     const oldReroutes = subgraphNode.subgraph.reroutes
     for (const reroute of oldReroutes.values()) {
       const migratedId = mintRerouteId(this.state)
-      const migratedReroute = new Reroute(migratedId, this, [
-        reroute.pos[0] + offsetX,
-        reroute.pos[1] + offsetY
-      ])
+      const migratedReroute = this.setReroute({
+        id: migratedId,
+        pos: [reroute.pos[0] + offsetX, reroute.pos[1] + offsetY],
+        linkIds: []
+      })
+      if (!migratedReroute) continue
       rerouteIdMap.set(reroute.id, migratedId)
-      this._addReroute(migratedReroute)
       toSelect.push(migratedReroute)
     }
 

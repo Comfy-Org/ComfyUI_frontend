@@ -3122,7 +3122,8 @@ export class LGraphNode
       return null
 
     // if there is something already plugged there, disconnect
-    if (inputHasLink(graph, inputNode.id, inputIndex)) {
+    const replacingLink = inputHasLink(graph, inputNode.id, inputIndex)
+    if (replacingLink) {
       graph.beforeChange()
       inputNode.disconnectInput(inputIndex, true, afterRerouteId)
     }
@@ -3143,7 +3144,10 @@ export class LGraphNode
     )
 
     // add to graph links list
-    graph._addLink(link)
+    if (!graph._addLink(link)) {
+      if (replacingLink) graph.afterChange()
+      return
+    }
 
     anchorRerouteChain(graph, link)
     graph.incrementVersion()
@@ -3175,7 +3179,7 @@ export class LGraphNode
     pos: Point,
     slot: INodeInputSlot | INodeOutputSlot,
     afterRerouteId?: RerouteId
-  ): Reroute {
+  ): Reroute | undefined {
     const { graph, id } = this
     if (!graph) throw new NullGraphError()
 
@@ -3192,6 +3196,7 @@ export class LGraphNode
       linkIds: [],
       floating: { slotType }
     })
+    if (!reroute) return
 
     const parentReroute = graph.getReroute(afterRerouteId)
     const fromLastFloatingReroute =

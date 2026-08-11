@@ -46,9 +46,9 @@ are derived from the authoritative components:
 - `originIndex`, keyed by `` `${originNodeId}:${originSlot}` ``, answers
   output-connectivity queries without scanning the graph.
 
-Floating links and links targeting `SUBGRAPH_OUTPUT_ID` do not have a unique
-target key but still belong to `byId`. The store holds no `LLink` class
-instances; a weak resolver connects each component to its compatibility shell.
+Floating links do not have a unique target key but still belong to `byId`. The
+store holds no `LLink` class instances; a weak resolver connects each component
+to its compatibility shell.
 
 Link ids are unique across the root graph and all of its subgraph definitions.
 Persisted collisions are remapped before registration, including clipboard

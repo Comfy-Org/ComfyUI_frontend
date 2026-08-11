@@ -107,6 +107,21 @@ describe('SubgraphConversion', () => {
       ).toBe(1)
     })
 
+    it('connects a nested conversion to its enclosing subgraph output', () => {
+      const subgraph = createTestSubgraph({
+        outputs: [{ name: 'value', type: 'number' }]
+      })
+      onTestFinished(enableSubgraphNodeCreation(subgraph.rootGraph))
+      const origin = createTestNode(subgraph, [], ['number'])
+      const output = subgraph.outputNode.slots[0]
+      output.connect(origin.outputs[0], origin)
+
+      subgraph.convertToSubgraph(new Set<Positionable>([origin]))
+
+      expect(output.getLinks()).toHaveLength(1)
+      expect(output.getLinks()[0].target_id).toBe(output.parent.id)
+    })
+
     it('preserves widget values on interior nodes through conversion', () => {
       const rootGraph = createTestRootGraph()
       onTestFinished(enableSubgraphNodeCreation(rootGraph))

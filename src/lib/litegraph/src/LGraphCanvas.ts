@@ -4295,6 +4295,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const { id, ...rerouteInfo } = info
 
       const reroute = graph.setReroute(rerouteInfo)
+      if (!reroute) continue
       created.push(reroute)
       reroutes.set(toRerouteId(id), reroute)
     }
@@ -7138,7 +7139,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               slot,
               afterRerouteId
             )
-            if (!reroute) throw new Error('Failed to create reroute')
+            if (!reroute) break
           }
 
           dirty()
