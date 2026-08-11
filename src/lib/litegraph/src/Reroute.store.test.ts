@@ -1,6 +1,14 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed } from 'vue'
 
 import {
@@ -39,7 +47,8 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const { graph, link } = connectedGraph()
     const store = useRerouteStore()
 
-    const reroute = graph.createReroute([10, 10], link)!
+    const reroute = graph.createReroute([10, 10], link)
+    assert(reroute)
     expect(store.getReroute(graphScopeOf(graph), reroute.id)?.id).toBe(
       reroute.id
     )
@@ -75,7 +84,8 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [5, 5],
       linkIds: []
-    })!
+    })
+    assert(reroute)
 
     expect(store.getReroute(graphScopeOf(graph), reroute.id)?.id).toBe(3)
     const creationOperations = applyOperation.mock.calls.filter(
@@ -94,7 +104,8 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [8, 9],
       linkIds: []
-    })!
+    })
+    assert(existing)
 
     expect(existing).toBe(reroute)
     expect(existing.pos).toEqual([8, 9])
@@ -113,8 +124,10 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const { graph, link } = connectedGraph()
     const store = useRerouteStore()
 
-    const first = graph.createReroute([10, 10], link)!
-    const second = graph.createReroute([20, 20], first)!
+    const first = graph.createReroute([10, 10], link)
+    assert(first)
+    const second = graph.createReroute([20, 20], first)
+    assert(second)
 
     const parentId = computed(
       () => store.getReroute(graphScopeOf(graph), first.id)?.parentId
@@ -134,7 +147,8 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [10, 10],
       linkIds: [link.id]
-    })!
+    })
+    assert(reroute)
     link.parentId = reroute.id
 
     link.disconnect(graph)
@@ -146,7 +160,8 @@ describe('Reroute ↔ rerouteStore integration', () => {
   it('clear() removes the graph’s chains from the store', () => {
     const { graph, link } = connectedGraph()
     const store = useRerouteStore()
-    const reroute = graph.createReroute([10, 10], link)!
+    const reroute = graph.createReroute([10, 10], link)
+    assert(reroute)
     const graphScope = graphScopeOf(graph)
 
     graph.clear()
@@ -189,7 +204,8 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [10, 10],
       linkIds: []
-    })!
+    })
+    assert(reroute)
 
     link.parentId = reroute.id
 
@@ -207,13 +223,15 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [10, 10],
       linkIds: []
-    })!
+    })
+    assert(first)
     const second = graph.setReroute({
       id: toRerouteId(2),
       parentId: undefined,
       pos: [20, 20],
       linkIds: []
-    })!
+    })
+    assert(second)
 
     first.parentId = second.id
     second.parentId = first.id
@@ -229,19 +247,22 @@ describe('Reroute ↔ rerouteStore integration', () => {
       parentId: undefined,
       pos: [0, 0],
       linkIds: []
-    })!
+    })
+    assert(a)
     const b = graph.setReroute({
       id: toRerouteId(2),
       parentId: a.id,
       pos: [0, 0],
       linkIds: []
-    })!
+    })
+    assert(b)
     const c = graph.setReroute({
       id: toRerouteId(3),
       parentId: b.id,
       pos: [0, 0],
       linkIds: []
-    })!
+    })
+    assert(c)
 
     a.parentId = c.id
 
@@ -251,7 +272,8 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
   it('snapToGrid mirrors the snapped position into the layout store', () => {
     const { graph, link } = connectedGraph()
-    const reroute = graph.createReroute([12, 17], link)!
+    const reroute = graph.createReroute([12, 17], link)
+    assert(reroute)
 
     expect(reroute.snapToGrid(10)).toBe(true)
 
@@ -266,7 +288,8 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
   it('snapToGrid does not report or store a change when already aligned', () => {
     const { graph, link } = connectedGraph()
-    const reroute = graph.createReroute([12, 17], link)!
+    const reroute = graph.createReroute([12, 17], link)
+    assert(reroute)
     reroute.snapToGrid(10)
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
     onTestFinished(() => applyOperation.mockRestore())
@@ -277,8 +300,10 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
   it('refuses parentId writes that would create a cycle, allows repair', () => {
     const { graph, link } = connectedGraph()
-    const first = graph.createReroute([10, 10], link)!
-    const second = graph.createReroute([20, 20], first)!
+    const first = graph.createReroute([10, 10], link)
+    assert(first)
+    const second = graph.createReroute([20, 20], first)
+    assert(second)
     expect(first.parentId).toBe(second.id)
 
     second.parentId = first.id
@@ -294,7 +319,8 @@ describe('Reroute ↔ rerouteStore integration', () => {
   it('convertToSubgraph hands reroute registrations to the subgraph', () => {
     const { graph, a, b, link } = connectedGraph()
     const store = useRerouteStore()
-    const reroute = graph.createReroute([10, 10], link)!
+    const reroute = graph.createReroute([10, 10], link)
+    assert(reroute)
 
     onTestFinished(enableSubgraphNodeCreation(graph))
 
@@ -315,7 +341,8 @@ describe('Reroute ↔ rerouteStore integration', () => {
   it('floating marker survives through the store state', () => {
     const { graph, a, link } = connectedGraph()
     const store = useRerouteStore()
-    const reroute = graph.createReroute([10, 10], link)!
+    const reroute = graph.createReroute([10, 10], link)
+    assert(reroute)
 
     a.disconnectOutput(0)
 
@@ -334,7 +361,8 @@ describe('Reroute position lives only in layoutStore', () => {
   it('registers geometry on construction, before any graph wiring', () => {
     const { graph, link } = connectedGraph()
 
-    const reroute = graph.createReroute([37, 41], link)!
+    const reroute = graph.createReroute([37, 41], link)
+    assert(reroute)
 
     expect(
       layoutStore.getRerouteLayout(graph.rootGraph.id, reroute.id)?.position
@@ -354,12 +382,14 @@ describe('Reroute position lives only in layoutStore', () => {
       id: rerouteId,
       pos: [10, 20],
       linkIds: []
-    })!
+    })
+    assert(first)
     const second = secondGraph.setReroute({
       id: rerouteId,
       pos: [100, 200],
       linkIds: []
-    })!
+    })
+    assert(second)
 
     first.pos = [30, 40]
     expect(
@@ -381,7 +411,8 @@ describe('Reroute position lives only in layoutStore', () => {
 
   it('reads a store write back through pos, with no class-side copy', () => {
     const { graph, link } = connectedGraph()
-    const reroute = graph.createReroute([10, 10], link)!
+    const reroute = graph.createReroute([10, 10], link)
+    assert(reroute)
     const pos = reroute.pos
 
     // Move it in the store only. A mirrored copy on the class could not see
@@ -399,7 +430,8 @@ describe('Reroute position lives only in layoutStore', () => {
 
   it('writes indexed and method mutations through to the store', () => {
     const { graph, link } = connectedGraph()
-    const reroute = graph.createReroute([10, 20], link)!
+    const reroute = graph.createReroute([10, 20], link)
+    assert(reroute)
 
     reroute.pos[0] = 30
     const pos = reroute.pos
@@ -413,7 +445,8 @@ describe('Reroute position lives only in layoutStore', () => {
 
   it('rejects mutations that change the position length', () => {
     const { graph, link } = connectedGraph()
-    const reroute = graph.createReroute([10, 20], link)!
+    const reroute = graph.createReroute([10, 20], link)
+    assert(reroute)
     const pos = reroute.pos
 
     pos.pop()
@@ -428,7 +461,8 @@ describe('Reroute position lives only in layoutStore', () => {
 
   it('routes move and snapToGrid through the same stored point', () => {
     const { graph, link } = connectedGraph()
-    const reroute = graph.createReroute([10, 10], link)!
+    const reroute = graph.createReroute([10, 10], link)
+    assert(reroute)
 
     reroute.move(5, 7)
     expect(
