@@ -49,9 +49,9 @@ const resolvedComponents = await Promise.all(
 
 /**
  * Aborts in a global guard so the assertions see the fully resolved target
- * without loading the real onboarding views. Redirects are applied before
- * guards run, so the collected targets are also every navigation the router
- * attempted — a redirect loop would show up as more than one.
+ * without loading the real onboarding views. Record-level redirects are applied
+ * before guards run, so the guard observes the final destination and its
+ * `redirectedFrom` says where the navigation started.
  */
 async function attemptNavigation(target: string) {
   const router = createRouter({
@@ -65,22 +65,20 @@ async function attemptNavigation(target: string) {
   })
 
   await router.push(target)
-  return attempts
+  return attempts[0]
 }
 
 describe('cloudOnboardingRoutes', () => {
   it('redirects the legacy /login path to the cloud login route', async () => {
-    const [to, ...rest] = await attemptNavigation('/login')
+    const to = await attemptNavigation('/login')
 
     expect(to.name).toBe('cloud-login')
     expect(to.path).toBe('/cloud/login')
-    expect(rest).toHaveLength(0)
+    expect(to.redirectedFrom?.path).toBe('/login')
   })
 
   it('preserves the query and hash through the legacy /login redirect', async () => {
-    const [to] = await attemptNavigation(
-      '/login?previousFullPath=%2Ffoo#section'
-    )
+    const to = await attemptNavigation('/login?previousFullPath=%2Ffoo#section')
 
     expect(to.name).toBe('cloud-login')
     expect(to.query.previousFullPath).toBe('/foo')
@@ -88,11 +86,11 @@ describe('cloudOnboardingRoutes', () => {
   })
 
   it('resolves /cloud/login without redirecting', async () => {
-    const [to, ...rest] = await attemptNavigation('/cloud/login')
+    const to = await attemptNavigation('/cloud/login')
 
     expect(to.name).toBe('cloud-login')
     expect(to.fullPath).toBe('/cloud/login')
-    expect(rest).toHaveLength(0)
+    expect(to.redirectedFrom).toBeUndefined()
   })
 
   it('consent route is not a child of the /cloud layout', () => {
