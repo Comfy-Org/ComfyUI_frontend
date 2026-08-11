@@ -813,9 +813,7 @@ export const comfyPageFixture = base.extend<{
 
     await page.coverage.startJSCoverage({ resetOnNavigation: false })
     await use(page)
-    // A test may legitimately close its page (finalizeCloudCustomNodeBootGuard
-    // closes it as the enforcement boundary); a closed page has no coverage to
-    // collect, and stopJSCoverage on it throws, failing a test that passed.
+    // A closed page has no coverage to collect
     if (page.isClosed()) return
     const coverage = await page.coverage.stopJSCoverage()
 
