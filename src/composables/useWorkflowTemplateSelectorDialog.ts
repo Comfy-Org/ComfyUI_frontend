@@ -1,3 +1,5 @@
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
+
 import WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useTelemetry } from '@/platform/telemetry'
@@ -15,8 +17,9 @@ const TEMPLATES_TAB_ID = 'templates'
 /**
  * Opens the template browser. The browser now lives in the docked sidebar
  * panel (TemplatesSidebarTab); this composable keeps the old modal-era API so
- * every entry point (menu, commands, welcome screens) works unchanged. Builder
- * mode has no sidebar panel, so it falls back to the original modal there.
+ * every entry point (menu, commands, welcome screens) works unchanged. Where
+ * no sidebar exists to dock into — builder mode, and App Mode below `md`,
+ * which renders MobileDisplay — it falls back to the original modal.
  */
 export const useWorkflowTemplateSelectorDialog = () => {
   const dialogService = useDialogService()
@@ -36,8 +39,11 @@ export const useWorkflowTemplateSelectorDialog = () => {
     source: TemplateLibraryMetadata['source'] = 'command',
     options?: { initialCategory?: string; afterClose?: () => void }
   ) {
-    const { isBuilderMode } = useAppMode()
-    if (!isBuilderMode.value) {
+    const { isBuilderMode, isAppMode } = useAppMode()
+    const isBelowMd = useBreakpoints(breakpointsTailwind).smaller('md')
+    const hasSidebarHost =
+      !isBuilderMode.value && !(isAppMode.value && isBelowMd.value)
+    if (hasSidebarHost) {
       // Panel path: stash the open context (category deep-link, close
       // callback, telemetry source) and activate the sidebar tab. The panel
       // component emits opened/closed telemetry itself.

@@ -276,10 +276,19 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card h-full transition-colors hover:bg-secondary-background/50"
+            role="button"
+            tabindex="0"
+            :aria-label="
+              getTemplateTitle(template, getEffectiveSourceModule(template))
+            "
+            class="group/card h-full transition-colors hover:bg-secondary-background/50 focus-visible:bg-secondary-background/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-base-foreground"
             @mouseenter="onCardEnter(template, $event)"
             @mouseleave="onCardLeave()"
+            @focus="onCardEnter(template, $event)"
+            @blur="onCardLeave()"
             @click="onLoadWorkflow(template)"
+            @keydown.enter.prevent="onLoadWorkflow(template)"
+            @keydown.space.prevent="onLoadWorkflow(template)"
           >
             <template #top>
               <CardTop ratio="square">

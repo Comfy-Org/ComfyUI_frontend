@@ -17,7 +17,11 @@ const mockTelemetry = vi.hoisted(() => ({
   trackTemplateLibraryOpened: vi.fn()
 }))
 
-const mockAppMode = vi.hoisted(() => ({ isBuilderMode: false }))
+const mockAppMode = vi.hoisted(() => ({
+  isBuilderMode: false,
+  isAppMode: false,
+  isBelowMd: false
+}))
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => mockDialogService
@@ -41,8 +45,25 @@ vi.mock('@/composables/useAppMode', () => ({
       get value() {
         return mockAppMode.isBuilderMode
       }
+    },
+    isAppMode: {
+      get value() {
+        return mockAppMode.isAppMode
+      }
     }
   })
+}))
+
+vi.mock(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  useBreakpoints: () =>
+    ({
+      smaller: () => ({
+        get value() {
+          return mockAppMode.isBelowMd
+        }
+      })
+    }) as never
 }))
 
 vi.mock(
@@ -62,6 +83,8 @@ describe('useWorkflowTemplateSelectorDialog', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockAppMode.isBuilderMode = false
+    mockAppMode.isAppMode = false
+    mockAppMode.isBelowMd = false
   })
 
   describe('show (panel path)', () => {
@@ -95,6 +118,41 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       dialog.show('command')
 
       expect(useSidebarTabStore().activeSidebarTabId).toBe('templates')
+    })
+
+    it('still uses the panel in App Mode above md', () => {
+      mockAppMode.isAppMode = true
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('menu')
+
+      expect(useSidebarTabStore().activeSidebarTabId).toBe('templates')
+      expect(mockDialogService.showLayoutDialog).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('show (mobile App Mode fallback to modal)', () => {
+    beforeEach(() => {
+      mockAppMode.isAppMode = true
+      mockAppMode.isBelowMd = true
+    })
+
+    // Below md, App Mode renders MobileDisplay, which hosts no sidebar — so
+    // activating the tab would show nothing at all.
+    it('opens the modal instead of activating a tab that has no host', () => {
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('menu')
+
+      expect(mockDialogService.showLayoutDialog).toHaveBeenCalled()
+      expect(useSidebarTabStore().activeSidebarTabId).not.toBe('templates')
+    })
+
+    it('keeps the graph-mode panel path below md', () => {
+      mockAppMode.isAppMode = false
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show('menu')
+
+      expect(useSidebarTabStore().activeSidebarTabId).toBe('templates')
+      expect(mockDialogService.showLayoutDialog).not.toHaveBeenCalled()
     })
   })
 

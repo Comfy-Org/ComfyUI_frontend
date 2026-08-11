@@ -1,5 +1,5 @@
 <template>
-  <div ref="rootRef">
+  <div ref="rootRef" data-testid="template-filter-bar">
     <div class="relative p-1">
       <i
         aria-hidden="true"
