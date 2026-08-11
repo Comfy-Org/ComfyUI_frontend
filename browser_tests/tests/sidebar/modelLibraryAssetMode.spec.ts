@@ -345,26 +345,28 @@ test.describe('Model library sidebar - asset mode before the loader_path cutover
 })
 
 test.describe('Model library sidebar - asset mode with a legacy bare tag', () => {
-  test.beforeEach(async ({ comfyPage, assetApi }) => {
-    assetApi.configure(
-      withModels([MODEL_TYPE_CHECKPOINT_ROOT, MODEL_TYPE_CHECKPOINT_LEGACY_TAG])
-    )
-    await assetApi.mock()
-    await comfyPage.modelLibrary.mockModelFolders([
-      {
-        name: 'checkpoints',
-        folders: ['/models/checkpoints'],
-        extensions: ['.safetensors']
-      }
-    ])
-    await comfyPage.setup()
+  test.use({
+    modelLibraryOptions: {
+      operators: [
+        withModels([
+          MODEL_TYPE_CHECKPOINT_ROOT,
+          MODEL_TYPE_CHECKPOINT_LEGACY_TAG
+        ])
+      ],
+      folders: [
+        {
+          name: 'checkpoints',
+          folders: ['/models/checkpoints'],
+          extensions: ['.safetensors']
+        }
+      ]
+    }
+  })
+
+  test.beforeEach(async ({ assetApi: _, comfyPage }) => {
     await comfyPage.featureFlags.setServerFlagsPersistent({
       supports_model_type_tags: true
     })
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
   })
 
   test('Falls back to legacy bare-tag grouping instead of dropping the asset', async ({
@@ -380,36 +382,35 @@ test.describe('Model library sidebar - asset mode with a legacy bare tag', () =>
 })
 
 test.describe('Model library sidebar - asset mode with a mid-retag twin tag', () => {
-  test.beforeEach(async ({ comfyPage, assetApi }) => {
-    assetApi.configure(
-      withModels([
-        MODEL_TYPE_CHECKPOINT_ROOT,
-        MODEL_TYPE_CHECKPOINT_MID_RETAG,
-        MODEL_TYPE_LORA
-      ])
-    )
-    await assetApi.mock()
-    await comfyPage.modelLibrary.mockModelFolders([
-      {
-        name: 'checkpoints',
-        folders: ['/models/checkpoints'],
-        extensions: ['.safetensors']
-      },
-      {
-        name: 'loras',
-        folders: ['/models/loras'],
-        extensions: ['.safetensors']
-      }
-    ])
-    await comfyPage.setup()
+  test.use({
+    modelLibraryOptions: {
+      operators: [
+        withModels([
+          MODEL_TYPE_CHECKPOINT_ROOT,
+          MODEL_TYPE_CHECKPOINT_MID_RETAG,
+          MODEL_TYPE_LORA
+        ])
+      ],
+      folders: [
+        {
+          name: 'checkpoints',
+          folders: ['/models/checkpoints'],
+          extensions: ['.safetensors']
+        },
+        {
+          name: 'loras',
+          folders: ['/models/loras'],
+          extensions: ['.safetensors']
+        }
+      ]
+    }
+  })
+
+  test.beforeEach(async ({ assetApi: _, comfyPage }) => {
     await comfyPage.featureFlags.setServerFlagsPersistent({
       supports_model_type_tags: true
     })
     await comfyPage.menu.modelLibraryTab.open()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
   })
 
   test('Groups a model_type-covered asset once and ignores its bare-tag twins', async ({
